@@ -383,17 +383,17 @@ struct sigmaanalysis {
         return false;
       histos.fill(HIST("GeneralQA/h2dPhotonPosTPCNSigmaEl"), cand.photonPosPt(), cand.photonPosTPCNSigmaEl());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 6.);
-      if ((cand.photonPosTPCNSigmaEl() != -999.f) && ((cand.photonPosTPCNSigmaEl() < PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigmaEl() > PhotonMaxTPCNSigmas)))
+      if (((cand.photonPosTPCNSigmaEl() < PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigmaEl() > PhotonMaxTPCNSigmas)))
         return false;
       histos.fill(HIST("GeneralQA/h2dPhotonNegTPCNSigmaEl"), cand.photonNegPt(), cand.photonNegTPCNSigmaEl());
-      if ((cand.photonNegTPCNSigmaEl() != -999.f) && ((cand.photonNegTPCNSigmaEl() < PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigmaEl() > PhotonMaxTPCNSigmas)))
+      if (((cand.photonNegTPCNSigmaEl() < PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigmaEl() > PhotonMaxTPCNSigmas)))
         return false;
       histos.fill(HIST("GeneralQA/h2dPhotonPosTPCNSigmaPi"), cand.photonPosPt(), cand.photonPosTPCNSigmaPi());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 7.);
-      if ((cand.photonPosTPCNSigmaPi() != -999.f) && ((TMath::Abs(cand.photonPosTPCNSigmaPi()) < PiMaxTPCNSigmas) && cand.photonPosPt() <= piMaxpT))
+      if (((TMath::Abs(cand.photonPosTPCNSigmaPi()) < PiMaxTPCNSigmas) && cand.photonPosPt() <= piMaxpT))
         return false;
       histos.fill(HIST("GeneralQA/h2dPhotonNegTPCNSigmaPi"), cand.photonNegPt(), cand.photonNegTPCNSigmaPi());
-      if ((cand.photonNegTPCNSigmaPi() != -999.f) && ((TMath::Abs(cand.photonNegTPCNSigmaPi()) < PiMaxTPCNSigmas) && cand.photonNegPt() <= piMaxpT))
+      if (((TMath::Abs(cand.photonNegTPCNSigmaPi()) < PiMaxTPCNSigmas) && cand.photonNegPt() <= piMaxpT))
         return false;
       histos.fill(HIST("GeneralQA/hPhotonpT"), cand.photonPt());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 8.);
@@ -533,15 +533,15 @@ struct sigmaanalysis {
       }
     } else { // AntiLambda PID selection
       // TPC Selection
-      if (fselLambdaTPCPID && (cand.lambdaPosPiTPCNSigma() != -999.f) && (TMath::Abs(cand.lambdaPosPiTPCNSigma()) > LambdaMaxTPCNSigmas))
+      if (fselLambdaTPCPID && (TMath::Abs(cand.lambdaPosPiTPCNSigma()) > LambdaMaxTPCNSigmas))
         passedTPC = false;
-      if (fselLambdaTPCPID && (cand.lambdaNegPrTPCNSigma() != -999.f) && (TMath::Abs(cand.lambdaNegPrTPCNSigma()) > LambdaMaxTPCNSigmas))
+      if (fselLambdaTPCPID && (TMath::Abs(cand.lambdaNegPrTPCNSigma()) > LambdaMaxTPCNSigmas))
         passedTPC = false;
 
       // TOF Selection
-      if (fselLambdaTOFPID && (cand.aLambdaPrTOFNSigma() != -1e+3) && (TMath::Abs(cand.aLambdaPrTOFNSigma()) > LambdaMaxTOFNSigmas))
+      if (fselLambdaTOFPID && (TMath::Abs(cand.aLambdaPrTOFNSigma()) > LambdaMaxTOFNSigmas))
         passedTOF = false;
-      if (fselLambdaTOFPID && (cand.aLambdaPiTOFNSigma() != -1e+3) && (TMath::Abs(cand.aLambdaPiTOFNSigma()) > LambdaMaxTOFNSigmas))
+      if (fselLambdaTOFPID && (TMath::Abs(cand.aLambdaPiTOFNSigma()) > LambdaMaxTOFNSigmas))
         passedTOF = false;
     }
     return (passedTPC && passedTOF);
