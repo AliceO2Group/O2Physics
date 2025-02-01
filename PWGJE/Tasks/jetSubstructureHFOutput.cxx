@@ -15,6 +15,9 @@
 //
 
 #include <vector>
+#include <algorithm>
+#include <utility>
+#include <map>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -203,21 +206,21 @@ struct JetSubstructureHFOutputTask {
             continue;
           }
           int32_t candidateCollisionIndex = -1;
-          int32_t candidateIndex = -1;
           if constexpr (isMCP) {
             auto hfMcCollisionIndex = candidateMcCollisionMapping.find(jetcandidateutilities::getMcCandidateCollisionId(candidate));
             if (hfMcCollisionIndex != candidateMcCollisionMapping.end()) {
               candidateCollisionIndex = hfMcCollisionIndex->second;
             }
-            jetcandidateutilities::fillCandidateMcTable(candidate, candidateCollisionIndex, hfParticlesTable, candidateIndex);
+            jetcandidateutilities::fillCandidateMcTable(candidate, candidateCollisionIndex, hfParticlesTable);
+            candidateMap.insert(std::make_pair(candidate.globalIndex(), hfParticlesTable.lastIndex()));
           } else {
             auto hfCollisionIndex = candidateCollisionMapping.find(jetcandidateutilities::getCandidateCollisionId(candidate));
             if (hfCollisionIndex != candidateCollisionMapping.end()) {
               candidateCollisionIndex = hfCollisionIndex->second;
             }
-            jetcandidateutilities::fillCandidateTable<isMCD>(candidate, candidateCollisionIndex, candidateTable, candidateParsTable, candidateParExtrasTable, candidateParsDaughterTable, candidateSelsTable, candidateMlsTable, candidateMlsDaughterTable, candidateMcsTable, candidateIndex);
+            jetcandidateutilities::fillCandidateTable<isMCD>(candidate, candidateCollisionIndex, candidateTable, candidateParsTable, candidateParExtrasTable, candidateParsDaughterTable, candidateSelsTable, candidateMlsTable, candidateMlsDaughterTable, candidateMcsTable);
+            candidateMap.insert(std::make_pair(candidate.globalIndex(), candidateTable.lastIndex()));
           }
-          candidateMap.insert(std::make_pair(candidate.globalIndex(), candidateIndex));
         }
       }
     }
@@ -331,13 +334,12 @@ struct JetSubstructureHFOutputTask {
       for (const auto& collision : collisions) {
         if (collisionFlag[collision.globalIndex()]) {
           const auto hfCollisionsPerCollision = jetcandidateutilities::slicedPerCandidateCollision(hfCollisions, candidates, collision, D0CollisionsPerCollision, LcCollisionsPerCollision, BplusCollisionsPerCollision, DielectronCollisionsPerCollision); // add Bplus later
-          int32_t candidateCollisionIndex = -1;
           for (const auto& hfCollisionPerCollision : hfCollisionsPerCollision) { // should only ever be one
             auto hfCollisionTableIndex = candidateCollisionMapping.find(hfCollisionPerCollision.globalIndex());
             if (hfCollisionTableIndex != candidateCollisionMapping.end()) {
               continue;
             }
-            jetcandidateutilities::fillCandidateCollisionTable(hfCollisionPerCollision, candidates, hfCollisionsTable, candidateCollisionIndex);
+            jetcandidateutilities::fillCandidateCollisionTable(hfCollisionPerCollision, candidates, hfCollisionsTable);
             candidateCollisionMapping.insert(std::make_pair(hfCollisionPerCollision.globalIndex(), hfCollisionsTable.lastIndex()));
           }
         }
@@ -347,13 +349,12 @@ struct JetSubstructureHFOutputTask {
       for (const auto& mcCollision : mcCollisions) {
         if (mcCollisionFlag[mcCollision.globalIndex()]) {
           const auto hfMcCollisionsPerMcCollision = jetcandidateutilities::slicedPerCandidateCollision(hfMcCollisions, candidatesMCP, mcCollision, D0McCollisionsPerMcCollision, LcMcCollisionsPerMcCollision, BplusMcCollisionsPerMcCollision, DielectronMcCollisionsPerMcCollision); // add Bplus later
-          int32_t candidateMcCollisionIndex = -1;
           for (const auto& hfMcCollisionPerMcCollision : hfMcCollisionsPerMcCollision) { // should only ever be one
             auto hfMcCollisionTableIndex = candidateMcCollisionMapping.find(hfMcCollisionPerMcCollision.globalIndex());
             if (hfMcCollisionTableIndex != candidateMcCollisionMapping.end()) {
               continue;
             }
-            jetcandidateutilities::fillCandidateMcCollisionTable(hfMcCollisionPerMcCollision, candidatesMCP, hfMcCollisionsTable, candidateMcCollisionIndex);
+            jetcandidateutilities::fillCandidateMcCollisionTable(hfMcCollisionPerMcCollision, candidatesMCP, hfMcCollisionsTable);
             candidateMcCollisionMapping.insert(std::make_pair(hfMcCollisionPerMcCollision.globalIndex(), hfMcCollisionsTable.lastIndex()));
             if constexpr (!isMCPOnly && (jethfutilities::isHFTable<P>() || jethfutilities::isHFMcTable<S>())) { // the matching of mcCollision to Collision is only done for HF tables
               std::vector<int32_t> hfCollisionIDs;
