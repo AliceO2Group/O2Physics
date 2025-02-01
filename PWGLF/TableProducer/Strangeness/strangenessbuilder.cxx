@@ -278,6 +278,11 @@ struct StrangenessBuilder {
 
     // conditionals
     Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimum TPC crossed rows for daughter tracks"};
+    Configurable<float> dcabachtopv{"dcabachtopv", .1, "DCA Bach To PV"};
+    Configurable<float> cascradius{"cascradius", 0.9, "cascradius"};
+    Configurable<float> casccospa{"casccospa", 0.95, "casccospa"};
+    Configurable<float> dcacascdau{"dcacascdau", 1.0, "DCA cascade Daughters"};
+    Configurable<float> lambdaMassWindow{"lambdaMassWindow", .015, "Distance from Lambda mass (does not apply to KF path)"};
 
     // KF building specific
     Configurable<bool> kfTuneForOmega{"kfTuneForOmega", false, "if enabled, take main cascade properties from Omega fit instead of Xi fit (= default)"};
@@ -432,6 +437,14 @@ struct StrangenessBuilder {
     straHelper.v0selections.dcav0dau = v0BuilderOpts.dcav0dau;
     straHelper.v0selections.v0radius = v0BuilderOpts.v0radius;
     straHelper.v0selections.maxDaughterEta = v0BuilderOpts.maxDaughterEta;
+
+    // set cascade parameters in the helper
+    straHelper.cascadeselections.minCrossedRows = cascadeBuilderOpts.minCrossedRows; 
+    straHelper.cascadeselections.dcabachtopv = cascadeBuilderOpts.dcabachtopv;
+    straHelper.cascadeselections.cascradius = cascadeBuilderOpts.cascradius;
+    straHelper.cascadeselections.casccospa = cascadeBuilderOpts.casccospa;
+    straHelper.cascadeselections.dcacascdau = cascadeBuilderOpts.dcacascdau;
+    straHelper.cascadeselections.lambdaMassWindow = cascadeBuilderOpts.lambdaMassWindow;
   }
 
   bool initCCDB(aod::BCsWithTimestamps const& bcs, aod::Collisions const& collisions)
