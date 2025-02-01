@@ -64,7 +64,7 @@ struct sigmaanalysis {
   Configurable<bool> fUseMLSel{"fUseMLSel", false, "Flag to use ML selection. If False, the standard selection is applied."};
   Configurable<bool> fProcessMonteCarlo{"fProcessMonteCarlo", false, "Flag to process MC data."};
   Configurable<bool> fselLambdaTPCPID{"fselLambdaTPCPID", true, "Flag to select lambda-like candidates using TPC NSigma."};
-  Configurable<bool> fselLambdaTOFPID{"fselLambdaTOFPID", true, "Flag to select lambda-like candidates using TOF NSigma."};
+  Configurable<bool> fselLambdaTOFPID{"fselLambdaTOFPID", false, "Flag to select lambda-like candidates using TOF NSigma."};
   Configurable<bool> fLambdaTPCTOFQA{"fLambdaTPCTOFQA", false, "Flag to fill histos for Lambda TPC+TOF PID studies."};
   Configurable<bool> doMCAssociation{"doMCAssociation", false, "Flag to process only signal candidates. Use only with processMonteCarlo!"};
 
@@ -503,15 +503,15 @@ struct sigmaanalysis {
 
     if (isLambdalike) { // Lambda PID selection
       // TPC Selection
-      if (fselLambdaTPCPID && (cand.lambdaPosPrTPCNSigma() != -999.f) && (TMath::Abs(cand.lambdaPosPrTPCNSigma()) > LambdaMaxTPCNSigmas))
+      if (fselLambdaTPCPID && (TMath::Abs(cand.lambdaPosPrTPCNSigma()) > LambdaMaxTPCNSigmas))
         passedTPC = false;
-      if (fselLambdaTPCPID && (cand.lambdaNegPiTPCNSigma() != -999.f) && (TMath::Abs(cand.lambdaNegPiTPCNSigma()) > LambdaMaxTPCNSigmas))
+      if (fselLambdaTPCPID && (TMath::Abs(cand.lambdaNegPiTPCNSigma()) > LambdaMaxTPCNSigmas))
         passedTPC = false;
 
       // TOF Selection
-      if (fselLambdaTOFPID && (cand.lambdaPrTOFNSigma() != -1e+3) && (TMath::Abs(cand.lambdaPrTOFNSigma()) > LambdaMaxTOFNSigmas))
+      if (fselLambdaTOFPID && (TMath::Abs(cand.lambdaPrTOFNSigma()) > LambdaMaxTOFNSigmas))
         passedTOF = false;
-      if (fselLambdaTOFPID && (cand.lambdaPiTOFNSigma() != -1e+3) && (TMath::Abs(cand.lambdaPiTOFNSigma()) > LambdaMaxTOFNSigmas))
+      if (fselLambdaTOFPID && (TMath::Abs(cand.lambdaPiTOFNSigma()) > LambdaMaxTOFNSigmas))
         passedTOF = false;
 
       if constexpr (requires { cand.lambdaCandPDGCode(); }) {
