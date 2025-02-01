@@ -221,8 +221,6 @@ struct V0PtInvMassPlots {
     double mK0shPDG = o2::constants::physics::MassK0Short;
     double mLambdaPDG = o2::constants::physics::MassLambda0;
     for (const auto& v0 : V0s) {
-      const auto& posDaughterTrack = v0.posTrack_as<DaughterTracks>();
-      const auto& negDaughterTrack = v0.negTrack_as<DaughterTracks>();
       // Armenteros-Podolandski Plot Values
       double pv0 = std::sqrt((v0.px() * v0.px()) + (v0.py() * v0.py()) + (v0.pz() * v0.pz()));
       double pposdauparallelv0 = ((v0.posTrack_as<DaughterTracks>().px() * v0.px()) + (v0.posTrack_as<DaughterTracks>().py() * v0.py()) + (v0.posTrack_as<DaughterTracks>().pz() * v0.pz())) / pv0;
