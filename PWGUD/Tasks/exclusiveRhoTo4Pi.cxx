@@ -32,7 +32,6 @@
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
 #include "Math/GenVector/Boost.h"
-#include <stdexcept>
 
 using namespace std;
 using namespace o2;
