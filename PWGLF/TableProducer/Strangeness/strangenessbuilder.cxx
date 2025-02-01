@@ -378,6 +378,7 @@ struct StrangenessBuilder {
   {
     // setup bookkeeping histogram
     auto h = histos.add<TH1>("hTableBuildingStatistics", "hTableBuildingStatistics", kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
+    h->SetTitle("-1: not generated, otherwise: generated table size");
 
     mRunNumber = 0;
 
