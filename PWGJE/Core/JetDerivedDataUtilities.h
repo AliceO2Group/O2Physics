@@ -617,10 +617,9 @@ uint8_t setTrackSelectionBit(T const& track, float trackDCAZ, float maxDCAZ)
   if (track.trackCutFlagFb5()) {
     SETBIT(bit, JTrackSel::hybridTrack);
   }
-  if (track.trackCutFlagFb5()) { //Change get FB6 to work
+  if (track.trackCutFlagFb5()) {
     SETBIT(bit, JTrackSel::hybridTrackRun2);
-    LOG(info) << "In JetDerivedDataUtilities setTrackSelectionBit: The bit was set to HYBRID_RUN2";
-  } //CHANGE
+  }
   return bit;
 }
 
