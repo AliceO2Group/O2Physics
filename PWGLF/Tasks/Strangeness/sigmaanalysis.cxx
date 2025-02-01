@@ -90,13 +90,16 @@ struct sigmaanalysis {
   Configurable<float> LambdaMaxDauEta{"LambdaMaxDauEta", 0.8, "Max pseudorapidity of daughter tracks"};
   Configurable<float> LambdaMaxTPCNSigmas{"LambdaMaxTPCNSigmas", 1e+9, "Max TPC NSigmas for daughters"};
   Configurable<float> LambdaMaxTOFNSigmas{"LambdaMaxTOFNSigmas", 1e+9, "Max TOF NSigmas for daughters"};
-  Configurable<float> LambdaMinTPCCrossedRows{"LambdaMinTPCCrossedRows", 50, "Min daughter TPC Crossed Rows"};
+  Configurable<int> LambdaMinTPCCrossedRows{"LambdaMinTPCCrossedRows", 50, "Min daughter TPC Crossed Rows"};
+  Configurable<int> LambdaMinITSclusters{"LambdaMinITSclusters", -1, "minimum ITS clusters"};
+  Configurable<bool> LambdaRejectPosITSafterburner{"LambdaRejectPosITSafterburner", false, "reject positive track formed out of afterburner ITS tracks"};
+  Configurable<bool> LambdaRejectNegITSafterburner{"LambdaRejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
 
   //// Photon standard criteria:
   Configurable<float> PhotonDauMinPt{"PhotonDauMinPt", 0.0, "Min daughter pT (GeV/c)"};
   Configurable<float> PhotonMinDCADauToPv{"PhotonMinDCADauToPv", 0.0, "Min DCA daughter To PV (cm)"};
   Configurable<float> PhotonMaxDCAV0Dau{"PhotonMaxDCAV0Dau", 3.5, "Max DCA V0 Daughters (cm)"};
-  Configurable<float> PhotonMinTPCCrossedRows{"PhotonMinTPCCrossedRows", 0, "Min daughter TPC Crossed Rows"};
+  Configurable<int> PhotonMinTPCCrossedRows{"PhotonMinTPCCrossedRows", 30, "Min daughter TPC Crossed Rows"};
   Configurable<float> PhotonMinTPCNSigmas{"PhotonMinTPCNSigmas", -7, "Min TPC NSigmas for daughters"};
   Configurable<float> PhotonMaxTPCNSigmas{"PhotonMaxTPCNSigmas", 7, "Max TPC NSigmas for daughters"};
   Configurable<float> PiMaxTPCNSigmas{"PiMaxTPCNSigmas", 1, "Max TPC NSigmas for pi rejection"};
@@ -144,7 +147,7 @@ struct sigmaanalysis {
   ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA (cm)"};
   ConfigurableAxis axisCosPA{"axisCosPA", {200, 0.5f, 1.0f}, "Cosine of pointing angle"};
   ConfigurableAxis axisPsiPair{"axisPsiPair", {500, -5.0f, 5.0f}, "Psipair for photons"};
-  ConfigurableAxis axisCandSel{"axisCandSel", {28, -0.5f, +27.5f}, "Candidate Selection"};
+  ConfigurableAxis axisCandSel{"axisCandSel", {29, -0.5f, +28.5f}, "Candidate Selection"};
 
   // ML
   ConfigurableAxis MLProb{"MLOutput", {100, 0.0f, 1.0f}, ""};
@@ -183,8 +186,9 @@ struct sigmaanalysis {
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(23, "Lambda CosPA Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(24, "Lambda Y/Eta Cuts");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(25, "Lambda TPCCrossedRows Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(26, "Sigma Y Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(27, "Lambda/ALambda PID Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(26, "Lambda ITSNCls");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(27, "Sigma Y Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(28, "Lambda/ALambda PID Cut");
 
     // Photon Selection QA histos
     histos.add("GeneralQA/hPhotonMass", "hPhotonMass", kTH1F, {axisPhotonMass});
@@ -463,12 +467,24 @@ struct sigmaanalysis {
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 24.);
       if ((cand.lambdaPosTPCCrossedRows() < LambdaMinTPCCrossedRows) || (cand.lambdaNegTPCCrossedRows() < LambdaMinTPCCrossedRows))
         return false;
-      histos.fill(HIST("GeneralQA/hSigmaY"), cand.sigmaRapidity());
+      histos.fill(HIST("GeneralQA/hLambdaPosITSCls"), cand.lambdaPosITSCls());
+      histos.fill(HIST("GeneralQA/hLambdaNegITSCls"), cand.lambdaNegITSCls());
+      histos.fill(HIST("GeneralQA/hLambdaPosChi2PerNc"), cand.lambdaPosChi2PerNcl());
+      histos.fill(HIST("GeneralQA/hLambdaNegChi2PerNc"), cand.lambdaNegChi2PerNcl());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
+      // check minimum number of ITS clusters + reject ITS afterburner tracks if requested
+      bool posIsFromAfterburner = cand.lambdaPosChi2PerNcl() < 0;
+      bool negIsFromAfterburner = cand.lambdaNegChi2PerNcl() < 0;
+      if (cand.lambdaPosITSCls() < LambdaMinITSclusters && (!LambdaRejectPosITSafterburner || posIsFromAfterburner))
+        return false;
+      if (cand.lambdaNegITSCls() < LambdaMinITSclusters && (!LambdaRejectNegITSafterburner || negIsFromAfterburner))
+        return false;      
+      histos.fill(HIST("GeneralQA/hSigmaY"), cand.sigmaRapidity());
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
       if (TMath::Abs(cand.sigmaRapidity()) > SigmaMaxRap)
         return false;
       histos.fill(HIST("GeneralQA/hSigmaOPAngle"), cand.sigmaOPAngle());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 27.);
     }
     return true;
   }
@@ -666,7 +682,7 @@ struct sigmaanalysis {
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
         histos.fill(HIST("GeneralQA/hLambdaMassSelected"), sigma.lambdaMass());
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 28.);
         histos.fill(HIST("Sigma0/hMassSigma0"), sigma.sigmaMass());
         histos.fill(HIST("Sigma0/hPtSigma0"), sigma.sigmapT());
         histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
@@ -683,7 +699,7 @@ struct sigmaanalysis {
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
         histos.fill(HIST("GeneralQA/hAntiLambdaMassSelected"), sigma.antilambdaMass());
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 28.);
         histos.fill(HIST("AntiSigma0/hMassAntiSigma0"), sigma.sigmaMass());
         histos.fill(HIST("AntiSigma0/hPtAntiSigma0"), sigma.sigmapT());
         histos.fill(HIST("AntiSigma0/hRapidityAntiSigma0"), sigma.sigmaRapidity());
