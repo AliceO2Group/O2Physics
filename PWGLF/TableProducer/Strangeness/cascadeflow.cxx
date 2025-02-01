@@ -125,11 +125,11 @@ static const std::vector<std::string> labelsCutScore = {"Background score", "Sig
 
 struct cascadeFlow {
 
-  //Output filling criteria
+  // Output filling criteria
   Configurable<bool> isFillTree{"isFillTree", 1, ""};
   Configurable<bool> isFillTHNXi{"isFillTHNXi", 1, ""};
   Configurable<bool> isFillTHNOmega{"isFillTHNOmega", 1, ""};
-  
+
   // axes
   ConfigurableAxis axisQVs{"axisQVs", {500, -10.f, 10.f}, "axisQVs"};
   ConfigurableAxis axisQVsNorm{"axisQVsNorm", {200, -1.f, 1.f}, "axisQVsNorm"};
@@ -395,7 +395,7 @@ struct cascadeFlow {
                    casc.pt(),
                    casc.eta(),
                    casc.phi(),
-		   casc.mLambda(),
+                   casc.mLambda(),
                    casc.mXi(),
                    casc.mOmega(),
                    v2CSP,
@@ -739,7 +739,8 @@ struct cascadeFlow {
         BDTresponse[1] = bdtScore[1][1];
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
-	if (isFillTree) fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
+        if (isFillTree)
+          fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
     }
   }
 
@@ -890,7 +891,8 @@ struct cascadeFlow {
         BDTresponse[1] = bdtScore[1][1];
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
-        if (isFillTree) fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
+        if (isFillTree)
+          fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
     }
   }
 
