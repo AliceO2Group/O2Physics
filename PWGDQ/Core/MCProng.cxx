@@ -24,16 +24,6 @@ std::map<TString, int> MCProng::fgSourceNames = {
   {"kFromBackgroundEvent", MCProng::kFromBackgroundEvent}
 };
 
-/*
-//________________________________________________________________________________________________________________
-void MCProng::SetDefaultSourceNames() {
-  fgSourceNames["kNothing"] = kNothing;
-  fgSourceNames["kPhysicalPrimary"] = kPhysicalPrimary; 
-  fgSourceNames["kProducedInTransport"] = kProducedInTransport;
-  fgSourceNames["kProducedByGenerator"] = kProducedByGenerator;
-  fgSourceNames["kFromBackgroundEvent"] = kFromBackgroundEvent;
-}*/
-
 //________________________________________________________________________________________________________________
 MCProng::MCProng() : fNGenerations(0),
                      fPDGcodes({}),

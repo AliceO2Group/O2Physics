@@ -3578,14 +3578,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("muonMatchingMFTMCHTriggerTestCuts_LowPt")) {
-    cut->AddCut(GetAnalysisCut("muonLowPt"));
-    cut->AddCut(GetAnalysisCut("muonMatchingMFTMCHTriggerTestCuts"));
-    return cut;
-  }
-
   delete cut;
-  LOGF(warn, Form("Did not find cut %s. Returning nullptr", cutName));
+  LOGF(fatal, Form("Did not find cut %s. Returning nullptr", cutName));
   return nullptr;
 }
 

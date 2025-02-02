@@ -90,8 +90,6 @@ class MCProng
   MCProng(const MCProng& c) = default;
   virtual ~MCProng() = default;
 
-  //static void SetDefaultSourceNames();
-
   void SetPDGcode(int generation, int code, bool checkBothCharges = false, bool exclude = false);
   void SetSources(int generation, uint64_t bits, uint64_t exclude = 0, bool useANDonSourceBits = true);
   void SetSourceBit(int generation, int sourceBit, bool exclude = false);
