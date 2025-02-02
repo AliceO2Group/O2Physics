@@ -29,6 +29,7 @@
 #include <vector>
 #include <list>
 
+
 class HistogramManager : public TNamed
 {
 
