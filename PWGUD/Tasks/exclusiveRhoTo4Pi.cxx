@@ -461,7 +461,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   // Begin of MC Generation function-----------------------------------------------------------------------------------------------------------------------------------------------
-  void processMCgen(aod::UDMcCollisions::iterator const& mccollisions, aod::UDMcParticles const& mcParts)
+  void processMCgen(aod::UDMcCollisions::iterator const&, aod::UDMcParticles const& mcParts)
   {
     std::vector<TLorentzVector> piPlusvectors;
     std::vector<TLorentzVector> piMinusvectors;
@@ -578,8 +578,6 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       } // End of track selections
     } // End of loop over tracks
 
-    int numTracksWOTS = static_cast<int>(WOTS_tracks.size());
-    int numTracksWTS = static_cast<int>(WTS_tracks.size());
     int numTracksWTSandPIDpi = static_cast<int>(WTS_PID_Pi_tracks.size());
     int numPiPlusTracks = static_cast<int>(Pi_plus_tracks.size());
     int numPionMinusTRacks = static_cast<int>(Pi_minus_tracks.size());
