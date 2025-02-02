@@ -526,7 +526,7 @@ struct QAProcessCent {
   Configurable<bool> cfgOpenDetailPlotscme{"cfgOpenDetailPlotscme", true, "open detail TH3D plots for nSigmaTPC-ITS Pt-eta-Phi nSigmaITS-clustersize"};
   Configurable<bool> cfgOpenPtEtaPhi{"cfgOpenPtEtaPhi", true, "open pt-#eta-#phi PID QA  (Optional for limited memory usage)"};
   Configurable<bool> cfgOpenITSTPCnSigma{"cfgOpenITSTPCnSigma", true, "open ITS-TPC nSigma QA (Optional for limited memory usage)"};
-  Configurable<bool> cfgOpenClusSizenSigmaTPC{"cfgOpenClusSizenSigmaITS", true, "open ITSClustersize- TPCnsigma QA (Optional for limited memory usage)"};
+  Configurable<bool> cfgOpenClusSizenSigmaTPC{"cfgOpenClusSizenSigmaTPC", true, "open ITSClustersize-TPCnsigma QA (Optional for limited memory usage)"};
   Configurable<bool> cfgOpenPi{"cfgOpenPi", true, "open Pion QA (Optional for limited memory usage)"};
   Configurable<bool> cfgOpenKa{"cfgOpenKa", true, "open Kaon QA (Optional for limited memory usage)"};
   Configurable<bool> cfgOpenPr{"cfgOpenPr", true, "open Proton QA (Optional for limited memory usage)"};
@@ -536,36 +536,36 @@ struct QAProcessCent {
   ConfigurableAxis cfgnSigmaBinsITScme{"cfgnSigmaBinsITScme", {200, -5.f, 5.f}, "Binning for n sigma TPC"};
   ConfigurableAxis cfgaxisAverClusterCoslnSigmacme{"cfgaxisAverClusterCoslnSigmacme", {50, 0, 5}, "Binning for average cluster size x cos(#lambda) vs nSigam"};
 
-  std::vector<std::shared_ptr<TH3>> vhistPhi_Pt_Eta_PosPi_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistPhi_Pt_Eta_NegPi_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistPhi_Pt_Eta_PosKa_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistPhi_Pt_Eta_NegKa_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistPhi_Pt_Eta_PosPr_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistPhi_Pt_Eta_NegPr_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistnSigmaITS_TPC_Pt_PosPi_Before_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistnSigmaITS_TPC_Pt_NegPi_Before_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistnSigmaITS_TPC_Pt_PosKa_Before_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistnSigmaITS_TPC_Pt_NegKa_Before_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistnSigmaITS_TPC_Pt_PosPr_Before_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistnSigmaITS_TPC_Pt_NegPr_Before_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistnSigmaITS_TPC_Pt_PosPi_After_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistnSigmaITS_TPC_Pt_NegPi_After_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistnSigmaITS_TPC_Pt_PosKa_After_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistnSigmaITS_TPC_Pt_NegKa_After_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistnSigmaITS_TPC_Pt_PosPr_After_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistnSigmaITS_TPC_Pt_NegPr_After_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_Before_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_Before_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_Before_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_Before_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_Before_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_Before_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_After_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_After_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_After_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_After_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_After_Cen;
-  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_After_Cen;
+  std::vector<std::shared_ptr<TH3>> vhistPhiPtEtaPosPiCen;
+  std::vector<std::shared_ptr<TH3>> vhistPhiPtEtaNegPiCen;
+  std::vector<std::shared_ptr<TH3>> vhistPhiPtEtaPosKaCen;
+  std::vector<std::shared_ptr<TH3>> vhistPhiPtEtaNegKaCen;
+  std::vector<std::shared_ptr<TH3>> vhistPhiPtEtaPosPrCen;
+  std::vector<std::shared_ptr<TH3>> vhistPhiPtEtaNegPrCen;
+  std::vector<std::shared_ptr<TH3>> vhistnSigmaITSTPCPtPosPiBeforeCen;
+  std::vector<std::shared_ptr<TH3>> vhistnSigmaITSTPCPtNegPiBeforeCen;
+  std::vector<std::shared_ptr<TH3>> vhistnSigmaITSTPCPtPosKaBeforeCen;
+  std::vector<std::shared_ptr<TH3>> vhistnSigmaITSTPCPtNegKaBeforeCen;
+  std::vector<std::shared_ptr<TH3>> vhistnSigmaITSTPCPtPosPrBeforeCen;
+  std::vector<std::shared_ptr<TH3>> vhistnSigmaITSTPCPtNegPrBeforeCen;
+  std::vector<std::shared_ptr<TH3>> vhistnSigmaITSTPCPtPosPiAfterCen;
+  std::vector<std::shared_ptr<TH3>> vhistnSigmaITSTPCPtNegPiAfterCen;
+  std::vector<std::shared_ptr<TH3>> vhistnSigmaITSTPCPtPosKaAfterCen;
+  std::vector<std::shared_ptr<TH3>> vhistnSigmaITSTPCPtNegKaAfterCen;
+  std::vector<std::shared_ptr<TH3>> vhistnSigmaITSTPCPtPosPrAfterCen;
+  std::vector<std::shared_ptr<TH3>> vhistnSigmaITSTPCPtNegPrAfterCen;
+  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCoslnSigmaTPCPtPosPiBeforeCen;
+  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCoslnSigmaTPCPtNegPiBeforeCen;
+  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCoslnSigmaTPCPtPosKaBeforeCen;
+  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCoslnSigmaTPCPtNegKaBeforeCen;
+  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCoslnSigmaTPCPtPosPrBeforeCen;
+  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCoslnSigmaTPCPtNegPrBeforeCen;
+  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCoslnSigmaTPCPtPosPiAfterCen;
+  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCoslnSigmaTPCPtNegPiAfterCen;
+  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCoslnSigmaTPCPtPosKaAfterCen;
+  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCoslnSigmaTPCPtNegKaAfterCen;
+  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCoslnSigmaTPCPtPosPrAfterCen;
+  std::vector<std::shared_ptr<TH3>> vhistAverClusterSizeCoslnSigmaTPCPtNegPrAfterCen;
   Filter trackPIDfilter = aod::cme_track_pid_columns::nPidFlag > (int8_t)0;
   void init(InitContext const&)
   {
@@ -575,86 +575,86 @@ struct QAProcessCent {
       for (int i = 0; i < static_cast<int>(cfgCentralitybinsforQA.value.size()) - 1; ++i) {
         if (cfgOpenPtEtaPhi) {
           if (cfgOpenPi) {
-            auto hPhi_Pt_Eta_PosPi = histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_PosPi_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhicme, cfgaxisptPIDcme, cfgaxisetaPIDcme}});
-            auto hPhi_Pt_Eta_NegPi = histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_NegPi_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhicme, cfgaxisptPIDcme, cfgaxisetaPIDcme}});
-            vhistPhi_Pt_Eta_PosPi_Cen.push_back(std::move(hPhi_Pt_Eta_PosPi));
-            vhistPhi_Pt_Eta_NegPi_Cen.push_back(std::move(hPhi_Pt_Eta_NegPi));
+            auto hPhiPtEtaPosPi = histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_PosPi_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhicme, cfgaxisptPIDcme, cfgaxisetaPIDcme}});
+            auto hPhiPtEtaNegPi = histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_NegPi_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhicme, cfgaxisptPIDcme, cfgaxisetaPIDcme}});
+            vhistPhiPtEtaPosPiCen.push_back(std::move(hPhiPtEtaPosPi));
+            vhistPhiPtEtaNegPiCen.push_back(std::move(hPhiPtEtaNegPi));
           }
           if (cfgOpenKa) {
-            auto hPhi_Pt_Eta_PosKa = histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_PosKa_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhicme, cfgaxisptPIDcme, cfgaxisetaPIDcme}});
-            auto hPhi_Pt_Eta_NegKa = histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_NegKa_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhicme, cfgaxisptPIDcme, cfgaxisetaPIDcme}});
-            vhistPhi_Pt_Eta_PosKa_Cen.push_back(std::move(hPhi_Pt_Eta_PosKa));
-            vhistPhi_Pt_Eta_NegKa_Cen.push_back(std::move(hPhi_Pt_Eta_NegKa));
+            auto hPhiPtEtaPosKa = histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_PosKa_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhicme, cfgaxisptPIDcme, cfgaxisetaPIDcme}});
+            auto hPhiPtEtaNegKa = histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_NegKa_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhicme, cfgaxisptPIDcme, cfgaxisetaPIDcme}});
+            vhistPhiPtEtaPosKaCen.push_back(std::move(hPhiPtEtaPosKa));
+            vhistPhiPtEtaNegKaCen.push_back(std::move(hPhiPtEtaNegKa));
           }
           if (cfgOpenPr) {
-            auto hPhi_Pt_Eta_PosPr = histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_PosPr_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhicme, cfgaxisptPIDcme, cfgaxisetaPIDcme}});
-            auto hPhi_Pt_Eta_NegPr = histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_NegPr_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhicme, cfgaxisptPIDcme, cfgaxisetaPIDcme}});
-            vhistPhi_Pt_Eta_PosPr_Cen.push_back(std::move(hPhi_Pt_Eta_PosPr));
-            vhistPhi_Pt_Eta_NegPr_Cen.push_back(std::move(hPhi_Pt_Eta_NegPr));
+            auto hPhiPtEtaPosPr = histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_PosPr_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhicme, cfgaxisptPIDcme, cfgaxisetaPIDcme}});
+            auto hPhiPtEtaNegPr = histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_NegPr_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhicme, cfgaxisptPIDcme, cfgaxisetaPIDcme}});
+            vhistPhiPtEtaPosPrCen.push_back(std::move(hPhiPtEtaPosPr));
+            vhistPhiPtEtaNegPrCen.push_back(std::move(hPhiPtEtaNegPr));
           }
         }
         if (cfgOpenITSTPCnSigma) {
           if (cfgOpenPi) {
-            auto hnSigmaITS_TPC_Pt_PosPi_Before = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPi_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
-            auto hnSigmaITS_TPC_Pt_PosPi_After = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPi_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
-            auto hnSigmaITS_TPC_Pt_NegPi_Before = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPi_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
-            auto hnSigmaITS_TPC_Pt_NegPi_After = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPi_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
-            vhistnSigmaITS_TPC_Pt_PosPi_Before_Cen.push_back(std::move(hnSigmaITS_TPC_Pt_PosPi_Before));
-            vhistnSigmaITS_TPC_Pt_NegPi_Before_Cen.push_back(std::move(hnSigmaITS_TPC_Pt_NegPi_Before));
-            vhistnSigmaITS_TPC_Pt_PosPi_After_Cen.push_back(std::move(hnSigmaITS_TPC_Pt_PosPi_After));
-            vhistnSigmaITS_TPC_Pt_NegPi_After_Cen.push_back(std::move(hnSigmaITS_TPC_Pt_NegPi_After));
+            auto hnSigmaITSTPCPtPosPiBefore = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPi_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
+            auto hnSigmaITSTPCPtPosPiAfter = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPi_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
+            auto hnSigmaITSTPCPtNegPiBefore = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPi_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
+            auto hnSigmaITSTPCPtNegPiAfter = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPi_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
+            vhistnSigmaITSTPCPtPosPiBeforeCen.push_back(std::move(hnSigmaITSTPCPtPosPiBefore));
+            vhistnSigmaITSTPCPtNegPiBeforeCen.push_back(std::move(hnSigmaITSTPCPtNegPiBefore));
+            vhistnSigmaITSTPCPtPosPiAfterCen.push_back(std::move(hnSigmaITSTPCPtPosPiAfter));
+            vhistnSigmaITSTPCPtNegPiAfterCen.push_back(std::move(hnSigmaITSTPCPtNegPiAfter));
           }
           if (cfgOpenKa) {
-            auto hnSigmaITS_TPC_Pt_PosKa_Before = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosKa_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
-            auto hnSigmaITS_TPC_Pt_PosKa_After = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosKa_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
-            auto hnSigmaITS_TPC_Pt_NegKa_Before = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegKa_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
-            auto hnSigmaITS_TPC_Pt_NegKa_After = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegKa_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
-            vhistnSigmaITS_TPC_Pt_PosKa_Before_Cen.push_back(std::move(hnSigmaITS_TPC_Pt_PosKa_Before));
-            vhistnSigmaITS_TPC_Pt_NegKa_Before_Cen.push_back(std::move(hnSigmaITS_TPC_Pt_NegKa_Before));
-            vhistnSigmaITS_TPC_Pt_PosKa_After_Cen.push_back(std::move(hnSigmaITS_TPC_Pt_PosKa_After));
-            vhistnSigmaITS_TPC_Pt_NegKa_After_Cen.push_back(std::move(hnSigmaITS_TPC_Pt_NegKa_After));
+            auto hnSigmaITSTPCPtPosKaBefore = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosKa_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
+            auto hnSigmaITSTPCPtPosKaAfter = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosKa_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
+            auto hnSigmaITSTPCPtNegKaBefore = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegKa_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
+            auto hnSigmaITSTPCPtNegKaAfter = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegKa_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
+            vhistnSigmaITSTPCPtPosKaBeforeCen.push_back(std::move(hnSigmaITSTPCPtPosKaBefore));
+            vhistnSigmaITSTPCPtNegKaBeforeCen.push_back(std::move(hnSigmaITSTPCPtNegKaBefore));
+            vhistnSigmaITSTPCPtPosKaAfterCen.push_back(std::move(hnSigmaITSTPCPtPosKaAfter));
+            vhistnSigmaITSTPCPtNegKaAfterCen.push_back(std::move(hnSigmaITSTPCPtNegKaAfter));
           }
           if (cfgOpenPr) {
-            auto hnSigmaITS_TPC_Pt_PosPr_Before = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPr_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
-            auto hnSigmaITS_TPC_Pt_PosPr_After = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPr_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
-            auto hnSigmaITS_TPC_Pt_NegPr_Before = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPr_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
-            auto hnSigmaITS_TPC_Pt_NegPr_After = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPr_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
-            vhistnSigmaITS_TPC_Pt_PosPr_Before_Cen.push_back(std::move(hnSigmaITS_TPC_Pt_PosPr_Before));
-            vhistnSigmaITS_TPC_Pt_NegPr_Before_Cen.push_back(std::move(hnSigmaITS_TPC_Pt_NegPr_Before));
-            vhistnSigmaITS_TPC_Pt_PosPr_After_Cen.push_back(std::move(hnSigmaITS_TPC_Pt_PosPr_After));
-            vhistnSigmaITS_TPC_Pt_NegPr_After_Cen.push_back(std::move(hnSigmaITS_TPC_Pt_NegPr_After));
+            auto hnSigmaITSTPCPtPosPrBefore = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPr_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
+            auto hnSigmaITSTPCPtPosPrAfter = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPr_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
+            auto hnSigmaITSTPCPtNegPrBefore = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPr_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
+            auto hnSigmaITSTPCPtNegPrAfter = histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPr_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgnSigmaBinsITScme, cfgaxisptPIDcme}});
+            vhistnSigmaITSTPCPtPosPrBeforeCen.push_back(std::move(hnSigmaITSTPCPtPosPrBefore));
+            vhistnSigmaITSTPCPtNegPrBeforeCen.push_back(std::move(hnSigmaITSTPCPtNegPrBefore));
+            vhistnSigmaITSTPCPtPosPrAfterCen.push_back(std::move(hnSigmaITSTPCPtPosPrAfter));
+            vhistnSigmaITSTPCPtNegPrAfterCen.push_back(std::move(hnSigmaITSTPCPtNegPrAfter));
           }
         }
         if (cfgOpenClusSizenSigmaTPC) {
           if (cfgOpenPi) {
-            auto hAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_Before = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
-            auto hAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_After = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
-            auto hAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_Before = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
-            auto hAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_After = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
-            vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_Before_Cen.push_back(std::move(hAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_Before));
-            vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_Before_Cen.push_back(std::move(hAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_Before));
-            vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_After_Cen.push_back(std::move(hAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_After));
-            vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_After_Cen.push_back(std::move(hAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_After));
+            auto hAverClusterSizeCoslnSigmaTPCPtPosPiBefore = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
+            auto hAverClusterSizeCoslnSigmaTPCPtPosPiAfter = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
+            auto hAverClusterSizeCoslnSigmaTPCPtNegPiBefore = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
+            auto hAverClusterSizeCoslnSigmaTPCPtNegPiAfter = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
+            vhistAverClusterSizeCoslnSigmaTPCPtPosPiBeforeCen.push_back(std::move(hAverClusterSizeCoslnSigmaTPCPtPosPiBefore));
+            vhistAverClusterSizeCoslnSigmaTPCPtNegPiBeforeCen.push_back(std::move(hAverClusterSizeCoslnSigmaTPCPtNegPiBefore));
+            vhistAverClusterSizeCoslnSigmaTPCPtPosPiAfterCen.push_back(std::move(hAverClusterSizeCoslnSigmaTPCPtPosPiAfter));
+            vhistAverClusterSizeCoslnSigmaTPCPtNegPiAfterCen.push_back(std::move(hAverClusterSizeCoslnSigmaTPCPtNegPiAfter));
           }
           if (cfgOpenKa) {
-            auto hAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_Before = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
-            auto hAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_After = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
-            auto hAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_Before = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
-            auto hAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_After = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
-            vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_Before_Cen.push_back(std::move(hAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_Before));
-            vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_Before_Cen.push_back(std::move(hAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_Before));
-            vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_After_Cen.push_back(std::move(hAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_After));
-            vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_After_Cen.push_back(std::move(hAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_After));
+            auto hAverClusterSizeCoslnSigmaTPCPtPosKaBefore = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
+            auto hAverClusterSizeCoslnSigmaTPCPtPosKaAfter = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
+            auto hAverClusterSizeCoslnSigmaTPCPtNegKaBefore = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
+            auto hAverClusterSizeCoslnSigmaTPCPtNegKaAfter = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
+            vhistAverClusterSizeCoslnSigmaTPCPtPosKaBeforeCen.push_back(std::move(hAverClusterSizeCoslnSigmaTPCPtPosKaBefore));
+            vhistAverClusterSizeCoslnSigmaTPCPtNegKaBeforeCen.push_back(std::move(hAverClusterSizeCoslnSigmaTPCPtNegKaBefore));
+            vhistAverClusterSizeCoslnSigmaTPCPtPosKaAfterCen.push_back(std::move(hAverClusterSizeCoslnSigmaTPCPtPosKaAfter));
+            vhistAverClusterSizeCoslnSigmaTPCPtNegKaAfterCen.push_back(std::move(hAverClusterSizeCoslnSigmaTPCPtNegKaAfter));
           }
           if (cfgOpenPr) {
-            auto hAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_Before = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
-            auto hAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_After = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
-            auto hAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_Before = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
-            auto hAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_After = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
-            vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_Before_Cen.push_back(std::move(hAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_Before));
-            vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_Before_Cen.push_back(std::move(hAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_Before));
-            vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_After_Cen.push_back(std::move(hAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_After));
-            vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_After_Cen.push_back(std::move(hAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_After));
+            auto hAverClusterSizeCoslnSigmaTPCPtPosPrBefore = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
+            auto hAverClusterSizeCoslnSigmaTPCPtPosPrAfter = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
+            auto hAverClusterSizeCoslnSigmaTPCPtNegPrBefore = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_Before_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
+            auto hAverClusterSizeCoslnSigmaTPCPtNegPrAfter = histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_After_Cen_%d_%d", cfgCentralitybinsforQA.value[i], cfgCentralitybinsforQA.value[i + 1]), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {cfgnSigmaBinsTPCcme, cfgaxisAverClusterCoslnSigmacme, cfgaxisptPIDcme}});
+            vhistAverClusterSizeCoslnSigmaTPCPtPosPrBeforeCen.push_back(std::move(hAverClusterSizeCoslnSigmaTPCPtPosPrBefore));
+            vhistAverClusterSizeCoslnSigmaTPCPtNegPrBeforeCen.push_back(std::move(hAverClusterSizeCoslnSigmaTPCPtNegPrBefore));
+            vhistAverClusterSizeCoslnSigmaTPCPtPosPrAfterCen.push_back(std::move(hAverClusterSizeCoslnSigmaTPCPtPosPrAfter));
+            vhistAverClusterSizeCoslnSigmaTPCPtNegPrAfterCen.push_back(std::move(hAverClusterSizeCoslnSigmaTPCPtNegPrAfter));
           }
         }
       }
@@ -679,27 +679,27 @@ struct QAProcessCent {
               if (cfgOpenPi) {
                 if (trk.sign() > 0) {
                   if (cfgOpenPtEtaPhi) {
-                    vhistPhi_Pt_Eta_PosPi_Cen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
+                    vhistPhiPtEtaPosPiCen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
                   }
                   if (cfgOpenITSTPCnSigma) {
-                    vhistnSigmaITS_TPC_Pt_PosPi_Before_Cen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.nSigmaPiITS(), trk.pt());
-                    vhistnSigmaITS_TPC_Pt_PosPi_After_Cen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.nSigmaPiITS(), trk.pt());
+                    vhistnSigmaITSTPCPtPosPiBeforeCen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.nSigmaPiITS(), trk.pt());
+                    vhistnSigmaITSTPCPtPosPiAfterCen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.nSigmaPiITS(), trk.pt());
                   }
                   if (cfgOpenClusSizenSigmaTPC) {
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_Before_Cen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.averClusterSizeCosl(), trk.pt());
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_After_Cen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtPosPiBeforeCen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtPosPiAfterCen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.averClusterSizeCosl(), trk.pt());
                   }
                 } else if (trk.sign() < 0) {
                   if (cfgOpenPtEtaPhi) {
-                    vhistPhi_Pt_Eta_NegPi_Cen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
+                    vhistPhiPtEtaNegPiCen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
                   }
                   if (cfgOpenITSTPCnSigma) {
-                    vhistnSigmaITS_TPC_Pt_NegPi_Before_Cen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.nSigmaPiITS(), trk.pt());
-                    vhistnSigmaITS_TPC_Pt_NegPi_After_Cen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.nSigmaPiITS(), trk.pt());
+                    vhistnSigmaITSTPCPtNegPiBeforeCen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.nSigmaPiITS(), trk.pt());
+                    vhistnSigmaITSTPCPtNegPiAfterCen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.nSigmaPiITS(), trk.pt());
                   }
                   if (cfgOpenClusSizenSigmaTPC) {
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_Before_Cen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.averClusterSizeCosl(), trk.pt());
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_After_Cen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtNegPiBeforeCen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtNegPiAfterCen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.averClusterSizeCosl(), trk.pt());
                   }
                 }
               }
@@ -708,27 +708,27 @@ struct QAProcessCent {
               if (cfgOpenKa) {
                 if (trk.sign() > 0) {
                   if (cfgOpenPtEtaPhi) {
-                    vhistPhi_Pt_Eta_PosKa_Cen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
+                    vhistPhiPtEtaPosKaCen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
                   }
                   if (cfgOpenITSTPCnSigma) {
-                    vhistnSigmaITS_TPC_Pt_PosKa_Before_Cen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.nSigmaKaITS(), trk.pt());
-                    vhistnSigmaITS_TPC_Pt_PosKa_After_Cen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.nSigmaKaITS(), trk.pt());
+                    vhistnSigmaITSTPCPtPosKaBeforeCen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.nSigmaKaITS(), trk.pt());
+                    vhistnSigmaITSTPCPtPosKaAfterCen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.nSigmaKaITS(), trk.pt());
                   }
                   if (cfgOpenClusSizenSigmaTPC) {
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_Before_Cen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.averClusterSizeCosl(), trk.pt());
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_After_Cen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtPosKaBeforeCen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtPosKaAfterCen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.averClusterSizeCosl(), trk.pt());
                   }
                 } else if (trk.sign() < 0) {
                   if (cfgOpenPtEtaPhi) {
-                    vhistPhi_Pt_Eta_NegKa_Cen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
+                    vhistPhiPtEtaNegKaCen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
                   }
                   if (cfgOpenITSTPCnSigma) {
-                    vhistnSigmaITS_TPC_Pt_NegKa_Before_Cen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.nSigmaKaITS(), trk.pt());
-                    vhistnSigmaITS_TPC_Pt_NegKa_After_Cen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.nSigmaKaITS(), trk.pt());
+                    vhistnSigmaITSTPCPtNegKaBeforeCen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.nSigmaKaITS(), trk.pt());
+                    vhistnSigmaITSTPCPtNegKaAfterCen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.nSigmaKaITS(), trk.pt());
                   }
                   if (cfgOpenClusSizenSigmaTPC) {
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_Before_Cen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.averClusterSizeCosl(), trk.pt());
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_After_Cen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtNegKaBeforeCen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtNegKaAfterCen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.averClusterSizeCosl(), trk.pt());
                   }
                 }
               }
@@ -737,27 +737,27 @@ struct QAProcessCent {
               if (cfgOpenPr) {
                 if (trk.sign() > 0) {
                   if (cfgOpenPtEtaPhi) {
-                    vhistPhi_Pt_Eta_PosPr_Cen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
+                    vhistPhiPtEtaPosPrCen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
                   }
                   if (cfgOpenITSTPCnSigma) {
-                    vhistnSigmaITS_TPC_Pt_PosPr_Before_Cen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.nSigmaPrITS(), trk.pt());
-                    vhistnSigmaITS_TPC_Pt_PosPr_After_Cen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.nSigmaPrITS(), trk.pt());
+                    vhistnSigmaITSTPCPtPosPrBeforeCen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.nSigmaPrITS(), trk.pt());
+                    vhistnSigmaITSTPCPtPosPrAfterCen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.nSigmaPrITS(), trk.pt());
                   }
                   if (cfgOpenClusSizenSigmaTPC) {
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_Before_Cen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.averClusterSizeCosl(), trk.pt());
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_After_Cen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtPosPrBeforeCen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtPosPrAfterCen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.averClusterSizeCosl(), trk.pt());
                   }
                 } else if (trk.sign() < 0) {
                   if (cfgOpenPtEtaPhi) {
-                    vhistPhi_Pt_Eta_NegPr_Cen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
+                    vhistPhiPtEtaNegPrCen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
                   }
                   if (cfgOpenITSTPCnSigma) {
-                    vhistnSigmaITS_TPC_Pt_NegPr_Before_Cen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.nSigmaPrITS(), trk.pt());
-                    vhistnSigmaITS_TPC_Pt_NegPr_After_Cen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.nSigmaPrITS(), trk.pt());
+                    vhistnSigmaITSTPCPtNegPrBeforeCen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.nSigmaPrITS(), trk.pt());
+                    vhistnSigmaITSTPCPtNegPrAfterCen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.nSigmaPrITS(), trk.pt());
                   }
                   if (cfgOpenClusSizenSigmaTPC) {
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_Before_Cen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.averClusterSizeCosl(), trk.pt());
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_After_Cen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtNegPrBeforeCen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtNegPrAfterCen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.averClusterSizeCosl(), trk.pt());
                   }
                 }
               }
@@ -766,17 +766,17 @@ struct QAProcessCent {
               if (cfgOpenPi) {
                 if (trk.sign() > 0) {
                   if (cfgOpenITSTPCnSigma) {
-                    vhistnSigmaITS_TPC_Pt_PosPi_Before_Cen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.nSigmaPiITS(), trk.pt());
+                    vhistnSigmaITSTPCPtPosPiBeforeCen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.nSigmaPiITS(), trk.pt());
                   }
                   if (cfgOpenClusSizenSigmaTPC) {
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPi_Before_Cen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtPosPiBeforeCen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.averClusterSizeCosl(), trk.pt());
                   }
                 } else if (trk.sign() < 0) {
                   if (cfgOpenITSTPCnSigma) {
-                    vhistnSigmaITS_TPC_Pt_NegPi_Before_Cen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.nSigmaPiITS(), trk.pt());
+                    vhistnSigmaITSTPCPtNegPiBeforeCen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.nSigmaPiITS(), trk.pt());
                   }
                   if (cfgOpenClusSizenSigmaTPC) {
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPi_Before_Cen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtNegPiBeforeCen[currentBin]->Fill(trk.nSigmaPiTPC(), trk.averClusterSizeCosl(), trk.pt());
                   }
                 }
               }
@@ -785,17 +785,17 @@ struct QAProcessCent {
               if (cfgOpenKa) {
                 if (trk.sign() > 0) {
                   if (cfgOpenITSTPCnSigma) {
-                    vhistnSigmaITS_TPC_Pt_PosKa_Before_Cen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.nSigmaKaITS(), trk.pt());
+                    vhistnSigmaITSTPCPtPosKaBeforeCen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.nSigmaKaITS(), trk.pt());
                   }
                   if (cfgOpenClusSizenSigmaTPC) {
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosKa_Before_Cen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtPosKaBeforeCen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.averClusterSizeCosl(), trk.pt());
                   }
                 } else if (trk.sign() < 0) {
                   if (cfgOpenITSTPCnSigma) {
-                    vhistnSigmaITS_TPC_Pt_NegKa_Before_Cen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.nSigmaKaITS(), trk.pt());
+                    vhistnSigmaITSTPCPtNegKaBeforeCen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.nSigmaKaITS(), trk.pt());
                   }
                   if (cfgOpenClusSizenSigmaTPC) {
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegKa_Before_Cen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtNegKaBeforeCen[currentBin]->Fill(trk.nSigmaKaTPC(), trk.averClusterSizeCosl(), trk.pt());
                   }
                 }
               }
@@ -804,17 +804,17 @@ struct QAProcessCent {
               if (cfgOpenPr) {
                 if (trk.sign() > 0) {
                   if (cfgOpenITSTPCnSigma) {
-                    vhistnSigmaITS_TPC_Pt_PosPr_Before_Cen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.nSigmaPrITS(), trk.pt());
+                    vhistnSigmaITSTPCPtPosPrBeforeCen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.nSigmaPrITS(), trk.pt());
                   }
                   if (cfgOpenClusSizenSigmaTPC) {
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_PosPr_Before_Cen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtPosPrBeforeCen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.averClusterSizeCosl(), trk.pt());
                   }
                 } else if (trk.sign() < 0) {
                   if (cfgOpenITSTPCnSigma) {
-                    vhistnSigmaITS_TPC_Pt_NegPr_Before_Cen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.nSigmaPrITS(), trk.pt());
+                    vhistnSigmaITSTPCPtNegPrBeforeCen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.nSigmaPrITS(), trk.pt());
                   }
                   if (cfgOpenClusSizenSigmaTPC) {
-                    vhistAverClusterSizeCosl_nSigmaTPC_Pt_NegPr_Before_Cen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.averClusterSizeCosl(), trk.pt());
+                    vhistAverClusterSizeCoslnSigmaTPCPtNegPrBeforeCen[currentBin]->Fill(trk.nSigmaPrTPC(), trk.averClusterSizeCosl(), trk.pt());
                   }
                 }
               }
