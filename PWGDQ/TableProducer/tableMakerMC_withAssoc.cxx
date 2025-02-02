@@ -778,11 +778,11 @@ struct TableMakerMC {
           int i = 0; // runs over the MC signals
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
-            if (sig.CheckSignal(true, mctrack)) {
+            if (sig->CheckSignal(true, mctrack)) {
               mcflags |= (static_cast<uint16_t>(1) << i);
               // If detailed QA is on, fill histograms for each MC signal and track cut combination
               if (fDoDetailedQA) {
-                fHistMan->FillHistClass(Form("MFTTrack_%s", sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
+                fHistMan->FillHistClass(Form("MFTTrack_%s", sig->GetName()), VarManager::fgValues); // fill the reconstructed truth
               }
             }
             i++;
