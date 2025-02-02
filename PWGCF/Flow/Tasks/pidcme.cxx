@@ -17,6 +17,8 @@
 #include <chrono>
 #include <string>
 #include <vector>
+#include <utility>
+#include <TF1.h>
 #include <TComplex.h>
 #include <TH1F.h>
 #include <TH2D.h>
@@ -44,9 +46,6 @@
 #include "Common/DataModel/PIDResponseITS.h"
 
 #include "CommonConstants/PhysicsConstants.h"
-
-#include <TF1.h>
-#include <utility>
 
 // o2 includes.
 
