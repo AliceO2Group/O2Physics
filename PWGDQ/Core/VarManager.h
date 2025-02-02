@@ -803,7 +803,7 @@ class VarManager : public TObject
 
   static TString fgVariableNames[kNVars]; // variable names
   static TString fgVariableUnits[kNVars]; // variable units
-  static std::map<TString, int> fgVarNamesMap;  // key: variables short name, value: order in the Variables enum
+  static std::map<TString, int> fgVarNamesMap; // key: variables short name, value: order in the Variables enum
   static void SetDefaultVarNames();
 
   static void SetUseVariable(int var)

@@ -107,7 +107,7 @@ AnalysisCompositeCut* GetCompositeCut(const char* cutName);
 AnalysisCut* GetAnalysisCut(const char* cutName);
 
 std::vector<AnalysisCut*> GetCutsFromJSON(const char* json);
-//AnalysisCut** GetCutsFromJSON(const char* json);
+// AnalysisCut** GetCutsFromJSON(const char* json);
 template <typename T>
 bool ValidateJSONAnalysisCut(T cut);
 template <typename T>

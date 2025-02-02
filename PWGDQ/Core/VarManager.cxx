@@ -994,7 +994,6 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kDeltaR2] = "angular distance prong 2";
   fgVariableUnits[kDeltaR2] = "";
 
-
   // Set the variables short names map. This is needed for dynamic configuration via JSON files
   fgVarNamesMap["kNothing"] = kNothing;
   fgVarNamesMap["kRunNo"] = kRunNo;

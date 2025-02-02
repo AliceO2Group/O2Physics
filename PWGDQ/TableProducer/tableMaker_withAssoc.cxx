@@ -325,7 +325,7 @@ struct TableMaker {
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       fCCDB->get<TGeoManager>(fConfigCCDB.fConfigGeoPath);
     }
-    VarManager::SetDefaultVarNames();  // Important that this is called before DefineCuts() !!
+    VarManager::SetDefaultVarNames(); // Important that this is called before DefineCuts() !!
 
     // Define the event, track and muon cuts
     DefineCuts();

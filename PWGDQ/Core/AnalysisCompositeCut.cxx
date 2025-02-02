@@ -13,8 +13,8 @@
 
 ClassImp(AnalysisCompositeCut)
 
-//____________________________________________________________________________
-AnalysisCompositeCut::AnalysisCompositeCut(bool useAND) : AnalysisCut(),
+  //____________________________________________________________________________
+  AnalysisCompositeCut::AnalysisCompositeCut(bool useAND) : AnalysisCut(),
                                                             fOptionUseAND(useAND),
                                                             fCutList(),
                                                             fCompositeCutList()

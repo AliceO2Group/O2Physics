@@ -765,7 +765,7 @@ struct AnalysisMuonSelection {
       }
 
       DefineHistograms(fHistMan, histDirNames.Data(), fConfigAddMuonHistogram.value.data()); // define all histograms
-      dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());  // ad-hoc histograms via JSON
+      dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
       VarManager::SetUseVars(fHistMan->GetUsedVars());                                       // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
@@ -997,7 +997,7 @@ struct AnalysisPrefilterSelection {
       LOG(warn) << "No specified loose cut or track cuts for prefiltering. This task will do nothing.";
     }
 
-    VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
+    VarManager::SetUseVars(AnalysisCut::fgUsedVars);                                   // provide the list of required variables so that VarManager knows what to fill
     VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
     // VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
   }
@@ -1404,7 +1404,7 @@ struct AnalysisSameEventPairing {
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
       VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
       DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data());                        // define all histograms
-      dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());  // ad-hoc histograms via JSON
+      dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());                    // ad-hoc histograms via JSON
       VarManager::SetUseVars(fHistMan->GetUsedVars());                                                          // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
@@ -2254,7 +2254,7 @@ struct AnalysisAsymmetricPairing {
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigHistogramSubgroups.value.data()); // define all histograms
-    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());  // ad-hoc histograms via JSON
+    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
     VarManager::SetUseVars(fHistMan->GetUsedVars());                                      // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
@@ -2863,7 +2863,7 @@ struct AnalysisDileptonTrack {
     if (context.mOptions.get<bool>("processBarrelMixedEvent")) {
       DefineHistograms(fHistMan, "DileptonTrackME", "mixedevent"); // define all histograms
     }
-    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());  // ad-hoc histograms via JSON
+    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
 
     VarManager::SetUseVars(fHistMan->GetUsedVars());
     fOutputList.setObject(fHistMan->GetMainHistogramList());

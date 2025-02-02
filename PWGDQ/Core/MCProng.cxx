@@ -18,11 +18,10 @@ ClassImp(MCProng);
 
 std::map<TString, int> MCProng::fgSourceNames = {
   {"kNothing", MCProng::kNothing},
-  {"kPhysicalPrimary", MCProng::kPhysicalPrimary}, 
+  {"kPhysicalPrimary", MCProng::kPhysicalPrimary},
   {"kProducedInTransport", MCProng::kProducedInTransport},
   {"kProducedByGenerator", MCProng::kProducedByGenerator},
-  {"kFromBackgroundEvent", MCProng::kFromBackgroundEvent}
-};
+  {"kFromBackgroundEvent", MCProng::kFromBackgroundEvent}};
 
 //________________________________________________________________________________________________________________
 MCProng::MCProng() : fNGenerations(0),

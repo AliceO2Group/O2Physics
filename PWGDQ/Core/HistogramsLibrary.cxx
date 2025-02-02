@@ -1641,23 +1641,24 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
 
 //__________________________________________________________________
 template <typename T>
-bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist) {
+bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist)
+{
   //
   // Validate JSON entry for this histogram
   //
-  
+
   // The fields histClass, title and type are compulsory
   if (!hist->HasMember("histClass") || !hist->HasMember("title") || !hist->HasMember("type")) {
     LOG(fatal) << "Missing histClass, title or type fields";
     return false;
   }
-  
+
   TString histTypeStr = hist->FindMember("type")->value.GetString();
   bool isTH1 = (histTypeStr.CompareTo("TH1") == 0);
   bool isTH2 = (histTypeStr.CompareTo("TH2") == 0);
   bool isTH3 = (histTypeStr.CompareTo("TH3") == 0);
   bool isTHn = (histTypeStr.CompareTo("THn") == 0);
-  if (! (isTH1 || isTH2 || isTH3 || isTHn)) {
+  if (!(isTH1 || isTH2 || isTH3 || isTHn)) {
     LOG(fatal) << "The type field must be one of the TH1, TH2, TH3 or THn";
     return false;
   }
@@ -1673,7 +1674,7 @@ bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist) {
   }
   bool isProfile = (hist->HasMember("isProfile") ? hist->FindMember("isProfile")->value.GetBool() : false);
 
-  if (isConstantBinning) { 
+  if (isConstantBinning) {
     if (!hist->HasMember("xmin") || !hist->HasMember("xmax")) {
       LOG(fatal) << "Missing xmin or xmax information for histogram";
       return false;
@@ -1716,8 +1717,8 @@ bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist) {
       LOG(fatal) << "Missing nDimensions or vars fields for histogram";
       return false;
     }
-    if (isConstantBinning) { 
-      if(!hist->HasMember("nBins")) {
+    if (isConstantBinning) {
+      if (!hist->HasMember("nBins")) {
         LOG(fatal) << "Missing nBins field for histogram";
         return false;
       } else {
@@ -1780,30 +1781,30 @@ bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist) {
   if (!isTHn) {
     TString varX = hist->FindMember("varX")->value.GetString();
     if (VarManager::fgVarNamesMap.find(varX) == VarManager::fgVarNamesMap.end()) {
-      LOG(fatal) << "Bad varX variable ("<< hist->FindMember("varX")->value.GetString() << ") specified for histogram";
+      LOG(fatal) << "Bad varX variable (" << hist->FindMember("varX")->value.GetString() << ") specified for histogram";
       return false;
     }
     if (hist->HasMember("varY") && (VarManager::fgVarNamesMap.find(hist->FindMember("varY")->value.GetString()) == VarManager::fgVarNamesMap.end())) {
-      LOG(fatal) << "Bad varY variable ("<< hist->FindMember("varY")->value.GetString() << ") specified for histogram";
+      LOG(fatal) << "Bad varY variable (" << hist->FindMember("varY")->value.GetString() << ") specified for histogram";
       return false;
     }
     if (hist->HasMember("varZ") && (VarManager::fgVarNamesMap.find(hist->FindMember("varZ")->value.GetString()) == VarManager::fgVarNamesMap.end())) {
-      LOG(fatal) << "Bad varZ variable ("<< hist->FindMember("varZ")->value.GetString() << ") specified for histogram";
+      LOG(fatal) << "Bad varZ variable (" << hist->FindMember("varZ")->value.GetString() << ") specified for histogram";
       return false;
     }
     if (hist->HasMember("varT") && (VarManager::fgVarNamesMap.find(hist->FindMember("varT")->value.GetString()) == VarManager::fgVarNamesMap.end())) {
-      LOG(fatal) << "Bad varT variable ("<< hist->FindMember("varT")->value.GetString() << ") specified for histogram";
+      LOG(fatal) << "Bad varT variable (" << hist->FindMember("varT")->value.GetString() << ") specified for histogram";
       return false;
     }
     if (hist->HasMember("varW") && (VarManager::fgVarNamesMap.find(hist->FindMember("varW")->value.GetString()) == VarManager::fgVarNamesMap.end())) {
-      LOG(fatal) << "Bad varW variable ("<< hist->FindMember("varW")->value.GetString() << ") specified for histogram";
+      LOG(fatal) << "Bad varW variable (" << hist->FindMember("varW")->value.GetString() << ") specified for histogram";
       return false;
     }
   }
   if (isTHn) {
     for (auto& v : hist->FindMember("vars")->value.GetArray()) {
       if (VarManager::fgVarNamesMap.find(v.GetString()) == VarManager::fgVarNamesMap.end()) {
-        LOG(fatal) << "Bad variable in vars ("<< v.GetString() << ") specified for histogram";
+        LOG(fatal) << "Bad variable in vars (" << v.GetString() << ") specified for histogram";
         return false;
       }
     }
@@ -1813,7 +1814,8 @@ bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist) {
 }
 
 //__________________________________________________________________
-void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const char* json) {
+void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const char* json)
+{
   //
   // Add histograms to already existing histogram classes from a JSON formatted string
   //   The JSON is expected to contain a list of objects, with each object containing the fields needed
@@ -1834,7 +1836,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
     LOG(fatal) << "JSON parse error: " << rapidjson::GetParseErrorFunc(ok.Code()) << " (" << ok.Offset() << ")";
     TString str = "";
     for (int i = ok.Offset() - 30; i < static_cast<int>(ok.Offset()) + 50; i++) {
-      if ( (i >= 0) && (i < static_cast<int>(strlen(json)))) {
+      if ((i >= 0) && (i < static_cast<int>(strlen(json)))) {
         str += json[i];
       }
     }
@@ -1851,7 +1853,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
       LOG(fatal) << "Histogram not properly defined in the JSON file. Skipping it";
       continue;
     }
-    
+
     TString histTypeStr = hist.FindMember("type")->value.GetString();
     bool isTH2 = (histTypeStr.CompareTo("TH2") == 0);
     bool isTH3 = (histTypeStr.CompareTo("TH3") == 0);
@@ -1860,7 +1862,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
     if (!(hist.HasMember("xmin") && hist.HasMember("xmax"))) {
       isConstantBinning = false;
     }
-            
+
     const char* histClass = hist.FindMember("histClass")->value.GetString();
     const char* title = hist.FindMember("title")->value.GetString();
 
@@ -1886,17 +1888,17 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
         int iDim = 0;
         for (auto& v : hist.FindMember("nBins")->value.GetArray()) {
           nBins[iDim++] = v.GetInt();
-          LOG(debug) << "nBins " << iDim << ": " << nBins[iDim-1];
+          LOG(debug) << "nBins " << iDim << ": " << nBins[iDim - 1];
         }
         iDim = 0;
         for (auto& v : hist.FindMember("xmin")->value.GetArray()) {
           xmin[iDim++] = v.GetDouble();
-          LOG(debug) << "xmin " << iDim << ": " << xmin[iDim-1];
+          LOG(debug) << "xmin " << iDim << ": " << xmin[iDim - 1];
         }
         iDim = 0;
         for (auto& v : hist.FindMember("xmax")->value.GetArray()) {
           xmax[iDim++] = v.GetDouble();
-          LOG(debug) << "xmax " << iDim << ": " << xmax[iDim-1];
+          LOG(debug) << "xmax " << iDim << ": " << xmax[iDim - 1];
         }
       } else {
         int iDim = 0;
@@ -1930,8 +1932,8 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
         hm->AddHistogram(histClass, histName, title, nDimensions, vars, binLimits, axLabels, varW, useSparse, isDouble);
       }
 
-    } else {   // TH1, TH2 or TH3
-      
+    } else { // TH1, TH2 or TH3
+
       LOG(debug) << "is TH1, TH2 or TH3 ";
 
       bool isProfile = hist.FindMember("isProfile")->value.GetBool();
@@ -1939,7 +1941,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
 
       int nXbins = hist.FindMember("nXbins")->value.GetInt();
       LOG(debug) << "nXbins: " << nXbins;
-      
+
       const char* varX = hist.FindMember("varX")->value.GetString();
       LOG(debug) << "varX: " << varX;
 
@@ -2020,7 +2022,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
 
       bool isFillLabelx = (hist.HasMember("isFillLabelx") ? hist.FindMember("isFillLabelx")->value.GetBool() : false);
       LOG(debug) << "isFillLabelx: " << isFillLabelx;
-    
+
       if (isConstantBinning) {
         hm->AddHistogram(histClass, histName, title, isProfile,
                          nXbins, xmin, xmax, VarManager::fgVarNamesMap[varX],
@@ -2057,12 +2059,13 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
           std::copy(zbinsVec.begin(), zbinsVec.end(), zbins);
         }
         hm->AddHistogram(histClass, histName, title, isProfile,
-                     nXbins, xbins, VarManager::fgVarNamesMap[varX],
-                     nYbins, ybins, VarManager::fgVarNamesMap[varY],
-                     nZbins, zbins, VarManager::fgVarNamesMap[varZ],
-                     xLabels, yLabels, zLabels,
-                     VarManager::fgVarNamesMap[varT], VarManager::fgVarNamesMap[varW], isdouble, isFillLabelx);
+                         nXbins, xbins, VarManager::fgVarNamesMap[varX],
+                         nYbins, ybins, VarManager::fgVarNamesMap[varY],
+                         nZbins, zbins, VarManager::fgVarNamesMap[varZ],
+                         xLabels, yLabels, zLabels,
+                         VarManager::fgVarNamesMap[varT], VarManager::fgVarNamesMap[varW], isdouble, isFillLabelx);
       } // end if (!isTHn)
     }
   }
 }
+ 

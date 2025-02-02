@@ -56,6 +56,8 @@ AnalysisCut::AnalysisCut(const AnalysisCut& c) : TNamed(c)
 AnalysisCut::~AnalysisCut() = default;
 
 //____________________________________________________________________________
-void AnalysisCut::PrintCuts() {
+void AnalysisCut::PrintCuts()
+{
   cout << "**************** AnalysisCut::PrintCuts" << endl;
 }
+ 

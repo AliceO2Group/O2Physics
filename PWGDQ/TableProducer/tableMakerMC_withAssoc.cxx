@@ -235,7 +235,7 @@ struct TableMakerMC {
       LOG(fatal) << "No process function was enabled for TableMakerMC. Check it out!!!";
     }
 
-    VarManager::SetDefaultVarNames();  // Important that this is called before DefineCuts() !!!
+    VarManager::SetDefaultVarNames(); // Important that this is called before DefineCuts() !!!
 
     // Define user specified cut
     DefineCuts();

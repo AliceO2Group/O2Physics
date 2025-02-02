@@ -564,7 +564,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
     fUsedVars[varW] = kTRUE;
   }
 
-  for (int i=0; i < nDimensions; i++) {
+  for (int i = 0; i < nDimensions; i++) {
     if (xmax[i] <= xmin[i]) {
       LOG(warn) << "HistogramManager::AddHistogram(): Histogram " << hname << " has wrong axes ranges for dimension " << i
                 << ", (xmin/xmax): " << xmin[i] << " / " << xmax[i];

@@ -193,7 +193,7 @@ struct AnalysisEventSelection {
         fEventCut->AddCut(cutIt);
       }
     }
-    
+
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
 
     if (fConfigQA) {
@@ -470,7 +470,7 @@ struct AnalysisTrackSelection {
       if (fConfigPublishAmbiguity) {
         DefineHistograms(fHistMan, "TrackBarrel_AmbiguityInBunch;TrackBarrel_AmbiguityOutOfBunch;", "ambiguity");
       }
-      dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());  // ad-hoc histograms via JSON
+      dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
       VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
@@ -567,8 +567,8 @@ struct AnalysisTrackSelection {
         for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
           // check if this MC signal is matched
           if ((*sig)->CheckSignal(true, track.reducedMCTrack())) {
-            //mcDecision |= (static_cast<uint32_t>(1) << isig);
-            // loop over cuts and fill histograms for the cuts that are fulfilled
+            // mcDecision |= (static_cast<uint32_t>(1) << isig);
+            //  loop over cuts and fill histograms for the cuts that are fulfilled
             for (unsigned int icut = 0; icut < fTrackCuts.size(); icut++) {
               if (filterMap & (static_cast<uint32_t>(1) << icut)) {
                 if (isCorrectAssoc) {
@@ -792,7 +792,7 @@ struct AnalysisMuonSelection {
       }
 
       DefineHistograms(fHistMan, histClasses.Data(), fConfigAddMuonHistogram.value.data()); // define all histograms
-      dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());  // ad-hoc histograms via JSON
+      dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
       VarManager::SetUseVars(fHistMan->GetUsedVars());                                      // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
@@ -1532,7 +1532,7 @@ struct AnalysisSameEventPairing {
         histNames += Form("MCTruthGenPair_%s;", sig->GetName());
         fHasTwoProngGenMCsignals = true;
       }
-    }    
+    }
 
     fCurrentRun = 0;
 
@@ -1558,7 +1558,7 @@ struct AnalysisSameEventPairing {
     VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data()); // define all histograms
-    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());  // ad-hoc histograms via JSON
+    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
     VarManager::SetUseVars(fHistMan->GetUsedVars());                                   // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
@@ -2424,7 +2424,7 @@ struct AnalysisAsymmetricPairing {
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigHistogramSubgroups.value.data()); // define all histograms
-    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());  // ad-hoc histograms via JSON
+    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
     VarManager::SetUseVars(fHistMan->GetUsedVars());                                      // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }

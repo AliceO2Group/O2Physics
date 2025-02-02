@@ -3583,7 +3583,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   return nullptr;
 }
 
-AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName) {
+AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
+{
   //
   // define here cuts which are likely to be used often
   //
@@ -6422,15 +6423,15 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName) {
   return nullptr;
 }
 
-
 //________________________________________________________________________________________________
-std::vector<AnalysisCut*> o2::aod::dqcuts::GetCutsFromJSON(const char* json) {
+std::vector<AnalysisCut*> o2::aod::dqcuts::GetCutsFromJSON(const char* json)
+{
   //
   // configure cuts using a json file
   //
 
   std::vector<AnalysisCut*> cuts;
-  //AnalysisCut* cuts[100];
+  // AnalysisCut* cuts[100];
   LOG(info) << "========================================== interpreting JSON for analysis cuts";
   LOG(info) << "JSON string: " << json;
 
@@ -6449,11 +6450,11 @@ std::vector<AnalysisCut*> o2::aod::dqcuts::GetCutsFromJSON(const char* json) {
 
   // The json is expected to contain a list of objects, each of which should provide the configuration of a cut
   for (rapidjson::Value::ConstMemberIterator it = document.MemberBegin(); it != document.MemberEnd(); it++) {
-    
+
     const char* cutName = it->name.GetString();
     LOG(info) << "=================================================== Configuring cut " << cutName;
     const auto& cut = it->value;
-    
+
     // Detect if this is an AnalysisCut or a composite cut
     bool isAnalysisCut = false;
     bool isAnalysisCompositeCut = false;
@@ -6468,7 +6469,7 @@ std::vector<AnalysisCut*> o2::aod::dqcuts::GetCutsFromJSON(const char* json) {
         isAnalysisCompositeCut = true;
       }
     }
-    if (! (isAnalysisCut || isAnalysisCompositeCut)) {
+    if (!(isAnalysisCut || isAnalysisCompositeCut)) {
       LOG(fatal) << "Member is neither an AnalysisCut or AnalysisCompositeCut";
       return cuts;
     }
@@ -6499,7 +6500,8 @@ std::vector<AnalysisCut*> o2::aod::dqcuts::GetCutsFromJSON(const char* json) {
 
 //________________________________________________________________________________________________
 template <typename T>
-bool o2::aod::dqcuts::ValidateJSONAnalysisCut(T cut) {
+bool o2::aod::dqcuts::ValidateJSONAnalysisCut(T cut)
+{
   //
   // Validate cut definition in JSON file
   //
@@ -6519,7 +6521,8 @@ bool o2::aod::dqcuts::ValidateJSONAnalysisCut(T cut) {
 
 //________________________________________________________________________________________________
 template <typename T>
-bool o2::aod::dqcuts::ValidateJSONAddCut(T addcut, bool isSimple) {
+bool o2::aod::dqcuts::ValidateJSONAddCut(T addcut, bool isSimple)
+{
   //
   // Validate AddCut definition in JSON file
   //
@@ -6551,7 +6554,7 @@ bool o2::aod::dqcuts::ValidateJSONAddCut(T addcut, bool isSimple) {
   // check that the variable to cut on is a valid one (implemented in the VarManager)
   const char* var = addcut->FindMember("var")->value.GetString();
   if (VarManager::fgVarNamesMap.find(var) == VarManager::fgVarNamesMap.end()) {
-    LOG(fatal) << "Bad cut variable ("<< var << ") specified for this AddCut";
+    LOG(fatal) << "Bad cut variable (" << var << ") specified for this AddCut";
     return false;
   }
 
@@ -6560,7 +6563,7 @@ bool o2::aod::dqcuts::ValidateJSONAddCut(T addcut, bool isSimple) {
   bool cutHigh_isNumber = addcut->FindMember("cutHigh")->value.IsNumber();
   if (!cutLow_isNumber) {
     auto& cutLow = addcut->FindMember("cutLow")->value;
-    if (!cutLow.HasMember("funcName") || !cutLow.HasMember("funcBody") || 
+    if (!cutLow.HasMember("funcName") || !cutLow.HasMember("funcBody") ||
         !cutLow.HasMember("xLow") || !cutLow.HasMember("xHigh")) {
       LOG(fatal) << "Missing fields for the cutLow TF1 definition";
       return false;
@@ -6568,7 +6571,7 @@ bool o2::aod::dqcuts::ValidateJSONAddCut(T addcut, bool isSimple) {
   }
   if (!cutHigh_isNumber) {
     auto& cutHigh = addcut->FindMember("cutHigh")->value;
-    if (!cutHigh.HasMember("funcName") || !cutHigh.HasMember("funcBody") || 
+    if (!cutHigh.HasMember("funcName") || !cutHigh.HasMember("funcBody") ||
         !cutHigh.HasMember("xLow") || !cutHigh.HasMember("xHigh")) {
       LOG(fatal) << "Missing fields for the cutLow TF1 definition";
       return false;
@@ -6581,14 +6584,14 @@ bool o2::aod::dqcuts::ValidateJSONAddCut(T addcut, bool isSimple) {
     }
     const char* depVar = addcut->FindMember("dependentVar")->value.GetString();
     if (VarManager::fgVarNamesMap.find(depVar) == VarManager::fgVarNamesMap.end()) {
-      LOG(fatal) << "Bad cut variable ("<< depVar << ") specified for the dependentVar";
+      LOG(fatal) << "Bad cut variable (" << depVar << ") specified for the dependentVar";
       return false;
     }
   }
   if (addcut->HasMember("dependentVar1") && cutLow_isNumber && cutHigh_isNumber) {
     const char* depVar1 = addcut->FindMember("dependentVar1")->value.GetString();
     if (VarManager::fgVarNamesMap.find(depVar1) == VarManager::fgVarNamesMap.end()) {
-      LOG(fatal) << "Bad cut variable ("<< depVar1 << ") specified for the dependentVar";
+      LOG(fatal) << "Bad cut variable (" << depVar1 << ") specified for the dependentVar";
       return false;
     }
     if (!addcut->HasMember("depCut2Low") || !addcut->HasMember("depCut2High")) {
@@ -6599,7 +6602,7 @@ bool o2::aod::dqcuts::ValidateJSONAddCut(T addcut, bool isSimple) {
   if (addcut->HasMember("dependentVar2")) {
     const char* depVar2 = addcut->FindMember("dependentVar2")->value.GetString();
     if (VarManager::fgVarNamesMap.find(depVar2) == VarManager::fgVarNamesMap.end()) {
-      LOG(fatal) << "Bad cut variable ("<< depVar2 << ") specified for the dependentVar2";
+      LOG(fatal) << "Bad cut variable (" << depVar2 << ") specified for the dependentVar2";
       return false;
     }
     if (!addcut->HasMember("depCut2Low") || !addcut->HasMember("depCut2High")) {
@@ -6613,8 +6616,9 @@ bool o2::aod::dqcuts::ValidateJSONAddCut(T addcut, bool isSimple) {
 
 //_______________________________________________________________________________________________
 template <typename T>
-AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName) {
-  
+AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName)
+{
+
   // Parse the json object and build an AnalysisCut
   if (!ValidateJSONAnalysisCut(cut)) {
     LOG(fatal) << "AnalysisCut not properly defined in the JSON file. Skipping it";
@@ -6631,7 +6635,7 @@ AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName) {
 
   // loop over all the members for this cut and configure the AddCut objects
   for (rapidjson::Value::ConstMemberIterator it = cut->MemberBegin(); it != cut->MemberEnd(); it++) {
-    
+
     TString itName = it->name.GetString();
 
     if (itName.Contains("AddCut")) {
@@ -6668,7 +6672,7 @@ AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName) {
       LOG(info) << "depCut2High " << depCut2High;
       bool depCut2Exclude = (addcut.HasMember("depCut2Exclude") ? addcut.FindMember("depCut2Exclude")->value.GetBool() : false);
       LOG(info) << "depCut2Exclude " << depCut2Exclude;
-      
+
       TF1* cutLowFunc = nullptr;
       TF1* cutHighFunc = nullptr;
       double cutLowNumber = 0.0;
@@ -6678,7 +6682,7 @@ AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName) {
         LOG(info) << "cutLowNumber " << cutLowNumber;
       } else {
         auto& cutLow = addcut.FindMember("cutLow")->value;
-        cutLowFunc = new TF1(cutLow.FindMember("funcName")->value.GetString(), cutLow.FindMember("funcBody")->value.GetString(), 
+        cutLowFunc = new TF1(cutLow.FindMember("funcName")->value.GetString(), cutLow.FindMember("funcBody")->value.GetString(),
                              cutLow.FindMember("xLow")->value.GetDouble(), cutLow.FindMember("xHigh")->value.GetDouble());
         LOG(info) << "cutLowFunc " << cutLow.FindMember("funcName")->value.GetString() << ", " << cutLow.FindMember("funcBody")->value.GetString()
                   << ", " << cutLow.FindMember("xLow")->value.GetDouble() << ", " << cutLow.FindMember("xHigh")->value.GetDouble();
@@ -6688,14 +6692,14 @@ AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName) {
         LOG(info) << "cutHighNumber " << cutHighNumber;
       } else {
         auto& cutHigh = addcut.FindMember("cutHigh")->value;
-        cutHighFunc = new TF1(cutHigh.FindMember("funcName")->value.GetString(), cutHigh.FindMember("funcBody")->value.GetString(), 
+        cutHighFunc = new TF1(cutHigh.FindMember("funcName")->value.GetString(), cutHigh.FindMember("funcBody")->value.GetString(),
                               cutHigh.FindMember("xLow")->value.GetDouble(), cutHigh.FindMember("xHigh")->value.GetDouble());
         LOG(info) << "cutHighFunc " << cutHigh.FindMember("funcName")->value.GetString() << ", " << cutHigh.FindMember("funcBody")->value.GetString()
-                  << ", " << cutHigh.FindMember("xLow")->value.GetDouble() << ", " << cutHigh.FindMember("xHigh")->value.GetDouble();                              
+                  << ", " << cutHigh.FindMember("xLow")->value.GetDouble() << ", " << cutHigh.FindMember("xHigh")->value.GetDouble();
       }
       if (cutLow_isNumber) {
         if (cutHigh_isNumber) {
-          retCut->AddCut(VarManager::fgVarNamesMap[var], cutLowNumber, cutHighNumber, exclude, 
+          retCut->AddCut(VarManager::fgVarNamesMap[var], cutLowNumber, cutHighNumber, exclude,
                          VarManager::fgVarNamesMap[dependentVar], depCutLow, depCutHigh, depCutExclude,
                          VarManager::fgVarNamesMap[dependentVar2], depCut2Low, depCut2High, depCut2Exclude);
         } else {
@@ -6705,7 +6709,7 @@ AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName) {
         }
       } else {
         if (cutHigh_isNumber) {
-          retCut->AddCut(VarManager::fgVarNamesMap[var], cutLowFunc, cutHighNumber, exclude, 
+          retCut->AddCut(VarManager::fgVarNamesMap[var], cutLowFunc, cutHighNumber, exclude,
                          VarManager::fgVarNamesMap[dependentVar], depCutLow, depCutHigh, depCutExclude,
                          VarManager::fgVarNamesMap[dependentVar2], depCut2Low, depCut2High, depCut2Exclude);
         } else {
@@ -6722,7 +6726,8 @@ AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName) {
 
 //_______________________________________________________________________________________________
 template <typename T>
-bool o2::aod::dqcuts::ValidateJSONAnalysisCompositeCut(T cut) {
+bool o2::aod::dqcuts::ValidateJSONAnalysisCompositeCut(T cut)
+{
   //
   // Validate composite cut definition in JSON file
   //
@@ -6744,8 +6749,9 @@ bool o2::aod::dqcuts::ValidateJSONAnalysisCompositeCut(T cut) {
 
 //_______________________________________________________________________________________________
 template <typename T>
-AnalysisCompositeCut* o2::aod::dqcuts::ParseJSONAnalysisCompositeCut(T cut, const char* cutName) {
-  
+AnalysisCompositeCut* o2::aod::dqcuts::ParseJSONAnalysisCompositeCut(T cut, const char* cutName)
+{
+
   // Configure an AnalysisCompositeCut
   if (!ValidateJSONAnalysisCompositeCut(cut)) {
     LOG(fatal) << "Composite Cut not properly defined in the JSON file. Skipping it";
@@ -6764,7 +6770,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::ParseJSONAnalysisCompositeCut(T cut, cons
     TString itName = it->name.GetString();
 
     if (itName.Contains("AddCut")) {
-     
+
       LOG(debug) << "Parsing " << itName.Data();
       const auto& addcut = it->value;
       if (!ValidateJSONAddCut(&addcut, false)) {
@@ -6782,7 +6788,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::ParseJSONAnalysisCompositeCut(T cut, cons
       if (typeStr.CompareTo("AnalysisCompositeCut") == 0) {
         isAnalysisCompositeCut = true;
       }
-      
+
       // Add an AnalysisCut
       if (isAnalysisCut) {
         AnalysisCut* cutMember = ParseJSONAnalysisCut(&addcut, itName.Data());
@@ -6806,3 +6812,4 @@ AnalysisCompositeCut* o2::aod::dqcuts::ParseJSONAnalysisCompositeCut(T cut, cons
 
   return retCut;
 }
+ 

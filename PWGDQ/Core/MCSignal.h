@@ -334,7 +334,7 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
       //   }
       // }
     }
-    if (pdgInHistory.size() != nIncludedPDG) {// vector has as many entries as mothers (daughters) defined for prong
+    if (pdgInHistory.size() != nIncludedPDG) { // vector has as many entries as mothers (daughters) defined for prong
       return false;
     }
   }

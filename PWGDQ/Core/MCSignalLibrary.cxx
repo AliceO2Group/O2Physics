@@ -12,7 +12,7 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 #include <string>
-//#include <iostream>
+// #include <iostream>
 
 #include <TPDGCode.h>
 #include "CommonConstants/PhysicsConstants.h"
@@ -20,8 +20,8 @@
 #include "Framework/Logger.h"
 
 using namespace o2::constants::physics;
-//using std::cout;
-//using std::endl;
+// using std::cout;
+// using std::endl;
 
 MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 {
@@ -1573,7 +1573,8 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 }
 
 //_______________________________________________________________________________________________
-std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* json) {
+std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* json)
+{
   //
   // configure MC signals using a json file
   //
@@ -1591,7 +1592,7 @@ std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* js
   if (!ok) {
     TString str = "";
     for (int i = ok.Offset() - 30; i < static_cast<int>(ok.Offset()) + 50; i++) {
-      if ( (i >= 0) && (i < static_cast<int>(strlen(json)))) {
+      if ((i >= 0) && (i < static_cast<int>(strlen(json)))) {
         str += json[i];
       }
     }
@@ -1601,11 +1602,11 @@ std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* js
 
   // loop over the top level objects in the json
   for (rapidjson::Value::ConstMemberIterator it = document.MemberBegin(); it != document.MemberEnd(); it++) {
-    
+
     const char* sigName = it->name.GetString();
     LOG(info) << "=================================================== Configuring MC signal " << sigName;
     const auto& signal = it->value;
-    
+
     // Validate the entry for this MCSignal
     if (!ValidateJSONMCSignal(&signal, sigName)) {
       LOG(fatal) << "MCSignal JSON not properly defined for " << sigName << ". Skipping";
@@ -1634,7 +1635,7 @@ std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* js
       if (!prongName.Contains("MCProng")) {
         continue;
       }
-            
+
       // Call the function to parse the MCProng object and get the pointer to the created MCProng
       MCProng* prong = ParseJSONMCProng(&prongIt->value, prongName.Data());
       if (prong == nullptr) {
@@ -1671,7 +1672,7 @@ std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* js
       LOG(fatal) << "Number of defined prongs and size of commonAncestors array must coincide in MCSignal definition";
       return signals;
     }
-    
+
     // Create the signal and add it to the output vector
     MCSignal* mcSignal = new MCSignal(sigName, title, prongs, commonAncestors, excludeCommonAncestor);
     LOG(debug) << "MCSignal defined, adding to the output vector";
@@ -1684,7 +1685,8 @@ std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* js
 
 //_______________________________________________________________________________________________
 template <typename T>
-bool o2::aod::dqmcsignals::ValidateJSONMCProng(T prongJSON, const char* prongName) {
+bool o2::aod::dqmcsignals::ValidateJSONMCProng(T prongJSON, const char* prongName)
+{
 
   // Check that the json entry for this prong is correctly given
   LOG(debug) << "Validating the prong " << prongName;
@@ -1807,7 +1809,8 @@ bool o2::aod::dqmcsignals::ValidateJSONMCProng(T prongJSON, const char* prongNam
 
 //_______________________________________________________________________________________________
 template <typename T>
-MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongName) {
+MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongName)
+{
 
   // Check that the entry for this prong is validated
   LOG(debug) << "Parsing the prong " << prongName;
@@ -1831,7 +1834,7 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
     checkBothCharges.push_back(ii.GetBool());
     LOG(debug) << "check both charges " << ii.GetBool();
   }
-  
+
   // get the array of booleans for the excludePDG option, defaults to false
   std::vector<bool> excludePDG;
   if (prongJSON->HasMember("excludePDG")) {
@@ -1849,13 +1852,13 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
   std::vector<std::vector<int>> sourceBitsVec;
   if (prongJSON->HasMember("sourceBits")) {
     for (auto& ii : prongJSON->FindMember("sourceBits")->value.GetArray()) {
-     std::vector<int> sourceBits;
+      std::vector<int> sourceBits;
       for (auto& iii : ii.GetArray()) {
         sourceBits.push_back(MCProng::fgSourceNames[iii.GetString()]);
         LOG(debug) << "source bit " << iii.GetString();
       }
       sourceBitsVec.push_back(sourceBits);
-    } 
+    }
   }
   // prepare the exclusion source options if specified
   std::vector<std::vector<bool>> excludeSourceVec;
@@ -1867,22 +1870,22 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
         LOG(debug) << "exclude source bit " << iii.GetBool();
       }
       excludeSourceVec.push_back(excludeSource);
-    } 
+    }
   }
-  
+
   // prepare the useANDonSourceBitMap vector, defaults to true for each generation
   std::vector<bool> useANDonSourceBitMap;
   if (prongJSON->HasMember("useANDonSourceBitMap")) {
     for (auto& ii : prongJSON->FindMember("useANDonSourceBitMap")->value.GetArray()) {
       useANDonSourceBitMap.push_back(ii.GetBool());
       LOG(debug) << "use AND on source map " << ii.GetBool();
-    } 
+    }
   } else {
-    for (int i=0; i<n; i++) {
+    for (int i = 0; i < n; i++) {
       useANDonSourceBitMap.push_back(true);
     }
   }
-  
+
   // prepare the bit maps suitable for the MCProng constructor
   bool hasExclude = prongJSON->HasMember("excludeSource");
   int igen = 0;
@@ -1892,7 +1895,7 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
     int is = 0;
     uint64_t sBits = 0;
     uint64_t sBitsExclude = 0;
-    auto excludeVec = (hasExclude ? excludeSourceVec[igen] : std::vector<bool> {});
+    auto excludeVec = (hasExclude ? excludeSourceVec[igen] : std::vector<bool>{});
     for (auto& s : itgen) {
       bool exclude = (hasExclude ? excludeVec[is] : false);
       if (s != MCProng::kNothing) {
@@ -1910,30 +1913,30 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
     LOG(debug) << "igen exclude " << sBitsExclude;
     igen++;
   }
-  
+
   // check that the sourceBits has the size of n generations
   if (prongJSON->HasMember("sourceBits")) {
     if (sBitsVec.size() != static_cast<uint32_t>(n)) {
-      LOG(fatal) << "sourceBits array should have a size equal to n";  
+      LOG(fatal) << "sourceBits array should have a size equal to n";
     }
   } else {
     sBitsVec.clear();
-    for (int i = 0; i<n; i++) {
+    for (int i = 0; i < n; i++) {
       sBitsVec.push_back(0);
     }
   }
   // check that the sourceBits exclude has the size of n generations
   if (prongJSON->HasMember("excludeSource")) {
     if (sBitsExcludeVec.size() != static_cast<uint32_t>(n)) {
-      LOG(fatal) << "sourceBits exclude array should have a size equal to n";  
+      LOG(fatal) << "sourceBits exclude array should have a size equal to n";
     }
   } else {
     sBitsExcludeVec.clear();
-    for (int i = 0; i<n; i++) {
+    for (int i = 0; i < n; i++) {
       sBitsExcludeVec.push_back(0);
     }
   }
-    
+
   bool checkGenerationsInTime = false;
   if (prongJSON->HasMember("checkGenerationsInTime")) {
     checkGenerationsInTime = prongJSON->FindMember("checkGenerationsInTime")->value.GetBool();
@@ -1945,28 +1948,29 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
     for (auto& ii : prongJSON->FindMember("checkIfPDGInHistory")->value.GetArray()) {
       checkIfPDGInHistory.push_back(ii.GetInt());
       LOG(debug) << "checkIfPDGInHistory: " << ii.GetInt();
-    } 
+    }
   }
-  
+
   std::vector<bool> excludePDGInHistory = {};
   if (prongJSON->HasMember("excludePDGInHistory")) {
     for (auto& ii : prongJSON->FindMember("excludePDGInHistory")->value.GetArray()) {
       excludePDGInHistory.push_back(ii.GetBool());
       LOG(debug) << "excludePDGInHistory: " << ii.GetBool();
-    } 
+    }
   }
-  
+
   // Calling the MCProng constructor
-  MCProng* prong = new MCProng(n, pdgs, checkBothCharges, excludePDG, sBitsVec, sBitsExcludeVec, useANDonSourceBitMap, 
+  MCProng* prong = new MCProng(n, pdgs, checkBothCharges, excludePDG, sBitsVec, sBitsExcludeVec, useANDonSourceBitMap,
                                checkGenerationsInTime, checkIfPDGInHistory, excludePDGInHistory);
   // Print the configuration
-  prong->Print();                           
+  prong->Print();
   return prong;
 }
 
 //_______________________________________________________________________________________________
 template <typename T>
-bool o2::aod::dqmcsignals::ValidateJSONMCSignal(T sigJSON, const char* sigName) {
+bool o2::aod::dqmcsignals::ValidateJSONMCSignal(T sigJSON, const char* sigName)
+{
 
   LOG(info) << "Validating MC signal " << sigName;
   if (sigJSON->HasMember("commonAncestors")) {
@@ -1982,3 +1986,4 @@ bool o2::aod::dqmcsignals::ValidateJSONMCSignal(T sigJSON, const char* sigName) 
 
   return true;
 }
+ 
