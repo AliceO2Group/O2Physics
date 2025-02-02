@@ -58,9 +58,11 @@ struct FemtoUniversePairTaskTrackPhi {
 
   Service<o2::framework::O2DatabasePDG> pdgMC;
 
-  // using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  // Filter trackCutFilter = requireGlobalTrackInFilter();
-  using FilteredFemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
+  using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
+  // Filters for selecting particles (both p1 and p2)
+  Filter trackCutFilter = requireGlobalTrackInFilter(); // Global track cuts
+  // Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.confEtaMax); // example filtering on configurable
+  using FilteredFemtoFullParticles = soa::Filtered<FemtoFullParticles>;
 
   SliceCache cache;
   Preslice<FilteredFemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
@@ -131,8 +133,8 @@ struct FemtoUniversePairTaskTrackPhi {
                                                                                        (aod::femtouniverseparticle::pt < ConfTrack.confTrackPtHighLimit.value);
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsTrackMCTruth = aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
-                                                                                        (aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(ConfTrack.confTrackPDGCode.value)) &
-                                                                                          (aod::femtouniverseparticle::pt > ConfTrack.confTrackPtLowLimit.value) &&
+                                                                                        (aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(ConfTrack.confTrackPDGCode)) &&
+                                                                                        (aod::femtouniverseparticle::pt > ConfTrack.confTrackPtLowLimit.value) &&
                                                                                         (aod::femtouniverseparticle::pt < ConfTrack.confTrackPtHighLimit.value);
 
   /// Particle 2 --- PHI MESON
@@ -151,6 +153,7 @@ struct FemtoUniversePairTaskTrackPhi {
                                                                                      (aod::femtouniverseparticle::pt < ConfPhi.confPhiPtHighLimit.value);
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsPhiMCTruth = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
+
                                                                                       (aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(333)) &&
                                                                                       (aod::femtouniverseparticle::pt > ConfPhi.confPhiPtLowLimit.value) &&
                                                                                       (aod::femtouniverseparticle::pt < ConfPhi.confPhiPtHighLimit.value);
