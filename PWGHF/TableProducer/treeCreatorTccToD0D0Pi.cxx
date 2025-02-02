@@ -77,6 +77,9 @@ DECLARE_SOA_COLUMN(MD1, mD1, float);
 DECLARE_SOA_COLUMN(MD2, mD2, float);
 DECLARE_SOA_COLUMN(DeltaMD1, deltaMD1, float);
 DECLARE_SOA_COLUMN(DeltaMD2, deltaMD2, float);
+DECLARE_SOA_COLUMN(MDD, mDD, float);
+DECLARE_SOA_COLUMN(MDPi1, mDPi1, float);
+DECLARE_SOA_COLUMN(MDPi2, mDPi2, float);
 DECLARE_SOA_COLUMN(MDDPi, mDDPi, float);
 DECLARE_SOA_COLUMN(DeltaMDDPi, deltaMDDPi, float);
 DECLARE_SOA_COLUMN(EtaD1, etaD1, float);
@@ -133,6 +136,9 @@ DECLARE_SOA_TABLE(HfCandTccLites, "AOD", "HFCANDTCCLITE",
                   full::MD2,
                   full::DeltaMD1,
                   full::DeltaMD2,
+                  full::MDD,
+                  full::MDPi1,
+                  full::MDPi2,
                   full::MDDPi,
                   full::DeltaMDDPi,
                   full::EtaD1,
@@ -339,6 +345,7 @@ struct HfTreeCreatorTccToD0D0Pi {
           auto arrayMomentaDDpi = std::array{pVecD1, pVecD2, pVecSoftPion};
           const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{MassD0, MassD0, MassPiPlus});
           const auto deltaMassD0D0Pi = massD0D0Pi - (massD01 + massD02);
+          const auto massD0D0Pair = RecoDecay::m(std::array{pVecD1, pVecD2}, std::array{MassD0, MassD0});
 
           if (deltaMassD0D0Pi > deltaMassCanMax || massD0D0Pi > massCanMax) {
             continue;
@@ -369,6 +376,9 @@ struct HfTreeCreatorTccToD0D0Pi {
             massD02,
             deltaMassD01,
             deltaMassD02,
+            massD0D0Pair,
+            massKpipi1,
+            massKpipi2,
             massD0D0Pi,
             deltaMassD0D0Pi,
             candidateD1.eta(),
