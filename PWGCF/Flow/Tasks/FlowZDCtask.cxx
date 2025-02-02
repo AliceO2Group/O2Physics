@@ -240,15 +240,15 @@ struct FlowZDCtask {
     histos.fill(HIST("eventSelectionSteps"), 2);
 
     if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
-     return;
+      return;
     histos.fill(HIST("eventSelectionSteps"), 3);
 
     if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
-     return;
+      return;
     histos.fill(HIST("eventSelectionSteps"), 4);
 
     if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
-     return;
+      return;
     histos.fill(HIST("eventSelectionSteps"), 5);
 
     histos.fill(HIST("eventSelectionSteps"), 6);
@@ -307,13 +307,13 @@ struct FlowZDCtask {
     aod::FT0s const& /*ft0s*/)
   {
     if (!collision.sel8())
-     return;
+      return;
     if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
-     return;
+      return;
     if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
-     return;
+      return;
     if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
-     return;
+      return;
     int nTot = tracks.size();
     double sumCosPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
     double sumSinPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
