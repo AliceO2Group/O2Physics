@@ -186,7 +186,7 @@ struct FlowZDCtask {
                {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZP Energy"}});
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ}); // for q vector recentering
     histos.add("hYield", "Nch vs pT", kTH2F, {axisMultiplicity, axisPt});
-    histos.add("eventSelectionSteps","eventSelectionSteps", kTH1D, {axisEvent});
+    histos.add("eventSelectionSteps", "eventSelectionSteps", kTH1D, {axisEvent});
 
     if (doprocessZdcCollAssoc) { // Check if the process function for ZDCCollAssoc is enabled
       histos.add("ZNAcoll", "ZNAcoll; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZn}}});
