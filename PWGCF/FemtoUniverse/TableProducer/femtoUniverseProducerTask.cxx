@@ -1657,17 +1657,29 @@ struct FemtoUniverseProducerTask {
         tmpIDtrack.push_back(particle.globalIndex());
         continue;
       }
-      outputParts(outputCollision.lastIndex(),
-                  particle.pt(),
-                  particle.eta(),
-                  particle.phi(),
-                  aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                  0,
-                  pdgCode,
-                  pdgCode,
-                  childIDs,
-                  0,
-                  0);
+      if (!confIsActivateCascade) {
+        outputParts(outputCollision.lastIndex(),
+                    particle.pt(),
+                    particle.eta(),
+                    particle.phi(),
+                    aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
+                    0,
+                    pdgCode,
+                    pdgCode,
+                    childIDs,
+                    0,
+                    0);
+      } else {
+        outputCascParts(outputCollision.lastIndex(),
+                        particle.pt(),
+                        particle.eta(),
+                        particle.phi(),
+                        aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
+                        0,
+                        pdgCode,
+                        pdgCode,
+                        childIDs, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      }
       if (confIsDebug) {
         fillDebugParticle<false, true, false>(particle);
       }
