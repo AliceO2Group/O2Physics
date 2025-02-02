@@ -141,7 +141,7 @@ struct JetSubstructureHFOutputTask {
     std::copy(pairEnergySpan.begin(), pairEnergySpan.end(), std::back_inserter(pairEnergyVec));
     std::copy(pairThetaSpan.begin(), pairThetaSpan.end(), std::back_inserter(pairThetaVec));
     jetOutputTable(collisionIndex, candidateIndex, jet.pt(), jet.phi(), jet.eta(), jet.y(), jet.r(), jet.tracksIds().size() + jet.candidatesIds().size()); // here we take the decision to keep the collision index consistent with the JE framework in case it is later needed to join to other tables. The candidate Index however can be linked to the HF tables
-    jetSubstructureOutputTable(jetOutputTable.lastIndex(), energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, jet.nSub2DR(), jet.nSub1(), jet.nSub2(), pairPtVec, pairEnergyVec, pairThetaVec, jet.angularity());
+    jetSubstructureOutputTable(jetOutputTable.lastIndex(), energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, jet.nSub2DR(), jet.nSub1(), jet.nSub2(), pairPtVec, pairEnergyVec, pairThetaVec, jet.angularity(), jet.ptLeadingConstituent());
     jetMap.insert(std::make_pair(jet.globalIndex(), jetOutputTable.lastIndex()));
   }
 
@@ -166,13 +166,17 @@ struct JetSubstructureHFOutputTask {
           if (candidateTableIndex != candidateMap.end()) {
             candidateIndex = candidateTableIndex->second;
           }
-          if constexpr (!isMCP) {
-            if (nJetInCollision == 0) {
-              collisionOutputTable(collision.posZ(), collision.centrality(), collision.eventSel(), eventWeight);
-              collisionIndex = collisionOutputTable.lastIndex();
+          if (nJetInCollision == 0) {
+            float centrality = -1.0;
+            uint8_t eventSel = 0.0;
+            if constexpr (!isMCP) {
+              centrality = collision.centrality();
+              eventSel = collision.eventSel();
             }
-            nJetInCollision++;
+            collisionOutputTable(collision.posZ(), centrality, eventSel, eventWeight);
+            collisionIndex = collisionOutputTable.lastIndex();
           }
+          nJetInCollision++;
           fillJetTables(jet, candidate, collisionIndex, candidateIndex, jetOutputTable, jetSubstructureOutputTable, jetMap);
         }
       }

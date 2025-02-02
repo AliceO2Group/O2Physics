@@ -12,6 +12,7 @@
 /// \file candidateCreatorXic0Omegac0.cxx
 /// \brief Reconstruction of Omegac0 and Xic0 decays candidates
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
+/// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 
 #ifndef HomogeneousField
@@ -92,6 +93,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   Configurable<double> maxChi2{"maxChi2", 100., "discard vertices with chi2/Nprongs > this (or sum{DCAi^2}/Nprongs for abs. distance minimization)"};
   Configurable<bool> refitWithMatCorr{"refitWithMatCorr", true, "when doing propagateTracksToVertex, propagate tracks to vtx with material corrections and rerun minimization"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions"};
+  Configurable<bool> fillAllHist{"fillAllHist", true, "Fill additional KF histograms to check selector cuts"};
 
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
@@ -136,10 +138,10 @@ struct HfCandidateCreatorXic0Omegac0 {
   struct {
     float chi2GeoV0;
     float ldlV0;
-    float chi2TopoV0ToPv;
+    float chi2NdfTopoV0ToPv;
     float chi2GeoCasc;
     float ldlCasc;
-    float chi2TopoCascToPv;
+    float chi2NdfTopoCascToPv;
     float decayLenXYLambda;
     float decayLenXYCasc;
     float cosPaV0ToCasc;
@@ -157,17 +159,17 @@ struct HfCandidateCreatorXic0Omegac0 {
     float rapOmegac;
     float massOmegac;
     float cosThetaStarPiFromOmegac;
-    float chi2TopoPiFromOmegacToPv;
+    float chi2NdfTopoPiFromOmegacToPv;
     float kfDcaXYPiFromOmegac;
-    float chi2TopoV0ToCasc;
-    float chi2TopoCascToOmegac;
+    float chi2NdfTopoV0ToCasc;
+    float chi2NdfTopoCascToOmegac;
     float decayLenXYOmegac;
     float chi2GeoOmegac;
     float kfDcaV0Dau;
     float kfDcaCascDau;
     float kfDcaOmegacDau;
     float kfDcaXYCascToPv;
-    float chi2TopoOmegacToPv;
+    float chi2NdfTopoOmegacToPv;
     float cosPaOmegacToPv;
     float cosPaXYOmegacToPv;
     float ldlOmegac;
@@ -177,6 +179,7 @@ struct HfCandidateCreatorXic0Omegac0 {
     float chi2MassV0;
     float chi2MassCasc;
     float etaOmegac;
+    float cascRejectInvmass; // rej
   } kfOmegac0Candidate;
 
   struct {
@@ -275,13 +278,12 @@ struct HfCandidateCreatorXic0Omegac0 {
     hCascadesCounterToOmegaPi = registry.add<TH1>("hCascadesCounterToOmegaPi", "Cascades counter wrt derived data - #Omega #pi decay;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});    // 0 --> cascades in derived data table (and stored in AOD table), 1 --> cascades in derived data table and also accessible in cascData table
     hCascadesCounterToOmegaK = registry.add<TH1>("hCascadesCounterToOmegaK", "Cascades counter wrt derived data - #Omega K decay;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});        // 0 --> cascades in derived data table (and stored in AOD table), 1 --> cascades in derived data table and also accessible in cascData table
 
-    // KFparticle variables hist
+    // KFParticle Variables Histograms
     registry.add("hKFParticleV0TopoChi2", "hKFParticleV0TopoChi2", kTH1D, {{1000, -0.10f, 100.0f}});
     registry.add("hKFParticleCascTopoChi2", "hKFParticleCascTopoChi2", kTH1D, {{1000, -0.1f, 100.0f}});
     registry.add("hKFParticleCascBachTopoChi2", "hKFParticleCascBachTopoChi2", kTH1D, {{1000, -0.1f, 100.0f}});
-    registry.add("hKFParticleDcaCharmBaryonDau", "hKFParticleDcaCharmBaryonDau", kTH1D, {{1000, -0.1f, 100.0f}});
-    registry.add("hKFParticleDcaXYV0DauToPv", "hKFParticleDcaXYV0DauToPv", kTH1D, {{1000, -0.1f, 100.0f}});
-    registry.add("hKFParticleDcaXYCascBachToPv", "hKFParticleDcaXYCascBachToPv", kTH1D, {{1000, -0.1f, 100.0f}});
+    registry.add("hKFParticleDcaCharmBaryonDau", "hKFParticleDcaCharmBaryonDau", kTH1D, {{1000, -0.1f, 1.0f}});
+    registry.add("hKFParticleDcaXYCascBachToPv", "hKFParticleDcaXYCascBachToPv", kTH1D, {{1000, -0.1f, 15.0f}});
     registry.add("hKfLambda_ldl", "hKfLambda_ldl", kTH1D, {{1000, 0.0f, 1000.0f}});
     registry.add("hKfOmega_ldl", "hKfOmega_ldl", kTH1D, {{1000, 0.0f, 1000.0f}});
     registry.add("hKfXi_ldl", "hKfXi_ldl", kTH1D, {{1000, 0.0f, 1000.0f}});
@@ -290,6 +292,39 @@ struct HfCandidateCreatorXic0Omegac0 {
     registry.add("hDcaXYCascadeToPVKf", "hDcaXYCascadeToPVKf", kTH1D, {{1000, 0.0f, 2.0f}});
     registry.add("hInvMassOmegaMinus", "hInvMassOmegaMinus", kTH1D, {{1000, 1.6f, 2.0f}});
     registry.add("hInvMassXiMinus", "hInvMassXiMinus", kTH1D, {{1000, 1.25f, 1.65f}});
+    registry.add("hInvMassXiMinus_rej", "hInvMassXiMinus_rej", kTH1D, {{1000, 1.25f, 1.65f}});
+
+    // Additional KFParticle Histograms
+    registry.add("hKFParticlechi2TopoOmegacToPv", "hKFParticlechi2TopoOmegacToPv", kTH1D, {{1000, -0.1f, 100.0f}});
+    registry.add("hKFParticlechi2TopoCascToPv", "hKFParticlechi2TopoCascToPv", kTH1D, {{1000, -0.1f, 100.0f}});
+    registry.add("hKFParticleDcaXYV0DauPosToPv", "hKFParticleDcaXYV0DauPosToPv", kTH1D, {{1000, -0.1f, 30.0f}});
+    registry.add("hKFParticleDcaXYV0DauNegToPv", "hKFParticleDcaXYV0DauNegToPv", kTH1D, {{1000, -0.1f, 30.0f}});
+    registry.add("hEtaV0PosDau", "hEtaV0PosDau", kTH1D, {{1000, -5.0f, 5.0f}});
+    registry.add("hEtaV0NegDau", "hEtaV0NegDau", kTH1D, {{1000, -5.0f, 5.0f}});
+    registry.add("hEtaKaFromCasc", "hEtaKaFromCasc", kTH1D, {{1000, -5.0f, 5.0f}});
+    registry.add("hEtaPiFromCharmBaryon", "hEtaPiFromCharmBaryon", kTH1D, {{1000, -5.0f, 5.0f}});
+    registry.add("hCascradius", "hCascradius", kTH1D, {{1000, 0.0f, 50.0f}});
+    registry.add("hV0radius", "hV0radius", kTH1D, {{1000, 0.0f, 50.0f}});
+    registry.add("hCosPACasc", "hCosPACasc", kTH1D, {{5000, 0.8f, 1.1f}});
+    registry.add("hCosPAV0", "hCosPAV0", kTH1D, {{5000, 0.8f, 1.1f}});
+    registry.add("hDcaCascDau", "hDcaCascDau", kTH1D, {{1000, -0.1f, 10.0f}});
+    registry.add("hDcaV0Dau", "hDcaV0Dau", kTH1D, {{1000, -0.1f, 10.0f}});
+    registry.add("hDcaXYToPvKa", "hDcaXYToPvKa", kTH1D, {{1000, -0.1f, 10.0f}});
+    registry.add("hImpactParBachFromCharmBaryonXY", "hImpactParBachFromCharmBaryonXY", kTH1D, {{1000, -1.0f, 1.0f}});
+    registry.add("hImpactParBachFromCharmBaryonZ", "hImpactParBachFromCharmBaryonZ", kTH1D, {{1000, -2.0f, 2.0f}});
+    registry.add("hImpactParCascXY", "hImpactParCascXY", kTH1D, {{1000, -4.0f, 4.0f}});
+    registry.add("hImpactParCascZ", "hImpactParCascZ", kTH1D, {{1000, -5.0f, 5.0f}});
+    registry.add("hPtKaFromCasc", "hPtKaFromCasc", kTH1D, {{1000, 0.0f, 5.0f}});
+    registry.add("hPtPiFromCharmBaryon", "hPtPiFromCharmBaryon", kTH1D, {{1000, 0.0f, 5.0f}});
+    registry.add("hCTauOmegac", "hCTauOmegac", kTH1D, {{1000, 0.0f, 0.1f}});
+    registry.add("hKFGeoV0Chi2OverNdf", "hKFGeoV0Chi2OverNdf", kTH1D, {{1000, 0.0f, 100.0f}});
+    registry.add("hKFGeoCascChi2OverNdf", "hKFGeoCascChi2OverNdf", kTH1D, {{1000, 0.0f, 100.0f}});
+    registry.add("hKFGeoCharmbaryonChi2OverNdf", "hKFGeoCharmbaryonChi2OverNdf", kTH1D, {{1000, 0.0f, 100.0f}});
+    registry.add("hKFdecayLenXYLambda", "hKFdecayLenXYLambda", kTH1D, {{1000, 0.0f, 50.0f}});
+    registry.add("hKFdecayLenXYCasc", "hKFdecayLenXYCasc", kTH1D, {{1000, 0.0f, 50.0f}});
+    registry.add("hKFdecayLenXYOmegac", "hKFdecayLenXYOmegac", kTH1D, {{1000, 0.0f, 50.0f}});
+    registry.add("hKFcosPaV0ToCasc", "hKFcosPaV0ToCasc", kTH1D, {{5000, 0.8f, 1.1f}});
+    registry.add("hKFcosPaCascToOmegac", "hKFcosPaCascToOmegac", kTH1D, {{5000, 0.8f, 1.1f}});
 
     hfEvSel.addHistograms(registry); // collision monitoring
 
@@ -724,21 +759,26 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFParticle kfPosPr(kfTrack0, kProton);
       KFParticle kfNegPi(kfTrack1, kPiMinus);
       KFParticle kfNegKa(kfTrackBach, kKMinus);
+      KFParticle kfNegPiRej(kfTrackBach, kPiMinus); // rej
       KFParticle kfPosPi(kfTrack0, kPiPlus);
       KFParticle kfNegPr(kfTrack1, kProton);
       KFParticle kfPosKa(kfTrackBach, kKPlus);
+      KFParticle kfPosPiRej(kfTrackBach, kPiPlus); // rej
 
       KFParticle kfBachKaon;
       KFParticle kfPos;
       KFParticle kfNeg;
+      KFParticle kfBachPionRej; // rej
       if (bachCharge < 0) {
         kfPos = kfPosPr;
         kfNeg = kfNegPi;
         kfBachKaon = kfNegKa;
+        kfBachPionRej = kfNegPiRej; // rej
       } else {
         kfPos = kfPosPi;
         kfNeg = kfNegPr;
         kfBachKaon = kfPosKa;
+        kfBachPionRej = kfPosPiRej; // rej
       }
 
       //__________________________________________
@@ -776,17 +816,23 @@ struct HfCandidateCreatorXic0Omegac0 {
       //__________________________________________
       //*>~<* step 2 : reconstruct cascade(Omega) with KF
       const KFParticle* omegaDaugthers[2] = {&kfBachKaon, &kfV0};
+      const KFParticle* omegaDaugthersRej[2] = {&kfBachPionRej, &kfV0}; // rej
       // construct cascade
       KFParticle kfOmega;
+      KFParticle kfOmegarej; // rej
       kfOmega.SetConstructMethod(kfConstructMethod);
+      kfOmegarej.SetConstructMethod(kfConstructMethod); // rej
       try {
         kfOmega.Construct(omegaDaugthers, 2);
+        kfOmegarej.Construct(omegaDaugthersRej, 2); // rej
       } catch (std::runtime_error& e) {
-        LOG(debug) << "Failed to construct Omega from V0 and bachelor track: " << e.what();
+        LOG(debug) << "Failed to construct Omega or Omega_rej from V0 and bachelor track: " << e.what();
         continue;
       }
       float massCasc, sigCasc;
+      float massCascrej, sigCascrej;
       kfOmega.GetMass(massCasc, sigCasc);
+      kfOmegarej.GetMass(massCascrej, sigCascrej); // rej
       // err_massOmega > 0
       if (sigCasc <= 0)
         continue;
@@ -796,6 +842,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       if (kfOmega.GetNDF() <= 0 || kfOmega.GetChi2() <= 0)
         continue;
       kfOmegac0Candidate.chi2GeoCasc = kfOmega.GetChi2();
+      kfOmegac0Candidate.cascRejectInvmass = massCascrej;
+      registry.fill(HIST("hInvMassXiMinus_rej"), massCascrej); // rej
       KFParticle kfOmegaMassConstrained = kfOmega;
       kfOmegaMassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassOmegaMinus); // set mass constrain to OmegaMinus
       if (kfUseCascadeMassConstraint) {
@@ -804,6 +852,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
       registry.fill(HIST("hInvMassOmegaMinus"), massCasc);
       kfOmega.TransportToDecayVertex();
+      // rej: Add competing rejection to minimize misidentified Xi impact. Reject if kfBachPionRej is Pion and the constructed cascade has Xi's invariant mass.
 
       //__________________________________________
       //*>~<* step 3 : reconstruc Omegac0 with KF
@@ -965,15 +1014,15 @@ struct HfCandidateCreatorXic0Omegac0 {
       auto cascNdfm = kfOmegaMassConstrained.GetNDF();
       auto cascChi2OverNdfm = kfOmegac0Candidate.chi2MassCasc / cascNdfm;
 
-      // KF topo Chi2
-      kfOmegac0Candidate.chi2TopoV0ToPv = kfV0ToPv.GetChi2();
-      kfOmegac0Candidate.chi2TopoCascToPv = kfOmegaToPv.GetChi2();
-      kfOmegac0Candidate.chi2TopoPiFromOmegacToPv = kfPiFromOmegacToPv.GetChi2();
-      kfOmegac0Candidate.chi2TopoOmegacToPv = kfOmegac0ToPv.GetChi2();
+      // KF topo Chi2 over NDF
+      kfOmegac0Candidate.chi2NdfTopoV0ToPv = kfV0ToPv.GetChi2() / kfV0ToPv.GetNDF();
+      kfOmegac0Candidate.chi2NdfTopoCascToPv = kfOmegaToPv.GetChi2() / kfOmegaToPv.GetNDF();
+      kfOmegac0Candidate.chi2NdfTopoPiFromOmegacToPv = kfPiFromOmegacToPv.GetChi2() / kfPiFromOmegacToPv.GetNDF();
+      kfOmegac0Candidate.chi2NdfTopoOmegacToPv = kfOmegac0ToPv.GetChi2() / kfOmegac0ToPv.GetNDF();
 
-      auto cascBachTopoChi2 = kfBachKaonToOmega.GetChi2();
-      kfOmegac0Candidate.chi2TopoV0ToCasc = kfV0ToCasc.GetChi2();
-      kfOmegac0Candidate.chi2TopoCascToOmegac = kfOmegaToOmegaC.GetChi2();
+      auto cascBachTopoChi2Ndf = kfBachKaonToOmega.GetChi2() / kfBachKaonToOmega.GetNDF();
+      kfOmegac0Candidate.chi2NdfTopoV0ToCasc = kfV0ToCasc.GetChi2() / kfV0ToCasc.GetNDF();
+      kfOmegac0Candidate.chi2NdfTopoCascToOmegac = kfOmegaToOmegaC.GetChi2() / kfOmegaToOmegaC.GetNDF();
 
       // KF ldl
       kfOmegac0Candidate.ldlV0 = ldlFromKF(kfV0, kfPV);
@@ -1036,16 +1085,48 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfOmegac0Candidate.etaOmegac = kfOmegaC0.GetEta();
 
       // fill KF hist
-      registry.fill(HIST("hKFParticleCascBachTopoChi2"), cascBachTopoChi2);
-      registry.fill(HIST("hKFParticleV0TopoChi2"), kfOmegac0Candidate.chi2TopoV0ToCasc);
-      registry.fill(HIST("hKFParticleCascTopoChi2"), kfOmegac0Candidate.chi2TopoCascToOmegac);
+      registry.fill(HIST("hKFParticleCascBachTopoChi2"), cascBachTopoChi2Ndf);
+      registry.fill(HIST("hKFParticleV0TopoChi2"), kfOmegac0Candidate.chi2NdfTopoV0ToCasc);
+      registry.fill(HIST("hKFParticleCascTopoChi2"), kfOmegac0Candidate.chi2NdfTopoCascToOmegac);
+      registry.fill(HIST("hKFParticlechi2TopoOmegacToPv"), kfOmegac0Candidate.chi2NdfTopoOmegacToPv);
+      registry.fill(HIST("hKFParticlechi2TopoCascToPv"), kfOmegac0Candidate.chi2NdfTopoCascToPv);
       registry.fill(HIST("hKFParticleDcaCharmBaryonDau"), kfOmegac0Candidate.kfDcaOmegacDau);
       registry.fill(HIST("hKFParticleDcaXYCascBachToPv"), dcaxyCascBachelor);
-      registry.fill(HIST("hKFParticleDcaXYV0DauToPv"), dcaxyV0Dau0);
+      registry.fill(HIST("hKFParticleDcaXYV0DauPosToPv"), dcaxyV0Dau0);
+      registry.fill(HIST("hKFParticleDcaXYV0DauNegToPv"), dcaxyV0Dau1);
       registry.fill(HIST("hKfLambda_ldl"), kfOmegac0Candidate.ldlV0);
       registry.fill(HIST("hKfOmega_ldl"), kfOmegac0Candidate.ldlCasc);
       registry.fill(HIST("hKfOmegaC0_ldl"), kfOmegac0Candidate.ldlOmegac);
       registry.fill(HIST("hDcaXYCascadeToPVKf"), kfOmegac0Candidate.kfDcaXYCascToPv);
+      // Additional histograms
+      if (fillAllHist) {
+        registry.fill(HIST("hEtaV0PosDau"), kfPos.GetEta());
+        registry.fill(HIST("hEtaV0NegDau"), kfNeg.GetEta());
+        registry.fill(HIST("hEtaKaFromCasc"), kfBachKaonToOmega.GetEta());
+        registry.fill(HIST("hEtaPiFromCharmBaryon"), kfBachPionToOmegaC.GetEta());
+        registry.fill(HIST("hCascradius"), RecoDecay::sqrtSumOfSquares(vertexCasc[0], vertexCasc[1]));
+        registry.fill(HIST("hV0radius"), RecoDecay::sqrtSumOfSquares(vertexV0[0], vertexV0[1]));
+        registry.fill(HIST("hCosPACasc"), kfOmegac0Candidate.cosPaCascToPv);
+        registry.fill(HIST("hCosPAV0"), kfOmegac0Candidate.cosPaV0ToPv);
+        registry.fill(HIST("hDcaCascDau"), kfOmegac0Candidate.kfDcaCascDau);
+        registry.fill(HIST("hDcaV0Dau"), kfOmegac0Candidate.kfDcaV0Dau);
+        registry.fill(HIST("hDcaXYToPvKa"), dcaxyCascBachelor);
+        registry.fill(HIST("hImpactParBachFromCharmBaryonXY"), impactParBachFromCharmBaryonXY);
+        registry.fill(HIST("hImpactParBachFromCharmBaryonZ"), impactParBachFromCharmBaryonZ);
+        registry.fill(HIST("hImpactParCascXY"), impactParameterCasc.getY());
+        registry.fill(HIST("hImpactParCascZ"), impactParameterCasc.getZ());
+        registry.fill(HIST("hPtKaFromCasc"), RecoDecay::sqrtSumOfSquares(pVecCascBachelor[0], pVecCascBachelor[1]));
+        registry.fill(HIST("hPtPiFromCharmBaryon"), RecoDecay::sqrtSumOfSquares(pVecCharmBachelorAsD[0], pVecCharmBachelorAsD[1]));
+        registry.fill(HIST("hCTauOmegac"), kfOmegac0Candidate.ctOmegac);
+        registry.fill(HIST("hKFGeoV0Chi2OverNdf"), v0Chi2OverNdf);
+        registry.fill(HIST("hKFGeoCascChi2OverNdf"), cascChi2OverNdf);
+        registry.fill(HIST("hKFGeoCharmbaryonChi2OverNdf"), charmbaryonChi2OverNdf);
+        registry.fill(HIST("hKFdecayLenXYLambda"), kfOmegac0Candidate.decayLenXYLambda);
+        registry.fill(HIST("hKFdecayLenXYCasc"), kfOmegac0Candidate.decayLenXYCasc);
+        registry.fill(HIST("hKFdecayLenXYOmegac"), kfOmegac0Candidate.decayLenXYOmegac);
+        registry.fill(HIST("hKFcosPaV0ToCasc"), kfOmegac0Candidate.cosPaV0ToCasc);
+        registry.fill(HIST("hKFcosPaCascToOmegac"), kfOmegac0Candidate.cosPaCascToOmegac);
+      }
 
       // fill the table
       rowCandToOmegaPi(collision.globalIndex(),
@@ -1080,14 +1161,14 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfCandidateData(kfOmegac0Candidate.kfDcaXYPiFromOmegac, kfOmegac0Candidate.kfDcaXYCascToPv,
                       kfOmegac0Candidate.chi2GeoV0, kfOmegac0Candidate.chi2GeoCasc, kfOmegac0Candidate.chi2GeoOmegac, kfOmegac0Candidate.chi2MassV0, kfOmegac0Candidate.chi2MassCasc,
                       kfOmegac0Candidate.ldlV0, kfOmegac0Candidate.ldlCasc, kfOmegac0Candidate.ldlOmegac,
-                      kfOmegac0Candidate.chi2TopoV0ToPv, kfOmegac0Candidate.chi2TopoCascToPv, kfOmegac0Candidate.chi2TopoPiFromOmegacToPv, kfOmegac0Candidate.chi2TopoOmegacToPv,
-                      kfOmegac0Candidate.chi2TopoV0ToCasc, kfOmegac0Candidate.chi2TopoCascToOmegac,
+                      kfOmegac0Candidate.chi2NdfTopoV0ToPv, kfOmegac0Candidate.chi2NdfTopoCascToPv, kfOmegac0Candidate.chi2NdfTopoPiFromOmegacToPv, kfOmegac0Candidate.chi2NdfTopoOmegacToPv,
+                      kfOmegac0Candidate.chi2NdfTopoV0ToCasc, kfOmegac0Candidate.chi2NdfTopoCascToOmegac,
                       kfOmegac0Candidate.decayLenXYLambda, kfOmegac0Candidate.decayLenXYCasc, kfOmegac0Candidate.decayLenXYOmegac,
                       kfOmegac0Candidate.cosPaV0ToCasc, kfOmegac0Candidate.cosPaCascToOmegac, kfOmegac0Candidate.cosPaXYV0ToCasc, kfOmegac0Candidate.cosPaXYCascToOmegac,
                       kfOmegac0Candidate.rapOmegac, kfOmegac0Candidate.ptPiFromOmegac, kfOmegac0Candidate.ptOmegac,
                       kfOmegac0Candidate.cosThetaStarPiFromOmegac,
                       v0NDF, cascNDF, charmbaryonNDF, v0Ndfm, cascNdfm,
-                      v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdfm, cascChi2OverNdfm);
+                      v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdfm, cascChi2OverNdfm, kfOmegac0Candidate.cascRejectInvmass);
 
     } // loop over LF Cascade-bachelor candidates
   } // end of run function

@@ -106,7 +106,7 @@ struct FilterCF {
     } else if (cfgTrigger == 8) {
       return isMultSelected && collision.sel8();
     } else if (cfgTrigger == 9) { // relevant only for Pb-Pb
-      return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
+      return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
     } else if (cfgTrigger == 10) { // TVX trigger only (sel8 selection before April, 2024)
       return isMultSelected && collision.selection_bit(aod::evsel::kIsTriggerTVX);
     } else if (cfgTrigger == 11) { // sel8 selection for MC
@@ -114,7 +114,7 @@ struct FilterCF {
     } else if (cfgTrigger == 12) { // relevant only for Pb-Pb with occupancy cuts and rejection of the collisions which have other events nearby
       int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy >= cfgMinOcc && occupancy < cfgMaxOcc)
-        return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard);
+        return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) && collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
       else
         return false;
     }

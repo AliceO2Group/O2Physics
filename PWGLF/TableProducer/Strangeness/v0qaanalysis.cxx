@@ -141,6 +141,7 @@ struct LfV0qaanalysis {
   Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 1, "Is No ITS Readout Frame Border"};
   Configurable<bool> isVertexTOFmatched{"isVertexTOFmatched", 0, "Is Vertex TOF matched"};
   Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 0, "isGoodZvtxFT0vsPV"};
+  Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
 
   // V0 selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
@@ -205,6 +206,9 @@ struct LfV0qaanalysis {
 
     for (auto& v0 : V0s) { // loop over V0s
 
+      if (v0.v0Type() != v0TypeSelection) {
+        continue;
+      }
       // c tau
       float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
       float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
@@ -229,6 +233,7 @@ struct LfV0qaanalysis {
 
       int lPDG = 0;
       bool isPhysicalPrimary = isMC;
+      bool isDauK0Short = false, isDauLambda = false, isDauAntiLambda = false;
 
       if (v0.v0radius() > v0radius &&
           v0.v0cosPA() > v0cospa &&
@@ -236,7 +241,7 @@ struct LfV0qaanalysis {
           TMath::Abs(v0.negTrack_as<DauTracks>().eta()) < etadau) {
 
         // Fill table
-        myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
+        myv0s(v0.pt(), v0.yLambda(), v0.yK0Short(),
               v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
               v0.v0radius(), v0.v0cosPA(),
               v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
@@ -247,7 +252,7 @@ struct LfV0qaanalysis {
               v0.negTrack_as<DauTracks>().tpcNSigmaPi(), v0.posTrack_as<DauTracks>().tpcNSigmaPi(),
               v0.negTrack_as<DauTracks>().tofNSigmaPr(), v0.posTrack_as<DauTracks>().tofNSigmaPr(),
               v0.negTrack_as<DauTracks>().tofNSigmaPi(), v0.posTrack_as<DauTracks>().tofNSigmaPi(),
-              v0.posTrack_as<DauTracks>().hasTOF(), v0.negTrack_as<DauTracks>().hasTOF(), lPDG, isPhysicalPrimary,
+              v0.posTrack_as<DauTracks>().hasTOF(), v0.negTrack_as<DauTracks>().hasTOF(), lPDG, isDauK0Short, isDauLambda, isDauAntiLambda, isPhysicalPrimary,
               collision.centFT0M(), collision.centFV0A(), evFlag, v0.alpha(), v0.qtarm());
       }
     }
@@ -298,6 +303,10 @@ struct LfV0qaanalysis {
           continue;
         }
 
+        if (v0.v0Type() != v0TypeSelection) {
+          continue;
+        }
+
         // Highest numerator of efficiency
         if (v0mcparticle.isPhysicalPrimary()) {
           if (v0mcparticle.pdgCode() == 310) {
@@ -321,10 +330,24 @@ struct LfV0qaanalysis {
         }
 
         int lPDG = 0;
+        bool isDauK0Short = false, isDauLambda = false, isDauAntiLambda = false;
         bool isprimary = false;
         if (TMath::Abs(v0mcparticle.pdgCode()) == 310 || TMath::Abs(v0mcparticle.pdgCode()) == 3122) {
           lPDG = v0mcparticle.pdgCode();
           isprimary = v0mcparticle.isPhysicalPrimary();
+        }
+        for (auto& mcparticleDaughter0 : v0mcparticle.daughters_as<aod::McParticles>()) {
+          for (auto& mcparticleDaughter1 : v0mcparticle.daughters_as<aod::McParticles>()) {
+            if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -211) {
+              isDauK0Short = true;
+            }
+            if (mcparticleDaughter0.pdgCode() == -211 && mcparticleDaughter1.pdgCode() == 2212) {
+              isDauLambda = true;
+            }
+            if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -2212) {
+              isDauAntiLambda = true;
+            }
+          }
         }
 
         int posITSNhits = 0, negITSNhits = 0;
@@ -348,7 +371,7 @@ struct LfV0qaanalysis {
         ) {
 
           // Fill table
-          myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
+          myv0s(v0.pt(), v0.yLambda(), v0.yK0Short(),
                 v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
                 v0.v0radius(), v0.v0cosPA(),
                 v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
@@ -359,7 +382,7 @@ struct LfV0qaanalysis {
                 v0.negTrack_as<DauTracksMC>().tpcNSigmaPi(), v0.posTrack_as<DauTracksMC>().tpcNSigmaPi(),
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPr(), v0.posTrack_as<DauTracksMC>().tofNSigmaPr(),
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPi(), v0.posTrack_as<DauTracksMC>().tofNSigmaPi(),
-                v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isprimary,
+                v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isDauK0Short, isDauLambda, isDauAntiLambda, isprimary,
                 mcCollision.centFT0M(), cent, evFlag, v0.alpha(), v0.qtarm());
         }
       }

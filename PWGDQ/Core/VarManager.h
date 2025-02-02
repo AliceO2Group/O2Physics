@@ -189,7 +189,10 @@ class VarManager : public TObject
     kIsGoodZvtxFT0vsPV,          // No collisions w/ difference between z_ {PV, tracks} and z_{PV FT0A-C}
     kIsVertexITSTPC,             // At least one ITS-TPC track
     kIsVertexTOFmatched,         // At least one TOF-matched track
-    kIsSel8,                     // TVX in Run3
+    kIsSel8,                     // TVX in Run3 && No time frame border && No ITS read out frame border (from event selection)
+    kIsGoodITSLayer3,            // number of inactive chips on ITS layer 3 is below maximum allowed value
+    kIsGoodITSLayer0123,         // numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
+    kIsGoodITSLayersAll,         // numbers of inactive chips on all ITS layers are below maximum allowed values
     kIsINT7,
     kIsEMC7,
     kIsINT7inMUON,
@@ -624,6 +627,7 @@ class VarManager : public TObject
     kCosThetaCS,
     kPhiHE,
     kPhiCS,
+    kCosPhiVP,
     kPhiVP,
     kDeltaPhiPair2,
     kDeltaEtaPair2,
@@ -1418,6 +1422,15 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kIsSel8]) {
       values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX) && event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
     }
+    if (fgUsedVars[kIsGoodITSLayer3]) {
+      values[kIsGoodITSLayer3] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayer3);
+    }
+    if (fgUsedVars[kIsGoodITSLayer0123]) {
+      values[kIsGoodITSLayer0123] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123);
+    }
+    if (fgUsedVars[kIsGoodITSLayersAll]) {
+      values[kIsGoodITSLayersAll] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
+    }
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.alias_bit(kINT7) > 0);
     }
@@ -1498,6 +1511,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultNTracksITSTPC] = event.multNTracksITSTPC();
     values[kMultAllTracksTPCOnly] = event.multAllTracksTPCOnly();
     values[kMultAllTracksITSTPC] = event.multAllTracksITSTPC();
+    values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
     if constexpr ((fillMap & ReducedEventMultExtra) > 0) {
       values[kNTPCcontribLongA] = event.nTPCoccupContribLongA();
       values[kNTPCcontribLongC] = event.nTPCoccupContribLongC();
@@ -1571,6 +1585,15 @@ void VarManager::FillEvent(T const& event, float* values)
     }
     if (fgUsedVars[kIsSel8]) {
       values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX) && event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
+    }
+    if (fgUsedVars[kIsGoodITSLayer3]) {
+      values[kIsGoodITSLayer3] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayer3);
+    }
+    if (fgUsedVars[kIsGoodITSLayer0123]) {
+      values[kIsGoodITSLayer0123] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123);
+    }
+    if (fgUsedVars[kIsGoodITSLayersAll]) {
+      values[kIsGoodITSLayersAll] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
     }
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.alias_bit(kINT7) > 0);
@@ -4034,7 +4057,7 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   values[kM11REF] = S21A - S12A;
   values[kM1111REF] = S41A - 6. * S12A * S21A + 8. * S13A * S11A + 3. * S22A - 6. * S14A;
   values[kCORR2REF] = (norm(compA21) - S12A) / values[kM11REF];
-  values[kCORR4REF] = (pow(norm(compA21), 2) + norm(compA42) - 2. * (compA42 * conj(compA21) * conj(compA21)).real() + 8. * (compA23 * conj(compA21)).real() - 4. * S12A * norm(compA21) - 6. * S14A - 2. * S22A) / values[kM1111REF];
+  values[kCORR4REF] = (pow(norm(compA21), 2) + norm(compA42) - 2. * (compA42 * conj(compA21) * conj(compA21)).real() + 8. * (compA23 * conj(compA21)).real() - 4. * S12A * norm(compA21) - 6. * S14A + 2. * S22A) / values[kM1111REF];
   values[kCORR2REF] = std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
   values[kM11REF] = std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kM11REF];
   values[kCORR4REF] = std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
@@ -4393,6 +4416,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   auto vDimu = (t1.sign() > 0 ? ROOT::Math::XYZVectorF(v1_vp.Px(), v1_vp.Py(), v1_vp.Pz()).Cross(ROOT::Math::XYZVectorF(v2_vp.Px(), v2_vp.Py(), v2_vp.Pz()))
                               : ROOT::Math::XYZVectorF(v2_vp.Px(), v2_vp.Py(), v2_vp.Pz()).Cross(ROOT::Math::XYZVectorF(v1_vp.Px(), v1_vp.Py(), v1_vp.Pz())));
   auto vRef = p12_vp.Cross(p12_vp_projXZ);
+  values[kCosPhiVP] = vDimu.Dot(vRef) / (vRef.R() * vDimu.R());
   values[kPhiVP] = std::acos(vDimu.Dot(vRef) / (vRef.R() * vDimu.R()));
 }
 
