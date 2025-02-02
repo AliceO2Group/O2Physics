@@ -1760,7 +1760,7 @@ struct tofSpectra {
       }
 
       if (!mcParticle.isPhysicalPrimary()) { // Secondaries (weak decays and material)
-        if (mcParticle.getProcess() == 4) {
+        if (mcParticle.getProcess() == 4) {  // Particles from decay
           if (enableDCAxyzHistograms) {
             hDcaXYZStr[i]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
           } else {
@@ -1777,7 +1777,7 @@ struct tofSpectra {
               hDecayLengthStr[i]->Fill(track.pt(), decayLength);
             }
           }
-        } else {
+        } else { // Particles from the material
           if (enableDCAxyzHistograms) {
             hDcaXYZMat[i]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
           } else {
@@ -1894,8 +1894,8 @@ struct tofSpectra {
     const bool isPionTOF = std::abs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
     const bool isProtonTOF = std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
 
-    if (!mcParticle.isPhysicalPrimary()) {
-      if (mcParticle.getProcess() == 4) {
+    if (!mcParticle.isPhysicalPrimary()) { // Is not physical primary
+      if (mcParticle.getProcess() == 4) {  // Is from decay
         if (includeCentralityMC) {
           if (includeCentralityMC) {
             histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity, track.dcaXY());
@@ -2128,15 +2128,15 @@ struct tofSpectra {
         float nsigma = 0.f;
         switch (i) {
           case 2:
-          case 11:
+          case Np + 2:
             nsigma = track.tofNSigmaPi();
             break;
           case 3:
-          case 12:
+          case Np + 3:
             nsigma = track.tofNSigmaKa();
             break;
           case 4:
-          case 13:
+          case Np + 4:
             nsigma = track.tofNSigmaPr();
             break;
           default:
