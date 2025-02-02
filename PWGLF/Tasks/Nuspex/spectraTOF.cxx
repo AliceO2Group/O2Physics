@@ -69,7 +69,9 @@ std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCCharm;  // Decay Length
 std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCBeauty; // Decay Length in the MC for particles from charm
 std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCNotHF;  // Decay Length in the MC for particles from not a HF
 
-// Spectra tas
+std::array<std::shared_ptr<TH2>, NpCharge> hPtNumTOFMatchWithPIDSignalPrm; // Pt distribution of particles with a hit in the TOF and a compatible signal
+
+// Spectra task
 struct tofSpectra {
   struct : ConfigurableGroup {
     Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -660,6 +662,7 @@ struct tofSpectra {
         histos.add(hdcaz[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
       }
 
+      const std::string cpName = Form("/%s", pNCharge[i]);
       if (doprocessMC) {
         if (includeCentralityMC) {
           //*************************************RD**********************************************
@@ -702,6 +705,7 @@ struct tofSpectra {
           histos.add(hpt_numtof_mat[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
 
           histos.add(hpt_numtofgoodmatch_prm[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
+          hPtNumTOFMatchWithPIDSignalPrm[i] = histos.add<TH2>("MC" + cpName + "/prm/pt/numtofwithpid", pTCharge[i], kTH2D, {ptAxis, multAxis});
 
           histos.add(hpt_den_prm[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
           histos.add(hpt_den_str[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
@@ -713,7 +717,6 @@ struct tofSpectra {
         }
         histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
         histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
-        const std::string cpName = Form("/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]);
         if (enableDCAxyzHistograms) {
           hDcaXYZPrm[i] = histos.add<TH3>("dcaprm" + cpName, pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
           hDcaXYZStr[i] = histos.add<TH3>("dcastr" + cpName, pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
@@ -1438,21 +1441,20 @@ struct tofSpectra {
         continue;
       }
       const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);
-      ;
       const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
       const auto& nsigmaTPCPr = o2::aod::pidutils::tpcNSigma<4>(track);
 
-      bool isTPCPion = std::abs(nsigmaTPCPi) < trkselOptions.cfgCutNsigma;
-      bool isTPCKaon = std::abs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
-      bool isTPCProton = std::abs(nsigmaTPCPr) < trkselOptions.cfgCutNsigma;
+      const bool isTPCPion = std::abs(nsigmaTPCPi) < trkselOptions.cfgCutNsigma;
+      const bool isTPCKaon = std::abs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
+      const bool isTPCProton = std::abs(nsigmaTPCPr) < trkselOptions.cfgCutNsigma;
 
       const auto& nsigmaTOFPi = o2::aod::pidutils::tofNSigma<2>(track);
       const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
       const auto& nsigmaTOFPr = o2::aod::pidutils::tofNSigma<4>(track);
 
-      bool isTOFPion = track.hasTOF() && std::abs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
-      bool isTOFKaon = track.hasTOF() && std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
-      bool isTOFProton = track.hasTOF() && std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
+      const bool isTOFPion = track.hasTOF() && std::abs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
+      const bool isTOFKaon = track.hasTOF() && std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
+      const bool isTOFProton = track.hasTOF() && std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
 
       // Apply rapidity cut for identified particles
       if (isTPCPion && std::abs(track.rapidity(PID::getMass(2))) < trkselOptions.cfgCutY) {
@@ -1726,10 +1728,8 @@ struct tofSpectra {
 
     const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
     const float multiplicity = getMultiplicityMC(mcCollision);
-    int occupancy = collision.trackOccupancyInTimeRange();
-    //************************************RD**************************************************
+    const int occupancy = collision.trackOccupancyInTimeRange();
     const float impParam = mcCollision.impactParameter();
-    //************************************RD**************************************************
 
     if (mcParticle.pdgCode() != PDGs[i]) {
       return;
@@ -1737,18 +1737,15 @@ struct tofSpectra {
     if (track.eta() < trkselOptions.cfgCutEtaMin || track.eta() > trkselOptions.cfgCutEtaMax) {
       return;
     }
-
     if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
       return;
     }
 
     const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
-
-    bool isKaonTPC = std::abs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
+    const bool isKaonTPC = std::abs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
 
     const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
-
-    bool isKaonTOF = std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
+    const bool isKaonTOF = std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
 
     // Filling DCA info with the TPC+TOF PID
     bool isDCAPureSample = (std::sqrt(nsigmaTOFKa * nsigmaTOFKa + nsigmaTPCKa * nsigmaTPCKa) < 2.f);
@@ -1884,18 +1881,18 @@ struct tofSpectra {
     if (!passesDCAxyCut(track)) { // Skipping tracks that don't pass the standard cuts
       return;
     }
-    int pdgCode = mcParticle.pdgCode();
+    const int pdgCode = mcParticle.pdgCode();
     const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);
     const auto& nsigmaTPCPr = o2::aod::pidutils::tpcNSigma<4>(track);
 
-    bool isPionTPC = std::abs(nsigmaTPCPi) < trkselOptions.cfgCutNsigma;
-    bool isProtonTPC = std::abs(nsigmaTPCPr) < trkselOptions.cfgCutNsigma;
+    const bool isPionTPC = std::abs(nsigmaTPCPi) < trkselOptions.cfgCutNsigma;
+    const bool isProtonTPC = std::abs(nsigmaTPCPr) < trkselOptions.cfgCutNsigma;
 
     const auto& nsigmaTOFPi = o2::aod::pidutils::tofNSigma<2>(track);
     const auto& nsigmaTOFPr = o2::aod::pidutils::tofNSigma<4>(track);
 
-    bool isPionTOF = std::abs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
-    bool isProtonTOF = std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
+    const bool isPionTOF = std::abs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
+    const bool isProtonTOF = std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
 
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
@@ -1926,7 +1923,7 @@ struct tofSpectra {
           }
         }
       }
-    } else {
+    } else { // Is physical primary
       if (includeCentralityMC) {
         if (isImpactParam) {
           histos.fill(HIST(hpt_num_prm[i]), track.pt(), impParam, track.dcaXY(), occupancy);
@@ -2126,6 +2123,27 @@ struct tofSpectra {
           } else {
             histos.fill(HIST(hpt_numtofgoodmatch_prm[i]), track.pt(), multiplicity);
           }
+        }
+        // Check if the signal is compatible with the PID hypothesis
+        float nsigma = 0.f;
+        switch (i) {
+          case 2:
+          case 11:
+            nsigma = track.tofNSigmaPi();
+            break;
+          case 3:
+          case 12:
+            nsigma = track.tofNSigmaKa();
+            break;
+          case 4:
+          case 13:
+            nsigma = track.tofNSigmaPr();
+            break;
+          default:
+            break;
+        }
+        if (std::abs(nsigma) <= trkselOptions.cfgCutNsigma) {
+          hPtNumTOFMatchWithPIDSignalPrm[i]->Fill(track.pt(), multiplicity);
         }
       }
 
@@ -2482,21 +2500,20 @@ struct tofSpectra {
         }
 
         const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);
-        ;
         const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
         const auto& nsigmaTPCPr = o2::aod::pidutils::tpcNSigma<4>(track);
 
-        bool isPionTPC = std::abs(nsigmaTPCPi) < trkselOptions.cfgCutNsigma;
-        bool isKaonTPC = std::abs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
-        bool isProtonTPC = std::abs(nsigmaTPCPr) < trkselOptions.cfgCutNsigma;
+        const bool isPionTPC = std::abs(nsigmaTPCPi) < trkselOptions.cfgCutNsigma;
+        const bool isKaonTPC = std::abs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
+        const bool isProtonTPC = std::abs(nsigmaTPCPr) < trkselOptions.cfgCutNsigma;
 
         const auto& nsigmaTOFPi = o2::aod::pidutils::tofNSigma<2>(track);
         const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
         const auto& nsigmaTOFPr = o2::aod::pidutils::tofNSigma<4>(track);
 
-        bool isPionTOF = track.hasTOF() && std::abs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
-        bool isKaonTOF = track.hasTOF() && std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
-        bool isProtonTOF = track.hasTOF() && std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
+        const bool isPionTOF = track.hasTOF() && std::abs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
+        const bool isKaonTOF = track.hasTOF() && std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
+        const bool isProtonTOF = track.hasTOF() && std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
 
         if (isPionTPC || isKaonTPC || isProtonTPC) {
           if (pdgCode == 2212) {
