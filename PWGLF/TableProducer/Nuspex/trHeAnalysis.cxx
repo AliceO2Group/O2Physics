@@ -327,7 +327,7 @@ struct TrHeAnalysis {
           histos.fill(HIST("histogram/cuts"), 1);
           continue;
         }
-        if (std::abs(track.eta()) >= kinemOptions.etaCut) {
+        if (std::abs(track.eta()) > kinemOptions.etaCut) {
           histos.fill(HIST("histogram/cuts"), 2);
           continue;
         }
@@ -475,7 +475,7 @@ struct TrHeAnalysis {
           histos.fill(HIST("histogram/cuts"), 1);
           continue;
         }
-        if (std::abs(track.eta()) < kinemOptions.etaCut) {
+        if (std::abs(track.eta()) > kinemOptions.etaCut) {
           histos.fill(HIST("histogram/cuts"), 2);
           continue;
         }
