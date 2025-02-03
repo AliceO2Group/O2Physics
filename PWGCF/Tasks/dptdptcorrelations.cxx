@@ -98,6 +98,7 @@ struct DptDptCorrelationsTask {
     /* histograms */
     TH1F* fhVertexZA;                                                            //!<! the z vertex distribution for the current multiplicity/centrality class
     std::vector<TH1F*> fhN1VsPt{nch, nullptr};                                   //!<! weighted single particle distribution vs \f$p_T\f$, for the different species
+    std::vector<TH2F*> fhN1VsPtEta{nch, nullptr};                                //!<! weighted single particle distribution vs \f$p_T,\;\eta\f$, for the different species
     std::vector<TH2F*> fhN1VsEtaPhi{nch, nullptr};                               //!<! weighted single particle distribution vs \f$\eta,\;\phi\f$, for the different species
     std::vector<TH2F*> fhSum1PtVsEtaPhi{nch, nullptr};                           //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
     std::vector<TH3F*> fhN1VsZEtaPhiPt{nch, nullptr};                            //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
@@ -407,6 +408,7 @@ struct DptDptCorrelationsTask {
         float corr = (*corrs)[index];
         fhN1VsPt[track.trackacceptedid()]->Fill(track.pt(), corr);
         if constexpr (smallsingles) {
+          fhN1VsPtEta[track.trackacceptedid()]->Fill(track.eta(), track.pt(), corr);
           fhN1VsEtaPhi[track.trackacceptedid()]->Fill(track.eta(), getShiftedPhi(track.phi()), corr);
           fhSum1PtVsEtaPhi[track.trackacceptedid()]->Fill(track.eta(), getShiftedPhi(track.phi()), track.pt() * corr);
         } else {
@@ -439,6 +441,7 @@ struct DptDptCorrelationsTask {
         n1nw[track.trackacceptedid()] += 1;
         sum1Ptnw[track.trackacceptedid()] += track.pt();
 
+        fhN1VsPtEta[track.trackacceptedid()]->Fill(track.eta(), track.pt(), corr);
         fhN1VsEtaPhi[track.trackacceptedid()]->Fill(track.eta(), getShiftedPhi(track.phi()), corr);
         fhSum1PtVsEtaPhi[track.trackacceptedid()]->Fill(track.eta(), getShiftedPhi(track.phi()), track.pt() * corr);
         index++;
@@ -672,6 +675,9 @@ struct DptDptCorrelationsTask {
           /* we don't want the Sumw2 structure being created here */
           bool defSumw2 = TH1::GetDefaultSumw2();
           if constexpr (smallsingles) {
+            fhN1VsPtEta[i] = new TH2F(TString::Format("n1_%s_vsPtEta", tnames[i].c_str()).Data(),
+                                      TString::Format("#LT n_{1_{%s}} #GT;#eta;#it{p}_{T}", tnames[i].c_str()).Data(),
+                                      etabins, etalow, etaup, ptbins, ptlow, ptup);
             fhN1VsEtaPhi[i] = new TH2F(TString::Format("n1_%s_vsEtaPhi", tnames[i].c_str()).Data(),
                                        TString::Format("#LT n_{1} #GT;#eta_{%s};#varphi_{%s} (radian);#LT n_{1} #GT", tnames[i].c_str(), tnames[i].c_str()).Data(),
                                        etabins, etalow, etaup, phibins, philow, phiup);
@@ -722,6 +728,8 @@ struct DptDptCorrelationsTask {
 
           /* the statistical uncertainties will be estimated by the subsamples method so let's get rid of the error tracking */
           if constexpr (smallsingles) {
+            fhN1VsPtEta[i]->SetBit(TH1::kIsNotW);
+            fhN1VsPtEta[i]->Sumw2(false);
             fhN1VsEtaPhi[i]->SetBit(TH1::kIsNotW);
             fhN1VsEtaPhi[i]->Sumw2(false);
             fhSum1PtVsEtaPhi[i]->SetBit(TH1::kIsNotW);
@@ -737,6 +745,7 @@ struct DptDptCorrelationsTask {
 
           fOutputList->Add(fhN1VsPt[i]);
           if constexpr (smallsingles) {
+            fOutputList->Add(fhN1VsPtEta[i]);
             fOutputList->Add(fhN1VsEtaPhi[i]);
             fOutputList->Add(fhSum1PtVsEtaPhi[i]);
           } else {
@@ -747,6 +756,9 @@ struct DptDptCorrelationsTask {
       } else {
         for (uint i = 0; i < nch; ++i) {
           /* histograms for each track species */
+          fhN1VsPtEta[i] = new TH2F(TString::Format("n1_%s_vsPtEta", tnames[i].c_str()).Data(),
+                                    TString::Format("#LT n_{1_{%s}} #GT;#eta;#it{p}_{T}", tnames[i].c_str()).Data(),
+                                    etabins, etalow, etaup, ptbins, ptlow, ptup);
           fhN1VsEtaPhi[i] = new TH2F(TString::Format("n1_%s_vsEtaPhi", tnames[i].c_str()).Data(),
                                      TString::Format("#LT n_{1} #GT;#eta_{%s};#varphi_{%s} (radian);#LT n_{1} #GT", tnames[i].c_str(), tnames[i].c_str()).Data(),
                                      etabins, etalow, etaup, phibins, philow, phiup);
@@ -768,6 +780,7 @@ struct DptDptCorrelationsTask {
                                           TString::Format("#LT #Sigma p_{t,%s} #GT;Centrality/Multiplicity (%%);#LT #Sigma p_{t,%s} #GT (GeV/c)", tnames[i].c_str(), tnames[i].c_str()).Data(), 100, 0.0, 100.0);
           fhNuaNue[i] = nullptr;
           fhPtAvgVsEtaPhi[i] = nullptr;
+          fOutputList->Add(fhN1VsPtEta[i]);
           fOutputList->Add(fhN1VsEtaPhi[i]);
           fOutputList->Add(fhSum1PtVsEtaPhi[i]);
           fOutputList->Add(fhN1VsC[i]);

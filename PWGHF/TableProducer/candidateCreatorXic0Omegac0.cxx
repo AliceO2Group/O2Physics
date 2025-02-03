@@ -843,7 +843,7 @@ struct HfCandidateCreatorXic0Omegac0 {
         continue;
       kfOmegac0Candidate.chi2GeoCasc = kfOmega.GetChi2();
       kfOmegac0Candidate.cascRejectInvmass = massCascrej;
-      registry.fill(HIST("hInvMassXiMinusrej"), massCascrej); // rej
+      registry.fill(HIST("hInvMassXiMinus_rej"), massCascrej); // rej
       KFParticle kfOmegaMassConstrained = kfOmega;
       kfOmegaMassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassOmegaMinus); // set mass constrain to OmegaMinus
       if (kfUseCascadeMassConstraint) {

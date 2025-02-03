@@ -45,6 +45,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
 
 using namespace std;
 using namespace o2;
@@ -95,11 +96,11 @@ struct NucleiInJets {
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
   Configurable<int> minNparticlesInJet{"minNparticlesInJet", 2, "Minimum number of particles inside jet"};
   Configurable<int> nJetsPerEventMax{"nJetsPerEventMax", 1000, "Maximum number of jets per event"};
-  Configurable<bool> requireNoOverlap{"requireNoOverlap", false, "require no overlap between jets and UE cones"};
+  Configurable<bool> requireNoOverlap{"requireNoOverlap", true, "require no overlap between jets and UE cones"};
 
   // Track Parameters
-  Configurable<double> par0{"par0", 0.004, "par 0"};
-  Configurable<double> par1{"par1", 0.013, "par 1"};
+  Configurable<double> par0{"par0", 0.00164, "par 0"};
+  Configurable<double> par1{"par1", 0.00231, "par 1"};
   Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum number of ITS clusters"};
   Configurable<int> minTpcNclusters{"minTpcNclusters", 80, "minimum number of TPC clusters"};
   Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 80, "minimum number of TPC crossed pad rows"};
@@ -119,26 +120,14 @@ struct NucleiInJets {
   Configurable<bool> requirePvContributor{"requirePvContributor", true, "require that the track is a PV contributor"};
   Configurable<bool> setDCAselectionPtDep{"setDCAselectionPtDep", true, "require pt dependent selection"};
   Configurable<bool> applyReweighting{"applyReweighting", true, "apply reweighting"};
-
-  // Bethe-bloch Parametrization of ITS cluster size
-  Configurable<double> bbPar0{"bbPar0", 0.00089176700, "Bethe Bloch Par 0"};
-  Configurable<double> bbPar1{"bbPar1", 33.9651487037, "Bethe Bloch Par 1"};
-  Configurable<double> bbPar2{"bbPar2", 0.42595677370, "Bethe Bloch Par 2"};
-  Configurable<double> bbPar3{"bbPar3", 1.39638691440, "Bethe Bloch Par 3"};
-  Configurable<double> bbPar4{"bbPar4", 7.97312623880, "Bethe Bloch Par 4"};
-  Configurable<double> bbPar5{"bbPar5", 61.3838254956, "Bethe Bloch Par 5"};
-  Configurable<double> bbPar6{"bbPar6", 2.30000000000, "Bethe Bloch Par 6"};
-  Configurable<double> bbPar7{"bbPar7", 0.93827208820, "Bethe Bloch Par 7"};
-  Configurable<double> bbPar8{"bbPar8", 1.0, "Bethe Bloch Par 8"};
-  Configurable<double> resolClsSize{"resolClsSize", 0.214, "Resolution of cls size distribution"};
-  Configurable<double> nSigmaClsSizeMax{"nSigmaClsSizeMax", 2.0, "nSigma cut on cluster size"};
+  Configurable<bool> applyItsPid{"applyItsPid", true, "apply ITS PID"};
+  Configurable<double> ptMaxItsPid{"ptMaxItsPid", 1.0, "maximum pt for ITS PID"};
+  Configurable<double> nSigmaItsMin{"nSigmaItsMin", -2.0, "nSigmaITS min"};
+  Configurable<double> nSigmaItsMax{"nSigmaItsMax", +2.0, "nSigmaITS max"};
   Configurable<std::string> urlToCcdb{"urlToCcdb", "http://alice-ccdb.cern.ch", "url of the personal ccdb"};
   Configurable<std::string> pathToFile{"pathToFile", "", "path to file with reweighting"};
   Configurable<std::string> histoNameWeightAntipJet{"histoNameWeightAntipJet", "", "reweighting histogram: antip in jet"};
   Configurable<std::string> histoNameWeightAntipUe{"histoNameWeightAntipUe", "", "reweighting histogram: antip in ue"};
-
-  // Bethe-Bloch
-  TF1* bbClsSize = nullptr;
 
   TH2F* twoDweightsAntipJet;
   TH2F* twoDweightsAntipUe;
@@ -250,17 +239,6 @@ struct NucleiInJets {
     registryMC.add("antiproton_eta_pt_pythia", "antiproton_eta_pt_pythia", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
     registryMC.add("antiproton_eta_pt_jet", "antiproton_eta_pt_jet", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
     registryMC.add("antiproton_eta_pt_ue", "antiproton_eta_pt_ue", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
-
-    bbClsSize = new TF1("bbClsSize", betheBloch, 0.1, 10, 9);
-    bbClsSize->SetParameter(0, bbPar0);
-    bbClsSize->SetParameter(1, bbPar1);
-    bbClsSize->SetParameter(2, bbPar2);
-    bbClsSize->SetParameter(3, bbPar3);
-    bbClsSize->SetParameter(4, bbPar4);
-    bbClsSize->SetParameter(5, bbPar5);
-    bbClsSize->SetParameter(6, bbPar6);
-    bbClsSize->SetParameter(7, bbPar7);
-    bbClsSize->SetParameter(8, bbPar8);
   }
 
   // Single-Track Selection for Particles inside Jets
@@ -444,36 +422,6 @@ struct NucleiInJets {
     return false;
   }
 
-  double trackInclination(double eta)
-  {
-    double lambda(0);
-    double theta = 2.0 * std::atan(std::exp(-eta));
-    if (theta <= o2::constants::math::PIHalf)
-      lambda = o2::constants::math::PIHalf - theta;
-    if (theta > o2::constants::math::PIHalf)
-      lambda = theta - o2::constants::math::PIHalf;
-    return lambda;
-  }
-
-  static double betheBloch(double* x, double* par)
-  {
-    // 5 parameters for the bethe bloch from 0 to 4
-    // 1 parameter for the mip mpar[5]
-    // 1 parameter for the charge exponent mpar[6]
-    // 1 parameter for the mass mpar[7]
-    // 1 parameter for the charge mpar[8]
-    return par[5] * betheBlochAleph(x[0] / par[7], par[0], par[1], par[2], par[3], par[4]) * std::pow(par[8], par[6]);
-  }
-
-  static double betheBlochAleph(double bg, double kp1, double kp2, double kp3, double kp4, double kp5)
-  {
-    double beta = bg / std::sqrt(1.0 + bg * bg);
-    double aa = std::pow(beta, kp4);
-    double bb = std::pow(1.0 / bg, kp5);
-    bb = std::log(kp3 + bb);
-    return (kp2 - aa - bb) * kp1 / aa;
-  }
-
   void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_antip_jet, TString histname_antip_ue)
   {
     TList* l = ccdbObj->get<TList>(filepath.Data());
@@ -515,6 +463,9 @@ struct NucleiInJets {
 
     // Event Counter: after z-vertex cut
     registryData.fill(HIST("number_of_events_data"), 2.5);
+
+    // ITS Response
+    o2::aod::ITSResponse itsResponse;
 
     // List of Tracks
     std::vector<TVector3> trk;
@@ -664,7 +615,7 @@ struct NucleiInJets {
       for (int j = 0; j < static_cast<int>(jet.size()); j++) { // o2-linter: disable=[const-ref-in-for-loop]
         if (isSelected[j] == 0 || i == j)
           continue;
-        if (overlap(jet[i], ue1[j], rJet) || overlap(jet[i], ue2[j], rJet))
+        if (overlap(jet[i], ue1[j], rJet) || overlap(jet[i], ue2[j], rJet) || overlap(jet[i], jet[j], rJet))
           nOverlaps++;
       }
     }
@@ -701,24 +652,15 @@ struct NucleiInJets {
         double dcaxy = track.dcaXY();
         double dcaz = track.dcaZ();
 
-        // ITS Cluster size
-        double averageItsClusterSize(0);
-        int nItsCls(0);
-        for (int i = 0; i < 7; i++) { // o2-linter: disable=[const-ref-in-for-loop]
-          int clusterSize = track.itsClsSizeInLayer(i);
-          averageItsClusterSize += static_cast<double>(clusterSize);
-          if (clusterSize > 0)
-            nItsCls++;
+        // Selection on <ITS Cluster size>
+        bool passedItsPid = false;
+        if (itsResponse.nSigmaITS<o2::track::PID::Proton>(track) > nSigmaItsMin && itsResponse.nSigmaITS<o2::track::PID::Proton>(track) < nSigmaItsMax) {
+          passedItsPid = true;
         }
-        averageItsClusterSize = averageItsClusterSize / static_cast<double>(nItsCls);
-        double lambda = trackInclination(track.eta());
-        double avgClsCosL = averageItsClusterSize * std::cos(lambda);
-        double nsigma = (avgClsCosL - bbClsSize->Eval(pt)) / (resolClsSize * bbClsSize->Eval(pt));
 
-        bool isItsSelected = false;
-        if (std::fabs(nsigma) < nSigmaClsSizeMax) {
-          isItsSelected = true;
-        }
+        bool passedItsPidSelection = true;
+        if (applyItsPid && pt < ptMaxItsPid && (!passedItsPid))
+          passedItsPidSelection = false;
 
         TVector3 particleDirection(track.px(), track.py(), track.pz());
         double deltaEtaJet = particleDirection.Eta() - jet[i].Eta();
@@ -753,7 +695,7 @@ struct NucleiInJets {
 
           if (track.sign() < 0) { // only antimatter
             // Antiproton
-            if (isItsSelected) {
+            if (passedItsPidSelection) {
               if (pt < maxPtForNsigmaTpc)
                 registryData.fill(HIST("antiproton_jet_tpc"), pt, nsigmaTPCPr);
               if (pt >= minPtForNsigmaTof && nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc && track.hasTOF())
@@ -785,7 +727,7 @@ struct NucleiInJets {
 
           if (track.sign() < 0) { // only antimatter
             // Antiproton
-            if (isItsSelected) {
+            if (passedItsPidSelection) {
               if (pt < maxPtForNsigmaTpc)
                 registryData.fill(HIST("antiproton_ue_tpc"), pt, nsigmaTPCPr);
               if (pt >= minPtForNsigmaTof && nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc && track.hasTOF())

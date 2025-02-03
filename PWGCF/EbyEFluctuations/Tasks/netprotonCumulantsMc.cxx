@@ -180,6 +180,8 @@ struct NetprotonCumulantsMc {
     // Variable bin width axis
     std::vector<double> ptBinning = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
+    std::vector<double> etaBinning = {-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
+    AxisSpec etaAxis = {etaBinning, "#it{#eta}"};
     std::vector<double> centBining = {0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90};
     AxisSpec centAxis = {centBining, "Multiplicity percentile from FT0M (%)"};
     AxisSpec netprotonAxis = {41, -20.5, 20.5, "net-proton number"};
@@ -217,6 +219,13 @@ struct NetprotonCumulantsMc {
     histos.add("hrecProfileTotalProton", "Reconstructed total proton number vs. centrality", kTProfile, {centAxis});
     histos.add("hrecProfileProton", "Reconstructed proton number vs. centrality", kTProfile, {centAxis});
     histos.add("hrecProfileAntiproton", "Reconstructed antiproton number vs. centrality", kTProfile, {centAxis});
+    histos.add("hCorrProfileTotalProton", "Eff. Corrected total proton number vs. centrality", kTProfile, {centAxis});
+    histos.add("hCorrProfileProton", "Eff. Corrected proton number vs. centrality", kTProfile, {centAxis});
+    histos.add("hCorrProfileAntiproton", "Eff. Corrected antiproton number vs. centrality", kTProfile, {centAxis});
+    histos.add("hrec2DEtaVsPtProton", "2D hist of Reconstructed Proton y: eta vs. x: pT", kTH2F, {ptAxis, etaAxis});
+    histos.add("hrec2DEtaVsPtAntiproton", "2D hist of Reconstructed Anti-proton y: eta vs. x: pT", kTH2F, {ptAxis, etaAxis});
+    histos.add("hgen2DEtaVsPtProton", "2D hist of Generated Proton y: eta vs. x: pT", kTH2F, {ptAxis, etaAxis});
+    histos.add("hgen2DEtaVsPtAntiproton", "2D hist of Generated Anti-proton y: eta vs. x: pT", kTH2F, {ptAxis, etaAxis});
 
     if (cfgIsCalculateCentral) {
       // uncorrected
@@ -813,6 +822,11 @@ struct NetprotonCumulantsMc {
   template <typename T>
   bool selectionPIDnew(const T& candidate)
   {
+    // electron rejection
+    if (candidate.tpcNSigmaEl() > -3.0f && candidate.tpcNSigmaEl() < 5.0f && std::abs(candidate.tpcNSigmaPi()) > 3.0f && std::abs(candidate.tpcNSigmaKa()) > 3.0f && std::abs(candidate.tpcNSigmaPr()) > 3.0f) {
+      return false;
+    }
+
     //! if pt < threshold
     if (candidate.pt() > 0.2f && candidate.pt() <= cfgCutPtUpperTPC) {
       if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaPi()) > cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaKa()) > cfgnSigmaCutTPC) {
@@ -918,6 +932,7 @@ struct NetprotonCumulantsMc {
             if (mcParticle.pdgCode() == 2212) {
               histos.fill(HIST("hgenPtProton"), mcParticle.pt()); //! hist for p gen
               histos.fill(HIST("hgenPtDistProtonVsCentrality"), mcParticle.pt(), cent);
+              histos.fill(HIST("hgen2DEtaVsPtProton"), mcParticle.pt(), mcParticle.eta());
               histos.fill(HIST("hgenEtaProton"), mcParticle.eta());
               histos.fill(HIST("hgenPhiProton"), mcParticle.phi());
               if (mcParticle.pt() < cfgCutPtUpper)
@@ -926,6 +941,7 @@ struct NetprotonCumulantsMc {
             if (mcParticle.pdgCode() == -2212) {
               histos.fill(HIST("hgenPtAntiproton"), mcParticle.pt()); //! hist for anti-p gen
               histos.fill(HIST("hgenPtDistAntiprotonVsCentrality"), mcParticle.pt(), cent);
+              histos.fill(HIST("hgen2DEtaVsPtAntiproton"), mcParticle.pt(), mcParticle.eta());
               histos.fill(HIST("hgenEtaAntiproton"), mcParticle.eta());
               histos.fill(HIST("hgenPhiAntiproton"), mcParticle.phi());
               if (mcParticle.pt() < cfgCutPtUpper)
@@ -1003,6 +1019,7 @@ struct NetprotonCumulantsMc {
             histos.fill(HIST("hrecPartPtProton"), particle.pt()); //! hist for p rec
             histos.fill(HIST("hrecPtProton"), track.pt());        //! hist for p rec
             histos.fill(HIST("hrecPtDistProtonVsCentrality"), particle.pt(), cent);
+            histos.fill(HIST("hrec2DEtaVsPtProton"), particle.pt(), particle.eta());
             histos.fill(HIST("hrecEtaProton"), particle.eta());
             histos.fill(HIST("hrecPhiProton"), particle.phi());
             histos.fill(HIST("hrecDcaXYProton"), track.dcaXY());
@@ -1017,6 +1034,7 @@ struct NetprotonCumulantsMc {
             histos.fill(HIST("hrecPartPtAntiproton"), particle.pt()); //! hist for anti-p rec
             histos.fill(HIST("hrecPtAntiproton"), track.pt());        //! hist for anti-p rec
             histos.fill(HIST("hrecPtDistAntiprotonVsCentrality"), particle.pt(), cent);
+            histos.fill(HIST("hrec2DEtaVsPtAntiproton"), particle.pt(), particle.eta());
             histos.fill(HIST("hrecEtaAntiproton"), particle.eta());
             histos.fill(HIST("hrecPhiAntiproton"), particle.phi());
             histos.fill(HIST("hrecDcaXYAntiproton"), track.dcaXY());
@@ -1065,6 +1083,9 @@ struct NetprotonCumulantsMc {
     for (const auto& track : inputTracks) {
       if (!track.isPVContributor()) //! track check as used in data
       {
+        continue;
+      }
+      if ((track.pt() < cfgCutPtLower) || (track.pt() > 5.0f) || (std::abs(track.eta()) > 0.8f)) {
         continue;
       }
 
@@ -1131,6 +1152,9 @@ struct NetprotonCumulantsMc {
     histos.fill(HIST("hrecProfileTotalProton"), cent, (nProt + nAntiprot));
     histos.fill(HIST("hrecProfileProton"), cent, nProt);
     histos.fill(HIST("hrecProfileAntiproton"), cent, nAntiprot);
+    histos.fill(HIST("hCorrProfileTotalProton"), cent, (powerEffProt[1] + powerEffAntiprot[1]));
+    histos.fill(HIST("hCorrProfileProton"), cent, powerEffProt[1]);
+    histos.fill(HIST("hCorrProfileAntiproton"), cent, powerEffAntiprot[1]);
     recEbyeCollisions(cent, netProt, nProt, nAntiprot);
 
     // Calculating q_{r,s} as required

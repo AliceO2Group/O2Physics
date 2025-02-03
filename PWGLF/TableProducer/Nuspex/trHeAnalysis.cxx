@@ -202,12 +202,12 @@ struct TrHeAnalysis {
   Configurable<float> cfgCutMaxChi2ItsH3{"cfgCutMaxChi2ItsH3", 36.f, "Maximum chi2 per cluster for ITS"};
   Configurable<float> cfgCutMaxChi2TpcHe{"cfgCutMaxChi2TpcHe", 4.f, "Maximum chi2 per cluster for TPC"};
   Configurable<float> cfgCutMaxChi2ItsHe{"cfgCutMaxChi2ItsHe", 36.f, "Maximum chi2 per cluster for ITS"};
-  Configurable<bool> cfgCutTpcRefit{"cfgCutTpcRefit", 1, "Maximum chi2 per cluster for TPC"};
-  Configurable<bool> cfgCutItsRefit{"cfgCutItsRefit", 1, "Maximum chi2 per cluster for ITS"};
-  Configurable<float> cfgCutMaxItsClusterSizeHe{"cfgCutMaxItsClusterSizeHe", 4.f, "Maximum chi2 per cluster for TPC"};
-  Configurable<float> cfgCutMinItsClusterSizeHe{"cfgCutMinItsClusterSizeHe", 1.f, "Maximum chi2 per cluster for ITS"};
-  Configurable<float> cfgCutMaxItsClusterSizeH3{"cfgCutMaxItsClusterSizeH3", 4.f, "Maximum chi2 per cluster for TPC"};
-  Configurable<float> cfgCutMinItsClusterSizeH3{"cfgCutMinItsClusterSizeH3", 1.f, "Maximum chi2 per cluster for ITS"};
+  Configurable<bool> cfgCutTpcRefit{"cfgCutTpcRefit", 1, "TPC refit "};
+  Configurable<bool> cfgCutItsRefit{"cfgCutItsRefit", 1, "ITS refit"};
+  Configurable<float> cfgCutMaxItsClusterSizeHe{"cfgCutMaxItsClusterSizeHe", 4.f, "Maximum ITS Cluster Size for He "};
+  Configurable<float> cfgCutMinItsClusterSizeHe{"cfgCutMinItsClusterSizeHe", 1.f, "Minimum ITS Cluster Size for He"};
+  Configurable<float> cfgCutMaxItsClusterSizeH3{"cfgCutMaxItsClusterSizeH3", 4.f, "Maximum ITS Cluster Size for Tr"};
+  Configurable<float> cfgCutMinItsClusterSizeH3{"cfgCutMinItsClusterSizeH3", 1.f, "Minimum ITS Cluster Size for Tr"};
   // Set the kinematic and PID cuts for tracks
   struct : ConfigurableGroup {
     Configurable<float> pCut{"pCut", 0.3f, "Value of the p selection for spectra (default 0.3)"};
@@ -273,7 +273,7 @@ struct TrHeAnalysis {
     h->GetXaxis()->SetBinLabel(6, "Sel8 cut");
     h->GetXaxis()->SetBinLabel(7, "Z-vert Cut");
     histos.add<TH1>("histogram/cuts", "cuts", HistType::kTH1D,
-                    {{11, -0.5, 10.5}});
+                    {{12, -0.5, 11.5}});
     auto hCuts = histos.get<TH1>(HIST("histogram/cuts"));
     hCuts->GetXaxis()->SetBinLabel(1, "total");
     hCuts->GetXaxis()->SetBinLabel(2, "p cut");
@@ -284,8 +284,9 @@ struct TrHeAnalysis {
     hCuts->GetXaxis()->SetBinLabel(7, "max chi2 ITS");
     hCuts->GetXaxis()->SetBinLabel(8, "max chi2 TPC");
     hCuts->GetXaxis()->SetBinLabel(9, "crossed rows over findable cluster");
-    hCuts->GetXaxis()->SetBinLabel(9, "TPC refit");
-    hCuts->GetXaxis()->SetBinLabel(9, "ITS refit");
+    hCuts->GetXaxis()->SetBinLabel(10, "TPC refit");
+    hCuts->GetXaxis()->SetBinLabel(11, "ITS refit");
+    hCuts->GetXaxis()->SetBinLabel(12, "ITS cluster size");
     for (int i = 0; i < nParticles; i++) {
       particles.push_back(Particle(particleNames.at(i), particlePdgCodes.at(i),
                                    particleMasses.at(i), particleCharge.at(i),
@@ -326,7 +327,7 @@ struct TrHeAnalysis {
           histos.fill(HIST("histogram/cuts"), 1);
           continue;
         }
-        if (std::abs(track.eta()) >= kinemOptions.etaCut) {
+        if (std::abs(track.eta()) > kinemOptions.etaCut) {
           histos.fill(HIST("histogram/cuts"), 2);
           continue;
         }
@@ -376,6 +377,10 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
+            if (cfgCutMinItsClusterSizeH3 < getMeanItsClsSize(track) / std::cosh(track.eta()) && getMeanItsClsSize(track) / std::cosh(track.eta()) < cfgCutMaxItsClusterSizeH3) {
+              histos.fill(HIST("histogram/cuts"), 12);
+              continue;
+            }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
                         track.tpcInnerParam() / (1.f * track.sign()),
                         track.tpcSignal());
@@ -415,6 +420,10 @@ struct TrHeAnalysis {
             }
             if (track.tpcChi2NCl() > cfgCutMaxChi2TpcHe) {
               histos.fill(HIST("histogram/cuts"), 7);
+              continue;
+            }
+            if (cfgCutMinItsClusterSizeHe < getMeanItsClsSize(track) / std::cosh(track.eta()) && getMeanItsClsSize(track) / std::cosh(track.eta()) < cfgCutMaxItsClusterSizeHe) {
+              histos.fill(HIST("histogram/cuts"), 12);
               continue;
             }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
@@ -466,7 +475,7 @@ struct TrHeAnalysis {
           histos.fill(HIST("histogram/cuts"), 1);
           continue;
         }
-        if (std::abs(track.eta()) < kinemOptions.etaCut) {
+        if (std::abs(track.eta()) > kinemOptions.etaCut) {
           histos.fill(HIST("histogram/cuts"), 2);
           continue;
         }
@@ -515,6 +524,10 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
+            if (cfgCutMinItsClusterSizeH3 < getMeanItsClsSize(track) / std::cosh(track.eta()) && getMeanItsClsSize(track) / std::cosh(track.eta()) < cfgCutMaxItsClusterSizeH3) {
+              histos.fill(HIST("histogram/cuts"), 12);
+              continue;
+            }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
                         track.tpcInnerParam() / (1.f * track.sign()),
                         track.tpcSignal());
@@ -553,6 +566,10 @@ struct TrHeAnalysis {
             }
             if (track.tpcChi2NCl() > cfgCutMaxChi2TpcHe) {
               histos.fill(HIST("histogram/cuts"), 7);
+              continue;
+            }
+            if (cfgCutMinItsClusterSizeHe < getMeanItsClsSize(track) / std::cosh(track.eta()) && getMeanItsClsSize(track) / std::cosh(track.eta()) < cfgCutMaxItsClusterSizeHe) {
+              histos.fill(HIST("histogram/cuts"), 12);
               continue;
             }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
