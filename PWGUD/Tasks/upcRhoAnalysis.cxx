@@ -105,12 +105,14 @@ struct upcRhoAnalysis {
   float PcEtaCut = 0.9; // physics coordination recommendation
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
   Configurable<bool> do4pi{"do4pi", true, "do 4pi analysis"};
+  Configurable<bool> doElectrons{"doElectrons", true, "do analysis with PIDed electrons"};
 
   Configurable<float> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
   Configurable<float> ZNcommonEnergyCut{"ZNcommonEnergyCut", 0.0, "ZN common energy cut"};
   Configurable<float> ZNtimeCut{"ZNtimeCut", 2.0, "ZN time cut"};
 
   Configurable<float> tracksTpcNSigmaPiCut{"tracksTpcNSigmaPiCut", 3.0, "TPC nSigma pion cut"};
+  Configurable<float> tracksTpcNSigmaElCut{"tracksTpcNSigmaElCut", 3.0, "TPC nSigma electron cut"};
   Configurable<float> tracksDcaMaxCut{"tracksDcaMaxCut", 1.0, "max DCA cut on tracks"};
   Configurable<int> tracksMinItsNClsCut{"tracksMinItsNClsCut", 6, "min ITS clusters cut"};
   Configurable<float> tracksMaxItsChi2NClCut{"tracksMaxItsChi2NClCut", 3.0, "max ITS chi2/Ncls cut"};
@@ -142,6 +144,7 @@ struct upcRhoAnalysis {
 
   HistogramRegistry QC{"QC", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry Pions{"Pions", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry Electrons{"Electrons", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry System{"System", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry MC{"MC", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry FourPiQA{"4piQA", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -183,7 +186,6 @@ struct upcRhoAnalysis {
     QC.add("QC/collisions/selected/hTimeFDDC", ";FDDC time (ns);counts", kTH1D, {{200, -100.0, 100.0}});
     // all tracks
     QC.add("QC/tracks/raw/hTpcNSigmaPi", ";TPC n#sigma_{#pi};counts", kTH1D, {{400, -10.0, 30.0}});
-    QC.add("QC/tracks/raw/hTofNSigmaPi", ";TOF n#sigma_{#pi};counts", kTH1D, {{400, -20.0, 20.0}});
     QC.add("QC/tracks/raw/hTpcNSigmaEl", ";TPC n#sigma_{e};counts", kTH1D, {{400, -10.0, 30.0}});
     QC.add("QC/tracks/raw/hDcaXYZ", ";DCA_{z} (cm);DCA_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {1000, -5.0, 5.0}});
     QC.add("QC/tracks/raw/hItsNCls", ";ITS N_{cls};counts", kTH1D, {{11, -0.5, 10.5}});
@@ -191,10 +193,14 @@ struct upcRhoAnalysis {
     QC.add("QC/tracks/raw/hTpcChi2NCl", ";TPC #chi^{2}/N_{cls};counts", kTH1D, {{1000, 0.0, 100.0}});
     QC.add("QC/tracks/raw/hTpcNCls", ";TPC N_{cls} found;counts", kTH1D, {{200, 0.0, 200.0}});
     QC.add("QC/tracks/raw/hTpcNClsCrossedRows", ";TPC crossed rows;counts", kTH1D, {{200, 0.0, 200.0}});
+    QC.add("QC/tracks/raw/hTpcNClsCrossedRowsOverNClsFindable", ";TPC crossed rows/findable N_{cls};counts", kTH1D, {{100, 0.0, 10.0}});
     QC.add("QC/tracks/raw/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
     QC.add("QC/tracks/raw/hEta", ";y;counts", kTH1D, {etaAxis});
-    QC.add("QC/tracks/raw/hPhi", ";#phi;counts", kTH1D, {phiAxis}); // tracks passing selections
+    QC.add("QC/tracks/raw/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    // tracks passing selections
+    QC.add("QC/tracks/cut/hTpcNSigmaPi", ";TPC n#sigma(#pi);counts", kTH1D, {{400, -10.0, 30.0}});
     QC.add("QC/tracks/cut/hTpcNSigmaPi2D", ";TPC n#sigma(#pi_{leading});TPC n#sigma(#pi_{subleading});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
+    QC.add("QC/tracks/cut/hTpcNSigmaEl", ";TPC n#sigma(e);counts", kTH1D, {{400, -10.0, 30.0}});
     QC.add("QC/tracks/cut/hTpcNSigmaEl2D", ";TPC n#sigma(e_{leading});TPC n#sigma(e_{subleading});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
     QC.add("QC/tracks/cut/hTpcSignalVsP", ";p (GeV/#it{c});TPC signal;counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
     QC.add("QC/tracks/cut/hTpcSignalVsPt", ";p_{T} (GeV/#it{c});TPC signal;counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
@@ -219,13 +225,28 @@ struct upcRhoAnalysis {
     Pions.add("pions/no-selection/like-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
     Pions.add("pions/no-selection/like-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaCutAxis, etaCutAxis});
     Pions.add("pions/no-selection/like-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
-    // selected
+    // from selected systems
     Pions.add("pions/selected/unlike-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
     Pions.add("pions/selected/unlike-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaCutAxis, etaCutAxis});
     Pions.add("pions/selected/unlike-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
     Pions.add("pions/selected/like-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
     Pions.add("pions/selected/like-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaCutAxis, etaCutAxis});
     Pions.add("pions/selected/like-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
+    // ELECTRONS
+    // no selection
+    Electrons.add("electrons/no-selection/unlike-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+    Electrons.add("electrons/no-selection/unlike-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaCutAxis, etaCutAxis});
+    Electrons.add("electrons/no-selection/unlike-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
+    Electrons.add("electrons/no-selection/like-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+    Electrons.add("electrons/no-selection/like-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaCutAxis, etaCutAxis});
+    Electrons.add("electrons/no-selection/like-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
+    // from selected systems
+    Electrons.add("electrons/selected/unlike-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+    Electrons.add("electrons/selected/unlike-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaCutAxis, etaCutAxis});
+    Electrons.add("electrons/selected/unlike-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
+    Electrons.add("electrons/selected/like-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+    Electrons.add("electrons/selected/like-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaCutAxis, etaCutAxis});
+    Electrons.add("electrons/selected/like-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
 
     // RAW RHOS
     System.add("system/raw/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
@@ -548,12 +569,21 @@ struct upcRhoAnalysis {
   }
 
   template <typename T>
-  bool tracksPassPiPID(const T& cutTracks) // n-dimensional PID cut
+  bool tracksPassPiPID(const T& cutTracks) // n-dimensional pion PID cut
   {
     float radius = 0.0;
     for (const auto& track : cutTracks)
       radius += std::pow(track.tpcNSigmaPi(), 2);
     return radius < std::pow(tracksTpcNSigmaPiCut, 2);
+  }
+
+  template <typename T>
+  bool tracksPassElPID(const T& cutTracks) // n-dimensional electron PID cut
+  {
+    float radius = 0.0;
+    for (const auto& track : cutTracks)
+      radius += std::pow(track.tpcNSigmaEl(), 2);
+    return radius < std::pow(tracksTpcNSigmaElCut, 2);
   }
 
   template <typename T>
@@ -677,12 +707,12 @@ struct upcRhoAnalysis {
     std::vector<TLorentzVector> cutTracks4Vecs;
 
     for (const auto& track : tracks) {
+      QC.fill(HIST("QC/tracks/hSelectionCounter"), 0);
       // float p = momentum(track.px(), track.py(), track.pz());
       QC.fill(HIST("QC/tracks/raw/hPt"), track.pt());
       QC.fill(HIST("QC/tracks/raw/hEta"), eta(track.px(), track.py(), track.pz()));
       QC.fill(HIST("QC/tracks/raw/hPhi"), phi(track.px(), track.py()));
       QC.fill(HIST("QC/tracks/raw/hTpcNSigmaPi"), track.tpcNSigmaPi());
-      QC.fill(HIST("QC/tracks/raw/hTofNSigmaPi"), track.tofNSigmaPi());
       QC.fill(HIST("QC/tracks/raw/hTpcNSigmaEl"), track.tpcNSigmaEl());
       QC.fill(HIST("QC/tracks/raw/hDcaXYZ"), track.dcaZ(), track.dcaXY());
       QC.fill(HIST("QC/tracks/raw/hItsNCls"), track.itsNCls());
@@ -690,7 +720,7 @@ struct upcRhoAnalysis {
       QC.fill(HIST("QC/tracks/raw/hTpcChi2NCl"), track.tpcChi2NCl());
       QC.fill(HIST("QC/tracks/raw/hTpcNCls"), (track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()));
       QC.fill(HIST("QC/tracks/raw/hTpcNClsCrossedRows"), track.tpcNClsCrossedRows());
-      QC.fill(HIST("QC/tracks/hSelectionCounter"), 0);
+      QC.fill(HIST("QC/tracks/raw/hTpcNClsCrossedRowsOverNClsFindable"), (static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())));
 
       if (!trackPassesCuts(track))
         continue;
@@ -699,6 +729,8 @@ struct upcRhoAnalysis {
       TLorentzVector track4Vec;
       track4Vec.SetXYZM(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged); // apriori assume pion mass
       cutTracks4Vecs.push_back(track4Vec);
+      QC.fill(HIST("QC/tracks/cut/hTpcNSigmaPi"), track.tpcNSigmaPi());
+      QC.fill(HIST("QC/tracks/cut/hTpcNSigmaEl"), track.tpcNSigmaEl());
       QC.fill(HIST("QC/tracks/cut/hTpcSignalVsP"), momentum(track.px(), track.py(), track.pz()), track.tpcSignal());
       QC.fill(HIST("QC/tracks/cut/hTpcSignalVsPt"), track.pt(), track.tpcSignal());
       QC.fill(HIST("QC/tracks/cut/hDcaXYZ"), track.dcaZ(), track.dcaXY());
@@ -756,6 +788,7 @@ struct upcRhoAnalysis {
     float subleadingEta = eta(subleadingMomentumTrack.px(), subleadingMomentumTrack.py(), subleadingMomentumTrack.pz());
     float leadingPhi = phi(leadingMomentumTrack.px(), leadingMomentumTrack.py());
     float subleadingPhi = phi(subleadingMomentumTrack.px(), subleadingMomentumTrack.py());
+
     // fill TOF hit checker
     QC.fill(HIST("QC/tracks/hTofHitCheck"), leadingMomentumTrack.hasTOF(), subleadingMomentumTrack.hasTOF());
 
@@ -778,6 +811,7 @@ struct upcRhoAnalysis {
          collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(), neutronClass,
          totalCharge, pT, rapidity, system.Phi(), mass, phiRandom, phiCharge,
          trackSigns, trackPts, trackEtas, trackPhis, trackMs, trackPiPIDs, trackElPIDs, trackDcaXYs, trackDcaZs, trackTpcSignals);
+
     // fill raw histograms according to the total charge
     switch (totalCharge) {
       case 0:
