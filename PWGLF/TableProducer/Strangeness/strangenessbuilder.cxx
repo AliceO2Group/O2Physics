@@ -81,7 +81,7 @@ static constexpr int nTablesConst = 35;
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
   {-1},
-  {1},
+  {-1},
   {-1},
   {-1},
   {-1},
@@ -283,6 +283,7 @@ struct StrangenessBuilder {
     Configurable<float> casccospa{"casccospa", 0.95, "casccospa"};
     Configurable<float> dcacascdau{"dcacascdau", 1.0, "DCA cascade Daughters"};
     Configurable<float> lambdaMassWindow{"lambdaMassWindow", .015, "Distance from Lambda mass (does not apply to KF path)"};
+    Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta (in abs value)"};
 
     // KF building specific
     Configurable<bool> kfTuneForOmega{"kfTuneForOmega", false, "if enabled, take main cascade properties from Omega fit instead of Xi fit (= default)"};
@@ -378,7 +379,8 @@ struct StrangenessBuilder {
   {
     // setup bookkeeping histogram
     auto h = histos.add<TH1>("hTableBuildingStatistics", "hTableBuildingStatistics", kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
-    h->SetTitle("-1: not generated, otherwise: generated table size");
+    auto h2 = histos.add<TH1>("hInputStatistics", "hInputStatistics", kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
+    h2->SetTitle("Input table sizes");
 
     mRunNumber = 0;
 
@@ -390,6 +392,7 @@ struct StrangenessBuilder {
     for (int i = 0; i < nTables; i++) {
       // adjust bookkeeping histogram
       h->GetXaxis()->SetBinLabel(i+1, tableNames[i].c_str());
+      h2->GetXaxis()->SetBinLabel(i+1, tableNames[i].c_str());
       h->SetBinContent(i+1, -1); // mark all as disabled to start
 
       int f = enabledTables->get(tableNames[i].c_str(), "enable");
@@ -413,9 +416,9 @@ struct StrangenessBuilder {
     }
 
     // list enabled tables
-    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
     LOGF(info, " Strangeness builder: enabled table listing");
-    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
     for (int i = 0; i < nTables; i++) {
       // printout to be improved in the future
       if (mEnabledTables[i]) {
@@ -423,7 +426,25 @@ struct StrangenessBuilder {
         h->SetBinContent(i+1, 0); // mark enabled
       }
     }
-    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+    // print base cuts
+    LOGF(info, "-~> V0 | min crossed rows ..............: %i", v0BuilderOpts.minCrossedRows.value);
+    LOGF(info, "-~> V0 | DCA pos track to PV ...........: %f", v0BuilderOpts.dcapostopv.value);
+    LOGF(info, "-~> V0 | DCA neg track to PV ...........: %f", v0BuilderOpts.dcanegtopv.value);
+    LOGF(info, "-~> V0 | V0 cosine of PA ...............: %f", v0BuilderOpts.v0cospa.value);
+    LOGF(info, "-~> V0 | DCA between V0 daughters ......: %f", v0BuilderOpts.dcav0dau.value);
+    LOGF(info, "-~> V0 | V0 2D decay radius ............: %f", v0BuilderOpts.v0radius.value);
+    LOGF(info, "-~> V0 | Maximum daughter eta ..........: %f", v0BuilderOpts.maxDaughterEta.value);
+
+    LOGF(info, "-~> Cascade | min crossed rows .........: %i", cascadeBuilderOpts.minCrossedRows.value);
+    LOGF(info, "-~> Cascade | DCA bach track to PV .....: %f", cascadeBuilderOpts.dcabachtopv.value);
+    LOGF(info, "-~> Cascade | Cascade cosine of PA .....: %f", cascadeBuilderOpts.casccospa.value);
+    LOGF(info, "-~> Cascade | Cascade daughter DCA .....: %f", cascadeBuilderOpts.dcacascdau.value);
+    LOGF(info, "-~> Cascade | Cascade radius ...........: %f", cascadeBuilderOpts.cascradius.value);
+    LOGF(info, "-~> Cascade | Lambda mass window .......: %f", cascadeBuilderOpts.lambdaMassWindow.value);
+    LOGF(info, "-~> Cascade | Maximum daughter eta .....: %f", cascadeBuilderOpts.maxDaughterEta.value);
+    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+    
 
     ccdb->setURL(ccdbConfigurations.ccdburl);
     ccdb->setCaching(true);
@@ -446,6 +467,7 @@ struct StrangenessBuilder {
     straHelper.cascadeselections.casccospa = cascadeBuilderOpts.casccospa;
     straHelper.cascadeselections.dcacascdau = cascadeBuilderOpts.dcacascdau;
     straHelper.cascadeselections.lambdaMassWindow = cascadeBuilderOpts.lambdaMassWindow;
+    straHelper.cascadeselections.maxDaughterEta = cascadeBuilderOpts.maxDaughterEta;
   }
 
   bool initCCDB(aod::BCsWithTimestamps const& bcs, aod::Collisions const& collisions)
@@ -565,7 +587,7 @@ struct StrangenessBuilder {
         }
       }
     }
-    LOGF(info, "V0 total %i, Cascade total %i, Tracked cascade total %i, V0s flagged used in cascades: %i", v0s.size(), cascades.size(), trackedCascadeCount, v0sUsedInCascades);
+    LOGF(debug, "V0 total %i, Cascade total %i, Tracked cascade total %i, V0s flagged used in cascades: %i", v0s.size(), cascades.size(), trackedCascadeCount, v0sUsedInCascades);
   }
 
   //__________________________________________________
@@ -583,6 +605,7 @@ struct StrangenessBuilder {
 
     int nV0s = 0;
     // Loops over all V0s in the time frame
+    histos.fill(HIST("hInputStatistics"), kV0CoresBase, v0s.size());
     for (auto& v0 : v0s) {
       if (!mEnabledTables[kV0CoresBase] && v0Map[v0.globalIndex()] == -2) {
         // this v0 hasn't been used by cascades and we're not generating V0s, so skip it
@@ -888,7 +911,7 @@ struct StrangenessBuilder {
       } // end V0MCCores filling in case of MC
     } // end constexpr requires mcParticles
 
-    LOGF(info, "V0s in DF: %i, V0s built: %i, V0s built and buffered for cascades: %i.", v0s.size(), nV0s, v0sFromCascades.size());
+    LOGF(debug, "V0s in DF: %i, V0s built: %i, V0s built and buffered for cascades: %i.", v0s.size(), nV0s, v0sFromCascades.size());
   }
 
   //__________________________________________________
@@ -1003,7 +1026,8 @@ struct StrangenessBuilder {
       return; // don't do if no request for cascades in place
     }
     int nCascades = 0;
-    // Loops over all V0s in the time frame
+    // Loops over all cascades in the time frame
+    histos.fill(HIST("hInputStatistics"), kStoredCascCores, cascades.size());
     for (auto& cascade : cascades) {
       // Get tracks and generate candidate
       auto const& collision = cascade.collision();
@@ -1292,7 +1316,7 @@ struct StrangenessBuilder {
       } // enabled tables check
     } // constexpr requires mcParticles check
 
-    LOGF(info, "Cascades in DF: %i, cascades built: %i", cascades.size(), nCascades);
+    LOGF(debug, "Cascades in DF: %i, cascades built: %i", cascades.size(), nCascades);
   }
 
   //__________________________________________________
@@ -1303,7 +1327,8 @@ struct StrangenessBuilder {
       return; // don't do if no request for cascades in place
     }
     int nCascades = 0;
-    // Loops over all V0s in the time frame
+    // Loops over all cascades in the time frame
+    histos.fill(HIST("hInputStatistics"), kStoredKFCascCores, cascades.size());
     for (auto& cascade : cascades) {
       // Get tracks and generate candidate
       auto const& collision = cascade.collision();
@@ -1376,7 +1401,7 @@ struct StrangenessBuilder {
       } // constexpr requires mcParticles check
     } // end loop over cascades
 
-    LOGF(info, "KF Cascades in DF: %i, KF cascades built: %i", cascades.size(), nCascades);
+    LOGF(debug, "KF Cascades in DF: %i, KF cascades built: %i", cascades.size(), nCascades);
   }
 
   //__________________________________________________
@@ -1388,6 +1413,7 @@ struct StrangenessBuilder {
     }
     int nCascades = 0;
     // Loops over all V0s in the time frame
+    histos.fill(HIST("hInputStatistics"), kStoredTraCascCores, cascadeTracks.size());
     for (auto& cascadeTrack : cascadeTracks) {
       // Get tracks and generate candidate
       if (!cascadeTrack.has_track())
@@ -1476,7 +1502,7 @@ struct StrangenessBuilder {
         } // enabled tables check
       } // constexpr requires mcParticles check
     } // end loop over cascades
-    LOGF(info, "Tracked cascades in DF: %i, tracked cascades built: %i", cascadeTracks.size(), nCascades);
+    LOGF(debug, "Tracked cascades in DF: %i, tracked cascades built: %i", cascadeTracks.size(), nCascades);
   }
 
   //__________________________________________________

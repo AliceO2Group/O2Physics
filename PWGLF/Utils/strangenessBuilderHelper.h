@@ -176,6 +176,14 @@ class strangenessBuilderHelper
       return false;
     }
 
+    // verify eta
+    if(std::fabs(positiveTrack.eta()) > v0selections.maxDaughterEta){ 
+      return false;
+    }
+    if(std::fabs(negativeTrack.eta()) > v0selections.maxDaughterEta){ 
+      return false;
+    }
+
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
     gpu::gpustd::array<float, 2> dcaInfo;
 
@@ -209,6 +217,7 @@ class strangenessBuilderHelper
     if (nCand == 0) {
       return false;
     }
+    fitter.setCollinear(false); // proper cleaning: when exiting this loop, always reset to not collinear
 
     v0.positiveTrackX = fitter.getTrack(0).getX();
     v0.negativeTrackX = fitter.getTrack(1).getX();
@@ -334,6 +343,25 @@ class strangenessBuilderHelper
       return false;
     }
     if(bachelorTrack.tpcNClsCrossedRows() < cascadeselections.minCrossedRows){ 
+      return false;
+    }
+
+    // verify eta
+    if(std::fabs(positiveTrack.eta()) > cascadeselections.maxDaughterEta){ 
+      return false;
+    }
+    if(std::fabs(negativeTrack.eta()) > cascadeselections.maxDaughterEta){ 
+      return false;
+    }
+    if(std::fabs(bachelorTrack.eta()) > cascadeselections.maxDaughterEta){ 
+      return false;
+    }
+
+    // verify lambda mass
+    if (bachelorTrack.sign()<0 && std::fabs(v0input.massLambda - o2::constants::physics::MassLambda) > cascadeselections.lambdaMassWindow){
+      return false;
+    }
+    if (bachelorTrack.sign()>0 && std::fabs(v0input.massAntiLambda - o2::constants::physics::MassLambda) > cascadeselections.lambdaMassWindow){
       return false;
     }
 
@@ -527,6 +555,17 @@ class strangenessBuilderHelper
       return false;
     }
     if(bachelorTrack.tpcNClsCrossedRows() < cascadeselections.minCrossedRows){ 
+      return false;
+    }
+
+    // verify eta
+    if(std::fabs(positiveTrack.eta()) > cascadeselections.maxDaughterEta){ 
+      return false;
+    }
+    if(std::fabs(negativeTrack.eta()) > cascadeselections.maxDaughterEta){ 
+      return false;
+    }
+    if(std::fabs(bachelorTrack.eta()) > cascadeselections.maxDaughterEta){ 
       return false;
     }
 
@@ -820,6 +859,7 @@ class strangenessBuilderHelper
     float casccospa;
     float dcacascdau;
     float lambdaMassWindow;
+    float maxDaughterEta;
   } cascadeselections;
 
  private:
