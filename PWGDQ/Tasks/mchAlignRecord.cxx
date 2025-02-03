@@ -154,14 +154,13 @@ struct mchAlignRecordTask {
     mImproveCutChi2 = 2. * cfgSigmaCutImprove.value * cfgSigmaCutImprove.value;
 
     // Configuration for chamber fixing
-    auto chambers = fFixChamber.value;
-    for (std::size_t i = 0; i < chambers.length(); ++i) {
-      if (chambers[i] == ',') {
-        continue;
+    TString chambersString = fFixChamber.value;
+    std::unique_ptr<TObjArray> objArray(chambersString.Tokenize(","));
+    if (objArray->GetEntries() > 0) {
+      for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
+        LOG(info) << Form("%s%d", "Fixing chamber: ", std::stoi(objArray->At(iVar)->GetName()));
+        mAlign.FixChamber(std::stoi(objArray->At(iVar)->GetName()));
       }
-      int chamber = chambers[i] - '0';
-      LOG(info) << Form("%s%d", "Fixing chamber: ", chamber);
-      mAlign.FixChamber(chamber);
     }
 
     // Configuration for DE fixing with given axes
