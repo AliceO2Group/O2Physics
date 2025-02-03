@@ -396,7 +396,6 @@ class VarManager : public TObject
     kTimeZNC,
     kTimeZPA,
     kTimeZPC,
-    kNEventWiseVariables,
     kQ2X0A1,
     kQ2X0A2,
     kQ2Y0A1,
@@ -417,6 +416,7 @@ class VarManager : public TObject
     kTwoR2SP2, // Scalar product resolution of event2 for ME technique
     kTwoR2EP1, // Event plane resolution of event2 for ME technique
     kTwoR2EP2, // Event plane resolution of event2 for ME technique
+    kNEventWiseVariables,
 
     // Basic track/muon/pair wise variables
     kX,
@@ -803,6 +803,7 @@ class VarManager : public TObject
 
   static TString fgVariableNames[kNVars]; // variable names
   static TString fgVariableUnits[kNVars]; // variable units
+  static std::map<TString, int> fgVarNamesMap; // key: variables short name, value: order in the Variables enum
   static void SetDefaultVarNames();
 
   static void SetUseVariable(int var)
