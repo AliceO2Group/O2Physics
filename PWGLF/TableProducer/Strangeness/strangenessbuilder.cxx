@@ -90,7 +90,7 @@ static const int defaultParameters[nTablesConst][nParameters]{
   {-1},
   {-1},
   {-1}, // index 9
-  {-1}, 
+  {-1},
   {-1},
   {-1},
   {-1},
@@ -110,12 +110,11 @@ static const int defaultParameters[nTablesConst][nParameters]{
   {-1},
   {-1},
   {-1}, // index 29
-  {-1}, 
-  {-1}, 
-  {-1}, 
-  {-1}, 
-  {-1}
-};
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1}};
 
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
@@ -391,9 +390,9 @@ struct StrangenessBuilder {
 
     for (int i = 0; i < nTables; i++) {
       // adjust bookkeeping histogram
-      h->GetXaxis()->SetBinLabel(i+1, tableNames[i].c_str());
-      h2->GetXaxis()->SetBinLabel(i+1, tableNames[i].c_str());
-      h->SetBinContent(i+1, -1); // mark all as disabled to start
+      h->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
+      h2->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
+      h->SetBinContent(i + 1, -1); // mark all as disabled to start
 
       int f = enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
@@ -423,7 +422,7 @@ struct StrangenessBuilder {
       // printout to be improved in the future
       if (mEnabledTables[i]) {
         LOGF(info, " -~> Table enabled: %s", tableNames[i]);
-        h->SetBinContent(i+1, 0); // mark enabled
+        h->SetBinContent(i + 1, 0); // mark enabled
       }
     }
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
@@ -444,15 +443,14 @@ struct StrangenessBuilder {
     LOGF(info, "-~> Cascade | Lambda mass window .......: %f", cascadeBuilderOpts.lambdaMassWindow.value);
     LOGF(info, "-~> Cascade | Maximum daughter eta .....: %f", cascadeBuilderOpts.maxDaughterEta.value);
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
-    
 
     ccdb->setURL(ccdbConfigurations.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    // set V0 parameters in the helper 
-    straHelper.v0selections.minCrossedRows = v0BuilderOpts.minCrossedRows; 
+    // set V0 parameters in the helper
+    straHelper.v0selections.minCrossedRows = v0BuilderOpts.minCrossedRows;
     straHelper.v0selections.dcanegtopv = v0BuilderOpts.dcanegtopv;
     straHelper.v0selections.dcapostopv = v0BuilderOpts.dcapostopv;
     straHelper.v0selections.v0cospa = v0BuilderOpts.v0cospa;
@@ -461,7 +459,7 @@ struct StrangenessBuilder {
     straHelper.v0selections.maxDaughterEta = v0BuilderOpts.maxDaughterEta;
 
     // set cascade parameters in the helper
-    straHelper.cascadeselections.minCrossedRows = cascadeBuilderOpts.minCrossedRows; 
+    straHelper.cascadeselections.minCrossedRows = cascadeBuilderOpts.minCrossedRows;
     straHelper.cascadeselections.dcabachtopv = cascadeBuilderOpts.dcabachtopv;
     straHelper.cascadeselections.cascradius = cascadeBuilderOpts.cascradius;
     straHelper.cascadeselections.casccospa = cascadeBuilderOpts.casccospa;
