@@ -140,7 +140,7 @@ struct cascadeFlow {
   ConfigurableAxis thnConfigAxisCharge{"thnConfigAxisCharge", {2, 0, 2}, ""};
   ConfigurableAxis thnConfigAxisMassXi{"thnConfigAxisMassXi", {45, 1.300, 1.345}, ""};
   ConfigurableAxis thnConfigAxisMassOmega{"thnConfigAxisMassOmega", {45, 1.655, 1.690}, ""};
-  ConfigurableAxis thnConfigAxisMassLambda{"thnConfigAxisMassLambda", {30, 1.1, 1.13}, ""};
+  ConfigurableAxis thnConfigAxisMassLambda{"thnConfigAxisMassLambda", {60, 1.1, 1.13}, ""};
   ConfigurableAxis thnConfigAxisBDTScore{"thnConfigAxisBDTScore", {60, 0.4, 1}, ""};
   ConfigurableAxis thnConfigAxisV2{"thnConfigAxiV2", {100, -1., 1.}, ""};
   ConfigurableAxis thnConfigAxisPzs2Xi{"thnConffigAxiPzs2Xi", {200, -2.8, 2.8}, ""};
