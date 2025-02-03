@@ -58,11 +58,11 @@ struct FemtoUniversePairTaskTrackPhi {
 
   Service<o2::framework::O2DatabasePDG> pdgMC;
 
-  using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  // Filters for selecting particles (both p1 and p2)
-  Filter trackCutFilter = requireGlobalTrackInFilter(); // Global track cuts
-  // Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.confEtaMax); // example filtering on configurable
-  using FilteredFemtoFullParticles = soa::Filtered<FemtoFullParticles>;
+  // using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
+  // Filter trackCutFilter = requireGlobalTrackInFilter(); // Global track cuts
+  // using FilteredFemtoFullParticles = soa::Filtered<FemtoFullParticles>;
+
+  using FilteredFemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
 
   SliceCache cache;
   Preslice<FilteredFemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
@@ -675,12 +675,12 @@ struct FemtoUniversePairTaskTrackPhi {
     auto groupMCTruthPhi = partsPhiMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     efficiencyCalculator.doMCTruth<2>(hMCTruth2, groupMCTruthPhi);
 
-    auto groupMCRecoTrack = partsTrackMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    auto groupMCRecoPhi = partsPhiMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsTrack = partsTrackMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsPhi = partsPhiMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsPhiDaugh = partsPhiDaughMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsKaons = partsKaonsMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    doSameEvent<true>(groupMCRecoTrack, groupMCRecoPhi, thegroupPartsPhiDaugh, thegroupPartsKaons, parts, col.magField(), col.multNtr());
+    doSameEvent<true>(thegroupPartsTrack, thegroupPartsPhi, thegroupPartsPhiDaugh, thegroupPartsKaons, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
