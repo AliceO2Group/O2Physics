@@ -8,21 +8,22 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief This task is an empty skeleton that fills a simple eta histogram.
-///        it is meant to be a blank page for further developments.
-/// \author everyone
 
-#include <iostream>
+/// \file   flowPtEfficiency.cxx
+/// \author Mingrui Zhao (mingrui.zhao@cern.ch), Zhiyong Lu (zhiyong.lu@cern.ch), Tao Jiang (tao.jiang@cern.ch)
+/// \since  Jun/08/2023
+/// \brief  a task to calculate the pt efficiency
+
 #include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
+
+#include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -30,15 +31,17 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct flowPtEfficiency {
+struct FlowPtEfficiency {
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 1000.0f, "Maximal pT for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
+  O2_DEFINE_CONFIGURABLE(cfgkIsTrackGlobal, bool, false, "GlobalTrack requirement for tracks")
   O2_DEFINE_CONFIGURABLE(cfgTrkSelRun3ITSMatch, bool, false, "GlobalTrackRun3ITSMatching::Run3ITSall7Layers selection")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCcrossedrows, float, 70.0f, "minimum TPC crossed rows")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.2f, "DCAxy cut for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "DCAz cut for tracks")
@@ -51,19 +54,19 @@ struct flowPtEfficiency {
 
   // Filter the tracks
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
-  using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>>;
+  using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>>;
 
   // Filter for collisions
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  using myCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
+  using MyCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
 
   // Filter for MCParticle
   Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPtMin) && (aod::mcparticle::pt < cfgCutPtMax);
-  using myMcParticles = soa::Filtered<aod::McParticles>;
+  using MyMcParticles = soa::Filtered<aod::McParticles>;
 
   // Filter for MCcollisions
   Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
-  using myMcCollisions = soa::Filtered<aod::McCollisions>;
+  using MyMcCollisions = soa::Filtered<aod::McCollisions>;
 
   // Additional filters for tracks
   TrackSelection myTrackSel;
@@ -73,15 +76,15 @@ struct flowPtEfficiency {
 
   bool isStable(int pdg)
   {
-    if (abs(pdg) == 211)
+    if (std::abs(pdg) == 211)
       return true;
-    if (abs(pdg) == 321)
+    if (std::abs(pdg) == 321)
       return true;
-    if (abs(pdg) == 2212)
+    if (std::abs(pdg) == 2212)
       return true;
-    if (abs(pdg) == 11)
+    if (std::abs(pdg) == 11)
       return true;
-    if (abs(pdg) == 13)
+    if (std::abs(pdg) == 13)
       return true;
     return false;
   }
@@ -107,6 +110,7 @@ struct flowPtEfficiency {
       myTrackSel.SetMaxDcaXY(cfgCutDCAxy);
     }
     myTrackSel.SetMinNClustersTPC(cfgCutTPCclu);
+    myTrackSel.SetMinNClustersITS(cfgCutITSclu);
     myTrackSel.SetMinNCrossedRowsTPC(cfgCutTPCcrossedrows);
     if (!cfgCutDCAzPtDepEnabled)
       myTrackSel.SetMaxDcaZ(cfgCutDCAz);
@@ -115,22 +119,24 @@ struct flowPtEfficiency {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
+    if (cfgkIsTrackGlobal && !track.isGlobalTrack())
+      return false;
     if (cfgCutDCAzPtDepEnabled && (track.dcaZ() > (0.004f + 0.013f / track.pt())))
       return false;
     return myTrackSel.IsSelected(track);
   }
 
-  void processReco(myCollisions::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks, aod::McParticles const&)
+  void processReco(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::McParticles const&)
   {
     registry.fill(HIST("eventCounter"), 0.5);
     if (!collision.sel8())
       return;
     if (tracks.size() < 1)
       return;
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int runNumber = bc.runNumber();
     if (cfgSelRunNumberEnabled) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      int RunNumber = bc.runNumber();
-      if (!std::count(cfgRunNumberList.value.begin(), cfgRunNumberList.value.end(), RunNumber))
+      if (!std::count(cfgRunNumberList.value.begin(), cfgRunNumberList.value.end(), runNumber))
         return;
     }
     for (const auto& track : tracks) {
@@ -144,14 +150,14 @@ struct flowPtEfficiency {
       }
     }
   }
-  PROCESS_SWITCH(flowPtEfficiency, processReco, "process reconstructed information", true);
+  PROCESS_SWITCH(FlowPtEfficiency, processReco, "process reconstructed information", true);
 
-  void processSim(myMcCollisions::iterator const& collision, aod::BCsWithTimestamps const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, myMcParticles const& mcParticles)
+  void processSim(MyMcCollisions::iterator const& collision, aod::BCsWithTimestamps const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, MyMcParticles const& mcParticles)
   {
     if (cfgSelRunNumberEnabled) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      int RunNumber = bc.runNumber();
-      if (!std::count(cfgRunNumberList.value.begin(), cfgRunNumberList.value.end(), RunNumber))
+      int runNumber = bc.runNumber();
+      if (!std::count(cfgRunNumberList.value.begin(), cfgRunNumberList.value.end(), runNumber))
         return;
     }
     if (collisions.size() > -1) {
@@ -163,11 +169,11 @@ struct flowPtEfficiency {
       }
     }
   }
-  PROCESS_SWITCH(flowPtEfficiency, processSim, "process pure simulation information", true);
+  PROCESS_SWITCH(FlowPtEfficiency, processSim, "process pure simulation information", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<flowPtEfficiency>(cfgc)};
+    adaptAnalysisTask<FlowPtEfficiency>(cfgc)};
 }

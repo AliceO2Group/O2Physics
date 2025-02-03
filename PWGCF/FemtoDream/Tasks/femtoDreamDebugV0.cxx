@@ -55,6 +55,7 @@ struct femtoDreamDebugV0 {
   ConfigurableAxis ConfV0ChildNsigmaTPCBins{"ConfV0ChildNsigmaTPCBins", {1600, -8, 8}, "binning of Nsigma TPC plot"};
   ConfigurableAxis ConfV0ChildNsigmaTOFBins{"ConfV0ChildNsigmaTOFBins", {3000, -15, 15}, "binning of the Nsigma TOF plot"};
   ConfigurableAxis ConfV0ChildNsigmaTPCTOFBins{"ConfV0ChildNsigmaTPCTOFBins", {1000, 0, 10}, "binning of the Nsigma TPC+TOF plot"};
+  ConfigurableAxis ConfV0ChildNsigmaITSBins{"ConfV0ChildNsigmaITSBins", {600, -3, 3}, "binning of the Nsigma ITS plot"};
 
   Configurable<aod::femtodreamparticle::cutContainerType> ConfV01_ChildPos_CutBit{"ConfV01_ChildPos_CutBit", 150, "Positive Child of V0 - Selection bit from cutCulator"};
   Configurable<aod::femtodreamparticle::cutContainerType> ConfV01_ChildPos_TPCBit{"ConfV01_ChildPos_TPCBit", 4, "Positive Child of V0 - PID bit from cutCulator"};
@@ -80,9 +81,9 @@ struct femtoDreamDebugV0 {
   void init(InitContext&)
   {
     eventHisto.init(&EventRegistry, false);
-    posChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_ChildPos_PDGCode.value, true);
-    negChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_ChildNeg_PDGCode, true);
-    V0Histos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0TempFitVarMomentumBins, ConfDummy, ConfDummy, ConfV0TempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_PDGCode.value, true);
+    posChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, false, ConfV01_ChildPos_PDGCode.value, true);
+    negChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, false, ConfV01_ChildNeg_PDGCode, true);
+    V0Histos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0TempFitVarMomentumBins, ConfDummy, ConfDummy, ConfV0TempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, false, ConfV01_PDGCode.value, true);
   }
 
   /// Porduce QA plots for V0 selection in FemtoDream framework

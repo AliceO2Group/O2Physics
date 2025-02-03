@@ -196,7 +196,7 @@ DECLARE_JET_DUPLICATE_TABLES_LEVELS(Charged, JTrackSub, HfD0Bases, HfD0PBases, "
 #undef STRINGIFY
 #undef DECLARE_JET_DUPLICATE_TABLES_LEVELS
 
-using JetCollisions = JCollisions;
+using JetCollisions = o2::soa::Join<JCollisions, JCollisionMcInfos>;
 using JetCollision = JetCollisions::iterator;
 using JetCollisionsMCD = o2::soa::Join<JetCollisions, JMcCollisionLbs>;
 using JetCollisionMCD = o2::soa::Join<JetCollisions, JMcCollisionLbs>::iterator;

@@ -28,8 +28,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/Vtx3BodyTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -259,6 +257,7 @@ struct threebodyKFTask {
           vtx3bodydata.decaylkf(), vtx3bodydata.decaylxykf(), vtx3bodydata.decayldeltal(),
           vtx3bodydata.chi2geondf(), vtx3bodydata.chi2topondf(),
           vtx3bodydata.ctaukftopo(),
+          vtx3bodydata.trackedclsize(),
           vtx3bodydata.massv0(), vtx3bodydata.chi2massv0(),
           vtx3bodydata.cospav0(),
           vtx3bodydata.pxtrack0(), vtx3bodydata.pytrack0(), vtx3bodydata.pztrack0(),                                  // proton
@@ -268,7 +267,7 @@ struct threebodyKFTask {
           vtx3bodydata.dcatrack0topvkf(), vtx3bodydata.dcatrack1topvkf(), vtx3bodydata.dcatrack2topvkf(),             // proton, pion, deuteron
           vtx3bodydata.dcaxytrack0topvkf(), vtx3bodydata.dcaxytrack1topvkf(), vtx3bodydata.dcaxytrack2topvkf(),       // proton, pion, deuteron
           vtx3bodydata.dcaxytrack0tosvkf(), vtx3bodydata.dcaxytrack1tosvkf(), vtx3bodydata.dcaxytrack2tosvkf(),       // proton, pion, deuteron
-          vtx3bodydata.dcaxytrack0totrack1kf(), vtx3bodydata.dcaxytrack0totrack2kf(), vtx3bodydata.dcaxytrack1totrack2kf(),
+          vtx3bodydata.dcatrack0totrack1kf(), vtx3bodydata.dcatrack0totrack2kf(), vtx3bodydata.dcatrack1totrack2kf(),
           vtx3bodydata.dcavtxdaughterskf(),
           vtx3bodydata.dcaxytrackpostopv(), vtx3bodydata.dcaxytracknegtopv(), vtx3bodydata.dcaxytrackbachtopv(),
           vtx3bodydata.dcatrackpostopv(), vtx3bodydata.dcatracknegtopv(), vtx3bodydata.dcatrackbachtopv(),
@@ -404,6 +403,7 @@ struct threebodyKFTask {
         -1, -1,
         -1, -1, -1,
         -1, -1,
+        -1,
         -1,
         -1, -1,
         -1,

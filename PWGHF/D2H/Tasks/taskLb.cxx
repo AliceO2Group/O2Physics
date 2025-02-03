@@ -15,6 +15,8 @@
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
 /// \author Martin Voelkl <martin.andreas.volkl@cern.ch>, University of Birmingham
 
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"

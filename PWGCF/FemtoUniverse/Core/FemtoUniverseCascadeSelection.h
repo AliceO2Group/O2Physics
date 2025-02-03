@@ -501,6 +501,9 @@ bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const
   if (!negDaughTrack.isSelectedMinimal(negTrack)) {
     return false;
   }
+  if (!bachTrack.hasTOF()) {
+    return false;
+  }
   if (!bachTrackSel.isSelectedMinimal(bachTrack)) {
     return false;
   }

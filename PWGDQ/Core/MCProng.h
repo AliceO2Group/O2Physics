@@ -56,21 +56,26 @@ A few non-existent PYTHIA codes are used to select more than one PYTHIA code.
 #define PWGDQ_CORE_MCPRONG_H_
 
 #include "TNamed.h"
+#include "TString.h"
 
 #include <vector>
 #include <iostream>
+#include <map>
 
 class MCProng
 {
  public:
   enum Source {
     // TODO: add more sources, see Run-2 code
+    kNothing = -1,
     kPhysicalPrimary = 0, // Physical primary, ALICE definition
     kProducedInTransport, // Produced during transport through the detector (e.g. GEANT)
     kProducedByGenerator, // Produced by generator (if not, then produced by GEANT)
     kFromBackgroundEvent, // Produced in the underlying event
     kNSources
   };
+
+  static std::map<TString, int> fgSourceNames;
 
   enum Constants {
     kPDGCodeNotAssigned = 0
