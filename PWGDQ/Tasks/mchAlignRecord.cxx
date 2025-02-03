@@ -115,6 +115,8 @@ struct mchAlignRecordTask {
   Configurable<double> fAllowedVarY{"variation-y", 0.3, "Allowed variation for y axis in cm"};
   Configurable<double> fAllowedVarPhi{"variation-phi", 0.002, "Allowed variation for phi axis in rad"};
   Configurable<double> fAllowedVarZ{"variation-z", 2.0, "Allowed variation for z axis in cm"};
+  Configurable<double> cfgSigmaX{"cfgSigmaX", 1000., "Sigma cut along X"};
+  Configurable<double> cfgSigmaY{"cfgSigmaY", 1000., "Sigma cut along Y"};
   Configurable<double> cfgChamberResolutionX{"cfgChamberResolutionX", 0.04, "Chamber resolution along X configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
   Configurable<double> cfgChamberResolutionY{"cfgChamberResolutionY", 0.04, "Chamber resolution along Y configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
   Configurable<double> cfgSigmaCutImprove{"cfgSigmaCutImprove", 6., "Sigma cut for track improvement"};
@@ -141,6 +143,7 @@ struct mchAlignRecordTask {
     mAlign.SetAllowedVariation(1, fAllowedVarY.value);
     mAlign.SetAllowedVariation(2, fAllowedVarPhi.value);
     mAlign.SetAllowedVariation(3, fAllowedVarZ.value);
+    mAlign.SetSigmaXY(cfgSigmaX.value, cfgSigmaY.value);
 
     // Configuration for track fitter
     const auto& trackerParam = o2::mch::TrackerParam::Instance();
