@@ -38,7 +38,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 
-using namespace o2::constants::physics;
+using namespace o2::constants::physics; // o2-linter: disable=using-directive
 
 enum JetTaggingSpecies {
   none = 0,
@@ -1078,7 +1078,7 @@ void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*
 
 // Discriminant value for GNN b-jet tagging
 template <typename T>
-T Db(const std::vector<T>& logits, double fC = 0.018)
+T Db(const std::vector<T>& logits, double fC = 0.018) // o2-linter: disable=name/function-variable
 {
   auto softmax = [](const std::vector<T>& logits) {
     std::vector<T> res;

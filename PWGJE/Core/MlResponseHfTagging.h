@@ -13,8 +13,8 @@
 /// \brief Class to compute the ML response for b-jet analysis
 /// \author Hadi Hassan <hadi.hassan@cern.ch>, University of Jyväskylä
 
-#ifndef PWGHF_CORE_MLRESPONSEHFTAGGING_H_
-#define PWGHF_CORE_MLRESPONSEHFTAGGING_H_
+#ifndef PWGJE_CORE_MLRESPONSEHFTAGGING_H_
+#define PWGJE_CORE_MLRESPONSEHFTAGGING_H_
 
 #include <map>
 #include <string>
@@ -32,9 +32,11 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_BJET(FEATURE) \
-  {#FEATURE, static_cast<uint8_t>(InputFeaturesBTag::FEATURE)}
-
+#define FILL_MAP_BJET(FEATURE)                                 \
+  {                                                            \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesBTag::FEATURE) \
+  }
+  
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the VECTOR vector is filled with the FEATURE's value
@@ -380,7 +382,7 @@ class GNNBjetAllocator : public TensorAllocator
   static int replaceNaN(std::vector<T>& vec, T value)
   {
     int numNaN = 0;
-    for (auto& el : vec) {
+    for (auto& el : vec) { // o2-linter: disable=const-ref-in-for-loop
       if (std::isnan(el)) {
         el = value;
         ++numNaN;
@@ -426,7 +428,7 @@ class GNNBjetAllocator : public TensorAllocator
     std::vector<int64_t> featShape{nNodes, nJetFeat + nTrkFeat};
 
     int numNaN = replaceNaN(jetFeat, 0.f);
-    for (auto& aTrkFeat : trkFeat) {
+    for (auto& aTrkFeat : trkFeat) { // o2-linter: disable=const-ref-in-for-loop
       for (size_t i = 0; i < jetFeat.size(); ++i)
         feat.push_back(jetFeatureTransform(jetFeat[i], i));
       numNaN += replaceNaN(aTrkFeat, 0.f);
@@ -448,4 +450,4 @@ class GNNBjetAllocator : public TensorAllocator
 #undef CHECK_AND_FILL_VEC_BTAG_FULL
 #undef CHECK_AND_FILL_VEC_BTAG
 
-#endif // PWGHF_CORE_MLRESPONSEHFTAGGING_H_
+#endif // PWGJE_CORE_MLRESPONSEHFTAGGING_H_
