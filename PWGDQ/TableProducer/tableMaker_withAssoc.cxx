@@ -173,9 +173,12 @@ struct TableMaker {
 
   // Event and track AnalysisCut configurables
   struct : ConfigurableGroup {
-    Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
+    Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandardNoINT7", "Event selection"};
     Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
     Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
+    Configurable<std::string> fConfigEventCutsJSON{"cfgEventCutsJSON", "", "Additional event selection in JSON format"};
+    Configurable<std::string> fConfigTrackCutsJSON{"cfgBarrelTrackCutsJSON", "", "Additional list of barrel track cuts in JSON format"};
+    Configurable<std::string> fConfigMuonCutsJSON{"cfgMuonCutsJSON", "", "Additional list of muon cuts in JSON format"};
   } fConfigCuts;
 
   // Zorro selection
@@ -193,6 +196,7 @@ struct TableMaker {
     Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
+    Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   } fConfigHistOutput;
 
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
@@ -254,8 +258,8 @@ struct TableMaker {
   o2::parameters::GRPMagField* fGrpMag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
 
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
-  std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
-  std::vector<AnalysisCompositeCut> fMuonCuts;  //! Muon track cuts
+  std::vector<AnalysisCompositeCut*> fTrackCuts; //! Barrel track cuts
+  std::vector<AnalysisCompositeCut*> fMuonCuts;  //! Muon track cuts
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
@@ -321,12 +325,12 @@ struct TableMaker {
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       fCCDB->get<TGeoManager>(fConfigCCDB.fConfigGeoPath);
     }
+    VarManager::SetDefaultVarNames(); // Important that this is called before DefineCuts() !!
 
     // Define the event, track and muon cuts
     DefineCuts();
 
     // Initialize the histogram manager
-    VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
@@ -365,7 +369,7 @@ struct TableMaker {
       if (fConfigHistOutput.fConfigQA) {
         // Barrel track histograms after selections; one histogram directory for each user specified selection
         for (auto& cut : fTrackCuts) {
-          histClasses += Form("TrackBarrel_%s;", cut.GetName());
+          histClasses += Form("TrackBarrel_%s;", cut->GetName());
         }
       }
       // Barrel histograms for clean samples of V0 legs used for post-calibration
@@ -384,7 +388,7 @@ struct TableMaker {
       if (fConfigHistOutput.fConfigQA) {
         // Muon tracks after selections; one directory per selection
         for (auto& muonCut : fMuonCuts) {
-          histClasses += Form("Muons_%s;", muonCut.GetName());
+          histClasses += Form("Muons_%s;", muonCut->GetName());
         }
       }
     }
@@ -394,6 +398,11 @@ struct TableMaker {
     }
 
     DefineHistograms(histClasses);                   // define all histograms
+    // Additional histogram via the JSON configurable
+    TString addHistsStr = fConfigHistOutput.fConfigAddJSONHistograms.value;
+    if (fConfigHistOutput.fConfigQA && addHistsStr != "") {
+      dqhistograms::AddHistogramsFromJSON(fHistMan, addHistsStr.Data());
+    }
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
@@ -403,14 +412,32 @@ struct TableMaker {
     // Event cuts
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigCuts.fConfigEventCuts.value;
-    fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    if (eventCutStr != "") {
+      fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    }
+    // Extra event cuts via JSON
+    TString addEvCutsStr = fConfigCuts.fConfigEventCutsJSON.value;
+    if (addEvCutsStr != "") {
+      std::vector<AnalysisCut*> addEvCuts = dqcuts::GetCutsFromJSON(addEvCutsStr.Data());
+      for (auto& cutIt : addEvCuts) {
+        fEventCut->AddCut(cutIt);
+      }
+    }
 
     // Barrel track cuts
     TString cutNamesStr = fConfigCuts.fConfigTrackCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+      }
+    }
+    // extra cuts via JSON
+    TString addTrackCutsStr = fConfigCuts.fConfigTrackCutsJSON.value;
+    if (addTrackCutsStr != "") {
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      for (auto& t : addTrackCuts) {
+        fTrackCuts.push_back((AnalysisCompositeCut*)t);
       }
     }
 
@@ -419,7 +446,15 @@ struct TableMaker {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fMuonCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fMuonCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+      }
+    }
+    // Extra cuts via JSON
+    TString addMuonCutsStr = fConfigCuts.fConfigMuonCutsJSON.value;
+    if (addMuonCutsStr != "") {
+      std::vector<AnalysisCut*> addMuonCuts = dqcuts::GetCutsFromJSON(addMuonCutsStr.Data());
+      for (auto& t : addMuonCuts) {
+        fMuonCuts.push_back((AnalysisCompositeCut*)t);
       }
     }
 
@@ -503,7 +538,7 @@ struct TableMaker {
     TH1D* histTracks = new TH1D("TrackStats", "Track statistics", fTrackCuts.size() + 5.0, -0.5, fTrackCuts.size() - 0.5 + 5.0);
     ib = 1;
     for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ib++) {
-      histTracks->GetXaxis()->SetBinLabel(ib, (*cut).GetName());
+      histTracks->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
     }
     const char* v0TagNames[5] = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
     for (ib = 0; ib < 5; ib++) {
@@ -514,7 +549,7 @@ struct TableMaker {
     TH1D* histMuons = new TH1D("MuonStats", "Muon statistics", fMuonCuts.size(), -0.5, fMuonCuts.size() - 0.5);
     ib = 1;
     for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, ib++) {
-      histMuons->GetXaxis()->SetBinLabel(ib, (*cut).GetName());
+      histMuons->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
     }
     fStatsList->AddAt(histMuons, kStatsMuons);
 
@@ -916,12 +951,12 @@ struct TableMaker {
       // apply track cuts and fill stats histogram
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
-        if ((*cut).IsSelected(VarManager::fgValues)) {
+        if ((*cut)->IsSelected(VarManager::fgValues)) {
           trackTempFilterMap |= (static_cast<uint32_t>(1) << i);
           // NOTE: the QA is filled here just for the first occurence of this track.
           //    So if there are histograms of quantities which depend on the collision association, these will not be accurate
           if (fConfigHistOutput.fConfigQA && (fTrackIndexMap.find(track.globalIndex()) == fTrackIndexMap.end())) {
-            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), VarManager::fgValues);
           }
           (reinterpret_cast<TH1D*>(fStatsList->At(kStatsTracks)))->Fill(static_cast<float>(i));
         }
@@ -1110,13 +1145,13 @@ struct TableMaker {
       // check the cuts and filters
       int i = 0;
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
-        if ((*cut).IsSelected(VarManager::fgValues)) {
+        if ((*cut)->IsSelected(VarManager::fgValues)) {
           trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
           // NOTE: the QA is filled here just for the first occurence of this muon, which means the current association
           //     will be skipped from histograms if this muon was already filled in the skimming map.
           //    So if there are histograms of quantities which depend on the collision association, these histograms will not be completely accurate
           if (fConfigHistOutput.fConfigQA && (fFwdTrackIndexMap.find(muon.globalIndex()) == fFwdTrackIndexMap.end())) {
-            fHistMan->FillHistClass(Form("Muons_%s", (*cut).GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("Muons_%s", (*cut)->GetName()), VarManager::fgValues);
           }
           (reinterpret_cast<TH1D*>(fStatsList->At(kStatsMuons)))->Fill(static_cast<float>(i));
         }
