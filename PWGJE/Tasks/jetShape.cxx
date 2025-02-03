@@ -13,6 +13,9 @@
 /// \author Yuto Nishida <yuto.nishida@cern.ch>
 /// \brief Task for measuring the dependence of the jet shape function rho(r) on the distance r from the jet axis.
 
+#include <string>
+#include <vector>
+
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
