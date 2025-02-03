@@ -278,11 +278,11 @@ struct StrangenessBuilder {
 
     // conditionals
     Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimum TPC crossed rows for daughter tracks"};
-    Configurable<float> dcabachtopv{"dcabachtopv", .1, "DCA Bach To PV"};
+    Configurable<float> dcabachtopv{"dcabachtopv", .05, "DCA Bach To PV"};
     Configurable<float> cascradius{"cascradius", 0.9, "cascradius"};
     Configurable<float> casccospa{"casccospa", 0.95, "casccospa"};
     Configurable<float> dcacascdau{"dcacascdau", 1.0, "DCA cascade Daughters"};
-    Configurable<float> lambdaMassWindow{"lambdaMassWindow", .015, "Distance from Lambda mass (does not apply to KF path)"};
+    Configurable<float> lambdaMassWindow{"lambdaMassWindow", .010, "Distance from Lambda mass (does not apply to KF path)"};
     Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta (in abs value)"};
 
     // KF building specific

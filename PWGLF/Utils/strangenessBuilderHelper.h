@@ -358,10 +358,10 @@ class strangenessBuilderHelper
     }
 
     // verify lambda mass
-    if (bachelorTrack.sign()<0 && std::fabs(v0input.massLambda - o2::constants::physics::MassLambda) > cascadeselections.lambdaMassWindow){
+    if (bachelorTrack.sign()<0 && std::fabs(v0input.massLambda - 1.116) > cascadeselections.lambdaMassWindow){
       return false;
     }
-    if (bachelorTrack.sign()>0 && std::fabs(v0input.massAntiLambda - o2::constants::physics::MassLambda) > cascadeselections.lambdaMassWindow){
+    if (bachelorTrack.sign()>0 && std::fabs(v0input.massAntiLambda - 1.116) > cascadeselections.lambdaMassWindow){
       return false;
     }
 
@@ -441,7 +441,7 @@ class strangenessBuilderHelper
       std::array{collision.posX(), collision.posY(), collision.posZ()},
       std::array{cascade.cascadePosition[0], cascade.cascadePosition[1], cascade.cascadePosition[2]},
       std::array{v0input.positiveMomentum[0] + v0input.negativeMomentum[0] + cascade.bachelorMomentum[0],
-                 v0input.positiveMomentum[0] + v0input.negativeMomentum[1] + cascade.bachelorMomentum[1],
+                 v0input.positiveMomentum[1] + v0input.negativeMomentum[1] + cascade.bachelorMomentum[1],
                  v0input.positiveMomentum[2] + v0input.negativeMomentum[2] + cascade.bachelorMomentum[2]});
     if(cosPA < cascadeselections.casccospa){ 
       return false;
