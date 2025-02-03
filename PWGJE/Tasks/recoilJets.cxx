@@ -123,7 +123,7 @@ struct RecoilJets {
   int trackSelection = -1;
   std::vector<int> triggerMaskBits;
 
-  Service<O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   void init(InitContext const&)
   {
