@@ -2094,10 +2094,7 @@ if (pdgCode == 2212) {
             histos.fill(HIST("MC/withPID/pr/pos/prm/pt/numtof_matched"), track.pt(), multiplicity);
         }
     }
-}
-
-// Proton (negative)
-else if (pdgCode == -2212) {
+} else if (pdgCode == -2212) {
     if (isImpactParam) {
         histos.fill(HIST("MC/withPID/pr/neg/prm/pt/numtof"), track.pt(), impParam);
     } else {
@@ -2110,10 +2107,7 @@ else if (pdgCode == -2212) {
             histos.fill(HIST("MC/withPID/pr/neg/prm/pt/numtof_matched"), track.pt(), multiplicity);
         }
     }
-}
-
-// Pion (positive)
-else if (pdgCode == 211) {
+} else if (pdgCode == 211) {
     if (isImpactParam) {
         histos.fill(HIST("MC/withPID/pi/pos/prm/pt/numtof"), track.pt(), impParam);
     } else {
@@ -2127,10 +2121,7 @@ else if (pdgCode == 211) {
             histos.fill(HIST("MC/withPID/pi/pos/prm/pt/numtof_matched"), track.pt(), multiplicity);
         }
     }
-}
-
-// Pion (negative)
-else if (pdgCode == -211) {
+} else if (pdgCode == -211) {
     if (isImpactParam) {
         histos.fill(HIST("MC/withPID/pi/neg/prm/pt/numtof"), track.pt(), impParam);
     } else {
@@ -2144,10 +2135,7 @@ else if (pdgCode == -211) {
             histos.fill(HIST("MC/withPID/pi/neg/prm/pt/numtof_matched"), track.pt(), multiplicity);
         }
     }
-}
-
-// Kaon (positive)
-else if (pdgCode == 321) {
+} else if (pdgCode == 321) {
     if (isImpactParam) {
         histos.fill(HIST("MC/withPID/ka/pos/prm/pt/numtof"), track.pt(), impParam);
     } else {
@@ -2161,10 +2149,7 @@ else if (pdgCode == 321) {
             histos.fill(HIST("MC/withPID/ka/pos/prm/pt/numtof_matched"), track.pt(), multiplicity);
         }
     }
-}
-
-// Kaon (negative)
-else if (pdgCode == -321) {
+} else if (pdgCode == -321) {
     if (isImpactParam) {
         histos.fill(HIST("MC/withPID/ka/neg/prm/pt/numtof"), track.pt(), impParam);
     } else {
