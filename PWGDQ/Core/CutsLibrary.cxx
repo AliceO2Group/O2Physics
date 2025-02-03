@@ -383,6 +383,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("JpsiPWGSkimmedCuts5")) {
+    cut->AddCut(GetAnalysisCut("electronTrackQualitySkimmed3"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug8"));
+    return cut;
+  }
+
   if (!nameStr.compare("pidElectron_ionut")) {
     cut->AddCut(GetAnalysisCut("pidcalib_ele"));
     cut->AddCut(GetAnalysisCut("jpsiStandardKine3"));
@@ -493,6 +499,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("pionPIDCut1")) {
     cut->AddCut(GetAnalysisCut("pionQualityCut1"));
+    cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pionPIDCut2")) {
+    cut->AddCut(GetAnalysisCut("pionQualityCut2"));
     cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
     return cut;
   }
@@ -3300,6 +3312,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairJpsi3")) {
+    cut->AddCut(GetAnalysisCut("pairJpsi3"));
+    return cut;
+  }
+
   if (!nameStr.compare("pairPsi2S")) {
     cut->AddCut(GetAnalysisCut("pairPsi2S"));
     return cut;
@@ -3315,8 +3332,23 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairX3872Cut2")) {
+    cut->AddCut(GetAnalysisCut("pairX3872_2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairX3872Cut3")) {
+    cut->AddCut(GetAnalysisCut("pairX3872_3"));
+    return cut;
+  }
+
   if (!nameStr.compare("DipionPairCut1")) {
     cut->AddCut(GetAnalysisCut("DipionMassCut1"));
+    return cut;
+  }
+
+  if (!nameStr.compare("DipionPairCut2")) {
+    cut->AddCut(GetAnalysisCut("DipionMassCut2"));
     return cut;
   }
 
@@ -4482,10 +4514,28 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("electronTrackQualitySkimmed3")) {
+    cut->AddCut(VarManager::kPt, 1.0, 1000.0);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    cut->AddCut(VarManager::kTPCnclsCR, 70, 161);
+    cut->AddCut(VarManager::kTPCncls, 70, 161);
+    return cut;
+  }
+
   if (!nameStr.compare("pionQualityCut1")) {
     cut->AddCut(VarManager::kPt, 0.15, 1000.0);
     cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
     cut->AddCut(VarManager::kTPCncls, 70, 161);
+    return cut;
+  }
+
+  if (!nameStr.compare("pionQualityCut2")) {
+    cut->AddCut(VarManager::kPt, 0.15, 1000.0);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    cut->AddCut(VarManager::kTPCncls, 90, 161);
+    cut->AddCut(VarManager::kTPCnclsCR, 70, 161);
     return cut;
   }
 
@@ -6133,6 +6183,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("DipionMassCut2")) {
+    cut->AddCut(VarManager::kMass, 0.0, 1.0);
+    return cut;
+  }
+
   if (!nameStr.compare("pairMassLow1")) {
     cut->AddCut(VarManager::kMass, 1.0, 1000.0);
     return cut;
@@ -6233,6 +6288,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairJpsi3")) {
+    cut->AddCut(VarManager::kMass, 2.92, 3.14);
+    return cut;
+  }
+
   if (!nameStr.compare("pairPsi2S")) {
     cut->AddCut(VarManager::kMass, 3.4, 3.9);
     return cut;
@@ -6245,6 +6305,22 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairX3872")) {
     cut->AddCut(VarManager::kQ, 0.0, 0.3);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairX3872_2")) {
+    cut->AddCut(VarManager::kQuadDefaultDileptonMass, 3.0, 5.0);
+    cut->AddCut(VarManager::kQ, 0.0, 0.5);
+    cut->AddCut(VarManager::kDeltaR, 0.0, 5.0);
+    cut->AddCut(VarManager::kQuadPt, 5.0, 40.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairX3872_3")) {
+    cut->AddCut(VarManager::kQuadDefaultDileptonMass, 3.0, 5.0);
+    cut->AddCut(VarManager::kQ, 0.0, 0.5);
+    cut->AddCut(VarManager::kDeltaR, 0.0, 5.0);
+    cut->AddCut(VarManager::kQuadPt, 0.0, 1000.0);
     return cut;
   }
 
