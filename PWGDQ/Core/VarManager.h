@@ -396,7 +396,6 @@ class VarManager : public TObject
     kTimeZNC,
     kTimeZPA,
     kTimeZPC,
-    kNEventWiseVariables,
     kQ2X0A1,
     kQ2X0A2,
     kQ2Y0A1,
@@ -417,6 +416,7 @@ class VarManager : public TObject
     kTwoR2SP2, // Scalar product resolution of event2 for ME technique
     kTwoR2EP1, // Event plane resolution of event2 for ME technique
     kTwoR2EP2, // Event plane resolution of event2 for ME technique
+    kNEventWiseVariables,
 
     // Basic track/muon/pair wise variables
     kX,
@@ -627,6 +627,7 @@ class VarManager : public TObject
     kCosThetaCS,
     kPhiHE,
     kPhiCS,
+    kCosPhiVP,
     kPhiVP,
     kDeltaPhiPair2,
     kDeltaEtaPair2,
@@ -802,6 +803,7 @@ class VarManager : public TObject
 
   static TString fgVariableNames[kNVars]; // variable names
   static TString fgVariableUnits[kNVars]; // variable units
+  static std::map<TString, int> fgVarNamesMap; // key: variables short name, value: order in the Variables enum
   static void SetDefaultVarNames();
 
   static void SetUseVariable(int var)
@@ -4415,6 +4417,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   auto vDimu = (t1.sign() > 0 ? ROOT::Math::XYZVectorF(v1_vp.Px(), v1_vp.Py(), v1_vp.Pz()).Cross(ROOT::Math::XYZVectorF(v2_vp.Px(), v2_vp.Py(), v2_vp.Pz()))
                               : ROOT::Math::XYZVectorF(v2_vp.Px(), v2_vp.Py(), v2_vp.Pz()).Cross(ROOT::Math::XYZVectorF(v1_vp.Px(), v1_vp.Py(), v1_vp.Pz())));
   auto vRef = p12_vp.Cross(p12_vp_projXZ);
+  values[kCosPhiVP] = vDimu.Dot(vRef) / (vRef.R() * vDimu.R());
   values[kPhiVP] = std::acos(vDimu.Dot(vRef) / (vRef.R() * vDimu.R()));
 }
 

@@ -41,9 +41,10 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::mult;
-using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>;
+using namespace o2::aod::evsel;
+using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
 using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
-using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
+using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using AodZDCs = soa::Join<aod::ZDCMults, aod::Zdcs>;
 
@@ -56,13 +57,15 @@ struct FlowZDCtask {
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 10.0f, "Maximal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for ref tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for ref tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.9f, "Eta range for tracks") // changed from .8 bc zdc is at eta 8.78
+  O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for ref tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2, "DCA Z cut")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.2f, "DCA XY cut")
 
-  Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
+  Configurable<int> nBinsPt{"nBinsPt", 500, "N bins in pT histo"};
   Configurable<int> eventSelection{"eventSelection", 1, "event selection"};
   Configurable<float> maxZp{"maxZp", 3099.5, "Max ZP signal"};
   Configurable<float> vtxCut{"vtxCut", 10.0, "Z vertex cut"};
@@ -70,6 +73,7 @@ struct FlowZDCtask {
   Configurable<float> etaGap{"etaGap", 0.5, "Eta gap"};
   Configurable<float> minPt{"minPt", 0.2, "Minimum pt"};
   Configurable<float> maxPt{"maxPt", 20.0, "Maximum pt"};
+  Configurable<float> minTpcNcrossedRows{"minTpcNcrossedRows", 20, "minTpcNcrossedRows"};
   Configurable<float> maxZem{"maxZem", 3099.5, "Max ZEM signal"};
   // for ZDC info and analysis
   Configurable<int> nBinsADC{"nBinsADC", 1000, "nbinsADC"};
@@ -95,7 +99,7 @@ struct FlowZDCtask {
   ConfigurableAxis axisFT0MAmp{"axisFT0MAmp", {10000, 0, 10000}, "axisFT0MAmp"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
   Partition<AodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
   std::complex<double> qTPC;       // init q TPC
@@ -146,6 +150,7 @@ struct FlowZDCtask {
     AxisSpec axisCent{8, 0.f, 105.f, "centrality"};
     AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
     AxisSpec axisPtBins{{0., 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10., 13., 16., 20.}, "p_{T} (GeV/c)"};
+    AxisSpec axisEvent{6, 0.5, 6.5, "#Event", "EventAxis"};
 
     // create histograms
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
@@ -179,8 +184,9 @@ struct FlowZDCtask {
                "ZP Energy vs FT0C Centrality;Centrality [%];ZP Energy",
                kTH2F,
                {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZP Energy"}});
-    // for q vector recentering
-    histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ});
+    histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ}); // for q vector recentering
+    histos.add("hYield", "Nch vs pT", kTH2F, {axisMultiplicity, axisPt});
+    histos.add("eventSelectionSteps", "eventSelectionSteps", kTH1D, {axisEvent});
 
     if (doprocessZdcCollAssoc) { // Check if the process function for ZDCCollAssoc is enabled
       histos.add("ZNAcoll", "ZNAcoll; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZn}}});
@@ -227,45 +233,68 @@ struct FlowZDCtask {
 
   void processQVector(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::ZDCMults const& /*zdcMults*/)
   {
-    histos.fill(HIST("eventCounter"), 0.5);
+    histos.fill(HIST("eventSelectionSteps"), 1);
+
     if (!collision.sel8())
       return;
+    histos.fill(HIST("eventSelectionSteps"), 2);
+
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      return;
+    histos.fill(HIST("eventSelectionSteps"), 3);
+
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      return;
+    histos.fill(HIST("eventSelectionSteps"), 4);
+
+    if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+      return;
+    histos.fill(HIST("eventSelectionSteps"), 5);
+
+    histos.fill(HIST("eventSelectionSteps"), 6);
+
+    histos.fill(HIST("eventCounter"), 0.5);
     histos.fill(HIST("centHistogram"), collision.centFT0C());
     const auto& tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     const int multTPC = tracksGrouped.size();
     const auto cent = collision.centFT0C();
-    int nTot = tracks.size();
-
     // this is the q vector for the TPC data. it is a complex function
     double qTpcReal = 0.0; // Initialize qTPC_real
     double qTpcIm = 0.0;   // init qTPC_imaginary
-
-    int multTrk = tracks.size(); // Tracks are already filtered with GlobalTrack || GlobalTrackSDD
-
     if (cent < 0.0 && cent > 70)
       return;
     std::complex<double> qTPC(0, 0); // Starting with a q-vector of zero
-
+    int nTot{0};                     // Tracks are already filtered with GlobalTrack || GlobalTrackSDD
     for (const auto& track : tracks) {
+      if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
+        continue;
+      if (fabs(track.dcaXY()) > cfgCutDCAxy)
+        continue;
       double phi = track.phi();
-
+      nTot++;
       histos.fill(HIST("etaHistogram"), track.eta());
       histos.fill(HIST("phiHistogram"), track.phi());
       histos.fill(HIST("ptHistogram"), track.pt());
-
       qTPC += std::complex<double>(std::cos(2.0 * phi), std::sin(2.0 * phi));
-
-      histos.fill(HIST("multvsCent"), cent, nTot);
-
-    } // end track loop
-
+    } // end track loop 1
+    double pT{0};
+    for (const auto& track : tracks) {
+      if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
+        continue;
+      if (fabs(track.dcaXY()) > cfgCutDCAxy)
+        continue;
+      pT = track.pt();
+      pT++;
+    } // end track loop 2
+    histos.fill(HIST("multvsCent"), cent, nTot);
+    histos.fill(HIST("hYield"), nTot, pT);
+    histos.fill(HIST("multHistogram"), nTot);
     qTpcReal = qTPC.real() / nTot; // normalize these vectors by the total number of particles
     qTpcIm = qTPC.imag() / nTot;
 
     histos.fill(HIST("REqHistogram"), qTpcReal);
     histos.fill(HIST("IMqHistogram"), qTpcIm);
 
-    histos.fill(HIST("multHistogram"), multTrk);
     histos.fill(HIST("TPCmultiplicity"), multTPC);
 
     histos.fill(HIST("revsimag"), qTpcReal, qTpcIm);
@@ -277,27 +306,32 @@ struct FlowZDCtask {
     aod::Zdcs const& /*zdcs*/,
     aod::FT0s const& /*ft0s*/)
   {
+    if (!collision.sel8())
+      return;
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      return;
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      return;
+    if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+      return;
     int nTot = tracks.size();
     double sumCosPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
     double sumSinPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
     int countEvents = 0;        // initialize Counter for the number of events processed
     double ft0aAmp = 0;
     double ft0cAmp = 0;
-    // collision-based event selection
-    if (!collision.sel8())
-      return;
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
       for (const auto& amplitude : ft0.amplitudeA()) {
-        histos.fill(HIST("hFT0AAmp"), amplitude);
         ft0aAmp += amplitude;
       }
       for (const auto& amplitude : ft0.amplitudeC()) {
-        histos.fill(HIST("hFT0CAmp"), amplitude);
         ft0cAmp += amplitude;
       }
     }
+    histos.fill(HIST("hFT0AAmp"), ft0aAmp);
+    histos.fill(HIST("hFT0CAmp"), ft0cAmp);
     double ft0mAmp = ft0aAmp + ft0cAmp;
     histos.fill(HIST("hFT0MAmp"), ft0mAmp);
     if (foundBC.has_zdc()) {

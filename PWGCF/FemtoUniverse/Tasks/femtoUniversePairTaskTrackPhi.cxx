@@ -58,9 +58,11 @@ struct FemtoUniversePairTaskTrackPhi {
 
   Service<o2::framework::O2DatabasePDG> pdgMC;
 
-  // using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  // Filter trackCutFilter = requireGlobalTrackInFilter();
-  using FilteredFemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
+  using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
+  // Filters for selecting particles (both p1 and p2)
+  Filter trackCutFilter = requireGlobalTrackInFilter(); // Global track cuts
+  // Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.confEtaMax); // example filtering on configurable
+  using FilteredFemtoFullParticles = soa::Filtered<FemtoFullParticles>;
 
   SliceCache cache;
   Preslice<FilteredFemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
@@ -114,6 +116,7 @@ struct FemtoUniversePairTaskTrackPhi {
     Configurable<int> confTrackSign{"confTrackSign", 1, "Track sign"};
     Configurable<bool> confTrackIsIdentified{"confTrackIsIdentified", true, "Enable PID for the track"};
     Configurable<bool> confTrackIsRejected{"confTrackIsRejected", true, "Enable PID rejection for the track other species than the identified one."};
+    Configurable<float> confTrackPtPIDLimit{"confTrackPtPIDLimit", 0.5, "Momentum threshold for change of the PID method (from using TPC to TPC and TOF)."};
     Configurable<float> confTrackPtLowLimit{"confTrackPtLowLimit", 0.5, "Lower limit of the hadron pT."};
     Configurable<float> confTrackPtHighLimit{"confTrackPtHighLimit", 2.5, "Higher limit of the hadron pT."};
   } ConfTrack;
@@ -130,8 +133,8 @@ struct FemtoUniversePairTaskTrackPhi {
                                                                                        (aod::femtouniverseparticle::pt < ConfTrack.confTrackPtHighLimit.value);
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsTrackMCTruth = aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
-                                                                                        (aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(ConfTrack.confTrackPDGCode.value)) &
-                                                                                          (aod::femtouniverseparticle::pt > ConfTrack.confTrackPtLowLimit.value) &&
+                                                                                        (aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(ConfTrack.confTrackPDGCode)) &&
+                                                                                        (aod::femtouniverseparticle::pt > ConfTrack.confTrackPtLowLimit.value) &&
                                                                                         (aod::femtouniverseparticle::pt < ConfTrack.confTrackPtHighLimit.value);
 
   /// Particle 2 --- PHI MESON
@@ -150,6 +153,7 @@ struct FemtoUniversePairTaskTrackPhi {
                                                                                      (aod::femtouniverseparticle::pt < ConfPhi.confPhiPtHighLimit.value);
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsPhiMCTruth = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
+
                                                                                       (aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(333)) &&
                                                                                       (aod::femtouniverseparticle::pt > ConfPhi.confPhiPtLowLimit.value) &&
                                                                                       (aod::femtouniverseparticle::pt < ConfPhi.confPhiPtHighLimit.value);
@@ -220,13 +224,13 @@ struct FemtoUniversePairTaskTrackPhi {
   // PID for protons
   bool isProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
   {
-    if (mom < 0.5) {
+    if (mom < ConfTrack.confTrackPtPIDLimit.value) {
       if (std::abs(nsigmaTPCPr) < ConfBothTracks.confPIDProtonNsigmaTPC.value) {
         return true;
       } else {
         return false;
       }
-    } else if (mom > 0.4) {
+    } else if (mom > ConfTrack.confTrackPtPIDLimit.value) {
       if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.confPIDProtonNsigmaCombined.value) {
         return true;
       } else {
