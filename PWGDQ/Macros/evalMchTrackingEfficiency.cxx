@@ -43,8 +43,8 @@ void evalMchTrackingEfficiency(const char* inFile = "AnalysisResults.root", cons
 {
   // read ouput from the taskComputeMchEfficiency
   TFile* file = TFile::Open(inFile, "read");
-  TDirectoryFile* dir = (TDirectoryFile*)file->Get("task-muon-mch-trk-efficiency");
-  THnF* hHitsEtaPtPhi = (THnF*)dir->Get("hHitsEtaPtPhi");
+  TDirectoryFile* dir = reinterpret_cast<TDirectoryFile*>(file->Get("task-muon-mch-trk-efficiency"));
+  THnF* hHitsEtaPtPhi = reinterpret_cast<THnF*>(dir->Get("hHitsEtaPtPhi"));
 
   // retrieve the eta/pt/phi axis binning configuration
   const int etaAx = 1, ptAx = 2, phiAx = 3;
@@ -67,10 +67,10 @@ void evalMchTrackingEfficiency(const char* inFile = "AnalysisResults.root", cons
 
   // define histograms efficiency per chamber
   //  vs eta, pt, phi
-  int nChamber = 10, nStation = 5;
-  TH1F *hEffPerChamberEta[nChamber], *hEffPerChamberPt[nChamber], *hEffPerChamberPhi[nChamber];
+  int const kChamber = 10, kStation = 5;
+  TH1F *hEffPerChamberEta[kChamber], *hEffPerChamberPt[kChamber], *hEffPerChamberPhi[kChamber];
 
-  for (int iCh = 0; iCh < nChamber; iCh++) {
+  for (int iCh = 0; iCh < kChamber; iCh++) {
     hEffPerChamberEta[iCh] = new TH1F(Form("hEffPerChamberEta_%d", iCh), Form("hEff Chamber %d vs. #eta; #eta ; Efficiency", iCh), nBinsEta, limitsEta.data());
     hEffPerChamberPt[iCh] = new TH1F(Form("hEffPerChamberPt_%d", iCh), Form("hEff Chamber %d vs. #it{p}_{T}; #it{p}_{T} (GeV/#it{c}) ; Efficiency", iCh), nBinsPt, limitsPt.data());
     hEffPerChamberPhi[iCh] = new TH1F(Form("hEffPerChamberPhi_%d", iCh), Form("hEff Chamber %d vs. #varphi; #varphi (rad.) ; Efficiency", iCh), nBinsPhi, limitsPhi.data());
@@ -79,30 +79,30 @@ void evalMchTrackingEfficiency(const char* inFile = "AnalysisResults.root", cons
   // define histogram for integrated efficiency per chamber
   // as well as the one per station
   // the total integrated value is stored in both histos as last quantity for reference
-  TH1F* hEffIntegratedChamber = new TH1F("hEffIntegratedChamber", "integrated efficiency per chamber; ;Efficiency", nChamber + 1, -0.5, nChamber + 0.5);
-  const char* hChNames[nChamber + 1];
-  for (int i = 0; i < nChamber; i++) {
+  TH1F* hEffIntegratedChamber = new TH1F("hEffIntegratedChamber", "integrated efficiency per chamber; ;Efficiency", kChamber + 1, -0.5, kChamber + 0.5);
+  const char* hChNames[kChamber + 1];
+  for (int i = 0; i < kChamber; i++) {
     hEffIntegratedChamber->GetXaxis()->SetBinLabel(i + 1, Form("Chamber %d", i));
   }
-  hEffIntegratedChamber->GetXaxis()->SetBinLabel(nChamber + 1, "Total");
+  hEffIntegratedChamber->GetXaxis()->SetBinLabel(kChamber + 1, "Total");
 
   // Define histogram for integrated efficiency per station
-  TH1F* hEffIntegratedStation = new TH1F("hEffIntegratedStation", "integrated efficiency per station; ;Efficiency", nStation, -0.5, nStation + 0.5);
-  const char* hStNames[nStation];
+  TH1F* hEffIntegratedStation = new TH1F("hEffIntegratedStation", "integrated efficiency per station; ;Efficiency", kStation, -0.5, kStation + 0.5);
+  const char* hStNames[kStation];
   for (int i = 0; i < 3; i++) {
     hEffIntegratedStation->GetXaxis()->SetBinLabel(i + 1, Form("Station %d", i));
   }
   hEffIntegratedStation->GetXaxis()->SetBinLabel(4, "Station 3 & 4");
-  hEffIntegratedStation->GetXaxis()->SetBinLabel(nStation, "Total");
+  hEffIntegratedStation->GetXaxis()->SetBinLabel(kStation, "Total");
 
   // define also the eta-phi efficiency per chamber
-  TH2F* hEffPerChamberEtaPhi[nChamber];
-  for (int iCh = 0; iCh < nChamber; iCh++) {
+  TH2F* hEffPerChamberEtaPhi[kChamber];
+  for (int iCh = 0; iCh < kChamber; iCh++) {
     hEffPerChamberEtaPhi[iCh] = new TH2F(Form("hEffPerChamberEtaPhi_%d", iCh), Form("hEff Chamber %d vs. #eta vs. #varphi; #eta ; #varphi ; Efficiency", iCh), nBinsEta, limitsEta.data(), nBinsPhi, limitsPhi.data());
   }
 
-  double effIntChamber[nChamber];
-  double effIntStation[nStation];
+  double effIntChamber[kChamber];
+  double effIntStation[kStation];
   double effIntegrated = 0.;
 
   // Calculation of the efficiency per chamber for each variable
@@ -166,8 +166,8 @@ void evalMchTrackingEfficiency(const char* inFile = "AnalysisResults.root", cons
 
   // Do integrated total calculation
   effIntegrated = computeTotalEfficiency(effIntStation);
-  hEffIntegratedStation->SetBinContent(nStation, effIntegrated);
-  hEffIntegratedChamber->SetBinContent(nChamber + 1, effIntegrated);
+  hEffIntegratedStation->SetBinContent(kStation, effIntegrated);
+  hEffIntegratedChamber->SetBinContent(kChamber + 1, effIntegrated);
 
   // Calculation of the 2D eta-phi efficiency per chamber
   for (int iCh = 0; iCh < 10; iCh++) {
@@ -271,7 +271,7 @@ double computeEfficiencyPerChamber(THnF* hnf, int iAxis, int iCh, double binLimi
   hnf->GetAxis(iAxis)->SetRangeUser(binLimits[0], binLimits[1]);
 
   // Project onto the Nhits axis
-  TH1F* htmp = (TH1F*)hnf->Projection(0);
+  TH1F* htmp = reinterpret_cast<TH1F*>(hnf->Projection(0));
   double NhitPairing[16];
   for (int i = 0; i < 16; i++) {
     NhitPairing[i] = 0;
@@ -319,7 +319,7 @@ double computeEfficiencyPerChamber(THnF* hnf, const int iAxis[3], int iCh, doubl
   }
 
   // Project onto the Nhits axis
-  TH1F* htmp = (TH1F*)hnf->Projection(0);
+  TH1F* htmp = reinterpret_cast<TH1F*>(hnf->Projection(0));
   double NhitPairing[16];
   for (int i = 0; i < 16; i++) {
     NhitPairing[i] = 0;
