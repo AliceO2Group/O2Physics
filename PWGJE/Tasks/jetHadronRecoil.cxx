@@ -53,6 +53,8 @@ struct JetHadronRecoil {
   Configurable<float> trackPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks"};
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
+  Configurable<float> centralityMin{"centralityMin", -999.0, "minimum centrality"};
+  Configurable<float> centralityMax{"centralityMax", 999.0, "maximum centrality"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> ptTTrefMin{"ptTTrefMin", 5, "reference minimum trigger track pt"};
   Configurable<float> ptTTrefMax{"ptTTrefMax", 7, "reference maximum trigger track pt"};
@@ -72,7 +74,7 @@ struct JetHadronRecoil {
 
   Filter jetCuts = aod::jet::r == nround(jetR.node() * 100.0f);
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-  Filter eventTrackLevelCuts = nabs(aod::jcollision::posZ) < vertexZCut;
+  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
 
   std::vector<double> ptBinningPart = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0,
                                        15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0,
@@ -103,14 +105,6 @@ struct JetHadronRecoil {
                               {"hSignalPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{250, -100, 150}}}},
                               {"hSignalTriggers", "trigger p_{T};p_{T,trig};entries", {HistType::kTH1F, {{150, 0, 150}}}},
                               {"hReferenceTriggers", "trigger p_{T};p_{T,trig};entries", {HistType::kTH1F, {{150, 0, 150}}}},
-                              {"hSignalLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{250, -100, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
-                              {"hReferenceLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{250, -100, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
-                              {"hJetSignalMultiplicity", "jet multiplicity;N_{jets};entries", {HistType::kTH1F, {{10, 0, 10}}}},
-                              {"hJetReferenceMultiplicity", "jet multiplicity;N_{jets};entries", {HistType::kTH1F, {{10, 0, 10}}}},
-                              {"hJetSignalConstituentMultiplicity", "jet constituent multiplicity;p_{T,jet};#Delta#phi;N_{constituents}", {HistType::kTH3F, {{250, -100, 150}, {100, 0, o2::constants::math::TwoPI}, {50, 0, 50}}}},
-                              {"hJetReferenceConstituentMultiplicity", "jet constituent multiplicity;p_{T,jet};#Delta#phi;N_{constituents}", {HistType::kTH3F, {{250, -100, 150}, {100, 0, o2::constants::math::TwoPI}, {50, 0, 50}}}},
-                              {"hJetSignalConstituentPt", "jet constituent p_{T};p_{T,jet};#Delta#phi;p_{T,constituent}", {HistType::kTH3F, {{250, -100, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
-                              {"hJetReferenceConstituentPt", "jet constituent p_{T};p_{T,jet};#Delta#phi;p_{T,constituent}", {HistType::kTH3F, {{250, -100, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
                               {"hSigEventTriggers", "N_{triggers};events", {HistType::kTH1F, {{10, 0, 10}}}},
                               {"hRefEventTriggers", "N_{triggers};events", {HistType::kTH1F, {{10, 0, 10}}}},
                               {"hJetPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{300, -100, 200}}}},
@@ -170,7 +164,6 @@ struct JetHadronRecoil {
     double phiTT = 0;
     int trigNumber = 0;
     int nTT = 0;
-    double leadingPT = 0;
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
 
     float dice = rand->Rndm();
@@ -185,12 +178,12 @@ struct JetHadronRecoil {
       }
       if (isSigCol && track.pt() < ptTTsigMax && track.pt() > ptTTsigMin) {
         phiTTAr.push_back(track.phi());
-        registry.fill(HIST("hSignalPt"), track.pt(), weight);
+        registry.fill(HIST("hSignalTriggers"), track.pt(), weight);
         nTT++;
       }
       if (!isSigCol && track.pt() < ptTTrefMax && track.pt() > ptTTrefMin) {
         phiTTAr.push_back(track.phi());
-        registry.fill(HIST("hReferencePt"), track.pt(), weight);
+        registry.fill(HIST("hReferenceTriggers"), track.pt(), weight);
         nTT++;
       }
       registry.fill(HIST("hPtTrack"), track.pt(), weight);
@@ -247,14 +240,6 @@ struct JetHadronRecoil {
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
             registry.fill(HIST("hSignalPt"), jet.pt() - (rho * jet.area()), weight);
           }
-          registry.fill(HIST("hJetSignalConstituentMultiplicity"), jet.pt() - (rho * jet.area()), dphi, jet.tracksIds().size(), weight);
-          for (const auto& constituent : jet.template tracks_as<U>()) {
-            if (constituent.pt() > leadingPT) {
-              leadingPT = constituent.pt();
-            }
-            registry.fill(HIST("hJetSignalConstituentPt"), jet.pt() - (rho * jet.area()), dphi, constituent.pt(), weight);
-          }
-          registry.fill(HIST("hSignalLeadingTrack"), jet.pt() - (rho * jet.area()), dphi, leadingPT, weight);
         }
         if (!isSigCol) {
           for (const auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
@@ -271,14 +256,6 @@ struct JetHadronRecoil {
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
             registry.fill(HIST("hReferencePt"), jet.pt() - (rho * jet.area()), weight);
           }
-          registry.fill(HIST("hJetReferenceConstituentMultiplicity"), jet.pt() - (rho * jet.area()), dphi, jet.tracksIds().size(), weight);
-          for (const auto& constituent : jet.template tracks_as<U>()) {
-            if (constituent.pt() > leadingPT) {
-              leadingPT = constituent.pt();
-            }
-            registry.fill(HIST("hJetReferenceConstituentPt"), jet.pt() - (rho * jet.area()), dphi, constituent.pt(), weight);
-          }
-          registry.fill(HIST("hReferenceLeadingTrack"), jet.pt() - (rho * jet.area()), dphi, leadingPT, weight);
         }
       }
     }
@@ -292,7 +269,6 @@ struct JetHadronRecoil {
     double phiTT = 0;
     int trigNumber = 0;
     int nTT = 0;
-    double leadingPT = 0;
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
 
     float dice = rand->Rndm();
@@ -371,14 +347,6 @@ struct JetHadronRecoil {
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
             registry.fill(HIST("hSignalPt"), jet.pt(), weight);
           }
-          registry.fill(HIST("hJetSignalConstituentMultiplicity"), jet.pt(), dphi, jet.tracksIds().size(), weight);
-          for (const auto& constituent : jet.template tracks_as<U>()) {
-            if (constituent.pt() > leadingPT) {
-              leadingPT = constituent.pt();
-            }
-            registry.fill(HIST("hJetSignalConstituentPt"), jet.pt(), dphi, constituent.pt(), weight);
-          }
-          registry.fill(HIST("hSignalLeadingTrack"), jet.pt(), dphi, leadingPT, weight);
         }
         if (!isSigCol) {
           for (const auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
@@ -395,14 +363,6 @@ struct JetHadronRecoil {
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
             registry.fill(HIST("hReferencePt"), jet.pt(), weight);
           }
-          registry.fill(HIST("hJetReferenceConstituentMultiplicity"), jet.pt(), dphi, jet.tracksIds().size(), weight);
-          for (const auto& constituent : jet.template tracks_as<U>()) {
-            if (constituent.pt() > leadingPT) {
-              leadingPT = constituent.pt();
-            }
-            registry.fill(HIST("hJetReferenceConstituentPt"), jet.pt(), dphi, constituent.pt(), weight);
-          }
-          registry.fill(HIST("hReferenceLeadingTrack"), jet.pt(), dphi, leadingPT, weight);
         }
       }
     }

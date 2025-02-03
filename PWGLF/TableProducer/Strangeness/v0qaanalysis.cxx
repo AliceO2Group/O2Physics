@@ -141,6 +141,7 @@ struct LfV0qaanalysis {
   Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 1, "Is No ITS Readout Frame Border"};
   Configurable<bool> isVertexTOFmatched{"isVertexTOFmatched", 0, "Is Vertex TOF matched"};
   Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 0, "isGoodZvtxFT0vsPV"};
+  Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
 
   // V0 selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
@@ -205,6 +206,9 @@ struct LfV0qaanalysis {
 
     for (auto& v0 : V0s) { // loop over V0s
 
+      if (v0.v0Type() != v0TypeSelection) {
+        continue;
+      }
       // c tau
       float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
       float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
@@ -237,7 +241,7 @@ struct LfV0qaanalysis {
           TMath::Abs(v0.negTrack_as<DauTracks>().eta()) < etadau) {
 
         // Fill table
-        myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
+        myv0s(v0.pt(), v0.yLambda(), v0.yK0Short(),
               v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
               v0.v0radius(), v0.v0cosPA(),
               v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
@@ -296,6 +300,10 @@ struct LfV0qaanalysis {
         auto v0mcparticle = v0.mcParticle();
 
         if (std::abs(v0mcparticle.y()) > 0.5f) {
+          continue;
+        }
+
+        if (v0.v0Type() != v0TypeSelection) {
           continue;
         }
 
@@ -363,7 +371,7 @@ struct LfV0qaanalysis {
         ) {
 
           // Fill table
-          myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
+          myv0s(v0.pt(), v0.yLambda(), v0.yK0Short(),
                 v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
                 v0.v0radius(), v0.v0cosPA(),
                 v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),

@@ -41,6 +41,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::mult;
+using namespace o2::aod::evsel;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
 using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
 using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
@@ -149,6 +150,7 @@ struct FlowZDCtask {
     AxisSpec axisCent{8, 0.f, 105.f, "centrality"};
     AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
     AxisSpec axisPtBins{{0., 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10., 13., 16., 20.}, "p_{T} (GeV/c)"};
+    AxisSpec axisEvent{6, 0.5, 6.5, "#Event", "EventAxis"};
 
     // create histograms
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
@@ -184,6 +186,7 @@ struct FlowZDCtask {
                {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZP Energy"}});
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ}); // for q vector recentering
     histos.add("hYield", "Nch vs pT", kTH2F, {axisMultiplicity, axisPt});
+    histos.add("eventSelectionSteps", "eventSelectionSteps", kTH1D, {axisEvent});
 
     if (doprocessZdcCollAssoc) { // Check if the process function for ZDCCollAssoc is enabled
       histos.add("ZNAcoll", "ZNAcoll; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZn}}});
@@ -230,18 +233,34 @@ struct FlowZDCtask {
 
   void processQVector(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::ZDCMults const& /*zdcMults*/)
   {
-    histos.fill(HIST("eventCounter"), 0.5);
+    histos.fill(HIST("eventSelectionSteps"), 1);
+
     if (!collision.sel8())
       return;
+    histos.fill(HIST("eventSelectionSteps"), 2);
+
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      return;
+    histos.fill(HIST("eventSelectionSteps"), 3);
+
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      return;
+    histos.fill(HIST("eventSelectionSteps"), 4);
+
+    if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+      return;
+    histos.fill(HIST("eventSelectionSteps"), 5);
+
+    histos.fill(HIST("eventSelectionSteps"), 6);
+
+    histos.fill(HIST("eventCounter"), 0.5);
     histos.fill(HIST("centHistogram"), collision.centFT0C());
     const auto& tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     const int multTPC = tracksGrouped.size();
     const auto cent = collision.centFT0C();
-
     // this is the q vector for the TPC data. it is a complex function
     double qTpcReal = 0.0; // Initialize qTPC_real
     double qTpcIm = 0.0;   // init qTPC_imaginary
-
     if (cent < 0.0 && cent > 70)
       return;
     std::complex<double> qTPC(0, 0); // Starting with a q-vector of zero
@@ -258,7 +277,7 @@ struct FlowZDCtask {
       histos.fill(HIST("ptHistogram"), track.pt());
       qTPC += std::complex<double>(std::cos(2.0 * phi), std::sin(2.0 * phi));
     } // end track loop 1
-    int pT{0};
+    double pT{0};
     for (const auto& track : tracks) {
       if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
         continue;
@@ -287,15 +306,20 @@ struct FlowZDCtask {
     aod::Zdcs const& /*zdcs*/,
     aod::FT0s const& /*ft0s*/)
   {
+    if (!collision.sel8())
+      return;
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      return;
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      return;
+    if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+      return;
     int nTot = tracks.size();
     double sumCosPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
     double sumSinPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
     int countEvents = 0;        // initialize Counter for the number of events processed
     double ft0aAmp = 0;
     double ft0cAmp = 0;
-    // collision-based event selection
-    if (!collision.sel8())
-      return;
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
