@@ -19,7 +19,6 @@
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Framework/StaticFor.h"
@@ -107,6 +106,28 @@ struct NeutronProtonCorrZdc {
     histos.add("CentvsAlphaZP", "CentvsAlphaZP", kTH2F, {cfgAxisCent, axisAlphaZ});
     histos.add("CentvsDiffZNSignal", "CentvsDiffZNSignal", defaultZDCDiffHist);
     histos.add("CentvsDiffZPSignal", "CentvsDiffZPSignal", defaultZDCDiffHist);
+
+    histos.add("CentvsZNAvsZNC", "CentvsZNAvsZNC", kTH3F, {cfgAxisCent, axisZNASignal, axisZNCSignal});
+    histos.add("CentvsZNAvsZPA", "CentvsZNAvsZPA", kTH3F, {cfgAxisCent, axisZNASignal, axisZPASignal});
+    histos.add("CentvsZNAvsZPC", "CentvsZNAvsZPC", kTH3F, {cfgAxisCent, axisZNASignal, axisZPCSignal});
+    histos.add("CentvsZPAvsZNC", "CentvsZPAvsZNC", kTH3F, {cfgAxisCent, axisZPASignal, axisZNCSignal});
+    histos.add("CentvsZPAvsZPC", "CentvsZNAvsZPC", kTH3F, {cfgAxisCent, axisZPASignal, axisZPCSignal});
+    histos.add("CentvsZNCvsZPC", "CentvsZNCvsZPC", kTH3F, {cfgAxisCent, axisZNCSignal, axisZPCSignal});
+    histos.add("CentvsZNvsZP", "CentvsZNvsZP", kTH3F, {cfgAxisCent, axisZNSignal, axisZPSignal});
+
+    const AxisSpec AxisMultiplicityF0A{2000, -10, 200000, "F0A"};
+    const AxisSpec AxisMultiplicityF0C{1000, -10, 100000, "F0C"};
+    const AxisSpec AxisMultiplicityFDD{1000, -10, 100000, "FDD"};
+    const AxisSpec AxisMultiplicityTPC{1000, -10, 100000, "FDD"};
+
+    histos.add("MultiplicityHistograms/FV0A", "FV0A", kTH1F, {AxisMultiplicityF0A});
+    histos.add("MultiplicityHistograms/FT0A", "FT0A", kTH1F, {AxisMultiplicityF0A});
+    histos.add("MultiplicityHistograms/FT0C", "FT0C", kTH1F, {AxisMultiplicityF0C});
+    histos.add("MultiplicityHistograms/FDDA", "FDDA", kTH1F, {AxisMultiplicityFDD});
+    histos.add("MultiplicityHistograms/FDDC", "FDDC", kTH1F, {AxisMultiplicityFDD});
+    histos.add("MultiplicityHistograms/TPC", "TPC", kTH1F, {AxisMultiplicityTPC});
+    histos.add("MultiplicityHistograms/CentvsFT0C", "CentvsFT0C", kTH2F, {cfgAxisCent, AxisMultiplicityF0C});
+
   }
   template <int side, typename Z>
   void fillZDCHistos(const float centr, const Z& zdc)
@@ -143,7 +164,7 @@ struct NeutronProtonCorrZdc {
     histos.fill(HIST(SubDir[side]) + HIST("CentvsdiffZPSignal"), centr, sumZP - zpEnergyResponseCommon[side]);
   }
 
-  void processRun3(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, CentralitiesRun3>>::iterator const& collision, BCsRun3 const&, aod::Zdcs const&)
+  void processRun3(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, CentralitiesRun3>>::iterator const& collision, BCsRun3 const&, aod::Zdcs const&)
   {
     histos.fill(HIST("eventCounter"), EventCounter::kNoSelection);
     if (!collision.sel8()) {
@@ -158,6 +179,22 @@ struct NeutronProtonCorrZdc {
     if (foundBC.has_zdc()) {
       const auto& zdcread = foundBC.zdc();
       const auto cent = collision.centFT0C();
+
+      auto multFV0A = collision.multFV0A();
+      auto multFT0C = collision.multFT0C();
+      auto multFT0A = collision.multFT0A();
+      auto multFDDC = collision.multFDDC();
+      auto multFDDA = collision.multFDDA();
+      auto multTPC = collision.multTPC();
+
+      histos.fill(HIST("MultiplicityHistograms/FV0A"), multFV0A);
+      histos.fill(HIST("MultiplicityHistograms/FT0A"), multFT0A);
+      histos.fill(HIST("MultiplicityHistograms/FT0C"), multFT0C);
+      histos.fill(HIST("MultiplicityHistograms/FDDA"), multFDDA);
+      histos.fill(HIST("MultiplicityHistograms/FDDC"), multFDDC);
+      histos.fill(HIST("MultiplicityHistograms/TPC"), float(multTPC));
+      histos.fill(HIST("MultiplicityHistograms/CentvsFT0C"), cent, multFT0C);
+
 
       histos.fill(HIST("eventCounter"), EventCounter::kZDCSelection);
       histos.fill(HIST("CentralityPercentile"), cent);
@@ -181,6 +218,14 @@ struct NeutronProtonCorrZdc {
       histos.fill(HIST("CentvsZPSignalCommon"), cent, (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
       histos.fill(HIST("CentvsAlphaZN"), cent, alphaZN);
       histos.fill(HIST("CentvsAlphaZP"), cent, alphaZP);
+
+      histos.fill(HIST("CentvsZNAvsZNC"), cent, sumZNA, sumZNC);
+      histos.fill(HIST("CentvsZNAvsZPA"), cent, sumZNA, sumZPA);
+      histos.fill(HIST("CentvsZNAvsZPC"), cent, sumZNA, sumZPC);
+      histos.fill(HIST("CentvsZPAvsZNC"), cent, sumZPA, sumZNC);
+      histos.fill(HIST("CentvsZPAvsZPC"), cent, sumZPA, sumZPC);
+      histos.fill(HIST("CentvsZNCvsZPC"), cent, sumZNC, sumZPC);
+      histos.fill(HIST("CentvsZNvsZP"), cent, sumZNA+sumZNC, sumZPA+sumZPC);
     }
   }
   PROCESS_SWITCH(NeutronProtonCorrZdc, processRun3, "Process analysis for Run 3 data", true);
@@ -223,6 +268,14 @@ struct NeutronProtonCorrZdc {
       histos.fill(HIST("CentvsZPSignalCommon"), cent, (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
       histos.fill(HIST("CentvsAlphaZN"), cent, alphaZN);
       histos.fill(HIST("CentvsAlphaZP"), cent, alphaZP);
+
+      histos.fill(HIST("CentvsZNAvsZNC"), cent, sumZNA, sumZNC);
+      histos.fill(HIST("CentvsZNAvsZPA"), cent, sumZNA, sumZPA);
+      histos.fill(HIST("CentvsZNAvsZPC"), cent, sumZNA, sumZPC);
+      histos.fill(HIST("CentvsZPAvsZNC"), cent, sumZPA, sumZNC);
+      histos.fill(HIST("CentvsZPAvsZPC"), cent, sumZPA, sumZPC);
+      histos.fill(HIST("CentvsZNCvsZPC"), cent, sumZNC, sumZPC);
+      histos.fill(HIST("CentvsZNvsZP"), cent, sumZNA+sumZNC, sumZPA+sumZPC);
     }
   }
   PROCESS_SWITCH(NeutronProtonCorrZdc, processRun2, "Process analysis for Run 2 converted data", false);
