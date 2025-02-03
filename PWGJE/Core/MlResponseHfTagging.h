@@ -36,7 +36,7 @@
   {                                                            \
     #FEATURE, static_cast<uint8_t>(InputFeaturesBTag::FEATURE) \
   }
-  
+
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the VECTOR vector is filled with the FEATURE's value
