@@ -484,6 +484,30 @@ struct cascadeFlow {
     histos.add("hv1EPvsv1SP", "hV1EPvsV1SP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
     histos.add("hv1SP_ZDCA_vs_ZDCC", "hv1SP_ZDCA_vs_ZDCC", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
 
+    const AxisSpec thnAxisFT0C{thnConfigAxisFT0C, "FT0C (%)"};
+    const AxisSpec thnAxisPt{thnConfigAxisPt, "p_{T}"};
+    const AxisSpec thnAxisCharge{thnConfigAxisCharge, "Charge"};
+    const AxisSpec thnAxisMassXi{thnConfigAxisMassXi, "inv. mass (#Lambda #pi) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisMassOmega{thnConfigAxisMassOmega, "inv. mass (#Lambda K) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisMassLambda{thnConfigAxisMassLambda, "inv. mass (p #pi) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisBDTScore{thnConfigAxisBDTScore, "BDT score"};
+    const AxisSpec thnAxisV2{thnConfigAxisV2, "v_{2}"};
+    const AxisSpec thnAxisPzs2Xi{thnConfigAxisPzs2Xi, "Pzs2Xi"};
+    const AxisSpec thnAxisPzs2Omega{thnConfigAxisPzs2Omega, "Pzs2Omega"};
+    const AxisSpec thnAxisPzs2Lambda{thnConfigAxisPzs2Lambda, "Pzs2Lambda"};
+    const AxisSpec thnAxisCos2Theta{thnConfigAxisCos2Theta, "Cos2Theta"};
+
+    if (isFillTHNXi) {
+      histos.add("hXiV2", "THn for v2 of Xi", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt,thnAxisMassXi, thnAxisBDTScore, thnAxisV2});
+      histos.add("hXiPzs2", "THn for Pzs2 of Xi", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt,thnAxisMassXi, thnAxisMassLambda, thnAxisBDTScore, thnAxisPzs2Xi, thnAxisPzs2Lambda});
+      histos.add("hXiCos2Theta", "THn for Cos2Theta of Xi", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt,thnAxisMassXi, thnAxisMassLambda, thnAxisBDTScore, thnAxisCos2Theta, thnAxisCos2Theta});
+    }
+    if (isFillTHNOmega) {
+      histos.add("hOmegaV2", "THn for v2 of Omega", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt,thnAxisMassOmega, thnAxisBDTScore, thnAxisV2});
+      histos.add("hOmegaPzs2", "THn for Pzs2 of Omega", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt,thnAxisMassOmega, thnAxisMassLambda, thnAxisBDTScore, thnAxisPzs2Omega, thnAxisPzs2Lambda});
+      histos.add("hOmegaCos2Theta", "THn for Cos2Theta of Omega", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt,thnAxisMassOmega, thnAxisMassLambda, thnAxisBDTScore, thnAxisCos2Theta, thnAxisCos2Theta});
+    }
+    
     histosMCGen.add("h2DGenXiEta08", "h2DGenXiEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histosMCGen.add("h2DGenOmegaEta08", "h2DGenOmegaEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histosMCGen.add("h2DGenXiY05", "h2DGenXiY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
