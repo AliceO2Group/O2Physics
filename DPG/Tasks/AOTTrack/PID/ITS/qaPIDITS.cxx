@@ -245,10 +245,10 @@ struct itsPidQa {
       hNsigmaPos[id] = histos.add<TH2>(Form("nsigmaPos/%s", pN[id]), axisTitle, kTH2F, {pAxis, nSigmaAxis});
       hNsigmaNeg[id] = histos.add<TH2>(Form("nsigmaNeg/%s", pN[id]), axisTitle, kTH2F, {pAxis, nSigmaAxis});
     }
-    histos.add("event/averageClusterSize", "", kTH2F, {ptAxis, avClsAxis});
-    histos.add("event/averageClusterSizePerCoslInv", "", kTH2F, {ptAxis, avClsEffAxis});
-    histos.add("event/SelectedAverageClusterSize", "", kTH2F, {ptAxis, avClsAxis});
-    histos.add("event/SelectedAverageClusterSizePerCoslInv", "", kTH2F, {ptAxis, avClsEffAxis});
+    histos.add("event/averageClusterSize", "", kTH2D, {pAxis, avClsAxis});
+    histos.add("event/averageClusterSizePerCoslInv", "", kTH2D, {pAxis, avClsEffAxis});
+    histos.add("event/SelectedAverageClusterSize", "", kTH2D, {pAxis, avClsAxis});
+    histos.add("event/SelectedAverageClusterSizePerCoslInv", "", kTH2D, {pAxis, avClsEffAxis});
     LOG(info) << "QA PID ITS histograms:";
     histos.print();
   }
@@ -285,6 +285,7 @@ struct itsPidQa {
     histos.fill(HIST("event/vertexz"), collision.posZ());
 
     int nTracks = -1;
+    bool keep = false;
     for (const auto& track : tracksWithPid) {
       nTracks++;
       histos.fill(HIST("event/trackselection"), 1.f);
@@ -313,24 +314,23 @@ struct itsPidQa {
       histos.fill(HIST("event/pt"), track.pt());
       histos.fill(HIST("event/p"), track.p());
       const auto& t = tracks.iteratorAt(nTracks);
-      histos.fill(HIST("event/averageClusterSize"), track.pt(), averageClusterSizeTrk(track));
-      histos.fill(HIST("event/averageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(track));
-      bool discard = false;
-      for (int id = 0; id < 9; id++) {
-        if (std::abs(nsigmaTPC(track, id)) > tpcSelValues[id]) {
-          discard = true;
+      histos.fill(HIST("event/averageClusterSize"), track.p(), averageClusterSizeTrk(track));
+      histos.fill(HIST("event/averageClusterSizePerCoslInv"), track.p(), averageClusterSizePerCoslInv(track));
+      keep = false;
+      for (o2::track::PID::ID id = 0; id <= o2::track::PID::Last; id++) {
+        if (!enableParticle[id]) {
+          continue;
         }
-        if (std::abs(nsigmaTOF(track, id)) > tofSelValues[id]) {
-          discard = true;
+        if (std::abs(nsigmaTPC(track, id)) <= tpcSelValues[id] || std::abs(nsigmaTOF(track, id)) <= tofSelValues[id]) {
+          keep = true;
         }
       }
-      if (discard) {
+      if (!keep) {
         continue;
       }
-      histos.fill(HIST("event/SelectedAverageClusterSize"), track.pt(), averageClusterSizeTrk(track));
-      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(track));
-
-      for (o2::track::PID::ID id = 0; id <= o2::track::PID::Last; id++) {
+      histos.fill(HIST("event/SelectedAverageClusterSize"), track.p(), averageClusterSizeTrk(track));
+      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.p(), averageClusterSizePerCoslInv(track));
+      for (int id = 0; id < 9; id++) {
         if (!enableParticle[id]) {
           continue;
         }
