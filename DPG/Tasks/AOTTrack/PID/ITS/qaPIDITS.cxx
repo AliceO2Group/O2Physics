@@ -284,9 +284,7 @@ struct itsPidQa {
     histos.fill(HIST("event/evsel"), 3);
     histos.fill(HIST("event/vertexz"), collision.posZ());
 
-    int nTracks = -1;
     for (const auto& track : tracksWithPid) {
-      nTracks++;
       histos.fill(HIST("event/trackselection"), 1.f);
       if (!track.isGlobalTrack()) { // Skipping non global tracks
         continue;
@@ -312,9 +310,8 @@ struct itsPidQa {
       histos.fill(HIST("event/length"), track.length());
       histos.fill(HIST("event/pt"), track.pt());
       histos.fill(HIST("event/p"), track.p());
-      const auto& t = tracks.iteratorAt(nTracks);
-      histos.fill(HIST("event/averageClusterSize"), track.pt(), averageClusterSizeTrk(track));
-      histos.fill(HIST("event/averageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(track));
+      histos.fill(HIST("event/averageClusterSize"), track.p(), averageClusterSizeTrk(track));
+      histos.fill(HIST("event/averageClusterSizePerCoslInv"), track.p(), averageClusterSizePerCoslInv(track));
       bool discard = false;
       for (int id = 0; id < 9; id++) {
         if (std::abs(nsigmaTPC(track, id)) > tpcSelValues[id]) {
@@ -327,8 +324,8 @@ struct itsPidQa {
       if (discard) {
         continue;
       }
-      histos.fill(HIST("event/SelectedAverageClusterSize"), track.pt(), averageClusterSizeTrk(track));
-      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(track));
+      histos.fill(HIST("event/SelectedAverageClusterSize"), track.p(), averageClusterSizeTrk(track));
+      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.p(), averageClusterSizePerCoslInv(track));
 
       for (o2::track::PID::ID id = 0; id <= o2::track::PID::Last; id++) {
         if (!enableParticle[id]) {
@@ -341,9 +338,9 @@ struct itsPidQa {
         }
         const float nsigma = nsigmaITS(track, id);
         if (t.sign() > 0) {
-          hNsigmaPos[id]->Fill(t.p(), nsigma);
+          hNsigmaPos[id]->Fill(track.p(), nsigma);
         } else {
-          hNsigmaNeg[id]->Fill(t.p(), nsigma);
+          hNsigmaNeg[id]->Fill(track.p(), nsigma);
         }
       }
     }
