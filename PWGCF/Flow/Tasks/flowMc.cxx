@@ -14,7 +14,7 @@
 /// \since  Feb/5/2025
 /// \brief  QC of synthetic flow exercise
 
-#include "CCDB/BasicCCDBManager.h"
+#include <CCDB/BasicCCDBManager.h>
 #include <string>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
