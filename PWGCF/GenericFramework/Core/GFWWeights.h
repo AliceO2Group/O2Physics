@@ -9,8 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file GFWWeights.h
+/// \brief Class to store corrections for the Generic Framework
+/// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
+
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTS_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTS_H_
+
+#include "Framework/Logger.h"
+#include "Framework/AnalysisTask.h"
+
 #include "TObjArray.h"
 #include "TNamed.h"
 #include "TH3D.h"
@@ -20,38 +28,41 @@
 #include "TCollection.h"
 #include "TString.h"
 
+using namespace o2::constants::math;
+
 class GFWWeights : public TNamed
 {
  public:
   GFWWeights();
   explicit GFWWeights(const char* name);
   ~GFWWeights();
-  void Init(bool AddData = kTRUE, bool AddM = kTRUE);
-  void Fill(double phi, double eta, double vz, double pt, double cent, int htype, double weight = 1); // htype: 0 for data, 1 for mc rec, 2 for mc gen
-  double GetWeight(double phi, double eta, double vz, double pt, double cent, int htype);             // htype: 0 for data, 1 for mc rec, 2 for mc gen
-  double GetNUA(double phi, double eta, double vz);                                                   // This just fetches correction from integrated NUA, should speed up
-  double GetNUE(double pt, double eta, double vz);                                                    // fetches weight from fEffInt
-  bool IsDataFilled() { return fDataFilled; }
-  bool IsMCFilled() { return fMCFilled; }
-  double FindMax(TH3D* inh, int& ix, int& iy, int& iz);
-  void MCToEfficiency();
-  TObjArray* GetRecArray() { return fW_mcrec; }
-  TObjArray* GetGenArray() { return fW_mcgen; }
-  TObjArray* GetDataArray() { return fW_data; }
-  void CreateNUA(bool IntegrateOverCentAndPt = kTRUE);
-  void CreateNUE(bool IntegrateOverCentrality = kTRUE);
-  TH1D* GetIntegratedEfficiencyHist();
-  bool CalculateIntegratedEff();
-  double GetIntegratedEfficiency(double pt);
-  void SetDataFilled(bool newval) { fDataFilled = newval; }
-  void SetMCFilled(bool newval) { fMCFilled = newval; }
-  void ReadAndMerge(TString filelinks, TString listName = "OutputList", bool addData = kTRUE, bool addRec = kTRUE, bool addGen = kTRUE);
-  void SetPtBins(int Nbins, double* bins);
+  void init(bool AddData = kTRUE, bool AddM = kTRUE);
+  void fill(double phi, double eta, double vz, double pt, double cent, int htype, double weight = 1); // htype: 0 for data, 1 for mc rec, 2 for mc gen
+  double getWeight(double phi, double eta, double vz, double pt, double cent, int htype);             // htype: 0 for data, 1 for mc rec, 2 for mc gen
+  double getNUA(double phi, double eta, double vz);                                                   // This just fetches correction from integrated NUA, should speed up
+  double getNUE(double pt, double eta, double vz);                                                    // fetches weight from fEffInt
+  bool isDataFilled() { return fDataFilled; }
+  bool isMCFilled() { return fMCFilled; }
+  double findMax(TH3D* inh, int& ix, int& iy, int& iz);
+  void mcToEfficiency();
+  TObjArray* getRecArray() { return fW_mcrec; }
+  TObjArray* getGenArray() { return fW_mcgen; }
+  TObjArray* getDataArray() { return fW_data; }
+  void createNUA(bool IntegrateOverCentAndPt = kTRUE);
+  void createNUE(bool IntegrateOverCentrality = kTRUE);
+  TH1D* getIntegratedEfficiencyHist();
+  bool calculateIntegratedEff();
+  double getIntegratedEfficiency(double pt);
+  void setDataFilled(bool newval) { fDataFilled = newval; }
+  void setMCFilled(bool newval) { fMCFilled = newval; }
+  void readAndMerge(TString filelinks, TString listName = "OutputList", bool addData = kTRUE, bool addRec = kTRUE, bool addGen = kTRUE);
+  void setPtBins(int Nbins, double* bins);
   Long64_t Merge(TCollection* collist);
-  void RebinNUA(int nX = 1, int nY = 2, int nZ = 5);
-  void OverwriteNUA();
-  TH1D* GetdNdPhi();
-  TH1D* GetEfficiency(double etamin, double etamax, double vzmin, double vzmax);
+  void rebinNUA(int nX = 1, int nY = 2, int nZ = 5);
+  void overwriteNUA();
+  TH1D* getdNdPhi();
+  TH1D* getEfficiency(double etamin, double etamax, double vzmin, double vzmax);
+  void mergeWeights(GFWWeights* other);
 
  private:
   bool fDataFilled;
@@ -64,8 +75,8 @@ class GFWWeights : public TNamed
   TH3D* fAccInt;   //!
   int fNbinsPt;    //! do not store
   double* fbinsPt; //! do not store
-  void AddArray(TObjArray* targ, TObjArray* sour);
-  const char* GetBinName(double /*ptv*/, double /*v0mv*/, const char* pf = "")
+  void addArray(TObjArray* targ, TObjArray* sour);
+  const char* getBinName(double /*ptv*/, double /*v0mv*/, const char* pf = "")
   {
     int ptind = 0;  // GetPtBin(ptv);
     int v0mind = 0; // GetV0MBin(v0mv);

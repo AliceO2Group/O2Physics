@@ -909,6 +909,7 @@ DECLARE_SOA_COLUMN(Rap, rap, float);                   //!
 DECLARE_SOA_COLUMN(DeltaQ, deltaQ, float);             //!
 DECLARE_SOA_COLUMN(R1, r1, float);                     //! distance between the dilepton and the track1 in theta-phi plane
 DECLARE_SOA_COLUMN(R2, r2, float);                     //! distance between the dilepton and the track2 in theta-phi plane
+DECLARE_SOA_COLUMN(R, r, float);                       //!
 DECLARE_SOA_COLUMN(DileptonMass, dileptonMass, float); //!
 DECLARE_SOA_COLUMN(DileptonPt, dileptonPt, float);     //!
 DECLARE_SOA_COLUMN(DileptonEta, dileptonEta, float);   //!
@@ -935,6 +936,7 @@ DECLARE_SOA_TABLE(DileptonTrackTrackCandidates, "AOD", "RTDQUADPLET", //!
                   dileptonTrackTrackCandidate::DeltaQ,
                   dileptonTrackTrackCandidate::R1,
                   dileptonTrackTrackCandidate::R2,
+                  dileptonTrackTrackCandidate::R,
                   dileptonTrackTrackCandidate::DileptonMass,
                   dileptonTrackTrackCandidate::DileptonPt,
                   dileptonTrackTrackCandidate::DileptonEta,
