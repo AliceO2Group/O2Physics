@@ -375,8 +375,8 @@ struct FwdMuonsUPC {
     }
   }
 
-  // template function that fills a map with the collision id of each udmccollision as key
-  // and a vector with the tracks
+  // template function that fills a map with the collision id of each udcollision as key
+  // and a vector with the tracks and corresponding geneated particles
   // map == (key, element) == (udCollisionId, vector(track1, mcPart1, track2, mcPart2))
   template <typename TTracks>
   void collectRecoCandID(std::unordered_map<int32_t, std::vector<int32_t>>& tracksPerCand, TTracks& tracks)
