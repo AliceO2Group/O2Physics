@@ -116,8 +116,8 @@ struct jflucAnalysisTask {
     pcf2Prong->Init();
     pcf2Prong->SetEventCentrality(collision.multiplicity());
     pcf2Prong->SetEventVertex(collision.posZ());
-    pcf2Prong->FillQA(poiTracks, 1u); // type = 1, all POI tracks in this list are of the same type
     pcf2Prong->FillQA(refTracks, 0u);
+    pcf2Prong->FillQA(poiTracks, 1u); // type = 1, all POI tracks in this list are of the same type
     qvecsRef.Calculate(refTracks, etamin, etamax);
     pcf2Prong->SetJQVectors(&qvecs, &qvecsRef);
     const AxisSpec& a = AxisSpec(massAxis);
