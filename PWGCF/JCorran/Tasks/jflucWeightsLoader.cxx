@@ -12,6 +12,7 @@
 /// \since May 2024
 
 #include <experimental/type_traits>
+#include <string>
 #include <TFile.h>
 #include <THn.h>
 
