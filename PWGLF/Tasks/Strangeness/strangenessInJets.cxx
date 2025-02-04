@@ -895,8 +895,8 @@ struct StrangenessInJets {
   void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
   {
     auto getWeightHistoObj = [&](Configurable<std::string> name, TH2F*& histo) {
-      if (name.value != "") {
-        LOG(info) << "Getting weight histogram for " << name.name " from " << name.value;
+      if (name.value == "") {
+        LOG(info) << "Getting weight histogram for " << name.name << " from " << name.value;
         histo = ccdbObj->get<TH2F>(name);
       }
     };
@@ -936,7 +936,6 @@ struct StrangenessInJets {
       LOG(info) << "Looking for 1D weight histogram '" << name.value << "' for " << name.name;
       if (name.value == "") {
         LOG(info) << " -> Skipping";
-        return nullptr;
       }
       histo = static_cast<TH1F*>(l->FindObject(name.value.c_str()));
       if (!histo) {
