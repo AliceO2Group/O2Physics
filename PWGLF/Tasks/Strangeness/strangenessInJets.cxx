@@ -894,11 +894,6 @@ struct StrangenessInJets {
 
   void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
   {
-    TList* l = ccdbObj->get<TList>(pathToFile.c_str());
-    if (!l) {
-      LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
-      return;
-    }
 
     if (histoNameWeightPiplusJet.value != "") {
       twodWeightsPiplusJet = ccdbObj->get<TH2F>(filepath.Data());
@@ -917,74 +912,56 @@ struct StrangenessInJets {
       LOG(info) << "Getting weight histogram for piminus in ue from " << histoNameWeightPiminusUe.value;
     }
 
-    auto getWeightHisto = [&](std::string name) {
-      TH2F *histo = static_cast<TH2F*>(l->FindObject(name.c_str()));
-      if (!histo){
-        LOG(error) << "Could not open histogram '" << name << "'";
+
+    TList* l = ccdbObj->get<TList>(pathToFile.c_str());
+    if (!l) {
+      LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
+      return;
+    }
+    l->ls();
+
+    auto get2DWeightHisto = [&](Configurable<std::string> name) {
+      LOG(info) << "Looking for 2D weight histogram '" << name.value << "'";
+      if (name.value == "") {
+        LOG(info) << " -> Skipping";
         return nullptr;
       }
+      TH2F *histo = static_cast<TH2F*>(l->FindObject(name.value.c_str()));
+      if (!histo) {
+        LOG(error) << "Could not open histogram '" << name.value << "'";
+        return nullptr;
+      }
+      LOG(info) << "Opened histogram " << histo->ClassName() << " " << histo->GetName();
       return histo;
     };
 
-    twodWeightsK0Jet = getWeightHisto(histoNameWeightK0Jet);
-    twodWeightsK0Ue = static_cast<TH2F*>(l->FindObject(histoNameWeightK0Ue.c_str()));
-    if (!twodWeightsK0Ue) {
-      LOG(error) << "Could not open histogram twodWeightsK0Ue " << histoNameWeightK0Ue.value;
-      return;
-    }
-    twodWeightsLambdaJet = static_cast<TH2F*>(l->FindObject(histoNameWeightLambdaJet.c_str()));
-    if (!twodWeightsLambdaJet) {
-      LOG(error) << "Could not open histogram twodWeightsLambdaJet " << histoNameWeightLambdaJet.value;
-      return;
-    }
-    twodWeightsLambdaUe = static_cast<TH2F*>(l->FindObject(histoNameWeightLambdaUe.c_str()));
-    if (!twodWeightsLambdaUe) {
-      LOG(error) << "Could not open histogram twodWeightsLambdaUe " << histoNameWeightLambdaUe.value;
-      return;
-    }
-    twodWeightsAntilambdaJet = static_cast<TH2F*>(l->FindObject(histoNameWeightAntilambdaJet.c_str()));
-    if (!twodWeightsAntilambdaJet) {
-      LOG(error) << "Could not open histogram twodWeightsAntilambdaJet " << histoNameWeightAntilambdaJet.value;
-      return;
-    }
-    twodWeightsAntilambdaUe = static_cast<TH2F*>(l->FindObject(histoNameWeightAntilambdaUe.c_str()));
-    if (!twodWeightsAntilambdaUe) {
-      LOG(error) << "Could not open histogram twodWeightsAntilambdaUe " << histoNameWeightAntilambdaUe.value;
-      return;
-    }
+    twodWeightsK0Jet = get2DWeightHisto(histoNameWeightK0Jet);
+    twodWeightsK0Ue = get2DWeightHisto(histoNameWeightK0Ue);
+    twodWeightsLambdaJet = get2DWeightHisto(histoNameWeightLambdaJet);
+    twodWeightsLambdaUe = get2DWeightHisto(histoNameWeightLambdaUe);
+    twodWeightsAntilambdaJet = get2DWeightHisto(histoNameWeightAntilambdaJet);
+    twodWeightsAntilambdaUe = get2DWeightHisto(histoNameWeightAntilambdaUe);
+   
+    auto get1DWeightHisto = [&](Configurable<std::string> name) {
+      LOG(info) << "Looking for 1D weight histogram '" << name.value << "'";
+      if (name.value == "") {
+        LOG(info) << " -> Skipping";
+        return nullptr;
+      }
+      TH1F *histo = static_cast<TH1F*>(l->FindObject(name.value.c_str()));
+      if (!histo) {
+        LOG(error) << "Could not open histogram '" << name.value << "'";
+        return nullptr;
+      }
+      LOG(info) << "Opened histogram " << histo->ClassName() << " " << histo->GetName();
+      return histo;
+    };
 
     // Secondary Lambda
-    weightsXiInJet = static_cast<TH1F*>(l->FindObject(histoNameWeightsXiInJet.c_str()));
-    if (!weightsXiInJet) {
-      LOG(error) << "Could not open histogram weightsXiInJet " << histoNameWeightsXiInJet.value;
-      return;
-    }
-    weightsXiInUe = static_cast<TH1F*>(l->FindObject(histoNameWeightsXiInUe.c_str()));
-    if (!weightsXiInUe) {
-      LOG(error) << "Could not open histogram weightsXiInUe " << histoNameWeightsXiInUe.value;
-      return;
-    }
-    weightsAntiXiInJet = static_cast<TH1F*>(l->FindObject(histoNameWeightsAntiXiInJet.c_str()));
-    if (!weightsAntiXiInJet) {
-      LOG(error) << "Could not open histogram weightsAntiXiInJet " << histoNameWeightsAntiXiInJet.value;
-      return;
-    }
-    weightsAntiXiInUe = static_cast<TH1F*>(l->FindObject(histoNameWeightsAntiXiInUe.value.c_str()));
-    if (!weightsAntiXiInUe) {
-      LOG(error) << "Could not open histogram weightsAntiXiInUe " << histoNameWeightsAntiXiInUe.value;
-      return;
-    }
-
-    LOGP(info, "Opened histogram {}", Form("%s", histname_k0_jet.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_k0_ue.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_lambda_jet.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_lambda_ue.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_antilambda_jet.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_antilambda_ue.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_xi_jet.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_xi_ue.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_antixi_jet.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_antixi_ue.Data()));
+    weightsXiInJet = get1DWeightHisto(histoNameWeightsXiInJet);
+    weightsXiInUe = get1DWeightHisto(histoNameWeightsXiInUe);
+    weightsAntiXiInJet = get1DWeightHisto(histoNameWeightsAntiXiInJet);
+    weightsAntiXiInUe = get1DWeightHisto(histoNameWeightsAntiXiInUestr);
   }
 
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, StrHadronDaughterTracks const& tracks)
