@@ -40,7 +40,7 @@
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "TDatabasePDG.h"
 
-#include "bestCollisionTable.h"
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 #include "TFile.h"
 
 using namespace o2;
