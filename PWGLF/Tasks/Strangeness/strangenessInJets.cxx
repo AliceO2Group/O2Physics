@@ -170,7 +170,7 @@ struct StrangenessInJets {
     ccdb->setFatalWhenNull(false);
 
     if (applyReweighting) {
-      getReweightingHistograms(ccdb, TString(pathToFile), TString(histoNameWeightK0Jet), TString(histoNameWeightK0Ue), TString(histoNameWeightLambdaJet), TString(histoNameWeightLambdaUe), TString(histoNameWeightAntilambdaJet), TString(histoNameWeightAntilambdaUe), TString(histoNameWeightsXiInJet), TString(histoNameWeightsXiInUe), TString(histoNameWeightsAntiXiInJet), TString(histoNameWeightsAntiXiInUe));
+      getReweightingHistograms(ccdb);
     } else {
       twodWeightsK0Jet = nullptr;
       twodWeightsK0Ue = nullptr;
@@ -892,9 +892,9 @@ struct StrangenessInJets {
     return false;
   }
 
-  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_k0_jet, TString histname_k0_ue, TString histname_lambda_jet, TString histname_lambda_ue, TString histname_antilambda_jet, TString histname_antilambda_ue, TString histname_xi_jet, TString histname_xi_ue, TString histname_antixi_jet, TString histname_antixi_ue)
+  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
   {
-    TList* l = ccdbObj->get<TList>(filepath.Data());
+    TList* l = ccdbObj->get<TList>(pathToFile.c_str());
     if (!l) {
       LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
       return;
@@ -917,56 +917,56 @@ struct StrangenessInJets {
       LOG(info) << "Getting weight histogram for piminus in ue from " << histoNameWeightPiminusUe.value;
     }
 
-    twodWeightsK0Jet = static_cast<TH2F*>(l->FindObject(Form("%s", histname_k0_jet.Data())));
+    twodWeightsK0Jet = static_cast<TH2F*>(l->FindObject(histoNameWeightK0Jet.c_str()));
     if (!twodWeightsK0Jet) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_k0_jet.Data()));
+      LOG(error) << "Could not open histogram twodWeightsK0Jet " << histoNameWeightK0Jet.value;
       return;
     }
-    twodWeightsK0Ue = static_cast<TH2F*>(l->FindObject(Form("%s", histname_k0_ue.Data())));
+    twodWeightsK0Ue = static_cast<TH2F*>(l->FindObject(histoNameWeightK0Ue.c_str()));
     if (!twodWeightsK0Ue) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_k0_ue.Data()));
+      LOG(error) << "Could not open histogram twodWeightsK0Ue " << histoNameWeightK0Ue.value;
       return;
     }
-    twodWeightsLambdaJet = static_cast<TH2F*>(l->FindObject(Form("%s", histname_lambda_jet.Data())));
+    twodWeightsLambdaJet = static_cast<TH2F*>(l->FindObject(histoNameWeightLambdaJet.c_str()));
     if (!twodWeightsLambdaJet) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_lambda_jet.Data()));
+      LOG(error) << "Could not open histogram twodWeightsLambdaJet " << histoNameWeightLambdaJet.value;
       return;
     }
-    twodWeightsLambdaUe = static_cast<TH2F*>(l->FindObject(Form("%s", histname_lambda_ue.Data())));
+    twodWeightsLambdaUe = static_cast<TH2F*>(l->FindObject(histoNameWeightLambdaUe.c_str()));
     if (!twodWeightsLambdaUe) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_lambda_ue.Data()));
+      LOG(error) << "Could not open histogram twodWeightsLambdaUe " << histoNameWeightLambdaUe.value;
       return;
     }
-    twodWeightsAntilambdaJet = static_cast<TH2F*>(l->FindObject(Form("%s", histname_antilambda_jet.Data())));
+    twodWeightsAntilambdaJet = static_cast<TH2F*>(l->FindObject(histoNameWeightAntilambdaJet.c_str()));
     if (!twodWeightsAntilambdaJet) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_antilambda_jet.Data()));
+      LOG(error) << "Could not open histogram twodWeightsAntilambdaJet " << histoNameWeightAntilambdaJet.value;
       return;
     }
-    twodWeightsAntilambdaUe = static_cast<TH2F*>(l->FindObject(Form("%s", histname_antilambda_ue.Data())));
+    twodWeightsAntilambdaUe = static_cast<TH2F*>(l->FindObject(histoNameWeightAntilambdaUe.c_str()));
     if (!twodWeightsAntilambdaUe) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_antilambda_ue.Data()));
+      LOG(error) << "Could not open histogram twodWeightsAntilambdaUe " << histoNameWeightAntilambdaUe.value;
       return;
     }
 
     // Secondary Lambda
-    weightsXiInJet = static_cast<TH1F*>(l->FindObject(Form("%s", histname_xi_jet.Data())));
+    weightsXiInJet = static_cast<TH1F*>(l->FindObject(histoNameWeightsXiInJet.c_str()));
     if (!weightsXiInJet) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_xi_jet.Data()));
+      LOG(error) << "Could not open histogram weightsXiInJet " << histoNameWeightsXiInJet.value;
       return;
     }
-    weightsXiInUe = static_cast<TH1F*>(l->FindObject(Form("%s", histname_xi_ue.Data())));
+    weightsXiInUe = static_cast<TH1F*>(l->FindObject(histoNameWeightsXiInUe.c_str()));
     if (!weightsXiInUe) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_xi_ue.Data()));
+      LOG(error) << "Could not open histogram weightsXiInUe " << histoNameWeightsXiInUe.value;
       return;
     }
-    weightsAntiXiInJet = static_cast<TH1F*>(l->FindObject(Form("%s", histname_antixi_jet.Data())));
+    weightsAntiXiInJet = static_cast<TH1F*>(l->FindObject(histoNameWeightsAntiXiInJet.c_str()));
     if (!weightsAntiXiInJet) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_antixi_jet.Data()));
+      LOG(error) << "Could not open histogram weightsAntiXiInJet " << histoNameWeightsAntiXiInJet.value;
       return;
     }
-    weightsAntiXiInUe = static_cast<TH1F*>(l->FindObject(Form("%s", histname_antixi_ue.Data())));
+    weightsAntiXiInUe = static_cast<TH1F*>(l->FindObject(histoNameWeightsAntiXiInUe.value.c_str()));
     if (!weightsAntiXiInUe) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_antixi_ue.Data()));
+      LOG(error) << "Could not open histogram weightsAntiXiInUe " << histoNameWeightsAntiXiInUe.value;
       return;
     }
 
