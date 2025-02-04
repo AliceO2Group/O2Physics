@@ -33,7 +33,6 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "TDatabasePDG.h"
 #include "TPDGCode.h"
 
 using namespace std;
@@ -44,22 +43,20 @@ using namespace o2::aod::evsel;
 using namespace o2::constants::physics;
 using namespace o2::constants::math;
 
-using ColEvSels =
-  soa::Join<aod::Collisions, aod::EvSels, aod::FT0MultZeqs, aod::TPCMults>;
+using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::FT0MultZeqs, o2::aod::CentFT0Cs, aod::TPCMults>;
 // o2::aod::BCsWithTimestamps = soa::Join<o2::aod::BCs, o2::aod::Timestamps>
-using BCsRun3 =
-  soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
-using SimCollisions =
-  soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-using SimTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra,
-                            aod::TracksDCA, aod::McTrackLabels>;
-using TableTracks = soa::Join<aod::Tracks, aod::TrackSelection,
-                              aod::TracksExtra, aod::TracksDCA>;
+using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, o2::aod::CentFT0Cs>;
+using SimTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
+using TableTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>;
 
 struct UccZdc {
   // Event selection
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
+  Configurable<float> minT0CcentCut{"minT0CcentCut", 0.0, "Min T0C Cent. cut"};
+  Configurable<float> maxT0CcentCut{"maxT0CcentCut", 90.0, "Max T0C Cent. cut"};
+
   // Track selection settings
   Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum number of ITS clusters"};
   Configurable<int> minTpcNclusters{"minTpcNclusters", 70, "minimum number of TPC clusters"};
@@ -90,6 +87,8 @@ struct UccZdc {
   Configurable<float> maxZEM{"maxZEM", 3099.5, "Max ZEM signal"};
   Configurable<int> nBinsTDC{"nBinsTDC", 480, "nbinsTDC"};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0., 0.1, 0.25, 0.5, 1., 2., 4., 6., 8., 10., 20.}, "Binning of the pT axis"};
+  ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C centrality binning"};
+
   // Configurable flags ZDC
   Configurable<bool> isTDCcut{"isTDCcut", false, "Flag for TDC cut"};
   Configurable<float> tdcCut{"tdcCut", 1.0, "TDC cut"};
@@ -121,6 +120,7 @@ struct UccZdc {
     const AxisSpec axisEta{30, -1.5, +1.5, "#eta"};
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisDeltaPt{100, -1.0, +1.0, "#Delta(p_{T})"};
+    const AxisSpec axisCent{binsCent, "T0C centrality"};
 
     //  Histograms: paritcle-level info
     registryData.add("EtaVsPhi", ";#eta;#varphi", kTH2F,
@@ -128,6 +128,7 @@ struct UccZdc {
     registryData.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
     registryData.add("ptHistogram", "ptHistogram", kTH1F, {axisPt});
 
+    registryData.add("hT0C_cent", ";T0C centrality;Entries", kTH1F, {axisCent});
     registryData.add("hEventCounter", "Event counter", kTH1F, {axisEvent});
     registryData.add("NchT0A", "NchT0A; Nch T0A; Entries",
                      {HistType::kTH1F, {{nBinsNchT0, -0.5, maxNchFT0}}});
@@ -204,6 +205,7 @@ struct UccZdc {
 
     // MC Histograms
     registrySim.add("hEvent_MC_rec", "Event counter", kTH1F, {axisEvent});
+    registrySim.add("hT0C_cent_rec", ";T0C centrality;Entries", kTH1F, {axisCent});
     registrySim.add("Pt_MC_rec_ch", ";p_{T};Entries;", kTH1F, {axisPt});
     registrySim.add("Pt_MC_rec_pi", ";p_{T};Entries;", kTH1F, {axisPt});
     registrySim.add("Pt_MC_rec_ka", ";p_{T};Entries;", kTH1F, {axisPt});
@@ -316,6 +318,12 @@ struct UccZdc {
           }
         }
 
+        // T0C centrality cut
+        if (collision.centFT0C() < minT0CcentCut || collision.centFT0C() > maxT0CcentCut) {
+          continue;
+        }
+
+        registryData.fill(HIST("hT0C_cent"), collision.centFT0C());
         registryData.get<TH1>(HIST("ZNA"))->Fill(aZNA);
         registryData.get<TH1>(HIST("ZNC"))->Fill(aZNC);
         registryData.get<TH1>(HIST("ZPA"))->Fill(aZPA);
@@ -376,6 +384,7 @@ struct UccZdc {
     // Generated MC
     for (const auto& mccollision : mcCollisions) {
       registrySim.fill(HIST("hEvent_MC_tru"), 0.5);
+      // Z-vtx position cut
       if (std::fabs(mccollision.posZ()) > posZcut) {
         continue;
       }
@@ -430,6 +439,12 @@ struct UccZdc {
       if (std::fabs(collision.posZ()) > posZcut) {
         continue;
       }
+
+      // T0C centrality cut
+      if (collision.centFT0C() < minT0CcentCut || collision.centFT0C() > maxT0CcentCut) {
+        continue;
+      }
+
       registrySim.fill(HIST("hEvent_MC_rec"), 2.5);
       registrySim.fill(HIST("hZpos_MC_rec"), collision.posZ());
 
@@ -459,6 +474,7 @@ struct UccZdc {
         aV0A = -999;
       }
 
+      registrySim.fill(HIST("hT0C_cent_rec"), collision.centFT0C());
       registrySim.fill(HIST("aT0Avsb"), aT0A / 100., b);
       registrySim.fill(HIST("aT0Cvsb"), aT0C / 100., b);
       registrySim.fill(HIST("aV0Avsb"), aV0A / 100., b);
