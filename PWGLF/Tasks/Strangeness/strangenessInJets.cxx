@@ -894,25 +894,19 @@ struct StrangenessInJets {
 
   void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
   {
+    auto getWeightHistoObj = [&](Configurable<std::string> name) {
+      if (name.value != "") {
+        LOG(info) << "Getting weight histogram for "<< name.name " from " << name.value;
+        return ccdbObj->get<TH2F>(name);
+      }
+    };
 
-    if (histoNameWeightPiplusJet.value != "") {
-      twodWeightsPiplusJet = ccdbObj->get<TH2F>(filepath.Data());
-      LOG(info) << "Getting weight histogram for piplus in jet from " << histoNameWeightPiplusJet.value;
-    }
-    if (histoNameWeightPiplusUe.value != "") {
-      twodWeightsPiplusUe = ccdbObj->get<TH2F>(filepath.Data());
-      LOG(info) << "Getting weight histogram for piplus in ue from " << histoNameWeightPiplusUe.value;
-    }
-    if (histoNameWeightPiminusJet.value != "") {
-      twodWeightsPiminusJet = ccdbObj->get<TH2F>(filepath.Data());
-      LOG(info) << "Getting weight histogram for piminus in jet from " << histoNameWeightPiminusJet.value;
-    }
-    if (histoNameWeightPiminusUe.value != "") {
-      twodWeightsPiminusUe = ccdbObj->get<TH2F>(filepath.Data());
-      LOG(info) << "Getting weight histogram for piminus in ue from " << histoNameWeightPiminusUe.value;
-    }
-
-    TList* l = ccdbObj->get<TList>(pathToFile.c_str());
+    twodWeightsPiplusJet = getWeightHistoObj(histoNameWeightPiplusJet);
+    twodWeightsPiplusUe = getWeightHistoObj(histoNameWeightPiplusUe);
+    twodWeightsPiminusJet = getWeightHistoObj(histoNameWeightPiminusJet);
+    twodWeightsPiminusUe = getWeightHistoObj(histoNameWeightPiminusUe);
+    
+    TList* l = ccdbObj->get<TList>(pathToFile.vc_str());
     if (!l) {
       LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
       return;
