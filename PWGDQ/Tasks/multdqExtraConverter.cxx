@@ -17,21 +17,20 @@
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "Common/DataModel/Multiplicity.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 
 struct MultDqExtraConverter {
 
-   Produces<aod::ReducedEventsMultPV_001> reducedEventsMultPV_001;
-   void process(aod::ReducedEventsMultPV_000 const& reducedEventsMultPV_000)
-   {
+  Produces<aod::ReducedEventsMultPV_001> reducedEventsMultPV_001;
+  void process(aod::ReducedEventsMultPV_000 const& reducedEventsMultPV_000)
+  {
     for (const auto& r : reducedEventsMultPV_000) {
       reducedEventsMultPV_001(r.multNTracksHasITS(),
-                     r.multNTracksHasTPC(), r.multNTracksHasTOF(), r.multNTracksHasTRD(), r.multNTracksITSOnly(),
-                     r.multNTracksTPCOnly(), r.multNTracksITSTPC(), 0.0f, 0.0f, 0.0f,
-                     r.trackOccupancyInTimeRange());
-   }
+                              r.multNTracksHasTPC(), r.multNTracksHasTOF(), r.multNTracksHasTRD(), r.multNTracksITSOnly(),
+                              r.multNTracksTPCOnly(), r.multNTracksITSTPC(), 0.0f, 0.0f, 0.0f,
+                              r.trackOccupancyInTimeRange());
+    }
   }
 };
 
