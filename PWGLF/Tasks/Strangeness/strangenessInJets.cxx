@@ -894,67 +894,62 @@ struct StrangenessInJets {
 
   void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
   {
-    auto getWeightHistoObj = [&](Configurable<std::string> name) {
+    auto getWeightHistoObj = [&](Configurable<std::string> name, TH2F*& histo) {
       if (name.value != "") {
         LOG(info) << "Getting weight histogram for " << name.name " from " << name.value;
-        return ccdbObj->get<TH2F>(name);
+        histo = ccdbObj->get<TH2F>(name);
       }
     };
 
-    twodWeightsPiplusJet = getWeightHistoObj(histoNameWeightPiplusJet);
-    twodWeightsPiplusUe = getWeightHistoObj(histoNameWeightPiplusUe);
-    twodWeightsPiminusJet = getWeightHistoObj(histoNameWeightPiminusJet);
-    twodWeightsPiminusUe = getWeightHistoObj(histoNameWeightPiminusUe);
+    getWeightHistoObj(histoNameWeightPiplusJet, twodWeightsPiplusJet);
+    getWeightHistoObj(histoNameWeightPiplusUe, twodWeightsPiplusUe);
+    getWeightHistoObj(histoNameWeightPiminusJet, twodWeightsPiminusJet);
+    getWeightHistoObj(histoNameWeightPiminusUe, twodWeightsPiminusUe);
 
-    TList* l = ccdbObj->get<TList>(pathToFile.vc_str());
+    TList* l = ccdbObj->get<TList>(pathToFile.value.c_str());
     if (!l) {
-      LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
+      LOG(error) << "Could not open the file " << pathToFile.value;
       return;
     }
     l->ls();
 
-    auto get2DWeightHisto = [&](Configurable<std::string> name) {
+    auto get2DWeightHisto = [&](Configurable<std::string> name, TH2F*& histo) {
       LOG(info) << "Looking for 2D weight histogram '" << name.value << "' for " << name.name;
       if (name.value == "") {
         LOG(info) << " -> Skipping";
-        return nullptr;
       }
-      TH2F* histo = static_cast<TH2F*>(l->FindObject(name.value.c_str()));
+      histo = static_cast<TH2F*>(l->FindObject(name.value.c_str()));
       if (!histo) {
         LOG(error) << "Could not open histogram '" << name.value << "'";
-        return nullptr;
       }
       LOG(info) << "Opened histogram " << histo->ClassName() << " " << histo->GetName();
-      return histo;
     };
 
-    twodWeightsK0Jet = get2DWeightHisto(histoNameWeightK0Jet);
-    twodWeightsK0Ue = get2DWeightHisto(histoNameWeightK0Ue);
-    twodWeightsLambdaJet = get2DWeightHisto(histoNameWeightLambdaJet);
-    twodWeightsLambdaUe = get2DWeightHisto(histoNameWeightLambdaUe);
-    twodWeightsAntilambdaJet = get2DWeightHisto(histoNameWeightAntilambdaJet);
-    twodWeightsAntilambdaUe = get2DWeightHisto(histoNameWeightAntilambdaUe);
+    get2DWeightHisto(histoNameWeightK0Jet, twodWeightsK0Jet);
+    get2DWeightHisto(histoNameWeightK0Ue, twodWeightsK0Ue);
+    get2DWeightHisto(histoNameWeightLambdaJet, twodWeightsLambdaJet);
+    get2DWeightHisto(histoNameWeightLambdaUe, twodWeightsLambdaUe);
+    get2DWeightHisto(histoNameWeightAntilambdaJet, twodWeightsAntilambdaJet);
+    get2DWeightHisto(histoNameWeightAntilambdaUe, twodWeightsAntilambdaUe);
 
-    auto get1DWeightHisto = [&](Configurable<std::string> name) {
+    auto get1DWeightHisto = [&](Configurable<std::string> name, TH1F*& histo) {
       LOG(info) << "Looking for 1D weight histogram '" << name.value << "' for " << name.name;
       if (name.value == "") {
         LOG(info) << " -> Skipping";
         return nullptr;
       }
-      TH1F* histo = static_cast<TH1F*>(l->FindObject(name.value.c_str()));
+      histo = static_cast<TH1F*>(l->FindObject(name.value.c_str()));
       if (!histo) {
         LOG(error) << "Could not open histogram '" << name.value << "'";
-        return nullptr;
       }
       LOG(info) << "Opened histogram " << histo->ClassName() << " " << histo->GetName();
-      return histo;
     };
 
     // Secondary Lambda
-    weightsXiInJet = get1DWeightHisto(histoNameWeightsXiInJet);
-    weightsXiInUe = get1DWeightHisto(histoNameWeightsXiInUe);
-    weightsAntiXiInJet = get1DWeightHisto(histoNameWeightsAntiXiInJet);
-    weightsAntiXiInUe = get1DWeightHisto(histoNameWeightsAntiXiInUestr);
+    get1DWeightHisto(histoNameWeightsXiInJet, weightsXiInJet);
+    get1DWeightHisto(histoNameWeightsXiInUe, weightsXiInUe);
+    get1DWeightHisto(histoNameWeightsAntiXiInJet, weightsAntiXiInJet);
+    get1DWeightHisto(histoNameWeightsAntiXiInUe, weightsAntiXiInUe);
   }
 
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, StrHadronDaughterTracks const& tracks)
