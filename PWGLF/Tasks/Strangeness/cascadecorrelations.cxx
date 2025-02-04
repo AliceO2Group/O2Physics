@@ -208,20 +208,20 @@ struct CascadeSelector {
     // fill event selection based on which selection criteria are applied and passed
     // do not skip the collision - this will lead to the cascadeFlag table having less entries than the Cascade table, and therefor not joinable.
     registry.fill(HIST("hEventSel"), 0);
-    if (doSel8 && !collision.sel8()){
+    if (doSel8 && !collision.sel8()) {
       evSel = false;
       registry.fill(HIST("hEventSel"), 1);
-    } else if (collision.multNTracksPVeta1() <= INEL){
-      evSel = false; 
+    } else if (collision.multNTracksPVeta1() <= INEL) {
+      evSel = false;
       registry.fill(HIST("hEventSel"), 2);
-    } else if (std::abs(collision.posZ()) > maxVertexZ){
+    } else if (std::abs(collision.posZ()) > maxVertexZ) {
       evSel = false;
       registry.fill(HIST("hEventSel"), 3);
-    } else if (doNoSameBunchPileUp && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)){
+    } else if (doNoSameBunchPileUp && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       evSel = false;
       registry.fill(HIST("hEventSel"), 4);
     }
-    if(evSel) // passes all selections
+    if (evSel) // passes all selections
       registry.fill(HIST("hEventSel"), 5);
 
     for (auto const& casc : Cascades) {
@@ -334,7 +334,7 @@ struct CascadeSelector {
           cascflags(2);
           registry.fill(HIST("hSelectionStatus"), 6); // passes bach PID
           // registry.fill(HIST("hMassXi5"), casc.mXi(), casc.pt());
-          if (casc.sign() < 0){
+          if (casc.sign() < 0) {
             registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.yXi());
             registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt(), casc.yOmega());
           } else {
@@ -346,7 +346,7 @@ struct CascadeSelector {
         cascflags(1);
         registry.fill(HIST("hSelectionStatus"), 6); // passes bach PID
         // registry.fill(HIST("hMassXi5"), casc.mXi(), casc.pt());
-        if (casc.sign() < 0){
+        if (casc.sign() < 0) {
           registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.yXi());
         } else {
           registry.fill(HIST("hMassXiPlus"), casc.mXi(), casc.pt(), casc.yXi());
@@ -355,7 +355,7 @@ struct CascadeSelector {
       } else if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor) {
         cascflags(3);
         registry.fill(HIST("hSelectionStatus"), 6); // passes bach PID
-        if (casc.sign() < 0){
+        if (casc.sign() < 0) {
           registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt(), casc.yOmega());
         } else {
           registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt(), casc.yOmega());
