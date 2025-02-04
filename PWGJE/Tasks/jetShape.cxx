@@ -15,6 +15,7 @@
 
 #include <string>
 #include <vector>
+#include <cmath>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -55,7 +56,7 @@ struct JetShapeTask {
                               {"rho", "rho", {HistType::kTH1F, {{200, -1, 119}}}},
                               {"ptCorr", "Corrected jet pT; p_{T}^{corr} (GeV/c); Counts", {HistType::kTH1F, {{200, 0, 200}}}},
                               {"ptCorrVsDistance", "ptcorr_vs_distance", {HistType::kTH2F, {{70, 0, 0.7}, {100, 0, 100}}}},
-                              {"trackPtVsDistance", "trackpt_vs_distance", {HistType::kTH2F, {{70, 0, 0.7}, {100, 0, 100}}}},
+                              {"distanceVsTrackpt", "trackpt_vs_distance", {HistType::kTH2F, {{70, 0, 0.7}, {100, 0, 100}}}},
                               {"ptSum", "ptSum", {HistType::kTH2F, {{14, 0, 0.7}, {300, 0, 300}}}},
                               {"ptSumBg1", "ptSumBg1", {HistType::kTH2F, {{14, 0, 0.7}, {300, 0, 300}}}},
                               {"ptSumBg2", "ptSumBg2", {HistType::kTH2F, {{14, 0, 0.7}, {300, 0, 300}}}},
@@ -96,7 +97,7 @@ struct JetShapeTask {
       if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
-      if (jet.area() < o2::constants::math::PIHALF * (jet.r() / 100.0) * (jet.r() / 100.0)) {
+      if (jet.area() < o2::constants::math::PIHalf * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
@@ -133,7 +134,7 @@ struct JetShapeTask {
 
   Preslice<soa::Filtered<aod::ChargedMCParticleLevelJets>> perMcCollisionJets = aod::jet::mcCollisionId;
 
-  void processCharged(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<JetTracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass> const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
+  void processJetShape(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, JetTracks const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -161,25 +162,18 @@ struct JetShapeTask {
 
         preDeltaPhi1 = track.phi() - jet.phi();
 
-        if (preDeltaPhi1 > o2::constants::math::PI) {
-          deltaPhi1 = preDeltaPhi1 - o2::constants::math::TWO_PI;
-        } else if (preDeltaPhi1 < -o2::constants::math::PI) {
-          deltaPhi1 = preDeltaPhi1 + o2::constants::math::TWO_PI;
-        } else {
-          deltaPhi1 = preDeltaPhi1;
-        }
+        deltaPhi1 = RecoDecay::constrainAngle(preDeltaPhi1);
 
         float distance = std::sqrt(deltaEta * deltaEta + deltaPhi1 * deltaPhi1);
-        registry.fill(HIST("trackPtVsDistance"), distance, track.pt());
-        registry.fill(HIST("ptCorrVsDistance"), distance, ptCorr);
 
+        registry.fill(HIST("ptCorrVsDistance"), distance, ptCorr);
         registry.fill(HIST("ptVsCentrality"), collision.centrality(), track.pt());
 
         double trackPtSum[14] = {0};
         double trackPtSumBg1[14] = {0};
         double trackPtSumBg2[14] = {0};
-        double phi2 = jet.phi() + (o2::constants::math::PIHALF);
-        double phi3 = jet.phi() - (o2::constants::math::PIHALF);
+        double phi2 = jet.phi() + (o2::constants::math::PIHalf);
+        double phi3 = jet.phi() - (o2::constants::math::PIHalf);
         double preDeltaPhi2 = 0;
         double deltaPhi2 = 0;
         double preDeltaPhi3 = 0;
@@ -188,21 +182,9 @@ struct JetShapeTask {
         preDeltaPhi2 = track.phi() - phi2;
         preDeltaPhi3 = track.phi() - phi3;
 
-        if (preDeltaPhi2 > o2::constants::math::PI) {
-          deltaPhi2 = preDeltaPhi2 - o2::constants::math::TWO_PI;
-        } else if (preDeltaPhi2 < -o2::constants::math::PI) {
-          deltaPhi2 = preDeltaPhi2 + o2::constants::math::TWO_PI;
-        } else {
-          deltaPhi2 = preDeltaPhi2;
-        }
+        deltaPhi2 = RecoDecay::constrainAngle(preDeltaPhi2);
 
-        if (preDeltaPhi3 > o2::constants::math::PI) {
-          deltaPhi3 = preDeltaPhi3 - o2::constants::math::TWO_PI;
-        } else if (preDeltaPhi3 < -o2::constants::math::PI) {
-          deltaPhi3 = preDeltaPhi3 + o2::constants::math::TWO_PI;
-        } else {
-          deltaPhi3 = preDeltaPhi3;
-        }
+        deltaPhi3 = RecoDecay::constrainAngle(preDeltaPhi3);
 
         deltaEta = track.eta() - jet.eta();
 
@@ -216,7 +198,7 @@ struct JetShapeTask {
             trackPtSum[i] += track.pt();
         }
 
-        for (int8_t i = 0; i < 14; i++) {
+        for (int i = 0; i < 14; i++) {
           ptDensity[i] += trackPtSum[i] / (0.05 * ptCorr);
         }
 
@@ -237,14 +219,6 @@ struct JetShapeTask {
         for (int i = 0; i < 14; i++) {
           ptDensityBg2[i] += trackPtSumBg2[i] / (0.05 * ptCorr);
         }
-
-        registry.fill(HIST("tpcDedx"), track.pt(), track.tpcSignal());
-        registry.fill(HIST("tofBeta"), track.pt(), track.beta());
-        registry.fill(HIST("tofMass"), track.mass());
-        registry.fill(HIST("tpcPi"), track.pt(), track.tpcNSigmaPi());
-        registry.fill(HIST("tofPi"), track.pt(), track.tofNSigmaPi());
-        registry.fill(HIST("tpcPr"), track.pt(), track.tpcNSigmaPr());
-        registry.fill(HIST("tofPr"), track.pt(), track.tofNSigmaPr());
       }
 
       registry.fill(HIST("jetPt"), jet.pt());
@@ -266,7 +240,55 @@ struct JetShapeTask {
       }
     }
   }
-  PROCESS_SWITCH(JetShapeTask, processCharged, "charged jets", true);
+  PROCESS_SWITCH(JetShapeTask, processJetShape, "JetShape", true);
+
+  void processProductionRatio(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<JetTracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass> const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
+  {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
+
+    for (auto const& jet : jets) {
+      if (!isAcceptedJet<JetTracks>(jet)) {
+        continue;
+      }
+
+      for (const auto& track : tracks) {
+        if (track.tpcNClsCrossedRows() < 70) {
+          continue;
+        }
+        if (std::fabs(track.dcaXY()) > 0.2) {
+          continue;
+        }
+        if (track.itsNCls() < 2) {
+          continue;
+        }
+        if (std::abs(track.eta()) > 0.6) {
+          continue;
+        }
+
+        registry.fill(HIST("tpcDedx"), track.pt(), track.tpcSignal());
+        registry.fill(HIST("tofBeta"), track.pt(), track.beta());
+        registry.fill(HIST("tofMass"), track.mass());
+        registry.fill(HIST("tpcPi"), track.pt(), track.tpcNSigmaPi());
+        registry.fill(HIST("tofPi"), track.pt(), track.tofNSigmaPi());
+        registry.fill(HIST("tpcPr"), track.pt(), track.tpcNSigmaPr());
+        registry.fill(HIST("tofPr"), track.pt(), track.tofNSigmaPr());
+
+        double preDeltaPhi1 = 0;
+        double deltaPhi1 = 0;
+        double deltaEta = 0;
+
+        preDeltaPhi1 = track.phi() - jet.phi();
+        deltaPhi1 = RecoDecay::constrainAngle(preDeltaPhi1);
+
+        float distance = std::sqrt(deltaEta * deltaEta + deltaPhi1 * deltaPhi1);
+
+        registry.fill(HIST("distanceVsTrackpt"), distance, track.pt());
+      }
+    }
+  }
+  PROCESS_SWITCH(JetShapeTask, processProductionRatio, "production ratio", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetShapeTask>(cfgc)}; }
