@@ -84,7 +84,6 @@ DECLARE_SOA_TABLE(SYSTEMTREE, "AOD", "SystemTree", fourpi::RunNumber, fourpi::M,
                   fourpi::PosX, fourpi::PosY, fourpi::PosZ, fourpi::TotalCharge, fourpi::TotalFT0AmplitudeA, fourpi::TotalFT0AmplitudeC, fourpi::TotalFV0AmplitudeA,
                   fourpi::TotalFDDAmplitudeA, fourpi::TotalFDDAmplitudeC,
                   fourpi::TimeFT0A, fourpi::TimeFT0C, fourpi::TimeFV0A, fourpi::TimeFDDA, fourpi::TimeFDDC);
-                  //fourpi::TrackSign, fourpi::TrackM, fourpi::TrackPt, fourpi::TrackEta, fourpi::TrackPhi);
 } // namespace o2::aod
 
 struct upcRhoFAnalysis {
@@ -149,19 +148,14 @@ struct upcRhoFAnalysis {
   {
     if (!track.isPVContributor())
       return false;
-    //registry.fill(HIST("QC/tracks/hSelectionCounter"), 1);
     if (!track.hasITS() || !track.hasTPC())
       return false;
-    //registry.fill(HIST("QC/tracks/hSelectionCounter"), 2);
     if (requireTof && !track.hasTOF())
       return false;
-    //registry.fill(HIST("QC/tracks/hSelectionCounter"), 3);
     if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0182 + 0.0350 / std::pow(track.pt(), 1.01))) // Run 2 dynamic DCA cut
       return false;
-    //registry.fill(HIST("QC/tracks/hSelectionCounter"), 4);
     if (std::abs(eta(track.px(), track.py(), track.pz())) > PcEtaCut)
       return false;
-    //registry.fill(HIST("QC/tracks/hSelectionCounter"), 5);
     return true;
   }
 
