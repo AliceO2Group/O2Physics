@@ -296,8 +296,6 @@ struct upcRhoFAnalysis {
       collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.timeFV0A(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
       collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC());
       
-      
-      //trackSigns, trackMs, trackPts, trackEtas, trackPhis);
       //registry.fill(HIST("4pi/hM"), mass);
       //registry.fill(HIST("4pi/hPt"), pT);
       //registry.fill(HIST("4pi/hEta"), rapiditiy);
