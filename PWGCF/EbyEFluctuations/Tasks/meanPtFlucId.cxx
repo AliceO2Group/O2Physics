@@ -44,7 +44,7 @@ struct MeanPtFlucId {
   Configurable<int> nPBins{"nPBins", 300, ""};
   Configurable<int> nPartBins{"nPartBins", 250, ""};
   Configurable<int> nCentBins{"nCentBins", 101, ""};
-  Configurable<int> nRapBins{"nEtaBins", 100, ""};
+  Configurable<int> nRapBins{"nRapBins", 100, ""};
   Configurable<int> nPhiBins{"nPhiBins", 100, ""};
   Configurable<float> cfgCutPtMax{"cfgCutPtMax", 3.0, "maximum pT"};
   Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.15, "minimum pT"};
