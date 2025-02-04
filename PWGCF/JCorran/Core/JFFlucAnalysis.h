@@ -142,6 +142,8 @@ class JFFlucAnalysis : public TNamed
   using hasWeightNUA = decltype(std::declval<T&>().weightNUA());
   template <class T>
   using hasWeightEff = decltype(std::declval<T&>().weightEff());
+  template <class T>
+  using hasSign = decltype(std::declval<T&>().sign());
 
   template <class JInputClass>
   inline void FillQA(JInputClass& inputInst, UInt_t type = 0u)
@@ -154,7 +156,9 @@ class JFFlucAnalysis : public TNamed
       using JInputClassIter = typename JInputClass::iterator;
       if constexpr (std::experimental::is_detected<hasWeightEff, const JInputClassIter>::value)
         corrInv /= track.weightEff();
-      pht[HIST_THN_PTETA]->Fill(fCent, track.pt(), track.eta(), corrInv);
+      if constexpr (std::experimental::is_detected<hasSign, const JInputClassIter>::value)
+        pht[HIST_THN_PTETA]->Fill(fCent, track.pt(), track.eta(), track.sign(), corrInv);
+      else pht[HIST_THN_PTETA]->Fill(fCent, track.pt(), track.eta(), 0.0, corrInv);
       if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value)
         corrInv /= track.weightNUA();
       pht[HIST_THN_PHIETA]->Fill(fCent, track.phi(), track.eta(), corrInv);
