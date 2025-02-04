@@ -16,6 +16,7 @@
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
+#include <vector>
 #include "TMath.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseCollisionSelection.h"
