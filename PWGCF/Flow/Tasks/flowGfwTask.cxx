@@ -79,7 +79,7 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileup, bool, false, "kNoSameBunchPileup");
   O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, false, "kIsGoodZvtxFT0vsPV");
   O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, false, "kNoCollInTimeRangeStandard");
-   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, false, "kIsGoodITSLayersAll")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, false, "kIsGoodITSLayersAll")
   O2_DEFINE_CONFIGURABLE(cfgOccupancy, bool, false, "Bool for event selection on detector occupancy");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, false, "Use additional event cut on mult correlations");
   O2_DEFINE_CONFIGURABLE(FineBinning, bool, false, "Manually change to fine binning")
@@ -564,8 +564,8 @@ struct FlowGfwTask {
       }
       registry.fill(HIST("hEventCount"), kNOCOLLINTIMERANGESTANDART);
     }
-    if (cfgEvSelkIsGoodITSLayersAll){
-     if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (cfgEvSelkIsGoodITSLayersAll) {
+      if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         // no other collisions in this Readout Frame with per-collision multiplicity above threshold
         return false;
       }
@@ -649,7 +649,6 @@ struct FlowGfwTask {
     }
   }
 
-
   // Apply process filters
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
@@ -721,27 +720,25 @@ struct FlowGfwTask {
     registry.fill(HIST("multT0A_centT0A_Aft"), collision.centFT0A(), collision.multFT0A());
     registry.fill(HIST("multFT0M_centFT0M_Aft"), collision.centFT0M(), collision.multFT0M());
 
-
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
-    if (foundBC.has_zdc())
-    {
-        registry.fill(HIST("hEventCounterForZDC"), 1);
+    if (foundBC.has_zdc()) {
+      registry.fill(HIST("hEventCounterForZDC"), 1);
 
       // FT0 amplitude to use in fine binning
       double ft0aAmp = 0;
       double ft0cAmp = 0;
 
-     if (collision.has_foundFT0()) {
+      if (collision.has_foundFT0()) {
         auto ft0 = collision.foundFT0();
         for (const auto& amplitude : ft0.amplitudeA()) {
-         ft0aAmp += amplitude;
+          ft0aAmp += amplitude;
         }
         for (const auto& amplitude : ft0.amplitudeC()) {
           ft0cAmp += amplitude;
-       }
-     } else{
+        }
+      } else {
         ft0aAmp = ft0cAmp = -999;
-     }
+      }
 
       registry.fill(HIST("FT0AAmp"), ft0aAmp);
       registry.fill(HIST("FT0CAmp"), ft0cAmp);
@@ -758,10 +755,10 @@ struct FlowGfwTask {
       auto aZEM1 = zdcread.amplitudeZEM1();
       auto aZEM2 = zdcread.amplitudeZEM2();
 
-      registry.fill(HIST("ZNAcoll"),aZNA);
-      registry.fill(HIST("ZNCcoll"),aZNC);
-      registry.fill(HIST("ZPAcoll"),aZPA);
-      registry.fill(HIST("ZPCcoll"),aZPC);
+      registry.fill(HIST("ZNAcoll"), aZNA);
+      registry.fill(HIST("ZNCcoll"), aZNC);
+      registry.fill(HIST("ZPAcoll"), aZPA);
+      registry.fill(HIST("ZPCcoll"), aZPC);
 
       double aZDC = aZNC + aZNA + aZPA + aZPC;
       registry.fill(HIST("ZNvsFT0correl"), (ft0aAmp + ft0aAmp) / 100., aZNC + aZNA);
@@ -769,18 +766,18 @@ struct FlowGfwTask {
 
       registry.fill(HIST("ZNvsZEMcoll"), aZEM1 + aZEM2, aZNA + aZNC);
 
-      if(centrality>=0 && centrality<=5){
+      if (centrality >= 0 && centrality <= 5) {
         registry.fill(HIST("ZNvsZEMcoll05"), aZEM1 + aZEM2, aZNA + aZNC);
-      }else if (centrality>5 && centrality<=10){
+      } else if (centrality > 5 && centrality <= 10) {
         registry.fill(HIST("ZNvsZEMcoll510"), aZEM1 + aZEM2, aZNA + aZNC);
-      }else if (centrality>10 && centrality<=20){
+      } else if (centrality > 10 && centrality <= 20) {
         registry.fill(HIST("ZNvsZEMcoll1020"), aZEM1 + aZEM2, aZNA + aZNC);
-      }else if (centrality>20 && centrality<=30){
+      } else if (centrality > 20 && centrality <= 30) {
         registry.fill(HIST("ZNvsZEMcoll2030"), aZEM1 + aZEM2, aZNA + aZNC);
-      }else{
+      } else {
         registry.fill(HIST("ZNvsZEMcollrest"), aZEM1 + aZEM2, aZNA + aZNC);
       }
-    }//End of ZDC
+    } // End of ZDC
 
     // track weights
     float weff = 1, wacc = 1;
@@ -794,8 +791,7 @@ struct FlowGfwTask {
     // track loop
     int globalTracksNch = 0;
 
-    for (const auto& track : tracks)
-    {
+    for (const auto& track : tracks) {
       if (!trackSelected(track))
         continue;
 
