@@ -94,7 +94,7 @@ struct jflucWeightsLoader {
       float phiWeight, effWeight;
       if (ph) {
         UInt_t partType = 0; // partType 0 = all charged hadrons
-        //TODO: code below to be enabled
+        // TODO: code below to be enabled
         /*if constexpr (std::experimental::is_detected<hasDecay, typename TrackT::iterator>::value) {
           switch (track.decay()) {
             case aod::cf2prongtrack::D0ToPiK:
