@@ -98,10 +98,10 @@ struct LFNucleiBATask {
   } nsigmaTPCvar;
 
   struct : ConfigurableGroup {
-    Configurable<bool> useITSTrCut{"useITSTrCut", false, "Select Helium if NOT compatible with triton hypothesis (via SigmaITS)"};
-    Configurable<float> nsigmaITSTr{"nsigmaITSTr", 3.f, "Value of the Nsigma ITS cut for tritons ( > nSigmaITSTr)"};
-    // Configurable<bool> useITSHeCut{"useITSHeCut", false, "Select Helium if compatible with helium hypothesis (via SigmaITS)"};
-    // Configurable<float> nsigmaITSHe{"nsigmaITSHe", 3.f, "Value of the Nsigma ITS cut for helium-3 ( < nSigmaITSHe)"};
+    // Configurable<bool> useITSTrCut{"useITSTrCut", false, "Select Helium if NOT compatible with triton hypothesis (via SigmaITS)"};
+    // Configurable<float> nsigmaITSTr{"nsigmaITSTr", 3.f, "Value of the Nsigma ITS cut for tritons ( > nSigmaITSTr)"};
+    Configurable<bool> useITSHeCut{"useITSHeCut", false, "Select Helium if compatible with helium hypothesis (via SigmaITS)"};
+    Configurable<float> nsigmaITSHe{"nsigmaITSHe", -1.f, "Value of the Nsigma ITS cut for helium-3 ( > nSigmaITSHe)"};
   } nsigmaITSvar;
 
   // Set additional cuts (used for debug)
@@ -2323,13 +2323,13 @@ struct LFNucleiBATask {
       isDe = isDeuteron && track.sign() > 0;
       isAntiDe = isDeuteron && track.sign() < 0;
 
-      if (!nsigmaITSvar.useITSTrCut) {
-        isHe = isHelium && track.sign() > 0;
-        isAntiHe = isHelium && track.sign() < 0;
-      } else {
-        isHe = isHelium && track.sign() > 0 && std::abs(nITSTr) > nsigmaITSvar.nsigmaITSTr;
-        isAntiHe = isHelium && track.sign() < 0 && std::abs(nITSTr) > nsigmaITSvar.nsigmaITSTr;
+      // nSigmaITSHe cut
+      if (nsigmaITSvar.useITSHeCut && (nITSHe <= nsigmaITSvar.nsigmaITSHe)) {
+        continue;
       }
+
+      isHe = isHelium && track.sign() > 0;
+      isAntiHe = isHelium && track.sign() < 0;
 
       isDeWoDCAxy = isDe && passDCAzCutDe;
       isAntiDeWoDCAxy = isAntiDe && passDCAzCutAntiDe;
