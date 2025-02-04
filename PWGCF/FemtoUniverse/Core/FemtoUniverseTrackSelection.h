@@ -318,7 +318,7 @@ void FemtoUniverseTrackSelection::init(HistogramRegistry* registry)
     mHistogramRegistry->add((folderName + "/hTPCcrossedRows").c_str(), "; TPC crossed rows; Entries", kTH1F, {{163, 0, 163}});
     mHistogramRegistry->add((folderName + "/hTPCfindableVsCrossed").c_str(), ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, 0, 163}, {163, 0, 163}});
     mHistogramRegistry->add((folderName + "/hTPCshared").c_str(), "; TPC shared clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
-    mHistogramRegistry->add((folderName + "/hTPCfracshared").c_str(), "; TPC fraction of shared clusters; Entries", kTH1F, {{100, 0.0, 100.0}});
+    mHistogramRegistry->add((folderName + "/hTPCfractionSharedCls").c_str(), "; TPC fraction of shared clusters; Entries", kTH1F, {{100, 0.0, 100.0}});
     mHistogramRegistry->add((folderName + "/hITSclusters").c_str(), "; ITS clusters; Entries", kTH1F, {{10, -0.5, 9.5}});
     mHistogramRegistry->add((folderName + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", kTH1F, {{10, -0.5, 9.5}});
     mHistogramRegistry->add((folderName + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
