@@ -16,8 +16,10 @@
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#include "TMath.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <vector>
+
+#include "TMath.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseCollisionSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
@@ -100,6 +102,7 @@ struct femtoUniverseProducerReducedTask {
   Configurable<std::vector<float>> ConfTrkTPCfCls{FemtoUniverseTrackSelection::getSelectionName(femto_universe_track_selection::kTPCfClsMin, "ConfTrk"), std::vector<float>{0.7f, 0.83f, 0.9f}, FemtoUniverseTrackSelection::getSelectionHelper(femto_universe_track_selection::kTPCfClsMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkTPCcRowsMin{FemtoUniverseTrackSelection::getSelectionName(femto_universe_track_selection::kTPCcRowsMin, "ConfTrk"), std::vector<float>{70.f, 60.f, 80.f}, FemtoUniverseTrackSelection::getSelectionHelper(femto_universe_track_selection::kTPCcRowsMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkTPCsCls{FemtoUniverseTrackSelection::getSelectionName(femto_universe_track_selection::kTPCsClsMax, "ConfTrk"), std::vector<float>{0.1f, 160.f}, FemtoUniverseTrackSelection::getSelectionHelper(femto_universe_track_selection::kTPCsClsMax, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkTPCfracsCls{FemtoUniverseTrackSelection::getSelectionName(femto_universe_track_selection::kTPCfracsClsMax, "ConfTrk"), std::vector<float>{0.1f, 160.f}, FemtoUniverseTrackSelection::getSelectionHelper(femto_universe_track_selection::kTPCfracsClsMax, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkITSnclsMin{FemtoUniverseTrackSelection::getSelectionName(femto_universe_track_selection::kITSnClsMin, "ConfTrk"), std::vector<float>{-1.f, 2.f, 4.f}, FemtoUniverseTrackSelection::getSelectionHelper(femto_universe_track_selection::kITSnClsMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkITSnclsIbMin{FemtoUniverseTrackSelection::getSelectionName(femto_universe_track_selection::kITSnClsIbMin, "ConfTrk"), std::vector<float>{-1.f, 1.f}, FemtoUniverseTrackSelection::getSelectionHelper(femto_universe_track_selection::kITSnClsIbMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkDCAxyMax{FemtoUniverseTrackSelection::getSelectionName(femto_universe_track_selection::kDCAxyMax, "ConfTrk"), std::vector<float>{0.1f, 0.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femto_universe_track_selection::kDCAxyMax, "Track selection: ")}; /// here we need an open cut to do the DCA fits later on!
@@ -129,6 +132,7 @@ struct femtoUniverseProducerReducedTask {
     trackCuts.setSelection(ConfTrkTPCfCls, femto_universe_track_selection::kTPCfClsMin, femto_universe_selection::kLowerLimit);
     trackCuts.setSelection(ConfTrkTPCcRowsMin, femto_universe_track_selection::kTPCcRowsMin, femto_universe_selection::kLowerLimit);
     trackCuts.setSelection(ConfTrkTPCsCls, femto_universe_track_selection::kTPCsClsMax, femto_universe_selection::kUpperLimit);
+    trackCuts.setSelection(ConfTrkTPCfracsCls, femto_universe_track_selection::kTPCfracsClsMax, femto_universe_selection::kUpperLimit);
     trackCuts.setSelection(ConfTrkITSnclsMin, femto_universe_track_selection::kITSnClsMin, femto_universe_selection::kLowerLimit);
     trackCuts.setSelection(ConfTrkITSnclsIbMin, femto_universe_track_selection::kITSnClsIbMin, femto_universe_selection::kLowerLimit);
     trackCuts.setSelection(ConfTrkDCAxyMax, femto_universe_track_selection::kDCAxyMax, femto_universe_selection::kAbsUpperLimit);
@@ -289,6 +293,7 @@ struct femtoUniverseProducerReducedTask {
                          track.tpcNClsFindable(),
                          (uint8_t)track.tpcNClsCrossedRows(),
                          track.tpcNClsShared(),
+                         track.tpcFractionSharedCls(),
                          track.tpcInnerParam(),
                          track.itsNCls(),
                          track.itsNClsInnerBarrel(),
