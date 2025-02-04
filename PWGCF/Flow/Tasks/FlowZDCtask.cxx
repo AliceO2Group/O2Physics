@@ -121,8 +121,8 @@ struct FlowZDCtask {
   ConfigurableAxis axisFT0CAmp{"axisFT0CAmp", {5000, 0, 5000}, "axisFT0CAmp"};
   ConfigurableAxis axisFT0AAmp{"axisFT0AAmp", {5000, 0, 5000}, "axisFT0AAmp"};
   ConfigurableAxis axisFT0MAmp{"axisFT0MAmp", {10000, 0, 10000}, "axisFT0MAmp"};
-  ConfigurableAxis ft0cMultHistBin{"FT0CMultDistBinning", {501, -0.5, 500.5}, ""};
-  ConfigurableAxis multHistBin{"MultDistBinning", {501, -0.5, 500.5}, ""};
+  ConfigurableAxis ft0cMultHistBin{"ft0cMultHistBin", {501, -0.5, 500.5}, ""};
+  ConfigurableAxis multHistBin{"multHistBin", {501, -0.5, 500.5}, ""};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
@@ -321,7 +321,7 @@ struct FlowZDCtask {
     for (const auto& track : tracks) {
       if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
         continue;
-      if (fabs(track.dcaXY()) > cfgCutDCAxy)
+      if (std::fabs(track.dcaXY()) > cfgCutDCAxy)
         continue;
       double phi = track.phi();
       nTot++;
@@ -334,7 +334,7 @@ struct FlowZDCtask {
     for (const auto& track : tracks) {
       if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
         continue;
-      if (fabs(track.dcaXY()) > cfgCutDCAxy)
+      if (std::fabs(track.dcaXY()) > cfgCutDCAxy)
         continue;
       pT = track.pt();
       pT++;
@@ -499,7 +499,7 @@ struct FlowZDCtask {
     }
     histos.fill(HIST("VtxZHist"), collision.posZ());
     auto nchTracks = 0;
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (std::abs(track.eta()) >= etaRange) {
         continue;
       }
