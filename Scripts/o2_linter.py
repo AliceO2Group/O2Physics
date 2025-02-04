@@ -373,7 +373,7 @@ class TestPiMultipleFraction(TestSpec):
         pattern_pi = r"(M_PI|TMath::(Two)?Pi\(\)|(((o2::)?constants::)?math::)?(Two)?PI)"
         pattern_multiple = r"(2(\.0*f?)?|0\.2?5f?) \* "  # * 2, 0.25, 0.5
         pattern_fraction = r" / ((2|3|4)([ ,;\)]|\.0*f?))"  # / 2, 3, 4
-        pattern = rf"{pattern_multiple}{pattern_pi}|{pattern_pi}{pattern_fraction}"
+        pattern = rf"{pattern_multiple}{pattern_pi}[^\w]|{pattern_pi}{pattern_fraction}"
         if is_comment_cpp(line):
             return True
         line = remove_comment_cpp(line)
