@@ -506,13 +506,15 @@ struct K0MixedEvents {
     mixbins.clear();
   }
 
+  Filter eventFilter = (aod::evsel::sel8 == true && (nabs(o2::aod::collision::posZ) < _vertexZ));
+
   using RecoMCCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>;
   using GenMCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   // Service<o2::framework::O2DatabasePDG> pdgDB;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
   SliceCache cache;
-  void processMCReco(RecoMCCollisions const& collisions,
+  void processMCReco(soa::Filtered<RecoMCCollisions> const& collisions,
                      GenMCCollisions const&,
                      aod::McParticles const& mcParticles)
   {
