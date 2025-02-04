@@ -40,6 +40,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::evsel;
+using namespace o2::constants::physics;
+using namespace o2::constants::math;
 
 using ColEvSels =
   soa::Join<aod::Collisions, aod::EvSels, aod::FT0MultZeqs, aod::TPCMults>;
@@ -137,7 +139,7 @@ struct UccZdc {
 
     //  Histograms: paritcle-level info
     registryData.add("EtaVsPhi", ";#eta;#varphi", kTH2F,
-                     {{{axisEta}, {100, -0.1 * M_PI, +2.1 * M_PI}}});
+                     {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
     registryData.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
     registryData.add("ptHistogram", "ptHistogram", kTH1F, {axisPt});
 
@@ -228,7 +230,7 @@ struct UccZdc {
     registrySim.add("Pt_MC_rec_re", "Remaining ch particles;p_{T};Entries;",
                     kTH1F, {axisPt});
     registrySim.add("EtaVsPhi_MC_rec", ";#eta;#varphi", kTH2F,
-                    {{{axisEta}, {100, -0.1 * M_PI, +2.1 * M_PI}}});
+                    {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
 
     registrySim.add("numberOfRecoCollisions", "",
                     {HistType::kTH1F, {{6, -0.5, 5.5}}});
@@ -406,15 +408,15 @@ struct UccZdc {
           continue;
         }
         registrySim.fill(HIST("Pt_MC_tru_ch"), particle.pt());
-        if (abs(particle.pdgCode()) == 211) { // pion
+        if (std::abs(particle.pdgCode()) == 211) { // pion
           registrySim.fill(HIST("Pt_MC_tru_pi"), particle.pt());
-        } else if (abs(particle.pdgCode()) == 321) { // kaon
+        } else if (std::abs(particle.pdgCode()) == 321) { // kaon
           registrySim.fill(HIST("Pt_MC_tru_ka"), particle.pt());
-        } else if (abs(particle.pdgCode()) == 2212) { // proton
+        } else if (std::abs(particle.pdgCode()) == 2212) { // proton
           registrySim.fill(HIST("Pt_MC_tru_pr"), particle.pt());
-        } else if (abs(particle.pdgCode()) == 3222) { // positive sigma
+        } else if (std::abs(particle.pdgCode()) == 3222) { // positive sigma
           registrySim.fill(HIST("Pt_MC_tru_sigpos"), particle.pt());
-        } else if (abs(particle.pdgCode()) == 3112) { // negative sigma
+        } else if (std::abs(particle.pdgCode()) == 3112) { // negative sigma
           registrySim.fill(HIST("Pt_MC_tru_signeg"), particle.pt());
         } else { // rest
           registrySim.fill(HIST("Pt_MC_tru_re"), particle.pt());
@@ -448,7 +450,7 @@ struct UccZdc {
 
       const auto& foundBC = collision.foundBC_as<BCsRun3>();
       if (foundBC.has_zdc()) {
-        std::cout << "True" << '\n';
+        return;
       }
       float aT0A{0.0};
       float aT0C{0.0};
@@ -498,15 +500,15 @@ struct UccZdc {
 
         const auto particle = track.mcParticle();
         registrySim.fill(HIST("Pt_MC_rec_ch"), track.pt());
-        if (abs(particle.pdgCode()) == 211) {
+        if (std::abs(particle.pdgCode()) == 211) {
           registrySim.fill(HIST("Pt_MC_rec_pi"), track.pt());
-        } else if (abs(particle.pdgCode()) == 321) {
+        } else if (std::abs(particle.pdgCode()) == 321) {
           registrySim.fill(HIST("Pt_MC_rec_ka"), track.pt());
-        } else if (abs(particle.pdgCode()) == 2212) {
+        } else if (std::abs(particle.pdgCode()) == 2212) {
           registrySim.fill(HIST("Pt_MC_rec_pr"), track.pt());
-        } else if (abs(particle.pdgCode()) == 3222) {
+        } else if (std::abs(particle.pdgCode()) == 3222) {
           registrySim.fill(HIST("Pt_MC_rec_sigpos"), track.pt());
-        } else if (abs(particle.pdgCode()) == 3112) {
+        } else if (std::abs(particle.pdgCode()) == 3112) {
           registrySim.fill(HIST("Pt_MC_rec_signeg"), track.pt());
         } else {
           registrySim.fill(HIST("Pt_MC_rec_re"), track.pt());
