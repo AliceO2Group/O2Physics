@@ -117,8 +117,9 @@ struct Chk892Flow {
   Configurable<int> cNbinsDiv{"cNbinsDiv", 1, "Integer to divide the number of bins"};
   Configurable<int> cNbinsDivQA{"cNbinsDivQA", 1, "Integer to divide the number of bins for QA"};
   ConfigurableAxis cfgAxisV2{"cfgAxisV2", {200, -2, 2}, "Binning of the v2 axis"};
+  ConfigurableAxis cfgAxisPhi{"cfgAxisPhi", {8, 0, constants::math::PI}, "Binning of the #phi axis"};
 
-  /// Event cuts
+  // Event cuts
   o2::analysis::CollisonCuts colCuts;
   Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
@@ -245,6 +246,7 @@ struct Chk892Flow {
     AxisSpec ptAxis = {cfgBinsPt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisQA = {cfgBinsPtQA, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec v2Axis = {cfgAxisV2, "#v_{2}"};
+    AxisSpec phiAxis = {cfgAxisPhi, "2(#phi-#Psi_{2})"};
     AxisSpec radiusAxis = {50, 0, 5, "Radius (cm)"};
     AxisSpec cpaAxis = {30, 0.97, 1.0, "CPA"};
     AxisSpec tauAxis = {250, 0, 25, "Lifetime (cm)"};
@@ -341,8 +343,8 @@ struct Chk892Flow {
 
     // Kstar
     // Invariant mass nSparse
-    histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis});
-    histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis});
+    histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis});
+    histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis, phiAxis});
 
     // Mass QA (quick check)
     histos.add("QA/before/KstarRapidity", "Rapidity distribution of chK(892)", HistType::kTH1D, {yAxis});
@@ -821,7 +823,7 @@ struct Chk892Flow {
         histos.fill(HIST("QA/after/hInvmassSecondary"), trkkMass);
 
         histos.fill(HIST("QA/after/k0sv2vsinvmass"), lResoSecondary.M(), v2K0s);
-        histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s);
+        histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s, static_cast<float>(nmode) * lPhiMinusPsiK0s);
       }
       k0sIndicies.push_back(k0sCand.index());
     }
@@ -854,7 +856,7 @@ struct Chk892Flow {
           histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
           histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
           histos.fill(HIST("QA/after/kstarv2vsinvmass"), lResoKstar.M(), v2Kstar);
-          histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), v2Kstar);
+          histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), v2Kstar, static_cast<float>(nmode) * lPhiMinusPsiKstar);
 
           if (cfgFillRotBkg) {
             for (int i = 0; i < cfgNrotBkg; i++) {
@@ -872,7 +874,7 @@ struct Chk892Flow {
               auto lPhiMinusPsiKstar = RecoDecay::constrainAngle(lResonanceRot.Phi() - lEPDet, 0.0, 2); // constrain angle to range 0, Pi
               auto v2Kstar = std::cos(static_cast<float>(nmode) * lPhiMinusPsiKstar);
               typeKstar = bTrack.sign() > 0 ? BinType::kKstarP_Rot : BinType::kKstarN_Rot;
-              histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), v2Kstar);
+              histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), v2Kstar, static_cast<float>(nmode) * lPhiMinusPsiKstar);
             }
           }
         } // IsMix
