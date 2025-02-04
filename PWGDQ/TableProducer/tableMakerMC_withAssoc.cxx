@@ -149,10 +149,14 @@ struct TableMakerMC {
     Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
     Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiPID1", "barrel track cut"};
     Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
+    Configurable<std::string> fConfigEventCutsJSON{"cfgEventCutsJSON", "", "Additional event selection in JSON format"};
+    Configurable<std::string> fConfigTrackCutsJSON{"cfgBarrelTrackCutsJSON", "", "Additional list of barrel track cuts in JSON format"};
+    Configurable<std::string> fConfigMuonCutsJSON{"cfgMuonCutsJSON", "", "Additional list of muon cuts in JSON format"};
   } fConfigCuts;
 
   // MC signals to be skimmed
   Configurable<std::string> fConfigMCSignals{"cfgMCsignals", "", "Comma separated list of MC signals"};
+  Configurable<std::string> fConfigMCSignalsJSON{"cfgMCsignalsJSON", "", "Additional list of MC signals via JSON"};
 
   // Steer QA output
   struct : ConfigurableGroup {
@@ -162,6 +166,7 @@ struct TableMakerMC {
     Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddMCTruthHistogram{"cfgAddMCTruthHistogram", "", "Comma separated list of histograms"};
+    Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   } fConfigHistOutput;
 
   // Selections to be applied as Filter on the Track and FwdTrack
@@ -199,14 +204,14 @@ struct TableMakerMC {
   o2::parameters::GRPMagField* fGrpMag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
 
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
-  std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
-  std::vector<AnalysisCompositeCut> fMuonCuts;  //! Muon track cuts
+  std::vector<AnalysisCompositeCut*> fTrackCuts; //! Barrel track cuts
+  std::vector<AnalysisCompositeCut*> fMuonCuts;  //! Muon track cuts
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
   // list of MCsignal objects
-  std::vector<MCSignal> fMCSignals;
+  std::vector<MCSignal*> fMCSignals;
   std::map<uint64_t, int> fLabelsMap;
   std::map<uint64_t, int> fLabelsMapReversed;
   std::map<uint64_t, uint16_t> fMCFlags;
@@ -230,10 +235,11 @@ struct TableMakerMC {
       LOG(fatal) << "No process function was enabled for TableMakerMC. Check it out!!!";
     }
 
+    VarManager::SetDefaultVarNames(); // Important that this is called before DefineCuts() !!!
+
     // Define user specified cut
     DefineCuts();
 
-    VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
@@ -263,7 +269,7 @@ struct TableMakerMC {
       // Barrel track histograms after cuts; one directory per cut
       if (fConfigHistOutput.fConfigQA) {
         for (auto& cut : fTrackCuts) {
-          histClasses += Form("TrackBarrel_%s;", cut.GetName());
+          histClasses += Form("TrackBarrel_%s;", cut->GetName());
         }
       }
     }
@@ -276,7 +282,7 @@ struct TableMakerMC {
       // Muon track histograms after cuts; one directory per cut
       if (fConfigHistOutput.fConfigQA) {
         for (auto& muonCut : fMuonCuts) {
-          histClasses += Form("Muons_%s;", muonCut.GetName());
+          histClasses += Form("Muons_%s;", muonCut->GetName());
         }
       }
     }
@@ -285,36 +291,52 @@ struct TableMakerMC {
     TString configNamesStr = fConfigMCSignals.value;
     std::unique_ptr<TObjArray> objArray(configNamesStr.Tokenize(","));
     if (objArray->GetEntries() > 0) {
-      // loop over MC signals
+      // loop over MC signals and add them to the signals array
       for (int isig = 0; isig < objArray->GetEntries(); ++isig) {
         MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objArray->At(isig)->GetName());
         if (sig) {
-          fMCSignals.push_back(*sig);
-          // setup a histogram directory for this MC signal
-          if (fConfigHistOutput.fConfigQA) {
-            histClasses += Form("MCTruth_%s;", objArray->At(isig)->GetName());
-          }
-        } else {
-          continue;
+          fMCSignals.push_back(sig);
         }
-        if (fDoDetailedQA) {
-          if (isBarrelEnabled) {
-            // in case of detailed QA, setup histogram directories for each combination of reconstructed track cuts and MC signals
-            for (auto& cut : fTrackCuts) {
-              histClasses += Form("TrackBarrel_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
-            }
+      }
+    }
+    // Adding additional signals via JSON
+    TString addMCSignalsStr = fConfigMCSignalsJSON.value;
+    if (addMCSignalsStr != "") {
+      std::vector<MCSignal*> addMCSignals = dqmcsignals::GetMCSignalsFromJSON(addMCSignalsStr.Data());
+      for (auto& mcIt : addMCSignals) {
+        if (mcIt) {
+          fMCSignals.push_back(mcIt);
+        }
+      }
+    }
+
+    for (auto& mcIt : fMCSignals) {
+      if (fConfigHistOutput.fConfigQA) {
+        histClasses += Form("MCTruth_%s;", mcIt->GetName());
+      }
+      if (fDoDetailedQA) {
+        if (isBarrelEnabled) {
+          // in case of detailed QA, setup histogram directories for each combination of reconstructed track cuts and MC signals
+          for (auto& cut : fTrackCuts) {
+            histClasses += Form("TrackBarrel_%s_%s;", cut->GetName(), mcIt->GetName());
           }
-          if (isMuonEnabled) {
-            // in case of detailed QA, setup histogram directories for each combination of reconstructed muon cuts and MC signals
-            for (auto& cut : fMuonCuts) {
-              histClasses += Form("Muons_%s_%s;", cut.GetName(), objArray->At(isig)->GetName());
-            }
+        }
+        if (isMuonEnabled) {
+          // in case of detailed QA, setup histogram directories for each combination of reconstructed muon cuts and MC signals
+          for (auto& cut : fMuonCuts) {
+            histClasses += Form("Muons_%s_%s;", cut->GetName(), mcIt->GetName());
           }
         }
       }
     }
 
     DefineHistograms(histClasses);                   // define all histograms
+    // Additional histogram via the JSON configurable
+    TString addHistsStr = fConfigHistOutput.fConfigAddJSONHistograms.value;
+    if (fConfigHistOutput.fConfigQA && addHistsStr != "") {
+      dqhistograms::AddHistogramsFromJSON(fHistMan, addHistsStr.Data());
+    }
+
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
 
@@ -334,13 +356,29 @@ struct TableMakerMC {
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigCuts.fConfigEventCuts.value;
     fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
+    // Extra event cuts via JSON
+    TString addEvCutsStr = fConfigCuts.fConfigEventCutsJSON.value;
+    if (addEvCutsStr != "") {
+      std::vector<AnalysisCut*> addEvCuts = dqcuts::GetCutsFromJSON(addEvCutsStr.Data());
+      for (auto& cutIt : addEvCuts) {
+        fEventCut->AddCut(cutIt);
+      }
+    }
 
     // Barrel track cuts
     TString cutNamesStr = fConfigCuts.fConfigTrackCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+      }
+    }
+    // Additional Barrel track cuts via JSON
+    TString addTrackCutsStr = fConfigCuts.fConfigTrackCutsJSON.value;
+    if (addTrackCutsStr != "") {
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      for (auto& t : addTrackCuts) {
+        fTrackCuts.push_back((AnalysisCompositeCut*)t);
       }
     }
 
@@ -349,7 +387,15 @@ struct TableMakerMC {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fMuonCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fMuonCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+      }
+    }
+    // Additional muon cuts via JSON
+    TString addMuonCutsStr = fConfigCuts.fConfigMuonCutsJSON.value;
+    if (addMuonCutsStr != "") {
+      std::vector<AnalysisCut*> addMuonCuts = dqcuts::GetCutsFromJSON(addMuonCutsStr.Data());
+      for (auto& t : addMuonCuts) {
+        fMuonCuts.push_back((AnalysisCompositeCut*)t);
       }
     }
 
@@ -402,9 +448,9 @@ struct TableMakerMC {
         bool checked = false;
         if constexpr (soa::is_soa_filtered_v<aod::McParticles>) {
           auto mctrack_raw = mcTracks.rawIteratorAt(mctrack.globalIndex());
-          checked = sig.CheckSignal(true, mctrack_raw);
+          checked = sig->CheckSignal(true, mctrack_raw);
         } else {
-          checked = sig.CheckSignal(true, mctrack);
+          checked = sig->CheckSignal(true, mctrack);
         }
         if (checked) {
           mcflags |= (static_cast<uint16_t>(1) << i);
@@ -430,7 +476,7 @@ struct TableMakerMC {
           int j = 0;
           for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
             if (mcflags & (static_cast<uint16_t>(1) << j)) {
-              fHistMan->FillHistClass(Form("MCTruth_%s", (*signal).GetName()), VarManager::fgValues);
+              fHistMan->FillHistClass(Form("MCTruth_%s", (*signal)->GetName()), VarManager::fgValues);
             }
           }
         }
@@ -591,10 +637,10 @@ struct TableMakerMC {
       // apply track cuts and fill histograms
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
-        if ((*cut).IsSelected(VarManager::fgValues)) {
+        if ((*cut)->IsSelected(VarManager::fgValues)) {
           trackTempFilterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigHistOutput.fConfigQA) {
-            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), VarManager::fgValues);
           }
           (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(i));
         }
@@ -667,14 +713,14 @@ struct TableMakerMC {
         int j = 0; // runs over the track cuts
         // check all the specified signals and fill histograms for MC truth matched tracks
         for (auto& sig : fMCSignals) {
-          if (sig.CheckSignal(true, mctrack)) {
+          if (sig->CheckSignal(true, mctrack)) {
             mcflags |= (static_cast<uint16_t>(1) << i);
             // If detailed QA is on, fill histograms for each MC signal and track cut combination
             if (fDoDetailedQA) {
               j = 0;
               for (auto& cut : fTrackCuts) {
                 if (trackTempFilterMap & (uint8_t(1) << j)) {
-                  fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
+                  fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut->GetName(), sig->GetName()), VarManager::fgValues); // fill the reconstructed truth
                 }
                 j++;
               }
@@ -732,11 +778,11 @@ struct TableMakerMC {
           int i = 0; // runs over the MC signals
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
-            if (sig.CheckSignal(true, mctrack)) {
+            if (sig->CheckSignal(true, mctrack)) {
               mcflags |= (static_cast<uint16_t>(1) << i);
               // If detailed QA is on, fill histograms for each MC signal and track cut combination
               if (fDoDetailedQA) {
-                fHistMan->FillHistClass(Form("MFTTrack_%s", sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
+                fHistMan->FillHistClass(Form("MFTTrack_%s", sig->GetName()), VarManager::fgValues); // fill the reconstructed truth
               }
             }
             i++;
@@ -830,10 +876,10 @@ struct TableMakerMC {
       // check the cuts and fill histograms for each fulfilled cut
       int i = 0;
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
-        if ((*cut).IsSelected(VarManager::fgValues)) {
+        if ((*cut)->IsSelected(VarManager::fgValues)) {
           trackTempFilterMap |= (uint8_t(1) << i);
           if (fConfigHistOutput.fConfigQA) {
-            fHistMan->FillHistClass(Form("Muons_%s", (*cut).GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("Muons_%s", (*cut)->GetName()), VarManager::fgValues);
           }
           (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
         }
@@ -867,12 +913,12 @@ struct TableMakerMC {
           int j = 0; // runs over the track cuts
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
-            if (sig.CheckSignal(true, mctrack)) {
+            if (sig->CheckSignal(true, mctrack)) {
               mcflags |= (static_cast<uint16_t>(1) << i);
               if (fDoDetailedQA) {
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
-                    fHistMan->FillHistClass(Form("Muons_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
+                    fHistMan->FillHistClass(Form("Muons_%s_%s", cut->GetName(), sig->GetName()), VarManager::fgValues); // fill the reconstructed truth
                   }
                   j++;
                 }
@@ -1181,7 +1227,7 @@ struct TableMakerMC {
     TH1I* histTracks = new TH1I("TrackStats", "Track statistics", fTrackCuts.size() + 5.0, -0.5, fTrackCuts.size() - 0.5 + 5.0);
     ib = 1;
     for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ib++) {
-      histTracks->GetXaxis()->SetBinLabel(ib, (*cut).GetName());
+      histTracks->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
     }
     const char* v0TagNames[5] = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
     for (int ib = 0; ib < 5; ib++) {
@@ -1191,13 +1237,13 @@ struct TableMakerMC {
     TH1I* histMuons = new TH1I("MuonStats", "Muon statistics", fMuonCuts.size(), -0.5, fMuonCuts.size() - 0.5);
     ib = 1;
     for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, ib++) {
-      histMuons->GetXaxis()->SetBinLabel(ib, (*cut).GetName());
+      histMuons->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
     }
     fStatsList->Add(histMuons);
     TH1I* histMCsignals = new TH1I("MCsignals", "MC signals", fMCSignals.size() + 1, -0.5, fMCSignals.size() - 0.5 + 1.0);
     ib = 1;
     for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, ib++) {
-      histMCsignals->GetXaxis()->SetBinLabel(ib, (*signal).GetName());
+      histMCsignals->GetXaxis()->SetBinLabel(ib, (*signal)->GetName());
     }
     histMCsignals->GetXaxis()->SetBinLabel(fMCSignals.size() + 1, "Others (matched to reco tracks)");
     fStatsList->Add(histMCsignals);

@@ -165,10 +165,8 @@ struct itsPidQa {
   ConfigurableAxis avClsBins{"avClsBins", {200, 0, 20}, "Binning in average cluster size"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
-  Configurable<bool> enableDeDxPlot{"enableDeDxPlot", true, "Enables the dEdx plot (reduces memory footprint if off)"};
   Configurable<int16_t> minTPCNcls{"minTPCNcls", 0, "Minimum number or TPC Clusters for tracks"};
   ConfigurableAxis tpcNclsBins{"tpcNclsBins", {16, 0, 160}, "Binning in number of clusters in TPC"};
-  Configurable<bool> fillTHnSparses{"fillTHnSparses", false, "Flag to fill multidimensional histograms for nsigma vs pt, eta, Ncls"};
 
   template <typename TrackType>
   float averageClusterSizeTrk(const TrackType& track)
@@ -196,7 +194,6 @@ struct itsPidQa {
       ptAxis.makeLogarithmic();
       pAxis.makeLogarithmic();
     }
-    const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
     const AxisSpec avClsAxis{avClsBins, "<ITS Cls. Size>"};
     const AxisSpec avClsEffAxis{avClsBins, "<ITS Cls. Size> / cosh(#eta)"};
 
@@ -253,8 +250,8 @@ struct itsPidQa {
     histos.print();
   }
 
-  Filter eventFilter = (o2::aod::evsel::sel8 == true);
-  Filter trackFilter = (requireGlobalTrackInFilter());
+  Filter eventFilter = (o2::aod::evsel::sel8 == true && nabs(o2::aod::collision::posZ) < 10.f);
+  // Filter trackFilter = (requireGlobalTrackInFilter());
   using CollisionCandidate = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
                                     aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
@@ -264,29 +261,22 @@ struct itsPidQa {
                                     aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe,
                                     aod::pidTOFTr, aod::pidTOFHe, aod::pidTOFAl>;
   void process(CollisionCandidate const& collision,
-               soa::Filtered<TrackCandidates> const& tracks)
+               TrackCandidates const& tracks)
   {
     auto tracksWithPid = soa::Attach<TrackCandidates,
                                      aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi,
                                      aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe,
                                      aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe, aod::pidits::ITSNSigmaAl>(tracks);
 
+    if (tracks.size() != tracksWithPid.size()) {
+      LOG(fatal) << "Mismatch in track table size!" << tracks.size() << " vs " << tracksWithPid.size();
+    }
     histos.fill(HIST("event/evsel"), 1);
-    if (!collision.sel8()) {
-      return;
-    }
-
     histos.fill(HIST("event/evsel"), 2);
-
-    if (std::abs(collision.posZ()) > 10.f) {
-      return;
-    }
     histos.fill(HIST("event/evsel"), 3);
     histos.fill(HIST("event/vertexz"), collision.posZ());
 
-    int nTracks = -1;
     for (const auto& track : tracksWithPid) {
-      nTracks++;
       histos.fill(HIST("event/trackselection"), 1.f);
       if (!track.isGlobalTrack()) { // Skipping non global tracks
         continue;
@@ -312,23 +302,28 @@ struct itsPidQa {
       histos.fill(HIST("event/length"), track.length());
       histos.fill(HIST("event/pt"), track.pt());
       histos.fill(HIST("event/p"), track.p());
-      const auto& t = tracks.iteratorAt(nTracks);
-      histos.fill(HIST("event/averageClusterSize"), track.pt(), averageClusterSizeTrk(track));
-      histos.fill(HIST("event/averageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(track));
+      histos.fill(HIST("event/averageClusterSize"), track.p(), averageClusterSizeTrk(track));
+      histos.fill(HIST("event/averageClusterSizePerCoslInv"), track.p(), averageClusterSizePerCoslInv(track));
       bool discard = false;
       for (int id = 0; id < 9; id++) {
         if (std::abs(nsigmaTPC(track, id)) > tpcSelValues[id]) {
+          LOG(debug) << "Discarding based on TPC hypothesis " << id << " " << std::abs(nsigmaTPC(track, id)) << ">" << tpcSelValues[id];
           discard = true;
+          break;
         }
-        if (std::abs(nsigmaTOF(track, id)) > tofSelValues[id]) {
-          discard = true;
+        if (track.hasTOF()) {
+          if (std::abs(nsigmaTOF(track, id)) > tofSelValues[id]) {
+            LOG(debug) << "Discarding based on TOF hypothesis " << id << " " << std::abs(nsigmaTOF(track, id)) << ">" << tofSelValues[id];
+            discard = true;
+            break;
+          }
         }
       }
       if (discard) {
         continue;
       }
-      histos.fill(HIST("event/SelectedAverageClusterSize"), track.pt(), averageClusterSizeTrk(track));
-      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(track));
+      histos.fill(HIST("event/SelectedAverageClusterSize"), track.p(), averageClusterSizeTrk(track));
+      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.p(), averageClusterSizePerCoslInv(track));
 
       for (o2::track::PID::ID id = 0; id <= o2::track::PID::Last; id++) {
         if (!enableParticle[id]) {
@@ -340,10 +335,10 @@ struct itsPidQa {
           }
         }
         const float nsigma = nsigmaITS(track, id);
-        if (t.sign() > 0) {
-          hNsigmaPos[id]->Fill(t.p(), nsigma);
+        if (track.sign() > 0) {
+          hNsigmaPos[id]->Fill(track.pt(), nsigma);
         } else {
-          hNsigmaNeg[id]->Fill(t.p(), nsigma);
+          hNsigmaNeg[id]->Fill(track.pt(), nsigma);
         }
       }
     }

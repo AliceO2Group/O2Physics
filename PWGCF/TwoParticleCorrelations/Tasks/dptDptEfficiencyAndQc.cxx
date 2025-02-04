@@ -807,7 +807,9 @@ struct DptDptEfficiencyAndQc {
     /* do nothing if not active */
     if (!doprocessDetectorLevelNotStored &&
         !doprocessDetectorLevelNotStoredPID &&
+        !doprocessDetectorLevelNotStoredTunedOnDataPID &&
         !doprocessDetectorLevelNotStoredPIDExtra &&
+        !doprocessDetectorLevelNotStoredTunedOnDataPIDExtra &&
         !doprocessGeneratorLevelNotStored &&
         !doprocessReconstructedNotStored &&
         !doprocessReconstructedNotStoredPID &&
@@ -895,8 +897,8 @@ struct DptDptEfficiencyAndQc {
       noOfNSigmaBins = static_cast<int>((maxNSigma - minNSigma) / widthNSigmaBin);
 
       bool doBasicAnalysis = doprocessDetectorLevelNotStored || doprocessReconstructedNotStored;
-      bool doPidAnalysis = doprocessDetectorLevelNotStoredPID || doprocessReconstructedNotStoredPID;
-      bool doPidExtraAnalysis = doprocessDetectorLevelNotStoredPIDExtra || doprocessReconstructedNotStoredPIDExtra;
+      bool doPidAnalysis = doprocessDetectorLevelNotStoredPID || doprocessDetectorLevelNotStoredTunedOnDataPID || doprocessReconstructedNotStoredPID;
+      bool doPidExtraAnalysis = doprocessDetectorLevelNotStoredPIDExtra || doprocessDetectorLevelNotStoredTunedOnDataPIDExtra || doprocessReconstructedNotStoredPIDExtra;
 
       if (doBasicAnalysis) {
         qaDataCE = new QADataCollectingEngine*[ncmranges];
@@ -1070,7 +1072,17 @@ struct DptDptEfficiencyAndQc {
 
     processTracks<soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>, kPID, kReco>(collision, tracks);
   }
-  PROCESS_SWITCH(DptDptEfficiencyAndQc, processDetectorLevelNotStoredPID, "Process MC detector level PID QA for not stored derived data", true);
+  PROCESS_SWITCH(DptDptEfficiencyAndQc, processDetectorLevelNotStoredPID, "Process MC detector level PID QA for not stored derived data", false);
+
+  void processDetectorLevelNotStoredTunedOnDataPID(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
+                                                   soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection, aod::McTrackLabels, TpcPID, TofPID, aod::mcTPCTuneOnData> const& tracks,
+                                                   soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo> const&)
+  {
+    using namespace efficiencyandqatask;
+
+    processTracks<soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>, kPID, kReco>(collision, tracks);
+  }
+  PROCESS_SWITCH(DptDptEfficiencyAndQc, processDetectorLevelNotStoredTunedOnDataPID, "Process MC detector level tuned on data PID QA for not stored derived data", true);
 
   void processDetectorLevelNotStoredPIDExtra(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
                                              soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection, aod::McTrackLabels, TpcPID, TofPID> const& tracks,
@@ -1080,7 +1092,17 @@ struct DptDptEfficiencyAndQc {
 
     processTracks<soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>, kPIDEXTRA, kReco>(collision, tracks);
   }
-  PROCESS_SWITCH(DptDptEfficiencyAndQc, processDetectorLevelNotStoredPIDExtra, "Process MC detector level PID extra QA for not stored derived data", true);
+  PROCESS_SWITCH(DptDptEfficiencyAndQc, processDetectorLevelNotStoredPIDExtra, "Process MC detector level PID extra QA for not stored derived data", false);
+
+  void processDetectorLevelNotStoredTunedOnDataPIDExtra(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
+                                                        soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection, aod::McTrackLabels, TpcPID, TofPID, aod::mcTPCTuneOnData> const& tracks,
+                                                        soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo> const&)
+  {
+    using namespace efficiencyandqatask;
+
+    processTracks<soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>, kPIDEXTRA, kReco>(collision, tracks);
+  }
+  PROCESS_SWITCH(DptDptEfficiencyAndQc, processDetectorLevelNotStoredTunedOnDataPIDExtra, "Process MC detector level tuned on data PID extra QA for not stored derived data", true);
 };
 
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;

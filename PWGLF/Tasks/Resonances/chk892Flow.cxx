@@ -85,18 +85,8 @@ struct Chk892Flow {
     kKstarN,
     kKstarP_Mix,
     kKstarN_Mix,
-    kKstarP_GenINEL10,
-    kKstarN_GenINEL10,
-    kKstarP_GenINELgt10,
-    kKstarN_GenINELgt10,
-    kKstarP_GenTrig10,
-    kKstarN_GenTrig10,
-    kKstarP_GenEvtSel,
-    kKstarN_GenEvtSel,
-    kKstarP_Rec,
-    kKstarN_Rec,
-    kKstarP_RecRot,
-    kKstarN_RecRot,
+    kKstarP_Rot,
+    kKstarN_Rot,
     kTYEnd
   };
 
@@ -125,6 +115,8 @@ struct Chk892Flow {
   ConfigurableAxis cfgBinsCent{"cfgBinsCent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
   ConfigurableAxis cfgBinsVtxZ{"cfgBinsVtxZ", {VARIABLE_WIDTH, -10.0, -9.0, -8.0, -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "Binning of the z-vertex axis"};
   Configurable<int> cNbinsDiv{"cNbinsDiv", 1, "Integer to divide the number of bins"};
+  Configurable<int> cNbinsDivQA{"cNbinsDivQA", 1, "Integer to divide the number of bins for QA"};
+  ConfigurableAxis cfgAxisV2{"cfgAxisV2", {200, -2, 2}, "Binning of the v2 axis"};
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
@@ -250,23 +242,19 @@ struct Chk892Flow {
     AxisSpec centAxis = {cfgBinsCent, "T0M (%)"};
     AxisSpec vtxzAxis = {cfgBinsVtxZ, "Z Vertex (cm)"};
     AxisSpec epAxis = {100, -1.0 * constants::math::PI, constants::math::PI};
-    AxisSpec epresAxis = {100, -1.02, 1.02};
     AxisSpec ptAxis = {cfgBinsPt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisQA = {cfgBinsPtQA, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec v2Axis = {200, -1, 1, "#v_{2}"};
+    AxisSpec v2Axis = {cfgAxisV2, "#v_{2}"};
     AxisSpec radiusAxis = {50, 0, 5, "Radius (cm)"};
-    AxisSpec cpaAxis = {50, 0.95, 1.0, "CPA"};
+    AxisSpec cpaAxis = {30, 0.97, 1.0, "CPA"};
     AxisSpec tauAxis = {250, 0, 25, "Lifetime (cm)"};
-    AxisSpec dcaAxis = {200, 0, 2, "DCA (cm)"};
-    AxisSpec dcaxyAxis = {200, 0, 2, "DCA_{#it{xy}} (cm)"};
+    AxisSpec dcaAxis = {100, 0, 2, "DCA (cm)"};
+    AxisSpec dcaxyAxis = {100, 0, 1, "DCA_{#it{xy}} (cm)"};
     AxisSpec dcazAxis = {200, 0, 2, "DCA_{#it{z}} (cm)"};
-    AxisSpec yAxis = {100, -1, 1, "Rapidity"};
+    AxisSpec yAxis = {50, -1, 1, "Rapidity"};
     AxisSpec invMassAxisK0s = {400 / cNbinsDiv, 0.3, 0.7, "Invariant Mass (GeV/#it{c}^2)"};    // K0s ~497.611
     AxisSpec invMassAxisReso = {900 / cNbinsDiv, 0.5f, 1.4f, "Invariant Mass (GeV/#it{c}^2)"}; // chK(892) ~892
-    AxisSpec invMassAxisScan = {150, 0, 1.5, "Invariant Mass (GeV/#it{c}^2)"};                 // For selection
-    AxisSpec pidQAAxis = {130, -6.5, 6.5};
-    AxisSpec dataTypeAxis = {9, 0, 9, "Histogram types"};
-    AxisSpec mcTypeAxis = {4, 0, 4, "Histogram types"};
+    AxisSpec pidQAAxis = {130 / cNbinsDivQA, -6.5, 6.5};
 
     // THnSparse
     AxisSpec axisType = {BinType::kTYEnd, 0, BinType::kTYEnd, "Type of bin with charge and mix"};
@@ -881,9 +869,9 @@ struct Chk892Flow {
                 lDaughterRot.RotateZ(lRotAngle);
                 lResonanceRot = lDecayDaughter_bach + lDaughterRot;
               }
-              auto lPhiMinusPsiKstar = RecoDecay::constrainAngle(lResonanceRot.Phi() - lEPDet, 0.0, 1); // constrain angle to range 0, Pi
+              auto lPhiMinusPsiKstar = RecoDecay::constrainAngle(lResonanceRot.Phi() - lEPDet, 0.0, 2); // constrain angle to range 0, Pi
               auto v2Kstar = std::cos(static_cast<float>(nmode) * lPhiMinusPsiKstar);
-              typeKstar = bTrack.sign() > 0 ? BinType::kKstarP_RecRot : BinType::kKstarN_RecRot;
+              typeKstar = bTrack.sign() > 0 ? BinType::kKstarP_Rot : BinType::kKstarN_Rot;
               histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), v2Kstar);
             }
           }

@@ -164,7 +164,6 @@ struct JetHadronRecoil {
     double phiTT = 0;
     int trigNumber = 0;
     int nTT = 0;
-    double leadingPT = 0;
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
 
     float dice = rand->Rndm();
@@ -241,14 +240,6 @@ struct JetHadronRecoil {
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
             registry.fill(HIST("hSignalPt"), jet.pt() - (rho * jet.area()), weight);
           }
-          registry.fill(HIST("hJetSignalConstituentMultiplicity"), jet.pt() - (rho * jet.area()), dphi, jet.tracksIds().size(), weight);
-          for (const auto& constituent : jet.template tracks_as<U>()) {
-            if (constituent.pt() > leadingPT) {
-              leadingPT = constituent.pt();
-            }
-            registry.fill(HIST("hJetSignalConstituentPt"), jet.pt() - (rho * jet.area()), dphi, constituent.pt(), weight);
-          }
-          registry.fill(HIST("hSignalLeadingTrack"), jet.pt() - (rho * jet.area()), dphi, leadingPT, weight);
         }
         if (!isSigCol) {
           for (const auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
@@ -265,14 +256,6 @@ struct JetHadronRecoil {
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
             registry.fill(HIST("hReferencePt"), jet.pt() - (rho * jet.area()), weight);
           }
-          registry.fill(HIST("hJetReferenceConstituentMultiplicity"), jet.pt() - (rho * jet.area()), dphi, jet.tracksIds().size(), weight);
-          for (const auto& constituent : jet.template tracks_as<U>()) {
-            if (constituent.pt() > leadingPT) {
-              leadingPT = constituent.pt();
-            }
-            registry.fill(HIST("hJetReferenceConstituentPt"), jet.pt() - (rho * jet.area()), dphi, constituent.pt(), weight);
-          }
-          registry.fill(HIST("hReferenceLeadingTrack"), jet.pt() - (rho * jet.area()), dphi, leadingPT, weight);
         }
       }
     }
@@ -286,7 +269,6 @@ struct JetHadronRecoil {
     double phiTT = 0;
     int trigNumber = 0;
     int nTT = 0;
-    double leadingPT = 0;
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
 
     float dice = rand->Rndm();
@@ -365,14 +347,6 @@ struct JetHadronRecoil {
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
             registry.fill(HIST("hSignalPt"), jet.pt(), weight);
           }
-          registry.fill(HIST("hJetSignalConstituentMultiplicity"), jet.pt(), dphi, jet.tracksIds().size(), weight);
-          for (const auto& constituent : jet.template tracks_as<U>()) {
-            if (constituent.pt() > leadingPT) {
-              leadingPT = constituent.pt();
-            }
-            registry.fill(HIST("hJetSignalConstituentPt"), jet.pt(), dphi, constituent.pt(), weight);
-          }
-          registry.fill(HIST("hSignalLeadingTrack"), jet.pt(), dphi, leadingPT, weight);
         }
         if (!isSigCol) {
           for (const auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
@@ -389,14 +363,6 @@ struct JetHadronRecoil {
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
             registry.fill(HIST("hReferencePt"), jet.pt(), weight);
           }
-          registry.fill(HIST("hJetReferenceConstituentMultiplicity"), jet.pt(), dphi, jet.tracksIds().size(), weight);
-          for (const auto& constituent : jet.template tracks_as<U>()) {
-            if (constituent.pt() > leadingPT) {
-              leadingPT = constituent.pt();
-            }
-            registry.fill(HIST("hJetReferenceConstituentPt"), jet.pt(), dphi, constituent.pt(), weight);
-          }
-          registry.fill(HIST("hReferenceLeadingTrack"), jet.pt(), dphi, leadingPT, weight);
         }
       }
     }

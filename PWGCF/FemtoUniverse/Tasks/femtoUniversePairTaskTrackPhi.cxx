@@ -59,7 +59,9 @@ struct FemtoUniversePairTaskTrackPhi {
   Service<o2::framework::O2DatabasePDG> pdgMC;
 
   // using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  // Filter trackCutFilter = requireGlobalTrackInFilter();
+  // Filter trackCutFilter = requireGlobalTrackInFilter(); // Global track cuts
+  // using FilteredFemtoFullParticles = soa::Filtered<FemtoFullParticles>;
+
   using FilteredFemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
 
   SliceCache cache;
@@ -131,8 +133,8 @@ struct FemtoUniversePairTaskTrackPhi {
                                                                                        (aod::femtouniverseparticle::pt < ConfTrack.confTrackPtHighLimit.value);
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsTrackMCTruth = aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
-                                                                                        (aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(ConfTrack.confTrackPDGCode.value)) &
-                                                                                          (aod::femtouniverseparticle::pt > ConfTrack.confTrackPtLowLimit.value) &&
+                                                                                        (aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(ConfTrack.confTrackPDGCode)) &&
+                                                                                        (aod::femtouniverseparticle::pt > ConfTrack.confTrackPtLowLimit.value) &&
                                                                                         (aod::femtouniverseparticle::pt < ConfTrack.confTrackPtHighLimit.value);
 
   /// Particle 2 --- PHI MESON
@@ -151,6 +153,7 @@ struct FemtoUniversePairTaskTrackPhi {
                                                                                      (aod::femtouniverseparticle::pt < ConfPhi.confPhiPtHighLimit.value);
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsPhiMCTruth = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
+
                                                                                       (aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(333)) &&
                                                                                       (aod::femtouniverseparticle::pt > ConfPhi.confPhiPtLowLimit.value) &&
                                                                                       (aod::femtouniverseparticle::pt < ConfPhi.confPhiPtHighLimit.value);
@@ -672,12 +675,12 @@ struct FemtoUniversePairTaskTrackPhi {
     auto groupMCTruthPhi = partsPhiMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     efficiencyCalculator.doMCTruth<2>(hMCTruth2, groupMCTruthPhi);
 
-    auto groupMCRecoTrack = partsTrackMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    auto groupMCRecoPhi = partsPhiMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsTrack = partsTrackMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsPhi = partsPhiMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsPhiDaugh = partsPhiDaughMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsKaons = partsKaonsMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    doSameEvent<true>(groupMCRecoTrack, groupMCRecoPhi, thegroupPartsPhiDaugh, thegroupPartsKaons, parts, col.magField(), col.multNtr());
+    doSameEvent<true>(thegroupPartsTrack, thegroupPartsPhi, thegroupPartsPhiDaugh, thegroupPartsKaons, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 

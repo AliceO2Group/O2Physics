@@ -154,6 +154,9 @@ class FemtoUniverseParticleHisto
       /// to be implemented
     } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
       // Phi histograms
+      mHistogramRegistry->add((folderName + folderSuffix + "/hPDG").c_str(), "; PDG; Entries", kTH1I, {{6001, -3000, 3000}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hOrigin_MC").c_str(), "; Origin; Entries", kTH1I, {{7, 0, 7}});
+
     } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kD0) {
       // D0/D0bar histograms
     } else {

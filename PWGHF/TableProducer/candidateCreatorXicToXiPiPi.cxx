@@ -17,7 +17,7 @@
 /// \author Jinjoo Seo <jseo@cern.ch>, Heidelberg University
 
 #ifndef HomogeneousField
-#define HomogeneousField
+#define HomogeneousField // o2-linter: disable=name/macro
 #endif
 
 #include <string>
@@ -118,7 +118,7 @@ struct HfCandidateCreatorXicToXiPiPi {
     if (fillHistograms) {
       // counter
       registry.add("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}}); // See o2::aod::hf_cand::VertexerType
-      registry.add("hCandCounter", "hCandCounter", {HistType::kTH1F, {{3, 0.f, 0.3}}});
+      registry.add("hCandCounter", "hCandCounter", {HistType::kTH1F, {{3, 0.5, 3.5}}});
       registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + AllIdTriplets, "total");
       registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + CascPreSel, "Cascade preselection");
       registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + VertexFit, "Successful vertex fit");
@@ -435,7 +435,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
       float covMatrixPV[6];
       kfpVertex.GetCovarianceMatrix(covMatrixPV);
-      KFParticle KFPV(kfpVertex); // for calculation of DCAs to PV
+      KFParticle kfPv(kfpVertex); // for calculation of DCAs to PV
 
       // convert pion tracks into KFParticle object
       KFPTrack kfpTrackCharmBachelor0 = createKFPTrackFromTrack(trackCharmBachelor0);
@@ -470,9 +470,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
 
       // topological constraint of Xic to PV
-      float chi2topoXicPlusToPVBeforeConstraint = kfXicPlus.GetDeviationFromVertex(KFPV);
+      float chi2topoXicPlusToPVBeforeConstraint = kfXicPlus.GetDeviationFromVertex(kfPv);
       KFParticle kfXicPlusToPV = kfXicPlus;
-      kfXicPlusToPV.SetProductionVertex(KFPV);
+      kfXicPlusToPV.SetProductionVertex(kfPv);
       float chi2topoXicPlusToPV = kfXicPlusToPV.GetChi2() / kfXicPlusToPV.GetNDF();
       if (constrainXicPlusToPv) {
         kfXicPlus = kfXicPlusToPV;
@@ -518,9 +518,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       float impactParameterPi0XY = 0., errImpactParameterPi0XY = 0.;
       float impactParameterPi1XY = 0., errImpactParameterPi1XY = 0.;
       float impactParameterXiXY = 0., errImpactParameterXiXY = 0.;
-      kfCharmBachelor0.GetDistanceFromVertexXY(KFPV, impactParameterPi0XY, errImpactParameterPi0XY);
-      kfCharmBachelor1.GetDistanceFromVertexXY(KFPV, impactParameterPi1XY, errImpactParameterPi1XY);
-      kfXi.GetDistanceFromVertexXY(KFPV, impactParameterXiXY, errImpactParameterXiXY);
+      kfCharmBachelor0.GetDistanceFromVertexXY(kfPv, impactParameterPi0XY, errImpactParameterPi0XY);
+      kfCharmBachelor1.GetDistanceFromVertexXY(kfPv, impactParameterPi1XY, errImpactParameterPi1XY);
+      kfXi.GetDistanceFromVertexXY(kfPv, impactParameterXiXY, errImpactParameterXiXY);
 
       // calculate cosine of pointing angle
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
@@ -618,7 +618,7 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       //------------------------------fill candidate table rows--------------------------------------
       rowCandidateBase(collision.globalIndex(),
-                       KFPV.GetX(), KFPV.GetY(), KFPV.GetZ(),
+                       kfPv.GetX(), kfPv.GetY(), kfPv.GetZ(),
                        std::sqrt(covMatrixPV[0]), std::sqrt(covMatrixPV[2]), std::sqrt(covMatrixPV[5]),
                        /*3-prong specific columns*/
                        rowTrackIndexXicPlus.cascadeId(), rowTrackIndexXicPlus.prong0Id(), rowTrackIndexXicPlus.prong1Id(),
@@ -696,20 +696,20 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
                                          candidate.negTrack_as<aod::TracksWMc>()};
 
       // Xic → pi pi pi pi p
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4);
+      indexRec = RecoDecay::getMatchedMCRec<false, true, false, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4);
       indexRecXicPlus = indexRec;
       if (indexRec == -1) {
         debug = 1;
       }
       if (indexRec > -1) {
         // Xi- → pi pi p
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &sign, 2);
         if (indexRec == -1) {
           debug = 2;
         }
         if (indexRec > -1) {
           // Lambda → p pi
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &sign, 1);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &sign, 1);
           if (indexRec == -1) {
             debug = 3;
           }
@@ -735,7 +735,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       // Check whether the charm baryon is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRecXicPlus);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false);
       }
 
       rowMcMatchRec(flag, debug, origin);
@@ -750,18 +750,24 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       arrDaughIndex.clear();
 
       //  Xic → Xi pi pi
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, &sign, 2)) {
+      if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, Pdg::kXiCPlus, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, &sign, 2)) {
         debug = 1;
         // Xi- -> Lambda pi
         auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
+        // Find Xi- from Xi(1530) -> Xi pi in case of resonant decay
+        RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
+        if (arrDaughIndex.size() == 2) {
+          auto cascStarMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascStarMC, +3324, std::array{+kXiMinus, +kPiPlus}, true)) {
+            cascMC = mcParticles.rawIteratorAt(cascStarMC.daughtersIds().front());
+          }
+        }
+        if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
           debug = 2;
           // Lambda -> p pi
           auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
-          if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
             debug = 3;
-
-            RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
             if (arrDaughIndex.size() == 2) {
               for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
                 auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
@@ -781,7 +787,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
       // Check whether the charm baryon is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false);
       }
 
       rowMcMatchGen(flag, debug, origin);
