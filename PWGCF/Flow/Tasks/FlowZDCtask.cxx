@@ -87,27 +87,27 @@ struct FlowZDCtask {
   Configurable<float> acceptanceZnc{"acceptanceZnc", 0.90, "ZNC acceptance factor"};
   Configurable<float> acceptanceZpa{"acceptanceZpa", 0.52, "ZPA acceptance factor"};
   Configurable<float> acceptanceZpc{"acceptanceZpc", 0.50, "ZPC acceptance factor"};
-  Configurable<float> vtxRange{"vertex-range", 10.0f, "Vertex Z range to consider"};
-  Configurable<float> etaRange{"eta-range", 1.0f, "Eta range to consider"};
-  Configurable<float> npvTracksCut{"NPVtracksCut", 1.0f, "Apply extra NPVtracks cut"};
-  Configurable<bool> isApplySameBunchPileup{"IsApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
-  Configurable<bool> isApplyGoodZvtxFT0vsPV{"IsApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
-  Configurable<bool> isApplyVertexITSTPC{"IsApplyVertexITSTPC", true, "Enable VertexITSTPC cut"};
-  Configurable<bool> isApplyVertexTOFmatched{"IsApplyVertexTOFmatched", true, "Enable VertexTOFmatched cut"};
-  Configurable<bool> isApplyVertexTRDmatched{"IsApplyVertexTRDmatched", true, "Enable VertexTRDmatched cut"};
-  Configurable<bool> isApplyExtraCorrCut{"IsApplyExtraCorrCut", false, "Enable extra NPVtracks vs FTOC correlation cut"};
-  Configurable<bool> isApplyExtraPhiCut{"IsApplyExtraPhiCut", false, "Enable extra phi cut"};
-  Configurable<bool> isApplyNoCollInTimeRangeStandard{"IsApplyNoCollInTimeRangeStandard", true, "Enable NoCollInTimeRangeStandard cut"};
-  Configurable<bool> isApplyNoCollInRofStandard{"IsApplyNoCollInRofStandard", true, "Enable NoCollInRofStandard cut"};
-  Configurable<bool> isApplyNoHighMultCollInPrevRof{"IsApplyNoHighMultCollInPrevRof", true, "Enable NoHighMultCollInPrevRof cut"};
-  Configurable<bool> isApplyFT0CbasedOccupancy{"IsApplyFT0CbasedOccupancy", true, "Enable FT0CbasedOccupancy cut"};
-  Configurable<bool> isApplyCentFT0C{"IsApplyCentFT0C", false, "Centrality based on FT0C"};
-  Configurable<bool> isApplyCentFT0CVariant1{"IsApplyCentFT0CVariant1", false, "Centrality based on FT0C variant1"};
-  Configurable<bool> isApplyCentFT0M{"IsApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
-  Configurable<bool> isApplyCentNGlobal{"IsApplyCentNGlobal", false, "Centrality based on global tracks"};
-  Configurable<bool> isApplyCentMFT{"IsApplyCentMFT", false, "Centrality based on MFT tracks"};
-  Configurable<bool> isGoodITSLayersAll{"IsGoodITSLayersAll", true, "Centrality based on no other collisions in this Readout Frame with per-collision multiplicity above threshold tracks"};
-  Configurable<float> FT0CCut{"FT0CCut", 1.0f, "Apply extra FT0C cut"};
+  Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
+  Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
+  Configurable<float> npvTracksCut{"npvTracksCut", 1.0f, "Apply extra NPVtracks cut"};
+  Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
+  Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
+  Configurable<bool> isApplyVertexITSTPC{"isApplyVertexITSTPC", true, "Enable VertexITSTPC cut"};
+  Configurable<bool> isApplyVertexTOFmatched{"isApplyVertexTOFmatched", true, "Enable VertexTOFmatched cut"};
+  Configurable<bool> isApplyVertexTRDmatched{"isApplyVertexTRDmatched", true, "Enable VertexTRDmatched cut"};
+  Configurable<bool> isApplyExtraCorrCut{"isApplyExtraCorrCut", false, "Enable extra NPVtracks vs FTOC correlation cut"};
+  Configurable<bool> isApplyExtraPhiCut{"isApplyExtraPhiCut", false, "Enable extra phi cut"};
+  Configurable<bool> isApplyNoCollInTimeRangeStandard{"isApplyNoCollInTimeRangeStandard", true, "Enable NoCollInTimeRangeStandard cut"};
+  Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", true, "Enable NoCollInRofStandard cut"};
+  Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", true, "Enable NoHighMultCollInPrevRof cut"};
+  Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", true, "Enable FT0CbasedOccupancy cut"};
+  Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", false, "Centrality based on FT0C"};
+  Configurable<bool> isApplyCentFT0CVariant1{"isApplyCentFT0CVariant1", false, "Centrality based on FT0C variant1"};
+  Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
+  Configurable<bool> isApplyCentNGlobal{"isApplyCentNGlobal", false, "Centrality based on global tracks"};
+  Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
+  Configurable<bool> isGoodITSLayersAll{"isGoodITSLayersAll", true, "Centrality based on no other collisions in this Readout Frame with per-collision multiplicity above threshold tracks"};
+  Configurable<float> ft0cCut{"ft0cCut", 1.0f, "Apply extra FT0C cut"};
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -498,14 +498,14 @@ struct FlowZDCtask {
       return;
     }
     histos.fill(HIST("VtxZHist"), collision.posZ());
-    auto NchTracks = 0;
+    auto nchTracks = 0;
     for (auto& track : tracks) {
       if (std::abs(track.eta()) >= etaRange) {
         continue;
       }
-      NchTracks++;
+      nchTracks++;
     }
-    histos.fill(HIST("GlobalMult_vs_FT0C"), NchTracks, collision.multFT0C());
+    histos.fill(HIST("GlobalMult_vs_FT0C"), nchTracks, collision.multFT0C());
   }
 
   PROCESS_SWITCH(FlowZDCtask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
