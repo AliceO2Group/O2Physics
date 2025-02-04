@@ -38,6 +38,7 @@
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
 #include "Math/GenVector/Boost.h"
+#include "Math/VectorUtil.h"
 
 #include "Framework/DataTypes.h"
 #include "TGeoGlobalMagField.h"
@@ -396,7 +397,6 @@ class VarManager : public TObject
     kTimeZNC,
     kTimeZPA,
     kTimeZPC,
-    kNEventWiseVariables,
     kQ2X0A1,
     kQ2X0A2,
     kQ2Y0A1,
@@ -417,6 +417,7 @@ class VarManager : public TObject
     kTwoR2SP2, // Scalar product resolution of event2 for ME technique
     kTwoR2EP1, // Event plane resolution of event2 for ME technique
     kTwoR2EP2, // Event plane resolution of event2 for ME technique
+    kNEventWiseVariables,
 
     // Basic track/muon/pair wise variables
     kX,
@@ -750,6 +751,7 @@ class VarManager : public TObject
     kQ,
     kDeltaR1,
     kDeltaR2,
+    kDeltaR,
 
     // DQ-HF correlation variables
     kMassCharmHadron,
@@ -803,6 +805,7 @@ class VarManager : public TObject
 
   static TString fgVariableNames[kNVars]; // variable names
   static TString fgVariableUnits[kNVars]; // variable units
+  static std::map<TString, int> fgVarNamesMap; // key: variables short name, value: order in the Variables enum
   static void SetDefaultVarNames();
 
   static void SetUseVariable(int var)
@@ -4604,8 +4607,9 @@ void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T
     values[kDitrackPt] = v23.Pt();
     values[kCosthetaDileptonDitrack] = (v1.Px() * v123.Px() + v1.Py() * v123.Py() + v1.Pz() * v123.Pz()) / (v1.P() * v123.P());
     values[kQ] = v123.M() - defaultDileptonMass - v23.M();
-    values[kDeltaR1] = sqrt(pow(v1.Eta() - v2.Eta(), 2) + pow(v1.Phi() - v2.Phi(), 2));
-    values[kDeltaR2] = sqrt(pow(v1.Eta() - v3.Eta(), 2) + pow(v1.Phi() - v3.Phi(), 2));
+    values[kDeltaR1] = ROOT::Math::VectorUtil::DeltaR(v1, v2);
+    values[kDeltaR2] = ROOT::Math::VectorUtil::DeltaR(v1, v3);
+    values[kDeltaR] = sqrt(pow(values[kDeltaR1], 2) + pow(values[kDeltaR2], 2));
     values[kRap] = v123.Rapidity();
   }
 }
@@ -4638,8 +4642,9 @@ void VarManager::FillQaudMC(T1 const& dilepton, T2 const& track1, T2 const& trac
   values[kQuadEta] = v123.Eta();
   values[kQuadPhi] = v123.Phi();
   values[kQ] = v123.M() - defaultDileptonMass - v23.M();
-  values[kDeltaR1] = sqrt(pow(v1.Eta() - v2.Eta(), 2) + pow(v1.Phi() - v2.Phi(), 2));
-  values[kDeltaR2] = sqrt(pow(v1.Eta() - v3.Eta(), 2) + pow(v1.Phi() - v3.Phi(), 2));
+  values[kDeltaR1] = ROOT::Math::VectorUtil::DeltaR(v1, v2);
+  values[kDeltaR2] = ROOT::Math::VectorUtil::DeltaR(v1, v3);
+  values[kDeltaR] = sqrt(pow(values[kDeltaR1], 2) + pow(values[kDeltaR2], 2));
   values[kDitrackMass] = v23.M();
   values[kDitrackPt] = v23.Pt();
 }
