@@ -1203,8 +1203,13 @@ class TestNameFileWorkflow(TestSpec):
     def test_file(self, path: str, content) -> bool:
         file_name = os.path.basename(path).rstrip(".cxx")
         base_struct_name = f"{file_name[0].upper()}{file_name[1:]}"  # expected base of struct names
-        if "PWGHF/" in path:
-            base_struct_name = "Hf" + base_struct_name
+        if match := re.search("PWG([A-Z]{2})/", path):
+            name_pwg = match.group(1)
+            prefix_pwg = name_pwg.capitalize()
+            if name_pwg in ("HF"):
+                base_struct_name = fr"{prefix_pwg}{base_struct_name}"  # mandatory PWG prefix
+            else:
+                base_struct_name = fr"({prefix_pwg})?{base_struct_name}"  # optional PWG prefix
         # print(f"For file {file_name} expecting to find {base_struct_name}.")
         struct_names = []  # actual struct names in the file
         for line in content:
@@ -1220,7 +1225,7 @@ class TestNameFileWorkflow(TestSpec):
             struct_names.append(struct_name)
         # print(f"Found structs: {struct_names}.")
         for struct_name in struct_names:
-            if struct_name.startswith(base_struct_name):
+            if re.match(base_struct_name, struct_name):
                 return True
         return False
 
