@@ -896,7 +896,7 @@ struct StrangenessInJets {
   {
     auto getWeightHistoObj = [&](Configurable<std::string> name) {
       if (name.value != "") {
-        LOG(info) << "Getting weight histogram for "<< name.name " from " << name.value;
+        LOG(info) << "Getting weight histogram for " << name.name " from " << name.value;
         return ccdbObj->get<TH2F>(name);
       }
     };
@@ -905,7 +905,7 @@ struct StrangenessInJets {
     twodWeightsPiplusUe = getWeightHistoObj(histoNameWeightPiplusUe);
     twodWeightsPiminusJet = getWeightHistoObj(histoNameWeightPiminusJet);
     twodWeightsPiminusUe = getWeightHistoObj(histoNameWeightPiminusUe);
-    
+
     TList* l = ccdbObj->get<TList>(pathToFile.vc_str());
     if (!l) {
       LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
