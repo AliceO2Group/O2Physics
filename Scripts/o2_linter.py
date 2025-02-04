@@ -794,6 +794,8 @@ class TestNameConstant(TestSpec):
             constant_name = constant_name[: constant_name.index("[")]
         if "::" in constant_name:  # Remove the class prefix for methods.
             constant_name = constant_name.split("::")[-1]
+        if "#" in constant_name:  # Remove "#" for strings in macros.
+            constant_name = constant_name[: constant_name.index("#")]
         # The actual test comes here.
         if constant_name.startswith("k") and len(constant_name) > 1:  # exception for special constants
             constant_name = constant_name[1:]  # test the name without "k"
@@ -824,6 +826,10 @@ class TestNameColumn(TestSpec):
         # return True
         if column_type_name[0] == "_":  # probably a macro variable
             return True
+        if "#" in column_type_name:  # Remove "#" for strings in macros.
+            column_type_name = column_type_name[: column_type_name.index("#")]
+        if "#" in column_getter_name:  # Remove "#" for strings in macros.
+            column_getter_name = column_getter_name[: column_getter_name.index("#")]
         # The actual test comes here.
         if not is_upper_camel_case(column_type_name):
             return False
@@ -860,6 +866,8 @@ class TestNameTable(TestSpec):
             # print(f"Got versioned table \"{table_type_name}\", version {table_version}")
         if table_type_name[0] == "_":  # probably a macro variable
             return True
+        if "#" in table_type_name:  # Remove "#" for strings in macros.
+            table_type_name = table_type_name[: table_type_name.index("#")]
         # The actual test comes here.
         return is_upper_camel_case(table_type_name)
 
