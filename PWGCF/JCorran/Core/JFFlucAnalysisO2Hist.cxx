@@ -24,7 +24,7 @@ JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec
   ph1[HIST_TH1_CENTRALITY] = std::get<std::shared_ptr<TH1>>(registry.add(Form("%s/h_cent", folder.Data()), "multiplicity/centrality", {HistType::kTH1F, {axisMultiplicity}})).get();
   ph1[HIST_TH1_IMPACTPARAM] = std::get<std::shared_ptr<TH1>>(registry.add(Form("%s/h_IP", folder.Data()), "impact parameter", {HistType::kTH1F, {{400, -2.0, 20.0}}})).get();
   ph1[HIST_TH1_ZVERTEX] = std::get<std::shared_ptr<TH1>>(registry.add(Form("%s/h_vertex", folder.Data()), "z vertex", {HistType::kTH1F, {{100, -20.0, 20.0}}})).get();
-  
+
   AxisSpec chgAxis = {3, -1.5, 1.5, "charge"};
   AxisSpec typeAxis = {2, -0.5, 1.5, "type"};
   pht[HIST_THN_PHIETAZ] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_phietaz", folder.Data()), "multiplicity/centrality, type, phi, eta, z", {HistType::kTHnSparseF, {axisMultiplicity, typeAxis, phiAxis, etaAxis, zvtAxis}})).get();

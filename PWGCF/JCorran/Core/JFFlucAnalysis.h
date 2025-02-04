@@ -158,7 +158,8 @@ class JFFlucAnalysis : public TNamed
         corrInv /= track.weightEff();
       if constexpr (std::experimental::is_detected<hasSign, const JInputClassIter>::value)
         pht[HIST_THN_PTETA]->Fill(fCent, track.pt(), track.eta(), track.sign(), corrInv);
-      else pht[HIST_THN_PTETA]->Fill(fCent, track.pt(), track.eta(), 0.0, corrInv);
+      else
+        pht[HIST_THN_PTETA]->Fill(fCent, track.pt(), track.eta(), 0.0, corrInv);
       if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value)
         corrInv /= track.weightNUA();
       pht[HIST_THN_PHIETA]->Fill(fCent, track.phi(), track.eta(), corrInv);
