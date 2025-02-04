@@ -187,14 +187,14 @@ struct FlowSP {
     int ptbins = ptbinning.size() - 1;
 
     if (cfgFillWeights) {
-      fWeights->SetPtBins(ptbins, &ptbinning[0]);
-      fWeights->Init(true, false);
+      fWeights->setPtBins(ptbins, &ptbinning[0]);
+      fWeights->init(true, false);
 
-      fWeightsPOS->SetPtBins(ptbins, &ptbinning[0]);
-      fWeightsPOS->Init(true, false);
+      fWeightsPOS->setPtBins(ptbins, &ptbinning[0]);
+      fWeightsPOS->init(true, false);
 
-      fWeightsNEG->SetPtBins(ptbins, &ptbinning[0]);
-      fWeightsNEG->Init(true, false);
+      fWeightsNEG->setPtBins(ptbins, &ptbinning[0]);
+      fWeightsNEG->init(true, false);
     }
 
     if ((doprocessData || doprocessMCReco)) {
@@ -413,7 +413,7 @@ struct FlowSP {
     weight_nue = 1. / eff;
     int sizeAcc = cfg.mAcceptance.size();
     if (sizeAcc > pID)
-      weight_nua = cfg.mAcceptance[pID]->GetNUA(phi, eta, vtxz);
+      weight_nua = cfg.mAcceptance[pID]->getNUA(phi, eta, vtxz);
     else
       weight_nua = 1;
     return true;
@@ -768,13 +768,13 @@ struct FlowSP {
 
         // Fill NUA weights
         if (cfgFillWeights) {
-          fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
+          fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
         } else if (cfgFillWeightsPOS) {
           if (pos)
-            fWeightsPOS->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
+            fWeightsPOS->fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
         } else if (cfgFillWeightsNEG) {
           if (!pos)
-            fWeightsNEG->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
+            fWeightsNEG->fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
         }
 
         // Set weff and wacc for inclusice, negative and positive hadrons

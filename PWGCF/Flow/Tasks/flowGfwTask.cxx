@@ -364,8 +364,8 @@ struct FlowGfwTask {
     fPtAxis = new TAxis(nPtBins, ptBins);
 
     if (cfgOutputNUAWeights) {
-      fWeights->SetPtBins(nPtBins, ptBins);
-      fWeights->Init(true, false);
+      fWeights->setPtBins(nPtBins, ptBins);
+      fWeights->init(true, false);
     }
 
     // add in FlowContainer to Get boostrap sample automatically
@@ -509,7 +509,7 @@ struct FlowGfwTask {
       return false;
     weight_nue = 1. / eff;
     if (mAcceptance)
-      weight_nua = mAcceptance->GetNUA(phi, eta, vtxz);
+      weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
     else
       weight_nua = 1;
     return true;
@@ -799,7 +799,7 @@ struct FlowGfwTask {
         continue;
 
       if (cfgOutputNUAWeights)
-        fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
+        fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
 
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         continue;
