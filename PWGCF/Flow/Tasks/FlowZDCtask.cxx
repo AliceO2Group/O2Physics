@@ -87,26 +87,26 @@ struct FlowZDCtask {
   Configurable<float> acceptanceZnc{"acceptanceZnc", 0.90, "ZNC acceptance factor"};
   Configurable<float> acceptanceZpa{"acceptanceZpa", 0.52, "ZPA acceptance factor"};
   Configurable<float> acceptanceZpc{"acceptanceZpc", 0.50, "ZPC acceptance factor"};
-  Configurable<float> VtxRange{"vertex-range", 10.0f, "Vertex Z range to consider"};
+  Configurable<float> vtxRange{"vertex-range", 10.0f, "Vertex Z range to consider"};
   Configurable<float> etaRange{"eta-range", 1.0f, "Eta range to consider"};
-  Configurable<float> NPVtracksCut{"NPVtracksCut", 1.0f, "Apply extra NPVtracks cut"};
-  Configurable<bool> IsApplySameBunchPileup{"IsApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
-  Configurable<bool> IsApplyGoodZvtxFT0vsPV{"IsApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
-  Configurable<bool> IsApplyVertexITSTPC{"IsApplyVertexITSTPC", true, "Enable VertexITSTPC cut"};
-  Configurable<bool> IsApplyVertexTOFmatched{"IsApplyVertexTOFmatched", true, "Enable VertexTOFmatched cut"};
-  Configurable<bool> IsApplyVertexTRDmatched{"IsApplyVertexTRDmatched", true, "Enable VertexTRDmatched cut"};
-  Configurable<bool> IsApplyExtraCorrCut{"IsApplyExtraCorrCut", false, "Enable extra NPVtracks vs FTOC correlation cut"};
-  Configurable<bool> IsApplyExtraPhiCut{"IsApplyExtraPhiCut", false, "Enable extra phi cut"};
-  Configurable<bool> IsApplyNoCollInTimeRangeStandard{"IsApplyNoCollInTimeRangeStandard", true, "Enable NoCollInTimeRangeStandard cut"};
-  Configurable<bool> IsApplyNoCollInRofStandard{"IsApplyNoCollInRofStandard", true, "Enable NoCollInRofStandard cut"};
-  Configurable<bool> IsApplyNoHighMultCollInPrevRof{"IsApplyNoHighMultCollInPrevRof", true, "Enable NoHighMultCollInPrevRof cut"};
-  Configurable<bool> IsApplyFT0CbasedOccupancy{"IsApplyFT0CbasedOccupancy", true, "Enable FT0CbasedOccupancy cut"};
-  Configurable<bool> IsApplyCentFT0C{"IsApplyCentFT0C", false, "Centrality based on FT0C"};
-  Configurable<bool> IsApplyCentFT0CVariant1{"IsApplyCentFT0CVariant1", false, "Centrality based on FT0C variant1"};
-  Configurable<bool> IsApplyCentFT0M{"IsApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
-  Configurable<bool> IsApplyCentNGlobal{"IsApplyCentNGlobal", false, "Centrality based on global tracks"};
-  Configurable<bool> IsApplyCentMFT{"IsApplyCentMFT", false, "Centrality based on MFT tracks"};
-  Configurable<bool> IsGoodITSLayersAll{"IsGoodITSLayersAll", true, "Centrality based on no other collisions in this Readout Frame with per-collision multiplicity above threshold tracks"};
+  Configurable<float> npvTracksCut{"NPVtracksCut", 1.0f, "Apply extra NPVtracks cut"};
+  Configurable<bool> isApplySameBunchPileup{"IsApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
+  Configurable<bool> isApplyGoodZvtxFT0vsPV{"IsApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
+  Configurable<bool> isApplyVertexITSTPC{"IsApplyVertexITSTPC", true, "Enable VertexITSTPC cut"};
+  Configurable<bool> isApplyVertexTOFmatched{"IsApplyVertexTOFmatched", true, "Enable VertexTOFmatched cut"};
+  Configurable<bool> isApplyVertexTRDmatched{"IsApplyVertexTRDmatched", true, "Enable VertexTRDmatched cut"};
+  Configurable<bool> isApplyExtraCorrCut{"IsApplyExtraCorrCut", false, "Enable extra NPVtracks vs FTOC correlation cut"};
+  Configurable<bool> isApplyExtraPhiCut{"IsApplyExtraPhiCut", false, "Enable extra phi cut"};
+  Configurable<bool> isApplyNoCollInTimeRangeStandard{"IsApplyNoCollInTimeRangeStandard", true, "Enable NoCollInTimeRangeStandard cut"};
+  Configurable<bool> isApplyNoCollInRofStandard{"IsApplyNoCollInRofStandard", true, "Enable NoCollInRofStandard cut"};
+  Configurable<bool> isApplyNoHighMultCollInPrevRof{"IsApplyNoHighMultCollInPrevRof", true, "Enable NoHighMultCollInPrevRof cut"};
+  Configurable<bool> isApplyFT0CbasedOccupancy{"IsApplyFT0CbasedOccupancy", true, "Enable FT0CbasedOccupancy cut"};
+  Configurable<bool> isApplyCentFT0C{"IsApplyCentFT0C", false, "Centrality based on FT0C"};
+  Configurable<bool> isApplyCentFT0CVariant1{"IsApplyCentFT0CVariant1", false, "Centrality based on FT0C variant1"};
+  Configurable<bool> isApplyCentFT0M{"IsApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
+  Configurable<bool> isApplyCentNGlobal{"IsApplyCentNGlobal", false, "Centrality based on global tracks"};
+  Configurable<bool> isApplyCentMFT{"IsApplyCentMFT", false, "Centrality based on MFT tracks"};
+  Configurable<bool> isGoodITSLayersAll{"IsGoodITSLayersAll", true, "Centrality based on no other collisions in this Readout Frame with per-collision multiplicity above threshold tracks"};
   Configurable<float> FT0CCut{"FT0CCut", 1.0f, "Apply extra FT0C cut"};
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
@@ -121,7 +121,7 @@ struct FlowZDCtask {
   ConfigurableAxis axisFT0CAmp{"axisFT0CAmp", {5000, 0, 5000}, "axisFT0CAmp"};
   ConfigurableAxis axisFT0AAmp{"axisFT0AAmp", {5000, 0, 5000}, "axisFT0AAmp"};
   ConfigurableAxis axisFT0MAmp{"axisFT0MAmp", {10000, 0, 10000}, "axisFT0MAmp"};
-  ConfigurableAxis FT0CmultHistBin{"FT0CMultDistBinning", {501, -0.5, 500.5}, ""};
+  ConfigurableAxis ft0cMultHistBin{"FT0CMultDistBinning", {501, -0.5, 500.5}, ""};
   ConfigurableAxis multHistBin{"MultDistBinning", {501, -0.5, 500.5}, ""};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -179,7 +179,7 @@ struct FlowZDCtask {
     AxisSpec axisPtBins{{0., 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10., 13., 16., 20.}, "p_{T} (GeV/c)"};
     AxisSpec axisEvent{6, 0.5, 6.5, "#Event", "EventAxis"};
     AxisSpec axisMult = {multHistBin, "Mult", "MultAxis"};
-    AxisSpec axisFT0CMult = {FT0CmultHistBin, "ft0c", "FT0CMultAxis"};
+    AxisSpec axisFT0CMult = {ft0cMultHistBin, "ft0c", "FT0CMultAxis"};
 
     // create histograms
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
@@ -270,7 +270,7 @@ struct FlowZDCtask {
     }
   }
   template <typename EventCuts>
-  bool IsEventSelected(EventCuts const& col)
+  bool isEventSelected(EventCuts const& col)
   {
     histos.fill(HIST("eventSelectionSteps"), 1);
 
@@ -279,22 +279,22 @@ struct FlowZDCtask {
     }
     histos.fill(HIST("eventSelectionSteps"), 2);
 
-    if (IsApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (isApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     histos.fill(HIST("eventSelectionSteps"), 3);
 
-    if (IsApplyGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (isApplyGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     histos.fill(HIST("eventSelectionSteps"), 4);
 
-    if (IsApplyVertexITSTPC && !col.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+    if (isApplyVertexITSTPC && !col.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
     histos.fill(HIST("eventSelectionSteps"), 5);
 
-    if (IsGoodITSLayersAll && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (isGoodITSLayersAll && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return false;
     }
     histos.fill(HIST("eventSelectionSteps"), 6);
@@ -303,7 +303,7 @@ struct FlowZDCtask {
 
   void processQVector(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::ZDCMults const& /*zdcMults*/)
   {
-    if (!IsEventSelected(collision)) {
+    if (!isEventSelected(collision)) {
       return;
     }
     histos.fill(HIST("eventCounter"), 0.5);
@@ -359,7 +359,7 @@ struct FlowZDCtask {
     aod::Zdcs const& /*zdcs*/,
     aod::FT0s const& /*ft0s*/)
   {
-    if (!IsEventSelected(collision)) {
+    if (!isEventSelected(collision)) {
       return;
     }
     int nTot = tracks.size();
@@ -491,10 +491,10 @@ struct FlowZDCtask {
 
   void processCorrelation(CollisionDataTable::iterator const& collision, FilTrackDataTable const& tracks)
   {
-    if (!IsEventSelected(collision)) {
+    if (!isEventSelected(collision)) {
       return;
     }
-    if (std::abs(collision.posZ()) >= VtxRange) {
+    if (std::abs(collision.posZ()) >= vtxRange) {
       return;
     }
     histos.fill(HIST("VtxZHist"), collision.posZ());
