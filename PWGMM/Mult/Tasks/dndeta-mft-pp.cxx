@@ -20,6 +20,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <unordered_set>
+#include <vector>
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -39,7 +41,6 @@
 #include "TDatabasePDG.h"
 
 #include "bestCollisionTable.h"
-#include <unordered_set>
 #include "TFile.h"
 
 using namespace o2;
@@ -673,9 +674,7 @@ struct PseudorapidityDensityMFT {
         registry.fill(HIST("Tracks/Control/woOrp/nTrk"), k);
         registry.fill(HIST("hNumCollisions_Inel"), 1, eventsInel.size());
       }
-    }
-
-    else {
+    } else {
       registry.fill(HIST("EventSelection"), 6);
     }
   }
