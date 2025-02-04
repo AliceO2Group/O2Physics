@@ -54,7 +54,7 @@ using FilTrackDataTable = soa::Filtered<TrackDataTable>;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct FlowZDCtask {
+struct FlowZdcTask {
   SliceCache cache;
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
@@ -518,5 +518,5 @@ struct FlowZDCtask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<FlowZDCtask>(cfgc)};
+    adaptAnalysisTask<FlowZdcTask>(cfgc)};
 }
