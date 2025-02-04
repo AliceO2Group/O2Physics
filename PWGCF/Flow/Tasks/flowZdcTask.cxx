@@ -9,10 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file   FlowZDCtask.cxx
+/// \file   flowZdcTask.cxx
 /// \author Sabrina Hernandez
 /// \since  10/01/2024
 /// \brief  task to evaluate flow and neutron skin with information from ZDC
+
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
