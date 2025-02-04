@@ -54,6 +54,7 @@ const AxisSpec axisSparseDcaZ{100, -1., 1., "DCA_{z}, cm"};
 struct TimeDependentQaTask {
   Configurable<double> confTimeBinWidthInSec{"TimeBinWidthInSec", 0.25, "Width of time bins in seconds"};                                                                        // o2-linter: disable=name/configurable
   Configurable<int> confTakeVerticesWithUPCsettings{"ConsiderVerticesWithUPCsettings", 0, "Take vertices: 0 - all , 1 - only without UPC settings, 2 - only with UPC settings"}; // o2-linter: disable=name/configurable
+  Configurable<int> confFillPhiVsTimeHist{"FillPhiVsTimeHist", 2, "0 - don't fill , 1 - fill only for global/7cls/TRD/TOF tracks, 2 - fill also layer-by-layer"};                // o2-linter: disable=name/configurable
   Configurable<int> confFillEtaPhiVsTimeHist{"FillEtaPhiVsTimeHist", 0, "0 - don't fill , 1 - fill"};                                                                            // o2-linter: disable=name/configurable
 
   enum EvSelBitsToMonitor {
@@ -129,6 +130,9 @@ struct TimeDependentQaTask {
       histos.add("hSecondsFT0CamlpByColMult", "", kTH1D, {axisSeconds});
       histos.add("hSecondsFT0AamlpByColMult", "", kTH1D, {axisSeconds});
       histos.add("hSecondsV0Aamlp", "", kTH1D, {axisSeconds});
+
+      histos.add("hSecondsOccupancyByTracks", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsOccupancyByFT0C", "", kTH1D, {axisSeconds});
 
       // QA for UPC settings
       histos.add("hSecondsUPCverticesBeforeSel8", "", kTH2F, {axisSeconds, {2, -0.5, 1.5, "Is vertex with UPC settings"}});
@@ -236,17 +240,21 @@ struct TimeDependentQaTask {
       // phi holes vs time
       const AxisSpec axisPhi{64, 0, TMath::TwoPi(), "#varphi"}; // o2-linter: disable=external-pi
       const AxisSpec axisEta{10, -0.8, 0.8, "#eta"};
-      histos.add("hSecondsITSlayer0vsPhi", "", kTH2F, {axisSeconds, axisPhi});
-      histos.add("hSecondsITSlayer1vsPhi", "", kTH2F, {axisSeconds, axisPhi});
-      histos.add("hSecondsITSlayer2vsPhi", "", kTH2F, {axisSeconds, axisPhi});
-      histos.add("hSecondsITSlayer3vsPhi", "", kTH2F, {axisSeconds, axisPhi});
-      histos.add("hSecondsITSlayer4vsPhi", "", kTH2F, {axisSeconds, axisPhi});
-      histos.add("hSecondsITSlayer5vsPhi", "", kTH2F, {axisSeconds, axisPhi});
-      histos.add("hSecondsITSlayer6vsPhi", "", kTH2F, {axisSeconds, axisPhi});
-      histos.add("hSecondsITS7clsVsPhi", "", kTH2F, {axisSeconds, axisPhi});
-      histos.add("hSecondsITSglobalVsPhi", "", kTH2F, {axisSeconds, axisPhi});
-      histos.add("hSecondsITSTRDVsPhi", "", kTH2F, {axisSeconds, axisPhi});
-      histos.add("hSecondsITSTOFVsPhi", "", kTH2F, {axisSeconds, axisPhi});
+      if (confFillPhiVsTimeHist == 2) {
+        histos.add("hSecondsITSlayer0vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+        histos.add("hSecondsITSlayer1vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+        histos.add("hSecondsITSlayer2vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+        histos.add("hSecondsITSlayer3vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+        histos.add("hSecondsITSlayer4vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+        histos.add("hSecondsITSlayer5vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+        histos.add("hSecondsITSlayer6vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+      }
+      if (confFillPhiVsTimeHist > 0) {
+        histos.add("hSecondsITS7clsVsPhi", "", kTH2F, {axisSeconds, axisPhi});
+        histos.add("hSecondsITSglobalVsPhi", "", kTH2F, {axisSeconds, axisPhi});
+        histos.add("hSecondsITSTRDVsPhi", "", kTH2F, {axisSeconds, axisPhi});
+        histos.add("hSecondsITSTOFVsPhi", "", kTH2F, {axisSeconds, axisPhi});
+      }
       if (confFillEtaPhiVsTimeHist)
         histos.add("hSecondsITSglobalVsEtaPhi", "", kTH3F, {axisSeconds, axisEta, axisPhi});
     }
@@ -289,6 +297,9 @@ struct TimeDependentQaTask {
       histos.fill(HIST("hSecondsFT0CamlpByColMult"), secFromSOR, col.multFT0C());
       histos.fill(HIST("hSecondsFT0AamlpByColMult"), secFromSOR, col.multFT0A());
       histos.fill(HIST("hSecondsV0Aamlp"), secFromSOR, col.multFV0A());
+
+      histos.fill(HIST("hSecondsOccupancyByTracks"), secFromSOR, col.trackOccupancyInTimeRange());
+      histos.fill(HIST("hSecondsOccupancyByFT0C"), secFromSOR, col.ft0cOccupancyInTimeRange());
 
       histos.fill(HIST("hSecondsEventSelBits"), secFromSOR, enCollisionsSel8);
       histos.fill(HIST("hSecondsEventSelBits"), secFromSOR, enNoSameBunchPileup, col.selection_bit(kNoSameBunchPileup));
@@ -432,34 +443,40 @@ struct TimeDependentQaTask {
           }
         } // end of global tracks
 
-        // study ITS cluster pattern vs phi vs time
+        // study ITS cluster pattern vs phi vs time (pt>1 GeV/c cut selects straight tracks)
         if (track.isPVContributor() && track.pt() > 1) {
-          // pt>1 GeV/c cut selects straight tracks
-          if (track.itsClusterMap() & (1 << 0))
-            histos.fill(HIST("hSecondsITSlayer0vsPhi"), secFromSOR, track.phi());
-          if (track.itsClusterMap() & (1 << 1))
-            histos.fill(HIST("hSecondsITSlayer1vsPhi"), secFromSOR, track.phi());
-          if (track.itsClusterMap() & (1 << 2))
-            histos.fill(HIST("hSecondsITSlayer2vsPhi"), secFromSOR, track.phi());
-          if (track.itsClusterMap() & (1 << 3))
-            histos.fill(HIST("hSecondsITSlayer3vsPhi"), secFromSOR, track.phi());
-          if (track.itsClusterMap() & (1 << 4))
-            histos.fill(HIST("hSecondsITSlayer4vsPhi"), secFromSOR, track.phi());
-          if (track.itsClusterMap() & (1 << 5))
-            histos.fill(HIST("hSecondsITSlayer5vsPhi"), secFromSOR, track.phi());
-          if (track.itsClusterMap() & (1 << 6))
-            histos.fill(HIST("hSecondsITSlayer6vsPhi"), secFromSOR, track.phi());
-          if (track.itsNCls() == 7)
-            histos.fill(HIST("hSecondsITS7clsVsPhi"), secFromSOR, track.phi());
-          if (track.hasITS() && track.hasTPC()) {
-            histos.fill(HIST("hSecondsITSglobalVsPhi"), secFromSOR, track.phi());
-            if (confFillEtaPhiVsTimeHist)
-              histos.fill(HIST("hSecondsITSglobalVsEtaPhi"), secFromSOR, track.eta(), track.phi());
+          // layer-by-layer check
+          if (confFillPhiVsTimeHist == 2) {
+            if (track.itsClusterMap() & (1 << 0))
+              histos.fill(HIST("hSecondsITSlayer0vsPhi"), secFromSOR, track.phi());
+            if (track.itsClusterMap() & (1 << 1))
+              histos.fill(HIST("hSecondsITSlayer1vsPhi"), secFromSOR, track.phi());
+            if (track.itsClusterMap() & (1 << 2))
+              histos.fill(HIST("hSecondsITSlayer2vsPhi"), secFromSOR, track.phi());
+            if (track.itsClusterMap() & (1 << 3))
+              histos.fill(HIST("hSecondsITSlayer3vsPhi"), secFromSOR, track.phi());
+            if (track.itsClusterMap() & (1 << 4))
+              histos.fill(HIST("hSecondsITSlayer4vsPhi"), secFromSOR, track.phi());
+            if (track.itsClusterMap() & (1 << 5))
+              histos.fill(HIST("hSecondsITSlayer5vsPhi"), secFromSOR, track.phi());
+            if (track.itsClusterMap() & (1 << 6))
+              histos.fill(HIST("hSecondsITSlayer6vsPhi"), secFromSOR, track.phi());
           }
-          if (track.hasTRD())
-            histos.fill(HIST("hSecondsITSTRDVsPhi"), secFromSOR, track.phi());
-          if (track.hasTOF())
-            histos.fill(HIST("hSecondsITSTOFVsPhi"), secFromSOR, track.phi());
+          // tracks with conditions
+          if (confFillPhiVsTimeHist > 0) {
+            if (track.itsNCls() == 7)
+              histos.fill(HIST("hSecondsITS7clsVsPhi"), secFromSOR, track.phi());
+            if (track.isGlobalTrack())
+              histos.fill(HIST("hSecondsITSglobalVsPhi"), secFromSOR, track.phi());
+            if (track.hasTRD())
+              histos.fill(HIST("hSecondsITSTRDVsPhi"), secFromSOR, track.phi());
+            if (track.hasTOF())
+              histos.fill(HIST("hSecondsITSTOFVsPhi"), secFromSOR, track.phi());
+          }
+          // eta-phi histogram for global tracks
+          if (confFillEtaPhiVsTimeHist && track.isGlobalTrack()) {
+            histos.fill(HIST("hSecondsITSglobalVsEtaPhi"), secFromSOR, track.eta(), track.phi());
+          }
         }
       }
     }
