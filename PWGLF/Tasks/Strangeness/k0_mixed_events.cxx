@@ -91,10 +91,10 @@ struct K0MixedEvents {
 
   Configurable<std::pair<float, float>> multPercentileCut{"multPercentileCut", std::pair<float, float>{-100.f, 1000.f}, "[min., max.] centrality range to keep events within"};
   Configurable<std::pair<float, float>> momentumCut{"momentumCut", std::pair<float, float>{0.f, 100.f}, "[min., max.] momentum range to keep candidates within"};
-  Configurable<std::pair<float, float>> dcaxyCut{"dcaxyCut", std::pair<float, float>{-100.f, 100.f}, "[min., max.] dcaXY range to keep candidates within"};
-  Configurable<std::pair<float, float>> dcazCut{"dcazCut", std::pair<float, float>{-100.f, 100.f}, "[min., max.] dcaZ range to keep candidates within"};
-  Configurable<std::pair<float, float>> dcaxyExclusionCut{"dcaxyExclusionCut", std::pair<float, float>{100.f, -100.f}, "[min., max.] dcaXY range to discard candidates within"};
-  Configurable<std::pair<float, float>> dcazExclusionCut{"dcazExclusionCut", std::pair<float, float>{100.f, -100.f}, "[min., max.] dcaZ range to discard candidates within"};
+  Configurable<float> dcaxyCut{"dcaxyCut", -100.f, "dcaXY range to keep candidates within"};
+  Configurable<float> dcazCut{"dcazCut", -100.f, "dcaZ range to keep candidates within"};
+  Configurable<float> dcaxyExclusionCut{"dcaxyExclusionCut", 100.f, "dcaXY range to discard candidates within"};
+  Configurable<float> dcazExclusionCut{"dcazExclusionCut", 100.f, "dcaZ range to discard candidates within"};
 
   Configurable<float> _eta{"eta", 100.0, "abs eta value limit"};
   Configurable<int16_t> _tpcNClsFound{"minTpcNClsFound", 0, "minimum allowed number of TPC clasters"};
@@ -296,28 +296,16 @@ struct K0MixedEvents {
       if (track.tpcCrossedRowsOverFindableCls() < _tpcCrossedRowsOverFindableCls) {
         continue;
       }
-      if (track.dcaXY() < dcaxyCut.value.first) {
+      if (std::abs(track.dcaXY()) > dcaxyCut) {
         continue;
       }
-      if (track.dcaXY() > dcaxyCut.value.second) {
+      if (std::abs(track.dcaXY()) < dcaxyExclusionCut) {
         continue;
       }
-      if (track.dcaXY() > dcaxyExclusionCut.value.first) {
+      if (std::abs(track.dcaZ()) > dcazCut) {
         continue;
       }
-      if (track.dcaXY() < dcaxyExclusionCut.value.second) {
-        continue;
-      }
-      if (track.dcaZ() < dcazCut.value.first) {
-        continue;
-      }
-      if (track.dcaZ() > dcazCut.value.second) {
-        continue;
-      }
-      if (track.dcaZ() > dcazExclusionCut.value.first) {
-        continue;
-      }
-      if (track.dcaZ() < dcazExclusionCut.value.second) {
+      if (std::abs(track.dcaZ()) < dcazExclusionCut) {
         continue;
       }
 

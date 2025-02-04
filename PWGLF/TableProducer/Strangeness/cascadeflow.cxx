@@ -56,6 +56,9 @@ constexpr double massSigmaParameters[4][2]{
   {1.03468e-1, 0.1898}};
 static const std::vector<std::string> massSigmaParameterNames{"p0", "p1", "p2", "p3"};
 static const std::vector<std::string> speciesNames{"Xi", "Omega"};
+const double AlphaXi[2] = {-0.390, 0.371};     // decay parameter of XiMinus and XiPlus
+const double AlphaOmega[2] = {0.0154, -0.018}; // decay parameter of OmegaMinus and OmegaPlus
+const double AlphaLambda[2] = {0.747, -0.757}; // decay parameter of Lambda and AntiLambda
 
 std::shared_ptr<TH2> hMassBeforeSelVsPt[2];
 std::shared_ptr<TH2> hMassAfterSelVsPt[2];
@@ -125,9 +128,28 @@ static const std::vector<std::string> labelsCutScore = {"Background score", "Sig
 
 struct cascadeFlow {
 
+  // Output filling criteria
+  Configurable<bool> isFillTree{"isFillTree", 1, ""};
+  Configurable<bool> isFillTHNXi{"isFillTHNXi", 1, ""};
+  Configurable<bool> isFillTHNOmega{"isFillTHNOmega", 1, ""};
+
   // axes
   ConfigurableAxis axisQVs{"axisQVs", {500, -10.f, 10.f}, "axisQVs"};
   ConfigurableAxis axisQVsNorm{"axisQVsNorm", {200, -1.f, 1.f}, "axisQVsNorm"};
+
+  // THN axes
+  ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {80, 0, 80}, ""};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {50, 0, 10}, ""};
+  ConfigurableAxis thnConfigAxisCharge{"thnConfigAxisCharge", {2, 0, 2}, ""};
+  ConfigurableAxis thnConfigAxisMassXi{"thnConfigAxisMassXi", {45, 1.300, 1.345}, ""};
+  ConfigurableAxis thnConfigAxisMassOmega{"thnConfigAxisMassOmega", {45, 1.655, 1.690}, ""};
+  ConfigurableAxis thnConfigAxisMassLambda{"thnConfigAxisMassLambda", {60, 1.1, 1.13}, ""};
+  ConfigurableAxis thnConfigAxisBDTScore{"thnConfigAxisBDTScore", {60, 0.4, 1}, ""};
+  ConfigurableAxis thnConfigAxisV2{"thnConfigAxiV2", {100, -1., 1.}, ""};
+  ConfigurableAxis thnConfigAxisPzs2Xi{"thnConffigAxiPzs2Xi", {200, -2.8, 2.8}, ""};
+  ConfigurableAxis thnConfigAxisPzs2Omega{"thnConfigAxiPzs2Omega", {200, -65, 65}, ""};
+  ConfigurableAxis thnConfigAxisPzs2Lambda{"thnConfigAxiPzs2Lambda", {200, -2, 2}, ""};
+  ConfigurableAxis thnConfigAxisCos2Theta{"thnConfigAxiCos2Theta", {100, 0, 1}, ""};
 
   // Event selection criteria
   Configurable<bool> isStoreTrueCascOnly{"isStoreTrueCascOnly", 1, ""};
@@ -157,6 +179,7 @@ struct cascadeFlow {
   Configurable<float> nsigmatpcPi{"nsigmatpcPi", 5, "nsigmatpcPi"};
   Configurable<float> mintpccrrows{"mintpccrrows", 70, "mintpccrrows"};
   Configurable<float> etaCascMCGen{"etaCascMCGen", 0.8, "etaCascMCGen"};
+  Configurable<float> etaCasc{"etaCasc", 0.8, "etaCasc"};
   Configurable<float> yCascMCGen{"yCascMCGen", 0.5, "yCascMCGen"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -390,6 +413,7 @@ struct cascadeFlow {
                    casc.pt(),
                    casc.eta(),
                    casc.phi(),
+                   casc.mLambda(),
                    casc.mXi(),
                    casc.mOmega(),
                    v2CSP,
@@ -462,6 +486,30 @@ struct cascadeFlow {
     histos.add("hv2CEPvsv2CSP", "hv2CEPvsV2CSP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
     histos.add("hv1EPvsv1SP", "hV1EPvsV1SP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
     histos.add("hv1SP_ZDCA_vs_ZDCC", "hv1SP_ZDCA_vs_ZDCC", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
+
+    const AxisSpec thnAxisFT0C{thnConfigAxisFT0C, "FT0C (%)"};
+    const AxisSpec thnAxisPt{thnConfigAxisPt, "p_{T}"};
+    const AxisSpec thnAxisCharge{thnConfigAxisCharge, "Charge"};
+    const AxisSpec thnAxisMassXi{thnConfigAxisMassXi, "inv. mass (#Lambda #pi) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisMassOmega{thnConfigAxisMassOmega, "inv. mass (#Lambda K) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisMassLambda{thnConfigAxisMassLambda, "inv. mass (p #pi) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisBDTScore{thnConfigAxisBDTScore, "BDT score"};
+    const AxisSpec thnAxisV2{thnConfigAxisV2, "v_{2}"};
+    const AxisSpec thnAxisPzs2Xi{thnConfigAxisPzs2Xi, "Pzs2Xi"};
+    const AxisSpec thnAxisPzs2Omega{thnConfigAxisPzs2Omega, "Pzs2Omega"};
+    const AxisSpec thnAxisPzs2Lambda{thnConfigAxisPzs2Lambda, "Pzs2Lambda"};
+    const AxisSpec thnAxisCos2Theta{thnConfigAxisCos2Theta, "Cos2Theta"};
+
+    if (isFillTHNXi) {
+      histos.add("hXiV2", "THn for v2 of Xi", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisV2});
+      histos.add("hXiPzs2", "THn for Pzs2 of Xi", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisMassLambda, thnAxisBDTScore, thnAxisPzs2Xi, thnAxisPzs2Lambda});
+      histos.add("hXiCos2Theta", "THn for Cos2Theta of Xi", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisMassLambda, thnAxisBDTScore, thnAxisCos2Theta, thnAxisCos2Theta});
+    }
+    if (isFillTHNOmega) {
+      histos.add("hOmegaV2", "THn for v2 of Omega", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisV2});
+      histos.add("hOmegaPzs2", "THn for Pzs2 of Omega", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisMassLambda, thnAxisBDTScore, thnAxisPzs2Omega, thnAxisPzs2Lambda});
+      histos.add("hOmegaCos2Theta", "THn for Cos2Theta of Omega", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisMassLambda, thnAxisBDTScore, thnAxisCos2Theta, thnAxisCos2Theta});
+    }
 
     histosMCGen.add("h2DGenXiEta08", "h2DGenXiEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histosMCGen.add("h2DGenOmegaEta08", "h2DGenOmegaEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
@@ -712,12 +760,42 @@ struct cascadeFlow {
       float v1SP = 0.5 * (v1SP_ZDCA - v1SP_ZDCC);
       float v1EP = 0.5 * (v1EP_ZDCA - v1EP_ZDCC); // same as v1SP
 
+      // polarization variables
+      double masses[2]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
+      ROOT::Math::PxPyPzMVector cascadeVector[2], lambdaVector, protonVector;
+      float cosThetaStarLambda[2], cosThetaStarProton;
+      lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), o2::constants::physics::MassLambda);
+      ROOT::Math::Boost lambdaBoost{lambdaVector.BoostToCM()};
+      if (casc.sign() > 0) {
+        protonVector.SetCoordinates(casc.pxneg(), casc.pyneg(), casc.pzneg(), o2::constants::physics::MassProton);
+      } else {
+        protonVector.SetCoordinates(casc.pxpos(), casc.pypos(), casc.pzpos(), o2::constants::physics::MassProton);
+      }
+      auto boostedProton{lambdaBoost(protonVector)};
+      cosThetaStarProton = boostedProton.Pz() / boostedProton.P();
+      for (int i{0}; i < 2; ++i) {
+        cascadeVector[i].SetCoordinates(casc.px(), casc.py(), casc.pz(), masses[i]);
+        ROOT::Math::Boost cascadeBoost{cascadeVector[i].BoostToCM()};
+        auto boostedLambda{cascadeBoost(lambdaVector)};
+        cosThetaStarLambda[i] = boostedLambda.Pz() / boostedLambda.P();
+      }
+      int ChargeIndex = 0;
+      if (casc.sign() > 0)
+        ChargeIndex = 1;
+      double Pzs2Xi = cosThetaStarLambda[0] * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaXi[ChargeIndex];
+      double Pzs2Omega = cosThetaStarLambda[1] * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaOmega[ChargeIndex];
+      double Cos2ThetaXi = cosThetaStarLambda[0] * cosThetaStarLambda[0];
+      double Cos2ThetaOmega = cosThetaStarLambda[1] * cosThetaStarLambda[1];
+      double Pzs2LambdaFromCasc = cosThetaStarProton * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaLambda[ChargeIndex];
+      double Cos2ThetaLambda = cosThetaStarProton * cosThetaStarProton;
+
       histos.fill(HIST("hv2CEPvsFT0C"), coll.centFT0C(), v2CEP);
       histos.fill(HIST("hv2CEPvsv2CSP"), v2CSP, v2CEP);
       histos.fill(HIST("hv1EPvsv1SP"), v1SP, v1EP);
       histos.fill(HIST("hv1SP_ZDCA_vs_ZDCC"), v1SP_ZDCC, v1SP_ZDCA);
       histos.fill(HIST("hCascadePhi"), casc.phi());
       histos.fill(HIST("hcascminuspsiT0C"), cascminuspsiT0C);
+
       double values[4]{casc.mXi(), casc.pt(), v2CSP, coll.centFT0C()};
       if (isSelectedCasc[0]) {
         cascadev2::hSparseV2C[0]->Fill(values);
@@ -732,8 +810,24 @@ struct cascadeFlow {
         BDTresponse[0] = bdtScore[0][1];
         BDTresponse[1] = bdtScore[1][1];
       }
-      if (isSelectedCasc[0] || isSelectedCasc[1])
-        fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
+
+      if (std::abs(casc.eta()) < etaCasc) {
+        if (isFillTHNXi) {
+          histos.get<THnSparse>(HIST("hXiV2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], v2CEP);
+          histos.get<THnSparse>(HIST("hXiPzs2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), casc.mLambda(), BDTresponse[0], Pzs2Xi, Pzs2LambdaFromCasc);
+          histos.get<THnSparse>(HIST("hXiCos2Theta"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), casc.mLambda(), BDTresponse[0], Cos2ThetaXi, Cos2ThetaLambda);
+        }
+        if (isFillTHNOmega) {
+          histos.get<THnSparse>(HIST("hOmegaV2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], v2CEP);
+          histos.get<THnSparse>(HIST("hOmegaPzs2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), casc.mLambda(), BDTresponse[1], Pzs2Omega, Pzs2LambdaFromCasc);
+          histos.get<THnSparse>(HIST("hOmegaCos2Theta"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), casc.mLambda(), BDTresponse[1], Cos2ThetaOmega, Cos2ThetaLambda);
+        }
+      }
+
+      if (isSelectedCasc[0] || isSelectedCasc[1]) {
+        if (isFillTree)
+          fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
+      }
     }
   }
 
@@ -884,7 +978,8 @@ struct cascadeFlow {
         BDTresponse[1] = bdtScore[1][1];
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
-        fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
+        if (isFillTree)
+          fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
     }
   }
 
