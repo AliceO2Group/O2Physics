@@ -92,21 +92,16 @@ struct PseudorapidityDensityMFT {
   Configurable<bool> usePhiCut{"usePhiCut", false, "use azimuthal angle cut"};
   Configurable<float> cfgPhiCut{"cfgPhiCut", 0.1f,
                                 "Cut on azimuthal angle of MFT tracks"};
-
   Configurable<float> cfgVzCut1{"cfgVzCut1", -30.0f,
                                 "Cut1 on vertex position of MFT tracks"};
-
   Configurable<float> cfgVzCut2{"cfgVzCut2", 30.0f,
                                 "Cut2 on vertex position of MFT tracks"};
-
   Configurable<float> cfgnCluster{"cfgnCluster", 5.0f,
                                   "Cut on no of clusters per MFT track"};
-
   Configurable<float> cfgnEta1{"cfgnEta1", -4.5f,
                                "Cut on eta1"};
   Configurable<float> cfgnEta2{"cfgnEta2", -1.0f,
                                "Cut on eta1"};
-
   HistogramRegistry registry{
     "registry",
     {
@@ -132,12 +127,10 @@ struct PseudorapidityDensityMFT {
        ";status;events",
        {HistType::kTH1F, {{2, 0.5, 2.5}}}},
       {"Tracks/Control/TrackCount", ";status;Track counts", {HistType::kTH1F, {{15, 0.5, 15.5}}}}, // added
-
     }};
 
   void init(InitContext&)
   {
-
     if (static_cast<int>(doprocessMult) +
           static_cast<int>(doprocessMultReassoc) +
           static_cast<int>(doprocessCountingCentrality) >
@@ -147,9 +140,7 @@ struct PseudorapidityDensityMFT {
            "processMultReassoc and processCountingCentrality should be "
            "enabled!");
     }
-
-    AxisSpec MultAxis = {multBinning, "N_{trk}"}; // for PbPb 3001,-0.5,3000.5
-
+    AxisSpec MultAxis = {multBinning, "N_{trk}"};
     auto hstat = registry.get<TH1>(HIST("EventSelection"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
@@ -157,24 +148,19 @@ struct PseudorapidityDensityMFT {
     x->SetBinLabel(3, "Selected INEL>0");
     x->SetBinLabel(4, "Vz cut Sel INEL>0");
     x->SetBinLabel(5, "Sel INEL,INEL_fwd>0");
-    x->SetBinLabel(6, "Rejected");                   // added ( before x->SetBinLabel(4, "Rejected"); and onwards )
-    x->SetBinLabel(7, "Good BCs");                   // added ( before 5)
-    x->SetBinLabel(8, "BCs with collisions");        // added ( before 6)
-    x->SetBinLabel(9, "BCs with pile-up/splitting"); //( before 6)
-                                                     // x->SetBinLabel(9, "event non amb");
-
+    x->SetBinLabel(6, "Rejected");
+    x->SetBinLabel(7, "Good BCs");
+    x->SetBinLabel(8, "BCs with collisions");
+    x->SetBinLabel(9, "BCs with pile-up/splitting");
     registry.add({"EventsNtrkZvtx",
                   "; N_{trk}; #it{z}_{vtx} (cm); events",
                   {HistType::kTH2F, {MultAxis, ZAxis}}});
     registry.add({"EventsNtrkZvtx_gt0",
                   "; N_{trk}; #it{z}_{vtx} (cm); events",
                   {HistType::kTH2F, {MultAxis, ZAxis}}});
-
-    //_____________________
     registry.add({"Tracks/Control/DCAXY",
                   " ; DCA_{XY} (cm)",
-                  {HistType::kTH1F, {DCAxyAxis}}}); //
-
+                  {HistType::kTH1F, {DCAxyAxis}}});
     if (doprocessGen) {
       registry.add({"EventsNtrkZvtxGen",
                     "; N_{trk}; #it{z}_{vtx} (cm); events",
@@ -224,9 +210,7 @@ struct PseudorapidityDensityMFT {
       registry.add({"EventsZposDiff",
                     " ; Z_{rec} - Z_{gen} (cm)",
                     {HistType::kTH1F, {DeltaZAxis}}});
-      registry.add(
-        {"EventsSplitMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
-
+      registry.add({"EventsSplitMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
       auto heff = registry.get<TH1>(HIST("EventEfficiency"));
       x = heff->GetXaxis();
       x->SetBinLabel(1, "Generated");
@@ -494,9 +478,6 @@ struct PseudorapidityDensityMFT {
       auto z = collision.posZ();
       auto perCollisionSample = sampleCentral->sliceByCached(
         o2::aod::track::collisionId, collision.globalIndex(), cache);
-      // auto perCollisionSample =
-      // sample->sliceByCached(o2::aod::fwdtrack::collisionId,
-      // collision.globalIndex(), cache);
       auto Ntrk = perCollisionSample.size();
 
       registry.fill(HIST("EventsNtrkZvtx"), Ntrk, z);
@@ -546,17 +527,13 @@ struct PseudorapidityDensityMFT {
                           o2::aod::MFTTracks const&,
                           soa::SmallGroups<aod::BestCollisionsFwd> const& retracks,
                           FiCentralTracks const& midtracks, aod::Tracks const&)
-  // BestCollisionsFwd -> responsible for all the amb tracks that are assigned to collision with best dca
   {
     registry.fill(HIST("EventSelection"), 1.);
     if (!useEvSel || (useEvSel && collision.sel8())) {
       registry.fill(HIST("EventSelection"), 2.);
       auto z = collision.posZ();
-      // if ((std::abs(z) >= cfgVzCut1) && (std::abs(z) <= cfgVzCut2)) {
       if ((z >= cfgVzCut1) && (z <= cfgVzCut2)) {
-
         registry.fill(HIST("EventSelection"), 3.);
-
         auto perCollisionSample = sampleCentral->sliceByCached(
           o2::aod::track::collisionId, collision.globalIndex(), cache);
         auto Ntrk = perCollisionSample.size();
@@ -566,62 +543,45 @@ struct PseudorapidityDensityMFT {
         std::unordered_set<int> uniqueCollisionsAmb;
         std::unordered_set<int> eventsInelMFT;
         std::unordered_set<int> eventsInel;
-
         registry.fill(HIST("EventsNtrkZvtx"), Ntrk, z);
-        // std::cout << " -------- EVENT LOOP sel8 collision.posZ()  ---------  " << collision.posZ() << "    Ntrk " << Ntrk << std::endl;
-        ;
-
-        if (midtracks.size() > 0) // INEL>0
-        {
+        if (midtracks.size() > 0) {
           registry.fill(HIST("EventSelection"), 4.);
           registry.fill(HIST("EventsNtrkZvtx_gt0"), Ntrk, z);
           eventsInel.insert(collision.globalIndex());
         }
-
         int64_t i = 0.0, j = 0.0, k = 0.0;
-        if (retracks.size() > 0) { // atleast one mft track
-                                   //  std::cout << " -------- EVENT LOOP retracks.size() > 0 collision.posZ()  ---------  " << collision.posZ() << "    Ntrk  " << Ntrk << std::endl;
+        if (retracks.size() > 0) {
           registry.fill(HIST("EventSelection"), 5.);
-          for (auto& retrack : retracks) { // TRACK LOOP
+          for (auto& retrack : retracks) {
             auto track = retrack.mfttrack();
 
             if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster) {
               registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
-              if (midtracks.size() > 0 && retrack.ambDegree() > 0) // INEL>0
-              {
+              if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
                 registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
                 eventsInelMFT.insert(retrack.bestCollisionId());
               }
-              if (retrack.ambDegree() != 0) // without orphan tracks
-              {
+              if (retrack.ambDegree() != 0) {
                 registry.fill(HIST("Tracks/Control/woOrp/woOrpEtaZvtx_gt0"), track.eta(), z);
                 ++k;
               }
-              // std::cout << " ****ALL*****   track.eta()  " << track.eta() << " track.collisionId()  " << track.collisionId() << " collision.globalIndex()  " << collision.globalIndex() << " retrack.bestCollisionId() " << retrack.bestCollisionId() << "  " << z << "  " << k << "   " << Ntrk << std::endl;
-              ;
-
               float phi = track.phi();
               o2::math_utils::bringTo02Pi(phi);
-              registry.fill(HIST("Tracks/Control/TrackCount"), 0); // All tracks after reassociation
+              registry.fill(HIST("Tracks/Control/TrackCount"), 0);
               registry.fill(HIST("TracksPhiEta"), phi, track.eta());
               registry.fill(HIST("TracksPtEta"), track.pt(), track.eta());
               if ((track.eta() < -2.0f) && (track.eta() > -3.9f)) {
                 registry.fill(HIST("TracksPhiZvtx"), phi, z);
               }
               if (track.collisionId() > -1 && retrack.ambDegree() == 1) {
-                registry.fill(HIST("Tracks/Control/TrackCount"), 8); // counts the orphann tracks (other way)
-                //registry.fill(HIST("EventSelection"), 9.);}
-                registry.fill(HIST("collisionID"), track.collisionId()); // non amb
+                registry.fill(HIST("Tracks/Control/TrackCount"), 8);
+                registry.fill(HIST("collisionID"), track.collisionId());
               }
               if (track.collisionId() > -1 && retrack.ambDegree() > 1) {
-
-                //registry.fill(HIST("EventSelection"), 9.);}
                 registry.fill(HIST("collisionIDamb"), track.collisionId());
               }
-              if (track.collisionId() != retrack.bestCollisionId())
-
-              {                                                               // this stores all the amb tracks that are assigned to collision with smallesdt dca that differs from the one assigned to them by default i.e the 1st collision.
-                registry.fill(HIST("Tracks/Control/ReassignedTracksEtaZvtx"), // this contains (track.collisionId()==retrack.bestCollisionId() only amb
+              if (track.collisionId() != retrack.bestCollisionId()) {
+                registry.fill(HIST("Tracks/Control/ReassignedTracksEtaZvtx"),
                               track.eta(), z);
                 registry.fill(HIST("Tracks/Control/ReassignedTracksPhiEta"), phi,
                               track.eta());
@@ -631,18 +591,16 @@ struct PseudorapidityDensityMFT {
                 registry.fill(HIST("Tracks/Control/DeltaZ"),
                               track.collision_as<CollwEv>().posZ() -
                                 collision.posZ());
-                registry.fill(HIST("Tracks/Control/TrackCount"), 1); // reassigned
-                //registry.fill(HIST("EventSelection"), 5.);
+                registry.fill(HIST("Tracks/Control/TrackCount"), 1);
               }
               if (track.collisionId() == retrack.bestCollisionId()) {
-                registry.fill(HIST("Tracks/Control/notReassignedTracksEtaZvtx"), // this contains (track.collisionId()==retrack.bestCollisionId() and only amb
+                registry.fill(HIST("Tracks/Control/notReassignedTracksEtaZvtx"),
                               track.eta(), z);
                 registry.fill(HIST("Tracks/Control/notReassignedTracksPhiEta"), phi,
                               track.eta());
                 registry.fill(HIST("Tracks/Control/notReassignedVertexCorr"),
                               track.collision_as<CollwEv>().posZ(), z);
-                registry.fill(HIST("Tracks/Control/TrackCount"), 2); // Not reassigned
-                //registry.fill(HIST("EventSelection"), 6.);
+                registry.fill(HIST("Tracks/Control/TrackCount"), 2);
               }
 
               registry.fill(HIST("Tracks/Control/TrackAmbDegree"),
@@ -650,7 +608,7 @@ struct PseudorapidityDensityMFT {
               registry.fill(HIST("Tracks/Control/DCAXY"), retrack.bestDCAXY());
               int isAmbiguous = 0;
 
-              if (retrack.ambDegree() > 1 && retrack.ambDegree() != 0) { // Only ambiguos tracks without orphans
+              if (retrack.ambDegree() > 1 && retrack.ambDegree() != 0) {
                 isAmbiguous = 1;
                 ++i;
 
@@ -662,26 +620,19 @@ struct PseudorapidityDensityMFT {
                               track.eta());
                 registry.fill(HIST("Tracks/Control/amb/AmbVertexCorr"),
                               track.collision_as<CollwEv>().posZ(), z);
-                registry.fill(HIST("Tracks/Control/TrackCount"), 3); // Ambiguous
+                registry.fill(HIST("Tracks/Control/TrackCount"), 3);
                 if (track.collisionId() == retrack.bestCollisionId()) {
                   registry.fill(HIST("Tracks/Control/TrackCount"), 5);
-                } // Ambiguous + Not reassigned
-                // counting number of events with ambiguos tracks
+                }
                 uniqueEventsAmb.insert(retrack.bestCollisionId());
-
-                // std::cout << " ****AMB*****   track.eta()  " << track.eta() << " track.collisionId()  " << track.collisionId() << " collision.globalIndex()  " << collision.globalIndex() << " retrack.bestCollisionId() " << retrack.bestCollisionId() << "  " << z << "  " << i << "   " << Ntrk << std::endl;
-                ;
               }
               if (midtracks.size() > 0 && retrack.ambDegree() > 1 && retrack.ambDegree() != 0) {
                 uniqueCollisionsAmb.insert(collision.globalIndex());
               }
 
               registry.fill(HIST("Tracks/Control/TrackIsAmb"), isAmbiguous);
-              // counting number of events with non-ambiguos tracks
-
-              if (retrack.ambDegree() == 1 && retrack.ambDegree() != 0) { // Only non-ambiguos tracks
+              if (retrack.ambDegree() == 1 && retrack.ambDegree() != 0) {
                 ++j;
-                // registry.fill(HIST("Tracks/Control/nonamb/nTrkNonAmb"), Ntrk);
                 registry.fill(HIST("Tracks/Control/nonamb/EtaZvtxNonAmb_gt0"), track.eta(), z);
                 registry.fill(HIST("Tracks/Control/nonamb/nonAmbTracksEtaZvtx"),
                               track.eta(), z);
@@ -689,24 +640,18 @@ struct PseudorapidityDensityMFT {
                               track.eta());
                 registry.fill(HIST("Tracks/Control/nonamb/nonAmbVertexCorr"),
                               track.collision_as<CollwEv>().posZ(), z);
-                registry.fill(HIST("Tracks/Control/TrackCount"), 4); // Non Ambiguous
+                registry.fill(HIST("Tracks/Control/TrackCount"), 4);
                 if (track.collisionId() == retrack.bestCollisionId()) {
                   registry.fill(HIST("Tracks/Control/TrackCount"), 6);
                 }
-                // std::cout << " $$$$ NON AMB $$$$   track.eta()  " << track.eta() << " track.collisionId()  " << track.collisionId() << " collision.globalIndex()  " << collision.globalIndex() << " retrack.bestCollisionId() " << retrack.bestCollisionId() << "  " << z << "  " << j << "   " << Ntrk << std::endl;
-                ;
                 uniqueEvents.insert(retrack.bestCollisionId());
               }
               if (midtracks.size() > 0 && retrack.ambDegree() == 1 && retrack.ambDegree() != 0) {
                 uniqueCollisions.insert(collision.globalIndex());
               }
-              // This loop fills the number of events with non-ambiguos to the hitogram
-
               if ((retrack.ambDegree() > 1) || (retrack.ambDegree() <= 1))
-                registry.fill(HIST("Tracks/Control/TrackCount"), 7); // Ambiguous+Non Ambiguous+orphans
-
-              if (retrack.ambDegree() != 0) // without orphan tracks (amb+nonamb)
-              {
+                registry.fill(HIST("Tracks/Control/TrackCount"), 7);
+              if (retrack.ambDegree() != 0) {
                 registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksEtaZvtx"),
                               track.eta(), z);
                 registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksPhiEta"), phi,
@@ -714,29 +659,26 @@ struct PseudorapidityDensityMFT {
                 registry.fill(HIST("Tracks/Control/woOrp/woOrpVertexCorr"),
                               track.collision_as<CollwEv>().posZ(), z);
                 registry.fill(HIST("Tracks/Control/TrackCount"), 9); // without orphan
-                //registry.fill(HIST("EventSelection"), 10.);
               }
             }
-          } // for loop ends here
+          }
           registry.fill(HIST("ambEventCounts"), 1, uniqueEventsAmb.size());
           registry.fill(HIST("NonambEventCounts"), 1, uniqueEvents.size());
           registry.fill(HIST("hNumCollisionsNonAmb_InelMFT"), 1, uniqueCollisions.size());
           registry.fill(HIST("hNumCollisionsAmb_InelMFT"), 1, uniqueCollisionsAmb.size());
           registry.fill(HIST("hNumCollisions_InelMFT"), 1, eventsInelMFT.size());
-
-        } // if loop, if (retracks.size() > 0) -> track loop
+        }
         registry.fill(HIST("Tracks/Control/amb/nTrkAmb"), i);
         registry.fill(HIST("Tracks/Control/nonamb/nTrkNonAmb"), j);
         registry.fill(HIST("Tracks/Control/woOrp/nTrk"), k);
         registry.fill(HIST("hNumCollisions_Inel"), 1, eventsInel.size());
       }
-    } // if (!useEvSel || (useEvSel && collision.sel8())) - event loop
+    }
 
     else {
       registry.fill(HIST("EventSelection"), 6);
     }
   }
-  // processreassociation
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMultReassoc,
                  "Process reco or data info", false);
 
@@ -1017,8 +959,6 @@ struct PseudorapidityDensityMFT {
     soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
     MFTTracksLabeled const& tracks, aod::McParticles const&)
   {
-    // In the MFT the measurement of pT is not precise, so we access it by using
-    // the particle's pT instead
     if (!useEvSel || (useEvSel && collision.sel8())) {
       for (auto& track : tracks) {
         if (!track.has_mcParticle()) {
