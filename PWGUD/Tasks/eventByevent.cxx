@@ -20,7 +20,7 @@
 #include "TLorentzVector.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/SGTrackSelector.h"
-
+#include <vector>
 using namespace std;
 using namespace o2;
 using namespace o2::aod;
