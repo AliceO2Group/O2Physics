@@ -921,7 +921,7 @@ struct StrangenessInJets {
     l->ls();
 
     auto get2DWeightHisto = [&](Configurable<std::string> name) {
-      LOG(info) << "Looking for 2D weight histogram '" << name.value << "'";
+      LOG(info) << "Looking for 2D weight histogram '" << name.value << "' for " << name.name;
       if (name.value == "") {
         LOG(info) << " -> Skipping";
         return nullptr;
@@ -943,7 +943,7 @@ struct StrangenessInJets {
     twodWeightsAntilambdaUe = get2DWeightHisto(histoNameWeightAntilambdaUe);
    
     auto get1DWeightHisto = [&](Configurable<std::string> name) {
-      LOG(info) << "Looking for 1D weight histogram '" << name.value << "'";
+      LOG(info) << "Looking for 1D weight histogram '" << name.value << "' for " << name.name;
       if (name.value == "") {
         LOG(info) << " -> Skipping";
         return nullptr;
@@ -1507,14 +1507,25 @@ struct StrangenessInJets {
             double wSecLambdaInJet(1.0);
             double wSecLambdaInUe(1.0);
             int idMother = posParticle.mothersIds()[0];
-            auto mother = mcParticles.iteratorAt(idMother);
+            const auto& mother = mcParticles.iteratorAt(idMother);
             int idGrandMother = mother.mothersIds()[0];
-            auto grandMother = mcParticles.iteratorAt(idGrandMother);
-            int ibinXiInJet = weightsXiInJet->GetXaxis()->FindBin(grandMother.pt());
-            int ibinXiInUe = weightsXiInUe->GetXaxis()->FindBin(grandMother.pt());
-            if (std::fabs(grandMother.pdgCode()) == 3312 || std::fabs(grandMother.pdgCode()) == 3322) {
-              wSecLambdaInJet = weightsXiInJet->GetBinContent(ibinXiInJet);
-              wSecLambdaInUe = weightsXiInUe->GetBinContent(ibinXiInUe);
+            const auto& grandMother = mcParticles.iteratorAt(idGrandMother);
+            switch(grandMother.pdgCode()){
+              case 3312:
+              case -3312:
+              case 3322:
+              case -3322:
+              if (weightsXiInJet) {
+                int ibinXiInJet = weightsXiInJet->GetXaxis()->FindBin(grandMother.pt());
+                wSecLambdaInJet = weightsXiInJet->GetBinContent(ibinXiInJet);
+              }
+              if (weightsXiInUe) {
+                int ibinXiInUe = weightsXiInUe->GetXaxis()->FindBin(grandMother.pt());
+                wSecLambdaInUe = weightsXiInUe->GetBinContent(ibinXiInUe);
+              }
+              break;
+              default:
+              break;
             }
             registryMC.fill(HIST("Secondary_Lambda_InJet"), v0.pt(), wSecLambdaInJet);
             registryMC.fill(HIST("Secondary_Lambda_InUe"), v0.pt(), wSecLambdaInUe);
@@ -1526,16 +1537,27 @@ struct StrangenessInJets {
           if (!isPhysPrim) {
             double wSecAntiLambdaInJet(1.0);
             double wSecAntiLambdaInUe(1.0);
-
             int idMother = posParticle.mothersIds()[0];
-            auto mother = mcParticles.iteratorAt(idMother);
+            const auto& mother = mcParticles.iteratorAt(idMother);
             int idGrandMother = mother.mothersIds()[0];
-            auto grandMother = mcParticles.iteratorAt(idGrandMother);
+            const auto& grandMother = mcParticles.iteratorAt(idGrandMother);
+                        switch(grandMother.pdgCode()){
+case 3312:
+case -3312:
+case 3322:
+case -3322:
+
+              if (weightsAntiXiInJet){
             int ibinAntiXiInJet = weightsAntiXiInJet->GetXaxis()->FindBin(grandMother.pt());
-            int ibinAntiXiInUe = weightsAntiXiInUe->GetXaxis()->FindBin(grandMother.pt());
-            if (std::fabs(grandMother.pdgCode()) == 3312 || std::fabs(grandMother.pdgCode()) == 3322) {
               wSecAntiLambdaInJet = weightsAntiXiInJet->GetBinContent(ibinAntiXiInJet);
+              }
+              if(weightsAntiXiInUe){ 
+int ibinAntiXiInUe = weightsAntiXiInUe->GetXaxis()->FindBin(grandMother.pt());
               wSecAntiLambdaInUe = weightsAntiXiInUe->GetBinContent(ibinAntiXiInUe);
+              }
+              break;
+              default:
+              break;
             }
             registryMC.fill(HIST("Secondary_AntiLambda_InJet"), v0.pt(), wSecAntiLambdaInJet);
             registryMC.fill(HIST("Secondary_AntiLambda_InUe"), v0.pt(), wSecAntiLambdaInUe);
