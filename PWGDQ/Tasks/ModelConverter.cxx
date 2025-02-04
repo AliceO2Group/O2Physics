@@ -25,12 +25,12 @@ struct MultPVConverter000_001 {
   void process(aod::ReducedEventsMultPV_001 const& multsPV)
   {
     for (const auto& r : multsPV) {
-      multsExtra_001(r.multNTracksHasITS(), r.multNTracksHasTPC(), r.multNTracksHasTOF(), r.multNTracksHasTRD(),
-                     r.multNTracksITSOnly(), r.multNTracksTPCOnly(), r.multNTracksITSTPC(), r.numTrnacksInTimeRange(), -999);
+      multPV_001(r.multNTracksHasITS(), r.multNTracksHasTPC(), r.multNTracksHasTOF(), r.multNTracksHasTRD(),
+                     r.multNTracksITSOnly(), r.multNTracksTPCOnly(), r.multNTracksITSTPC(), r.numTrnacksInTimeRange(), -999.);
     }
   }
 
-  void processDummy(MyEvents&)
+  void processDummy(aod::ReducedEvents&)
   {
     // do nothing
   }
