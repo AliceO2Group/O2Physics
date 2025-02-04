@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file netprotonCumulantsMc.cxx
-/// \brief Task for analyzing efficiency of proton, and net-proton distributions in MC reconstructed and generated
+/// \brief Task for analyzing efficiency of proton, and net-proton distributions in MC reconstructed and generated, and calculating net-proton cumulants
 /// \author Swati Saha
 
 #include <CCDB/BasicCCDBManager.h>
@@ -146,16 +146,22 @@ struct NetprotonCumulantsMc {
   Configurable<std::vector<float>> cfgProtonEff{"cfgProtonEff", {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "Efficiency of protons"};
   Configurable<std::vector<float>> cfgAntiprotonEff{"cfgAntiprotonEff", {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "Efficiency of anti-protons"};
 
+  Configurable<bool> cfgLoadEff{"cfgLoadEff", true, "Load efficiency from file"};
+  Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
+
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "https://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPath{"ccdbPath", "Users/s/swati/EtavsPtEfficiency_LHC24f3b_PIDchoice0", "CCDB path to ccdb object containing eff(pt, eta) in 2D hist"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  // for errs of uncorrected
-  std::vector<std::vector<std::shared_ptr<TProfile>>> subsample;
 
   TRandom3* fRndm = new TRandom3(0);
+
+  // Eff histograms 2d: eff(pT, eta)
+  TH2F* hRatio2DEtaVsPtProton = nullptr;
+  TH2F* hRatio2DEtaVsPtAntiproton = nullptr;
 
   // Filter command for rec (data)***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -174,6 +180,25 @@ struct NetprotonCumulantsMc {
   // Equivalent of the AliRoot task UserCreateOutputObjects
   void init(o2::framework::InitContext&)
   {
+    // Loading efficiency histograms from ccdb
+    if (cfgLoadEff) {
+
+      // Accessing eff histograms
+      ccdb->setURL(ccdbUrl.value);
+      // Enabling object caching, otherwise each call goes to the CCDB server
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      // Not later than now, will be replaced by the value of the train creation
+      // This avoids that users can replace objects **while** a train is running
+      ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
+      LOGF(info, "Getting object %s", ccdbPath.value.data());
+      TList* lst = ccdb->getForTimeStamp<TList>(ccdbPath.value, ccdbNoLaterThan.value);
+      hRatio2DEtaVsPtProton = reinterpret_cast<TH2F*>(lst->FindObject("hRatio2DEtaVsPtProton"));
+      hRatio2DEtaVsPtAntiproton = reinterpret_cast<TH2F*>(lst->FindObject("hRatio2DEtaVsPtAntiproton"));
+      if (!hRatio2DEtaVsPtProton || !hRatio2DEtaVsPtAntiproton)
+        LOGF(info, "FATAL!! could not get efficiency---------> check");
+    }
+
     // Define your axes
     // Constant bin width axis
     AxisSpec vtxZAxis = {100, -20, 20};
@@ -487,21 +512,14 @@ struct NetprotonCumulantsMc {
 
     if (cfgIsCalculateError) {
       // uncorrected
-      subsample.resize(cfgNSubsample);
-      for (int i = 0; i < cfgNSubsample; i++) {
-        subsample[i].resize(8);
-      }
-      for (int i = 0; i < cfgNSubsample; i++) {
-        //! 1D profiles of moments
-        subsample[i][0] = std::get<std::shared_ptr<TProfile>>(histos.add(Form("subsample_%d/Prof_mu1_netproton", i), "", {HistType::kTProfile, {centAxis}}));
-        subsample[i][1] = std::get<std::shared_ptr<TProfile>>(histos.add(Form("subsample_%d/Prof_mu2_netproton", i), "", {HistType::kTProfile, {centAxis}}));
-        subsample[i][2] = std::get<std::shared_ptr<TProfile>>(histos.add(Form("subsample_%d/Prof_mu3_netproton", i), "", {HistType::kTProfile, {centAxis}}));
-        subsample[i][3] = std::get<std::shared_ptr<TProfile>>(histos.add(Form("subsample_%d/Prof_mu4_netproton", i), "", {HistType::kTProfile, {centAxis}}));
-        subsample[i][4] = std::get<std::shared_ptr<TProfile>>(histos.add(Form("subsample_%d/Prof_mu5_netproton", i), "", {HistType::kTProfile, {centAxis}}));
-        subsample[i][5] = std::get<std::shared_ptr<TProfile>>(histos.add(Form("subsample_%d/Prof_mu6_netproton", i), "", {HistType::kTProfile, {centAxis}}));
-        subsample[i][6] = std::get<std::shared_ptr<TProfile>>(histos.add(Form("subsample_%d/Prof_mu7_netproton", i), "", {HistType::kTProfile, {centAxis}}));
-        subsample[i][7] = std::get<std::shared_ptr<TProfile>>(histos.add(Form("subsample_%d/Prof_mu8_netproton", i), "", {HistType::kTProfile, {centAxis}}));
-      }
+      histos.add("Prof2D_mu1_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu2_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu3_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu4_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu5_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu6_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu7_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu8_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
 
       // eff. corrected
       histos.add("Prof2D_Q11_1", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
@@ -777,6 +795,28 @@ struct NetprotonCumulantsMc {
       histos.add("hgenProfileTotalProton", "Generated total proton number vs. centrality", kTProfile, {centAxis});
       histos.add("hgenProfileProton", "Generated proton number vs. centrality", kTProfile, {centAxis});
       histos.add("hgenProfileAntiproton", "Generated antiproton number vs. centrality", kTProfile, {centAxis});
+
+      if (cfgIsCalculateCentral) {
+        histos.add("GenProf_mu1_netproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu2_netproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu3_netproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu4_netproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu5_netproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu6_netproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu7_netproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu8_netproton", "", {HistType::kTProfile, {centAxis}});
+      }
+
+      if (cfgIsCalculateError) {
+        histos.add("GenProf2D_mu1_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu2_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu3_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu4_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu5_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu6_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu7_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu8_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      }
     }
   } // end init()
 
@@ -851,28 +891,41 @@ struct NetprotonCumulantsMc {
   template <typename T>
   float getEfficiency(const T& candidate)
   {
-    // Find the pt bin index based on the track's pt value
-    int binIndex = -1;
-    // Get the array from the Configurable
-    auto ptBins = (std::vector<float>)cfgPtBins;
-    auto effProt = (std::vector<float>)cfgProtonEff;
-    auto effAntiprot = (std::vector<float>)cfgAntiprotonEff;
-
-    for (int i = 0; i < 16; ++i) {
-      if (candidate.pt() >= ptBins[i] && candidate.pt() < ptBins[i + 1]) {
-        binIndex = i;
-        break;
+    // Load eff from histograms in CCDB
+    if (cfgLoadEff) {
+      if (candidate.sign() > 0) {
+        float effmeanval = hRatio2DEtaVsPtProton->GetBinContent(hRatio2DEtaVsPtProton->FindBin(candidate.pt(), candidate.eta()));
+        return effmeanval;
       }
+      if (candidate.sign() < 0) {
+        float effmeanval = hRatio2DEtaVsPtAntiproton->GetBinContent(hRatio2DEtaVsPtAntiproton->FindBin(candidate.pt(), candidate.eta()));
+        return effmeanval;
+      }
+      return 0.0;
+    } else {
+      // Find the pt bin index based on the track's pt value
+      int binIndex = -1;
+      // Get the array from the Configurable
+      auto ptBins = (std::vector<float>)cfgPtBins;
+      auto effProt = (std::vector<float>)cfgProtonEff;
+      auto effAntiprot = (std::vector<float>)cfgAntiprotonEff;
+
+      for (int i = 0; i < 16; ++i) {
+        if (candidate.pt() >= ptBins[i] && candidate.pt() < ptBins[i + 1]) {
+          binIndex = i;
+          break;
+        }
+      }
+      // If the pt is outside the defined bins, return a default efficiency or handle it differently
+      if (binIndex == -1) {
+        return 0.0; // Default efficiency (0% if outside bins)
+      }
+      if (candidate.sign() > 0)
+        return effProt[binIndex];
+      if (candidate.sign() < 0)
+        return effAntiprot[binIndex];
+      return 0.0;
     }
-    // If the pt is outside the defined bins, return a default efficiency or handle it differently
-    if (binIndex == -1) {
-      return 0.0; // Default efficiency (0% if outside bins)
-    }
-    if (candidate.sign() > 0)
-      return effProt[binIndex];
-    if (candidate.sign() < 0)
-      return effAntiprot[binIndex];
-    return 0.0;
   }
 
   Produces<aod::ProtGenCollEbyeTables> genEbyeCollisions; //! MC Gen table creation
@@ -960,6 +1013,36 @@ struct NetprotonCumulantsMc {
     histos.fill(HIST("hgenProfileProton"), cent, nProt);
     histos.fill(HIST("hgenProfileAntiproton"), cent, nAntiprot);
     genEbyeCollisions(cent, netProt, nProt, nAntiprot);
+
+    // Profiles for generated level cumulants
+    //-------------------------------------------------------------------------------------------
+
+    if (cfgIsCalculateCentral) {
+      histos.get<TProfile>(HIST("GenProf_mu1_netproton"))->Fill(cent, std::pow(netProt, 1.0));
+      histos.get<TProfile>(HIST("GenProf_mu2_netproton"))->Fill(cent, std::pow(netProt, 2.0));
+      histos.get<TProfile>(HIST("GenProf_mu3_netproton"))->Fill(cent, std::pow(netProt, 3.0));
+      histos.get<TProfile>(HIST("GenProf_mu4_netproton"))->Fill(cent, std::pow(netProt, 4.0));
+      histos.get<TProfile>(HIST("GenProf_mu5_netproton"))->Fill(cent, std::pow(netProt, 5.0));
+      histos.get<TProfile>(HIST("GenProf_mu6_netproton"))->Fill(cent, std::pow(netProt, 6.0));
+      histos.get<TProfile>(HIST("GenProf_mu7_netproton"))->Fill(cent, std::pow(netProt, 7.0));
+      histos.get<TProfile>(HIST("GenProf_mu8_netproton"))->Fill(cent, std::pow(netProt, 8.0));
+    }
+
+    if (cfgIsCalculateError) {
+
+      float l_Random = fRndm->Rndm();
+      int sampleIndex = static_cast<int>(cfgNSubsample * l_Random);
+
+      histos.get<TProfile2D>(HIST("GenProf2D_mu1_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 1.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu2_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 2.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu3_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 3.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu4_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 4.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu5_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 5.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu6_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 6.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu7_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 7.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu8_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 8.0));
+    }
+    //-------------------------------------------------------------------------------------------
   }
   PROCESS_SWITCH(NetprotonCumulantsMc, processMCGen, "Process Generated", true);
 
@@ -983,6 +1066,10 @@ struct NetprotonCumulantsMc {
 
     float nProt = 0.0;
     float nAntiprot = 0.0;
+    std::array<float, 7> powerEffProt = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    std::array<float, 7> powerEffAntiprot = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    std::array<float, 7> fTCP0 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    std::array<float, 7> fTCP1 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     // Start of the Monte-Carlo reconstructed tracks
     for (const auto& track : tracks) {
@@ -1024,8 +1111,15 @@ struct NetprotonCumulantsMc {
             histos.fill(HIST("hrecPhiProton"), particle.phi());
             histos.fill(HIST("hrecDcaXYProton"), track.dcaXY());
             histos.fill(HIST("hrecDcaZProton"), track.dcaZ());
-            if (particle.pt() < cfgCutPtUpper)
+            if (particle.pt() < cfgCutPtUpper) {
               nProt = nProt + 1.0;
+              float pEff = getEfficiency(track); // get efficiency of track
+              if (pEff != 0) {
+                for (int i = 1; i < 7; i++) {
+                  powerEffProt[i] += std::pow(1.0 / pEff, i);
+                }
+              }
+            }
             if (particle.pdgCode() == 2212) {
               histos.fill(HIST("hrecTruePtProton"), particle.pt()); //! hist for p purity
             }
@@ -1039,8 +1133,15 @@ struct NetprotonCumulantsMc {
             histos.fill(HIST("hrecPhiAntiproton"), particle.phi());
             histos.fill(HIST("hrecDcaXYAntiproton"), track.dcaXY());
             histos.fill(HIST("hrecDcaZAntiproton"), track.dcaZ());
-            if (particle.pt() < cfgCutPtUpper)
+            if (particle.pt() < cfgCutPtUpper) {
               nAntiprot = nAntiprot + 1.0;
+              float pEff = getEfficiency(track); // get efficiency of track
+              if (pEff != 0) {
+                for (int i = 1; i < 7; i++) {
+                  powerEffAntiprot[i] += std::pow(1.0 / pEff, i);
+                }
+              }
+            }
             if (particle.pdgCode() == -2212) {
               histos.fill(HIST("hrecTruePtAntiproton"), particle.pt()); //! hist for anti-p purity
             }
@@ -1056,13 +1157,815 @@ struct NetprotonCumulantsMc {
     histos.fill(HIST("hrecProfileTotalProton"), cent, (nProt + nAntiprot));
     histos.fill(HIST("hrecProfileProton"), cent, nProt);
     histos.fill(HIST("hrecProfileAntiproton"), cent, nAntiprot);
+    histos.fill(HIST("hCorrProfileTotalProton"), cent, (powerEffProt[1] + powerEffAntiprot[1]));
+    histos.fill(HIST("hCorrProfileProton"), cent, powerEffProt[1]);
+    histos.fill(HIST("hCorrProfileAntiproton"), cent, powerEffAntiprot[1]);
     recEbyeCollisions(cent, netProt, nProt, nAntiprot);
+
+    // Calculating q_{r,s} as required
+    for (int i = 1; i < 7; i++) {
+      fTCP0[i] = powerEffProt[i] + powerEffAntiprot[i];
+      fTCP1[i] = powerEffProt[i] - powerEffAntiprot[i];
+    }
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    float fQ11_1 = fTCP1[1];
+    float fQ11_2 = std::pow(fTCP1[1], 2);
+    float fQ11_3 = std::pow(fTCP1[1], 3);
+    float fQ11_4 = std::pow(fTCP1[1], 4);
+    float fQ11_5 = std::pow(fTCP1[1], 5);
+    float fQ11_6 = std::pow(fTCP1[1], 6);
+
+    float fQ21_3 = std::pow(fTCP0[1], 3);
+    float fQ22_3 = std::pow(fTCP0[2], 3);
+    float fQ31_2 = std::pow(fTCP1[1], 2);
+    float fQ32_2 = std::pow(fTCP1[2], 2);
+    float fQ33_2 = std::pow(fTCP1[3], 2);
+
+    float fQ61_1 = fTCP0[1];
+    float fQ62_1 = fTCP0[2];
+    float fQ63_1 = fTCP0[3];
+    float fQ64_1 = fTCP0[4];
+    float fQ65_1 = fTCP0[5];
+    float fQ66_1 = fTCP0[6];
+
+    float fQ112122_111 = fTCP1[1] * fTCP0[1] * fTCP0[2];
+    float fQ112131_111 = fTCP1[1] * fTCP0[1] * fTCP1[1];
+    float fQ112132_111 = fTCP1[1] * fTCP0[1] * fTCP1[2];
+    float fQ112133_111 = fTCP1[1] * fTCP0[1] * fTCP1[3];
+    float fQ112231_111 = fTCP1[1] * fTCP0[2] * fTCP1[1];
+    float fQ112232_111 = fTCP1[1] * fTCP0[2] * fTCP1[2];
+    float fQ112233_111 = fTCP1[1] * fTCP0[2] * fTCP1[3];
+    float fQ112221_111 = fTCP1[1] * fTCP0[2] * fTCP0[1];
+
+    float fQ21_1 = fTCP0[1];
+    float fQ22_1 = fTCP0[2];
+    float fQ31_1 = fTCP1[1];
+    float fQ32_1 = fTCP1[2];
+    float fQ33_1 = fTCP1[3];
+    float fQ41_1 = fTCP0[1];
+    float fQ42_1 = fTCP0[2];
+    float fQ43_1 = fTCP0[3];
+    float fQ44_1 = fTCP0[4];
+    float fQ21_2 = std::pow(fTCP0[1], 2);
+    float fQ22_2 = std::pow(fTCP0[2], 2);
+    float fQ1121_11 = fTCP1[1] * fTCP0[1];
+    float fQ1121_01 = fTCP0[1];
+    float fQ1121_10 = fTCP1[1];
+    float fQ1121_20 = std::pow(fTCP1[1], 2);
+    float fQ1121_21 = std::pow(fTCP1[1], 2) * fTCP0[1];
+    float fQ1122_11 = fTCP1[1] * fTCP0[2];
+    float fQ1122_01 = fTCP0[2];
+    float fQ1122_10 = fTCP1[1];
+    float fQ1122_20 = std::pow(fTCP1[1], 2);
+    float fQ1122_21 = std::pow(fTCP1[1], 2) * fTCP0[2];
+    float fQ1131_11 = fTCP1[1] * fTCP1[1];
+    float fQ1131_01 = fTCP1[1];
+    float fQ1131_10 = fTCP1[1];
+    float fQ1132_11 = fTCP1[1] * fTCP1[2];
+    float fQ1132_01 = fTCP1[2];
+    float fQ1132_10 = fTCP1[1];
+    float fQ1133_11 = fTCP1[1] * fTCP1[3];
+    float fQ1133_01 = fTCP1[3];
+    float fQ1133_10 = fTCP1[1];
+    float fQ2122_11 = fTCP0[1] * fTCP0[2];
+    float fQ2122_01 = fTCP0[2];
+    float fQ2122_10 = fTCP0[1];
+
+    ///////////////--------------------->
+    float fQ3132_11 = fTCP1[1] * fTCP1[2];
+    float fQ3132_01 = fTCP1[2];
+    float fQ3132_10 = fTCP1[1];
+    float fQ3133_11 = fTCP1[1] * fTCP1[3];
+    float fQ3133_01 = fTCP1[3];
+    float fQ3133_10 = fTCP1[1];
+    float fQ3233_11 = fTCP1[2] * fTCP1[3];
+    float fQ3233_01 = fTCP1[3];
+    float fQ3233_10 = fTCP1[2];
+    float fQ2241_11 = fTCP0[2] * fTCP0[1];
+    float fQ2241_01 = fTCP0[1];
+    float fQ2241_10 = fTCP0[2];
+    float fQ2242_11 = fTCP0[2] * fTCP0[2];
+    float fQ2242_01 = fTCP0[2];
+    float fQ2242_10 = fTCP0[2];
+    float fQ2243_11 = fTCP0[2] * fTCP0[3];
+    float fQ2243_01 = fTCP0[3];
+    float fQ2243_10 = fTCP0[2];
+    float fQ2244_11 = fTCP0[2] * fTCP0[4];
+    float fQ2244_01 = fTCP0[4];
+    float fQ2244_10 = fTCP0[2];
+    float fQ2141_11 = fTCP0[1] * fTCP0[1];
+    float fQ2141_01 = fTCP0[1];
+    float fQ2141_10 = fTCP0[1];
+    float fQ2142_11 = fTCP0[1] * fTCP0[2];
+    float fQ2142_01 = fTCP0[2];
+    float fQ2142_10 = fTCP0[1];
+    float fQ2143_11 = fTCP0[1] * fTCP0[3];
+    float fQ2143_01 = fTCP0[3];
+    float fQ2143_10 = fTCP0[1];
+    float fQ2144_11 = fTCP0[1] * fTCP0[4];
+    float fQ2144_01 = fTCP0[4];
+    float fQ2144_10 = fTCP0[1];
+    float fQ1151_11 = fTCP1[1] * fTCP1[1];
+    float fQ1151_01 = fTCP1[1];
+    float fQ1151_10 = fTCP1[1];
+    float fQ1152_11 = fTCP1[1] * fTCP1[2];
+    float fQ1152_01 = fTCP1[2];
+    float fQ1152_10 = fTCP1[1];
+    float fQ1153_11 = fTCP1[1] * fTCP1[3];
+    float fQ1153_01 = fTCP1[3];
+    float fQ1153_10 = fTCP1[1];
+    float fQ1154_11 = fTCP1[1] * fTCP1[4];
+    float fQ1154_01 = fTCP1[4];
+    float fQ1154_10 = fTCP1[1];
+    float fQ1155_11 = fTCP1[1] * fTCP1[5];
+    float fQ1155_01 = fTCP1[5];
+    float fQ1155_10 = fTCP1[1];
+
+    float fQ112233_001 = fTCP1[3];
+    float fQ112233_010 = fTCP0[2];
+    float fQ112233_100 = fTCP1[1];
+    float fQ112233_011 = fTCP0[2] * fTCP1[3];
+    float fQ112233_101 = fTCP1[1] * fTCP1[3];
+    float fQ112233_110 = fTCP1[1] * fTCP0[2];
+    float fQ112232_001 = fTCP1[2];
+    float fQ112232_010 = fTCP0[2];
+    float fQ112232_100 = fTCP1[1];
+    float fQ112232_011 = fTCP0[2] * fTCP1[2];
+    float fQ112232_101 = fTCP1[1] * fTCP1[2];
+    float fQ112232_110 = fTCP1[1] * fTCP0[2];
+    //
+    float fQ112231_001 = fTCP1[1];
+    float fQ112231_010 = fTCP0[2];
+    float fQ112231_100 = fTCP1[1];
+    float fQ112231_011 = fTCP0[2] * fTCP1[1];
+    float fQ112231_101 = fTCP1[1] * fTCP1[1];
+    float fQ112231_110 = fTCP1[1] * fTCP0[2];
+    float fQ112133_001 = fTCP1[3];
+    float fQ112133_010 = fTCP0[1];
+    float fQ112133_100 = fTCP1[1];
+    float fQ112133_011 = fTCP0[1] * fTCP1[3];
+    float fQ112133_101 = fTCP1[1] * fTCP1[3];
+    float fQ112133_110 = fTCP1[1] * fTCP0[1];
+
+    float fQ112132_001 = fTCP1[2];
+    float fQ112132_010 = fTCP0[1];
+    float fQ112132_100 = fTCP1[1];
+    float fQ112132_011 = fTCP0[1] * fTCP1[2];
+    float fQ112132_101 = fTCP1[1] * fTCP1[2];
+    float fQ112132_110 = fTCP1[1] * fTCP0[1];
+    float fQ112131_001 = fTCP1[1];
+    float fQ112131_010 = fTCP0[1];
+    float fQ112131_100 = fTCP1[1];
+    float fQ112131_011 = fTCP0[1] * fTCP1[1];
+    float fQ112131_101 = fTCP1[1] * fTCP1[1];
+    float fQ112131_110 = fTCP1[1] * fTCP0[1];
+
+    float fQ2221_11 = fTCP0[2] * fTCP0[1];
+    float fQ2221_01 = fTCP0[1];
+    float fQ2221_10 = fTCP0[2];
+    float fQ2221_21 = std::pow(fTCP0[2], 2) * fTCP0[1];
+    float fQ2221_20 = std::pow(fTCP0[2], 2);
+
+    float fQ2122_21 = std::pow(fTCP0[1], 2) * fTCP0[2];
+    float fQ2122_20 = std::pow(fTCP0[1], 2);
+    float fQ1121_02 = std::pow(fTCP0[1], 2);
+    float fQ1121_12 = fTCP1[1] * std::pow(fTCP0[1], 2);
+    float fQ1121_22 = std::pow(fTCP1[1], 2) * std::pow(fTCP0[1], 2);
+    float fQ1122_02 = std::pow(fTCP0[2], 2);
+    float fQ1122_12 = fTCP1[1] * std::pow(fTCP0[2], 2);
+    float fQ1122_22 = std::pow(fTCP1[1], 2) * std::pow(fTCP0[2], 2);
+
+    float fQ112221_001 = fTCP0[1];
+    float fQ112221_010 = fTCP0[2];
+    float fQ112221_100 = fTCP1[1];
+    float fQ112221_011 = fTCP0[2] * fTCP0[1];
+    float fQ112221_101 = fTCP1[1] * fTCP0[1];
+    float fQ112221_110 = fTCP1[1] * fTCP0[2];
+    float fQ112221_200 = std::pow(fTCP1[1], 2);
+    float fQ112221_201 = std::pow(fTCP1[1], 2) * fTCP0[1];
+    float fQ112221_210 = std::pow(fTCP1[1], 2) * fTCP0[2];
+    float fQ112221_211 = std::pow(fTCP1[1], 2) * fTCP0[2] * fTCP0[1];
+    float fQ1131_21 = std::pow(fTCP1[1], 2) * fTCP1[1];
+    float fQ1131_20 = std::pow(fTCP1[1], 2);
+    float fQ1131_31 = std::pow(fTCP1[1], 3) * fTCP1[1];
+    float fQ1131_30 = std::pow(fTCP1[1], 3);
+
+    float fQ1132_21 = std::pow(fTCP1[1], 2) * fTCP1[2];
+    float fQ1132_20 = std::pow(fTCP1[1], 2);
+    float fQ1132_31 = std::pow(fTCP1[1], 3) * fTCP1[2];
+    float fQ1132_30 = std::pow(fTCP1[1], 3);
+    float fQ1133_21 = std::pow(fTCP1[1], 2) * fTCP1[3];
+    float fQ1133_20 = std::pow(fTCP1[1], 2);
+    float fQ1133_31 = std::pow(fTCP1[1], 3) * fTCP1[3];
+    float fQ1133_30 = std::pow(fTCP1[1], 3);
+    float fQ1121_30 = std::pow(fTCP1[1], 3);
+    float fQ1121_31 = std::pow(fTCP1[1], 3) * fTCP0[1];
+    float fQ1121_40 = std::pow(fTCP1[1], 4);
+    float fQ1121_41 = std::pow(fTCP1[1], 4) * fTCP0[1];
+    float fQ1122_30 = std::pow(fTCP1[1], 3);
+    float fQ1122_31 = std::pow(fTCP1[1], 3) * fTCP0[2];
+    float fQ1122_40 = std::pow(fTCP1[1], 4);
+    float fQ1122_41 = std::pow(fTCP1[1], 4) * fTCP0[2];
+
+    float fQ2211_11 = fTCP0[2] * fTCP1[1];
+    float fQ2211_01 = fTCP1[1];
+    float fQ2211_10 = fTCP0[2];
+    float fQ2211_20 = std::pow(fTCP0[2], 2);
+    float fQ2211_21 = std::pow(fTCP0[2], 2) * fTCP1[1];
+    float fQ2111_11 = fTCP0[1] * fTCP1[1];
+    float fQ2111_01 = fTCP1[1];
+    float fQ2111_10 = fTCP0[1];
+    float fQ2111_20 = std::pow(fTCP0[1], 2);
+    float fQ2111_21 = std::pow(fTCP0[1], 2) * fTCP1[1];
+
+    float fQ112122_001 = fTCP0[2];
+    float fQ112122_010 = fTCP0[1];
+    float fQ112122_100 = fTCP1[1];
+    float fQ112122_011 = fTCP0[1] * fTCP0[2];
+    float fQ112122_101 = fTCP1[1] * fTCP0[2];
+    float fQ112122_110 = fTCP1[1] * fTCP0[1];
+
+    float fQ1141_11 = fTCP1[1] * fTCP0[1];
+    float fQ1141_01 = fTCP0[1];
+    float fQ1141_10 = fTCP1[1];
+    float fQ1141_20 = std::pow(fTCP1[1], 2);
+    float fQ1141_21 = std::pow(fTCP1[1], 2) * fTCP0[1];
+    float fQ1142_11 = fTCP1[1] * fTCP0[2];
+    float fQ1142_01 = fTCP0[2];
+    float fQ1142_10 = fTCP1[1];
+    float fQ1142_20 = std::pow(fTCP1[1], 2);
+    float fQ1142_21 = std::pow(fTCP1[1], 2) * fTCP0[2];
+
+    float fQ1143_11 = fTCP1[1] * fTCP0[3];
+    float fQ1143_01 = fTCP0[3];
+    float fQ1143_10 = fTCP1[1];
+    float fQ1143_20 = std::pow(fTCP1[1], 2);
+    float fQ1143_21 = std::pow(fTCP1[1], 2) * fTCP0[3];
+    float fQ1144_11 = fTCP1[1] * fTCP0[4];
+    float fQ1144_01 = fTCP0[4];
+    float fQ1144_10 = fTCP1[1];
+    float fQ1144_20 = std::pow(fTCP1[1], 2);
+    float fQ1144_21 = std::pow(fTCP1[1], 2) * fTCP0[4];
+    float fQ2131_11 = fTCP0[1] * fTCP1[1];
+    float fQ2131_01 = fTCP1[1];
+    float fQ2131_10 = fTCP0[1];
+
+    float fQ2132_11 = fTCP0[1] * fTCP1[2];
+    float fQ2132_01 = fTCP1[2];
+    float fQ2132_10 = fTCP0[1];
+    float fQ2133_11 = fTCP0[1] * fTCP1[3];
+    float fQ2133_01 = fTCP1[3];
+    float fQ2133_10 = fTCP0[1];
+    float fQ2231_11 = fTCP0[2] * fTCP1[1];
+    float fQ2231_01 = fTCP1[1];
+    float fQ2231_10 = fTCP0[2];
+    float fQ2232_11 = fTCP0[2] * fTCP1[2];
+    float fQ2232_01 = fTCP1[2];
+    float fQ2232_10 = fTCP0[2];
+    float fQ2233_11 = fTCP0[2] * fTCP1[3];
+    float fQ2233_01 = fTCP1[3];
+    float fQ2233_10 = fTCP0[2];
+
+    float fQ51_1 = fTCP1[1];
+    float fQ52_1 = fTCP1[2];
+    float fQ53_1 = fTCP1[3];
+    float fQ54_1 = fTCP1[4];
+    float fQ55_1 = fTCP1[5];
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    if (cfgIsCalculateCentral) {
+
+      // uncorrected
+      histos.get<TProfile>(HIST("Prof_mu1_netproton"))->Fill(cent, std::pow(netProt, 1.0));
+      histos.get<TProfile>(HIST("Prof_mu2_netproton"))->Fill(cent, std::pow(netProt, 2.0));
+      histos.get<TProfile>(HIST("Prof_mu3_netproton"))->Fill(cent, std::pow(netProt, 3.0));
+      histos.get<TProfile>(HIST("Prof_mu4_netproton"))->Fill(cent, std::pow(netProt, 4.0));
+      histos.get<TProfile>(HIST("Prof_mu5_netproton"))->Fill(cent, std::pow(netProt, 5.0));
+      histos.get<TProfile>(HIST("Prof_mu6_netproton"))->Fill(cent, std::pow(netProt, 6.0));
+      histos.get<TProfile>(HIST("Prof_mu7_netproton"))->Fill(cent, std::pow(netProt, 7.0));
+      histos.get<TProfile>(HIST("Prof_mu8_netproton"))->Fill(cent, std::pow(netProt, 8.0));
+
+      // eff. corrected
+      histos.get<TProfile>(HIST("Prof_Q11_1"))->Fill(cent, fQ11_1);
+      histos.get<TProfile>(HIST("Prof_Q11_2"))->Fill(cent, fQ11_2);
+      histos.get<TProfile>(HIST("Prof_Q11_3"))->Fill(cent, fQ11_3);
+      histos.get<TProfile>(HIST("Prof_Q11_4"))->Fill(cent, fQ11_4);
+      histos.get<TProfile>(HIST("Prof_Q21_1"))->Fill(cent, fQ21_1);
+      histos.get<TProfile>(HIST("Prof_Q22_1"))->Fill(cent, fQ22_1);
+      histos.get<TProfile>(HIST("Prof_Q31_1"))->Fill(cent, fQ31_1);
+      histos.get<TProfile>(HIST("Prof_Q32_1"))->Fill(cent, fQ32_1);
+      histos.get<TProfile>(HIST("Prof_Q33_1"))->Fill(cent, fQ33_1);
+      histos.get<TProfile>(HIST("Prof_Q41_1"))->Fill(cent, fQ41_1);
+      histos.get<TProfile>(HIST("Prof_Q42_1"))->Fill(cent, fQ42_1);
+      histos.get<TProfile>(HIST("Prof_Q43_1"))->Fill(cent, fQ43_1);
+      histos.get<TProfile>(HIST("Prof_Q44_1"))->Fill(cent, fQ44_1);
+      histos.get<TProfile>(HIST("Prof_Q21_2"))->Fill(cent, fQ21_2);
+      histos.get<TProfile>(HIST("Prof_Q22_2"))->Fill(cent, fQ22_2);
+      histos.get<TProfile>(HIST("Prof_Q1121_11"))->Fill(cent, fQ1121_11);
+      histos.get<TProfile>(HIST("Prof_Q1121_01"))->Fill(cent, fQ1121_01);
+      histos.get<TProfile>(HIST("Prof_Q1121_10"))->Fill(cent, fQ1121_10);
+      histos.get<TProfile>(HIST("Prof_Q1121_20"))->Fill(cent, fQ1121_20);
+      histos.get<TProfile>(HIST("Prof_Q1121_21"))->Fill(cent, fQ1121_21);
+      histos.get<TProfile>(HIST("Prof_Q1122_11"))->Fill(cent, fQ1122_11);
+      histos.get<TProfile>(HIST("Prof_Q1122_01"))->Fill(cent, fQ1122_01);
+      histos.get<TProfile>(HIST("Prof_Q1122_10"))->Fill(cent, fQ1122_10);
+      histos.get<TProfile>(HIST("Prof_Q1122_20"))->Fill(cent, fQ1122_20);
+      histos.get<TProfile>(HIST("Prof_Q1122_21"))->Fill(cent, fQ1122_21);
+      histos.get<TProfile>(HIST("Prof_Q1131_11"))->Fill(cent, fQ1131_11);
+      histos.get<TProfile>(HIST("Prof_Q1131_01"))->Fill(cent, fQ1131_01);
+      histos.get<TProfile>(HIST("Prof_Q1131_10"))->Fill(cent, fQ1131_10);
+      histos.get<TProfile>(HIST("Prof_Q1132_11"))->Fill(cent, fQ1132_11);
+      histos.get<TProfile>(HIST("Prof_Q1132_01"))->Fill(cent, fQ1132_01);
+      histos.get<TProfile>(HIST("Prof_Q1132_10"))->Fill(cent, fQ1132_10);
+      histos.get<TProfile>(HIST("Prof_Q1133_11"))->Fill(cent, fQ1133_11);
+      histos.get<TProfile>(HIST("Prof_Q1133_01"))->Fill(cent, fQ1133_01);
+      histos.get<TProfile>(HIST("Prof_Q1133_10"))->Fill(cent, fQ1133_10);
+      histos.get<TProfile>(HIST("Prof_Q2122_11"))->Fill(cent, fQ2122_11);
+      histos.get<TProfile>(HIST("Prof_Q2122_01"))->Fill(cent, fQ2122_01);
+      histos.get<TProfile>(HIST("Prof_Q2122_10"))->Fill(cent, fQ2122_10);
+      histos.get<TProfile>(HIST("Prof_Q3132_11"))->Fill(cent, fQ3132_11);
+      histos.get<TProfile>(HIST("Prof_Q3132_01"))->Fill(cent, fQ3132_01);
+      histos.get<TProfile>(HIST("Prof_Q3132_10"))->Fill(cent, fQ3132_10);
+      histos.get<TProfile>(HIST("Prof_Q3133_11"))->Fill(cent, fQ3133_11);
+      histos.get<TProfile>(HIST("Prof_Q3133_01"))->Fill(cent, fQ3133_01);
+      histos.get<TProfile>(HIST("Prof_Q3133_10"))->Fill(cent, fQ3133_10);
+      histos.get<TProfile>(HIST("Prof_Q3233_11"))->Fill(cent, fQ3233_11);
+      histos.get<TProfile>(HIST("Prof_Q3233_01"))->Fill(cent, fQ3233_01);
+      histos.get<TProfile>(HIST("Prof_Q3233_10"))->Fill(cent, fQ3233_10);
+      histos.get<TProfile>(HIST("Prof_Q2241_11"))->Fill(cent, fQ2241_11);
+      histos.get<TProfile>(HIST("Prof_Q2241_01"))->Fill(cent, fQ2241_01);
+      histos.get<TProfile>(HIST("Prof_Q2241_10"))->Fill(cent, fQ2241_10);
+      histos.get<TProfile>(HIST("Prof_Q2242_11"))->Fill(cent, fQ2242_11);
+      histos.get<TProfile>(HIST("Prof_Q2242_01"))->Fill(cent, fQ2242_01);
+      histos.get<TProfile>(HIST("Prof_Q2242_10"))->Fill(cent, fQ2242_10);
+      histos.get<TProfile>(HIST("Prof_Q2243_11"))->Fill(cent, fQ2243_11);
+      histos.get<TProfile>(HIST("Prof_Q2243_01"))->Fill(cent, fQ2243_01);
+      histos.get<TProfile>(HIST("Prof_Q2243_10"))->Fill(cent, fQ2243_10);
+      histos.get<TProfile>(HIST("Prof_Q2244_11"))->Fill(cent, fQ2244_11);
+      histos.get<TProfile>(HIST("Prof_Q2244_01"))->Fill(cent, fQ2244_01);
+      histos.get<TProfile>(HIST("Prof_Q2244_10"))->Fill(cent, fQ2244_10);
+      histos.get<TProfile>(HIST("Prof_Q2141_11"))->Fill(cent, fQ2141_11);
+      histos.get<TProfile>(HIST("Prof_Q2141_01"))->Fill(cent, fQ2141_01);
+      histos.get<TProfile>(HIST("Prof_Q2141_10"))->Fill(cent, fQ2141_10);
+      histos.get<TProfile>(HIST("Prof_Q2142_11"))->Fill(cent, fQ2142_11);
+      histos.get<TProfile>(HIST("Prof_Q2142_01"))->Fill(cent, fQ2142_01);
+      histos.get<TProfile>(HIST("Prof_Q2142_10"))->Fill(cent, fQ2142_10);
+      histos.get<TProfile>(HIST("Prof_Q2143_11"))->Fill(cent, fQ2143_11);
+      histos.get<TProfile>(HIST("Prof_Q2143_01"))->Fill(cent, fQ2143_01);
+      histos.get<TProfile>(HIST("Prof_Q2143_10"))->Fill(cent, fQ2143_10);
+      histos.get<TProfile>(HIST("Prof_Q2144_11"))->Fill(cent, fQ2144_11);
+      histos.get<TProfile>(HIST("Prof_Q2144_01"))->Fill(cent, fQ2144_01);
+      histos.get<TProfile>(HIST("Prof_Q2144_10"))->Fill(cent, fQ2144_10);
+      histos.get<TProfile>(HIST("Prof_Q1151_11"))->Fill(cent, fQ1151_11);
+      histos.get<TProfile>(HIST("Prof_Q1151_01"))->Fill(cent, fQ1151_01);
+      histos.get<TProfile>(HIST("Prof_Q1151_10"))->Fill(cent, fQ1151_10);
+      histos.get<TProfile>(HIST("Prof_Q1152_11"))->Fill(cent, fQ1152_11);
+      histos.get<TProfile>(HIST("Prof_Q1152_01"))->Fill(cent, fQ1152_01);
+      histos.get<TProfile>(HIST("Prof_Q1152_10"))->Fill(cent, fQ1152_10);
+      histos.get<TProfile>(HIST("Prof_Q1153_11"))->Fill(cent, fQ1153_11);
+      histos.get<TProfile>(HIST("Prof_Q1153_01"))->Fill(cent, fQ1153_01);
+      histos.get<TProfile>(HIST("Prof_Q1153_10"))->Fill(cent, fQ1153_10);
+      histos.get<TProfile>(HIST("Prof_Q1154_11"))->Fill(cent, fQ1154_11);
+      histos.get<TProfile>(HIST("Prof_Q1154_01"))->Fill(cent, fQ1154_01);
+      histos.get<TProfile>(HIST("Prof_Q1154_10"))->Fill(cent, fQ1154_10);
+      histos.get<TProfile>(HIST("Prof_Q1155_11"))->Fill(cent, fQ1155_11);
+      histos.get<TProfile>(HIST("Prof_Q1155_01"))->Fill(cent, fQ1155_01);
+      histos.get<TProfile>(HIST("Prof_Q1155_10"))->Fill(cent, fQ1155_10);
+      histos.get<TProfile>(HIST("Prof_Q112233_001"))->Fill(cent, fQ112233_001);
+      histos.get<TProfile>(HIST("Prof_Q112233_010"))->Fill(cent, fQ112233_010);
+      histos.get<TProfile>(HIST("Prof_Q112233_100"))->Fill(cent, fQ112233_100);
+      histos.get<TProfile>(HIST("Prof_Q112233_011"))->Fill(cent, fQ112233_011);
+      histos.get<TProfile>(HIST("Prof_Q112233_101"))->Fill(cent, fQ112233_101);
+      histos.get<TProfile>(HIST("Prof_Q112233_110"))->Fill(cent, fQ112233_110);
+      histos.get<TProfile>(HIST("Prof_Q112232_001"))->Fill(cent, fQ112232_001);
+      histos.get<TProfile>(HIST("Prof_Q112232_010"))->Fill(cent, fQ112232_010);
+      histos.get<TProfile>(HIST("Prof_Q112232_100"))->Fill(cent, fQ112232_100);
+      histos.get<TProfile>(HIST("Prof_Q112232_011"))->Fill(cent, fQ112232_011);
+      histos.get<TProfile>(HIST("Prof_Q112232_101"))->Fill(cent, fQ112232_101);
+      histos.get<TProfile>(HIST("Prof_Q112232_110"))->Fill(cent, fQ112232_110);
+      histos.get<TProfile>(HIST("Prof_Q112231_001"))->Fill(cent, fQ112231_001);
+      histos.get<TProfile>(HIST("Prof_Q112231_010"))->Fill(cent, fQ112231_010);
+      histos.get<TProfile>(HIST("Prof_Q112231_100"))->Fill(cent, fQ112231_100);
+      histos.get<TProfile>(HIST("Prof_Q112231_011"))->Fill(cent, fQ112231_011);
+      histos.get<TProfile>(HIST("Prof_Q112231_101"))->Fill(cent, fQ112231_101);
+      histos.get<TProfile>(HIST("Prof_Q112231_110"))->Fill(cent, fQ112231_110);
+      histos.get<TProfile>(HIST("Prof_Q112133_001"))->Fill(cent, fQ112133_001);
+      histos.get<TProfile>(HIST("Prof_Q112133_010"))->Fill(cent, fQ112133_010);
+      histos.get<TProfile>(HIST("Prof_Q112133_100"))->Fill(cent, fQ112133_100);
+      histos.get<TProfile>(HIST("Prof_Q112133_011"))->Fill(cent, fQ112133_011);
+      histos.get<TProfile>(HIST("Prof_Q112133_101"))->Fill(cent, fQ112133_101);
+      histos.get<TProfile>(HIST("Prof_Q112133_110"))->Fill(cent, fQ112133_110);
+      histos.get<TProfile>(HIST("Prof_Q112132_001"))->Fill(cent, fQ112132_001);
+      histos.get<TProfile>(HIST("Prof_Q112132_010"))->Fill(cent, fQ112132_010);
+      histos.get<TProfile>(HIST("Prof_Q112132_100"))->Fill(cent, fQ112132_100);
+      histos.get<TProfile>(HIST("Prof_Q112132_011"))->Fill(cent, fQ112132_011);
+      histos.get<TProfile>(HIST("Prof_Q112132_101"))->Fill(cent, fQ112132_101);
+      histos.get<TProfile>(HIST("Prof_Q112132_110"))->Fill(cent, fQ112132_110);
+      histos.get<TProfile>(HIST("Prof_Q112131_001"))->Fill(cent, fQ112131_001);
+      histos.get<TProfile>(HIST("Prof_Q112131_010"))->Fill(cent, fQ112131_010);
+      histos.get<TProfile>(HIST("Prof_Q112131_100"))->Fill(cent, fQ112131_100);
+      histos.get<TProfile>(HIST("Prof_Q112131_011"))->Fill(cent, fQ112131_011);
+      histos.get<TProfile>(HIST("Prof_Q112131_101"))->Fill(cent, fQ112131_101);
+      histos.get<TProfile>(HIST("Prof_Q112131_110"))->Fill(cent, fQ112131_110);
+      histos.get<TProfile>(HIST("Prof_Q2221_11"))->Fill(cent, fQ2221_11);
+      histos.get<TProfile>(HIST("Prof_Q2221_01"))->Fill(cent, fQ2221_01);
+      histos.get<TProfile>(HIST("Prof_Q2221_10"))->Fill(cent, fQ2221_10);
+      histos.get<TProfile>(HIST("Prof_Q2221_21"))->Fill(cent, fQ2221_21);
+      histos.get<TProfile>(HIST("Prof_Q2221_20"))->Fill(cent, fQ2221_20);
+      histos.get<TProfile>(HIST("Prof_Q2122_21"))->Fill(cent, fQ2122_21);
+      histos.get<TProfile>(HIST("Prof_Q2122_20"))->Fill(cent, fQ2122_20);
+      histos.get<TProfile>(HIST("Prof_Q1121_02"))->Fill(cent, fQ1121_02);
+      histos.get<TProfile>(HIST("Prof_Q1121_12"))->Fill(cent, fQ1121_12);
+      histos.get<TProfile>(HIST("Prof_Q1121_22"))->Fill(cent, fQ1121_22);
+      histos.get<TProfile>(HIST("Prof_Q1122_02"))->Fill(cent, fQ1122_02);
+      histos.get<TProfile>(HIST("Prof_Q1122_12"))->Fill(cent, fQ1122_12);
+      histos.get<TProfile>(HIST("Prof_Q1122_22"))->Fill(cent, fQ1122_22);
+      histos.get<TProfile>(HIST("Prof_Q112221_001"))->Fill(cent, fQ112221_001);
+      histos.get<TProfile>(HIST("Prof_Q112221_010"))->Fill(cent, fQ112221_010);
+      histos.get<TProfile>(HIST("Prof_Q112221_100"))->Fill(cent, fQ112221_100);
+      histos.get<TProfile>(HIST("Prof_Q112221_011"))->Fill(cent, fQ112221_011);
+      histos.get<TProfile>(HIST("Prof_Q112221_101"))->Fill(cent, fQ112221_101);
+      histos.get<TProfile>(HIST("Prof_Q112221_110"))->Fill(cent, fQ112221_110);
+      histos.get<TProfile>(HIST("Prof_Q112221_200"))->Fill(cent, fQ112221_200);
+      histos.get<TProfile>(HIST("Prof_Q112221_201"))->Fill(cent, fQ112221_201);
+      histos.get<TProfile>(HIST("Prof_Q112221_210"))->Fill(cent, fQ112221_210);
+      histos.get<TProfile>(HIST("Prof_Q112221_211"))->Fill(cent, fQ112221_211);
+      histos.get<TProfile>(HIST("Prof_Q1131_21"))->Fill(cent, fQ1131_21);
+      histos.get<TProfile>(HIST("Prof_Q1131_20"))->Fill(cent, fQ1131_20);
+      histos.get<TProfile>(HIST("Prof_Q1131_31"))->Fill(cent, fQ1131_31);
+      histos.get<TProfile>(HIST("Prof_Q1131_30"))->Fill(cent, fQ1131_30);
+      histos.get<TProfile>(HIST("Prof_Q1132_21"))->Fill(cent, fQ1132_21);
+      histos.get<TProfile>(HIST("Prof_Q1132_20"))->Fill(cent, fQ1132_20);
+      histos.get<TProfile>(HIST("Prof_Q1132_31"))->Fill(cent, fQ1132_31);
+      histos.get<TProfile>(HIST("Prof_Q1132_30"))->Fill(cent, fQ1132_30);
+      histos.get<TProfile>(HIST("Prof_Q1133_21"))->Fill(cent, fQ1133_21);
+      histos.get<TProfile>(HIST("Prof_Q1133_20"))->Fill(cent, fQ1133_20);
+      histos.get<TProfile>(HIST("Prof_Q1133_31"))->Fill(cent, fQ1133_31);
+      histos.get<TProfile>(HIST("Prof_Q1133_30"))->Fill(cent, fQ1133_30);
+      histos.get<TProfile>(HIST("Prof_Q11_5"))->Fill(cent, fQ11_5);
+      histos.get<TProfile>(HIST("Prof_Q11_6"))->Fill(cent, fQ11_6);
+      histos.get<TProfile>(HIST("Prof_Q1121_30"))->Fill(cent, fQ1121_30);
+      histos.get<TProfile>(HIST("Prof_Q1121_31"))->Fill(cent, fQ1121_31);
+      histos.get<TProfile>(HIST("Prof_Q1121_40"))->Fill(cent, fQ1121_40);
+      histos.get<TProfile>(HIST("Prof_Q1121_41"))->Fill(cent, fQ1121_41);
+      histos.get<TProfile>(HIST("Prof_Q1122_30"))->Fill(cent, fQ1122_30);
+      histos.get<TProfile>(HIST("Prof_Q1122_31"))->Fill(cent, fQ1122_31);
+      histos.get<TProfile>(HIST("Prof_Q1122_40"))->Fill(cent, fQ1122_40);
+      histos.get<TProfile>(HIST("Prof_Q1122_41"))->Fill(cent, fQ1122_41);
+      histos.get<TProfile>(HIST("Prof_Q2211_11"))->Fill(cent, fQ2211_11);
+      histos.get<TProfile>(HIST("Prof_Q2211_01"))->Fill(cent, fQ2211_01);
+      histos.get<TProfile>(HIST("Prof_Q2211_10"))->Fill(cent, fQ2211_10);
+      histos.get<TProfile>(HIST("Prof_Q2211_20"))->Fill(cent, fQ2211_20);
+      histos.get<TProfile>(HIST("Prof_Q2211_21"))->Fill(cent, fQ2211_21);
+      histos.get<TProfile>(HIST("Prof_Q2111_11"))->Fill(cent, fQ2111_11);
+      histos.get<TProfile>(HIST("Prof_Q2111_01"))->Fill(cent, fQ2111_01);
+      histos.get<TProfile>(HIST("Prof_Q2111_10"))->Fill(cent, fQ2111_10);
+      histos.get<TProfile>(HIST("Prof_Q2111_20"))->Fill(cent, fQ2111_20);
+      histos.get<TProfile>(HIST("Prof_Q2111_21"))->Fill(cent, fQ2111_21);
+      histos.get<TProfile>(HIST("Prof_Q112122_001"))->Fill(cent, fQ112122_001);
+      histos.get<TProfile>(HIST("Prof_Q112122_010"))->Fill(cent, fQ112122_010);
+      histos.get<TProfile>(HIST("Prof_Q112122_100"))->Fill(cent, fQ112122_100);
+      histos.get<TProfile>(HIST("Prof_Q112122_011"))->Fill(cent, fQ112122_011);
+      histos.get<TProfile>(HIST("Prof_Q112122_101"))->Fill(cent, fQ112122_101);
+      histos.get<TProfile>(HIST("Prof_Q112122_110"))->Fill(cent, fQ112122_110);
+      histos.get<TProfile>(HIST("Prof_Q1141_11"))->Fill(cent, fQ1141_11);
+      histos.get<TProfile>(HIST("Prof_Q1141_01"))->Fill(cent, fQ1141_01);
+      histos.get<TProfile>(HIST("Prof_Q1141_10"))->Fill(cent, fQ1141_10);
+      histos.get<TProfile>(HIST("Prof_Q1141_20"))->Fill(cent, fQ1141_20);
+      histos.get<TProfile>(HIST("Prof_Q1141_21"))->Fill(cent, fQ1141_21);
+      histos.get<TProfile>(HIST("Prof_Q1142_11"))->Fill(cent, fQ1142_11);
+      histos.get<TProfile>(HIST("Prof_Q1142_01"))->Fill(cent, fQ1142_01);
+      histos.get<TProfile>(HIST("Prof_Q1142_10"))->Fill(cent, fQ1142_10);
+      histos.get<TProfile>(HIST("Prof_Q1142_20"))->Fill(cent, fQ1142_20);
+      histos.get<TProfile>(HIST("Prof_Q1142_21"))->Fill(cent, fQ1142_21);
+      histos.get<TProfile>(HIST("Prof_Q1143_11"))->Fill(cent, fQ1143_11);
+      histos.get<TProfile>(HIST("Prof_Q1143_01"))->Fill(cent, fQ1143_01);
+      histos.get<TProfile>(HIST("Prof_Q1143_10"))->Fill(cent, fQ1143_10);
+      histos.get<TProfile>(HIST("Prof_Q1143_20"))->Fill(cent, fQ1143_20);
+      histos.get<TProfile>(HIST("Prof_Q1143_21"))->Fill(cent, fQ1143_21);
+      histos.get<TProfile>(HIST("Prof_Q1144_11"))->Fill(cent, fQ1144_11);
+      histos.get<TProfile>(HIST("Prof_Q1144_01"))->Fill(cent, fQ1144_01);
+      histos.get<TProfile>(HIST("Prof_Q1144_10"))->Fill(cent, fQ1144_10);
+      histos.get<TProfile>(HIST("Prof_Q1144_20"))->Fill(cent, fQ1144_20);
+      histos.get<TProfile>(HIST("Prof_Q1144_21"))->Fill(cent, fQ1144_21);
+      histos.get<TProfile>(HIST("Prof_Q2131_11"))->Fill(cent, fQ2131_11);
+      histos.get<TProfile>(HIST("Prof_Q2131_01"))->Fill(cent, fQ2131_01);
+      histos.get<TProfile>(HIST("Prof_Q2131_10"))->Fill(cent, fQ2131_10);
+      histos.get<TProfile>(HIST("Prof_Q2132_11"))->Fill(cent, fQ2132_11);
+      histos.get<TProfile>(HIST("Prof_Q2132_01"))->Fill(cent, fQ2132_01);
+      histos.get<TProfile>(HIST("Prof_Q2132_10"))->Fill(cent, fQ2132_10);
+      histos.get<TProfile>(HIST("Prof_Q2133_11"))->Fill(cent, fQ2133_11);
+      histos.get<TProfile>(HIST("Prof_Q2133_01"))->Fill(cent, fQ2133_01);
+      histos.get<TProfile>(HIST("Prof_Q2133_10"))->Fill(cent, fQ2133_10);
+      histos.get<TProfile>(HIST("Prof_Q2231_11"))->Fill(cent, fQ2231_11);
+      histos.get<TProfile>(HIST("Prof_Q2231_01"))->Fill(cent, fQ2231_01);
+      histos.get<TProfile>(HIST("Prof_Q2231_10"))->Fill(cent, fQ2231_10);
+      histos.get<TProfile>(HIST("Prof_Q2232_11"))->Fill(cent, fQ2232_11);
+      histos.get<TProfile>(HIST("Prof_Q2232_01"))->Fill(cent, fQ2232_01);
+      histos.get<TProfile>(HIST("Prof_Q2232_10"))->Fill(cent, fQ2232_10);
+      histos.get<TProfile>(HIST("Prof_Q2233_11"))->Fill(cent, fQ2233_11);
+      histos.get<TProfile>(HIST("Prof_Q2233_01"))->Fill(cent, fQ2233_01);
+      histos.get<TProfile>(HIST("Prof_Q2233_10"))->Fill(cent, fQ2233_10);
+      histos.get<TProfile>(HIST("Prof_Q51_1"))->Fill(cent, fQ51_1);
+      histos.get<TProfile>(HIST("Prof_Q52_1"))->Fill(cent, fQ52_1);
+      histos.get<TProfile>(HIST("Prof_Q53_1"))->Fill(cent, fQ53_1);
+      histos.get<TProfile>(HIST("Prof_Q54_1"))->Fill(cent, fQ54_1);
+      histos.get<TProfile>(HIST("Prof_Q55_1"))->Fill(cent, fQ55_1);
+      histos.get<TProfile>(HIST("Prof_Q21_3"))->Fill(cent, fQ21_3);
+      histos.get<TProfile>(HIST("Prof_Q22_3"))->Fill(cent, fQ22_3);
+      histos.get<TProfile>(HIST("Prof_Q31_2"))->Fill(cent, fQ31_2);
+      histos.get<TProfile>(HIST("Prof_Q32_2"))->Fill(cent, fQ32_2);
+      histos.get<TProfile>(HIST("Prof_Q33_2"))->Fill(cent, fQ33_2);
+      histos.get<TProfile>(HIST("Prof_Q61_1"))->Fill(cent, fQ61_1);
+      histos.get<TProfile>(HIST("Prof_Q62_1"))->Fill(cent, fQ62_1);
+      histos.get<TProfile>(HIST("Prof_Q63_1"))->Fill(cent, fQ63_1);
+      histos.get<TProfile>(HIST("Prof_Q64_1"))->Fill(cent, fQ64_1);
+      histos.get<TProfile>(HIST("Prof_Q65_1"))->Fill(cent, fQ65_1);
+      histos.get<TProfile>(HIST("Prof_Q66_1"))->Fill(cent, fQ66_1);
+      histos.get<TProfile>(HIST("Prof_Q112122_111"))->Fill(cent, fQ112122_111);
+      histos.get<TProfile>(HIST("Prof_Q112131_111"))->Fill(cent, fQ112131_111);
+      histos.get<TProfile>(HIST("Prof_Q112132_111"))->Fill(cent, fQ112132_111);
+      histos.get<TProfile>(HIST("Prof_Q112133_111"))->Fill(cent, fQ112133_111);
+      histos.get<TProfile>(HIST("Prof_Q112231_111"))->Fill(cent, fQ112231_111);
+      histos.get<TProfile>(HIST("Prof_Q112232_111"))->Fill(cent, fQ112232_111);
+      histos.get<TProfile>(HIST("Prof_Q112233_111"))->Fill(cent, fQ112233_111);
+      histos.get<TProfile>(HIST("Prof_Q112221_111"))->Fill(cent, fQ112221_111);
+    }
+
+    if (cfgIsCalculateError) {
+      // selecting subsample and filling profiles
+      float lRandom = fRndm->Rndm();
+      int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
+
+      histos.get<TProfile2D>(HIST("Prof2D_mu1_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 1.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu2_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 2.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu3_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 3.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu4_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 4.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu5_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 5.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu6_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 6.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu7_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 7.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu8_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 8.0));
+
+      histos.get<TProfile2D>(HIST("Prof2D_Q11_1"))->Fill(cent, sampleIndex, fQ11_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q11_2"))->Fill(cent, sampleIndex, fQ11_2);
+      histos.get<TProfile2D>(HIST("Prof2D_Q11_3"))->Fill(cent, sampleIndex, fQ11_3);
+      histos.get<TProfile2D>(HIST("Prof2D_Q11_4"))->Fill(cent, sampleIndex, fQ11_4);
+      histos.get<TProfile2D>(HIST("Prof2D_Q21_1"))->Fill(cent, sampleIndex, fQ21_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q22_1"))->Fill(cent, sampleIndex, fQ22_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q31_1"))->Fill(cent, sampleIndex, fQ31_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q32_1"))->Fill(cent, sampleIndex, fQ32_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q33_1"))->Fill(cent, sampleIndex, fQ33_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q41_1"))->Fill(cent, sampleIndex, fQ41_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q42_1"))->Fill(cent, sampleIndex, fQ42_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q43_1"))->Fill(cent, sampleIndex, fQ43_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q44_1"))->Fill(cent, sampleIndex, fQ44_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q21_2"))->Fill(cent, sampleIndex, fQ21_2);
+      histos.get<TProfile2D>(HIST("Prof2D_Q22_2"))->Fill(cent, sampleIndex, fQ22_2);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1121_11"))->Fill(cent, sampleIndex, fQ1121_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1121_01"))->Fill(cent, sampleIndex, fQ1121_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1121_10"))->Fill(cent, sampleIndex, fQ1121_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1121_20"))->Fill(cent, sampleIndex, fQ1121_20);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1121_21"))->Fill(cent, sampleIndex, fQ1121_21);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1122_11"))->Fill(cent, sampleIndex, fQ1122_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1122_01"))->Fill(cent, sampleIndex, fQ1122_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1122_10"))->Fill(cent, sampleIndex, fQ1122_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1122_20"))->Fill(cent, sampleIndex, fQ1122_20);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1122_21"))->Fill(cent, sampleIndex, fQ1122_21);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1131_11"))->Fill(cent, sampleIndex, fQ1131_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1131_01"))->Fill(cent, sampleIndex, fQ1131_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1131_10"))->Fill(cent, sampleIndex, fQ1131_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1132_11"))->Fill(cent, sampleIndex, fQ1132_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1132_01"))->Fill(cent, sampleIndex, fQ1132_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1132_10"))->Fill(cent, sampleIndex, fQ1132_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1133_11"))->Fill(cent, sampleIndex, fQ1133_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1133_01"))->Fill(cent, sampleIndex, fQ1133_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1133_10"))->Fill(cent, sampleIndex, fQ1133_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2122_11"))->Fill(cent, sampleIndex, fQ2122_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2122_01"))->Fill(cent, sampleIndex, fQ2122_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2122_10"))->Fill(cent, sampleIndex, fQ2122_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q3132_11"))->Fill(cent, sampleIndex, fQ3132_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q3132_01"))->Fill(cent, sampleIndex, fQ3132_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q3132_10"))->Fill(cent, sampleIndex, fQ3132_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q3133_11"))->Fill(cent, sampleIndex, fQ3133_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q3133_01"))->Fill(cent, sampleIndex, fQ3133_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q3133_10"))->Fill(cent, sampleIndex, fQ3133_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q3233_11"))->Fill(cent, sampleIndex, fQ3233_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q3233_01"))->Fill(cent, sampleIndex, fQ3233_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q3233_10"))->Fill(cent, sampleIndex, fQ3233_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2241_11"))->Fill(cent, sampleIndex, fQ2241_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2241_01"))->Fill(cent, sampleIndex, fQ2241_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2241_10"))->Fill(cent, sampleIndex, fQ2241_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2242_11"))->Fill(cent, sampleIndex, fQ2242_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2242_01"))->Fill(cent, sampleIndex, fQ2242_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2242_10"))->Fill(cent, sampleIndex, fQ2242_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2243_11"))->Fill(cent, sampleIndex, fQ2243_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2243_01"))->Fill(cent, sampleIndex, fQ2243_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2243_10"))->Fill(cent, sampleIndex, fQ2243_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2244_11"))->Fill(cent, sampleIndex, fQ2244_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2244_01"))->Fill(cent, sampleIndex, fQ2244_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2244_10"))->Fill(cent, sampleIndex, fQ2244_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2141_11"))->Fill(cent, sampleIndex, fQ2141_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2141_01"))->Fill(cent, sampleIndex, fQ2141_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2141_10"))->Fill(cent, sampleIndex, fQ2141_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2142_11"))->Fill(cent, sampleIndex, fQ2142_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2142_01"))->Fill(cent, sampleIndex, fQ2142_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2142_10"))->Fill(cent, sampleIndex, fQ2142_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2143_11"))->Fill(cent, sampleIndex, fQ2143_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2143_01"))->Fill(cent, sampleIndex, fQ2143_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2143_10"))->Fill(cent, sampleIndex, fQ2143_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2144_11"))->Fill(cent, sampleIndex, fQ2144_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2144_01"))->Fill(cent, sampleIndex, fQ2144_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2144_10"))->Fill(cent, sampleIndex, fQ2144_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1151_11"))->Fill(cent, sampleIndex, fQ1151_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1151_01"))->Fill(cent, sampleIndex, fQ1151_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1151_10"))->Fill(cent, sampleIndex, fQ1151_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1152_11"))->Fill(cent, sampleIndex, fQ1152_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1152_01"))->Fill(cent, sampleIndex, fQ1152_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1152_10"))->Fill(cent, sampleIndex, fQ1152_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1153_11"))->Fill(cent, sampleIndex, fQ1153_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1153_01"))->Fill(cent, sampleIndex, fQ1153_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1153_10"))->Fill(cent, sampleIndex, fQ1153_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1154_11"))->Fill(cent, sampleIndex, fQ1154_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1154_01"))->Fill(cent, sampleIndex, fQ1154_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1154_10"))->Fill(cent, sampleIndex, fQ1154_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1155_11"))->Fill(cent, sampleIndex, fQ1155_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1155_01"))->Fill(cent, sampleIndex, fQ1155_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1155_10"))->Fill(cent, sampleIndex, fQ1155_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112233_001"))->Fill(cent, sampleIndex, fQ112233_001);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112233_010"))->Fill(cent, sampleIndex, fQ112233_010);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112233_100"))->Fill(cent, sampleIndex, fQ112233_100);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112233_011"))->Fill(cent, sampleIndex, fQ112233_011);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112233_101"))->Fill(cent, sampleIndex, fQ112233_101);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112233_110"))->Fill(cent, sampleIndex, fQ112233_110);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112232_001"))->Fill(cent, sampleIndex, fQ112232_001);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112232_010"))->Fill(cent, sampleIndex, fQ112232_010);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112232_100"))->Fill(cent, sampleIndex, fQ112232_100);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112232_011"))->Fill(cent, sampleIndex, fQ112232_011);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112232_101"))->Fill(cent, sampleIndex, fQ112232_101);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112232_110"))->Fill(cent, sampleIndex, fQ112232_110);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112231_001"))->Fill(cent, sampleIndex, fQ112231_001);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112231_010"))->Fill(cent, sampleIndex, fQ112231_010);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112231_100"))->Fill(cent, sampleIndex, fQ112231_100);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112231_011"))->Fill(cent, sampleIndex, fQ112231_011);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112231_101"))->Fill(cent, sampleIndex, fQ112231_101);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112231_110"))->Fill(cent, sampleIndex, fQ112231_110);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112133_001"))->Fill(cent, sampleIndex, fQ112133_001);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112133_010"))->Fill(cent, sampleIndex, fQ112133_010);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112133_100"))->Fill(cent, sampleIndex, fQ112133_100);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112133_011"))->Fill(cent, sampleIndex, fQ112133_011);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112133_101"))->Fill(cent, sampleIndex, fQ112133_101);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112133_110"))->Fill(cent, sampleIndex, fQ112133_110);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112132_001"))->Fill(cent, sampleIndex, fQ112132_001);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112132_010"))->Fill(cent, sampleIndex, fQ112132_010);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112132_100"))->Fill(cent, sampleIndex, fQ112132_100);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112132_011"))->Fill(cent, sampleIndex, fQ112132_011);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112132_101"))->Fill(cent, sampleIndex, fQ112132_101);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112132_110"))->Fill(cent, sampleIndex, fQ112132_110);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112131_001"))->Fill(cent, sampleIndex, fQ112131_001);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112131_010"))->Fill(cent, sampleIndex, fQ112131_010);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112131_100"))->Fill(cent, sampleIndex, fQ112131_100);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112131_011"))->Fill(cent, sampleIndex, fQ112131_011);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112131_101"))->Fill(cent, sampleIndex, fQ112131_101);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112131_110"))->Fill(cent, sampleIndex, fQ112131_110);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2221_11"))->Fill(cent, sampleIndex, fQ2221_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2221_01"))->Fill(cent, sampleIndex, fQ2221_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2221_10"))->Fill(cent, sampleIndex, fQ2221_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2221_21"))->Fill(cent, sampleIndex, fQ2221_21);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2221_20"))->Fill(cent, sampleIndex, fQ2221_20);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2122_21"))->Fill(cent, sampleIndex, fQ2122_21);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2122_20"))->Fill(cent, sampleIndex, fQ2122_20);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1121_02"))->Fill(cent, sampleIndex, fQ1121_02);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1121_12"))->Fill(cent, sampleIndex, fQ1121_12);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1121_22"))->Fill(cent, sampleIndex, fQ1121_22);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1122_02"))->Fill(cent, sampleIndex, fQ1122_02);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1122_12"))->Fill(cent, sampleIndex, fQ1122_12);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1122_22"))->Fill(cent, sampleIndex, fQ1122_22);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112221_001"))->Fill(cent, sampleIndex, fQ112221_001);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112221_010"))->Fill(cent, sampleIndex, fQ112221_010);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112221_100"))->Fill(cent, sampleIndex, fQ112221_100);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112221_011"))->Fill(cent, sampleIndex, fQ112221_011);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112221_101"))->Fill(cent, sampleIndex, fQ112221_101);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112221_110"))->Fill(cent, sampleIndex, fQ112221_110);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112221_200"))->Fill(cent, sampleIndex, fQ112221_200);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112221_201"))->Fill(cent, sampleIndex, fQ112221_201);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112221_210"))->Fill(cent, sampleIndex, fQ112221_210);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112221_211"))->Fill(cent, sampleIndex, fQ112221_211);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1131_21"))->Fill(cent, sampleIndex, fQ1131_21);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1131_20"))->Fill(cent, sampleIndex, fQ1131_20);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1131_31"))->Fill(cent, sampleIndex, fQ1131_31);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1131_30"))->Fill(cent, sampleIndex, fQ1131_30);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1132_21"))->Fill(cent, sampleIndex, fQ1132_21);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1132_20"))->Fill(cent, sampleIndex, fQ1132_20);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1132_31"))->Fill(cent, sampleIndex, fQ1132_31);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1132_30"))->Fill(cent, sampleIndex, fQ1132_30);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1133_21"))->Fill(cent, sampleIndex, fQ1133_21);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1133_20"))->Fill(cent, sampleIndex, fQ1133_20);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1133_31"))->Fill(cent, sampleIndex, fQ1133_31);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1133_30"))->Fill(cent, sampleIndex, fQ1133_30);
+      histos.get<TProfile2D>(HIST("Prof2D_Q11_5"))->Fill(cent, sampleIndex, fQ11_5);
+      histos.get<TProfile2D>(HIST("Prof2D_Q11_6"))->Fill(cent, sampleIndex, fQ11_6);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1121_30"))->Fill(cent, sampleIndex, fQ1121_30);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1121_31"))->Fill(cent, sampleIndex, fQ1121_31);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1121_40"))->Fill(cent, sampleIndex, fQ1121_40);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1121_41"))->Fill(cent, sampleIndex, fQ1121_41);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1122_30"))->Fill(cent, sampleIndex, fQ1122_30);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1122_31"))->Fill(cent, sampleIndex, fQ1122_31);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1122_40"))->Fill(cent, sampleIndex, fQ1122_40);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1122_41"))->Fill(cent, sampleIndex, fQ1122_41);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2211_11"))->Fill(cent, sampleIndex, fQ2211_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2211_01"))->Fill(cent, sampleIndex, fQ2211_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2211_10"))->Fill(cent, sampleIndex, fQ2211_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2211_20"))->Fill(cent, sampleIndex, fQ2211_20);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2211_21"))->Fill(cent, sampleIndex, fQ2211_21);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2111_11"))->Fill(cent, sampleIndex, fQ2111_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2111_01"))->Fill(cent, sampleIndex, fQ2111_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2111_10"))->Fill(cent, sampleIndex, fQ2111_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2111_20"))->Fill(cent, sampleIndex, fQ2111_20);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2111_21"))->Fill(cent, sampleIndex, fQ2111_21);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112122_001"))->Fill(cent, sampleIndex, fQ112122_001);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112122_010"))->Fill(cent, sampleIndex, fQ112122_010);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112122_100"))->Fill(cent, sampleIndex, fQ112122_100);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112122_011"))->Fill(cent, sampleIndex, fQ112122_011);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112122_101"))->Fill(cent, sampleIndex, fQ112122_101);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112122_110"))->Fill(cent, sampleIndex, fQ112122_110);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1141_11"))->Fill(cent, sampleIndex, fQ1141_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1141_01"))->Fill(cent, sampleIndex, fQ1141_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1141_10"))->Fill(cent, sampleIndex, fQ1141_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1141_20"))->Fill(cent, sampleIndex, fQ1141_20);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1141_21"))->Fill(cent, sampleIndex, fQ1141_21);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1142_11"))->Fill(cent, sampleIndex, fQ1142_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1142_01"))->Fill(cent, sampleIndex, fQ1142_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1142_10"))->Fill(cent, sampleIndex, fQ1142_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1142_20"))->Fill(cent, sampleIndex, fQ1142_20);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1142_21"))->Fill(cent, sampleIndex, fQ1142_21);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1143_11"))->Fill(cent, sampleIndex, fQ1143_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1143_01"))->Fill(cent, sampleIndex, fQ1143_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1143_10"))->Fill(cent, sampleIndex, fQ1143_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1143_20"))->Fill(cent, sampleIndex, fQ1143_20);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1143_21"))->Fill(cent, sampleIndex, fQ1143_21);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1144_11"))->Fill(cent, sampleIndex, fQ1144_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1144_01"))->Fill(cent, sampleIndex, fQ1144_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1144_10"))->Fill(cent, sampleIndex, fQ1144_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1144_20"))->Fill(cent, sampleIndex, fQ1144_20);
+      histos.get<TProfile2D>(HIST("Prof2D_Q1144_21"))->Fill(cent, sampleIndex, fQ1144_21);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2131_11"))->Fill(cent, sampleIndex, fQ2131_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2131_01"))->Fill(cent, sampleIndex, fQ2131_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2131_10"))->Fill(cent, sampleIndex, fQ2131_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2132_11"))->Fill(cent, sampleIndex, fQ2132_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2132_01"))->Fill(cent, sampleIndex, fQ2132_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2132_10"))->Fill(cent, sampleIndex, fQ2132_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2133_11"))->Fill(cent, sampleIndex, fQ2133_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2133_01"))->Fill(cent, sampleIndex, fQ2133_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2133_10"))->Fill(cent, sampleIndex, fQ2133_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2231_11"))->Fill(cent, sampleIndex, fQ2231_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2231_01"))->Fill(cent, sampleIndex, fQ2231_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2231_10"))->Fill(cent, sampleIndex, fQ2231_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2232_11"))->Fill(cent, sampleIndex, fQ2232_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2232_01"))->Fill(cent, sampleIndex, fQ2232_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2232_10"))->Fill(cent, sampleIndex, fQ2232_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2233_11"))->Fill(cent, sampleIndex, fQ2233_11);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2233_01"))->Fill(cent, sampleIndex, fQ2233_01);
+      histos.get<TProfile2D>(HIST("Prof2D_Q2233_10"))->Fill(cent, sampleIndex, fQ2233_10);
+      histos.get<TProfile2D>(HIST("Prof2D_Q51_1"))->Fill(cent, sampleIndex, fQ51_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q52_1"))->Fill(cent, sampleIndex, fQ52_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q53_1"))->Fill(cent, sampleIndex, fQ53_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q54_1"))->Fill(cent, sampleIndex, fQ54_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q55_1"))->Fill(cent, sampleIndex, fQ55_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q21_3"))->Fill(cent, sampleIndex, fQ21_3);
+      histos.get<TProfile2D>(HIST("Prof2D_Q22_3"))->Fill(cent, sampleIndex, fQ22_3);
+      histos.get<TProfile2D>(HIST("Prof2D_Q31_2"))->Fill(cent, sampleIndex, fQ31_2);
+      histos.get<TProfile2D>(HIST("Prof2D_Q32_2"))->Fill(cent, sampleIndex, fQ32_2);
+      histos.get<TProfile2D>(HIST("Prof2D_Q33_2"))->Fill(cent, sampleIndex, fQ33_2);
+      histos.get<TProfile2D>(HIST("Prof2D_Q61_1"))->Fill(cent, sampleIndex, fQ61_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q62_1"))->Fill(cent, sampleIndex, fQ62_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q63_1"))->Fill(cent, sampleIndex, fQ63_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q64_1"))->Fill(cent, sampleIndex, fQ64_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q65_1"))->Fill(cent, sampleIndex, fQ65_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q66_1"))->Fill(cent, sampleIndex, fQ66_1);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112122_111"))->Fill(cent, sampleIndex, fQ112122_111);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112131_111"))->Fill(cent, sampleIndex, fQ112131_111);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112132_111"))->Fill(cent, sampleIndex, fQ112132_111);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112133_111"))->Fill(cent, sampleIndex, fQ112133_111);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112231_111"))->Fill(cent, sampleIndex, fQ112231_111);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112232_111"))->Fill(cent, sampleIndex, fQ112232_111);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112233_111"))->Fill(cent, sampleIndex, fQ112233_111);
+      histos.get<TProfile2D>(HIST("Prof2D_Q112221_111"))->Fill(cent, sampleIndex, fQ112221_111);
+    }
   }
   PROCESS_SWITCH(NetprotonCumulantsMc, processMCRec, "Process Generated", true);
 
   void processDataRec(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
   {
     if (!coll.sel8()) {
+      return;
+    }
+
+    if (cfgEvSelkNoSameBunchPileup && !coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      // rejects collisions which are associated with the same "found-by-T0" bunch crossing
+      // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return;
     }
 
@@ -1695,14 +2598,14 @@ struct NetprotonCumulantsMc {
       float lRandom = fRndm->Rndm();
       int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
 
-      subsample[sampleIndex][0]->Fill(cent, std::pow(netProt, 1.0));
-      subsample[sampleIndex][1]->Fill(cent, std::pow(netProt, 2.0));
-      subsample[sampleIndex][2]->Fill(cent, std::pow(netProt, 3.0));
-      subsample[sampleIndex][3]->Fill(cent, std::pow(netProt, 4.0));
-      subsample[sampleIndex][4]->Fill(cent, std::pow(netProt, 5.0));
-      subsample[sampleIndex][5]->Fill(cent, std::pow(netProt, 6.0));
-      subsample[sampleIndex][6]->Fill(cent, std::pow(netProt, 7.0));
-      subsample[sampleIndex][7]->Fill(cent, std::pow(netProt, 8.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu1_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 1.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu2_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 2.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu3_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 3.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu4_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 4.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu5_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 5.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu6_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 6.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu7_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 7.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu8_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 8.0));
 
       histos.get<TProfile2D>(HIST("Prof2D_Q11_1"))->Fill(cent, sampleIndex, fQ11_1);
       histos.get<TProfile2D>(HIST("Prof2D_Q11_2"))->Fill(cent, sampleIndex, fQ11_2);
