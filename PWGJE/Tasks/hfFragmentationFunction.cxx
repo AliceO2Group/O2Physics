@@ -193,12 +193,12 @@ struct HfFragmentationFunction {
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   void init(InitContext const&)
   {
     // initialise event selection:
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
 
     // create histograms
     // collision system histograms
@@ -238,7 +238,7 @@ struct HfFragmentationFunction {
   {
     // apply event selection and fill histograms for sanity check
     registry.fill(HIST("h_collision_counter"), 2.0);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !(std::abs(collision.posZ()) < vertexZCut)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
       return;
     }
     registry.fill(HIST("h_collision_counter"), 3.0);
@@ -307,7 +307,7 @@ struct HfFragmentationFunction {
       for (const auto& collision : collisionsPerMCCollision) {
 
         registry.fill(HIST("h_collision_counter"), 2.0);
-        if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !(std::abs(collision.posZ()) < vertexZCut)) {
+        if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
           continue;
         }
         registry.fill(HIST("h_collision_counter"), 3.0);
@@ -398,7 +398,7 @@ struct HfFragmentationFunction {
       for (const auto& collision : collisionsPerMCCollision) {
 
         registry.fill(HIST("h_collision_counter"), 2.0);
-        if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !(std::abs(collision.posZ()) < vertexZCut)) {
+        if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
           continue;
         }
         registry.fill(HIST("h_collision_counter"), 3.0);

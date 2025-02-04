@@ -110,7 +110,7 @@ struct JetTaggerHFQA {
   ConfigurableAxis binSigmaLxyz{"binSigmaLxyz", {100, 0., 0.1}, ""};
 
   int numberOfJetFlavourSpecies = 6;
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -119,7 +119,7 @@ struct JetTaggerHFQA {
   {
     numberOfJetFlavourSpecies = static_cast<int>(numFlavourSpecies);
 
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
     // Axis
     AxisSpec axisJetFlavour = {binJetFlavour, "Jet flavour"};
@@ -1072,7 +1072,7 @@ struct JetTaggerHFQA {
       }
       if (checkMcCollisionIsMatched) {
         auto collisionspermcpjet = collisions.sliceBy(collisionsPerMCPCollision, mcpjet.mcCollisionId());
-        if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelection)) {
+        if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
           fillHistogramIPsMCP(mcpjet);
         }
       } else {
@@ -1093,7 +1093,7 @@ struct JetTaggerHFQA {
       }
       if (checkMcCollisionIsMatched) {
         auto collisionspermcpjet = collisions.sliceBy(collisionsPerMCPCollision, mcpjet.mcCollisionId());
-        if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelection)) {
+        if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
           fillHistogramIPsMCP(mcpjet, mcpjet.eventWeight());
         }
       } else {
