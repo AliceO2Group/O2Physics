@@ -694,6 +694,8 @@ class TestNameFunctionVariable(TestSpec):
             "namespace",
             "struct",
             "class",
+            "explicit",
+            "concept",
         ):
             return True
         if len(words) > 2 and words[1] in ("typename", "class", "struct"):
@@ -894,10 +896,10 @@ class TestNameType(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
-        if not (match := re.match(r"using (\w+) = ", line)):
+        if not (match := re.match(r"(using|concept) (\w+) = ", line)):
             return True
         # Extract type name.
-        type_name = match.group(1)
+        type_name = match.group(2)
         # The actual test comes here.
         return is_upper_camel_case(type_name)
 
