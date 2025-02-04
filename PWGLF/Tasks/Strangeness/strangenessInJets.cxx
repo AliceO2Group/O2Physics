@@ -1545,7 +1545,6 @@ struct StrangenessInJets {
               case -3312:
               case 3322:
               case -3322:
-
                 if (weightsAntiXiInJet) {
                   int ibinAntiXiInJet = weightsAntiXiInJet->GetXaxis()->FindBin(grandMother.pt());
                   wSecAntiLambdaInJet = weightsAntiXiInJet->GetBinContent(ibinAntiXiInJet);
