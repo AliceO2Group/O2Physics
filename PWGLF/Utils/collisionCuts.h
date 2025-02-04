@@ -20,6 +20,8 @@
 #ifndef PWGLF_UTILS_COLLISIONCUTS_H_
 #define PWGLF_UTILS_COLLISIONCUTS_H_
 
+#include <vector>
+
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 #include "Common/DataModel/EventSelection.h"
