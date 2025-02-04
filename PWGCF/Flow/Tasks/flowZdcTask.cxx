@@ -509,9 +509,9 @@ struct FlowZdcTask {
     histos.fill(HIST("GlobalMult_vs_FT0C"), nchTracks, collision.multFT0C());
   }
 
-  PROCESS_SWITCH(FlowZDCtask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
-  PROCESS_SWITCH(FlowZDCtask, processQVector, "Process before recentering", true);
-  PROCESS_SWITCH(FlowZDCtask, processCorrelation, "Process correlations", true);
+  PROCESS_SWITCH(FlowZdcTask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
+  PROCESS_SWITCH(FlowZdcTask, processQVector, "Process before recentering", true);
+  PROCESS_SWITCH(FlowZdcTask, processCorrelation, "Process correlations", true);
 
 }; // end of struct function
 
