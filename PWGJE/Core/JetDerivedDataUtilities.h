@@ -558,8 +558,7 @@ enum JTrackSel {
   globalTrack = 1,
   qualityTrack = 2,
   qualityTrackWDCA = 3,
-  hybridTrack = 4,
-  hybridTrackRun2 = 5
+  hybridTrack = 4
 };
 
 template <typename T>
@@ -590,8 +589,6 @@ int initialiseTrackSelection(std::string trackSelection)
     return JTrackSel::qualityTrackWDCA;
   } else if (trackSelection == "hybridTracks") {
     return JTrackSel::hybridTrack;
-  } else if (trackSelection == "hybridTracksRun2") {
-    return JTrackSel::hybridTrackRun2;
   }
   return -1;
 }
@@ -616,9 +613,6 @@ uint8_t setTrackSelectionBit(T const& track, float trackDCAZ, float maxDCAZ)
   }
   if (track.trackCutFlagFb5()) {
     SETBIT(bit, JTrackSel::hybridTrack);
-  }
-  if (track.trackCutFlagFb5()) {
-    SETBIT(bit, JTrackSel::hybridTrackRun2);
   }
   return bit;
 }

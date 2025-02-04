@@ -239,29 +239,6 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisions, "produces derived MC collision table", false);
 
-  void processTracksRun2(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>::iterator const& track)
-  {
-    //TracksDCACov table is not yet available for Run 2 converted data. Remove this process function and use only processTracks when that becomes available. 
-    products.jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), dcaZMax));
-    // auto trackParCov = getTrackParCov(track);
-    // auto xyzTrack = trackParCov.getXYZGlo();
-    float sigmaDCAXYZ2 = 0.0;
-    float dcaXYZ = getDcaXYZ(track, &sigmaDCAXYZ2);
-    float dcaX = -99.0;
-    float dcaY = -99.0;
-    /*if (track.collisionId() >= 0) {
-      auto const& collision = track.collision_as<aod::Collisions>();
-      dcaX = xyzTrack.X() - collision.posX();
-      dcaY = xyzTrack.Y() - collision.posY();
-    }*/
-
-    // jTracksExtraTable(dcaX, dcaY, track.dcaZ(), track.dcaXY(), dcaXYZ, std::sqrt(track.sigmaDcaZ2()), std::sqrt(track.sigmaDcaXY2()), std::sqrt(sigmaDCAXYZ2), track.sigma1Pt()); // why is this getSigmaZY
-    products.jTracksExtraTable(dcaX, dcaY, track.dcaZ(), track.dcaXY(), dcaXYZ, std::sqrt(1.), std::sqrt(1.), std::sqrt(sigmaDCAXYZ2), track.sigma1Pt()); // dummy values - will be fixed when TracksDCACov table is available for Run 2
-    products.jTracksParentIndexTable(track.globalIndex());
-    trackCollisionMapping[{track.globalIndex(), track.collisionId()}] = products.jTracksTable.lastIndex();
-  }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processTracksRun2, "produces derived track table for Run2 AO2Ds", false);
-
   void processTracks(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::TrackSelectionExtension>::iterator const& track, aod::Collisions const&)
   {
     products.jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), dcaZMax));
