@@ -13,6 +13,7 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
+#include <vector>
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
