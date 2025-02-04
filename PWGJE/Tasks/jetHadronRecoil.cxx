@@ -60,9 +60,9 @@ struct JetHadronRecoil {
   Configurable<float> ptTTrefMax{"ptTTrefMax", 7, "reference maximum trigger track pt"};
   Configurable<float> ptTTsigMin{"ptTTsigMin", 20, "signal minimum trigger track pt"};
   Configurable<float> ptTTsigMax{"ptTTsigMax", 50, "signal maximum trigger track pt"};
-  Configurable<float> fracSig{"fracSig", 0.5, "fraction of events to use for signal"};
+  Configurable<float> fracSig{"fracSig", 0.9, "fraction of events to use for signal"};
   Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
-  Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
+  Configurable<float> pTHatExponent{"pTHatExponent", 4.0, "exponent of the event weight for the calculation of pTHat"};
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
   Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
@@ -196,12 +196,10 @@ struct JetHadronRecoil {
       phiTT = phiTTAr[trigNumber];
       if (isSigCol) {
         registry.fill(HIST("hNtrig"), 1.5, weight);
-        registry.fill(HIST("hJetSignalMultiplicity"), jets.size(), weight);
         registry.fill(HIST("hSigEventTriggers"), nTT, weight);
       }
       if (!isSigCol) {
         registry.fill(HIST("hNtrig"), 0.5, weight);
-        registry.fill(HIST("hJetReferenceMultiplicity"), jets.size(), weight);
         registry.fill(HIST("hRefEventTriggers"), nTT, weight);
       }
     }
@@ -303,12 +301,10 @@ struct JetHadronRecoil {
       phiTT = phiTTAr[trigNumber];
       if (isSigCol) {
         registry.fill(HIST("hNtrig"), 1.5, weight);
-        registry.fill(HIST("hJetSignalMultiplicity"), jets.size(), weight);
         registry.fill(HIST("hSigEventTriggers"), nTT, weight);
       }
       if (!isSigCol) {
         registry.fill(HIST("hNtrig"), 0.5, weight);
-        registry.fill(HIST("hJetReferenceMultiplicity"), jets.size(), weight);
         registry.fill(HIST("hRefEventTriggers"), nTT, weight);
       }
     }
