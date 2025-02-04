@@ -525,7 +525,7 @@ struct FlowSP {
       return false;
 
     if (track.tpcFractionSharedCls() < cfgFshcls)
-      return false; 
+      return false;
 
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field
@@ -672,7 +672,7 @@ struct FlowSP {
       cfg.correctionsLoaded = false;
       cfg.lastRunNumber = bc.runNumber();
     }
-    if(cfgFillQAHistos) 
+    if (cfgFillQAHistos)
       fillEventQA<kBefore>(collision, tracks);
 
     loadCorrections(bc.timestamp());
@@ -711,7 +711,7 @@ struct FlowSP {
       double psiFull = 1.0 * std::atan2(qyA + qyC, qxA + qxC);
       registry.fill(HIST("hSPplaneFull"), psiFull, 1);
 
-      if(cfgFillQAHistos) 
+      if (cfgFillQAHistos)
         fillEventQA<kAfter>(collision, tracks);
 
       registry.fill(HIST("hCosPhiACosPhiC"), centrality, std::cos(psiA) * std::cos(psiC));
@@ -824,13 +824,13 @@ struct FlowSP {
     double vtxz = collision.posZ();
     float centrality = collision.centFT0C();
 
-    if(cfgFillQAHistos) 
+    if (cfgFillQAHistos)
       fillEventQA<kBefore>(collision, tracks);
 
     if (!eventSelected(collision, tracks.size(), centrality))
       return;
 
-    if(cfgFillQAHistos) 
+    if (cfgFillQAHistos)
       fillEventQA<kAfter>(collision, tracks);
 
     for (const auto& track : tracks) {
@@ -843,13 +843,13 @@ struct FlowSP {
         return;
 
       if (track.sign() == 0.0)
-          return;
+        return;
       bool pos = (track.sign() > 0) ? true : false;
 
       registry.fill(HIST("QA/before/hPt_inclusive"), track.pt());
-      if(pos) {
+      if (pos) {
         registry.fill(HIST("QA/before/hPt_positive"), track.pt());
-      } else { 
+      } else {
         registry.fill(HIST("QA/before/hPt_negative"), track.pt());
       }
 
