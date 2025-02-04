@@ -242,10 +242,10 @@ struct itsPidQa {
       hNsigmaPos[id] = histos.add<TH2>(Form("nsigmaPos/%s", pN[id]), axisTitle, kTH2F, {pAxis, nSigmaAxis});
       hNsigmaNeg[id] = histos.add<TH2>(Form("nsigmaNeg/%s", pN[id]), axisTitle, kTH2F, {pAxis, nSigmaAxis});
     }
-    histos.add("event/averageClusterSize", "", kTH2F, {ptAxis, avClsAxis});
-    histos.add("event/averageClusterSizePerCoslInv", "", kTH2F, {ptAxis, avClsEffAxis});
-    histos.add("event/SelectedAverageClusterSize", "", kTH2F, {ptAxis, avClsAxis});
-    histos.add("event/SelectedAverageClusterSizePerCoslInv", "", kTH2F, {ptAxis, avClsEffAxis});
+    histos.add("event/averageClusterSize", "", kTH2D, {pAxis, avClsAxis});
+    histos.add("event/averageClusterSizePerCoslInv", "", kTH2D, {pAxis, avClsEffAxis});
+    histos.add("event/SelectedAverageClusterSize", "", kTH2D, {pAxis, avClsAxis});
+    histos.add("event/SelectedAverageClusterSizePerCoslInv", "", kTH2D, {pAxis, avClsEffAxis});
     LOG(info) << "QA PID ITS histograms:";
     histos.print();
   }
