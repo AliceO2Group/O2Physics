@@ -536,7 +536,7 @@ std::array<CutContainerType, 2> FemtoUniverseTrackSelection::getCutContainer(T c
           break;
         case (femto_universe_track_selection::kTPCfracsClsMax):
           observable = tpcNClsFracS;
-          break;          
+          break;
         case (femto_universe_track_selection::kITSnClsMin):
           observable = itsNCls;
           break;
