@@ -37,6 +37,8 @@
 
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 #include "PWGCF/Femto3D/Core/femto3dPairTask.h"
+#include "Common/DataModel/Centrality.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 using namespace o2;
 using namespace o2::soa;
@@ -132,6 +134,7 @@ struct K0MixedEvents {
   Configurable<int> _vertexbinwidth{"vertexbinwidth", 2, "width of vertexZ bins within which the mixing is done"};
 
   // Binnings
+  ConfigurableAxis invMassBinning{"invMassBinning", {500, 0.4, 0.6}, "k* binning of the CF (Nbins, lowlimit, uplimit)"};
   ConfigurableAxis ptBinning{"ptBinning", {1000, 0.f, 10.f}, "pT binning (Nbins, lowlimit, uplimit)"};
   ConfigurableAxis dcaXyBinning{"dcaXyBinning", {100, -1.f, 1.f}, "dcaXY binning (Nbins, lowlimit, uplimit)"};
   ConfigurableAxis multPercentileBinning{"multPercentileBinning", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "Binning in multiplicity percentile"};
@@ -191,6 +194,7 @@ struct K0MixedEvents {
     TPCcuts_2 = std::make_pair(_particlePDG_2, _tpcNSigma_2);
     TOFcuts_2 = std::make_pair(_particlePDG_2, _tofNSigma_2);
 
+    const AxisSpec invMassAxis{invMassBinning, "Inv. mass (GeV/c^{2})"};
     const AxisSpec ptAxis{ptBinning, "#it{p}_{T} (GeV/c)"};
     const AxisSpec dcaXyAxis{dcaXyBinning, "DCA_{xy} (cm)"};
     const AxisSpec multPercentileAxis{multPercentileBinning, "Mult. Perc."};
@@ -228,7 +232,7 @@ struct K0MixedEvents {
       registry.add("rapidity_second", Form("rapidity_%i", _particlePDG_2.value), kTH2F, {ptAxis, {100, -10., 10., Form("y(%s)", pdgToSymbol(_particlePDG_2))}});
     }
 
-    if (!doprocessMC) {
+    if (!doprocessMCReco) {
       return;
     }
     if (useCentralityInvMass) {
@@ -238,8 +242,8 @@ struct K0MixedEvents {
     }
   }
 
-  template <typename Type, typename CollType>
-  void mixTracks(Type const& tracks, CollType const& collision)
+  template <typename Type>
+  void mixTracks(Type const& tracks, const float centrality)
   { // template for identical particles from the same collision
 
     LOG(debug) << "Mixing tracks of the same event";
@@ -258,7 +262,7 @@ struct K0MixedEvents {
         registry.fill(HIST("SEcand"), 2.f);
         registry.fill(HIST("SE"), Pair->getInvMass()); // close pair rejection and fillig the SE histo
         if (useCentralityInvMass) {
-          registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt(), collision.multPerc()); // close pair rejection and fillig the SE histo
+          registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt(), centrality); // close pair rejection and fillig the SE histo
         } else {
           registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt()); // close pair rejection and fillig the SE histo
         }
@@ -266,8 +270,8 @@ struct K0MixedEvents {
     }
   }
 
-  template <bool isSameEvent = false, typename Type, typename CollType>
-  void mixTracks(Type const& tracks1, Type const& tracks2, CollType const& collision)
+  template <bool isSameEvent = false, typename Type>
+  void mixTracks(Type const& tracks1, Type const& tracks2, const float centrality)
   {
     LOG(debug) << "Mixing tracks of two different events";
     for (auto trk1 : tracks1) {
@@ -288,14 +292,14 @@ struct K0MixedEvents {
           registry.fill(HIST("SEcand"), 2.f);
           registry.fill(HIST("SE"), Pair->getInvMass());
           if (useCentralityInvMass) {
-            registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt(), collision.multPerc());
+            registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt(), centrality);
           } else {
             registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt());
           }
         } else {
           registry.fill(HIST("ME"), Pair->getInvMass());
           if (useCentralityInvMass) {
-            registry.fill(HIST("MEvsPt"), Pair->getInvMass(), Pair->getPt(), collision.multPerc());
+            registry.fill(HIST("MEvsPt"), Pair->getInvMass(), Pair->getPt(), centrality);
           } else {
             registry.fill(HIST("MEvsPt"), Pair->getInvMass(), Pair->getPt());
           }
@@ -441,7 +445,7 @@ struct K0MixedEvents {
           Pair->SetMagField1(col1->magField());
           Pair->SetMagField2(col1->magField());
 
-          mixTracks(selectedtracks_1[col1->index()], col1); // mixing SE identical
+          mixTracks(selectedtracks_1[col1->index()], col1->multPerc()); // mixing SE identical
           if (!doMixedEvent) {
             continue;
           }
@@ -451,7 +455,7 @@ struct K0MixedEvents {
             auto col2 = (i->second)[indx2];
 
             Pair->SetMagField2(col2->magField());
-            mixTracks(selectedtracks_1[col1->index()], selectedtracks_1[col2->index()], col1); // mixing ME identical
+            mixTracks(selectedtracks_1[col1->index()], selectedtracks_1[col2->index()], col1->multPerc()); // mixing ME identical
           }
         }
       }
@@ -469,7 +473,7 @@ struct K0MixedEvents {
           Pair->SetMagField1(col1->magField());
           Pair->SetMagField2(col1->magField());
 
-          mixTracks<true>(selectedtracks_1[col1->index()], selectedtracks_2[col1->index()], col1); // mixing SE non-identical
+          mixTracks<true>(selectedtracks_1[col1->index()], selectedtracks_2[col1->index()], col1->multPerc()); // mixing SE non-identical
           if (!doMixedEvent) {
             continue;
           }
@@ -479,7 +483,7 @@ struct K0MixedEvents {
             auto col2 = (i->second)[indx2];
 
             Pair->SetMagField2(col2->magField());
-            mixTracks(selectedtracks_1[col1->index()], selectedtracks_2[col2->index()], col1); // mixing ME non-identical
+            mixTracks(selectedtracks_1[col1->index()], selectedtracks_2[col2->index()], col1->multPerc()); // mixing ME non-identical
           }
         }
       }
@@ -513,10 +517,10 @@ struct K0MixedEvents {
                      aod::McParticles const& mcParticles)
   {
     for (const auto& col : collisions) {
-      if (!collision.has_mcCollision()) {
+      if (!col.has_mcCollision()) {
         continue;
       }
-      const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
+      const auto& mcCollision = col.mcCollision_as<GenMCCollisions>();
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
       for (const auto& mcParticle : particlesInCollision) {
         switch (mcParticle.pdgCode()) {
@@ -532,7 +536,7 @@ struct K0MixedEvents {
           continue;
         }
         if (useCentralityInvMass) {
-          registry.fill(HIST("MC/generatedInRecoEvs"), mcParticle.pt(), collision.col());
+          registry.fill(HIST("MC/generatedInRecoEvs"), mcParticle.pt(), col.centFT0M());
         } else {
           registry.fill(HIST("MC/generatedInRecoEvs"), mcParticle.pt());
         }
