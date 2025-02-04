@@ -351,7 +351,7 @@ struct HfCorrelatorLcHadrons {
     }
     registry.fill(HIST("hMultiplicity"), nTracks);
 
-    int cntLc = 0;
+    int countLc = 0;
     std::vector<float> outputMl = {-1., -1., -1.};
 
     for (const auto& candidate : candidates) {
@@ -446,7 +446,7 @@ struct HfCorrelatorLcHadrons {
             entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
           }
         }
-        if (cntLc == 0) {
+        if (countLc == 0) {
           entryHadron(track.phi(), track.eta(), track.pt() * track.sign(), poolBin, gCollisionId, timeStamp);
           if (fillTrkPID) {
             entryTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
@@ -454,7 +454,7 @@ struct HfCorrelatorLcHadrons {
           registry.fill(HIST("hTracksBin"), poolBin);
         }
       } // Hadron Tracks loop
-      cntLc++;
+      countLc++;
     } // end outer Lc loop
     registry.fill(HIST("hZvtx"), collision.posZ());
     registry.fill(HIST("hMultFT0M"), collision.multFT0M());
@@ -497,7 +497,7 @@ struct HfCorrelatorLcHadrons {
     bool isLcPrompt = false;
     bool isLcNonPrompt = false;
     bool isLcSignal = false;
-    int cntLc = 1;
+    int countLc = 1;
     for (const auto& candidate : candidates) {
       // check decay channel flag for candidate
       if (std::abs(hfHelper.yLc(candidate)) > yCandMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
@@ -589,7 +589,7 @@ struct HfCorrelatorLcHadrons {
       if (calTrkEff && !isLcSignal && calEffLcEvent)
         continue;
 
-      if (calTrkEff && cntLc == 1) {
+      if (calTrkEff && countLc == 1) {
         // genrated tracks
         for (const auto& track : mcParticles) {
           if (std::abs(track.eta()) > etaTrackMax || track.pt() < ptTrackMin || track.pt() > ptTrackMax) {
@@ -625,7 +625,7 @@ struct HfCorrelatorLcHadrons {
             continue;
         }
 
-        if (calTrkEff && cntLc == 1 && track.has_mcParticle()) {
+        if (calTrkEff && countLc == 1 && track.has_mcParticle()) {
           auto mcParticle = track.template mcParticle_as<aod::McParticles>();
           if (!mcParticle.isPhysicalPrimary() && isRecTrkPhyPrimary)
             continue;
@@ -707,7 +707,7 @@ struct HfCorrelatorLcHadrons {
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         }
       } // end inner loop (Tracks)
-      cntLc++;
+      countLc++;
     } // end outer Lc loop
     registry.fill(HIST("hZvtx"), collision.posZ());
     registry.fill(HIST("hMultFT0M"), collision.multFT0M());
