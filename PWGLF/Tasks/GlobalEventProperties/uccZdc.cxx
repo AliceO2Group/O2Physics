@@ -34,6 +34,7 @@
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "TDatabasePDG.h"
+#include "TPDGCode.h"
 
 using namespace std;
 using namespace o2;
@@ -59,52 +60,36 @@ using TableTracks = soa::Join<aod::Tracks, aod::TrackSelection,
 struct UccZdc {
   // Event selection
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
-
   // Track selection settings
-  Configurable<int> minItsNclusters{"minItsNclusters", 5,
-                                    "minimum number of ITS clusters"};
-  Configurable<int> minTpcNclusters{"minTpcNclusters", 70,
-                                    "minimum number of TPC clusters"};
-  Configurable<int> minTpcNcrossedRows{
-    "minTpcNcrossedRows", 70, "minimum number of TPC crossed pad rows"};
-  Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0,
-                                       "maximum TPC chi^2/Ncls"};
-  Configurable<double> maxChiSquareIts{"maxChiSquareIts", 36.0,
-                                       "maximum ITS chi^2/Ncls"};
+  Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum number of ITS clusters"};
+  Configurable<int> minTpcNclusters{"minTpcNclusters", 70, "minimum number of TPC clusters"};
+  Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 70, "minimum number of TPC crossed pad rows"};
+  Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0, "maximum TPC chi^2/Ncls"};
+  Configurable<double> maxChiSquareIts{"maxChiSquareIts", 36.0, "maximum ITS chi^2/Ncls"};
   Configurable<double> minPt{"minPt", 0.1, "minimum pt of the tracks"};
   Configurable<double> maxPt{"maxPt", 50., "maximum pt of the tracks"};
   Configurable<double> minEta{"minEta", -0.8, "minimum eta"};
   Configurable<double> maxEta{"maxEta", +0.8, "maximum eta"};
   Configurable<double> maxDcaxy{"maxDcaxy", 0.05, "Maximum DCAxy"};
   Configurable<double> maxDcaz{"maxDcaz", 0.05, "Maximum DCAz"};
-  Configurable<bool> setDCAselectionPtDep{"setDCAselectionPtDep", true,
-                                          "require pt dependent selection"};
+  Configurable<bool> setDCAselectionPtDep{"setDCAselectionPtDep", true, "require pt dependent selection"};
   Configurable<double> par0{"par0", 0.0105, "par 0"};
   Configurable<double> par1{"par1", 0.035, "par 1"};
-
   // Configurables, binning
-  Configurable<int> nBinsAmpFV0{"nBinsAmpFV0", 1000,
-                                "Number of bins FV0 amplitude"};
+  Configurable<int> nBinsAmpFV0{"nBinsAmpFV0", 1000, "Number of bins FV0 amplitude"};
   Configurable<float> maxAmpFV0{"maxAmpFV0", 3000, "Max FV0 amplitude"};
-  Configurable<int> nBinsAmpFT0{"nBinsAmpFT0", 1000,
-                                "Number of bins FT0 amplitude"};
+  Configurable<int> nBinsAmpFT0{"nBinsAmpFT0", 1000, "Number of bins FT0 amplitude"};
   Configurable<float> maxAmpFT0{"maxAmpFT0", 3000, "Max FT0 amplitude"};
   Configurable<int> nBinsNchT0{"nBinsNchT0", 1000, "nBinsNchT0"};
   Configurable<float> maxNchFT0{"maxNchFT0", 1000, "Max Nch in the FT0"};
-
   Configurable<int> nBinsNch{"nBinsNch", 2500, "# of bins for midrapidity Nch"};
   Configurable<float> maxNch{"maxNch", 2500, "Max Nch at midrapidity"};
-
   Configurable<int> nBinsZDC{"nBinsZDC", 1025, "nBinsZDC"};
   Configurable<float> maxZN{"maxZN", 4099.5, "Max ZN signal"};
   Configurable<float> maxZP{"maxZP", 3099.5, "Max ZP signal"};
   Configurable<float> maxZEM{"maxZEM", 3099.5, "Max ZEM signal"};
   Configurable<int> nBinsTDC{"nBinsTDC", 480, "nbinsTDC"};
-  ConfigurableAxis binsPt{
-    "binsPt",
-    {VARIABLE_WIDTH, 0., 0.1, 0.25, 0.5, 1., 2., 4., 6., 8., 10., 20.},
-    "Binning of the pT axis"};
-
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0., 0.1, 0.25, 0.5, 1., 2., 4., 6., 8., 10., 20.}, "Binning of the pT axis"};
   // Configurable flags ZDC
   Configurable<bool> isTDCcut{"isTDCcut", false, "Flag for TDC cut"};
   Configurable<float> tdcCut{"tdcCut", 1.0, "TDC cut"};
@@ -408,15 +393,15 @@ struct UccZdc {
           continue;
         }
         registrySim.fill(HIST("Pt_MC_tru_ch"), particle.pt());
-        if (std::abs(particle.pdgCode()) == 211) { // pion
+        if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) { // pion
           registrySim.fill(HIST("Pt_MC_tru_pi"), particle.pt());
-        } else if (std::abs(particle.pdgCode()) == 321) { // kaon
+        } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) { // kaon
           registrySim.fill(HIST("Pt_MC_tru_ka"), particle.pt());
-        } else if (std::abs(particle.pdgCode()) == 2212) { // proton
+        } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) { // proton
           registrySim.fill(HIST("Pt_MC_tru_pr"), particle.pt());
-        } else if (std::abs(particle.pdgCode()) == 3222) { // positive sigma
+        } else if (particle.pdgCode() == PDG_t::kSigmaPlus || particle.pdgCode() == PDG_t::kSigmaBarMinus) { // positive sigma
           registrySim.fill(HIST("Pt_MC_tru_sigpos"), particle.pt());
-        } else if (std::abs(particle.pdgCode()) == 3112) { // negative sigma
+        } else if (particle.pdgCode() == PDG_t::kSigmaMinus || particle.pdgCode() == PDG_t::kSigmaBarPlus) { // negative sigma
           registrySim.fill(HIST("Pt_MC_tru_signeg"), particle.pt());
         } else { // rest
           registrySim.fill(HIST("Pt_MC_tru_re"), particle.pt());
@@ -500,15 +485,15 @@ struct UccZdc {
 
         const auto particle = track.mcParticle();
         registrySim.fill(HIST("Pt_MC_rec_ch"), track.pt());
-        if (std::abs(particle.pdgCode()) == 211) {
+        if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
           registrySim.fill(HIST("Pt_MC_rec_pi"), track.pt());
-        } else if (std::abs(particle.pdgCode()) == 321) {
+        } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
           registrySim.fill(HIST("Pt_MC_rec_ka"), track.pt());
-        } else if (std::abs(particle.pdgCode()) == 2212) {
+        } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
           registrySim.fill(HIST("Pt_MC_rec_pr"), track.pt());
-        } else if (std::abs(particle.pdgCode()) == 3222) {
+        } else if (particle.pdgCode() == PDG_t::kSigmaPlus || particle.pdgCode() == PDG_t::kSigmaBarMinus) {
           registrySim.fill(HIST("Pt_MC_rec_sigpos"), track.pt());
-        } else if (std::abs(particle.pdgCode()) == 3112) {
+        } else if (particle.pdgCode() == PDG_t::kSigmaMinus || particle.pdgCode() == PDG_t::kSigmaBarPlus) {
           registrySim.fill(HIST("Pt_MC_rec_signeg"), track.pt());
         } else {
           registrySim.fill(HIST("Pt_MC_rec_re"), track.pt());
