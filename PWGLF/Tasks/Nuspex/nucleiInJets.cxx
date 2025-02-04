@@ -266,7 +266,7 @@ struct NucleiInJets {
       return false;
     if (track.tpcNClsCrossedRows() < 70)
       return false;
-    if (track.tpcNClsCrossedRows() / trk.tpcNClsFindable() < 0.8)
+    if (track.tpcNClsCrossedRows() / track.tpcNClsFindable() < 0.8)
       return false;
     if (track.tpcChi2NCl() > 4)
       return false;
@@ -1440,7 +1440,7 @@ struct NucleiInJets {
 
       if ((std::fabs(jet[i].Eta()) + rJet) > maxEta)
         continue;
-      registryQC.fill(HIST("hJetArea"), jetArea[i]));
+      registryQC.fill(HIST("hJetArea"), jetArea[i]);
     }
   }
   PROCESS_SWITCH(NucleiInJets, processGhosts, "Process Ghosts", false);
