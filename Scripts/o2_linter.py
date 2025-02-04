@@ -336,7 +336,7 @@ class TestPi(TestSpec):
         return super().file_matches(path) and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
-        pattern = r"M_PI|TMath::(Two)?Pi"
+        pattern = r"[^\w]M_PI|TMath::(Two)?Pi"
         if is_comment_cpp(line):
             return True
         line = remove_comment_cpp(line)
