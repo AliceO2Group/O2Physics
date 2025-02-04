@@ -912,7 +912,6 @@ struct StrangenessInJets {
       LOG(info) << "Getting weight histogram for piminus in ue from " << histoNameWeightPiminusUe.value;
     }
 
-
     TList* l = ccdbObj->get<TList>(pathToFile.c_str());
     if (!l) {
       LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
@@ -926,7 +925,7 @@ struct StrangenessInJets {
         LOG(info) << " -> Skipping";
         return nullptr;
       }
-      TH2F *histo = static_cast<TH2F*>(l->FindObject(name.value.c_str()));
+      TH2F* histo = static_cast<TH2F*>(l->FindObject(name.value.c_str()));
       if (!histo) {
         LOG(error) << "Could not open histogram '" << name.value << "'";
         return nullptr;
@@ -941,14 +940,14 @@ struct StrangenessInJets {
     twodWeightsLambdaUe = get2DWeightHisto(histoNameWeightLambdaUe);
     twodWeightsAntilambdaJet = get2DWeightHisto(histoNameWeightAntilambdaJet);
     twodWeightsAntilambdaUe = get2DWeightHisto(histoNameWeightAntilambdaUe);
-   
+
     auto get1DWeightHisto = [&](Configurable<std::string> name) {
       LOG(info) << "Looking for 1D weight histogram '" << name.value << "' for " << name.name;
       if (name.value == "") {
         LOG(info) << " -> Skipping";
         return nullptr;
       }
-      TH1F *histo = static_cast<TH1F*>(l->FindObject(name.value.c_str()));
+      TH1F* histo = static_cast<TH1F*>(l->FindObject(name.value.c_str()));
       if (!histo) {
         LOG(error) << "Could not open histogram '" << name.value << "'";
         return nullptr;
@@ -1510,22 +1509,22 @@ struct StrangenessInJets {
             const auto& mother = mcParticles.iteratorAt(idMother);
             int idGrandMother = mother.mothersIds()[0];
             const auto& grandMother = mcParticles.iteratorAt(idGrandMother);
-            switch(grandMother.pdgCode()){
+            switch (grandMother.pdgCode()) {
               case 3312:
               case -3312:
               case 3322:
               case -3322:
-              if (weightsXiInJet) {
-                int ibinXiInJet = weightsXiInJet->GetXaxis()->FindBin(grandMother.pt());
-                wSecLambdaInJet = weightsXiInJet->GetBinContent(ibinXiInJet);
-              }
-              if (weightsXiInUe) {
-                int ibinXiInUe = weightsXiInUe->GetXaxis()->FindBin(grandMother.pt());
-                wSecLambdaInUe = weightsXiInUe->GetBinContent(ibinXiInUe);
-              }
-              break;
+                if (weightsXiInJet) {
+                  int ibinXiInJet = weightsXiInJet->GetXaxis()->FindBin(grandMother.pt());
+                  wSecLambdaInJet = weightsXiInJet->GetBinContent(ibinXiInJet);
+                }
+                if (weightsXiInUe) {
+                  int ibinXiInUe = weightsXiInUe->GetXaxis()->FindBin(grandMother.pt());
+                  wSecLambdaInUe = weightsXiInUe->GetBinContent(ibinXiInUe);
+                }
+                break;
               default:
-              break;
+                break;
             }
             registryMC.fill(HIST("Secondary_Lambda_InJet"), v0.pt(), wSecLambdaInJet);
             registryMC.fill(HIST("Secondary_Lambda_InUe"), v0.pt(), wSecLambdaInUe);
@@ -1541,23 +1540,23 @@ struct StrangenessInJets {
             const auto& mother = mcParticles.iteratorAt(idMother);
             int idGrandMother = mother.mothersIds()[0];
             const auto& grandMother = mcParticles.iteratorAt(idGrandMother);
-                        switch(grandMother.pdgCode()){
-case 3312:
-case -3312:
-case 3322:
-case -3322:
+            switch (grandMother.pdgCode()) {
+              case 3312:
+              case -3312:
+              case 3322:
+              case -3322:
 
-              if (weightsAntiXiInJet){
-            int ibinAntiXiInJet = weightsAntiXiInJet->GetXaxis()->FindBin(grandMother.pt());
-              wSecAntiLambdaInJet = weightsAntiXiInJet->GetBinContent(ibinAntiXiInJet);
-              }
-              if(weightsAntiXiInUe){ 
-int ibinAntiXiInUe = weightsAntiXiInUe->GetXaxis()->FindBin(grandMother.pt());
-              wSecAntiLambdaInUe = weightsAntiXiInUe->GetBinContent(ibinAntiXiInUe);
-              }
-              break;
+                if (weightsAntiXiInJet) {
+                  int ibinAntiXiInJet = weightsAntiXiInJet->GetXaxis()->FindBin(grandMother.pt());
+                  wSecAntiLambdaInJet = weightsAntiXiInJet->GetBinContent(ibinAntiXiInJet);
+                }
+                if (weightsAntiXiInUe) {
+                  int ibinAntiXiInUe = weightsAntiXiInUe->GetXaxis()->FindBin(grandMother.pt());
+                  wSecAntiLambdaInUe = weightsAntiXiInUe->GetBinContent(ibinAntiXiInUe);
+                }
+                break;
               default:
-              break;
+                break;
             }
             registryMC.fill(HIST("Secondary_AntiLambda_InJet"), v0.pt(), wSecAntiLambdaInJet);
             registryMC.fill(HIST("Secondary_AntiLambda_InUe"), v0.pt(), wSecAntiLambdaInUe);
