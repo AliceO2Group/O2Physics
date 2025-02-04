@@ -113,7 +113,6 @@ struct Derivedcascadeanalysis {
     Configurable<bool> doVertexTRDmatch{"doVertexTRDmatch", false, "Checks wherher at least one of vertex contributors is matched to TRD"};
     Configurable<bool> doTimeRangeStandardCut{"doTimeRangeStandardCut", true, "It rejects a given collision if there are other events nearby in dtime +/- 2 μs, or mult above some threshold in -4..-2 μs"};
     Configurable<bool> doTimeRangeStrictCut{"doTimeRangeStrictCut", false, "It rejects a given collision if there are other events nearby in |dt|< 10 μs"};
-    Configurable<bool> doTimeRangeVzDependent{"doTimeRangeVzDependent", false, "It rejects collision with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ"};
     Configurable<bool> doNoCollInRofStrictCut{"doNoCollInRofStrictCut", false, "Enable an evevnt selection which rejects a collision if there are other events within the same ITS ROF"};
     Configurable<bool> doNoCollInRofStandardCut{"doNoCollInRofStandardCut", true, "Enable an evevnt selection which rejects a collision if there are other events within the same ITS ROF with mult above threshold"};
     Configurable<bool> doMultiplicityCorrCut{"doMultiplicityCorrCut", false, "Enable multiplicity vs centrality correlation cut"};
@@ -557,11 +556,8 @@ struct Derivedcascadeanalysis {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 18.5 /*rejects a collision if there are other events within the same ITS ROF above mult threshold*/);
 
-    if (eventSelectionFlags.doTimeRangeVzDependent && !coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent)) {
-      return false;
-    }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 19.5 /*rejects collision with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ*/);
+      histos.fill(HIST("hEventSelection"), 19.5 /*currently no cut applied*/);
 
     float occupancyFT0 = coll.ft0cOccupancyInTimeRange();
     if (minOccupancyFT0 > 0 && occupancyFT0 < minOccupancyFT0) {
