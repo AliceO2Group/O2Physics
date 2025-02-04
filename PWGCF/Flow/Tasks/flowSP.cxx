@@ -48,7 +48,7 @@ using namespace o2::framework::expressions;
 
 struct FlowSP {
   // QA Plots
-  O2_DEFINE_CONFIGURABLE(cfgFillEventQA, bool, true, "Fill histograms for event QA");
+  O2_DEFINE_CONFIGURABLE(cfgFillQAHistos, bool, true, "Fill histograms for event and track QA");
   // Centrality Estimators -> standard is FT0C
   O2_DEFINE_CONFIGURABLE(cfgFT0Cvariant1, bool, false, "Set centrality estimator to cfgFT0Cvariant1");
   O2_DEFINE_CONFIGURABLE(cfgFT0M, bool, false, "Set centrality estimator to cfgFT0M");
@@ -58,6 +58,7 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgDCAxy, float, 0.2, "Cut on DCA in the transverse direction (cm)");
   O2_DEFINE_CONFIGURABLE(cfgDCAz, float, 2, "Cut on DCA in the longitudinal direction (cm)");
   O2_DEFINE_CONFIGURABLE(cfgNcls, float, 70, "Cut on number of TPC clusters found");
+  O2_DEFINE_CONFIGURABLE(cfgFshcls, float, 0.2, "Cut on fraction of shared TPC clusters found");
   O2_DEFINE_CONFIGURABLE(cfgPtmin, float, 0.2, "minimum pt (GeV/c)");
   O2_DEFINE_CONFIGURABLE(cfgPtmax, float, 10, "maximum pt (GeV/c)");
   O2_DEFINE_CONFIGURABLE(cfgEta, float, 0.8, "eta cut");
@@ -197,10 +198,12 @@ struct FlowSP {
     }
 
     if ((doprocessData || doprocessMCReco)) {
-      if (cfgFillEventQA) {
+      if (cfgFillQAHistos) {
         registry.add("QA/after/hCent", "", {HistType::kTH1D, {axisCent}});
         registry.add("QA/after/pt_phi", "", {HistType::kTH2D, {axisPt, axisPhiMod}});
         registry.add("QA/after/hPt_inclusive", "", {HistType::kTH1D, {axisPt}});
+        registry.add("QA/after/hPt_positive", "", {HistType::kTH1D, {axisPt}});
+        registry.add("QA/after/hPt_negative", "", {HistType::kTH1D, {axisPt}});
         registry.add("QA/after/globalTracks_centT0C", "", {HistType::kTH2D, {axisCent, nchAxis}});
         registry.add("QA/after/PVTracks_centT0C", "", {HistType::kTH2D, {axisCent, multpvAxis}});
         registry.add("QA/after/globalTracks_PVTracks", "", {HistType::kTH2D, {multpvAxis, nchAxis}});
@@ -270,7 +273,7 @@ struct FlowSP {
         registry.add<TProfile>("qAXqCY", "", kTProfile, {axisCent});
         registry.add<TProfile>("qAYqCX", "", kTProfile, {axisCent});
 
-        if (cfgFillEventQA) {
+        if (cfgFillQAHistos) {
           registry.add("QA/after/PsiA_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
           registry.add("QA/after/PsiC_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
           registry.add("QA/after/PsiFull_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
@@ -521,6 +524,9 @@ struct FlowSP {
     if (track.tpcNClsFound() < cfgNcls)
       return false;
 
+    if (track.tpcFractionSharedCls() < cfgFshcls)
+      return false;
+
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field
       phimodn = o2::constants::math::TwoPI - phimodn;
@@ -666,7 +672,8 @@ struct FlowSP {
       cfg.correctionsLoaded = false;
       cfg.lastRunNumber = bc.runNumber();
     }
-    fillEventQA<kBefore>(collision, tracks);
+    if (cfgFillQAHistos)
+      fillEventQA<kBefore>(collision, tracks);
 
     loadCorrections(bc.timestamp());
 
@@ -704,7 +711,8 @@ struct FlowSP {
       double psiFull = 1.0 * std::atan2(qyA + qyC, qxA + qxC);
       registry.fill(HIST("hSPplaneFull"), psiFull, 1);
 
-      fillEventQA<kAfter>(collision, tracks);
+      if (cfgFillQAHistos)
+        fillEventQA<kAfter>(collision, tracks);
 
       registry.fill(HIST("hCosPhiACosPhiC"), centrality, std::cos(psiA) * std::cos(psiC));
       registry.fill(HIST("hSinPhiASinPhiC"), centrality, std::sin(psiA) * std::sin(psiC));
@@ -816,12 +824,14 @@ struct FlowSP {
     double vtxz = collision.posZ();
     float centrality = collision.centFT0C();
 
-    fillEventQA<kBefore>(collision, tracks);
+    if (cfgFillQAHistos)
+      fillEventQA<kBefore>(collision, tracks);
 
     if (!eventSelected(collision, tracks.size(), centrality))
       return;
 
-    fillEventQA<kAfter>(collision, tracks);
+    if (cfgFillQAHistos)
+      fillEventQA<kAfter>(collision, tracks);
 
     for (const auto& track : tracks) {
 
@@ -832,7 +842,16 @@ struct FlowSP {
       if (mcParticle.eta() < -cfgEta || mcParticle.eta() > cfgEta || mcParticle.pt() < cfgPtmin || mcParticle.pt() > cfgPtmax || track.tpcNClsFound() < cfgNcls)
         return;
 
+      if (track.sign() == 0.0)
+        return;
+      bool pos = (track.sign() > 0) ? true : false;
+
       registry.fill(HIST("QA/before/hPt_inclusive"), track.pt());
+      if (pos) {
+        registry.fill(HIST("QA/before/hPt_positive"), track.pt());
+      } else {
+        registry.fill(HIST("QA/before/hPt_negative"), track.pt());
+      }
 
       if (!trackSelected(track, field))
         return;
