@@ -319,11 +319,12 @@ struct itsPidQa {
           }
         }
       }
-      if (!keep) {
+      if (discard) {
         continue;
       }
       histos.fill(HIST("event/SelectedAverageClusterSize"), track.p(), averageClusterSizeTrk(track));
       histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.p(), averageClusterSizePerCoslInv(track));
+
       for (o2::track::PID::ID id = 0; id <= o2::track::PID::Last; id++) {
         if (!enableParticle[id]) {
           continue;
