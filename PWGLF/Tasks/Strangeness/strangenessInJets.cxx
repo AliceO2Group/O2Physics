@@ -917,11 +917,16 @@ struct StrangenessInJets {
       LOG(info) << "Getting weight histogram for piminus in ue from " << histoNameWeightPiminusUe.value;
     }
 
-    twodWeightsK0Jet = static_cast<TH2F*>(l->FindObject(histoNameWeightK0Jet.c_str()));
-    if (!twodWeightsK0Jet) {
-      LOG(error) << "Could not open histogram twodWeightsK0Jet " << histoNameWeightK0Jet.value;
-      return;
-    }
+    auto getWeightHisto = [&](std::string name) {
+      TH2F *histo = static_cast<TH2F*>(l->FindObject(name.c_str()));
+      if (!histo){
+        LOG(error) << "Could not open histogram '" << name << "'";
+        return nullptr;
+      }
+      return histo;
+    };
+
+    twodWeightsK0Jet = getWeightHisto(histoNameWeightK0Jet);
     twodWeightsK0Ue = static_cast<TH2F*>(l->FindObject(histoNameWeightK0Ue.c_str()));
     if (!twodWeightsK0Ue) {
       LOG(error) << "Could not open histogram twodWeightsK0Ue " << histoNameWeightK0Ue.value;
