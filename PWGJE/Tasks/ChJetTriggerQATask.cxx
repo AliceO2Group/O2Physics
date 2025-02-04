@@ -96,13 +96,13 @@ struct ChJetTriggerQATask {
 
   HistogramRegistry spectra;
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
   void init(InitContext&)
   {
     fiducialVolume = static_cast<float>(cfgTPCVolume) - static_cast<float>(cfgJetR);
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(evSel));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(evSel));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     // Basic histos
@@ -166,7 +166,7 @@ struct ChJetTriggerQATask {
       return;
     }
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
 

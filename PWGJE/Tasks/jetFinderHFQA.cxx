@@ -81,7 +81,7 @@ struct JetFinderHFQATask {
   std::vector<bool> filledJetHFR_High;
   std::vector<double> jetRadiiValues;
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
   std::vector<double> jetPtBins;
@@ -89,7 +89,7 @@ struct JetFinderHFQATask {
 
   void init(o2::framework::InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     jetRadiiValues = (std::vector<double>)jetRadii;
@@ -949,7 +949,7 @@ struct JetFinderHFQATask {
   void randomCone(T const& collision, U const& jets, V const& candidates, M const& tracks)
   {
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& candidate : candidates) {
@@ -1196,7 +1196,7 @@ struct JetFinderHFQATask {
       return;
     }
     registry.fill(HIST("h_collision_trigger_events"), 1.5); // all events with z vertex cut
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collision_trigger_events"), 2.5); // events with sel8()
@@ -1362,7 +1362,7 @@ struct JetFinderHFQATask {
       return;
     }
     registry.fill(HIST("h_collision_hftrigger_events"), 1.5); // all events with z vertex cut
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collision_hftrigger_events"), 2.5); // events with sel8()
@@ -1477,7 +1477,7 @@ struct JetFinderHFQATask {
     }
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -1496,7 +1496,7 @@ struct JetFinderHFQATask {
     }
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -1512,7 +1512,7 @@ struct JetFinderHFQATask {
     if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& candidate : candidates) {
@@ -1532,7 +1532,7 @@ struct JetFinderHFQATask {
     if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& candidate : candidates) {

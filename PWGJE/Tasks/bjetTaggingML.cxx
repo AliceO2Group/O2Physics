@@ -73,7 +73,7 @@ struct BJetTaggingML {
 
   Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.4}, "jet resolution parameters"};
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   std::vector<double> jetRadiiValues;
 
@@ -84,7 +84,7 @@ struct BJetTaggingML {
 
     jetRadiiValues = (std::vector<double>)jetRadii;
 
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
 
     registry.add("h_vertexZ", "Vertex Z;#it{Z} (cm)", {HistType::kTH1F, {{40, -20.0, 20.0}}});
 
@@ -270,7 +270,7 @@ struct BJetTaggingML {
 
   void processDataJets(FilteredCollision::iterator const& collision, DataJets const& alljets, JetTrackswID const& allTracks, aod::DataSecondaryVertex3Prongs const& allSVs)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
 
@@ -321,7 +321,7 @@ struct BJetTaggingML {
 
   void processMCJets(FilteredCollisionMCD::iterator const& collision, MCDJetTable const& MCDjets, MCPJetTable const& MCPjets, JetTracksMCDwID const& allTracks, aod::JetParticles const& /*MCParticles*/, aod::MCDSecondaryVertex3Prongs const& allSVs)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
 

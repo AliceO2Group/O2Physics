@@ -90,6 +90,7 @@ DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelUnanchoredMC, readCountsWith
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelTVX, readCountsWithTVXAndZVertexAndSelTVX, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel7, readCountsWithTVXAndZVertexAndSel7, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel7KINT7, readCountsWithTVXAndZVertexAndSel7KINT7, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithCustom, readCountsWithCustom, std::vector<int>);
 DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);
 DECLARE_SOA_COLUMN(IsEMCALReadout, isEmcalReadout, bool);
 } // namespace jcollision
@@ -146,7 +147,8 @@ DECLARE_SOA_TABLE_STAGED(CollisionCounts, "COLLCOUNT",
                          jcollision::ReadCountsWithTVXAndZVertexAndSelUnanchoredMC,
                          jcollision::ReadCountsWithTVXAndZVertexAndSelTVX,
                          jcollision::ReadCountsWithTVXAndZVertexAndSel7,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSel7KINT7);
+                         jcollision::ReadCountsWithTVXAndZVertexAndSel7KINT7,
+                         jcollision::ReadCountsWithCustom);
 
 namespace jmccollision
 {
