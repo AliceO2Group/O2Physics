@@ -796,9 +796,9 @@ struct highmasslambda {
         Proton = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPr);
         Kshort = ROOT::Math::PxPyPzMVector(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
         Lambdac = Proton + Kshort;
-        if (Lambdac.Pt() > 6.0 || Lambdac.Pt() < 2.0) {
-          continue;
-        }
+        // if (Lambdac.Pt() > 6.0 || Lambdac.Pt() < 2.0) {
+        //   continue;
+        // }
         if (std::abs(Lambdac.Rapidity()) > confRapidity) {
           continue;
         }
