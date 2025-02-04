@@ -123,7 +123,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Compute the overall momentum in GeV/c
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                                  //! Sign of the track charge
 DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, uint8_t);                                 //! Number of TPC clusters
 DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, uint8_t);                     //! Number of TPC crossed rows
-DECLARE_SOA_COLUMN(TPCFractionSharedCls, tpcFractionSharedCls, float);                     //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TPCFractionSharedCls, tpcFractionSharedCls, float);                   //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(ItsNCls, itsNCls, uint8_t);                                           //! Number of ITS clusters
 DECLARE_SOA_COLUMN(ItsNClsInnerBarrel, itsNClsInnerBarrel, uint8_t);                     //! Number of ITS clusters in the inner barrel                             //! TPC signal
 DECLARE_SOA_DYNAMIC_COLUMN(TpcCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, //! Compute the number of crossed rows over findable TPC clusters
