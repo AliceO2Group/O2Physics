@@ -823,7 +823,7 @@ struct Chk892Flow {
         histos.fill(HIST("QA/after/hInvmassSecondary"), trkkMass);
 
         histos.fill(HIST("QA/after/k0sv2vsinvmass"), lResoSecondary.M(), v2K0s);
-        histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s, static_cast<float>(nmode)*lPhiMinusPsiK0s);
+        histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s, static_cast<float>(nmode) * lPhiMinusPsiK0s);
       }
       k0sIndicies.push_back(k0sCand.index());
     }
@@ -856,7 +856,7 @@ struct Chk892Flow {
           histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
           histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
           histos.fill(HIST("QA/after/kstarv2vsinvmass"), lResoKstar.M(), v2Kstar);
-          histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), v2Kstar, static_cast<float>(nmode)*lPhiMinusPsiKstar);
+          histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), v2Kstar, static_cast<float>(nmode) * lPhiMinusPsiKstar);
 
           if (cfgFillRotBkg) {
             for (int i = 0; i < cfgNrotBkg; i++) {
@@ -874,7 +874,7 @@ struct Chk892Flow {
               auto lPhiMinusPsiKstar = RecoDecay::constrainAngle(lResonanceRot.Phi() - lEPDet, 0.0, 2); // constrain angle to range 0, Pi
               auto v2Kstar = std::cos(static_cast<float>(nmode) * lPhiMinusPsiKstar);
               typeKstar = bTrack.sign() > 0 ? BinType::kKstarP_Rot : BinType::kKstarN_Rot;
-              histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), v2Kstar, static_cast<float>(nmode)*lPhiMinusPsiKstar);
+              histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), v2Kstar, static_cast<float>(nmode) * lPhiMinusPsiKstar);
             }
           }
         } // IsMix
