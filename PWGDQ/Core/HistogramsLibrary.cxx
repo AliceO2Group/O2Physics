@@ -108,6 +108,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "VtxZ_MultTPCWithPV", "VtxZ vs MultTPCWithPV", false, 240, -12.0, 12.0, VarManager::kVtxZ, 400, 0, 400.0, VarManager::kMultNTracksHasTPC);
         hm->AddHistogram(histClass, "VtxZ_MultITSTPCWithPV", "VtxZ vs MultITSTPCWithPV", false, 240, -12.0, 12.0, VarManager::kVtxZ, 400, 0, 400.0, VarManager::kMultNTracksITSTPC);
         hm->AddHistogram(histClass, "VtxZ_MultITSOnly", "VtxZ vs MultITSOnly", false, 240, -12.0, 12.0, VarManager::kVtxZ, 400, 0, 400.0, VarManager::kMultNTracksITSOnly);
+        hm->AddHistogram(histClass, "MultNTracksPV", "MultNTracksPV", false, 200, 0, 200.0, VarManager::kMultNTracksPV);
+        hm->AddHistogram(histClass, "MultNTracksPVeta1", "MultNTracksPVeta1", false, 200, 0, 200.0, VarManager::kMultNTracksPVeta1);
+        hm->AddHistogram(histClass, "MultNTracksPVetaHalf", "MultNTracksPVetaHalf", false, 200, 0, 200.0, VarManager::kMultNTracksPVetaHalf);
+        hm->AddHistogram(histClass, "VtxZ_MultNTracksPV", "VtxZ vs MultNTracksPV", false, 240, -12.0, 12.0, VarManager::kVtxZ, 200, 0, 200.0, VarManager::kMultNTracksPV);
+        hm->AddHistogram(histClass, "VtxZ_MultNTracksPVeta1", "VtxZ vs MultNTracksPVeta1", false, 240, -12.0, 12.0, VarManager::kVtxZ, 200, 0, 200.0, VarManager::kMultNTracksPVeta1);
+        hm->AddHistogram(histClass, "VtxZ_MultNTracksPVetaHalf", "VtxZ vs MultNTracksPVetaHalf", false, 240, -12.0, 12.0, VarManager::kVtxZ, 200, 0, 200.0, VarManager::kMultNTracksPVetaHalf);
 
       } else {
         hm->AddHistogram(histClass, "MultTPC", "MultTPC", false, 200, 0.0, 50000.0, VarManager::kMultTPC);
@@ -894,6 +900,18 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Mass_HighRange", "", false, 375, 0.0, 15.0, VarManager::kMass);
       hm->AddHistogram(histClass, "Pt", "", false, 2000, 0.0, 20., VarManager::kPt);
       hm->AddHistogram(histClass, "Mass_Pt", "", false, 125, 0.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt);
+      if (subGroupStr.Contains("multpv0p8")) {
+        hm->AddHistogram(histClass, "MultNTracksPV", "MultNTracksPV", false, 200, 0, 200.0, VarManager::kMultNTracksPV);
+        hm->AddHistogram(histClass, "Mass_MultNTracksPV", "Mass vs MultNTracksPV", false, 200, 2.0, 5.0, VarManager::kMass, 150, 0, 150.0, VarManager::kMultNTracksPV);
+      }
+      if (subGroupStr.Contains("multpv1p0")) {
+        hm->AddHistogram(histClass, "MultNTracksPVeta1", "MultNTracksPVeta1", false, 200, 0, 200.0, VarManager::kMultNTracksPVeta1);
+        hm->AddHistogram(histClass, "Mass_MultNTracksPVeta1", "Mass vs MultNTracksPVeta1", false, 200, 2.0, 5.0, VarManager::kMass, 150, 0, 150.0, VarManager::kMultNTracksPVeta1);
+      }
+      if (subGroupStr.Contains("multpv0p5")) {
+        hm->AddHistogram(histClass, "MultNTracksPVetaHalf", "MultNTracksPVetaHalf", false, 200, 0, 200.0, VarManager::kMultNTracksPVetaHalf);
+        hm->AddHistogram(histClass, "Mass_MultNTracksPVetaHalf", "Mass vs MultNTracksPVetaHalf", false, 200, 2.0, 5.0, VarManager::kMass, 150, 0, 150.0, VarManager::kMultNTracksPVetaHalf);
+      }
       double massBins[76];
       for (int i = 0; i < 76; i++) {
         massBins[i] = 1.5 + i * 0.04;
