@@ -1367,7 +1367,7 @@ struct NucleiInJets {
     // Event Selection
     if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
       return;
-        
+
     // Track Selection for Jet Finding
     std::vector<TVector3> trk;
     for (auto track : tracks) { // o2-linter: disable=[const-ref-in-for-loop]
@@ -1380,13 +1380,13 @@ struct NucleiInJets {
     // int nTracks = static_cast<int>(trk.size());
 
     // Generate Ghosts
-    for (int i = 0 ; i < nGhosts ; i++) { // o2-linter: disable=[const-ref-in-for-loop]
+    for (int i = 0; i < nGhosts; i++) { // o2-linter: disable=[const-ref-in-for-loop]
 
-      double eta = gRandom->Uniform(-0.8,0.8);
-      double phi = gRandom->Uniform(0.0,TwoPI);
+      double eta = gRandom->Uniform(-0.8, 0.8);
+      double phi = gRandom->Uniform(0.0, TwoPI);
       double pt = 1e-100;
       TVector3 ghost;
-      ghost.SetPtEtaPhi (pt, eta, phi);
+      ghost.SetPtEtaPhi(pt, eta, phi);
       trk.push_back(ghost);
     }
 
