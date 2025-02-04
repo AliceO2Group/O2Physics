@@ -41,7 +41,8 @@ using namespace o2::constants::physics;
 using namespace std;
 
 struct MeanPtFlucId {
-  Configurable<int> nPtBins{"nPtBins", 300, ""};
+  Configurable<int> nPtBins{"nPtBins", 50, ""};
+  Configurable<int> nPBins{"nPBins", 300, ""};
   Configurable<int> nPartBins{"nPartBins", 250, ""};
   Configurable<int> nCentBins{"nCentBins", 101, ""};
   Configurable<int> nEtaBins{"nEtaBins", 100, ""};
@@ -133,8 +134,8 @@ struct MeanPtFlucId {
     const AxisSpec axisPhi{nPhiBins, 0., +7., "#phi (rad)"};
     const AxisSpec axisY{nEtaBins, -1., +1., "y"};
     const AxisSpec axisPt{nPtBins, 0., 3., "p_{T} (GeV/c)"};
-    const AxisSpec axisP{nPtBins, 0., 3., "p (GeV/c)"};
-    const AxisSpec axisInnerParam{nPtBins, 0., 3., "p_{InnerParam } (GeV/c)"};
+    const AxisSpec axisP{nPBins, 0., 3., "p (GeV/c)"};
+    const AxisSpec axisInnerParam{nPBins, 0., 3., "p_{InnerParam } (GeV/c)"};
     const AxisSpec axisPart{nPartBins, 0., 18., " "};
     const AxisSpec axisQn{qNBins, ""};
     const AxisSpec axisTpN{tpNBins, "(Q_{1}^{2} - Q_{2})"};
