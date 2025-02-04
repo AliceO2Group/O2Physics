@@ -16,6 +16,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <vector>
+#include <string>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"

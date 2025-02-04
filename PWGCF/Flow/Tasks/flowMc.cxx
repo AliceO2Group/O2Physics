@@ -15,6 +15,7 @@
 /// \brief  QC of synthetic flow exercise
 
 #include "CCDB/BasicCCDBManager.h"
+#include <string>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -154,7 +155,7 @@ struct FlowMc {
     if (evPhi < 0)
       evPhi += constants::math::TwoPI;
 
-    long nCh = 0;
+    int64_t nCh = 0;
     float weff = 1.;
     float wacc = 1.;
     auto bc = mcCollision.bc_as<aod::BCsWithTimestamps>();
