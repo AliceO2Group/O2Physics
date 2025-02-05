@@ -649,6 +649,10 @@ struct Pi0EtaToGammaGammaMC {
         continue; // I don't know why this is necessary in simulation.
       }
 
+      if (eventcuts.onlyKeepWeightedEvents && fabs(collision.weight() - 1.) < 1E-10) {
+        continue;
+      }
+
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
