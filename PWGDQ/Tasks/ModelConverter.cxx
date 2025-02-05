@@ -15,14 +15,31 @@
 // the conflict with the old data model.
 
 // other includes
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Framework/WorkflowSpec.h"
+#include <THashList.h>
+#include <TList.h>
+#include <TString.h>
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoAHelpers.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/MixingHandler.h"
+#include "PWGDQ/Core/AnalysisCut.h"
+#include "PWGDQ/Core/AnalysisCompositeCut.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
+#include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/MixingLibrary.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "Field/MagneticField.h"
+#include "TGeoGlobalMagField.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "ITSMFTBase/DPLAlpideParam.h"
+#include "Common/CCDB/EventSelectionParams.h"
 
 struct MultPVConverter000_001 {
   Produces<o2::aod::ReducedEventsMultPV_001> multPV_001;
