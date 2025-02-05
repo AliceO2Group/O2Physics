@@ -18,11 +18,14 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisHelpers.h"
+#include "Framework/Configurable.h"
+#include "Framework/WorkflowSpec.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 struct MultPVConverter000_001 {
-  Produces<aod::ReducedEventsMultPV_001> multPV_001;
-  void process(aod::ReducedEventsMultPV_001 const& multsPV)
+  Produces<o2::aod::ReducedEventsMultPV_001> multPV_001;
+  void process(o2::aod::ReducedEventsMultPV_001 const& multsPV)
   {
     for (const auto& r : multsPV) {
       multPV_001(r.multNTracksHasITS(), r.multNTracksHasTPC(), r.multNTracksHasTOF(), r.multNTracksHasTRD(),
@@ -30,7 +33,7 @@ struct MultPVConverter000_001 {
     }
   }
 
-  void processDummy(aod::ReducedEvents&)
+  void processDummy(o2::aod::ReducedEvents&)
   {
     // do nothing
   }
