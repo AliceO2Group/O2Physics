@@ -917,10 +917,12 @@ struct StrangenessInJets {
       LOG(info) << "Looking for 2D weight histogram '" << name.value << "' for " << name.name;
       if (name.value == "") {
         LOG(info) << " -> Skipping";
+        return;
       }
       histo = static_cast<TH2F*>(l->FindObject(name.value.c_str()));
       if (!histo) {
         LOG(error) << "Could not open histogram '" << name.value << "'";
+        return;
       }
       LOG(info) << "Opened histogram " << histo->ClassName() << " " << histo->GetName();
     };
@@ -936,10 +938,12 @@ struct StrangenessInJets {
       LOG(info) << "Looking for 1D weight histogram '" << name.value << "' for " << name.name;
       if (name.value == "") {
         LOG(info) << " -> Skipping";
+        return;
       }
       histo = static_cast<TH1F*>(l->FindObject(name.value.c_str()));
       if (!histo) {
         LOG(error) << "Could not open histogram '" << name.value << "'";
+        return;
       }
       LOG(info) << "Opened histogram " << histo->ClassName() << " " << histo->GetName();
     };
