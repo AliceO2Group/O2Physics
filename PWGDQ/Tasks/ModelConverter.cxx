@@ -36,7 +36,7 @@ struct MultPVConverter000_001 {
   {
     for (const auto& r : multsPV) {
       multPV_001(r.multNTracksHasITS(), r.multNTracksHasTPC(), r.multNTracksHasTOF(), r.multNTracksHasTRD(),
-                     r.multNTracksITSOnly(), r.multNTracksTPCOnly(), r.multNTracksITSTPC(), r.numTrnacksInTimeRange(), -999.);
+                     r.multNTracksITSOnly(), r.multNTracksTPCOnly(), r.multNTracksITSTPC(), r.trackOccupancyInTimeRange(), -999.);
     }
   }
 
