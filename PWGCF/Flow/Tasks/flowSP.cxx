@@ -109,19 +109,26 @@ struct FlowSP {
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
-  using UsedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::SPTableZDC>>;
+  using UsedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals, aod::SPTableZDC>>;
   using UsedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
 
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
 
-  // from Generic Framework
-  // Adapted to hold weights for: inclusive, positive charged, negative charged
+  // struct to hold the correction histos/
   struct Config {
     std::vector<TH1D*> mEfficiency = {};
     std::vector<GFWWeights*> mAcceptance = {};
     bool correctionsLoaded = false;
     int lastRunNumber = 0;
+
+    TProfile* hcorrQQ = nullptr; 
+    TProfile* hcorrQQx = nullptr; 
+    TProfile* hcorrQQy = nullptr; 
+    TProfile* hEvPlaneRes = nullptr; 
+    bool clQQ = false;
+    bool clEvPlaneRes = false;
+
   } cfg;
 
   // define output objects
@@ -685,7 +692,8 @@ struct FlowSP {
       centrality = collision.centFT0M();
     if (cfgFV0A)
       centrality = collision.centFV0A();
-    // if (cfgNGlobal) centrality = collision.centNGlobal();
+    if (cfgNGlobal) 
+      centrality = collision.centNGlobal();
 
     if (!eventSelected(collision, tracks.size(), centrality))
       return;
@@ -732,21 +740,28 @@ struct FlowSP {
       double corrQQ = 1., corrQQx = 1., corrQQy = 1.;
 
       // Load correlations and SP resolution needed for Scalar Product and event plane methods.
+      // Only load once! 
       // If not loaded set to 1
       if (cfgLoadAverageQQ) {
-        TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir.value, bc.timestamp());
-        TProfile* hcorrQQ = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCXY"));
-        TProfile* hcorrQQx = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCX"));
-        TProfile* hcorrQQy = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCY"));
-        corrQQ = hcorrQQ->GetBinContent(hcorrQQ->FindBin(centrality));
-        corrQQx = hcorrQQx->GetBinContent(hcorrQQx->FindBin(centrality));
-        corrQQy = hcorrQQy->GetBinContent(hcorrQQy->FindBin(centrality));
+        if(!cfg.clQQ){
+          TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir.value, bc.timestamp());
+          cfg.hcorrQQ = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCXY"));
+          cfg.hcorrQQx = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCX"));
+          cfg.hcorrQQy = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCY"));
+          cfg.clQQ = true; 
+        }
+        corrQQ = cfg.hcorrQQ->GetBinContent(cfg.hcorrQQ->FindBin(centrality));
+        corrQQx = cfg.hcorrQQx->GetBinContent(cfg.hcorrQQx->FindBin(centrality));
+        corrQQy = cfg.hcorrQQy->GetBinContent(cfg.hcorrQQy->FindBin(centrality));
       }
 
       double evPlaneRes = 1.;
       if (cfgLoadSPPlaneRes) {
-        TProfile* hEvPlaneRes = ccdb->getForTimeStamp<TProfile>(cfgCCDBdir_SP.value, bc.timestamp());
-        evPlaneRes = hEvPlaneRes->GetBinContent(hEvPlaneRes->FindBin(centrality));
+        if(!cfg.clEvPlaneRes){
+          cfg.hEvPlaneRes = ccdb->getForTimeStamp<TProfile>(cfgCCDBdir_SP.value, bc.timestamp());
+          cfg.clEvPlaneRes = true; 
+        }
+        evPlaneRes = cfg.hEvPlaneRes->GetBinContent(cfg.hEvPlaneRes->FindBin(centrality));
         if (evPlaneRes < 0)
           LOGF(fatal, "<Cos(PsiA-PsiC)> > 0 for centrality %.2f! Cannot determine resolution.. Change centrality ranges!!!", centrality);
         evPlaneRes = std::sqrt(evPlaneRes);
@@ -785,7 +800,7 @@ struct FlowSP {
         if (!pos && !setCurrentParticleWeights(kNegative, weffN, waccN, track.phi(), track.eta(), track.pt(), vtxz))
           return;
 
-        registry.fill(HIST("QA/after/hPt_inclusive"), track.pt());
+        registry.fill(HIST("QA/after/hPt_inclusive"), track.pt(), wacc * weff);
 
         // // constrain angle to 0 -> [0,0+2pi]
         auto phi = RecoDecay::constrainAngle(track.phi(), 0);
@@ -816,13 +831,21 @@ struct FlowSP {
   }
   PROCESS_SWITCH(FlowSP, processData, "Process analysis for non-derived data", true);
 
-  void processMCReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
+  void processMCReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
 
     double vtxz = collision.posZ();
     float centrality = collision.centFT0C();
+    if (cfgFT0Cvariant1)
+      centrality = collision.centFT0CVariant1();
+    if (cfgFT0M)
+      centrality = collision.centFT0M();
+    if (cfgFV0A)
+      centrality = collision.centFV0A();
+    if (cfgNGlobal) 
+      centrality = collision.centNGlobal();
 
     if (cfgFillQAHistos)
       fillEventQA<kBefore>(collision, tracks);
@@ -865,13 +888,21 @@ struct FlowSP {
   PROCESS_SWITCH(FlowSP, processMCReco, "Process analysis for MC reconstructed events", false);
 
   Filter mcCollFilter = nabs(aod::mccollision::posZ) < cfgVtxZ;
-  void processMCGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs>> const& collisions, aod::McParticles const& particles)
+  void processMCGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals>> const& collisions, aod::McParticles const& particles)
   {
     if (collisions.size() != 1)
       return;
     float centrality = -1;
     for (const auto& collision : collisions) {
       centrality = collision.centFT0C();
+      if (cfgFT0Cvariant1)
+        centrality = collision.centFT0CVariant1();
+      if (cfgFT0M)
+        centrality = collision.centFT0M();
+      if (cfgFV0A)
+        centrality = collision.centFV0A();
+      if (cfgNGlobal) 
+        centrality = collision.centNGlobal();
     }
 
     if (particles.size() < 1)
