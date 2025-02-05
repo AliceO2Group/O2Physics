@@ -203,8 +203,8 @@ using JetCollisionMCD = o2::soa::Join<JetCollisions, JMcCollisionLbs>::iterator;
 using JetTracks = JTracks;
 using JetTracksMCD = o2::soa::Join<JetTracks, JMcTrackLbs>;
 using JetTracksSub = JTrackSubs;
-using JetClusters = JClusters;
-using JetClustersMCD = o2::soa::Join<JClusters, JMcClusterLbs>;
+using JetClusters = o2::soa::Join<JClusters, JClustersCorrectedEnergies, JClusterTracks>;
+using JetClustersMCD = o2::soa::Join<JClusters, JClustersCorrectedEnergies, JClusterTracks, JMcClusterLbs>;
 
 using JetMcCollisions = JMcCollisions;
 using JetMcCollision = JetMcCollisions::iterator;

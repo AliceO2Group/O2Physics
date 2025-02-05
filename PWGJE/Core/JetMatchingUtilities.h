@@ -427,7 +427,7 @@ float getPtSum(T const& tracksBase, U const& clustersBase, V const& tracksTag, O
   if constexpr (isEMCAL) {
     if constexpr (jetsTagIsMc) {
       for (const auto& clusterBase : clustersBase) {
-        for (const auto& clusterBaseParticleId : clusterBase.mcParticleIds()) {
+        for (const auto& clusterBaseParticleId : clusterBase.mcParticlesIds()) {
           bool isClusterMatched = false;
           for (const auto& trackTag : tracksTag) {
             if (clusterBaseParticleId != -1 && clusterBaseParticleId == trackTag.globalIndex()) {
@@ -450,7 +450,7 @@ float getPtSum(T const& tracksBase, U const& clustersBase, V const& tracksTag, O
         auto trackBaseId = trackBase.globalIndex();
         for (const auto& clusterTag : clustersTag) {
           bool isClusterMatched = false;
-          for (const auto& clusterTagParticleId : clusterTag.mcParticleIds()) {
+          for (const auto& clusterTagParticleId : clusterTag.mcParticlesIds()) {
             if (trackBaseId != -1 && trackBaseId == clusterTagParticleId) {
               ptSum += trackBase.pt();
               isClusterMatched = true;

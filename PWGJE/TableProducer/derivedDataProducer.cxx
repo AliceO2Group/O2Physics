@@ -58,53 +58,55 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetDerivedDataProducerTask {
-  Produces<aod::BCCounts> bcCountsTable;
-  Produces<aod::CollisionCounts> collisionCountsTable;
-  Produces<aod::JDummys> jDummysTable;
-  Produces<aod::JBCs> jBCsTable;
-  Produces<aod::JBCPIs> jBCParentIndexTable;
-  Produces<aod::JCollisions> jCollisionsTable;
-  Produces<aod::JCollisionMcInfos> jCollisionMcInfosTable;
-  Produces<aod::JCollisionPIs> jCollisionsParentIndexTable;
-  Produces<aod::JCollisionBCs> jCollisionsBunchCrossingIndexTable;
-  Produces<aod::JEMCCollisionLbs> jCollisionsEMCalLabelTable;
-  Produces<aod::JMcCollisionLbs> jMcCollisionsLabelTable;
-  Produces<aod::JMcCollisions> jMcCollisionsTable;
-  Produces<aod::JMcCollisionPIs> jMcCollisionsParentIndexTable;
-  Produces<aod::JTracks> jTracksTable;
-  Produces<aod::JTrackExtras> jTracksExtraTable;
-  Produces<aod::JEMCTracks> jTracksEMCalTable;
-  Produces<aod::JTrackPIs> jTracksParentIndexTable;
-  Produces<aod::JMcTrackLbs> jMcTracksLabelTable;
-  Produces<aod::JMcParticles> jMcParticlesTable;
-  Produces<aod::JMcParticlePIs> jParticlesParentIndexTable;
-  Produces<aod::JClusters> jClustersTable;
-  Produces<aod::JClusterPIs> jClustersParentIndexTable;
-  Produces<aod::JClusterTracks> jClustersMatchedTracksTable;
-  Produces<aod::JMcClusterLbs> jMcClustersLabelTable;
-  Produces<aod::JD0CollisionIds> jD0CollisionIdsTable;
-  Produces<aod::JD0McCollisionIds> jD0McCollisionIdsTable;
-  Produces<aod::JD0Ids> jD0IdsTable;
-  Produces<aod::JD0PIds> jD0ParticleIdsTable;
-  Produces<aod::JLcCollisionIds> jLcCollisionIdsTable;
-  Produces<aod::JLcMcCollisionIds> jLcMcCollisionIdsTable;
-  Produces<aod::JLcIds> jLcIdsTable;
-  Produces<aod::JLcPIds> jLcParticleIdsTable;
-  Produces<aod::JBplusCollisionIds> jBplusCollisionIdsTable;
-  Produces<aod::JBplusMcCollisionIds> jBplusMcCollisionIdsTable;
-  Produces<aod::JBplusIds> jBplusIdsTable;
-  Produces<aod::JBplusPIds> jBplusParticleIdsTable;
-  Produces<aod::JV0Ids> jV0IdsTable;
-  Produces<aod::JV0McCollisions> jV0McCollisionsTable;
-  Produces<aod::JV0McCollisionIds> jV0McCollisionIdsTable;
-  Produces<aod::JV0Mcs> jV0McsTable;
-  Produces<aod::JV0McIds> jV0McIdsTable;
-  Produces<aod::JDielectronCollisionIds> jDielectronCollisionIdsTable;
-  Produces<aod::JDielectronIds> jDielectronIdsTable;
-  Produces<aod::JDielectronMcCollisions> jDielectronMcCollisionsTable;
-  Produces<aod::JDielectronMcCollisionIds> jDielectronMcCollisionIdsTable;
-  Produces<aod::JDielectronMcs> jDielectronMcsTable;
-  Produces<aod::JDielectronMcIds> jDielectronMcIdsTable;
+  struct : ProducesGroup {
+    Produces<aod::BCCounts> bcCountsTable;
+    Produces<aod::CollisionCounts> collisionCountsTable;
+    Produces<aod::JDummys> jDummysTable;
+    Produces<aod::JBCs> jBCsTable;
+    Produces<aod::JBCPIs> jBCParentIndexTable;
+    Produces<aod::JCollisions> jCollisionsTable;
+    Produces<aod::JCollisionMcInfos> jCollisionMcInfosTable;
+    Produces<aod::JCollisionPIs> jCollisionsParentIndexTable;
+    Produces<aod::JCollisionBCs> jCollisionsBunchCrossingIndexTable;
+    Produces<aod::JEMCCollisionLbs> jCollisionsEMCalLabelTable;
+    Produces<aod::JMcCollisionLbs> jMcCollisionsLabelTable;
+    Produces<aod::JMcCollisions> jMcCollisionsTable;
+    Produces<aod::JMcCollisionPIs> jMcCollisionsParentIndexTable;
+    Produces<aod::JTracks> jTracksTable;
+    Produces<aod::JTrackExtras> jTracksExtraTable;
+    Produces<aod::JEMCTracks> jTracksEMCalTable;
+    Produces<aod::JTrackPIs> jTracksParentIndexTable;
+    Produces<aod::JMcTrackLbs> jMcTracksLabelTable;
+    Produces<aod::JMcParticles> jMcParticlesTable;
+    Produces<aod::JMcParticlePIs> jParticlesParentIndexTable;
+    Produces<aod::JClusters> jClustersTable;
+    Produces<aod::JClusterPIs> jClustersParentIndexTable;
+    Produces<aod::JClusterTracks> jClustersMatchedTracksTable;
+    Produces<aod::JMcClusterLbs> jMcClustersLabelTable;
+    Produces<aod::JD0CollisionIds> jD0CollisionIdsTable;
+    Produces<aod::JD0McCollisionIds> jD0McCollisionIdsTable;
+    Produces<aod::JD0Ids> jD0IdsTable;
+    Produces<aod::JD0PIds> jD0ParticleIdsTable;
+    Produces<aod::JLcCollisionIds> jLcCollisionIdsTable;
+    Produces<aod::JLcMcCollisionIds> jLcMcCollisionIdsTable;
+    Produces<aod::JLcIds> jLcIdsTable;
+    Produces<aod::JLcPIds> jLcParticleIdsTable;
+    Produces<aod::JBplusCollisionIds> jBplusCollisionIdsTable;
+    Produces<aod::JBplusMcCollisionIds> jBplusMcCollisionIdsTable;
+    Produces<aod::JBplusIds> jBplusIdsTable;
+    Produces<aod::JBplusPIds> jBplusParticleIdsTable;
+    Produces<aod::JV0Ids> jV0IdsTable;
+    Produces<aod::JV0McCollisions> jV0McCollisionsTable;
+    Produces<aod::JV0McCollisionIds> jV0McCollisionIdsTable;
+    Produces<aod::JV0Mcs> jV0McsTable;
+    Produces<aod::JV0McIds> jV0McIdsTable;
+    Produces<aod::JDielectronCollisionIds> jDielectronCollisionIdsTable;
+    Produces<aod::JDielectronIds> jDielectronIdsTable;
+    Produces<aod::JDielectronMcCollisions> jDielectronMcCollisionsTable;
+    Produces<aod::JDielectronMcCollisionIds> jDielectronMcCollisionIdsTable;
+    Produces<aod::JDielectronMcs> jDielectronMcsTable;
+    Produces<aod::JDielectronMcIds> jDielectronMcIdsTable;
+  } products;
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
@@ -149,7 +151,7 @@ struct JetDerivedDataProducerTask {
     trackCollisionMapping.clear();
     if (!doprocessMcCollisionLabels) {
       for (int i = 0; i < collisions.size(); i++) {
-        jCollisionMcInfosTable(-1.0, jetderiveddatautilities::JCollisionSubGeneratorId::none); // fill a dummy weights table if not MC
+        products.jCollisionMcInfosTable(-1.0, jetderiveddatautilities::JCollisionSubGeneratorId::none); // fill a dummy weights table if not MC
       }
     }
   }
@@ -157,8 +159,8 @@ struct JetDerivedDataProducerTask {
 
   void processBunchCrossings(soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>::iterator const& bc)
   {
-    jBCsTable(bc.runNumber(), bc.globalBC(), bc.timestamp(), bc.alias_raw(), bc.selection_raw());
-    jBCParentIndexTable(bc.globalIndex());
+    products.jBCsTable(bc.runNumber(), bc.globalBC(), bc.timestamp(), bc.alias_raw(), bc.selection_raw());
+    products.jBCParentIndexTable(bc.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processBunchCrossings, "produces derived bunch crossing table", false);
 
@@ -170,9 +172,9 @@ struct JetDerivedDataProducerTask {
       triggerDecider.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), jetderiveddatautilities::JTriggerMasks);
       triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults(bc.globalBC()));
     }
-    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centFT0C(), collision.trackOccupancyInTimeRange(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit); // note change multFT0C to multFT0M when problems with multFT0A are fixed
-    jCollisionsParentIndexTable(collision.globalIndex());
-    jCollisionsBunchCrossingIndexTable(collision.bcId());
+    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centFT0C(), collision.trackOccupancyInTimeRange(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit); // note change multFT0C to multFT0M when problems with multFT0A are fixed
+    products.jCollisionsParentIndexTable(collision.globalIndex());
+    products.jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisions, "produces derived collision tables", true);
 
@@ -184,62 +186,62 @@ struct JetDerivedDataProducerTask {
       triggerDecider.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), jetderiveddatautilities::JTriggerMasks);
       triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults(bc.globalBC()));
     }
-    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit);
-    jCollisionsParentIndexTable(collision.globalIndex());
-    jCollisionsBunchCrossingIndexTable(collision.bcId());
+    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit);
+    products.jCollisionsParentIndexTable(collision.globalIndex());
+    products.jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsWithoutCentralityAndMultiplicity, "produces derived collision tables without centrality or multiplicity", false);
 
   void processCollisionsRun2(soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentRun2V0Ms>::iterator const& collision)
   {
-    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centRun2V0M(), -1, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), 0); // note change multFT0C to multFT0M when problems with multFT0A are fixed
-    jCollisionsParentIndexTable(collision.globalIndex());
-    jCollisionsBunchCrossingIndexTable(collision.bcId());
+    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centRun2V0M(), -1, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), 0); // note change multFT0C to multFT0M when problems with multFT0A are fixed
+    products.jCollisionsParentIndexTable(collision.globalIndex());
+    products.jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsRun2, "produces derived collision tables for Run 2 data", false);
 
   void processCollisionsALICE3(aod::Collision const& collision)
   {
-    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1, -1.0, 0, 0);
-    jCollisionsParentIndexTable(collision.globalIndex());
-    jCollisionsBunchCrossingIndexTable(-1);
+    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1, -1.0, 0, 0);
+    products.jCollisionsParentIndexTable(collision.globalIndex());
+    products.jCollisionsBunchCrossingIndexTable(-1);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsALICE3, "produces derived collision tables for ALICE 3 simulations", false);
 
   void processWithoutEMCalCollisionLabels(aod::Collision const&)
   {
-    jCollisionsEMCalLabelTable(false, false);
+    products.jCollisionsEMCalLabelTable(false, false);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processWithoutEMCalCollisionLabels, "produces dummy derived collision labels for EMCal", true);
 
   void processEMCalCollisionLabels(aod::EMCALMatchedCollision const& collision)
   {
-    jCollisionsEMCalLabelTable(collision.ambiguous(), collision.isemcreadout());
+    products.jCollisionsEMCalLabelTable(collision.ambiguous(), collision.isemcreadout());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processEMCalCollisionLabels, "produces derived collision labels for EMCal", false);
 
   void processMcCollisionLabels(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&)
   {
     if (collision.has_mcCollision()) {
-      jMcCollisionsLabelTable(collision.mcCollisionId());
-      jCollisionMcInfosTable(collision.mcCollision().weight(), collision.mcCollision().getSubGeneratorId());
+      products.jMcCollisionsLabelTable(collision.mcCollisionId());
+      products.jCollisionMcInfosTable(collision.mcCollision().weight(), collision.mcCollision().getSubGeneratorId());
     } else {
-      jMcCollisionsLabelTable(-1);
-      jCollisionMcInfosTable(-1.0, jetderiveddatautilities::JCollisionSubGeneratorId::none);
+      products.jMcCollisionsLabelTable(-1);
+      products.jCollisionMcInfosTable(-1.0, jetderiveddatautilities::JCollisionSubGeneratorId::none);
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionLabels, "produces derived MC collision labels table", false);
 
   void processMcCollisions(aod::McCollision const& mcCollision)
   {
-    jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.weight(), mcCollision.getSubGeneratorId());
-    jMcCollisionsParentIndexTable(mcCollision.globalIndex());
+    products.jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.weight(), mcCollision.getSubGeneratorId());
+    products.jMcCollisionsParentIndexTable(mcCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisions, "produces derived MC collision table", false);
 
   void processTracks(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::TrackSelectionExtension>::iterator const& track, aod::Collisions const&)
   {
-    jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), dcaZMax));
+    products.jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), dcaZMax));
     auto trackParCov = getTrackParCov(track);
     auto xyzTrack = trackParCov.getXYZGlo();
     float sigmaDCAXYZ2;
@@ -252,9 +254,9 @@ struct JetDerivedDataProducerTask {
       dcaY = xyzTrack.Y() - collision.posY();
     }
 
-    jTracksExtraTable(dcaX, dcaY, track.dcaZ(), track.dcaXY(), dcaXYZ, std::sqrt(track.sigmaDcaZ2()), std::sqrt(track.sigmaDcaXY2()), std::sqrt(sigmaDCAXYZ2), track.sigma1Pt()); // why is this getSigmaZY
-    jTracksParentIndexTable(track.globalIndex());
-    trackCollisionMapping[{track.globalIndex(), track.collisionId()}] = jTracksTable.lastIndex();
+    products.jTracksExtraTable(dcaX, dcaY, track.dcaZ(), track.dcaXY(), dcaXYZ, std::sqrt(track.sigmaDcaZ2()), std::sqrt(track.sigmaDcaXY2()), std::sqrt(sigmaDCAXYZ2), track.sigma1Pt()); // why is this getSigmaZY
+    products.jTracksParentIndexTable(track.globalIndex());
+    trackCollisionMapping[{track.globalIndex(), track.collisionId()}] = products.jTracksTable.lastIndex();
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processTracks, "produces derived track table", true);
 
@@ -266,12 +268,12 @@ struct JetDerivedDataProducerTask {
         auto track = collisionTrackIndex.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::TrackSelectionExtension>>();
         auto trackParCov = getTrackParCov(track);
         if (track.collisionId() == collision.globalIndex()) {
-          jTracksTable(collision.globalIndex(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), dcaZMax));
-          jTracksParentIndexTable(track.globalIndex());
+          products.jTracksTable(collision.globalIndex(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), dcaZMax));
+          products.jTracksParentIndexTable(track.globalIndex());
           auto xyzTrack = trackParCov.getXYZGlo();
           float sigmaDCAXYZ2;
           float dcaXYZ = getDcaXYZ(track, &sigmaDCAXYZ2);
-          jTracksExtraTable(xyzTrack.X() - collision.posX(), xyzTrack.Y() - collision.posY(), track.dcaZ(), track.dcaXY(), dcaXYZ, std::sqrt(track.sigmaDcaZ2()), std::sqrt(track.sigmaDcaXY2()), std::sqrt(sigmaDCAXYZ2), track.sigma1Pt()); // why is this getSigmaZY
+          products.jTracksExtraTable(xyzTrack.X() - collision.posX(), xyzTrack.Y() - collision.posY(), track.dcaZ(), track.dcaXY(), dcaXYZ, std::sqrt(track.sigmaDcaZ2()), std::sqrt(track.sigmaDcaXY2()), std::sqrt(sigmaDCAXYZ2), track.sigma1Pt()); // why is this getSigmaZY
         } else {
           auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
           initCCDB(bc, runNumber, ccdb, doprocessCollisionsRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, doprocessCollisionsRun2);
@@ -281,8 +283,8 @@ struct JetDerivedDataProducerTask {
           collisionInfo.setPos({collision.posX(), collision.posY(), collision.posZ()});
           collisionInfo.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
           o2::base::Propagator::Instance()->propagateToDCABxByBz(collisionInfo, trackParCov, 2.f, noMatCorr, &dcaCovInfo);
-          jTracksTable(collision.globalIndex(), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), jetderiveddatautilities::setTrackSelectionBit(track, dcaCovInfo.getZ(), dcaZMax)); // only qualitytracksWDCA are a reliable selection
-          jTracksParentIndexTable(track.globalIndex());
+          products.jTracksTable(collision.globalIndex(), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), jetderiveddatautilities::setTrackSelectionBit(track, dcaCovInfo.getZ(), dcaZMax)); // only qualitytracksWDCA are a reliable selection
+          products.jTracksParentIndexTable(track.globalIndex());
           auto xyzTrack = trackParCov.getXYZGlo();
           float dcaXY = dcaCovInfo.getY();
           float dcaZ = dcaCovInfo.getZ();
@@ -296,9 +298,9 @@ struct JetDerivedDataProducerTask {
           } else {
             sigmaDCAXYZ = covYY * (2.f * dcaXY / dcaXYZ) * (2.f * dcaXY / dcaXYZ) + covZZ * (2.f * dcaZ / dcaXYZ) * (2.f * dcaZ / dcaXYZ) + 2.f * covYZ * (2.f * dcaXY / dcaXYZ) * (2.f * dcaZ / dcaXYZ);
           }
-          jTracksExtraTable(xyzTrack.X() - collision.posX(), xyzTrack.Y() - collision.posY(), dcaZ, dcaXY, dcaXYZ, std::sqrt(covZZ), std::sqrt(covYY), std::sqrt(sigmaDCAXYZ), std::sqrt(trackParCov.getSigma1Pt2()));
+          products.jTracksExtraTable(xyzTrack.X() - collision.posX(), xyzTrack.Y() - collision.posY(), dcaZ, dcaXY, dcaXYZ, std::sqrt(covZZ), std::sqrt(covYY), std::sqrt(sigmaDCAXYZ), std::sqrt(trackParCov.getSigma1Pt2()));
         }
-        trackCollisionMapping[{track.globalIndex(), collision.globalIndex()}] = jTracksTable.lastIndex();
+        trackCollisionMapping[{track.globalIndex(), collision.globalIndex()}] = products.jTracksTable.lastIndex();
       }
     }
   }
@@ -307,9 +309,9 @@ struct JetDerivedDataProducerTask {
   void processMcTrackLabels(soa::Join<aod::Tracks, aod::McTrackLabels>::iterator const& track)
   {
     if (track.has_mcParticle()) {
-      jMcTracksLabelTable(track.mcParticleId());
+      products.jMcTracksLabelTable(track.mcParticleId());
     } else {
-      jMcTracksLabelTable(-1);
+      products.jMcTracksLabelTable(-1);
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcTrackLabels, "produces derived track labels table", false);
@@ -321,9 +323,9 @@ struct JetDerivedDataProducerTask {
       for (auto const& collisionTrackIndex : collisionTrackIndices) {
         auto track = collisionTrackIndex.track_as<soa::Join<aod::Tracks, aod::McTrackLabels>>();
         if (track.collisionId() == collision.globalIndex() && track.has_mcParticle()) {
-          jMcTracksLabelTable(track.mcParticleId());
+          products.jMcTracksLabelTable(track.mcParticleId());
         } else {
-          jMcTracksLabelTable(-1);
+          products.jMcTracksLabelTable(-1);
         }
       }
     }
@@ -350,8 +352,8 @@ struct JetDerivedDataProducerTask {
         i++;
       }
     }
-    jMcParticlesTable(particle.mcCollisionId(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
-    jParticlesParentIndexTable(particle.globalIndex());
+    products.jMcParticlesTable(particle.mcCollisionId(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
+    products.jParticlesParentIndexTable(particle.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processParticles, "produces derived parrticle table", false);
 
@@ -381,8 +383,8 @@ struct JetDerivedDataProducerTask {
         }
       }
 
-      jClustersTable(cluster.collisionId(), cluster.id(), cluster.energy(), cluster.coreEnergy(), cluster.rawEnergy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.m20(), cluster.nCells(), cluster.time(), cluster.isExotic(), cluster.distanceToBadChannel(), cluster.nlm(), cluster.definition(), leadingCellEnergy, subleadingCellEnergy, leadingCellNumber, subleadingCellNumber);
-      jClustersParentIndexTable(cluster.globalIndex());
+      products.jClustersTable(cluster.collisionId(), cluster.id(), cluster.energy(), cluster.coreEnergy(), cluster.rawEnergy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.m20(), cluster.nCells(), cluster.time(), cluster.isExotic(), cluster.distanceToBadChannel(), cluster.nlm(), cluster.definition(), leadingCellEnergy, subleadingCellEnergy, leadingCellNumber, subleadingCellNumber);
+      products.jClustersParentIndexTable(cluster.globalIndex());
 
       auto const clusterTracks = matchedTracks.sliceBy(perClusterTracks, cluster.globalIndex());
       std::vector<int32_t> clusterTrackIDs;
@@ -390,9 +392,9 @@ struct JetDerivedDataProducerTask {
         auto JClusterID = trackCollisionMapping.find({clusterTrack.trackId(), cluster.collisionId()}); // does EMCal use its own associator?
         clusterTrackIDs.push_back(JClusterID->second);
         auto emcTrack = clusterTrack.track_as<soa::Join<aod::Tracks, aod::TracksExtra>>();
-        jTracksEMCalTable(JClusterID->second, emcTrack.trackEtaEmcal(), emcTrack.trackPhiEmcal());
+        products.jTracksEMCalTable(JClusterID->second, emcTrack.trackEtaEmcal(), emcTrack.trackPhiEmcal());
       }
-      jClustersMatchedTracksTable(clusterTrackIDs);
+      products.jClustersMatchedTracksTable(clusterTrackIDs);
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processClusters, "produces derived cluster tables", false);
@@ -406,19 +408,19 @@ struct JetDerivedDataProducerTask {
     std::vector<float> amplitudeA;
     auto amplitudeASpan = cluster.amplitudeA();
     std::copy(amplitudeASpan.begin(), amplitudeASpan.end(), std::back_inserter(amplitudeA));
-    jMcClustersLabelTable(particleIds, amplitudeA);
+    products.jMcClustersLabelTable(particleIds, amplitudeA);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcClusterLabels, "produces derived cluster particle label table", false);
 
   void processD0Collisions(aod::HfD0CollIds::iterator const& D0Collision)
   {
-    jD0CollisionIdsTable(D0Collision.collisionId());
+    products.jD0CollisionIdsTable(D0Collision.collisionId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processD0Collisions, "produces derived index for D0 collisions", false);
 
   void processD0McCollisions(aod::HfD0McCollIds::iterator const& D0McCollision)
   {
-    jD0McCollisionIdsTable(D0McCollision.mcCollisionId());
+    products.jD0McCollisionIdsTable(D0McCollision.mcCollisionId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processD0McCollisions, "produces derived index for D0 MC collisions", false);
 
@@ -430,25 +432,25 @@ struct JetDerivedDataProducerTask {
       JProng0ID = trackCollisionMapping.find({D0.prong0Id(), D0.collisionId()});
       JProng1ID = trackCollisionMapping.find({D0.prong1Id(), D0.collisionId()});
     }
-    jD0IdsTable(D0.collisionId(), JProng0ID->second, JProng1ID->second);
+    products.jD0IdsTable(D0.collisionId(), JProng0ID->second, JProng1ID->second);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processD0, "produces derived index for D0 candidates", false);
 
   void processD0MC(aod::HfD0PIds::iterator const& D0)
   {
-    jD0ParticleIdsTable(D0.mcCollisionId(), D0.mcParticleId());
+    products.jD0ParticleIdsTable(D0.mcCollisionId(), D0.mcParticleId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processD0MC, "produces derived index for D0 particles", false);
 
   void processLcCollisions(aod::HfLcCollIds::iterator const& LcCollision)
   {
-    jLcCollisionIdsTable(LcCollision.collisionId());
+    products.jLcCollisionIdsTable(LcCollision.collisionId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processLcCollisions, "produces derived index for Lc collisions", false);
 
   void processLcMcCollisions(aod::HfLcMcCollIds::iterator const& LcMcCollision)
   {
-    jLcMcCollisionIdsTable(LcMcCollision.mcCollisionId());
+    products.jLcMcCollisionIdsTable(LcMcCollision.mcCollisionId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processLcMcCollisions, "produces derived index for Lc MC collisions", false);
 
@@ -462,25 +464,25 @@ struct JetDerivedDataProducerTask {
       JProng1ID = trackCollisionMapping.find({Lc.prong1Id(), Lc.collisionId()});
       JProng2ID = trackCollisionMapping.find({Lc.prong2Id(), Lc.collisionId()});
     }
-    jLcIdsTable(Lc.collisionId(), JProng0ID->second, JProng1ID->second, JProng2ID->second);
+    products.jLcIdsTable(Lc.collisionId(), JProng0ID->second, JProng1ID->second, JProng2ID->second);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processLc, "produces derived index for Lc candidates", false);
 
   void processLcMC(aod::HfLcPIds::iterator const& Lc)
   {
-    jLcParticleIdsTable(Lc.mcCollisionId(), Lc.mcParticleId());
+    products.jLcParticleIdsTable(Lc.mcCollisionId(), Lc.mcParticleId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processLcMC, "produces derived index for Lc particles", false);
 
   void processBplusCollisions(aod::HfBplusCollIds::iterator const& BplusCollision)
   {
-    jBplusCollisionIdsTable(BplusCollision.collisionId());
+    products.jBplusCollisionIdsTable(BplusCollision.collisionId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processBplusCollisions, "produces derived index for Bplus collisions", false);
 
   void processBplusMcCollisions(aod::HfBplusMcCollIds::iterator const& BplusMcCollision)
   {
-    jBplusMcCollisionIdsTable(BplusMcCollision.mcCollisionId());
+    products.jBplusMcCollisionIdsTable(BplusMcCollision.mcCollisionId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processBplusMcCollisions, "produces derived index for Bplus MC collisions", false);
 
@@ -494,13 +496,13 @@ struct JetDerivedDataProducerTask {
       JProng1ID = trackCollisionMapping.find({Bplus.prong1Id(), Bplus.collisionId()});
       JProng2ID = trackCollisionMapping.find({Bplus.prong2Id(), Bplus.collisionId()});
     }
-    jBplusIdsTable(Bplus.collisionId(), JProng0ID->second, JProng1ID->second, JProng2ID->second);
+    products.jBplusIdsTable(Bplus.collisionId(), JProng0ID->second, JProng1ID->second, JProng2ID->second);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processBplus, "produces derived index for Bplus candidates", false);
 
   void processBplusMC(aod::HfBplusPIds::iterator const& Bplus)
   {
-    jBplusParticleIdsTable(Bplus.mcCollisionId(), Bplus.mcParticleId());
+    products.jBplusParticleIdsTable(Bplus.mcCollisionId(), Bplus.mcParticleId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processBplusMC, "produces derived index for Bplus particles", false);
 
@@ -512,7 +514,7 @@ struct JetDerivedDataProducerTask {
       JPosTrackID = trackCollisionMapping.find({V0.posTrackId(), V0.collisionId()});
       JNegTrackID = trackCollisionMapping.find({V0.negTrackId(), V0.collisionId()});
     }
-    jV0IdsTable(V0.collisionId(), JPosTrackID->second, JNegTrackID->second);
+    products.jV0IdsTable(V0.collisionId(), JPosTrackID->second, JNegTrackID->second);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processV0, "produces derived index for V0 candidates", false);
 
@@ -522,8 +524,8 @@ struct JetDerivedDataProducerTask {
     for (auto const& particle : particles) {
       if (jetv0utilities::isV0Particle(particles, particle)) {
         if (!filledV0McCollisionTable) {
-          jV0McCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
-          jV0McCollisionIdsTable(mcCollision.globalIndex());
+          products.jV0McCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+          products.jV0McCollisionIdsTable(mcCollision.globalIndex());
           filledV0McCollisionTable = true;
         }
         std::vector<int32_t> mothersId;
@@ -545,8 +547,8 @@ struct JetDerivedDataProducerTask {
           }
         }
         auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
-        jV0McsTable(jV0McCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), jetv0utilities::setV0ParticleDecayBit(particles, particle));
-        jV0McIdsTable(mcCollision.globalIndex(), particle.globalIndex(), mothersId, daughtersId);
+        products.jV0McsTable(products.jV0McCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), jetv0utilities::setV0ParticleDecayBit(particles, particle));
+        products.jV0McIdsTable(mcCollision.globalIndex(), particle.globalIndex(), mothersId, daughtersId);
       }
     }
   }
@@ -554,7 +556,7 @@ struct JetDerivedDataProducerTask {
 
   void processDielectronCollisions(aod::ReducedEventsInfo::iterator const& DielectronCollision)
   {
-    jDielectronCollisionIdsTable(DielectronCollision.collisionId());
+    products.jDielectronCollisionIdsTable(DielectronCollision.collisionId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processDielectronCollisions, "produces derived index for Dielectron collisions", false);
 
@@ -566,7 +568,7 @@ struct JetDerivedDataProducerTask {
       JProng0ID = trackCollisionMapping.find({Dielectron.prong0Id(), Dielectron.collisionId()});
       JProng1ID = trackCollisionMapping.find({Dielectron.prong1Id(), Dielectron.collisionId()});
     }
-    jDielectronIdsTable(Dielectron.collisionId(), JProng0ID->second, JProng1ID->second);
+    products.jDielectronIdsTable(Dielectron.collisionId(), JProng0ID->second, JProng1ID->second);
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processDielectron, "produces derived index for Dielectron candidates", false);
 
@@ -576,8 +578,8 @@ struct JetDerivedDataProducerTask {
     for (auto const& particle : particles) {
       if (jetdqutilities::isDielectronParticle(particles, particle)) {
         if (!filledDielectronMcCollisionTable) {
-          jDielectronMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
-          jDielectronMcCollisionIdsTable(mcCollision.globalIndex());
+          products.jDielectronMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+          products.jDielectronMcCollisionIdsTable(mcCollision.globalIndex());
           filledDielectronMcCollisionTable = true;
         }
         std::vector<int32_t> mothersId;
@@ -599,8 +601,8 @@ struct JetDerivedDataProducerTask {
           }
         }
         auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
-        jDielectronMcsTable(jDielectronMcCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), jetdqutilities::setDielectronParticleDecayBit(particles, particle), RecoDecay::getCharmHadronOrigin(particles, particle, false)); // Todo: should the last thing be false?
-        jDielectronMcIdsTable(mcCollision.globalIndex(), particle.globalIndex(), mothersId, daughtersId);
+        products.jDielectronMcsTable(products.jDielectronMcCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), jetdqutilities::setDielectronParticleDecayBit(particles, particle), RecoDecay::getCharmHadronOrigin(particles, particle, false)); // Todo: should the last thing be false?
+        products.jDielectronMcIdsTable(mcCollision.globalIndex(), particle.globalIndex(), mothersId, daughtersId);
       }
     }
   }

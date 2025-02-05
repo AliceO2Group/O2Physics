@@ -53,7 +53,7 @@ namespace jetsubstructureutilities
  * @param pseudoJet converted pseudoJet object which is passed by reference
  */
 template <typename T, typename U, typename V, typename O>
-fastjet::ClusterSequenceArea jetToPseudoJet(T const& jet, U const& /*tracks*/, V const& /*clusters*/, O const& /*candidates*/, fastjet::PseudoJet& pseudoJet)
+fastjet::ClusterSequenceArea jetToPseudoJet(T const& jet, U const& /*tracks*/, V const& /*clusters*/, O const& /*candidates*/, fastjet::PseudoJet& pseudoJet, int hadronicCorrectionType = 0)
 {
   std::vector<fastjet::PseudoJet> jetConstituents;
   for (auto& jetConstituent : jet.template tracks_as<U>()) {
@@ -61,7 +61,7 @@ fastjet::ClusterSequenceArea jetToPseudoJet(T const& jet, U const& /*tracks*/, V
   }
   if constexpr (std::is_same_v<std::decay_t<typename V::iterator>, o2::aod::JetClusters::iterator> || std::is_same_v<std::decay_t<typename V::iterator>, o2::aod::JetClusters::filtered_iterator>) {
     for (auto& jetClusterConstituent : jet.template clusters_as<V>()) {
-      fastjetutilities::fillClusters(jetClusterConstituent, jetConstituents, jetClusterConstituent.globalIndex());
+      fastjetutilities::fillClusters(jetClusterConstituent, jetConstituents, jetClusterConstituent.globalIndex(), hadronicCorrectionType);
     }
   }
   if constexpr (jetcandidateutilities::isCandidateTable<O>() || jetcandidateutilities::isCandidateMcTable<O>()) {
@@ -96,11 +96,11 @@ fastjet::ClusterSequenceArea jetToPseudoJet(T const& jet, U const& /*tracks*/, V
 
 // function that returns the N-subjettiness ratio and the distance betewwen the two axes considered for tau2, in the form of a vector
 template <typename T, typename U, typename V, typename O, typename M>
-std::vector<float> getNSubjettiness(T const& jet, U const& tracks, V const& clusters, O const& candidates, std::vector<fastjet::PseudoJet>::size_type nMax, M const& reclusteringAlgorithm, bool doSoftDrop = false, float zCut = 0.1, float beta = 0.0)
+std::vector<float> getNSubjettiness(T const& jet, U const& tracks, V const& clusters, O const& candidates, std::vector<fastjet::PseudoJet>::size_type nMax, M const& reclusteringAlgorithm, bool doSoftDrop = false, float zCut = 0.1, float beta = 0.0, int hadronicCorrectionType = 0)
 {
   std::vector<float> result;
   fastjet::PseudoJet pseudoJet;
-  fastjet::ClusterSequenceArea clusterSeq(jetToPseudoJet(jet, tracks, clusters, candidates, pseudoJet));
+  fastjet::ClusterSequenceArea clusterSeq(jetToPseudoJet(jet, tracks, clusters, candidates, pseudoJet, hadronicCorrectionType));
   if (doSoftDrop) {
     fastjet::contrib::SoftDrop softDrop(beta, zCut);
     pseudoJet = softDrop(pseudoJet);

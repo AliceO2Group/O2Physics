@@ -28,6 +28,11 @@ o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy-charged
+                    SOURCES derivedDataProducerDummyCharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy-d0
                     SOURCES derivedDataProducerDummyD0.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
