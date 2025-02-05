@@ -88,7 +88,7 @@ std::vector<double> pyZDC = {-1.75, -1.75, 1.75, 1.75};
 double alphaZDC = 0.395;
 
 // q-vectors before (q) and after (qRec) recentering.
-std::vector<double> q(4); // start values of [QxA, QyA, QxC, QyC]
+std::vector<double> q(4);    // start values of [QxA, QyA, QxC, QyC]
 std::vector<double> qRec(4); // Recentered values of [QxA, QyA, QxC, QyC]
 
 // for energy calibration
@@ -120,7 +120,6 @@ struct ZdcQVectors {
   ConfigurableAxis axisVx{"axisVx", {10, -0.01, 0.01}, "for Pos X of collision"};
   ConfigurableAxis axisVy{"axisVy", {10, -0.01, 0.01}, "for Pos Y of collision"};
   ConfigurableAxis axisVz{"axisVz", {10, -10, 1}, "for vz of collision"};
-
 
   // Centrality Estimators -> standard is FT0C
   O2_DEFINE_CONFIGURABLE(cfgFT0Cvariant1, bool, false, "Set centrality estimator to cfgFT0Cvariant1");
@@ -182,11 +181,11 @@ struct ZdcQVectors {
       energyZN[tower] = registry.add<TProfile2D>(Form("Energy/%s", namesEcal[tower].Data()), Form("%s", namesEcal[tower].Data()), kTProfile2D, {{1, 0, 1}, axisCent});
     }
 
-      registry.add<TH2>(Form("before/QA/hSPplaneA"), "hSPplaneA", kTH2D, {{100, -4, 4}, axisCent10});
-      registry.add<TH2>(Form("before/QA/hSPplaneC"), "hSPplaneC", kTH2D, {{100, -4, 4}, axisCent10});
-      registry.add<TH2>(Form("before/QA/hSPplaneFull"), "hSPplaneFull", kTH2D, {{100, -4, 4}, axisCent10});
-      for (const auto& side : sides) {
-        registry.add<TH2>(Form("before/hZN%s_Qx_vs_Qy", side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
+    registry.add<TH2>(Form("before/QA/hSPplaneA"), "hSPplaneA", kTH2D, {{100, -4, 4}, axisCent10});
+    registry.add<TH2>(Form("before/QA/hSPplaneC"), "hSPplaneC", kTH2D, {{100, -4, 4}, axisCent10});
+    registry.add<TH2>(Form("before/QA/hSPplaneFull"), "hSPplaneFull", kTH2D, {{100, -4, 4}, axisCent10});
+    for (const auto& side : sides) {
+      registry.add<TH2>(Form("before/hZN%s_Qx_vs_Qy", side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
       }
 
       for (const auto& COORD1 : capCOORDS) {
@@ -213,19 +212,19 @@ struct ZdcQVectors {
         } // end of capCOORDS
       } // end of sides
 
-    // recentered q-vectors (to check what steps are finished in the end)
+      // recentered q-vectors (to check what steps are finished in the end)
 
-    registry.add<TProfile>("vmean/hvertex_vx", "hvertex_vx", kTProfile, {{1, 0., 1.}});
-    registry.add<TProfile>("vmean/hvertex_vy", "hvertex_vy", kTProfile, {{1, 0., 1.}});
-    registry.add<TProfile>("vmean/hvertex_vz", "hvertex_vz", kTProfile, {{1, 0., 1.}});
+      registry.add<TProfile>("vmean/hvertex_vx", "hvertex_vx", kTProfile, {{1, 0., 1.}});
+      registry.add<TProfile>("vmean/hvertex_vy", "hvertex_vy", kTProfile, {{1, 0., 1.}});
+      registry.add<TProfile>("vmean/hvertex_vz", "hvertex_vz", kTProfile, {{1, 0., 1.}});
 
-    registry.add<TH1>("QA/centrality_before", "centrality_before", kTH1D, {{200, 0, 100}});
-    registry.add<TH1>("QA/centrality_after", "centrality_after", kTH1D, {{200, 0, 100}});
+      registry.add<TH1>("QA/centrality_before", "centrality_before", kTH1D, {{200, 0, 100}});
+      registry.add<TH1>("QA/centrality_after", "centrality_after", kTH1D, {{200, 0, 100}});
 
-    registry.add<TProfile>("QA/ZNA_Energy", "ZNA_Energy", kTProfile, {{8, 0, 8}});
-    registry.add<TProfile>("QA/ZNC_Energy", "ZNC_Energy", kTProfile, {{8, 0, 8}});
+      registry.add<TProfile>("QA/ZNA_Energy", "ZNA_Energy", kTProfile, {{8, 0, 8}});
+      registry.add<TProfile>("QA/ZNC_Energy", "ZNC_Energy", kTProfile, {{8, 0, 8}});
 
-    registry.addClone("before/", "after/");
+      registry.addClone("before/", "after/");
   }
 
   template <FillType ft>
@@ -397,7 +396,6 @@ struct ZdcQVectors {
     return calibConstant;
   }
 
-
   void process(UsedCollisions::iterator const& collision,
                BCsRun3 const& /*bcs*/,
                aod::Zdcs const& /*zdcs*/)
@@ -410,7 +408,7 @@ struct ZdcQVectors {
 
     isSelected = true;
 
-    // TODO Implement other ZDC estimators 
+    // TODO Implement other ZDC estimators
     auto cent = collision.centFT0C();
     if (cfgFT0Cvariant1)
       cent = collision.centFT0CVariant1();
@@ -418,7 +416,7 @@ struct ZdcQVectors {
       cent = collision.centFT0M();
     if (cfgFV0A)
       cent = collision.centFV0A();
-    if (cfgNGlobal) 
+    if (cfgNGlobal)
       cent = collision.centNGlobal();
 
     if (cent < 0 || cent > 90) {
@@ -608,45 +606,45 @@ struct ZdcQVectors {
       if (counter < 1)
         LOGF(warning, "Calibation files missing!!! Output created with q-vectors right after energy gain eq. !!");
       if (isSelected)
-      fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality); 
+        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0], q[1], q[2], q[3], isSelected, 0, 0);
       counter++;
       return;
-    } else if (cal.atIteration == 5 && cal.atStep == 4){
-      std::vector<double> qRec(4); 
+    } else if (cal.atIteration == 5 && cal.atStep == 4) {
+      std::vector<double> qRec(4);
       fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
-      qRec = q; 
+      qRec = q;
 
-      // vector of 4 
+      // vector of 4
       std::vector<double> corrQxA;
       std::vector<double> corrQyA;
       std::vector<double> corrQxC;
       std::vector<double> corrQyC;
 
-      int pb = 0; 
+      int pb = 0;
 
-      for(int it = 1; it<6; it++){
+      for (int it = 1; it < 6; it++) {
         corrQxA.push_back(getCorrection<THnSparse>(it, 0, names[0][0].Data()));
         corrQyA.push_back(getCorrection<THnSparse>(it, 0, names[0][1].Data()));
         corrQxC.push_back(getCorrection<THnSparse>(it, 0, names[0][2].Data()));
         corrQyC.push_back(getCorrection<THnSparse>(it, 0, names[0][3].Data()));
 
-        pb++; 
+        pb++;
 
-        for(int step = 1; step<5; step++){
-          corrQxA.push_back(getCorrection<TProfile>( it, step, names[step][0].Data()));
-          corrQyA.push_back(getCorrection<TProfile>( it, step, names[step][1].Data()));
-          corrQxC.push_back(getCorrection<TProfile>( it, step, names[step][2].Data()));
-          corrQyC.push_back(getCorrection<TProfile>( it, step, names[step][3].Data()));
-          pb++; 
+        for (int step = 1; step < 5; step++) {
+          corrQxA.push_back(getCorrection<TProfile>(it, step, names[step][0].Data()));
+          corrQyA.push_back(getCorrection<TProfile>(it, step, names[step][1].Data()));
+          corrQxC.push_back(getCorrection<TProfile>(it, step, names[step][2].Data()));
+          corrQyC.push_back(getCorrection<TProfile>(it, step, names[step][3].Data()));
+          pb++;
         }
       }
 
-      for(int cor = 0; cor < pb; cor++){
-        qRec[0] -= corrQxA[cor]; 
-        qRec[1] -= corrQyA[cor]; 
-        qRec[2] -= corrQxC[cor]; 
-        qRec[3] -= corrQyC[cor]; 
+      for (int cor = 0; cor < pb; cor++) {
+        qRec[0] -= corrQxA[cor];
+        qRec[1] -= corrQyA[cor];
+        qRec[2] -= corrQxC[cor];
+        qRec[3] -= corrQyC[cor];
       }
 
       if (counter < 1)
