@@ -25,6 +25,11 @@
 #include "Framework/ASoAHelpers.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using namespace o2::aod;
+
 struct MultPVConverter000_001 {
   Produces<o2::aod::ReducedEventsMultPV_001> multPV_001;
   void process(o2::aod::ReducedEventsMultPV_001 const& multsPV)
