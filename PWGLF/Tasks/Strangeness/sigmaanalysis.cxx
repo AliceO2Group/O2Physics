@@ -32,15 +32,15 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-#include "PWGLF/DataModel/LFStrangenessMLTables.h"
-#include "PWGLF/DataModel/LFSigmaTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessMLTables.h"
+#include "PWGLF/DataModel/LFSigmaTables.h"
 #include "CCDB/BasicCCDBManager.h"
 #include <TFile.h>
 #include <TH2F.h>
@@ -52,13 +52,18 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using std::array;
 
+using std::array;
 using V0MCSigmas = soa::Join<aod::Sigma0Cores, aod::SigmaPhotonExtras, aod::SigmaLambdaExtras, aod::SigmaMCCores>;
 using V0Sigmas = soa::Join<aod::Sigma0Cores, aod::SigmaPhotonExtras, aod::SigmaLambdaExtras>;
 
 struct sigmaanalysis {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  // Interaction rate selection:
+  
+  Configurable<float> IRMinSel{"IRMinSel", -1, "Min Interaction Rate (kHz). Leave -1 if no selection desired."};
+  Configurable<float> IRMaxSel{"IRMaxSel", -1, "Max Interaction Rate (kHz). Leave -1 if no selection desired."};
 
   // Analysis strategy:
   Configurable<bool> fUseMLSel{"fUseMLSel", false, "Flag to use ML selection. If False, the standard selection is applied."};
@@ -197,7 +202,6 @@ struct sigmaanalysis {
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(28, "Lambda/ALambda Mass");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(29, "Sigma Y");
     
-
     // Photon Selection QA histos
     histos.add("GeneralQA/hPhotonMass", "hPhotonMass", kTH1F, {axisPhotonMass});
     histos.add("GeneralQA/hPhotonNegpT", "hPhotonNegpT", kTH1F, {axisPt});
@@ -495,7 +499,7 @@ struct sigmaanalysis {
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 24.);
       if (cand.lambdaLifeTime() > LambdaMaxLifeTime)
         return false;
-
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
       // Separating lambda and antilambda selections:
       if (isLambdalike) { // Lambda selection
         histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_LambdaPr"), cand.lambdaPosPrTPCNSigma(), cand.lambdaPrTOFNSigma());
@@ -516,12 +520,12 @@ struct sigmaanalysis {
         // DCA Selection
         histos.fill(HIST("GeneralQA/hLambdaDCANegToPV"), cand.lambdaDCANegPV());
         histos.fill(HIST("GeneralQA/hLambdaDCAPosToPV"), cand.lambdaDCAPosPV());
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
         if ((TMath::Abs(cand.lambdaDCAPosPV()) < LambdaMinDCAPosToPv) || (TMath::Abs(cand.lambdaDCANegPV()) < LambdaMinDCANegToPv))
           return false;
 
         // Mass Selection
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 27.);
         histos.fill(HIST("GeneralQA/hLambdaMass"), cand.lambdaMass());
         if (TMath::Abs(cand.lambdaMass() - 1.115683) > LambdaWindow)
           return false;
@@ -562,13 +566,12 @@ struct sigmaanalysis {
         // DCA Selection
         histos.fill(HIST("GeneralQA/hALambdaDCANegToPV"), cand.lambdaDCANegPV());
         histos.fill(HIST("GeneralQA/hALambdaDCAPosToPV"), cand.lambdaDCAPosPV());
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
         if ((TMath::Abs(cand.lambdaDCAPosPV()) < ALambdaMinDCAPosToPv) || (TMath::Abs(cand.lambdaDCANegPV()) < ALambdaMinDCANegToPv))
           return false;
 
         // Mass Selection
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
-        histos.fill(HIST("GeneralQA/hLambdaMass"), cand.lambdaMass());
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 27.);
         histos.fill(HIST("GeneralQA/hAntiLambdaMass"), cand.antilambdaMass());
         if (TMath::Abs(cand.antilambdaMass() - 1.115683) > LambdaWindow)
           return false;
@@ -576,11 +579,11 @@ struct sigmaanalysis {
 
       // Sigma0 selection
       histos.fill(HIST("GeneralQA/hSigmaY"), cand.sigmaRapidity());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 27.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 28.);
       if (TMath::Abs(cand.sigmaRapidity()) > SigmaMaxRap)
         return false;
       histos.fill(HIST("GeneralQA/hSigmaOPAngle"), cand.sigmaOPAngle());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 28.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 29.);
     }
     return true;
   }
@@ -589,6 +592,9 @@ struct sigmaanalysis {
   {
     for (auto& sigma : sigmas) { // selecting Sigma0-like candidates
       if (doMCAssociation && !(sigma.isSigma() || sigma.isAntiSigma())) {
+        continue;
+      }
+      if ((IRMaxSel!=-1) && (IRMinSel!=-1) && ((sigma.sigmaIR()<=IRMinSel) || (sigma.sigmaIR()>=IRMaxSel))){
         continue;
       }
       // Filling histos before analysis selection
@@ -696,6 +702,9 @@ struct sigmaanalysis {
   void processRealData(V0Sigmas const& sigmas)
   {
     for (auto& sigma : sigmas) { // selecting Sigma0-like candidates
+      if ((IRMaxSel!=-1) && (IRMinSel!=-1) && ((sigma.sigmaIR()<=IRMinSel) || (sigma.sigmaIR()>=IRMaxSel))){
+        continue;
+      }
       histos.fill(HIST("GeneralQA/h2dArmenterosBeforeSel"), sigma.photonAlpha(), sigma.photonQt());
       histos.fill(HIST("GeneralQA/h2dArmenterosBeforeSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
       histos.fill(HIST("GeneralQA/hMassSigma0BeforeSel"), sigma.sigmaMass());
@@ -713,7 +722,6 @@ struct sigmaanalysis {
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
         histos.fill(HIST("GeneralQA/hLambdaMassSelected"), sigma.lambdaMass());
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 29.);
         histos.fill(HIST("Sigma0/hMassSigma0"), sigma.sigmaMass());
         histos.fill(HIST("Sigma0/hPtSigma0"), sigma.sigmapT());
         histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
@@ -727,7 +735,6 @@ struct sigmaanalysis {
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
         histos.fill(HIST("GeneralQA/hAntiLambdaMassSelected"), sigma.antilambdaMass());
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 29.);
         histos.fill(HIST("AntiSigma0/hMassAntiSigma0"), sigma.sigmaMass());
         histos.fill(HIST("AntiSigma0/hPtAntiSigma0"), sigma.sigmapT());
         histos.fill(HIST("AntiSigma0/hRapidityAntiSigma0"), sigma.sigmaRapidity());

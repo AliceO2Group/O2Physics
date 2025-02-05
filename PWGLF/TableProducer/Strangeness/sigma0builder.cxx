@@ -33,15 +33,16 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-#include "PWGLF/DataModel/LFStrangenessMLTables.h"
-#include "PWGLF/DataModel/LFSigmaTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessMLTables.h"
+#include "PWGLF/DataModel/LFSigmaTables.h"
 #include "CCDB/BasicCCDBManager.h"
 #include <TFile.h>
 #include <TH2F.h>
@@ -60,6 +61,8 @@ using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras,
 using V0StandardDerivedDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0GammaMLScores>;
 
 struct sigma0builder {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  ctpRateFetcher rateFetcher;
   SliceCache cache;
 
   Produces<aod::Sigma0Cores> sigma0cores;             // save sigma0 candidates for analysis
@@ -76,6 +79,7 @@ struct sigma0builder {
 
   // Event selection
   Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
+  Configurable<std::string> irSource{"irSource", "T0VTX", "Source of the interaction rate"};
   struct : ConfigurableGroup {
     Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
     Configurable<bool> requireTriggerTVX{"requireTriggerTVX", true, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level"};
@@ -148,6 +152,7 @@ struct sigma0builder {
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Centrality"};
   ConfigurableAxis axisDeltaPt{"axisDeltaPt", {100, -1.0, +1.0}, "#Delta(p_{T})"};
+  ConfigurableAxis axisIRBinning{"axisIRBinning", {5000, 0, 500000}, "Binning for the interaction rate (kHz)"};
 
   // Invariant Mass
   ConfigurableAxis axisSigmaMass{"axisSigmaMass", {1000, 1.10f, 1.30f}, "M_{#Sigma^{0}} (GeV/c^{2})"};
@@ -171,6 +176,11 @@ struct sigma0builder {
   int nSigmaCandidates = 0;
   void init(InitContext const&)
   {
+    // setting CCDB service
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setFatalWhenNull(false);
+
     // Event Counters
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{20, -0.5f, +18.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
@@ -198,6 +208,7 @@ struct sigma0builder {
     }
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {axisCentrality});
+    histos.add("hInteractionRate", "hInteractionRate", kTH1F, {axisIRBinning});
     histos.add("hCandidateBuilderSelection", "hCandidateBuilderSelection", kTH1F, {axisCandSel});
     histos.get<TH1>(HIST("hCandidateBuilderSelection"))->GetXaxis()->SetBinLabel(1, "No Sel");
     histos.get<TH1>(HIST("hCandidateBuilderSelection"))->GetXaxis()->SetBinLabel(2, "Photon Mass Cut");
@@ -730,9 +741,10 @@ struct sigma0builder {
     float fSigmaRap = RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0);
     float fSigmaOPAngle = v1.Angle(v2);
     float fSigmaCentrality = coll.centFT0C();
+    double fSigmaIR = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource)*1.e-3;
 
     // Filling TTree for ML analysis
-    sigma0cores(fSigmapT, fSigmaMass, fSigmaRap, fSigmaOPAngle, fSigmaCentrality);
+    sigma0cores(fSigmapT, fSigmaMass, fSigmaRap, fSigmaOPAngle, fSigmaCentrality, fSigmaIR);
 
     sigmaPhotonExtras(fPhotonPt, fPhotonMass, fPhotonQt, fPhotonAlpha, fPhotonRadius,
                       fPhotonCosPA, fPhotonDCADau, fPhotonDCANegPV, fPhotonDCAPosPV, fPhotonZconv,
@@ -762,8 +774,10 @@ struct sigma0builder {
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = coll.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionMCDerived, collIdx);
+      double interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource)*1.e-3;
 
       histos.fill(HIST("hEventCentrality"), coll.centFT0C());
+      histos.fill(HIST("hInteractionRate"), interactionRate);
       // V0 table sliced
       for (auto& gamma : V0Table_thisCollision) { // selecting photons from Sigma0
         float centrality = coll.centFT0C();
@@ -891,8 +905,10 @@ struct sigma0builder {
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = coll.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionSTDDerived, collIdx);
+      double interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource)*1.e-3;
 
       histos.fill(HIST("hEventCentrality"), coll.centFT0C());
+      histos.fill(HIST("hInteractionRate"), interactionRate);
 
       // V0 table sliced
       for (auto& gamma : V0Table_thisCollision) {    // selecting photons from Sigma0
