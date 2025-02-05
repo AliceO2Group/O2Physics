@@ -203,6 +203,7 @@ struct K0MixedEvents {
     registry.add("VTXc", "VTXc", kTH1D, {{100, -20., 20., "vtx"}});
     registry.add("VTX", "VTX", kTH1D, {{100, -20., 20., "vtx"}});
     registry.add("multPerc", "multPerc", kTH1D, {multPercentileAxis});
+
     registry.add("SEcand", "SEcand", kTH1D, {{2, 0.5, 2.5}});
     registry.add("SE", "SE", kTH1D, {invMassAxis});
     registry.add("ME", "ME", kTH1D, {invMassAxis});
@@ -236,6 +237,7 @@ struct K0MixedEvents {
     if (!doprocessMCReco) {
       return;
     }
+    registry.add("MC/multPerc", "multPerc", kTH1D, {multPercentileAxis});
     if (useCentralityInvMass) {
       registry.add("MC/generatedInRecoEvs", "generatedInRecoEvs", kTH2D, {ptAxis, multPercentileAxis});
     } else {
@@ -521,9 +523,16 @@ struct K0MixedEvents {
                      aod::McParticles const& mcParticles)
   {
     for (const auto& col : collisions) {
+      if (!col.sel8()) {
+        continue;
+      }
+      if (std::abs(col.posZ()) > _vertexZ) {
+        continue;
+      }
       if (!col.has_mcCollision()) {
         continue;
       }
+      registry.fill(HIST("MC/multPerc"), col.centFT0M());
       const auto& mcCollision = col.mcCollision_as<GenMCCollisions>();
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
       for (const auto& mcParticle : particlesInCollision) {
