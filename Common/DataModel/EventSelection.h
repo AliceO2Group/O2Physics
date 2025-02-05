@@ -20,6 +20,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/QualitySelectionParams.h"
 
 namespace o2::aod
 {
