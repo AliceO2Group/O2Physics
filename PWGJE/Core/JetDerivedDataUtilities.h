@@ -29,15 +29,15 @@ static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(2
 
 enum JCollisionSel {
   sel8 = 0,
-  sel8Full = 1,
-  sel8FullPbPb = 2,
-  selMC = 3,
-  selMCFull = 4,
-  selMCFullPbPb = 5,
-  selUnanchoredMC = 6,
-  selTVX = 7,
-  sel7 = 8,
-  sel7KINT7 = 9
+  sel7 = 1,
+  sel7KINT7 = 2,
+  selTVX = 3,
+  selNoTimeFrameBorder = 4,
+  selNoITSROFrameBorder = 5,
+  selNoSameBunchPileup = 6,
+  selIsGoodZvtxFT0vsPV = 7,
+  selNoCollInTimeRangeStandard = 8,
+  selNoCollInRofStandard = 9
 };
 
 enum JCollisionSubGeneratorId {
@@ -46,50 +46,96 @@ enum JCollisionSubGeneratorId {
 };
 
 template <typename T>
-bool selectCollision(T const& collision, int eventSelection = -1, bool skipMBGapEvents = true)
+bool selectCollision(T const& collision, std::vector<int> eventSelectionMaskBits, bool skipMBGapEvents = true)
 {
   if (skipMBGapEvents && collision.subGeneratorId() == JCollisionSubGeneratorId::mbGap) {
     return false;
   }
-  if (eventSelection == -1) {
+  if (eventSelectionMaskBits.size() == 0) {
     return true;
   }
-  return (collision.eventSel() & (1 << eventSelection));
+  for (auto eventSelectionMaskBit : eventSelectionMaskBits) {
+    if (!(collision.eventSel() & (1 << eventSelectionMaskBit))) {
+      return false;
+    }
+  }
+  return true;
 }
 
-int initialiseEventSelection(std::string eventSelection)
+bool eventSelectionMasksContainSelection(std::string eventSelectionMasks, std::string selection)
 {
-  if (eventSelection == "sel8") {
-    return JCollisionSel::sel8;
+  size_t position = 0;
+  while ((position = eventSelectionMasks.find(selection, position)) != std::string::npos) {
+    bool validStart = (position == 0 || eventSelectionMasks[position - 1] == '+');
+    bool validEnd = (position + selection.length() == eventSelectionMasks.length() || eventSelectionMasks[position + selection.length()] == '+');
+    if (validStart && validEnd) {
+      return true;
+    }
+    position += selection.length();
   }
-  if (eventSelection == "sel8Full") {
-    return JCollisionSel::sel8Full;
+  return false;
+}
+
+std::vector<int> initialiseEventSelectionBits(std::string eventSelectionMasks)
+{
+  std::vector<int> eventSelectionMaskBits;
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "sel8")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::sel8);
   }
-  if (eventSelection == "sel8FullPbPb") {
-    return JCollisionSel::sel8FullPbPb;
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "sel7")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::sel7);
   }
-  if (eventSelection == "selMC") {
-    return JCollisionSel::selMC;
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "sel7KINT7")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::sel7KINT7);
   }
-  if (eventSelection == "selMCFull") {
-    return JCollisionSel::selMCFull;
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "TVX")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selTVX);
   }
-  if (eventSelection == "selMCFullPbPb") {
-    return JCollisionSel::selMCFullPbPb;
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "NoTimeFrameBorder")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoTimeFrameBorder);
   }
-  if (eventSelection == "selUnanchoredMC") {
-    return JCollisionSel::selUnanchoredMC;
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "NoITSROFrameBorder")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoITSROFrameBorder);
   }
-  if (eventSelection == "selTVX") {
-    return JCollisionSel::selTVX;
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "NoSameBunchPileup")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoSameBunchPileup);
   }
-  if (eventSelection == "sel7") {
-    return JCollisionSel::sel7;
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "IsGoodZvtxFT0vsPV")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selIsGoodZvtxFT0vsPV);
   }
-  if (eventSelection == "sel7KINT7") {
-    return JCollisionSel::sel7KINT7;
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "NoCollInTimeRangeStandard")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoCollInTimeRangeStandard);
   }
-  return -1;
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "NoCollInRofStandard")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoCollInRofStandard);
+  }
+
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "sel8Full")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::sel8);
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoSameBunchPileup);
+  }
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "sel8FullPbPb")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoCollInTimeRangeStandard);
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoCollInRofStandard);
+  }
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "selUnanchoredMC")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selTVX);
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoTimeFrameBorder);
+  }
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "selMC")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selTVX);
+  }
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "selMCFull")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selTVX);
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoTimeFrameBorder);
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoSameBunchPileup);
+  }
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "selMCFullPbPb")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selTVX);
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoCollInTimeRangeStandard);
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoCollInRofStandard);
+  }
+  return eventSelectionMaskBits;
 }
 
 template <typename T>
@@ -98,12 +144,6 @@ uint16_t setEventSelectionBit(T const& collision)
   uint16_t bit = 0;
   if (collision.sel8()) {
     SETBIT(bit, JCollisionSel::sel8);
-    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      SETBIT(bit, JCollisionSel::sel8Full);
-      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-        SETBIT(bit, JCollisionSel::sel8FullPbPb);
-      }
-    }
   }
   if (collision.sel7()) {
     SETBIT(bit, JCollisionSel::sel7);
@@ -113,16 +153,24 @@ uint16_t setEventSelectionBit(T const& collision)
   }
   if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
     SETBIT(bit, JCollisionSel::selTVX);
-    SETBIT(bit, JCollisionSel::selUnanchoredMC);
-    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      SETBIT(bit, JCollisionSel::selMC);
-      if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-        SETBIT(bit, JCollisionSel::selMCFull);
-        if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-          SETBIT(bit, JCollisionSel::selMCFullPbPb);
-        }
-      }
-    }
+  }
+  if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    SETBIT(bit, JCollisionSel::selNoTimeFrameBorder);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    SETBIT(bit, JCollisionSel::selNoITSROFrameBorder);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    SETBIT(bit, JCollisionSel::selNoSameBunchPileup);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    SETBIT(bit, JCollisionSel::selIsGoodZvtxFT0vsPV);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    SETBIT(bit, JCollisionSel::selNoCollInTimeRangeStandard);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    SETBIT(bit, JCollisionSel::selNoCollInRofStandard);
   }
   return bit;
 }
@@ -210,67 +258,67 @@ std::vector<int> initialiseTriggerMaskBits(std::string triggerMasks)
 {
   std::vector<int> triggerMaskBits;
   if (triggerMasksContainTrigger(triggerMasks, "fJetChLowPt")) {
-    triggerMaskBits.push_back(JetChLowPt);
+    triggerMaskBits.push_back(JTrigSel::JetChLowPt);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fJetChHighPt")) {
-    triggerMaskBits.push_back(JetChHighPt);
+    triggerMaskBits.push_back(JTrigSel::JetChHighPt);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fTrackLowPt")) {
-    triggerMaskBits.push_back(TrackLowPt);
+    triggerMaskBits.push_back(JTrigSel::TrackLowPt);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fTrackHighPt")) {
-    triggerMaskBits.push_back(TrackHighPt);
+    triggerMaskBits.push_back(JTrigSel::TrackHighPt);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fJetD0ChLowPt")) {
-    triggerMaskBits.push_back(JetD0ChLowPt);
+    triggerMaskBits.push_back(JTrigSel::JetD0ChLowPt);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fJetD0ChHighPt")) {
-    triggerMaskBits.push_back(JetD0ChHighPt);
+    triggerMaskBits.push_back(JTrigSel::JetD0ChHighPt);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fJetLcChLowPt")) {
-    triggerMaskBits.push_back(JetLcChLowPt);
+    triggerMaskBits.push_back(JTrigSel::JetLcChLowPt);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fJetLcChHighPt")) {
-    triggerMaskBits.push_back(JetLcChHighPt);
+    triggerMaskBits.push_back(JTrigSel::JetLcChHighPt);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fEMCALReadout")) {
-    triggerMaskBits.push_back(EMCALReadout);
+    triggerMaskBits.push_back(JTrigSel::EMCALReadout);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fJetFullHighPt")) {
-    triggerMaskBits.push_back(JetFullHighPt);
+    triggerMaskBits.push_back(JTrigSel::JetFullHighPt);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fJetFullLowPt")) {
-    triggerMaskBits.push_back(JetFullLowPt);
+    triggerMaskBits.push_back(JTrigSel::JetFullLowPt);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fJetNeutralHighPt")) {
-    triggerMaskBits.push_back(JetNeutralHighPt);
+    triggerMaskBits.push_back(JTrigSel::JetNeutralHighPt);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fJetNeutralLowPt")) {
-    triggerMaskBits.push_back(JetNeutralLowPt);
+    triggerMaskBits.push_back(JTrigSel::JetNeutralLowPt);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fGammaVeryHighPtEMCAL")) {
-    triggerMaskBits.push_back(GammaVeryHighPtEMCAL);
+    triggerMaskBits.push_back(JTrigSel::GammaVeryHighPtEMCAL);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fGammaVeryHighPtDCAL")) {
-    triggerMaskBits.push_back(GammaVeryHighPtDCAL);
+    triggerMaskBits.push_back(JTrigSel::GammaVeryHighPtDCAL);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fGammaHighPtEMCAL")) {
-    triggerMaskBits.push_back(GammaHighPtEMCAL);
+    triggerMaskBits.push_back(JTrigSel::GammaHighPtEMCAL);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fGammaHighPtDCAL")) {
-    triggerMaskBits.push_back(GammaHighPtDCAL);
+    triggerMaskBits.push_back(JTrigSel::GammaHighPtDCAL);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fGammaLowPtEMCAL")) {
-    triggerMaskBits.push_back(GammaLowPtEMCAL);
+    triggerMaskBits.push_back(JTrigSel::GammaLowPtEMCAL);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fGammaLowPtDCAL")) {
-    triggerMaskBits.push_back(GammaLowPtDCAL);
+    triggerMaskBits.push_back(JTrigSel::GammaLowPtDCAL);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fGammaVeryLowPtEMCAL")) {
-    triggerMaskBits.push_back(GammaVeryLowPtEMCAL);
+    triggerMaskBits.push_back(JTrigSel::GammaVeryLowPtEMCAL);
   }
   if (triggerMasksContainTrigger(triggerMasks, "fGammaVeryLowPtDCAL")) {
-    triggerMaskBits.push_back(GammaVeryLowPtDCAL);
+    triggerMaskBits.push_back(JTrigSel::GammaVeryLowPtDCAL);
   }
   return triggerMaskBits;
 }

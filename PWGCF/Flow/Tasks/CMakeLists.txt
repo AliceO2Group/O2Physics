@@ -30,7 +30,7 @@ o2physics_add_dpl_workflow(flow-gfw-task
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(flow-zdc-task
-                    SOURCES FlowZDCtask.cxx
+                    SOURCES flowZdcTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 

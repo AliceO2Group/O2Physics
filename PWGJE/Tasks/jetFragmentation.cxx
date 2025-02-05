@@ -14,6 +14,7 @@
 /// \author Gijs van Weelden <g.van.weelden@cern.ch>
 //
 
+#include <vector>
 #include "TH1F.h"
 #include "TTree.h"
 
@@ -160,11 +161,11 @@ struct JetFragmentation {
   Preslice<aod::JetParticles> JetParticlesPerCollision = aod::jmcparticle::mcCollisionId;
   Preslice<aod::McParticles> ParticlesPerCollision = aod::mcparticle::mcCollisionId;
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   void init(InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(evSel));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(evSel));
 
     // Axes
     AxisSpec jetPtAxis = {binJetPt, "#it{p}_{T}^{ jet}"}; // Data
@@ -2320,7 +2321,7 @@ struct JetFragmentation {
     if (!collision.has_mcCollision()) {
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     double nJets = 0, nTracks = 0;
@@ -2365,7 +2366,7 @@ struct JetFragmentation {
                        ChargedJetsWithConstituents const& jets,
                        aod::JetTracks const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     double nJets = 0, nTracks = 0;
@@ -2398,7 +2399,7 @@ struct JetFragmentation {
     if (!collision.has_mcCollision()) {
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     double weight = collision.mcCollision().weight();
@@ -2485,7 +2486,7 @@ struct JetFragmentation {
     if (!collision.has_mcCollision()) {
       return;
     }
-    // if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    // if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
     //   return;
     // }
     double weight = collision.mcCollision().weight();
@@ -2512,7 +2513,7 @@ struct JetFragmentation {
     if (!jcoll.has_mcCollision()) {
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
     }
     double weight = jcoll.mcCollision().weight();
@@ -2665,7 +2666,7 @@ struct JetFragmentation {
                          aod::Collisions const&,
                          aod::V0Datas const& allV0s)
   {
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
     }
     // This is necessary, because jets are linked to aod::JetCollisions, but V0s are linked to Collisions
@@ -2744,7 +2745,7 @@ struct JetFragmentation {
   // ---------------- V0 jets ----------------
   void processDataV0JetsFrag(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, soa::Join<aod::V0ChargedJets, aod::V0ChargedJetConstituents> const& v0jets, aod::CandidatesV0Data const& v0s)
   {
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("data/V0/nV0sEvent"), v0s.size());
@@ -2781,7 +2782,7 @@ struct JetFragmentation {
 
   void processDataV0JetsFragWithWeights(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, soa::Join<aod::V0ChargedJets, aod::V0ChargedJetConstituents> const& v0jets, aod::CandidatesV0Data const& v0s)
   {
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("data/V0/nV0sEvent"), v0s.size());
@@ -2828,7 +2829,7 @@ struct JetFragmentation {
 
   void processDataV0PerpCone(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, aod::V0ChargedJets const& v0jets, aod::CandidatesV0Data const& v0s)
   {
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
     }
     if (v0s.size() == 0) {
@@ -2851,7 +2852,7 @@ struct JetFragmentation {
     if (!jcoll.has_mcCollision()) {
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
     }
     double weight = jcoll.mcCollision().weight();
@@ -2971,7 +2972,7 @@ struct JetFragmentation {
 
   void processMcV0PerpCone(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0Jets const& v0jets, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const& v0s, aod::McParticles const& particles)
   {
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
     }
     if (v0s.size() == 0) {
@@ -2992,7 +2993,7 @@ struct JetFragmentation {
 
   void processMcV0MatchedPerpCone(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0Jets const& v0jets, MatchedMCPV0Jets const&, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const& v0s, aod::McParticles const& particles)
   {
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
     }
     if (v0s.size() == 0) {

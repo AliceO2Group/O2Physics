@@ -134,6 +134,8 @@ enum CollisionSelectionFlags {
   kISVERTEXITSTPCBIT,       ///< is vertex TPC and ITS
   kISVERTEXTOFMATCHEDBIT,   ///< vertex contributor with TOF matched
   kISVERTEXTRDMATCHEDBIT,   ///< vertex contributor with TRD matche
+  kNOCOLLINTIMERANGEBIT,    ///< no collision in time range
+  kNOCOLLINROFBIT,          ///< no collision in readout
   kOCCUPANCYBIT,            ///< occupancy within limits
   kISGOODITSLAYER3BIT,      ///< right level of inactive chips for ITS layer 3
   kISGOODITSLAYER0123BIT,   ///< right level of inactive chips for ITS layers 0,1,2, and 3
@@ -381,6 +383,7 @@ TriggerSelectionType fTriggerSelection = kMB;
 OccupancyEstimationType fOccupancyEstimation = kNOOCC; /* the occupancy estimator to use */
 ItsDeadMapsCheckType fItsDeadMapCheck = kNOCHECK;      /* the check of the ITS dead maps to use */
 
+float fMinOccupancy = 0.0f; /* the minimum allowed occupancy */
 float fMaxOccupancy = 1e6f; /* the maximum allowed occupancy */
 
 /* adaptations for the pp nightly checks */
@@ -612,7 +615,9 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
     case kppRun3:
     case kPbPbRun3: {
       auto run3Accepted = [](auto const& coll) {
-        return coll.sel8();
+        return coll.sel8() &&
+               coll.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) &&
+               coll.selection_bit(aod::evsel::kNoCollInRofStandard);
       };
       auto run3ExtraAccepted = [](auto const& coll) {
         return coll.sel8() &&
@@ -627,6 +632,8 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
         flags.set(kISVERTEXITSTPCBIT, coll.selection_bit(aod::evsel::kIsVertexITSTPC));
         flags.set(kISVERTEXTOFMATCHEDBIT, coll.selection_bit(aod::evsel::kIsVertexTOFmatched));
         flags.set(kISVERTEXTRDMATCHEDBIT, coll.selection_bit(aod::evsel::kIsVertexTRDmatched));
+        flags.set(kNOCOLLINTIMERANGEBIT, coll.selection_bit(aod::evsel::kNoCollInTimeRangeStandard));
+        flags.set(kNOCOLLINROFBIT, coll.selection_bit(aod::evsel::kNoCollInRofStandard));
         flags.set(kISGOODITSLAYER3BIT, coll.selection_bit(aod::evsel::kIsGoodITSLayer3));
         flags.set(kISGOODITSLAYER0123BIT, coll.selection_bit(aod::evsel::kIsGoodITSLayer0123));
         flags.set(kISGOODITSLAYERALLBIT, coll.selection_bit(aod::evsel::kIsGoodITSLayersAll));
@@ -932,14 +939,14 @@ inline bool selectOnOccupancy(CollisionObject collision)
       collisionFlags.set(kOCCUPANCYBIT);
       return true;
     case kTRACKSOCC:
-      if (collision.trackOccupancyInTimeRange() < fMaxOccupancy) {
+      if ((fMinOccupancy <= collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < fMaxOccupancy)) {
         collisionFlags.set(kOCCUPANCYBIT);
         return true;
       } else {
         return false;
       }
     case kFT0COCC:
-      if (collision.ft0cOccupancyInTimeRange() < fMaxOccupancy) {
+      if ((fMinOccupancy <= collision.ft0cOccupancyInTimeRange()) && (collision.ft0cOccupancyInTimeRange() < fMaxOccupancy)) {
         collisionFlags.set(kOCCUPANCYBIT);
         return true;
       } else {

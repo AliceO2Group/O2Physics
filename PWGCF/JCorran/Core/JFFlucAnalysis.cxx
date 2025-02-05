@@ -116,6 +116,13 @@ TComplex JFFlucAnalysis::Q(int n, int p)
   return n >= 0 ? pqvecs->QvectorQC[n][p] : C(pqvecs->QvectorQC[-n][p]);
 }
 
+TComplex JFFlucAnalysis::Q(const JQVectorsT& qvecs, int n, int p)
+{
+  // Return QvectorQC
+  // Q{-n, p} = Q{n, p}*
+  return n >= 0 ? qvecs.QvectorQC[n][p] : C(qvecs.QvectorQC[-n][p]);
+}
+
 TComplex JFFlucAnalysis::Two(int n1, int n2)
 {
   // two-particle correlation <exp[i(n1*phi1 + n2*phi2)]>
@@ -124,9 +131,26 @@ TComplex JFFlucAnalysis::Two(int n1, int n2)
 
 TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 {
-
   return Q(n1, 1) * Q(n2, 1) * Q(n3, 1) * Q(n4, 1) - Q(n1 + n2, 2) * Q(n3, 1) * Q(n4, 1) - Q(n2, 1) * Q(n1 + n3, 2) * Q(n4, 1) - Q(n1, 1) * Q(n2 + n3, 2) * Q(n4, 1) + 2. * Q(n1 + n2 + n3, 3) * Q(n4, 1) - Q(n2, 1) * Q(n3, 1) * Q(n1 + n4, 2) + Q(n2 + n3, 2) * Q(n1 + n4, 2) - Q(n1, 1) * Q(n3, 1) * Q(n2 + n4, 2) + Q(n1 + n3, 2) * Q(n2 + n4, 2) + 2. * Q(n3, 1) * Q(n1 + n2 + n4, 3) - Q(n1, 1) * Q(n2, 1) * Q(n3 + n4, 2) + Q(n1 + n2, 2) * Q(n3 + n4, 2) + 2. * Q(n2, 1) * Q(n1 + n3 + n4, 3) + 2. * Q(n1, 1) * Q(n2 + n3 + n4, 3) - 6. * Q(n1 + n2 + n3 + n4, 4);
 }
+
+TComplex JFFlucAnalysis::TwoDiff(int n1, int n2)
+{
+#define dp(n, p) Q(*pqvecs, n, p)    // POI
+#define dQ(n, p) Q(*pqvecsRef, n, p) // REF
+#define dq(n, p) dp(n, p)            //(dp(n,p)+dQ(n,p)) //POI+REF in narrow bin. Since there is no mass for ref, q = POI
+                                     // #define dq(n,p) (dp(n,p)+dQ(n,p)) //POI+REF in narrow bin. Since there is no mass for ref, q = POI
+  return dp(n1, 1) * dQ(n2, 1) - dq(n1 + n2, 2);
+}
+
+TComplex JFFlucAnalysis::FourDiff(int n1, int n2, int n3, int n4)
+{
+  return dp(n1, 1) * dQ(n2, 1) * dQ(n3, 1) * dQ(n4, 1) - dq(n1 + n2, 2) * dQ(n3, 1) * dQ(n4, 1) - dq(n1 + n3, 2) * dQ(n2, 1) * dQ(n4, 1) - dp(n1, 1) * dQ(n2 + n3, 2) * dQ(n4, 1) + 2. * dq(n1 + n2 + n3, 3) * dQ(n4, 1) - dQ(n2, 1) * dQ(n3, 1) * dq(n1 + n4, 2) + dQ(n2 + n3, 2) * dq(n1 + n4, 2) - dp(n1, 1) * dQ(n3, 1) * dQ(n2 + n4, 2) + dq(n1 + n3, 2) * dQ(n2 + n4, 2) + 2. * dQ(n3, 1) * dq(n1 + n2 + n4, 3) - dp(n1, 1) * dQ(n2, 1) * dQ(n3 + n4, 2) + dq(n1 + n2, 2) * dQ(n3 + n4, 2) + 2. * dQ(n2, 1) * dq(n1 + n3 + n4, 3) + 2. * dp(n1, 1) * dQ(n2 + n3 + n4, 3) - 6. * dq(n1 + n2 + n3 + n4, 4);
+}
+
+#undef dp
+#undef dQ
+#undef dq
 #undef C
 
 //________________________________________________________________________
@@ -296,19 +320,21 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/) // NOLINT(readability/casting)
     }
   }
 
+  auto four = [&](int a, int b, int c, int d) -> TComplex { return pqvecsRef ? FourDiff(a, b, c, d) : Four(a, b, c, d); };
+  auto two = [&](int a, int b) -> TComplex { return pqvecsRef ? TwoDiff(a, b) : Two(a, b); };
   Double_t event_weight_four = 1.0;
   Double_t event_weight_two = 1.0;
   if (flags & kFlucEbEWeighting) {
-    event_weight_four = Four(0, 0, 0, 0).Re();
-    event_weight_two = Two(0, 0).Re();
+    event_weight_four = four(0, 0, 0, 0).Re();
+    event_weight_two = two(0, 0).Re();
   }
 
   for (UInt_t ih = 2; ih < kNH; ih++) {
     for (UInt_t ihh = 2, mm = (ih < kcNH ? ih : static_cast<UInt_t>(kcNH)); ihh < mm; ihh++) {
-      TComplex scfour = Four(ih, ihh, -ih, -ihh) / Four(0, 0, 0, 0).Re();
+      TComplex scfour = four(ih, ihh, -ih, -ihh) / four(0, 0, 0, 0).Re();
       pht[HIST_THN_SC_with_QC_4corr]->Fill(fCent, fAvgInvariantMass, ih, ihh, scfour.Re(), event_weight_four);
     }
-    TComplex sctwo = Two(ih, -ih) / Two(0, 0).Re();
+    TComplex sctwo = two(ih, -ih) / two(0, 0).Re();
     pht[HIST_THN_SC_with_QC_2corr]->Fill(fCent, fAvgInvariantMass, ih, sctwo.Re(), event_weight_two);
   }
 }

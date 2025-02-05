@@ -105,6 +105,8 @@ const char* eventSelectionSteps[knCollisionSelectionFlags] = {
   "ISVERTEXITSTPC",
   "ISVERTEXTOFMATCHED",
   "ISVERTEXTRDMATCHED",
+  "NOCOLLINTIMERANGE",
+  "NOCOLLINROF",
   "OCCUPANCY",
   "ISGOODITSLAYER3",
   "ISGOODITSLAYER0123",
@@ -364,11 +366,16 @@ struct DptDptFilter {
   } cfginputfile;
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NTPV,NOCM: none. Default V0M"};
-  Configurable<std::string> cfgOccupancyEstimation{"occestimation", "None", "Occupancy estimation: None, Tracks, FT0C. Default None"};
-  Configurable<float> cfgMaxOccupancy{"occmax", 1e6f, "Maximum allowed occupancy. Depends on the occupancy estimation"};
+
   struct : ConfigurableGroup {
     std::string prefix = "cfgEventSelection";
     Configurable<std::string> itsDeadMaps{"itsDeadMaps", "", "Level of inactive chips: nocheck(empty), goodIts3, goodIts0123, goodItsAll. Default empty"};
+    struct : ConfigurableGroup {
+      std::string prefix = "cfgOccupancySelection";
+      Configurable<std::string> cfgOccupancyEstimation{"cfgOccupancyEstimation", "None", "Occupancy estimation: None, Tracks, FT0C. Default None"};
+      Configurable<float> cfgMinOccupancy{"cfgMinOccupancy", 0.0f, "Minimum allowed occupancy. Depends on the occupancy estimation"};
+      Configurable<float> cfgMaxOccupancy{"cfgMaxOccupancy", 1e6f, "Maximum allowed occupancy. Depends on the occupancy estimation"};
+    } cfgOccupancySelection;
   } cfgEventSelection;
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
@@ -426,8 +433,9 @@ struct DptDptFilter {
       fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator);
     }
     /* the occupancy selection */
-    fOccupancyEstimation = getOccupancyEstimator(cfgOccupancyEstimation);
-    fMaxOccupancy = cfgMaxOccupancy;
+    fOccupancyEstimation = getOccupancyEstimator(cfgEventSelection.cfgOccupancySelection.cfgOccupancyEstimation);
+    fMinOccupancy = cfgEventSelection.cfgOccupancySelection.cfgMinOccupancy;
+    fMaxOccupancy = cfgEventSelection.cfgOccupancySelection.cfgMaxOccupancy;
     /* the ITS dead map check */
     fItsDeadMapCheck = getItsDeadMapCheck(cfgEventSelection.itsDeadMaps);
 

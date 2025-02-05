@@ -544,7 +544,7 @@ struct statPromptPhoton {
       }
 
       // now we check the realness of our prompt photons
-      auto ClusterParticles = mccluster.mcParticle_as<aod::JMcParticles>();
+      auto ClusterParticles = mccluster.mcParticles_as<aod::JMcParticles>();
       bool goodgentrigger = true;
       for (auto& clusterparticle : ClusterParticles) {
         if (clusterparticle.pdgCode() == 211 || clusterparticle.pdgCode() == 321 || clusterparticle.pdgCode() == 2212) {
