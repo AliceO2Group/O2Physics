@@ -80,14 +80,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("MCHMID"));
     return cut;
   }
-  if (!nameStr.compare("ElectronForEM")) {
+  if (!nameStr.compare("ElectronForEMu")) {
     cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaLoose"));
     return cut;
   }
-  if (!nameStr.compare("MuonForEM")) {
-    cut->AddCut(GetAnalysisCut("muonHighPt5"));
+  if (!nameStr.compare("MuonForEMu")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt5"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     return cut;
   }
