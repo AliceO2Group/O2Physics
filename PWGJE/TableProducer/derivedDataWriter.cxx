@@ -135,7 +135,7 @@ struct JetDerivedDataWriter {
 
   Preslice<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs>> TracksPerCollisionData = aod::jtrack::collisionId;
 
-  PresliceUnsorted<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>> ParticlesPerMcCollision = aod::jmcparticle::mcCollisionId;
+  Preslice<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>> ParticlesPerMcCollision = aod::jmcparticle::mcCollisionId;
   Preslice<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs, aod::JMcTrackLbs>> TracksPerCollision = aod::jtrack::collisionId;
   Preslice<aod::McCollisionsD0> D0McCollisionsPerMcCollision = aod::jd0indices::mcCollisionId;
   Preslice<aod::McCollisionsLc> LcMcCollisionsPerMcCollision = aod::jlcindices::mcCollisionId;
