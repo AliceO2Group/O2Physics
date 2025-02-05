@@ -186,7 +186,7 @@ struct ZdcQVectors {
     registry.add<TH2>(Form("before/QA/hSPplaneFull"), "hSPplaneFull", kTH2D, {{100, -4, 4}, axisCent10});
     for (const auto& side : sides) {
       registry.add<TH2>(Form("before/hZN%s_Qx_vs_Qy", side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
-      }
+    }
 
       for (const auto& COORD1 : capCOORDS) {
         for (const auto& COORD2 : capCOORDS) {
