@@ -487,15 +487,11 @@ struct HfElectronSelectionWithTpcEmcal {
 
         /////////////////          NonHf electron Selection with Emcal       ////////////////////////
 
+        nonHfe(matchTrack, tracks, true);
+
         electronSel(track.collisionId(), matchTrack.globalIndex(), etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
-
-        isEMcal = true;
-        // std::cout << " electron id  in selection" << electronId << std::endl; // FIXME: Use LOG
-        electronSel(matchTrack.collisionId(), electronId, etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
-
                     eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
       }
-      nonHfe(track, tracks, true);
       /// Electron information without Emcal and use TPC and TOF
       if (isEMcal) {
         continue;
