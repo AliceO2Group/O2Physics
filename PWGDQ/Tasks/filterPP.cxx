@@ -13,6 +13,8 @@
 //
 #include <iostream>
 #include <vector>
+#include <map>
+#include <string>
 #include <memory>
 #include <cstring>
 #include <TH1.h>
@@ -248,14 +250,14 @@ struct DQBarrelTrackSelection {
       fCurrentRun = bc.runNumber();
     }
 
-    uint32_t filterMap = uint32_t(0);
+    uint32_t filterMap = static_cast<uint32_t>(0);
     trackSel.reserve(tracksBarrel.size());
 
     VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
     for (auto& track : tracksBarrel) {
-      filterMap = uint32_t(0);
+      filterMap = static_cast<uint32_t>(0);
       if (!track.has_collision()) {
-        trackSel(uint32_t(0));
+        trackSel(static_cast<uint32_t>(0));
       } else {
         VarManager::FillTrack<TTrackFillMap>(track);
         if (fConfigQA) {
@@ -264,7 +266,7 @@ struct DQBarrelTrackSelection {
         int i = 0;
         for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
           if ((*cut).IsSelected(VarManager::fgValues)) {
-            filterMap |= (uint32_t(1) << i);
+            filterMap |= (static_cast<uint32_t>(1) << i);
             if (fConfigQA) {
               fHistMan->FillHistClass(fCutHistNames[i].Data(), VarManager::fgValues);
             }
@@ -332,16 +334,16 @@ struct DQMuonsSelection {
   template <uint32_t TMuonFillMap, typename TMuons>
   void runMuonSelection(TMuons const& muons)
   {
-    uint32_t filterMap = uint32_t(0);
+    uint32_t filterMap = static_cast<uint32_t>(0);
     trackSel.reserve(muons.size());
 
     VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
     // fill event information which might be needed in histograms or cuts that combine track and event properties
 
     for (auto& muon : muons) {
-      filterMap = uint32_t(0);
+      filterMap = static_cast<uint32_t>(0);
       if (!muon.has_collision()) {
-        trackSel(uint32_t(0));
+        trackSel(static_cast<uint32_t>(0));
       } else {
         VarManager::FillTrack<TMuonFillMap>(muon);
         if (fConfigQA) {
@@ -350,7 +352,7 @@ struct DQMuonsSelection {
         int i = 0;
         for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
           if ((*cut).IsSelected(VarManager::fgValues)) {
-            filterMap |= (uint32_t(1) << i);
+            filterMap |= (static_cast<uint32_t>(1) << i);
             if (fConfigQA) {
               fHistMan->FillHistClass(fCutHistNames[i].Data(), VarManager::fgValues);
             }
@@ -387,8 +389,8 @@ struct DQFilterPPTask {
   Configurable<std::string> fConfigFilterLsBarrelTracksPairs{"cfgWithBarrelLS", "false", "Comma separated list of booleans for each trigger, If true, also select like sign (--/++) barrel track pairs"};
   Configurable<std::string> fConfigFilterLsMuonsPairs{"cfgWithMuonLS", "false", "Comma separated list of booleans for each trigger, If true, also select like sign (--/++) muon pairs"};
 
-  Filter filterBarrelTrackSelected = aod::dqppfilter::isDQBarrelSelected > uint32_t(0);
-  Filter filterMuonTrackSelected = aod::dqppfilter::isDQMuonSelected > uint32_t(0);
+  Filter filterBarrelTrackSelected = aod::dqppfilter::isDQBarrelSelected > static_cast<uint32_t>(0);
+  Filter filterMuonTrackSelected = aod::dqppfilter::isDQMuonSelected > static_cast<uint32_t>(0);
 
   int fNBarrelCuts;                                    // number of barrel selections
   int fNMuonCuts;                                      // number of muon selections
@@ -516,7 +518,7 @@ struct DQFilterPPTask {
     // count the number of barrel tracks fulfilling each cut
     for (auto track : tracksBarrel) {
       for (int i = 0; i < fNBarrelCuts; ++i) {
-        if (track.isDQBarrelSelected() & (uint32_t(1) << i)) {
+        if (track.isDQBarrelSelected() & (static_cast<uint32_t>(1) << i)) {
           objCountersBarrel[i] += 1;
         }
       }
@@ -527,7 +529,7 @@ struct DQFilterPPTask {
     for (int i = 0; i < fNBarrelCuts; i++) {
       if (fBarrelRunPairing[i]) {
         if (objCountersBarrel[i] > 1) { // pairing has to be enabled and at least two tracks are needed
-          pairingMask |= (uint32_t(1) << i);
+          pairingMask |= (static_cast<uint32_t>(1) << i);
         }
         objCountersBarrel[i] = 0; // reset counters for selections where pairing is needed (count pairs instead)
       }
@@ -540,7 +542,7 @@ struct DQFilterPPTask {
     for (int icut = 0; icut < fNBarrelCuts; icut++) {
       TString objStr = objArrayLS->At(icut)->GetName();
       if (!objStr.CompareTo("true")) {
-        pairingLS |= (uint32_t(1) << icut);
+        pairingLS |= (static_cast<uint32_t>(1) << icut);
       }
     }
 
@@ -557,12 +559,12 @@ struct DQFilterPPTask {
         VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNBarrelCuts; icut++) {
           // select like-sign pairs if trigger has set boolean true within fConfigFilterLsBarrelTracksPairs
-          if (!(pairingLS & (uint32_t(1) << icut))) {
+          if (!(pairingLS & (static_cast<uint32_t>(1) << icut))) {
             if (t1.sign() * t2.sign() > 0) {
               continue;
             }
           }
-          if (!(pairFilter & (uint32_t(1) << icut))) {
+          if (!(pairFilter & (static_cast<uint32_t>(1) << icut))) {
             continue;
           }
           if (!fBarrelPairCuts[icut].IsSelected(VarManager::fgValues)) {
@@ -580,7 +582,7 @@ struct DQFilterPPTask {
     // count the number of muon tracks fulfilling each selection
     for (auto muon : muons) {
       for (int i = 0; i < fNMuonCuts; ++i) {
-        if (muon.isDQMuonSelected() & (uint32_t(1) << i)) {
+        if (muon.isDQMuonSelected() & (static_cast<uint32_t>(1) << i)) {
           objCountersMuon[i] += 1;
         }
       }
@@ -591,7 +593,7 @@ struct DQFilterPPTask {
     for (int i = 0; i < fNMuonCuts; i++) {
       if (fMuonRunPairing[i]) { // pairing has to be enabled and at least two tracks are needed
         if (objCountersMuon[i] > 1) {
-          pairingMask |= (uint32_t(1) << i);
+          pairingMask |= (static_cast<uint32_t>(1) << i);
         }
         objCountersMuon[i] = 0; // reset counters for selections where pairing is needed (count pairs instead)
       }
@@ -604,7 +606,7 @@ struct DQFilterPPTask {
     for (int icut = 0; icut < fNMuonCuts; icut++) {
       TString objStr = objArrayMuonLS->At(icut)->GetName();
       if (!objStr.CompareTo("true")) {
-        pairingLS |= (uint32_t(1) << icut);
+        pairingLS |= (static_cast<uint32_t>(1) << icut);
       }
     }
 
@@ -621,12 +623,12 @@ struct DQFilterPPTask {
         VarManager::FillPair<VarManager::kDecayToMuMu, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNMuonCuts; icut++) {
           // select like-sign pairs if trigger has set boolean true within fConfigFilterLsMuonsPairs
-          if (!(pairingLS & (uint32_t(1) << icut))) {
+          if (!(pairingLS & (static_cast<uint32_t>(1) << icut))) {
             if (t1.sign() * t2.sign() > 0) {
               continue;
             }
           }
-          if (!(pairFilter & (uint32_t(1) << icut))) {
+          if (!(pairFilter & (static_cast<uint32_t>(1) << icut))) {
             continue;
           }
           if (!fMuonPairCuts[icut].IsSelected(VarManager::fgValues)) {
@@ -649,7 +651,7 @@ struct DQFilterPPTask {
     uint64_t filter = 0;
     for (int i = 0; i < fNBarrelCuts; i++) {
       if (objCountersBarrel[i] >= fBarrelNreqObjs[i]) {
-        filter |= (uint64_t(1) << i);
+        filter |= (static_cast<uint64_t>(1) << i);
         fStats->Fill(static_cast<float>(i));
         if (i < kNTriggersDQ) {
           decisions[i] = true;
@@ -658,7 +660,7 @@ struct DQFilterPPTask {
     }
     for (int i = 0; i < fNMuonCuts; i++) {
       if (objCountersMuon[i] >= fMuonNreqObjs[i]) {
-        filter |= (uint64_t(1) << (i + fNBarrelCuts));
+        filter |= (static_cast<uint64_t>(1) << (i + fNBarrelCuts));
         fStats->Fill(static_cast<float>(i + fNBarrelCuts));
         if (i + fNBarrelCuts < kNTriggersDQ) {
           decisions[i + fNBarrelCuts] = true;
@@ -726,3 +728,4 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     }
   }
 }
+
