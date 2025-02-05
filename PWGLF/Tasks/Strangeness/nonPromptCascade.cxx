@@ -292,7 +292,7 @@ struct NonPromptCascadeTask {
   }
 
   template <typename T, typename PR, typename PI>
-  void fillCascadeDCA(T const track, PR const& protonTrack, PI const& pionTrack, o2::dataformats::VertexBase primaryVertex, bool isOmega, motherDCA& mDCA)
+  void fillCascadeDCA(T const track, PR const& protonTrack, PI const& pionTrack, o2::dataformats::VertexBase primaryVertex, bool isOmega, motherDCA& motherDCA)
   {
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value);
     auto trackCovTrk = getTrackParCov(track);
@@ -317,8 +317,8 @@ struct NonPromptCascadeTask {
         registry.fill(HIST("h_dcavsr_Xi"), impactParameterTrk.getY(), std::hypot(track.x(), track.y()));
       }
     }
-    mDCA.DCAxy = impactParameterTrk.getY();
-    mDCA.DCAz = impactParameterTrk.getZ();
+    motherDCA.DCAxy = impactParameterTrk.getY();
+    motherDCA.DCAz = impactParameterTrk.getZ();
   }
 
   template <typename TC, typename B, typename PR, typename PI>
@@ -580,8 +580,8 @@ struct NonPromptCascadeTask {
       invMassACV0->Fill(v0mass);
       registry.fill(HIST("h_massvspt_V0"), v0mass, track.pt());
 
-      motherDCA mDCA;
-      fillCascadeDCA(track, protonTrack, pionTrack, primaryVertex, isOmega, mDCA);
+      motherDCA motherDCA;
+      fillCascadeDCA(track, protonTrack, pionTrack, primaryVertex, isOmega, motherDCA);
       daughtersDCA dDCA;
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
 
@@ -589,7 +589,7 @@ struct NonPromptCascadeTask {
                                               collision.numContrib(), collision.collisionTimeRes(), primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
-                                              mDCA.DCAxy, mDCA.DCAz, dDCA.protonDCAxy, dDCA.protonDCAz, dDCA.pionDCAxy, dDCA.pionDCAz, dDCA.bachDCAxy, dDCA.bachDCAz,
+                                              motherDCA.DCAxy, motherDCA.DCAz, dDCA.protonDCAxy, dDCA.protonDCAz, dDCA.pionDCAxy, dDCA.pionDCAz, dDCA.bachDCAxy, dDCA.bachDCAz,
                                               cascCpa, v0Cpa,
                                               massXi, massOmega, v0mass,
                                               std::hypot(trackedCascade.decayX(), trackedCascade.decayY()), std::hypot(v0Pos[0], v0Pos[1]), std::hypot(trackedCascade.decayX(), trackedCascade.decayY(), trackedCascade.decayZ()), std::hypot(v0Pos[0], v0Pos[1], v0Pos[2]),
