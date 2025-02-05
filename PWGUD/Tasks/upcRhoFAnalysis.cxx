@@ -31,30 +31,29 @@ using namespace o2::framework::expressions;
 using FullUDSgCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::SGCollisions>::iterator;
 using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
 
-
 namespace o2::aod
 {
 namespace fourpi
 {
 
-//for event
+// for event
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
 
-//for Rhos
+// for Rhos
 DECLARE_SOA_COLUMN(M, m, double);
 DECLARE_SOA_COLUMN(Pt, pt, double);
 DECLARE_SOA_COLUMN(Eta, eta, double);
 DECLARE_SOA_COLUMN(Phi, phi, double);
 
-//for vertex
+// for vertex
 DECLARE_SOA_COLUMN(PosX, posX, double);
 DECLARE_SOA_COLUMN(PosY, posY, double);
 DECLARE_SOA_COLUMN(PosZ, posZ, double);
 
-//for other
+// for other
 DECLARE_SOA_COLUMN(TotalCharge, totalCharge, int);
 
-//info Detec
+// info Detec
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
 DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float);
@@ -66,12 +65,12 @@ DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);
 DECLARE_SOA_COLUMN(TimeFDDA, timeFDDA, float);
 DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float);
 
-//for pion tracks
-//DECLARE_SOA_COLUMN(TrackSign, trackSign, std::vector<int>);
-//DECLARE_SOA_COLUMN(TrackM, trackM, std::vector<double>);
-//DECLARE_SOA_COLUMN(TrackPt, trackPt, std::vector<double>);
-//DECLARE_SOA_COLUMN(TrackEta, trackEta, std::vector<double>);
-//DECLARE_SOA_COLUMN(TrackPhi, trackPhi, std::vector<double>);
+// for pion tracks
+// DECLARE_SOA_COLUMN(TrackSign, trackSign, std::vector<int>);
+// DECLARE_SOA_COLUMN(TrackM, trackM, std::vector<double>);
+// DECLARE_SOA_COLUMN(TrackPt, trackPt, std::vector<double>);
+// DECLARE_SOA_COLUMN(TrackEta, trackEta, std::vector<double>);
+// DECLARE_SOA_COLUMN(TrackPhi, trackPhi, std::vector<double>);
 
 } // namespace fourpi
 DECLARE_SOA_TABLE(SYSTEMTREE, "AOD", "SystemTree", fourpi::RunNumber, fourpi::M, fourpi::Pt, fourpi::Eta, fourpi::Phi,
@@ -80,7 +79,7 @@ DECLARE_SOA_TABLE(SYSTEMTREE, "AOD", "SystemTree", fourpi::RunNumber, fourpi::M,
 } // namespace o2::aod
 
 struct upcRhoFAnalysis {
-  Produces<aod::SYSTEMTREE>systemTree;
+  Produces<aod::SYSTEMTREE> systemTree;
 
   double PcEtaCut = 0.9; // physics coordination recommendation
 
@@ -120,10 +119,10 @@ struct upcRhoFAnalysis {
     std::vector<std::string> selectionCounterLabels = {"all tracks", "PV contributor", "ITS + TPC hit", "TOF requirement", "DCA cut", "#eta cut", "2D TPC n#sigma_{#pi} cut"};
 
     // 4PI SYSTEM
-    //registry.add("4pi/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    //registry.add("4pi/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    //registry.add("4pi/hEta", ";Eta (1);counts", kTH1D, {etaAxis});
-    //registry.add("4pi/hPhi", ";Phi ();counts", kTH1D, {phiAxis});
+    // registry.add("4pi/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    // registry.add("4pi/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    // registry.add("4pi/hEta", ";Eta (1);counts", kTH1D, {etaAxis});
+    // registry.add("4pi/hPhi", ";Phi ();counts", kTH1D, {phiAxis});
   }
 
   template <typename C>
@@ -230,7 +229,6 @@ struct upcRhoFAnalysis {
 
   void processReco(FullUDSgCollision const& collision, FullUDTracks const& tracks)
   {
-    
 
     if (!collisionPassesCuts(collision))
       return;
@@ -252,16 +250,13 @@ struct upcRhoFAnalysis {
 
     int trackCounter = 0;
     for (const auto& track : tracks) {
-   
 
       if (!trackPassesCuts(track))
         continue;
       trackCounter++;
       cutTracks.push_back(track);
       cutTracks4Vecs.push_back(ROOT::Math::PxPyPzMVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged)); // apriori assume pion mass
-      
     }
-
 
     if (!tracksPassPiPID(cutTracks))
       return;
@@ -275,20 +270,18 @@ struct upcRhoFAnalysis {
     double rapidity = system.Rapidity();
     double systemPhi = system.Phi() + o2::constants::math::PI;
 
-
     if (nTracks == 4 && tracksTotalCharge(cutTracks) == 0) { // 4pi system
 
-
       systemTree(collision.runNumber(), mass, pT, rapidity, systemPhi, collision.posX(), collision.posY(), collision.posZ(), totalCharge,
-                collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.timeFV0A(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
-                collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC());
-      
-      //registry.fill(HIST("4pi/hM"), mass);
-      //registry.fill(HIST("4pi/hPt"), pT);
-      //registry.fill(HIST("4pi/hEta"), rapiditiy);
-      //registry.fill(HIST("4pi/hPhi"), system);
-    } 
-    //std::cout<<"Hello World"<<std::endl;
+                 collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.timeFV0A(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
+                 collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC());
+
+      // registry.fill(HIST("4pi/hM"), mass);
+      // registry.fill(HIST("4pi/hPt"), pT);
+      // registry.fill(HIST("4pi/hEta"), rapiditiy);
+      // registry.fill(HIST("4pi/hPhi"), system);
+    }
+    // std::cout<<"Hello World"<<std::endl;
   }
   PROCESS_SWITCH(upcRhoFAnalysis, processReco, "analyse reco tracks", true);
 };
