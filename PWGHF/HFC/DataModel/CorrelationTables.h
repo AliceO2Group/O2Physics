@@ -441,6 +441,7 @@ DECLARE_SOA_COLUMN(DmesonSel, dmesonSel, bool); //! Selection flag for D meson i
 DECLARE_SOA_TABLE(DmesonSelection, "AOD", "DINCOLL", // Selection of D meson in collisions
                   aod::hf_selection_dmeson_collision::DmesonSel);
 
+
 // Note: definition of columns and tables for Electron Hadron correlation pairs
 namespace hf_correlation_electron_hadron
 {
@@ -449,34 +450,36 @@ DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);     //! DeltaEta between Electron
 DECLARE_SOA_COLUMN(PtElectron, ptElectron, float); //! Transverse momentum of Electron
 DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);     //! Transverse momentum of Hadron;
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);         //! Pool Bin of event defined using zvtx and multiplicity
+DECLARE_SOA_COLUMN(IsLSEHCorr, isLSEHCorr, int);   //! Pool Bin of event defined using zvtx and multiplicity
+DECLARE_SOA_COLUMN(IsULSEHCorr, isULSEHCorr, int); //! Pool Bin of event defined using zvtx and multiplicity
 } // namespace hf_correlation_electron_hadron
 DECLARE_SOA_TABLE(HfEHadronPair, "AOD", "HFEHADRONPAIR", //! Hfe-Hadrons pairs Informations
                   hf_correlation_electron_hadron::DeltaPhi,
                   hf_correlation_electron_hadron::DeltaEta,
                   hf_correlation_electron_hadron::PtElectron,
                   hf_correlation_electron_hadron::PtHadron,
-                  hf_correlation_electron_hadron::PoolBin);
+                  hf_correlation_electron_hadron::PoolBin,
+                  hf_correlation_electron_hadron::IsLSEHCorr,
+                  hf_correlation_electron_hadron::IsULSEHCorr);
 
-// definition of columns and tables for Mc Gen HfElectron Selection
-namespace HfMcGen_sel_electron
+// Note: definition of columns and tables for Electron Hadron correlation pairs for MC Gen
+namespace hf_correlation_McGenelectron_hadron
 {
-DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! collisioniD of the electron track
-DECLARE_SOA_INDEX_COLUMN(Track, track);             //! trackid of of the electron track
-DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);      //! pseudorapidity of the electron track
-DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);      //! azimuth of the electron track
-DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);        //! transverse momentum of the electron track
-DECLARE_SOA_COLUMN(IsNonHfe, isNonHfe, bool);       //! Non-Heavy flavour  electron information
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);         //! DeltaPhi between Electron and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);         //! DeltaEta between Electron and Hadrons
+DECLARE_SOA_COLUMN(PtElectron, ptElectron, float);     //! Transverse momentum of Electron
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);         //! Transverse momentum of Hadron;
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);             //! Pool Bin of event defined using zvtx and multiplicity
+DECLARE_SOA_COLUMN(IsNonHfEHCorr, isNonHfEHCorr, int); //! Pool Bin of event defined using zvtx and multiplicity
 
-} // namespace HfMcGen_sel_electron
-
-DECLARE_SOA_TABLE(HfMcGenSelEl, "AOD", "HFMCGENEESELEL", //! Electron Informations
-                  o2::soa::Index<>,
-                  HfMcGen_sel_electron::McCollisionId,
-                  HfMcGen_sel_electron::TrackId,
-                  HfMcGen_sel_electron::EtaTrack,
-                  HfMcGen_sel_electron::PhiTrack,
-                  HfMcGen_sel_electron::PtTrack,
-                  HfMcGen_sel_electron::IsNonHfe);
+} // namespace hf_correlation_McGenelectron_hadron
+DECLARE_SOA_TABLE(HfEHadronMcGenPair, "AOD", "HFEHADRONMCGENPAIR", //! Hfe-Hadrons pairs Informations
+                  hf_correlation_McGenelectron_hadron::DeltaPhi,
+                  hf_correlation_McGenelectron_hadron::DeltaEta,
+                  hf_correlation_McGenelectron_hadron::PtElectron,
+                  hf_correlation_McGenelectron_hadron::PtHadron,
+                  hf_correlation_McGenelectron_hadron::PoolBin,
+                  hf_correlation_McGenelectron_hadron::IsNonHfEHCorr);
 
 } // namespace o2::aod
 
