@@ -45,7 +45,6 @@ struct JetShapeTask {
                               {"tofPi", "tofPi", {HistType::kTH2F, {{1000, 0, 5}, {401, -10.025f, 10.025f}}}},
                               {"tpcPr", "tpcPr", {HistType::kTH2F, {{1000, 0, 5}, {401, -10.025f, 10.025f}}}},
                               {"tofPr", "tofPr", {HistType::kTH2F, {{1000, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tofTpc", "tofTpc", {HistType::kTH2F, {{401, -10.025f, 10.025f}, {401, -10.025f, 10.025f}}}},
                               {"tpcDedx", "tpcDedx", {HistType::kTH2F, {{1000, 0, 5}, {1000, 0, 1000}}}},
                               {"tofBeta", "tofBeta", {HistType::kTH2F, {{1000, 0, 5}, {900, 0.2, 1.1}}}},
                               {"tofMass", "tofMass", {HistType::kTH1F, {{3000, 0, 3}}}},
@@ -74,8 +73,13 @@ struct JetShapeTask {
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", 5.0, "minimum pT selection on jet constituent"};
   Configurable<float> leadingConstituentPtMax{"leadingConstituentPtMax", 9999.0, "maximum pT selection on jet constituent"};
 
-  Configurable<float> kappa{"kappa", 1.0, "angularity kappa"};
-  Configurable<float> alpha{"alpha", 1.0, "angularity alpha"};
+  // for jet shape
+  Configurable<std::vector<float>> distanceCategory{"distanceCategory", {0.00f, 0.05f, 0.10f, 0.15f, 0.20f, 0.25f, 0.30f, 0.35f, 0.40f, 0.45f, 0.50f, 0.55f, 0.60f, 0.65f, 0.70f}, "distance of category"};
+
+  // for ppi production
+  Configurable<float> maxTpcNClsCrossedRows{"maxTpcNClsCrossedRows", 70, ""};
+  Configurable<float> maxDcaXY{"maxDcaXY", 0.2, ""};
+  Configurable<float> maxItsNCls{"maxItsNCls", 2, ""};
 
   Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
 
@@ -139,9 +143,13 @@ struct JetShapeTask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
-    double ptDensity[14] = {0};
-    double ptDensityBg1[14] = {0};
-    double ptDensityBg2[14] = {0};
+    std::vector<float> ptDensity;
+    std::vector<float> ptDensityBg1;
+    std::vector<float> ptDensityBg2;
+
+    ptDensity.reserve(distanceCategory->size() - 1);
+    ptDensityBg1.reserve(distanceCategory->size() - 1);
+    ptDensityBg2.reserve(distanceCategory->size() - 1);
 
     // std::cout << collision.centrality() << std::endl;
 
@@ -150,74 +158,52 @@ struct JetShapeTask {
         continue;
       }
 
+      // Get underlying event subtracted jet.pt() as ptCorr
       float ptCorr = jet.pt() - collision.rho() * jet.area();
 
-      int nJet = 0;
-      nJet += jets.size();
-
       for (const auto& track : tracks) {
-        double preDeltaPhi1 = 0;
-        double deltaPhi1 = 0;
-        double deltaEta = 0;
+        float preDeltaPhi1 = track.phi() - jet.phi();
+        float deltaPhi1 = RecoDecay::constrainAngle(preDeltaPhi1);
+        float deltaEta = track.eta() - jet.eta();
 
-        preDeltaPhi1 = track.phi() - jet.phi();
-
-        deltaPhi1 = RecoDecay::constrainAngle(preDeltaPhi1);
-
+        // calculate distance from jet axis
         float distance = std::sqrt(deltaEta * deltaEta + deltaPhi1 * deltaPhi1);
 
         registry.fill(HIST("ptCorrVsDistance"), distance, ptCorr);
         registry.fill(HIST("ptVsCentrality"), collision.centrality(), track.pt());
 
-        double trackPtSum[14] = {0};
-        double trackPtSumBg1[14] = {0};
-        double trackPtSumBg2[14] = {0};
-        double phi2 = jet.phi() + (o2::constants::math::PIHalf);
-        double phi3 = jet.phi() - (o2::constants::math::PIHalf);
-        double preDeltaPhi2 = 0;
-        double deltaPhi2 = 0;
-        double preDeltaPhi3 = 0;
-        double deltaPhi3 = 0;
+        // calculate compornents of jetshapefunction rho(r)
+        std::vector<float> trackPtSum;
+        std::vector<float> trackPtSumBg1;
+        std::vector<float> trackPtSumBg2;
+        trackPtSum.reserve(distanceCategory->size() - 1);
+        trackPtSumBg1.reserve(distanceCategory->size() - 1);
+        trackPtSumBg2.reserve(distanceCategory->size() - 1);
+        float phiBg1 = jet.phi() + (o2::constants::math::PIHalf);
+        float phiBg2 = jet.phi() - (o2::constants::math::PIHalf);
 
-        preDeltaPhi2 = track.phi() - phi2;
-        preDeltaPhi3 = track.phi() - phi3;
+        float preDeltaPhiBg1 = track.phi() - phiBg1;
+        float preDeltaPhiBg2 = track.phi() - phiBg2;
 
-        deltaPhi2 = RecoDecay::constrainAngle(preDeltaPhi2);
+        float deltaPhiBg1 = RecoDecay::constrainAngle(preDeltaPhiBg1);
+        float deltaPhiBg2 = RecoDecay::constrainAngle(preDeltaPhiBg2);
 
-        deltaPhi3 = RecoDecay::constrainAngle(preDeltaPhi3);
+        float distanceBg1 = std::sqrt(deltaEta * deltaEta + deltaPhiBg1 * deltaPhiBg1);
+        float distanceBg2 = std::sqrt(deltaEta * deltaEta + deltaPhiBg2 * deltaPhiBg2);
 
-        deltaEta = track.eta() - jet.eta();
-
-        float distanceBg1 = std::sqrt(deltaEta * deltaEta + deltaPhi2 * deltaPhi2);
-        float distanceBg2 = std::sqrt(deltaEta * deltaEta + deltaPhi3 * deltaPhi3);
-
-        float trackMomentumCategory[] = {0.05f, 0.1f, 0.15f, 0.2f, 0.25f, 0.3f, 0.35f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.65f, 0.7f};
-
-        for (int i = 0; i < 14; i++) {
-          if (distance < trackMomentumCategory[i])
+        for (int i = 0; i < distanceCategory->size() - 1; i++) {
+          if (distance < distanceCategory->at(i + 1))
             trackPtSum[i] += track.pt();
-        }
-
-        for (int i = 0; i < 14; i++) {
-          ptDensity[i] += trackPtSum[i] / (0.05 * ptCorr);
-        }
-
-        for (int i = 0; i < 14; i++) {
-          if (distanceBg1 < trackMomentumCategory[i])
+          if (distanceBg1 < distanceCategory->at(i + 1))
             trackPtSumBg1[i] += track.pt();
-        }
-
-        for (int i = 0; i < 14; i++) {
-          ptDensityBg1[i] += trackPtSumBg1[i] / (0.05 * ptCorr);
-        }
-
-        for (int i = 0; i < 14; i++) {
-          if (distanceBg2 < trackMomentumCategory[i])
+          if (distanceBg2 < distanceCategory->at(i + 1))
             trackPtSumBg2[i] += track.pt();
         }
 
-        for (int i = 0; i < 14; i++) {
-          ptDensityBg2[i] += trackPtSumBg2[i] / (0.05 * ptCorr);
+        for (int i = 0; i < distanceCategory->size() - 1; i++) {
+          ptDensity[i] += trackPtSum[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
+          ptDensityBg1[i] += trackPtSumBg1[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
+          ptDensityBg2[i] += trackPtSumBg2[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
         }
       }
 
@@ -227,13 +213,12 @@ struct JetShapeTask {
       registry.fill(HIST("area"), jet.area());
       registry.fill(HIST("rho"), collision.rho());
       registry.fill(HIST("ptCorr"), ptCorr);
-      // std::cout << nJet << std::endl;
 
-      for (int i = 0; i < 14; i++) {
-        double jetX = 0.05 * i + 0.025;
-        double jetShapeFunction = ptDensity[i] / nJet;
-        double jetShapeFunctionBg1 = ptDensityBg1[i] / nJet;
-        double jetShapeFunctionBg2 = ptDensityBg2[i] / nJet;
+      for (int i = 0; i < distanceCategory->size() - 1; i++) {
+        double jetX = (distanceCategory->at(i + 1) - distanceCategory->at(i)) * i + (distanceCategory->at(i + 1) - distanceCategory->at(i)) / 2;
+        double jetShapeFunction = ptDensity[i + 1];
+        double jetShapeFunctionBg1 = ptDensityBg1[i + 1];
+        double jetShapeFunctionBg2 = ptDensityBg2[i + 1];
         registry.fill(HIST("ptSum"), jetX, jetShapeFunction);
         registry.fill(HIST("ptSumBg1"), jetX, jetShapeFunctionBg1);
         registry.fill(HIST("ptSumBg2"), jetX, jetShapeFunctionBg2);
@@ -253,35 +238,33 @@ struct JetShapeTask {
         continue;
       }
 
+      // tracks conditions
       for (const auto& track : tracks) {
-        if (track.tpcNClsCrossedRows() < 70) {
+        if (track.tpcNClsCrossedRows() < maxTpcNClsCrossedRows)
           continue;
-        }
-        if (std::fabs(track.dcaXY()) > 0.2) {
+        if (std::fabs(track.dcaXY()) > maxDcaXY)
           continue;
-        }
-        if (track.itsNCls() < 2) {
-          continue;
-        }
-        if (std::abs(track.eta()) > 0.6) {
+        if (track.itsNCls() < maxItsNCls) {
           continue;
         }
 
+        // PID check
         registry.fill(HIST("tpcDedx"), track.pt(), track.tpcSignal());
         registry.fill(HIST("tofBeta"), track.pt(), track.beta());
         registry.fill(HIST("tofMass"), track.mass());
+
+        // for calculate purity
         registry.fill(HIST("tpcPi"), track.pt(), track.tpcNSigmaPi());
         registry.fill(HIST("tofPi"), track.pt(), track.tofNSigmaPi());
         registry.fill(HIST("tpcPr"), track.pt(), track.tpcNSigmaPr());
         registry.fill(HIST("tofPr"), track.pt(), track.tofNSigmaPr());
 
-        double preDeltaPhi1 = 0;
-        double deltaPhi1 = 0;
-        double deltaEta = 0;
+        // for calculate distance
+        float preDeltaPhi1 = track.phi() - jet.phi();
+        float deltaPhi1 = RecoDecay::constrainAngle(preDeltaPhi1);
+        float deltaEta = track.eta() - jet.eta();
 
-        preDeltaPhi1 = track.phi() - jet.phi();
-        deltaPhi1 = RecoDecay::constrainAngle(preDeltaPhi1);
-
+        // calculate distance from jet axis
         float distance = std::sqrt(deltaEta * deltaEta + deltaPhi1 * deltaPhi1);
 
         registry.fill(HIST("distanceVsTrackpt"), distance, track.pt());
