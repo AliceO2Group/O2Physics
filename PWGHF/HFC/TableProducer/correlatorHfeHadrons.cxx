@@ -292,9 +292,9 @@ struct HfCorrelatorHfeHadrons {
       double etaHadron = 0;
       double deltaPhi = 0;
       double deltaEta = 0;
-      ptElectron = electronMc.ptTrack();
-      phiElectron = electronMc.phiTrack();
-      etaElectron = electronMc.etaTrack();
+      ptElectron = electronMc.ptTrackMc();
+      phiElectron = electronMc.phiTrackMc();
+      etaElectron = electronMc.etaTrackMc();
       for (const auto& particleMc : mcParticles) {
         if (particleMc.globalIndex() == electronMc.trackId()) {
 
@@ -321,7 +321,7 @@ struct HfCorrelatorHfeHadrons {
         deltaPhi = RecoDecay::constrainAngle(phiElectron - phiHadron, -o2::constants::math::PIHalf);
         deltaEta = etaElectron - etaHadron;
         bool isNonHfeCorr = false;
-        if (electronMc.isNonHfe()) {
+        if (electronMc.isNonHfeMc()) {
 
           registry.fill(HIST("hMCgenNonHfEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
           isNonHfeCorr = true;
@@ -386,10 +386,10 @@ struct HfCorrelatorHfeHadrons {
       int poolBin = corrBinningMcGen.getBin(std::make_tuple(c1.posZ(), c1.multMCFT0A()));
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
         ptHadronMix = t2.pt();
-        ptElectronMix = t1.ptTrack();
-        phiElectronMix = t1.phiTrack();
+        ptElectronMix = t1.ptTrackMc();
+        phiElectronMix = t1.phiTrackMc();
         phiHadronMix = t2.phi();
-        etaElectronMix = t1.etaTrack();
+        etaElectronMix = t1.etaTrackMc();
         etaHadronMix = t2.eta();
         if (t2.eta() < etaTrackMin || t2.eta() > etaTrackMax) {
           continue;
@@ -404,7 +404,7 @@ struct HfCorrelatorHfeHadrons {
         deltaPhiMix = RecoDecay::constrainAngle(phiElectronMix - phiHadronMix, -o2::constants::math::PIHalf);
         deltaEtaMix = etaElectronMix - etaHadronMix;
         bool isNonHfeCorr = false;
-        if (t1.isNonHfe()) {
+        if (t1.isNonHfeMc()) {
           isNonHfeCorr = true;
           registry.fill(HIST("hMixEventMcGenNonHfEHCorrl"), ptElectronMix, ptHadronMix, deltaPhiMix, deltaEtaMix);
         } else {
