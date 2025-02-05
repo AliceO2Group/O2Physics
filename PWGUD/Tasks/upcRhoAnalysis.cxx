@@ -13,6 +13,7 @@
 ///         includes event tagging based on ZN information, track selection, reconstruction,
 ///         and also some basic stuff for decay phi anisotropy studies
 /// \author Jakub Juracka, jakub.juracka@cern.ch
+/// \file   ?
 
 #include <string>
 #include <vector>
@@ -39,7 +40,7 @@ using FullUdTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksD
 
 namespace o2::aod
 {
-namespace tree
+namespace recoTree
 {
 // misc event info
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
@@ -89,18 +90,48 @@ DECLARE_SOA_COLUMN(TrackElPID, trackElPID, std::vector<float>);
 DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, std::vector<float>);
 DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, std::vector<float>);
 DECLARE_SOA_COLUMN(TrackTpcSignal, trackTpcSignal, std::vector<float>);
-} // namespace tree
-DECLARE_SOA_TABLE(Tree, "AOD", "TREE",
-                  tree::RunNumber, tree::LocalBC, tree::NumContrib,
-                  tree::PosX, tree::PosY, tree::PosZ, tree::TotalFT0AmplitudeA, tree::TotalFT0AmplitudeC, tree::TotalFV0AmplitudeA, tree::TotalFDDAmplitudeA, tree::TotalFDDAmplitudeC,
-                  tree::TimeFT0A, tree::TimeFT0C, tree::TimeFV0A, tree::TimeFDDA, tree::TimeFDDC,
-                  tree::EnergyCommonZNA, tree::EnergyCommonZNC, tree::TimeZNA, tree::TimeZNC, tree::NeutronClass,
-                  tree::TotalCharge, tree::RhoPt, tree::RhoY, tree::RhoPhi, tree::RhoM, tree::RhoPhiRandom, tree::RhoPhiCharge,
-                  tree::TrackSign, tree::TrackPt, tree::TrackEta, tree::TrackPhi, tree::TrackM, tree::TrackPiPID, tree::TrackElPID, tree::TrackDcaXY, tree::TrackDcaZ, tree::TrackTpcSignal);
+} // namespace recoTree
+DECLARE_SOA_TABLE(RecoTree, "AOD", "RECOTREE",
+                  recoTree::RunNumber, recoTree::LocalBC, recoTree::NumContrib,
+                  recoTree::PosX, recoTree::PosY, recoTree::PosZ, recoTree::TotalFT0AmplitudeA, recoTree::TotalFT0AmplitudeC, recoTree::TotalFV0AmplitudeA, recoTree::TotalFDDAmplitudeA, recoTree::TotalFDDAmplitudeC,
+                  recoTree::TimeFT0A, recoTree::TimeFT0C, recoTree::TimeFV0A, recoTree::TimeFDDA, recoTree::TimeFDDC,
+                  recoTree::EnergyCommonZNA, recoTree::EnergyCommonZNC, recoTree::TimeZNA, recoTree::TimeZNC, recoTree::NeutronClass,
+                  recoTree::TotalCharge, recoTree::RhoPt, recoTree::RhoY, recoTree::RhoPhi, recoTree::RhoM, recoTree::RhoPhiRandom, recoTree::RhoPhiCharge,
+                  recoTree::TrackSign, recoTree::TrackPt, recoTree::TrackEta, recoTree::TrackPhi, recoTree::TrackM, recoTree::TrackPiPID, recoTree::TrackElPID, recoTree::TrackDcaXY, recoTree::TrackDcaZ, recoTree::TrackTpcSignal);
+
+namespace mcTree
+{
+// misc event info
+DECLARE_SOA_COLUMN(LocalBc, localBc, int);
+// event vertex
+DECLARE_SOA_COLUMN(PosX, posX, float);
+DECLARE_SOA_COLUMN(PosY, posY, float);
+DECLARE_SOA_COLUMN(PosZ, posZ, float);
+// rho lorentz vector reconstruction
+DECLARE_SOA_COLUMN(RhoPt, rhoPt, float);
+DECLARE_SOA_COLUMN(RhoY, rhoY, float);
+DECLARE_SOA_COLUMN(RhoPhi, rhoPhi, float);
+DECLARE_SOA_COLUMN(RhoM, rhoM, float);
+// other stuff
+DECLARE_SOA_COLUMN(RhoPhiRandom, rhoPhiRandom, float);
+DECLARE_SOA_COLUMN(RhoPhiCharge, rhoPhiCharge, float);
+// Pion tracks
+DECLARE_SOA_COLUMN(TrackSign, trackSign, std::vector<int>);
+// for lorentz vector reconstruction
+DECLARE_SOA_COLUMN(TrackPt, trackPt, std::vector<float>);
+DECLARE_SOA_COLUMN(TrackEta, trackEta, std::vector<float>);
+DECLARE_SOA_COLUMN(TrackPhi, trackPhi, std::vector<float>);
+DECLARE_SOA_COLUMN(TrackM, trackM, std::vector<float>);
+} // namespace mcTree
+DECLARE_SOA_TABLE(McTree, "AOD", "MCTREE",
+                  mcTree::LocalBc,
+                  mcTree::PosX, mcTree::PosY, mcTree::PosZ, mcTree::RhoPt, mcTree::RhoY, mcTree::RhoPhi, mcTree::RhoM, mcTree::RhoPhiRandom, mcTree::RhoPhiCharge,
+                  mcTree::TrackSign, mcTree::TrackPt, mcTree::TrackEta, mcTree::TrackPhi, mcTree::TrackM);
 } // namespace o2::aod
 
 struct upcRhoAnalysis {
-  Produces<o2::aod::Tree> Tree;
+  Produces<o2::aod::RecoTree> RecoTree;
+  Produces<o2::aod::McTree> McTree;
 
   float PcEtaCut = 0.9; // physics coordination recommendation
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
@@ -108,6 +139,7 @@ struct upcRhoAnalysis {
   Configurable<bool> doElectrons{"doElectrons", true, "do analysis with PIDed electrons"};
 
   Configurable<float> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
+  Configurable<int> collisionsNumContribsMaxCut{"collisionsNumContribsMaxCut", 7, "max number of contributors cut on collisions"};
   Configurable<float> ZNcommonEnergyCut{"ZNcommonEnergyCut", 0.0, "ZN common energy cut"};
   Configurable<float> ZNtimeCut{"ZNtimeCut", 2.0, "ZN time cut"};
 
@@ -140,6 +172,8 @@ struct upcRhoAnalysis {
   ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, o2::constants::math::TwoPI}, "#phi"};
   ConfigurableAxis phiAsymmAxis{"phiAsymmAxis", {182, -o2::constants::math::PI, o2::constants::math::PI}, "#phi"};
   ConfigurableAxis momentumFromPhiAxis{"momentumFromPhiAxis", {400, -0.1, 0.1}, "p (GeV/#it{c})"};
+  ConfigurableAxis znCommonEnergyAxis{"znCommonEnergyAxis", {250, -5.0, 20.0}, "ZN common energy (TeV)"};
+  ConfigurableAxis znTimeAxis{"znTimeAxis", {200, -10.0, 10.0}, "ZN time (ns)"};
   // ConfigurableAxis ptQuantileAxis{"ptQuantileAxis", {0, 0.0181689, 0.0263408, 0.0330488, 0.0390369, 0.045058, 0.0512604, 0.0582598, 0.066986, 0.0788085, 0.1}, "p_{T} (GeV/#it{c})"};
 
   HistogramRegistry QC{"QC", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -156,8 +190,8 @@ struct upcRhoAnalysis {
     QC.add("QC/collisions/all/hPosXY", ";x (cm);y (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
     QC.add("QC/collisions/all/hPosZ", ";z (cm);counts", kTH1D, {{400, -20.0, 20.0}});
     QC.add("QC/collisions/all/hNumContrib", ";number of contributors;counts", kTH1D, {{36, -0.5, 35.5}});
-    QC.add("QC/collisions/all/hZdcCommonEnergy", ";ZNA common energy;ZNC common energy;counts", kTH2D, {{250, -5.0, 20.0}, {250, -5.0, 20.0}});
-    QC.add("QC/collisions/all/hZdcTime", ";ZNA time (ns);ZNC time (ns);counts", kTH2D, {{200, -10.0, 10.0}, {200, -10.0, 10.0}});
+    QC.add("QC/collisions/all/hZdcCommonEnergy", ";ZNA common energy (TeV);ZNC common energy (TeV);counts", kTH2D, {znCommonEnergyAxis, znCommonEnergyAxis});
+    QC.add("QC/collisions/all/hZdcTime", ";ZNA time (ns);ZNC time (ns);counts", kTH2D, {znTimeAxis, znTimeAxis});
     QC.add("QC/collisions/all/hTotalFT0AmplitudeA", ";FT0A amplitude;counts", kTH1D, {{1000, 0.0, 1000.0}});
     QC.add("QC/collisions/all/hTotalFT0AmplitudeC", ";FT0C amplitude;counts", kTH1D, {{1000, 0.0, 1000.0}});
     QC.add("QC/collisions/all/hTotalFV0AmplitudeA", ";FV0A amplitude;counts", kTH1D, {{1000, 0.0, 1000.0}});
@@ -172,6 +206,7 @@ struct upcRhoAnalysis {
     QC.add("QC/collisions/selected/hPosXY", ";x (cm);y (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
     QC.add("QC/collisions/selected/hPosZ", ";z (cm);counts", kTH1D, {{400, -20.0, 20.0}});
     QC.add("QC/collisions/selected/hNumContrib", ";number of contributors;counts", kTH1D, {{36, -0.5, 35.5}});
+    QC.add("QC/collisions/selected/hNumContribVsSystemPt", ";p_{T} (GeV/#it{c});number of contributors;counts", kTH2D, {ptAxis,{36, -0.5, 35.5}});
     QC.add("QC/collisions/selected/hZdcCommonEnergy", ";ZNA common energy;ZNC common energy;counts", kTH2D, {{250, -5.0, 20.0}, {250, -5.0, 20.0}});
     QC.add("QC/collisions/selected/hZdcTime", ";ZNA time (ns);ZNC time (ns);counts", kTH2D, {{200, -10.0, 10.0}, {200, -10.0, 10.0}});
     QC.add("QC/collisions/selected/hTotalFT0AmplitudeA", ";FT0A amplitude;counts", kTH1D, {{1000, 0.0, 1000.0}});
@@ -510,6 +545,16 @@ struct upcRhoAnalysis {
     }
   }
 
+  template <typename C>
+  bool collisionPassesCuts(const C& collision) // collision cuts
+  {
+    if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
+      return false;
+    // if (collision.numContrib() > collisionsNumContribsMaxCut)
+    //   return false;
+    return true;
+  }
+
   template <typename T>
   bool trackPassesCuts(const T& track) // track cuts (PID done separately)
   {
@@ -679,7 +724,7 @@ struct upcRhoAnalysis {
     QC.fill(HIST("QC/collisions/all/hTimeFDDC"), collision.timeFDDC());
 
     // vertex z-position cut
-    if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
+    if (!collisionPassesCuts(collision))
       return;
 
     // event tagging
@@ -702,6 +747,7 @@ struct upcRhoAnalysis {
       XnXn = true;
       neutronClass = 3;
     }
+    
     // vectors for storing selected tracks and their 4-vectors
     std::vector<decltype(tracks.begin())> cutTracks;
     std::vector<TLorentzVector> cutTracks4Vecs;
@@ -792,7 +838,7 @@ struct upcRhoAnalysis {
     // fill TOF hit checker
     QC.fill(HIST("QC/tracks/hTofHitCheck"), leadingMomentumTrack.hasTOF(), subleadingMomentumTrack.hasTOF());
 
-    // fill tree
+    // fill recoTree
     int localBc = collision.globalBC() % o2::constants::lhc::LHCMaxBunches;
     std::vector<int> trackSigns = {leadingMomentumTrack.sign(), subleadingMomentumTrack.sign()};
     std::vector<float> trackPts = {leadingPt, subleadingPt};
@@ -804,7 +850,7 @@ struct upcRhoAnalysis {
     std::vector<float> trackDcaXYs = {leadingMomentumTrack.dcaXY(), subleadingMomentumTrack.dcaXY()};
     std::vector<float> trackDcaZs = {leadingMomentumTrack.dcaZ(), subleadingMomentumTrack.dcaZ()};
     std::vector<float> trackTpcSignals = {leadingMomentumTrack.tpcSignal(), subleadingMomentumTrack.tpcSignal()};
-    Tree(collision.runNumber(), localBc, collision.numContrib(),
+    RecoTree(collision.runNumber(), localBc, collision.numContrib(),
          collision.posX(), collision.posY(), collision.posZ(),
          collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
          collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
@@ -823,6 +869,7 @@ struct upcRhoAnalysis {
         System.fill(HIST("system/raw/unlike-sign/hPtVsM"), mass, pT);
         System.fill(HIST("system/raw/unlike-sign/hY"), rapidity);
         System.fill(HIST("system/raw/unlike-sign/hPhi"), systemPhi);
+        QC.fill(HIST("QC/collisions/selected/hNumContribVsSystemPt"), pT, collision.numContrib());
         break;
 
       case 2:
@@ -1160,6 +1207,17 @@ struct upcRhoAnalysis {
     MC.fill(HIST("MC/system/hPhi"), systemPhi);
     MC.fill(HIST("MC/system/hPhiRandom"), phiRandom);
     MC.fill(HIST("MC/system/hPhiCharge"), phiCharge);
+
+    // fill mcTree
+    int localBc = mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches;
+    std::vector<int> trackSigns = {leadingMomentumPion.pdgCode() / std::abs(leadingMomentumPion.pdgCode()), subleadingMomentumPion.pdgCode() / std::abs(subleadingMomentumPion.pdgCode())};
+    std::vector<float> trackPts = {pt(leadingMomentumPion.px(), leadingMomentumPion.py()), pt(subleadingMomentumPion.px(), subleadingMomentumPion.py())};
+    std::vector<float> trackEtas = {eta(leadingMomentumPion.px(), leadingMomentumPion.py(), leadingMomentumPion.pz()), eta(subleadingMomentumPion.px(), subleadingMomentumPion.py(), subleadingMomentumPion.pz())};
+    std::vector<float> trackPhis = {phi(leadingMomentumPion.px(), leadingMomentumPion.py()), phi(subleadingMomentumPion.px(), subleadingMomentumPion.py())};
+    std::vector<float> trackMs = {o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged};
+    McTree(localBc,
+           mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), pT, rapidity, systemPhi, mass, phiRandom, phiCharge,
+           trackSigns, trackPts, trackEtas, trackPhis, trackMs);
   }
 
   template <typename C>
