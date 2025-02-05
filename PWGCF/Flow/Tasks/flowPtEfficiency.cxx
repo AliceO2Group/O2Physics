@@ -398,11 +398,11 @@ struct FlowPtEfficiency {
               registry.fill(HIST("hPhiWeighted"), track.phi(), wacc);
             }
             if (withinPtRef)
-              fGFWReco->fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+              fGFWReco->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
             if (withinPtPOI)
-              fGFWReco->fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
+              fGFWReco->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
             if (withinPtPOI && withinPtRef)
-              fGFWReco->fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
+              fGFWReco->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
           }
         }
       }

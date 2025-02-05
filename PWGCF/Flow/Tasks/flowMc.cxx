@@ -96,8 +96,8 @@ struct FlowMc {
     histos.add<TH3>("hBVsPtVsPhiGeneratedOmega", "hBVsPtVsPhiGeneratedOmega", HistType::kTH3D, {axisB, axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiGlobalOmega", "hBVsPtVsPhiGlobalOmega", HistType::kTH3D, {axisB, axisPhi, axisPt});
 
-    registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
-    registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
+    histos.add<TH1>("hPhi", "#phi distribution", HistType::kTH1D, {axisPhi});
+    histos.add<TH1>("hPhiWeighted", "corrected #phi distribution", HistType::kTH1D, {axisPhi});
 
     if (cfgOutputNUAWeights) {
       o2::framework::AxisSpec axis = axisPt;
@@ -222,8 +222,8 @@ struct FlowMc {
         if (!setCurrentParticleWeights(weff, wacc, mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), vtxz))
           continue;
         if (withinPtRef) {
-          registry.fill(HIST("hPhi"), mcParticle.phi());
-          registry.fill(HIST("hPhiWeighted"), mcParticle.phi(), wacc);
+          histos.fill(HIST("hPhi"), mcParticle.phi());
+          histos.fill(HIST("hPhiWeighted"), mcParticle.phi(), wacc);
         }
 
         // if valid global, fill
