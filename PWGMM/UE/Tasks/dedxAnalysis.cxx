@@ -34,11 +34,8 @@ using namespace o2::framework;
 using namespace constants::physics;
 
 using PIDTracks = soa::Join<
-  aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta,
-  aod::pidTOFmass, aod::TrackSelection, aod::TrackSelectionExtension,
-  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-  aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTOFFullPi, aod::pidTOFFullKa,
-  aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullEl>;
+  aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension,
+  aod::pidTOFFullPi, aod::pidTOFFullPr, aod::pidTOFFullEl>;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 
@@ -85,11 +82,13 @@ struct DedxAnalysis {
   Configurable<float> maxDCAxy{"maxDCAxy", 0.1f, "maxDCAxy"};
   Configurable<float> maxDCAz{"maxDCAz", 0.1f, "maxDCAz"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
-  Configurable<bool> calibrationMode{"calibrationMode", false, "calibration mode"};
+  Configurable<bool> calibrationMode{"calibrationMode", true, "calibration mode"};
   // Histograms names
   static constexpr std::string_view kDedxvsMomentum[4] = {"dEdx_vs_Momentum_all", "dEdx_vs_Momentum_Pi_v0", "dEdx_vs_Momentum_Pr_v0", "dEdx_vs_Momentum_El_v0"};
   static constexpr double EtaCut[9] = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
-  static constexpr double Correction[8] = {56.0452, 56.632, 57.2627, 57.8265, 57.8403, 57.5441, 57.2386, 56.7532};
+  static constexpr double Correction[8] = {54.5281, 54.6548, 54.6513, 54.6781, 54.6167, 54.7384, 55.0047, 54.9592};
+  ConfigurableAxis binP{"binP", {0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, ""};
+  AxisSpec pAxis = {binP, "#it{p}/Z (GeV/c)"};
 
   void init(InitContext const&)
   {
@@ -113,7 +112,7 @@ struct DedxAnalysis {
       // De/Dx for ch and v0 particles
       for (int i = 0; i < 4; ++i) {
         registryDeDx.add(kDedxvsMomentum[i].data(), "dE/dx", HistType::kTH3F,
-                         {{100, -20, 20, "#it{p}/Z (GeV/c)"}, {100, 0.0, 600.0, "dE/dx (a. u.)"}, {8, -0.8, 0.8, "#eta"}});
+                         {{pAxis}, {100, 0.0, 600.0, "dE/dx (a. u.)"}, {8, -0.8, 0.8, "#eta"}});
       }
     }
     // Event Counter
@@ -306,7 +305,7 @@ struct DedxAnalysis {
       float signedP = trk.sign() * trk.tpcInnerParam();
 
       // MIP for pions
-      if (trk.tpcInnerParam() >= 0.25 && trk.tpcInnerParam() <= 0.35) {
+      if (trk.tpcInnerParam() >= 0.35 && trk.tpcInnerParam() <= 0.45) {
         if (calibrationMode) {
           registryDeDx.fill(HIST("hdEdxMIP_vs_eta"), trk.eta(), trk.tpcSignal());
           registryDeDx.fill(HIST("hdEdxMIP_vs_phi"), trk.phi(), trk.tpcSignal());
