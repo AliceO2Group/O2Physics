@@ -688,7 +688,7 @@ struct HfTreeCreatorD0ToKPi {
                                   aod::Tracks const& tracks,
                                   aod::BCs const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle, true, false, false>(collisions, mcCollisions, reconstructedCandBkgKF, mcParticles, tracks, bcs);
+    processMc<aod::hf_cand::VertexerType::KfParticle, true, false, false>(collisions, mcCollisions, candidates, mcParticles, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithKFParticleAll, "Process MC with KFParticle", false);
 
