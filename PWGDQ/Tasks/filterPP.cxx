@@ -728,4 +728,3 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     }
   }
 }
-
