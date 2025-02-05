@@ -273,7 +273,7 @@ struct HfTreeCreatorD0ToKPi {
       runNumber);
   }
 
-  template <typename T>
+  template <bool applyMl, typename T>
   auto fillTable(const T& candidate, int candFlag, double invMass, double cosThetaStar, double topoChi2,
                  double ct, double y, double e, int8_t flagMc, int8_t origin)
   {
@@ -378,6 +378,20 @@ struct HfTreeCreatorD0ToKPi {
         origin,
         candidate.globalIndex());
     }
+    if constexpr (applyMl) {
+      if (candidate.isSelD0()) {
+        rowCandidateMl(
+          candidate.mlProbD0()[0],
+          candidate.mlProbD0()[1],
+          candidate.mlProbD0()[2]);
+      }
+      if (candidate.isSelD0bar()) {
+        rowCandidateMl(
+          candidate.mlProbD0bar()[0],
+          candidate.mlProbD0bar()[1],
+          candidate.mlProbD0bar()[2]);
+      }
+    }
   }
 
   template <int reconstructionType, bool applyMl, typename CandType>
@@ -421,24 +435,10 @@ struct HfTreeCreatorD0ToKPi {
         massD0bar = hfHelper.invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillTable(candidate, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, 0, 0);
+        fillTable<applyMl>(candidate, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, 0, 0);
       }
       if (candidate.isSelD0bar()) {
-        fillTable(candidate, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, 0, 0);
-      }
-      if constexpr (applyMl) {
-        if (candidate.isSelD0()) {
-          rowCandidateMl(
-            candidate.mlProbD0()[0],
-            candidate.mlProbD0()[1],
-            candidate.mlProbD0()[2]);
-        }
-        if (candidate.isSelD0bar()) {
-          rowCandidateMl(
-            candidate.mlProbD0bar()[0],
-            candidate.mlProbD0bar()[1],
-            candidate.mlProbD0bar()[2]);
-        }
+        fillTable<applyMl>(candidate, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, 0, 0);
       }
     }
   }
@@ -533,24 +533,10 @@ struct HfTreeCreatorD0ToKPi {
         massD0bar = hfHelper.invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillTable(candidate, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+        fillTable<applyMl>(candidate, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
       }
       if (candidate.isSelD0bar()) {
-        fillTable(candidate, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
-      }
-      if constexpr (applyMl) {
-        if (candidate.isSelD0()) {
-          rowCandidateMl(
-            candidate.mlProbD0()[0],
-            candidate.mlProbD0()[1],
-            candidate.mlProbD0()[2]);
-        }
-        if (candidate.isSelD0bar()) {
-          rowCandidateMl(
-            candidate.mlProbD0bar()[0],
-            candidate.mlProbD0bar()[1],
-            candidate.mlProbD0bar()[2]);
-        }
+        fillTable<applyMl>(candidate, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
       }
     }
 
