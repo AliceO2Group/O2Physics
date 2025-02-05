@@ -479,7 +479,7 @@ struct HfTreeCreatorD0ToKPi {
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processDataWithKFParticleMl, "Process data with KFParticle and ML", false);
 
-  template <int reconstructionType, bool onlyBkg, bool onlySig, typename CandType>
+  template <int reconstructionType, bool onlyBkg, bool onlySig, bool applyMl, typename CandType>
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
                  CandType const& candidates,
