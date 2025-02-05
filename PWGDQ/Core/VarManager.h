@@ -679,8 +679,6 @@ class VarManager : public TObject
     kM01POIoverMpminus,
     kM01POIoverMpplus,
     kM01POIoverMpmoins,
-    kM01POIoverMpplus,
-    kM01POIoverMpmoins,
     kM0111POIoverMpminus,
     kM0111POIoverMpplus,
     kCORR2POIplus,
