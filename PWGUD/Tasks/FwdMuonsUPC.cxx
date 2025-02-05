@@ -37,6 +37,7 @@
 namespace dimu
 {
 // dimuon
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Energy, energy, float);
 DECLARE_SOA_COLUMN(Px, px, float);
@@ -73,6 +74,7 @@ DECLARE_SOA_COLUMN(Nclass, nclass, int);
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
+                  dimu::RunNumber,
                   dimu::M, dimu::Energy, dimu::Px, dimu::Py, dimu::Pz, dimu::Pt, dimu::Rap, dimu::Phi,
                   dimu::PhiAv, dimu::PhiCh,
                   dimu::EnergyP, dimu::Pxp, dimu::Pyp, dimu::Pzp, dimu::Ptp, dimu::Etap, dimu::Phip,
@@ -112,6 +114,7 @@ DECLARE_SOA_TABLE(GenDimu, "AOD", "GENDIMU",
 namespace recodimu
 {
 // dimuon
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Rap, rap, float);
@@ -141,6 +144,7 @@ DECLARE_SOA_COLUMN(GenPhin, genPhin, float);
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(RecoDimu, "AOD", "RECODIMU",
+                  recodimu::RunNumber,
                   recodimu::M, recodimu::Pt, recodimu::Rap, recodimu::Phi,
                   recodimu::PhiAv, recodimu::PhiCh,
                   recodimu::Ptp, recodimu::Etap, recodimu::Phip,
@@ -371,8 +375,8 @@ struct FwdMuonsUPC {
     }
   }
 
-  // template function that fills a map with the collision id of each udmccollision as key
-  // and a vector with the tracks
+  // template function that fills a map with the collision id of each udcollision as key
+  // and a vector with the tracks and corresponding geneated particles
   // map == (key, element) == (udCollisionId, vector(track1, mcPart1, track2, mcPart2))
   template <typename TTracks>
   void collectRecoCandID(std::unordered_map<int32_t, std::vector<int32_t>>& tracksPerCand, TTracks& tracks)
@@ -621,13 +625,15 @@ struct FwdMuonsUPC {
 
     // store the event to save it into a tree
     if (tr1.sign() > 0) {
-      dimuSel(p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
+      dimuSel(cand.runNumber(),
+              p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
               p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
               p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
               zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
     } else {
-      dimuSel(p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
+      dimuSel(cand.runNumber(),
+              p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
               p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
               p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
@@ -836,7 +842,8 @@ struct FwdMuonsUPC {
 
     // store the event to save it into a tree
     if (tr1.sign() > 0) {
-      dimuReco(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
+      dimuReco(cand.runNumber(),
+               p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
                p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
                p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
@@ -845,7 +852,8 @@ struct FwdMuonsUPC {
                p1Mc.Pt(), p1Mc.PseudoRapidity(), p1Mc.Phi(),
                p2Mc.Pt(), p2Mc.PseudoRapidity(), p2Mc.Phi());
     } else {
-      dimuReco(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
+      dimuReco(cand.runNumber(),
+               p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
                p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
                p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
