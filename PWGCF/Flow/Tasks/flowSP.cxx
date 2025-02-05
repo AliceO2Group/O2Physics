@@ -122,10 +122,10 @@ struct FlowSP {
     bool correctionsLoaded = false;
     int lastRunNumber = 0;
 
-    TProfile* hcorrQQ = nullptr; 
-    TProfile* hcorrQQx = nullptr; 
-    TProfile* hcorrQQy = nullptr; 
-    TProfile* hEvPlaneRes = nullptr; 
+    TProfile* hcorrQQ = nullptr;
+    TProfile* hcorrQQx = nullptr;
+    TProfile* hcorrQQy = nullptr;
+    TProfile* hEvPlaneRes = nullptr;
     bool clQQ = false;
     bool clEvPlaneRes = false;
 
@@ -692,7 +692,7 @@ struct FlowSP {
       centrality = collision.centFT0M();
     if (cfgFV0A)
       centrality = collision.centFV0A();
-    if (cfgNGlobal) 
+    if (cfgNGlobal)
       centrality = collision.centNGlobal();
 
     if (!eventSelected(collision, tracks.size(), centrality))
@@ -740,15 +740,15 @@ struct FlowSP {
       double corrQQ = 1., corrQQx = 1., corrQQy = 1.;
 
       // Load correlations and SP resolution needed for Scalar Product and event plane methods.
-      // Only load once! 
+      // Only load once!
       // If not loaded set to 1
       if (cfgLoadAverageQQ) {
-        if(!cfg.clQQ){
+        if (!cfg.clQQ) {
           TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir.value, bc.timestamp());
           cfg.hcorrQQ = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCXY"));
           cfg.hcorrQQx = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCX"));
           cfg.hcorrQQy = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCY"));
-          cfg.clQQ = true; 
+          cfg.clQQ = true;
         }
         corrQQ = cfg.hcorrQQ->GetBinContent(cfg.hcorrQQ->FindBin(centrality));
         corrQQx = cfg.hcorrQQx->GetBinContent(cfg.hcorrQQx->FindBin(centrality));
@@ -757,9 +757,9 @@ struct FlowSP {
 
       double evPlaneRes = 1.;
       if (cfgLoadSPPlaneRes) {
-        if(!cfg.clEvPlaneRes){
+        if (!cfg.clEvPlaneRes) {
           cfg.hEvPlaneRes = ccdb->getForTimeStamp<TProfile>(cfgCCDBdir_SP.value, bc.timestamp());
-          cfg.clEvPlaneRes = true; 
+          cfg.clEvPlaneRes = true;
         }
         evPlaneRes = cfg.hEvPlaneRes->GetBinContent(cfg.hEvPlaneRes->FindBin(centrality));
         if (evPlaneRes < 0)
@@ -844,7 +844,7 @@ struct FlowSP {
       centrality = collision.centFT0M();
     if (cfgFV0A)
       centrality = collision.centFV0A();
-    if (cfgNGlobal) 
+    if (cfgNGlobal)
       centrality = collision.centNGlobal();
 
     if (cfgFillQAHistos)
@@ -901,7 +901,7 @@ struct FlowSP {
         centrality = collision.centFT0M();
       if (cfgFV0A)
         centrality = collision.centFV0A();
-      if (cfgNGlobal) 
+      if (cfgNGlobal)
         centrality = collision.centNGlobal();
     }
 
