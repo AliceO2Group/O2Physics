@@ -179,6 +179,8 @@ struct CreateResolutionMap {
     registry.add("Event/Electron/hImpPar_Centrality", "true imapact parameter vs. estimated centrality;impact parameter (fm);centrality (%)", kTH2F, {{200, 0, 20}, {110, 0, 110}}, true);
     registry.add("Event/Muon/hImpPar_Centrality", "true imapact parameter vs. estimated centrality;impact parameter (fm);centrality (%)", kTH2F, {{200, 0, 20}, {110, 0, 110}}, true);
 
+    registry.add("Electron/hPt", "rec. p_{T,l};p_{T,l} (GeV/c)", kTH1F, {{1000, 0, 10}}, false);
+    registry.add("Electron/hEtaPhi", "rec. #eta vs. #varphi;#varphi_{l} (rad.);#eta_{l}", kTH2F, {{90, 0, 2 * M_PI}, {80, -2, +2}}, false);
     registry.add("Electron/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt}}, true);
     registry.add("Electron/Ptgen_DeltaEta", "resolution", kTH2F, {{axis_pt_gen}, {axis_deta}}, true);
     registry.add("Electron/Ptgen_DeltaPhi_Pos", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
@@ -469,6 +471,8 @@ struct CreateResolutionMap {
     }
 
     if (muon.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
+      registry.fill(HIST("StandaloneMuon/hPt"), pt);
+      registry.fill(HIST("StandaloneMuon/hEtaPhi"), phi, eta);
       registry.fill(HIST("StandaloneMuon/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), -mcparticle.pdgCode() / 13, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
       registry.fill(HIST("StandaloneMuon/Ptgen_RelDeltaPt"), mcparticle.pt(), (mcparticle.pt() - pt) / mcparticle.pt());
       registry.fill(HIST("StandaloneMuon/Ptgen_DeltaEta"), mcparticle.pt(), mcparticle.eta() - eta);
@@ -478,6 +482,8 @@ struct CreateResolutionMap {
         registry.fill(HIST("StandaloneMuon/Ptgen_DeltaPhi_Neg"), mcparticle.pt(), mcparticle.phi() - phi);
       }
     } else if (muon.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
+      registry.fill(HIST("GlobalMuon/hPt"), pt);
+      registry.fill(HIST("GlobalMuon/hEtaPhi"), phi, eta);
       registry.fill(HIST("GlobalMuon/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), -mcparticle.pdgCode() / 13, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
       registry.fill(HIST("GlobalMuon/Ptgen_RelDeltaPt"), mcparticle.pt(), (mcparticle.pt() - pt) / mcparticle.pt());
       registry.fill(HIST("GlobalMuon/Ptgen_DeltaEta"), mcparticle.pt(), mcparticle.eta() - eta);
@@ -521,13 +527,27 @@ struct CreateResolutionMap {
       return;
     }
 
-    registry.fill(HIST("Electron/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), -mcparticle.pdgCode() / 11, (mcparticle.pt() - track.pt()) / mcparticle.pt(), mcparticle.eta() - track.eta(), mcparticle.phi() - track.phi());
-    registry.fill(HIST("Electron/Ptgen_RelDeltaPt"), mcparticle.pt(), (mcparticle.pt() - track.pt()) / mcparticle.pt());
-    registry.fill(HIST("Electron/Ptgen_DeltaEta"), mcparticle.pt(), mcparticle.eta() - track.eta());
+    gpu::gpustd::array<float, 2> dcaInfo;
+    auto track_par_cov_recalc = getTrackParCov(track);
+    track_par_cov_recalc.setPID(o2::track::PID::Electron);
+    // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+    // getPxPyPz(track_par_cov_recalc, pVec_recalc);
+
+    float pt = track_par_cov_recalc.getPt();
+    float eta = track_par_cov_recalc.getEta();
+    float phi = track_par_cov_recalc.getPhi();
+    o2::math_utils::bringTo02Pi(phi);
+
+    registry.fill(HIST("Electron/hPt"), pt);
+    registry.fill(HIST("Electron/hEtaPhi"), phi, eta);
+    registry.fill(HIST("Electron/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), -mcparticle.pdgCode() / 11, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
+    registry.fill(HIST("Electron/Ptgen_RelDeltaPt"), mcparticle.pt(), (mcparticle.pt() - pt) / mcparticle.pt());
+    registry.fill(HIST("Electron/Ptgen_DeltaEta"), mcparticle.pt(), mcparticle.eta() - eta);
     if (mcparticle.pdgCode() == -11) { // positron
-      registry.fill(HIST("Electron/Ptgen_DeltaPhi_Pos"), mcparticle.pt(), mcparticle.phi() - track.phi());
+      registry.fill(HIST("Electron/Ptgen_DeltaPhi_Pos"), mcparticle.pt(), mcparticle.phi() - phi);
     } else if (mcparticle.pdgCode() == 11) { // electron
-      registry.fill(HIST("Electron/Ptgen_DeltaPhi_Neg"), mcparticle.pt(), mcparticle.phi() - track.phi());
+      registry.fill(HIST("Electron/Ptgen_DeltaPhi_Neg"), mcparticle.pt(), mcparticle.phi() - phi);
     }
   }
 

@@ -243,9 +243,9 @@ struct skimmerPrimaryElectron {
     gpu::gpustd::array<float, 2> dcaInfo;
     auto track_par_cov_recalc = getTrackParCov(track);
     track_par_cov_recalc.setPID(o2::track::PID::Electron);
-    std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
+    // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-    getPxPyPz(track_par_cov_recalc, pVec_recalc);
+    // getPxPyPz(track_par_cov_recalc, pVec_recalc);
     float dcaXY = dcaInfo[0];
     float dcaZ = dcaInfo[1];
 
@@ -315,9 +315,9 @@ struct skimmerPrimaryElectron {
       gpu::gpustd::array<float, 2> dcaInfo;
       auto track_par_cov_recalc = getTrackParCov(track);
       track_par_cov_recalc.setPID(o2::track::PID::Electron);
-      std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
+      // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-      getPxPyPz(track_par_cov_recalc, pVec_recalc);
+      // getPxPyPz(track_par_cov_recalc, pVec_recalc);
       float dcaXY = dcaInfo[0];
       float dcaZ = dcaInfo[1];
 
@@ -762,9 +762,9 @@ struct prefilterPrimaryElectron {
     gpu::gpustd::array<float, 2> dcaInfo;
     auto track_par_cov_recalc = getTrackParCov(track);
     track_par_cov_recalc.setPID(o2::track::PID::Electron);
-    std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
+    // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-    getPxPyPz(track_par_cov_recalc, pVec_recalc);
+    // getPxPyPz(track_par_cov_recalc, pVec_recalc);
 
     if (std::fabs(dcaInfo[0]) > max_dcaxy || std::fabs(dcaInfo[1]) > max_dcaz) {
       return false;
