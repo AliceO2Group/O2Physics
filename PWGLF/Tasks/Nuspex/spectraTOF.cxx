@@ -486,6 +486,12 @@ struct tofSpectra {
         histos.add("MC/withPID/ka/neg/prm/pt/numtof", "recons. MC K^{-}", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/withPID/pr/pos/prm/pt/numtof", "recons. MC p", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/withPID/pr/neg/prm/pt/numtof", "recons. MC #bar{p}", kTHnSparseD, {ptAxis, impParamAxis});
+        histos.add("MC/withPID/pi/pos/prm/pt/numtof_matched", "recons. MC #pi^{+}", kTHnSparseD, {ptAxis, impParamAxis});
+        histos.add("MC/withPID/pi/neg/prm/pt/numtof_matched", "recons. MC #pi^{-}", kTHnSparseD, {ptAxis, impParamAxis});
+        histos.add("MC/withPID/ka/pos/prm/pt/numtof_matched", "recons. MC K^{+}", kTHnSparseD, {ptAxis, impParamAxis});
+        histos.add("MC/withPID/ka/neg/prm/pt/numtof_matched", "recons. MC K^{-}", kTHnSparseD, {ptAxis, impParamAxis});
+        histos.add("MC/withPID/pr/pos/prm/pt/numtof_matched", "recons. MC p", kTHnSparseD, {ptAxis, impParamAxis});
+        histos.add("MC/withPID/pr/neg/prm/pt/numtof_matched", "recons. MC #bar{p}", kTHnSparseD, {ptAxis, impParamAxis});
       } else {
         histos.add("MC/withPID/pi/pos/prm/pt/num", "recons. MC #pi^{+}", kTHnSparseD, {ptAxis, multAxis});
         histos.add("MC/withPID/pi/neg/prm/pt/num", "recons. MC #pi^{-}", kTHnSparseD, {ptAxis, multAxis});
