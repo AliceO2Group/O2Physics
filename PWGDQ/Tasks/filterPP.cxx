@@ -59,6 +59,7 @@ enum DQTriggers {
   kSingleMuLow,
   kSingleMuHigh,
   kDiMuon,
+  kElectronMuon,
   kNTriggersDQ
 };
 } // namespace
@@ -496,14 +497,14 @@ struct DQFilterPPTask {
     // if the event is not selected produce tables and return
     if (!collision.isDQEventSelected()) {
       eventFilter(0);
-      dqtable(false, false, false, false, false, false, false);
+      dqtable(false, false, false, false, false, false, false, false);
       return;
     }
     fStats->Fill(-1.0);
 
     if (tracksBarrel.size() == 0 && muons.size() == 0) {
       eventFilter(0);
-      dqtable(false, false, false, false, false, false, false);
+      dqtable(false, false, false, false, false, false, false, false);
       return;
     }
 
@@ -665,7 +666,7 @@ struct DQFilterPPTask {
       }
     }
     eventFilter(filter);
-    dqtable(decisions[0], decisions[1], decisions[2], decisions[3], decisions[4], decisions[5], decisions[6]);
+    dqtable(decisions[0], decisions[1], decisions[2], decisions[3], decisions[4], decisions[5], decisions[6], decisions[7]);
   }
 
   void processFilterPP(MyEventsSelected::iterator const& collision, aod::BCs const& bcs,
