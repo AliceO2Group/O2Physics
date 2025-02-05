@@ -19,11 +19,8 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPHISELECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPHISELECTION_H_
 
-#include <iostream>
 #include <string>
 #include <vector>
-
-#include <TDatabasePDG.h> // FIXME
 
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseObjectSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
@@ -34,11 +31,9 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "TLorentzVector.h"
 
-using namespace o2::framework;
-
-namespace o2::analysis::femtoUniverse
+namespace o2::analysis::femto_universe
 {
-namespace femtoUniversePhiSelection
+namespace femto_universe_phi_selection
 {
 /// The different selections this task is capable of doing
 enum PhiSel {
@@ -62,22 +57,22 @@ enum PhiContainerPosition {
   kPosPID,
   kNegCuts,
   kNegPID,
-}; /// Position in the full VO cut container
+}; /// Position in the full Phi cut container
 
-} // namespace femtoUniversePhiSelection
+} // namespace femto_universe_phi_selection
 
 /// \class FemtoUniversePhiSelection
 /// \brief Cut class to contain and execute all cuts applied to Phis
 class FemtoUniversePhiSelection
-  : public FemtoUniverseObjectSelection<float, femtoUniversePhiSelection::PhiSel>
+  : public FemtoUniverseObjectSelection<float, femto_universe_phi_selection::PhiSel>
 {
  public:
   FemtoUniversePhiSelection()
-    : nPtPhiMinSel(0), nPtPhiMaxSel(0), nEtaPhiMaxSel(0), nDCAPhiDaughMax(0), nCPAPhiMin(0), nTranRadPhiMin(0), nTranRadPhiMax(0), nDecVtxMax(0), pTPhiMin(9999999.), pTPhiMax(-9999999.), etaPhiMax(-9999999.), DCAPhiDaughMax(-9999999.), CPAPhiMin(9999999.), TranRadPhiMin(9999999.), TranRadPhiMax(-9999999.), DecVtxMax(-9999999.), fInvMassLowLimit(1.05), fInvMassUpLimit(1.3), fRejectKaon(false), fInvMassKaonLowLimit(0.48), fInvMassKaonUpLimit(0.515), nSigmaPIDOffsetTPC(0.) {}
+    : nPtPhiMinSel(0), nPtPhiMaxSel(0), nEtaPhiMaxSel(0), nDCAPhiDaughMax(0), nCPAPhiMin(0), nTranRadPhiMin(0), nTranRadPhiMax(0), nDecVtxMax(0), pTPhiMin(9999999.), pTPhiMax(-9999999.), etaPhiMax(-9999999.), kDCAPhiDaughMax(-9999999.), kCPAPhiMin(9999999.), kTranRadPhiMin(9999999.), kTranRadPhiMax(-9999999.), kDecVtxMax(-9999999.), fInvMassLowLimit(1.05), fInvMassUpLimit(1.3), fRejectKaon(false), fInvMassKaonLowLimit(0.48), fInvMassKaonUpLimit(0.515), nSigmaPIDOffsetTPC(0.) {}
   /// Initializes histograms for the task
   template <o2::aod::femtouniverseparticle::ParticleType part,
             o2::aod::femtouniverseparticle::ParticleType daugh,
-            typename cutContainerType>
+            typename CutContainerType>
   void init(HistogramRegistry* registry);
 
   template <typename C, typename V, typename T>
@@ -90,8 +85,8 @@ class FemtoUniversePhiSelection
 
   /// \todo for the moment the PID of the tracks is factored out into a separate
   /// field, hence 5 values in total \\ASK: what does it mean?
-  template <typename cutContainerType, typename C, typename V, typename T>
-  std::array<cutContainerType, 5> getCutContainer(C const& col, V const& phi,
+  template <typename CutContainerType, typename C, typename V, typename T>
+  std::array<CutContainerType, 5> getCutContainer(C const& col, V const& phi,
                                                   T const& posTrack,
                                                   T const& negTrack);
 
@@ -101,23 +96,23 @@ class FemtoUniversePhiSelection
   void fillQA(C const& col, V const& phi, T const& posTrack, T const& negTrack, Q const& posPID, Q const& negPID);
 
   template <typename T1, typename T2>
-  void setChildCuts(femtoUniversePhiSelection::ChildTrackType child, T1 selVal,
-                    T2 selVar, femtoUniverseSelection::SelectionType selType)
+  void setChildCuts(femto_universe_phi_selection::ChildTrackType child, T1 selVal,
+                    T2 selVar, femto_universe_selection::SelectionType selType)
   {
-    if (child == femtoUniversePhiSelection::kPosTrack) {
-      PosDaughTrack.setSelection(selVal, selVar, selType);
-    } else if (child == femtoUniversePhiSelection::kNegTrack) {
-      NegDaughTrack.setSelection(selVal, selVar, selType);
+    if (child == femto_universe_phi_selection::kPosTrack) {
+      posDaughTrack.setSelection(selVal, selVar, selType);
+    } else if (child == femto_universe_phi_selection::kNegTrack) {
+      negDaughTrack.setSelection(selVal, selVar, selType);
     }
   }
   template <typename T>
-  void setChildPIDSpecies(femtoUniversePhiSelection::ChildTrackType child,
+  void setChildPIDSpecies(femto_universe_phi_selection::ChildTrackType child,
                           T& pids)
   {
-    if (child == femtoUniversePhiSelection::kPosTrack) {
-      PosDaughTrack.setPIDSpecies(pids);
-    } else if (child == femtoUniversePhiSelection::kNegTrack) {
-      NegDaughTrack.setPIDSpecies(pids);
+    if (child == femto_universe_phi_selection::kPosTrack) {
+      posDaughTrack.setPIDSpecies(pids);
+    } else if (child == femto_universe_phi_selection::kNegTrack) {
+      negDaughTrack.setPIDSpecies(pids);
     }
   }
 
@@ -125,12 +120,12 @@ class FemtoUniversePhiSelection
   /// \param iSel Track selection variable to be examined
   /// \param prefix Additional prefix for the name of the configurable
   /// \param suffix Additional suffix for the name of the configurable
-  static std::string getSelectionName(femtoUniversePhiSelection::PhiSel iSel,
+  static std::string getSelectionName(femto_universe_phi_selection::PhiSel iSel,
                                       std::string_view prefix = "",
                                       std::string_view suffix = "")
   {
     std::string outString = static_cast<std::string>(prefix);
-    outString += static_cast<std::string>(mSelectionNames[iSel]);
+    outString += static_cast<std::string>(kSelectionNames[iSel]);
     outString += suffix;
     return outString;
   }
@@ -143,7 +138,7 @@ class FemtoUniversePhiSelection
   {
     for (int index = 0; index < kNphiSelection; index++) {
       std::string comp = static_cast<std::string>(prefix) +
-                         static_cast<std::string>(mSelectionNames[index]);
+                         static_cast<std::string>(kSelectionNames[index]);
       std::string_view cmp{comp};
       if (obs.compare(cmp) == 0)
         return index;
@@ -154,8 +149,7 @@ class FemtoUniversePhiSelection
 
   /// Helper function to obtain the type of a given selection variable for consistent naming of the configurables
   /// \param iSel Phi selection variable whose type is returned
-  static femtoUniverseSelection::SelectionType
-    getSelectionType(femtoUniversePhiSelection::PhiSel iSel)
+  static femto_universe_selection::SelectionType getSelectionType(femto_universe_phi_selection::PhiSel iSel)
   {
     return mSelectionTypes[iSel];
   }
@@ -164,11 +158,11 @@ class FemtoUniversePhiSelection
   /// for consistent description of the configurables
   /// \param iSel Track selection variable to be examined
   /// \param prefix Additional prefix for the output of the configurable
-  static std::string getSelectionHelper(femtoUniversePhiSelection::PhiSel iSel,
+  static std::string getSelectionHelper(femto_universe_phi_selection::PhiSel iSel,
                                         std::string_view prefix = "")
   {
     std::string outString = static_cast<std::string>(prefix);
-    outString += static_cast<std::string>(mSelectionHelper[iSel]);
+    outString += static_cast<std::string>(kSelectionHelper[iSel]);
     return outString;
   }
 
@@ -196,21 +190,21 @@ class FemtoUniversePhiSelection
     nSigmaPIDOffsetTPC = offsetTPC;
   }
 
-  void setChildRejectNotPropagatedTracks(femtoUniversePhiSelection::ChildTrackType child, bool reject)
+  void setChildRejectNotPropagatedTracks(femto_universe_phi_selection::ChildTrackType child, bool reject)
   {
-    if (child == femtoUniversePhiSelection::kPosTrack) {
-      PosDaughTrack.setRejectNotPropagatedTracks(reject);
-    } else if (child == femtoUniversePhiSelection::kNegTrack) {
-      NegDaughTrack.setRejectNotPropagatedTracks(reject);
+    if (child == femto_universe_phi_selection::kPosTrack) {
+      posDaughTrack.setRejectNotPropagatedTracks(reject);
+    } else if (child == femto_universe_phi_selection::kNegTrack) {
+      negDaughTrack.setRejectNotPropagatedTracks(reject);
     }
   }
 
-  void setChildnSigmaPIDOffset(femtoUniversePhiSelection::ChildTrackType child, float offsetTPC, float offsetTOF)
+  void setChildnSigmaPIDOffset(femto_universe_phi_selection::ChildTrackType child, float offsetTPC, float offsetTOF)
   {
-    if (child == femtoUniversePhiSelection::kPosTrack) {
-      PosDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
-    } else if (child == femtoUniversePhiSelection::kNegTrack) {
-      NegDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
+    if (child == femto_universe_phi_selection::kPosTrack) {
+      posDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
+    } else if (child == femto_universe_phi_selection::kNegTrack) {
+      negDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
     }
   }
 
@@ -226,12 +220,11 @@ class FemtoUniversePhiSelection
   float pTPhiMin;
   float pTPhiMax;
   float etaPhiMax;
-  float DCAPhiDaughMax;
-  float CPAPhiMin;
-  float TranRadPhiMin;
-  float TranRadPhiMax;
-  float DecVtxMax;
-
+  float kDCAPhiDaughMax;
+  float kCPAPhiMin;
+  float kTranRadPhiMin;
+  float kTranRadPhiMax;
+  float kDecVtxMax;
   float fInvMassLowLimit;
   float fInvMassUpLimit;
 
@@ -241,30 +234,30 @@ class FemtoUniversePhiSelection
 
   float nSigmaPIDOffsetTPC;
 
-  FemtoUniverseTrackSelection PosDaughTrack;
-  FemtoUniverseTrackSelection NegDaughTrack;
+  FemtoUniverseTrackSelection posDaughTrack;
+  FemtoUniverseTrackSelection negDaughTrack;
 
   static constexpr int kNphiSelection = 9;
 
-  static constexpr std::string_view mSelectionNames[kNphiSelection] = {
+  static constexpr std::string_view kSelectionNames[kNphiSelection] = {
     "Sign", "PtMin", "PtMax", "EtaMax", "DCAdaughMax", "CPAMin",
     "TranRadMin", "TranRadMax", "DecVecMax"}; ///< Name of the different
                                               ///< selections
 
-  static constexpr femtoUniverseSelection::SelectionType
+  static constexpr femto_universe_selection::SelectionType
     mSelectionTypes[kNphiSelection]{
-      femtoUniverseSelection::kEqual,
-      femtoUniverseSelection::kLowerLimit,
-      femtoUniverseSelection::kUpperLimit,
-      femtoUniverseSelection::kUpperLimit,
-      femtoUniverseSelection::kUpperLimit,
-      femtoUniverseSelection::kLowerLimit,
-      femtoUniverseSelection::kLowerLimit,
-      femtoUniverseSelection::kUpperLimit,
-      femtoUniverseSelection::kUpperLimit}; ///< Map to match a variable with
-                                            ///< its type
+      femto_universe_selection::kEqual,
+      femto_universe_selection::kLowerLimit,
+      femto_universe_selection::kUpperLimit,
+      femto_universe_selection::kUpperLimit,
+      femto_universe_selection::kUpperLimit,
+      femto_universe_selection::kLowerLimit,
+      femto_universe_selection::kLowerLimit,
+      femto_universe_selection::kUpperLimit,
+      femto_universe_selection::kUpperLimit}; ///< Map to match a variable with
+                                              ///< its type
 
-  static constexpr std::string_view mSelectionHelper[kNphiSelection] = {
+  static constexpr std::string_view kSelectionHelper[kNphiSelection] = {
     "+1 for lambda, -1 for antilambda",
     "Minimum pT (GeV/c)",
     "Maximum pT (GeV/c)",
@@ -276,11 +269,11 @@ class FemtoUniversePhiSelection
     "Maximum distance from primary vertex"}; ///< Helper information for the
                                              ///< different selections
 
-}; // namespace femtoUniverse
+}; // namespace femto_universe
 
 template <o2::aod::femtouniverseparticle::ParticleType part,
           o2::aod::femtouniverseparticle::ParticleType daugh,
-          typename cutContainerType>
+          typename CutContainerType>
 void FemtoUniversePhiSelection::init(HistogramRegistry* registry)
 {
 
@@ -297,7 +290,7 @@ void FemtoUniversePhiSelection::init(HistogramRegistry* registry)
     /// \todo this should be an automatic check in the parent class, and the
     /// return type should be templated
     size_t nSelections = getNSelections();
-    if (nSelections > 8 * sizeof(cutContainerType)) {
+    if (nSelections > 8 * sizeof(CutContainerType)) {
       LOG(fatal) << "FemtoUniversePhiCuts: Number of selections to large for your "
                     "container - quitting!";
     }
@@ -310,17 +303,17 @@ void FemtoUniversePhiSelection::init(HistogramRegistry* registry)
     mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries",
                             kTH1F, {{1000, -1, 1}});
     mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries",
-                            kTH1F, {{1000, 0, 2. * M_PI}});
+                            kTH1F, {{1000, 0, o2::constants::math::TwoPI}});
     mHistogramRegistry->add((folderName + "/hInvMassPhi").c_str(), "", kTH1F,
                             {massAxisPhi});
 
-    PosDaughTrack.init<aod::femtouniverseparticle::ParticleType::kPhiChild,
+    posDaughTrack.init<aod::femtouniverseparticle::ParticleType::kPhiChild,
                        aod::femtouniverseparticle::TrackType::kPosChild,
-                       aod::femtouniverseparticle::cutContainerType>(
+                       aod::femtouniverseparticle::CutContainerType>(
       mHistogramRegistry);
-    NegDaughTrack.init<aod::femtouniverseparticle::ParticleType::kPhiChild,
+    negDaughTrack.init<aod::femtouniverseparticle::ParticleType::kPhiChild,
                        aod::femtouniverseparticle::TrackType::kNegChild,
-                       aod::femtouniverseparticle::cutContainerType>(
+                       aod::femtouniverseparticle::CutContainerType>(
       mHistogramRegistry);
 
     // mHistogramRegistry->add("LambdaQA/hInvMassLambdaNoCuts", "No cuts", kTH1F,
@@ -349,31 +342,31 @@ void FemtoUniversePhiSelection::init(HistogramRegistry* registry)
   }
   /// check whether the most open cuts are fulfilled - most of this should have
   /// already be done by the filters
-  nPtPhiMinSel = getNSelections(femtoUniversePhiSelection::kPhipTMin);
-  nPtPhiMaxSel = getNSelections(femtoUniversePhiSelection::kPhipTMax);
-  nEtaPhiMaxSel = getNSelections(femtoUniversePhiSelection::kPhietaMax);
-  nDCAPhiDaughMax = getNSelections(femtoUniversePhiSelection::kPhiDCADaughMax);
-  nCPAPhiMin = getNSelections(femtoUniversePhiSelection::kPhiCPAMin);
-  nTranRadPhiMin = getNSelections(femtoUniversePhiSelection::kPhiTranRadMin);
-  nTranRadPhiMax = getNSelections(femtoUniversePhiSelection::kPhiTranRadMax);
-  nDecVtxMax = getNSelections(femtoUniversePhiSelection::kPhiDecVtxMax);
+  nPtPhiMinSel = getNSelections(femto_universe_phi_selection::kPhipTMin);
+  nPtPhiMaxSel = getNSelections(femto_universe_phi_selection::kPhipTMax);
+  nEtaPhiMaxSel = getNSelections(femto_universe_phi_selection::kPhietaMax);
+  nDCAPhiDaughMax = getNSelections(femto_universe_phi_selection::kPhiDCADaughMax);
+  nCPAPhiMin = getNSelections(femto_universe_phi_selection::kPhiCPAMin);
+  nTranRadPhiMin = getNSelections(femto_universe_phi_selection::kPhiTranRadMin);
+  nTranRadPhiMax = getNSelections(femto_universe_phi_selection::kPhiTranRadMax);
+  nDecVtxMax = getNSelections(femto_universe_phi_selection::kPhiDecVtxMax);
 
-  pTPhiMin = getMinimalSelection(femtoUniversePhiSelection::kPhipTMin,
-                                 femtoUniverseSelection::kLowerLimit);
-  pTPhiMax = getMinimalSelection(femtoUniversePhiSelection::kPhipTMax,
-                                 femtoUniverseSelection::kUpperLimit);
-  etaPhiMax = getMinimalSelection(femtoUniversePhiSelection::kPhietaMax,
-                                  femtoUniverseSelection::kAbsUpperLimit);
-  DCAPhiDaughMax = getMinimalSelection(femtoUniversePhiSelection::kPhiDCADaughMax,
-                                       femtoUniverseSelection::kUpperLimit);
-  CPAPhiMin = getMinimalSelection(femtoUniversePhiSelection::kPhiCPAMin,
-                                  femtoUniverseSelection::kLowerLimit);
-  TranRadPhiMin = getMinimalSelection(femtoUniversePhiSelection::kPhiTranRadMin,
-                                      femtoUniverseSelection::kLowerLimit);
-  TranRadPhiMax = getMinimalSelection(femtoUniversePhiSelection::kPhiTranRadMax,
-                                      femtoUniverseSelection::kUpperLimit);
-  DecVtxMax = getMinimalSelection(femtoUniversePhiSelection::kPhiDecVtxMax,
-                                  femtoUniverseSelection::kAbsUpperLimit);
+  pTPhiMin = getMinimalSelection(femto_universe_phi_selection::kPhipTMin,
+                                 femto_universe_selection::kLowerLimit);
+  pTPhiMax = getMinimalSelection(femto_universe_phi_selection::kPhipTMax,
+                                 femto_universe_selection::kUpperLimit);
+  etaPhiMax = getMinimalSelection(femto_universe_phi_selection::kPhietaMax,
+                                  femto_universe_selection::kAbsUpperLimit);
+  kDCAPhiDaughMax = getMinimalSelection(femto_universe_phi_selection::kPhiDCADaughMax,
+                                        femto_universe_selection::kUpperLimit);
+  kCPAPhiMin = getMinimalSelection(femto_universe_phi_selection::kPhiCPAMin,
+                                   femto_universe_selection::kLowerLimit);
+  kTranRadPhiMin = getMinimalSelection(femto_universe_phi_selection::kPhiTranRadMin,
+                                       femto_universe_selection::kLowerLimit);
+  kTranRadPhiMax = getMinimalSelection(femto_universe_phi_selection::kPhiTranRadMax,
+                                       femto_universe_selection::kUpperLimit);
+  kDecVtxMax = getMinimalSelection(femto_universe_phi_selection::kPhiDecVtxMax,
+                                   femto_universe_selection::kAbsUpperLimit);
 }
 
 template <typename C, typename V, typename T>
@@ -419,42 +412,42 @@ bool FemtoUniversePhiSelection::isSelectedMinimal(C const& col, V const& phi,
   if (nEtaPhiMaxSel > 0 && std::abs(eta) > etaPhiMax) {
     return false;
   }
-  if (nDCAPhiDaughMax > 0 && dcaDaughphi > DCAPhiDaughMax) {
+  if (nDCAPhiDaughMax > 0 && dcaDaughphi > kDCAPhiDaughMax) {
     return false;
   }
-  if (nCPAPhiMin > 0 && cpaphi < CPAPhiMin) {
+  if (nCPAPhiMin > 0 && cpaphi < kCPAPhiMin) {
     return false;
   }
-  if (nTranRadPhiMin > 0 && tranRad < TranRadPhiMin) {
+  if (nTranRadPhiMin > 0 && tranRad < kTranRadPhiMin) {
     return false;
   }
-  if (nTranRadPhiMax > 0 && tranRad > TranRadPhiMax) {
+  if (nTranRadPhiMax > 0 && tranRad > kTranRadPhiMax) {
     return false;
   }
   for (size_t i = 0; i < decVtx.size(); i++) {
-    if (nDecVtxMax > 0 && decVtx.at(i) > DecVtxMax) {
+    if (nDecVtxMax > 0 && decVtx.at(i) > kDecVtxMax) {
       return false;
     }
   }
-  if (!PosDaughTrack.isSelectedMinimal(posTrack)) {
+  if (!posDaughTrack.isSelectedMinimal(posTrack)) {
     return false;
   }
-  if (!NegDaughTrack.isSelectedMinimal(negTrack)) {
+  if (!negDaughTrack.isSelectedMinimal(negTrack)) {
     return false;
   }
 
   // check that track combinations for Phi or antiPhi would be fulfilling PID
-  int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
+  int nSigmaPIDMax = posDaughTrack.getSigmaPIDMax();
   // antiPhi
   auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
   auto nSigmaPiPos = posTrack.tpcNSigmaPi();
   // phi
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
-  if (!(abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-        abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) &&
-      !(abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-        abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax)) {
+  if (!(std::abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
+        std::abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) &&
+      !(std::abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
+        std::abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax)) {
     return false;
   }
 
@@ -499,24 +492,24 @@ void FemtoUniversePhiSelection::fillLambdaQA(C const& col, V const& phi,
     mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaEtaMax"),
                              phi.mLambda());
   }
-  if (dcaDaughphi < DCAPhiDaughMax) {
+  if (dcaDaughphi < kDCAPhiDaughMax) {
     mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaDCAPhiDaugh"),
                              phi.mLambda());
   }
-  if (cpaphi > CPAPhiMin) {
+  if (cpaphi > kCPAPhiMin) {
     mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaCPA"), phi.mLambda());
   }
-  if (tranRad > TranRadPhiMin) {
+  if (tranRad > kTranRadPhiMin) {
     mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaTranRadMin"),
                              phi.mLambda());
   }
-  if (tranRad < TranRadPhiMax) {
+  if (tranRad < kTranRadPhiMax) {
     mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaTranRadMax"),
                              phi.mLambda());
   }
   bool write = true;
   for (size_t i = 0; i < decVtx.size(); i++) {
-    write = write && (decVtx.at(i) < DecVtxMax);
+    write = write && (decVtx.at(i) < kDecVtxMax);
   }
   if (write) {
     mHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaDecVtxMax"),
@@ -526,37 +519,37 @@ void FemtoUniversePhiSelection::fillLambdaQA(C const& col, V const& phi,
 
 /// the CosPA of Phi needs as argument the posXYZ of collisions vertex so we need
 /// to pass the collsion as well
-template <typename cutContainerType, typename C, typename V, typename T>
-std::array<cutContainerType, 5>
+template <typename CutContainerType, typename C, typename V, typename T>
+std::array<CutContainerType, 5>
   FemtoUniversePhiSelection::getCutContainer(C const& col, V const& phi, T const& posTrack, T const& negTrack)
 {
-  auto outputPosTrack = PosDaughTrack.getCutContainer<cutContainerType>(posTrack);
-  auto outputNegTrack = NegDaughTrack.getCutContainer<cutContainerType>(negTrack);
-  cutContainerType output = 0;
+  auto outputPosTrack = posDaughTrack.getCutContainer<CutContainerType>(posTrack);
+  auto outputNegTrack = negDaughTrack.getCutContainer<CutContainerType>(negTrack);
+  CutContainerType output = 0;
   size_t counter = 0;
 
-  auto lambdaMassNominal = TDatabasePDG::Instance()->GetParticle(3122)->Mass(); // FIXME: Get from the common header
+  auto lambdaMassNominal = o2::constants::physics::MassPhi;
   auto lambdaMassHypothesis = phi.mLambda();
   auto antiLambdaMassHypothesis = phi.mAntiLambda();
-  auto diffLambda = abs(lambdaMassNominal - lambdaMassHypothesis);
-  auto diffAntiLambda = abs(antiLambdaMassHypothesis - lambdaMassHypothesis);
+  auto diffLambda = std::abs(lambdaMassNominal - lambdaMassHypothesis);
+  auto diffAntiLambda = std::abs(antiLambdaMassHypothesis - lambdaMassHypothesis);
 
   float sign = 0.;
-  int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
+  int nSigmaPIDMax = posDaughTrack.getSigmaPIDMax();
   auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
   auto nSigmaPiPos = posTrack.tpcNSigmaPi();
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
   // check the mass and the PID of daughters
-  if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda > diffLambda) {
+  if (std::abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda > diffLambda) {
     sign = -1.;
-  } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
+  } else if (std::abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
     sign = 1.;
   } else {
     // if it happens that none of these are true, ignore the invariant mass
-    if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
+    if (std::abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
       sign = -1.;
-    } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
+    } else if (std::abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
       sign = 1.;
     }
   }
@@ -571,38 +564,38 @@ std::array<cutContainerType, 5>
   float observable = 0.;
   for (auto& sel : mSelections) {
     const auto selVariable = sel.getSelectionVariable();
-    if (selVariable == femtoUniversePhiSelection::kPhiDecVtxMax) {
+    if (selVariable == femto_universe_phi_selection::kPhiDecVtxMax) {
       for (size_t i = 0; i < decVtx.size(); ++i) {
         auto decVtxValue = decVtx.at(i);
         sel.checkSelectionSetBit(decVtxValue, output, counter);
       }
     } else {
       switch (selVariable) {
-        case (femtoUniversePhiSelection::kPhiSign):
+        case (femto_universe_phi_selection::kPhiSign):
           observable = sign;
           break;
-        case (femtoUniversePhiSelection::kPhipTMin):
+        case (femto_universe_phi_selection::kPhipTMin):
           observable = pT;
           break;
-        case (femtoUniversePhiSelection::kPhipTMax):
+        case (femto_universe_phi_selection::kPhipTMax):
           observable = pT;
           break;
-        case (femtoUniversePhiSelection::kPhietaMax):
+        case (femto_universe_phi_selection::kPhietaMax):
           observable = eta;
           break;
-        case (femtoUniversePhiSelection::kPhiDCADaughMax):
+        case (femto_universe_phi_selection::kPhiDCADaughMax):
           observable = dcaDaughphi;
           break;
-        case (femtoUniversePhiSelection::kPhiCPAMin):
+        case (femto_universe_phi_selection::kPhiCPAMin):
           observable = cpaphi;
           break;
-        case (femtoUniversePhiSelection::kPhiTranRadMin):
+        case (femto_universe_phi_selection::kPhiTranRadMin):
           observable = tranRad;
           break;
-        case (femtoUniversePhiSelection::kPhiTranRadMax):
+        case (femto_universe_phi_selection::kPhiTranRadMax):
           observable = tranRad;
           break;
-        case (femtoUniversePhiSelection::kPhiDecVtxMax):
+        case (femto_universe_phi_selection::kPhiDecVtxMax):
           break;
       }
       sel.checkSelectionSetBit(observable, output, counter);
@@ -610,10 +603,10 @@ std::array<cutContainerType, 5>
   }
   return {
     output,
-    outputPosTrack.at(femtoUniverseTrackSelection::TrackContainerPosition::kCuts),
-    outputPosTrack.at(femtoUniverseTrackSelection::TrackContainerPosition::kPID),
-    outputNegTrack.at(femtoUniverseTrackSelection::TrackContainerPosition::kCuts),
-    outputNegTrack.at(femtoUniverseTrackSelection::TrackContainerPosition::kPID)};
+    outputPosTrack.at(femto_universe_track_selection::TrackContainerPosition::kCuts),
+    outputPosTrack.at(femto_universe_track_selection::TrackContainerPosition::kPID),
+    outputNegTrack.at(femto_universe_track_selection::TrackContainerPosition::kCuts),
+    outputNegTrack.at(femto_universe_track_selection::TrackContainerPosition::kPID)};
 }
 
 template <o2::aod::femtouniverseparticle::ParticleType part,
@@ -625,8 +618,8 @@ void FemtoUniversePhiSelection::fillQA(C const& /*col*/, V const& /*phi*/, T con
   if (mHistogramRegistry) {
     TLorentzVector part1Vec;
     TLorentzVector part2Vec;
-    float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass(); // FIXME: Get from the common header
-    float mMassTwo = TDatabasePDG::Instance()->GetParticle(321)->Mass(); // FIXME: Get from the common header
+    float mMassOne = o2::constants::physics::MassKPlus;
+    float mMassTwo = o2::constants::physics::MassKMinus;
 
     part1Vec.SetPtEtaPhiM(posTrack.pt(), posTrack.eta(), posTrack.phi(), mMassOne);
     part2Vec.SetPtEtaPhiM(negTrack.pt(), negTrack.eta(), negTrack.phi(), mMassTwo);
@@ -635,13 +628,7 @@ void FemtoUniversePhiSelection::fillQA(C const& /*col*/, V const& /*phi*/, T con
     sumVec += part2Vec;
     float phiEta = sumVec.Eta();
     float phiPt = sumVec.Pt();
-    // float phiP = sumVec.P();
-    float phiPhi = sumVec.Phi();
-    if (sumVec.Phi() < 0) {
-      phiPhi = sumVec.Phi() + 2 * o2::constants::math::PI;
-    } else if (sumVec.Phi() >= 0) {
-      phiPhi = sumVec.Phi();
-    }
+    float phiPhi = RecoDecay::constrainAngle(sumVec.Phi(), 0);
 
     float phiM = sumVec.M();
 
@@ -664,12 +651,12 @@ void FemtoUniversePhiSelection::fillQA(C const& /*col*/, V const& /*phi*/, T con
       phiM);
   }
 
-  PosDaughTrack.fillQA<aod::femtouniverseparticle::ParticleType::kPhiChild,
+  posDaughTrack.fillQA<aod::femtouniverseparticle::ParticleType::kPhiChild,
                        aod::femtouniverseparticle::TrackType::kPosChild>(posTrack);
-  NegDaughTrack.fillQA<aod::femtouniverseparticle::ParticleType::kPhiChild,
+  negDaughTrack.fillQA<aod::femtouniverseparticle::ParticleType::kPhiChild,
                        aod::femtouniverseparticle::TrackType::kNegChild>(negTrack);
 }
 
-} // namespace o2::analysis::femtoUniverse
+} // namespace o2::analysis::femto_universe
 
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPHISELECTION_H_

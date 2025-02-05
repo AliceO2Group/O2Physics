@@ -12,6 +12,7 @@
 /// \file femtoDreamProducer.cxx
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Ravindra Singh, GSI, ravindra.singh@cern.ch
+/// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
 
 #include <string>
 #include <vector>
@@ -39,11 +40,25 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Core/CentralityEstimation.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoDream;
+using namespace o2::hf_evsel;
+using namespace o2::hf_centrality;
+
+// event types
+enum Event : uint8_t {
+  kAll = 0,
+  kRejEveSel,
+  kRejNoTracksAndCharm,
+  kTrackSelected,
+  kCharmSelected,
+  kPairSelected
+};
 
 struct HfFemtoDreamProducer {
 
@@ -68,19 +83,6 @@ struct HfFemtoDreamProducer {
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
   // Configurable<bool> isForceGRP{"isForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
-
-  /// Event selection
-  // Configurable<float> evtZvtx{"evtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
-  // Configurable<bool> evtTriggerCheck{"evtTriggerCheck", true, "Evt sel: check for trigger"};
-  // Configurable<int> evtTriggerSel{"evtTriggerSel", kINT7, "Evt sel: trigger"};
-  // Configurable<bool> evtOfflineCheck{"evtOfflineCheck", false, "Evt sel: check for offline selection"};
-  // Configurable<bool> evtAddOfflineCheck{"evtAddOfflineCheck", false, "Evt sel: additional checks for offline selection (not part of sel8 yet)"};
-
-  Configurable<bool> evtAddOfflineCheck{"evtAddOfflineCheck", false, "Evt sel: additional checks for offline selection (not part of sel8 yet)"};
-  Configurable<bool> evtOfflineCheck{"evtOfflineCheck", false, "Evt sel: check for offline selection"};
-  Configurable<bool> evtTriggerCheck{"evtTriggerCheck", true, "Evt sel: check for trigger"};
-  Configurable<int> evtTriggerSel{"evtTriggerSel", kINT7, "Evt sel: trigger"};
-  Configurable<float> evtZvtx{"evtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
 
   Configurable<bool> isDebug{"isDebug", true, "Enable Debug tables"};
   Configurable<bool> isRun3{"isRun3", true, "Running on Run3 or pilot"};
@@ -114,14 +116,13 @@ struct HfFemtoDreamProducer {
   using FemtoFullCollisionMc = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
   using FemtoFullMcgenCollisions = soa::Join<aod::McCollisions, o2::aod::MultsExtraMC>;
   using FemtoFullMcgenCollision = FemtoFullMcgenCollisions::iterator;
-  using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
   using FemtoHFTrack = FemtoHFTracks::iterator;
   using FemtoHFMcTracks = soa::Join<aod::McTrackLabels, FemtoHFTracks>;
   using FemtoHFMcTrack = FemtoHFMcTracks::iterator;
 
   using GeneratedMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
-  FemtoDreamCollisionSelection colCuts;
   FemtoDreamTrackSelection trackCuts;
 
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
@@ -130,6 +131,7 @@ struct HfFemtoDreamProducer {
   HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   HfHelper hfHelper;
+  o2::hf_evsel::HfEventSelection hfEvSel;
 
   float magField;
   int runNumber;
@@ -148,8 +150,21 @@ struct HfFemtoDreamProducer {
     int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
 
-    colCuts.setCuts(evtZvtx.value, evtTriggerCheck.value, evtTriggerSel.value, evtOfflineCheck.value, evtAddOfflineCheck.value, isRun3.value);
-    colCuts.init(&qaRegistry);
+    // event QA histograms
+    constexpr int kEventTypes = kPairSelected + 1;
+    std::string labels[kEventTypes];
+    labels[Event::kAll] = "All events";
+    labels[Event::kRejEveSel] = "rejected by event selection";
+    labels[Event::kRejNoTracksAndCharm] = "rejected by no tracks and charm";
+    labels[Event::kTrackSelected] = "with tracks ";
+    labels[Event::kCharmSelected] = "with charm hadrons ";
+    labels[Event::kPairSelected] = "with pairs";
+
+    static const AxisSpec axisEvents = {kEventTypes, 0.5, kEventTypes + 0.5, ""};
+    qaRegistry.add("hEventQA", "Events;;entries", HistType::kTH1F, {axisEvents});
+    for (int iBin = 0; iBin < kEventTypes; iBin++) {
+      qaRegistry.get<TH1>(HIST("hEventQA"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+    }
 
     trackCuts.setSelection(trkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
     trackCuts.setSelection(trkPtmin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
@@ -174,6 +189,8 @@ struct HfFemtoDreamProducer {
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+
+    hfEvSel.addHistograms(qaRegistry); // collision monitoring
 
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
@@ -203,17 +220,18 @@ struct HfFemtoDreamProducer {
                      particle.tpcNSigmaPi(),
                      particle.tpcNSigmaKa(),
                      particle.tpcNSigmaPr(),
-                     -999.,
+                     particle.tpcNSigmaDe(),
                      -999.,
                      -999.,
                      -999.,
                      particle.tofNSigmaPi(),
                      particle.tofNSigmaKa(),
                      particle.tofNSigmaPr(),
-                     -999.,
-                     -999.,
-                     -999.,
-                     -999., -999., -999., -999., -999., -999.);
+                     particle.tofNSigmaDe(),
+                     -999., -999., -999., -999.,
+                     -999., -999., -999., -999.,
+                     -999., -999., -999., -999.,
+                     -999., -999., -999., -999.);
   }
 
   template <typename CollisionType, typename ParticleType>
@@ -303,7 +321,7 @@ struct HfFemtoDreamProducer {
 
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, true>(track);
       // the bit-wise container of the systematic variations is obtained
-      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
+      auto cutContainer = trackCuts.getCutContainer<false, aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
 
       // track global index
       outputPartsIndex(track.globalIndex());
@@ -335,8 +353,7 @@ struct HfFemtoDreamProducer {
   {
     const auto vtxZ = col.posZ();
     const auto sizeCand = candidates.size();
-
-    const auto spher = colCuts.computeSphericity(col, tracks);
+    const auto spher = 2.; // dummy value for the moment
     float mult = 0;
     int multNtr = 0;
     if (isRun3) {
@@ -351,15 +368,20 @@ struct HfFemtoDreamProducer {
       multNtr = col.multTracklets();
     }
 
-    colCuts.fillQA(col, mult);
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(col, mult, ccdb, qaRegistry);
 
-    // check whether the basic event selection criteria are fulfilled
-    // that included checking if there is at least on usable track or V0
-    if (!colCuts.isSelectedCollision(col)) {
+    qaRegistry.fill(HIST("hEventQA"), 1 + Event::kAll);
+
+    /// monitor the satisfied event selections
+    hfEvSel.fillHistograms(col, rejectionMask, mult);
+    if (rejectionMask != 0) {
+      /// at least one event selection not satisfied --> reject the candidate
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kRejEveSel);
       return;
     }
 
-    if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
+    if (isNoSelectedTracks(col, tracks, trackCuts) && sizeCand <= 0) {
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kRejNoTracksAndCharm);
       return;
     }
 
@@ -437,16 +459,37 @@ struct HfFemtoDreamProducer {
     aod::femtodreamcollision::BitMaskType bitTrack = 0;
     if (isTrackFilled) {
       bitTrack |= 1 << 0;
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kTrackSelected);
     }
 
     aod::femtodreamcollision::BitMaskType bitCand = 0;
     if (sizeCand > 0) {
       bitCand |= 1 << 0;
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kCharmSelected);
     }
+
+    if (isTrackFilled && (sizeCand > 0))
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kPairSelected);
 
     rowMasks(static_cast<aod::femtodreamcollision::BitMaskType>(bitTrack),
              static_cast<aod::femtodreamcollision::BitMaskType>(bitCand),
              0);
+  }
+
+  // check if there is no selected track
+  /// \param C type of the collision
+  /// \param T type of the tracks
+  /// \param TC type of the femto track cuts
+  /// \return whether or not the tracks fulfills the all selections
+  template <typename C, typename T, typename TC>
+  bool isNoSelectedTracks(C const& /*col*/, T const& tracks, TC& trackCuts)
+  {
+    for (auto const& track : tracks) {
+      if (trackCuts.isSelectedMinimal(track)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   template <typename ParticleType>

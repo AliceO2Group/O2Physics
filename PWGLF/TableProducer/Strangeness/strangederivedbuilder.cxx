@@ -21,6 +21,8 @@
 #include <map>
 #include <iterator>
 #include <utility>
+#include <string>
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -46,6 +48,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Framework/StaticFor.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 
@@ -112,6 +115,7 @@ struct strangederivedbuilder {
   Produces<aod::StraFV0AQVs> StraFV0AQVs;     // FV0A Q-vector
   Produces<aod::StraTPCQVs> StraTPCQVs;       // TPC Q-vector
   Produces<aod::StraFT0CQVsEv> StraFT0CQVsEv; // events used to compute FT0C Q-vector (LF)
+  Produces<aod::StraZDCSP> StraZDCSP;         // ZDC Sums and Products
 
   //__________________________________________________
   // Generated binned data
@@ -199,6 +203,8 @@ struct strangederivedbuilder {
   Preslice<aod::McParticles> mcParticlePerMcCollision = o2::aod::mcparticle::mcCollisionId;
   Preslice<UDCollisionsFull> udCollisionsPerCollision = o2::aod::udcollision::collisionId;
 
+  Service<o2::framework::O2DatabasePDG> pdg;
+
   std::vector<uint32_t> genK0Short;
   std::vector<uint32_t> genLambda;
   std::vector<uint32_t> genAntiLambda;
@@ -218,6 +224,143 @@ struct strangederivedbuilder {
 
   void init(InitContext&)
   {
+    LOGF(info, "Initializing now: cross-checking correctness...");
+    if (doprocessCollisions +
+          doprocessCollisionsWithUD +
+          doprocessCollisionsWithMC +
+          doprocessCollisionsWithUDWithMC >
+        1) {
+      LOGF(fatal, "You have enabled more than one process function associated to collisions. Please check your configuration! Aborting now.");
+    }
+    if (doprocessTrackExtrasV0sOnly +
+          doprocessTrackExtras +
+          doprocessTrackExtrasNoPID +
+          doprocessTrackExtrasMC >
+        1) {
+      LOGF(fatal, "You have enabled more than one process function associated to TracksExtra. Please check your configuration! Aborting now.");
+    }
+
+    LOGF(info, "====] base information processing [===============================");
+    if (doprocessDataframeIDs) {
+      LOGF(info, "Process data frame IDs............: yes");
+    } else {
+      LOGF(info, "Process data frame IDs............: no");
+    }
+
+    // collision processing printout
+    if (doprocessCollisions) {
+      LOGF(info, "Collision processing type.........: no UD, no MC");
+    }
+    if (doprocessCollisionsWithUD) {
+      LOGF(info, "Collision processing type.........: with UD, no MC");
+    }
+    if (doprocessCollisionsWithMC) {
+      LOGF(info, "Collision processing type.........: with MC, no UD");
+    }
+    if (doprocessCollisionsWithUDWithMC) {
+      LOGF(info, "Collision processing type.........: with MC, with UD");
+    }
+
+    LOGF(info, "====] event characterization processing [=========================");
+    if (doprocessFT0AQVectors) {
+      LOGF(info, "Process FT0A Q-vectors............: yes");
+    } else {
+      LOGF(info, "Process FT0A Q-vectors............: no");
+    }
+    if (doprocessFT0CQVectors) {
+      LOGF(info, "Process FT0C Q-vectors............: yes");
+    } else {
+      LOGF(info, "Process FT0C Q-vectors............: no");
+    }
+    if (doprocessFT0CQVectorsLF) {
+      LOGF(info, "Process FT0C Q-vectors (LF).......: yes");
+    } else {
+      LOGF(info, "Process FT0C Q-vectors (LF).......: no");
+    }
+    if (doprocessFT0MQVectors) {
+      LOGF(info, "Process FT0M Q-vectors............: yes");
+    } else {
+      LOGF(info, "Process FT0M Q-vectors............: no");
+    }
+    if (doprocessFV0AQVectors) {
+      LOGF(info, "Process FV0A Q-vectors............: yes");
+    } else {
+      LOGF(info, "Process FV0A Q-vectors............: no");
+    }
+    if (doprocessTPCQVectors) {
+      LOGF(info, "Process TPC Q-vectors.............: yes");
+    } else {
+      LOGF(info, "Process TPC Q-vectors.............: no");
+    }
+    if (doprocessTPCQVectorsLF) {
+      LOGF(info, "Process TPC Q-vectors (LF)........: yes");
+    } else {
+      LOGF(info, "Process TPC Q-vectors (LF)........: no");
+    }
+    if (doprocessZDCSP) {
+      LOGF(info, "Process ZPC spectator plane.......: yes");
+    } else {
+      LOGF(info, "Process ZPC spectator plane.......: no");
+    }
+
+    LOGF(info, "====] daughter track property processing [========================");
+    if (doprocessTrackExtrasV0sOnly) {
+      LOGF(info, "TracksExtra processing type.......: V0s only");
+    }
+    if (doprocessTrackExtras) {
+      LOGF(info, "TracksExtra processing type.......: V0s + cascades");
+    }
+    if (doprocessTrackExtrasNoPID) {
+      LOGF(info, "TracksExtra processing type.......: V0s + cascades, no PID");
+    }
+    if (doprocessTrackExtrasMC) {
+      LOGF(info, "TracksExtra processing type.......: V0s + cascades, Monte Carlo");
+    }
+    LOGF(info, "====] cascade interlink processing [==============================");
+    if (doprocessCascadeInterlinkTracked) {
+      LOGF(info, "Process cascade/tracked interlink.: yes");
+    } else {
+      LOGF(info, "Process cascade/tracked interlink.: no");
+    }
+    if (doprocessCascadeInterlinkKF) {
+      LOGF(info, "Process cascade/KF interlink......: yes");
+    } else {
+      LOGF(info, "Process cascade/KF interlink......: no");
+    }
+    LOGF(info, "====] simulated information processing [==========================");
+    if (doprocessPureSimulation) {
+      LOGF(info, "Process pure simulation info......: yes");
+    } else {
+      LOGF(info, "Process pure simulation info......: no");
+    }
+    if (doprocessReconstructedSimulation) {
+      LOGF(info, "Process reco simulation info......: yes");
+    } else {
+      LOGF(info, "Process reco simulation info......: no");
+    }
+    if (doprocessBinnedGenerated) {
+      LOGF(info, "Process binned simulation info....: yes");
+    } else {
+      LOGF(info, "Process binned simulation info....: no");
+    }
+    if (doprocessStrangeMothers) {
+      LOGF(info, "Process strange mothers...........: yes");
+    } else {
+      LOGF(info, "Process strange mothers...........: no");
+    }
+    LOGF(info, "====] findable exercise extras [==================================");
+    if (doprocessV0FoundTags) {
+      LOGF(info, "Process found V0 tags.............: yes");
+    } else {
+      LOGF(info, "Process found V0 tags.............: no");
+    }
+    if (doprocessCascFoundTags) {
+      LOGF(info, "Process found cascade tags........: yes");
+    } else {
+      LOGF(info, "Process found cascade tags........: no");
+    }
+    LOGF(info, "==================================================================");
+
     // setup map for fast checking if enabled
     static_for<0, nSpecies - 1>([&](auto i) {
       constexpr int index = i.value;
@@ -351,7 +494,8 @@ struct strangederivedbuilder {
           strangeCollLabels(collision.mcCollisionId());
         }
         strangeCents(collision.centFT0M(), collision.centFT0A(),
-                     centrality, collision.centFV0A());
+                     centrality, collision.centFV0A(), collision.centFT0CVariant1(),
+                     collision.centMFT(), collision.centNGlobal());
         strangeEvSels(collision.sel8(), collision.selection_raw(),
                       collision.multFT0A() * static_cast<float>(fillTruncationOptions.fillRawFT0A),
                       collision.multFT0C() * static_cast<float>(fillTruncationOptions.fillRawFT0C),
@@ -378,8 +522,9 @@ struct strangederivedbuilder {
                       totalFDDAmplitudeA, totalFDDAmplitudeC,
                       energyCommonZNA, energyCommonZNC,
                       // Collision flags
-                      collision.flags());
-        strangeStamps(bc.runNumber(), bc.timestamp());
+                      collision.flags(),
+                      collision.alias_raw());
+        strangeStamps(bc.runNumber(), bc.timestamp(), bc.globalBC());
       }
       for (const auto& v0 : V0Table_thisColl)
         V0CollIndices[v0.globalIndex()] = strangeColl.lastIndex();
@@ -408,39 +553,64 @@ struct strangederivedbuilder {
   }
 
   // master function to process a collision
-  template <typename mccoll>
-  void populateMCCollisionTable(mccoll const& mcCollisions)
+  template <typename mccoll, typename mcparts>
+  void populateMCCollisionTable(mccoll const& mcCollisions, mcparts const& mcParticlesEntireTable)
   {
     // ______________________________________________
     // fill all MC collisions, correlate via index later on
     for (const auto& mccollision : mcCollisions) {
-      strangeMCColl(mccollision.posX(), mccollision.posY(), mccollision.posZ(), mccollision.impactParameter());
+      const uint64_t mcCollIndex = mccollision.globalIndex();
+      auto mcParticles = mcParticlesEntireTable.sliceBy(mcParticlePerMcCollision, mcCollIndex);
+
+      // count total MC multiplicity in generated collision
+      // reproduces what is done here:
+      // https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/multiplicityTable.cxx#L654
+      int totalMult = 0;
+      for (const auto& mcPart : mcParticles) {
+        if (!mcPart.isPhysicalPrimary()) {
+          continue;
+        }
+
+        auto charge = 0.;
+        auto* p = pdg->GetParticle(mcPart.pdgCode());
+        if (p != nullptr) {
+          charge = p->Charge();
+        }
+        if (std::abs(charge) < 1e-3) {
+          continue; // reject neutral particles in counters
+        }
+        totalMult++;
+      }
+
+      strangeMCColl(mccollision.posX(), mccollision.posY(), mccollision.posZ(),
+                    mccollision.impactParameter(), mccollision.eventPlaneAngle());
       strangeMCMults(mccollision.multMCFT0A(), mccollision.multMCFT0C(),
                      mccollision.multMCNParticlesEta05(),
                      mccollision.multMCNParticlesEta08(),
-                     mccollision.multMCNParticlesEta10());
+                     mccollision.multMCNParticlesEta10(),
+                     totalMult);
     }
   }
 
-  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/)
+  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentNGlobals, aod::CentMFTs, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/)
   {
     populateCollisionTables(collisions, collisions, V0s, Cascades, KFCascades, TraCascades);
   }
 
-  void processCollisionsWithUD(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, UDCollisionsFull const& udCollisions)
+  void processCollisionsWithUD(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentNGlobals, aod::CentMFTs, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, UDCollisionsFull const& udCollisions)
   {
     populateCollisionTables(collisions, udCollisions, V0s, Cascades, KFCascades, TraCascades);
   }
 
-  void processCollisionsWithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
+  void processCollisionsWithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentNGlobals, aod::CentMFTs, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    populateMCCollisionTable(mcCollisions);
+    populateMCCollisionTable(mcCollisions, mcParticles);
     populateCollisionTables(collisions, collisions, V0s, Cascades, KFCascades, TraCascades);
   }
 
-  void processCollisionsWithUDWithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, UDCollisionsFull const& udCollisions, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
+  void processCollisionsWithUDWithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentNGlobals, aod::CentMFTs, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, UDCollisionsFull const& udCollisions, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    populateMCCollisionTable(mcCollisions);
+    populateMCCollisionTable(mcCollisions, mcParticles);
     populateCollisionTables(collisions, udCollisions, V0s, Cascades, KFCascades, TraCascades);
   }
 
@@ -478,8 +648,11 @@ struct strangederivedbuilder {
     for (auto const& tr : tracksExtra) {
       if (trackMap[tr.globalIndex()] >= 0) {
         dauTrackExtras(tr.itsChi2NCl(),
-                       tr.detectorMap(), tr.itsClusterSizes(),
-                       tr.tpcNClsFound(), tr.tpcNClsCrossedRows());
+                       tr.detectorMap(),
+                       tr.itsClusterSizes(),
+                       tr.tpcNClsFindable(),
+                       tr.tpcNClsFindableMinusFound(),
+                       tr.tpcNClsFindableMinusCrossedRows());
       }
     }
     // done!
@@ -569,31 +742,39 @@ struct strangederivedbuilder {
     for (auto const& tr : tracksExtra) {
       if (trackMap[tr.globalIndex()] >= 0) {
         dauTrackExtras(tr.itsChi2NCl(),
-                       tr.detectorMap(), tr.itsClusterSizes(),
-                       tr.tpcNClsFound(), tr.tpcNClsCrossedRows());
+                       tr.detectorMap(),
+                       tr.itsClusterSizes(),
+                       tr.tpcNClsFindable(),
+                       tr.tpcNClsFindableMinusFound(),
+                       tr.tpcNClsFindableMinusCrossedRows());
 
+        // _________________________________________
         // if the table has MC info
         if constexpr (requires { tr.mcParticle(); }) {
           // do your thing with the mcParticleIds only in case the table has the MC info
           dauTrackMCIds(tr.mcParticleId()); // joinable with dauTrackExtras
         }
 
-        // round if requested
-        if (roundNSigmaVariables) {
-          dauTrackTPCPIDs(tr.tpcSignal(),
-                          roundToPrecision(tr.tpcNSigmaEl(), precisionNSigmas),
-                          roundToPrecision(tr.tpcNSigmaPi(), precisionNSigmas),
-                          roundToPrecision(tr.tpcNSigmaKa(), precisionNSigmas),
-                          roundToPrecision(tr.tpcNSigmaPr(), precisionNSigmas),
-                          roundToPrecision(tr.tpcNSigmaHe(), precisionNSigmas));
+        if constexpr (requires { tr.tpcNSigmaEl(); }) {
+          if (roundNSigmaVariables) { // round if requested
+            dauTrackTPCPIDs(tr.tpcSignal(),
+                            roundToPrecision(tr.tpcNSigmaEl(), precisionNSigmas),
+                            roundToPrecision(tr.tpcNSigmaPi(), precisionNSigmas),
+                            roundToPrecision(tr.tpcNSigmaKa(), precisionNSigmas),
+                            roundToPrecision(tr.tpcNSigmaPr(), precisionNSigmas),
+                            roundToPrecision(tr.tpcNSigmaHe(), precisionNSigmas));
+          } else {
+            dauTrackTPCPIDs(tr.tpcSignal(), tr.tpcNSigmaEl(),
+                            tr.tpcNSigmaPi(), tr.tpcNSigmaKa(),
+                            tr.tpcNSigmaPr(), tr.tpcNSigmaHe());
+          }
+          // populate daughter-level TOF information
+          dauTrackTOFPIDs(tr.tofSignal(), tr.tofEvTime(), tr.length());
         } else {
-          dauTrackTPCPIDs(tr.tpcSignal(), tr.tpcNSigmaEl(),
-                          tr.tpcNSigmaPi(), tr.tpcNSigmaKa(),
-                          tr.tpcNSigmaPr(), tr.tpcNSigmaHe());
+          // populate with empty fully-compatible Nsigmas if no corresponding table available
+          dauTrackTPCPIDs(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+          dauTrackTOFPIDs(0.0f, 0.0f, 0.0f);
         }
-
-        // populate daughter-level TOF information
-        dauTrackTOFPIDs(tr.tofSignal(), tr.tofEvTime(), tr.length());
       }
     }
     // done!
@@ -602,13 +783,17 @@ struct strangederivedbuilder {
   void processTrackExtras(aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::TOFEvTime, aod::TOFSignal> const& tracksExtra, aod::V0s const&)
   {
     fillTrackExtras(V0s, Cascades, KFCascades, TraCascades, tracksExtra);
-    // done!
+  }
+
+  // no TPC services
+  void processTrackExtrasNoPID(aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::TracksIU, aod::TracksExtra> const& tracksExtra, aod::V0s const&)
+  {
+    fillTrackExtras(V0s, Cascades, KFCascades, TraCascades, tracksExtra);
   }
 
   void processTrackExtrasMC(aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::TOFEvTime, aod::TOFSignal> const& tracksExtra, aod::V0s const&)
   {
     fillTrackExtras(V0s, Cascades, KFCascades, TraCascades, tracksExtra);
-    // done!
   }
 
   void processStrangeMothers(soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::McParticles const& mcParticles)
@@ -800,6 +985,11 @@ struct strangederivedbuilder {
     StraFT0CQVs(collision.qFT0C() * std::cos(2 * collision.psiFT0C()), collision.qFT0C() * std::sin(2 * collision.psiFT0C()), collision.qFT0C());
     StraFT0CQVsEv(collision.triggereventep());
   }
+  void processZDCSP(soa::Join<aod::Collisions, aod::SPCalibrationTables>::iterator const& collision)
+  {
+    StraZDCSP(collision.triggereventsp(),
+              collision.psiZDCA(), collision.psiZDCC());
+  }
   void processFT0MQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Ms>::iterator const& collision)
   {
     StraFT0MQVs(collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M());
@@ -889,6 +1079,7 @@ struct strangederivedbuilder {
   // detailed information processing
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasV0sOnly, "Produce track extra information (V0s only)", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtras, "Produce track extra information (V0s + casc)", true);
+  PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasNoPID, "Produce track extra information (V0s + casc), no PID", false);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasMC, "Produce track extra information (V0s + casc)", false);
   PROCESS_SWITCH(strangederivedbuilder, processStrangeMothers, "Produce tables with mother info for V0s + casc", true);
   PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlinkTracked, "Produce tables interconnecting cascades", false);
@@ -905,6 +1096,7 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processFV0AQVectors, "Produce FV0A Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processTPCQVectors, "Produce TPC Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processTPCQVectorsLF, "Produce TPC Q-vectors table using LF temporary calibration", false);
+  PROCESS_SWITCH(strangederivedbuilder, processZDCSP, "Produce ZDC SP table", false);
 
   // dedicated findable functionality
   PROCESS_SWITCH(strangederivedbuilder, processV0FoundTags, "Produce FoundV0Tags for findable exercise", false);

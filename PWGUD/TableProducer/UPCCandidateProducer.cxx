@@ -81,7 +81,7 @@ struct UpcCandProducer {
   Configurable<int> fFilterTVX{"filterTVX", -1, "Filter candidates by FT0 TVX"};
   Configurable<int> fFilterFV0{"filterFV0", -1, "Filter candidates by FV0A"};
 
-  Configurable<int> fBCWindowFITAmps{"bcWindowFITAmps", 20, "BC range for T0A/V0A amplitudes array [-range, +(range-1)]"};
+  Configurable<uint64_t> fBCWindowFITAmps{"bcWindowFITAmps", 20, "BC range for T0A/V0A amplitudes array [-range, +(range-1)]"};
   Configurable<int> fBcWindowMCH{"bcWindowMCH", 20, "Time window for MCH-MID to MCH-only matching for Muon candidates"};
   Configurable<int> fBcWindowITSTPC{"bcWindowITSTPC", 20, "Time window for TOF/ITS-TPC to ITS-TPC matching for Central candidates"};
 
@@ -884,7 +884,7 @@ struct UpcCandProducer {
     for (auto& pair : bcsMatchedTrIdsTOF) {
       auto globalBC = pair.first;
       auto& barrelTrackIDs = pair.second;
-      int32_t nTOFs = barrelTrackIDs.size();
+      uint32_t nTOFs = barrelTrackIDs.size();
       if (nTOFs > fNBarProngs) // too many tracks
         continue;
       auto closestBcITSTPC = std::numeric_limits<uint64_t>::max();
@@ -898,7 +898,7 @@ struct UpcCandProducer {
         if (std::abs(distClosestBcITSTPC) > fBcWindowITSTPC)
           continue;
         auto& itstpcTracks = itClosestBcITSTPC->second;
-        int32_t nITSTPCs = itstpcTracks.size();
+        uint32_t nITSTPCs = itstpcTracks.size();
         if ((nTOFs + nITSTPCs) != fNBarProngs)
           continue;
         barrelTrackIDs.insert(barrelTrackIDs.end(), itstpcTracks.begin(), itstpcTracks.end());
@@ -953,7 +953,7 @@ struct UpcCandProducer {
     for (auto& pair : bcsMatchedTrIdsITSTPC) {
       auto globalBC = pair.first;
       auto& barrelTrackIDs = pair.second;
-      int32_t nThisITSTPCs = barrelTrackIDs.size();
+      uint32_t nThisITSTPCs = barrelTrackIDs.size();
       if (nThisITSTPCs > fNBarProngs || nThisITSTPCs == 0) // too many tracks / already matched to TOF
         continue;
       auto closestBcITSTPC = std::numeric_limits<uint64_t>::max();
@@ -967,7 +967,7 @@ struct UpcCandProducer {
         if (std::abs(distClosestBcITSTPC) > fBcWindowITSTPC)
           continue;
         auto& itstpcTracks = itClosestBcITSTPC->second;
-        int32_t nITSTPCs = itstpcTracks.size();
+        uint32_t nITSTPCs = itstpcTracks.size();
         if ((nThisITSTPCs + nITSTPCs) != fNBarProngs)
           continue;
         barrelTrackIDs.insert(barrelTrackIDs.end(), itstpcTracks.begin(), itstpcTracks.end());
@@ -1208,7 +1208,7 @@ struct UpcCandProducer {
                       const std::map<uint64_t, int32_t>& mapBCs,
                       std::vector<float>& amps,
                       std::vector<int8_t>& relBCs,
-                      int64_t gbc)
+                      uint64_t gbc)
   {
     auto s = gbc - fBCWindowFITAmps;
     auto e = gbc + (fBCWindowFITAmps - 1);
@@ -1344,7 +1344,7 @@ struct UpcCandProducer {
     for (auto& pair : bcsMatchedTrIdsMID) { // candidates without MFT
       auto globalBC = static_cast<int64_t>(pair.first);
       const auto& fwdTrackIDs = pair.second; // only MID-matched tracks at the moment
-      int32_t nMIDs = fwdTrackIDs.size();
+      uint32_t nMIDs = fwdTrackIDs.size();
       if (nMIDs > fNFwdProngs) // too many tracks
         continue;
       std::vector<int64_t> trkCandIDs{};
@@ -1359,7 +1359,7 @@ struct UpcCandProducer {
         if (std::abs(distClosestBcMCH) > fBcWindowMCH)
           continue;
         auto& mchTracks = itClosestBcMCH->second;
-        int32_t nMCHs = mchTracks.size();
+        uint32_t nMCHs = mchTracks.size();
         if ((nMCHs + nMIDs) != fNFwdProngs)
           continue;
         trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
@@ -1466,7 +1466,7 @@ struct UpcCandProducer {
                           fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                           fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A);
+      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, 0, 0, 0);
       eventCandidatesSelsFwd(fitInfo.distClosestBcV0A,
                              fitInfo.distClosestBcT0A,
                              amplitudesT0A,
@@ -1589,7 +1589,6 @@ struct UpcCandProducer {
     auto nFT0s = mapGlobalBcWithT0A.size();
     auto nFV0As = mapGlobalBcWithV0A.size();
     auto nZdcs = mapGlobalBcWithZdc.size();
-    auto nBcsWithMID = bcsMatchedTrIdsMID.size();
     auto nFDDs = mapGlobalBcWithFDD.size();
 
     // todo: calculate position of UD collision?
@@ -1601,29 +1600,59 @@ struct UpcCandProducer {
 
     std::vector<int> selTrackIdsGlobal{};
 
-    // storing n-prong matches
     int32_t candID = 0;
-    auto midIt = bcsMatchedTrIdsMID.begin();
-    for (auto& pair : bcsMatchedTrIdsGlobal) { // candidates with MFT
+
+    for (auto& pair : bcsMatchedTrIdsGlobal) {
       auto globalBC = static_cast<int64_t>(pair.first);
-      const auto& fwdTrackIDs = pair.second;
-      int32_t nMFTs = fwdTrackIDs.size();
-      if (nMFTs > fNFwdProngs) // too many tracks
+      const auto& fwdTrackIDs = pair.second; // Forward tracks (Global with MFT)
+      if (fwdTrackIDs.size() != 2) {         // ensure we have two MFT tracks
         continue;
-      std::vector<int64_t> trkCandIDs{};
-      auto midBC = static_cast<int64_t>(midIt->first);
-      const auto& midTrackIDs = midIt->second;
-      if (nMFTs == fNFwdProngs) {
-        for (auto iMft : fwdTrackIDs) {
-          auto trk = fwdTracks.iteratorAt(iMft);
-          auto trkEta = trk.eta();
-          if (trkEta > fMinEtaMFT && trkEta < fMaxEtaMFT) { // If the track is in the MFT acceptance, store the global track
-            trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
-          } else { // If the track is not in the MFT acceptance, store the MCH-MID track
-            trkCandIDs.insert(trkCandIDs.end(), midTrackIDs.begin(), midTrackIDs.end());
-          }
-        }
       }
+
+      // find the corresponding MCH-MID tracks
+      auto midIt = std::find_if(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
+                                [globalBC](const auto& midPair) {
+                                  return midPair.first == static_cast<uint64_t>(globalBC);
+                                });
+      const auto* midTrackIDs = (midIt != bcsMatchedTrIdsMID.end()) ? &midIt->second : nullptr;
+
+      // ensure MCH-MID tracks are available
+      if (!midTrackIDs || midTrackIDs->size() != 2) {
+        continue;
+      }
+
+      std::vector<int64_t> trkCandIDs;
+
+      // retrieve global track eta and apply the logic
+      bool firstInAcceptance = false, secondInAcceptance = false;
+
+      const auto& trk1 = fwdTracks.iteratorAt(fwdTrackIDs[0]);
+      const auto& trk2 = fwdTracks.iteratorAt(fwdTrackIDs[1]);
+
+      if (trk1.eta() > fMinEtaMFT && trk1.eta() < fMaxEtaMFT) {
+        firstInAcceptance = true;
+      }
+      if (trk2.eta() > fMinEtaMFT && trk2.eta() < fMaxEtaMFT) {
+        secondInAcceptance = true;
+      }
+
+      // handle the four cases
+      if (!firstInAcceptance && !secondInAcceptance) {
+        // Case 1: Both outside MFT acceptance
+        trkCandIDs.insert(trkCandIDs.end(), midTrackIDs->begin(), midTrackIDs->end());
+      } else if (firstInAcceptance && !secondInAcceptance) {
+        // Case 2: First inside, second outside
+        trkCandIDs.push_back(fwdTrackIDs[0]);    // Keep first global
+        trkCandIDs.push_back((*midTrackIDs)[1]); // Replace second with MCH-MID
+      } else if (!firstInAcceptance && secondInAcceptance) {
+        // Case 3: First outside, second inside
+        trkCandIDs.push_back((*midTrackIDs)[0]); // Replace first with MCH-MID
+        trkCandIDs.push_back(fwdTrackIDs[1]);    // Keep second global
+      } else {
+        // Case 4: Both inside MFT acceptance
+        trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
+      }
+
       uint64_t closestBcMCH = 0;
       upchelpers::FITInfo fitInfo{};
       fitInfo.timeFT0A = -999.f;
@@ -1726,7 +1755,7 @@ struct UpcCandProducer {
                           fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                           fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A);
+      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, 0, 0, 0);
       eventCandidatesSelsFwd(fitInfo.distClosestBcV0A,
                              fitInfo.distClosestBcT0A,
                              amplitudesT0A,
@@ -1734,7 +1763,6 @@ struct UpcCandProducer {
                              amplitudesV0A,
                              relBCsV0A);
       candID++;
-      midIt++;
       trkCandIDs.clear();
     }
 
@@ -1899,13 +1927,35 @@ struct UpcCandProducer {
                               (o2::aod::McFwdTrackLabels*)nullptr);
   }
 
+  void processForwardGlobalMC(ForwardTracks const& fwdTracks,
+                              o2::aod::FwdTrkCls const& fwdTrkClusters,
+                              o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
+                              BCsWithBcSels const& bcs,
+                              o2::aod::Collisions const& collisions,
+                              o2::aod::FT0s const& ft0s,
+                              o2::aod::FDDs const& fdds,
+                              o2::aod::FV0As const& fv0as,
+                              o2::aod::Zdcs const& zdcs,
+                              o2::aod::McCollisions const& mcCollisions, o2::aod::McParticles const& mcParticles,
+                              o2::aod::McFwdTrackLabels const& mcFwdTrackLabels)
+  {
+    fDoMC = true;
+    skimMCInfo(mcCollisions, mcParticles, bcs);
+    createCandidatesFwdGlobal(fwdTracks, fwdTrkClusters, ambFwdTracks,
+                              bcs, collisions,
+                              ft0s, fdds, fv0as, zdcs,
+                              &mcFwdTrackLabels);
+    fNewPartIDs.clear();
+  }
+
   PROCESS_SWITCH(UpcCandProducer, processSemiFwd, "Produce candidates in semiforward/forward region", false);
   PROCESS_SWITCH(UpcCandProducer, processCentral, "Produce candidates in central region", false);
   PROCESS_SWITCH(UpcCandProducer, processSemiFwdMC, "Produce candidates in semiforward/forward region with MC information", false);
   PROCESS_SWITCH(UpcCandProducer, processCentralMC, "Produce candidates in central region with MC information", false);
   PROCESS_SWITCH(UpcCandProducer, processForward, "Produce candidates in forward region", false);
   PROCESS_SWITCH(UpcCandProducer, processForwardGlobal, "Produce candidates in forward region with MFT", true);
-  PROCESS_SWITCH(UpcCandProducer, processForwardMC, "Produce caniddates in forward region with MC information", false);
+  PROCESS_SWITCH(UpcCandProducer, processForwardMC, "Produce candidates in forward region with MC information", false);
+  PROCESS_SWITCH(UpcCandProducer, processForwardGlobalMC, "Produce candidates in forward region with MFT and MC information", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -14,6 +14,8 @@
 /// \author Rashi Gupta <rashi.gupta@cern.ch>, IIT Indore
 /// \author Ravindra Singh <ravindra.singh@cern.ch>, IIT Indore
 
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -69,7 +71,7 @@ struct HfCorrelatorHfeHadrons {
   using McTableCollision = McTableCollisions::iterator;
   using McTableTracks = soa::Join<TableTracks, aod::McTrackLabels>;
 
-  Filter CollisionFilter = nabs(aod::collision::posZ) < zPvPosMax && aod::collision::numContrib > (uint16_t)1;
+  Filter CollisionFilter = nabs(aod::collision::posZ) < zPvPosMax && aod::collision::numContrib > static_cast<uint16_t>(1);
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Preslice<aod::HfSelEl> perCollision = aod::hf_sel_electron::collisionId;
   HistogramConfigSpec hCorrelSpec{HistType::kTHnSparseD, {{30, 0., 30.}, {20, 0., 20.}, {32, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {50, -1.8, 1.8}}};

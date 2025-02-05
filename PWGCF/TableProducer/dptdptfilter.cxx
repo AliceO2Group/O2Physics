@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file dptdptfilter.cxx
+/// \brief Filters collisions and tracks according to selection criteria
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #include <cmath>
 #include <algorithm>
 #include <string>
@@ -28,10 +32,10 @@
 #include "PWGCF/DataModel/DptDptFiltered.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include <TROOT.h>
-#include <TDatabasePDG.h>
 #include <TPDGCode.h>
 #include <TParameter.h>
 #include <TList.h>
@@ -71,6 +75,7 @@ using DptDptFullTracksFullPIDDetLevel = soa::Join<DptDptFullTracksDetLevel, DptD
 using DptDptFullTracksFullPIDDetLevelAmbiguous = soa::Join<DptDptFullTracksDetLevelAmbiguous, DptDptTracksFullPID>;
 
 bool fullDerivedData = false; /* produce full derived data for its external storage */
+TpcExcludeTrack tpcExcluder;  ///< the TPC excluder object instance
 
 /// \enum MatchRecoGenSpecies
 /// \brief The species considered by the matching test
@@ -89,10 +94,32 @@ const char* speciesName[kDptDptNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
 
 const char* speciesTitle[kDptDptNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
 
+const char* eventSelectionSteps[knCollisionSelectionFlags] = {
+  "IN",
+  "MB",
+  "INT7",
+  "SEL7",
+  "SEL8",
+  "NOSAMEBUNCHPUP",
+  "ISGOODZVTXFT0VSPV",
+  "ISVERTEXITSTPC",
+  "ISVERTEXTOFMATCHED",
+  "ISVERTEXTRDMATCHED",
+  "NOCOLLINTIMERANGE",
+  "NOCOLLINROF",
+  "OCCUPANCY",
+  "ISGOODITSLAYER3",
+  "ISGOODITSLAYER0123",
+  "ISGOODITSLAYERALL",
+  "CENTRALITY",
+  "ZVERTEX",
+  "SELECTED"};
+
 //============================================================================================
 // The DptDptFilter histogram objects
 // TODO: consider registering in the histogram registry
 //============================================================================================
+TH1D* fhEventSelection = nullptr;
 TH1F* fhCentMultB = nullptr;
 TH1F* fhCentMultA = nullptr;
 TH1F* fhVertexZB = nullptr;
@@ -172,24 +199,24 @@ using namespace dptdptfilter;
 //////////////////////////////////////////////////////////////////////////////
 
 struct Multiplicity {
-  enum multest {
+  enum MultEst {
     kV0M,
     kCL1,
     kCL1GAP
   };
 
-  float getMultiplicityClass() { return multiplicityclass; }
+  float getMultiplicityClass() { return multiplicityClass; }
   float getMultiplicity() { return multiplicity; }
 
-  multest classestimator = kV0M;
+  MultEst classestimator = kV0M;
 
-  float multiplicityclass = -1.0;
+  float multiplicityClass = -1.0;
   float multiplicity = 0.0;
   bool inelgth0 = false;
-  int V0AM = 0;
-  int V0CM = 0;
-  int CL1M = 0;
-  int CL1EtaGapM = 0;
+  int v0am = 0;
+  int v0cm = 0;
+  int cl1m = 0;
+  int cl1EtaGapM = 0;
   int dNchdEta = 0;
   int nPart = 0;
   TH1F* fhNPartTot = nullptr;           ///< total number of particles analyzed
@@ -254,11 +281,11 @@ struct Multiplicity {
           if (p.eta() < 1.0 && -1.0 < p.eta()) {
             inelgth0 = true;
           }
-          addTo(p, V0AM, 2.8, 5.1);
-          addTo(p, V0CM, -3.7, -1.7);
-          addTo(p, CL1M, -1.4, 1.4);
-          addTo(p, CL1EtaGapM, -1.4, -0.8);
-          addTo(p, CL1EtaGapM, 0.8, 1.4);
+          addTo(p, v0am, 2.8, 5.1);
+          addTo(p, v0cm, -3.7, -1.7);
+          addTo(p, cl1m, -1.4, 1.4);
+          addTo(p, cl1EtaGapM, -1.4, -0.8);
+          addTo(p, cl1EtaGapM, 0.8, 1.4);
           addTo(p, dNchdEta, -0.5, 0.5);
           nPart++;
         }
@@ -272,17 +299,17 @@ struct Multiplicity {
   template <typename CollisionParticles>
   void extractMultiplicity(const CollisionParticles& particles)
   {
-    multiplicityclass = 105;
+    multiplicityClass = 105;
     multiplicity = 0;
     inelgth0 = false;
     nPart = 0;
-    V0AM = 0;
-    V0CM = 0;
-    CL1M = 0;
-    CL1EtaGapM = 0;
+    v0am = 0;
+    v0cm = 0;
+    cl1m = 0;
+    cl1EtaGapM = 0;
     dNchdEta = 0;
 
-    for (auto particle : particles) {
+    for (auto const& particle : particles) {
       addParticleToMultiplicity(particle);
     }
 
@@ -291,37 +318,37 @@ struct Multiplicity {
         fhNPartTot->Fill(nPart);
       }
       if (fhV0Multiplicity != nullptr) {
-        fhV0Multiplicity->Fill(V0AM + V0CM, dNchdEta);
+        fhV0Multiplicity->Fill(v0am + v0cm, dNchdEta);
       }
       if (fhCL1Multiplicity != nullptr) {
-        fhCL1Multiplicity->Fill(CL1M, dNchdEta);
+        fhCL1Multiplicity->Fill(cl1m, dNchdEta);
       }
       if (fhCL1EtaGapMultiplicity != nullptr) {
-        fhCL1EtaGapMultiplicity->Fill(CL1EtaGapM, dNchdEta);
+        fhCL1EtaGapMultiplicity->Fill(cl1EtaGapM, dNchdEta);
       }
       switch (classestimator) {
         case kV0M:
           if (fhV0MMultPercentile != nullptr) {
-            multiplicityclass = fhV0MMultPercentile->GetBinContent(fhV0MMultPercentile->FindFixBin(V0AM + V0CM));
-            multiplicity = V0AM + V0CM;
+            multiplicityClass = fhV0MMultPercentile->GetBinContent(fhV0MMultPercentile->FindFixBin(v0am + v0cm));
+            multiplicity = v0am + v0cm;
           }
           break;
         case kCL1:
           if (fhCL1MultPercentile != nullptr) {
-            multiplicityclass = fhCL1MultPercentile->GetBinContent(fhCL1MultPercentile->FindFixBin(CL1M));
-            multiplicity = CL1M;
+            multiplicityClass = fhCL1MultPercentile->GetBinContent(fhCL1MultPercentile->FindFixBin(cl1m));
+            multiplicity = cl1m;
           }
           break;
         case kCL1GAP:
           if (fhCL1EtaGapMultPercentile != nullptr) {
-            multiplicityclass = fhCL1EtaGapMultPercentile->GetBinContent(fhCL1EtaGapMultPercentile->FindFixBin(CL1EtaGapM));
-            multiplicity = CL1EtaGapM;
+            multiplicityClass = fhCL1EtaGapMultPercentile->GetBinContent(fhCL1EtaGapMultPercentile->FindFixBin(cl1EtaGapM));
+            multiplicity = cl1EtaGapM;
           }
           break;
         default:
           break;
       }
-      fhMultiplicity->Fill(multiplicityclass);
+      fhMultiplicity->Fill(multiplicityClass);
     }
   }
 };
@@ -339,11 +366,30 @@ struct DptDptFilter {
   } cfginputfile;
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NTPV,NOCM: none. Default V0M"};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "cfgEventSelection";
+    Configurable<std::string> itsDeadMaps{"itsDeadMaps", "", "Level of inactive chips: nocheck(empty), goodIts3, goodIts0123, goodItsAll. Default empty"};
+    struct : ConfigurableGroup {
+      std::string prefix = "cfgOccupancySelection";
+      Configurable<std::string> cfgOccupancyEstimation{"cfgOccupancyEstimation", "None", "Occupancy estimation: None, Tracks, FT0C. Default None"};
+      Configurable<float> cfgMinOccupancy{"cfgMinOccupancy", 0.0f, "Minimum allowed occupancy. Depends on the occupancy estimation"};
+      Configurable<float> cfgMaxOccupancy{"cfgMaxOccupancy", 1e6f, "Maximum allowed occupancy. Depends on the occupancy estimation"};
+    } cfgOccupancySelection;
+  } cfgEventSelection;
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB,VTXTOFMATCHED,VTXTRDMATCHED,VTXTRDTOFMATCHED,None. Default MB"};
   Configurable<std::string> cfgCentSpec{"centralities", "00-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
   Configurable<float> cfgOverallMinP{"overallminp", 0.0f, "The overall minimum momentum for the analysis. Default: 0.0"};
+  struct : ConfigurableGroup {
+    std::string prefix = "cfgTpcExclusion";
+    Configurable<int> method{"method", 0, "The method for excluding tracks within the TPC. 0: no exclusion; 1: static; 2: dynamic. Default: 0"};
+    Configurable<std::string> positiveLowCut{"positiveLowCut", "0.0787/x - 0.0236", "The lower cut function for positive tracks"};
+    Configurable<std::string> positiveUpCut{"positiveUpCut", "0.0892/x + 0.0251", "The upper cut function for positive tracks"};
+    Configurable<std::string> negativeLowCut{"negativeLowCut", "pi/9.0 - (0.0892/x + 0.0251)", "The lower cut function for negative tracks"};
+    Configurable<std::string> negativeUpCut{"negativeUpCut", "pi/9 - (0.0787/x - 0.0236)", "The upper cut function for negative tracks"};
+  } cfgTpcExclusion;
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
@@ -386,6 +432,13 @@ struct DptDptFilter {
     } else {
       fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator);
     }
+    /* the occupancy selection */
+    fOccupancyEstimation = getOccupancyEstimator(cfgEventSelection.cfgOccupancySelection.cfgOccupancyEstimation);
+    fMinOccupancy = cfgEventSelection.cfgOccupancySelection.cfgMinOccupancy;
+    fMaxOccupancy = cfgEventSelection.cfgOccupancySelection.cfgMaxOccupancy;
+    /* the ITS dead map check */
+    fItsDeadMapCheck = getItsDeadMapCheck(cfgEventSelection.itsDeadMaps);
+
     /* the trigger selection */
     fTriggerSelection = getTriggerSelection(cfgTriggSel);
     traceCollId0 = cfgTraceCollId0;
@@ -401,6 +454,10 @@ struct DptDptFilter {
 
     if ((fDataType == kData) || (fDataType == kDataNoEvtSel) || (fDataType == kMC)) {
       /* create the reconstructed data histograms */
+      fhEventSelection = new TH1D("EventSelection", ";;counts", knCollisionSelectionFlags, -0.5f, static_cast<float>(knCollisionSelectionFlags) - 0.5f);
+      for (int ix = 0; ix < knCollisionSelectionFlags; ++ix) {
+        fhEventSelection->GetXaxis()->SetBinLabel(ix + 1, eventSelectionSteps[ix]);
+      }
       /* TODO: proper axes and axes titles according to the system; still incomplete */
       std::string multestimator = getCentMultEstimatorName(fCentMultEstimator);
       if (fSystem > kPbp) {
@@ -420,6 +477,7 @@ struct DptDptFilter {
       fhVertexZA = new TH1F("VertexZA", "Vertex Z; z_{vtx}", zvtxbins, zvtxlow, zvtxup);
 
       /* add the hstograms to the output list */
+      fOutputList->Add(fhEventSelection);
       fOutputList->Add(fhCentMultB);
       fOutputList->Add(fhCentMultA);
       fOutputList->Add(fhMultB);
@@ -530,7 +588,7 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
   fhVertexZB->Fill(collision.posZ());
   uint8_t acceptedevent = uint8_t(false);
   float centormult = tentativecentmult;
-  if (IsEvtSelected(collision, centormult)) {
+  if (isEventSelected(collision, centormult)) {
     acceptedevent = true;
     fhCentMultA->Fill(centormult);
     fhMultA->Fill(mult);
@@ -544,6 +602,12 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
     if (!fullDerivedData) {
       /* the tracks are done at a different level */
       collisionsinfo(uint8_t(false), 105.0);
+    }
+  }
+  /* report the event selection */
+  for (int iflag = 0; iflag < knCollisionSelectionFlags; ++iflag) {
+    if (collisionFlags.test(iflag)) {
+      fhEventSelection->Fill(iflag);
     }
   }
 }
@@ -584,7 +648,7 @@ bool DptDptFilter::processGenerated(CollisionObject const& mccollision, Particle
   using namespace dptdptfilter;
 
   uint8_t acceptedevent = uint8_t(false);
-  if (IsEvtSelected(mccollision, centormult)) {
+  if (isEventSelected(mccollision, centormult)) {
     acceptedevent = uint8_t(true);
   }
   if (fullDerivedData) {
@@ -611,13 +675,14 @@ void DptDptFilter::processGeneratorLevel(aod::McCollision const& mccollision,
   }
 
   bool processed = false;
-  for (auto& tmpcollision : collisions) {
+  for (auto const& tmpcollision : collisions) {
     if (tmpcollision.has_mcCollision()) {
       if (tmpcollision.mcCollisionId() == mccollision.globalIndex()) {
         typename AllCollisions::iterator const& collision = allcollisions.iteratorAt(tmpcollision.globalIndex());
-        if (IsEvtSelected(collision, defaultcent)) {
-          fhTrueVertexZAA->Fill((mccollision.posZ()));
-          processGenerated(mccollision, mcparticles, defaultcent);
+        if (isEventSelected(collision, defaultcent)) {
+          if (processGenerated(mccollision, mcparticles, defaultcent)) {
+            fhTrueVertexZAA->Fill((mccollision.posZ()));
+          }
           processed = true;
           break; /* TODO: only processing the first reconstructed accepted collision */
         }
@@ -660,7 +725,7 @@ void DptDptFilter::processOnTheFlyGeneratorLevel(aod::McCollision const& mccolli
   fhTrueVertexZB->Fill(mccollision.posZ());
   /* we assign a default value for the time being */
   float centormult = 50.0f;
-  if (IsEvtSelected(mccollision, centormult)) {
+  if (isEventSelected(mccollision, centormult)) {
     acceptedEvent = true;
     multiplicity.extractMultiplicity(mcparticles);
     fhTrueVertexZA->Fill((mccollision.posZ()));
@@ -679,7 +744,7 @@ void DptDptFilter::processVertexGenerated(aod::McCollisions const& mccollisions)
     fhTrueVertexZB->Fill(mccollision.posZ());
     /* we assign a default value */
     float centmult = 50.0f;
-    if (IsEvtSelected(mccollision, centmult)) {
+    if (isEventSelected(mccollision, centmult)) {
       fhTrueVertexZA->Fill((mccollision.posZ()));
     }
   }
@@ -695,10 +760,10 @@ T computeRMS(std::vector<T>& vec)
 
   std::vector<T> diff(vec.size());
   std::transform(vec.begin(), vec.end(), diff.begin(), [mean](T x) { return x - mean; });
-  T sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
-  T stdev = std::sqrt(sq_sum / vec.size());
+  T sqSum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+  T stdDev = std::sqrt(sqSum / vec.size());
 
-  return stdev;
+  return stdDev;
 }
 
 struct DptDptFilterTracks {
@@ -723,7 +788,7 @@ struct DptDptFilterTracks {
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle, 3 mcparticle only primaries, 4 mcparticle only sec, 5 mcparicle only sec from decays, 6 mcparticle only sec from material. Default 0"};
-  Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"tunetracksel", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,2.4,false,3.2,false}"};
+  Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"tunetracksel", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, tpcshcls-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,0.4,false,2.4,false,3.2,false}"};
   Configurable<o2::analysis::TrackSelectionPIDCfg> cfgPionPIDSelection{"pipidsel",
                                                                        {},
                                                                        "PID criteria for pions"};
@@ -741,8 +806,11 @@ struct DptDptFilterTracks {
                                                                        "PID criteria for muons"};
 
   OutputObj<TList> fOutput{"DptDptFilterTracksInfo", OutputObjHandlingPolicy::AnalysisObject};
+  Service<o2::framework::O2DatabasePDG> fPDG;
   PIDSpeciesSelection pidselector;
   bool checkAmbiguousTracks = false;
+
+  std::vector<bool> particleReconstructed;
 
   void init(InitContext& initContext)
   {
@@ -762,7 +830,23 @@ struct DptDptFilterTracks {
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibins", phibins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibinshift", phibinshift, false);
 
+    TpcExclusionMethod tpcExclude = kNOEXCLUSION; ///< exclude tracks within the TPC according to this method
+    std::string pLowCut;
+    std::string pUpCut;
+    std::string nLowCut;
+    std::string nUpCut;
+    {
+      int tmpTpcExclude = 0;
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgTpcExclusion.method", tmpTpcExclude, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgTpcExclusion.positiveLowCut", pLowCut, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgTpcExclusion.positiveUpCut", pUpCut, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgTpcExclusion.negativeLowCut", nLowCut, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgTpcExclusion.negativeUpCut", nUpCut, false);
+      tpcExclude = static_cast<TpcExclusionMethod>(tmpTpcExclude);
+    }
     /* self configure the CCDB access to the input file */
     getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdburl", cfgCCDBUrl, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbpath", cfgCCDBPathName, false);
@@ -771,11 +855,15 @@ struct DptDptFilterTracks {
 
     /* the track types and combinations */
     tracktype = cfgTrackType.value;
-    initializeTrackSelection(cfgTuneTrackSelection);
+    initializeTrackSelection(cfgTuneTrackSelection.value);
     traceDCAOutliers = cfgTraceDCAOutliers;
     traceOutOfSpeciesParticles = cfgTraceOutOfSpeciesParticles;
     recoIdMethod = cfgRecoIdMethod;
     onlyInOneSide = cfgOnlyInOneSide.value;
+
+    /* the TPC excluder object instance */
+    tpcExcluder = TpcExcludeTrack(tpcExclude);
+    tpcExcluder.setCuts(pLowCut, pUpCut, nLowCut, nUpCut);
 
     /* self configure system type and data type */
     /* if the system type is not known at this time, we have to put the initialization somewhere else */
@@ -784,7 +872,6 @@ struct DptDptFilterTracks {
     fSystem = getSystemType(tmpstr);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "datatype", tmpstr, false);
     fDataType = getDataType(tmpstr);
-    fPDG = TDatabasePDG::Instance();
 
     /* required ambiguous tracks checks? */
     if (dofilterDetectorLevelWithoutPIDAmbiguous || dofilterDetectorLevelWithPIDAmbiguous || dofilterDetectorLevelWithFullPIDAmbiguous ||
@@ -796,10 +883,10 @@ struct DptDptFilterTracks {
     auto insertInPIDselector = [&](auto cfg, uint sp) {
       if (cfg.value.mUseIt) {
         if (cfg.value.mExclude) {
-          pidselector.AddExclude(sp, &(cfg.value));
+          pidselector.addExcludedSpecies(sp, &(cfg.value));
           LOGF(info, "Incorporated species: %s to PID selection for exclusion", pidselector.spnames[sp].data());
         } else {
-          pidselector.Add(sp, &(cfg.value));
+          pidselector.addSpecies(sp, &(cfg.value));
           LOGF(info, "Incorporated species: %s to PID selection", pidselector.spnames[sp].data());
         }
       }
@@ -816,9 +903,9 @@ struct DptDptFilterTracks {
     fOutput.setObject(fOutputList);
 
     /* incorporate configuration parameters to the output */
-    fOutputList->Add(new TParameter<Int_t>("TrackType", cfgTrackType, 'f'));
-    fOutputList->Add(new TParameter<Int_t>("TrackOneCharge", 1, 'f'));
-    fOutputList->Add(new TParameter<Int_t>("TrackTwoCharge", -1, 'f'));
+    fOutputList->Add(new TParameter<int>("TrackType", cfgTrackType, 'f'));
+    fOutputList->Add(new TParameter<int>("TrackOneCharge", 1, 'f'));
+    fOutputList->Add(new TParameter<int>("TrackTwoCharge", -1, 'f'));
 
     if ((fDataType == kData) || (fDataType == kDataNoEvtSel) || (fDataType == kMC)) {
       /* create the reconstructed data histograms */
@@ -1086,12 +1173,12 @@ struct DptDptFilterTracks {
     if (!fullDerivedData) {
       tracksinfo.reserve(tracks.size());
     }
-    for (auto collision : collisions) {
+    for (auto const& collision : collisions) {
       if (collision.collisionaccepted()) {
         ncollaccepted++;
       }
     }
-    for (auto track : tracks) {
+    for (auto const& track : tracks) {
       int8_t pid = -1;
       if (track.has_collision() && (track.template collision_as<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>()).collisionaccepted()) {
         pid = selectTrackAmbiguousCheck<outdebug>(collisions, track);
@@ -1125,6 +1212,26 @@ struct DptDptFilterTracks {
          tracks.size());
   }
 
+  /* filter the tracks but not creating the filtered tracks table */
+  /* the aim is to fill the structure of the generated particles  */
+  /* that were reconstructed                                      */
+  template <typename passedtracks>
+  void filterTracksSpecial(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const&, passedtracks const& tracks)
+  {
+    /* do check for special adjustments */
+    getCCDBInformation();
+
+    for (auto const& track : tracks) {
+      int8_t pid = -1;
+      if (track.has_collision() && (track.template collision_as<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>()).collisionaccepted()) {
+        pid = selectTrack<kNODEBUG, soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>(track);
+        if (!(pid < 0)) {
+          particleReconstructed[track.mcParticleId()] = true;
+        }
+      }
+    }
+  }
+
   /* TODO: for the time being the full derived data is still not supported  */
   /* for doing that we need to get the index of the associated mc collision */
   void filterParticles(soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles)
@@ -1137,22 +1244,76 @@ struct DptDptFilterTracks {
       gentracksinfo.reserve(particles.size());
     }
 
-    for (auto gencoll : gencollisions) {
+    for (auto const& gencoll : gencollisions) {
       if (gencoll.collisionaccepted()) {
         acceptedcollisions++;
       }
     }
 
-    for (auto& particle : particles) {
-      float charge = getCharge(particle);
-
+    for (auto const& particle : particles) {
       int8_t pid = -1;
+      auto pdgpart = fPDG->GetParticle(particle.pdgCode());
+      float charge = pdgpart != nullptr ? getCharge(pdgpart->Charge()) : 0;
+
       if (charge != 0) {
         if (particle.has_mcCollision() && (particle.template mcCollision_as<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>()).collisionaccepted()) {
           auto mccollision = particle.template mcCollision_as<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>();
           pid = selectParticle(particle, mccollision);
           if (!(pid < 0)) {
             acceptedparticles++;
+          }
+        }
+      } else {
+        if ((particle.mcCollisionId() == 0) && traceCollId0) {
+          LOGF(DPTDPTFILTERLOGTRACKS, "Particle %d with fractional charge or equal to zero", particle.globalIndex());
+        }
+      }
+      if (!fullDerivedData) {
+        gentracksinfo(pid);
+      }
+    }
+    LOGF(DPTDPTFILTERLOGCOLLISIONS,
+         "Processed %d accepted generated collisions out of a total of %d with  %d accepted particles out of a "
+         "total of %d",
+         acceptedcollisions,
+         gencollisions.size(),
+         acceptedparticles,
+         particles.size());
+  }
+
+  /* we produce the derived particle table incoporating only the particles that were accepted but not were reconstructed */
+  void filterParticlesSpecial(soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles)
+  {
+    using namespace dptdptfilter;
+
+    int acceptedparticles = 0;
+    int acceptedcollisions = 0;
+    if (!fullDerivedData) {
+      gentracksinfo.reserve(particles.size());
+    }
+
+    for (auto const& gencoll : gencollisions) {
+      if (gencoll.collisionaccepted()) {
+        acceptedcollisions++;
+      }
+    }
+
+    for (auto const& particle : particles) {
+      int8_t pid = -1;
+      auto pdgpart = fPDG->GetParticle(particle.pdgCode());
+      float charge = pdgpart != nullptr ? getCharge(pdgpart->Charge()) : 0;
+
+      if (charge != 0) {
+        if (particle.has_mcCollision() && (particle.template mcCollision_as<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>()).collisionaccepted()) {
+          auto mccollision = particle.template mcCollision_as<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>();
+          pid = selectParticle(particle, mccollision);
+          if (!(pid < 0)) {
+            if (particleReconstructed[particle.globalIndex()]) {
+              /* the particle was reconstructed and accepted, reject it */
+              pid = -1;
+            } else {
+              acceptedparticles++;
+            }
           }
         }
       } else {
@@ -1262,6 +1423,16 @@ struct DptDptFilterTracks {
     filterParticles(gencollisions, particles);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterGenerated, "Generated particles filtering", true)
+
+  void filterGeneratedNotReconstructedWithPID(soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles,
+                                              soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevel const& tracks)
+  {
+    particleReconstructed.resize(particles.size());
+    filterTracksSpecial(collisions, tracks);
+    filterParticlesSpecial(gencollisions, particles);
+    particleReconstructed.clear();
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterGeneratedNotReconstructedWithPID, "Generated particles filtering", false)
 };
 
 template <StrongDebugging outdebug, typename TrackObject>
@@ -1316,7 +1487,7 @@ int8_t DptDptFilterTracks::selectTrack(TrackObject const& track)
 
   /* track selection */
   int8_t sp = -127;
-  if (AcceptTrack<CollisionsObject>(track)) {
+  if (acceptTrack<CollisionsObject>(track)) {
     /* the track has been accepted */
     /* let's identify it */
     sp = trackIdentification<outdebug>(track);
@@ -1371,22 +1542,22 @@ int8_t DptDptFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& col
     }
   }
 
-  float multiplicityclass = (track.template collision_as<CollisionObjects>()).centmult();
+  float multiplicityClass = (track.template collision_as<CollisionObjects>()).centmult();
   if (ambiguoustrack) {
     /* keep track of ambiguous tracks */
-    fhAmbiguousTrackType->Fill(ambtracktype, multiplicityclass);
-    fhAmbiguousTrackPt->Fill(track.pt(), multiplicityclass);
-    fhAmbiguityDegree->Fill(zvertexes.size(), multiplicityclass);
+    fhAmbiguousTrackType->Fill(ambtracktype, multiplicityClass);
+    fhAmbiguousTrackPt->Fill(track.pt(), multiplicityClass);
+    fhAmbiguityDegree->Fill(zvertexes.size(), multiplicityClass);
     if (ambtracktype == 2) {
-      fhCompatibleCollisionsZVtxRms->Fill(-computeRMS(zvertexes), multiplicityclass);
+      fhCompatibleCollisionsZVtxRms->Fill(-computeRMS(zvertexes), multiplicityClass);
     } else {
-      fhCompatibleCollisionsZVtxRms->Fill(computeRMS(zvertexes), multiplicityclass);
+      fhCompatibleCollisionsZVtxRms->Fill(computeRMS(zvertexes), multiplicityClass);
     }
     return -1;
   } else {
     if (checkAmbiguousTracks) {
       /* feedback of no ambiguous tracks only if checks required */
-      fhAmbiguousTrackType->Fill(ambtracktype, multiplicityclass);
+      fhAmbiguousTrackType->Fill(ambtracktype, multiplicityClass);
     }
     return selectTrack<outdebug, CollisionObjects>(track);
   }
@@ -1468,14 +1639,15 @@ inline int8_t DptDptFilterTracks::identifySecFromMaterialParticle(ParticleObject
 template <typename ParticleObject, typename MCCollisionObject>
 inline int8_t DptDptFilterTracks::selectParticle(ParticleObject const& particle, MCCollisionObject const& mccollision)
 {
-  float charge = getCharge(particle);
   int8_t sp = -127;
+  auto pdgpart = fPDG->GetParticle(particle.pdgCode());
+  float charge = pdgpart != nullptr ? getCharge(pdgpart->Charge()) : 0;
   if (charge != 0) {
     /* before particle selection */
     fillParticleHistosBeforeSelection(particle, mccollision, charge);
 
     /* track selection */
-    if (AcceptParticle(particle, mccollision)) {
+    if (acceptParticle(particle, mccollision)) {
       /* the particle has been accepted */
       /* the particle is only accepted if it is a primary particle */
       /* let's identify the particle */
@@ -1512,14 +1684,14 @@ void DptDptFilterTracks::fillParticleHistosBeforeSelection(ParticleObject const&
     fhTruePtNegB->Fill(particle.pt());
   }
 
-  float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                            (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
+  float dcaxy = std::sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                          (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
   if (traceDCAOutliers.mDoIt && (traceDCAOutliers.mLowValue < dcaxy) && (dcaxy < traceDCAOutliers.mUpValue)) {
     fhTrueDCAxyBid->Fill(TString::Format("%d", particle.pdgCode()).Data(), 1.0);
   }
 
-  fhTrueDCAxyB->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
+  fhTrueDCAxyB->Fill(std::sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                               (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
   fhTrueDCAzB->Fill((particle.vz() - collision.posZ()));
 }
 
@@ -1528,16 +1700,16 @@ void DptDptFilterTracks::fillParticleHistosAfterSelection(ParticleObject const& 
 {
   fhTrueEtaA->Fill(particle.eta());
   fhTruePhiA->Fill(particle.phi());
-  float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                            (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
+  float dcaxy = std::sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                          (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
   if (traceDCAOutliers.mDoIt && (traceDCAOutliers.mLowValue < dcaxy) && (dcaxy < traceDCAOutliers.mUpValue)) {
     LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
          particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
     LOGF(info, "               With status %d and flags %0X", particle.statusCode(), particle.flags());
   }
 
-  fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
+  fhTrueDCAxyA->Fill(std::sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                               (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
   fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
   fhTruePA[sp]->Fill(particle.p());
   fhTruePtA[sp]->Fill(particle.pt());

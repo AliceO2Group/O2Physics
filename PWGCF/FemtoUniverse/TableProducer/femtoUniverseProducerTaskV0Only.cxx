@@ -14,6 +14,8 @@
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #include <CCDB/BasicCCDBManager.h>
+#include <vector>
+
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -36,7 +38,7 @@
 #include "TMath.h"
 
 using namespace o2;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -77,7 +79,7 @@ int getRowDaughters(int daughID, T const& vecID)
 
 struct femtoUniverseProducerTaskV0Only {
 
-  Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FdCollisions> outputCollision;
   Produces<aod::FDParticles> outputParts;
   Produces<aod::FDExtParticles> outputDebugParts;
 
@@ -109,60 +111,60 @@ struct femtoUniverseProducerTaskV0Only {
   /// \todo Labeled array (see Track-Track task)
 
   Configurable<std::vector<float>> ConfV0Sign{
-    FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0Sign,
+    FemtoUniverseV0Selection::getSelectionName(femto_universe_v0_selection::kV0Sign,
                                                "ConfV0"),
     std::vector<float>{-1, 1},
-    FemtoUniverseV0Selection::getSelectionHelper(femtoUniverseV0Selection::kV0Sign,
+    FemtoUniverseV0Selection::getSelectionHelper(femto_universe_v0_selection::kV0Sign,
                                                  "V0 selection: ")};
   Configurable<std::vector<float>> ConfV0PtMin{
-    FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0pTMin,
+    FemtoUniverseV0Selection::getSelectionName(femto_universe_v0_selection::kV0pTMin,
                                                "ConfV0"),
     std::vector<float>{0.3f},
-    FemtoUniverseV0Selection::getSelectionHelper(femtoUniverseV0Selection::kV0pTMin,
+    FemtoUniverseV0Selection::getSelectionHelper(femto_universe_v0_selection::kV0pTMin,
                                                  "V0 selection: ")};
   Configurable<std::vector<float>> ConfV0PtMax{
-    FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0pTMax,
+    FemtoUniverseV0Selection::getSelectionName(femto_universe_v0_selection::kV0pTMax,
                                                "ConfV0"),
     std::vector<float>{6.f},
-    FemtoUniverseV0Selection::getSelectionHelper(femtoUniverseV0Selection::kV0pTMax,
+    FemtoUniverseV0Selection::getSelectionHelper(femto_universe_v0_selection::kV0pTMax,
                                                  "V0 selection: ")};
   Configurable<std::vector<float>> ConfV0EtaMax{
-    FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0etaMax,
+    FemtoUniverseV0Selection::getSelectionName(femto_universe_v0_selection::kV0etaMax,
                                                "ConfV0"),
     std::vector<float>{6.f},
-    FemtoUniverseV0Selection::getSelectionHelper(femtoUniverseV0Selection::kV0etaMax,
+    FemtoUniverseV0Selection::getSelectionHelper(femto_universe_v0_selection::kV0etaMax,
                                                  "V0 selection: ")};
   Configurable<std::vector<float>> ConfDCAV0DaughMax{
     FemtoUniverseV0Selection::getSelectionName(
-      femtoUniverseV0Selection::kV0DCADaughMax, "ConfV0"),
+      femto_universe_v0_selection::kV0DCADaughMax, "ConfV0"),
     std::vector<float>{1.5f},
     FemtoUniverseV0Selection::getSelectionHelper(
-      femtoUniverseV0Selection::kV0DCADaughMax, "V0 selection: ")};
+      femto_universe_v0_selection::kV0DCADaughMax, "V0 selection: ")};
   Configurable<std::vector<float>> ConfCPAV0Min{
-    FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0CPAMin,
+    FemtoUniverseV0Selection::getSelectionName(femto_universe_v0_selection::kV0CPAMin,
                                                "ConfV0"),
     std::vector<float>{0.99f},
     FemtoUniverseV0Selection::getSelectionHelper(
-      femtoUniverseV0Selection::kV0CPAMin, "V0 selection: ")};
+      femto_universe_v0_selection::kV0CPAMin, "V0 selection: ")};
 
   Configurable<std::vector<float>> V0TranRadV0Min{
     FemtoUniverseV0Selection::getSelectionName(
-      femtoUniverseV0Selection::kV0TranRadMin, "ConfV0"),
+      femto_universe_v0_selection::kV0TranRadMin, "ConfV0"),
     std::vector<float>{0.2f},
     FemtoUniverseV0Selection::getSelectionHelper(
-      femtoUniverseV0Selection::kV0TranRadMin, "V0 selection: ")};
+      femto_universe_v0_selection::kV0TranRadMin, "V0 selection: ")};
   Configurable<std::vector<float>> V0TranRadV0Max{
     FemtoUniverseV0Selection::getSelectionName(
-      femtoUniverseV0Selection::kV0TranRadMax, "ConfV0"),
+      femto_universe_v0_selection::kV0TranRadMax, "ConfV0"),
     std::vector<float>{100.f},
     FemtoUniverseV0Selection::getSelectionHelper(
-      femtoUniverseV0Selection::kV0TranRadMax, "V0 selection: ")};
+      femto_universe_v0_selection::kV0TranRadMax, "V0 selection: ")};
   Configurable<std::vector<float>> V0DecVtxMax{
     FemtoUniverseV0Selection::getSelectionName(
-      femtoUniverseV0Selection::kV0DecVtxMax, "ConfV0"),
+      femto_universe_v0_selection::kV0DecVtxMax, "ConfV0"),
     std::vector<float>{100.f},
     FemtoUniverseV0Selection::getSelectionHelper(
-      femtoUniverseV0Selection::kV0DecVtxMax, "V0 selection: ")};
+      femto_universe_v0_selection::kV0DecVtxMax, "V0 selection: ")};
 
   Configurable<std::vector<float>> ConfV0DaughCharge{
     "ConfV0DaughCharge", std::vector<float>{-1, 1}, "V0 Daugh sel: Charge"};
@@ -223,67 +225,67 @@ struct femtoUniverseProducerTaskV0Only {
     /// \todo fix how to pass array to setSelection, getRow() passing a
     /// different type!
     // v0Cuts.setSelection(ConfV0Selection->getRow(0),
-    // femtoUniverseV0Selection::kDecVtxMax, femtoUniverseSelection::kAbsUpperLimit);
+    // femto_universe_v0_selection::kDecVtxMax, femto_universe_selection::kAbsUpperLimit);
     if (ConfStoreV0) {
-      v0Cuts.setSelection(ConfV0Sign, femtoUniverseV0Selection::kV0Sign,
-                          femtoUniverseSelection::kEqual);
-      v0Cuts.setSelection(ConfV0PtMin, femtoUniverseV0Selection::kV0pTMin,
-                          femtoUniverseSelection::kLowerLimit);
-      v0Cuts.setSelection(ConfV0PtMax, femtoUniverseV0Selection::kV0pTMax,
-                          femtoUniverseSelection::kUpperLimit);
-      v0Cuts.setSelection(ConfV0EtaMax, femtoUniverseV0Selection::kV0etaMax,
-                          femtoUniverseSelection::kUpperLimit);
+      v0Cuts.setSelection(ConfV0Sign, femto_universe_v0_selection::kV0Sign,
+                          femto_universe_selection::kEqual);
+      v0Cuts.setSelection(ConfV0PtMin, femto_universe_v0_selection::kV0pTMin,
+                          femto_universe_selection::kLowerLimit);
+      v0Cuts.setSelection(ConfV0PtMax, femto_universe_v0_selection::kV0pTMax,
+                          femto_universe_selection::kUpperLimit);
+      v0Cuts.setSelection(ConfV0EtaMax, femto_universe_v0_selection::kV0etaMax,
+                          femto_universe_selection::kUpperLimit);
       v0Cuts.setSelection(ConfDCAV0DaughMax,
-                          femtoUniverseV0Selection::kV0DCADaughMax,
-                          femtoUniverseSelection::kUpperLimit);
-      v0Cuts.setSelection(ConfCPAV0Min, femtoUniverseV0Selection::kV0CPAMin,
-                          femtoUniverseSelection::kLowerLimit);
+                          femto_universe_v0_selection::kV0DCADaughMax,
+                          femto_universe_selection::kUpperLimit);
+      v0Cuts.setSelection(ConfCPAV0Min, femto_universe_v0_selection::kV0CPAMin,
+                          femto_universe_selection::kLowerLimit);
 
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack, ConfV0DaughCharge,
-                          femtoUniverseTrackSelection::kSign,
-                          femtoUniverseSelection::kEqual);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack, ConfDaughEta,
-                          femtoUniverseTrackSelection::kEtaMax,
-                          femtoUniverseSelection::kAbsUpperLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack,
+      v0Cuts.setChildCuts(femto_universe_v0_selection::kPosTrack, ConfV0DaughCharge,
+                          femto_universe_track_selection::kSign,
+                          femto_universe_selection::kEqual);
+      v0Cuts.setChildCuts(femto_universe_v0_selection::kPosTrack, ConfDaughEta,
+                          femto_universe_track_selection::kEtaMax,
+                          femto_universe_selection::kAbsUpperLimit);
+      v0Cuts.setChildCuts(femto_universe_v0_selection::kPosTrack,
                           ConfV0DaughTPCnclsMin,
-                          femtoUniverseTrackSelection::kTPCnClsMin,
-                          femtoUniverseSelection::kLowerLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack, ConfV0DaughDCAMin,
-                          femtoUniverseTrackSelection::kDCAMin,
-                          femtoUniverseSelection::kAbsLowerLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kPosTrack,
+                          femto_universe_track_selection::kTPCnClsMin,
+                          femto_universe_selection::kLowerLimit);
+      v0Cuts.setChildCuts(femto_universe_v0_selection::kPosTrack, ConfV0DaughDCAMin,
+                          femto_universe_track_selection::kDCAMin,
+                          femto_universe_selection::kAbsLowerLimit);
+      v0Cuts.setChildCuts(femto_universe_v0_selection::kPosTrack,
                           ConfV0DaughPIDnSigmaMax,
-                          femtoUniverseTrackSelection::kPIDnSigmaMax,
-                          femtoUniverseSelection::kAbsUpperLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack, ConfV0DaughCharge,
-                          femtoUniverseTrackSelection::kSign,
-                          femtoUniverseSelection::kEqual);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack, ConfDaughEta,
-                          femtoUniverseTrackSelection::kEtaMax,
-                          femtoUniverseSelection::kAbsUpperLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack,
+                          femto_universe_track_selection::kPIDnSigmaMax,
+                          femto_universe_selection::kAbsUpperLimit);
+      v0Cuts.setChildCuts(femto_universe_v0_selection::kNegTrack, ConfV0DaughCharge,
+                          femto_universe_track_selection::kSign,
+                          femto_universe_selection::kEqual);
+      v0Cuts.setChildCuts(femto_universe_v0_selection::kNegTrack, ConfDaughEta,
+                          femto_universe_track_selection::kEtaMax,
+                          femto_universe_selection::kAbsUpperLimit);
+      v0Cuts.setChildCuts(femto_universe_v0_selection::kNegTrack,
                           ConfV0DaughTPCnclsMin,
-                          femtoUniverseTrackSelection::kTPCnClsMin,
-                          femtoUniverseSelection::kLowerLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack, ConfV0DaughDCAMin,
-                          femtoUniverseTrackSelection::kDCAMin,
-                          femtoUniverseSelection::kAbsLowerLimit);
-      v0Cuts.setChildCuts(femtoUniverseV0Selection::kNegTrack,
+                          femto_universe_track_selection::kTPCnClsMin,
+                          femto_universe_selection::kLowerLimit);
+      v0Cuts.setChildCuts(femto_universe_v0_selection::kNegTrack, ConfV0DaughDCAMin,
+                          femto_universe_track_selection::kDCAMin,
+                          femto_universe_selection::kAbsLowerLimit);
+      v0Cuts.setChildCuts(femto_universe_v0_selection::kNegTrack,
                           ConfV0DaughPIDnSigmaMax,
-                          femtoUniverseTrackSelection::kPIDnSigmaMax,
-                          femtoUniverseSelection::kAbsUpperLimit);
-      v0Cuts.setChildPIDSpecies(femtoUniverseV0Selection::kPosTrack,
+                          femto_universe_track_selection::kPIDnSigmaMax,
+                          femto_universe_selection::kAbsUpperLimit);
+      v0Cuts.setChildPIDSpecies(femto_universe_v0_selection::kPosTrack,
                                 ConfV0DaughTPIDspecies);
-      v0Cuts.setChildPIDSpecies(femtoUniverseV0Selection::kNegTrack,
+      v0Cuts.setChildPIDSpecies(femto_universe_v0_selection::kNegTrack,
                                 ConfV0DaughTPIDspecies);
       v0Cuts.init<aod::femtouniverseparticle::ParticleType::kV0,
                   aod::femtouniverseparticle::ParticleType::kV0Child,
-                  aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
+                  aod::femtouniverseparticle::CutContainerType>(&qaRegistry);
       v0Cuts.setInvMassLimits(ConfInvMassLowLimit, ConfInvMassUpLimit);
-      v0Cuts.setChildRejectNotPropagatedTracks(femtoUniverseV0Selection::kPosTrack,
+      v0Cuts.setChildRejectNotPropagatedTracks(femto_universe_v0_selection::kPosTrack,
                                                ConfRejectNotPropagatedTracks);
-      v0Cuts.setChildRejectNotPropagatedTracks(femtoUniverseV0Selection::kNegTrack,
+      v0Cuts.setChildRejectNotPropagatedTracks(femto_universe_v0_selection::kNegTrack,
                                                ConfRejectNotPropagatedTracks);
       if (ConfRejectKaons) {
         v0Cuts.setKaonInvMassLimits(ConfInvKaonMassLowLimit,
@@ -419,15 +421,15 @@ struct femtoUniverseProducerTaskV0Only {
                       aod::femtouniverseparticle::ParticleType::kV0Child>(
           col, v0, postrack, negtrack); ///\todo fill QA also for daughters
         auto cutContainerV0 =
-          v0Cuts.getCutContainer<aod::femtouniverseparticle::cutContainerType>(
+          v0Cuts.getCutContainer<aod::femtouniverseparticle::CutContainerType>(
             col, v0, postrack, negtrack);
 
         if ((cutContainerV0.at(
-               femtoUniverseV0Selection::V0ContainerPosition::kV0) > 0) &&
+               femto_universe_v0_selection::V0ContainerPosition::kV0) > 0) &&
             (cutContainerV0.at(
-               femtoUniverseV0Selection::V0ContainerPosition::kPosCuts) > 0) &&
+               femto_universe_v0_selection::V0ContainerPosition::kPosCuts) > 0) &&
             (cutContainerV0.at(
-               femtoUniverseV0Selection::V0ContainerPosition::kNegCuts) > 0)) {
+               femto_universe_v0_selection::V0ContainerPosition::kNegCuts) > 0)) {
           int postrackID = v0.posTrackId();
           int rowInPrimaryTrackTablePos = -1;
           rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
@@ -437,9 +439,9 @@ struct femtoUniverseProducerTaskV0Only {
                       v0.positiveeta(), v0.positivephi(),
                       aod::femtouniverseparticle::ParticleType::kV0Child,
                       cutContainerV0.at(
-                        femtoUniverseV0Selection::V0ContainerPosition::kPosCuts),
+                        femto_universe_v0_selection::V0ContainerPosition::kPosCuts),
                       cutContainerV0.at(
-                        femtoUniverseV0Selection::V0ContainerPosition::kPosPID),
+                        femto_universe_v0_selection::V0ContainerPosition::kPosPID),
                       0., childIDs, 0, 0);
           const int rowOfPosTrack = outputParts.lastIndex();
           int negtrackID = v0.negTrackId();
@@ -451,16 +453,16 @@ struct femtoUniverseProducerTaskV0Only {
                       v0.negativeeta(), v0.negativephi(),
                       aod::femtouniverseparticle::ParticleType::kV0Child,
                       cutContainerV0.at(
-                        femtoUniverseV0Selection::V0ContainerPosition::kNegCuts),
+                        femto_universe_v0_selection::V0ContainerPosition::kNegCuts),
                       cutContainerV0.at(
-                        femtoUniverseV0Selection::V0ContainerPosition::kNegPID),
+                        femto_universe_v0_selection::V0ContainerPosition::kNegPID),
                       0., childIDs, 0, 0);
           const int rowOfNegTrack = outputParts.lastIndex();
           std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
           outputParts(outputCollision.lastIndex(), v0.pt(), v0.eta(), v0.phi(),
                       aod::femtouniverseparticle::ParticleType::kV0,
                       cutContainerV0.at(
-                        femtoUniverseV0Selection::V0ContainerPosition::kV0),
+                        femto_universe_v0_selection::V0ContainerPosition::kV0),
                       0, v0.v0cosPA(),
                       indexChildID, v0.mLambda(), v0.mAntiLambda());
           if (ConfDebugOutput) {
@@ -468,7 +470,7 @@ struct femtoUniverseProducerTaskV0Only {
               postrack.sign(), (uint8_t)postrack.tpcNClsFound(),
               postrack.tpcNClsFindable(),
               (uint8_t)postrack.tpcNClsCrossedRows(),
-              postrack.tpcNClsShared(), postrack.tpcInnerParam(),
+              postrack.tpcNClsShared(), postrack.tpcFractionSharedCls(), postrack.tpcInnerParam(),
               postrack.itsNCls(), postrack.itsNClsInnerBarrel(),
               postrack.dcaXY(), postrack.dcaZ(), postrack.tpcSignal(),
               postrack.tpcNSigmaStoreEl(), postrack.tpcNSigmaStorePi(),
@@ -482,7 +484,7 @@ struct femtoUniverseProducerTaskV0Only {
               negtrack.sign(), (uint8_t)negtrack.tpcNClsFound(),
               negtrack.tpcNClsFindable(),
               (uint8_t)negtrack.tpcNClsCrossedRows(),
-              negtrack.tpcNClsShared(), negtrack.tpcInnerParam(),
+              negtrack.tpcNClsShared(), negtrack.tpcFractionSharedCls(), negtrack.tpcInnerParam(),
               negtrack.itsNCls(), negtrack.itsNClsInnerBarrel(),
               negtrack.dcaXY(), negtrack.dcaZ(), negtrack.tpcSignal(),
               negtrack.tpcNSigmaStoreEl(), negtrack.tpcNSigmaStorePi(),
@@ -492,7 +494,7 @@ struct femtoUniverseProducerTaskV0Only {
               negtrack.tofNSigmaStorePr(), negtrack.tofNSigmaStoreDe(), -999.,
               -999., -999., -999., -999.,
               -999.); // QA for negative daughter
-            outputDebugParts(-999., -999., -999., -999., -999., -999., -999.,
+            outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
                              -999., -999., -999., -999., -999., -999., -999.,
                              -999., -999., -999., -999., -999., -999., -999.,
                              v0.dcaV0daughters(), v0.v0radius(), v0.x(), v0.y(),

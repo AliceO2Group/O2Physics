@@ -15,6 +15,8 @@
 /// \author Joachim C. K. B. Hansen, Lund University
 
 #include <string>
+#include <vector>
+#include <map>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -39,87 +41,139 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 #include "Framework/runDataProcessing.h"
+#include "Framework/StaticFor.h"
 
 struct JetSpectraEseTask {
   ConfigurableAxis binJetPt{"binJetPt", {200, 0., 200.}, ""};
-  ConfigurableAxis bindPhi{"bindPhi", {100, -TMath::Pi() - 1, TMath::Pi() + 1}, ""};
+  ConfigurableAxis bindPhi{"bindPhi", {180, -o2::constants::math::PI, o2::constants::math::PI}, ""};
   ConfigurableAxis binESE{"binESE", {100, 0, 100}, ""};
   ConfigurableAxis binCos{"binCos", {100, -1.05, 1.05}, ""};
+  ConfigurableAxis binOccupancy{"binOccupancy", {5000, 0, 25000}, ""};
+  ConfigurableAxis binQVec{"binQVec", {100, -3, 3}, ""};
 
   Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
   Configurable<float> jetR{"jetR", 0.2, "jet resolution parameter"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0, "vertex z cut"};
-  Configurable<std::vector<float>> CentRange{"CentRange", {30, 50}, "centrality region of interest"};
-  Configurable<double> leadingJetPtCut{"fLeadingJetPtCut", 5.0, "leading jet pT cut"};
+  Configurable<std::vector<float>> centRange{"centRange", {30, 50}, "centrality region of interest"};
+  Configurable<double> leadingJetPtCut{"leadingJetPtCut", 5.0, "leading jet pT cut"};
 
-  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
+  Configurable<std::string> eventSelections{"eventSelections", "sel8FullPbPb", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
-  Configurable<int> fColSwitch{"fColSwitch", 0, "collision switch"};
+  Configurable<bool> cfgEvSelOccupancy{"cfgEvSelOccupancy", false, "Flag for occupancy cut"};
+  Configurable<std::vector<int>> cfgCutOccupancy{"cfgCutOccupancy", {0, 1000}, "Occupancy cut"};
+  Configurable<std::vector<float>> cfgOccupancyPtCut{"cfgOccupancyPtCut", {0, 100}, "pT cut"};
+
+  Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "total qvector number // look in Qvector table for this number"};
+  Configurable<int> cfgnCorrLevel{"cfgnCorrLevel", 3, "QVector step: 0 = no corr, 1 = rect, 2 = twist, 3 = full"};
+
+  Configurable<std::string> cfgEPRefA{"cfgEPRefA", "FT0A", "EP reference A"};
+  Configurable<std::string> cfgEPRefB{"cfgEPRefB", "TPCpos", "EP reference B"};
+  Configurable<std::string> cfgEPRefC{"cfgEPRefC", "TPCneg", "EP reference C"};
 
   AxisSpec jetPtAxis = {binJetPt, "#it{p}_{T,jet}"};
   AxisSpec dPhiAxis = {bindPhi, "#Delta#phi"};
   AxisSpec eseAxis = {binESE, "#it{q}_{2}"};
-
   AxisSpec cosAxis = {binCos, ""};
+  AxisSpec occAxis = {binOccupancy, "Occupancy"};
+  AxisSpec qvecAxis = {binQVec, "Q-vector"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  int eventSelection = -1;
-  int trackSelection = -1;
+  std::vector<int> eventSelectionBits;
+  int trackSelection{-1};
+
+  using ChargedMCDJets = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
+  Preslice<ChargedMCDJets> mcdjetsPerJCollision = o2::aod::jet::collisionId;
+
+  enum class DetID { FT0C,
+                     FT0A,
+                     FT0M,
+                     FV0A,
+                     TPCpos,
+                     TPCneg,
+                     TPCall };
 
   void init(o2::framework::InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     LOGF(info, "jetSpectraEse::init()");
 
-    switch (fColSwitch) {
-      case 0:
-        LOGF(info, "JetSpectraEseTask::init() - using data");
-        registry.add("hEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
-        registry.add("hJetPt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
-        registry.add("hJetPt_bkgsub", "jet pT background sub;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
-        registry.add("hJetEta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
-        registry.add("hJetPhi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
-        registry.add("hRho", ";#rho;entries", {HistType::kTH1F, {{100, 0, 200.}}});
-        registry.add("hJetArea", ";area_{jet};entries", {HistType::kTH1F, {{100, 0, 10.}}});
-        registry.add("hdPhi", "#Delta#phi;entries;", {HistType::kTH1F, {{dPhiAxis}}});
-        registry.add("hJetPtdPhiq2", "", {HistType::kTH3F, {{jetPtAxis}, {dPhiAxis}, {eseAxis}}});
-        registry.add("hPsi2FT0C", ";Centrality; #Psi_{2}", {HistType::kTH2F, {{100, 0, 100}, {150, -2.5, 2.5}}});
-        registry.add("hPsi2FT0A", ";Centrality; #Psi_{2}", {HistType::kTH2F, {{100, 0, 100}, {150, -2.5, 2.5}}});
-        registry.add("hPsi2FV0A", ";Centrality; #Psi_{2}", {HistType::kTH2F, {{100, 0, 100}, {150, -2.5, 2.5}}});
-        registry.add("hPsi2TPCpos", ";Centrality; #Psi_{2}", {HistType::kTH2F, {{100, 0, 100}, {150, -2.5, 2.5}}});
-        registry.add("hPsi2TPCneg", ";Centrality; #Psi_{2}", {HistType::kTH2F, {{100, 0, 100}, {150, -2.5, 2.5}}});
-        registry.add("hCosPsi2FT0CmFT0A", ";Centrality;cos(2(#Psi_{2}^{FT0C}-#Psi_{2}^{FT0A}));#it{q}_{2}", {HistType::kTH3F, {{100, 0, 100}, {cosAxis}, {eseAxis}}});
-        registry.add("hCosPsi2FT0CmFV0A", ";Centrality;cos(2(#Psi_{2}^{FT0C}-#Psi_{2}^{FV0A}));#it{q}_{2}", {HistType::kTH3F, {{100, 0, 100}, {cosAxis}, {eseAxis}}});
-        registry.add("hCosPsi2FV0AmFT0A", ";Centrality;cos(2(#Psi_{2}^{FT0C}-#Psi_{2}^{FV0A}));#it{q}_{2}", {HistType::kTH3F, {{100, 0, 100}, {cosAxis}, {eseAxis}}});
-        registry.add("hCosPsi2FT0AmFT0C", ";Centrality;cos(2(#Psi_{2}^{FT0A}-#Psi_{2}^{FT0C}));#it{q}_{2}", {HistType::kTH3F, {{100, 0, 100}, {cosAxis}, {eseAxis}}});
-        registry.add("hCosPsi2FT0AmFV0A", ";Centrality;cos(2(#Psi_{2}^{FT0C}-#Psi_{2}^{FV0A}));#it{q}_{2}", {HistType::kTH3F, {{100, 0, 100}, {cosAxis}, {eseAxis}}});
-        registry.add("hCosPsi2FV0AmFT0C", ";Centrality;cos(2(#Psi_{2}^{FV0A}-#Psi_{2}^{FT0C}));#it{q}_{2}", {HistType::kTH3F, {{100, 0, 100}, {cosAxis}, {eseAxis}}});
-        registry.add("hCosPsi2TPCposmTPCneg", ";Centrality;cos(2(#Psi_{2}^{TPCpos}-#Psi_{2}^{TPCneg}));#it{q}_{2}", {HistType::kTH3F, {{100, 0, 100}, {cosAxis}, {eseAxis}}});
-        registry.add("hCosPsi2TPCposmFV0A", ";Centrality;cos(2(#Psi_{2}^{TPCpos}-#Psi_{2}^{FV0A}));#it{q}_{2}", {HistType::kTH3F, {{100, 0, 100}, {cosAxis}, {eseAxis}}});
-        registry.add("hCosPsi2TPCnegmFV0A", ";Centrality;cos(2(#Psi_{2}^{TPCneg}-#Psi_{2}^{FV0A}));#it{q}_{2}", {HistType::kTH3F, {{100, 0, 100}, {cosAxis}, {eseAxis}}});
-
-        break;
-      case 1:
-        LOGF(info, "JetSpectraEseTask::init() - using MC");
-        registry.add("h_mc_collisions", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
-        registry.add("h_part_jet_pt", "particle level jet pT;#it{p}_{T,jet part} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
-        registry.add("h_part_jet_eta", "particle level jet #eta;#eta_{jet part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
-        registry.add("h_part_jet_phi", "particle level jet #phi;#phi_{jet part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
-        registry.add("h_part_jet_pt_match", "particle level jet pT;#it{p}_{T,jet part} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
-        registry.add("h_part_jet_eta_match", "particle level jet #eta;#eta_{jet part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
-        registry.add("h_part_jet_phi_match", "particle level jet #phi;#phi_{jet part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
-        registry.add("h_detector_jet_pt", "detector level jet pT;#it{p}_{T,jet det} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
-        registry.add("h_detector_jet_eta", "detector level jet #eta;#eta_{jet det};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
-        registry.add("h_detector_jet_phi", "detector level jet #phi;#phi_{jet det};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
-        registry.add("h_matched_jets_pt_delta", "#it{p}_{T,jet part}; det - part", {HistType::kTH2F, {{jetPtAxis}, {200, -20., 20.0}}});
-        registry.add("h_matched_jets_eta_delta", "#eta_{jet part}; det - part", {HistType::kTH2F, {{100, -1.0, 1.0}, {200, -20.0, 20.0}}});
-        registry.add("h_matched_jets_phi_delta", "#phi_{jet part}; det - part", {HistType::kTH2F, {{80, -1.0, 7.}, {200, -20.0, 20.}}});
-        registry.add("h_response_mat_match", "#it{p}_{T, jet det}; #it{p}_{T, jet part}", HistType::kTH2F, {jetPtAxis, jetPtAxis});
-        break;
+    if (doprocessESEDataCharged) {
+      LOGF(info, "JetSpectraEseTask::init() - processESEDataCharged");
+      registry.add("hEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
+      registry.add("hCentralityMult", ";Centrality;entries", {HistType::kTH1F, {{100, 0, 100}}});
+      registry.add("hJetPt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
+      registry.add("hJetPt_bkgsub", "jet pT background sub;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
+      registry.add("hJetEta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
+      registry.add("hJetPhi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
+      registry.add("hRho", ";#rho;entries", {HistType::kTH1F, {{100, 0, 200.}}});
+      registry.add("hJetArea", ";area_{jet};entries", {HistType::kTH1F, {{100, 0, 10.}}});
+      registry.add("hdPhi", "#Delta#phi;entries;", {HistType::kTH1F, {{dPhiAxis}}});
+      registry.add("hCentJetPtdPhiq2", "", {HistType::kTHnSparseF, {{100, 0, 100}, {jetPtAxis}, {dPhiAxis}, {eseAxis}}});
+      registry.add("hPsi2FT0C", ";Centrality; #Psi_{2}", {HistType::kTH2F, {{100, 0, 100}, {150, -2.5, 2.5}}});
+      registry.addClone("hPsi2FT0C", "hPsi2FT0A");
+      registry.addClone("hPsi2FT0C", "hPsi2FV0A");
+      registry.addClone("hPsi2FT0C", "hPsi2TPCpos");
+      registry.addClone("hPsi2FT0C", "hPsi2TPCneg");
+      registry.add("hCosPsi2AmC", ";Centrality;cos(2(#Psi_{2}^{A}-#Psi_{2}^{B}));#it{q}_{2}", {HistType::kTH3F, {{100, 0, 100}, {cosAxis}, {eseAxis}}});
+      registry.addClone("hCosPsi2AmC", "hCosPsi2AmB");
+      registry.addClone("hCosPsi2AmC", "hCosPsi2BmC");
+      registry.add("hQvecUncorV2", ";Centrality;Q_x;Q_y", {HistType::kTH3F, {{100, 0, 100}, {qvecAxis}, {qvecAxis}}});
+      registry.addClone("hQvecUncorV2", "hQvecRectrV2");
+      registry.addClone("hQvecUncorV2", "hQvecTwistV2");
+      registry.addClone("hQvecUncorV2", "hQvecFinalV2");
+      registry.addClone("hPsi2FT0C", "hEPUncorV2");
+      registry.addClone("hPsi2FT0C", "hEPRectrV2");
+      registry.addClone("hPsi2FT0C", "hEPTwistV2");
+    }
+    if (doprocessMCParticleLevel) {
+      LOGF(info, "JetSpectraEseTask::init() - processMCParticleLevel");
+      registry.add("hMCPartEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
+      registry.add("hPartJetPt", "particle level jet pT;#it{p}_{T,jet part} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
+      registry.add("hPartJetPtSubBkg", "particle level jet pT;#it{p}_{T,jet part} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
+      registry.add("hPartJetEta", "particle level jet #eta;#eta_{jet part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
+      registry.add("hPartJetPhi", "particle level jet #phi;#phi_{jet part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
+    }
+    if (doprocessMCDetectorLevel) {
+      LOGF(info, "JetSpectraEseTask::init() - processMCDetectorLevel");
+      registry.add("hMCDetEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
+      registry.add("hDetJetPt", "particle level jet pT;#it{p}_{T,jet part} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
+      registry.add("hDetJetPtSubBkg", "particle level jet pT;#it{p}_{T,jet part} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
+      registry.add("hDetJetEta", "particle level jet #eta;#eta_{jet part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
+      registry.add("hDetJetPhi", "particle level jet #phi;#phi_{jet part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
+    }
+    if (doprocessMCChargedMatched) {
+      LOGF(info, "JetSpectraEseTask::init() - processMCChargedMatched");
+      registry.add("hMCEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
+      registry.add("hMCDMatchedEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
+      registry.add("hCentralityMult", ";Centrality;entries", {HistType::kTH1F, {{100, 0, 100}}});
+      registry.add("hPartJetPtMatch", ";Centrality;#it{p}_{T,jet part} (GeV/#it{c})", {HistType::kTH2F, {{100, 0, 100}, {jetPtAxis}}});
+      registry.add("hPartJetPtMatchSubBkg", ";Centrality;#it{p}_{T,jet part} (GeV/#it{c})", {HistType::kTH2F, {{100, 0, 100}, {jetPtAxis}}});
+      registry.add("hPartJetEtaMatch", "particle level jet #eta;#eta_{jet part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
+      registry.add("hPartJetPhiMatch", "particle level jet #phi;#phi_{jet part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
+      registry.add("hDetectorJetPt", ";Centrality;#it{p}_{T,jet det} (GeV/#it{c})", {HistType::kTH2F, {{100, 0, 100}, {jetPtAxis}}});
+      registry.add("hDetectorJetPtSubBkg", ";Centrality;#it{p}_{T,jet det} (GeV/#it{c})", {HistType::kTH2F, {{100, 0, 100}, {jetPtAxis}}});
+      registry.add("hDetectorJetEta", "detector level jet #eta;#eta_{jet det};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
+      registry.add("hDetectorJetPhi", "detector level jet #phi;#phi_{jet det};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
+      registry.add("hMatchedJetsPtDelta", "#it{p}_{T,jet part}; det - part", {HistType::kTH2F, {{jetPtAxis}, {200, -20., 20.0}}});
+      registry.add("hGenMatchedJetsPtDeltadPt", "#it{p}_{T,jet part}; det - part / part", {HistType::kTHnSparseF, {{100, 0, 100}, {jetPtAxis}, {200, -20., 20.0}}});
+      registry.add("hRecoMatchedJetsPtDeltadPt", "#it{p}_{T,jet det}; det - part / det", {HistType::kTHnSparseF, {{100, 0, 100}, {jetPtAxis}, {200, -20., 20.0}}});
+      registry.add("hMatchedJetsEtaDelta", "#eta_{jet part}; det - part", {HistType::kTH2F, {{100, -1.0, 1.0}, {200, -0.8, 0.8}}});
+      registry.add("hMatchedJetsPhiDelta", "#phi_{jet part}; det - part", {HistType::kTH2F, {{80, -1.0, 7.}, {200, -10.0, 10.}}});
+      registry.add("hRespMcDMcPMatch", ";Centrality,#it{p}_{T, jet det}; #it{p}_{T, jet part}", HistType::kTHnSparseF, {{100, 0, 100}, jetPtAxis, jetPtAxis});
+      registry.add("hRespMcDMcPMatchSubBkg", ";Centrality,#it{p}_{T, jet det}; #it{p}_{T, jet part}", HistType::kTHnSparseF, {{100, 0, 100}, jetPtAxis, jetPtAxis});
+    }
+    if (doprocessESEOccupancy) {
+      LOGF(info, "JetSpectraEseTask::init() - processESEOccupancy");
+      registry.add("hEventCounterOcc", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
+      registry.add("hTrackPt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTHnSparseF, {{100, 0, 100}, {100, 0, 100}, {eseAxis}, {occAxis}}});
+      registry.add("hTrackEta", "track #eta;#eta_{track};entries", {HistType::kTH3F, {{100, 0, 100}, {100, -1.0, 1.0}, {occAxis}}});
+      registry.add("hTrackPhi", "track #phi;#phi_{track};entries", {HistType::kTH3F, {{100, 0, 100}, {80, -1.0, 7.}, {occAxis}}});
+      registry.add("hOccupancy", "Occupancy;Occupancy;entries", {HistType::kTH1F, {{occAxis}}});
+      registry.add("hPsiOccupancy", "Occupancy;#Psi_{2};entries", {HistType::kTH3F, {{100, 0, 100}, {150, -2.5, 2.5}, {occAxis}}});
     }
   }
 
@@ -127,28 +181,24 @@ struct JetSpectraEseTask {
   Filter colFilter = nabs(aod::jcollision::posZ) < vertexZCut;
   Filter mcCollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
 
-  void processESEDataCharged(soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::BkgChargedRhos>::iterator const& collision,
-                             soa::Join<aod::Collisions, aod::CentFT0Cs, aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFV0AVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs, aod::QPercentileFT0Cs> const&,
+  void processESEDataCharged(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors, aod::QPercentileFT0Cs>::iterator const& collision,
                              soa::Filtered<aod::ChargedJets> const& jets,
                              aod::JetTracks const& tracks)
   {
     float counter{0.5f};
     registry.fill(HIST("hEventCounter"), counter++);
-    const auto originalCollision = collision.collision_as<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFV0AVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs, aod::QPercentileFT0Cs>>();
-    registry.fill(HIST("hEventCounter"), counter++);
-    if (originalCollision.centFT0C() < CentRange->at(0) || originalCollision.centFT0C() > CentRange->at(1))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
     registry.fill(HIST("hEventCounter"), counter++);
 
-    const auto vPsi2 = procEP(originalCollision);
-    const auto qPerc = originalCollision.qPERCFT0C();
+    if (cfgEvSelOccupancy && !isOccupancyWithin(collision))
+      return;
+    registry.fill(HIST("hEventCounter"), counter++);
+
+    const auto vPsi2{procEP<true>(collision)};
+    const auto qPerc{collision.qPERCFT0C()};
     if (qPerc[0] < 0)
       return;
-    registry.fill(HIST("hEventCounter"), counter++);
-
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
-      return;
-
     registry.fill(HIST("hEventCounter"), counter++);
 
     if (!isAcceptedLeadTrack(tracks))
@@ -156,63 +206,170 @@ struct JetSpectraEseTask {
 
     registry.fill(HIST("hEventCounter"), counter++);
     registry.fill(HIST("hRho"), collision.rho());
+    registry.fill(HIST("hCentralityMult"), collision.centrality());
     for (auto const& jet : jets) {
-      float jetpT_bkgsub = jet.pt() - (collision.rho() * jet.area());
+      float jetpTbkgsub = jet.pt() - (collision.rho() * jet.area());
       registry.fill(HIST("hJetPt"), jet.pt());
-      registry.fill(HIST("hJetPt_bkgsub"), jetpT_bkgsub);
+      registry.fill(HIST("hJetPt_bkgsub"), jetpTbkgsub);
       registry.fill(HIST("hJetEta"), jet.eta());
       registry.fill(HIST("hJetPhi"), jet.phi());
       registry.fill(HIST("hJetArea"), jet.area());
 
-      float dPhi = RecoDecay::constrainAngle(jet.phi() - vPsi2, -o2::constants::math::PI);
+      float dPhi{RecoDecay::constrainAngle(jet.phi() - vPsi2, -o2::constants::math::PI)};
       registry.fill(HIST("hdPhi"), dPhi);
-      registry.fill(HIST("hJetPtdPhiq2"), jetpT_bkgsub, dPhi, qPerc[0]); /* check the dphi */
+      registry.fill(HIST("hCentJetPtdPhiq2"), collision.centrality(), jetpTbkgsub, dPhi, qPerc[0]);
     }
+    registry.fill(HIST("hEventCounter"), counter++);
+
+    if (collision.centrality() < centRange->at(0) || collision.centrality() > centRange->at(1))
+      return;
     registry.fill(HIST("hEventCounter"), counter++);
   }
   PROCESS_SWITCH(JetSpectraEseTask, processESEDataCharged, "process ese collisions", true);
 
-  void processMCParticleLevel(soa::Filtered<aod::ChargedMCParticleLevelJets>::iterator const& jet)
+  void processESEOccupancy(soa::Join<aod::JetCollisions, aod::Qvectors, aod::QPercentileFT0Cs>::iterator const& collision,
+                           soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks)
   {
-    registry.fill(HIST("h_part_jet_pt"), jet.pt());
-    registry.fill(HIST("h_part_jet_eta"), jet.eta());
-    registry.fill(HIST("h_part_jet_phi"), jet.phi());
+    float count{0.5};
+    registry.fill(HIST("hEventCounterOcc"), count++);
+    const auto vPsi2{procEP<false>(collision)};
+    const auto qPerc{collision.qPERCFT0C()};
+
+    auto occupancy{collision.trackOccupancyInTimeRange()};
+    registry.fill(HIST("hPsiOccupancy"), collision.centrality(), vPsi2, occupancy);
+    registry.fill(HIST("hOccupancy"), occupancy);
+
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
+      return;
+    registry.fill(HIST("hEventCounterOcc"), count++);
+
+    for (auto const& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection))
+        continue;
+
+      registry.fill(HIST("hTrackPt"), collision.centrality(), track.pt(), qPerc[0], occupancy);
+      if (track.pt() < cfgOccupancyPtCut->at(0) || track.pt() > cfgOccupancyPtCut->at(1))
+        continue;
+      registry.fill(HIST("hTrackEta"), collision.centrality(), track.eta(), occupancy);
+      registry.fill(HIST("hTrackPhi"), collision.centrality(), track.phi(), occupancy);
+    }
+  }
+  PROCESS_SWITCH(JetSpectraEseTask, processESEOccupancy, "process occupancy", false);
+
+  void processMCParticleLevel(soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>::iterator const& collision,
+                              soa::Filtered<aod::ChargedMCParticleLevelJets> const& jets)
+  {
+    float counter{0.5f};
+    registry.fill(HIST("hMCPartEventCounter"), counter++);
+    if (collision.size() < 1) {
+      return;
+    }
+    registry.fill(HIST("hMCPartEventCounter"), counter++);
+    if (!(std::abs(collision.posZ()) < vertexZCut)) {
+      return;
+    }
+    registry.fill(HIST("hMCPartEventCounter"), counter++);
+
+    for (const auto& jet : jets) {
+      registry.fill(HIST("hPartJetPt"), jet.pt());
+      registry.fill(HIST("hPartJetPtSubBkg"), jet.pt() - (collision.rho() * jet.area()));
+      registry.fill(HIST("hPartJetEta"), jet.eta());
+      registry.fill(HIST("hPartJetPhi"), jet.phi());
+    }
   }
   PROCESS_SWITCH(JetSpectraEseTask, processMCParticleLevel, "jets on particle level MC", false);
 
+  void processMCDetectorLevel(soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>::iterator const& collision,
+                              ChargedMCDJets const& mcdjets,
+                              aod::JetTracks const&,
+                              aod::JetParticles const&)
+  {
+    float counter{0.5f};
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
+      return;
+    registry.fill(HIST("hMCDetEventCounter"), counter++);
+
+    if (cfgEvSelOccupancy && !isOccupancyWithin(collision))
+      return;
+    registry.fill(HIST("hMCDetEventCounter"), counter++);
+
+    for (const auto& mcdjet : mcdjets) {
+      auto mcdetPt{mcdjet.pt() - (collision.rho() * mcdjet.area())};
+      registry.fill(HIST("hDetJetPt"), mcdjet.pt());
+      registry.fill(HIST("hDetJetPtSubBkg"), mcdetPt);
+      registry.fill(HIST("hDetJetEta"), mcdjet.eta());
+      registry.fill(HIST("hDetJetPhi"), mcdjet.phi());
+    }
+  }
+  PROCESS_SWITCH(JetSpectraEseTask, processMCDetectorLevel, "jets on detector level", false);
+
   using JetMCPTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
-  void processMCChargedMatched(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
-                               soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
+  void processMCChargedMatched(/*soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision*/
+                               soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>::iterator const& mcCol,
+                               soa::SmallGroups<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>> const& collisions,
+                               ChargedMCDJets const& mcdjets,
                                JetMCPTable const&,
                                aod::JetTracks const&,
                                aod::JetParticles const&)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
-      return;
-
     float counter{0.5f};
-    registry.fill(HIST("h_mc_collisions"), counter++);
-    for (const auto& mcdjet : mcdjets) {
-
-      registry.fill(HIST("h_detector_jet_pt"), mcdjet.pt());
-      registry.fill(HIST("h_detector_jet_eta"), mcdjet.eta());
-      registry.fill(HIST("h_detector_jet_phi"), mcdjet.phi());
-      for (auto& mcpjet : mcdjet.template matchedJetGeo_as<JetMCPTable>()) {
-
-        registry.fill(HIST("h_part_jet_pt_match"), mcpjet.pt());
-        registry.fill(HIST("h_part_jet_eta_match"), mcpjet.eta());
-        registry.fill(HIST("h_part_jet_phi_match"), mcpjet.phi());
-
-        registry.fill(HIST("h_matched_jets_pt_delta"), mcpjet.pt(), mcdjet.pt() - mcpjet.pt());
-        registry.fill(HIST("h_matched_jets_phi_delta"), mcpjet.phi(), mcdjet.phi() - mcpjet.phi());
-        registry.fill(HIST("h_matched_jets_eta_delta"), mcpjet.eta(), mcdjet.eta() - mcpjet.eta());
-
-        registry.fill(HIST("h_response_mat_match"), mcdjet.pt(), mcpjet.pt());
-      }
+    registry.fill(HIST("hMCEventCounter"), counter++);
+    if (mcCol.size() < 1) {
+      return;
     }
-    registry.fill(HIST("h_mc_collisions"), counter++);
+    registry.fill(HIST("hMCEventCounter"), counter++);
+    if (!(std::abs(mcCol.posZ()) < vertexZCut)) {
+      return;
+    }
+    registry.fill(HIST("hMCEventCounter"), counter++);
+
+    for (const auto& collision : collisions) {
+      float secCount{0.5f};
+      registry.fill(HIST("hMCDMatchedEventCounter"), secCount++);
+      if (!(std::abs(collision.posZ()) < vertexZCut)) {
+        return;
+      }
+
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
+        return;
+      registry.fill(HIST("hMCDMatchedEventCounter"), secCount++);
+
+      if (cfgEvSelOccupancy && !isOccupancyWithin(collision))
+        return;
+      registry.fill(HIST("hMCDMatchedEventCounter"), secCount++);
+
+      if (collision.centrality() < centRange->at(0) || collision.centrality() > centRange->at(1))
+        registry.fill(HIST("hMCDMatchedEventCounter"), secCount++);
+
+      registry.fill(HIST("hCentralityMult"), collision.centrality());
+      auto collmcdJets{mcdjets.sliceBy(mcdjetsPerJCollision, collision.globalIndex())};
+      for (const auto& mcdjet : collmcdJets) {
+        auto mcdPt{mcdjet.pt() - (collision.rho() * mcdjet.area())};
+        registry.fill(HIST("hDetectorJetPt"), collision.centrality(), mcdjet.pt());
+        registry.fill(HIST("hDetectorJetPtSubBkg"), collision.centrality(), mcdPt);
+        registry.fill(HIST("hDetectorJetEta"), mcdjet.eta());
+        registry.fill(HIST("hDetectorJetPhi"), mcdjet.phi());
+        for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetMCPTable>()) {
+          auto mcpPt{mcpjet.pt() - (mcCol.rho() * mcpjet.area())};
+          registry.fill(HIST("hPartJetPtMatch"), collision.centrality(), mcpjet.pt());
+          registry.fill(HIST("hPartJetPtMatchSubBkg"), collision.centrality(), mcpPt);
+          registry.fill(HIST("hPartJetEtaMatch"), mcpjet.eta());
+          registry.fill(HIST("hPartJetPhiMatch"), mcpjet.phi());
+          registry.fill(HIST("hMatchedJetsPtDelta"), mcpjet.pt(), mcdjet.pt() - mcpjet.pt());
+          registry.fill(HIST("hGenMatchedJetsPtDeltadPt"), collision.centrality(), mcpPt, (mcdPt - mcpPt) / mcpPt);
+          registry.fill(HIST("hRecoMatchedJetsPtDeltadPt"), collision.centrality(), mcdPt, (mcdPt - mcpPt) / mcdPt);
+          registry.fill(HIST("hMatchedJetsPhiDelta"), mcpjet.phi(), mcdjet.phi() - mcpjet.phi());
+          registry.fill(HIST("hMatchedJetsEtaDelta"), mcpjet.eta(), mcdjet.eta() - mcpjet.eta());
+
+          registry.fill(HIST("hRespMcDMcPMatch"), collision.centrality(), mcdjet.pt(), mcpjet.pt());
+          registry.fill(HIST("hRespMcDMcPMatchSubBkg"), collision.centrality(), mcdPt, mcpPt);
+        }
+      }
+      registry.fill(HIST("hMCDMatchedEventCounter"), secCount++);
+    }
+    registry.fill(HIST("hMCEventCounter"), counter++);
   }
-  PROCESS_SWITCH(JetSpectraEseTask, processMCChargedMatched, "jet matched mcp and mcd", false);
+  PROCESS_SWITCH(JetSpectraEseTask, processMCChargedMatched, "jet MC process: geometrically matched MCP and MCD for response matrix and efficiency", false);
 
   template <typename T>
   bool isAcceptedLeadTrack(T const& tracks)
@@ -230,49 +387,108 @@ struct JetSpectraEseTask {
     else
       return true;
   }
-
-  template <typename qVectors>
-  float procEP(qVectors const& vec)
+  template <bool Fill, typename EPCol>
+  float procEP(EPCol const& vec)
   {
-    const auto epFT0A = 1 / 2.0 * TMath::ATan2(vec.qvecFT0AImVec()[0], vec.qvecFT0AReVec()[0]);
-    const auto epFV0A = 1 / 2.0 * std::atan2(vec.qvecFV0AImVec()[0], vec.qvecFV0AReVec()[0]);
-    const auto epFT0C = 1 / 2.0 * std::atan2(vec.qvecFT0CImVec()[0], vec.qvecFT0CReVec()[0]);
-    const auto epTPCpos = 1 / 2.0 * std::atan2(vec.qvecTPCposImVec()[0], vec.qvecTPCposReVec()[0]);
-    const auto epTPCneg = 1 / 2.0 * std::atan2(vec.qvecTPCnegImVec()[0], vec.qvecTPCnegReVec()[0]);
-
-    registry.fill(HIST("hPsi2FT0C"), vec.centFT0C(), epFT0C);
-    registry.fill(HIST("hPsi2FT0A"), vec.centFT0C(), epFT0A);
-    registry.fill(HIST("hPsi2FV0A"), vec.centFT0C(), epFV0A);
-    registry.fill(HIST("hPsi2TPCpos"), vec.centFT0C(), epTPCpos);
-    registry.fill(HIST("hPsi2TPCneg"), vec.centFT0C(), epTPCneg);
-
-    const auto cosPsi2FT0CmFT0A = cosPsiXY(epFT0C, epFT0A);
-    const auto cosPsi2FT0CmFV0A = cosPsiXY(epFT0C, epFV0A);
-    const auto cosPsi2FV0AmFT0A = cosPsiXY(epFV0A, epFT0A);
-    const auto cosPsi2FT0AmFT0C = cosPsiXY(epFT0A, epFT0C);
-    const auto cosPsi2FT0AmFV0A = cosPsiXY(epFT0A, epFV0A);
-    const auto cosPsi2FV0AmFT0C = cosPsiXY(epFV0A, epFT0C);
-    const auto cosPsi2TPCposmTPCneg = cosPsiXY(epTPCpos, epTPCneg);
-    const auto cosPsi2TPCposmFV0A = cosPsiXY(epTPCpos, epFV0A);
-    const auto cosPsi2TPCnegmFV0A = cosPsiXY(epTPCneg, epFV0A);
-
-    registry.fill(HIST("hCosPsi2FT0CmFT0A"), vec.centFT0C(), cosPsi2FT0CmFT0A, vec.qPERCFT0C()[0]);
-    registry.fill(HIST("hCosPsi2FT0CmFV0A"), vec.centFT0C(), cosPsi2FT0CmFV0A, vec.qPERCFT0C()[0]);
-    registry.fill(HIST("hCosPsi2FV0AmFT0A"), vec.centFT0C(), cosPsi2FV0AmFT0A, vec.qPERCFT0C()[0]);
-    registry.fill(HIST("hCosPsi2FT0AmFT0C"), vec.centFT0C(), cosPsi2FT0AmFT0C, vec.qPERCFT0C()[0]);
-    registry.fill(HIST("hCosPsi2FT0AmFV0A"), vec.centFT0C(), cosPsi2FT0AmFV0A, vec.qPERCFT0C()[0]);
-    registry.fill(HIST("hCosPsi2FV0AmFT0C"), vec.centFT0C(), cosPsi2FV0AmFT0C, vec.qPERCFT0C()[0]);
-    registry.fill(HIST("hCosPsi2TPCposmTPCneg"), vec.centFT0C(), cosPsi2TPCposmTPCneg, vec.qPERCFT0C()[0]);
-    registry.fill(HIST("hCosPsi2TPCposmFV0A"), vec.centFT0C(), cosPsi2TPCposmFV0A, vec.qPERCFT0C()[0]);
-    registry.fill(HIST("hCosPsi2TPCnegmFV0A"), vec.centFT0C(), cosPsi2TPCnegmFV0A, vec.qPERCFT0C()[0]);
-
-    return epFT0A;
+    constexpr std::array<float, 2> AmpCut{1e-8, 0.0};
+    auto computeEP = [&AmpCut](std::vector<float> vec, auto det) { return vec[2] > AmpCut[det] ? 0.5 * std::atan2(vec[1], vec[0]) : 999.; };
+    std::map<std::string, float> epMap;
+    epMap["FT0A"] = computeEP(qVecNoESE<DetID::FT0A, Fill>(vec), 0);
+    if constexpr (Fill) {
+      epMap["FT0C"] = computeEP(qVecNoESE<DetID::FT0C, false>(vec), 0);
+      epMap["FV0A"] = computeEP(qVecNoESE<DetID::FV0A, false>(vec), 0);
+      epMap["TPCpos"] = computeEP(qVecNoESE<DetID::TPCpos, false>(vec), 1);
+      epMap["TPCneg"] = computeEP(qVecNoESE<DetID::TPCneg, false>(vec), 1);
+      fillEP(/*std::make_index_sequence<5>{},*/ vec, epMap);
+      auto cosPsi = [](float psiX, float psiY) { return (static_cast<double>(psiX) == 999. || static_cast<double>(psiY) == 999.) ? 999. : std::cos(2.0 * (psiX - psiY)); };
+      std::array<float, 3> epCorrContainer{};
+      epCorrContainer[0] = cosPsi(epMap[cfgEPRefA], epMap[cfgEPRefC]);
+      epCorrContainer[1] = cosPsi(epMap[cfgEPRefA], epMap[cfgEPRefB]);
+      epCorrContainer[2] = cosPsi(epMap[cfgEPRefB], epMap[cfgEPRefC]);
+      fillEPCos(/*std::make_index_sequence<3>{},*/ vec, epCorrContainer);
+    }
+    return epMap[cfgEPRefA];
+  }
+  template </*std::size_t... Idx,*/ typename collision>
+  void fillEPCos(/*const std::index_sequence<Idx...>&,*/ const collision& col, const std::array<float, 3>& Corr)
+  {
+    // static constexpr std::string CosList[] = {"hCosPsi2AmC", "hCosPsi2AmB", "hCosPsi2BmC"};
+    // (registry.fill(HIST(CosList[Idx]), col.centrality(), Corr[Idx], col.qPERCFT0C()[0]), ...);
+    registry.fill(HIST("hCosPsi2AmC"), col.centrality(), Corr[0], col.qPERCFT0C()[0]);
+    registry.fill(HIST("hCosPsi2AmB"), col.centrality(), Corr[1], col.qPERCFT0C()[0]);
+    registry.fill(HIST("hCosPsi2BmC"), col.centrality(), Corr[2], col.qPERCFT0C()[0]);
   }
 
-  template <typename Psi>
-  float cosPsiXY(Psi const& psiX, Psi const& psiY)
+  template </*std::size_t... Idx,*/ typename collision>
+  void fillEP(/*const std::index_sequence<Idx...>&,*/ const collision& col, const std::map<std::string, float>& epMap)
   {
-    return std::cos(2.0 * (psiX - psiY));
+    // static constexpr std::string_view EpList[] = {"hPsi2FT0A", "hPsi2FV0A", "hPsi2FT0C", "hPsi2TPCpos", "hPsi2TPCneg"};
+    // (registry.fill(HIST(EpList[Idx]), col.centrality(), epMap.at(std::string(RemovePrefix(EpList[Idx])))), ...);
+    registry.fill(HIST("hPsi2FT0A"), col.centrality(), epMap.at("FT0A"));
+    registry.fill(HIST("hPsi2FV0A"), col.centrality(), epMap.at("FV0A"));
+    registry.fill(HIST("hPsi2FT0C"), col.centrality(), epMap.at("FT0C"));
+    registry.fill(HIST("hPsi2TPCpos"), col.centrality(), epMap.at("TPCpos"));
+    registry.fill(HIST("hPsi2TPCneg"), col.centrality(), epMap.at("TPCneg"));
+  }
+  constexpr std::string_view RemovePrefix(std::string_view str)
+  {
+    constexpr std::string_view Prefix{"hPsi2"};
+    return str.substr(Prefix.size());
+  }
+
+  constexpr int detIDN(const DetID id)
+  {
+    switch (id) {
+      case DetID::FT0C:
+        return 0;
+      case DetID::FT0A:
+        return 1;
+      case DetID::FT0M:
+        return 2;
+      case DetID::FV0A:
+        return 3;
+      case DetID::TPCpos:
+        return 4;
+      case DetID::TPCneg:
+        return 5;
+      case DetID::TPCall:
+        return 6;
+    }
+    return -1;
+  }
+
+  template <DetID id, bool fill, typename Col>
+  std::vector<float> qVecNoESE(Col collision)
+  {
+    const int nmode{2};
+    int detId{detIDN(id)};
+    int detInd{detId * 4 + cfgnTotalSystem * 4 * (nmode - 2)};
+    if constexpr (fill) {
+      if (collision.qvecAmp()[detInd] > 1e-8) {
+        registry.fill(HIST("hQvecUncorV2"), collision.centrality(), collision.qvecRe()[detInd], collision.qvecIm()[detInd]);
+        registry.fill(HIST("hQvecRectrV2"), collision.centrality(), collision.qvecRe()[detInd + 1], collision.qvecIm()[detInd + 1]);
+        registry.fill(HIST("hQvecTwistV2"), collision.centrality(), collision.qvecRe()[detInd + 2], collision.qvecIm()[detInd + 2]);
+        registry.fill(HIST("hQvecFinalV2"), collision.centrality(), collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3]);
+        registry.fill(HIST("hEPUncorV2"), collision.centrality(), 0.5 * std::atan2(collision.qvecIm()[detInd], collision.qvecRe()[detInd]));
+        registry.fill(HIST("hEPRectrV2"), collision.centrality(), 0.5 * std::atan2(collision.qvecIm()[detInd + 1], collision.qvecRe()[detInd + 1]));
+        registry.fill(HIST("hEPTwistV2"), collision.centrality(), 0.5 * std::atan2(collision.qvecIm()[detInd + 2], collision.qvecRe()[detInd + 2]));
+      }
+    }
+    std::vector<float> qVec{};
+    qVec.push_back(collision.qvecRe()[detInd + cfgnCorrLevel]);
+    qVec.push_back(collision.qvecIm()[detInd + cfgnCorrLevel]);
+    qVec.push_back(collision.qvecAmp()[detId]);
+    return qVec;
+  }
+
+  template <typename col>
+  bool isOccupancyWithin(const col& collision)
+  {
+    auto occupancy{collision.trackOccupancyInTimeRange()};
+    if (occupancy < cfgCutOccupancy->at(0) || occupancy > cfgCutOccupancy->at(1))
+      return false;
+    else
+      return true;
   }
 };
 

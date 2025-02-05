@@ -14,6 +14,9 @@
 #include <iostream>
 #include <memory>
 #include <fstream>
+#include <list>
+#include <vector>
+#include <algorithm>
 #include "Framework/Logger.h"
 using namespace std;
 
@@ -137,7 +140,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   }
   // check whether this histogram name was used before
   if (hList->FindObject(hname)) {
-    LOG(warn) << "HistogramManager::AddHistogram(): Histogram " << hname << " already exists";
+    LOG(warn) << "HistogramManager::AddHistogram(): Histogram " << hname << " already exists in class " << histClass;
     return;
   }
 
@@ -179,7 +182,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   varVector.push_back(varX);              // variables on each axis
   varVector.push_back(varY);
   varVector.push_back(varZ);
-  varVector.push_back(varT); // variable used for profiling in case of TProfile3D
+  varVector.push_back(varT);                 // variable used for profiling in case of TProfile3D
   varVector.push_back(isFillLabelx ? 1 : 0); // whether to fill with the x-axis labels
   std::list varList = fVariablesMap[histClass];
   varList.push_back(varVector);
@@ -389,7 +392,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   varVector.push_back(varX);              // variables on each axis
   varVector.push_back(varY);
   varVector.push_back(varZ);
-  varVector.push_back(varT); // variable used for profiling in case of TProfile3D
+  varVector.push_back(varT);                 // variable used for profiling in case of TProfile3D
   varVector.push_back(isFillLabelx ? 1 : 0); // whether to fill with the x-axis labels
   std::list varList = fVariablesMap[histClass];
   varList.push_back(varVector);
@@ -559,6 +562,13 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
 
   if (varW > kNothing) {
     fUsedVars[varW] = kTRUE;
+  }
+
+  for (int i = 0; i < nDimensions; i++) {
+    if (xmax[i] <= xmin[i]) {
+      LOG(warn) << "HistogramManager::AddHistogram(): Histogram " << hname << " has wrong axes ranges for dimension " << i
+                << ", (xmin/xmax): " << xmin[i] << " / " << xmax[i];
+    }
   }
 
   // encode needed variable identifiers in a vector and push it to the std::list corresponding to the current histogram list
@@ -795,9 +805,9 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
           if (isProfile) {
             if (varW > kNothing) {
               if (isFillLabelx) {
-                (reinterpret_cast<TProfile*>(h))->Fill(Form("%d", static_cast<int>(values[varX])), values[varW]);
+                (reinterpret_cast<TProfile*>(h))->Fill(Form("%d", static_cast<int>(values[varX])), values[varY], values[varW]);
               } else {
-                (reinterpret_cast<TProfile*>(h))->Fill(values[varX], values[varW]);
+                (reinterpret_cast<TProfile*>(h))->Fill(values[varX], values[varY], values[varW]);
               }
             } else {
               if (isFillLabelx) {
@@ -880,7 +890,7 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
         }
       }
     } // end else
-  }   // end loop over histograms
+  } // end loop over histograms
 }
 
 //____________________________________________________________________________________

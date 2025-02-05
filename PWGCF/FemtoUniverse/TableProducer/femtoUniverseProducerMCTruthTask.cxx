@@ -26,7 +26,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseV0Selection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePhiSelection.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -40,7 +40,7 @@
 #include "TLorentzVector.h"
 
 using namespace o2;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -77,10 +77,10 @@ struct femtoUniverseProducerMCTruthTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
 
   // Tables being produced
-  Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FdCollisions> outputCollision;
   Produces<aod::FDParticles> outputParts;
   // Produces<aod::FDMCLabels> outputPartsMCLabels;
-  // Produces<aod::FDMCParticles> outputPartsMC;
+  // Produces<aod::FdMCParticles> outputPartsMC;
 
   // Analysis configs
   Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"}; // Choose if filtering or skimming version is run
@@ -121,7 +121,7 @@ struct femtoUniverseProducerMCTruthTask {
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3, ConfCentFT0Min, ConfCentFT0Max);
 
     colCuts.init(&qaRegistry);
-    trackCuts.init<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::TrackType::kNoChild, aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
+    trackCuts.init<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::TrackType::kNoChild, aod::femtouniverseparticle::CutContainerType>(&qaRegistry);
 
     mRunNumber = 0;
     mMagField = 0.0;
@@ -189,7 +189,7 @@ struct femtoUniverseProducerMCTruthTask {
       // trackCuts.fillQA<aod::femtouniverseparticle::ParticleType::kTrack,
       //                  aod::femtouniverseparticle::TrackType::kNoChild>(track);
       //  the bit-wise container of the systematic variations is obtained
-      // auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::cutContainerType>(track);
+      // auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::CutContainerType>(track);
       // instead of the bitmask, the PDG of the particle is stored as uint32_t
 
       // now the table is filled

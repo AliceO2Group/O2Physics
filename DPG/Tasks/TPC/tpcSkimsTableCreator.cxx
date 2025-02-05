@@ -23,6 +23,8 @@
 #include "TRandom3.h"
 /// O2
 #include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 /// O2Physics
@@ -33,6 +35,7 @@
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -42,6 +45,8 @@ using namespace o2::dataformats;
 
 struct TreeWriterTpcV0 {
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   using Trks = soa::Join<aod::Tracks, aod::V0Bits, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection>;
   using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
 
@@ -49,7 +54,7 @@ struct TreeWriterTpcV0 {
   Produces<o2::aod::SkimmedTPCV0Tree> rowTPCTree;
 
   /// Configurables
-  Configurable<float> nSigmaTOFdautrack{"nSigmaTOFdautrack", 5., "n-sigma TOF cut on the daughter tracks. Set 0 to switch it off."};
+  Configurable<float> nSigmaTOFdautrack{"nSigmaTOFdautrack", 999., "n-sigma TOF cut on the proton daughter tracks. Set 999 to switch it off."};
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -72,9 +77,11 @@ struct TreeWriterTpcV0 {
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
+  ctpRateFetcher mRateFetcher;
+
   /// Funktion to fill skimmed tables
   template <typename T, typename C, typename V0>
-  void fillSkimmedV0Table(V0 const& v0, T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor)
+  void fillSkimmedV0Table(V0 const& v0, T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate)
   {
 
     const double ncl = track.tpcNClsFound();
@@ -82,6 +89,8 @@ struct TreeWriterTpcV0 {
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
     const int multTPC = collision.multTPC();
+    auto trackocc = collision.trackOccupancyInTimeRange();
+    auto ft0occ = collision.ft0cOccupancyInTimeRange();
 
     const float alpha = v0.alpha();
     const float qt = v0.qtarm();
@@ -113,7 +122,10 @@ struct TreeWriterTpcV0 {
                  pT,
                  v0radius,
                  gammapsipair,
-                 runnumber);
+                 runnumber,
+                 trackocc,
+                 ft0occ,
+                 hadronicRate);
     }
   };
 
@@ -167,6 +179,9 @@ struct TreeWriterTpcV0 {
 
   void init(o2::framework::InitContext&)
   {
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setFatalWhenNull(false);
   }
 
   /// Apply a track quality selection with a filter!
@@ -178,6 +193,7 @@ struct TreeWriterTpcV0 {
     }
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     const int runnumber = bc.runNumber();
+    float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3;
 
     rowTPCTree.reserve(tracks.size());
 
@@ -188,37 +204,41 @@ struct TreeWriterTpcV0 {
       // gamma
       if (static_cast<bool>(posTrack.pidbit() & (1 << 0)) && static_cast<bool>(negTrack.pidbit() & (1 << 0))) {
         if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisElectrons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Electron], maxPt4dwnsmplTsalisElectrons)) {
-          fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaEl(), posTrack.tofNSigmaEl(), posTrack.tpcExpSignalEl(posTrack.tpcSignal()), o2::track::PID::Electron, runnumber, dwnSmplFactor_El);
+          fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaEl(), posTrack.tofNSigmaEl(), posTrack.tpcExpSignalEl(posTrack.tpcSignal()), o2::track::PID::Electron, runnumber, dwnSmplFactor_El, hadronicRate);
         }
         if (downsampleTsalisCharged(negTrack.pt(), downsamplingTsalisElectrons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Electron], maxPt4dwnsmplTsalisElectrons)) {
-          fillSkimmedV0Table(v0, negTrack, collision, negTrack.tpcNSigmaEl(), negTrack.tofNSigmaEl(), negTrack.tpcExpSignalEl(negTrack.tpcSignal()), o2::track::PID::Electron, runnumber, dwnSmplFactor_El);
+          fillSkimmedV0Table(v0, negTrack, collision, negTrack.tpcNSigmaEl(), negTrack.tofNSigmaEl(), negTrack.tpcExpSignalEl(negTrack.tpcSignal()), o2::track::PID::Electron, runnumber, dwnSmplFactor_El, hadronicRate);
         }
       }
       // Ks0
       if (static_cast<bool>(posTrack.pidbit() & (1 << 1)) && static_cast<bool>(negTrack.pidbit() & (1 << 1))) {
         if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion], maxPt4dwnsmplTsalisPions)) {
-          fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(posTrack.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi);
+          fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(posTrack.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate);
         }
         if (downsampleTsalisCharged(negTrack.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion], maxPt4dwnsmplTsalisPions)) {
-          fillSkimmedV0Table(v0, negTrack, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(negTrack.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi);
+          fillSkimmedV0Table(v0, negTrack, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(negTrack.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate);
         }
       }
       // Lambda
       if (static_cast<bool>(posTrack.pidbit() & (1 << 2)) && static_cast<bool>(negTrack.pidbit() & (1 << 2))) {
         if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton], maxPt4dwnsmplTsalisProtons)) {
-          fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPr(), posTrack.tofNSigmaPr(), posTrack.tpcExpSignalPr(posTrack.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr);
+          if (TMath::Abs(posTrack.tofNSigmaPr()) <= nSigmaTOFdautrack) {
+            fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPr(), posTrack.tofNSigmaPr(), posTrack.tpcExpSignalPr(posTrack.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate);
+          }
         }
         if (downsampleTsalisCharged(negTrack.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion], maxPt4dwnsmplTsalisPions)) {
-          fillSkimmedV0Table(v0, negTrack, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(negTrack.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi);
+          fillSkimmedV0Table(v0, negTrack, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(negTrack.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate);
         }
       }
       // Antilambda
       if (static_cast<bool>(posTrack.pidbit() & (1 << 3)) && static_cast<bool>(negTrack.pidbit() & (1 << 3))) {
         if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion], maxPt4dwnsmplTsalisPions)) {
-          fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(posTrack.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi);
+          fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(posTrack.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate);
         }
         if (downsampleTsalisCharged(negTrack.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton], maxPt4dwnsmplTsalisProtons)) {
-          fillSkimmedV0Table(v0, negTrack, collision, negTrack.tpcNSigmaPr(), negTrack.tofNSigmaPr(), negTrack.tpcExpSignalPr(negTrack.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr);
+          if (TMath::Abs(negTrack.tofNSigmaPr()) <= nSigmaTOFdautrack) {
+            fillSkimmedV0Table(v0, negTrack, collision, negTrack.tpcNSigmaPr(), negTrack.tofNSigmaPr(), negTrack.tpcExpSignalPr(negTrack.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate);
+          }
         }
       }
     }
@@ -226,6 +246,9 @@ struct TreeWriterTpcV0 {
 };  /// struct TreeWriterTpcV0
 
 struct TreeWriterTPCTOF {
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::TrackSelection>;
   using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
 
@@ -285,6 +308,8 @@ struct TreeWriterTPCTOF {
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
+  ctpRateFetcher mRateFetcher;
+
   double tsalisCharged(double pt, double mass, double sqrts)
   {
     const double a = 6.81, b = 59.24;
@@ -316,7 +341,7 @@ struct TreeWriterTPCTOF {
 
   /// Function to fill trees
   template <typename T, typename C>
-  void fillSkimmedTPCTOFTable(T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor)
+  void fillSkimmedTPCTOFTable(T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, double hadronicRate)
   {
 
     const double ncl = track.tpcNClsFound();
@@ -324,6 +349,8 @@ struct TreeWriterTPCTOF {
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
     const int multTPC = collision.multTPC();
+    auto trackocc = collision.trackOccupancyInTimeRange();
+    auto ft0occ = collision.ft0cOccupancyInTimeRange();
 
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
@@ -342,7 +369,10 @@ struct TreeWriterTPCTOF {
                     id,
                     nSigmaTPC,
                     nSigmaTOF,
-                    runnumber);
+                    runnumber,
+                    trackocc,
+                    ft0occ,
+                    hadronicRate);
     }
   };
 
@@ -364,6 +394,9 @@ struct TreeWriterTPCTOF {
 
   void init(o2::framework::InitContext&)
   {
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setFatalWhenNull(false);
   }
 
   void process(Coll::iterator const& collision, soa::Filtered<Trks> const& tracks, aod::BCsWithTimestamps const&)
@@ -375,37 +408,39 @@ struct TreeWriterTPCTOF {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     const int runnumber = bc.runNumber();
+    float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3;
+
     rowTPCTOFTree.reserve(tracks.size());
     for (auto const& trk : tracks) {
       /// Fill tree for tritons
       if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate);
       } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate);
       }
       /// Fill tree for deuterons
       if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate);
       } else if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate);
       }
       /// Fill tree for protons
       if (trk.tpcInnerParam() <= maxMomTPCOnlyPr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPCOnlyPr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(trk.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(trk.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate);
       } else if (trk.tpcInnerParam() > maxMomTPCOnlyPr && std::abs(trk.tofNSigmaPr()) < nSigmaTOF_TPCTOF_Pr && std::abs(trk.tpcNSigmaPr()) < nSigmaTPC_TPCTOF_Pr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(trk.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.tpcExpSignalPr(trk.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate);
       }
       /// Fill tree for kaons
       if (trk.tpcInnerParam() < maxMomHardCutOnlyKa && trk.tpcInnerParam() <= maxMomTPCOnlyKa && std::abs(trk.tpcNSigmaKa()) < nSigmaTPCOnlyKa && downsampleTsalisCharged(trk.pt(), downsamplingTsalisKaons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Kaon])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaKa(), trk.tofNSigmaKa(), trk.tpcExpSignalKa(trk.tpcSignal()), o2::track::PID::Kaon, runnumber, dwnSmplFactor_Ka);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaKa(), trk.tofNSigmaKa(), trk.tpcExpSignalKa(trk.tpcSignal()), o2::track::PID::Kaon, runnumber, dwnSmplFactor_Ka, hadronicRate);
       } else if (trk.tpcInnerParam() < maxMomHardCutOnlyKa && trk.tpcInnerParam() > maxMomTPCOnlyKa && std::abs(trk.tofNSigmaKa()) < nSigmaTOF_TPCTOF_Ka && std::abs(trk.tpcNSigmaKa()) < nSigmaTPC_TPCTOF_Ka && downsampleTsalisCharged(trk.pt(), downsamplingTsalisKaons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Kaon])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaKa(), trk.tofNSigmaKa(), trk.tpcExpSignalKa(trk.tpcSignal()), o2::track::PID::Kaon, runnumber, dwnSmplFactor_Ka);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaKa(), trk.tofNSigmaKa(), trk.tpcExpSignalKa(trk.tpcSignal()), o2::track::PID::Kaon, runnumber, dwnSmplFactor_Ka, hadronicRate);
       }
       /// Fill tree pions
       if (trk.tpcInnerParam() <= maxMomTPCOnlyPi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPCOnlyPi && downsampleTsalisCharged(trk.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPi(), trk.tofNSigmaPi(), trk.tpcExpSignalPi(trk.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPi(), trk.tofNSigmaPi(), trk.tpcExpSignalPi(trk.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate);
       } else if (trk.tpcInnerParam() > maxMomTPCOnlyPi && std::abs(trk.tofNSigmaPi()) < nSigmaTOF_TPCTOF_Pi && std::abs(trk.tpcNSigmaPi()) < nSigmaTPC_TPCTOF_Pi && downsampleTsalisCharged(trk.pt(), downsamplingTsalisPions, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Pion])) {
-        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPi(), trk.tofNSigmaPi(), trk.tpcExpSignalPi(trk.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi);
+        fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaPi(), trk.tofNSigmaPi(), trk.tpcExpSignalPi(trk.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate);
       }
     } /// Loop tracks
   }   /// process

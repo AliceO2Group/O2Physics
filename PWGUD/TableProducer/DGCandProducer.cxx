@@ -12,9 +12,14 @@
 // \brief Saves relevant information of DG candidates
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 
+#include <vector>
+#include <string>
+#include <map>
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/Vertex.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/Core/DGSelector.h"
@@ -24,6 +29,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct DGCandProducer {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  ctpRateFetcher mRateFetcher;
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
   Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
@@ -36,6 +43,7 @@ struct DGCandProducer {
   // data tables
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
+  Produces<aod::UDCollisionSelExtras> outputCollisionSelExtras;
   Produces<aod::UDCollsLabels> outputCollsLabels;
   Produces<aod::UDZdcs> outputZdcs;
   Produces<aod::UDZdcsReduced> outputZdcsReduced;
@@ -195,7 +203,9 @@ struct DGCandProducer {
   void init(InitContext&)
   {
     LOGF(debug, "<DGCandProducer> beginning of init reached");
-
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setFatalWhenNull(false);
     diffCuts = (DGCutparHolder)DGCuts;
 
     const int nXbinsInStatH = 25;
@@ -247,6 +257,31 @@ struct DGCandProducer {
     }
     registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
     auto bc = collision.foundBC_as<BCs>();
+    int trs = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      trs = 1;
+    }
+    int trofs = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      trofs = 1;
+    }
+    int hmpr = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      hmpr = 1;
+    }
+    double ir = 0.;
+    const uint64_t ts = bc.timestamp();
+    const int runnumber = bc.runNumber();
+    if (bc.has_zdc()) {
+      ir = mRateFetcher.fetch(ccdb.service, ts, runnumber, "ZNC hadronic") * 1.e-3;
+    }
+    uint8_t chFT0A = 0;
+    uint8_t chFT0C = 0;
+    uint8_t chFDDA = 0;
+    uint8_t chFDDC = 0;
+    uint8_t chFV0A = 0;
+    int occ = 0;
+    occ = collision.trackOccupancyInTimeRange();
     LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
 
     // fill FIT histograms
@@ -286,6 +321,7 @@ struct DGCandProducer {
                            fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
+      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr);
       outputCollsLabels(collision.globalIndex());
 
       // update DGTracks tables
@@ -375,7 +411,8 @@ struct McDGCandProducer {
   void updateUDMcCollisions(TMcCollision const& mccol)
   {
     // save mccol
-    outputMcCollisions(mccol.bcId(),
+    auto bc = mccol.template bc_as<BCs>();
+    outputMcCollisions(bc.globalBC(),
                        mccol.generatorsID(),
                        mccol.posX(),
                        mccol.posY(),
@@ -577,7 +614,6 @@ struct McDGCandProducer {
     auto dgcandAtEnd = dgcand == lastdgcand;
     auto mccolAtEnd = mccol == lastmccol;
     bool goon = !dgcandAtEnd || !mccolAtEnd;
-    int counter = 0;
 
     while (goon) {
       // check if dgcand has an associated Collision and McCollision
@@ -621,7 +657,6 @@ struct McDGCandProducer {
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           LOGF(debug, "  writing %d to outputMcCollsLabels", mcColIsSaved[mcdgId]);
           outputMcCollsLabels(mcColIsSaved[mcdgId]);
-          counter++;
 
           // update UDMcParticles
           auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mcdgId);
@@ -637,7 +672,6 @@ struct McDGCandProducer {
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           LOGF(debug, "  writing %d to UDMcCollsLabels", -1);
           outputMcCollsLabels(-1);
-          counter++;
 
           // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
           // loop over tracks of dgcand

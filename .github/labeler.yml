@@ -16,12 +16,17 @@ infrastructure:
           - '.github/**'
           - '.checkov.yml'
           - '.mega-linter.yml'
+          - '.pre-commit-config.yaml'
           - 'cmake/**'
           - 'CODEOWNERS'
           - 'CPPLINT.cfg'
           - 'dependencies/**'
           - 'packaging/**'
           - 'pyproject.toml'
+
+datamodel:
+  - changed-files:
+      - any-glob-to-any-file: ['DataModel/**', '*/DataModel/**']
 
 dpg:
   - changed-files:

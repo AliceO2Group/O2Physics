@@ -29,7 +29,7 @@ namespace udmccollision
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t); //!
 } // namespace udmccollision
 
-DECLARE_SOA_TABLE(UDMcCollisions, "AOD", "UDMCCOLLISIONS",
+DECLARE_SOA_TABLE(UDMcCollisions, "AOD", "UDMCCOLLISION",
                   o2::soa::Index<>,
                   udmccollision::GlobalBC,
                   mccollision::GeneratorsID,
@@ -53,7 +53,7 @@ DECLARE_SOA_COLUMN(Pz, pz, float);                         //!
 DECLARE_SOA_COLUMN(E, e, float);                           //!
 } // namespace udmcparticle
 
-DECLARE_SOA_TABLE_FULL(UDMcParticles, "UDMcParticles", "AOD", "UDMCPARTICLES", //!
+DECLARE_SOA_TABLE_FULL(UDMcParticles, "UDMcParticles", "AOD", "UDMCPARTICLE", //!
                        o2::soa::Index<>, udmcparticle::UDMcCollisionId,
                        mcparticle::PdgCode,
                        mcparticle::StatusCode,
@@ -101,6 +101,11 @@ DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float); //! sum of am
 DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);                     //! FV0A average time
 DECLARE_SOA_COLUMN(TriggerMaskFV0A, triggerMaskFV0A, uint8_t);     //! FV0 trigger mask
 DECLARE_SOA_COLUMN(ChFV0A, chFV0A, uint8_t);                       //! number of FV0A active channels
+DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, int);
+DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
+DECLARE_SOA_COLUMN(Trs, trs, int);
+DECLARE_SOA_COLUMN(Trofs, trofs, int);
+DECLARE_SOA_COLUMN(Hmpr, hmpr, int);
 // Gap Side Information
 DECLARE_SOA_COLUMN(GapSide, gapSide, uint8_t); // 0 for side A, 1 for side C, 2 for both sides (or use an enum for better readability)
 // FIT selection flags
@@ -203,12 +208,24 @@ DECLARE_SOA_TABLE(UDCollisionsSels, "AOD", "UDCOLLISIONSEL",
                   udcollision::BBFV0A<udcollision::BBFV0APF>, udcollision::BGFV0A<udcollision::BGFV0APF>,
                   udcollision::BBFDDA<udcollision::BBFDDAPF>, udcollision::BBFDDC<udcollision::BBFDDCPF>, udcollision::BGFDDA<udcollision::BGFDDAPF>, udcollision::BGFDDC<udcollision::BGFDDCPF>);
 
-DECLARE_SOA_TABLE(UDCollisionSelExtras, "AOD", "UDCOLSELEXTRA",
+DECLARE_SOA_TABLE(UDCollisionSelExtras_000, "AOD", "UDCOLSELEXTRA",
                   udcollision::ChFT0A,  //! number of active channels in FT0A
                   udcollision::ChFT0C,  //! number of active channels in FT0C
                   udcollision::ChFDDA,  //! number of active channels in FDDA
                   udcollision::ChFDDC,  //! number of active channels in FDDC
                   udcollision::ChFV0A); //! number of active channels in FV0A
+
+DECLARE_SOA_TABLE_VERSIONED(UDCollisionSelExtras_001, "AOD", "UDCOLSELEXTRA", 1,
+                            udcollision::ChFT0A,          //! number of active channels in FT0A
+                            udcollision::ChFT0C,          //! number of active channels in FT0C
+                            udcollision::ChFDDA,          //! number of active channels in FDDA
+                            udcollision::ChFDDC,          //! number of active channels in FDDC
+                            udcollision::ChFV0A,          //! number of active channels in FV0A
+                            udcollision::OccupancyInTime, //! Occupancy
+                            udcollision::HadronicRate,    //! Interaction Rate
+                            udcollision::Trs,
+                            udcollision::Trofs,
+                            udcollision::Hmpr);
 
 // central barrel-specific selections
 DECLARE_SOA_TABLE(UDCollisionsSelsCent, "AOD", "UDCOLSELCNT",
@@ -233,6 +250,7 @@ DECLARE_SOA_TABLE(UDMcCollsLabels, "AOD", "UDMCCOLLSLABEL",
                   udcollision::UDMcCollisionId);
 
 using UDCollisions = UDCollisions_001;
+using UDCollisionSelExtras = UDCollisionSelExtras_001;
 
 using UDCollision = UDCollisions::iterator;
 using SGCollision = SGCollisions::iterator;

@@ -14,6 +14,8 @@
 ///
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Sezione di Bari
 
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -35,58 +37,103 @@ namespace o2::aod
 {
 namespace hf_cand_bplus_lite
 {
-DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                               //! Transverse momentum of prong0 (GeV/c)
-DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                               //! Transverse momentum of prong1 (GeV/c)
-DECLARE_SOA_COLUMN(MProng0, mProng0, float);                                 //! Invariant mass of prong0 (GeV/c)
-DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of candidate (GeV/c2)
-DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! Transverse momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                     //! Transverse momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(P, p, float);                                             //! Momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(Y, y, float);                                             //! Rapidity of candidate
-DECLARE_SOA_COLUMN(Eta, eta, float);                                         //! Pseudorapidity of candidate
-DECLARE_SOA_COLUMN(Phi, phi, float);                                         //! Azimuth angle of candidate
-DECLARE_SOA_COLUMN(E, e, float);                                             //! Energy of candidate (GeV)
-DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);                           //! TPC Nsigma separation for prong1 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);                           //! TOF Nsigma separation for prong1 with pion mass hypothesis
-DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                         //! Decay length of candidate (cm)
-DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                     //! Transverse decay length of candidate (cm)
-DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);     //! Normalised decay length of candidate
-DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //! Normalised transverse decay length of candidate
-DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);   //! Impact parameter product of candidate
-DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //! Cosine pointing angle of candidate
-DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine pointing angle of candidate in transverse plane
-DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);       //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
-DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                           //! ML score for signal class
-DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);          //! Flag for association with wrong collision
+DECLARE_SOA_COLUMN(PtD, ptD, float);                                                     //! Transverse momentum of D-meson daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtBach, ptBach, float);                                               //! Transverse momentum of bachelor pion (GeV/c)
+DECLARE_SOA_COLUMN(AbsEtaBach, absEtaBach, float);                                       //! Absolute pseudorapidity of bachelor pion
+DECLARE_SOA_COLUMN(ItsNClsBach, itsNClsBach, int);                                       //! Number of ITS clusters of bachelor pion
+DECLARE_SOA_COLUMN(TpcNClsCrossedRowsBach, tpcNClsCrossedRowsBach, int);                 //! Number of TPC crossed rows of prongs of bachelor pion
+DECLARE_SOA_COLUMN(TpcChi2NClBach, tpcChi2NClBach, float);                               //! Maximum TPC chi2 of prongs of D0-meson daughter candidate
+DECLARE_SOA_COLUMN(PtDmesProngMin, ptDmesProngMin, float);                               //! Minimum pT of prongs of D-meson daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(AbsEtaDmesProngMin, absEtaDmesProngMin, float);                       //! Minimum absolute pseudorapidity of prongs of D-meson daughter candidate
+DECLARE_SOA_COLUMN(ItsNClsDmesProngMin, itsNClsDmesProngMin, int);                       //! Minimum number of ITS clusters of prongs of D-meson daughter candidate
+DECLARE_SOA_COLUMN(TpcNClsCrossedRowsDmesProngMin, tpcNClsCrossedRowsDmesProngMin, int); //! Minimum number of TPC crossed rows of prongs of D-meson daughter candidate
+DECLARE_SOA_COLUMN(TpcChi2NClDmesProngMax, tpcChi2NClDmesProngMax, float);               //! Maximum TPC chi2 of prongs of D-meson daughter candidate
+DECLARE_SOA_COLUMN(MD, mD, float);                                                       //! Invariant mass of D-meson daughter candidates (GeV/c)
+DECLARE_SOA_COLUMN(M, m, float);                                                         //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                       //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                                 //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(P, p, float);                                                         //! Momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(Y, y, float);                                                         //! Rapidity of candidate
+DECLARE_SOA_COLUMN(Eta, eta, float);                                                     //! Pseudorapidity of candidate
+DECLARE_SOA_COLUMN(Phi, phi, float);                                                     //! Azimuth angle of candidate
+DECLARE_SOA_COLUMN(E, e, float);                                                         //! Energy of candidate (GeV)
+DECLARE_SOA_COLUMN(NSigTpcPiBachelor, nSigTpcPiBachelor, float);                         //! TPC Nsigma separation for bachelor with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPiBachelor, nSigTofPiBachelor, float);                         //! TOF Nsigma separation for bachelor with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofPiBachelor, nSigTpcTofPiBachelor, float);                   //! Combined TPC and TOF Nsigma separation for bachelor with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcPiDmesProng0, nSigTpcPiDmesProng0, float);                     //! TPC Nsigma separation for D-meson prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPiDmesProng0, nSigTofPiDmesProng0, float);                     //! TOF Nsigma separation for D-meson prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofPiDmesProng0, nSigTpcTofPiDmesProng0, float);               //! Combined TPC and TOF Nsigma separation for D-meson prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcKaDmesProng1, nSigTpcKaDmesProng1, float);                     //! TPC Nsigma separation for D-meson prong1 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofKaDmesProng1, nSigTofKaDmesProng1, float);                     //! TOF Nsigma separation for D-meson prong1 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofKaDmesProng1, nSigTpcTofKaDmesProng1, float);               //! Combined TPC and TOF Nsigma separation for D-meson prong1 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                                     //! Decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                                 //! Transverse decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);                 //! Normalised decay length of candidate
+DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);             //! Normalised transverse decay length of candidate
+DECLARE_SOA_COLUMN(DecayLengthD, decayLengthD, float);                                   //! Decay length of D-meson daughter candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthXYD, decayLengthXYD, float);                               //! Transverse decay length of D-meson daughter candidate (cm)
+DECLARE_SOA_COLUMN(ImpactParameterD, impactParameterD, float);                           //! Impact parameter product of D-meson daughter candidate
+DECLARE_SOA_COLUMN(ImpactParameterBach, impactParameterBach, float);                     //! Impact parameter product of bachelor pion
+DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);               //! Impact parameter product of daughters
+DECLARE_SOA_COLUMN(Cpa, cpa, float);                                                     //! Cosine pointing angle of candidate
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                                 //! Cosine pointing angle of candidate in transverse plane
+DECLARE_SOA_COLUMN(CpaD, cpaD, float);                                                   //! Cosine pointing angle of D-meson daughter candidate
+DECLARE_SOA_COLUMN(CpaXYD, cpaXYD, float);                                               //! Cosine pointing angle in transverse plane of D-meson daughter candidate
+DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);                   //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
+DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                                       //! ML score for signal class
+DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);                      //! Flag for association with wrong collision
 } // namespace hf_cand_bplus_lite
 
 DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with some B+ properties
+                  hf_cand_bplus_lite::M,
+                  hf_cand_bplus_lite::Pt,
+                  hf_cand_bplus_lite::Eta,
+                  hf_cand_bplus_lite::Phi,
+                  hf_cand_bplus_lite::Y,
+                  hf_cand_bplus_lite::Cpa,
+                  hf_cand_bplus_lite::CpaXY,
                   hf_cand::Chi2PCA,
                   hf_cand_bplus_lite::DecayLength,
                   hf_cand_bplus_lite::DecayLengthXY,
                   hf_cand_bplus_lite::DecayLengthNormalised,
                   hf_cand_bplus_lite::DecayLengthXYNormalised,
-                  hf_cand_bplus_lite::MProng0,
-                  hf_cand_bplus_lite::PtProng0,
-                  hf_cand_bplus_lite::PtProng1,
-                  hf_cand::ImpactParameter0,
-                  hf_cand::ImpactParameter1,
                   hf_cand_bplus_lite::ImpactParameterProduct,
-                  hf_cand_bplus_lite::NSigTpcPi1,
-                  hf_cand_bplus_lite::NSigTofPi1,
+                  hf_cand_bplus_lite::MaxNormalisedDeltaIP,
+                  hf_cand_bplus_lite::MlScoreSig,
+                  hf_sel_candidate_bplus::IsSelBplusToD0Pi,
+                  // D meson features
+                  hf_cand_bplus_lite::MD,
+                  hf_cand_bplus_lite::PtD,
+                  hf_cand_bplus_lite::DecayLengthD,
+                  hf_cand_bplus_lite::DecayLengthXYD,
+                  hf_cand_bplus_lite::ImpactParameterD,
+                  hf_cand_bplus_lite::CpaD,
+                  hf_cand_bplus_lite::CpaXYD,
+                  hf_cand_bplus_lite::PtDmesProngMin,
+                  hf_cand_bplus_lite::AbsEtaDmesProngMin,
+                  hf_cand_bplus_lite::ItsNClsDmesProngMin,
+                  hf_cand_bplus_lite::TpcNClsCrossedRowsDmesProngMin,
+                  hf_cand_bplus_lite::TpcChi2NClDmesProngMax,
+                  hf_cand_bplus_lite::NSigTpcPiDmesProng0,
+                  hf_cand_bplus_lite::NSigTofPiDmesProng0,
+                  hf_cand_bplus_lite::NSigTpcTofPiDmesProng0,
+                  hf_cand_bplus_lite::NSigTpcKaDmesProng1,
+                  hf_cand_bplus_lite::NSigTofKaDmesProng1,
+                  hf_cand_bplus_lite::NSigTpcTofKaDmesProng1,
                   hf_cand_bplus_reduced::Prong0MlScoreBkg,
                   hf_cand_bplus_reduced::Prong0MlScorePrompt,
                   hf_cand_bplus_reduced::Prong0MlScoreNonprompt,
-                  hf_cand_bplus_lite::MlScoreSig,
-                  hf_sel_candidate_bplus::IsSelBplusToD0Pi,
-                  hf_cand_bplus_lite::M,
-                  hf_cand_bplus_lite::Pt,
-                  hf_cand_bplus_lite::Cpa,
-                  hf_cand_bplus_lite::CpaXY,
-                  hf_cand_bplus_lite::MaxNormalisedDeltaIP,
-                  hf_cand_bplus_lite::Eta,
-                  hf_cand_bplus_lite::Phi,
-                  hf_cand_bplus_lite::Y,
+                  // pion features
+                  hf_cand_bplus_lite::PtBach,
+                  hf_cand_bplus_lite::AbsEtaBach,
+                  hf_cand_bplus_lite::ItsNClsBach,
+                  hf_cand_bplus_lite::TpcNClsCrossedRowsBach,
+                  hf_cand_bplus_lite::TpcChi2NClBach,
+                  hf_cand_bplus_lite::ImpactParameterBach,
+                  hf_cand_bplus_lite::NSigTpcPiBachelor,
+                  hf_cand_bplus_lite::NSigTofPiBachelor,
+                  hf_cand_bplus_lite::NSigTpcTofPiBachelor,
+                  // MC truth
                   hf_cand_2prong::FlagMcMatchRec,
                   hf_cand_2prong::OriginMcRec,
                   hf_cand_bplus_lite::FlagWrongCollision,
@@ -95,8 +142,8 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
 DECLARE_SOA_TABLE(HfRedBpMcCheck, "AOD", "HFREDBPMCCHECK", //! Table with MC decay type check
                   hf_cand_2prong::FlagMcMatchRec,
                   hf_cand_bplus_lite::FlagWrongCollision,
-                  hf_cand_bplus_lite::MProng0,
-                  hf_cand_bplus_lite::PtProng0,
+                  hf_cand_bplus_lite::MD,
+                  hf_cand_bplus_lite::PtD,
                   hf_cand_bplus_lite::M,
                   hf_cand_bplus_lite::Pt,
                   hf_cand_bplus_lite::MlScoreSig,
@@ -135,11 +182,12 @@ struct HfTaskBplusReduced {
 
   HfHelper hfHelper;
 
+  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
+  using CandsD0 = soa::Join<HfRed2Prongs, HfRedPidDau0s, HfRedPidDau1s>;
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus);
 
   HistogramRegistry registry{"registry"};
-
-  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
 
   void init(InitContext&)
   {
@@ -337,14 +385,14 @@ struct HfTaskBplusReduced {
   /// \param withBplusMl is the flag to enable the filling with ML scores for the B+ candidate
   /// \param candidate is the B+ candidate
   /// \param candidatesD is the table with D0 candidates
-  template <bool doMc, bool withDecayTypeCheck, bool withDmesMl, bool withBplusMl, typename Cand>
+  template <bool doMc, bool withDecayTypeCheck, bool withDmesMl, bool withBplusMl, typename Cand, typename CandsDmes>
   void fillCand(Cand const& candidate,
-                aod::HfRed2Prongs const& /*candidatesD*/,
+                CandsDmes const& /*candidatesD*/,
                 TracksPion const&)
   {
     auto ptCandBplus = candidate.pt();
     auto invMassBplus = hfHelper.invMassBplusToD0Pi(candidate);
-    auto candD0 = candidate.template prong0_as<aod::HfRed2Prongs>();
+    auto candD0 = candidate.template prong0_as<CandsDmes>();
     auto candPi = candidate.template prong1_as<TracksPion>();
     auto ptD0 = candidate.ptProng0();
     auto invMassD0 = (candPi.signed1Pt() < 0) ? candD0.invMassHypo0() : candD0.invMassHypo1();
@@ -489,7 +537,7 @@ struct HfTaskBplusReduced {
       }
     }
     if (fillTree) {
-      float pseudoRndm = ptD0 * 1000. - (int64_t)(ptD0 * 1000);
+      float pseudoRndm = ptD0 * 1000. - static_cast<int64_t>(ptD0 * 1000);
       if (ptCandBplus >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor) {
         float prong0MlScoreBkg = -1.;
         float prong0MlScorePrompt = -1.;
@@ -504,6 +552,22 @@ struct HfTaskBplusReduced {
           candidateMlScoreSig = candidate.mlProbBplusToD0Pi();
         }
         auto prong1 = candidate.template prong1_as<TracksPion>();
+        float tpcNSigmaPi, tofNSigmaPi, tpcTofNSigmaPi, tpcNSigmaKa, tofNSigmaKa, tpcTofNSigmaKa;
+        if (prong1.signed1Pt() < 0) {
+          tpcNSigmaPi = candD0.tpcNSigmaPiProng1();
+          tofNSigmaPi = candD0.tofNSigmaPiProng1();
+          tpcTofNSigmaPi = candD0.tpcTofNSigmaPiProng1();
+          tpcNSigmaKa = candD0.tpcNSigmaKaProng0();
+          tofNSigmaKa = candD0.tofNSigmaKaProng0();
+          tpcTofNSigmaKa = candD0.tpcTofNSigmaKaProng0();
+        } else {
+          tpcNSigmaPi = candD0.tpcNSigmaPiProng0();
+          tofNSigmaPi = candD0.tofNSigmaPiProng0();
+          tpcTofNSigmaPi = candD0.tpcTofNSigmaPiProng0();
+          tpcNSigmaKa = candD0.tpcNSigmaKaProng1();
+          tofNSigmaKa = candD0.tofNSigmaKaProng1();
+          tpcTofNSigmaKa = candD0.tpcTofNSigmaKaProng1();
+        }
 
         float ptMother = -1.;
         if constexpr (doMc) {
@@ -511,54 +575,75 @@ struct HfTaskBplusReduced {
         }
 
         hfRedCandBpLite(
+          // B+ - meson features
+          invMassBplus,
+          ptCandBplus,
+          candidate.eta(),
+          candidate.phi(),
+          hfHelper.yBplus(candidate),
+          candidate.cpa(),
+          candidate.cpaXY(),
           candidate.chi2PCA(),
           candidate.decayLength(),
           candidate.decayLengthXY(),
           candidate.decayLengthNormalised(),
           candidate.decayLengthXYNormalised(),
+          candidate.impactParameterProduct(),
+          candidate.maxNormalisedDeltaIP(),
+          candidateMlScoreSig,
+          candidate.isSelBplusToD0Pi(),
+          // D-meson features
           invMassD0,
           ptD0,
-          candidate.ptProng1(),
+          decLenD0,
+          decLenXyD0,
           candidate.impactParameter0(),
-          candidate.impactParameter1(),
-          candidate.impactParameterProduct(),
-          prong1.tpcNSigmaPi(),
-          prong1.tofNSigmaPi(),
+          cpaD0,
+          cpaXyD0,
+          candD0.ptProngMin(),
+          candD0.absEtaProngMin(),
+          candD0.itsNClsProngMin(),
+          candD0.tpcNClsCrossedRowsProngMin(),
+          candD0.tpcChi2NClProngMax(),
+          tpcNSigmaPi,
+          tofNSigmaPi,
+          tpcTofNSigmaPi,
+          tpcNSigmaKa,
+          tofNSigmaKa,
+          tpcTofNSigmaKa,
           prong0MlScoreBkg,
           prong0MlScorePrompt,
           prong0MlScoreNonprompt,
-          candidateMlScoreSig,
-          candidate.isSelBplusToD0Pi(),
-          invMassBplus,
-          ptCandBplus,
-          candidate.cpa(),
-          candidate.cpaXY(),
-          candidate.maxNormalisedDeltaIP(),
-          candidate.eta(),
-          candidate.phi(),
-          hfHelper.yBplus(candidate),
+          // pion features
+          candidate.ptProng1(),
+          std::abs(RecoDecay::eta(prong1.pVector())),
+          prong1.itsNCls(),
+          prong1.tpcNClsCrossedRows(),
+          prong1.tpcChi2NCl(),
+          candidate.impactParameter1(),
+          prong1.tpcNSigmaPi(),
+          prong1.tofNSigmaPi(),
+          prong1.tpcTofNSigmaPi(),
+          // MC truth
           flagMcMatchRec,
           isSignal,
           flagWrongCollision,
           ptMother);
-      }
-      if constexpr (withDecayTypeCheck) {
-        float candidateMlScoreSig = -1;
-        if constexpr (withBplusMl) {
-          candidateMlScoreSig = candidate.mlProbBplusToD0Pi();
+
+        if constexpr (withDecayTypeCheck) {
+          hfRedBpMcCheck(
+            flagMcMatchRec,
+            flagWrongCollision,
+            invMassD0,
+            ptD0,
+            invMassBplus,
+            ptCandBplus,
+            candidateMlScoreSig,
+            candidate.pdgCodeBeautyMother(),
+            candidate.pdgCodeProng0(),
+            candidate.pdgCodeProng1(),
+            candidate.pdgCodeProng2());
         }
-        hfRedBpMcCheck(
-          flagMcMatchRec,
-          flagWrongCollision,
-          invMassD0,
-          ptD0,
-          invMassBplus,
-          ptCandBplus,
-          candidateMlScoreSig,
-          candidate.pdgCodeBeautyMother(),
-          candidate.pdgCodeProng0(),
-          candidate.pdgCodeProng1(),
-          candidate.pdgCodeProng2());
       }
     }
   }
@@ -603,7 +688,7 @@ struct HfTaskBplusReduced {
 
   // Process functions
   void processData(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfSelBplusToD0Pi>> const& candidates,
-                   aod::HfRed2Prongs const& candidatesD,
+                   CandsD0 const& candidatesD,
                    TracksPion const& pionTracks)
   {
     for (const auto& candidate : candidates) {
@@ -612,11 +697,11 @@ struct HfTaskBplusReduced {
       }
       fillCand<false, false, false, false>(candidate, candidatesD, pionTracks);
     } // candidate loop
-  }   // processData
+  } // processData
   PROCESS_SWITCH(HfTaskBplusReduced, processData, "Process data without ML scores for D0 daughter", true);
 
   void processDataWithDmesMl(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfRedBplusD0Mls, aod::HfSelBplusToD0Pi>> const& candidates,
-                             aod::HfRed2Prongs const& candidatesD,
+                             CandsD0 const& candidatesD,
                              TracksPion const& pionTracks)
   {
     for (const auto& candidate : candidates) {
@@ -625,11 +710,11 @@ struct HfTaskBplusReduced {
       }
       fillCand<false, false, true, false>(candidate, candidatesD, pionTracks);
     } // candidate loop
-  }   // processDataWithDmesMl
+  } // processDataWithDmesMl
   PROCESS_SWITCH(HfTaskBplusReduced, processDataWithDmesMl, "Process data with ML scores for D0 daughter", false);
 
   void processDataWithBplusMl(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfMlBplusToD0Pi, aod::HfSelBplusToD0Pi>> const& candidates,
-                              aod::HfRed2Prongs const& candidatesD,
+                              CandsD0 const& candidatesD,
                               TracksPion const& pionTracks)
   {
     for (const auto& candidate : candidates) {
@@ -638,12 +723,12 @@ struct HfTaskBplusReduced {
       }
       fillCand<false, false, false, true>(candidate, candidatesD, pionTracks);
     } // candidate loop
-  }   // processDataWithBplusMl
+  } // processDataWithBplusMl
   PROCESS_SWITCH(HfTaskBplusReduced, processDataWithBplusMl, "Process data with(out) ML scores for B+ (D0 daughter)", false);
 
   void processMc(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfSelBplusToD0Pi, aod::HfMcRecRedBps>> const& candidates,
                  aod::HfMcGenRedBps const& mcParticles,
-                 aod::HfRed2Prongs const& candidatesD,
+                 CandsD0 const& candidatesD,
                  TracksPion const& pionTracks)
   {
     // MC rec
@@ -658,12 +743,12 @@ struct HfTaskBplusReduced {
     for (const auto& particle : mcParticles) {
       fillCandMcGen(particle);
     } // gen
-  }   // processMc
+  } // processMc
   PROCESS_SWITCH(HfTaskBplusReduced, processMc, "Process MC without ML scores for B+ and D0 daughter", false);
 
   void processMcWithDecayTypeCheck(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfSelBplusToD0Pi, aod::HfMcRecRedBps, aod::HfMcCheckBps>> const& candidates,
                                    aod::HfMcGenRedBps const& mcParticles,
-                                   aod::HfRed2Prongs const& candidatesD,
+                                   CandsD0 const& candidatesD,
                                    TracksPion const& pionTracks)
   {
     // MC rec
@@ -678,12 +763,12 @@ struct HfTaskBplusReduced {
     for (const auto& particle : mcParticles) {
       fillCandMcGen(particle);
     } // gen
-  }   // processMc
+  } // processMc
   PROCESS_SWITCH(HfTaskBplusReduced, processMcWithDecayTypeCheck, "Process MC with decay type check and without ML scores for B+ and D daughter", false);
 
   void processMcWithDmesMl(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfRedBplusD0Mls, aod::HfSelBplusToD0Pi, aod::HfMcRecRedBps>> const& candidates,
                            aod::HfMcGenRedBps const& mcParticles,
-                           aod::HfRed2Prongs const& candidatesD,
+                           CandsD0 const& candidatesD,
                            TracksPion const& pionTracks)
   {
     // MC rec
@@ -698,12 +783,12 @@ struct HfTaskBplusReduced {
     for (const auto& particle : mcParticles) {
       fillCandMcGen(particle);
     } // gen
-  }   // processMcWithDmesMl
+  } // processMcWithDmesMl
   PROCESS_SWITCH(HfTaskBplusReduced, processMcWithDmesMl, "Process MC with(out) ML scores for D0 daughter (B+)", false);
 
   void processMcWithDmesMlAndDecayTypeCheck(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfRedBplusD0Mls, aod::HfSelBplusToD0Pi, aod::HfMcRecRedBps, aod::HfMcCheckBps>> const& candidates,
                                             aod::HfMcGenRedBps const& mcParticles,
-                                            aod::HfRed2Prongs const& candidatesD,
+                                            CandsD0 const& candidatesD,
                                             TracksPion const& pionTracks)
   {
     // MC rec
@@ -723,7 +808,7 @@ struct HfTaskBplusReduced {
 
   void processMcWithBplusMl(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfMlBplusToD0Pi, aod::HfSelBplusToD0Pi, aod::HfMcRecRedBps>> const& candidates,
                             aod::HfMcGenRedBps const& mcParticles,
-                            aod::HfRed2Prongs const& candidatesD,
+                            CandsD0 const& candidatesD,
                             TracksPion const& pionTracks)
   {
     // MC rec
@@ -738,12 +823,12 @@ struct HfTaskBplusReduced {
     for (const auto& particle : mcParticles) {
       fillCandMcGen(particle);
     } // gen
-  }   // processMcWithBplusMl
+  } // processMcWithBplusMl
   PROCESS_SWITCH(HfTaskBplusReduced, processMcWithBplusMl, "Process MC with(out) ML scores for B+ (D0 daughter)", false);
 
   void processMcWithBplusMlAndDecayTypeCheck(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfMlBplusToD0Pi, aod::HfSelBplusToD0Pi, aod::HfMcRecRedBps, aod::HfMcCheckBps>> const& candidates,
                                              aod::HfMcGenRedBps const& mcParticles,
-                                             aod::HfRed2Prongs const& candidatesD,
+                                             CandsD0 const& candidatesD,
                                              TracksPion const& pionTracks)
   {
     // MC rec
@@ -758,7 +843,7 @@ struct HfTaskBplusReduced {
     for (const auto& particle : mcParticles) {
       fillCandMcGen(particle);
     } // gen
-  }   // processMc
+  } // processMc
   PROCESS_SWITCH(HfTaskBplusReduced, processMcWithBplusMlAndDecayTypeCheck, "Process MC with decay type check and with(out) ML scores for B+ (D0 daughter)", false);
 }; // struct
 

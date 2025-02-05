@@ -68,7 +68,7 @@ DECLARE_SOA_COLUMN(MCPosY, mcposY, float); //!
 DECLARE_SOA_COLUMN(MCPosZ, mcposZ, float); //!
 } // namespace mycollision
 DECLARE_SOA_TABLE(MyCollisions, "AOD", "MYCOLLISION", //! vertex information of collision
-                  o2::soa::Index<>, bc::GlobalBC, bc::RunNumber, collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::Sel8, mycollision::Bz,
+                  o2::soa::Index<>, bc::GlobalBC, bc::RunNumber, collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, evsel::Sel8, mycollision::Bz,
                   mccollision::GeneratorsID, mycollision::MCPosX, mycollision::MCPosY, mycollision::MCPosZ, mult::MultNTracksPV,
                   cent::CentFT0M, cent::CentFT0A, cent::CentFT0C);
 using MyCollision = MyCollisions::iterator;
@@ -184,7 +184,8 @@ struct TreeCreatorElectronML {
 
   // collision
   Configurable<float> maxVtxZ{"maxVtxZ", 10.0, "max VtxZ [cm]"};
-  Configurable<int> maxOccupancy{"maxOccupancy", 999999, "max occupancy"};
+  Configurable<int> maxTrackOccupancy{"maxTrackOccupancy", 999999, "max. track occupancy"};
+  Configurable<float> maxFT0Occupancy{"maxFT0Occupancy", 999999., "max. FT0 occupancy"};
 
   // track
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
@@ -195,8 +196,8 @@ struct TreeCreatorElectronML {
   Configurable<float> minpt{"minpt", 0.2, "min. pT"};
   Configurable<float> maxDcaZ{"maxDcaZ", 1.0, "max DCA Z"};
   Configurable<float> maxDcaXY{"maxDcaXY", 1.0, "max DCA XY"};
-  Configurable<uint8_t> minITSClusters{"minITSLayers", 5, "min. of ITS clusters"};
-  Configurable<uint8_t> minITSClustersIB{"minITSClustersIB", 3, "min. number of ITS clusters in inner barrel"};
+  Configurable<uint> minITSClusters{"minITSLayers", 5, "min. of ITS clusters"};
+  Configurable<uint> minITSClustersIB{"minITSClustersIB", 3, "min. number of ITS clusters in inner barrel"};
   Configurable<float> downSampleEl{"downSampleEl", 1.0, "down scaling factor for electrons"};
   Configurable<float> downSamplePi{"downSamplePi", 1.0, "down scaling factor for pions"};
   Configurable<float> downSampleKa{"downSampleKa", 1.0, "down scaling factor for kaons"};
@@ -598,7 +599,7 @@ struct TreeCreatorElectronML {
   void doCollision(TCollision& collision, TMCCollision& mccollision, uint64_t globalBC, int runNumber)
   {
     registry.fill(HIST("hEventCounter"), 1.5);
-    mycollision(globalBC, runNumber, collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.sel8(), d_bz,
+    mycollision(globalBC, runNumber, collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), collision.sel8(), d_bz,
                 mccollision.generatorsID(), mccollision.posX(), mccollision.posY(), mccollision.posZ(),
                 collision.multNTracksPV(), collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
   }
@@ -613,7 +614,7 @@ struct TreeCreatorElectronML {
   using MyFilteredTracksMC = soa::Filtered<FullTracksExtMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
 
-  Filter collisionFilter = nabs(o2::aod::collision::posZ) < maxVtxZ && o2::aod::evsel::trackOccupancyInTimeRange < maxOccupancy;
+  Filter collisionFilter = nabs(o2::aod::collision::posZ) < maxVtxZ && o2::aod::evsel::trackOccupancyInTimeRange < maxTrackOccupancy && o2::aod::evsel::ft0cOccupancyInTimeRange < maxFT0Occupancy;
   using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
 
   void processSingleTrack(MyFilteredCollisions const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks, aod::McParticles const& mctracks, aod::McCollisions const&)

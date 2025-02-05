@@ -171,7 +171,7 @@ struct tpcPidQaSignal {
       return false;
     }
     histos.fill(HIST("trksel"), 6);
-    if (pidInTracking != -1 && (track.pidForTracking() != std::abs(pidInTracking))) {
+    if (pidInTracking != -1 && (track.pidForTracking() != static_cast<unsigned int>(std::abs(pidInTracking)))) {
       return false;
     }
     histos.fill(HIST("trksel"), 7);
@@ -219,7 +219,7 @@ struct tpcPidQaSignal {
       if (!t.has_collision()) {
         continue;
       }
-      if (abs(t.collision().posZ()) > 10.f) {
+      if (std::abs(t.collision().posZ()) > 10.f) {
         continue;
       }
       if (!isTrackSelected(t)) {
@@ -269,7 +269,7 @@ struct tpcPidQaSignal {
 
     histos.fill(HIST("event/evsel"), 2);
 
-    if (abs(collision.posZ()) > 10.f) {
+    if (std::abs(collision.posZ()) > 10.f) {
       return;
     }
     histos.fill(HIST("event/evsel"), 3);

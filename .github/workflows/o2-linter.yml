@@ -1,0 +1,34 @@
+---
+# Find issues in O2 code
+name: O2 linter
+
+'on': [pull_request, push]
+permissions: {}
+env:
+  MAIN_BRANCH: master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  o2-linter:
+    name: O2 linter
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # needed to get the full history
+      - name: Run tests
+        run: |
+          # Diff against the common ancestor of the source branch and the main branch.
+          readarray -t files < <(git diff --diff-filter d --name-only origin/${{ env.MAIN_BRANCH }}...)
+          if [ ${#files[@]} -eq 0 ]; then
+              echo "::notice::No files to lint."
+              exit 0
+          fi
+          [ ${{ github.event_name }} == 'pull_request' ] && options="-g"
+          # shellcheck disable=SC2086 # Ignore unquoted options.
+          python3 Scripts/o2_linter.py $options "${files[@]}"
+          echo "Tip: If you allow actions in your fork repository, O2 linter will run when you push commits."

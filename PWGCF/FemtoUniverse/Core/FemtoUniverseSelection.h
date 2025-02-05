@@ -19,10 +19,10 @@
 
 #include <cmath>
 
-namespace o2::analysis::femtoUniverse
+namespace o2::analysis::femto_universe
 {
 
-namespace femtoUniverseSelection
+namespace femto_universe_selection
 {
 /// Type of selection to be employed
 enum SelectionType { kUpperLimit,    ///< simple upper limit for the value, e.g. p_T < 1 GeV/c
@@ -32,7 +32,7 @@ enum SelectionType { kUpperLimit,    ///< simple upper limit for the value, e.g.
                      kEqual          ///< values need to be equal, e.g. sign = 1
 };
 
-} // namespace femtoUniverseSelection
+} // namespace femto_universe_selection
 
 /// Simple class taking care of individual selections
 /// \todo In principle all cuts that fulfill the getMinimalSelection are done implicitly and can be removed from the vector containing all cuts
@@ -49,7 +49,7 @@ class FemtoUniverseSelection
   /// \param selVal Value used for the selection
   /// \param selVar Variable used for the selection
   /// \param selType Type of selection to be employed
-  FemtoUniverseSelection(selValDataType selVal, selVariableDataType selVar, femtoUniverseSelection::SelectionType selType)
+  FemtoUniverseSelection(selValDataType selVal, selVariableDataType selVar, femto_universe_selection::SelectionType selType)
     : mSelVal(selVal),
       mSelVar(selVar),
       mSelType(selType)
@@ -69,7 +69,7 @@ class FemtoUniverseSelection
 
   /// Get the type of selection to be employed
   /// \return Type of selection to be employed
-  femtoUniverseSelection::SelectionType getSelectionType() { return mSelType; }
+  femto_universe_selection::SelectionType getSelectionType() { return mSelType; }
 
   /// Check whether the selection is fulfilled or not
   /// \param observable Value of the variable to be checked
@@ -77,17 +77,17 @@ class FemtoUniverseSelection
   bool isSelected(selValDataType observable)
   {
     switch (mSelType) {
-      case (femtoUniverseSelection::SelectionType::kUpperLimit):
+      case (femto_universe_selection::SelectionType::kUpperLimit):
         return (observable < mSelVal);
-      case (femtoUniverseSelection::SelectionType::kAbsUpperLimit):
+      case (femto_universe_selection::SelectionType::kAbsUpperLimit):
         return (std::abs(observable) < mSelVal);
         break;
-      case (femtoUniverseSelection::SelectionType::kLowerLimit):
+      case (femto_universe_selection::SelectionType::kLowerLimit):
         return (observable > mSelVal);
-      case (femtoUniverseSelection::SelectionType::kAbsLowerLimit):
+      case (femto_universe_selection::SelectionType::kAbsLowerLimit):
         return (std::abs(observable) > mSelVal);
         break;
-      case (femtoUniverseSelection::SelectionType::kEqual):
+      case (femto_universe_selection::SelectionType::kEqual):
         /// \todo can the comparison be done a bit nicer?
         return (std::abs(observable - mSelVal) < std::abs(mSelVal * 1e-6));
         break;
@@ -123,11 +123,11 @@ class FemtoUniverseSelection
   }
 
  private:
-  selValDataType mSelVal{0.f};                    ///< Value used for the selection
-  selVariableDataType mSelVar;                    ///< Variable used for the selection
-  femtoUniverseSelection::SelectionType mSelType; ///< Type of selection employed
+  selValDataType mSelVal{0.f};                      ///< Value used for the selection
+  selVariableDataType mSelVar;                      ///< Variable used for the selection
+  femto_universe_selection::SelectionType mSelType; ///< Type of selection employed
 };
 
-} // namespace o2::analysis::femtoUniverse
+} // namespace o2::analysis::femto_universe
 
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESELECTION_H_

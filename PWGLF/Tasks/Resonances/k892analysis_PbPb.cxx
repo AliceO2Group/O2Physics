@@ -19,6 +19,7 @@
 #include <TObjArray.h>
 #include <TFile.h>
 #include <TH2F.h>
+#include <TRandom3.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
@@ -71,7 +72,7 @@ struct k892analysis_PbPb {
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
-  Configurable<bool> additionalEvSel2{"additionalEvSel2", true, "Additional evsel2"};
+  Configurable<bool> additionalEvSel2{"additionalEvSel2", true, "NoSameBunchPileUp and IsGoodZvtxFT0vsPV"};
   Configurable<bool> additionalEvSel3{"additionalEvSel3", false, "Additional evsel3"};
 
   // presel
@@ -102,6 +103,10 @@ struct k892analysis_PbPb {
   Configurable<bool> tpclowpt{"tpclowpt", true, "apply TPC at low pt"};
   Configurable<bool> tofhighpt{"tofhighpt", false, "apply TOF at high pt"};
 
+  // rotational bkg
+  Configurable<int> cfgNoRotations{"cfgNoRotations", 3, "Number of rotations per pair for rotbkg"};
+  Configurable<int> rotational_cut{"rotational_cut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
+
   // event mixing
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
@@ -125,6 +130,8 @@ struct k892analysis_PbPb {
   Configurable<bool> genacceptancecut{"genacceptancecut", false, "Acceptance cut on generated MC particles"};
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
 
+  TRandom* rand = new TRandom();
+
   void init(o2::framework::InitContext&)
   {
     AxisSpec centAxis = {binsCent, "V0M (%)"};
@@ -136,7 +143,7 @@ struct k892analysis_PbPb {
     AxisSpec invMassAxis = {cInvMassBins, cInvMassStart, cInvMassEnd, "Invariant Mass (GeV/#it{c}^2)"};
     AxisSpec pidQAAxis = {cPIDBins, -cPIDQALimit, cPIDQALimit};
 
-    if (doprocessSameEvent || doprocessMixedEvent) {
+    if (doprocessSameEvent || doprocessSameEventRun2 || doprocessMixedEvent || doprocessMixedEventRun2 || doprocessMixedEventMC) {
       // event histograms
       histos.add("QAevent/hEvtCounterSameE", "Number of analyzed Same Events", HistType::kTH1F, {{1, 0.5, 1.5}});
       histos.add("QAevent/hMultiplicityPercentSameE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
@@ -163,7 +170,7 @@ struct k892analysis_PbPb {
     histos.add("k892invmassDSAnti", "Invariant mass of Anti-K(892)0 different sign", kTH1F, {invMassAxis});
     histos.add("k892invmassLS", "Invariant mass of K(892)0 like sign", kTH1F, {invMassAxis});
     histos.add("k892invmassLSAnti", "Invariant mass of Anti-K(892)0 like sign", kTH1F, {invMassAxis});
-    if (doprocessMixedEvent) {
+    if (doprocessMixedEvent || doprocessMixedEventRun2 || doprocessMixedEventMC) {
       histos.add("k892invmassME", "Invariant mass of K(892)0 mixed event", kTH1F, {invMassAxis});
       if (additionalMEPlots) {
         histos.add("k892invmassME_DS", "Invariant mass of K(892)0 mixed event DS", kTH1F, {invMassAxis});
@@ -195,12 +202,21 @@ struct k892analysis_PbPb {
     histos.add("QA/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
     histos.add("QA/TPC_Nsigmaka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
 
-    // 3d histogram
+    // inv mass histograms
     histos.add("h3k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassDSAnti", "Invariant mass of Anti-K(892)0 differnt sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassLSAnti", "Invariant mass of Anti-K(892)0 same sign", kTH3F, {centAxis, ptAxis, invMassAxis});
-    if (doprocessMixedEvent) {
+
+    if (doprocessRotationalBkg) {
+      histos.add("k892invmassRotDS", "Invariant mass of K(892)0 RotBkg", kTH1F, {invMassAxis});
+      histos.add("k892invmassRotDSAnti", "Invariant mass of Anti-K(892)0 RotBkg", kTH1F, {invMassAxis});
+
+      histos.add("h3k892invmassRotDS", "Invariant mass of K(892)0 Rotational Bkg", kTH3F, {centAxis, ptAxis, invMassAxis});
+      histos.add("h3k892invmassRotDSAnti", "Invariant mass of Anti-K(892)0 Rotational Bkg", kTH3F, {centAxis, ptAxis, invMassAxis});
+    }
+
+    if (doprocessMixedEvent || doprocessMixedEventRun2 || doprocessMixedEventMC) {
       histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTH3F, {centAxis, ptAxis, invMassAxis});
 
       if (additionalMEPlots) {
@@ -216,7 +232,7 @@ struct k892analysis_PbPb {
       }
     }
 
-    if (doprocessMC) {
+    if (doprocessMC || doprocessMCRun2) {
       histos.add("hMCrecCollSels", "MC Event statistics", HistType::kTH1F, {{10, 0.0f, 10.0f}});
       histos.add("QAevent/hMultiplicityPercentMC", "Multiplicity percentile of MCrec collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
 
@@ -279,19 +295,19 @@ struct k892analysis_PbPb {
 
     if (TofandTpcPID) {
 
-      if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon && candidate.hasTPC() && std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) { // tof and tpc cut
+      if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) <= cMaxTOFnSigmaKaon && candidate.hasTPC() && std::abs(candidate.tpcNSigmaKa()) <= cMaxTPCnSigmaKaon) { // tof and tpc cut
         return true;
       }
 
     } else {
 
-      if (candidate.hasTPC() && std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) { // tpc cut, tof when available
+      if (candidate.hasTPC() && std::abs(candidate.tpcNSigmaKa()) <= cMaxTPCnSigmaKaon) { // tpc cut, tof when available
 
         if (cByPassTOF) // skip tof selection
           return true;
 
         if (candidate.hasTOF()) {
-          if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
+          if (std::abs(candidate.tofNSigmaKa()) <= cMaxTOFnSigmaKaon) {
             return true;
           }
         } else {
@@ -309,19 +325,19 @@ struct k892analysis_PbPb {
 
     if (TofandTpcPID) {
 
-      if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion && candidate.hasTPC() && std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) { // tof and tpc cut
+      if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) <= cMaxTOFnSigmaPion && candidate.hasTPC() && std::abs(candidate.tpcNSigmaPi()) <= cMaxTPCnSigmaPion) { // tof and tpc cut
         return true;
       }
 
     } else {
 
-      if (candidate.hasTPC() && std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) { // tpc cut, tof when available
+      if (candidate.hasTPC() && std::abs(candidate.tpcNSigmaPi()) <= cMaxTPCnSigmaPion) { // tpc cut, tof when available
 
         if (cByPassTOF) // skip tof selection
           return true;
 
         if (candidate.hasTOF()) {
-          if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
+          if (std::abs(candidate.tofNSigmaPi()) <= cMaxTOFnSigmaPion) {
             return true;
           }
         } else {
@@ -333,22 +349,25 @@ struct k892analysis_PbPb {
     return false;
   }
 
-  template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
+  template <bool IsMC, bool IsMix, bool IsRot, bool IsRun2, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
+    auto multiplicity = -999;
 
-    auto multiplicity = collision.centFT0C();
+    if constexpr (!IsRun2)
+      multiplicity = collision.centFT0C();
+    else
+      multiplicity = collision.centRun2V0M();
 
     auto oldindex = -999;
-    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
+    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance, ldaughter_rot, lResonance_rot;
     for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
-
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
         continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
 
       if (additionalQAeventPlots) {
-        if constexpr (!IsMC) {
+        if constexpr (!IsMC && !IsRot) {
           if constexpr (!IsMix) {
             histos.fill(HIST("TestME/hPairsCounterSameE"), 1.0);
           } else {
@@ -377,15 +396,15 @@ struct k892analysis_PbPb {
 
       if constexpr (IsMC) {
         if (tpclowpt) {
-          if (trk1ptPi > cMaxPtTPC || trk2ptKa > cMaxPtTPC)
+          if (trk1ptPi >= cMaxPtTPC || trk2ptKa >= cMaxPtTPC)
             continue;
         } else if (tofhighpt) {
-          if (trk1ptPi < cMinPtTOF || trk2ptKa < cMinPtTOF)
+          if (trk1ptPi <= cMinPtTOF || trk2ptKa <= cMinPtTOF)
             continue;
         }
       }
 
-      if (additionalQAplots) {
+      if (additionalQAplots && !IsMix && !IsRot) {
         // TPCncluster distributions
         histos.fill(HIST("TPCncluster/TPCnclusterpi"), trk1.tpcNClsFound());
         histos.fill(HIST("TPCncluster/TPCnclusterka"), trk2.tpcNClsFound());
@@ -393,7 +412,7 @@ struct k892analysis_PbPb {
         histos.fill(HIST("TPCncluster/TPCnclusterPhika"), trk2.tpcNClsFound(), trk2.phi());
       }
 
-      if constexpr (!IsMix) {
+      if constexpr (!IsMix && !IsRot) {
         //// QA plots after the selection
         //  --- PID QA Pion
         histos.fill(HIST("QA/TPC_Nsigma_pi_all"), multiplicity, trk1ptPi, trk1NSigmaPiTPC);
@@ -413,7 +432,7 @@ struct k892analysis_PbPb {
         histos.fill(HIST("QA/trkDCAxy_ka"), trk2.dcaXY());
         histos.fill(HIST("QA/trkDCAz_pi"), trk1.dcaZ());
         histos.fill(HIST("QA/trkDCAz_ka"), trk2.dcaZ());
-      } else if (additionalMEPlots) {
+      } else if (IsMix && additionalMEPlots) {
         //  --- PID QA Pion
         histos.fill(HIST("QAME/TPC_Nsigma_pi_all"), multiplicity, trk1ptPi, trk1NSigmaPiTPC);
         if (isTrk1hasTOF) {
@@ -428,6 +447,9 @@ struct k892analysis_PbPb {
         }
       }
 
+      int track1Sign = trk1.sign();
+      int track2Sign = trk2.sign();
+
       //// Resonance reconstruction
       lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
       lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
@@ -435,19 +457,37 @@ struct k892analysis_PbPb {
       // Rapidity cut
       if (abs(lResonance.Rapidity()) >= 0.5)
         continue;
-      if (cfgCutsOnMother) {
+      if (cfgCutsOnMother && !IsRot) {
         if (lResonance.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
           continue;
         if (lResonance.M() >= cMaxMinvMotherCut) // excluding candidates in overflow
           continue;
       }
 
-      int track1Sign = trk1.sign();
-      int track2Sign = trk2.sign();
       //// Un-like sign pair only
-
       if (track1Sign * track2Sign < 0) {
-        if constexpr (!IsMix) {
+        if constexpr (IsRot) { // rotational background
+          for (int i = 0; i < cfgNoRotations; i++) {
+            float theta2 = rand->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
+            ldaughter_rot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa);
+            lResonance_rot = lDecayDaughter1 + ldaughter_rot;
+
+            if (cfgCutsOnMother) {
+              if (lResonance_rot.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
+                continue;
+              if (lResonance_rot.M() >= cMaxMinvMotherCut) // excluding candidates in overflow
+                continue;
+            }
+
+            if (track1Sign < 0) {
+              histos.fill(HIST("k892invmassRotDS"), lResonance_rot.M());
+              histos.fill(HIST("h3k892invmassRotDS"), multiplicity, lResonance_rot.Pt(), lResonance_rot.M());
+            } else if (track1Sign > 0) {
+              histos.fill(HIST("k892invmassRotDSAnti"), lResonance.M());
+              histos.fill(HIST("h3k892invmassRotDSAnti"), multiplicity, lResonance_rot.Pt(), lResonance_rot.M());
+            }
+          }
+        } else if constexpr (!IsMix) { // same event
           if (track1Sign < 0) {
             histos.fill(HIST("k892invmassDS"), lResonance.M());
             histos.fill(HIST("h3k892invmassDS"), multiplicity, lResonance.Pt(), lResonance.M());
@@ -455,7 +495,7 @@ struct k892analysis_PbPb {
             histos.fill(HIST("k892invmassDSAnti"), lResonance.M());
             histos.fill(HIST("h3k892invmassDSAnti"), multiplicity, lResonance.Pt(), lResonance.M());
           }
-        } else {
+        } else { // mixed event
           histos.fill(HIST("k892invmassME"), lResonance.M());
           histos.fill(HIST("h3k892invmassME"), multiplicity, lResonance.Pt(), lResonance.M());
           if (additionalMEPlots) {
@@ -470,7 +510,7 @@ struct k892analysis_PbPb {
         }
 
         // MC
-        if constexpr (IsMC) {
+        if constexpr (IsMC && !IsMix) {
 
           if (!trk1.has_mcParticle() || !trk2.has_mcParticle())
             continue;
@@ -545,10 +585,10 @@ struct k892analysis_PbPb {
     } // end of loop on tracks combinations
   } // ennd on fill histograms
 
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter centralityFilter = nabs(aod::cent::centFT0C) < cfgCutCentrality;
-  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
-  Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  Filter collisionFilter = nabs(aod::collision::posZ) <= cfgCutVertex;
+  Filter centralityFilter = nabs(aod::cent::centFT0C) <= cfgCutCentrality;
+  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) >= cfgCutPT);
+  Filter DCAcutFilter = (nabs(aod::track::dcaXY) <= cfgCutDCAxy) && (nabs(aod::track::dcaZ) <= cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -599,29 +639,138 @@ struct k892analysis_PbPb {
       auto candPosPitpc = posPitpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto candNegKatpc = negKatpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-      fillHistograms<false, false>(collision, candPosPitpc, candNegKatpc);
+      fillHistograms<false, false, false, false>(collision, candPosPitpc, candNegKatpc);
 
       //-+
       auto candNegPitpc = negPitpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto candPosKatpc = posKatpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-      fillHistograms<false, false>(collision, candNegPitpc, candPosKatpc);
+      fillHistograms<false, false, false, false>(collision, candNegPitpc, candPosKatpc);
 
     } else if (tofhighpt) {
       //+-
       auto candPosPitof = posPitof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto candNegKatof = negKatof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-      fillHistograms<false, false>(collision, candPosPitof, candNegKatof);
+      fillHistograms<false, false, false, false>(collision, candPosPitof, candNegKatof);
 
       //-+
       auto candNegPitof = negPitof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto candPosKatof = posKatof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-      fillHistograms<false, false>(collision, candNegPitof, candPosKatof);
+      fillHistograms<false, false, false, false>(collision, candNegPitof, candPosKatof);
     }
   }
-  PROCESS_SWITCH(k892analysis_PbPb, processSameEvent, "Process Same event TOF High Pt", false);
+  PROCESS_SWITCH(k892analysis_PbPb, processSameEvent, "Process Same event", true);
+
+  void processRotationalBkg(EventCandidates::iterator const& collision, TrackCandidates const&, aod::BCs const&)
+  {
+    if (!collision.sel8()) {
+      return;
+    }
+    if (timFrameEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      return;
+    }
+    if (additionalEvSel2 && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      return;
+    }
+    if (additionalEvSel3 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+      return;
+    }
+    //    int occupancy = collision.trackOccupancyInTimeRange();
+
+    if (tpclowpt) {
+      //+-
+      auto candPosPitpc = posPitpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto candNegKatpc = negKatpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+      fillHistograms<false, false, true, false>(collision, candPosPitpc, candNegKatpc);
+
+      //-+
+      auto candNegPitpc = negPitpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto candPosKatpc = posKatpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+      fillHistograms<false, false, true, false>(collision, candNegPitpc, candPosKatpc);
+
+    } else if (tofhighpt) {
+      //+-
+      auto candPosPitof = posPitof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto candNegKatof = negKatof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+      fillHistograms<false, false, true, false>(collision, candPosPitof, candNegKatof);
+
+      //-+
+      auto candNegPitof = negPitof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto candPosKatof = posKatof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+      fillHistograms<false, false, true, false>(collision, candNegPitof, candPosKatof);
+    }
+  }
+  PROCESS_SWITCH(k892analysis_PbPb, processRotationalBkg, "Process Rotational Background", false);
+
+  ///////***************************************
+
+  using Run2Events = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s>; //, aod::TrackletMults>;
+  using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
+
+  void processSameEventRun2(Run2Events::iterator const& collision, TrackCandidates const& tracks, BCsWithRun2Info const&)
+  {
+    auto bc = collision.bc_as<BCsWithRun2Info>();
+
+    // if (!collision.alias_bit(kINT7))
+    //   return;
+
+    // if (!collision.sel7())
+    //   return;
+
+    if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
+      return;
+
+    if (std::abs(collision.posZ()) > cfgCutVertex)
+      return;
+
+    auto centrality = collision.centRun2V0M();
+
+    if (centrality > cfgCutCentrality)
+      return;
+
+    histos.fill(HIST("QAevent/hEvtCounterSameE"), 1);
+    histos.fill(HIST("QAevent/hVertexZSameE"), collision.posZ());
+    histos.fill(HIST("QAevent/hMultiplicityPercentSameE"), centrality);
+
+    if (additionalQAeventPlots) {
+      histos.fill(HIST("TestME/hCollisionIndexSameE"), collision.globalIndex());
+      histos.fill(HIST("TestME/hnTrksSameE"), tracks.size());
+    }
+
+    if (tpclowpt) {
+      //+-
+      auto candPosPitpc = posPitpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto candNegKatpc = negKatpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+      fillHistograms<false, false, false, true>(collision, candPosPitpc, candNegKatpc);
+
+      //-+
+      auto candNegPitpc = negPitpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto candPosKatpc = posKatpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+      fillHistograms<false, false, false, true>(collision, candNegPitpc, candPosKatpc);
+
+    } else if (tofhighpt) {
+      //+-
+      auto candPosPitof = posPitof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto candNegKatof = negKatof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+      fillHistograms<false, false, false, true>(collision, candPosPitof, candNegKatof);
+
+      //-+
+      auto candNegPitof = negPitof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto candPosKatof = posKatof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+      fillHistograms<false, false, false, true>(collision, candNegPitof, candPosKatof);
+    }
+  }
+  PROCESS_SWITCH(k892analysis_PbPb, processSameEventRun2, "Process Same event  Run2", false);
 
   using BinningTypeVtxCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
@@ -632,18 +781,18 @@ struct k892analysis_PbPb {
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (!collision1.sel8() || !collision2.sel8()) {
-        return;
+        continue;
       }
       auto centrality = collision1.centFT0C();
 
       if (timFrameEvsel && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-        return;
+        continue;
       }
       if (additionalEvSel2 && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
-        return;
+        continue;
       }
       if (additionalEvSel3 && (!collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
-        return;
+        continue;
       }
 
       if (additionalQAeventPlots) {
@@ -660,13 +809,13 @@ struct k892analysis_PbPb {
         auto candPosPitpc = posPitpc->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
         auto candNegKatpc = negKatpc->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
 
-        fillHistograms<false, true>(collision1, candPosPitpc, candNegKatpc);
+        fillHistograms<false, true, false, false>(collision1, candPosPitpc, candNegKatpc);
 
         //-+
         auto candNegPitpc = negPitpc->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
         auto candPosKatpc = posKatpc->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
 
-        fillHistograms<false, true>(collision1, candNegPitpc, candPosKatpc);
+        fillHistograms<false, true, false, false>(collision1, candNegPitpc, candPosKatpc);
 
       } else if (tofhighpt) {
 
@@ -674,22 +823,122 @@ struct k892analysis_PbPb {
         auto candPosPitof = posPitof->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
         auto candNegKatof = negKatof->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
 
-        fillHistograms<false, true>(collision1, candPosPitof, candNegKatof);
+        fillHistograms<false, true, false, false>(collision1, candPosPitof, candNegKatof);
 
         //-+
         auto candNegPitof = negPitof->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
         auto candPosKatof = posKatof->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
 
-        fillHistograms<false, true>(collision1, candNegPitof, candPosKatof);
+        fillHistograms<false, true, false, false>(collision1, candNegPitof, candPosKatof);
       }
     }
   }
-  PROCESS_SWITCH(k892analysis_PbPb, processMixedEvent, "Process Mixed event TPC low pt", true);
+  PROCESS_SWITCH(k892analysis_PbPb, processMixedEvent, "Process Mixed event", true);
+
+  using BinningTypeVtxCentRun2 = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>;
+  void processMixedEventRun2(Run2Events const& collisions, TrackCandidates const& tracks, BCsWithRun2Info const&)
+  {
+    auto tracksTuple = std::make_tuple(tracks);
+    BinningTypeVtxCentRun2 colBinning{{CfgVtxBins, CfgMultBins}, true};
+    SameKindPair<Run2Events, TrackCandidates, BinningTypeVtxCentRun2> pairs{colBinning, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+
+    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+
+      auto bc1 = collision1.bc_as<BCsWithRun2Info>();
+      auto bc2 = collision2.bc_as<BCsWithRun2Info>();
+
+      if (!(bc1.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)) || !(bc2.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
+        continue;
+
+      if ((std::abs(collision1.posZ()) > cfgCutVertex) || (std::abs(collision2.posZ()) > cfgCutVertex))
+        continue;
+
+      auto centrality1 = collision1.centRun2V0M();
+      auto centrality2 = collision2.centRun2V0M();
+
+      if ((centrality1 > cfgCutCentrality) || (centrality2 > cfgCutCentrality))
+        continue;
+
+      if (additionalQAeventPlots) {
+        histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
+        histos.fill(HIST("QAevent/hVertexZMixedE"), collision1.posZ());
+        histos.fill(HIST("QAevent/hMultiplicityPercentMixedE"), centrality1);
+        histos.fill(HIST("TestME/hCollisionIndexMixedE"), collision1.globalIndex());
+        histos.fill(HIST("TestME/hnTrksMixedE"), tracks1.size());
+      }
+
+      if (tpclowpt) {
+
+        //+-
+        auto candPosPitpc = posPitpc->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+        auto candNegKatpc = negKatpc->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
+
+        fillHistograms<false, true, false, true>(collision1, candPosPitpc, candNegKatpc);
+
+        //-+
+        auto candNegPitpc = negPitpc->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+        auto candPosKatpc = posKatpc->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
+
+        fillHistograms<false, true, false, true>(collision1, candNegPitpc, candPosKatpc);
+
+      } else if (tofhighpt) {
+
+        //+-
+        auto candPosPitof = posPitof->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+        auto candNegKatof = negKatof->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
+
+        fillHistograms<false, true, false, true>(collision1, candPosPitof, candNegKatof);
+
+        //-+
+        auto candNegPitof = negPitof->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+        auto candPosKatof = posKatof->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
+
+        fillHistograms<false, true, false, true>(collision1, candNegPitof, candPosKatof);
+      }
+    }
+  }
+  PROCESS_SWITCH(k892analysis_PbPb, processMixedEventRun2, "Process Mixed event Run2", false);
 
   // MC
 
   using EventCandidatesMCrec = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using TrackCandidatesMCrec = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels>>;
+
+  void processMixedEventMC(EventCandidatesMCrec const& recCollisions, TrackCandidatesMCrec const& RecTracks)
+  {
+    auto tracksTuple = std::make_tuple(RecTracks);
+    BinningTypeVtxCent colBinning{{CfgVtxBins, CfgMultBins}, true};
+    SameKindPair<EventCandidatesMCrec, TrackCandidatesMCrec, BinningTypeVtxCent> pairs{colBinning, cfgNoMixedEvents, -1, recCollisions, tracksTuple, &cache};
+
+    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+      if (!collision1.sel8() || !collision2.sel8()) {
+        continue;
+      }
+      if (TMath::Abs(collision1.posZ()) > cfgCutVertex || TMath::Abs(collision2.posZ()) > cfgCutVertex) {
+        continue;
+      }
+      if (timFrameEvsel && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel2 && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+        continue;
+      }
+
+      if (additionalQAeventPlots) {
+        histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
+        histos.fill(HIST("QAevent/hVertexZMixedE"), collision1.posZ());
+        histos.fill(HIST("QAevent/hMultiplicityPercentMixedE"), collision1.centFT0C());
+        histos.fill(HIST("TestME/hCollisionIndexMixedE"), collision1.globalIndex());
+        histos.fill(HIST("TestME/hnTrksMixedE"), tracks1.size());
+      }
+
+      fillHistograms<true, true, false, false>(collision1, tracks1, tracks2);
+    }
+  }
+  PROCESS_SWITCH(k892analysis_PbPb, processMixedEventMC, "Process Mixed event MC", false);
 
   void processMC(aod::McCollisions::iterator const& /*mcCollision*/, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMCrec>& recCollisions, TrackCandidatesMCrec const& RecTracks)
   {
@@ -728,7 +977,7 @@ struct k892analysis_PbPb {
       auto centrality = RecCollision.centFT0C();
       histos.fill(HIST("QAevent/hMultiplicityPercentMC"), centrality);
       auto tracks = RecTracks.sliceByCached(aod::track::collisionId, RecCollision.globalIndex(), cache);
-      fillHistograms<true, false>(RecCollision, tracks, tracks);
+      fillHistograms<true, false, false, false>(RecCollision, tracks, tracks);
 
       // Generated MC
       for (auto& mcPart : mcParticles) {
@@ -781,6 +1030,91 @@ struct k892analysis_PbPb {
     } // end loop on rec collisions
   }
   PROCESS_SWITCH(k892analysis_PbPb, processMC, "Process Monte Carlo", false);
+
+  // MC Run2
+
+  using EventCandidatesMCrecRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentRun2V0Ms, aod::CentRun2CL0s>; // aod::TrackletMults>;
+
+  void processMCRun2(aod::McCollisions::iterator const& /*mcCollision*/, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMCrecRun2>& recCollisions, TrackCandidatesMCrec const& RecTracks, BCsWithRun2Info const&)
+  {
+    histos.fill(HIST("hMCrecCollSels"), 0);
+    if (recCollisions.size() == 0) {
+      histos.fill(HIST("hMCrecCollSels"), 1);
+      return;
+    }
+    if (recCollisions.size() > 1) {
+      histos.fill(HIST("hMCrecCollSels"), 2);
+      return;
+    }
+    for (auto& RecCollision : recCollisions) {
+      auto bc = RecCollision.bc_as<BCsWithRun2Info>();
+      histos.fill(HIST("hMCrecCollSels"), 3);
+
+      if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
+        continue;
+      histos.fill(HIST("hMCrecCollSels"), 4);
+
+      if (std::abs(RecCollision.posZ()) > cfgCutVertex)
+        continue;
+      histos.fill(HIST("hMCrecCollSels"), 5);
+
+      auto centrality = RecCollision.centRun2V0M();
+
+      histos.fill(HIST("QAevent/hMultiplicityPercentMC"), centrality);
+      auto tracks = RecTracks.sliceByCached(aod::track::collisionId, RecCollision.globalIndex(), cache);
+      fillHistograms<true, false, false, true>(RecCollision, tracks, tracks);
+
+      // Generated MC
+      for (auto& mcPart : mcParticles) {
+        if (abs(mcPart.y()) >= 0.5 || abs(mcPart.pdgCode()) != 313)
+          continue;
+
+        auto kDaughters = mcPart.daughters_as<aod::McParticles>();
+        if (kDaughters.size() != 2) {
+          continue;
+        }
+
+        TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
+
+        auto daughtp = false;
+        auto daughtk = false;
+        for (auto kCurrentDaughter : kDaughters) {
+          if (!kCurrentDaughter.isPhysicalPrimary())
+            break;
+          if (genacceptancecut && (kCurrentDaughter.pt() < cfgCutPT || TMath::Abs(kCurrentDaughter.eta()) > cfgCutEta))
+            break;
+
+          if (abs(kCurrentDaughter.pdgCode()) == 211) {
+            daughtp = true;
+            lDecayDaughter1.SetXYZM(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massPi);
+          } else if (abs(kCurrentDaughter.pdgCode()) == 321) {
+            daughtk = true;
+            lDecayDaughter2.SetXYZM(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKa);
+          }
+        }
+
+        if (!daughtp || !daughtk)
+          continue;
+
+        lResonance = lDecayDaughter1 + lDecayDaughter2;
+
+        histos.fill(HIST("QAMCTrue/hGlobalIndexMotherGen"), mcPart.globalIndex());
+
+        if (mcPart.pdgCode() > 0) { // no cuts, purely generated
+          histos.fill(HIST("k892GenInvmass"), lResonance.M());
+          histos.fill(HIST("h3k892GenInvmass"), centrality, lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("k892Gen"), 3, mcPart.pt(), centrality);
+        } else {
+          histos.fill(HIST("k892GenInvmassAnti"), lResonance.M());
+          histos.fill(HIST("h3k892GenInvmassAnti"), centrality, lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("k892GenAnti"), 3, mcPart.pt(), centrality);
+        }
+
+      } // end loop on gen particles
+
+    } // end loop on rec collisions
+  }
+  PROCESS_SWITCH(k892analysis_PbPb, processMCRun2, "Process Monte Carlo Run2", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

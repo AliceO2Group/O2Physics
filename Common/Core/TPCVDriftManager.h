@@ -116,8 +116,8 @@ class TPCVDriftManager
     if (dDriftErr < 0.f || dDrift > 250.f) { // we cannot move a track outside the drift volume
       if (mOutside < mWarningLimit) {
         LOGP(warn, "Skipping correction outside of tpc volume with dDrift={} +- {}", dDrift, dDriftErr);
-        const auto& trackBC = trackExtra.template collision_as<Collisions>().template foundBC_as<BCs>().globalBC();
-        const auto& colBC = col.template foundBC_as<BCs>().globalBC();
+        const auto trackBC = trackExtra.template collision_as<Collisions>().template foundBC_as<BCs>().globalBC();
+        const auto colBC = col.template foundBC_as<BCs>().globalBC();
         int diffBC = colBC - trackBC;
         LOGP(info, "ct={}; ctr={}; tTB={}; t0={}; dTime={}; dDrift={}; tgl={}:   colBC={}   trackBC={}  diffBC={}", col.collisionTime(), col.collisionTimeRes(), tTB, trackExtra.trackTime(), dTime, dDrift, track.getTgl(), colBC, trackBC, diffBC);
         if (mOutside == mWarningLimit - 1) {

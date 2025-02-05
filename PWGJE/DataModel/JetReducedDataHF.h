@@ -50,6 +50,19 @@ DECLARE_SOA_TABLE_STAGED(JD0PIds, "JD0PID",
                          jd0indices::JMcCollisionId,
                          jd0indices::JMcParticleId);
 
+namespace jdummyd0
+{
+DECLARE_SOA_COLUMN(DummyD0, dummyD0, bool);
+} // namespace jdummyd0
+
+DECLARE_SOA_TABLE(JDumD0ParDaus, "AOD", "JDUMD0PARDAU",
+                  jdummyd0::DummyD0,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(JDumD0MlDaus, "AOD", "JDumD0MLDAU",
+                  jdummyd0::DummyD0,
+                  o2::soa::Marker<2>);
+
 namespace jlcindices
 {
 DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
@@ -75,6 +88,46 @@ DECLARE_SOA_TABLE_STAGED(JLcIds, "JLCID",
 DECLARE_SOA_TABLE_STAGED(JLcPIds, "JLCPID",
                          jlcindices::JMcCollisionId,
                          jlcindices::JMcParticleId);
+
+namespace jdummylc
+{
+
+DECLARE_SOA_COLUMN(DummyLc, dummyLc, bool);
+
+} // namespace jdummylc
+DECLARE_SOA_TABLE(JDumLcParDaus, "AOD", "JDUMLCPARDAU",
+                  jdummylc::DummyLc,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(JDumLcMlDaus, "AOD", "JDUMLCMLDAU",
+                  jdummylc::DummyLc,
+                  o2::soa::Marker<2>);
+
+namespace jbplusindices
+{
+DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, JTracks, "_2");
+DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
+DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
+} // namespace jbplusindices
+
+DECLARE_SOA_TABLE_STAGED(JBplusCollisionIds, "JBPCOLLID",
+                         jbplusindices::JCollisionId);
+
+DECLARE_SOA_TABLE_STAGED(JBplusMcCollisionIds, "JBPMCCOLLID",
+                         jbplusindices::JMcCollisionId);
+
+DECLARE_SOA_TABLE_STAGED(JBplusIds, "JBPID",
+                         jbplusindices::JCollisionId,
+                         jbplusindices::Prong0Id,
+                         jbplusindices::Prong1Id,
+                         jbplusindices::Prong2Id);
+
+DECLARE_SOA_TABLE_STAGED(JBplusPIds, "JBPPID",
+                         jbplusindices::JMcCollisionId,
+                         jbplusindices::JMcParticleId);
 
 } // namespace o2::aod
 

@@ -15,12 +15,17 @@ o2physics_add_dpl_workflow(meanpt-fluctuations
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mean-pt-fluc-id
-                    SOURCES MeanPtFlucIdentified.cxx
+                    SOURCES meanPtFlucId.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(netproton-cumulants
                     SOURCES NetProtonCumulants.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(netproton-cumulants-mc
+                    SOURCES netprotonCumulantsMc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
@@ -41,5 +46,10 @@ o2physics_add_dpl_workflow(v0pt-pp-task
 
 o2physics_add_dpl_workflow(factorial-moments
                     SOURCES FactorialMomentsTask.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(netcharge-fluctuations
+                    SOURCES netchargeFluctuations.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)

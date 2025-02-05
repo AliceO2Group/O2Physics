@@ -9,6 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file eventSelection.cxx
+/// \brief Event selection task
+///
+/// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
+
+#include <vector>
+#include <map>
+#include <string>
+
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -25,6 +34,9 @@
 #include "ITSMFTBase/DPLAlpideParam.h"
 #include "MetadataHelper.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
+#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
+#include "DataFormatsITSMFT/TimeDeadMap.h"
+#include "ITSMFTReconstruction/ChipMappingITS.h"
 
 #include "TH1D.h"
 
@@ -40,27 +52,42 @@ using BCsWithBcSelsRun2 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod:
 using BCsWithBcSelsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
 using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
-const double bcNS = o2::constants::lhc::LHCBunchSpacingNS;
+static const double bcNS = o2::constants::lhc::LHCBunchSpacingNS;
+static const int32_t nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 
 struct BcSelectionTask {
   Produces<aod::BcSels> bcsel;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to 294 for apass2/apass3 in LHC22o-t"};
-  Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};
-  Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
-  Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"};
-  Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};
-  Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};
+  Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to 294 for apass2/apass3 in LHC22o-t"};                                                         // o2-linter: disable=name/configurable
+  Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"}; // o2-linter: disable=name/configurable
+  Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};       // o2-linter: disable=name/configurable
+  Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"}; // o2-linter: disable=name/configurable
+  Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};       // o2-linter: disable=name/configurable
+  Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};                           // o2-linter: disable=name/configurable
+  Configurable<std::vector<int>> maxInactiveChipsPerLayer{"maxInactiveChipsPerLayer", {8, 8, 8, 111, 111, 195, 195}, "Maximum allowed number of inactive ITS chips per layer"};
 
-  int lastRunNumber = -1;
-  int64_t bcSOR = -1;                    // global bc of the start of the first orbit
+  int lastRun = -1;
+  uint64_t sorTimestamp = 0;             // default SOR timestamp
+  uint64_t eorTimestamp = 1;             // default EOR timestamp
+  int64_t bcSOR = -1;                    // global bc of the start of run
   int64_t nBCsPerTF = -1;                // duration of TF in bcs, should be 128*3564 or 32*3564
+  int rofOffset = -1;                    // ITS ROF offset, in bc
+  int rofLength = -1;                    // ITS ROF length, in bc
   int mITSROFrameStartBorderMargin = 10; // default value
   int mITSROFrameEndBorderMargin = 20;   // default value
   int mTimeFrameStartBorderMargin = 300; // default value
   int mTimeFrameEndBorderMargin = 4000;  // default value
-
+  bool isPP = 1;                         // default value
+  TriggerAliases* aliases = nullptr;
+  EventSelectionParams* par = nullptr;
+  std::map<uint64_t, uint32_t>* mapRCT = nullptr;
+  std::map<int64_t, std::vector<int16_t>> mapInactiveChips; // number of inactive chips vs orbit per layer
+  int64_t prevOrbitForInactiveChips = 0;                    // cached next stored orbit in the inactive chip map
+  int64_t nextOrbitForInactiveChips = 0;                    // cached previous stored orbit in the inactive chip map
+  bool isGoodITSLayer3 = true;                              // default value
+  bool isGoodITSLayer0123 = true;                           // default value
+  bool isGoodITSLayersAll = true;                           // default value
   void init(InitContext&)
   {
     if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
@@ -106,19 +133,19 @@ struct BcSelectionTask {
   {
     bcsel.reserve(bcs.size());
 
-    for (auto& bc : bcs) {
-      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
-      TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
+    for (const auto& bc : bcs) {
+      par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
+      aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
       // fill fired aliases
       uint32_t alias{0};
       uint64_t triggerMask = bc.triggerMask();
-      for (auto& al : aliases->GetAliasToTriggerMaskMap()) {
+      for (const auto& al : aliases->GetAliasToTriggerMaskMap()) {
         if (triggerMask & al.second) {
           alias |= BIT(al.first);
         }
       }
       uint64_t triggerMaskNext50 = bc.triggerMaskNext50();
-      for (auto& al : aliases->GetAliasToTriggerMaskNext50Map()) {
+      for (const auto& al : aliases->GetAliasToTriggerMaskNext50Map()) {
         if (triggerMaskNext50 & al.second) {
           alias |= BIT(al.first);
         }
@@ -154,9 +181,9 @@ struct BcSelectionTask {
       selection |= (timeT0C > par->fT0CBBlower && timeT0C < par->fT0CBBupper) ? BIT(kIsBBT0C) : 0;
       selection |= (timeZNA > par->fZNABBlower && timeZNA < par->fZNABBupper) ? BIT(kIsBBZNA) : 0;
       selection |= (timeZNC > par->fZNCBBlower && timeZNC < par->fZNCBBupper) ? BIT(kIsBBZNC) : 0;
-      selection |= !(fabs(timeZNA) > par->fZNABGlower && fabs(timeZNA) < par->fZNABGupper) ? BIT(kNoBGZNA) : 0;
-      selection |= !(fabs(timeZNC) > par->fZNCBGlower && fabs(timeZNC) < par->fZNCBGupper) ? BIT(kNoBGZNC) : 0;
-      selection |= (pow((timeZNA + timeZNC - par->fZNSumMean) / par->fZNSumSigma, 2) + pow((timeZNA - timeZNC - par->fZNDifMean) / par->fZNDifSigma, 2) < 1) ? BIT(kIsBBZAC) : 0;
+      selection |= !(std::fabs(timeZNA) > par->fZNABGlower && std::fabs(timeZNA) < par->fZNABGupper) ? BIT(kNoBGZNA) : 0;
+      selection |= !(std::fabs(timeZNC) > par->fZNCBGlower && std::fabs(timeZNC) < par->fZNCBGupper) ? BIT(kNoBGZNC) : 0;
+      selection |= (std::pow((timeZNA + timeZNC - par->fZNSumMean) / par->fZNSumSigma, 2) + std::pow((timeZNA - timeZNC - par->fZNDifMean) / par->fZNDifSigma, 2) < 1) ? BIT(kIsBBZAC) : 0;
 
       // Calculate V0 multiplicity per ring
       float multRingV0A[5] = {0.};
@@ -216,8 +243,9 @@ struct BcSelectionTask {
         histos.get<TH1>(HIST("hCounterTVX"))->Fill(Form("%d", bc.runNumber()), 1);
       }
 
+      uint32_t rct = 0;
       // Fill bc selection columns
-      bcsel(alias, selection, foundFT0, foundFV0, foundFDD, foundZDC);
+      bcsel(alias, selection, rct, foundFT0, foundFV0, foundFDD, foundZDC);
     }
   }
   PROCESS_SWITCH(BcSelectionTask, processRun2, "Process Run2 event selection", true);
@@ -230,56 +258,102 @@ struct BcSelectionTask {
   {
     if (bcs.size() == 0)
       return;
-
     bcsel.reserve(bcs.size());
-    // extract ITS time frame parameters
+
     int run = bcs.iteratorAt(0).runNumber();
-    auto timestamps = ccdb->getRunDuration(run, true); /// fatalise if timestamps are not found
-    int64_t sorTimestamp = timestamps.first;           // timestamp of the SOR/SOX/STF in ms
-    int64_t eorTimestamp = timestamps.second;          // timestamp of the EOR/EOX/ETF in ms
-    int64_t ts = eorTimestamp / 2 + sorTimestamp / 2;  // timestamp of the middle of the run
-    auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
-    EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
-    TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", ts);
+
+    if (run != lastRun && run >= 500000) {
+      lastRun = run;
+      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
+      // first bc of the first orbit
+      bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
+      // duration of TF in bcs
+      nBCsPerTF = runInfo.orbitsPerTF * nBCsPerOrbit;
+      // SOR and EOR timestamps
+      sorTimestamp = runInfo.sor;
+      eorTimestamp = runInfo.eor;
+      // timestamp of the middle of the run used to access run-wise CCDB entries
+      int64_t ts = runInfo.sor / 2 + runInfo.eor / 2;
+      // access ITSROF and TF border margins
+      par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
+      mITSROFrameStartBorderMargin = confITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : confITSROFrameStartBorderMargin;
+      mITSROFrameEndBorderMargin = confITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : confITSROFrameEndBorderMargin;
+      mTimeFrameStartBorderMargin = confTimeFrameStartBorderMargin < 0 ? par->fTimeFrameStartBorderMargin : confTimeFrameStartBorderMargin;
+      mTimeFrameEndBorderMargin = confTimeFrameEndBorderMargin < 0 ? par->fTimeFrameEndBorderMargin : confTimeFrameEndBorderMargin;
+      // ITSROF parameters
+      auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
+      rofOffset = alppar->roFrameBiasInBC;
+      rofLength = alppar->roFrameLengthInBC;
+      // Trigger aliases
+      aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", ts);
+      // Collision system info
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
+      int beamZ1 = grplhcif->getBeamZ(o2::constants::lhc::BeamA);
+      int beamZ2 = grplhcif->getBeamZ(o2::constants::lhc::BeamC);
+      isPP = beamZ1 == 1 && beamZ2 == 1;
+      // prepare map of inactive chips
+      auto itsDeadMap = ccdb->getForTimeStamp<o2::itsmft::TimeDeadMap>("ITS/Calib/TimeDeadMap", ts);
+      auto itsDeadMapOrbits = itsDeadMap->getEvolvingMapKeys(); // roughly every second, ~350 TFs = 350x32 orbits
+      std::vector<uint16_t> vClosest;                           // temporary vector of inactive chip ids for the current orbit range
+      for (const auto& orbit : itsDeadMapOrbits) {
+        itsDeadMap->getMapAtOrbit(orbit, vClosest);
+        // insert initial (orbit,vector) pair for each layer
+        mapInactiveChips[orbit].resize(o2::itsmft::ChipMappingITS::NLayers, 0);
+
+        // fill map of inactive chips
+        for (size_t iel = 0; iel < vClosest.size(); iel++) {
+          uint16_t w1 = vClosest[iel];
+          bool isLastInSequence = (w1 & 0x8000) == 0;
+          uint16_t w2 = isLastInSequence ? w1 + 1 : vClosest[iel + 1];
+          uint16_t chipId1 = w1 & 0x7FFF;
+          uint16_t chipId2 = w2 & 0x7FFF;
+          for (int chipId = chipId1; chipId < chipId2; chipId++) {
+            auto layer = o2::itsmft::ChipMappingITS::getLayer(chipId);
+            mapInactiveChips[orbit][layer]++;
+          }
+        } // loop over vector of inactive chip ids
+      } // loop over orbits
+
+      // QC info
+      std::map<std::string, std::string> metadata;
+      metadata["run"] = Form("%d", run);
+      ccdb->setFatalWhenNull(0);
+      mapRCT = ccdb->getSpecific<std::map<uint64_t, uint32_t>>("Users/j/jian/RCT", ts, metadata);
+      ccdb->setFatalWhenNull(1);
+      if (mapRCT == nullptr) {
+        LOGP(info, "rct object missing... inserting dummy rct flags");
+        mapRCT = new std::map<uint64_t, uint32_t>;
+        mapRCT->insert(std::pair<uint64_t, uint32_t>(sorTimestamp, 0));
+      }
+    }
+
     // map from GlobalBC to BcId needed to find triggerBc
     std::map<uint64_t, int32_t> mapGlobalBCtoBcId;
-    for (auto& bc : bcs) {
+    for (const auto& bc : bcs) {
       mapGlobalBCtoBcId[bc.globalBC()] = bc.globalIndex();
     }
+
     int triggerBcShift = confTriggerBcShift;
     if (confTriggerBcShift == 999) {
       triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734 || run >= 534091) ? 0 : 294;
     }
 
-    // extract run number and related information
-    if (run != lastRunNumber) {
-      lastRunNumber = run; // do it only once
-      if (run >= 500000) { // access CCDB for data or anchored MC only
-        int64_t ts = bcs.iteratorAt(0).timestamp();
-        // access orbitShift, ITSROF and TF border margins
-        EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
-        mITSROFrameStartBorderMargin = confITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : confITSROFrameStartBorderMargin;
-        mITSROFrameEndBorderMargin = confITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : confITSROFrameEndBorderMargin;
-        mTimeFrameStartBorderMargin = confTimeFrameStartBorderMargin < 0 ? par->fTimeFrameStartBorderMargin : confTimeFrameStartBorderMargin;
-        mTimeFrameEndBorderMargin = confTimeFrameEndBorderMargin < 0 ? par->fTimeFrameEndBorderMargin : confTimeFrameEndBorderMargin;
-
-        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
-        // first bc of the first orbit
-        bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
-        // duration of TF in bcs
-        nBCsPerTF = runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches;
-      }
-    }
-
     // bc loop
-    for (auto bc : bcs) {
+    for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop
+      // store rct flags
+      auto itrct = mapRCT->upper_bound(bc.timestamp());
+      if (itrct != mapRCT->begin())
+        itrct--;
+      uint32_t rct = itrct->second;
+      LOGP(debug, "sor={} eor={} ts={} rct={}", sorTimestamp, eorTimestamp, bc.timestamp(), rct);
+
       uint32_t alias{0};
       // workaround for pp2022 (trigger info is shifted by -294 bcs)
       int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
-      if (triggerBcId) {
+      if (triggerBcId && aliases) {
         auto triggerBc = bcs.iteratorAt(triggerBcId);
         uint64_t triggerMask = triggerBc.triggerMask();
-        for (auto& al : aliases->GetAliasToTriggerMaskMap()) {
+        for (const auto& al : aliases->GetAliasToTriggerMaskMap()) {
           if (triggerMask & al.second) {
             alias |= BIT(al.first);
           }
@@ -338,21 +412,53 @@ struct BcSelectionTask {
       selection |= (timeT0C > par->fT0CBBlower && timeT0C < par->fT0CBBupper) ? BIT(kIsBBT0C) : 0;
       selection |= (timeZNA > par->fZNABBlower && timeZNA < par->fZNABBupper) ? BIT(kIsBBZNA) : 0;
       selection |= (timeZNC > par->fZNCBBlower && timeZNC < par->fZNCBBupper) ? BIT(kIsBBZNC) : 0;
-      selection |= (pow((timeZNA + timeZNC - par->fZNSumMean) / par->fZNSumSigma, 2) + pow((timeZNA - timeZNC - par->fZNDifMean) / par->fZNDifSigma, 2) < 1) ? BIT(kIsBBZAC) : 0;
-      selection |= !(fabs(timeZNA) > par->fZNABGlower && fabs(timeZNA) < par->fZNABGupper) ? BIT(kNoBGZNA) : 0;
-      selection |= !(fabs(timeZNC) > par->fZNCBGlower && fabs(timeZNC) < par->fZNCBGupper) ? BIT(kNoBGZNC) : 0;
+      selection |= (std::pow((timeZNA + timeZNC - par->fZNSumMean) / par->fZNSumSigma, 2) + std::pow((timeZNA - timeZNC - par->fZNDifMean) / par->fZNDifSigma, 2) < 1) ? BIT(kIsBBZAC) : 0;
+      selection |= !(std::fabs(timeZNA) > par->fZNABGlower && std::fabs(timeZNA) < par->fZNABGupper) ? BIT(kNoBGZNA) : 0;
+      selection |= !(std::fabs(timeZNC) > par->fZNCBGlower && std::fabs(timeZNC) < par->fZNCBGupper) ? BIT(kNoBGZNC) : 0;
       selection |= (bc.has_ft0() ? (bc.ft0().triggerMask() & BIT(o2::ft0::Triggers::bitVertex)) > 0 : 0) ? BIT(kIsTriggerTVX) : 0;
 
       // check if bc is far from start and end of the ITS RO Frame border
-      uint16_t bcInITSROF = (globalBC + 3564 - alppar->roFrameBiasInBC) % alppar->roFrameLengthInBC;
+      uint16_t bcInITSROF = (globalBC + nBCsPerOrbit - rofOffset) % rofLength;
       LOGP(debug, "bcInITSROF={}", bcInITSROF);
-      selection |= bcInITSROF > mITSROFrameStartBorderMargin && bcInITSROF < alppar->roFrameLengthInBC - mITSROFrameEndBorderMargin ? BIT(kNoITSROFrameBorder) : 0;
+      selection |= bcInITSROF > mITSROFrameStartBorderMargin && bcInITSROF < rofLength - mITSROFrameEndBorderMargin ? BIT(kNoITSROFrameBorder) : 0;
 
       // check if bc is far from the Time Frame borders
       int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
       LOGP(debug, "bcInTF={}", bcInTF);
       selection |= bcInTF > mTimeFrameStartBorderMargin && bcInTF < nBCsPerTF - mTimeFrameEndBorderMargin ? BIT(kNoTimeFrameBorder) : 0;
 
+      // check number of inactive chips and set kIsGoodITSLayer3, kIsGoodITSLayer0123, kIsGoodITSLayersAll flags
+      int64_t orbit = globalBC / nBCsPerOrbit;
+      if (mapInactiveChips.size() > 0 && (orbit < prevOrbitForInactiveChips || orbit > nextOrbitForInactiveChips)) {
+        auto it = mapInactiveChips.upper_bound(orbit);
+        bool isEnd = (it == mapInactiveChips.end());
+        if (isEnd)
+          it--;
+        nextOrbitForInactiveChips = isEnd ? orbit : it->first; // setting current orbit in case we reached the end of mapInactiveChips
+        auto vNextInactiveChips = it->second;
+        if (it != mapInactiveChips.begin() && !isEnd)
+          it--;
+        prevOrbitForInactiveChips = it->first;
+        auto vPrevInactiveChips = it->second;
+        LOGP(debug, "orbit: {}, previous orbit: {}, next orbit: {} ", orbit, prevOrbitForInactiveChips, nextOrbitForInactiveChips);
+        LOGP(debug, "next inactive chips: {} {} {} {} {} {} {}", vNextInactiveChips[0], vNextInactiveChips[1], vNextInactiveChips[2], vNextInactiveChips[3], vNextInactiveChips[4], vNextInactiveChips[5], vNextInactiveChips[6]);
+        LOGP(debug, "prev inactive chips: {} {} {} {} {} {} {}", vPrevInactiveChips[0], vPrevInactiveChips[1], vPrevInactiveChips[2], vPrevInactiveChips[3], vPrevInactiveChips[4], vPrevInactiveChips[5], vPrevInactiveChips[6]);
+        isGoodITSLayer3 = vPrevInactiveChips[3] <= maxInactiveChipsPerLayer->at(3) && vNextInactiveChips[3] <= maxInactiveChipsPerLayer->at(3);
+        isGoodITSLayer0123 = true;
+        for (int i = 0; i < 4; i++) {
+          isGoodITSLayer0123 &= vPrevInactiveChips[i] <= maxInactiveChipsPerLayer->at(i) && vNextInactiveChips[i] <= maxInactiveChipsPerLayer->at(i);
+        }
+        isGoodITSLayersAll = true;
+        for (int i = 0; i < o2::itsmft::ChipMappingITS::NLayers; i++) {
+          isGoodITSLayersAll &= vPrevInactiveChips[i] <= maxInactiveChipsPerLayer->at(i) && vNextInactiveChips[i] <= maxInactiveChipsPerLayer->at(i);
+        }
+      }
+
+      selection |= isGoodITSLayer3 ? BIT(kIsGoodITSLayer3) : 0;
+      selection |= isGoodITSLayer0123 ? BIT(kIsGoodITSLayer0123) : 0;
+      selection |= isGoodITSLayersAll ? BIT(kIsGoodITSLayersAll) : 0;
+
+      // fill found indices
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
       int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
@@ -361,10 +467,7 @@ struct BcSelectionTask {
 
       // Temporary workaround to get visible cross section. TODO: store run-by-run visible cross sections in CCDB
       const char* srun = Form("%d", run);
-      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", bc.timestamp());
-      int beamZ1 = grplhcif->getBeamZ(o2::constants::lhc::BeamA);
-      int beamZ2 = grplhcif->getBeamZ(o2::constants::lhc::BeamC);
-      bool isPP = beamZ1 == 1 && beamZ2 == 1;
+
       bool injectionEnergy = (run >= 500000 && run <= 520099) || (run >= 534133 && run <= 534468);
       // Cross sections in ub. Using dummy -1 if lumi estimator is not reliable
       float csTVX = isPP ? (injectionEnergy ? 0.0355e6 : 0.0594e6) : -1.;
@@ -414,7 +517,7 @@ struct BcSelectionTask {
         }
       }
 
-      if (bc.timestamp() < static_cast<uint64_t>(sorTimestamp) || bc.timestamp() > static_cast<uint64_t>(eorTimestamp)) {
+      if (bc.timestamp() < sorTimestamp || bc.timestamp() > eorTimestamp) {
         histos.get<TH1>(HIST("hCounterInvalidBCTimestamp"))->Fill(srun, 1);
         if (confCheckRunDurationLimits.value) {
           LOGF(warn, "Invalid BC timestamp: %d, run: %d, sor: %d, eor: %d", bc.timestamp(), run, sorTimestamp, eorTimestamp);
@@ -424,7 +527,7 @@ struct BcSelectionTask {
       }
 
       // Fill bc selection columns
-      bcsel(alias, selection, foundFT0, foundFV0, foundFDD, foundZDC);
+      bcsel(alias, selection, rct, foundFT0, foundFV0, foundFDD, foundZDC);
     }
   }
   PROCESS_SWITCH(BcSelectionTask, processRun3, "Process Run3 event selection", false);
@@ -439,15 +542,15 @@ struct EventSelectionTask {
   Configurable<int> confSigmaBCforHighPtTracks{"confSigmaBCforHighPtTracks", 4, "Custom sigma (in bcs) for collisions with high-pt tracks"};
 
   // configurables for occupancy-based event selection
-  Configurable<float> confTimeIntervalForOccupancyCalculationMin{"TimeIntervalForOccupancyCalculationMin", -40, "Min time diff window for TPC occupancy calculation, us"};
-  Configurable<float> confTimeIntervalForOccupancyCalculationMax{"TimeIntervalForOccupancyCalculationMax", 100, "Max time diff window for TPC occupancy calculation, us"};
-  Configurable<float> confTimeRangeVetoOnCollStandard{"TimeRangeVetoOnCollStandard", 10.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};
-  Configurable<float> confTimeRangeVetoOnCollNarrow{"TimeRangeVetoOnCollNarrow", 2.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};
-  Configurable<int> confFT0CamplCutVetoOnCollInTimeRange{"FT0CamplPerCollCutVetoOnCollInTimeRange", 8000, "Max allowed FT0C amplitude for each nearby collision in +/- time range"};
-  Configurable<float> confEpsilonDistanceForVzDependentVetoTPC{"EpsilonDistanceForVzDependentVetoTPC", 2.5, "Epsilon for vZ-dependent veto on drifting TPC tracks from nearby collisions, cm"};
-  Configurable<float> confFT0CamplCutVetoOnCollInROF{"FT0CamplPerCollCutVetoOnCollInROF", 5000, "Max allowed FT0C amplitude for each nearby collision inside this ITS ROF"};
-  Configurable<float> confEpsilonVzDiffVetoInROF{"EpsilonVzDiffVetoInROF", 0.3, "Minumum distance to nearby collisions along z inside this ITS ROF, cm"};
-  Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};
+  Configurable<float> confTimeIntervalForOccupancyCalculationMin{"TimeIntervalForOccupancyCalculationMin", -40, "Min time diff window for TPC occupancy calculation, us"};                      // o2-linter: disable=name/configurable
+  Configurable<float> confTimeIntervalForOccupancyCalculationMax{"TimeIntervalForOccupancyCalculationMax", 100, "Max time diff window for TPC occupancy calculation, us"};                      // o2-linter: disable=name/configurable
+  Configurable<float> confTimeRangeVetoOnCollStandard{"TimeRangeVetoOnCollStandard", 10.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};                            // o2-linter: disable=name/configurable
+  Configurable<float> confTimeRangeVetoOnCollNarrow{"TimeRangeVetoOnCollNarrow", 2.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};                                 // o2-linter: disable=name/configurable
+  Configurable<int> confFT0CamplCutVetoOnCollInTimeRange{"FT0CamplPerCollCutVetoOnCollInTimeRange", 8000, "Max allowed FT0C amplitude for each nearby collision in +/- time range"};            // o2-linter: disable=name/configurable
+  Configurable<float> confEpsilonDistanceForVzDependentVetoTPC{"EpsilonDistanceForVzDependentVetoTPC", 2.5, "Epsilon for vZ-dependent veto on drifting TPC tracks from nearby collisions, cm"}; // o2-linter: disable=name/configurable
+  Configurable<float> confFT0CamplCutVetoOnCollInROF{"FT0CamplPerCollCutVetoOnCollInROF", 5000, "Max allowed FT0C amplitude for each nearby collision inside this ITS ROF"};                    // o2-linter: disable=name/configurable
+  Configurable<float> confEpsilonVzDiffVetoInROF{"EpsilonVzDiffVetoInROF", 0.3, "Minumum distance to nearby collisions along z inside this ITS ROF, cm"};                                       // o2-linter: disable=name/configurable
+  Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};                                 // o2-linter: disable=name/configurable
 
   Partition<FullTracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
 
@@ -457,8 +560,8 @@ struct EventSelectionTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  int lastRun = -1;                                          // last run number (needed to access ccdb only if run!=lastRun)
-  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB; // bc pattern of colliding bunches
+  int lastRun = -1;                     // last run number (needed to access ccdb only if run!=lastRun)
+  std::bitset<nBCsPerOrbit> bcPatternB; // bc pattern of colliding bunches
 
   int64_t bcSOR = -1;     // global bc of the start of the first orbit
   int64_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
@@ -498,7 +601,7 @@ struct EventSelectionTask {
     int64_t maxBC = meanBC + 3 * sigmaBC;
     // TODO: use ITS ROF bounds to reduce the search range?
 
-    float zVtxSigma = 2.7 * pow(nContrib, -0.466) + 0.024;
+    float zVtxSigma = 2.7 * std::pow(nContrib, -0.466) + 0.024;
     zVtxSigma += 1.0; // additional uncertainty due to imperfectections of FT0 time calibration
 
     auto itMin = mapGlobalBcVtxZ.lower_bound(minBC);
@@ -507,7 +610,7 @@ struct EventSelectionTask {
     float bestChi2 = 1e+10;
     int64_t bestGlobalBC = 0;
     for (std::map<int64_t, float>::iterator it = itMin; it != itMax; ++it) {
-      float chi2 = pow((it->second - zVtxCol) / zVtxSigma, 2) + pow(static_cast<float>(it->first - meanBC) / sigmaBC, 2.);
+      float chi2 = std::pow((it->second - zVtxCol) / zVtxSigma, 2) + std::pow(static_cast<float>(it->first - meanBC) / sigmaBC, 2.);
       if (chi2 < bestChi2) {
         bestChi2 = chi2;
         bestGlobalBC = it->first;
@@ -556,7 +659,7 @@ struct EventSelectionTask {
   {
     auto bc = col.bc_as<BCsWithBcSelsRun2>();
     EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
-    bool* applySelection = par->GetSelection(muonSelection);
+    bool* applySelection = par->getSelection(muonSelection);
     if (isMC == 1) {
       applySelection[kIsBBZAC] = 0;
       applySelection[kNoV0MOnVsOfPileup] = 0;
@@ -595,6 +698,9 @@ struct EventSelectionTask {
     selection |= (spdClusters < par->fSPDClsVsTklA + nTkl * par->fSPDClsVsTklB) ? BIT(kNoSPDClsVsTklBG) : 0;
     selection |= !(nTkl < 6 && multV0C012 > par->fV0C012vsTklA + nTkl * par->fV0C012vsTklB) ? BIT(kNoV0C012vsTklBG) : 0;
 
+    // copy rct flags from bcsel table
+    uint32_t rct = bc.rct_raw();
+
     // apply int7-like selections
     bool sel7 = 1;
     for (int i = 0; i < kNsel; i++) {
@@ -620,11 +726,11 @@ struct EventSelectionTask {
       }
     }
 
-    evsel(alias, selection, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0, 0, 0);
+    evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0, 0, 0);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
-  Partition<FullTracksIU> pvTracks = ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<FullTracksIU> pvTracks = ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
   void processRun3(aod::Collisions const& cols, FullTracksIU const&, BCsWithBcSelsRun3 const& bcs, aod::FT0s const&)
   {
     int run = bcs.iteratorAt(0).runNumber();
@@ -633,9 +739,9 @@ struct EventSelectionTask {
       lastRun = run;
       auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
       // first bc of the first orbit
-      bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
+      bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
       // duration of TF in bcs
-      nBCsPerTF = runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches;
+      nBCsPerTF = runInfo.orbitsPerTF * nBCsPerOrbit;
       // colliding bc pattern
       int64_t ts = bcs.iteratorAt(0).timestamp();
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
@@ -646,16 +752,16 @@ struct EventSelectionTask {
       rofOffset = alppar->roFrameBiasInBC;
       rofLength = alppar->roFrameLengthInBC;
       LOGP(debug, "ITS ROF Offset={} ITS ROF Length={}", rofOffset, rofLength);
-    }
+    } // if run != lastRun
 
     // create maps from globalBC to bc index for TVX-fired bcs
     // to be used for closest TVX searches
     std::map<int64_t, int32_t> mapGlobalBcWithTVX;
     std::map<int64_t, float> mapGlobalBcVtxZ;
-    for (auto& bc : bcs) {
+    for (const auto& bc : bcs) {
       int64_t globalBC = bc.globalBC();
       // skip non-colliding bcs for data and anchored runs
-      if (run >= 500000 && bcPatternB[globalBC % o2::constants::lhc::LHCMaxBunches] == 0) {
+      if (run >= 500000 && bcPatternB[globalBC % nBCsPerOrbit] == 0) {
         continue;
       }
       if (bc.selection_bit(kIsTriggerTVX)) {
@@ -667,7 +773,7 @@ struct EventSelectionTask {
     // protection against empty FT0 maps
     if (mapGlobalBcWithTVX.size() == 0) {
       LOGP(error, "FT0 table is empty or corrupted. Filling evsel table with dummy values");
-      for (auto& col : cols) {
+      for (const auto& col : cols) {
         auto bc = col.bc_as<BCsWithBcSelsRun3>();
         int32_t foundBC = bc.globalIndex();
         int32_t foundFT0 = bc.foundFT0Id();
@@ -675,7 +781,8 @@ struct EventSelectionTask {
         int32_t foundFDD = bc.foundFDDId();
         int32_t foundZDC = bc.foundZDCId();
         int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
-        evsel(bc.alias_raw(), bc.selection_raw(), kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF, -1, -1);
+        uint32_t rct = 0;
+        evsel(bc.alias_raw(), bc.selection_raw(), rct, kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF, -1, -1);
       }
       return;
     }
@@ -706,7 +813,7 @@ struct EventSelectionTask {
     std::vector<float> vTrackTimesTRDnoTOF;
 
     // first loop to match collisions to TVX, also extract other per-collision information for further use
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
       auto bc = col.bc_as<BCsWithBcSelsRun3>();
 
@@ -722,7 +829,7 @@ struct EventSelectionTask {
       int nPvTracksTPCnoTOFnoTRD = 0;
       int nPvTracksHighPtTPCnoTOFnoTRD = 0;
       float sumTime = 0, sumW = 0, sumHighPtTime = 0, sumHighPtW = 0;
-      for (auto& track : colPvTracks) {
+      for (const auto& track : colPvTracks) {
         float trackTime = track.trackTime();
         if (track.itsNCls() >= 5)
           vTracksITS567perColl[colIndex]++;
@@ -750,7 +857,7 @@ struct EventSelectionTask {
         }
       }
       vWeightedTimesTPCnoTOFnoTRD[colIndex] = sumW > 0 ? sumTime / sumW : 0;
-      vWeightedSigmaTPCnoTOFnoTRD[colIndex] = sumW > 0 ? sqrt(1. / sumW) : 0;
+      vWeightedSigmaTPCnoTOFnoTRD[colIndex] = sumW > 0 ? std::sqrt(1. / sumW) : 0;
       vNcontributors[colIndex] = colPvTracks.size();
       int nPvTracksTOF = vTrackTimesTOF.size();
       int nPvTracksTRDnoTOF = vTrackTimesTRDnoTOF.size();
@@ -803,7 +910,7 @@ struct EventSelectionTask {
     }
 
     // second loop to match remaining low-pt TPCnoTOFnoTRD collisions
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
       if (vIsVertexTPC[colIndex] > 0 && vIsVertexTOF[colIndex] == 0 && vIsVertexHighPtTPC[colIndex] == 0) {
         float weightedTime = vWeightedTimesTPCnoTOFnoTRD[colIndex];
@@ -821,36 +928,37 @@ struct EventSelectionTask {
     }
 
     // save indices of collisions for occupancy calculation (both in ROF and in time range)
-    std::vector<std::vector<int>> vCollsInTimeWin;
     std::vector<std::vector<int>> vCollsInSameITSROF;
+    std::vector<std::vector<int>> vCollsInPrevITSROF;
+    std::vector<std::vector<int>> vCollsInTimeWin;
     std::vector<std::vector<float>> vTimeDeltaForColls; // delta time wrt a given collision
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
       int64_t foundGlobalBC = vFoundGlobalBC[colIndex];
       auto bc = bcs.iteratorAt(vFoundBCindex[colIndex]);
       if (bc.has_foundFT0())
         vAmpFT0CperColl[colIndex] = bc.foundFT0().sumAmpC();
 
-      int64_t TFid = (foundGlobalBC - bcSOR) / nBCsPerTF;
-      int64_t rofId = (foundGlobalBC + 3564 - rofOffset) / rofLength;
+      int64_t tfId = (foundGlobalBC - bcSOR) / nBCsPerTF;
+      int64_t rofId = (foundGlobalBC + nBCsPerOrbit - rofOffset) / rofLength;
 
       // ### for in-ROF occupancy
-      std::vector<int> vAssocToSameROF;
+      std::vector<int> vAssocCollInSameROF;
       // find all collisions in the same ROF before a given collision
       int32_t minColIndex = colIndex - 1;
       while (minColIndex >= 0) {
         int64_t thisBC = vFoundGlobalBC[minColIndex];
         // check if this is still the same TF
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        if (thisTFid != tfId)
           break;
         // int thisRofIdInTF = (thisBC - rofOffset) / rofLength;
-        int64_t thisRofId = (thisBC + 3564 - rofOffset) / rofLength;
+        int64_t thisRofId = (thisBC + nBCsPerOrbit - rofOffset) / rofLength;
 
         // check if we are within the same ROF
         if (thisRofId != rofId)
           break;
-        vAssocToSameROF.push_back(minColIndex);
+        vAssocCollInSameROF.push_back(minColIndex);
         minColIndex--;
       }
       // find all collisions in the same ROF after the current one
@@ -858,16 +966,33 @@ struct EventSelectionTask {
       while (maxColIndex < cols.size()) {
         int64_t thisBC = vFoundGlobalBC[maxColIndex];
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        if (thisTFid != tfId)
           break;
-        // int thisRofIdInTF = (thisBC - rofOffset) / rofLength;
-        int64_t thisRofId = (thisBC + 3564 - rofOffset) / rofLength;
+        int64_t thisRofId = (thisBC + nBCsPerOrbit - rofOffset) / rofLength;
         if (thisRofId != rofId)
           break;
-        vAssocToSameROF.push_back(maxColIndex);
+        vAssocCollInSameROF.push_back(maxColIndex);
         maxColIndex++;
       }
-      vCollsInSameITSROF.push_back(vAssocToSameROF);
+      vCollsInSameITSROF.push_back(vAssocCollInSameROF);
+
+      // ### bookkeep collisions in previous ROF
+      std::vector<int> vAssocCollInPrevROF;
+      minColIndex = colIndex - 1;
+      while (minColIndex >= 0) {
+        int64_t thisBC = vFoundGlobalBC[minColIndex];
+        // check if this is still the same TF
+        int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
+        if (thisTFid != tfId)
+          break;
+        int64_t thisRofId = (thisBC + nBCsPerOrbit - rofOffset) / rofLength;
+        if (thisRofId == rofId - 1)
+          vAssocCollInPrevROF.push_back(minColIndex);
+        else if (thisRofId < rofId - 1)
+          break;
+        minColIndex--;
+      }
+      vCollsInPrevITSROF.push_back(vAssocCollInPrevROF);
 
       // ### for occupancy in time windows
       std::vector<int> vAssocToThisCol;
@@ -884,7 +1009,7 @@ struct EventSelectionTask {
         int64_t thisBC = vFoundGlobalBC[minColIndex];
         // check if this is still the same TF
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        if (thisTFid != tfId)
           break;
         float dt = (thisBC - foundGlobalBC) * bcNS; // ns
         // check if we are within the chosen time range
@@ -899,7 +1024,7 @@ struct EventSelectionTask {
       while (maxColIndex < cols.size()) {
         int64_t thisBC = vFoundGlobalBC[maxColIndex];
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        if (thisTFid != tfId)
           break;
         float dt = (thisBC - foundGlobalBC) * bcNS; // ns
         if (dt > timeWinOccupancyCalcMaxNS)
@@ -924,28 +1049,39 @@ struct EventSelectionTask {
     std::vector<bool> vNoCollInSameRofStrict(cols.size(), 0);      // to veto events with other collisions in the same ITS ROF
     std::vector<bool> vNoCollInSameRofStandard(cols.size(), 0);    // to veto events with other collisions in the same ITS ROF, with per-collision multiplicity above threshold
     std::vector<bool> vNoCollInSameRofWithCloseVz(cols.size(), 0); // to veto events with nearby collisions with close vZ
+    std::vector<bool> vNoHighMultCollInPrevRof(cols.size(), 0);    // veto events if FT0C amplitude in previous ITS ROF is above threshold
 
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
       float vZ = col.posZ();
 
       // ### in-ROF occupancy
-      std::vector<int> vAssocToSameROF = vCollsInSameITSROF[colIndex];
-      int nITS567tracksForRofVetoStrict = 0;        // to veto events with other collisions in the same ITS ROF
+      std::vector<int> vAssocCollInSameROF = vCollsInSameITSROF[colIndex];
+      int nITS567tracksForSameRofVetoStrict = 0;    // to veto events with other collisions in the same ITS ROF
       int nCollsInRofWithFT0CAboveVetoStandard = 0; // to veto events with other collisions in the same ITS ROF, with per-collision multiplicity above threshold
       int nITS567tracksForRofVetoOnCloseVz = 0;     // to veto events with nearby collisions with close vZ
-      for (uint32_t iCol = 0; iCol < vAssocToSameROF.size(); iCol++) {
-        int thisColIndex = vAssocToSameROF[iCol];
-        nITS567tracksForRofVetoStrict += vTracksITS567perColl[thisColIndex];
+      for (uint32_t iCol = 0; iCol < vAssocCollInSameROF.size(); iCol++) {
+        int thisColIndex = vAssocCollInSameROF[iCol];
+        nITS567tracksForSameRofVetoStrict += vTracksITS567perColl[thisColIndex];
         if (vAmpFT0CperColl[thisColIndex] > confFT0CamplCutVetoOnCollInROF)
           nCollsInRofWithFT0CAboveVetoStandard++;
-        if (fabs(vCollVz[thisColIndex] - vZ) < confEpsilonVzDiffVetoInROF)
+        if (std::fabs(vCollVz[thisColIndex] - vZ) < confEpsilonVzDiffVetoInROF)
           nITS567tracksForRofVetoOnCloseVz += vTracksITS567perColl[thisColIndex];
       }
       // in-ROF occupancy flags
-      vNoCollInSameRofStrict[colIndex] = (nITS567tracksForRofVetoStrict == 0);
+      vNoCollInSameRofStrict[colIndex] = (nITS567tracksForSameRofVetoStrict == 0);
       vNoCollInSameRofStandard[colIndex] = (nCollsInRofWithFT0CAboveVetoStandard == 0);
       vNoCollInSameRofWithCloseVz[colIndex] = (nITS567tracksForRofVetoOnCloseVz == 0);
+
+      // ### occupancy in previous ROF
+      std::vector<int> vAssocCollInPrevROF = vCollsInPrevITSROF[colIndex];
+      float totalFT0amplInPrevROF = 0;
+      for (uint32_t iCol = 0; iCol < vAssocCollInPrevROF.size(); iCol++) {
+        int thisColIndex = vAssocCollInPrevROF[iCol];
+        totalFT0amplInPrevROF += vAmpFT0CperColl[thisColIndex];
+      }
+      // veto events if FT0C amplitude in previous ITS ROF is above threshold
+      vNoHighMultCollInPrevRof[colIndex] = (totalFT0amplInPrevROF < confFT0CamplCutVetoOnCollInROF);
 
       // ### occupancy in time windows
       // protection against TF borders
@@ -984,35 +1120,35 @@ struct EventSelectionTask {
         sumAmpFT0CInFullTimeWindow += wOccup * vAmpFT0CperColl[thisColIndex];
 
         // counting tracks from other collisions in fixed time windows
-        if (fabs(dt) < confTimeRangeVetoOnCollNarrow)
+        if (std::fabs(dt) < confTimeRangeVetoOnCollNarrow)
           nITS567tracksForVetoNarrow += vTracksITS567perColl[thisColIndex];
-        if (fabs(dt) < confTimeRangeVetoOnCollStandard)
+        if (std::fabs(dt) < confTimeRangeVetoOnCollStandard)
           nITS567tracksForVetoStrict += vTracksITS567perColl[thisColIndex];
 
         // standard cut on other collisions vs delta-times
-        const float driftV = 2.5; // drift velocity in cm/us, TPC drift_length / drift_time = 250 cm / 100 us
-        if (fabs(dt) < 2.0) {     // us, complete veto on other collisions
+        const float driftV = 2.5;  // drift velocity in cm/us, TPC drift_length / drift_time = 250 cm / 100 us
+        if (std::fabs(dt) < 2.0) { // us, complete veto on other collisions
           nCollsWithFT0CAboveVetoStandard++;
         } else if (dt > -4.0 && dt <= -2.0) { // us, strict veto to suppress fake ITS-TPC matches more
           if (vAmpFT0CperColl[thisColIndex] > confFT0CamplCutVetoOnCollInTimeRange / 5)
             nCollsWithFT0CAboveVetoStandard++;
-        } else if (fabs(dt) < 8 + fabs(vZ) / driftV) { // loose veto, 8 us corresponds to maximum possible |vZ|, which is ~20 cm
+        } else if (std::fabs(dt) < 8 + std::fabs(vZ) / driftV) { // loose veto, 8 us corresponds to maximum possible |vZ|, which is ~20 cm
           // counting number of other collisions with multiplicity above threshold
           if (vAmpFT0CperColl[thisColIndex] > confFT0CamplCutVetoOnCollInTimeRange)
             nCollsWithFT0CAboveVetoStandard++;
         }
 
         // vZ-dependent time cut to avoid collinear tracks from other collisions (experimental)
-        if (fabs(dt) < 8 + fabs(vZ) / driftV) {
+        if (std::fabs(dt) < 8 + std::fabs(vZ) / driftV) {
           if (dt < 0) {
             // check distance between given vZ and (moving in two directions) vZ of drifting tracks from past collisions
-            if ((fabs(vCollVz[thisColIndex] - fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC) ||
-                (fabs(vCollVz[thisColIndex] + fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC))
+            if ((std::fabs(vCollVz[thisColIndex] - std::fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC) ||
+                (std::fabs(vCollVz[thisColIndex] + std::fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC))
               nITS567tracksForVetoVzDependent += vTracksITS567perColl[thisColIndex];
           } else { // dt>0
             // check distance between drifted vZ of given collision (in two directions) and vZ of future collisions
-            if ((fabs(vZ - dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC) ||
-                (fabs(vZ + dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC))
+            if ((std::fabs(vZ - dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC) ||
+                (std::fabs(vZ + dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC))
               nITS567tracksForVetoVzDependent += vTracksITS567perColl[thisColIndex];
           }
         }
@@ -1026,7 +1162,7 @@ struct EventSelectionTask {
       vNoCollInVzDependentTimeRange[colIndex] = (nITS567tracksForVetoVzDependent == 0); // experimental
     }
 
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
       int32_t foundBC = vFoundBCindex[colIndex];
       auto bc = bcs.iteratorAt(foundBC);
@@ -1036,7 +1172,7 @@ struct EventSelectionTask {
       int32_t foundZDC = bc.foundZDCId();
 
       // compare zVtx from FT0 and from PV
-      bool isGoodZvtxFT0vsPV = bc.has_foundFT0() ? fabs(bc.foundFT0().posZ() - col.posZ()) < maxDiffZvtxFT0vsPV : 0;
+      bool isGoodZvtxFT0vsPV = bc.has_foundFT0() ? std::fabs(bc.foundFT0().posZ() - col.posZ()) < maxDiffZvtxFT0vsPV : 0;
 
       // copy alias decisions from bcsel table
       uint32_t alias = bc.alias_raw();
@@ -1058,6 +1194,10 @@ struct EventSelectionTask {
       // selection bits based on ITS in-ROF occupancy
       selection |= vNoCollInSameRofStrict[colIndex] ? BIT(kNoCollInRofStrict) : 0;
       selection |= (vNoCollInSameRofStandard[colIndex] && vNoCollInSameRofWithCloseVz[colIndex]) ? BIT(kNoCollInRofStandard) : 0;
+      selection |= vNoHighMultCollInPrevRof[colIndex] ? BIT(kNoHighMultCollInPrevRof) : 0;
+
+      // copy rct flags from bcsel table
+      uint32_t rct = bc.rct_raw();
 
       // apply int7-like selections
       bool sel7 = 0;
@@ -1078,7 +1218,7 @@ struct EventSelectionTask {
 
       int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
 
-      evsel(alias, selection, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF,
+      evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF,
             vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
     }
   }

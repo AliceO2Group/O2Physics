@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <vector>
+#include <algorithm>
+#include <map>
+#include <string>
+
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -23,6 +28,7 @@
 #include "TableHelper.h"
 #include "MetadataHelper.h"
 #include "TList.h"
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -73,6 +79,7 @@ static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1},
 struct MultiplicityTable {
   SliceCache cache;
   Produces<aod::FV0Mults> tableFV0;             // 0
+  Produces<aod::FV0AOuterMults> tableFV0AOuter; // 0-bis (produced with FV0)
   Produces<aod::FT0Mults> tableFT0;             // 1
   Produces<aod::FDDMults> tableFDD;             // 2
   Produces<aod::ZDCMults> tableZDC;             // 3
@@ -87,6 +94,7 @@ struct MultiplicityTable {
   Produces<aod::PVMultZeqs> tablePVZeqs;        // 12
   Produces<aod::MultMCExtras> tableExtraMc;     // 13
   Produces<aod::Mult2MCExtras> tableExtraMult2MCExtras;
+  Produces<aod::MFTMults> mftMults;             // Not accounted for, produced using custom process function to avoid dependencies
   Produces<aod::MultsGlobal> multsGlobal;       // Not accounted for, produced based on process function processGlobalTrackingCounters
 
   // For vertex-Z corrections in calibration
@@ -100,6 +108,7 @@ struct MultiplicityTable {
   Partition<Run2Tracks> pvContribTracksEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Preslice<aod::TracksIU> perColIU = aod::track::collisionId;
+  Preslice<aod::MFTTracks> perCollisionMFT = o2::aod::fwdtrack::collisionId;
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
@@ -125,6 +134,7 @@ struct MultiplicityTable {
   TProfile* hVtxZFT0A;
   TProfile* hVtxZFT0C;
   TProfile* hVtxZFDDA;
+
   TProfile* hVtxZFDDC;
   TProfile* hVtxZNTracks;
   std::vector<int> mEnabledTables; // Vector of enabled tables
@@ -151,6 +161,7 @@ struct MultiplicityTable {
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
+
     bool tEnabled[nTables] = {false};
     for (int i = 0; i < nTables; i++) {
       int f = enabledTables->get(tableNames[i].c_str(), "Enable");
@@ -299,6 +310,7 @@ struct MultiplicityTable {
       switch (i) {
         case kFV0Mults: // FV0
           tableFV0.reserve(collisions.size());
+          tableFV0AOuter.reserve(collisions.size());
           break;
         case kFT0Mults: // FT0
           tableFT0.reserve(collisions.size());
@@ -346,6 +358,7 @@ struct MultiplicityTable {
 
     // Initializing multiplicity values
     float multFV0A = 0.f;
+    float multFV0AOuter = 0.f;
     float multFV0C = 0.f;
     float multFT0A = 0.f;
     float multFT0C = 0.f;
@@ -421,18 +434,25 @@ struct MultiplicityTable {
           case kFV0Mults: // FV0
           {
             multFV0A = 0.f;
+            multFV0AOuter = 0.f;
             multFV0C = 0.f;
             // using FV0 row index from event selection task
             if (collision.has_foundFV0()) {
               const auto& fv0 = collision.foundFV0();
-              for (auto amplitude : fv0.amplitude()) {
+              for (size_t ii = 0; ii < fv0.amplitude().size(); ii++) {
+                auto amplitude = fv0.amplitude()[ii];
+                auto channel = fv0.channel()[ii];
                 multFV0A += amplitude;
+                if (channel > 7) {
+                  multFV0AOuter += amplitude;
+                }
               }
             } else {
               multFV0A = -999.f;
               multFV0C = -999.f;
             }
             tableFV0(multFV0A, multFV0C);
+            tableFV0AOuter(multFV0AOuter);
             LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f", multFV0A, multFV0C);
           } break;
           case kFT0Mults: // FT0
@@ -628,13 +648,16 @@ struct MultiplicityTable {
   // one loop better than multiple sliceby calls
   // FIT FT0C: -3.3 < η < -2.1
   // FOT FT0A:  3.5 < η <  4.9
-  Filter mcParticleFilter = (aod::mcparticle::eta < 4.9f) && (aod::mcparticle::eta > -3.3f);
+  Filter mcParticleFilter = (aod::mcparticle::eta < 7.0f) && (aod::mcparticle::eta > -7.0f);
   using mcParticlesFiltered = soa::Filtered<aod::McParticles>;
 
   void processMC(aod::McCollision const& mcCollision, mcParticlesFiltered const& mcParticles)
   {
     int multFT0A = 0;
+    int multFV0A = 0;
     int multFT0C = 0;
+    int multFDDA = 0;
+    int multFDDC = 0;
     int multBarrelEta05 = 0;
     int multBarrelEta08 = 0;
     int multBarrelEta10 = 0;
@@ -665,8 +688,14 @@ struct MultiplicityTable {
         multFT0C++;
       if (3.5 < mcPart.eta() && mcPart.eta() < 4.9)
         multFT0A++;
+      if (2.2 < mcPart.eta() && mcPart.eta() < 5.0)
+        multFV0A++;
+      if (-6.9 < mcPart.eta() && mcPart.eta() < -4.9)
+        multFDDC++;
+      if (4.7 < mcPart.eta() && mcPart.eta() < 6.3)
+        multFDDA++;
     }
-    tableExtraMc(multFT0A, multFT0C, multBarrelEta05, multBarrelEta08, multBarrelEta10, mcCollision.posZ());
+    tableExtraMc(multFT0A, multFT0C, multFV0A, multFDDA, multFDDC, multBarrelEta05, multBarrelEta08, multBarrelEta10, mcCollision.posZ());
   }
 
   void processMC2Mults(soa::Join<aod::McCollisionLabels, aod::Collisions>::iterator const& collision)
@@ -719,12 +748,44 @@ struct MultiplicityTable {
     multsGlobal(nGlobalTracks, multNContribsEta08_kGlobalTrackWoDCA, multNContribsEta10_kGlobalTrackWoDCA, multNContribsEta05_kGlobalTrackWoDCA);
   }
 
+  void processRun3MFT(soa::Join<aod::Collisions, aod::EvSels>::iterator const&,
+                      o2::aod::MFTTracks const& mftTracks,
+                      soa::SmallGroups<aod::BestCollisionsFwd> const& retracks)
+  {
+    int nAllTracks = 0;
+    int nTracks = 0;
+
+    for (auto& track : mftTracks) {
+      if (track.nClusters() >= 5) { // hardcoded for now
+        nAllTracks++;
+      }
+    }
+
+    if (retracks.size() > 0) {
+      for (auto& retrack : retracks) {
+        auto track = retrack.mfttrack();
+        if (track.nClusters() < 5) {
+          continue; // min cluster requirement
+        }
+        if ((track.eta() > -2.0f) && (track.eta() < -3.9f)) {
+          continue; // too far to be of true interest
+        }
+        if (std::abs(retrack.bestDCAXY()) > 2.0f) {
+          continue; // does not point to PV properly
+        }
+        nTracks++;
+      }
+    }
+    mftMults(nAllTracks, nTracks);
+  }
+
   // Process switches
   PROCESS_SWITCH(MultiplicityTable, processRun2, "Produce Run 2 multiplicity tables", false);
   PROCESS_SWITCH(MultiplicityTable, processRun3, "Produce Run 3 multiplicity tables", true);
   PROCESS_SWITCH(MultiplicityTable, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
   PROCESS_SWITCH(MultiplicityTable, processMC, "Produce MC multiplicity tables", false);
   PROCESS_SWITCH(MultiplicityTable, processMC2Mults, "Produce MC -> Mult map", false);
+  PROCESS_SWITCH(MultiplicityTable, processRun3MFT, "Produce MFT mult tables", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

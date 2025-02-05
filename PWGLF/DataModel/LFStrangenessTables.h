@@ -22,6 +22,7 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/DataModel/SPCalibrationTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 namespace o2::aod
@@ -62,9 +63,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNC, energyCommonZNC, //! get the total s
 // if required (for 2pc, etc)
 DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! basic collision properties: position
                   o2::soa::Index<>, collision::PosX, collision::PosY, collision::PosZ);
-DECLARE_SOA_TABLE(StraCents, "AOD", "STRACENTS", //! centrality percentiles
+DECLARE_SOA_TABLE(StraCents_000, "AOD", "STRACENTS", //! centrality percentiles
                   cent::CentFT0M, cent::CentFT0A,
                   cent::CentFT0C, cent::CentFV0A);
+DECLARE_SOA_TABLE_VERSIONED(StraCents_001, "AOD", "STRACENTS", 1, //! centrality percentiles
+                            cent::CentFT0M, cent::CentFT0A,
+                            cent::CentFT0C, cent::CentFV0A,
+                            cent::CentFT0CVariant1, cent::CentMFT,
+                            cent::CentNGlobal);
 // !!! DEPRECATED TABLE: StraRawCents_000 !!! All info in StraEvSels_001, in order to group all event characteristics in a unique table. Please use StraEvSels_001
 DECLARE_SOA_TABLE(StraRawCents_000, "AOD", "STRARAWCENTS", //! debug information
                   mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultNTracksPVeta1);
@@ -128,15 +134,6 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_001, "AOD", "STRAEVSELS", 1,         //! 
                             udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
                             udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
                             udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
-
-                            // Dynamic columns for manipulating information
-                            // stracollision::TotalFV0AmplitudeA<mult::MultFV0A>,
-                            // stracollision::TotalFT0AmplitudeA<mult::MultFT0A>,
-                            // stracollision::TotalFT0AmplitudeC<mult::MultFT0C>,
-                            // stracollision::TotalFDDAmplitudeA<mult::MultFDDA>,
-                            // stracollision::TotalFDDAmplitudeC<mult::MultFDDC>,
-                            // stracollision::EnergyCommonZNA<mult::MultZNA>,
-                            // stracollision::EnergyCommonZNC<mult::MultZNC>,
                             stracollision::IsUPC<udcollision::GapSide>);
 
 DECLARE_SOA_TABLE_VERSIONED(StraEvSels_002, "AOD", "STRAEVSELS", 2,         //! debug information
@@ -160,17 +157,7 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_002, "AOD", "STRAEVSELS", 2,         //! 
                             udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
                             udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
                             udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
-
-                            collision::Flags, // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
-
-                            // Dynamic columns for manipulating information
-                            // stracollision::TotalFV0AmplitudeA<mult::MultFV0A>,
-                            // stracollision::TotalFT0AmplitudeA<mult::MultFT0A>,
-                            // stracollision::TotalFT0AmplitudeC<mult::MultFT0C>,
-                            // stracollision::TotalFDDAmplitudeA<mult::MultFDDA>,
-                            // stracollision::TotalFDDAmplitudeC<mult::MultFDDC>,
-                            // stracollision::EnergyCommonZNA<mult::MultZNA>,
-                            // stracollision::EnergyCommonZNC<mult::MultZNC>,
+                            collision::Flags,                // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
                             stracollision::IsUPC<udcollision::GapSide>);
 
 DECLARE_SOA_TABLE_VERSIONED(StraEvSels_003, "AOD", "STRAEVSELS", 3,         //! debug information
@@ -195,8 +182,34 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_003, "AOD", "STRAEVSELS", 3,         //! 
                             udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
                             udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
                             udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
+                            collision::Flags,                // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
+                            stracollision::IsUPC<udcollision::GapSide>);
+
+DECLARE_SOA_TABLE_VERSIONED(StraEvSels_004, "AOD", "STRAEVSELS", 4,         //! debug information
+                            evsel::Sel8, evsel::Selection,                  //! event selection: sel8
+                            mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+                            mult::MultFDDA, mult::MultFDDC,
+                            mult::MultNTracksPVeta1,                      // track multiplicities with eta cut for INEL>0
+                            mult::MultPVTotalContributors,                // number of PV contribs total
+                            mult::MultNTracksGlobal,                      // global track multiplicities
+                            mult::MultNTracksITSTPC,                      // track multiplicities, PV contribs, no eta cut
+                            mult::MultAllTracksTPCOnly,                   // TPConly track multiplicities, all, no eta cut
+                            mult::MultAllTracksITSTPC,                    // ITSTPC track multiplicities, all, no eta cut
+                            mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
+                            mult::MultZEM2, mult::MultZPA, mult::MultZPC,
+                            evsel::NumTracksInTimeRange,     // add occupancy in specified time interval by a number of tracks from nearby collisions
+                            evsel::SumAmpFT0CInTimeRange,    // add occupancy in specified time interval by a sum of FT0C amplitudes from nearby collisions
+                            udcollision::GapSide,            // UPC info: 0 for side A, 1 for side C, 2 for both sides, 3 neither A or C, 4 not enough or too many pv contributors
+                            udcollision::TotalFT0AmplitudeA, // UPC info: re-assigned FT0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFT0AmplitudeC, // UPC info: re-assigned FT0-C amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFV0AmplitudeA, // UPC info: re-assigned FV0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeA, // UPC info: re-assigned FDD-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
 
                             collision::Flags, // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
+                            evsel::Alias,     // trigger aliases (e.g. kTVXinTRD for v2)
 
                             // Dynamic columns for manipulating information
                             // stracollision::TotalFV0AmplitudeA<mult::MultFV0A>,
@@ -221,29 +234,51 @@ DECLARE_SOA_TABLE(StraTPCQVs, "AOD", "STRATPCQVS", //! tpc Qvec
                   qvec::QvecBPosRe, qvec::QvecBPosIm, epcalibrationtable::QTPCR);
 DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to compute t0c Qvec
                   epcalibrationtable::TriggerEventEP);
-DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
+DECLARE_SOA_TABLE(StraZDCSP, "AOD", "STRAZDCSP", //! ZDC SP information
+                  spcalibrationtable::TriggerEventSP,
+                  spcalibrationtable::PsiZDCA, spcalibrationtable::PsiZDCC);
+DECLARE_SOA_TABLE(StraStamps_000, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
                   bc::RunNumber, timestamp::Timestamp);
+DECLARE_SOA_TABLE_VERSIONED(StraStamps_001, "AOD", "STRASTAMPS", 1, //! information for ID-ing mag field if needed
+                            bc::RunNumber, timestamp::Timestamp, bc::GlobalBC);
 
 using StraRawCents = StraRawCents_004;
-using StraEvSels = StraEvSels_003;
+using StraCents = StraCents_001;
+using StraEvSels = StraEvSels_004;
+using StraStamps = StraStamps_001;
 using StraCollision = StraCollisions::iterator;
-using StraCent = StraCents::iterator;
+using StraCent = StraCents_001::iterator;
+
+namespace stramccollision
+{
+DECLARE_SOA_COLUMN(TotalMultMCParticles, totalMultMCParticles, int); //! total number of MC particles in a generated collision
+} // namespace stramccollision
 
 //______________________________________________________
 // for correlating information with MC
 // also allows for collision association cross-checks
-DECLARE_SOA_TABLE(StraMCCollisions, "AOD", "STRAMCCOLLISION", //! MC collision properties
+DECLARE_SOA_TABLE(StraMCCollisions_000, "AOD", "STRAMCCOLLISION", //! MC collision properties
                   o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
                   mccollision::ImpactParameter);
-DECLARE_SOA_TABLE(StraMCCollMults, "AOD", "STRAMCCOLLMULTS", //! MC collision multiplicities
-                  mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<2>);
-
+DECLARE_SOA_TABLE_VERSIONED(StraMCCollisions_001, "AOD", "STRAMCCOLLISION", 1, //! debug information
+                            o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
+                            mccollision::ImpactParameter, mccollision::EventPlaneAngle);
+using StraMCCollisions = StraMCCollisions_001;
 using StraMCCollision = StraMCCollisions::iterator;
+
+DECLARE_SOA_TABLE(StraMCCollMults_000, "AOD", "STRAMCCOLLMULTS", //! MC collision multiplicities
+                  mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<2>);
+DECLARE_SOA_TABLE_VERSIONED(StraMCCollMults_001, "AOD", "STRAMCCOLLMULTS", 1, //! MC collision multiplicities
+                            mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, stramccollision::TotalMultMCParticles);
+
+using StraMCCollMults = StraMCCollMults_001;
 
 namespace dautrack
 {
 //______________________________________________________
 // Daughter track declarations for derived data analysis
+// These definitions are for the first version of the table
+// The latest version will inherit most properties from TracksExtra
 DECLARE_SOA_COLUMN(ITSChi2PerNcl, itsChi2PerNcl, float);        //! ITS chi2 per N cluster
 DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);          //! detector map for reference (see DetectorMapEnum)
 DECLARE_SOA_COLUMN(ITSClusterSizes, itsClusterSizes, uint32_t); //! ITS cluster sizes per layer
@@ -288,6 +323,18 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasITSTracker, hasITSTracker, //! Flag to check if tr
                            [](uint8_t detectorMap, float itsChi2PerNcl) -> bool { return (detectorMap & o2::aod::track::ITS) ? (itsChi2PerNcl > -1e-3f) : false; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasITSAfterburner, hasITSAfterburner, //! Flag to check if track is from ITS AB
                            [](uint8_t detectorMap, float itsChi2PerNcl) -> bool { return (detectorMap & o2::aod::track::ITS) ? (itsChi2PerNcl < -1e-3f) : false; });
+
+// sub-namespace for compatibility purposes
+namespace compatibility
+{                                                    // adds dynamics that ensure full backwards compatibility with previous getters
+DECLARE_SOA_DYNAMIC_COLUMN(TPCClusters, tpcClusters, //! number of TPC clusters
+                           [](uint8_t tpcNClsFindable, int8_t tpcNClsFindableMinusFound) -> int16_t { return (int16_t)tpcNClsFindable - tpcNClsFindableMinusFound; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRows, tpcCrossedRows, //! Number of crossed TPC Rows
+                           [](uint8_t tpcNClsFindable, int8_t TPCNClsFindableMinusCrossedRows) -> int16_t { return (int16_t)tpcNClsFindable - TPCNClsFindableMinusCrossedRows; });
+DECLARE_SOA_DYNAMIC_COLUMN(ITSChi2PerNcl, itsChi2PerNcl, //! simple equivalent return
+                           [](float itsChi2NCl) -> float { return (float)itsChi2NCl; });
+} // namespace compatibility
+
 } // namespace dautrack
 
 DECLARE_SOA_TABLE(DauTrackExtras_000, "AOD", "DAUTRACKEXTRA", //! detector properties of decay daughters
@@ -319,10 +366,42 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_001, "AOD", "DAUTRACKEXTRA", 1, //! d
                             dautrack::HasITSTracker<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>,
                             dautrack::HasITSAfterburner<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>);
 
+DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_002, "AOD", "DAUTRACKEXTRA", 2, //! detector properties of decay daughters
+                            track::ITSChi2NCl,
+                            dautrack::DetectorMap, // here we don´t save everything so we simplify this
+                            track::ITSClusterSizes,
+                            track::TPCNClsFindable,
+                            track::TPCNClsFindableMinusFound,
+                            track::TPCNClsFindableMinusCrossedRows,
+
+                            // Dynamics for ITS matching TracksExtra
+                            track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                            track::v001::ITSClsSizeInLayer<track::ITSClusterSizes>,
+                            track::v001::ITSClusterMap<track::ITSClusterSizes>,
+                            track::v001::ITSNCls<track::ITSClusterSizes>,
+                            track::v001::IsITSAfterburner<track::v001::DetectorMap, track::ITSChi2NCl>,
+                            /*compatibility*/ dautrack::HasITSTracker<dautrack::DetectorMap, track::ITSChi2NCl>,
+                            /*compatibility*/ dautrack::HasITSAfterburner<dautrack::DetectorMap, track::ITSChi2NCl>,
+
+                            // dynamics for TPC tracking properties matching main data model
+                            track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            /*compatibility*/ dautrack::compatibility::TPCClusters<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            /*compatibility*/ dautrack::compatibility::TPCCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            /*compatibility*/ dautrack::compatibility::ITSChi2PerNcl<track::ITSChi2NCl>,
+
+                            // dynamics to identify detectors
+                            dautrack::HasITS<dautrack::DetectorMap>,
+                            dautrack::HasTPC<dautrack::DetectorMap>,
+                            dautrack::HasTRD<dautrack::DetectorMap>,
+                            dautrack::HasTOF<dautrack::DetectorMap>);
+
 DECLARE_SOA_TABLE(DauTrackMCIds, "AOD", "DAUTRACKMCID", // index table when using AO2Ds
                   dautrack::ParticleMCId);
 
-using DauTrackExtras = DauTrackExtras_001;
+using DauTrackExtras = DauTrackExtras_002;
 using DauTrackExtra = DauTrackExtras::iterator;
 
 namespace motherParticle

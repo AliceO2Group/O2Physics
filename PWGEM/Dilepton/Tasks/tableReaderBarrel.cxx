@@ -862,7 +862,7 @@ struct AnalysisEventMixing {
         if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
           continue;
         }
-        VarManager::FillPairME<TPairType>(track1, track2);
+        VarManager::FillPairME<TEventFillMap, TPairType>(track1, track2);
 
         constexpr bool eventHasQvector = (VarManager::ObjTypes::ReducedEventQvector > 0);
         if constexpr (eventHasQvector) {

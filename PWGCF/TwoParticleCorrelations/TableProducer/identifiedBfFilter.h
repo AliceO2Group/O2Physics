@@ -26,6 +26,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "MathUtils/Utils.h"
 #include <TDatabasePDG.h>
 
 namespace o2
@@ -34,8 +35,8 @@ namespace aod
 {
 using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>;
 using CollisionEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>::iterator;
-using CollisionsEvSelRun2Cent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>;
-using CollisionEvSelRun2Cent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator;
+using CollisionsEvSelRun2Cent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>;
+using CollisionEvSelRun2Cent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>::iterator;
 using CollisionsEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
 using CollisionEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>::iterator;
 using TrackData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>::iterator;
@@ -59,6 +60,11 @@ enum MatchRecoGenSpecies {
   kWrongSpecies = -1
 };
 
+constexpr int pdgcodeEl = 11;
+constexpr int pdgcodePi = 211;
+constexpr int pdgcodeKa = 321;
+constexpr int pdgcodePr = 2212;
+
 /// \enum SpeciesPairMatch
 /// \brief The species pair considered by the matching test
 enum SpeciesPairMatch {
@@ -79,9 +85,9 @@ enum SpeciesPairMatch {
   kIdBfProtonProton      ///< Proton-Proton
 };
 
-const char* speciesName[kIdBfNoOfSpecies] = {"e", "pi", "ka", "p"};
+const char* speciesName[kIdBfNoOfSpecies + 1] = {"e", "pi", "ka", "p", "ha"};
 
-const char* speciesTitle[kIdBfNoOfSpecies] = {"e", "#pi", "K", "p"};
+const char* speciesTitle[kIdBfNoOfSpecies + 1] = {"e", "#pi", "K", "p", "ha"};
 
 const int speciesChargeValue1[kIdBfNoOfSpecies] = {
   0, //< electron
@@ -523,38 +529,60 @@ inline float extractMultiplicity(CollisionObject const& collision, CentMultEstim
 //////////////////////////////////////////////////////////////////////////////////
 /// \brief Centrality/multiplicity percentile
 template <typename CollisionObject>
-  requires(o2::aod::HasRun2Centrality<CollisionObject>)
 float getCentMultPercentile(CollisionObject collision)
 {
-  switch (fCentMultEstimator) {
-    case kV0M:
-      return collision.centRun2V0M();
-    case kCL0:
-      return collision.centRun2CL0();
-    case kCL1:
-      return collision.centRun2CL1();
-    default:
-      return 105.0;
-  }
-}
+  if constexpr (framework::has_type_v<aod::cent::CentRun2V0M, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentRun2CL0, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentRun2CL1, typename CollisionObject::all_columns>) {
+    switch (fCentMultEstimator) {
+      case kV0M:
+        return collision.centRun2V0M();
+        break;
+      case kCL0:
+        if constexpr (framework::has_type_v<aod::cent::CentRun2CL0, typename CollisionObject::all_columns>) {
+          return collision.centRun2CL0();
+        } else {
+          return 105.0;
+        }
+        break;
 
-template <typename CollisionObject>
-  requires(o2::aod::HasCentrality<CollisionObject>)
-float getCentMultPercentile(CollisionObject collision)
-{
-  switch (fCentMultEstimator) {
-    case kFV0A:
-      return collision.centFV0A();
-    case kFT0M:
-      return collision.centFT0M();
-    case kFT0A:
-      return collision.centFT0A();
-    case kFT0C:
-      return collision.centFT0C();
-    case kNTPV:
-      return collision.centNTPV();
-    default:
-      return 105.0;
+      case kCL1:
+        if constexpr (framework::has_type_v<aod::cent::CentRun2CL1, typename CollisionObject::all_columns>) {
+          return collision.centRun2CL1();
+        } else {
+          return 105.0;
+        }
+        break;
+      default:
+        return 105.0;
+        break;
+    }
+  }
+  if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentFT0M, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentFT0A, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentNTPV, typename CollisionObject::all_columns>) {
+    switch (fCentMultEstimator) {
+      case kFV0A:
+        return collision.centFV0A();
+        break;
+      case kFT0M:
+        return collision.centFT0M();
+        break;
+      case kFT0A:
+        return collision.centFT0A();
+        break;
+      case kFT0C:
+        return collision.centFT0C();
+        break;
+      case kNTPV:
+        return collision.centNTPV();
+        break;
+      default:
+        return 105.0;
+        break;
+    }
   }
 }
 
@@ -668,6 +696,7 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
   }
 
   bool centmultsel = centralitySelection(collision, centormult);
+
   return trigsel && zvtxsel && centmultsel;
 }
 
@@ -720,14 +749,9 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
   }
 }
 
-template <typename ParticleObject>
-inline float getCharge(ParticleObject& particle)
+inline float getCharge(float pdgCharge)
 {
-  float charge = 0.0;
-  TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
-  if (pdgparticle != nullptr) {
-    charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0);
-  }
+  float charge = (pdgCharge / 3 >= 1) ? 1.0 : ((pdgCharge / 3 <= -1) ? -1.0 : 0);
   return charge;
 }
 

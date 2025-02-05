@@ -79,6 +79,8 @@ struct f0980pbpbanalysis {
   Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", -100, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<bool> cfgNCollinTR{"cfgNCollinTR", false, "Additional selection for the number of coll in time range"};
+  Configurable<bool> cfgPVSel{"cfgPVSel", false, "Additional PV selection flag for syst"};
+  Configurable<float> cfgPV{"cfgPV", 8.0, "Additional PV selection range for syst"};
 
   Configurable<float> cfgCentSel{"cfgCentSel", 80., "Centrality selection"};
   Configurable<int> cfgCentEst{"cfgCentEst", 1, "Centrality estimator, 1: FT0C, 2: FT0M"};
@@ -192,6 +194,9 @@ struct f0980pbpbanalysis {
     if (cfgNCollinTR && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return 0;
     }
+    if (cfgPVSel && std::abs(collision.posZ()) > cfgPV) {
+      return 0;
+    }
 
     return 1;
   } // event selection
@@ -234,9 +239,6 @@ struct f0980pbpbanalysis {
   bool PIDSelected(const TrackType track)
   {
     if (cfgUSETOF) {
-      if (!track.hasTOF()) {
-        return 0;
-      }
       if (std::fabs(track.tofNSigmaPi()) > cMaxTOFnSigmaPion) {
         return 0;
       }

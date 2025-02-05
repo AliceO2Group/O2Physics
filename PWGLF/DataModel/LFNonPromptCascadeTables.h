@@ -25,10 +25,13 @@ namespace o2::aod
 namespace NPCascadeTable
 {
 DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float);
+DECLARE_SOA_COLUMN(DeltaPtITSCascade, deltaPtITSCascade, float);
 DECLARE_SOA_COLUMN(ITSClusSize, itsClusSize, float);
+DECLARE_SOA_COLUMN(HasReassociatedCluster, hasReassociatedCluster, bool);
 DECLARE_SOA_COLUMN(IsGoodMatch, isGoodMatch, bool);
 DECLARE_SOA_COLUMN(IsGoodCascade, isGoodCascade, bool);
 DECLARE_SOA_COLUMN(PdgCodeMom, pdgCodeMom, int);
+DECLARE_SOA_COLUMN(PdgCodeITStrack, pdgCodeITStrack, int);
 DECLARE_SOA_COLUMN(IsFromBeauty, isFromBeauty, bool);
 DECLARE_SOA_COLUMN(IsFromCharm, isFromCharm, bool);
 
@@ -107,7 +110,11 @@ DECLARE_SOA_COLUMN(MCcollisionMatch, mcCollisionMatch, bool);
 } // namespace NPCascadeTable
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::MatchingChi2,
+                  NPCascadeTable::DeltaPtITSCascade,
                   NPCascadeTable::ITSClusSize,
+                  NPCascadeTable::HasReassociatedCluster,
+                  aod::collision::NumContrib,
+                  aod::collision::CollisionTimeRes,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
                   NPCascadeTable::PvZ,
@@ -161,12 +168,17 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
 
 DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::MatchingChi2,
+                  NPCascadeTable::DeltaPtITSCascade,
                   NPCascadeTable::ITSClusSize,
+                  NPCascadeTable::HasReassociatedCluster,
                   NPCascadeTable::IsGoodMatch,
                   NPCascadeTable::IsGoodCascade,
                   NPCascadeTable::PdgCodeMom,
+                  NPCascadeTable::PdgCodeITStrack,
                   NPCascadeTable::IsFromBeauty,
                   NPCascadeTable::IsFromCharm,
+                  aod::collision::NumContrib,
+                  aod::collision::CollisionTimeRes,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
                   NPCascadeTable::PvZ,

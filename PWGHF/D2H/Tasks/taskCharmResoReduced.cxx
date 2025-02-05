@@ -114,6 +114,11 @@ DECLARE_SOA_TABLE(HfCandResoLites, "AOD", "HFCANDRESOLITE", //! Table with some 
                   hf_cand_reso_lite::PtGen,
                   hf_cand_reso_lite::SignD0);
 
+DECLARE_SOA_TABLE(HfGenResoLites, "AOD", "HFGENRESOLITE", //! Table with some B0 properties
+                  hf_cand_reso_lite::Pt,
+                  hf_cand_reso_lite::Y,
+                  hf_cand_reso_lite::Origin);
+
 } // namespace o2::aod
 
 enum DecayChannel : uint8_t {
@@ -125,15 +130,18 @@ enum DecayChannel : uint8_t {
 
 struct HfTaskCharmResoReduced {
   Produces<aod::HfCandResoLites> hfCandResoLite;
-  Configurable<float> ptMinReso{"ptMinReso", 5, "Discard events with smaller pT"};
-  Configurable<bool> fillTrees{"fillTrees", false, "Fill output Trees"};
+  Produces<aod::HfGenResoLites> hfGenResoLite;
+  Configurable<float> ptMinReso{"ptMinReso", -1, "Discard events with smaller pT"};
+  Configurable<bool> fillTrees{"fillTrees", true, "Fill output Trees"};
   Configurable<bool> fillSparses{"fillSparses", false, "Fill output Sparses"};
-  Configurable<bool> useDeltaMass{"useDeltaMass", false, "Use Delta Mass for resonance invariant Mass calculation"};
+  Configurable<bool> useDeltaMass{"useDeltaMass", true, "Use Delta Mass for resonance invariant Mass calculation"};
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to Fill only signal candidates (MC only)"};
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
-  Configurable<float> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
+  Configurable<float> yCandRecoMax{"yCandRecoMax", -1, "max. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. track pseudo-rapidity for acceptance calculation"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum for acceptance calculation"};
+  Configurable<float> massResoMin{"massResoMin", 0.49, "min. mass of resonance"};
+  Configurable<float> massResoMax{"massResoMax", 1.29, "max. mass of resonance"};
   // Configurables axis for histos
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis axisPtProng0{"axisPtProng0", {VARIABLE_WIDTH, 0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "prong0 bach. #it{p}_{T} (GeV/#it{c})"};
@@ -152,7 +160,7 @@ struct HfTaskCharmResoReduced {
   using ReducedResoWithMl = soa::Join<aod::HfCandCharmReso, aod::HfCharmResoMLs, aod::HfResoIndices>;
   using ReducedResoMc = soa::Join<aod::HfCandCharmReso, aod::HfResoIndices, aod::HfMcRecRedResos>;
   using ReducedResoWithMlMc = soa::Join<aod::HfCandCharmReso, aod::HfCharmResoMLs, aod::HfResoIndices, aod::HfMcRecRedResos>;
-  using CharmBach = soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl>;
+
   // Histogram Registry
   HistogramRegistry registry;
 
@@ -165,13 +173,15 @@ struct HfTaskCharmResoReduced {
     registry.add("hPt", "Charm resonance candidates pT", {HistType::kTH1F, {axisPt}});
     registry.add("hPtProng0", "D daughters pT", {HistType::kTH1F, {axisPtProng0}});
     registry.add("hPtProng1", "V0 daughter pT", {HistType::kTH1F, {axisPtProng1}});
-    registry.add("hNPvCont", "Collision number of PV contributors ; N contrib ; entries", {HistType::kTH1F, {{100, 0, 250}}});
+    registry.add("hNPvCont", "Collision number of PV contributors ; N contrib ; entries", {HistType::kTH1F, {{125, -0.5, 249.5}}});
     registry.add("hZvert", "Collision Z Vtx ; z PV [cm] ; entries", {HistType::kTH1F, {{120, -12., 12.}}});
     registry.add("hBz", "Collision Bz ; Bz [T] ; entries", {HistType::kTH1F, {{20, -10., 10.}}});
     registry.add("hSparse", "THn for production studies with cosThStar and BDT scores", HistType::kTHnSparseF, {axisPt, axisPtProng0, axisPtProng1, axisInvMassReso, axisInvMassProng0, axisInvMassProng1, axisCosThetaStar, axisBkgBdtScore, axisNonPromptBdtScore});
 
-    if (doprocessDs1Mc || doprocessDs2StarMc) {
+    if (doprocessDs1Mc || doprocessDs2StarMc || doprocessDs1McWithMl || doprocessDs2StarMcWithMl) {
       // gen histos
+      registry.add("hYRecPrompt", "Charm resonance candidates pT", {HistType::kTH2F, {axisPt, axisEta}});
+      registry.add("hYRecNonPrompt", "Charm resonance candidates pT", {HistType::kTH2F, {axisPt, axisEta}});
       registry.add("hYGenPrompt", "Prompt {D_{S}}^j particles (generated);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2F, {axisPt, axisEta}});
       registry.add("hYGenPromptWithProngsInAcceptance", "Prompt {D_{S}}^j particles (generated-daughters in acceptance);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2F, {axisPt, axisEta}});
       registry.add("hYGenNonPrompt", "NonPrompt {D_{S}}^j particles (generated);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2F, {axisPt, axisEta}});
@@ -242,6 +252,9 @@ struct HfTaskCharmResoReduced {
     } else {
       invMassReso = RecoDecay::m(std::array{bach0.pVector(), bach1.pVector()}, std::array{pdgMassBach0, pdgMassBach1});
     }
+    if (invMassReso < massResoMin || invMassReso > massResoMax) {
+      return;
+    }
     invMassBach0 = invMassBach0 - invMassD0;
     float ptGen{-1.};
     int8_t origin{-1}, flagMcMatchRec{-1}, debugMcRec{-1}, signD0{0};
@@ -250,7 +263,19 @@ struct HfTaskCharmResoReduced {
       origin = candidate.origin();
       flagMcMatchRec = candidate.flagMcMatchRec();
       debugMcRec = candidate.debugMcRec();
-      // signD0 = candidate.signD0();
+      if (fillOnlySignal) {
+        if (channel == DecayChannel::Ds1ToDstarK0s && !(std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0s || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0NoPiK0sPart || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu)) {
+          return;
+        }
+        if (channel == DecayChannel::Ds2StarToDplusK0s && !(std::abs(flagMcMatchRec) == DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi || std::abs(flagMcMatchRec) == DecayTypeMc::Ds2StarToDplusK0sOneMu)) {
+          return;
+        }
+      }
+      if (origin == 1) {
+        registry.fill(HIST("hYRecPrompt"), candidate.pt(), y);
+      } else if (origin == 2) {
+        registry.fill(HIST("hYRecNonPrompt"), candidate.pt(), y);
+      }
     }
     float mlScoreBkg{-1.}, mlScorePrompt{-1.}, mlScoreNonPrompt{-1.};
     if constexpr (withMl) {
@@ -263,23 +288,16 @@ struct HfTaskCharmResoReduced {
     registry.fill(HIST("hZvert"), collision.posZ());
     registry.fill(HIST("hBz"), collision.bz());
     // Candidate properties
-    registry.fill(HIST("hMass"), candidate.invMass());
-    registry.fill(HIST("hMassProng0"), candidate.invMassProng0());
-    registry.fill(HIST("hMassProng1"), candidate.invMassProng1());
+    registry.fill(HIST("hMass"), invMassReso);
+    registry.fill(HIST("hMassProng0"), invMassBach0);
+    registry.fill(HIST("hMassProng1"), invMassBach1);
     registry.fill(HIST("hPt"), candidate.pt());
     registry.fill(HIST("hPtProng0"), candidate.ptProng0());
     registry.fill(HIST("hPtProng1"), candidate.ptProng1());
     if (fillSparses) {
-      registry.fill(HIST("hSparse"), candidate.pt(), candidate.ptProng0(), candidate.ptProng1(), candidate.invMass(), candidate.invMassProng0(), candidate.invMassProng1(), cosThetaStar, mlScoreBkg, mlScoreNonPrompt);
+      registry.fill(HIST("hSparse"), candidate.pt(), candidate.ptProng0(), candidate.ptProng1(), invMassReso, invMassBach0, invMassBach1, cosThetaStar, mlScoreBkg, mlScoreNonPrompt);
     }
-    if (doMc && fillOnlySignal) {
-      if (channel == DecayChannel::Ds1ToDstarK0s && !(std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0s || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0NoPiK0sPart || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu)) {
-        return;
-      }
-      if (channel == DecayChannel::Ds2StarToDplusK0s && !(std::abs(flagMcMatchRec) == DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s || std::abs(flagMcMatchRec) == DecayTypeMc::Ds2StarToDplusK0sOneMu)) {
-        return;
-      }
-    }
+
     if (fillTrees) {
       hfCandResoLite(
         invMassReso,
@@ -323,11 +341,11 @@ struct HfTaskCharmResoReduced {
   /// \param CharmBach is the reduced 3 prong table
   /// \param V0Bach is the reduced v0 table
   /// \param Cand is the candidates table
-  template <bool doMc, bool withMl, DecayChannel channel, typename Coll, typename Candidates>
-  void processData(Coll const&, Candidates const& candidates)
+  template <bool doMc, bool withMl, DecayChannel channel, typename Coll, typename Candidates, typename CharmBach>
+  void processData(Coll const&, Candidates const& candidates, CharmBach const&, aod::HfRedVzeros const&)
   {
     for (const auto& cand : candidates) {
-      if (cand.pt() < ptMinReso) {
+      if (ptMinReso >= 0 && cand.pt() < ptMinReso) {
         continue;
       }
       float pdgMassReso{0};
@@ -391,59 +409,62 @@ struct HfTaskCharmResoReduced {
           registry.fill(HIST("hPtYWithProngsInAccepanceGenSig"), ptParticle, yParticle, originParticle, flag);
         }
       }
+      if (fillTrees) {
+        hfGenResoLite(ptParticle, yParticle, originParticle);
+      }
     }
   } // fillCandMcGen
 
   // process functions
 
-  void processDs1Data(aod::HfRedCollisions const& collisions, ReducedReso const& candidates)
+  void processDs1Data(aod::HfRedCollisions const& collisions, ReducedReso const& candidates, aod::HfRed3PrNoTrks const& charmBachs, aod::HfRedVzeros const& v0Bachs)
   {
-    processData<false, false, DecayChannel::Ds1ToDstarK0s>(collisions, candidates);
+    processData<false, false, DecayChannel::Ds1ToDstarK0s>(collisions, candidates, charmBachs, v0Bachs);
   }
   PROCESS_SWITCH(HfTaskCharmResoReduced, processDs1Data, "Process data for Ds1 analysis without Ml", true);
 
-  void processDs1DataWithMl(aod::HfRedCollisions const& collisions, ReducedResoWithMl const& candidates)
+  void processDs1DataWithMl(aod::HfRedCollisions const& collisions, ReducedResoWithMl const& candidates, soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& charmBachs, aod::HfRedVzeros const& v0Bachs)
   {
-    processData<false, true, DecayChannel::Ds1ToDstarK0s>(collisions, candidates);
+    processData<false, true, DecayChannel::Ds1ToDstarK0s>(collisions, candidates, charmBachs, v0Bachs);
   }
   PROCESS_SWITCH(HfTaskCharmResoReduced, processDs1DataWithMl, "Process data for Ds1 analysis with Ml", false);
 
-  void processDs2StarData(aod::HfRedCollisions const& collisions, ReducedReso const& candidates)
+  void processDs2StarData(aod::HfRedCollisions const& collisions, ReducedReso const& candidates, aod::HfRed3PrNoTrks const& charmBachs, aod::HfRedVzeros const& v0Bachs)
   {
-    processData<false, false, DecayChannel::Ds2StarToDplusK0s>(collisions, candidates);
+    processData<false, false, DecayChannel::Ds2StarToDplusK0s>(collisions, candidates, charmBachs, v0Bachs);
   }
   PROCESS_SWITCH(HfTaskCharmResoReduced, processDs2StarData, "Process data Ds2Star analysis without Ml", false);
 
-  void processDs2StarDataWithMl(aod::HfRedCollisions const& collisions, ReducedResoWithMl const& candidates)
+  void processDs2StarDataWithMl(aod::HfRedCollisions const& collisions, ReducedResoWithMl const& candidates, soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& charmBachs, aod::HfRedVzeros const& v0Bachs)
   {
-    processData<false, true, DecayChannel::Ds2StarToDplusK0s>(collisions, candidates);
+    processData<false, true, DecayChannel::Ds2StarToDplusK0s>(collisions, candidates, charmBachs, v0Bachs);
   }
   PROCESS_SWITCH(HfTaskCharmResoReduced, processDs2StarDataWithMl, "Process data Ds2Star analysis with Ml", false);
 
-  void processDs1Mc(aod::HfRedCollisions const& collisions, ReducedResoMc const& candidates, aod::HfMcGenRedResos const& mcParticles)
+  void processDs1Mc(aod::HfRedCollisions const& collisions, ReducedResoMc const& candidates, aod::HfMcGenRedResos const& mcParticles, aod::HfRed3PrNoTrks const& charmBachs, aod::HfRedVzeros const& v0Bachs)
   {
-    processData<true, false, DecayChannel::Ds1ToDstarK0s>(collisions, candidates);
+    processData<true, false, DecayChannel::Ds1ToDstarK0s>(collisions, candidates, charmBachs, v0Bachs);
     fillCandMcGen<DecayChannel::Ds1ToDstarK0s>(mcParticles);
   }
   PROCESS_SWITCH(HfTaskCharmResoReduced, processDs1Mc, "Process Mc for Ds1 analysis without Ml", false);
 
-  void processDs1McWithMl(aod::HfRedCollisions const& collisions, ReducedResoWithMlMc const& candidates, aod::HfMcGenRedResos const& mcParticles)
+  void processDs1McWithMl(aod::HfRedCollisions const& collisions, ReducedResoWithMlMc const& candidates, aod::HfMcGenRedResos const& mcParticles, soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& charmBachs, aod::HfRedVzeros const& v0Bachs)
   {
-    processData<true, true, DecayChannel::Ds1ToDstarK0s>(collisions, candidates);
+    processData<true, true, DecayChannel::Ds1ToDstarK0s>(collisions, candidates, charmBachs, v0Bachs);
     fillCandMcGen<DecayChannel::Ds1ToDstarK0s>(mcParticles);
   }
   PROCESS_SWITCH(HfTaskCharmResoReduced, processDs1McWithMl, "Process Mc for Ds1 analysis with Ml", false);
 
-  void processDs2StarMc(aod::HfRedCollisions const& collisions, ReducedResoMc const& candidates, aod::HfMcGenRedResos const& mcParticles)
+  void processDs2StarMc(aod::HfRedCollisions const& collisions, ReducedResoMc const& candidates, aod::HfMcGenRedResos const& mcParticles, aod::HfRed3PrNoTrks const& charmBachs, aod::HfRedVzeros const& v0Bachs)
   {
-    processData<true, false, DecayChannel::Ds2StarToDplusK0s>(collisions, candidates);
+    processData<true, false, DecayChannel::Ds2StarToDplusK0s>(collisions, candidates, charmBachs, v0Bachs);
     fillCandMcGen<DecayChannel::Ds2StarToDplusK0s>(mcParticles);
   }
   PROCESS_SWITCH(HfTaskCharmResoReduced, processDs2StarMc, "Process Mc for Ds2Star analysis without Ml", false);
 
-  void processDs2StarMcWithMl(aod::HfRedCollisions const& collisions, ReducedResoWithMlMc const& candidates, aod::HfMcGenRedResos const& mcParticles)
+  void processDs2StarMcWithMl(aod::HfRedCollisions const& collisions, ReducedResoWithMlMc const& candidates, aod::HfMcGenRedResos const& mcParticles, soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& charmBachs, aod::HfRedVzeros const& v0Bachs)
   {
-    processData<true, true, DecayChannel::Ds2StarToDplusK0s>(collisions, candidates);
+    processData<true, true, DecayChannel::Ds2StarToDplusK0s>(collisions, candidates, charmBachs, v0Bachs);
     fillCandMcGen<DecayChannel::Ds2StarToDplusK0s>(mcParticles);
   }
   PROCESS_SWITCH(HfTaskCharmResoReduced, processDs2StarMcWithMl, "Process Mc for Ds2Star analysis with Ml", false);

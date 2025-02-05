@@ -69,6 +69,8 @@ DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
+DECLARE_SOA_COLUMN(Weight, weight, float);
+DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int);
 DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
 DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int);
@@ -88,6 +90,7 @@ DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelUnanchoredMC, readCountsWith
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelTVX, readCountsWithTVXAndZVertexAndSelTVX, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel7, readCountsWithTVXAndZVertexAndSel7, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel7KINT7, readCountsWithTVXAndZVertexAndSel7KINT7, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithCustom, readCountsWithCustom, std::vector<int>);
 DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);
 DECLARE_SOA_COLUMN(IsEMCALReadout, isEmcalReadout, bool);
 } // namespace jcollision
@@ -106,6 +109,10 @@ DECLARE_SOA_TABLE_STAGED(JCollisions, "JCOLLISION",
 
 using JCollision = JCollisions::iterator;
 using StoredJCollision = StoredJCollisions::iterator;
+
+DECLARE_SOA_TABLE_STAGED(JCollisionMcInfos, "JCOLLISIONMCINFO",
+                         jcollision::Weight,
+                         jcollision::SubGeneratorId);
 
 DECLARE_SOA_TABLE_STAGED(JEMCCollisionLbs, "JEMCCOLLISIONLB",
                          jcollision::IsAmbiguous,
@@ -140,7 +147,8 @@ DECLARE_SOA_TABLE_STAGED(CollisionCounts, "COLLCOUNT",
                          jcollision::ReadCountsWithTVXAndZVertexAndSelUnanchoredMC,
                          jcollision::ReadCountsWithTVXAndZVertexAndSelTVX,
                          jcollision::ReadCountsWithTVXAndZVertexAndSel7,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSel7KINT7);
+                         jcollision::ReadCountsWithTVXAndZVertexAndSel7KINT7,
+                         jcollision::ReadCountsWithCustom);
 
 namespace jmccollision
 {
@@ -149,13 +157,15 @@ DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
+DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int);
 } // namespace jmccollision
 DECLARE_SOA_TABLE_STAGED(JMcCollisions, "JMCCOLLISION",
                          o2::soa::Index<>,
                          jmccollision::PosX,
                          jmccollision::PosY,
                          jmccollision::PosZ,
-                         jmccollision::Weight);
+                         jmccollision::Weight,
+                         jmccollision::SubGeneratorId);
 
 using JMcCollision = JMcCollisions::iterator;
 using StoredJMcCollision = StoredJMcCollisions::iterator;
@@ -348,9 +358,23 @@ DECLARE_SOA_TABLE_STAGED(JClusterPIs, "JCLUSTERPI",
 DECLARE_SOA_TABLE_STAGED(JClusterTracks, "JCLUSTERTRACK", //!
                          jcluster::JTrackIds);
 
+namespace jclusterhadroniccorrection
+{
+DECLARE_SOA_COLUMN(EnergyCorrectedOneTrack1, energyCorrectedOneTrack1, float);   //! with hadronic correction fraction (100%) for one matched track
+DECLARE_SOA_COLUMN(EnergyCorrectedOneTrack2, energyCorrectedOneTrack2, float);   //! with hadronic correction fraction (70%) for one matched track - systematic studies
+DECLARE_SOA_COLUMN(EnergyCorrectedAllTracks1, energyCorrectedAllTracks1, float); //! with hadronic correction fraction (100%) for all matched tracks
+DECLARE_SOA_COLUMN(EnergyCorrectedAllTracks2, energyCorrectedAllTracks2, float); //! with hadronic correction fraction (70%) for all matched tracks - for systematic studies
+} // namespace jclusterhadroniccorrection
+
+DECLARE_SOA_TABLE_STAGED(JClustersCorrectedEnergies, "JCLUSTERCORRE",            //! if this table changes it needs to be reflected in FastJetUtilities.h!!
+                         jclusterhadroniccorrection::EnergyCorrectedOneTrack1,   // corrected cluster energy for 1 matched track (f = 100%)
+                         jclusterhadroniccorrection::EnergyCorrectedOneTrack2,   // corrected cluster energy for 1 matched track (f = 70%)
+                         jclusterhadroniccorrection::EnergyCorrectedAllTracks1,  // corrected cluster energy for all matched tracks (f = 100%)
+                         jclusterhadroniccorrection::EnergyCorrectedAllTracks2); // corrected cluster energy for all matched tracks (f = 70%)
+
 namespace jmcclusterlb
 {
-DECLARE_SOA_ARRAY_INDEX_COLUMN(JMcParticle, mcParticle);
+DECLARE_SOA_ARRAY_INDEX_COLUMN(JMcParticle, mcParticles);
 DECLARE_SOA_COLUMN(AmplitudeA, amplitudeA, std::vector<float>);
 } // namespace jmcclusterlb
 

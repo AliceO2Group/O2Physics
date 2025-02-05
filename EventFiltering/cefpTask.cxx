@@ -14,12 +14,13 @@
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 
-#include <iostream>
 #include <cstdio>
 #include <random>
 #include <string>
 #include <string_view>
 #include <vector>
+#include <unordered_map>
+#include <utility>
 
 #include "filterTables.h"
 
@@ -213,6 +214,7 @@ struct centralEventFilterTask {
   Produces<aod::CefpDecisions> tags;
 
   Configurable<bool> cfgDisableDownscalings{"cfgDisableDownscalings", false, "Disable downscalings"};
+  Configurable<bool> cfgSkipUntriggeredEvents{"cfgSkipUntriggeredEvents", false, "Skip untriggered events"};
 
   FILTER_CONFIGURABLE(F1ProtonFilters);
   FILTER_CONFIGURABLE(NucleiFilters);
@@ -389,6 +391,9 @@ struct centralEventFilterTask {
     }
     for (uint64_t iD{0}; iD < outDecision.size(); ++iD) {
       uint64_t foundBC = FoundBCArray->Value(iD) >= 0 && FoundBCArray->Value(iD) < GloBCArray->length() ? GloBCArray->Value(FoundBCArray->Value(iD)) : -1;
+      if (cfgSkipUntriggeredEvents.value && !outDecision[iD][0] && !outDecision[iD][1]) {
+        continue;
+      }
       tags(CollBCIdArray->Value(iD), GloBCArray->Value(CollBCIdArray->Value(iD)), foundBC, CollTimeArray->Value(iD), CollTimeResArray->Value(iD), outTrigger[iD][0], outTrigger[iD][1], outDecision[iD][0], outDecision[iD][1]);
     }
   }

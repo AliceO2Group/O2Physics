@@ -246,7 +246,7 @@ struct RofOccupancyQaTask {
     histos.add("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
 
     // 2,3,4 colls in ROF
-    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_noVzCutOnOtherVertices", "", kTH2D, {{500, 0., 20000 * k}, {250, 0., 8000 * k}});
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_noVzCutOnOtherVertices", "", kTH2D, {{500, 0., 8000 * k}, {250, 0., 8000 * k}});
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_3coll_noVzCutOnOtherVertices", "", kTH2D, {{500, 0., 20000 * k}, {250, 0., 8000 * k}});
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_4coll_noVzCutOnOtherVertices", "", kTH2D, {{500, 0., 20000 * k}, {250, 0., 8000 * k}});
 
@@ -342,27 +342,31 @@ struct RofOccupancyQaTask {
     histos.add("ROFbyROF/nPV_000_00y_x00_0", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
 
     // #### new occupancy studies
-    histos.add("nPV_vs_occupancyByTracks/sel8", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
-    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeNarrow", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
-    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeStrict", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
-    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeStandard", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
-    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeVzDependent", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
-    histos.add("nPV_vs_occupancyByTracks/NoCollInRofStrict", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
-    histos.add("nPV_vs_occupancyByTracks/NoCollInRofStandard", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
-    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStandard", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
-    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStrict", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
-    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStrict_vZ_5cm", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/sel8", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeNarrow", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeVzDependent", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInRofStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInRofStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStrict_vZ_5cm", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/kNoHighMultCollInPrevRof", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/kNoHighMultCollInPrevRofAndRofStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
 
-    histos.add("nPV_vs_occupancyByFT0C/sel8", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
-    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeNarrow", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
-    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStrict", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
-    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStandard", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
-    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeVzDependent", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
-    histos.add("nPV_vs_occupancyByFT0C/NoCollInRofStrict", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
-    histos.add("nPV_vs_occupancyByFT0C/NoCollInRofStandard", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
-    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStandard", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
-    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
-    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict_vZ_5cm", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/sel8", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeNarrow", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeVzDependent", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInRofStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInRofStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict_vZ_5cm", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/kNoHighMultCollInPrevRof", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/kNoHighMultCollInPrevRofAndRofStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
   }
 
   Partition<FullTracksIU> pvTracks = ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
@@ -453,7 +457,7 @@ struct RofOccupancyQaTask {
       for (auto& track : colPvTracks) {
         if (track.itsNCls() >= 5) {
           vTracksITS567perColl[colIndex]++;
-          if (fabs(track.eta() < 0.8))
+          if (fabs(track.eta()) < 0.8)
             vTracksITS567eta08perColl[colIndex]++;
           if (track.tpcNClsFound() > 70)
             vTracksITSTPCperColl[colIndex]++;
@@ -754,7 +758,7 @@ struct RofOccupancyQaTask {
       vROFidThisColl[colIndex] = rofIdInTF;
 
       if (fabs(vZ) < 10)
-        vNumCollinROFinVz10[colIndex]++;
+        vNumCollinROFinVz10[colIndex] = 1;
       for (uint32_t iCol = 0; iCol < vAssocToSameROF.size(); iCol++) {
         int thisColIndex = vAssocToSameROF[iCol];
         // int64_t thisRofId = (vFoundGlobalBC[thisColIndex] + 3564 - rofOffset) / rofLength;
@@ -769,6 +773,8 @@ struct RofOccupancyQaTask {
         nITS567tracksForRofVetoStrict += vTracksITS567perColl[thisColIndex];
         nSumAmplFT0CforRofVetoStrict += vAmpFT0CperColl[thisColIndex];
         vNumCollinROF[colIndex]++;
+        if (fabs(vCollVz[thisColIndex]) < 10)
+          vNumCollinROFinVz10[colIndex]++;
         vInROFcollIndex[colIndex] = thisBcInITSROF > bcInITSROF ? 0 : 1; // if colIndex is for the first coll in ROF => inROFindex=0, otherwise =1
 
         // if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInROF)
@@ -883,13 +889,13 @@ struct RofOccupancyQaTask {
         } else if (dt > -4.0 && dt <= -2.0) { // us, strict veto to suppress fake ITS-TPC matches more
           if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInTimeRange / 5)
             nITS567tracksForVetoStandard += vTracksITS567perColl[thisColIndex];
-        } else if (fabs(dt) < 10 + fabs(vZ) / driftV) { // loose veto, 8 us corresponds to maximum possible |vZ|, which is ~20 cm
+        } else if (fabs(dt) < 8 + fabs(vZ) / driftV) { // loose veto, 8 us corresponds to maximum possible |vZ|, which is ~20 cm
           // counting number of other collisions with mult above threshold
           if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInTimeRange)
             nITS567tracksForVetoStandard += vTracksITS567perColl[thisColIndex];
         }
         // vZ-dependent time cut to avoid collinear tracks from other collisions (experimental)
-        if (fabs(dt) < 10 + fabs(vZ) / driftV) {
+        if (fabs(dt) < 8 + fabs(vZ) / driftV) {
           if (dt < 0) {
             // check distance between given vZ and (moving in two directions) vZ of drifting tracks from past collisions
             if ((fabs(vCollVz[thisColIndex] - fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC) ||
@@ -976,6 +982,10 @@ struct RofOccupancyQaTask {
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStrict"), nPV, occTracks);
           if (col.selection_bit(kNoCollInTimeRangeStrict) && col.selection_bit(kNoCollInRofStrict) && fabs(vZ) < 5)
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStrict_vZ_5cm"), nPV, occTracks);
+          if (col.selection_bit(kNoHighMultCollInPrevRof))
+            histos.fill(HIST("nPV_vs_occupancyByTracks/kNoHighMultCollInPrevRof"), nPV, occTracks);
+          if (col.selection_bit(kNoHighMultCollInPrevRof) && col.selection_bit(kNoCollInRofStrict))
+            histos.fill(HIST("nPV_vs_occupancyByTracks/kNoHighMultCollInPrevRofAndRofStrict"), nPV, occTracks);
         }
         if (occFT0C >= 0 && fabs(vZ) < 8) {
           histos.fill(HIST("nPV_vs_occupancyByFT0C/sel8"), nPV, occFT0C);
@@ -997,6 +1007,10 @@ struct RofOccupancyQaTask {
             histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict"), nPV, occFT0C);
           if (col.selection_bit(kNoCollInTimeRangeStrict) && col.selection_bit(kNoCollInRofStrict) && fabs(vZ) < 5)
             histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict_vZ_5cm"), nPV, occFT0C);
+          if (col.selection_bit(kNoHighMultCollInPrevRof))
+            histos.fill(HIST("nPV_vs_occupancyByFT0C/kNoHighMultCollInPrevRof"), nPV, occFT0C);
+          if (col.selection_bit(kNoHighMultCollInPrevRof) && col.selection_bit(kNoCollInRofStrict))
+            histos.fill(HIST("nPV_vs_occupancyByFT0C/kNoHighMultCollInPrevRofAndRofStrict"), nPV, occFT0C);
         }
       }
 

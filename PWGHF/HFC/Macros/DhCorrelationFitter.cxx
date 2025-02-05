@@ -14,6 +14,12 @@
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>
 
+#include "DhCorrelationFitter.h"
+
+#include <cstdio>
+#include <iostream>
+#include <sstream>
+
 #include <TMath.h>
 #include <TFile.h>
 #include <TCanvas.h>
@@ -34,10 +40,10 @@
 #include <TLatex.h>
 #include <TColor.h>
 #include <TClass.h>
-#include <sstream>
 #include <TVirtualFitter.h>
 #include <TMinuit.h>
-#include "DhCorrelationFitter.h"
+
+using namespace std;
 
 DhCorrelationFitter::DhCorrelationFitter() : // default constructor
                                              fIsReflected(kFALSE),

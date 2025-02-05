@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -37,7 +38,7 @@ struct ExclusivePhiLeptons {
   Configurable<float> gap_Side{"gap", 2, "gap selection"};
   Configurable<float> pid2d_cut{"PID2D", 2., "PID cut in 2D"};
   Configurable<float> pid_cut{"PID", 2., "PID cut in 1D"};
-  Configurable<int> electronsInTOF{"eTOF", 2, "electrons in TOF"};
+  Configurable<std::size_t> electronsInTOF{"eTOF", 2, "electrons in TOF"};
   // defining histograms using histogram registry
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 

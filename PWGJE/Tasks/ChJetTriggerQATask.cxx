@@ -89,17 +89,20 @@ struct ChJetTriggerQATask {
   ConfigurableAxis dcaXY_Binning{"dcaXY_Binning", {100, -5., 5.}, ""};
   ConfigurableAxis dcaZ_Binning{"dcaZ_Binning", {100, -3., 3.}, ""};
 
+  ConfigurableAxis xPhiAxis{"xPhiAxis", {180, 0., TMath::TwoPi()}, ""};
+  ConfigurableAxis yQ1pTAxis{"yQ1pTAxis", {200, -0.5, 0.5}, ""};
+
   float fiducialVolume; // 0.9 - jetR
 
   HistogramRegistry spectra;
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
   void init(InitContext&)
   {
     fiducialVolume = static_cast<float>(cfgTPCVolume) - static_cast<float>(cfgJetR);
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(evSel));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(evSel));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     // Basic histos
@@ -128,6 +131,7 @@ struct ChJetTriggerQATask {
     spectra.add("nITSClusters_TrackPt", "Number of ITS hits vs phi & pT of tracks", kTH3F, {{7, 1., 8.}, {60, 0., TMath::TwoPi()}, {100, 0., 100.}});
     spectra.add("ptphiQualityTracks", "pT vs phi of quality tracks", {HistType::kTH2F, {{100, 0., 100.}, {60, 0, TMath::TwoPi()}}});
     spectra.add("ptphiAllTracks", "pT vs phi of all tracks", {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}});
+    spectra.add("phi_Q1pT", "Track phi vs. q/pT", kTH2F, {xPhiAxis, yQ1pTAxis});
 
     // Supplementary plots
     if (bAddSupplementHistosToOutput) {
@@ -162,7 +166,7 @@ struct ChJetTriggerQATask {
       return;
     }
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
 
@@ -206,6 +210,7 @@ struct ChJetTriggerQATask {
           continue;
         }
 
+        spectra.fill(HIST("phi_Q1pT"), originalTrack.phi(), originalTrack.sign() / originalTrack.pt());
         spectra.fill(HIST("ptphiQualityTracks"), track.pt(), track.phi());
 
         bool bDcaCondition = (fabs(track.dcaZ()) < dcaZ_cut) && (fabs(track.dcaXY()) < dcaXY_multFact * DcaXYPtCut(track.pt()));

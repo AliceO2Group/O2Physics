@@ -8,9 +8,7 @@
         "orbit-multiplier-enumeration": "0",
         "start-value-enumeration": "0",
         "end-value-enumeration": "-1",
-        "step-value-enumeration": "1",
-        "aod-parent-access-level": "1",
-        "aod-parent-base-path-replacement": "old-path-to-parent;new-path-to-parent"
+        "step-value-enumeration": "1"
     },
     "internal-dpl-aod-spawner": "",
     "bc-converter": "",

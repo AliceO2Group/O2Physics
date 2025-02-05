@@ -46,6 +46,9 @@ inline float getMass(int pdgCode)
     case kLambda0:
       mass = o2::constants::physics::MassLambda;
       break;
+    case kXiMinus:
+      mass = o2::constants::physics::MassXiMinus;
+      break;
     case o2::constants::physics::Pdg::kPhi:
       mass = o2::constants::physics::MassPhi;
       break;
@@ -83,7 +86,19 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
     } // switch
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0) {
-    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
+    switch (abs(motherPDG)) {
+      case kSigma0:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigma0;
+        break;
+      case kXiMinus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXiMinus;
+        break;
+      case o2::constants::physics::Pdg::kXi0:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXi0;
+        break;
+      default:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
+    }
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
     switch (abs(motherPDG)) {
@@ -117,6 +132,23 @@ inline bool containsNameValuePair(const std::vector<T>& myVector, const std::str
   }
   return false; // No match found
 }
+
+template <typename T>
+float itsSignal(T const& track)
+{
+  uint32_t clsizeflag = track.itsClusterSizes();
+  auto clSizeLayer0 = (clsizeflag >> (0 * 4)) & 0xf;
+  auto clSizeLayer1 = (clsizeflag >> (1 * 4)) & 0xf;
+  auto clSizeLayer2 = (clsizeflag >> (2 * 4)) & 0xf;
+  auto clSizeLayer3 = (clsizeflag >> (3 * 4)) & 0xf;
+  auto clSizeLayer4 = (clsizeflag >> (4 * 4)) & 0xf;
+  auto clSizeLayer5 = (clsizeflag >> (5 * 4)) & 0xf;
+  auto clSizeLayer6 = (clsizeflag >> (6 * 4)) & 0xf;
+  int numLayers = 7;
+  int sumClusterSizes = clSizeLayer1 + clSizeLayer2 + clSizeLayer3 + clSizeLayer4 + clSizeLayer5 + clSizeLayer6 + clSizeLayer0;
+  float cosLamnda = 1. / std::cosh(track.eta());
+  return (static_cast<float>(sumClusterSizes) / numLayers) * cosLamnda;
+};
 
 } // namespace o2::analysis::femtoDream
 #endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMUTILS_H_

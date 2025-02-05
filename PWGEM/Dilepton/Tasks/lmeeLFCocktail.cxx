@@ -58,7 +58,10 @@ struct lmeelfcocktail {
     {331, {"etaP/", {22, 223, 211 * 211}}},
     {113, {"rho/", {-1}}},
     {223, {"omega/", {-1, 111}}},
-    {333, {"phi/", {-1, 111, 221}}}};
+    {333, {"phi/", {-1, 111, 221}}},
+    {443, {"Jpsi/", {-1}}},
+    {100443, {"psi2S/", {-1}}},
+    {553, {"Upsilon/", {-1}}}};
 
   std::map<TString, int> histogramId;
 
@@ -283,6 +286,8 @@ struct lmeelfcocktail {
 
   void init(InitContext& context)
   {
+    registry.add<TH1>("NEvents", "NEvents", HistType::kTH1F, {{1, 0., 1.}}, false);
+
     AxisSpec mass_axis = {fConfigMeeBins, "m_{ee} (GeV/#it{c}^{2})"};
     AxisSpec ptee_axis = {fConfigPteeBins, "#it{p}_{T,ee} (GeV/#it{c})"};
     AxisSpec cos2dphi_axis = {fConfigCos2DPhi, "cos(2(#varphi_{ee} - #Psi_{RP}))"}; // PsiRP = 0 rad. in generator.
@@ -317,19 +322,21 @@ struct lmeelfcocktail {
       addHistogram1D("OpAng", opAng_axis, i);
       addHistogram1D("Mee", mass_axis, i);
       addHistogram1D("Ptee", ptee_axis, i);
-      addHistogram1D_stage("Dca", dca_axis, i, "rec/");
-      addHistogram1D_stage("Dcaee", dcaee_axis, i, "rec/");
+      // addHistogram1D_stage("Dca", dca_axis, i, "rec/");
+      // addHistogram1D_stage("Dcaee", dcaee_axis, i, "rec/");
       i = -1;
-      addHistogram2D_stage("DcaVsPt", dca_axis, pt_axis, i, "rec/");
-      addHistogram2D_stage("DcaeeVsPtee", dcaee_axis, ptee_axis, i, "rec/");
-      addHistogram2D_stage("DcaeeVsMee", dcaee_axis, mass_axis, i, "rec/");
+      // addHistogram2D_stage("DcaVsPt", dca_axis, pt_axis, i, "rec/");
+      // addHistogram2D_stage("DcaeeVsPtee", dcaee_axis, ptee_axis, i, "rec/");
+      // addHistogram2D_stage("DcaeeVsMee", dcaee_axis, mass_axis, i, "rec/");
       i = -1;
       addHistogramND("MeeVsPteeVsCos2DPhiRP", std::vector<AxisSpec>{mass_axis, ptee_axis, cos2dphi_axis}, i);
     }
   }
 
-  void processCocktail(McParticlesSmeared const& mcParticles)
+  void processCocktail(aod::McCollision const&, McParticlesSmeared const& mcParticles)
   {
+    registry.fill(HIST("NEvents"), 0.5);
+
     for (auto const& particle : mcParticles) {
       if (particle.has_mothers()) {
         continue;
@@ -347,7 +354,7 @@ struct lmeelfcocktail {
       int nPos = 0;
 
       ROOT::Math::PtEtaPhiMVector pEleGen, pPosGen, pEleRec, pPosRec;
-      float weight(1.), effEle(1.), effPos(1.), dcaEle(0.), dcaPos(0.);
+      float weight(1.), effEle(1.), effPos(1.); //, dcaEle(0.), dcaPos(0.);
       for (const auto& daughter : particle.daughters_as<McParticlesSmeared>()) {
         int temp_pdg = daughter.pdgCode();
         if (temp_pdg == 11) {
@@ -357,7 +364,7 @@ struct lmeelfcocktail {
           pEleRec = temp_p;
           weight = daughter.weight();
           effEle = daughter.efficiency();
-          dcaEle = daughter.dca();
+          // dcaEle = daughter.dca();
           nEle++;
           continue;
         }
@@ -367,7 +374,7 @@ struct lmeelfcocktail {
           pPosGen = temp_p_gen;
           pPosRec = temp_p;
           effPos = daughter.efficiency();
-          dcaPos = daughter.dca();
+          // dcaPos = daughter.dca();
           nPos++;
           continue;
         }
@@ -431,12 +438,12 @@ struct lmeelfcocktail {
 
         if (s == kRec) { // dca only at rec. level
           if (acceptedEle) {
-            fillHistogram1D("Dca", s, pdg, other_daughter_pdg, dcaEle, weightEle);
-            fillHistogram2D("DcaVsPt", s, pdg, other_daughter_pdg, dcaEle, pEle.Pt(), weightEle);
+            // fillHistogram1D("Dca", s, pdg, other_daughter_pdg, dcaEle, weightEle);
+            // fillHistogram2D("DcaVsPt", s, pdg, other_daughter_pdg, dcaEle, pEle.Pt(), weightEle);
           }
           if (acceptedPos) {
-            fillHistogram1D("Dca", s, pdg, other_daughter_pdg, dcaPos, weightPos);
-            fillHistogram2D("DcaVsPt", s, pdg, other_daughter_pdg, dcaPos, pPos.Pt(), weightPos);
+            // fillHistogram1D("Dca", s, pdg, other_daughter_pdg, dcaPos, weightPos);
+            // fillHistogram2D("DcaVsPt", s, pdg, other_daughter_pdg, dcaPos, pPos.Pt(), weightPos);
           }
         }
 
@@ -454,7 +461,7 @@ struct lmeelfcocktail {
           float ptee = p12.Pt();
           float opAng = o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(pPos.Px(), pPos.Py(), pPos.Pz(), pEle.Px(), pEle.Py(), pEle.Pz());
           float phiV = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pPos.Px(), pPos.Py(), pPos.Pz(), pEle.Px(), pEle.Py(), pEle.Pz(), 1, -1, 1);
-          float dcaee = sqrt((pow(dcaEle, 2) + pow(dcaPos, 2)) / 2);
+          // float dcaee = sqrt((pow(dcaEle, 2) + pow(dcaPos, 2)) / 2);
           float cos2dphi = std::cos(2.f * p12.Phi()); // PsiRP = 0 rad.
           double values[3] = {mee, ptee, cos2dphi};
           fillHistogramND("MeeVsPteeVsCos2DPhiRP", s, pdg, other_daughter_pdg, values, pairWeight);
@@ -463,9 +470,9 @@ struct lmeelfcocktail {
           fillHistogram1D("PhiV", s, pdg, other_daughter_pdg, phiV, pairWeight);
           fillHistogram1D("OpAng", s, pdg, other_daughter_pdg, opAng, pairWeight);
           if (s == kRec) { // dca only at rec. level
-            fillHistogram1D("Dcaee", s, pdg, other_daughter_pdg, dcaee, pairWeight);
-            fillHistogram2D("DcaeeVsPtee", s, pdg, other_daughter_pdg, dcaee, ptee, pairWeight);
-            fillHistogram2D("DcaeeVsMee", s, pdg, other_daughter_pdg, dcaee, mee, pairWeight);
+            // fillHistogram1D("Dcaee", s, pdg, other_daughter_pdg, dcaee, pairWeight);
+            // fillHistogram2D("DcaeeVsPtee", s, pdg, other_daughter_pdg, dcaee, ptee, pairWeight);
+            // fillHistogram2D("DcaeeVsMee", s, pdg, other_daughter_pdg, dcaee, mee, pairWeight);
           }
         }
       }

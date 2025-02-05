@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FemtoUniverseTrackCuts.h
-/// \brief Definition of the FemtoUniverseTrackCuts
+/// \file FemtoUniverseTrackSelection.h
+/// \brief Definition of the FemtoUniverseTrackSelection
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
@@ -21,7 +21,6 @@
 #include <string>
 #include <vector>
 #include <cmath>
-#include <iostream>
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -31,27 +30,28 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
 
-using namespace o2::framework;
+// using namespace o2::framework;
 
-namespace o2::analysis::femtoUniverse
+namespace o2::analysis::femto_universe
 {
-namespace femtoUniverseTrackSelection
+namespace femto_universe_track_selection
 {
 /// The different selections this task is capable of doing
-enum TrackSel { kSign,         ///< Sign of the track
-                kpTMin,        ///< Min. p_T (GeV/c)
-                kpTMax,        ///< Max. p_T (GeV/c)
-                kEtaMax,       ///< Max. |eta|
-                kTPCnClsMin,   ///< Min. number of TPC clusters
-                kTPCfClsMin,   ///< Min. fraction of crossed rows/findable TPC clusters
-                kTPCcRowsMin,  ///< Min. number of crossed TPC rows
-                kTPCsClsMax,   ///< Max. number of shared TPC clusters
-                kITSnClsMin,   ///< Min. number of ITS clusters
-                kITSnClsIbMin, ///< Min. number of ITS clusters in the inner barrel
-                kDCAxyMax,     ///< Max. DCA_xy (cm)
-                kDCAzMax,      ///< Max. DCA_z (cm)
-                kDCAMin,       ///< Min. DCA_xyz (cm)
-                kPIDnSigmaMax  ///< Max. |n_sigma| for PID
+enum TrackSel { kSign,           ///< Sign of the track
+                kpTMin,          ///< Min. p_T (GeV/c)
+                kpTMax,          ///< Max. p_T (GeV/c)
+                kEtaMax,         ///< Max. |eta|
+                kTPCnClsMin,     ///< Min. number of TPC clusters
+                kTPCfClsMin,     ///< Min. fraction of crossed rows/findable TPC clusters
+                kTPCcRowsMin,    ///< Min. number of crossed TPC rows
+                kTPCsClsMax,     ///< Max. number of shared TPC clusters
+                kTPCfracsClsMax, ///< Max. number of fraction of shared TPC clusters
+                kITSnClsMin,     ///< Min. number of ITS clusters
+                kITSnClsIbMin,   ///< Min. number of ITS clusters in the inner barrel
+                kDCAxyMax,       ///< Max. DCA_xy (cm)
+                kDCAzMax,        ///< Max. DCA_z (cm)
+                kDCAMin,         ///< Min. DCA_xyz (cm)
+                kPIDnSigmaMax    ///< Max. |n_sigma| for PID
 };
 
 enum TrackContainerPosition {
@@ -59,11 +59,11 @@ enum TrackContainerPosition {
   kPID
 }; /// Position in the full track cut container
 
-} // namespace femtoUniverseTrackSelection
+} // namespace femto_universe_track_selection
 
 /// \class FemtoUniverseTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
-class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, femtoUniverseTrackSelection::TrackSel>
+class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, femto_universe_track_selection::TrackSel>
 {
  public:
   FemtoUniverseTrackSelection() : nRejectNotPropagatedTracks(false),
@@ -87,6 +87,7 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
                                   fClsMin(9999999.),
                                   cTPCMin(9999999.),
                                   sTPCMax(-9999999.),
+                                  fracsTPCMax(-9999999.),
                                   dcaXYMax(-9999999.),
                                   dcaZMax(-9999999.),
                                   dcaMin(9999999.),
@@ -97,9 +98,9 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
   /// Initializes histograms for the task
   /// \tparam part Type of the particle for proper naming of the folders for QA
   /// \tparam tracktype Type of track (track, positive child, negative child) for proper naming of the folders for QA
-  /// \tparam cutContainerType Data type of the bit-wise container for the selections
+  /// \tparam CutContainerType Data type of the bit-wise container for the selections
   /// \param registry HistogramRegistry for QA output
-  template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::TrackType tracktype, typename cutContainerType>
+  template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::TrackType tracktype, typename CutContainerType>
   void init(HistogramRegistry* registry);
 
   /// Passes the species to the task for which PID needs to be stored
@@ -109,8 +110,8 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
   void setPIDSpecies(T& pids)
   {
     std::vector<int> tmpPids = pids; /// necessary due to some features of the configurable
-    for (o2::track::PID pid : tmpPids) {
-      mPIDspecies.push_back(pid);
+    for (const o2::track::PID pid : tmpPids) {
+      kPIDspecies.push_back(pid);
     }
   }
 
@@ -139,12 +140,12 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
 
   /// Obtain the bit-wise container for the selections
   /// \todo For the moment, PID is separated from the other selections, hence instead of a single value an std::array of size two is returned
-  /// \tparam cutContainerType Data type of the bit-wise container for the selections
+  /// \tparam CutContainerType Data type of the bit-wise container for the selections
   /// \tparam T Data type of the track
   /// \param track Track
   /// \return The bit-wise container for the selections, separately with all selection criteria, and the PID
-  template <typename cutContainerType, typename T>
-  std::array<cutContainerType, 2> getCutContainer(T const& track);
+  template <typename CutContainerType, typename T>
+  std::array<CutContainerType, 2> getCutContainer(T const& track);
 
   /// Some basic QA histograms
   /// \tparam part Type of the particle for proper naming of the folders for QA
@@ -158,10 +159,10 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
   /// \param iSel Track selection variable to be examined
   /// \param prefix Additional prefix for the name of the configurable
   /// \param suffix Additional suffix for the name of the configurable
-  static std::string getSelectionName(femtoUniverseTrackSelection::TrackSel iSel, std::string_view prefix = "", std::string_view suffix = "")
+  static std::string getSelectionName(femto_universe_track_selection::TrackSel iSel, std::string_view prefix = "", std::string_view suffix = "")
   {
     std::string outString = static_cast<std::string>(prefix);
-    outString += static_cast<std::string>(mSelectionNames[iSel]);
+    outString += static_cast<std::string>(kSelectionNames[iSel]);
     outString += suffix;
     return outString;
   }
@@ -172,7 +173,7 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
   static int findSelectionIndex(const std::string_view& obs, std::string_view prefix = "")
   {
     for (int index = 0; index < kNtrackSelection; index++) {
-      std::string comp = static_cast<std::string>(prefix) + static_cast<std::string>(mSelectionNames[index]);
+      std::string comp = static_cast<std::string>(prefix) + static_cast<std::string>(kSelectionNames[index]);
       std::string_view cmp{comp};
       if (obs.compare(cmp) == 0)
         return index;
@@ -182,18 +183,18 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
 
   /// Helper function to obtain the type of a given selection variable for consistent naming of the configurables
   /// \param iSel Track selection variable whose type is returned
-  static femtoUniverseSelection::SelectionType getSelectionType(femtoUniverseTrackSelection::TrackSel iSel)
+  static femto_universe_selection::SelectionType getSelectionType(femto_universe_track_selection::TrackSel iSel)
   {
-    return mSelectionTypes[iSel];
+    return kSelectionTypes[iSel];
   }
 
   /// Helper function to obtain the helper string of a given selection criterion for consistent description of the configurables
   /// \param iSel Track selection variable to be examined
   /// \param prefix Additional prefix for the output of the configurable
-  static std::string getSelectionHelper(femtoUniverseTrackSelection::TrackSel iSel, std::string_view prefix = "")
+  static std::string getSelectionHelper(femto_universe_track_selection::TrackSel iSel, std::string_view prefix = "")
   {
     std::string outString = static_cast<std::string>(prefix);
-    outString += static_cast<std::string>(mSelectionHelper[iSel]);
+    outString += static_cast<std::string>(kSelectionHelper[iSel]);
     return outString;
   }
 
@@ -221,6 +222,7 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
   int nTPCfMinSel;
   int nTPCcMinSel;
   int nTPCsMaxSel;
+  int nTPCsFracMaxSel;
   int nITScMinSel;
   int nITScIbMinSel;
   int nDCAxyMaxSel;
@@ -234,6 +236,7 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
   float fClsMin;
   float cTPCMin;
   float sTPCMax;
+  float fracsTPCMax;
   float nITSclsMin;
   float nITSclsIbMin;
   float dcaXYMax;
@@ -242,9 +245,9 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
   float nSigmaPIDMax;
   float nSigmaPIDOffsetTPC;
   float nSigmaPIDOffsetTOF;
-  std::vector<o2::track::PID> mPIDspecies; ///< All the particle species for which the n_sigma values need to be stored
-  static constexpr int kNtrackSelection = 14;
-  static constexpr std::string_view mSelectionNames[kNtrackSelection] = {"Sign",
+  std::vector<o2::track::PID> kPIDspecies; ///< All the particle species for which the n_sigma values need to be stored
+  static constexpr int kNtrackSelection = 15;
+  static constexpr std::string_view kSelectionNames[kNtrackSelection] = {"Sign",
                                                                          "PtMin",
                                                                          "PtMax",
                                                                          "EtaMax",
@@ -252,6 +255,7 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
                                                                          "TPCfClsMin",
                                                                          "TPCcRowsMin",
                                                                          "TPCsClsMax",
+                                                                         "TPCfracsClsMax",
                                                                          "ITSnClsMin",
                                                                          "ITSnClsIbMin",
                                                                          "DCAxyMax",
@@ -259,22 +263,23 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
                                                                          "DCAMin",
                                                                          "PIDnSigmaMax"}; ///< Name of the different selections
 
-  static constexpr femtoUniverseSelection::SelectionType mSelectionTypes[kNtrackSelection]{femtoUniverseSelection::kEqual,
-                                                                                           femtoUniverseSelection::kLowerLimit,
-                                                                                           femtoUniverseSelection::kUpperLimit,
-                                                                                           femtoUniverseSelection::kAbsUpperLimit,
-                                                                                           femtoUniverseSelection::kLowerLimit,
-                                                                                           femtoUniverseSelection::kLowerLimit,
-                                                                                           femtoUniverseSelection::kLowerLimit,
-                                                                                           femtoUniverseSelection::kUpperLimit,
-                                                                                           femtoUniverseSelection::kLowerLimit,
-                                                                                           femtoUniverseSelection::kLowerLimit,
-                                                                                           femtoUniverseSelection::kAbsUpperLimit,
-                                                                                           femtoUniverseSelection::kAbsUpperLimit,
-                                                                                           femtoUniverseSelection::kAbsUpperLimit,
-                                                                                           femtoUniverseSelection::kAbsUpperLimit}; ///< Map to match a variable with its type
+  static constexpr femto_universe_selection::SelectionType kSelectionTypes[kNtrackSelection]{femto_universe_selection::kEqual,
+                                                                                             femto_universe_selection::kLowerLimit,
+                                                                                             femto_universe_selection::kUpperLimit,
+                                                                                             femto_universe_selection::kAbsUpperLimit,
+                                                                                             femto_universe_selection::kLowerLimit,
+                                                                                             femto_universe_selection::kLowerLimit,
+                                                                                             femto_universe_selection::kLowerLimit,
+                                                                                             femto_universe_selection::kUpperLimit,
+                                                                                             femto_universe_selection::kUpperLimit,
+                                                                                             femto_universe_selection::kLowerLimit,
+                                                                                             femto_universe_selection::kLowerLimit,
+                                                                                             femto_universe_selection::kAbsUpperLimit,
+                                                                                             femto_universe_selection::kAbsUpperLimit,
+                                                                                             femto_universe_selection::kAbsUpperLimit,
+                                                                                             femto_universe_selection::kAbsUpperLimit}; ///< Map to match a variable with its type
 
-  static constexpr std::string_view mSelectionHelper[kNtrackSelection] = {"Sign of the track",
+  static constexpr std::string_view kSelectionHelper[kNtrackSelection] = {"Sign of the track",
                                                                           "Minimal pT (GeV/c)",
                                                                           "Maximal pT (GeV/c)",
                                                                           "Maximal eta",
@@ -282,15 +287,16 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
                                                                           "Minimum fraction of crossed rows/findable clusters",
                                                                           "Minimum number of crossed TPC rows",
                                                                           "Maximal number of shared TPC cluster",
+                                                                          "Maximal number of fraction of shared TPC cluster",
                                                                           "Minimum number of ITS clusters",
                                                                           "Minimum number of ITS clusters in the inner barrel",
                                                                           "Maximal DCA_xy (cm)",
                                                                           "Maximal DCA_z (cm)",
                                                                           "Minimal DCA (cm)",
                                                                           "Maximal PID (nSigma)"}; ///< Helper information for the different selections
-};                                                                                                 // namespace femtoUniverse
+}; // namespace femto_universe
 
-template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::TrackType tracktype, typename cutContainerType>
+template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::TrackType tracktype, typename CutContainerType>
 void FemtoUniverseTrackSelection::init(HistogramRegistry* registry)
 {
   if (registry) {
@@ -298,20 +304,21 @@ void FemtoUniverseTrackSelection::init(HistogramRegistry* registry)
     std::string folderName = static_cast<std::string>(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + "/" + static_cast<std::string>(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]);
 
     /// check whether the number of selection exceeds the bitmap size
-    unsigned int nSelections = getNSelections() - getNSelections(femtoUniverseTrackSelection::kPIDnSigmaMax);
-    if (nSelections > 8 * sizeof(cutContainerType)) {
+    unsigned int nSelections = getNSelections() - getNSelections(femto_universe_track_selection::kPIDnSigmaMax);
+    if (nSelections > 8 * sizeof(CutContainerType)) {
       LOG(fatal) << "FemtoUniverseTrackCuts: Number of selections too large for your container - quitting!";
     }
 
     mHistogramRegistry->add((folderName + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
     mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
-    mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
+    mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, o2::constants::math::TwoPI}});
     mHistogramRegistry->add((folderName + "/hTPCfindable").c_str(), "; TPC findable clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
     mHistogramRegistry->add((folderName + "/hTPCfound").c_str(), "; TPC found clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
     mHistogramRegistry->add((folderName + "/hTPCcrossedOverFindalbe").c_str(), "; TPC ratio findable; Entries", kTH1F, {{100, 0.5, 1.5}});
     mHistogramRegistry->add((folderName + "/hTPCcrossedRows").c_str(), "; TPC crossed rows; Entries", kTH1F, {{163, 0, 163}});
     mHistogramRegistry->add((folderName + "/hTPCfindableVsCrossed").c_str(), ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, 0, 163}, {163, 0, 163}});
     mHistogramRegistry->add((folderName + "/hTPCshared").c_str(), "; TPC shared clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
+    mHistogramRegistry->add((folderName + "/hTPCfractionSharedCls").c_str(), "; TPC fraction of shared clusters; Entries", kTH1F, {{100, 0.0, 100.0}});
     mHistogramRegistry->add((folderName + "/hITSclusters").c_str(), "; ITS clusters; Entries", kTH1F, {{10, -0.5, 9.5}});
     mHistogramRegistry->add((folderName + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", kTH1F, {{10, -0.5, 9.5}});
     mHistogramRegistry->add((folderName + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
@@ -335,33 +342,35 @@ void FemtoUniverseTrackSelection::init(HistogramRegistry* registry)
     mHistogramRegistry->add((folderName + "/nSigmaComb_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
   }
   /// set cuts
-  nPtMinSel = getNSelections(femtoUniverseTrackSelection::kpTMin);
-  nPtMaxSel = getNSelections(femtoUniverseTrackSelection::kpTMax);
-  nEtaSel = getNSelections(femtoUniverseTrackSelection::kEtaMax);
-  nTPCnMinSel = getNSelections(femtoUniverseTrackSelection::kTPCnClsMin);
-  nTPCfMinSel = getNSelections(femtoUniverseTrackSelection::kTPCfClsMin);
-  nTPCcMinSel = getNSelections(femtoUniverseTrackSelection::kTPCcRowsMin);
-  nTPCsMaxSel = getNSelections(femtoUniverseTrackSelection::kTPCsClsMax);
-  nITScMinSel = getNSelections(femtoUniverseTrackSelection::kITSnClsMin);
-  nITScIbMinSel = getNSelections(femtoUniverseTrackSelection::kITSnClsIbMin);
-  nDCAxyMaxSel = getNSelections(femtoUniverseTrackSelection::kDCAxyMax);
-  nDCAzMaxSel = getNSelections(femtoUniverseTrackSelection::kDCAzMax);
-  nDCAMinSel = getNSelections(femtoUniverseTrackSelection::kDCAMin);
-  nPIDnSigmaSel = getNSelections(femtoUniverseTrackSelection::kPIDnSigmaMax);
+  nPtMinSel = getNSelections(femto_universe_track_selection::kpTMin);
+  nPtMaxSel = getNSelections(femto_universe_track_selection::kpTMax);
+  nEtaSel = getNSelections(femto_universe_track_selection::kEtaMax);
+  nTPCnMinSel = getNSelections(femto_universe_track_selection::kTPCnClsMin);
+  nTPCfMinSel = getNSelections(femto_universe_track_selection::kTPCfClsMin);
+  nTPCcMinSel = getNSelections(femto_universe_track_selection::kTPCcRowsMin);
+  nTPCsMaxSel = getNSelections(femto_universe_track_selection::kTPCsClsMax);
+  nTPCsFracMaxSel = getNSelections(femto_universe_track_selection::kTPCfracsClsMax);
+  nITScMinSel = getNSelections(femto_universe_track_selection::kITSnClsMin);
+  nITScIbMinSel = getNSelections(femto_universe_track_selection::kITSnClsIbMin);
+  nDCAxyMaxSel = getNSelections(femto_universe_track_selection::kDCAxyMax);
+  nDCAzMaxSel = getNSelections(femto_universe_track_selection::kDCAzMax);
+  nDCAMinSel = getNSelections(femto_universe_track_selection::kDCAMin);
+  nPIDnSigmaSel = getNSelections(femto_universe_track_selection::kPIDnSigmaMax);
 
-  pTMin = getMinimalSelection(femtoUniverseTrackSelection::kpTMin, femtoUniverseSelection::kLowerLimit);
-  pTMax = getMinimalSelection(femtoUniverseTrackSelection::kpTMax, femtoUniverseSelection::kUpperLimit);
-  etaMax = getMinimalSelection(femtoUniverseTrackSelection::kEtaMax, femtoUniverseSelection::kAbsUpperLimit);
-  nClsMin = getMinimalSelection(femtoUniverseTrackSelection::kTPCnClsMin, femtoUniverseSelection::kLowerLimit);
-  fClsMin = getMinimalSelection(femtoUniverseTrackSelection::kTPCfClsMin, femtoUniverseSelection::kLowerLimit);
-  cTPCMin = getMinimalSelection(femtoUniverseTrackSelection::kTPCcRowsMin, femtoUniverseSelection::kLowerLimit);
-  sTPCMax = getMinimalSelection(femtoUniverseTrackSelection::kTPCsClsMax, femtoUniverseSelection::kUpperLimit);
-  nITSclsMin = getMinimalSelection(femtoUniverseTrackSelection::kITSnClsMin, femtoUniverseSelection::kLowerLimit);
-  nITSclsIbMin = getMinimalSelection(femtoUniverseTrackSelection::kITSnClsIbMin, femtoUniverseSelection::kLowerLimit);
-  dcaXYMax = getMinimalSelection(femtoUniverseTrackSelection::kDCAxyMax, femtoUniverseSelection::kAbsUpperLimit);
-  dcaZMax = getMinimalSelection(femtoUniverseTrackSelection::kDCAzMax, femtoUniverseSelection::kAbsUpperLimit);
-  dcaMin = getMinimalSelection(femtoUniverseTrackSelection::kDCAMin, femtoUniverseSelection::kAbsLowerLimit);
-  nSigmaPIDMax = getMinimalSelection(femtoUniverseTrackSelection::kPIDnSigmaMax, femtoUniverseSelection::kAbsUpperLimit);
+  pTMin = getMinimalSelection(femto_universe_track_selection::kpTMin, femto_universe_selection::kLowerLimit);
+  pTMax = getMinimalSelection(femto_universe_track_selection::kpTMax, femto_universe_selection::kUpperLimit);
+  etaMax = getMinimalSelection(femto_universe_track_selection::kEtaMax, femto_universe_selection::kAbsUpperLimit);
+  nClsMin = getMinimalSelection(femto_universe_track_selection::kTPCnClsMin, femto_universe_selection::kLowerLimit);
+  fClsMin = getMinimalSelection(femto_universe_track_selection::kTPCfClsMin, femto_universe_selection::kLowerLimit);
+  cTPCMin = getMinimalSelection(femto_universe_track_selection::kTPCcRowsMin, femto_universe_selection::kLowerLimit);
+  sTPCMax = getMinimalSelection(femto_universe_track_selection::kTPCsClsMax, femto_universe_selection::kUpperLimit);
+  fracsTPCMax = getMinimalSelection(femto_universe_track_selection::kTPCfracsClsMax, femto_universe_selection::kUpperLimit);
+  nITSclsMin = getMinimalSelection(femto_universe_track_selection::kITSnClsMin, femto_universe_selection::kLowerLimit);
+  nITSclsIbMin = getMinimalSelection(femto_universe_track_selection::kITSnClsIbMin, femto_universe_selection::kLowerLimit);
+  dcaXYMax = getMinimalSelection(femto_universe_track_selection::kDCAxyMax, femto_universe_selection::kAbsUpperLimit);
+  dcaZMax = getMinimalSelection(femto_universe_track_selection::kDCAzMax, femto_universe_selection::kAbsUpperLimit);
+  dcaMin = getMinimalSelection(femto_universe_track_selection::kDCAMin, femto_universe_selection::kAbsLowerLimit);
+  nSigmaPIDMax = getMinimalSelection(femto_universe_track_selection::kPIDnSigmaMax, femto_universe_selection::kAbsUpperLimit);
 }
 
 template <typename T>
@@ -390,6 +399,7 @@ bool FemtoUniverseTrackSelection::isSelectedMinimal(T const& track)
   const auto tpcRClsC = track.tpcCrossedRowsOverFindableCls();
   const auto tpcNClsC = track.tpcNClsCrossedRows();
   const auto tpcNClsS = track.tpcNClsShared();
+  const auto tpcNClsFracS = track.tpcFractionSharedCls();
   const auto itsNCls = track.itsNCls();
   const auto itsNClsIB = track.itsNClsInnerBarrel();
   const auto dcaXY = track.dcaXY();
@@ -397,7 +407,7 @@ bool FemtoUniverseTrackSelection::isSelectedMinimal(T const& track)
   const auto dca = track.dcaXY(); // Accordingly to FemtoUniverse in AliPhysics  as well as LF analysis,
                                   // only dcaXY should be checked; NOT std::sqrt(pow(dcaXY, 2.) + pow(dcaZ, 2.))
   std::vector<float> pidTPC, pidTOF;
-  for (auto it : mPIDspecies) {
+  for (const auto it : kPIDspecies) {
     pidTPC.push_back(getNsigmaTPC(track, it));
     pidTOF.push_back(getNsigmaTOF(track, it));
   }
@@ -421,6 +431,9 @@ bool FemtoUniverseTrackSelection::isSelectedMinimal(T const& track)
     return false;
   }
   if (nTPCsMaxSel > 0 && tpcNClsS > sTPCMax) {
+    return false;
+  }
+  if (nTPCsFracMaxSel > 0 && tpcNClsFracS > fracsTPCMax) {
     return false;
   }
   if (nITScMinSel > 0 && itsNCls < nITSclsMin) {
@@ -457,12 +470,12 @@ bool FemtoUniverseTrackSelection::isSelectedMinimal(T const& track)
   return true;
 }
 
-template <typename cutContainerType, typename T>
-std::array<cutContainerType, 2> FemtoUniverseTrackSelection::getCutContainer(T const& track)
+template <typename CutContainerType, typename T>
+std::array<CutContainerType, 2> FemtoUniverseTrackSelection::getCutContainer(T const& track)
 {
-  cutContainerType output = 0;
+  CutContainerType output = 0;
   size_t counter = 0;
-  cutContainerType outputPID = 0;
+  CutContainerType outputPID = 0;
   const auto sign = track.sign();
   const auto pT = track.pt();
   const auto eta = track.eta();
@@ -470,14 +483,15 @@ std::array<cutContainerType, 2> FemtoUniverseTrackSelection::getCutContainer(T c
   const auto tpcRClsC = track.tpcCrossedRowsOverFindableCls();
   const auto tpcNClsC = track.tpcNClsCrossedRows();
   const auto tpcNClsS = track.tpcNClsShared();
+  const auto tpcNClsFracS = track.tpcFractionSharedCls();
   const auto itsNCls = track.itsNCls();
   const auto itsNClsIB = track.itsNClsInnerBarrel();
   const auto dcaXY = track.dcaXY();
   const auto dcaZ = track.dcaZ();
-  const auto dca = std::sqrt(pow(dcaXY, 2.) + pow(dcaZ, 2.));
+  const auto dca = std::sqrt(std::pow(dcaXY, 2.) + std::pow(dcaZ, 2.));
 
   std::vector<float> pidTPC, pidTOF;
-  for (auto it : mPIDspecies) {
+  for (auto it : kPIDspecies) {
     pidTPC.push_back(getNsigmaTPC(track, it));
     pidTOF.push_back(getNsigmaTOF(track, it));
   }
@@ -485,9 +499,9 @@ std::array<cutContainerType, 2> FemtoUniverseTrackSelection::getCutContainer(T c
   float observable = 0.;
   for (auto& sel : mSelections) {
     const auto selVariable = sel.getSelectionVariable();
-    if (selVariable == femtoUniverseTrackSelection::kPIDnSigmaMax) {
+    if (selVariable == femto_universe_track_selection::kPIDnSigmaMax) {
       /// PID needs to be handled a bit differently since we may need more than one species
-      for (size_t i = 0; i < mPIDspecies.size(); ++i) {
+      for (size_t i = 0; i < kPIDspecies.size(); ++i) {
         auto pidTPCVal = pidTPC.at(i) - nSigmaPIDOffsetTPC;
         auto pidTOFVal = pidTOF.at(i) - nSigmaPIDOffsetTOF;
         auto pidComb = std::sqrt(pidTPCVal * pidTPCVal + pidTOFVal * pidTOFVal);
@@ -498,44 +512,47 @@ std::array<cutContainerType, 2> FemtoUniverseTrackSelection::getCutContainer(T c
     } else {
       /// for the rest it's all the same
       switch (selVariable) {
-        case (femtoUniverseTrackSelection::kSign):
+        case (femto_universe_track_selection::kSign):
           observable = sign;
           break;
-        case (femtoUniverseTrackSelection::kpTMin):
-        case (femtoUniverseTrackSelection::kpTMax):
+        case (femto_universe_track_selection::kpTMin):
+        case (femto_universe_track_selection::kpTMax):
           observable = pT;
           break;
-        case (femtoUniverseTrackSelection::kEtaMax):
+        case (femto_universe_track_selection::kEtaMax):
           observable = eta;
           break;
-        case (femtoUniverseTrackSelection::kTPCnClsMin):
+        case (femto_universe_track_selection::kTPCnClsMin):
           observable = tpcNClsF;
           break;
-        case (femtoUniverseTrackSelection::kTPCfClsMin):
+        case (femto_universe_track_selection::kTPCfClsMin):
           observable = tpcRClsC;
           break;
-        case (femtoUniverseTrackSelection::kTPCcRowsMin):
+        case (femto_universe_track_selection::kTPCcRowsMin):
           observable = tpcNClsC;
           break;
-        case (femtoUniverseTrackSelection::kTPCsClsMax):
+        case (femto_universe_track_selection::kTPCsClsMax):
           observable = tpcNClsS;
           break;
-        case (femtoUniverseTrackSelection::kITSnClsMin):
+        case (femto_universe_track_selection::kTPCfracsClsMax):
+          observable = tpcNClsFracS;
+          break;
+        case (femto_universe_track_selection::kITSnClsMin):
           observable = itsNCls;
           break;
-        case (femtoUniverseTrackSelection::kITSnClsIbMin):
+        case (femto_universe_track_selection::kITSnClsIbMin):
           observable = itsNClsIB;
           break;
-        case (femtoUniverseTrackSelection::kDCAxyMax):
+        case (femto_universe_track_selection::kDCAxyMax):
           observable = dcaXY;
           break;
-        case (femtoUniverseTrackSelection::kDCAzMax):
+        case (femto_universe_track_selection::kDCAzMax):
           observable = dcaZ;
           break;
-        case (femtoUniverseTrackSelection::kDCAMin):
+        case (femto_universe_track_selection::kDCAMin):
           observable = dca;
           break;
-        case (femtoUniverseTrackSelection::kPIDnSigmaMax):
+        case (femto_universe_track_selection::kPIDnSigmaMax):
           break;
       }
       sel.checkSelectionSetBit(observable, output, counter);
@@ -557,11 +574,12 @@ void FemtoUniverseTrackSelection::fillQA(T const& track)
     mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]) + HIST("/hTPCcrossedRows"), track.tpcNClsCrossedRows());
     mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]) + HIST("/hTPCfindableVsCrossed"), track.tpcNClsFindable(), track.tpcNClsCrossedRows());
     mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]) + HIST("/hTPCshared"), track.tpcNClsShared());
+    mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]) + HIST("/hTPCfractionSharedCls"), track.tpcFractionSharedCls());
     mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]) + HIST("/hITSclusters"), track.itsNCls());
     mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]) + HIST("/hITSclustersIB"), track.itsNClsInnerBarrel());
     mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]) + HIST("/hDCAxy"), track.pt(), track.dcaXY());
     mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]) + HIST("/hDCAz"), track.pt(), track.dcaZ());
-    mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]) + HIST("/hDCA"), track.pt(), std::sqrt(pow(track.dcaXY(), 2.) + pow(track.dcaZ(), 2.)));
+    mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]) + HIST("/hDCA"), track.pt(), std::sqrt(std::pow(track.dcaXY(), 2.) + std::pow(track.dcaZ(), 2.)));
     mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]) + HIST("/hTPCdEdX"), track.p(), track.tpcSignal());
     mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTPC_el"), track.p(), track.tpcNSigmaEl());
     mHistogramRegistry->fill(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtouniverseparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTPC_pi"), track.p(), track.tpcNSigmaPi());
@@ -581,6 +599,6 @@ void FemtoUniverseTrackSelection::fillQA(T const& track)
   }
 }
 
-} // namespace o2::analysis::femtoUniverse
+} // namespace o2::analysis::femto_universe
 
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSETRACKSELECTION_H_

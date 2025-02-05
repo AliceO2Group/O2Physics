@@ -159,11 +159,11 @@ void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParti
  * @param clusters track table to be added
  */
 template <typename T>
-void analyseClusters(std::vector<fastjet::PseudoJet>& inputParticles, T const& clusters)
+void analyseClusters(std::vector<fastjet::PseudoJet>& inputParticles, T const& clusters, int hadronicCorrectionType = 0)
 {
   for (auto& cluster : *clusters) {
     // add cluster selections
-    fastjetutilities::fillClusters(cluster, inputParticles, cluster.globalIndex());
+    fastjetutilities::fillClusters(cluster, inputParticles, cluster.globalIndex(), hadronicCorrectionType);
   }
 }
 
@@ -336,7 +336,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
  * @param pdgDatabase database of pdg codes
  * @param candidate optional hf candidiate
  */
-template <typename T, typename U>
+template <bool checkIsDaughter, typename T, typename U>
 void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::string particleSelection, int jetTypeParticleLevel, T const& particles, o2::framework::Service<o2::framework::O2DatabasePDG> pdgDatabase, std::optional<U> const& candidate = std::nullopt)
 {
   for (auto& particle : particles) {
@@ -366,9 +366,11 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
         if (cand.mcParticleId() == particle.globalIndex()) {
           continue;
         }
-        auto hfParticle = cand.template mcParticle_as<T>();
-        if (jetcandidateutilities::isDaughterParticle(hfParticle, particle.globalIndex())) {
-          continue;
+        if constexpr (checkIsDaughter) {
+          auto hfParticle = cand.template mcParticle_as<T>();
+          if (jetcandidateutilities::isDaughterParticle(hfParticle, particle.globalIndex())) {
+            continue;
+          }
         }
       }
     }

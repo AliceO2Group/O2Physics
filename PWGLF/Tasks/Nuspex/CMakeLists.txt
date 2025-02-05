@@ -30,12 +30,12 @@ o2physics_add_dpl_workflow(hypertriton3bodyanalysis
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypertriton3bodymcqa
-    SOURCES hypertriton3bodyMCQA.cxx
+    SOURCES hypertriton3bodyMcqa.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2::TOFBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-in-jets
-    SOURCES nuclei_in_jets.cxx
+    SOURCES nucleiInJets.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -141,6 +141,11 @@ o2physics_add_dpl_workflow(nuclei-toward-transv
 
 o2physics_add_dpl_workflow(ebye-mult
     SOURCES ebyeMult.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(nuclei-from-hypertriton-map
+    SOURCES nucleiFromHypertritonMap.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 

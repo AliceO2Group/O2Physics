@@ -12,10 +12,11 @@
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_GLOBALCONSTANTS_H_
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_GLOBALCONSTANTS_H_
 
-const Int_t gMaxCorrelator = 12;
-const Int_t gMaxHarmonic = 9;
-const Int_t gMaxIndex = 300;           // per order, used only in Test0
-const Int_t gMaxNoBinsKine = 1000;     // max number of bins for differential q-vector
-const Int_t fMaxBinsDiffWeights = 100; // max number of bins for differential weights, see MakeWeights.C
+const int gMaxCorrelator = 12;
+const int gMaxHarmonic = 9;
+const int gMaxIndex = 300;              // per order, used only in Test0
+const int gMaxNoBinsKine = 1000;        // max number of bins for differential q-vector
+const int gMaxBinsDiffWeights = 100;    // max number of bins for differential weights, see MakeWeights.C
+const int gMaxNumberEtaSeparations = 9; // max number of different eta separations used to calculated 2p corr. with eta separations
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_GLOBALCONSTANTS_H_

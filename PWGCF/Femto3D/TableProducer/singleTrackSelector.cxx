@@ -17,6 +17,8 @@
 #include <Framework/AnalysisDataModel.h>
 
 #include <vector>
+#include <string>
+#include <utility>
 
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
@@ -30,6 +32,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 
 #include "DetectorsBase/Propagator.h"
@@ -84,9 +87,9 @@ struct singleTrackSelector {
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidEvTimeFlags, aod::TracksDCA,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
-                         aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe,
+                         aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe,
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa,
-                         aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe,
+                         aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe,
                          aod::TrackSelection, aod::pidTOFbeta>;
 
   using CollRun2 = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>;
@@ -97,8 +100,17 @@ struct singleTrackSelector {
   Produces<o2::aod::SingleCollExtras> tableRowCollExtra;
   Produces<o2::aod::SingleTrackSels> tableRow;
   Produces<o2::aod::SingleTrkExtras> tableRowExtra;
+
   Produces<o2::aod::SinglePIDEls> tableRowPIDEl;
+  Produces<o2::aod::SinglePIDPis> tableRowPIDPi;
+  Produces<o2::aod::SinglePIDKas> tableRowPIDKa;
+  Produces<o2::aod::SinglePIDPrs> tableRowPIDPr;
+  Produces<o2::aod::SinglePIDDes> tableRowPIDDe;
+  Produces<o2::aod::SinglePIDTrs> tableRowPIDTr;
+  Produces<o2::aod::SinglePIDHes> tableRowPIDHe;
+
   Produces<o2::aod::SingleTrkMCs> tableRowMC;
+  // Produces<o2::aod::SingleTrkMCExtras> tableRowMCExtra;
 
   Filter eventFilter = (applyEvSel.node() == 0) ||
                        ((applyEvSel.node() == 1) && (aod::evsel::sel7 == true)) ||
@@ -109,7 +121,7 @@ struct singleTrackSelector {
   Filter pFilter = o2::aod::track::p > _min_P&& o2::aod::track::p < _max_P;
   Filter etaFilter = nabs(o2::aod::track::eta) < _eta;
   Filter dcaFilter = ((nabs(o2::aod::track::dcaXY) <= _dcaXY) && (nabs(o2::aod::track::dcaZ) <= _dcaZ)) &&
-                     ((o2::aod::track::dcaXY >= _dcaXYmin) && (o2::aod::track::dcaZ >= _dcaZmin));
+                     ((nabs(o2::aod::track::dcaXY) >= _dcaXYmin) && (nabs(o2::aod::track::dcaZ) >= _dcaZmin));
   Filter tofChi2Filter = o2::aod::track::tofChi2 < _maxTofChi2;
 
   ctpRateFetcher mRateFetcher; // inspired by zdcSP.cxx in PWGLF
@@ -136,11 +148,13 @@ struct singleTrackSelector {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    if (applySkimming) {
-      registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{2, 0.f, 2.f}}});
-      registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
-      registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "Skimmed");
-    }
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{2, 0.f, 2.f}}});
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "Skimmed");
+
+    registry.add("hNTracks", "hNTracks", {HistType::kTH1D, {{2, 0.f, 2.f}}});
+    registry.get<TH1>(HIST("hNTracks"))->GetXaxis()->SetBinLabel(1, "All");
+    registry.get<TH1>(HIST("hNTracks"))->GetXaxis()->SetBinLabel(2, "Selected");
 
     if (enable_gen_info) {
       registry.add("hNEvents_MCGen", "hNEvents_MCGen", {HistType::kTH1F, {{1, 0.f, 1.f}}});
@@ -187,12 +201,13 @@ struct singleTrackSelector {
     d_bz = 0.1 * d_bz;
   }
 
-  template <bool isMC, typename Trks>
-  inline void fillTrackTables(Trks const& tracks)
+  template <bool isMC, typename TracksType>
+  inline void fillTrackTables(TracksType const& tracks)
   {
     bool skip_track = false; // flag used for track rejection
 
     for (auto& track : tracks) {
+      registry.fill(HIST("hNTracks"), 0.5);
       if constexpr (isMC) {
         if (!track.has_mcParticle())
           continue;
@@ -212,6 +227,7 @@ struct singleTrackSelector {
 
       if (skip_track)
         continue;
+      registry.fill(HIST("hNTracks"), 1.5);
 
       for (auto ii : particlesToKeep)
         if (o2::aod::singletrackselector::TPCselection(track, std::make_pair(ii, keepWithinNsigmaTPC))) {
@@ -231,23 +247,32 @@ struct singleTrackSelector {
                    singletrackselector::packSymmetric<singletrackselector::binning::dca>(track.dcaZ()),
                    singletrackselector::packInTable<singletrackselector::binning::chi2>(track.tpcChi2NCl()),
                    singletrackselector::packInTable<singletrackselector::binning::chi2>(track.itsChi2NCl()),
-                   singletrackselector::packInTable<singletrackselector::binning::rowsOverFindable>(track.tpcCrossedRowsOverFindableCls()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaPi()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaPi()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaKa()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaKa()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaPr()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaPr()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaDe()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaHe()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaHe()));
+                   singletrackselector::packInTable<singletrackselector::binning::rowsOverFindable>(track.tpcCrossedRowsOverFindableCls()));
 
           tableRowExtra(track.tpcInnerParam(),
                         track.tpcSignal(),
                         track.beta());
 
-          tableRowPIDEl(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaEl()));
+          tableRowPIDEl(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaEl()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaEl()));
+
+          tableRowPIDPi(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaPi()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaPi()));
+
+          tableRowPIDKa(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaKa()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaKa()));
+
+          tableRowPIDPr(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaPr()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaPr()));
+
+          tableRowPIDDe(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaDe()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()));
+
+          tableRowPIDTr(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaTr()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaTr()));
+
+          tableRowPIDHe(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaHe()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaHe()));
 
           if constexpr (isMC) {
             int origin = -1;
@@ -268,14 +293,21 @@ struct singleTrackSelector {
                        track.mcParticle().p(),
                        track.mcParticle().eta(),
                        track.mcParticle().phi());
+
+            // tableRowMCExtra(track.mcParticle().vx(),
+            //                 track.mcParticle().vy(),
+            //                 track.mcParticle().vz());
           }
           break; // break the loop with particlesToKeep after the 'if' condition is satisfied -- don't want double entries
         }
     }
   }
 
-  void processDataRun2(soa::Filtered<CollRun2>::iterator const& collision, soa::Filtered<Trks> const& tracks, aod::BCsWithTimestamps const&)
+  void processDataRun2(soa::Filtered<CollRun2>::iterator const& collision,
+                       soa::Filtered<Trks> const& tracks,
+                       aod::BCsWithTimestamps const&)
   {
+
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
@@ -309,19 +341,21 @@ struct singleTrackSelector {
   }
   PROCESS_SWITCH(singleTrackSelector, processDataRun2, "process data Run2", false);
 
-  void processDataRun3(soa::Filtered<CollRun3>::iterator const& collision, soa::Filtered<Trks> const& tracks, aod::BCsWithTimestamps const&)
+  void processDataRun3(soa::Filtered<CollRun3>::iterator const& collision,
+                       soa::Filtered<Trks> const& tracks,
+                       aod::BCsWithTimestamps const&)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
+    const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
+    registry.fill(HIST("hNEvents"), 0.5);
     if (applySkimming) {
-      registry.fill(HIST("hNEvents"), 0.5);
-      bool zorroSelected = zorro.isSelected(bc.globalBC());
-      if (!zorroSelected) {
+      if (!zorro.isSelected(bc.globalBC())) {
         return;
       }
-      registry.fill(HIST("hNEvents"), 1.5);
     }
+    registry.fill(HIST("hNEvents"), 1.5);
 
     double hadronicRate = 0.;
     if (fetchRate) {
@@ -386,8 +420,11 @@ struct singleTrackSelector {
   }
   PROCESS_SWITCH(singleTrackSelector, processDataRun3, "process data Run3", true);
 
-  void processMCRun2(soa::Filtered<CollRun2>::iterator const& collision, soa::Filtered<soa::Join<Trks, aod::McTrackLabels>> const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
+  void processMCRun2(soa::Filtered<CollRun2>::iterator const& collision,
+                     soa::Filtered<soa::Join<Trks, aod::McTrackLabels>> const& tracks,
+                     aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
+
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
@@ -420,8 +457,12 @@ struct singleTrackSelector {
   }
   PROCESS_SWITCH(singleTrackSelector, processMCRun2, "process MC Run2", false);
 
-  void processMCRun3(soa::Filtered<CollRun3MC>::iterator const& collision, aod::McCollisions const&, soa::Filtered<soa::Join<Trks, aod::McTrackLabels>> const& tracks, aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
+  void processMCRun3(soa::Filtered<CollRun3MC>::iterator const& collision, aod::McCollisions const&,
+                     soa::Filtered<soa::Join<Trks, aod::McTrackLabels>> const& tracks,
+                     aod::McParticles const& mcParticles,
+                     aod::BCsWithTimestamps const&)
   {
+
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     double hadronicRate = 0.;

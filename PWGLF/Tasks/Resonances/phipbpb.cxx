@@ -54,6 +54,9 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,22 +67,33 @@ struct phipbpb {
   int mRunNumber;
   int multEstimator;
   float d_bz;
+
+  struct : ConfigurableGroup {
+    Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
+    Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+  } cfgCcdbParam;
+
+  // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
   Service<o2::framework::O2DatabasePDG> pdg;
 
   // CCDB options
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  // Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  // Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  // Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  // Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
+  // filling
+  Configurable<bool> fillSA{"fillSA", false, "fill spin alignment"};
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentrality{"cfgCutCentrality", 80.0f, "Accepted maximum Centrality"};
   Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 3000, "Occupancy cut"};
   // track
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
+  Configurable<bool> additionalEvselITS{"additionalEvselITS", true, "Additional event selcection for ITS"};
   Configurable<bool> removefaketrak{"removefaketrack", true, "Remove fake track from momentum difference"};
   Configurable<float> ConfFakeKaonCut{"ConfFakeKaonCut", 0.1, "Cut based on track from momentum difference"};
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
@@ -96,6 +110,7 @@ struct phipbpb {
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<bool> ispTdepPID{"ispTdepPID", true, "pT dependent PID"};
+  Configurable<bool> checkAllCharge{"checkAllCharge", true, "check all charge for MC weight"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
   Configurable<double> confRapidity{"confRapidity", 0.5, "Rapidity cut"};
   ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {120, 0.98, 1.1}, "#it{M} (GeV/#it{c}^{2})"};
@@ -103,14 +118,18 @@ struct phipbpb {
   ConfigurableAxis configThnAxisCosThetaStar{"configThnAxisCosThetaStar", {10, -1.0, 1.}, "cos(#vartheta)"};
   ConfigurableAxis configThnAxisCentrality{"configThnAxisCentrality", {8, 0., 80}, "Centrality"};
   ConfigurableAxis configThnAxisPhiminusPsi{"configThnAxisPhiminusPsi", {6, 0.0, TMath::Pi()}, "#phi - #psi"};
-  ConfigurableAxis configThnAxisV2{"configThnAxisV2", {200, -1, 1}, "V2"};
+  ConfigurableAxis configThnAxisV2{"configThnAxisV2", {200, -6, 6}, "V2"};
   ConfigurableAxis configThnAxisRapidity{"configThnAxisRapidity", {8, 0, 0.8}, "Rapidity"};
   ConfigurableAxis configThnAxisSA{"configThnAxisSA", {200, -1, 1}, "SA"};
   ConfigurableAxis configThnAxiscosthetaSA{"configThnAxiscosthetaSA", {200, 0, 1}, "costhetaSA"};
+  ConfigurableAxis axisPtKaonWeight{"axisPtKaonWeight", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f}, "pt axis"};
   Configurable<bool> isMC{"isMC", false, "use MC"};
   Configurable<bool> genacceptancecut{"genacceptancecut", true, "use acceptance cut for generated"};
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
   Configurable<bool> islike{"islike", false, "use like"};
+  Configurable<bool> useWeight{"useWeight", true, "use EP dep effi weight"};
+  Configurable<std::string> ConfWeightPath{"ConfWeightPath", "Users/s/skundu/My/Object/mcweight", "Path to gain calibration"};
+
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter centralityFilter = nabs(aod::cent::centFT0C) < cfgCutCentrality;
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
@@ -144,7 +163,7 @@ struct phipbpb {
   void init(o2::framework::InitContext&)
   {
     // std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 3000.0, 6000.0, 50000.0};
-    std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
+    std::vector<double> occupancyBinning = {-0.5, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisCosThetaStar{configThnAxisCosThetaStar, "cos(#vartheta_{OP})"};
@@ -152,8 +171,9 @@ struct phipbpb {
     const AxisSpec thnAxisV2{configThnAxisV2, "V2"};
     const AxisSpec thnAxisRapidity{configThnAxisRapidity, "Rapidity"};
     const AxisSpec thnAxisSA{configThnAxisSA, "SA"};
+    AxisSpec cumulantAxis = {200, -1, 1, "phi"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
-    AxisSpec resAxis = {2000, -10, 10, "Res"};
+    AxisSpec resAxis = {6000, -30, 30, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     AxisSpec occupancyAxis = {occupancyBinning, "Occupancy"};
 
@@ -175,18 +195,26 @@ struct phipbpb {
     histos.add("hPsiTPCR", "PsiTPCR", kTH3F, {centAxis, occupancyAxis, phiAxis});
     histos.add("hPsiTPCL", "PsiTPCL", kTH3F, {centAxis, occupancyAxis, phiAxis});
 
+    histos.add("hSparseV2SameEventCosPhi", "hSparseV2SameEventCosPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+    histos.add("hSparseV2SameEventSinPhi", "hSparseV2SameEventSinPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+    histos.add("hSparseV2SameEventCosPsi", "hSparseV2SameEventCosPsi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+    histos.add("hSparseV2SameEventSinPsi", "hSparseV2SameEventSinPsi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+
     histos.add("hSparseV2SameEventCosDeltaPhi", "hSparseV2SameEventCosDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     histos.add("hSparseV2MixedEventCosDeltaPhi", "hSparseV2MixedEventCosDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+
+    histos.add("hSparseV2SameEventCosDeltaPhiSquare", "hSparseV2SameEventCosDeltaPhiSquare", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    histos.add("hSparseV2MixedEventCosDeltaPhiSquare", "hSparseV2MixedEventCosDeltaPhiSquare", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
     histos.add("hSparseV2SameEventSinDeltaPhi", "hSparseV2SameEventSinDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     histos.add("hSparseV2MixedEventSinDeltaPhi", "hSparseV2MixedEventSinDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
-    histos.add("hSparseV2SameEventSA", "hSparseV2SameEventSA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
-    histos.add("hSparseV2MixedEventSA", "hSparseV2MixedEventSA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
-
-    histos.add("hSparseV2SameEventCosThetaStar", "hSparseV2SameEventCosThetaStar", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
-    histos.add("hSparseV2MixedEventCosThetaStar", "hSparseV2MixedEventCosThetaStar", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
-
+    if (fillSA) {
+      histos.add("hSparseV2SameEventSA", "hSparseV2SameEventSA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2MixedEventSA", "hSparseV2MixedEventSA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2SameEventCosThetaStar", "hSparseV2SameEventCosThetaStar", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2MixedEventCosThetaStar", "hSparseV2MixedEventCosThetaStar", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
+    }
     // histogram for resolution
     histos.add("ResFT0CTPC", "ResFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
     histos.add("ResFT0CTPCR", "ResFT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
@@ -213,6 +241,15 @@ struct phipbpb {
 
       histos.add("hSparseV2MCRecSA", "hSparseV2SameEventSA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
       histos.add("hSparseV2MCRecCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
+
+      // weight
+      histos.add("hImpactParameter", "Impact parameter", kTH1F, {{200, 0.0f, 20.0f}});
+      histos.add("hEventPlaneAngle", "hEventPlaneAngle", kTH1F, {{200, -2.0f * TMath::Pi(), 2.0f * TMath::Pi()}});
+      histos.add("hEventPlaneAngleRec", "hEventPlaneAngleRec", kTH1F, {{200, -2.0f * TMath::Pi(), 2.0f * TMath::Pi()}});
+      histos.add("hNchVsImpactParameter", "hNchVsImpactParameter", kTH2F, {{200, 0.0f, 20.0f}, {500, -0.5f, 5000.5f}});
+      histos.add("hSparseMCGenWeight", "hSparseMCGenWeight", HistType::kTHnSparseF, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, axisPtKaonWeight, {8, -0.8, 0.8}});
+      histos.add("hSparseMCRecWeight", "hSparseMCRecWeight", HistType::kTHnSparseF, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, axisPtKaonWeight, {8, -0.8, 0.8}});
+      histos.add("hSparseMCRecAllTrackWeight", "hSparseMCRecAllTrackWeight", HistType::kTHnSparseF, {thnAxisCentrality, {36, 0.0, TMath::Pi()}, axisPtKaonWeight, {8, -0.8, 0.8}});
     }
     // Event selection cut additional - Alex
     if (additionalEvsel) {
@@ -227,6 +264,12 @@ struct phipbpb {
       fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
       fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
     }
+
+    ccdb->setURL(cfgCcdbParam.cfgURL);
+    ccdbApi.init("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
   }
 
   double massKa = o2::constants::physics::MassKPlus;
@@ -259,7 +302,7 @@ struct phipbpb {
     if (useGlobalTrack && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
-    if (!useGlobalTrack && !(candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
+    if (!useGlobalTrack && !(candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
     return true;
@@ -344,13 +387,15 @@ struct phipbpb {
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
   ConfigurableAxis axisEPAngle{"axisEPAngle", {6, -TMath::Pi() / 2, TMath::Pi() / 2}, "event plane angle"};
-  ConfigurableAxis axisOccup{"axisOccup", {20, 0.0, 40000.0}, "occupancy axis"};
+  ConfigurableAxis axisOccup{"axisOccup", {20, -0.5, 40000.0}, "occupancy axis"};
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, o2::aod::evsel::NumTracksInTimeRange>;
   ROOT::Math::PxPyPzMVector PhiMesonMother, KaonPlus, KaonMinus, fourVecDauCM;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
-
-  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, aod::BCs const&)
+  int currentRunNumber = -999;
+  int lastRunNumber = -999;
+  TH3D* hweight;
+  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks, aod::BCs const&*/, aod::BCsWithTimestamps const&)
   {
     if (!collision.sel8() || !collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
@@ -371,11 +416,15 @@ struct phipbpb {
     auto QTPCR = collision.qTPCR();
     auto QTPCL = collision.qTPCL();
     int occupancy = collision.trackOccupancyInTimeRange();
+    o2::aod::ITSResponse itsResponse;
     if (occupancy > cfgCutOccupancy) {
       return;
     }
     histos.fill(HIST("hFTOCvsTPC"), centrality, multTPC);
     if (additionalEvsel && !eventSelected(collision, centrality)) {
+      return;
+    }
+    if (additionalEvselITS && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return;
     }
     histos.fill(HIST("hFTOCvsTPCSelected"), centrality, multTPC);
@@ -401,7 +450,16 @@ struct phipbpb {
 
     histos.fill(HIST("hCentrality"), centrality);
     histos.fill(HIST("hVtxZ"), collision.posZ());
+
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
+    if (useWeight && (currentRunNumber != lastRunNumber)) {
+      hweight = ccdb->getForTimeStamp<TH3D>(ConfWeightPath.value, bc.timestamp());
+    }
+    lastRunNumber = currentRunNumber;
     int Npostrack = 0;
+    float weight1 = 1.0;
+    float weight2 = 1.0;
     for (auto track1 : posThisColl) {
       // track selection
       if (!selectionTrack(track1)) {
@@ -414,6 +472,9 @@ struct phipbpb {
       if (!ispTdepPID && !selectionPID(track1)) {
         continue;
       }
+      if (useGlobalTrack && track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 2.5)) {
+        continue;
+      }
       histos.fill(HIST("hTPCglobalmomcorr"), track1.p() / track1.sign(), track1.p() - track1.tpcInnerParam(), centrality);
       histos.fill(HIST("hEta"), track1.eta());
       histos.fill(HIST("hDcaxy"), track1.dcaXY());
@@ -421,6 +482,13 @@ struct phipbpb {
       histos.fill(HIST("hNsigmaKaonTPC"), track1.tpcNSigmaKa());
       histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
       auto track1ID = track1.globalIndex();
+      if (useWeight) {
+        if (track1.pt() < 10.0 && track1.pt() > 0.15) {
+          weight1 = hweight->GetBinContent(hweight->FindBin(centrality, GetPhiInRange(track1.phi() - psiFT0C), track1.pt() + 0.000005));
+        } else {
+          weight1 = 1;
+        }
+      }
       for (auto track2 : negThisColl) {
         // track selection
         if (!selectionTrack(track2)) {
@@ -449,28 +517,68 @@ struct phipbpb {
         if (removefaketrak && isFakeKaon(track2)) {
           continue;
         }
+        if (useGlobalTrack && track2.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 2.5)) {
+          continue;
+        }
+        if (useWeight) {
+          if (track2.pt() < 10.0 && track2.pt() > 0.15) {
+            weight2 = hweight->GetBinContent(hweight->FindBin(centrality, GetPhiInRange(track2.phi() - psiFT0C), track2.pt() + 0.000005));
+          } else {
+            weight2 = 1;
+          }
+        }
         KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
         KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
         PhiMesonMother = KaonPlus + KaonMinus;
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
         auto v2sin = TMath::Sin(2.0 * phiminuspsi);
+        auto phimother = PhiMesonMother.Phi();
         histos.fill(HIST("hpTvsRapidity"), PhiMesonMother.Pt(), PhiMesonMother.Rapidity());
-        if (TMath::Abs(PhiMesonMother.Rapidity()) < confRapidity) {
-          histos.fill(HIST("hSparseV2SameEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
-          histos.fill(HIST("hSparseV2SameEventSinDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2sin * QFT0C, centrality);
+        auto totalweight = weight1 * weight2;
+        if (totalweight <= 0.0005) {
+          totalweight = 1.0;
         }
-        ROOT::Math::Boost boost{PhiMesonMother.BoostToCM()};
-        fourVecDauCM = boost(KaonMinus);
-        threeVecDauCM = fourVecDauCM.Vect();
-        threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
-        eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
-        eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
-        auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
-        auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
-        auto cosThetaStar = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
-        histos.fill(HIST("hSparseV2SameEventSA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
-        histos.fill(HIST("hSparseV2SameEventCosThetaStar"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStar, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+        // LOGF(info, Form("weight %f    %f",weight1, weight2));
+        if (TMath::Abs(PhiMesonMother.Rapidity()) < confRapidity) {
+          if (useWeight) {
+            histos.fill(HIST("hSparseV2SameEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality, 1 / totalweight);
+            histos.fill(HIST("hSparseV2SameEventCosDeltaPhiSquare"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * v2, centrality, 1 / totalweight);
+            histos.fill(HIST("hSparseV2SameEventSinDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2sin * QFT0C, centrality, 1 / totalweight);
+
+            histos.fill(HIST("hSparseV2SameEventCosPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Cos(2.0 * phimother), centrality, 1 / totalweight);
+            histos.fill(HIST("hSparseV2SameEventSinPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Sin(2.0 * phimother), centrality, 1 / totalweight);
+            histos.fill(HIST("hSparseV2SameEventCosPsi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Cos(2.0 * psiFT0C), centrality, 1 / totalweight);
+            histos.fill(HIST("hSparseV2SameEventSinPsi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Sin(2.0 * psiFT0C), centrality, 1 / totalweight);
+          } else {
+            histos.fill(HIST("hSparseV2SameEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
+            histos.fill(HIST("hSparseV2SameEventCosDeltaPhiSquare"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * v2, centrality);
+            histos.fill(HIST("hSparseV2SameEventSinDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2sin * QFT0C, centrality);
+
+            histos.fill(HIST("hSparseV2SameEventCosPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Cos(2.0 * phimother), centrality);
+            histos.fill(HIST("hSparseV2SameEventSinPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Sin(2.0 * phimother), centrality);
+            histos.fill(HIST("hSparseV2SameEventCosPsi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Cos(2.0 * psiFT0C), centrality);
+            histos.fill(HIST("hSparseV2SameEventSinPsi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Sin(2.0 * psiFT0C), centrality);
+          }
+        }
+        if (fillSA) {
+          ROOT::Math::Boost boost{PhiMesonMother.BoostToCM()};
+          fourVecDauCM = boost(KaonMinus);
+          threeVecDauCM = fourVecDauCM.Vect();
+          threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
+          eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
+          eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
+          auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
+          auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
+          auto cosThetaStar = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
+          if (useWeight) {
+            histos.fill(HIST("hSparseV2SameEventSA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, TMath::Abs(PhiMesonMother.Rapidity()), centrality, 1 / totalweight);
+            histos.fill(HIST("hSparseV2SameEventCosThetaStar"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStar, TMath::Abs(PhiMesonMother.Rapidity()), centrality, 1 / totalweight);
+          } else {
+            histos.fill(HIST("hSparseV2SameEventSA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+            histos.fill(HIST("hSparseV2SameEventCosThetaStar"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStar, TMath::Abs(PhiMesonMother.Rapidity()));
+          }
+        }
       }
       Npostrack = Npostrack + 1;
     }
@@ -491,6 +599,7 @@ struct phipbpb {
       if (collision1.bcId() == collision2.bcId()) {
         continue;
       }
+      o2::aod::ITSResponse itsResponse;
       int occupancy1 = collision1.trackOccupancyInTimeRange();
       int occupancy2 = collision2.trackOccupancyInTimeRange();
       if (occupancy1 > cfgCutOccupancy) {
@@ -509,9 +618,20 @@ struct phipbpb {
       if (additionalEvsel && !eventSelected(collision2, centrality2)) {
         continue;
       }
-
+      if (additionalEvselITS && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      if (additionalEvselITS && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
       for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         if (track1.sign() * track2.sign() > 0) {
+          continue;
+        }
+        if (useGlobalTrack && track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 2.5)) {
+          continue;
+        }
+        if (useGlobalTrack && track2.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 2.5)) {
           continue;
         }
         if (!selectionTrack(track1) || !selectionTrack(track2)) {
@@ -547,19 +667,22 @@ struct phipbpb {
         histos.fill(HIST("hpTvsRapidity"), PhiMesonMother.Pt(), PhiMesonMother.Rapidity());
         if (TMath::Abs(PhiMesonMother.Rapidity()) < confRapidity) {
           histos.fill(HIST("hSparseV2MixedEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
+          histos.fill(HIST("hSparseV2MixedEventCosDeltaPhiSquare"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * v2, centrality);
           histos.fill(HIST("hSparseV2MixedEventSinDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2sin * QFT0C, centrality);
         }
-        ROOT::Math::Boost boost{PhiMesonMother.BoostToCM()};
-        fourVecDauCM = boost(KaonMinus);
-        threeVecDauCM = fourVecDauCM.Vect();
-        threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
-        eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
-        eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
-        auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
-        auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
-        auto cosThetaStar = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
-        histos.fill(HIST("hSparseV2MixedEventSA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
-        histos.fill(HIST("hSparseV2MixedEventCosThetaStar"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStar, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+        if (fillSA) {
+          ROOT::Math::Boost boost{PhiMesonMother.BoostToCM()};
+          fourVecDauCM = boost(KaonMinus);
+          threeVecDauCM = fourVecDauCM.Vect();
+          threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
+          eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
+          eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
+          auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
+          auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
+          auto cosThetaStar = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
+          histos.fill(HIST("hSparseV2MixedEventSA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2MixedEventCosThetaStar"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStar, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+        }
       }
     }
   }
@@ -750,6 +873,90 @@ struct phipbpb {
 
   } // process MC
   PROCESS_SWITCH(phipbpb, processMC, "Process MC", false);
+  using recoTracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
+  void processMCweight(aod::McCollision const& mcCollision, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& mcParticles, recoTracks const&)
+  {
+    float imp = mcCollision.impactParameter();
+    float evPhi = mcCollision.eventPlaneAngle() / 2.0;
+    float centclass = -999;
+    if (imp >= 0 && imp < 3.49) {
+      centclass = 2.5;
+    }
+    if (imp >= 3.49 && imp < 4.93) {
+      centclass = 7.5;
+    }
+    if (imp >= 4.93 && imp < 6.98) {
+      centclass = 15.0;
+    }
+    if (imp >= 6.98 && imp < 8.55) {
+      centclass = 25.0;
+    }
+    if (imp >= 8.55 && imp < 9.87) {
+      centclass = 35.0;
+    }
+    if (imp >= 9.87 && imp < 11) {
+      centclass = 45.0;
+    }
+    if (imp >= 11 && imp < 12.1) {
+      centclass = 55.0;
+    }
+    if (imp >= 12.1 && imp < 13.1) {
+      centclass = 65.0;
+    }
+    if (imp >= 13.1 && imp < 14) {
+      centclass = 75.0;
+    }
+    // if (evPhi < 0)
+    //   evPhi += 2. * TMath::Pi();
+
+    int nCh = 0;
+
+    if (centclass > 0 && centclass < 80) {
+      // event within range
+      histos.fill(HIST("hImpactParameter"), imp);
+      histos.fill(HIST("hEventPlaneAngle"), evPhi);
+      for (auto const& mcParticle : mcParticles) {
+
+        float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
+        // focus on bulk: e, mu, pi, k, p
+        int pdgCode = TMath::Abs(mcParticle.pdgCode());
+        if (checkAllCharge && pdgCode != 11 && pdgCode != 13 && pdgCode != 211 && pdgCode != 321 && pdgCode != 2212)
+          continue;
+        if (!checkAllCharge && pdgCode != 321)
+          continue;
+        if (!mcParticle.isPhysicalPrimary())
+          continue;
+        if (TMath::Abs(mcParticle.eta()) > 0.8) // main acceptance
+          continue;
+        histos.fill(HIST("hSparseMCGenWeight"), centclass, GetPhiInRange(deltaPhi), mcParticle.pt(), mcParticle.eta());
+        nCh++;
+        bool validGlobal = false;
+        bool validAny = false;
+        if (mcParticle.has_tracks()) {
+          auto const& tracks = mcParticle.tracks_as<recoTracks>();
+          for (auto const& track : tracks) {
+            if (track.hasTPC() && track.hasITS()) {
+              validGlobal = true;
+            }
+            if (track.hasTPC() || track.hasITS()) {
+              validAny = true;
+            }
+          }
+        }
+        // if valid global, fill
+        if (validGlobal) {
+          histos.fill(HIST("hSparseMCRecWeight"), centclass, GetPhiInRange(deltaPhi), mcParticle.pt(), mcParticle.eta());
+        }
+        if (validAny) {
+          histos.fill(HIST("hSparseMCRecAllTrackWeight"), centclass, GetPhiInRange(deltaPhi), mcParticle.pt(), mcParticle.eta());
+          histos.fill(HIST("hEventPlaneAngleRec"), GetPhiInRange(deltaPhi));
+        }
+        // if any track present, fill
+      }
+    }
+    histos.fill(HIST("hNchVsImpactParameter"), imp, nCh);
+  }
+  PROCESS_SWITCH(phipbpb, processMCweight, "Process MC Weight", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
