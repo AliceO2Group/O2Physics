@@ -30,7 +30,7 @@ o2physics_add_dpl_workflow(hypertriton3bodyanalysis
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypertriton3bodymcqa
-    SOURCES hypertriton3bodyMCQA.cxx
+    SOURCES hypertriton3bodyMcqa.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2::TOFBase
     COMPONENT_NAME Analysis)
 
