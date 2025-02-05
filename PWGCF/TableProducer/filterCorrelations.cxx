@@ -22,7 +22,6 @@
 #include "Common/DataModel/Centrality.h"
 
 #include <TH3F.h>
-#include <TDatabasePDG.h>
 
 using namespace o2;
 using namespace o2::framework;
