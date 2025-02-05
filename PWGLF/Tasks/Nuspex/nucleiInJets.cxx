@@ -526,7 +526,7 @@ struct NucleiInJets {
     std::vector<TVector3> ue1;
     std::vector<TVector3> ue2;
     std::vector<int> nParticlesInjet;
-  
+
     do {
       double dijMin(1e+06), diBmin(1e+06);
       int iMin(0), jMin(0), iBmin(0);
@@ -654,7 +654,7 @@ struct NucleiInJets {
     registryQC.fill(HIST("jet_ue_overlaps"), nJetsSelected, nOverlapsJetUe);
     registryQC.fill(HIST("ue_ue_overlaps"), nJetsSelected, nOverlapsUeUe);
     registryQC.fill(HIST("tot_overlaps"), nJetsSelected, nOverlapsTot);
-      
+
     if (nJetsSelected > nJetsPerEventMax)
       return;
     registryData.fill(HIST("number_of_events_data"), 5.5);
