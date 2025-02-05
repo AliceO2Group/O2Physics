@@ -254,6 +254,11 @@ struct FlowSP {
         registry.add<TProfile>("incl/vnA_pt", "", kTProfile, {axisPt});
         registry.add<TProfile>("incl/vnC_pt_odd", "", kTProfile, {axisPt});
         registry.add<TProfile>("incl/vnA_pt_odd", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnCx_pt_odd", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnAx_pt_odd", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnCy_pt_odd", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnAy_pt_odd", "", kTProfile, {axisPt});
+
         registry.add<TProfile>("incl/vnA_pt_EP", "", kTProfile, {axisPt});
         registry.add<TProfile>("incl/vnC_pt_EP", "", kTProfile, {axisPt});
         registry.add<TProfile>("incl/vnFull_pt_EP", "", kTProfile, {axisPt});
@@ -637,12 +642,23 @@ struct FlowSP {
 
       registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_odd"), track.pt(), -1.0 * (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
       registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_odd"), track.pt(), -1.0 * (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+
+      registry.fill(HIST(Charge[ct]) + HIST("vnAx_pt_odd"), track.pt(), -1.0 * (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAy_pt_odd"), track.pt(), -1.0 * (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnCx_pt_odd"), track.pt(), -1.0 * (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnCy_pt_odd"), track.pt(), -1.0 * (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+
     } else {
       registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_plusEta"), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
       registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_plusEta"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
       registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_odd"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
       registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_odd"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+
+      registry.fill(HIST(Charge[ct]) + HIST("vnAx_pt_odd"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAy_pt_odd"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnCx_pt_odd"), track.pt(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnCy_pt_odd"), track.pt(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
     }
 
     registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_cent_MH"), centrality, (uxMH * qxA * qxC) / corrQQx, wacc * weff);
