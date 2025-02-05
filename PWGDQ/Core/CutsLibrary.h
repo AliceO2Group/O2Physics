@@ -97,12 +97,27 @@
 //           End of Cuts for CEFP               //
 // ///////////////////////////////////////////////
 
+#include "rapidjson/document.h"
+
 namespace o2::aod
 {
 namespace dqcuts
 {
 AnalysisCompositeCut* GetCompositeCut(const char* cutName);
 AnalysisCut* GetAnalysisCut(const char* cutName);
+
+std::vector<AnalysisCut*> GetCutsFromJSON(const char* json);
+// AnalysisCut** GetCutsFromJSON(const char* json);
+template <typename T>
+bool ValidateJSONAnalysisCut(T cut);
+template <typename T>
+bool ValidateJSONAddCut(T cut, bool isSimple);
+template <typename T>
+AnalysisCut* ParseJSONAnalysisCut(T cut, const char* cutName);
+template <typename T>
+bool ValidateJSONAnalysisCompositeCut(T cut);
+template <typename T>
+AnalysisCompositeCut* ParseJSONAnalysisCompositeCut(T key, const char* cutName);
 } // namespace dqcuts
 } // namespace o2::aod
 

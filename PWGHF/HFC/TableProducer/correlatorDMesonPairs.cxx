@@ -73,6 +73,7 @@ struct HfCorrelatorDMesonPairs {
   Configurable<bool> selectSignalRegionOnly{"selectSignalRegionOnly", false, "only use events close to PDG peak"};
   Configurable<float> massCut{"massCut", 0.05, "Maximum deviation from PDG peak allowed for signal region"};
   Configurable<bool> daughterTracksCutFlag{"daughterTracksCutFlag", false, "Flag to add cut on daughter tracks"};
+  Configurable<bool> removeAmbiguous{"removeAmbiguous", false, "Flag to remove ambiguous candidates"};
 
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
@@ -123,6 +124,7 @@ struct HfCorrelatorDMesonPairs {
      {"hEta", "D meson candidates;candidate #it{#eta};entries", hTH1Y},
      {"hPhi", "D meson candidates;candidate #it{#varphi};entries", hTH1Phi},
      {"hY", "D meson candidates;candidate #it{y};entries", hTH1Y},
+     {"hPVContrib", "D meson candidates;candidate Number of PV contributors;entries", hTH1NContrib},
      // MC Gen plots
      {"hPtCandMcGen", "D meson candidates MC Gen;candidate #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
      {"hPtCandAfterCutMcGen", "D meson candidates after pT cut;candidate #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
@@ -131,12 +133,12 @@ struct HfCorrelatorDMesonPairs {
      {"hPtVsYVsNContribMcGen", "D meson candidates MC Gen;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
      {"hPtVsYVsNContribMcGenPrompt", "D meson candidates MC Gen Prompt;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
      {"hPtVsYVsNContribMcGenNonPrompt", "D meson candidates MC Gen Prompt;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
-     {"hNContribMcGen", "D meson candidates MC Gen;Number of contributors", hTH1NContrib},
+     {"hNContribMcGen", "D meson candidates MC Gen;Number of PV contributors", hTH1NContrib},
      // MC Rec plots
      {"hPtVsYVsNContribMcRec", "D meson candidates MC Rec;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
      {"hPtVsYVsNContribMcRecPrompt", "D meson candidates MC Rec Prompt;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
      {"hPtVsYVsNContribMcRecNonPrompt", "D meson candidates MC Rec Non-prompt;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
-     {"hNContribMcRec", "D meson candidates MC Rec;Number of contributors", hTH1NContrib},
+     {"hNContribMcRec", "D meson candidates MC Rec;Number of PV contributors", hTH1NContrib},
      // PID plots ----- Not definitively here
      {"PID/hTofNSigmaPi", "(TOFsignal-time#pi)/tofSigPid;p[GeV/c];(TOFsignal-time#pi)/tofSigPid", hTH2Pid},
      {"PID/hTofNSigmaKa", "(TOFsignal-timeK)/tofSigPid;p[GeV/c];(TOFsignal-timeK)/tofSigPid", hTH2Pid},
@@ -576,12 +578,18 @@ struct HfCorrelatorDMesonPairs {
         }
       }
 
+      // Remove ambiguous D0 candidates if flag is true
+      if (removeAmbiguous && (isDCand1 && isDbarCand1)) {
+        continue;
+      }
+
       registry.fill(HIST("hPtProng0"), candidate1.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate1.ptProng1());
       registry.fill(HIST("hEta"), candidate1.eta());
       registry.fill(HIST("hPhi"), candidate1.phi());
       registry.fill(HIST("hY"), candidate1.y(MassD0));
       registry.fill(HIST("hPtCandAfterCut"), candidate1.pt());
+      registry.fill(HIST("hPVContrib"), collision.numContrib());
 
       if (isDCand1) {
         registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
@@ -632,6 +640,11 @@ struct HfCorrelatorDMesonPairs {
 
           // Remove non-ML selected D0 candidates
           if (!isSelectedMlD0Cand2 && !isSelectedMlD0barCand2) {
+            continue;
+          }
+
+          // Remove ambiguous D0 candidates if flag is true
+          if (removeAmbiguous && (isDCand2 && isDbarCand2)) {
             continue;
           }
 
@@ -717,6 +730,11 @@ struct HfCorrelatorDMesonPairs {
         if (!isSelectedMlD0Cand1 && !isSelectedMlD0barCand1) {
           continue;
         }
+      }
+
+      // Remove ambiguous D0 candidates if flag is true
+      if (removeAmbiguous && (isDCand1 && isDbarCand1)) {
+        continue;
       }
 
       if (isTrueDCand1) {
@@ -818,6 +836,11 @@ struct HfCorrelatorDMesonPairs {
 
           // Remove non-ML selected D0 candidates
           if (!isSelectedMlD0Cand2 && !isSelectedMlD0barCand2) {
+            continue;
+          }
+
+          // Remove ambiguous D0 candidates if flag is true
+          if (removeAmbiguous && (isDCand2 && isDbarCand2)) {
             continue;
           }
 

@@ -90,7 +90,6 @@ struct nucleiInJets {
     }
   }
 
-  Configurable<std::string> cfgeventSelections{"cfgeventSelections", "sel8", "choose event selection"};
   Configurable<std::string> cfgtrackSelections{"cfgtrackSelections", "globalTracks", "set track selections"};
 
   Configurable<bool> isMC{"isMC", false, "flag for the MC"};
@@ -938,7 +937,7 @@ struct nucleiInJets {
 
     if (fabs(collision.posZ()) > 10)
       return;
-    if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8))
+    if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel8")))
       return;
 
     int nJets = 0;
@@ -1046,7 +1045,7 @@ struct nucleiInJets {
     jetHist.fill(HIST("mcdJet/eventStat"), 0.5);
     // JEhistos.fill(HIST("nEvents_MCRec"), 0.5);
 
-    if (!jetderiveddatautilities::selectCollision(collisionJet, jetderiveddatautilities::JCollisionSel::sel8))
+    if (!jetderiveddatautilities::selectCollision(collisionJet, jetderiveddatautilities::initialiseEventSelectionBits("sel8")))
       return;
     // bool jetFlag = kFALSE;
 
@@ -1142,7 +1141,7 @@ struct nucleiInJets {
   {
     if (fabs(collision.posZ()) > 10)
       return;
-    if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8))
+    if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel8")))
       return;
 
     jetHist.fill(HIST("recmatched/vertexZ"), collision.posZ());

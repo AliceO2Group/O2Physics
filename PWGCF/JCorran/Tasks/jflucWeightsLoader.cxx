@@ -12,6 +12,7 @@
 /// \since May 2024
 
 #include <experimental/type_traits>
+#include <string>
 #include <TFile.h>
 #include <THn.h>
 
@@ -94,7 +95,8 @@ struct jflucWeightsLoader {
       float phiWeight, effWeight;
       if (ph) {
         UInt_t partType = 0; // partType 0 = all charged hadrons
-        if constexpr (std::experimental::is_detected<hasDecay, typename TrackT::iterator>::value) {
+        // TODO: code below to be enabled
+        /*if constexpr (std::experimental::is_detected<hasDecay, typename TrackT::iterator>::value) {
           switch (track.decay()) {
             case aod::cf2prongtrack::D0ToPiK:
             case aod::cf2prongtrack::D0barToKPi:
@@ -103,7 +105,7 @@ struct jflucWeightsLoader {
             default:
               break;
           }
-        }
+        }*/
         const Double_t coords[] = {collision.multiplicity(), static_cast<Double_t>(partType), track.phi(), track.eta(), collision.posZ()};
         phiWeight = ph->GetBinContent(ph->GetBin(coords));
       } else {

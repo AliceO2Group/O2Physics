@@ -165,10 +165,9 @@ struct EmcalGammaGammaBcWise {
 
     TVector3 lvRotationPion = (meson.pMeson).Vect(); // calculate rotation axis
     for (unsigned int ig3 = 0; ig3 < mPhotons.size(); ++ig3) {
+      if (ig3 == ig1 || ig3 == ig2) // Skip if photon is one of the meson constituents
+        continue;
       for (const unsigned int ig : {ig1, ig2}) {
-        if (ig == ig3)
-          continue;
-
         TLorentzVector lvRotationPhoton(mPhotons[ig].px, mPhotons[ig].py, mPhotons[ig].pz, mPhotons[ig].e);
         lvRotationPhoton.Rotate(constants::math::PIHalf, lvRotationPion);
         Photon rotPhoton(lvRotationPhoton.Eta(), lvRotationPhoton.Phi(), lvRotationPhoton.E());

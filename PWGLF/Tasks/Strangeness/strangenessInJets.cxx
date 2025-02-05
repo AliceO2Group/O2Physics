@@ -12,7 +12,7 @@
 /// \file strangenessInJets.cxx
 ///
 /// \brief task for analysis of strangeness in jets
-/// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch)
+/// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch), Nicolò Jacazio (nicolo.jacazio@cern.ch)
 /// \since May 22, 2024
 
 #include <TLorentzVector.h>
@@ -132,6 +132,10 @@ struct StrangenessInJets {
   Configurable<std::string> histoNameWeightLambdaUe{"histoNameWeightLambdaUe", "", "reweighting histogram: lambda in ue"};
   Configurable<std::string> histoNameWeightAntilambdaJet{"histoNameWeightAntilambdaJet", "", "reweighting histogram: antilambda in jet"};
   Configurable<std::string> histoNameWeightAntilambdaUe{"histoNameWeightAntilambdaUe", "", "reweighting histogram: antilambda in ue"};
+  Configurable<std::string> histoNameWeightsXiInJet{"histoNameWeightsXiInJet", "", "reweighting histogram: xi in jet"};
+  Configurable<std::string> histoNameWeightsXiInUe{"histoNameWeightsXiInUe", "", "reweighting histogram: xi in ue"};
+  Configurable<std::string> histoNameWeightsAntiXiInJet{"histoNameWeightsAntiXiInJet", "", "reweighting histogram: antixi in jet"};
+  Configurable<std::string> histoNameWeightsAntiXiInUe{"histoNameWeightsAntiXiInUe", "", "reweighting histogram: antixi in ue"};
 
   // Two-dimensional weights
   TH2F* twodWeightsPiplusJet = nullptr;
@@ -144,6 +148,10 @@ struct StrangenessInJets {
   TH2F* twodWeightsLambdaUe;
   TH2F* twodWeightsAntilambdaJet;
   TH2F* twodWeightsAntilambdaUe;
+  TH1F* weightsXiInJet;
+  TH1F* weightsXiInUe;
+  TH1F* weightsAntiXiInJet;
+  TH1F* weightsAntiXiInUe;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
@@ -162,7 +170,7 @@ struct StrangenessInJets {
     ccdb->setFatalWhenNull(false);
 
     if (applyReweighting) {
-      getReweightingHistograms(ccdb, TString(pathToFile), TString(histoNameWeightK0Jet), TString(histoNameWeightK0Ue), TString(histoNameWeightLambdaJet), TString(histoNameWeightLambdaUe), TString(histoNameWeightAntilambdaJet), TString(histoNameWeightAntilambdaUe));
+      getReweightingHistograms(ccdb);
     } else {
       twodWeightsK0Jet = nullptr;
       twodWeightsK0Ue = nullptr;
@@ -170,6 +178,10 @@ struct StrangenessInJets {
       twodWeightsLambdaUe = nullptr;
       twodWeightsAntilambdaJet = nullptr;
       twodWeightsAntilambdaUe = nullptr;
+      weightsXiInJet = nullptr;
+      weightsXiInUe = nullptr;
+      weightsAntiXiInJet = nullptr;
+      weightsAntiXiInUe = nullptr;
     }
 
     // Event Counters
@@ -280,6 +292,12 @@ struct StrangenessInJets {
       registryMC.add("K0s_reconstructed_incl", "K0s_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("Lambda_reconstructed_incl", "Lambda_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("AntiLambda_reconstructed_incl", "AntiLambda_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
+
+      // Histograms for secondary lambda in jet and UE
+      registryMC.add("Secondary_Lambda_InJet", "Secondary_Lambda_InJet", HistType::kTH1F, {ptAxis});
+      registryMC.add("Secondary_Lambda_InUe", "Secondary_Lambda_InUe", HistType::kTH1F, {ptAxis});
+      registryMC.add("Secondary_AntiLambda_InJet", "Secondary_AntiLambda_InJet", HistType::kTH1F, {ptAxis});
+      registryMC.add("Secondary_AntiLambda_InUe", "Secondary_AntiLambda_InUe", HistType::kTH1F, {ptAxis});
 
       // Histograms for 2d reweighting (pion)
       registryMC.add("pi_plus_eta_pt_jet", "pi_plus_eta_pt_jet", HistType::kTH2F, {ptAxisPi, etaAxis});
@@ -874,68 +892,67 @@ struct StrangenessInJets {
     return false;
   }
 
-  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_k0_jet, TString histname_k0_ue, TString histname_lambda_jet, TString histname_lambda_ue, TString histname_antilambda_jet, TString histname_antilambda_ue)
+  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj)
   {
-    TList* l = ccdbObj->get<TList>(filepath.Data());
+    auto getWeightHistoObj = [&](Configurable<std::string> name, TH2F*& histo) {
+      if (name.value == "") {
+        LOG(info) << "Getting weight histogram for " << name.name << " from " << name.value;
+        histo = ccdbObj->get<TH2F>(name);
+      }
+    };
+
+    getWeightHistoObj(histoNameWeightPiplusJet, twodWeightsPiplusJet);
+    getWeightHistoObj(histoNameWeightPiplusUe, twodWeightsPiplusUe);
+    getWeightHistoObj(histoNameWeightPiminusJet, twodWeightsPiminusJet);
+    getWeightHistoObj(histoNameWeightPiminusUe, twodWeightsPiminusUe);
+
+    TList* l = ccdbObj->get<TList>(pathToFile.value.c_str());
     if (!l) {
-      LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
+      LOG(error) << "Could not open the file " << pathToFile.value;
       return;
     }
+    l->ls();
 
-    if (histoNameWeightPiplusJet.value != "") {
-      twodWeightsPiplusJet = ccdbObj->get<TH2F>(filepath.Data());
-      LOG(info) << "Getting weight histogram for piplus in jet from " << histoNameWeightPiplusJet.value;
-    }
-    if (histoNameWeightPiplusUe.value != "") {
-      twodWeightsPiplusUe = ccdbObj->get<TH2F>(filepath.Data());
-      LOG(info) << "Getting weight histogram for piplus in ue from " << histoNameWeightPiplusUe.value;
-    }
-    if (histoNameWeightPiminusJet.value != "") {
-      twodWeightsPiminusJet = ccdbObj->get<TH2F>(filepath.Data());
-      LOG(info) << "Getting weight histogram for piminus in jet from " << histoNameWeightPiminusJet.value;
-    }
-    if (histoNameWeightPiminusUe.value != "") {
-      twodWeightsPiminusUe = ccdbObj->get<TH2F>(filepath.Data());
-      LOG(info) << "Getting weight histogram for piminus in ue from " << histoNameWeightPiminusUe.value;
-    }
+    auto get2DWeightHisto = [&](Configurable<std::string> name, TH2F*& histo) {
+      LOG(info) << "Looking for 2D weight histogram '" << name.value << "' for " << name.name;
+      if (name.value == "") {
+        LOG(info) << " -> Skipping";
+        return;
+      }
+      histo = static_cast<TH2F*>(l->FindObject(name.value.c_str()));
+      if (!histo) {
+        LOG(error) << "Could not open histogram '" << name.value << "'";
+        return;
+      }
+      LOG(info) << "Opened histogram " << histo->ClassName() << " " << histo->GetName();
+    };
 
-    twodWeightsK0Jet = static_cast<TH2F*>(l->FindObject(Form("%s", histname_k0_jet.Data())));
-    if (!twodWeightsK0Jet) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_k0_jet.Data()));
-      return;
-    }
-    twodWeightsK0Ue = static_cast<TH2F*>(l->FindObject(Form("%s", histname_k0_ue.Data())));
-    if (!twodWeightsK0Ue) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_k0_ue.Data()));
-      return;
-    }
-    twodWeightsLambdaJet = static_cast<TH2F*>(l->FindObject(Form("%s", histname_lambda_jet.Data())));
-    if (!twodWeightsLambdaJet) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_lambda_jet.Data()));
-      return;
-    }
-    twodWeightsLambdaUe = static_cast<TH2F*>(l->FindObject(Form("%s", histname_lambda_ue.Data())));
-    if (!twodWeightsLambdaUe) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_lambda_ue.Data()));
-      return;
-    }
-    twodWeightsAntilambdaJet = static_cast<TH2F*>(l->FindObject(Form("%s", histname_antilambda_jet.Data())));
-    if (!twodWeightsAntilambdaJet) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_antilambda_jet.Data()));
-      return;
-    }
-    twodWeightsAntilambdaUe = static_cast<TH2F*>(l->FindObject(Form("%s", histname_antilambda_ue.Data())));
-    if (!twodWeightsAntilambdaUe) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histname_antilambda_ue.Data()));
-      return;
-    }
+    get2DWeightHisto(histoNameWeightK0Jet, twodWeightsK0Jet);
+    get2DWeightHisto(histoNameWeightK0Ue, twodWeightsK0Ue);
+    get2DWeightHisto(histoNameWeightLambdaJet, twodWeightsLambdaJet);
+    get2DWeightHisto(histoNameWeightLambdaUe, twodWeightsLambdaUe);
+    get2DWeightHisto(histoNameWeightAntilambdaJet, twodWeightsAntilambdaJet);
+    get2DWeightHisto(histoNameWeightAntilambdaUe, twodWeightsAntilambdaUe);
 
-    LOGP(info, "Opened histogram {}", Form("%s", histname_k0_jet.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_k0_ue.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_lambda_jet.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_lambda_ue.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_antilambda_jet.Data()));
-    LOGP(info, "Opened histogram {}", Form("%s", histname_antilambda_ue.Data()));
+    auto get1DWeightHisto = [&](Configurable<std::string> name, TH1F*& histo) {
+      LOG(info) << "Looking for 1D weight histogram '" << name.value << "' for " << name.name;
+      if (name.value == "") {
+        LOG(info) << " -> Skipping";
+        return;
+      }
+      histo = static_cast<TH1F*>(l->FindObject(name.value.c_str()));
+      if (!histo) {
+        LOG(error) << "Could not open histogram '" << name.value << "'";
+        return;
+      }
+      LOG(info) << "Opened histogram " << histo->ClassName() << " " << histo->GetName();
+    };
+
+    // Secondary Lambda
+    get1DWeightHisto(histoNameWeightsXiInJet, weightsXiInJet);
+    get1DWeightHisto(histoNameWeightsXiInUe, weightsXiInUe);
+    get1DWeightHisto(histoNameWeightsAntiXiInJet, weightsAntiXiInJet);
+    get1DWeightHisto(histoNameWeightsAntiXiInUe, weightsAntiXiInUe);
   }
 
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, StrHadronDaughterTracks const& tracks)
@@ -1101,7 +1118,13 @@ struct StrangenessInJets {
       for (int j = 0; j < static_cast<int>(jet.size()); j++) {
         if (isSelected[j] == 0 || i == j)
           continue;
+        if (overlap(jet[i], jet[j], rJet))
+          nOverlaps++;
         if (overlap(jet[i], ue1[j], rJet) || overlap(jet[i], ue2[j], rJet))
+          nOverlaps++;
+        if (overlap(ue1[i], ue1[j], rJet) || overlap(ue1[i], ue2[j], rJet))
+          nOverlaps++;
+        if (overlap(ue2[i], ue2[j], rJet))
           nOverlaps++;
       }
     }
@@ -1464,6 +1487,73 @@ struct StrangenessInJets {
         if (pdgParent == 0)
           continue;
 
+        // Generated Momentum of V0
+        TVector3 momentumPos(posParticle.px(), posParticle.py(), posParticle.pz());
+        TVector3 momentumNeg(negParticle.px(), negParticle.py(), negParticle.pz());
+        TVector3 momentumV0 = momentumPos + momentumNeg;
+
+        // Feed-down for lambda
+        if (passedLambdaSelection(v0, pos, neg) && pdgParent == 3122) {
+          if (!isPhysPrim) {
+            double wSecLambdaInJet(1.0);
+            double wSecLambdaInUe(1.0);
+            int idMother = posParticle.mothersIds()[0];
+            const auto& mother = mcParticles.iteratorAt(idMother);
+            int idGrandMother = mother.mothersIds()[0];
+            const auto& grandMother = mcParticles.iteratorAt(idGrandMother);
+            switch (grandMother.pdgCode()) {
+              case 3312:
+              case -3312:
+              case 3322:
+              case -3322:
+                if (weightsXiInJet) {
+                  int ibinXiInJet = weightsXiInJet->GetXaxis()->FindBin(grandMother.pt());
+                  wSecLambdaInJet = weightsXiInJet->GetBinContent(ibinXiInJet);
+                }
+                if (weightsXiInUe) {
+                  int ibinXiInUe = weightsXiInUe->GetXaxis()->FindBin(grandMother.pt());
+                  wSecLambdaInUe = weightsXiInUe->GetBinContent(ibinXiInUe);
+                }
+                break;
+              default:
+                break;
+            }
+            registryMC.fill(HIST("Secondary_Lambda_InJet"), v0.pt(), wSecLambdaInJet);
+            registryMC.fill(HIST("Secondary_Lambda_InUe"), v0.pt(), wSecLambdaInUe);
+          }
+        }
+
+        // Feed-down for antilambda
+        if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == -3122) {
+          if (!isPhysPrim) {
+            double wSecAntiLambdaInJet(1.0);
+            double wSecAntiLambdaInUe(1.0);
+            int idMother = posParticle.mothersIds()[0];
+            const auto& mother = mcParticles.iteratorAt(idMother);
+            int idGrandMother = mother.mothersIds()[0];
+            const auto& grandMother = mcParticles.iteratorAt(idGrandMother);
+            switch (grandMother.pdgCode()) {
+              case 3312:
+              case -3312:
+              case 3322:
+              case -3322:
+                if (weightsAntiXiInJet) {
+                  int ibinAntiXiInJet = weightsAntiXiInJet->GetXaxis()->FindBin(grandMother.pt());
+                  wSecAntiLambdaInJet = weightsAntiXiInJet->GetBinContent(ibinAntiXiInJet);
+                }
+                if (weightsAntiXiInUe) {
+                  int ibinAntiXiInUe = weightsAntiXiInUe->GetXaxis()->FindBin(grandMother.pt());
+                  wSecAntiLambdaInUe = weightsAntiXiInUe->GetBinContent(ibinAntiXiInUe);
+                }
+                break;
+              default:
+                break;
+            }
+            registryMC.fill(HIST("Secondary_AntiLambda_InJet"), v0.pt(), wSecAntiLambdaInJet);
+            registryMC.fill(HIST("Secondary_AntiLambda_InUe"), v0.pt(), wSecAntiLambdaInUe);
+          }
+        }
+
         if (passedK0ShortSelection(v0, pos, neg) && pdgParent == 310) {
           registryMC.fill(HIST("K0s_reconstructed_incl"), multiplicity, v0.pt());
         }
@@ -1475,11 +1565,6 @@ struct StrangenessInJets {
         }
         if (!isPhysPrim)
           continue;
-
-        // Momentum of V0
-        TVector3 momentumPos(posParticle.px(), posParticle.py(), posParticle.pz());
-        TVector3 momentumNeg(negParticle.px(), negParticle.py(), negParticle.pz());
-        TVector3 momentumV0 = momentumPos + momentumNeg;
 
         double wK0jet(1.0), wK0Ue(1.0), wLambdaJet(1.0), wLambdaUe(1.0), wAntilambdaJet(1.0), wAntilambdaUe(1.0);
         if (applyReweighting) {
