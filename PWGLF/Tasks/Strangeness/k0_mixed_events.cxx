@@ -202,6 +202,7 @@ struct K0MixedEvents {
     registry.add("Trks", "Trks", kTH1D, {{2, 0.5, 2.5, "Tracks"}});
     registry.add("VTXc", "VTXc", kTH1D, {{100, -20., 20., "vtx"}});
     registry.add("VTX", "VTX", kTH1D, {{100, -20., 20., "vtx"}});
+    registry.add("multPerc", "multPerc", kTH1D, {multPercentileAxis});
     registry.add("SEcand", "SEcand", kTH1D, {{2, 0.5, 2.5}});
     registry.add("SE", "SE", kTH1D, {invMassAxis});
     registry.add("ME", "ME", kTH1D, {invMassAxis});
@@ -319,6 +320,7 @@ struct K0MixedEvents {
     for (auto collision : collisions) {
       LOG(debug) << "Collision index " << collision.globalIndex();
       registry.fill(HIST("VTXc"), collision.posZ());
+      registry.fill(HIST("multPerc"), collision.multPerc());
     }
 
     for (auto track : tracks) {
