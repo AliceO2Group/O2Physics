@@ -73,6 +73,7 @@ struct FlowPtEfficiency {
 
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "pt axis for histograms"};
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "X axis for histograms"};
+  ConfigurableAxis axisPhi{"axisPhi", {100, 0.0f, constants::math::TwoPI}, ""};
   ConfigurableAxis axisB{"axisB", {100, 0.0f, 20.0f}, "b (fm)"};
 
   // Filter the tracks
@@ -149,14 +150,16 @@ struct FlowPtEfficiency {
     if (cfgFlowEnabled) {
       registry.add("hImpactParameterReco", "hImpactParameterReco", {HistType::kTH1D, {axisB}});
       registry.add("hImpactParameterTruth", "hImpactParameterTruth", {HistType::kTH1D, {axisB}});
+      registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
+      registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
 
       o2::framework::AxisSpec axis = axisPt;
       int nPtBins = axis.binEdges.size() - 1;
       double* ptBins = &(axis.binEdges)[0];
       fPtAxis = new TAxis(nPtBins, ptBins);
 
-      fWeights->SetPtBins(nPtBins, ptBins);
-      fWeights->Init(true, false);
+      fWeights->setPtBins(nPtBins, ptBins);
+      fWeights->init(true, false);
 
       TObjArray* oba = new TObjArray();
       oba->Add(new TNamed("ChFull22", "ChFull22"));
@@ -326,7 +329,7 @@ struct FlowPtEfficiency {
       return false;
     weight_nue = 1. / eff;
     if (mAcceptance)
-      weight_nua = mAcceptance->GetNUA(phi, eta, vtxz);
+      weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
     else
       weight_nua = 1;
     return true;
@@ -387,15 +390,19 @@ struct FlowPtEfficiency {
             bool withinPtPOI = (cfgFlowCutPtPOIMin < track.pt()) && (track.pt() < cfgFlowCutPtPOIMax); // within POI pT range
             bool withinPtRef = (cfgFlowCutPtRefMin < track.pt()) && (track.pt() < cfgFlowCutPtRefMax); // within RF pT range
             if (withinPtRef)
-              fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
+              fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
             if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
               continue;
+            if (withinPtRef) {
+              registry.fill(HIST("hPhi"), track.phi());
+              registry.fill(HIST("hPhiWeighted"), track.phi(), wacc);
+            }
             if (withinPtRef)
-              fGFWReco->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+              fGFWReco->fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
             if (withinPtPOI)
-              fGFWReco->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
+              fGFWReco->fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
             if (withinPtPOI && withinPtRef)
-              fGFWReco->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
+              fGFWReco->fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
           }
         }
       }

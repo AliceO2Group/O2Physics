@@ -96,13 +96,16 @@ struct FlowMc {
     histos.add<TH3>("hBVsPtVsPhiGeneratedOmega", "hBVsPtVsPhiGeneratedOmega", HistType::kTH3D, {axisB, axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiGlobalOmega", "hBVsPtVsPhiGlobalOmega", HistType::kTH3D, {axisB, axisPhi, axisPt});
 
+    registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
+    registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
+
     if (cfgOutputNUAWeights) {
       o2::framework::AxisSpec axis = axisPt;
       int nPtBins = axis.binEdges.size() - 1;
       double* ptBins = &(axis.binEdges)[0];
 
-      fWeights->SetPtBins(nPtBins, ptBins);
-      fWeights->Init(true, false);
+      fWeights->setPtBins(nPtBins, ptBins);
+      fWeights->init(true, false);
     }
   }
 
@@ -138,7 +141,7 @@ struct FlowMc {
       return false;
     weight_nue = 1. / eff;
     if (mAcceptance)
-      weight_nua = mAcceptance->GetNUA(phi, eta, vtxz);
+      weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
     else
       weight_nua = 1;
     return true;
@@ -215,9 +218,13 @@ struct FlowMc {
 
         bool withinPtRef = (cfgCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtRefMax); // within RF pT range
         if (cfgOutputNUAWeights && withinPtRef)
-          fWeights->Fill(mcParticle.phi(), mcParticle.eta(), vtxz, mcParticle.pt(), 0, 0);
+          fWeights->fill(mcParticle.phi(), mcParticle.eta(), vtxz, mcParticle.pt(), 0, 0);
         if (!setCurrentParticleWeights(weff, wacc, mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), vtxz))
           continue;
+        if (withinPtRef) {
+          registry.fill(HIST("hPhi"), mcParticle.phi());
+          registry.fill(HIST("hPhiWeighted"), mcParticle.phi(), wacc);
+        }
 
         // if valid global, fill
         if (validGlobal) {
