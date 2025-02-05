@@ -112,7 +112,7 @@ struct RecoilJets {
 
   // Declare filters on accepted tracks and MC particles (settings for jet reco are provided in the jet finder wagon)
   Filter trackFilter = aod::jtrack::pt > trkPtMin&& aod::jtrack::pt < trkPtMax&& nabs(aod::jtrack::eta) < trkEtaCut;
-  Filter partFilter = aod::jmcparticle::pt > trkPtMin&& aod::jmcparticle::pt < trkPtMax&& nabs(aod::jmcparticle::eta) < trkEtaCut;
+  Filter partFilter = nabs(aod::jmcparticle::eta) < trkEtaCut;
 
   // Declare filter on jets
   Filter jetRadiusFilter = aod::jet::r == nround(jetR.node() * 100.);
