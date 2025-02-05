@@ -39,6 +39,8 @@
 #include "PWGCF/Femto3D/Core/femto3dPairTask.h"
 #include "Common/DataModel/Centrality.h"
 #include "PWGLF/DataModel/mcCentrality.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "PWGLF/Utils/inelGt.h"
 
 using namespace o2;
 using namespace o2::soa;
@@ -128,7 +130,6 @@ struct K0MixedEvents {
   Configurable<float> _dphi{"dphi", 1, "minimum allowed defference in phi_star between two tracks in a pair"};
   Configurable<float> _radiusTPC{"radiusTPC", 1.2, "TPC radius to calculate phi_star for"};
 
-  Configurable<bool> useCentralityInvMass{"useCentralityInvMass", true, "Use the centrality vs inv. mass plots"};
   Configurable<bool> doMixedEvent{"doMixedEvent", false, "Do the mixed event"};
   Configurable<int> _multbinwidth{"multbinwidth", 50, "width of multiplicity bins within which the mixing is done"};
   Configurable<int> _vertexbinwidth{"vertexbinwidth", 2, "width of vertexZ bins within which the mixing is done"};
@@ -203,20 +204,13 @@ struct K0MixedEvents {
     registry.add("VTXc", "VTXc", kTH1D, {{100, -20., 20., "vtx"}});
     registry.add("VTX", "VTX", kTH1D, {{100, -20., 20., "vtx"}});
     registry.add("multPerc", "multPerc", kTH1D, {multPercentileAxis});
+
     registry.add("SEcand", "SEcand", kTH1D, {{2, 0.5, 2.5}});
     registry.add("SE", "SE", kTH1D, {invMassAxis});
     registry.add("ME", "ME", kTH1D, {invMassAxis});
-    if (useCentralityInvMass) {
-      registry.add("SEvsPt", "SEvsPt", kTH3F, {invMassAxis, ptAxis, multPercentileAxis});
-    } else {
-      registry.add("SEvsPt", "SEvsPt", kTH2D, {invMassAxis, ptAxis});
-    }
+    registry.add("SEvsPt", "SEvsPt", kTH3F, {invMassAxis, ptAxis, multPercentileAxis});
     if (doMixedEvent) {
-      if (useCentralityInvMass) {
-        registry.add("MEvsPt", "MEvsPt", kTH3F, {invMassAxis, ptAxis, multPercentileAxis});
-      } else {
-        registry.add("MEvsPt", "MEvsPt", kTH2D, {invMassAxis, ptAxis});
-      }
+      registry.add("MEvsPt", "MEvsPt", kTH3F, {invMassAxis, ptAxis, multPercentileAxis});
     }
     registry.add("eta", Form("eta_%i", _particlePDG_1.value), kTH2F, {ptAxis, {100, -10., 10., "#eta"}});
     registry.add("p_first", Form("p_%i", _particlePDG_1.value), kTH1D, {ptAxis});
@@ -233,14 +227,14 @@ struct K0MixedEvents {
       registry.add("rapidity_second", Form("rapidity_%i", _particlePDG_2.value), kTH2F, {ptAxis, {100, -10., 10., Form("y(%s)", pdgToSymbol(_particlePDG_2))}});
     }
 
-    if (!doprocessMCReco) {
+    if (!doprocessMC) {
       return;
     }
-    if (useCentralityInvMass) {
-      registry.add("MC/generatedInRecoEvs", "generatedInRecoEvs", kTH2D, {ptAxis, multPercentileAxis});
-    } else {
-      registry.add("MC/generatedInRecoEvs", "generatedInRecoEvs", kTH2D, {ptAxis});
-    }
+    registry.add("MC/multPerc", "multPerc", kTH1D, {multPercentileAxis});
+    registry.add("MC/multPercMC", "multPercMC", kTH1D, {multPercentileAxis});
+    registry.add("MC/generatedInRecoEvs", "generatedInRecoEvs", kTH2D, {ptAxis, multPercentileAxis});
+    registry.add("MC/generatedInGenEvs", "generatedInGenEvs", kTH2D, {ptAxis, multPercentileAxis});
+    registry.add("MC/SEvsPt", "SEvsPt", kTH3F, {invMassAxis, ptAxis, multPercentileAxis});
   }
 
   template <typename Type>
@@ -261,12 +255,8 @@ struct K0MixedEvents {
           continue;
         }
         registry.fill(HIST("SEcand"), 2.f);
-        registry.fill(HIST("SE"), Pair->getInvMass()); // close pair rejection and fillig the SE histo
-        if (useCentralityInvMass) {
-          registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt(), centrality); // close pair rejection and fillig the SE histo
-        } else {
-          registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt()); // close pair rejection and fillig the SE histo
-        }
+        registry.fill(HIST("SE"), Pair->getInvMass());                                // close pair rejection and fillig the SE histo
+        registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt(), centrality); // close pair rejection and fillig the SE histo
       }
     }
   }
@@ -292,18 +282,10 @@ struct K0MixedEvents {
         if constexpr (isSameEvent) {
           registry.fill(HIST("SEcand"), 2.f);
           registry.fill(HIST("SE"), Pair->getInvMass());
-          if (useCentralityInvMass) {
-            registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt(), centrality);
-          } else {
-            registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt());
-          }
+          registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt(), centrality);
         } else {
           registry.fill(HIST("ME"), Pair->getInvMass());
-          if (useCentralityInvMass) {
-            registry.fill(HIST("MEvsPt"), Pair->getInvMass(), Pair->getPt(), centrality);
-          } else {
-            registry.fill(HIST("MEvsPt"), Pair->getInvMass(), Pair->getPt());
-          }
+          registry.fill(HIST("MEvsPt"), Pair->getInvMass(), Pair->getPt(), centrality);
         }
       }
     }
@@ -513,17 +495,35 @@ struct K0MixedEvents {
   using RecoMCCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>;
   using GenMCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
-  // Service<o2::framework::O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
   SliceCache cache;
-  void processMCReco(soa::Filtered<RecoMCCollisions> const& collisions,
-                     GenMCCollisions const&,
-                     aod::McParticles const& mcParticles)
+  void processMC(soa::Filtered<RecoMCCollisions> const& collisions,
+                 //  soa::Join<aod::Tracks, aod::TracksExtra,
+                 //            aod::TracksDCA, aod::McTrackLabels,
+                 //            aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                 //            aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
+                 //            aod::TrackSelection> const& tracks,
+                 GenMCCollisions const& mcCollisions,
+                 aod::McParticles const& mcParticles)
   {
+
+    // Loop on reconstructed collisions
     for (const auto& col : collisions) {
+      if (!col.sel8()) {
+        continue;
+      }
+      if (std::abs(col.posZ()) > _vertexZ) {
+        continue;
+      }
       if (!col.has_mcCollision()) {
         continue;
       }
+      registry.fill(HIST("MC/multPerc"), col.centFT0M());
+      // Loop on tracks
+      // MC / SEvsPt
+
+      // Loop on particles
       const auto& mcCollision = col.mcCollision_as<GenMCCollisions>();
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
       for (const auto& mcParticle : particlesInCollision) {
@@ -539,16 +539,39 @@ struct K0MixedEvents {
         if (std::abs(mcParticle.y()) > 0.5) {
           continue;
         }
-        if (useCentralityInvMass) {
-          registry.fill(HIST("MC/generatedInRecoEvs"), mcParticle.pt(), col.centFT0M());
-        } else {
-          registry.fill(HIST("MC/generatedInRecoEvs"), mcParticle.pt());
+        registry.fill(HIST("MC/generatedInRecoEvs"), mcParticle.pt(), col.centFT0M());
+      }
+    }
+
+    // Loop on generated collisions
+    for (const auto& mcCollision : mcCollisions) {
+      if (std::abs(mcCollision.posZ()) > _vertexZ) {
+        continue;
+      }
+      const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      if (!o2::pwglf::isINELgt0mc(particlesInCollision, pdgDB)) {
+        continue;
+      }
+      registry.fill(HIST("MC/multPercMC"), mcCollision.centFT0M());
+      for (const auto& mcParticle : particlesInCollision) {
+        switch (mcParticle.pdgCode()) {
+          case 310:
+            break;
+          default:
+            continue;
         }
+        if (mcParticle.pdgCode() != 310) {
+          LOG(fatal) << "Fatal in PDG";
+        }
+        if (std::abs(mcParticle.y()) > 0.5) {
+          continue;
+        }
+        registry.fill(HIST("MC/generatedInGenEvs"), mcParticle.pt(), mcCollision.centFT0M());
       }
     }
   }
 
-  PROCESS_SWITCH(K0MixedEvents, processMCReco, "process mc", false);
+  PROCESS_SWITCH(K0MixedEvents, processMC, "process mc", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
