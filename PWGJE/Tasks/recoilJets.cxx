@@ -119,7 +119,7 @@ struct RecoilJets {
 
   HistogramRegistry spectra;
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
   std::vector<int> triggerMaskBits;
 
@@ -127,7 +127,7 @@ struct RecoilJets {
 
   void init(InitContext const&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(evSel));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(evSel));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trkSel));
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
 
@@ -539,7 +539,7 @@ struct RecoilJets {
   bool skipEvent(const Collision& coll)
   {
     /// \brief: trigger cut is needed for pp data
-    return !jetderiveddatautilities::selectCollision(coll, eventSelection) || !jetderiveddatautilities::selectTrigger(coll, triggerMaskBits);
+    return !jetderiveddatautilities::selectCollision(coll, eventSelectionBits) || !jetderiveddatautilities::selectTrigger(coll, triggerMaskBits);
   }
 
   template <typename Track>
