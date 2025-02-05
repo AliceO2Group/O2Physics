@@ -65,7 +65,7 @@ using namespace o2::aod::track;
 using namespace o2::aod::evsel;
 
 // define my.....
-using UsedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+using UsedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 namespace o2::analysis::qvectortask
@@ -75,10 +75,6 @@ int counter = 0;
 
 // step0 -> Energy calib
 std::shared_ptr<TProfile2D> energyZN[10] = {{nullptr}};
-std::shared_ptr<TH2> hQxvsQy[6] = {{nullptr}};
-
-// <XX> <XY> <YX> and <YY>
-std::shared_ptr<TProfile> hCOORDcorrelations[6][4] = {{nullptr}};
 
 // Define histogrm names here to use same names for creating and later uploading and retrieving data from ccdb
 // Energy calibration:
@@ -91,8 +87,9 @@ std::vector<double> pxZDC = {-1.75, 1.75, -1.75, 1.75};
 std::vector<double> pyZDC = {-1.75, -1.75, 1.75, 1.75};
 double alphaZDC = 0.395;
 
-// step 0 tm 5 A&C
-std::vector<std::vector<std::vector<double>>> q(6, std::vector<std::vector<double>>(7, std::vector<double>(4, 0.0))); // 5 iterations with 5 steps, each with 4 values
+// q-vectors before (q) and after (qRec) recentering.
+std::vector<double> q(4);    // start values of [QxA, QyA, QxC, QyC]
+std::vector<double> qRec(4); // Recentered values of [QxA, QyA, QxC, QyC]
 
 // for energy calibration
 std::vector<double> eZN(8);      // uncalibrated energy for the 2x4 towers (a1, a2, a3, a4, c1, c2, c3, c4)
@@ -123,6 +120,12 @@ struct ZdcQVectors {
   ConfigurableAxis axisVx{"axisVx", {10, -0.01, 0.01}, "for Pos X of collision"};
   ConfigurableAxis axisVy{"axisVy", {10, -0.01, 0.01}, "for Pos Y of collision"};
   ConfigurableAxis axisVz{"axisVz", {10, -10, 1}, "for vz of collision"};
+
+  // Centrality Estimators -> standard is FT0C
+  O2_DEFINE_CONFIGURABLE(cfgFT0Cvariant1, bool, false, "Set centrality estimator to cfgFT0Cvariant1");
+  O2_DEFINE_CONFIGURABLE(cfgFT0M, bool, false, "Set centrality estimator to cfgFT0M");
+  O2_DEFINE_CONFIGURABLE(cfgFV0A, bool, false, "Set centrality estimator to cfgFV0A");
+  O2_DEFINE_CONFIGURABLE(cfgNGlobal, bool, false, "Set centrality estimator to cfgNGlobal");
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal.q pT for poi tracks")
@@ -155,6 +158,11 @@ struct ZdcQVectors {
     int atIteration = 0;
   } cal;
 
+  enum FillType {
+    kBefore,
+    kAfter
+  };
+
   void init(InitContext const&)
   {
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -173,20 +181,17 @@ struct ZdcQVectors {
       energyZN[tower] = registry.add<TProfile2D>(Form("Energy/%s", namesEcal[tower].Data()), Form("%s", namesEcal[tower].Data()), kTProfile2D, {{1, 0, 1}, axisCent});
     }
 
-    // Qx_vs_Qy for each step for ZNA and ZNC
-    for (int step = 0; step < 6; step++) {
-      registry.add<TH2>(Form("step%i/QA/hSPplaneA", step), "hSPplaneA", kTH2D, {{100, -4, 4}, axisCent10});
-      registry.add<TH2>(Form("step%i/QA/hSPplaneC", step), "hSPplaneC", kTH2D, {{100, -4, 4}, axisCent10});
-      registry.add<TH2>(Form("step%i/QA/hSPplaneFull", step), "hSPplaneFull", kTH2D, {{100, -4, 4}, axisCent10});
-      for (const auto& side : sides) {
-        hQxvsQy[step] = registry.add<TH2>(Form("step%i/hZN%s_Qx_vs_Qy", step, side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
-      }
-      int i = 0;
+    registry.add<TH2>(Form("before/QA/hSPplaneA"), "hSPplaneA", kTH2D, {{100, -4, 4}, axisCent10});
+    registry.add<TH2>(Form("before/QA/hSPplaneC"), "hSPplaneC", kTH2D, {{100, -4, 4}, axisCent10});
+    registry.add<TH2>(Form("before/QA/hSPplaneFull"), "hSPplaneFull", kTH2D, {{100, -4, 4}, axisCent10});
+    for (const auto& side : sides) {
+      registry.add<TH2>(Form("before/hZN%s_Qx_vs_Qy", side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
+    }
+
       for (const auto& COORD1 : capCOORDS) {
         for (const auto& COORD2 : capCOORDS) {
           // Now we get: <XX> <XY> & <YX> <YY> vs. Centrality
-          hCOORDcorrelations[step][i] = registry.add<TProfile>(Form("step%i/QA/hQ%sA_Q%sC_vs_cent", step, COORD1, COORD2), Form("hQ%sA_Q%sC_vs_cent", COORD1, COORD2), kTProfile, {axisCent10});
-          i++;
+          registry.add<TProfile>(Form("before/QA/hQ%sA_Q%sC_vs_cent", COORD1, COORD2), Form("hQ%sA_Q%sC_vs_cent", COORD1, COORD2), kTProfile, {axisCent});
         }
       }
 
@@ -194,190 +199,76 @@ struct ZdcQVectors {
       // Sides is {A,C} and capcoords is {X,Y}
       for (const auto& side : sides) {
         for (const auto& coord : capCOORDS) {
-          registry.add(Form("step%i/QA/hQ%s%s_vs_cent", step, coord, side), Form("hQ%s%s_vs_cent", coord, side), {HistType::kTProfile, {axisCent10}});
-          registry.add(Form("step%i/QA/hQ%s%s_vs_vx", step, coord, side), Form("hQ%s%s_vs_vx", coord, side), {HistType::kTProfile, {axisVx}});
-          registry.add(Form("step%i/QA/hQ%s%s_vs_vy", step, coord, side), Form("hQ%s%s_vs_vy", coord, side), {HistType::kTProfile, {axisVy}});
-          registry.add(Form("step%i/QA/hQ%s%s_vs_vz", step, coord, side), Form("hQ%s%s_vs_vz", coord, side), {HistType::kTProfile, {axisVz}});
+          registry.add(Form("before/QA/hQ%s%s_vs_cent", coord, side), Form("hQ%s%s_vs_cent", coord, side), {HistType::kTProfile, {axisCent10}});
+          registry.add(Form("before/QA/hQ%s%s_vs_vx", coord, side), Form("hQ%s%s_vs_vx", coord, side), {HistType::kTProfile, {axisVx}});
+          registry.add(Form("before/QA/hQ%s%s_vs_vy", coord, side), Form("hQ%s%s_vs_vy", coord, side), {HistType::kTProfile, {axisVy}});
+          registry.add(Form("before/QA/hQ%s%s_vs_vz", coord, side), Form("hQ%s%s_vs_vz", coord, side), {HistType::kTProfile, {axisVz}});
 
-          if (step == 1 || step == 5) {
-            TString name = TString::Format("hQ%s%s_mean_Cent_V_run", coord, side);
-            registry.add(Form("step%i/%s", step, name.Data()), Form("hQ%s%s_mean_Cent_V_run", coord, side), {HistType::kTHnSparseD, {axisCent10, axisVxBig, axisVyBig, axisVzBig, axisQ}});
-            if (step == 1)
-              names[step - 1].push_back(name);
-          }
-          if (step == 2) {
-            TString name = TString::Format("hQ%s%s_mean_cent_run", coord, side);
-            registry.add<TProfile>(Form("step%i/%s", step, name.Data()), Form("hQ%s%s_mean_cent_run", coord, side), kTProfile, {axisCent});
-            names[step - 1].push_back(name);
-          }
-          if (step == 3) {
-            TString name = TString::Format("hQ%s%s_mean_vx_run", coord, side);
-            registry.add<TProfile>(Form("step%i/%s", step, name.Data()), Form("hQ%s%s_mean_vx_run", coord, side), kTProfile, {axisVx});
-            names[step - 1].push_back(name);
-          }
-          if (step == 4) {
-            TString name = TString::Format("hQ%s%s_mean_vy_run", coord, side);
-            registry.add<TProfile>(Form("step%i/%s", step, name.Data()), Form("hQ%s%s_mean_vy_run", coord, side), kTProfile, {axisVy});
-            names[step - 1].push_back(name);
-          }
-          if (step == 5) {
-            TString name = TString::Format("hQ%s%s_mean_vz_run", coord, side);
-            registry.add<TProfile>(Form("step%i/%s", step, name.Data()), Form("hQ%s%s_mean_vz_run", coord, side), kTProfile, {axisVz});
-            names[step - 1].push_back(name);
-          }
+          names[0].push_back(TString::Format("hQ%s%s_mean_Cent_V_run", coord, side));
+          names[1].push_back(TString::Format("hQ%s%s_mean_cent_run", coord, side));
+          names[2].push_back(TString::Format("hQ%s%s_mean_vx_run", coord, side));
+          names[3].push_back(TString::Format("hQ%s%s_mean_vy_run", coord, side));
+          names[4].push_back(TString::Format("hQ%s%s_mean_vz_run", coord, side));
         } // end of capCOORDS
       } // end of sides
-    } // end of sum over steps
 
-    // recentered q-vectors (to check what steps are finished in the end)
-    registry.add("hStep", "hStep", {HistType::kTH1D, {{10, 0., 10.}}});
-    registry.add("hIteration", "hIteration", {HistType::kTH1D, {{10, 0., 10.}}});
+      // recentered q-vectors (to check what steps are finished in the end)
 
-    registry.add<TProfile>("vmean/hvertex_vx", "hvertex_vx", kTProfile, {{1, 0., 1.}});
-    registry.add<TProfile>("vmean/hvertex_vy", "hvertex_vy", kTProfile, {{1, 0., 1.}});
-    registry.add<TProfile>("vmean/hvertex_vz", "hvertex_vz", kTProfile, {{1, 0., 1.}});
+      registry.add<TProfile>("vmean/hvertex_vx", "hvertex_vx", kTProfile, {{1, 0., 1.}});
+      registry.add<TProfile>("vmean/hvertex_vy", "hvertex_vy", kTProfile, {{1, 0., 1.}});
+      registry.add<TProfile>("vmean/hvertex_vz", "hvertex_vz", kTProfile, {{1, 0., 1.}});
 
-    registry.add<TH1>("QA/centrality_before", "centrality_before", kTH1D, {{200, 0, 100}});
-    registry.add<TH1>("QA/centrality_after", "centrality_after", kTH1D, {{200, 0, 100}});
+      registry.add<TH1>("QA/centrality_before", "centrality_before", kTH1D, {{200, 0, 100}});
+      registry.add<TH1>("QA/centrality_after", "centrality_after", kTH1D, {{200, 0, 100}});
 
-    registry.add<TProfile>("QA/ZNA_Energy", "ZNA_Energy", kTProfile, {{8, 0, 8}});
-    registry.add<TProfile>("QA/ZNC_Energy", "ZNC_Energy", kTProfile, {{8, 0, 8}});
+      registry.add<TProfile>("QA/ZNA_Energy", "ZNA_Energy", kTProfile, {{8, 0, 8}});
+      registry.add<TProfile>("QA/ZNC_Energy", "ZNC_Energy", kTProfile, {{8, 0, 8}});
+
+      registry.addClone("before/", "after/");
   }
 
-  inline void fillRegistry(int iteration, int step)
-  {
-    if (step == 0 && iteration == 1) {
-      registry.fill(HIST("hIteration"), iteration, 1);
-
-      registry.fill(HIST("step1/hQXA_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[0][step][0]);
-      registry.fill(HIST("step1/hQYA_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[0][step][1]);
-      registry.fill(HIST("step1/hQXC_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[0][step][2]);
-      registry.fill(HIST("step1/hQYC_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[0][step][3]);
-      registry.fill(HIST("hStep"), step, 1);
-    }
-
-    if (step == 1) {
-      registry.get<TProfile>(HIST("step2/hQXA_mean_cent_run"))->Fill(centrality, q[iteration][step][0]);
-      registry.get<TProfile>(HIST("step2/hQYA_mean_cent_run"))->Fill(centrality, q[iteration][step][1]);
-      registry.get<TProfile>(HIST("step2/hQXC_mean_cent_run"))->Fill(centrality, q[iteration][step][2]);
-      registry.get<TProfile>(HIST("step2/hQYC_mean_cent_run"))->Fill(centrality, q[iteration][step][3]);
-      registry.fill(HIST("hStep"), step, 1);
-    }
-
-    if (step == 2) {
-      registry.get<TProfile>(HIST("step3/hQXA_mean_vx_run"))->Fill(v[0], q[iteration][step][0]);
-      registry.get<TProfile>(HIST("step3/hQYA_mean_vx_run"))->Fill(v[0], q[iteration][step][1]);
-      registry.get<TProfile>(HIST("step3/hQXC_mean_vx_run"))->Fill(v[0], q[iteration][step][2]);
-      registry.get<TProfile>(HIST("step3/hQYC_mean_vx_run"))->Fill(v[0], q[iteration][step][3]);
-      registry.fill(HIST("hStep"), step, 1);
-    }
-
-    if (step == 3) {
-      registry.get<TProfile>(HIST("step4/hQXA_mean_vy_run"))->Fill(v[1], q[iteration][step][0]);
-      registry.get<TProfile>(HIST("step4/hQYA_mean_vy_run"))->Fill(v[1], q[iteration][step][1]);
-      registry.get<TProfile>(HIST("step4/hQXC_mean_vy_run"))->Fill(v[1], q[iteration][step][2]);
-      registry.get<TProfile>(HIST("step4/hQYC_mean_vy_run"))->Fill(v[1], q[iteration][step][3]);
-      registry.fill(HIST("hStep"), step, 1);
-    }
-
-    if (step == 4) {
-      registry.get<TProfile>(HIST("step5/hQXA_mean_vz_run"))->Fill(v[2], q[iteration][step][0]);
-      registry.get<TProfile>(HIST("step5/hQYA_mean_vz_run"))->Fill(v[2], q[iteration][step][1]);
-      registry.get<TProfile>(HIST("step5/hQXC_mean_vz_run"))->Fill(v[2], q[iteration][step][2]);
-      registry.get<TProfile>(HIST("step5/hQYC_mean_vz_run"))->Fill(v[2], q[iteration][step][3]);
-      registry.fill(HIST("hStep"), step, 1);
-    }
-
-    if (step == 5) {
-      registry.fill(HIST("step5/hQXA_mean_Cent_V_run"), centrality, v[0], v[1], v[2], q[iteration][step][0]);
-      registry.fill(HIST("step5/hQYA_mean_Cent_V_run"), centrality, v[0], v[1], v[2], q[iteration][step][1]);
-      registry.fill(HIST("step5/hQXC_mean_Cent_V_run"), centrality, v[0], v[1], v[2], q[iteration][step][2]);
-      registry.fill(HIST("step5/hQYC_mean_Cent_V_run"), centrality, v[0], v[1], v[2], q[iteration][step][3]);
-      registry.fill(HIST("hStep"), step, 1);
-    }
-  }
-
-  inline void fillCommonRegistry(int iteration)
+  template <FillType ft>
+  inline void fillCommonRegistry(double qxa, double qya, double qxc, double qyc, std::vector<double> v, double centrality)
   {
     // loop for filling multiple histograms with different naming patterns
     //  Always fill the uncentered "raw" Q-vector histos!
+    static constexpr std::string_view Time[] = {"before", "after"};
 
-    registry.fill(HIST("step0/hZNA_Qx_vs_Qy"), q[0][0][0], q[0][0][1]);
-    registry.fill(HIST("step0/hZNC_Qx_vs_Qy"), q[0][0][2], q[0][0][3]);
+    registry.fill(HIST(Time[ft]) + HIST("/hZNA_Qx_vs_Qy"), qxa, qya);
+    registry.fill(HIST(Time[ft]) + HIST("/hZNC_Qx_vs_Qy"), qxc, qyc);
 
-    registry.fill(HIST("step0/QA/hQXA_QXC_vs_cent"), centrality, q[0][0][0] * q[0][0][2]);
-    registry.fill(HIST("step0/QA/hQYA_QYC_vs_cent"), centrality, q[0][0][1] * q[0][0][3]);
-    registry.fill(HIST("step0/QA/hQYA_QXC_vs_cent"), centrality, q[0][0][1] * q[0][0][2]);
-    registry.fill(HIST("step0/QA/hQXA_QYC_vs_cent"), centrality, q[0][0][0] * q[0][0][3]);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQXA_QXC_vs_cent"), centrality, qxa * qxc);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQYA_QYC_vs_cent"), centrality, qya * qyc);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQYA_QXC_vs_cent"), centrality, qya * qxc);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQXA_QYC_vs_cent"), centrality, qxa * qyc);
 
-    registry.fill(HIST("step0/QA/hQXA_vs_cent"), centrality, q[0][0][0]);
-    registry.fill(HIST("step0/QA/hQYA_vs_cent"), centrality, q[0][0][1]);
-    registry.fill(HIST("step0/QA/hQXC_vs_cent"), centrality, q[0][0][2]);
-    registry.fill(HIST("step0/QA/hQYC_vs_cent"), centrality, q[0][0][3]);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQXA_vs_cent"), centrality, qxa);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQYA_vs_cent"), centrality, qya);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQXC_vs_cent"), centrality, qxc);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQYC_vs_cent"), centrality, qyc);
 
-    registry.fill(HIST("step0/QA/hQXA_vs_vx"), v[0], q[0][0][0]);
-    registry.fill(HIST("step0/QA/hQYA_vs_vx"), v[0], q[0][0][1]);
-    registry.fill(HIST("step0/QA/hQXC_vs_vx"), v[0], q[0][0][2]);
-    registry.fill(HIST("step0/QA/hQYC_vs_vx"), v[0], q[0][0][3]);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQXA_vs_vx"), v[0], qxa);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQYA_vs_vx"), v[0], qya);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQXC_vs_vx"), v[0], qxc);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQYC_vs_vx"), v[0], qyc);
 
-    registry.fill(HIST("step0/QA/hQXA_vs_vy"), v[1], q[0][0][0]);
-    registry.fill(HIST("step0/QA/hQYA_vs_vy"), v[1], q[0][0][1]);
-    registry.fill(HIST("step0/QA/hQXC_vs_vy"), v[1], q[0][0][2]);
-    registry.fill(HIST("step0/QA/hQYC_vs_vy"), v[1], q[0][0][3]);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQXA_vs_vy"), v[1], qxa);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQYA_vs_vy"), v[1], qya);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQXC_vs_vy"), v[1], qxc);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQYC_vs_vy"), v[1], qyc);
 
-    registry.fill(HIST("step0/QA/hQXA_vs_vz"), v[2], q[0][0][0]);
-    registry.fill(HIST("step0/QA/hQYA_vs_vz"), v[2], q[0][0][1]);
-    registry.fill(HIST("step0/QA/hQXC_vs_vz"), v[2], q[0][0][2]);
-    registry.fill(HIST("step0/QA/hQYC_vs_vz"), v[2], q[0][0][3]);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQXA_vs_vz"), v[2], qxa);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQYA_vs_vz"), v[2], qya);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQXC_vs_vz"), v[2], qxc);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hQYC_vs_vz"), v[2], qyc);
 
     // add psi!!
-    double psiA = 1.0 * std::atan2(q[0][0][2], q[0][0][0]);
-    registry.fill(HIST("step0/QA/hSPplaneA"), psiA, centrality, 1);
-    double psiC = 1.0 * std::atan2(q[0][0][3], q[0][0][1]);
-    registry.fill(HIST("step0/QA/hSPplaneC"), psiC, centrality, 1);
-    double psiFull = 1.0 * std::atan2(q[0][0][2] + q[0][0][3], q[0][0][0] + q[0][0][1]);
-    registry.fill(HIST("step0/QA/hSPplaneFull"), psiFull, centrality, 1);
-
-    static constexpr std::string_view SubDir[] = {"step1/", "step2/", "step3/", "step4/", "step5/"};
-    static_for<0, 4>([&](auto Ind) {
-      constexpr int Index = Ind.value;
-      int indexRt = Index + 1;
-
-      registry.fill(HIST(SubDir[Index]) + HIST("hZNA_Qx_vs_Qy"), q[iteration][indexRt][0], q[iteration][indexRt][1]);
-      registry.fill(HIST(SubDir[Index]) + HIST("hZNC_Qx_vs_Qy"), q[iteration][indexRt][2], q[iteration][indexRt][3]);
-
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXA_QXC_vs_cent"), centrality, q[iteration][indexRt][0] * q[iteration][indexRt][2]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYA_QYC_vs_cent"), centrality, q[iteration][indexRt][1] * q[iteration][indexRt][3]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYA_QXC_vs_cent"), centrality, q[iteration][indexRt][1] * q[iteration][indexRt][2]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXA_QYC_vs_cent"), centrality, q[iteration][indexRt][0] * q[iteration][indexRt][3]);
-
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXA_vs_cent"), centrality, q[iteration][indexRt][0]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYA_vs_cent"), centrality, q[iteration][indexRt][1]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXC_vs_cent"), centrality, q[iteration][indexRt][2]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYC_vs_cent"), centrality, q[iteration][indexRt][3]);
-
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXA_vs_vx"), v[0], q[iteration][indexRt][0]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYA_vs_vx"), v[0], q[iteration][indexRt][1]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXC_vs_vx"), v[0], q[iteration][indexRt][2]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYC_vs_vx"), v[0], q[iteration][indexRt][3]);
-
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXA_vs_vy"), v[1], q[iteration][indexRt][0]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYA_vs_vy"), v[1], q[iteration][indexRt][1]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXC_vs_vy"), v[1], q[iteration][indexRt][2]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYC_vs_vy"), v[1], q[iteration][indexRt][3]);
-
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXA_vs_vz"), v[2], q[iteration][indexRt][0]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYA_vs_vz"), v[2], q[iteration][indexRt][1]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXC_vs_vz"), v[2], q[iteration][indexRt][2]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYC_vs_vz"), v[2], q[iteration][indexRt][3]);
-
-      psiA = 1.0 * std::atan2(q[iteration][indexRt][2], q[iteration][indexRt][0]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hSPplaneA"), psiA, centrality, 1);
-      psiC = 1.0 * std::atan2(q[iteration][indexRt][3], q[iteration][indexRt][1]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hSPplaneC"), psiC, centrality, 1);
-      psiFull = 1.0 * std::atan2(q[iteration][indexRt][2] + q[iteration][indexRt][3], q[iteration][indexRt][0] + q[iteration][indexRt][1]);
-      registry.fill(HIST(SubDir[Index]) + HIST("QA/hSPplaneFull"), psiFull, centrality, 1);
-    });
+    double psiA = 1.0 * std::atan2(qxc, qxa);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hSPplaneA"), psiA, centrality, 1);
+    double psiC = 1.0 * std::atan2(qyc, qya);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hSPplaneC"), psiC, centrality, 1);
+    double psiFull = 1.0 * std::atan2(qxc + qyc, qxa + qya);
+    registry.fill(HIST(Time[ft]) + HIST("/QA/hSPplaneFull"), psiFull, centrality, 1);
   }
 
   void loadCalibrations(int iteration, int step, uint64_t timestamp, std::string ccdb_dir, std::vector<TString> names)
@@ -505,13 +396,6 @@ struct ZdcQVectors {
     return calibConstant;
   }
 
-  void fillAllRegistries(int iteration, int step)
-  {
-    for (int s = 0; s <= step; s++)
-      fillRegistry(iteration, s);
-    fillCommonRegistry(iteration);
-  }
-
   void process(UsedCollisions::iterator const& collision,
                BCsRun3 const& /*bcs*/,
                aod::Zdcs const& /*zdcs*/)
@@ -524,7 +408,16 @@ struct ZdcQVectors {
 
     isSelected = true;
 
+    // TODO Implement other ZDC estimators
     auto cent = collision.centFT0C();
+    if (cfgFT0Cvariant1)
+      cent = collision.centFT0CVariant1();
+    if (cfgFT0M)
+      cent = collision.centFT0M();
+    if (cfgFV0A)
+      cent = collision.centFV0A();
+    if (cfgNGlobal)
+      cent = collision.centNGlobal();
 
     if (cent < 0 || cent > 90) {
       isSelected = false;
@@ -676,8 +569,8 @@ struct ZdcQVectors {
     // "QXA", "QYA", "QXC", "QYC"
     for (int i = 0; i < 2; ++i) {
       if (sumZN[i] > 0) {
-        q[0][0][i * 2] = xEnZN[i] / sumZN[i];     // for QXA[0] and QXC[2]
-        q[0][0][i * 2 + 1] = yEnZN[i] / sumZN[i]; // for QYA[1] and QYC[3]
+        q[i * 2] = xEnZN[i] / sumZN[i];     // for QXA[0] and QXC[2]
+        q[i * 2 + 1] = yEnZN[i] / sumZN[i]; // for QYA[1] and QYC[3]
       }
     }
 
@@ -713,41 +606,59 @@ struct ZdcQVectors {
       if (counter < 1)
         LOGF(warning, "Calibation files missing!!! Output created with q-vectors right after energy gain eq. !!");
       if (isSelected)
-        fillAllRegistries(0, 0);
-      spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0][0][0], q[0][0][1], q[0][0][2], q[0][0][3], isSelected, 0, 0);
+        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
+      spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0], q[1], q[2], q[3], isSelected, 0, 0);
       counter++;
       return;
-    } else {
-      for (int iteration = 1; iteration <= cal.atIteration; iteration++) {
-        for (int step = 0; step < cal.atStep + 1; step++) {
-          if (cal.calibfilesLoaded[iteration][step]) {
-            for (int i = 0; i < 4; i++) {
-              if (step == 0) {
-                if (iteration == 1) {
-                  q[iteration][step + 1][i] = q[0][0][i] - getCorrection<THnSparse>(iteration, step, names[step][i].Data());
-                } else {
-                  q[iteration][step + 1][i] = q[iteration - 1][5][i] - getCorrection<THnSparse>(iteration, step, names[step][i].Data());
-                }
-              } else {
-                q[iteration][step + 1][i] = q[iteration][step][i] - getCorrection<TProfile>(iteration, step, names[step][i].Data());
-              }
-            }
-          } else {
-            if (counter < 1)
-              LOGF(warning, "Something went wrong in calibration loop! File not loaded but bool set to tue");
-          } // end of (cal.calibLoaded)
-        } // end of step
-      } // end of iteration
+    } else if (cal.atIteration == 5 && cal.atStep == 4) {
+      std::vector<double> qRec(4);
+      fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
+      qRec = q;
+
+      // vector of 4
+      std::vector<double> corrQxA;
+      std::vector<double> corrQyA;
+      std::vector<double> corrQxC;
+      std::vector<double> corrQyC;
+
+      int pb = 0;
+
+      for (int it = 1; it < 6; it++) {
+        corrQxA.push_back(getCorrection<THnSparse>(it, 0, names[0][0].Data()));
+        corrQyA.push_back(getCorrection<THnSparse>(it, 0, names[0][1].Data()));
+        corrQxC.push_back(getCorrection<THnSparse>(it, 0, names[0][2].Data()));
+        corrQyC.push_back(getCorrection<THnSparse>(it, 0, names[0][3].Data()));
+
+        pb++;
+
+        for (int step = 1; step < 5; step++) {
+          corrQxA.push_back(getCorrection<TProfile>(it, step, names[step][0].Data()));
+          corrQyA.push_back(getCorrection<TProfile>(it, step, names[step][1].Data()));
+          corrQxC.push_back(getCorrection<TProfile>(it, step, names[step][2].Data()));
+          corrQyC.push_back(getCorrection<TProfile>(it, step, names[step][3].Data()));
+          pb++;
+        }
+      }
+
+      for (int cor = 0; cor < pb; cor++) {
+        qRec[0] -= corrQxA[cor];
+        qRec[1] -= corrQyA[cor];
+        qRec[2] -= corrQxC[cor];
+        qRec[3] -= corrQyC[cor];
+      }
 
       if (counter < 1)
         LOGF(info, "Output created with q-vectors at iteration %i and step %i!!!!", cal.atIteration, cal.atStep + 1);
       if (isSelected) {
-        fillAllRegistries(cal.atIteration, cal.atStep + 1);
+        fillCommonRegistry<kAfter>(qRec[0], qRec[1], qRec[2], qRec[3], v, centrality);
         registry.fill(HIST("QA/centrality_after"), centrality);
       }
-      spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[cal.atIteration][cal.atStep][0], q[cal.atIteration][cal.atStep][1], q[cal.atIteration][cal.atStep][2], q[cal.atIteration][cal.atStep][3], isSelected, cal.atIteration, cal.atStep);
+      spTableZDC(runnumber, centrality, v[0], v[1], v[2], qRec[0], qRec[1], qRec[2], qRec[3], isSelected, cal.atIteration, cal.atStep);
       counter++;
       return;
+    } else {
+      if (counter < 1)
+        LOGF(info, "Recentering not complete!! q-vectors at iteration %i and step %i!!!!", cal.atIteration, cal.atStep + 1);
     }
     LOGF(warning, "We return without saving table... -> THis is a problem");
   } // end of process
