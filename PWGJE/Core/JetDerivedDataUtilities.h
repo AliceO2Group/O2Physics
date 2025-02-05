@@ -115,6 +115,7 @@ std::vector<int> initialiseEventSelectionBits(std::string eventSelectionMasks)
     eventSelectionMaskBits.push_back(JCollisionSel::selNoSameBunchPileup);
   }
   if (eventSelectionMasksContainSelection(eventSelectionMasks, "sel8FullPbPb")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::sel8);
     eventSelectionMaskBits.push_back(JCollisionSel::selNoCollInTimeRangeStandard);
     eventSelectionMaskBits.push_back(JCollisionSel::selNoCollInRofStandard);
   }
