@@ -163,6 +163,13 @@ DECLARE_SOA_TABLE(LcHadronPairTrkPID, "AOD", "LCHPAIRPID", //! Lc-proton details
                   aod::hf_correlation_lc_hadron::PrNsigmTOF,
                   aod::hf_correlation_lc_hadron::KaNsigmTOF,
                   aod::hf_correlation_lc_hadron::PiNsigmTOF);
+DECLARE_SOA_TABLE(LcHadronTrkPID, "AOD", "LCHTRKPID", //! Lc-proton details
+                  aod::hf_correlation_lc_hadron::PrNsigmTPC,
+                  aod::hf_correlation_lc_hadron::KaNsigmTPC,
+                  aod::hf_correlation_lc_hadron::PiNsigmTPC,
+                  aod::hf_correlation_lc_hadron::PrNsigmTOF,
+                  aod::hf_correlation_lc_hadron::KaNsigmTOF,
+                  aod::hf_correlation_lc_hadron::PiNsigmTOF);
 
 DECLARE_SOA_TABLE(LcHadronGenInfo, "AOD", "LCHGENINFO", //! Lc-Hadrons pairs Generated Information
                   aod::hf_correlation_lc_hadron::IsPrompt,
@@ -441,7 +448,6 @@ DECLARE_SOA_COLUMN(DmesonSel, dmesonSel, bool); //! Selection flag for D meson i
 DECLARE_SOA_TABLE(DmesonSelection, "AOD", "DINCOLL", // Selection of D meson in collisions
                   aod::hf_selection_dmeson_collision::DmesonSel);
 
-
 // Note: definition of columns and tables for Electron Hadron correlation pairs
 namespace hf_correlation_electron_hadron
 {
@@ -480,7 +486,6 @@ DECLARE_SOA_TABLE(HfEHadronMcGenPair, "AOD", "HFEHADRONMCGENPAIR", //! Hfe-Hadro
                   hf_correlation_McGenelectron_hadron::PtHadron,
                   hf_correlation_McGenelectron_hadron::PoolBin,
                   hf_correlation_McGenelectron_hadron::IsNonHfEHCorr);
-
 } // namespace o2::aod
 
 #endif // PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_
