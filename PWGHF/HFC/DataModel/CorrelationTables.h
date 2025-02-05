@@ -163,6 +163,13 @@ DECLARE_SOA_TABLE(LcHadronPairTrkPID, "AOD", "LCHPAIRPID", //! Lc-proton details
                   aod::hf_correlation_lc_hadron::PrNsigmTOF,
                   aod::hf_correlation_lc_hadron::KaNsigmTOF,
                   aod::hf_correlation_lc_hadron::PiNsigmTOF);
+DECLARE_SOA_TABLE(LcHadronTrkPID, "AOD", "LCHTRKPID", //! Lc-proton details
+                  aod::hf_correlation_lc_hadron::PrNsigmTPC,
+                  aod::hf_correlation_lc_hadron::KaNsigmTPC,
+                  aod::hf_correlation_lc_hadron::PiNsigmTPC,
+                  aod::hf_correlation_lc_hadron::PrNsigmTOF,
+                  aod::hf_correlation_lc_hadron::KaNsigmTOF,
+                  aod::hf_correlation_lc_hadron::PiNsigmTOF);
 
 DECLARE_SOA_TABLE(LcHadronGenInfo, "AOD", "LCHGENINFO", //! Lc-Hadrons pairs Generated Information
                   aod::hf_correlation_lc_hadron::IsPrompt,
