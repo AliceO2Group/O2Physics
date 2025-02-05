@@ -10,7 +10,6 @@
 // or submit itself to any jurisdiction.
 ///
 /// \brief  Task for analysis of rho' in UPCs using UD tables (from SG producer).
-
 /// \author Cesar Ramirez, cesar.ramirez@cern.ch
 
 #include "Framework/AnalysisTask.h"
@@ -33,13 +32,10 @@ using FullUDSgCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, ao
 using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
 
 
-
 namespace o2::aod
 {
 namespace fourpi
 {
-
-
 
 //for event
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
@@ -77,13 +73,10 @@ DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float);
 //DECLARE_SOA_COLUMN(TrackEta, trackEta, std::vector<double>);
 //DECLARE_SOA_COLUMN(TrackPhi, trackPhi, std::vector<double>);
 
-
-
 } // namespace fourpi
 DECLARE_SOA_TABLE(SYSTEMTREE, "AOD", "SystemTree", fourpi::RunNumber, fourpi::M, fourpi::Pt, fourpi::Eta, fourpi::Phi,
                   fourpi::PosX, fourpi::PosY, fourpi::PosZ, fourpi::TotalCharge, fourpi::TotalFT0AmplitudeA, fourpi::TotalFT0AmplitudeC, fourpi::TotalFV0AmplitudeA,
-                  fourpi::TotalFDDAmplitudeA, fourpi::TotalFDDAmplitudeC,
-                  fourpi::TimeFT0A, fourpi::TimeFT0C, fourpi::TimeFV0A, fourpi::TimeFDDA, fourpi::TimeFDDC);
+                  fourpi::TotalFDDAmplitudeA, fourpi::TotalFDDAmplitudeC, fourpi::TimeFT0A, fourpi::TimeFT0C, fourpi::TimeFV0A, fourpi::TimeFDDA, fourpi::TimeFDDC);
 } // namespace o2::aod
 
 struct upcRhoFAnalysis {
@@ -287,8 +280,8 @@ struct upcRhoFAnalysis {
 
 
       systemTree(collision.runNumber(), mass, pT, rapidity, systemPhi, collision.posX(), collision.posY(), collision.posZ(), totalCharge,
-      collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.timeFV0A(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
-      collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC());
+                collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.timeFV0A(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
+                collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC());
       
       //registry.fill(HIST("4pi/hM"), mass);
       //registry.fill(HIST("4pi/hPt"), pT);
