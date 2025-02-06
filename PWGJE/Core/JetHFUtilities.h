@@ -481,17 +481,15 @@ float getHFCandidateInvariantMass(T const& candidate)
 }
 
 template <typename T, typename U>
-void fillHFCollisionTable(T const& collision, U& HFCollisionTable, int32_t& HFCollisionTableIndex)
+void fillHFCollisionTable(T const& collision, U& HFCollisionTable)
 {
   HFCollisionTable(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFV0A(), collision.multZeqNTracksPV());
-  HFCollisionTableIndex = HFCollisionTable.lastIndex();
 }
 
 template <typename T, typename U>
-void fillHFMcCollisionTable(T const& mcCollision, U& HFMcCollisionTable, int32_t& HFMcCollisionTableIndex)
+void fillHFMcCollisionTable(T const& mcCollision, U& HFMcCollisionTable)
 {
   HFMcCollisionTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.centFT0M());
-  HFMcCollisionTableIndex = HFMcCollisionTable.lastIndex();
 }
 
 template <bool isMc, typename T, typename U, typename V, typename M, typename N>
@@ -706,10 +704,9 @@ void fillBplusCandidateTable(T const& candidate, U& BplusParTable, V& BplusParET
 }
 
 template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q, typename S>
-void fillHFCandidateTable(T const& candidate, int32_t collisionIndex, U& HFBaseTable, V& HFParTable, M& HFParETable, N& HFParDaughterTable, O& HFSelectionFlagTable, P& HFMlTable, Q& HFMlDaughterTable, S& HFMCDTable, int32_t& HFCandidateTableIndex)
+void fillHFCandidateTable(T const& candidate, int32_t collisionIndex, U& HFBaseTable, V& HFParTable, M& HFParETable, N& HFParDaughterTable, O& HFSelectionFlagTable, P& HFMlTable, Q& HFMlDaughterTable, S& HFMCDTable)
 {
   HFBaseTable(collisionIndex, candidate.pt(), candidate.eta(), candidate.phi(), candidate.m(), candidate.y());
-  HFCandidateTableIndex = HFBaseTable.lastIndex();
   HFSelectionFlagTable(candidate.candidateSelFlag());
 
   if constexpr (isD0Candidate<T>()) {
@@ -724,10 +721,9 @@ void fillHFCandidateTable(T const& candidate, int32_t collisionIndex, U& HFBaseT
 }
 
 template <typename T, typename U>
-void fillHFCandidateMcTable(T const& candidate, int32_t mcCollisionIndex, U& BaseMcTable, int32_t& candidateTableIndex)
+void fillHFCandidateMcTable(T const& candidate, int32_t mcCollisionIndex, U& BaseMcTable)
 {
   BaseMcTable(mcCollisionIndex, candidate.pt(), candidate.eta(), candidate.phi(), candidate.y(), candidate.flagMcMatchGen(), candidate.originMcGen());
-  candidateTableIndex = BaseMcTable.lastIndex();
 }
 
 }; // namespace jethfutilities

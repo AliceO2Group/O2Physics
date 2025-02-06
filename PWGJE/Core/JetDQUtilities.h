@@ -312,31 +312,27 @@ uint8_t setDielectronParticleDecayBit(T const& particles, U const& particle)
 }
 
 template <typename T, typename U>
-void fillDielectronCollisionTable(T const& collision, U& DielectronCollisionTable, int32_t& DielectronCollisionTableIndex)
+void fillDielectronCollisionTable(T const& collision, U& DielectronCollisionTable)
 {
   DielectronCollisionTable(collision.tag_raw(), collision.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
-  DielectronCollisionTableIndex = DielectronCollisionTable.lastIndex();
 }
 
 template <typename T, typename U>
-void fillDielectronMcCollisionTable(T const& mcCollision, U& DielectronMcCollisionTable, int32_t& DielectronMcCollisionTableIndex)
+void fillDielectronMcCollisionTable(T const& mcCollision, U& DielectronMcCollisionTable)
 {
   DielectronMcCollisionTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
-  DielectronMcCollisionTableIndex = DielectronMcCollisionTable.lastIndex();
 }
 
 template <typename T, typename U>
-void fillDielectronCandidateTable(T const& candidate, int32_t collisionIndex, U& DielectronTable, int32_t& DielectronCandidateTableIndex)
+void fillDielectronCandidateTable(T const& candidate, int32_t collisionIndex, U& DielectronTable)
 {
   DielectronTable(collisionIndex, candidate.mass(), candidate.pt(), candidate.eta(), candidate.phi(), candidate.sign(), candidate.filterMap_raw(), candidate.mcDecision());
-  DielectronCandidateTableIndex = DielectronTable.lastIndex();
 }
 
 template <typename T, typename U>
-void fillDielectronCandidateMcTable(T const& candidate, int32_t mcCollisionIndex, U& DielectronMcTable, int32_t& DielectronCandidateTableIndex)
+void fillDielectronCandidateMcTable(T const& candidate, int32_t mcCollisionIndex, U& DielectronMcTable)
 {
   DielectronMcTable(mcCollisionIndex, candidate.pt(), candidate.eta(), candidate.phi(), candidate.y(), candidate.e(), candidate.m(), candidate.pdgCode(), candidate.getGenStatusCode(), candidate.getHepMCStatusCode(), candidate.isPhysicalPrimary(), candidate.decayFlag(), candidate.origin());
-  DielectronCandidateTableIndex = DielectronMcTable.lastIndex();
 }
 
 }; // namespace jetdqutilities
