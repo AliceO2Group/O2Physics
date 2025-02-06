@@ -31,14 +31,15 @@
 namespace o2::aod
 {
 // basic species:
-// D0 -> K- + pi+ (done)
-// Lc -> pi+ K- p
-// D+ -> K- + pi+ + pi+ (3P table with adapted PID columns)
-// Ds+ -> K- + K+ + pi+ (3P table with adapted PID columns)
+// D0 → K− π+ (done)
+// Λc → p K− π+ (done)
+// D+ → K− π+ π+ (done)
+// Ds+ → K− K+ π+
+
 // composite species
-// B0 -> D- + pi+
-// B+ -> D0 + pi+ (in progress)
-// D*+ -> D0 + pi+
+// B0 → D− π+
+// B+ → D0 π+ (done)
+// D*+ → D0 π+
 
 // ================
 // Collision tables
