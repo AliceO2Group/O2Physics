@@ -73,12 +73,12 @@ struct NeutronProtonCorrZdc {
     const AxisSpec axisZPSignal{2 * cfgNBinsZP, cfgZPmin, 1.5 * cfgZPmax, "ZP (a.u.)"};
     const AxisSpec axisAlphaZ{cfgNBinsAlpha, cfgAlphaZmin, cfgAlphaZmax, "#alpha_{spec}"};
     const AxisSpec axisZDiffSignal{cfgNBinsZN, cfgDiffZmin, cfgDiffZmax, "#Delta E"};
-    const AxisSpec AxisMultiplicityF0A{cfgNBinsMultiplicity, 0, 200000, "F0A"};
-    const AxisSpec AxisMultiplicityF0C{cfgNBinsMultiplicity, 0, 100000, "F0C"};
-    const AxisSpec AxisMultiplicityF0M{cfgNBinsMultiplicity, 0, 300000, "F0M"};
-    const AxisSpec AxisMultiplicityFDD{cfgNBinsMultiplicity, 0, 50000, "FDD"};
-    const AxisSpec AxisMultiplicityTPC{cfgNBinsMultiplicity, 0, 100000, "TPC"};
-    const AxisSpec AxisMultiplicityMultNGlobal{cfgNBinsMultiplicity, 0, 3500, "MultsNGlobal"};
+    const AxisSpec axisMultiplicityF0A{cfgNBinsMultiplicity, 0, 200000, "F0A"};
+    const AxisSpec axisMultiplicityF0C{cfgNBinsMultiplicity, 0, 100000, "F0C"};
+    const AxisSpec axisMultiplicityF0M{cfgNBinsMultiplicity, 0, 300000, "F0M"};
+    const AxisSpec axisMultiplicityFDD{cfgNBinsMultiplicity, 0, 50000, "FDD"};
+    const AxisSpec axisMultiplicityTPC{cfgNBinsMultiplicity, 0, 100000, "TPC"};
+    const AxisSpec axisMultiplicityMultNGlobal{cfgNBinsMultiplicity, 0, 3500, "MultsNGlobal"};
 
     HistogramConfigSpec defaultZNSectorHist({HistType::kTH2F, {cfgAxisCent, axisZNSectorSignal}});
     HistogramConfigSpec defaultZPSectorHist({HistType::kTH2F, {cfgAxisCent, axisZPSectorSignal}});
@@ -122,18 +122,18 @@ struct NeutronProtonCorrZdc {
     histos.add("CentvsZNCvsZPC", "CentvsZNCvsZPC", kTH3F, {cfgAxisCent, axisZNCSignal, axisZPCSignal});
     histos.add("CentvsZNvsZP", "CentvsZNvsZP", kTH3F, {cfgAxisCent, axisZNSignal, axisZPSignal});
 
-    histos.add("MultiplicityHistograms/FV0A", "FV0A", kTH1F, {AxisMultiplicityF0A});
-    histos.add("MultiplicityHistograms/FT0A", "FT0A", kTH1F, {AxisMultiplicityF0A});
-    histos.add("MultiplicityHistograms/FT0C", "FT0C", kTH1F, {AxisMultiplicityF0C});
-    histos.add("MultiplicityHistograms/FDDA", "FDDA", kTH1F, {AxisMultiplicityFDD});
-    histos.add("MultiplicityHistograms/FDDC", "FDDC", kTH1F, {AxisMultiplicityFDD});
-    histos.add("MultiplicityHistograms/TPC", "TPC", kTH1F, {AxisMultiplicityTPC});
-    histos.add("MultiplicityHistograms/NGlobal", "NGlobal", kTH1F, {AxisMultiplicityMultNGlobal});
-    histos.add("MultiplicityHistograms/CentvsFT0C", "CentvsFT0C", kTH2F, {cfgAxisCent, AxisMultiplicityF0C});
-    histos.add("MultiplicityHistograms/CentvsFT0CVar1", "CentvsFT0CVar1", kTH2F, {cfgAxisCent, AxisMultiplicityF0C});
-    histos.add("MultiplicityHistograms/CentvsFT0M", "CentvsFT0M", kTH2F, {cfgAxisCent, AxisMultiplicityF0M});
-    histos.add("MultiplicityHistograms/CentvsFV0A", "CentvsFV0A", kTH2F, {cfgAxisCent, AxisMultiplicityF0A});
-    histos.add("MultiplicityHistograms/CentvsNGlobal", "CentvsNGlobal", kTH2F, {cfgAxisCent, AxisMultiplicityMultNGlobal});
+    histos.add("MultiplicityHistograms/FV0A", "FV0A", kTH1F, {axisMultiplicityF0A});
+    histos.add("MultiplicityHistograms/FT0A", "FT0A", kTH1F, {axisMultiplicityF0A});
+    histos.add("MultiplicityHistograms/FT0C", "FT0C", kTH1F, {axisMultiplicityF0C});
+    histos.add("MultiplicityHistograms/FDDA", "FDDA", kTH1F, {axisMultiplicityFDD});
+    histos.add("MultiplicityHistograms/FDDC", "FDDC", kTH1F, {axisMultiplicityFDD});
+    histos.add("MultiplicityHistograms/TPC", "TPC", kTH1F, {axisMultiplicityTPC});
+    histos.add("MultiplicityHistograms/NGlobal", "NGlobal", kTH1F, {axisMultiplicityMultNGlobal});
+    histos.add("MultiplicityHistograms/CentvsFT0C", "CentvsFT0C", kTH2F, {cfgAxisCent, axisMultiplicityF0C});
+    histos.add("MultiplicityHistograms/CentvsFT0CVar1", "CentvsFT0CVar1", kTH2F, {cfgAxisCent, axisMultiplicityF0C});
+    histos.add("MultiplicityHistograms/CentvsFT0M", "CentvsFT0M", kTH2F, {cfgAxisCent, axisMultiplicityF0M});
+    histos.add("MultiplicityHistograms/CentvsFV0A", "CentvsFV0A", kTH2F, {cfgAxisCent, axisMultiplicityF0A});
+    histos.add("MultiplicityHistograms/CentvsNGlobal", "CentvsNGlobal", kTH2F, {cfgAxisCent, axisMultiplicityMultNGlobal});
 
   }
 
@@ -216,7 +216,7 @@ struct NeutronProtonCorrZdc {
       static_for<0,6>([&](auto i){
         fillMultHistosRun3<i>(collision); // Fill multiplicity histograms
       });
-      
+
       static_for<0,4>([&](auto i){
         fillCentHistosRun3<i>(collision); // Fill centrality histograms
       }); 
