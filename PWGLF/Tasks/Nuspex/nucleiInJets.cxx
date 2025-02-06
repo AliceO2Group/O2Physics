@@ -1096,7 +1096,7 @@ struct NucleiInJets {
           double deltaEtaUe2 = selectedTrack.Eta() - ueAxis2.Eta();
           double deltaPhiUe2 = getDeltaPhi(selectedTrack.Phi(), ueAxis2.Phi());
           double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
-            
+
           if ((deltaRUe1 < alpha * rJet) || (deltaRUe2 < alpha * rJet)) {
             ptUE = ptUE + particle.pt();
           }
@@ -1462,7 +1462,7 @@ struct NucleiInJets {
       double ptJetCorr = getCorrectedPt(ptJetRec);
       if (ptJetCorr < minJetPt)
         continue;
-        
+
       registryQC.fill(HIST("hJetArea"), jetArea[i]);
     }
   }
