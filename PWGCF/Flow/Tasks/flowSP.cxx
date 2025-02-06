@@ -200,8 +200,8 @@ struct FlowSP {
     AxisSpec t0cAxis = {70, 0, 70000, "N_{ch} (T0C)"};
     AxisSpec t0aAxis = {200, 0, 200, "N_{ch}"};
     AxisSpec multpvAxis = {4000, 0, 4000, "N_{ch} (PV)"};
-    AxisSpec shclAxis = {200,0,1, "Fraction shared cl. TPC"};
-    AxisSpec clAxis = {160,0,160, "Number of cl. TPC"};
+    AxisSpec shclAxis = {200, 0, 1, "Fraction shared cl. TPC"};
+    AxisSpec clAxis = {160, 0, 160, "Number of cl. TPC"};
 
     int ptbins = ptbinning.size() - 1;
 
@@ -823,7 +823,7 @@ struct FlowSP {
 
         if (track.sign() == 0.0)
           return;
-         registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
+        registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
         bool pos = (track.sign() > 0) ? true : false;
 
         // Fill NUA weights
