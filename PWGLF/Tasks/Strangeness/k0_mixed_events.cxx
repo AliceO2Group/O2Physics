@@ -41,6 +41,8 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "PWGLF/Utils/inelGt.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/PIDResponse.h"
 
 using namespace o2;
 using namespace o2::soa;
@@ -235,6 +237,7 @@ struct K0MixedEvents {
     registry.add("MC/generatedInRecoEvs", "generatedInRecoEvs", kTH2D, {ptAxis, multPercentileAxis});
     registry.add("MC/generatedInGenEvs", "generatedInGenEvs", kTH2D, {ptAxis, multPercentileAxis});
     registry.add("MC/SEvsPt", "SEvsPt", kTH3F, {invMassAxis, ptAxis, multPercentileAxis});
+    registry.add("MC/MEvsPt", "MEvsPt", kTH3F, {invMassAxis, ptAxis, multPercentileAxis});
   }
 
   template <typename Type>
@@ -291,6 +294,36 @@ struct K0MixedEvents {
     }
   }
 
+  template <typename TrkType>
+  bool isTrackSelected(TrkType const& track)
+  {
+    if (track.itsNCls() < _itsNCls) {
+      return false;
+    }
+    if (track.itsChi2NCl() > _itsChi2NCl) {
+      return false;
+    }
+    if (track.tpcChi2NCl() > _tpcChi2NCl) {
+      return false;
+    }
+    if (track.tpcCrossedRowsOverFindableCls() < _tpcCrossedRowsOverFindableCls) {
+      return false;
+    }
+    if (std::abs(track.dcaXY()) > dcaxyCut) {
+      return false;
+    }
+    if (std::abs(track.dcaXY()) < dcaxyExclusionCut) {
+      return false;
+    }
+    if (std::abs(track.dcaZ()) > dcazCut) {
+      return false;
+    }
+    if (std::abs(track.dcaZ()) < dcazExclusionCut) {
+      return false;
+    }
+    return true;
+  }
+
   void process(FilteredTracks const& tracks, FilteredCollisions const& collisions)
   {
     LOG(debug) << "Processing " << collisions.size() << " collisions and " << tracks.size() << " tracks";
@@ -307,31 +340,9 @@ struct K0MixedEvents {
 
     for (auto track : tracks) {
       LOG(debug) << "Track index " << track.singleCollSelId();
-      if (track.itsNCls() < _itsNCls) {
+      if (!isTrackSelected(track)) {
         continue;
       }
-      if (track.itsChi2NCl() > _itsChi2NCl) {
-        continue;
-      }
-      if (track.tpcChi2NCl() > _tpcChi2NCl) {
-        continue;
-      }
-      if (track.tpcCrossedRowsOverFindableCls() < _tpcCrossedRowsOverFindableCls) {
-        continue;
-      }
-      if (std::abs(track.dcaXY()) > dcaxyCut) {
-        continue;
-      }
-      if (std::abs(track.dcaXY()) < dcaxyExclusionCut) {
-        continue;
-      }
-      if (std::abs(track.dcaZ()) > dcazCut) {
-        continue;
-      }
-      if (std::abs(track.dcaZ()) < dcazExclusionCut) {
-        continue;
-      }
-
       registry.fill(HIST("Trks"), 1);
       const auto& col = track.singleCollSel_as<FilteredCollisions>();
       registry.fill(HIST("VTX"), col.posZ());
@@ -499,14 +510,78 @@ struct K0MixedEvents {
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
   SliceCache cache;
   void processMC(soa::Filtered<RecoMCCollisions> const& collisions,
-                 //  soa::Join<aod::Tracks, aod::TracksExtra,
-                 //            aod::TracksDCA, aod::McTrackLabels,
-                 //            aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                 //            aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
-                 //            aod::TrackSelection> const& tracks,
+                 soa::Join<aod::Tracks, aod::TracksExtra,
+                           aod::TracksDCA, aod::McTrackLabels,
+                           aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                           aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
+                           aod::TrackSelection> const& tracks,
                  GenMCCollisions const& mcCollisions,
                  aod::McParticles const& mcParticles)
   {
+
+    // Loop on reconstructed tracks
+    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
+    for (const auto& trk1 : tracks) {
+      if (!isTrackSelected(trk1)) {
+        continue;
+      }
+      const auto& col1 = trk1.collision_as<soa::Filtered<RecoMCCollisions>>();
+      if (!col1.sel8()) {
+        continue;
+      }
+      if (std::abs(col1.posZ()) > _vertexZ) {
+        continue;
+      }
+      if (col1.centFT0M() < multPercentileCut.value.first) {
+        continue;
+      }
+      if (col1.centFT0M() > multPercentileCut.value.second) {
+        continue;
+      }
+      const auto& part1 = trk1.mcParticle();
+      switch (part1.pdgCode()) {
+        case 211:
+          break;
+        default:
+          continue;
+      }
+      lDecayDaughter1.SetPtEtaPhiM(part1.pt(), part1.eta(), part1.phi(), 0.13957040);
+      for (const auto& trk2 : tracks) {
+        if (trk1 == trk2) {
+          continue;
+        }
+        if (!isTrackSelected(trk2)) {
+          continue;
+        }
+        const auto& col2 = trk2.collision_as<soa::Filtered<RecoMCCollisions>>();
+        if (!col2.sel8()) {
+          continue;
+        }
+        if (std::abs(col2.posZ()) > _vertexZ) {
+          continue;
+        }
+        if (col2.centFT0M() < multPercentileCut.value.first) {
+          continue;
+        }
+        if (col2.centFT0M() > multPercentileCut.value.second) {
+          continue;
+        }
+        const auto& part2 = trk2.mcParticle();
+        switch (part2.pdgCode()) {
+          case -211:
+            break;
+          default:
+            continue;
+        }
+        lDecayDaughter2.SetPtEtaPhiM(part2.pt(), part2.eta(), part2.phi(), 0.13957040);
+        lResonance = lDecayDaughter1 + lDecayDaughter2;
+        if (col1 == col2) { // Same collision
+          registry.fill(HIST("MC/SEvsPt"), lResonance.M(), lResonance.Pt(), col1.centFT0M());
+        } else { // Different collision
+          registry.fill(HIST("MC/MEvsPt"), lResonance.M(), lResonance.Pt(), col1.centFT0M());
+        }
+      }
+    }
 
     // Loop on reconstructed collisions
     for (const auto& col : collisions) {
@@ -520,8 +595,6 @@ struct K0MixedEvents {
         continue;
       }
       registry.fill(HIST("MC/multPerc"), col.centFT0M());
-      // Loop on tracks
-      // MC / SEvsPt
 
       // Loop on particles
       const auto& mcCollision = col.mcCollision_as<GenMCCollisions>();
