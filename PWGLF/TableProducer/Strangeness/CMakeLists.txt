@@ -145,5 +145,5 @@ o2physics_add_dpl_workflow(cascademlselection
 
 o2physics_add_dpl_workflow(sigma0builder
     SOURCES sigma0builder.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
     COMPONENT_NAME Analysis)

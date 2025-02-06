@@ -34,7 +34,8 @@ DECLARE_SOA_COLUMN(SigmaMass, sigmaMass, float);
 DECLARE_SOA_COLUMN(SigmaRapidity, sigmaRapidity, float);
 DECLARE_SOA_COLUMN(SigmaOPAngle, sigmaOPAngle, float);
 DECLARE_SOA_COLUMN(SigmaCentrality, sigmaCentrality, float);
-DECLARE_SOA_COLUMN(SigmaIR, sigmaIR, float);
+DECLARE_SOA_COLUMN(SigmaRunNumber, sigmaRunNumber, int);
+DECLARE_SOA_COLUMN(SigmaTimestamp, sigmaTimestamp, uint64_t);
 
 } // namespace sigma0Core
 
@@ -44,7 +45,8 @@ DECLARE_SOA_TABLE(Sigma0Cores, "AOD", "SIGMA0CORES",
                   sigma0Core::SigmaRapidity,
                   sigma0Core::SigmaOPAngle,
                   sigma0Core::SigmaCentrality,
-                  sigma0Core::SigmaIR);
+                  sigma0Core::SigmaRunNumber,
+                  sigma0Core::SigmaTimestamp);
 
 // For Photon extra info
 namespace sigmaPhotonExtra
