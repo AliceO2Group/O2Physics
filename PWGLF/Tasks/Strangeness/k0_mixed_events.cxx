@@ -233,12 +233,11 @@ struct K0MixedEvents {
       return;
     }
     registry.add("MC/multPerc", "multPerc", kTH1D, {multPercentileAxis});
-    registry.add("MC/multPercMC", "multPercMC", kTH1D, {multPercentileAxis});
     registry.add("MC/multPercWMcCol", "multPercWMcCol", kTH1D, {multPercentileAxis});
     registry.add("MC/generatedInRecoEvs", "generatedInRecoEvs", kTH2D, {ptAxis, multPercentileAxis});
-    registry.add("MC/generatedInGenEvs", "generatedInGenEvs", kTH2D, {ptAxis, multPercentileAxis});
     registry.add("MC/SEvsPt", "SEvsPt", kTH3F, {invMassAxis, ptAxis, multPercentileAxis});
-    registry.add("MC/MEvsPt", "MEvsPt", kTH3F, {invMassAxis, ptAxis, multPercentileAxis});
+    registry.addClone("MC/", "MCCent/");
+    registry.add("MCCent/generatedInGenEvs", "generatedInGenEvs", kTH2D, {ptAxis, multPercentileAxis});
   }
 
   template <typename Type>
@@ -553,7 +552,10 @@ struct K0MixedEvents {
           if (std::abs(lResonance.Rapidity()) > 0.5f) {
             continue;
           }
-          registry.fill(HIST("SEvsPt"), lResonance.M(), lResonance.Pt(), col.centFT0M()); // close pair rejection and fillig the SE histo
+          registry.fill(HIST("MC/SEvsPt"), lResonance.M(), lResonance.Pt(), col.centFT0M()); // close pair rejection and fillig the SE histo
+          if (col.has_mcCollision()) {
+            registry.fill(HIST("MCCent/SEvsPt"), lResonance.M(), lResonance.Pt(), col.mcCollision_as<GenMCCollisions>().centFT0M()); // close pair rejection and fillig the SE histo
+          }
         }
       }
 
@@ -561,10 +563,11 @@ struct K0MixedEvents {
       if (!col.has_mcCollision()) {
         continue;
       }
+      const auto& mcCollision = col.mcCollision_as<GenMCCollisions>();
       registry.fill(HIST("MC/multPercWMcCol"), col.centFT0M());
+      registry.fill(HIST("MCCent/multPercWMcCol"), mcCollision.centFT0M());
 
       // Loop on particles
-      const auto& mcCollision = col.mcCollision_as<GenMCCollisions>();
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
       for (const auto& mcParticle : particlesInCollision) {
         switch (mcParticle.pdgCode()) {
@@ -580,6 +583,7 @@ struct K0MixedEvents {
           continue;
         }
         registry.fill(HIST("MC/generatedInRecoEvs"), mcParticle.pt(), col.centFT0M());
+        registry.fill(HIST("MCCent/generatedInRecoEvs"), mcParticle.pt(), mcCollision.centFT0M());
       }
     }
 
@@ -592,7 +596,7 @@ struct K0MixedEvents {
       if (!o2::pwglf::isINELgt0mc(particlesInCollision, pdgDB)) {
         continue;
       }
-      registry.fill(HIST("MC/multPercMC"), mcCollision.centFT0M());
+      registry.fill(HIST("MCCent/multPerc"), mcCollision.centFT0M());
       for (const auto& mcParticle : particlesInCollision) {
         switch (mcParticle.pdgCode()) {
           case 310:
@@ -606,7 +610,7 @@ struct K0MixedEvents {
         if (std::abs(mcParticle.y()) > 0.5) {
           continue;
         }
-        registry.fill(HIST("MC/generatedInGenEvs"), mcParticle.pt(), mcCollision.centFT0M());
+        registry.fill(HIST("MCCent/generatedInGenEvs"), mcParticle.pt(), mcCollision.centFT0M());
       }
     }
   }
@@ -614,7 +618,4 @@ struct K0MixedEvents {
   PROCESS_SWITCH(K0MixedEvents, processMC, "process mc", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<K0MixedEvents>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<K0MixedEvents>(cfgc)}; }
