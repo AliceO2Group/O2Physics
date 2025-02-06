@@ -1244,10 +1244,10 @@ struct AnalysisSameEventPairing {
         if (twoTrackFilter && (t1.sign() != t2.sign())) {
           mult_dimuons++;
         }
-        if (twoTrackFilter && (t1.sign() > 0 || t2.sign() > 0 )) {
+        if (twoTrackFilter && (t1.sign() > 0 || t2.sign() > 0)) {
           mult_antimuons++;
         }
-        if (twoTrackFilter && (t1.sign() < 0 || t2.sign() < 0 )) {
+        if (twoTrackFilter && (t1.sign() < 0 || t2.sign() < 0)) {
           mult_muons++;
         }
       }
