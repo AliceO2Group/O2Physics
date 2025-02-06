@@ -43,7 +43,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--alien-path",
     type=Path,
-    help="path to train run's directory in Alien with analysis results [example: /alice/cern.ch/user/a/alihyperloop/outputs/0033/332611/70301]",
+    help="path to train run's directory in Alien with analysis results "
+    "[example: /alice/cern.ch/user/a/alihyperloop/outputs/0033/332611/70301]",
 )
 parser.add_argument(
     "--mc-reco",
