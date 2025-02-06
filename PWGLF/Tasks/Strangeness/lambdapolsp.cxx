@@ -265,6 +265,15 @@ struct lambdapolsp {
       histos.add("hcentQxZDCC", "hcentQxZDCC", kTH2F, {{centAxis}, {qxZDCAxis}});
       histos.add("hcentQyZDCC", "hcentQyZDCC", kTH2F, {{centAxis}, {qxZDCAxis}});*/
 
+      histos.add("hSparseLambdaCosPsiA", "hSparseLambdaCosPsiA", HistType::kTHnSparseF, {thnAxisInvMass, configthnAxispT, configetaAxis, configthnAxisPol, configcentAxis}, true);
+      histos.add("hSparseLambdaSinPsiA", "hSparseLambdaSinPsiA", HistType::kTHnSparseF, {thnAxisInvMass, configthnAxispT, configetaAxis, configthnAxisPol, configcentAxis}, true);
+      histos.add("hSparseLambdaCosPsiC", "hSparseLambdaCosPsiC", HistType::kTHnSparseF, {thnAxisInvMass, configthnAxispT, configetaAxis, configthnAxisPol, configcentAxis}, true);
+      histos.add("hSparseLambdaSinPsiC", "hSparseLambdaSinPsiC", HistType::kTHnSparseF, {thnAxisInvMass, configthnAxispT, configetaAxis, configthnAxisPol, configcentAxis}, true);
+      histos.add("hSparseAntiLambdaCosPsiA", "hSparseAntiLambdaCosPsiA", HistType::kTHnSparseF, {thnAxisInvMass, configthnAxispT, configetaAxis, configthnAxisPol, configcentAxis}, true);
+      histos.add("hSparseAntiLambdaSinPsiA", "hSparseAntiLambdaSinPsiA", HistType::kTHnSparseF, {thnAxisInvMass, configthnAxispT, configetaAxis, configthnAxisPol, configcentAxis}, true);
+      histos.add("hSparseAntiLambdaCosPsiC", "hSparseAntiLambdaCosPsiC", HistType::kTHnSparseF, {thnAxisInvMass, configthnAxispT, configetaAxis, configthnAxisPol, configcentAxis}, true);
+      histos.add("hSparseAntiLambdaSinPsiC", "hSparseAntiLambdaSinPsiC", HistType::kTHnSparseF, {thnAxisInvMass, configthnAxispT, configetaAxis, configthnAxisPol, configcentAxis}, true);
+
       histos.add("hSparseLambdaPolA", "hSparseLambdaPolA", HistType::kTHnSparseF, {thnAxisInvMass, configthnAxispT, configetaAxis, configthnAxisPol, configcentAxis}, true);
       histos.add("hSparseLambdaPolC", "hSparseLambdaPolC", HistType::kTHnSparseF, {thnAxisInvMass, configthnAxispT, configetaAxis, configthnAxisPol, configcentAxis}, true);
       histos.add("hSparseAntiLambdaPolA", "hSparseAntiLambdaPolA", HistType::kTHnSparseF, {thnAxisInvMass, configthnAxispT, configetaAxis, configthnAxisPol, configcentAxis}, true);
@@ -473,6 +482,11 @@ struct lambdapolsp {
 
     // Fill histograms using constructed names
     if (tag2) {
+      histos.fill(HIST("hSparseAntiLambdaCosPsiA"), candmass, candpt, candeta, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality);
+      histos.fill(HIST("hSparseAntiLambdaCosPsiC"), candmass, candpt, candeta, (TMath::Cos(GetPhiInRange(psiZDCC))), centrality);
+      histos.fill(HIST("hSparseAntiLambdaSinPsiA"), candmass, candpt, candeta, (TMath::Sin(GetPhiInRange(psiZDCA))), centrality);
+      histos.fill(HIST("hSparseAntiLambdaSinPsiC"), candmass, candpt, candeta, (TMath::Sin(GetPhiInRange(psiZDCC))), centrality);
+
       histos.fill(HIST("hSparseAntiLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
       histos.fill(HIST("hSparseAntiLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
       histos.fill(HIST("hSparseAntiLambda_corr1a"), candmass, candpt, candeta, sinPhiStar, centrality);
@@ -482,6 +496,11 @@ struct lambdapolsp {
       histos.fill(HIST("hSparseAntiLambda_corr2b"), candmass, candpt, candeta, sinThetaStarcosphiphiStar, centrality);
     }
     if (tag1) {
+      histos.fill(HIST("hSparseLambdaCosPsiA"), candmass, candpt, candeta, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality);
+      histos.fill(HIST("hSparseLambdaCosPsiC"), candmass, candpt, candeta, (TMath::Cos(GetPhiInRange(psiZDCC))), centrality);
+      histos.fill(HIST("hSparseLambdaSinPsiA"), candmass, candpt, candeta, (TMath::Sin(GetPhiInRange(psiZDCA))), centrality);
+      histos.fill(HIST("hSparseLambdaSinPsiC"), candmass, candpt, candeta, (TMath::Sin(GetPhiInRange(psiZDCC))), centrality);
+
       histos.fill(HIST("hSparseLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
       histos.fill(HIST("hSparseLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
       histos.fill(HIST("hSparseLambda_corr1a"), candmass, candpt, candeta, sinPhiStar, centrality);
