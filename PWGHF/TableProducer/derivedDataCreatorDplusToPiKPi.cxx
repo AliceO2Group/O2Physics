@@ -268,7 +268,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
         double ct = hfHelper.ctDplus(candidate);
         double y = hfHelper.yDplus(candidate);
         float massDplusToPiKPi = hfHelper.invMassDplusToPiKPi(candidate);
-        std::vector<float> mlScoresDplusToPiKPi, mlScoresDplusToPiKP;
+        std::vector<float> mlScoresDplusToPiKPi;
         if constexpr (isMl) {
           std::copy(candidate.mlProbDplusToPiKPi().begin(), candidate.mlProbDplusToPiKPi().end(), std::back_inserter(mlScoresDplusToPiKPi));
         }
