@@ -558,6 +558,7 @@ struct K0MixedEvents {
           }
         }
       }
+      trkPool.clear();
 
       registry.fill(HIST("MC/multPerc"), col.centFT0M());
       if (!col.has_mcCollision()) {
