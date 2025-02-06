@@ -122,22 +122,21 @@ struct NeutronProtonCorrZdc {
     histos.add("CentvsZNCvsZPC", "CentvsZNCvsZPC", kTH3F, {cfgAxisCent, axisZNCSignal, axisZPCSignal});
     histos.add("CentvsZNvsZP", "CentvsZNvsZP", kTH3F, {cfgAxisCent, axisZNSignal, axisZPSignal});
 
-    histos.add("MultiplicityHistograms/FV0A", "FV0A", kTH1F, {axisMultiplicityF0A});
-    histos.add("MultiplicityHistograms/FT0A", "FT0A", kTH1F, {axisMultiplicityF0A});
-    histos.add("MultiplicityHistograms/FT0C", "FT0C", kTH1F, {axisMultiplicityF0C});
-    histos.add("MultiplicityHistograms/FDDA", "FDDA", kTH1F, {axisMultiplicityFDD});
-    histos.add("MultiplicityHistograms/FDDC", "FDDC", kTH1F, {axisMultiplicityFDD});
-    histos.add("MultiplicityHistograms/TPC", "TPC", kTH1F, {axisMultiplicityTPC});
-    histos.add("MultiplicityHistograms/NGlobal", "NGlobal", kTH1F, {axisMultiplicityMultNGlobal});
-    histos.add("MultiplicityHistograms/CentvsFT0C", "CentvsFT0C", kTH2F, {cfgAxisCent, axisMultiplicityF0C});
-    histos.add("MultiplicityHistograms/CentvsFT0CVar1", "CentvsFT0CVar1", kTH2F, {cfgAxisCent, axisMultiplicityF0C});
-    histos.add("MultiplicityHistograms/CentvsFT0M", "CentvsFT0M", kTH2F, {cfgAxisCent, axisMultiplicityF0M});
-    histos.add("MultiplicityHistograms/CentvsFV0A", "CentvsFV0A", kTH2F, {cfgAxisCent, axisMultiplicityF0A});
-    histos.add("MultiplicityHistograms/CentvsNGlobal", "CentvsNGlobal", kTH2F, {cfgAxisCent, axisMultiplicityMultNGlobal});
-
+    histos.add("MultiplicityHistograms/FV0A", "FV0A", kTH1F, {AxisMultiplicityF0A});
+    histos.add("MultiplicityHistograms/FT0A", "FT0A", kTH1F, {AxisMultiplicityF0A});
+    histos.add("MultiplicityHistograms/FT0C", "FT0C", kTH1F, {AxisMultiplicityF0C});
+    histos.add("MultiplicityHistograms/FDDA", "FDDA", kTH1F, {AxisMultiplicityFDD});
+    histos.add("MultiplicityHistograms/FDDC", "FDDC", kTH1F, {AxisMultiplicityFDD});
+    histos.add("MultiplicityHistograms/TPC", "TPC", kTH1F, {AxisMultiplicityTPC});
+    histos.add("MultiplicityHistograms/NGlobal", "NGlobal", kTH1F, {AxisMultiplicityMultNGlobal});
+    histos.add("MultiplicityHistograms/CentvsFT0C", "CentvsFT0C", kTH2F, {cfgAxisCent, AxisMultiplicityF0C});
+    histos.add("MultiplicityHistograms/CentvsFT0CVar1", "CentvsFT0CVar1", kTH2F, {cfgAxisCent, AxisMultiplicityF0C});
+    histos.add("MultiplicityHistograms/CentvsFT0M", "CentvsFT0M", kTH2F, {cfgAxisCent, AxisMultiplicityF0M});
+    histos.add("MultiplicityHistograms/CentvsFV0A", "CentvsFV0A", kTH2F, {cfgAxisCent, AxisMultiplicityF0A});
+    histos.add("MultiplicityHistograms/CentvsNGlobal", "CentvsNGlobal", kTH2F, {cfgAxisCent, AxisMultiplicityMultNGlobal});
   }
 
-  template<int mult, typename C>
+  template <int mult, typename C>
   void fillMultHistosRun3(const C& col)
   {
     static constexpr std::string_view multLabels[] = {"FT0C", "FT0A", "FV0A", "FDDC", "FDDA", "TPC", "NGlobal"};
@@ -146,12 +145,12 @@ struct NeutronProtonCorrZdc {
     histos.fill(HIST("MultiplicityHistograms/") + HIST(multLabels[mult]), multarray[mult]);
   }
 
-   template<int cent, typename C>
+  template <int cent, typename C>
   void fillCentHistosRun3(const C& col)
   {
     static constexpr std::string_view centLabels[] = {"CentvsFT0C", "CentvsFT0CVar1", "CentvsFT0M", "CentvsFV0A", "CentvsNGlobal"};
     std::array<float, 5> centarray = {col.centFT0C(), col.centFT0CVariant1(), col.centFT0M(), col.centFV0A(), col.centNGlobal()};
-    std::array<float, 5> multarray = {col.multFT0C(), col.multFT0C(), col.multFT0C()+col.multFT0A(), col.multFV0A(), float(col.multNTracksGlobal())};
+    std::array<float, 5> multarray = {col.multFT0C(), col.multFT0C(), col.multFT0C() + col.multFT0A(), col.multFV0A(), float(col.multNTracksGlobal())};
 
     histos.fill(HIST("MultiplicityHistograms/") + HIST(centLabels[cent]), centarray[cent], multarray[cent]);
   }
@@ -186,10 +185,9 @@ struct NeutronProtonCorrZdc {
 
     std::array<std::array<float, 4>, 2> znEnergyResponse = {zdc.energySectorZNA(), zdc.energySectorZNC()};
     std::array<std::array<float, 4>, 2> zpEnergyResponse = {zdc.energySectorZPA(), zdc.energySectorZPC()};
-  
+
     histos.fill(HIST(SubDir[side]) + HIST(ZNSector[sector]), centr, znEnergyResponse[side][sector]);
     histos.fill(HIST(SubDir[side]) + HIST(ZPSector[sector]), centr, zpEnergyResponse[side][sector]);
-    
   }
 
   void processRun3(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsGlobal, CentralitiesRun3>>::iterator const& collision, BCsRun3 const&, aod::Zdcs const&)
@@ -213,18 +211,18 @@ struct NeutronProtonCorrZdc {
       histos.fill(HIST("eventCounter"), EventCounter::kZDCSelection);
       histos.fill(HIST("CentralityPercentile"), cent);
 
-      static_for<0,6>([&](auto i){
+      static_for<0, 6>([&](auto i) {
         fillMultHistosRun3<i>(collision); // Fill multiplicity histograms
       });
 
-      static_for<0,4>([&](auto i){
+      static_for<0, 4>([&](auto i) {
         fillCentHistosRun3<i>(collision); // Fill centrality histograms
-      }); 
+      });
 
-      static_for<0,1>([&](auto i){
+      static_for<0, 1>([&](auto i) {
         fillZDCSideCommonHistos<i>(cent, zdcread); // Fill i-side common histograms
-        static_for<0,3>([&](auto j){
-          fillZDCSideSectorHistos<i,j>(cent, zdcread); // Fill i-side sector j histograms
+        static_for<0, 3>([&](auto j) {
+          fillZDCSideSectorHistos<i, j>(cent, zdcread); // Fill i-side sector j histograms
         });
       });
 
@@ -251,7 +249,7 @@ struct NeutronProtonCorrZdc {
       histos.fill(HIST("CentvsZPAvsZNC"), cent, sumZPA, sumZNC);
       histos.fill(HIST("CentvsZPAvsZPC"), cent, sumZPA, sumZPC);
       histos.fill(HIST("CentvsZNCvsZPC"), cent, sumZNC, sumZPC);
-      histos.fill(HIST("CentvsZNvsZP"), cent, sumZNA+sumZNC, sumZPA+sumZPC);
+      histos.fill(HIST("CentvsZNvsZP"), cent, sumZNA + sumZNC, sumZPA + sumZPC);
     }
   }
   PROCESS_SWITCH(NeutronProtonCorrZdc, processRun3, "Process analysis for Run 3 data", true);
@@ -275,10 +273,10 @@ struct NeutronProtonCorrZdc {
       histos.fill(HIST("eventCounter"), EventCounter::kZDCSelection);
       histos.fill(HIST("CentralityPercentile"), cent);
 
-      static_for<0,1>([&](auto i){
+      static_for<0, 1>([&](auto i) {
         fillZDCSideCommonHistos<i>(cent, zdcread); // Fill i-side common channels
-        static_for<0,3>([&](auto j){
-          fillZDCSideSectorHistos<i,j>(cent, zdcread); // Fill i-side sector j
+        static_for<0, 3>([&](auto j) {
+          fillZDCSideSectorHistos<i, j>(cent, zdcread); // Fill i-side sector j
         });
       });
 
@@ -305,7 +303,7 @@ struct NeutronProtonCorrZdc {
       histos.fill(HIST("CentvsZPAvsZNC"), cent, sumZPA, sumZNC);
       histos.fill(HIST("CentvsZPAvsZPC"), cent, sumZPA, sumZPC);
       histos.fill(HIST("CentvsZNCvsZPC"), cent, sumZNC, sumZPC);
-      histos.fill(HIST("CentvsZNvsZP"), cent, sumZNA+sumZNC, sumZPA+sumZPC);
+      histos.fill(HIST("CentvsZNvsZP"), cent, sumZNA + sumZNC, sumZPA + sumZPC);
     }
   }
   PROCESS_SWITCH(NeutronProtonCorrZdc, processRun2, "Process analysis for Run 2 converted data", false);
