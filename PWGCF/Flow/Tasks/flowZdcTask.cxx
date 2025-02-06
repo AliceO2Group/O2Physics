@@ -298,25 +298,26 @@ struct FlowZdcTask {
     if (isGoodITSLayersAll && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return false;
     }
+    histos.fill(HIST("eventSelectionSteps"), 6);
     if (isApplyVertexTOFmatched && !col.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
       return false;
     }
-    histos.fill(HIST("EventHist"), 6);
+    histos.fill(HIST("eventSelectionSteps"), 7);
 
     if (isApplyVertexTRDmatched && !col.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
       return false;
     }
-    histos.fill(HIST("EventHist"), 7);
+    histos.fill(HIST("eventSelectionSteps"), 8);
     if (col.centFT0C() < 0. || col.centFT0C() > 100.) {
       return false;
     }
-    histos.fill(HIST("EventHist"), 8);
+    histos.fill(HIST("eventSelectionSteps"), 9);
 
     if (isApplyExtraCorrCut && col.multNTracksPV() > npvTracksCut && col.multFT0C() < (10 * col.multNTracksPV() - ft0cCut)) {
       return false;
     }
-    histos.fill(HIST("EventHist"), 9);    
-    histos.fill(HIST("eventSelectionSteps"), 10);
+    histos.fill(HIST("eventSelectionSteps"), 10);    
+    histos.fill(HIST("eventSelectionSteps"), 11);
     return true;
   }
 
