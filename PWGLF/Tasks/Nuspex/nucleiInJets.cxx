@@ -1103,7 +1103,7 @@ struct NucleiInJets {
         }
         registryQC.fill(HIST("sumPtUE_MC"), 0.5 * ptUE);
 
-        double ptJetRec = jetGen[i].Pt() - averagePtUEMC;
+        double ptJetCorr = jetGen[i].Pt() - averagePtUEMC;
 
         if (ptJetCorr < minJetPt)
           continue;
@@ -1305,7 +1305,7 @@ struct NucleiInJets {
         ue1.push_back(ueAxis1);
         ue2.push_back(ueAxis2);
 
-        double ptJetRec = jet[i].Pt() - averagePtUEMC;
+        double ptJetCorr = jet[i].Pt() - averagePtUEMC;
         if (ptJetCorr < minJetPt)
           continue;
 
