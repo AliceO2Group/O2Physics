@@ -95,7 +95,7 @@ if len(args.ccdb_labels) > 0 and len(args.ccdb_labels) != len(args.mc_reco):
     sys.exit(1)
 
 if len(args.ccdb_labels) == 0:
-    # if flag is not provided, fill with empty strings as a placeholders
+    # if flag is not provided, fill with empty strings to match size
     args.ccdb_labels = [""] * len(args.mc_reco)
 
 ANALYSIS_RESULTS = "AnalysisResults.root"
