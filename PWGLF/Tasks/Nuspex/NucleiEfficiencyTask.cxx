@@ -48,8 +48,7 @@ using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-//using CollisionCandidates = o2::soa::Join<>;
-
+// using CollisionCandidates = o2::soa::Join<>;
 
 struct NucleiEfficiencyTask {
 
