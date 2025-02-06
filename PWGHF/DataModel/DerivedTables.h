@@ -696,20 +696,14 @@ DECLARE_SOA_TABLE_STAGED(HfDplusPars, "HFDPPAR", //! Table with candidate proper
                          hf_cand_par::ImpactParameterNormalised1,
                          hf_cand_par::ImpactParameterNormalised2,
                          hf_cand_par::NSigTpcPi0,
-                         hf_cand_par::NSigTpcPr0,
                          hf_cand_par::NSigTofPi0,
-                         hf_cand_par::NSigTofPr0,
                          hf_cand_par::NSigTpcTofPi0,
-                         hf_cand_par::NSigTpcTofPr0,
                          hf_cand_par::NSigTpcKa1,
                          hf_cand_par::NSigTofKa1,
                          hf_cand_par::NSigTpcTofKa1,
                          hf_cand_par::NSigTpcPi2,
-                         hf_cand_par::NSigTpcPr2,
                          hf_cand_par::NSigTofPi2,
-                         hf_cand_par::NSigTofPr2,
                          hf_cand_par::NSigTpcTofPi2,
-                         hf_cand_par::NSigTpcTofPr2,
                          o2::soa::Marker<MarkerDplus>);
 
 DECLARE_SOA_TABLE_STAGED(HfDplusParEs, "HFDPPARE", //! Table with additional candidate properties used for selection
