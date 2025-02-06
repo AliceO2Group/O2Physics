@@ -70,10 +70,8 @@ struct UccZdc {
                                     "minimum number of ITS clusters"};
   Configurable<int> minTpcNclusters{"minTpcNclusters", 70,
                                     "minimum number of TPC clusters"};
-  Configurable<int> minTpcNcrossedRows{
-    "minTpcNcrossedRows", 70, "minimum number of TPC crossed pad rows"};
-  Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0,
-                                       "maximum TPC chi^2/Ncls"};
+  Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 70, "minimum number of TPC crossed pad rows"};
+  Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0, "maximum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareIts{"maxChiSquareIts", 36.0,
                                        "maximum ITS chi^2/Ncls"};
   Configurable<double> minPt{"minPt", 0.1, "minimum pt of the tracks"};
@@ -105,14 +103,8 @@ struct UccZdc {
   Configurable<float> minMeanpT{"minMeanpT", 0.5, "minimum [pT]"};
   Configurable<float> maxMeanpT{"maxMeanpT", 1.1, "maximum [pT]"};
   Configurable<int> nBinsMeanpT{"nBinsMeanpT", 160, "# bins [pT]"};
-  ConfigurableAxis binsPt{
-    "binsPt",
-    {VARIABLE_WIDTH, 0., 0.1, 0.25, 0.5, 1., 2., 4., 6., 8., 10., 20.},
-    "Binning of the pT axis"};
-  ConfigurableAxis binsCent{
-    "binsCent",
-    {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.},
-    "T0C centrality binning"};
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0., 0.1, 0.25, 0.5, 1., 2., 4., 6., 8., 10., 20.}, "Binning of the pT axis"};
+  ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C centrality binning"};
 
   // Configurable flags ZDC
   Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut?"};
