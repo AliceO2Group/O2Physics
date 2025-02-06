@@ -44,7 +44,7 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::mult;
 using namespace o2::aod::evsel;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
-using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
+using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
 using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using AodZDCs = soa::Join<aod::ZDCMults, aod::Zdcs>;
@@ -298,7 +298,25 @@ struct FlowZdcTask {
     if (isGoodITSLayersAll && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return false;
     }
-    histos.fill(HIST("eventSelectionSteps"), 6);
+    if (isApplyVertexTOFmatched && !col.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 6);
+
+    if (isApplyVertexTRDmatched && !col.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 7);
+    if (col.centFT0C() < 0. || col.centFT0C() > 100.) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 8);
+
+    if (isApplyExtraCorrCut && col.multNTracksPV() > npvTracksCut && col.multFT0C() < (10 * col.multNTracksPV() - ft0cCut)) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 9);    
+    histos.fill(HIST("eventSelectionSteps"), 10);
     return true;
   }
 
