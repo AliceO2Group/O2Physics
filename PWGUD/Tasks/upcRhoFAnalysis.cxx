@@ -236,17 +236,6 @@ struct upcRhoFAnalysis {
     if (!collisionPassesCuts(collision))
       return;
 
-    // event tagging
-    bool XnXn = false, OnOn = false, XnOn = false, OnXn = false; // note: On == 0n...
-    if (collision.energyCommonZNA() < ZNcommonEnergyCut && collision.energyCommonZNC() < ZNcommonEnergyCut)
-      OnOn = true;
-    if (collision.energyCommonZNA() > ZNcommonEnergyCut && std::abs(collision.timeZNA()) < ZNtimeCut &&
-        collision.energyCommonZNC() > ZNcommonEnergyCut && std::abs(collision.timeZNC()) < ZNtimeCut)
-      XnXn = true;
-    if (collision.energyCommonZNA() > ZNcommonEnergyCut && std::abs(collision.timeZNA()) < ZNtimeCut && collision.energyCommonZNC() < ZNcommonEnergyCut)
-      XnOn = true;
-    if (collision.energyCommonZNA() < ZNcommonEnergyCut && collision.energyCommonZNC() > ZNcommonEnergyCut && std::abs(collision.timeZNC()) < ZNtimeCut)
-      OnXn = true;
     // vectors for storing selected tracks and their 4-vectors
     std::vector<decltype(tracks.begin())> cutTracks;
     std::vector<ROOT::Math::PxPyPzMVector> cutTracks4Vecs;
@@ -269,7 +258,7 @@ struct upcRhoFAnalysis {
     int nTracks = cutTracks.size();
     double mass = system.M();
     double pT = system.Pt();
-    double pTsquare = pT * pT;
+    //double pTsquare = pT * pT;
     double rapidity = system.Rapidity();
     double systemPhi = system.Phi() + o2::constants::math::PI;
 
