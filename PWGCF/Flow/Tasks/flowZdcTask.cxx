@@ -178,7 +178,7 @@ struct FlowZdcTask {
     AxisSpec axisZvert{120, -30.f, 30.f, "Vtx z (cm)"};
     AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
     AxisSpec axisPtBins{{0., 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10., 13., 16., 20.}, "p_{T} (GeV/c)"};
-    AxisSpec axisEvent{6, 0.5, 6.5, "#Event", "EventAxis"};
+    AxisSpec axisEvent{11, 0.5, 11.5, "#Event", "EventAxis"};
     AxisSpec axisMult = {multHistBin, "Mult", "MultAxis"};
     AxisSpec axisFT0CMult = {ft0cMultHistBin, "ft0c", "FT0CMultAxis"};
 
@@ -225,6 +225,10 @@ struct FlowZdcTask {
     xAxis->SetBinLabel(4, "kIsGoodZvtxFT0vsPV");  // small difference between z-vertex from PV and from FT0
     xAxis->SetBinLabel(5, "kIsVertexITSTPC");     // at least one ITS-TPC track (reject vertices built from ITS-only tracks)
     xAxis->SetBinLabel(6, "kIsGoodITSLayersAll"); //"Centrality based on no other collisions in this Readout Frame with per-collision multiplicity above threshold tracks"
+    xAxis->SetBinLabel(7, "kIsApplyVertexTOFmatched");
+    xAxis->SetBinLabel(8, "kIsVertexTRDmatched");
+    xAxis->SetBinLabel(9, "centrality selection");
+    xAxis->SetBinLabel(10, "isApplyExtraCorrCut");
     histos.add("GlobalMult_vs_FT0C", "GlobalMult_vs_FT0C", kTH2F, {axisMult, axisFT0CMult});
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ});
 
