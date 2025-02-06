@@ -31,15 +31,15 @@
 namespace o2::aod
 {
 // basic species:
-// D0 → K− π+ (done)
-// Λc → p K− π+ (done)
-// D+ → K− π+ π+ (done)
-// Ds+ → K− K+ π+
+// D0 → K− π+
+// Λc → p K− π+
+// D+ → K− π+ π+
+// Ds+ → K− K+ π+ (todo)
 
 // composite species
-// B0 → D− π+
-// B+ → D0 π+ (done)
-// D*+ → D0 π+
+// B0 → D− π+ (todo)
+// B+ → D0 π+
+// D*+ → D0 π+ (todo)
 
 // ================
 // Collision tables
@@ -260,7 +260,8 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 
 DECLARE_2P_TABLES(D0, "D0", d0, 2);
 DECLARE_3P_TABLES(Lc, "LC", lc, 3);
-DECLARE_3P_TABLES(Bplus, "BP", bplus, 4);
+DECLARE_3P_TABLES(Dplus, "DP", dplus, 4);
+DECLARE_3P_TABLES(Bplus, "BP", bplus, 5);
 
 // ================
 // Candidate tables
