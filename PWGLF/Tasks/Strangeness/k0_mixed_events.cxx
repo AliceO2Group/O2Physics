@@ -214,7 +214,7 @@ struct K0MixedEvents {
     if (doMixedEvent) {
       registry.add("MEvsPt", "MEvsPt", kTH3F, {invMassAxis, ptAxis, multPercentileAxis});
     }
-    registry.add("eta", Form("eta_%i", _particlePDG_1.value), kTH2F, {ptAxis, {100, -10., 10., "#eta"}});
+    registry.add("eta_first", Form("eta_%i", _particlePDG_1.value), kTH2F, {ptAxis, {100, -10., 10., "#eta"}});
     registry.add("p_first", Form("p_%i", _particlePDG_1.value), kTH1D, {ptAxis});
     registry.add("dcaXY_first", Form("dca_%i", _particlePDG_1.value), kTH2F, {ptAxis, dcaXyAxis});
     registry.add("nsigmaTOF_first", Form("nsigmaTOF_%i", _particlePDG_1.value), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TOF}(%s))", pdgToSymbol(_particlePDG_1))}});
@@ -234,6 +234,7 @@ struct K0MixedEvents {
     }
     registry.add("MC/multPerc", "multPerc", kTH1D, {multPercentileAxis});
     registry.add("MC/multPercMC", "multPercMC", kTH1D, {multPercentileAxis});
+    registry.add("MC/multPercWMcCol", "multPercWMcCol", kTH1D, {multPercentileAxis});
     registry.add("MC/generatedInRecoEvs", "generatedInRecoEvs", kTH2D, {ptAxis, multPercentileAxis});
     registry.add("MC/generatedInGenEvs", "generatedInGenEvs", kTH2D, {ptAxis, multPercentileAxis});
     registry.add("MC/SEvsPt", "SEvsPt", kTH3F, {invMassAxis, ptAxis, multPercentileAxis});
@@ -350,10 +351,10 @@ struct K0MixedEvents {
         continue;
       if (col.multPerc() > multPercentileCut.value.second || col.multPerc() < multPercentileCut.value.first)
         continue;
-      registry.fill(HIST("eta"), track.pt(), track.eta());
-      if (std::abs(track.rapidity(particle_mass(_particlePDG_1))) > _maxy) {
-        continue;
-      }
+      registry.fill(HIST("eta_first"), track.pt(), track.eta());
+      // if (std::abs(track.rapidity(particle_mass(_particlePDG_1))) > _maxy) {
+      //   continue;
+      // }
       registry.fill(HIST("rapidity_first"), track.pt(), track.rapidity(particle_mass(_particlePDG_1)));
 
       if ((track.sign() == _sign_1) &&
@@ -503,99 +504,23 @@ struct K0MixedEvents {
 
   using RecoMCCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>;
   using GenMCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
-
+  using RecoMCTracks = soa::Join<aod::Tracks, aod::TracksExtra,
+                                 aod::TracksDCA, aod::McTrackLabels,
+                                 aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                 aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
+                                 aod::TrackSelection>;
   Service<o2::framework::O2DatabasePDG> pdgDB;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
+  Preslice<RecoMCTracks> perCollision = aod::track::collisionId;
   SliceCache cache;
-  void processMC(soa::Join<aod::Tracks, aod::TracksExtra,
-                           aod::TracksDCA, aod::McTrackLabels,
-                           aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                           aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
-                           aod::TrackSelection> const& tracks,
-                 RecoMCCollisions const& collisions,
+  void processMC(RecoMCCollisions const& collisions,
+                 RecoMCTracks const& tracks,
                  GenMCCollisions const& mcCollisions,
                  aod::McParticles const& mcParticles)
   {
     // Loop on reconstructed tracks
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
-    for (const auto& trk1 : tracks) {
-      if (!isTrackSelected(trk1)) {
-        continue;
-      }
-      if (!trk1.has_collision()) {
-        continue;
-      }
-      // LOG(info) << "COL1: Get";
-      const auto& col1 = trk1.collision_as<RecoMCCollisions>();
-      // LOG(info) << "COL1";
-      if (!col1.sel8()) {
-        continue;
-      }
-      if (std::abs(col1.posZ()) > _vertexZ) {
-        continue;
-      }
-      if (col1.centFT0M() < multPercentileCut.value.first) {
-        continue;
-      }
-      if (col1.centFT0M() > multPercentileCut.value.second) {
-        continue;
-      }
-      if (!trk1.has_mcParticle()) {
-        continue;
-      }
-      const auto& part1 = trk1.mcParticle();
-      switch (part1.pdgCode()) {
-        case 211:
-          break;
-        default:
-          continue;
-      }
-      lDecayDaughter1.SetPtEtaPhiM(part1.pt(), part1.eta(), part1.phi(), 0.13957040);
-      for (const auto& trk2 : tracks) {
-        if (trk1 == trk2) {
-          continue;
-        }
-        if (!isTrackSelected(trk2)) {
-          continue;
-        }
-        if (!trk2.has_collision()) {
-          continue;
-        }
-        // LOG(info) << "COL2: Get";
-        const auto& col2 = trk2.collision_as<RecoMCCollisions>();
-        // LOG(info) << "COL2";
-        if (!col2.sel8()) {
-          continue;
-        }
-        if (std::abs(col2.posZ()) > _vertexZ) {
-          continue;
-        }
-        if (col2.centFT0M() < multPercentileCut.value.first) {
-          continue;
-        }
-        if (col2.centFT0M() > multPercentileCut.value.second) {
-          continue;
-        }
-        if (!trk2.has_mcParticle()) {
-          continue;
-        }
-        const auto& part2 = trk2.mcParticle();
-        switch (part2.pdgCode()) {
-          case -211:
-            break;
-          default:
-            continue;
-        }
-        lDecayDaughter2.SetPtEtaPhiM(part2.pt(), part2.eta(), part2.phi(), 0.13957040);
-        lResonance = lDecayDaughter1 + lDecayDaughter2;
-        if (col1 == col2) { // Same collision
-          registry.fill(HIST("MC/SEvsPt"), lResonance.M(), lResonance.Pt(), col1.centFT0M());
-        } else { // Different collision
-          registry.fill(HIST("MC/MEvsPt"), lResonance.M(), lResonance.Pt(), col1.centFT0M());
-        }
-      }
-    }
-
+    std::vector<std::shared_ptr<RecoMCTracks::iterator>> trkPool;
     // Loop on reconstructed collisions
     for (const auto& col : collisions) {
       if (!col.sel8()) {
@@ -604,10 +529,39 @@ struct K0MixedEvents {
       if (std::abs(col.posZ()) > _vertexZ) {
         continue;
       }
+      // Loop on tracks
+      const auto& tracksInCollision = tracks.sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
+      for (const auto& trk : tracksInCollision) {
+        if (!trk.has_mcParticle()) {
+          continue;
+        }
+        const auto& part = trk.mcParticle();
+        switch (part.pdgCode()) {
+          case 211:
+            break;
+          default:
+            continue;
+        }
+        trkPool.push_back(std::make_shared<RecoMCTracks::iterator>(trk));
+      }
+
+      for (uint32_t trk1 = 0; trk1 < trkPool.size(); trk1++) { // nested loop for all the combinations
+        lDecayDaughter1.SetPtEtaPhiM(trkPool[trk1]->pt(), trkPool[trk1]->eta(), trkPool[trk1]->phi(), particle_mass(_particlePDG_1));
+        for (uint32_t trk2 = trk1 + 1; trk2 < trkPool.size(); trk2++) {
+          lDecayDaughter2.SetPtEtaPhiM(trkPool[trk2]->pt(), trkPool[trk2]->eta(), trkPool[trk2]->phi(), particle_mass(_particlePDG_2));
+          lResonance = lDecayDaughter1 + lDecayDaughter2;
+          if (std::abs(lResonance.Rapidity()) > 0.5f) {
+            continue;
+          }
+          registry.fill(HIST("SEvsPt"), lResonance.M(), lResonance.Pt(), col.centFT0M()); // close pair rejection and fillig the SE histo
+        }
+      }
+
+      registry.fill(HIST("MC/multPerc"), col.centFT0M());
       if (!col.has_mcCollision()) {
         continue;
       }
-      registry.fill(HIST("MC/multPerc"), col.centFT0M());
+      registry.fill(HIST("MC/multPercWMcCol"), col.centFT0M());
 
       // Loop on particles
       const auto& mcCollision = col.mcCollision_as<GenMCCollisions>();
