@@ -76,7 +76,7 @@ parser.add_argument(
     type=str,
     nargs="+",
     help="custom labels to add to objects' metadata in CCDB [example: label1 label2]",
-    default=[""] * 2,
+    default=[],
 )
 parser.add_argument(
     "--ccdb-lifetime",
@@ -89,6 +89,14 @@ args = parser.parse_args()
 if len(args.mc_reco) != len(args.mc_truth):
     print("[!] Provided number of histograms with MC Reco must match MC Truth", file=sys.stderr)
     sys.exit(1)
+
+if len(args.ccdb_labels) > 0 and len(args.ccdb_labels) != len(args.mc_reco):
+    print("[!] You must provide labels for all particles", file=sys.stderr)
+    sys.exit(1)
+
+if len(args.ccdb_labels) == 0:
+    # if flag is not provided, fill with empty strings as a placeholders
+    args.ccdb_labels = [""] * len(args.mc_reco)
 
 ANALYSIS_RESULTS = "AnalysisResults.root"
 results_path = args.alien_path / ANALYSIS_RESULTS
@@ -203,4 +211,5 @@ except subprocess.CalledProcessError as error:
     print(f"\n[!] Error while uploading: {error.stderr.decode('utf-8')}", file=sys.stderr)
     sys.exit(1)
 
-print("\n[✓] Success!", file=sys.stderr)
+print()
+print("[✓] Success!", file=sys.stderr)
