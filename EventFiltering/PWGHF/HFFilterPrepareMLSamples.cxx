@@ -233,13 +233,6 @@ struct HfFilterPrepareMlSamples { // Main struct
   {
     for (const auto& cand2Prong : cand2Prongs) { // start loop over 2 prongs
 
-      if (fillOnlySignal && cand2Prong.hfflag() == 0) {
-        continue;
-      }
-      if (fillOnlyBackground && cand2Prong.hfflag() != 0) {
-        continue;
-      }
-
       auto thisCollId = cand2Prong.collisionId();
       auto collision = collisions.rawIteratorAt(thisCollId);
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
