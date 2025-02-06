@@ -73,7 +73,7 @@ struct HfTaskCorrelationHfeHadrons {
         }
       }
       if (pairEntry.isULSEHCorr() > 0) {
-        for (int i = 0; i < pairEntry.isULSEHCorr() > 0; ++i) {
+        for (int i = 0; i < pairEntry.isULSEHCorr(); ++i) {
 
           registry.fill(HIST("hUnlikeSignEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
         }
