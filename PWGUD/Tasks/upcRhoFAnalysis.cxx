@@ -258,7 +258,7 @@ struct upcRhoFAnalysis {
     int nTracks = cutTracks.size();
     double mass = system.M();
     double pT = system.Pt();
-    //double pTsquare = pT * pT;
+    // double pTsquare = pT * pT;
     double rapidity = system.Rapidity();
     double systemPhi = system.Phi() + o2::constants::math::PI;
 
