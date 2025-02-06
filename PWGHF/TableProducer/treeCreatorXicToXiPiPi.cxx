@@ -820,7 +820,8 @@ struct HfTreeCreatorXicToXiPiPi {
 
   void processResiduals(SelectedCandidatesMc const&,
                         aod::TracksWMc const& tracks,
-                        aod::McParticles const& particles)
+                        aod::McParticles const& particles,
+                        aod::McCollisions const&)
   {
     rowCandidateResiduals.reserve(recSig.size());
 

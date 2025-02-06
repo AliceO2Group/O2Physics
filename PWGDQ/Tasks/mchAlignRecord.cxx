@@ -111,6 +111,23 @@ struct mchAlignRecordTask {
   Configurable<bool> fDoNewGeo{"do-realign", false, "Transform to a given new geometry"};
   Configurable<bool> fDoEvaluation{"do-evaluation", false, "Enable storage of residuals"};
   Configurable<string> fConfigNewGeoFile{"new-geo", "o2sim_geometry-aligned.root", "New geometry for transformation"};
+  Configurable<double> fAllowedVarX{"variation-x", 2.0, "Allowed variation for x axis in cm"};
+  Configurable<double> fAllowedVarY{"variation-y", 0.3, "Allowed variation for y axis in cm"};
+  Configurable<double> fAllowedVarPhi{"variation-phi", 0.002, "Allowed variation for phi axis in rad"};
+  Configurable<double> fAllowedVarZ{"variation-z", 2.0, "Allowed variation for z axis in cm"};
+  Configurable<double> cfgSigmaX{"cfgSigmaX", 1000., "Sigma cut along X"};
+  Configurable<double> cfgSigmaY{"cfgSigmaY", 1000., "Sigma cut along Y"};
+  Configurable<double> cfgChamberResolutionX{"cfgChamberResolutionX", 0.04, "Chamber resolution along X configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
+  Configurable<double> cfgChamberResolutionY{"cfgChamberResolutionY", 0.04, "Chamber resolution along Y configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
+  Configurable<double> cfgSigmaCutImprove{"cfgSigmaCutImprove", 6., "Sigma cut for track improvement"};
+  struct : ConfigurableGroup {
+    Configurable<std::vector<int>> cfgDetElem{"cfgDetElem",
+                                              {},
+                                              "List of DetElem to be fixed"};
+    Configurable<std::vector<int>> cfgParMask{"cfgParMask",
+                                              {},
+                                              "List of param mask for d.o.f to be fixed"};
+  } fFixDetElem;
 
   void init(InitContext& ic)
   {
@@ -122,27 +139,41 @@ struct mchAlignRecordTask {
 
     // Configuration for alignment object
     mAlign.SetDoEvaluation(fDoEvaluation.value);
-    mAlign.SetAllowedVariation(0, 2.0);
-    mAlign.SetAllowedVariation(1, 0.3);
-    mAlign.SetAllowedVariation(2, 0.002);
-    mAlign.SetAllowedVariation(3, 2.0);
+    mAlign.SetAllowedVariation(0, fAllowedVarX.value);
+    mAlign.SetAllowedVariation(1, fAllowedVarY.value);
+    mAlign.SetAllowedVariation(2, fAllowedVarPhi.value);
+    mAlign.SetAllowedVariation(3, fAllowedVarZ.value);
+    mAlign.SetSigmaXY(cfgSigmaX.value, cfgSigmaY.value);
 
     // Configuration for track fitter
     const auto& trackerParam = o2::mch::TrackerParam::Instance();
     trackFitter.setBendingVertexDispersion(trackerParam.bendingVertexDispersion);
-    trackFitter.setChamberResolution(trackerParam.chamberResolutionX, trackerParam.chamberResolutionY);
+    trackFitter.setChamberResolution(cfgChamberResolutionX.value, cfgChamberResolutionY.value);
     trackFitter.smoothTracks(true);
     trackFitter.useChamberResolution();
-    mImproveCutChi2 = 2. * trackerParam.sigmaCutForImprovement * trackerParam.sigmaCutForImprovement;
+    mImproveCutChi2 = 2. * cfgSigmaCutImprove.value * cfgSigmaCutImprove.value;
 
     // Configuration for chamber fixing
-    auto chambers = fFixChamber.value;
-    for (std::size_t i = 0; i < chambers.length(); ++i) {
-      if (chambers[i] == ',')
-        continue;
-      int chamber = chambers[i] - '0';
-      LOG(info) << Form("%s%d", "Fixing chamber: ", chamber);
-      mAlign.FixChamber(chamber);
+    TString chambersString = fFixChamber.value;
+    std::unique_ptr<TObjArray> objArray(chambersString.Tokenize(","));
+    if (objArray->GetEntries() > 0) {
+      for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
+        LOG(info) << Form("%s%d", "Fixing chamber: ", std::stoi(objArray->At(iVar)->GetName()));
+        mAlign.FixChamber(std::stoi(objArray->At(iVar)->GetName()));
+      }
+    }
+
+    // Configuration for DE fixing with given axes
+    auto DEs = fFixDetElem.cfgDetElem.value;
+    auto Masks = fFixDetElem.cfgParMask.value;
+    if (DEs.size() > 0) {
+      if (DEs.size() != Masks.size()) {
+        LOG(fatal) << "Inconsistent size of mask list.";
+      }
+      for (int i = 0; i < static_cast<int>(DEs.size()); i++) {
+        LOG(info) << Form("%s%d%s%d", "Fixing DE: ", DEs.at(i), " with mask: ", Masks.at(i));
+        mAlign.FixDetElem(DEs.at(i), Masks.at(i));
+      }
     }
 
     // Init for output saving

@@ -18,8 +18,8 @@
 //
 //  process functions:
 //
-//  -- processRealData .........: use this OR processSimulation but NOT both
-//  -- processMonteCarlo .......: use this OR processRealData but NOT both
+//  -- processRealData[Run2] .........: use this OR processMonteCarlo but NOT both
+//  -- processMonteCarlo[Run2] .......: use this OR processRealData but NOT both
 //
 
 #include "Framework/runDataProcessing.h"
@@ -39,95 +39,48 @@ using namespace o2::framework;
 
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{
-  "V0Indices",          //.0 (standard analysis: V0Data)
-  "V0CoresBase",        //.1 (standard analyses: V0Data)
-  "V0Covs",             //.2
+  "V0Indices",          //.0 (standard analysis: V0Cores)
+  "V0CoresBase",        //.1 (standard analyses: main table)
+  "V0Covs",             //.2 (joinable with V0Cores)
   "CascIndices",        //.3 (standard analyses: CascData)
   "KFCascIndices",      //.4 (standard analyses: KFCascData)
   "TraCascIndices",     //.5 (standard analyses: TraCascData)
-  "StoredCascCores",    //.6 (standard analyses: CascData)
-  "StoredKFCascCores",  //.7 (standard analyses: KFCascData)
-  "StoredTraCascCores", //.8 (standard analyses: TraCascData)
-  "CascCovs",           //.9
-  "KFCascCovs",         //.10
-  "TraCascCovs",        //.11
-  "V0TrackXs",          //.12
-  "CascTrackXs",        //.13
-  "CascBBs",            //.14
+  "StoredCascCores",    //.6 (standard analyses: CascData, main table)
+  "StoredKFCascCores",  //.7 (standard analyses: KFCascData, main table)
+  "StoredTraCascCores", //.8 (standard analyses: TraCascData, main table)
+  "CascCovs",           //.9 (joinable with CascData)
+  "KFCascCovs",         //.10 (joinable with KFCascData)
+  "TraCascCovs",        //.11 (joinable with TraCascData)
+  "V0TrackXs",          //.12 (joinable with V0Data)
+  "CascTrackXs",        //.13 (joinable with CascData)
+  "CascBBs",            //.14 (standard, bachelor-baryon vars)
   "V0DauCovs",          //.15 (requested: tracking studies)
   "V0DauCovIUs",        //.16 (requested: tracking studies)
   "V0TraPosAtDCAs",     //.17 (requested: tracking studies)
   "V0TraPosAtIUs",      //.18 (requested: tracking studies)
   "V0Ivanovs",          //.19 (requested: tracking studies)
   "McV0Labels",         //.20 (MC/standard analysis)
-  "V0MCCores",          //.21 (MC)
-  "V0CoreMCLabels",     //.22 (MC)
-  "V0MCCollRefs",       //.23 (MC)
+  "V0MCCores",          //.21 (MC, all generated desired V0s)
+  "V0CoreMCLabels",     //.22 (MC, refs V0Cores to V0MCCores)
+  "V0MCCollRefs",       //.23 (MC, refs V0MCCores to McCollisions)
   "McCascLabels",       //.24 (MC/standard analysis)
-  "McKFCascLabels",     //.25 (MC)
-  "McTraCascLabels",    //.26 (MC)
-  "McCascBBTags",       //.27 (MC)
-  "CascMCCores",        //.28 (MC)
-  "CascCoreMCLabels",   //.29 (MC)
-  "CascMCCollRefs",     // 30 (MC)
-  "StraCollision",      // 31 (derived)
-  "StraCollLabels",     // 32 (derived)
-  "StraMCCollisions",   // 33 (MC/derived)
-  "StraMCCollMults",    // 34 (MC/derived)
-  "StraCents",          // 35 (derived)
-  "StraEvSels",         // 36 (derived)
-  "StraStamps",         // 37 (derived)
-  "V0CollRefs",         // 38 (derived)
-  "CascCollRefs",       // 39 (derived)
-  "KFCascCollRefs",     // 40 (derived)
-  "TraCascCollRefs",    // 41 (derived)
-  "DauTrackExtras",     // 42 (derived)
-  "DauTrackMCIds",      // 43 (MC/derived)
-  "DauTrackTPCPIDs",    // 44 (derived)
-  "DauTrackTOFPIDs",    // 45 (derived)
-  "V0Extras",           // 46 (derived)
-  "CascExtras",         // 47 (derived)
-  "StraTrackExtras",    // 48 (derived)
-  "CascToTraRefs",      //.49 (interlink)
-  "CascToKFRefs",       //.50 (interlink)
-  "TraToCascRefs",      //.51 (interlink)
-  "KFToCascRefs",       //.52 (interlink)
-  "V0MCMothers",        // 53 (MC/derived)
-  "CascMCMothers",      // 54 (MC/derived)
-  "MotherMCParts",      // 55 (MC/derived)
-  "StraFT0AQVs",        // 56 (derived)
-  "StraFT0CQVs",        // 57 (derived)
-  "StraFT0MQVs",        // 58 (derived)
-  "StraFV0AQVs",        // 59 (derived)
-  "StraTPCQVs",         // 60 (derived)
-  "StraFT0CQVsEv",      // 61 (derived)
-  "StraZDCSP",          // 62 (derived)
-  "GeK0Short",          // 63 (MC/derived)
-  "GeLambda",           // 64 (MC/derived)
-  "GeAntiLambda",       // 65 (MC/derived)
-  "GeXiMinus",          // 66 (MC/derived)
-  "GeXiPlus",           // 67 (MC/derived)
-  "GeOmegaMinus",       // 68 (MC/derived)
-  "GeOmegaPlus",        // 69 (MC/derived)
-  "V0FoundTags",        // 70 (MC/derived)
-  "CascFoundTags",      // 71 (MC/derived)
-  "StraOrigins"         // 72 (derived)
+  "McKFCascLabels",     //.25 (MC, refs KFCascCores to CascMCCores)
+  "McTraCascLabels",    //.26 (MC, refs TraCascCores to CascMCCores)
+  "McCascBBTags",       //.27 (MC, joinable with CascCores, tags reco-ed)
+  "CascMCCores",        //.28 (MC, all generated desired cascades)
+  "CascCoreMCLabels",   //.29 (MC, refs CascCores to CascMCCores)
+  "CascMCCollRefs",     // 30 (MC, refs CascMCCores to McCollisions)
+  "CascToTraRefs",      //.31 (interlink CascCores -> TraCascCores)
+  "CascToKFRefs",       //.32 (interlink CascCores -> KFCascCores)
+  "TraToCascRefs",      //.33 (interlink TraCascCores -> CascCores)
+  "KFToCascRefs"        //.34 (interlink KFCascCores -> CascCores)
 };
 
-static constexpr int nTablesConst = 73;
+static constexpr int nTablesConst = 35;
 
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
   {-1},
-  {1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1}, // 0-9
   {-1},
   {-1},
   {-1},
@@ -136,8 +89,7 @@ static const int defaultParameters[nTablesConst][nParameters]{
   {-1},
   {-1},
   {-1},
-  {-1},
-  {-1}, // 10-19
+  {-1}, // index 9
   {-1},
   {-1},
   {-1},
@@ -147,7 +99,7 @@ static const int defaultParameters[nTablesConst][nParameters]{
   {-1},
   {-1},
   {-1},
-  {-1}, // 20-29
+  {-1}, // index 19
   {-1},
   {-1},
   {-1},
@@ -157,41 +109,12 @@ static const int defaultParameters[nTablesConst][nParameters]{
   {-1},
   {-1},
   {-1},
-  {-1}, // 30-39
+  {-1}, // index 29
   {-1},
   {-1},
   {-1},
   {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1}, // 40-49
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1}, // 50-59
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1}, // 60-69
-  {-1},
-  {-1},
-  {-1} // 70-72
-};
+  {-1}};
 
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
@@ -239,48 +162,10 @@ struct StrangenessBuilder {
                     kCascMCCores,
                     kCascCoreMCLabels,
                     kCascMCCollRefs,
-                    kStraCollision,
-                    kStraCollLabels,
-                    kStraMCCollisions,
-                    kStraMCCollMults,
-                    kStraCents,
-                    kStraEvSels,
-                    kStraStamps,
-                    kV0CollRefs,
-                    kCascCollRefs,
-                    kKFCascCollRefs,
-                    kTraCascCollRefs,
-                    kDauTrackExtras,
-                    kDauTrackMCIds,
-                    kDauTrackTPCPIDs,
-                    kDauTrackTOFPIDs,
-                    kV0Extras,
-                    kCascExtras,
-                    kStraTrackExtras,
                     kCascToTraRefs,
                     kCascToKFRefs,
                     kTraToCascRefs,
                     kKFToCascRefs,
-                    kV0MCMothers,
-                    kCascMCMothers,
-                    kMotherMCParts,
-                    kStraFT0AQVs,
-                    kStraFT0CQVs,
-                    kStraFT0MQVs,
-                    kStraFV0AQVs,
-                    kStraTPCQVs,
-                    kStraFT0CQVsEv,
-                    kStraZDCSP,
-                    kGeK0Short,
-                    kGeLambda,
-                    kGeAntiLambda,
-                    kGeXiMinus,
-                    kGeXiPlus,
-                    kGeOmegaMinus,
-                    kGeOmegaPlus,
-                    kV0FoundTags,
-                    kCascFoundTags,
-                    kStraOrigins,
                     nTables };
 
   //__________________________________________________
@@ -313,6 +198,7 @@ struct StrangenessBuilder {
   Produces<aod::V0TrackXs> v0trackXs;     // for decay chain reco
   Produces<aod::CascTrackXs> cascTrackXs; // for decay chain reco
 
+  //__________________________________________________
   // further auxiliary / optional if desired
   Produces<aod::CascBBs> cascbb;
   Produces<aod::V0DauCovs> v0daucovs;            // covariances of daughter tracks
@@ -344,66 +230,6 @@ struct StrangenessBuilder {
   Produces<aod::TraToCascRefs> traToCascRefs; // tracked -> cascades
   Produces<aod::KFToCascRefs> kfToCascRefs;   // KF -> cascades
 
-  //__________________________________________________
-  // fundamental building blocks of derived data
-  // Produces<aod::StraCollision> strangeColl;        // characterises collisions
-  // Produces<aod::StraCollLabels> strangeCollLabels; // characterises collisions
-  // Produces<aod::StraMCCollisions> strangeMCColl;   // characterises collisions / MC
-  // Produces<aod::StraMCCollMults> strangeMCMults;   // characterises collisions / MC mults
-  // Produces<aod::StraCents> strangeCents;           // characterises collisions / centrality
-  // Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / centrality / sel8 selection
-  // Produces<aod::StraStamps> strangeStamps;         // provides timestamps, run numbers
-  // Produces<aod::V0CollRefs> v0collref;             // references collisions from V0s
-  // Produces<aod::CascCollRefs> casccollref;         // references collisions from cascades
-  // Produces<aod::KFCascCollRefs> kfcasccollref;     // references collisions from KF cascades
-  // Produces<aod::TraCascCollRefs> tracasccollref;   // references collisions from tracked cascades
-
-  //__________________________________________________
-  // track extra references
-  // Produces<aod::DauTrackExtras> dauTrackExtras;   // daughter track detector properties
-  // Produces<aod::DauTrackMCIds> dauTrackMCIds;     // daughter track MC Particle ID
-  // Produces<aod::DauTrackTPCPIDs> dauTrackTPCPIDs; // daughter track TPC PID
-  // Produces<aod::DauTrackTOFPIDs> dauTrackTOFPIDs; // daughter track TOF PID
-  // Produces<aod::V0Extras> v0Extras;               // references DauTracks from V0s
-  // Produces<aod::CascExtras> cascExtras;           // references DauTracks from cascades
-  // Produces<aod::StraTrackExtras> straTrackExtras; // references DauTracks from tracked cascades (for the actual tracked cascade, not its daughters)
-
-  //__________________________________________________
-  // mother information
-  // Produces<aod::V0MCMothers> v0mothers;       // V0 mother references
-  // Produces<aod::CascMCMothers> cascmothers;   // casc mother references
-  // Produces<aod::MotherMCParts> motherMCParts; // mc particles for mothers
-
-  //__________________________________________________
-  // Q-vectors
-  // Produces<aod::StraFT0AQVs> StraFT0AQVs;     // FT0A Q-vector
-  // Produces<aod::StraFT0CQVs> StraFT0CQVs;     // FT0C Q-vector
-  // Produces<aod::StraFT0MQVs> StraFT0MQVs;     // FT0M Q-vector
-  // Produces<aod::StraFV0AQVs> StraFV0AQVs;     // FV0A Q-vector
-  // Produces<aod::StraTPCQVs> StraTPCQVs;       // TPC Q-vector
-  // Produces<aod::StraFT0CQVsEv> StraFT0CQVsEv; // events used to compute FT0C Q-vector (LF)
-  // Produces<aod::StraZDCSP> StraZDCSP;         // ZDC Sums and Products
-
-  //__________________________________________________
-  // Generated binned data
-  // this is a hack while the system does not do better
-  // Produces<aod::GeK0Short> geK0Short;
-  // Produces<aod::GeLambda> geLambda;
-  // Produces<aod::GeAntiLambda> geAntiLambda;
-  // Produces<aod::GeXiMinus> geXiMinus;
-  // Produces<aod::GeXiPlus> geXiPlus;
-  // Produces<aod::GeOmegaMinus> geOmegaMinus;
-  // Produces<aod::GeOmegaPlus> geOmegaPlus;
-
-  //__________________________________________________
-  // Found tags for findable exercise
-  // Produces<aod::V0FoundTags> v0FoundTags;
-  // Produces<aod::CascFoundTags> cascFoundTags;
-
-  //__________________________________________________
-  // Debug
-  Produces<aod::StraOrigins> straOrigin;
-
   Configurable<LabeledArray<int>> enabledTables{"enabledTables",
                                                 {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
                                                 "Produce this table: -1 for autodetect; otherwise, 0/1 is false/true"};
@@ -424,6 +250,15 @@ struct StrangenessBuilder {
     std::string prefix = "v0BuilderOpts";
     Configurable<bool> generatePhotonCandidates{"generatePhotonCandidates", false, "generate gamma conversion candidates (V0s using TPC-only tracks)"};
 
+    // baseline conditionals of V0 building
+    Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimum TPC crossed rows for daughter tracks"};
+    Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
+    Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
+    Configurable<double> v0cospa{"v0cospa", 0.95, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
+    Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
+    Configurable<float> v0radius{"v0radius", 0.9, "v0radius"};
+    Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta (in abs value)"};
+
     // MC builder options
     Configurable<bool> mc_populateV0MCCoresSymmetric{"mc_populateV0MCCoresSymmetric", false, "populate V0MCCores table for derived data analysis, keep V0MCCores joinable with V0Cores"};
     Configurable<bool> mc_populateV0MCCoresAsymmetric{"mc_populateV0MCCoresAsymmetric", true, "populate V0MCCores table for derived data analysis, create V0Cores -> V0MCCores interlink. Saves only labeled V0s."};
@@ -439,6 +274,15 @@ struct StrangenessBuilder {
   struct : ConfigurableGroup {
     std::string prefix = "cascadeBuilderOpts";
     Configurable<bool> useCascadeMomentumAtPrimVtx{"useCascadeMomentumAtPrimVtx", false, "use cascade momentum at PV"};
+
+    // conditionals
+    Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimum TPC crossed rows for daughter tracks"};
+    Configurable<float> dcabachtopv{"dcabachtopv", .05, "DCA Bach To PV"};
+    Configurable<float> cascradius{"cascradius", 0.9, "cascradius"};
+    Configurable<float> casccospa{"casccospa", 0.95, "casccospa"};
+    Configurable<float> dcacascdau{"dcacascdau", 1.0, "DCA cascade Daughters"};
+    Configurable<float> lambdaMassWindow{"lambdaMassWindow", .010, "Distance from Lambda mass (does not apply to KF path)"};
+    Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta (in abs value)"};
 
     // KF building specific
     Configurable<bool> kfTuneForOmega{"kfTuneForOmega", false, "if enabled, take main cascade properties from Omega fit instead of Xi fit (= default)"};
@@ -532,6 +376,11 @@ struct StrangenessBuilder {
 
   void init(InitContext& context)
   {
+    // setup bookkeeping histogram
+    auto h = histos.add<TH1>("hTableBuildingStatistics", "hTableBuildingStatistics", kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
+    auto h2 = histos.add<TH1>("hInputStatistics", "hInputStatistics", kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
+    h2->SetTitle("Input table sizes");
+
     mRunNumber = 0;
 
     mEnabledTables.resize(nTables, 0);
@@ -540,6 +389,11 @@ struct StrangenessBuilder {
     auto& workflows = context.services().get<RunningWorkflowInfo const>();
 
     for (int i = 0; i < nTables; i++) {
+      // adjust bookkeeping histogram
+      h->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
+      h2->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
+      h->SetBinContent(i + 1, -1); // mark all as disabled to start
+
       int f = enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
         mEnabledTables[i] = 1;
@@ -561,21 +415,57 @@ struct StrangenessBuilder {
     }
 
     // list enabled tables
-    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
     LOGF(info, " Strangeness builder: enabled table listing");
-    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
     for (int i = 0; i < nTables; i++) {
       // printout to be improved in the future
       if (mEnabledTables[i]) {
         LOGF(info, " -~> Table enabled: %s", tableNames[i]);
+        h->SetBinContent(i + 1, 0); // mark enabled
       }
     }
-    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+    // print base cuts
+    LOGF(info, "-~> V0 | min crossed rows ..............: %i", v0BuilderOpts.minCrossedRows.value);
+    LOGF(info, "-~> V0 | DCA pos track to PV ...........: %f", v0BuilderOpts.dcapostopv.value);
+    LOGF(info, "-~> V0 | DCA neg track to PV ...........: %f", v0BuilderOpts.dcanegtopv.value);
+    LOGF(info, "-~> V0 | V0 cosine of PA ...............: %f", v0BuilderOpts.v0cospa.value);
+    LOGF(info, "-~> V0 | DCA between V0 daughters ......: %f", v0BuilderOpts.dcav0dau.value);
+    LOGF(info, "-~> V0 | V0 2D decay radius ............: %f", v0BuilderOpts.v0radius.value);
+    LOGF(info, "-~> V0 | Maximum daughter eta ..........: %f", v0BuilderOpts.maxDaughterEta.value);
+
+    LOGF(info, "-~> Cascade | min crossed rows .........: %i", cascadeBuilderOpts.minCrossedRows.value);
+    LOGF(info, "-~> Cascade | DCA bach track to PV .....: %f", cascadeBuilderOpts.dcabachtopv.value);
+    LOGF(info, "-~> Cascade | Cascade cosine of PA .....: %f", cascadeBuilderOpts.casccospa.value);
+    LOGF(info, "-~> Cascade | Cascade daughter DCA .....: %f", cascadeBuilderOpts.dcacascdau.value);
+    LOGF(info, "-~> Cascade | Cascade radius ...........: %f", cascadeBuilderOpts.cascradius.value);
+    LOGF(info, "-~> Cascade | Lambda mass window .......: %f", cascadeBuilderOpts.lambdaMassWindow.value);
+    LOGF(info, "-~> Cascade | Maximum daughter eta .....: %f", cascadeBuilderOpts.maxDaughterEta.value);
+    LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
 
     ccdb->setURL(ccdbConfigurations.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    // set V0 parameters in the helper
+    straHelper.v0selections.minCrossedRows = v0BuilderOpts.minCrossedRows;
+    straHelper.v0selections.dcanegtopv = v0BuilderOpts.dcanegtopv;
+    straHelper.v0selections.dcapostopv = v0BuilderOpts.dcapostopv;
+    straHelper.v0selections.v0cospa = v0BuilderOpts.v0cospa;
+    straHelper.v0selections.dcav0dau = v0BuilderOpts.dcav0dau;
+    straHelper.v0selections.v0radius = v0BuilderOpts.v0radius;
+    straHelper.v0selections.maxDaughterEta = v0BuilderOpts.maxDaughterEta;
+
+    // set cascade parameters in the helper
+    straHelper.cascadeselections.minCrossedRows = cascadeBuilderOpts.minCrossedRows;
+    straHelper.cascadeselections.dcabachtopv = cascadeBuilderOpts.dcabachtopv;
+    straHelper.cascadeselections.cascradius = cascadeBuilderOpts.cascradius;
+    straHelper.cascadeselections.casccospa = cascadeBuilderOpts.casccospa;
+    straHelper.cascadeselections.dcacascdau = cascadeBuilderOpts.dcacascdau;
+    straHelper.cascadeselections.lambdaMassWindow = cascadeBuilderOpts.lambdaMassWindow;
+    straHelper.cascadeselections.maxDaughterEta = cascadeBuilderOpts.maxDaughterEta;
   }
 
   bool initCCDB(aod::BCsWithTimestamps const& bcs, aod::Collisions const& collisions)
@@ -643,21 +533,25 @@ struct StrangenessBuilder {
     if (mEnabledTables[kCascToKFRefs]) {
       for (auto& cascCore : interlinks.cascCoreToCascades) {
         cascToKFRefs(interlinks.cascadeToKFCascCores[cascCore]);
+        histos.fill(HIST("hTableBuildingStatistics"), kCascToKFRefs);
       }
     }
     if (mEnabledTables[kCascToTraRefs]) {
       for (auto& cascCore : interlinks.cascCoreToCascades) {
         cascToTraRefs(interlinks.cascadeToTraCascCores[cascCore]);
+        histos.fill(HIST("hTableBuildingStatistics"), kCascToTraRefs);
       }
     }
     if (mEnabledTables[kKFToCascRefs]) {
       for (auto& kfCascCore : interlinks.kfCascCoreToCascades) {
         kfToCascRefs(interlinks.cascadeToCascCores[kfCascCore]);
+        histos.fill(HIST("hTableBuildingStatistics"), kKFToCascRefs);
       }
     }
     if (mEnabledTables[kTraToCascRefs]) {
       for (auto& traCascCore : interlinks.traCascCoreToCascades) {
         traToCascRefs(interlinks.cascadeToCascCores[traCascCore]);
+        histos.fill(HIST("hTableBuildingStatistics"), kTraToCascRefs);
       }
     }
   }
@@ -691,7 +585,7 @@ struct StrangenessBuilder {
         }
       }
     }
-    LOGF(info, "V0 total %i, Cascade total %i, Tracked cascade total %i, V0s flagged used in cascades: %i", v0s.size(), cascades.size(), trackedCascadeCount, v0sUsedInCascades);
+    LOGF(debug, "V0 total %i, Cascade total %i, Tracked cascade total %i, V0s flagged used in cascades: %i", v0s.size(), cascades.size(), trackedCascadeCount, v0sUsedInCascades);
   }
 
   //__________________________________________________
@@ -709,6 +603,7 @@ struct StrangenessBuilder {
 
     int nV0s = 0;
     // Loops over all V0s in the time frame
+    histos.fill(HIST("hInputStatistics"), kV0CoresBase, v0s.size());
     for (auto& v0 : v0s) {
       if (!mEnabledTables[kV0CoresBase] && v0Map[v0.globalIndex()] == -2) {
         // this v0 hasn't been used by cascades and we're not generating V0s, so skip it
@@ -729,16 +624,18 @@ struct StrangenessBuilder {
         v0sFromCascades.push_back(straHelper.v0);
       }
       // fill requested cursors only if type is not 0
-      if (v0.v0Type() == 1 || (v0.v0Type() == 2 && v0BuilderOpts.generatePhotonCandidates)) {
+      if (v0.v0Type() == 1 || (v0.v0Type() > 1 && v0BuilderOpts.generatePhotonCandidates)) {
         nV0s++;
         if (mEnabledTables[kV0Indices]) {
           // for referencing (especially - but not only - when using derived data)
           v0indices(v0.posTrackId(), v0.negTrackId(),
                     v0.collisionId(), v0.globalIndex());
+          histos.fill(HIST("hTableBuildingStatistics"), kV0Indices);
         }
         if (mEnabledTables[kV0TrackXs]) {
           // further decay chains may need this
           v0trackXs(straHelper.v0.positiveTrackX, straHelper.v0.negativeTrackX);
+          histos.fill(HIST("hTableBuildingStatistics"), kV0TrackXs);
         }
         if (mEnabledTables[kV0CoresBase]) {
           // standard analysis
@@ -752,11 +649,13 @@ struct StrangenessBuilder {
                   straHelper.v0.dcaXY,
                   v0.v0Type());
           v0dataLink(v0cores.lastIndex(), -1);
+          histos.fill(HIST("hTableBuildingStatistics"), kV0CoresBase);
         }
         if (mEnabledTables[kV0TraPosAtDCAs]) {
           // for tracking studies
           v0dauPositions(straHelper.v0.positivePosition[0], straHelper.v0.positivePosition[1], straHelper.v0.positivePosition[2],
                          straHelper.v0.negativePosition[0], straHelper.v0.negativePosition[1], straHelper.v0.negativePosition[2]);
+          histos.fill(HIST("hTableBuildingStatistics"), kV0TraPosAtDCAs);
         }
         if (mEnabledTables[kV0TraPosAtIUs]) {
           // for tracking studies
@@ -768,9 +667,11 @@ struct StrangenessBuilder {
           negativeTrackParam.getXYZGlo(negativePositionIU);
           v0dauPositionsIU(positivePositionIU[0], positivePositionIU[1], positivePositionIU[2],
                            negativePositionIU[0], negativePositionIU[1], negativePositionIU[2]);
+          histos.fill(HIST("hTableBuildingStatistics"), kV0TraPosAtIUs);
         }
         if (mEnabledTables[kV0Covs]) {
           v0covs(straHelper.v0.positionCovariance, straHelper.v0.momentumCovariance);
+          histos.fill(HIST("hTableBuildingStatistics"), kV0Covs);
         }
 
         //_________________________________________________________
@@ -846,6 +747,7 @@ struct StrangenessBuilder {
             // Construct label table (note: this will be joinable with V0Datas!)
             if (mEnabledTables[kMcV0Labels]) {
               v0labels(thisInfo.label, thisInfo.motherLabel);
+              histos.fill(HIST("hTableBuildingStatistics"), kMcV0Labels);
             }
 
             // Mark mcParticle as recoed (no searching necessary afterwards)
@@ -866,9 +768,11 @@ struct StrangenessBuilder {
                   thisInfo.posP[0], thisInfo.posP[1], thisInfo.posP[2],
                   thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2],
                   thisInfo.momentum[0], thisInfo.momentum[1], thisInfo.momentum[2]);
+                histos.fill(HIST("hTableBuildingStatistics"), kV0MCCores);
               }
               if (mEnabledTables[kV0MCCollRefs]) {
                 v0mccollref(thisInfo.mcCollision);
+                histos.fill(HIST("hTableBuildingStatistics"), kV0MCCollRefs);
               }
 
               // n.b. placing the interlink index here allows for the writing of
@@ -876,6 +780,7 @@ struct StrangenessBuilder {
               //      V0Cores and V0MCCores (always dereference -> safe)
               if (mEnabledTables[kV0CoreMCLabels]) {
                 v0CoreMCLabels(v0.globalIndex()); // interlink index
+                histos.fill(HIST("hTableBuildingStatistics"), kV0CoreMCLabels);
               }
             }
             // ---] Asymmetric populate [---
@@ -899,6 +804,7 @@ struct StrangenessBuilder {
               }
               if (mEnabledTables[kV0CoreMCLabels]) {
                 v0CoreMCLabels(thisV0MCCoreIndex); // interlink index
+                histos.fill(HIST("hTableBuildingStatistics"), kV0CoreMCLabels);
               }
             }
           } // enabled tables check
@@ -993,15 +899,17 @@ struct StrangenessBuilder {
               info.posP[0], info.posP[1], info.posP[2],
               info.negP[0], info.negP[1], info.negP[2],
               info.momentum[0], info.momentum[1], info.momentum[2]);
+            histos.fill(HIST("hTableBuildingStatistics"), kV0MCCores);
           }
           if (mEnabledTables[kV0MCCollRefs]) {
             v0mccollref(info.mcCollision);
+            histos.fill(HIST("hTableBuildingStatistics"), kV0MCCollRefs);
           }
         }
       } // end V0MCCores filling in case of MC
     } // end constexpr requires mcParticles
 
-    LOGF(info, "V0s in DF: %i, V0s built: %i, V0s built and buffered for cascades: %i.", v0s.size(), nV0s, v0sFromCascades.size());
+    LOGF(debug, "V0s in DF: %i, V0s built: %i, V0s built and buffered for cascades: %i.", v0s.size(), nV0s, v0sFromCascades.size());
   }
 
   //__________________________________________________
@@ -1116,7 +1024,8 @@ struct StrangenessBuilder {
       return; // don't do if no request for cascades in place
     }
     int nCascades = 0;
-    // Loops over all V0s in the time frame
+    // Loops over all cascades in the time frame
+    histos.fill(HIST("hInputStatistics"), kStoredCascCores, cascades.size());
     for (auto& cascade : cascades) {
       // Get tracks and generate candidate
       auto const& collision = cascade.collision();
@@ -1149,6 +1058,7 @@ struct StrangenessBuilder {
         cascidx(cascade.globalIndex(),
                 straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
                 straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
+        histos.fill(HIST("hTableBuildingStatistics"), kCascIndices);
       }
       if (mEnabledTables[kStoredCascCores]) {
         cascdata(straHelper.cascade.charge, straHelper.cascade.massXi, straHelper.cascade.massOmega,
@@ -1161,6 +1071,8 @@ struct StrangenessBuilder {
                  straHelper.cascade.v0DaughterDCA, straHelper.cascade.cascadeDaughterDCA,
                  straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
                  straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz);
+        histos.fill(HIST("hTableBuildingStatistics"), kStoredCascCores);
+
         // interlink always produced if cascades generated
         cascdataLink(cascdata.lastIndex());
         interlinks.cascCoreToCascades.push_back(cascade.globalIndex());
@@ -1169,12 +1081,15 @@ struct StrangenessBuilder {
 
       if (mEnabledTables[kCascTrackXs]) {
         cascTrackXs(straHelper.cascade.positiveTrackX, straHelper.cascade.negativeTrackX, straHelper.cascade.bachelorTrackX);
+        histos.fill(HIST("hTableBuildingStatistics"), kCascTrackXs);
       }
       if (mEnabledTables[kCascBBs]) {
         cascbb(straHelper.cascade.bachBaryonCosPA, straHelper.cascade.bachBaryonDCAxyToPV);
+        histos.fill(HIST("hTableBuildingStatistics"), kCascBBs);
       }
       if (mEnabledTables[kCascCovs]) {
         casccovs(straHelper.cascade.covariance);
+        histos.fill(HIST("hTableBuildingStatistics"), kCascCovs);
       }
 
       //_________________________________________________________
@@ -1188,6 +1103,7 @@ struct StrangenessBuilder {
           if (mEnabledTables[kMcCascLabels]) {
             casclabels(
               thisCascInfo.label, thisCascInfo.motherLabel);
+            histos.fill(HIST("hTableBuildingStatistics"), kMcCascLabels);
           }
 
           // Mark mcParticle as recoed (no searching necessary afterwards)
@@ -1206,9 +1122,11 @@ struct StrangenessBuilder {
                 thisCascInfo.negP[0], thisCascInfo.negP[1], thisCascInfo.negP[2],
                 thisCascInfo.bachP[0], thisCascInfo.bachP[1], thisCascInfo.bachP[2],
                 thisCascInfo.momentum[0], thisCascInfo.momentum[1], thisCascInfo.momentum[2]);
+              histos.fill(HIST("hTableBuildingStatistics"), kCascMCCores);
             }
             if (mEnabledTables[kCascMCCollRefs]) {
               cascmccollrefs(thisCascInfo.mcCollision);
+              histos.fill(HIST("hTableBuildingStatistics"), kCascMCCollRefs);
             }
           }
 
@@ -1229,6 +1147,7 @@ struct StrangenessBuilder {
             }
             if (mEnabledTables[kCascCoreMCLabels]) {
               cascCoreMClabels(thisCascMCCoreIndex); // interlink: reconstructed -> MC index
+              histos.fill(HIST("hTableBuildingStatistics"), kCascCoreMCLabels);
             }
           }
 
@@ -1270,6 +1189,7 @@ struct StrangenessBuilder {
           } // end bachelor has mcparticle
           // Construct label table (note: this will be joinable with CascDatas)
           bbtags(bbTag);
+          histos.fill(HIST("hTableBuildingStatistics"), kMcCascBBTags);
         } // end BB tag table enabled check
 
       } // constexpr requires mcParticles check
@@ -1383,16 +1303,18 @@ struct StrangenessBuilder {
                 thisInfoToFill.negP[0], thisInfoToFill.negP[1], thisInfoToFill.negP[2],
                 thisInfoToFill.bachP[0], thisInfoToFill.bachP[1], thisInfoToFill.bachP[2],
                 thisInfoToFill.momentum[0], thisInfoToFill.momentum[1], thisInfoToFill.momentum[2]);
+              histos.fill(HIST("hTableBuildingStatistics"), kCascMCCores);
             }
             if (mEnabledTables[kCascMCCollRefs]) {
               cascmccollrefs(thisInfoToFill.mcCollision);
+              histos.fill(HIST("hTableBuildingStatistics"), kCascMCCollRefs);
             }
           }
         }
       } // enabled tables check
     } // constexpr requires mcParticles check
 
-    LOGF(info, "Cascades in DF: %i, cascades built: %i", cascades.size(), nCascades);
+    LOGF(debug, "Cascades in DF: %i, cascades built: %i", cascades.size(), nCascades);
   }
 
   //__________________________________________________
@@ -1403,7 +1325,8 @@ struct StrangenessBuilder {
       return; // don't do if no request for cascades in place
     }
     int nCascades = 0;
-    // Loops over all V0s in the time frame
+    // Loops over all cascades in the time frame
+    histos.fill(HIST("hInputStatistics"), kStoredKFCascCores, cascades.size());
     for (auto& cascade : cascades) {
       // Get tracks and generate candidate
       auto const& collision = cascade.collision();
@@ -1433,6 +1356,7 @@ struct StrangenessBuilder {
         kfcascidx(cascade.globalIndex(),
                   straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
                   straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
+        histos.fill(HIST("hTableBuildingStatistics"), kKFCascIndices);
       }
       if (mEnabledTables[kStoredKFCascCores]) {
         kfcascdata(straHelper.cascade.charge, straHelper.cascade.massXi, straHelper.cascade.massOmega,
@@ -1449,6 +1373,8 @@ struct StrangenessBuilder {
                    straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
                    straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz,
                    straHelper.cascade.kfMLambda, straHelper.cascade.kfV0Chi2, straHelper.cascade.kfCascadeChi2);
+        histos.fill(HIST("hTableBuildingStatistics"), kStoredKFCascCores);
+
         // interlink always produced if cascades generated
         kfcascdataLink(kfcascdata.lastIndex());
         interlinks.kfCascCoreToCascades.push_back(cascade.globalIndex());
@@ -1456,6 +1382,7 @@ struct StrangenessBuilder {
       }
       if (mEnabledTables[kKFCascCovs]) {
         kfcasccovs(straHelper.cascade.covariance, straHelper.cascade.kfTrackCovarianceV0, straHelper.cascade.kfTrackCovariancePos, straHelper.cascade.kfTrackCovarianceNeg);
+        histos.fill(HIST("hTableBuildingStatistics"), kKFCascCovs);
       }
 
       //_________________________________________________________
@@ -1467,11 +1394,12 @@ struct StrangenessBuilder {
 
           // Construct label table (note: this will be joinable with KFCascDatas)
           kfcasclabels(thisCascInfo.label);
+          histos.fill(HIST("hTableBuildingStatistics"), kMcKFCascLabels);
         } // enabled tables check
       } // constexpr requires mcParticles check
     } // end loop over cascades
 
-    LOGF(info, "KF Cascades in DF: %i, KF cascades built: %i", cascades.size(), nCascades);
+    LOGF(debug, "KF Cascades in DF: %i, KF cascades built: %i", cascades.size(), nCascades);
   }
 
   //__________________________________________________
@@ -1483,6 +1411,7 @@ struct StrangenessBuilder {
     }
     int nCascades = 0;
     // Loops over all V0s in the time frame
+    histos.fill(HIST("hInputStatistics"), kStoredTraCascCores, cascadeTracks.size());
     for (auto& cascadeTrack : cascadeTracks) {
       // Get tracks and generate candidate
       if (!cascadeTrack.has_track())
@@ -1526,6 +1455,7 @@ struct StrangenessBuilder {
         tracascidx(cascade.globalIndex(),
                    straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
                    straHelper.cascade.bachelorTrack, cascadeTrack.trackId(), straHelper.cascade.collisionId);
+        histos.fill(HIST("hTableBuildingStatistics"), kTraCascIndices);
       }
       if (mEnabledTables[kStoredTraCascCores]) {
         tracascdata(straHelper.cascade.charge, cascadeTrack.xiMass(), cascadeTrack.omegaMass(),
@@ -1539,6 +1469,8 @@ struct StrangenessBuilder {
                     straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
                     straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz,
                     cascadeTrack.matchingChi2(), cascadeTrack.topologyChi2(), cascadeTrack.itsClsSize());
+        histos.fill(HIST("hTableBuildingStatistics"), kStoredTraCascCores);
+
         // interlink always produced if base core table generated
         tracascdataLink(tracascdata.lastIndex());
         interlinks.traCascCoreToCascades.push_back(cascade.globalIndex());
@@ -1552,6 +1484,7 @@ struct StrangenessBuilder {
           traCovMatArray[ii] = traCovMat[ii];
         }
         tracasccovs(traCovMatArray);
+        histos.fill(HIST("hTableBuildingStatistics"), kCascCovs);
       }
 
       //_________________________________________________________
@@ -1563,10 +1496,11 @@ struct StrangenessBuilder {
 
           // Construct label table (note: this will be joinable with KFCascDatas)
           tracasclabels(thisCascInfo.label);
+          histos.fill(HIST("hTableBuildingStatistics"), kMcTraCascLabels);
         } // enabled tables check
       } // constexpr requires mcParticles check
     } // end loop over cascades
-    LOGF(info, "Tracked cascades in DF: %i, tracked cascades built: %i", cascadeTracks.size(), nCascades);
+    LOGF(debug, "Tracked cascades in DF: %i, tracked cascades built: %i", cascadeTracks.size(), nCascades);
   }
 
   //__________________________________________________

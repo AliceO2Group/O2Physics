@@ -22,7 +22,6 @@ namespace o2::aod
 namespace myv0candidates
 {
 
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(V0Pt, v0pt, float);
 DECLARE_SOA_COLUMN(RapLambda, raplambda, float);
 DECLARE_SOA_COLUMN(RapK0Short, rapk0short, float);
@@ -66,8 +65,8 @@ DECLARE_SOA_COLUMN(QtArm, qtarm, float);
 
 } // namespace myv0candidates
 
-DECLARE_SOA_TABLE(MyV0Candidates, "AOD", "MYV0CANDIDATES", o2::soa::Index<>,
-                  myv0candidates::CollisionId, myv0candidates::V0Pt, myv0candidates::RapLambda, myv0candidates::RapK0Short,
+DECLARE_SOA_TABLE(MyV0Candidates, "AOD", "MYV0CANDIDATES",
+                  myv0candidates::V0Pt, myv0candidates::RapLambda, myv0candidates::RapK0Short,
                   myv0candidates::MassLambda, myv0candidates::MassAntiLambda, myv0candidates::MassK0Short,
                   myv0candidates::V0Radius, myv0candidates::V0CosPA, myv0candidates::V0DCAPosToPV,
                   myv0candidates::V0DCANegToPV, myv0candidates::V0DCAV0Daughters,

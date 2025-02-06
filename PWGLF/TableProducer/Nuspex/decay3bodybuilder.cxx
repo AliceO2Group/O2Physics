@@ -458,6 +458,7 @@ struct decay3bodyBuilder {
       registry.add("QA/Tracks/hTrackProtonPt", "hTrackProtonPt", HistType::kTH1F, {{100, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}});
       registry.add("QA/Tracks/hTrackPionPt", "hTrackPionPt", HistType::kTH1F, {{100, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}});
       registry.add("QA/Tracks/hTrackBachPt", "hTrackBachPt", HistType::kTH1F, {{100, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}});
+      registry.add("QA/Event/hAllSelEventsVtxZ", "hAllSelEventsVtxZ", HistType::kTH1F, {{500, -15.0f, 15.0f, "PV Z (cm)"}});
       registry.add("QA/Event/hVtxXKF", "hVtxXKF", HistType::kTH1F, {{500, -0.1f, 0.1f, "PV X (cm)"}});
       registry.add("QA/Event/hVtxYKF", "hVtxYKF", HistType::kTH1F, {{500, -0.1f, 0.1f, "PV Y (cm)"}});
       registry.add("QA/Event/hVtxZKF", "hVtxZKF", HistType::kTH1F, {{500, -15.0f, 15.0f, "PV Z (cm)"}});
@@ -918,6 +919,11 @@ struct decay3bodyBuilder {
     gROOT->SetBatch(true);
     gRandom->SetSeed(42);
 
+    kf3bodyVtxCandidates.clear();
+    kfProtonDaughters.clear();
+    kfPionDaughters.clear();
+    kfDeuteronDaughters.clear();
+
     LOG(debug) << "buildVtx3BodyDataTableKFParticle called.";
 
     bool isEventMixing = false;
@@ -930,7 +936,7 @@ struct decay3bodyBuilder {
     KFParticle kfpv(kfpVertex);
     LOG(debug) << "Created KF PV.";
 
-    // fill event QA histograms
+    // fill event QA histograms --> only for events with a decay3body!
     if (kfparticleConfigurations.doVertexQA) {
       registry.fill(HIST("QA/Event/hVtxXKF"), kfpv.GetX());
       registry.fill(HIST("QA/Event/hVtxYKF"), kfpv.GetY());
@@ -1424,7 +1430,6 @@ struct decay3bodyBuilder {
       candidate.tofNsigmaDeuteron = tofNSigmaDeuteron;
       candidate.averageClusterSizeDeuteron = averageClusterSizeDeuteron;
       candidate.pidForTrackingDeuteron = trackBach.pidForTracking();
-      /// TODO: push back candidate to candidate array?? --> only if I want table filling happening separately in process function
 
       //------------------------------------------------------------------
       // table filling
@@ -1577,8 +1582,6 @@ struct decay3bodyBuilder {
 
   void processRun3withKFParticle(ColwithEvTimes const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
-    kf3bodyVtxCandidates.clear();
-
     for (const auto& collision : collisions) {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -1600,10 +1603,11 @@ struct decay3bodyBuilder {
         continue;
       }
       registry.fill(HIST("Counters/hEventCounterKFParticle"), 1.5);
-      if (kfparticleConfigurations.doPosZselection && abs(collision.posZ()) > 10.f) {
+      if (kfparticleConfigurations.doPosZselection && (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) {
         continue;
       }
       registry.fill(HIST("Counters/hEventCounterKFParticle"), 2.5);
+      registry.fill(HIST("QA/Event/hAllSelEventsVtxZ"), collision.posZ());
 
       if (isZorroSelected) {
         registry.fill(HIST("Counters/hEventCounterZorro"), 1.);
@@ -1611,9 +1615,7 @@ struct decay3bodyBuilder {
 
       // slice Decay3Body table by collision
       const uint64_t collIdx = collision.globalIndex();
-      // LOG(debug) << "Collision index: " << collIdx;
       auto Decay3BodyTable_thisCollision = decay3bodys.sliceBy(perCollision, collIdx);
-      // LOG(debug) << "Decay3Body tables sliced per collision. Calling buildVtx3BodyDataTableKFParticle function...";
       for (auto& vtx3body : Decay3BodyTable_thisCollision) {
         auto trackPos = vtx3body.template track0_as<TrackExtPIDIUwithEvTimes>();
         auto trackNeg = vtx3body.template track1_as<TrackExtPIDIUwithEvTimes>();
@@ -1694,10 +1696,11 @@ struct decay3bodyBuilder {
         continue;
       }
       registry.fill(HIST("Counters/hEventCounterKFParticle"), 1.5);
-      if (kfparticleConfigurations.doPosZselection && abs(collision.posZ()) > 10.f) {
+      if (kfparticleConfigurations.doPosZselection && (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) {
         continue;
       }
       registry.fill(HIST("Counters/hEventCounterKFParticle"), 2.5);
+      registry.fill(HIST("QA/Event/hAllSelEventsVtxZ"), collision.posZ());
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -1705,9 +1708,7 @@ struct decay3bodyBuilder {
 
       // slice Decay3Body table by collision
       const uint64_t collIdx = collision.globalIndex();
-      // LOG(debug) << "Collision index: " << collIdx;
       auto Decay3BodyTable_thisCollision = decay3bodys.sliceBy(perCollision, collIdx);
-      // LOG(debug) << "Decay3Body tables sliced per collision. Calling buildVtx3BodyDataTableKFParticle function...";
       for (auto& vtx3body : Decay3BodyTable_thisCollision) {
         auto trackPos = vtx3body.template track0_as<TrackExtPIDIUwithEvTimes>();
         auto trackNeg = vtx3body.template track1_as<TrackExtPIDIUwithEvTimes>();
