@@ -320,7 +320,7 @@ struct FlowZdcTask {
     if (isApplyExtraCorrCut && col.multNTracksPV() > npvTracksCut && col.multFT0C() < (10 * col.multNTracksPV() - ft0cCut)) {
       return false;
     }
-    histos.fill(HIST("eventSelectionSteps"), 10);    
+    histos.fill(HIST("eventSelectionSteps"), 10); 
     histos.fill(HIST("eventSelectionSteps"), 11);
     return true;
   }
