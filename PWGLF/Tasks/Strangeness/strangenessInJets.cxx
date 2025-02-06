@@ -1071,9 +1071,9 @@ struct StrangenessInJets {
       isSelected.push_back(0);
 
       // Jet fully contained inside acceptance
-      if ((std::fabs(jet[i].Eta()) + rJet) > (maxEta - 0.5))
+      if ((std::fabs(jet[i].Eta()) + rJet) > (etaMax - 0.5))
         continue;
-      if (nParticlesInjet[i] < minNparticlesInJet)
+      if (nParticlesInjet[i] < minNumberOfParticlesInJet)
         continue;
 
       // Perpendicular cones
@@ -1113,7 +1113,7 @@ struct StrangenessInJets {
       double ptJetRec = jet[i].Pt() - averagePtUE;
       double ptJetCorr = getCorrectedPt(ptJetRec);
 
-      if (ptJetCorr < minJetPt)
+      if (ptJetCorr < minimumJetPt)
         continue;
 
       nJetsSelected++;
@@ -1974,9 +1974,9 @@ struct StrangenessInJets {
         isSelected.push_back(0);
 
         // Jet fully contained inside acceptance
-        if ((std::fabs(jet[i].Eta()) + rJet) > (maxEta - 0.5))
+        if ((std::fabs(jet[i].Eta()) + rJet) > (etaMax - 0.5))
           continue;
-        if (nParticlesInjet[i] < minNparticlesInJet)
+        if (nParticlesInjet[i] < minNumberOfParticlesInJet)
           continue;
 
         // Perpendicular cones
@@ -1988,7 +1988,7 @@ struct StrangenessInJets {
         ue2.push_back(ueAxis2);
 
         double ptJetCorr = jet[i].Pt() - averagePtUEMC;
-        if (ptJetCorr < minJetPt)
+        if (ptJetCorr < minimumJetPt)
           continue;
 
         nJetsSelected++;
