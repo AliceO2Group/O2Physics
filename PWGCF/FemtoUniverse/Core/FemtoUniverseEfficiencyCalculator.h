@@ -40,7 +40,7 @@ struct EfficiencyConfigurableGroup : ConfigurableGroup {
   Configurable<bool> confEfficiencyApplyCorrections{"confEfficiencyApplyCorrections", false, "Should apply corrections from efficiency"};
   Configurable<std::vector<std::string>> confEfficiencyCCDBLabels{"confEfficiencyCCDBLabels", {}, "Custom labels for efficiency objects in CCDB"};
   Configurable<int> confCCDBTrainNumber{"confCCDBTrainNumber", -1, "Train number for which to query CCDB objects (set to -1 to ignore)"};
-  Configurable<std::vector<std::string>> confEfficiencyCCDBTimestamps{"confEfficiencyCCDBTimestamps", {"-1", "-1"}, "Timestamps in CCDB, to query for specific objects (default: -1 for both, the latest valid object)"}; // o2-linter: disable=name/configurable
+  Configurable<std::vector<std::string>> confEfficiencyCCDBTimestamps{"confEfficiencyCCDBTimestamps", {"-1", "-1"}, "Timestamps in CCDB, to query for specific objects (default: -1 for both, the latest valid object)"};
 
   // NOTE: in the future we might move the below configurables to a separate struct, eg. CCDBConfigurableGroup
   Configurable<std::string> confCCDBUrl{"confCCDBUrl", "http://alice-ccdb.cern.ch", "CCDB URL to be used"};
