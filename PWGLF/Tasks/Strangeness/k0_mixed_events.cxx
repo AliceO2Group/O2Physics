@@ -501,7 +501,6 @@ struct K0MixedEvents {
     mixbins.clear();
   }
 
-
   using RecoMCCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>;
   using GenMCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
