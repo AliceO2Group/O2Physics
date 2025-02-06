@@ -207,6 +207,7 @@ struct lnnRecoTask {
   std::vector<unsigned int> filledMothers;
   // vector to keep track of the collisions passing the event selection in the MC
   std::vector<bool> isGoodCollision;
+  std::vector<float> collisionFT0Ccent;
   // vector to armazenade h3Track
 
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
@@ -623,6 +624,8 @@ struct lnnRecoTask {
 
     isGoodCollision.clear();
     isGoodCollision.resize(mcCollisions.size(), false);
+    collisionFT0Ccent.clear();
+    collisionFT0Ccent.resize(mcCollisions.size(), -1.f);
 
     for (const auto& collision : collisions) {
       lnnCandidates.clear();
@@ -643,6 +646,7 @@ struct lnnRecoTask {
 
       if (collision.has_mcCollision()) {
         isGoodCollision[collision.mcCollisionId()] = true;
+        collisionFT0Ccent[collision.mcCollisionId()] = collision.centFT0C();
       }
 
       const uint64_t collIdx = collision.globalIndex();
@@ -727,7 +731,7 @@ struct lnnRecoTask {
       lnnCand.posTrackID = -1;
       lnnCand.negTrackID = -1;
       lnnCand.isSignal = true;
-      outputMCTable(-1, -1, -1,
+      outputMCTable(-1, collisionFT0Ccent[mcPart.mcCollisionId()], -1,
                     -1, -1, -1,
                     0,
                     -1, -1, -1,

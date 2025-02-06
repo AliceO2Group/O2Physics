@@ -256,7 +256,7 @@ struct hyperRecoTask {
     hEventsZorro->GetXaxis()->SetBinLabel(1, "Zorro before evsel");
     hEventsZorro->GetXaxis()->SetBinLabel(2, "Zorro after evsel");
 
-    if (doprocessMC) {
+    if (doprocessMC || doprocessMCTracked) {
       hDecayChannel = qaRegistry.add<TH1>("hDecayChannel", ";Decay channel; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hDecayChannel->GetXaxis()->SetBinLabel(1, "2-body");
       hDecayChannel->GetXaxis()->SetBinLabel(2, "3-body");

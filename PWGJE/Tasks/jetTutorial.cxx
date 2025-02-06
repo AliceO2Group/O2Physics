@@ -273,7 +273,7 @@ struct JetTutorialTask {
         angularity += std::pow(jetConstituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, jetConstituent), alpha);
       }
 
-      for (auto& jetCluster : jet.tracks_as<aod::JetClusters>()) {
+      for (auto& jetCluster : jet.clusters_as<aod::JetClusters>()) {
         angularity += std::pow(jetCluster.energy(), kappa) * std::pow(jetutilities::deltaR(jet, jetCluster), alpha);
       }
 

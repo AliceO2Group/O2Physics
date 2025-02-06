@@ -57,6 +57,7 @@ struct jflucAnalysisTask {
   ConfigurableAxis phiAxis{"axisPhi", {50, 0.0, o2::constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis etaAxis{"axisEta", {40, -2.0, 2.0}, "eta axis for histograms"};
   ConfigurableAxis zvtAxis{"axisZvt", {20, -10.0, 10.0}, "zvertex axis for histograms"};
+  ConfigurableAxis ptAxis{"axisPt", {60, 0.0, 300.0}, "pt axis for histograms"};
   ConfigurableAxis massAxis{"axisMass", {1, 0.0, 10.0}, "mass axis for histograms"};
 
   Filter jtrackFilter = (aod::jtrack::pt > ptmin) && (aod::jtrack::pt < ptmax);    // eta cuts done by jfluc
@@ -71,16 +72,17 @@ struct jflucAnalysisTask {
     auto axisSpecPhi = AxisSpec(phiAxis);
     auto axisSpecEta = AxisSpec(etaAxis);
     auto axisSpecZvt = AxisSpec(zvtAxis);
+    auto axisSpecPt = AxisSpec(ptAxis);
     auto axisSpecMass = AxisSpec(massAxis);
     if (doprocessJDerived || doprocessJDerivedCorrected || doprocessCFDerived || doprocessCFDerivedCorrected) {
-      pcf = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecMass, "jfluc");
+      pcf = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, "jfluc");
       pcf->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
       pcf->UserCreateOutputObjects();
     } else {
       pcf = 0;
     }
     if (doprocessCF2ProngDerived || doprocessCF2ProngDerivedCorrected) {
-      pcf2Prong = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecMass, "jfluc2prong");
+      pcf2Prong = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, "jfluc2prong");
       pcf2Prong->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
       pcf2Prong->UserCreateOutputObjects();
 
@@ -116,8 +118,8 @@ struct jflucAnalysisTask {
     pcf2Prong->Init();
     pcf2Prong->SetEventCentrality(collision.multiplicity());
     pcf2Prong->SetEventVertex(collision.posZ());
-    pcf2Prong->FillQA(poiTracks, 1u); // type = 1, all POI tracks in this list are of the same type
     pcf2Prong->FillQA(refTracks, 0u);
+    pcf2Prong->FillQA(poiTracks, 1u); // type = 1, all POI tracks in this list are of the same type
     qvecsRef.Calculate(refTracks, etamin, etamax);
     pcf2Prong->SetJQVectors(&qvecs, &qvecsRef);
     const AxisSpec& a = AxisSpec(massAxis);
