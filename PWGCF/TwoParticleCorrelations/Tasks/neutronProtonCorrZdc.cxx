@@ -122,18 +122,18 @@ struct NeutronProtonCorrZdc {
     histos.add("CentvsZNCvsZPC", "CentvsZNCvsZPC", kTH3F, {cfgAxisCent, axisZNCSignal, axisZPCSignal});
     histos.add("CentvsZNvsZP", "CentvsZNvsZP", kTH3F, {cfgAxisCent, axisZNSignal, axisZPSignal});
 
-    histos.add("MultiplicityHistograms/FV0A", "FV0A", kTH1F, {AxisMultiplicityF0A});
-    histos.add("MultiplicityHistograms/FT0A", "FT0A", kTH1F, {AxisMultiplicityF0A});
-    histos.add("MultiplicityHistograms/FT0C", "FT0C", kTH1F, {AxisMultiplicityF0C});
-    histos.add("MultiplicityHistograms/FDDA", "FDDA", kTH1F, {AxisMultiplicityFDD});
-    histos.add("MultiplicityHistograms/FDDC", "FDDC", kTH1F, {AxisMultiplicityFDD});
-    histos.add("MultiplicityHistograms/TPC", "TPC", kTH1F, {AxisMultiplicityTPC});
-    histos.add("MultiplicityHistograms/NGlobal", "NGlobal", kTH1F, {AxisMultiplicityMultNGlobal});
-    histos.add("MultiplicityHistograms/CentvsFT0C", "CentvsFT0C", kTH2F, {cfgAxisCent, AxisMultiplicityF0C});
-    histos.add("MultiplicityHistograms/CentvsFT0CVar1", "CentvsFT0CVar1", kTH2F, {cfgAxisCent, AxisMultiplicityF0C});
-    histos.add("MultiplicityHistograms/CentvsFT0M", "CentvsFT0M", kTH2F, {cfgAxisCent, AxisMultiplicityF0M});
-    histos.add("MultiplicityHistograms/CentvsFV0A", "CentvsFV0A", kTH2F, {cfgAxisCent, AxisMultiplicityF0A});
-    histos.add("MultiplicityHistograms/CentvsNGlobal", "CentvsNGlobal", kTH2F, {cfgAxisCent, AxisMultiplicityMultNGlobal});
+    histos.add("MultiplicityHistograms/FV0A", "FV0A", kTH1F, {axisMultiplicityF0A});
+    histos.add("MultiplicityHistograms/FT0A", "FT0A", kTH1F, {axisMultiplicityF0A});
+    histos.add("MultiplicityHistograms/FT0C", "FT0C", kTH1F, {axisMultiplicityF0C});
+    histos.add("MultiplicityHistograms/FDDA", "FDDA", kTH1F, {axisMultiplicityFDD});
+    histos.add("MultiplicityHistograms/FDDC", "FDDC", kTH1F, {axisMultiplicityFDD});
+    histos.add("MultiplicityHistograms/TPC", "TPC", kTH1F, {axisMultiplicityTPC});
+    histos.add("MultiplicityHistograms/NGlobal", "NGlobal", kTH1F, {axisMultiplicityMultNGlobal});
+    histos.add("MultiplicityHistograms/CentvsFT0C", "CentvsFT0C", kTH2F, {cfgAxisCent, axisMultiplicityF0C});
+    histos.add("MultiplicityHistograms/CentvsFT0CVar1", "CentvsFT0CVar1", kTH2F, {cfgAxisCent, axisMultiplicityF0C});
+    histos.add("MultiplicityHistograms/CentvsFT0M", "CentvsFT0M", kTH2F, {cfgAxisCent, axisMultiplicityF0M});
+    histos.add("MultiplicityHistograms/CentvsFV0A", "CentvsFV0A", kTH2F, {cfgAxisCent, axisMultiplicityF0A});
+    histos.add("MultiplicityHistograms/CentvsNGlobal", "CentvsNGlobal", kTH2F, {cfgAxisCent, axisMultiplicityMultNGlobal});
   }
 
   template <int mult, typename C>
