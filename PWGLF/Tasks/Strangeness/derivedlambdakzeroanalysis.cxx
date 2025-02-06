@@ -1593,7 +1593,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
     }
 
-    double interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource)*1.e-3;
+    double interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3;
     if (eventSelections.minIR >= 0 && interactionRate < eventSelections.minIR) {
       return false;
     }
@@ -1721,7 +1721,7 @@ struct derivedlambdakzeroanalysis {
       centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(doPPAnalysis ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
     }
     float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-    double interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource)*1.e-3;
+    double interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3;
 
     // gap side
     int gapSide = collision.gapSide();
@@ -1805,7 +1805,7 @@ struct derivedlambdakzeroanalysis {
       centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(doPPAnalysis ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
     }
     float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-    double interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource)*1.e-3;
+    double interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3;
 
     // gap side
     int gapSide = collision.gapSide();
