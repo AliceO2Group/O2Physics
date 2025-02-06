@@ -294,6 +294,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMultTracklets] = "";
   fgVariableNames[kMultDimuons] = "Multiplicity Dimuons Unlike Sign";
   fgVariableUnits[kMultDimuons] = "";
+  fgVariableNames[kMultMuons] = "Multiplicity muons";
+  fgVariableUnits[kMultMuons] = "";
+  fgVariableNames[kMultAntiMuons] = "Multiplicity anti-muons";
+  fgVariableUnits[kMultAntiMuons] = "";
   fgVariableNames[kCentFT0C] = "Centrality FT0C";
   fgVariableUnits[kCentFT0C] = "%";
   fgVariableNames[kMCEventGeneratorId] = "MC Generator ID";
@@ -1084,6 +1088,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMultZNC"] = kMultZNC;
   fgVarNamesMap["kMultTracklets"] = kMultTracklets;
   fgVarNamesMap["kMultDimuons"] = kMultDimuons;
+  fgVarNamesMap["kMultAntiMuons"] = kMultAntiMuons;
+  fgVarNamesMap["kMultMuons"] = kMultMuons;
   fgVarNamesMap["kMultNTracksHasITS"] = kMultNTracksHasITS;
   fgVarNamesMap["kMultNTracksHasTPC"] = kMultNTracksHasTPC;
   fgVarNamesMap["kMultNTracksHasTOF"] = kMultNTracksHasTOF;
