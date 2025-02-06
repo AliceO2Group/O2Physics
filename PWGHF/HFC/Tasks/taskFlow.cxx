@@ -1173,10 +1173,6 @@ struct HfTaskFlow {
       int bin = binningWithTracksSize.getBin(binningValues);
 
       const auto multiplicityTracks1 = getPartsSize(collision1);
-      const auto multiplicityTracks2 = getPartsSize(collision2);
-      // const auto multiplicityTracks1 = tracks1.size(); // get multiplicity of charged hadrons, which is used for slicing in mixing
-      // const auto multiplicityTracks2 = tracks2.size(); // get multiplicity of charged hadrons, which is used for slicing in mixing
-      const auto vz = collision1.posZ();
 
       if constexpr (std::is_same_v<FilteredCollisionsWSelMultMC, TCollisions>) { // If MC
         registry.fill(HIST("MC/Rec/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
