@@ -598,7 +598,7 @@ struct HfElectronSelectionWithTpcEmcal {
             registry.fill(HIST("hEtaeEmbTrkPt"), particleMc.pt());
           }
         }
-        HfGenElectronSel(particleMc.mcCollisionId(), particleMc.globalIndex(), particleMc.eta(), particleMc.phi(), particleMc.pt(), isNonHfe);
+        HfGenElectronSel(mcCollision.globalIndex(), particleMc.globalIndex(), particleMc.eta(), particleMc.phi(), particleMc.pt(), isNonHfe);
       }
     }
   }
