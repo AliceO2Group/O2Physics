@@ -200,6 +200,8 @@ struct FlowSP {
     AxisSpec t0cAxis = {70, 0, 70000, "N_{ch} (T0C)"};
     AxisSpec t0aAxis = {200, 0, 200, "N_{ch}"};
     AxisSpec multpvAxis = {4000, 0, 4000, "N_{ch} (PV)"};
+    AxisSpec shclAxis = {200,0,1, "Fraction shared cl. TPC"};
+    AxisSpec clAxis = {160,0,160, "Number of cl. TPC"};
 
     int ptbins = ptbinning.size() - 1;
 
@@ -325,8 +327,10 @@ struct FlowSP {
       registry.add<TH1>("incl/QA/hPhiCorrected", "", kTH1D, {axisPhi});
       registry.add<TH1>("incl/QA/hEta", "", kTH1D, {axisEta});
       registry.add<TH3>("incl/QA/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
-      registry.add<TH1>("incl/QA/hDCAxy", "", kTH1D, {axisDCAxy});
-      registry.add<TH1>("incl/QA/hDCAz", "", kTH1D, {axisDCAz});
+      registry.add<TH2>("incl/QA/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
+      registry.add<TH2>("incl/QA/hDCAz_pt", "", kTH2D, {axisPt, axisDCAz});
+      registry.add("incl/QA/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, shclAxis}});
+      registry.add("incl/QA/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, clAxis}});
 
       registry.addClone("incl/", "pos/");
       registry.addClone("incl/", "neg/");
@@ -700,8 +704,10 @@ struct FlowSP {
     registry.fill(HIST(Charge[ct]) + HIST("QA/hPhiCorrected"), track.phi(), wacc * weff);
     registry.fill(HIST(Charge[ct]) + HIST("QA/hEta"), track.eta());
     registry.fill(HIST(Charge[ct]) + HIST("QA/hPhi_Eta_vz"), track.phi(), track.eta(), vz);
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAxy"), track.dcaXY());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAz"), track.dcaZ());
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAxy_pt"), track.pt(), track.dcaXY());
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAz_pt"), track.pt(), track.dcaZ());
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls());
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hCrossedRows_pt"), track.pt(), track.tpcNClsFound());
   }
 
   void processData(UsedCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
