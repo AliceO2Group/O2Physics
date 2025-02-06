@@ -24,7 +24,7 @@
 //_______________________________________________________________________
 inline bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, const float qt_max = 0.05)
 {
-  float ellipse = pow(alpha / alpha_max, 2) + pow(qt / qt_max, 2);
+  float ellipse = std::pow(alpha / alpha_max, 2) + std::pow(qt / qt_max, 2);
   if (ellipse < 1.0) {
     return true;
   } else {
@@ -111,8 +111,8 @@ float getPtResolution(TV0 const& v0)
   float px = v0.px();
   float py = v0.py();
   float pt = v0.pt();
-  float px_err = std::sqrt(fabs(v0.sigmaPx2()));
-  float py_err = std::sqrt(fabs(v0.sigmaPy2()));
+  float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
+  float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
   float pxy_err = v0.sigmaPxPy();
   return std::sqrt(std::pow(px / pt * px_err, 2) + std::pow(py / pt * py_err, 2) + 2.f * px / pt * py / pt * pxy_err);
 }
@@ -123,8 +123,8 @@ float getPhiResolution(TV0 const& v0)
   float px = v0.px();
   float py = v0.py();
   float pt = v0.pt();
-  float px_err = std::sqrt(fabs(v0.sigmaPx2()));
-  float py_err = std::sqrt(fabs(v0.sigmaPy2()));
+  float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
+  float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
   float pxy_err = v0.sigmaPxPy();
   return std::sqrt(std::pow(px / pt / pt * py_err, 2) + std::pow(py / pt / pt * px_err, 2) - 2.f * px / pt / pt * py / pt / pt * pxy_err);
 }
@@ -137,9 +137,9 @@ float getThetaResolution(TV0 const& v0)
   float pz = v0.pz();
   float pt = v0.pt();
   float p = v0.p();
-  float px_err = std::sqrt(fabs(v0.sigmaPx2()));
-  float py_err = std::sqrt(fabs(v0.sigmaPy2()));
-  float pz_err = std::sqrt(fabs(v0.sigmaPz2()));
+  float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
+  float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
+  float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
   float pxy_err = v0.sigmaPxPy();
   float pyz_err = v0.sigmaPyPz();
   float pzx_err = v0.sigmaPzPx();
@@ -154,9 +154,9 @@ float getEtaResolution(TV0 const& v0)
   float pz = v0.pz();
   float pt = v0.pt();
   float p = v0.p();
-  float px_err = std::sqrt(fabs(v0.sigmaPx2()));
-  float py_err = std::sqrt(fabs(v0.sigmaPy2()));
-  float pz_err = std::sqrt(fabs(v0.sigmaPz2()));
+  float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
+  float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
+  float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
   float pxy_err = v0.sigmaPxPy();
   float pyz_err = v0.sigmaPyPz();
   float pzx_err = v0.sigmaPzPx();
@@ -170,9 +170,9 @@ float getPResolution(TV0 const& v0)
   float py = v0.py();
   float pz = v0.pz();
   float p = v0.p();
-  float px_err = std::sqrt(fabs(v0.sigmaPx2()));
-  float py_err = std::sqrt(fabs(v0.sigmaPy2()));
-  float pz_err = std::sqrt(fabs(v0.sigmaPz2()));
+  float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
+  float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
+  float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
   float pxy_err = v0.sigmaPxPy();
   float pyz_err = v0.sigmaPyPz();
   float pzx_err = v0.sigmaPzPx();

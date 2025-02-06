@@ -102,8 +102,6 @@ struct PhotonConversionBuilder {
   Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
   Configurable<float> dcanegtopv{"dcanegtopv", 0.1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", 0.1, "DCA Pos To PV"};
-  Configurable<float> min_pt_leg_at_sv{"min_pt_leg_at_sv", 0.0, "min pT for v0 legs at SV"};                                                    // this is obsolete.
-  Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 16.f, "max. <ITS cluster size> x cos(lambda) for ITSonly tracks"}; // this is to suppress random combination for V0s with ITSonly tracks. default 3 + 1 for skimming.
   Configurable<float> maxX{"maxX", 83.1, "max X for track IU"};
   Configurable<float> min_pt_trackiu{"min_pt_trackiu", 0.05, "min pT for trackiu"}; // this comes from online processing. pT of track seed is above 50 MeV/c in B = 0.5 T, 20 MeV/c in B = 0.2 T.
 
@@ -115,6 +113,7 @@ struct PhotonConversionBuilder {
   Configurable<float> max_dcav0dau_itsibss{"max_dcav0dau_itsibss", 1.0, "max distance btween 2 legs to V0s with ITS hits on ITSib SS"};
   Configurable<float> max_dcav0dau_tpc_inner_fc{"max_dcav0dau_tpc_inner_fc", 1.5, "max distance btween 2 legs to V0s with ITS hits on TPC inner FC"};
   Configurable<float> min_v0radius{"min_v0radius", 1.0, "min v0 radius"};
+  Configurable<float> max_v0radius{"max_v0radius", 90.0, "max v0 radius"};
   Configurable<float> margin_r_its{"margin_r_its", 3.0, "margin for r cut in cm"};
   Configurable<float> margin_r_tpc{"margin_r_tpc", 7.0, "margin for r cut in cm"};
   Configurable<float> margin_r_itstpc_tpc{"margin_r_itstpc_tpc", 7.0, "margin for r cut in cm"};
@@ -320,21 +319,6 @@ struct PhotonConversionBuilder {
           return false;
         }
       }
-
-      if (isITSonlyTrack(track)) {
-        uint32_t itsClusterSizes = track.itsClusterSizes();
-        int total_cluster_size = 0, nl = 0;
-        for (unsigned int layer = 0; layer < 7; layer++) {
-          int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
-          if (cluster_size_per_layer > 0) {
-            nl++;
-          }
-          total_cluster_size += cluster_size_per_layer;
-        }
-        if (static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())) > max_mean_its_cluster_size) {
-          return false;
-        }
-      }
     }
 
     return true;
@@ -376,7 +360,7 @@ struct PhotonConversionBuilder {
   }
 
   template <typename TTrack, typename TShiftedTrack, typename TKFParticle>
-  void fillTrackTable(TTrack const& track, TShiftedTrack const& shiftedtrack, TKFParticle const& kfp, float dcaXY, float dcaZ)
+  void fillTrackTable(TTrack const& track, TShiftedTrack const& shiftedtrack, TKFParticle const& kfp, const float dcaXY, const float dcaZ)
   {
     v0legs(track.collisionId(), track.globalIndex(), track.sign(),
            kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), dcaXY, dcaZ,
@@ -421,6 +405,11 @@ struct PhotonConversionBuilder {
     }
 
     // LOGF(info, "v0.collisionId() = %d , v0.posTrackId() = %d , v0.negTrackId() = %d", v0.collisionId(), v0.posTrackId(), v0.negTrackId());
+
+    // if(isTPConlyTrack(ele)){
+    //   // LOGF(info, "TPConly: ele.globalIndex() = %d, ele.x() = %f, ele.y() = %f, ele.z() = %f, ele.tgl() = %f, ele.alpha() = %f, ele.snp() = %f, ele.signed1Pt() = %f", ele.globalIndex(), ele.x(), ele.y(), ele.z(), ele.tgl(), ele.alpha(), ele.snp(), ele.signed1Pt());
+    //   // LOGF(info, "TPConly: ele.globalIndex() = %d, ele.cYY() = %f, ele.cZY() = %f, ele.cZZ() = %f, ele.cSnpY() = %f, ele.cSnpZ() = %f, ele.cSnpSnp() = %f, ele.cTglY() = %f, ele.cTglZ() = %f, ele.cTglSnp() = %f, ele.cTglTgl() = %f, ele.c1PtY() = %f, ele.c1PtZ() = %f, ele.c1PtSnp() = %f, ele.c1PtTgl() = %f, ele.c1Pt21Pt2() = %f", ele.globalIndex(), ele.cYY(), ele.cZY(), ele.cZZ(), ele.cSnpY(), ele.cSnpZ(), ele.cSnpSnp(), ele.cTglY(), ele.cTglZ(), ele.cTglSnp(), ele.cTglTgl(), ele.c1PtY(), ele.c1PtZ(), ele.c1PtSnp(), ele.c1PtTgl(), ele.c1Pt21Pt2());
+    // }
 
     // Calculate DCA with respect to the collision associated to the v0, not individual tracks
     gpu::gpustd::array<float, 2> dcaInfo;
@@ -498,7 +487,7 @@ struct PhotonConversionBuilder {
     if (rxy < std::fabs(gammaKF_DecayVtx.GetZ()) * std::tan(2 * std::atan(std::exp(-max_eta_v0))) - margin_z) {
       return; // RZ line cut
     }
-    if (rxy < min_v0radius) {
+    if (rxy < min_v0radius || max_v0radius < rxy) {
       return;
     }
 
@@ -596,9 +585,6 @@ struct PhotonConversionBuilder {
 
     float pos_pt = RecoDecay::sqrtSumOfSquares(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy());
     float ele_pt = RecoDecay::sqrtSumOfSquares(kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy());
-    if (pos_pt < min_pt_leg_at_sv || ele_pt < min_pt_leg_at_sv) {
-      return;
-    }
 
     if (isITSonlyTrack(pos) && pos_pt > maxpt_itsonly) {
       return;
