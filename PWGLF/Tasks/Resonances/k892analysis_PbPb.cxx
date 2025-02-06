@@ -112,6 +112,8 @@ struct k892analysis_PbPb {
   // rotational bkg
   Configurable<int> cfgNoRotations{"cfgNoRotations", 3, "Number of rotations per pair for rotbkg"};
   Configurable<int> rotationalCut{"rotationalCut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
+  Configurable<bool> cfgRotPi{"cfgRotPi", true, "rotate Pion"};
+
 
   // event mixing
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
@@ -145,6 +147,8 @@ struct k892analysis_PbPb {
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
     AxisSpec ptAxis = {binsPt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisQA = {binsPtQA, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptAxisMom = {binsPt, "Mom #it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptAxisDau = {binsPtQA, "Dau #it{p}_{T} (GeV/#it{c})"};
     AxisSpec invMassAxis = {cInvMassBins, cInvMassStart, cInvMassEnd, "Invariant Mass (GeV/#it{c}^2)"};
     AxisSpec pidQAAxis = {cPIDBins, -cPIDQALimit, cPIDQALimit};
 
@@ -192,9 +196,19 @@ struct k892analysis_PbPb {
 		  
       histos.add("Ncluster/TPCChi2ncluster", "TPC Chi2ncluster distribution", kTH1F, {{100, 0, 10, "TPC Chi2nCluster"}});
       histos.add("Ncluster/ITSChi2ncluster", "ITS Chi2ncluster distribution", kTH1F, {{100, 0, 40, "ITS Chi2nCluster"}});
-      histos.add("Ncluster/ITSncluster", "ITS  ncluster distribution", kTH1F, {{10, 0, 10, "ITS nCluster"}});
-    }
+      histos.add("Ncluster/ITSncluster", "ITS  ncluster distribution", kTH1F, {{10, 0, 10, "ITS nCluster"}});     
+      
+      histos.add("QA/h2k892ptMothervsptPiDS", "Pt of K(892)0 differnt sign vs pt pion daughter", kTH2F, {ptAxisMom, ptAxisDau});
+      histos.add("QA/h2k892ptMothervsptPiDSAnti", "Pt of Anti-K(892)0 differnt sign vs pt pion daughter", kTH2F, {ptAxisMom, ptAxisDau});
+      histos.add("QA/h2k892ptMothervsptKaDS", "Pt of K(892)0 differnt sign vs pt kaon daughter", kTH2F, {ptAxisMom, ptAxisDau});
+      histos.add("QA/h2k892ptMothervsptKaDSAnti", "Pt of Anti-K(892)0 differnt sign vs pt kaon daughter", kTH2F, {ptAxisMom, ptAxisDau});
 
+      histos.add("QAME/h2k892ptMothervsptPiDS", "Pt of Mother vs pt pion daughter, Mixed Event", kTH2F, {ptAxisMom, ptAxisDau});
+      histos.add("QAME/h2k892ptMothervsptPiDSAnti", "Pt of Anti-Mother vs pt pion daughter, Mixed Event", kTH2F, {ptAxisMom, ptAxisDau});
+      histos.add("QAME/h2k892ptMothervsptKaDS", "Pt of Mother vs pt kaon daughter, Mixed Event", kTH2F, {ptAxisMom, ptAxisDau});
+      histos.add("QAME/h2k892ptMothervsptKaDSAnti", "Pt of Anti-Mother vs pt pion daughter, Mixed Event", kTH2F, {ptAxisMom, ptAxisDau});
+    }
+    
     // DCA QA
     histos.add("QA/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
     histos.add("QA/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
@@ -217,7 +231,8 @@ struct k892analysis_PbPb {
     histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassLSAnti", "Invariant mass of Anti-K(892)0 same sign", kTH3F, {centAxis, ptAxis, invMassAxis});
 
-    if (doprocessRotationalBkg) {
+    
+    if (doprocessRotationalBkg || doprocessRotationalBkgMC) {
       histos.add("k892invmassRotDS", "Invariant mass of K(892)0 RotBkg", kTH1F, {invMassAxis});
       histos.add("k892invmassRotDSAnti", "Invariant mass of Anti-K(892)0 RotBkg", kTH1F, {invMassAxis});
 
@@ -526,10 +541,15 @@ struct k892analysis_PbPb {
       if (track1Sign * track2Sign < 0) {
         if constexpr (IsRot) { // rotational background
           for (int i = 0; i < cfgNoRotations; i++) {
-            float theta2 = rand->Uniform(o2::constants::math::PI - o2::constants::math::PI/rotationalCut, o2::constants::math::PI + o2::constants::math::PI/rotationalCut);
-            ldaughterRot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa);
-            lResonanceRot = lDecayDaughter1 + ldaughterRot;
-
+            float theta = rand->Uniform(o2::constants::math::PI - o2::constants::math::PI/rotationalCut, o2::constants::math::PI + o2::constants::math::PI/rotationalCut);
+	    if (cfgRotPi) {
+	      ldaughterRot.SetPtEtaPhiM(trk1.pt(), trk1.eta(), trk1.phi() + theta, massPi);
+	      lResonanceRot = lDecayDaughter2 + ldaughterRot;
+	    } else {
+	      ldaughterRot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta, massKa);
+	      lResonanceRot = lDecayDaughter1 + ldaughterRot;
+	    }
+	    
             if (cfgCutsOnMother) {
               if (lResonanceRot.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
                 continue;
@@ -551,9 +571,17 @@ struct k892analysis_PbPb {
           if (track1Sign < 0) {
             histos.fill(HIST("k892invmassDS"), lResonance.M());
             histos.fill(HIST("h3k892invmassDS"), multiplicity, lResonance.Pt(), lResonance.M());
+	    if(additionalQAplots) {
+	      histos.fill(HIST("QA/h2k892ptMothervsptPiDS"),     lResonance.Pt(), lDecayDaughter1.Pt());
+	      histos.fill(HIST("QA/h2k892ptMothervsptKaDS"),     lResonance.Pt(), lDecayDaughter2.Pt());
+	    }
           } else if (track1Sign > 0) {
             histos.fill(HIST("k892invmassDSAnti"), lResonance.M());
             histos.fill(HIST("h3k892invmassDSAnti"), multiplicity, lResonance.Pt(), lResonance.M());
+	    if(additionalQAplots) {
+	      histos.fill(HIST("QA/h2k892ptMothervsptPiDSAnti"), lResonance.Pt(), lDecayDaughter1.Pt());
+	      histos.fill(HIST("QA/h2k892ptMothervsptKaDSAnti"), lResonance.Pt(), lDecayDaughter2.Pt());
+	    }
           }
 
 	  
@@ -564,15 +592,23 @@ struct k892analysis_PbPb {
             if (track1Sign < 0) {
               histos.fill(HIST("k892invmassME_DS"), lResonance.M());
               histos.fill(HIST("h3k892invmassME_DS"), multiplicity, lResonance.Pt(), lResonance.M());
+	      if(additionalQAplots) {
+		histos.fill(HIST("QAME/h2k892ptMothervsptPiDS"),     lResonance.Pt(), lDecayDaughter1.Pt());
+		histos.fill(HIST("QAME/h2k892ptMothervsptKaDS"),     lResonance.Pt(), lDecayDaughter2.Pt());
+	      }
             } else if (track1Sign > 0) {
               histos.fill(HIST("k892invmassME_DSAnti"), lResonance.M());
               histos.fill(HIST("h3k892invmassME_DSAnti"), multiplicity, lResonance.Pt(), lResonance.M());
+	      if(additionalQAplots) {
+		histos.fill(HIST("QAME/h2k892ptMothervsptPiDSAnti"), lResonance.Pt(), lDecayDaughter1.Pt());
+		histos.fill(HIST("QAME/h2k892ptMothervsptKaDSAnti"), lResonance.Pt(), lDecayDaughter2.Pt());
+	      }
             }
           }
         }
 
         // MC
-        if constexpr (IsMC && !IsMix) {
+        if constexpr (IsMC && !IsMix && !IsRot) {
 
           if (!trk1.has_mcParticle() || !trk2.has_mcParticle())
             continue;
@@ -646,9 +682,9 @@ struct k892analysis_PbPb {
             histos.fill(HIST("h3k892invmassLSAnti"), multiplicity, lResonance.Pt(), lResonance.M());
           }
         }
-      } // end on DS or LS if tenses
-    } // end of loop on tracks combinations
-  } // ennd on fill histograms
+      } // end on DS or LS if
+    } // end of loop on track combinations
+  } // end of fill histograms
 
   Filter collisionFilter = nabs(aod::collision::posZ) <= cfgCutVertex;
   Filter centralityFilter = nabs(aod::cent::centFT0C) <= cfgCutCentrality;
@@ -811,6 +847,19 @@ struct k892analysis_PbPb {
 
   }
   PROCESS_SWITCH(k892analysis_PbPb, processRotationalBkg, "Process Rotational Background", false);
+
+
+  void processRotationalBkgMC(EventCandidatesMCrec::iterator const& recCollision, TrackCandidatesMCrec const& RecTracks)
+  {
+
+    if(!myEventSelections(recCollision))
+      return;
+
+    //             <IsMC, IsMix, IsRot, IsRun2>
+    fillHistograms<true, false, true, false>(recCollision, RecTracks, RecTracks);
+
+  }
+  PROCESS_SWITCH(k892analysis_PbPb, processRotationalBkgMC, "Process Rotational Background MC", false);
 
 
 
