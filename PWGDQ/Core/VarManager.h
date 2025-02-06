@@ -698,6 +698,10 @@ class VarManager : public TObject
     kCORR4REFbydimuons,
     kCORR4POI,
     kM11REFoverMp,
+    kM11REFoverMpplus,
+    kM1111REFoverMpplus,
+    kM11REFoverMpminus,
+    kM1111REFoverMpminus,
     kM01POIoverMp,
     kM1111REFoverMp,
     kM0111POIoverMp,
@@ -4429,6 +4433,8 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
 
     complex<double> P2plus(TMath::Cos(2 * v1.Phi()), TMath::Sin(2 * v1.Phi()));
     complex<double> P2minus(TMath::Cos(2 * v2.Phi()), TMath::Sin(2 * v2.Phi()));
+    values[kM11REFoverMpplus] = values[kMultAntiMuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM11REF] / values[kMultAntiMuons] : 0;
+    values[kM1111REFoverMpminus] = values[kMultMuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM1111REF] / values[kMultMuons] : 0;
     values[kCORR2POIplus] = (P2plus * conj(Q21)).real() / values[kM01POI];
     values[kCORR2POIminus] = (P2minus * conj(Q21)).real() / values[kM01POI];
     values[kM01POIplus] = values[kMultAntiMuons] * values[kS11A];

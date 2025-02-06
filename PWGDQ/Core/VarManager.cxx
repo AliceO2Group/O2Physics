@@ -869,6 +869,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCORR4POI] = "";
   fgVariableNames[kM11REFoverMp] = "M_{11}^{REF}/M_{p} ";
   fgVariableUnits[kM11REFoverMp] = "";
+  fgVariableNames[kM11REFoverMpminus] = "M^{-}_{11}^{REF}/M^{-}_{p} ";
+  fgVariableUnits[kM11REFoverMpminus] = "";
+  fgVariableNames[kM11REFoverMpplus] = "M^{+}_{11}^{REF}/M^{+}_{p} ";
+  fgVariableUnits[kM11REFoverMpplus] = "";
+  fgVariableNames[kM1111REFoverMpplus] = "M^{+}_{1111}^{REF}/M^{+}_{p} ";
+  fgVariableUnits[kM1111REFoverMpplus] = "";
+  fgVariableNames[kM1111REFoverMpminus] = "M^{-}_{1111}^{REF}/M^{-}_{p} ";
+  fgVariableUnits[kM1111REFoverMpminus] = "";
   fgVariableNames[kM01POIoverMp] = "M^{'}_{01}^{POI}/M_{p} ";
   fgVariableUnits[kM01POIoverMp] = "";
   fgVariableNames[kM1111REFoverMp] = "M_{1111}^{REF}/M_{p} ";
