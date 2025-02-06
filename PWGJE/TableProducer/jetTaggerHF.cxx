@@ -64,7 +64,7 @@ struct JetTaggerHFTask {
   Configurable<bool> trackProbQA{"trackProbQA", false, "fill track probability histograms separately for geometric positive and negative tracks for QA"};
   Configurable<int> numCount{"numCount", 3, "number of track counting"};
   Configurable<int> resoFuncMatching{"resoFuncMatching", 0, "matching parameters of resolution function as MC samble (0: custom, 1: custom & inc, 2: MB, 3: MB & inc, 4: JJ, 5: JJ & inc)"};
-  Configurable<std::vector<std::string>> IPparameterPathsCCDB{"IPparameterPathsCCDB", std::vector<std::string>{"Users/l/leehy/LHC24g4/f_inclusive_0"}, "Paths for fitting parameters of resolution functions for IP method on CCDB"};
+  Configurable<std::vector<std::string>> pathsCCDBforIPparamer{"pathsCCDBforIPparamer", std::vector<std::string>{"Users/l/leehy/LHC24g4/f_inclusive_0"}, "Paths for fitting parameters of resolution functions for IP method on CCDB"};
   Configurable<bool> usepTcategorize{"usepTcategorize", false, "p_T categorize TF1 function with Inclusive jet"};
   Configurable<std::vector<float>> paramsResoFuncData{"paramsResoFuncData", std::vector<float>{-1.0}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7))"};
   Configurable<std::vector<float>> paramsResoFuncIncJetMC{"paramsResoFuncIncJetMC", std::vector<float>{-1.0}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
@@ -263,7 +263,7 @@ struct JetTaggerHFTask {
       std::map<std::string, std::string> metadata; // dummy meta data (will be updated)
                                                    // fill the timestamp directly of each TF1 according to p_T track range (0, 0.5, 1, 2, 4, 6, 9)
       for (int i = 0; i < 7; i++) {
-        resoFuncCCDB.push_back(ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB->at(i), metadata, -1));
+        resoFuncCCDB.push_back(ccdbApi.retrieveFromTFileAny<TF1>(pathsCCDBforIPparamer->at(i), metadata, -1));
       }
     }
 
@@ -450,7 +450,7 @@ struct JetTaggerHFTask {
         tensorAlloc.getGNNInput(jetFeat, trkFeat, feat, gnnInput);
 
         auto modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
-        scoreML[jet.globalIndex()] = jettaggingutilities::Db(modelOutput, fC);
+        scoreML[jet.globalIndex()] = jettaggingutilities::getDb(modelOutput, fC);
       } else {
         scoreML[jet.globalIndex()] = -999.;
         LOGF(debug, "doprocessAlgorithmGNN, trkFeat.size() <= 0 (%d)", jet.globalIndex());

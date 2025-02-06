@@ -38,8 +38,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 
-using namespace o2::constants::physics; // o2-linter: disable=using-directive
-
 enum JetTaggingSpecies {
   none = 0,
   charm = 1,
@@ -114,10 +112,11 @@ struct BJetSVParams {
 //________________________________________________________________________
 bool isBHadron(int pc)
 {
+  using o2::constants::physics::Pdg;
   std::vector<int> bPdG = {Pdg::kB0, Pdg::kBPlus, 10511, 10521, 513, 523, 10513, 10523, 20513, 20523, 20513, 20523, 515, 525, Pdg::kBS, 10531, 533, 10533,
                            20533, 535, 541, 10541, 543, 10543, 20543, 545, 551, 10551, 100551, 110551, 200551, 210551, 553, 10553, 20553,
                            30553, 100553, 110553, 120553, 130553, 200553, 210553, 220553, 300553, 9000533, 9010553, 555, 10555, 20555,
-                           100555, 110555, 120555, 200555, 557, 100557, Pdg::kLambdaB0, 5112, 5212, 5222, 5114, 5214, 5224, 5132, kXiB0, 5312, 5322,
+                           100555, 110555, 120555, 200555, 557, 100557, Pdg::kLambdaB0, 5112, 5212, 5222, 5114, 5214, 5224, 5132, Pdg::kXiB0, 5312, 5322,
                            5314, 5324, 5332, 5334, 5142, 5242, 5412, 5422, 5414, 5424, 5342, 5432, 5434, 5442, 5444, 5512, 5522, 5514, 5524,
                            5532, 5534, 5542, 5544, 5554};
 
@@ -126,6 +125,7 @@ bool isBHadron(int pc)
 //________________________________________________________________________
 bool isCHadron(int pc)
 {
+  using o2::constants::physics::Pdg;
   std::vector<int> bPdG = {Pdg::kDPlus, Pdg::kD0, Pdg::kD0StarPlus, Pdg::kD0Star0, 413, 423, 10413, 10423, 20431, 20423, Pdg::kD2StarPlus, Pdg::kD2Star0, Pdg::kDS, 10431, Pdg::kDSStar, Pdg::kDS1, 20433, Pdg::kDS2Star, 441,
                            10441, 100441, Pdg::kJPsi, 10443, Pdg::kChiC1, 100443, 30443, 9000443, 9010443, 9020443, 445, 100445, Pdg::kLambdaCPlus, Pdg::kSigmaCPlusPlus, 4212, Pdg::kSigmaC0,
                            4224, 4214, 4114, Pdg::kXiCPlus, Pdg::kXiC0, 4322, 4312, 4324, 4314, Pdg::kOmegaC0, 4334, 4412, Pdg::kXiCCPlusPlus, 4414, 4424, 4432, 4434, 4444};
@@ -1001,7 +1001,7 @@ void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*a
 
     double deltaRJetTrack = jetutilities::deltaR(analysisJet, constituent);
     double dotProduct = RecoDecay::dotProd(std::array<float, 3>{analysisJet.px(), analysisJet.py(), analysisJet.pz()}, std::array<float, 3>{constituent.px(), constituent.py(), constituent.pz()});
-    int sign = jettaggingutilities::getGeoSign(analysisJet, constituent);
+    int sign = getGeoSign(analysisJet, constituent);
 
     float rClosestSV = 10.;
     for (const auto& candSV : analysisJet.template secondaryVertices_as<SecondaryVertices>()) {
@@ -1034,7 +1034,7 @@ void analyzeJetTrackInfo4MLnoSV(AnalysisJet const& analysisJet, AnyTracks const&
 
     double deltaRJetTrack = jetutilities::deltaR(analysisJet, constituent);
     double dotProduct = RecoDecay::dotProd(std::array<float, 3>{analysisJet.px(), analysisJet.py(), analysisJet.pz()}, std::array<float, 3>{constituent.px(), constituent.py(), constituent.pz()});
-    int sign = jettaggingutilities::getGeoSign(analysisJet, constituent);
+    int sign = getGeoSign(analysisJet, constituent);
 
     tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), 0.0});
   }
@@ -1057,7 +1057,7 @@ void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*
       continue;
     }
 
-    int sign = jettaggingutilities::getGeoSign(analysisJet, constituent);
+    int sign = getGeoSign(analysisJet, constituent);
 
     auto origConstit = constituent.template track_as<AnyOriginalTracks>();
 
@@ -1078,7 +1078,7 @@ void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*
 
 // Discriminant value for GNN b-jet tagging
 template <typename T>
-T Db(const std::vector<T>& logits, double fC = 0.018) // o2-linter: disable=name/function-variable
+T getDb(const std::vector<T>& logits, double fC = 0.018)
 {
   auto softmax = [](const std::vector<T>& logits) {
     std::vector<T> res;

@@ -296,12 +296,12 @@ class TensorAllocator
 {
  protected:
 #if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-  Ort::MemoryInfo mem_info;
+  Ort::MemoryInfo memInfo;
 #endif
  public:
   TensorAllocator()
 #if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-    : mem_info(Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault))
+    : memInfo(Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault))
 #endif
   {
   }
@@ -312,7 +312,7 @@ class TensorAllocator
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
     return Ort::Experimental::Value::CreateTensor<T>(input.data(), input.size(), inputShape);
 #else
-    return Ort::Value::CreateTensor<T>(mem_info, input.data(), input.size(), inputShape.data(), inputShape.size());
+    return Ort::Value::CreateTensor<T>(memInfo, input.data(), input.size(), inputShape.data(), inputShape.size());
 #endif
   }
 };
