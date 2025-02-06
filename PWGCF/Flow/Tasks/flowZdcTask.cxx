@@ -44,7 +44,7 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::mult;
 using namespace o2::aod::evsel;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
-using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
+using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
 using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using AodZDCs = soa::Join<aod::ZDCMults, aod::Zdcs>;
@@ -124,6 +124,7 @@ struct FlowZdcTask {
   ConfigurableAxis axisFT0MAmp{"axisFT0MAmp", {10000, 0, 10000}, "axisFT0MAmp"};
   ConfigurableAxis ft0cMultHistBin{"ft0cMultHistBin", {501, -0.5, 500.5}, ""};
   ConfigurableAxis multHistBin{"multHistBin", {501, -0.5, 500.5}, ""};
+  ConfigurableAxis axisCent{"axisCent", {10, 0, 100}, "axisCent"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
@@ -175,10 +176,9 @@ struct FlowZdcTask {
     AxisSpec axisVtxcounts{2, -0.5f, 1.5f, "Vtx info (0=no, 1=yes)"};
     AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
     AxisSpec axisZvert{120, -30.f, 30.f, "Vtx z (cm)"};
-    AxisSpec axisCent{8, 0.f, 105.f, "centrality"};
     AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
     AxisSpec axisPtBins{{0., 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10., 13., 16., 20.}, "p_{T} (GeV/c)"};
-    AxisSpec axisEvent{6, 0.5, 6.5, "#Event", "EventAxis"};
+    AxisSpec axisEvent{11, 0.5, 11.5, "#Event", "EventAxis"};
     AxisSpec axisMult = {multHistBin, "Mult", "MultAxis"};
     AxisSpec axisFT0CMult = {ft0cMultHistBin, "ft0c", "FT0CMultAxis"};
 
@@ -225,6 +225,10 @@ struct FlowZdcTask {
     xAxis->SetBinLabel(4, "kIsGoodZvtxFT0vsPV");  // small difference between z-vertex from PV and from FT0
     xAxis->SetBinLabel(5, "kIsVertexITSTPC");     // at least one ITS-TPC track (reject vertices built from ITS-only tracks)
     xAxis->SetBinLabel(6, "kIsGoodITSLayersAll"); //"Centrality based on no other collisions in this Readout Frame with per-collision multiplicity above threshold tracks"
+    xAxis->SetBinLabel(7, "kIsApplyVertexTOFmatched");
+    xAxis->SetBinLabel(8, "kIsVertexTRDmatched");
+    xAxis->SetBinLabel(9, "centrality selection");
+    xAxis->SetBinLabel(10, "isApplyExtraCorrCut");
     histos.add("GlobalMult_vs_FT0C", "GlobalMult_vs_FT0C", kTH2F, {axisMult, axisFT0CMult});
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ});
 
@@ -299,6 +303,25 @@ struct FlowZdcTask {
       return false;
     }
     histos.fill(HIST("eventSelectionSteps"), 6);
+    if (isApplyVertexTOFmatched && !col.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      return false;
+    }
+    histos.fill(HIST("eventSelectionSteps"), 7);
+
+    if (isApplyVertexTRDmatched && !col.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      return false;
+    }
+    histos.fill(HIST("eventSelectionSteps"), 8);
+    if (col.centFT0C() < 0. || col.centFT0C() > 100.) {
+      return false;
+    }
+    histos.fill(HIST("eventSelectionSteps"), 9);
+
+    if (isApplyExtraCorrCut && col.multNTracksPV() > npvTracksCut && col.multFT0C() < (10 * col.multNTracksPV() - ft0cCut)) {
+      return false;
+    }
+    histos.fill(HIST("eventSelectionSteps"), 10);
+    histos.fill(HIST("eventSelectionSteps"), 11);
     return true;
   }
 
@@ -315,8 +338,6 @@ struct FlowZdcTask {
     // this is the q vector for the TPC data. it is a complex function
     double qTpcReal = 0.0; // Initialize qTPC_real
     double qTpcIm = 0.0;   // init qTPC_imaginary
-    if (cent < 0.0 && cent > 70)
-      return;
     std::complex<double> qTPC(0, 0); // Starting with a q-vector of zero
     int nTot{0};                     // Tracks are already filtered with GlobalTrack || GlobalTrackSDD
     for (const auto& track : tracks) {
