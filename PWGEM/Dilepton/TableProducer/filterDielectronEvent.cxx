@@ -167,7 +167,7 @@ struct filterDielectronEvent {
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
@@ -250,11 +250,11 @@ struct filterDielectronEvent {
     float dcaXY = dcaInfo[0];
     float dcaZ = dcaInfo[1];
 
-    if (fabs(dcaXY) > dca_xy_max || fabs(dcaZ) > dca_z_max) {
+    if (std::fabs(dcaXY) > dca_xy_max || std::fabs(dcaZ) > dca_z_max) {
       return false;
     }
 
-    if (track_par_cov_recalc.getPt() < minpt || fabs(track_par_cov_recalc.getEta()) > maxeta) {
+    if (track_par_cov_recalc.getPt() < minpt || std::fabs(track_par_cov_recalc.getEta()) > maxeta) {
       return false;
     }
 
@@ -264,7 +264,7 @@ struct filterDielectronEvent {
       dca_3d = 999.f;
     } else {
       float chi2 = (dcaXY * dcaXY * track_par_cov_recalc.getSigmaZ2() + dcaZ * dcaZ * track_par_cov_recalc.getSigmaY2() - 2. * dcaXY * dcaZ * track_par_cov_recalc.getSigmaZY()) / det;
-      dca_3d = std::sqrt(fabs(chi2) / 2.);
+      dca_3d = std::sqrt(std::fabs(chi2) / 2.);
     }
     if (dca_3d > dca_3d_sigma_max) {
       return false;
@@ -294,7 +294,7 @@ struct filterDielectronEvent {
     if (minTPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < maxTPCNsigmaPr) {
       return false;
     }
-    if (track.hasTOF() && (maxTOFNsigmaEl < fabs(track.tofNSigmaEl()))) {
+    if (track.hasTOF() && (maxTOFNsigmaEl < std::fabs(track.tofNSigmaEl()))) {
       return false;
     }
     return true;
@@ -306,7 +306,7 @@ struct filterDielectronEvent {
     if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi && track.tpcInnerParam() < max_pin_for_pion_rejection) {
       return false;
     }
-    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && fabs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
+    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && std::fabs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
   }
 
   template <typename TCollision, typename TTrack>
@@ -373,9 +373,9 @@ struct filterDielectronEvent {
         fRegistry.fill(HIST("Track/hRelSigma1Pt"), pt_recalc, std::sqrt(track_par_cov_recalc.getSigma1Pt2()) * pt_recalc);
         fRegistry.fill(HIST("Track/hEtaPhi"), phi_recalc, eta_recalc);
         fRegistry.fill(HIST("Track/hDCAxyz"), dcaXY, dcaZ);
-        fRegistry.fill(HIST("Track/hDCAxyzSigma"), dcaXY / sqrt(track_par_cov_recalc.getSigmaY2()), dcaZ / sqrt(track_par_cov_recalc.getSigmaZ2()));
-        fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), pt_recalc, sqrt(track_par_cov_recalc.getSigmaY2()) * 1e+4); // convert cm to um
-        fRegistry.fill(HIST("Track/hDCAzRes_Pt"), pt_recalc, sqrt(track_par_cov_recalc.getSigmaZ2()) * 1e+4);  // convert cm to um
+        fRegistry.fill(HIST("Track/hDCAxyzSigma"), dcaXY / std::sqrt(track_par_cov_recalc.getSigmaY2()), dcaZ / std::sqrt(track_par_cov_recalc.getSigmaZ2()));
+        fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), pt_recalc, std::sqrt(track_par_cov_recalc.getSigmaY2()) * 1e+4); // convert cm to um
+        fRegistry.fill(HIST("Track/hDCAzRes_Pt"), pt_recalc, std::sqrt(track_par_cov_recalc.getSigmaZ2()) * 1e+4);  // convert cm to um
         fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
         fRegistry.fill(HIST("Track/hNclsTPC"), track.tpcNClsFound());
         fRegistry.fill(HIST("Track/hNcrTPC"), track.tpcNClsCrossedRows());
@@ -415,7 +415,7 @@ struct filterDielectronEvent {
   }
 
   std::vector<std::pair<int, int>> stored_trackIds;
-  std::vector<std::pair<int, int>> stored_pairIds;
+  // std::vector<std::pair<int, int>> stored_pairIds;
   Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
   Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
@@ -512,8 +512,8 @@ struct filterDielectronEvent {
 
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
-    stored_pairIds.clear();
-    stored_pairIds.shrink_to_fit();
+    // stored_pairIds.clear();
+    // stored_pairIds.shrink_to_fit();
   }
   PROCESS_SWITCH(filterDielectronEvent, processRec_SA, "process reconstructed info only", true); // standalone
 
@@ -645,8 +645,8 @@ struct filterDielectronEvent {
 
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
-    stored_pairIds.clear();
-    stored_pairIds.shrink_to_fit();
+    // stored_pairIds.clear();
+    // stored_pairIds.shrink_to_fit();
   }
   PROCESS_SWITCH(filterDielectronEvent, processRec_TTCA, "process reconstructed info only", false); // with TTCA
 
@@ -743,8 +743,8 @@ struct filterDielectronEvent {
 
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
-    stored_pairIds.clear();
-    stored_pairIds.shrink_to_fit();
+    // stored_pairIds.clear();
+    // stored_pairIds.shrink_to_fit();
   }
   PROCESS_SWITCH(filterDielectronEvent, processRec_SA_SWT, "process reconstructed info only", false); // standalone
 
@@ -879,8 +879,8 @@ struct filterDielectronEvent {
 
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
-    stored_pairIds.clear();
-    stored_pairIds.shrink_to_fit();
+    // stored_pairIds.clear();
+    // stored_pairIds.shrink_to_fit();
   }
   PROCESS_SWITCH(filterDielectronEvent, processRec_TTCA_SWT, "process reconstructed info only", false); // with TTCA
 
@@ -977,8 +977,8 @@ struct filterDielectronEvent {
 
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
-    stored_pairIds.clear();
-    stored_pairIds.shrink_to_fit();
+    // stored_pairIds.clear();
+    // stored_pairIds.shrink_to_fit();
   }
   PROCESS_SWITCH(filterDielectronEvent, processMC_SA, "process reconstructed and MC info ", false);
 
@@ -1108,8 +1108,8 @@ struct filterDielectronEvent {
 
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
-    stored_pairIds.clear();
-    stored_pairIds.shrink_to_fit();
+    // stored_pairIds.clear();
+    // stored_pairIds.shrink_to_fit();
   }
   PROCESS_SWITCH(filterDielectronEvent, processMC_TTCA, "process reconstructed info only", false); // with TTCA
 };
@@ -1195,7 +1195,7 @@ struct prefilterPrimaryElectron {
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
@@ -1268,15 +1268,15 @@ struct prefilterPrimaryElectron {
 
     gpu::gpustd::array<float, 2> dcaInfo;
     auto track_par_cov_recalc = getTrackParCov(track);
-    std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
+    // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-    getPxPyPz(track_par_cov_recalc, pVec_recalc);
+    // getPxPyPz(track_par_cov_recalc, pVec_recalc);
 
-    if (fabs(dcaInfo[0]) > max_dcaxy || fabs(dcaInfo[1]) > max_dcaz) {
+    if (std::fabs(dcaInfo[0]) > max_dcaxy || std::fabs(dcaInfo[1]) > max_dcaz) {
       return false;
     }
 
-    if (track_par_cov_recalc.getPt() < minpt || fabs(track_par_cov_recalc.getEta()) > maxeta) {
+    if (track_par_cov_recalc.getPt() < minpt || std::fabs(track_par_cov_recalc.getEta()) > maxeta) {
       return false;
     }
 
