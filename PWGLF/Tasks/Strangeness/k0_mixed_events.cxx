@@ -501,7 +501,6 @@ struct K0MixedEvents {
     mixbins.clear();
   }
 
-  Filter eventFilter = (aod::evsel::sel8 == true && (nabs(o2::aod::collision::posZ) < _vertexZ));
 
   using RecoMCCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>;
   using GenMCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
@@ -509,7 +508,7 @@ struct K0MixedEvents {
   Service<o2::framework::O2DatabasePDG> pdgDB;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
   SliceCache cache;
-  void processMC(soa::Filtered<RecoMCCollisions> const& collisions,
+  void processMC(RecoMCCollisions const& collisions,
                  soa::Join<aod::Tracks, aod::TracksExtra,
                            aod::TracksDCA, aod::McTrackLabels,
                            aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -525,7 +524,7 @@ struct K0MixedEvents {
       if (!isTrackSelected(trk1)) {
         continue;
       }
-      const auto& col1 = trk1.collision_as<soa::Filtered<RecoMCCollisions>>();
+      const auto& col1 = trk1.collision_as<RecoMCCollisions>();
       if (!col1.sel8()) {
         continue;
       }
@@ -553,7 +552,7 @@ struct K0MixedEvents {
         if (!isTrackSelected(trk2)) {
           continue;
         }
-        const auto& col2 = trk2.collision_as<soa::Filtered<RecoMCCollisions>>();
+        const auto& col2 = trk2.collision_as<RecoMCCollisions>();
         if (!col2.sel8()) {
           continue;
         }
