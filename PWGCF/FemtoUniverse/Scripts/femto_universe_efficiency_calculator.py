@@ -81,7 +81,7 @@ parser.add_argument(
 parser.add_argument(
     "--ccdb-lifetime",
     type=int,
-    help="how long should objects in CCDB remain valid",
+    help="how long should objects in CCDB remain valid (milliseconds)",
     default=365 * 24 * 60 * 60 * 1000,  # one year
 )
 args = parser.parse_args()
