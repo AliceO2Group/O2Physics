@@ -51,14 +51,12 @@ struct NeutronProtonCorrZdc {
   Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 0, "Choice of centrality estimator"};
   Configurable<int> cfgNBinsMultiplicity{"cfgNBinsMultiplicity", 1000, "N bins for multiplicity histograms"};
 
-
-
   ConfigurableAxis cfgAxisCent{"cfgAxisCent", {VARIABLE_WIDTH, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0, 70.0, 71.0, 72.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 79.0, 80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, 90.0, 91.0, 92.0, 93.0, 94.0, 95.0, 96.0, 97.0, 98.0, 99.0, 100.0}, "Centrality [%]"};
 
   Filter collisionVtxZ = nabs(aod::collision::posZ) < 10.f;
 
   using CentralitiesRun3 = soa::Join<aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentNGlobals>;
-  using CentralitiesRun2 = soa::Join<aod::CentRun2V0Ms, aod::CentRun2V0As, aod::CentRun2SPDTrks, aod::CentRun2SPDClss, aod::CentRun2CL0s, aod::CentRun2CL1s>;
+  using CentralitiesRun2 = aod::CentRun2V0Ms;
   using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
   void init(InitContext const&)
@@ -116,7 +114,6 @@ struct NeutronProtonCorrZdc {
     histos.add("CentvsAlphaZP", "CentvsAlphaZP", kTH2F, {cfgAxisCent, axisAlphaZ});
     histos.add("CentvsDiffZNSignal", "CentvsDiffZNSignal", defaultZDCDiffHist);
     histos.add("CentvsDiffZPSignal", "CentvsDiffZPSignal", defaultZDCDiffHist);
-
     histos.add("CentvsZNAvsZNC", "CentvsZNAvsZNC", kTH3F, {cfgAxisCent, axisZNASignal, axisZNCSignal});
     histos.add("CentvsZNAvsZPA", "CentvsZNAvsZPA", kTH3F, {cfgAxisCent, axisZNASignal, axisZPASignal});
     histos.add("CentvsZNAvsZPC", "CentvsZNAvsZPC", kTH3F, {cfgAxisCent, axisZNASignal, axisZPCSignal});
@@ -209,25 +206,25 @@ struct NeutronProtonCorrZdc {
       return;
     }
     histos.fill(HIST("eventCounter"), EventCounter::kMaxCentralitySelection);
-    
+
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (foundBC.has_zdc()) {
       const auto& zdcread = foundBC.zdc();
+      histos.fill(HIST("eventCounter"), EventCounter::kZDCSelection);
+      histos.fill(HIST("CentralityPercentile"), cent);
 
       static_for<0,6>([&](auto i){
         fillMultHistosRun3<i>(collision); // Fill multiplicity histograms
       });
+      
       static_for<0,4>([&](auto i){
         fillCentHistosRun3<i>(collision); // Fill centrality histograms
-      });
-
-      histos.fill(HIST("eventCounter"), EventCounter::kZDCSelection);
-      histos.fill(HIST("CentralityPercentile"), cent);
+      }); 
 
       static_for<0,1>([&](auto i){
-        fillZDCSideCommonHistos<i>(cent, zdcread); // Fill i-side common channels
+        fillZDCSideCommonHistos<i>(cent, zdcread); // Fill i-side common histograms
         static_for<0,3>([&](auto j){
-          fillZDCSideSectorHistos<i,j>(cent, zdcread); // Fill i-side sector j
+          fillZDCSideSectorHistos<i,j>(cent, zdcread); // Fill i-side sector j histograms
         });
       });
 
