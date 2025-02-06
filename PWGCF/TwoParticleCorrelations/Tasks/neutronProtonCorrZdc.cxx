@@ -140,7 +140,7 @@ struct NeutronProtonCorrZdc {
   void fillMultHistosRun3(const C& col)
   {
     static constexpr std::string_view MultLabels[] = {"FT0C", "FT0A", "FV0A", "FDDC", "FDDA", "TPC", "NGlobal"};
-    std::array<float, 7> multarray = {col.multFT0C(), col.multFT0A(), col.multFV0A(), col.multFDDC(), col.multFDDA(), float(col.multTPC()), float(col.multNTracksGlobal())};
+    std::array<float, 7> multarray = {col.multFT0C(), col.multFT0A(), col.multFV0A(), col.multFDDC(), col.multFDDA(), static_cast<float>(col.multTPC()), static_cast<float>(col.multNTracksGlobal())};
 
     histos.fill(HIST("MultiplicityHistograms/") + HIST(MultLabels[mult]), multarray[mult]);
   }
@@ -150,7 +150,7 @@ struct NeutronProtonCorrZdc {
   {
     static constexpr std::string_view CentLabels[] = {"CentvsFT0C", "CentvsFT0CVar1", "CentvsFT0M", "CentvsFV0A", "CentvsNGlobal"};
     std::array<float, 5> centarray = {col.centFT0C(), col.centFT0CVariant1(), col.centFT0M(), col.centFV0A(), col.centNGlobal()};
-    std::array<float, 5> multarray = {col.multFT0C(), col.multFT0C(), col.multFT0C() + col.multFT0A(), col.multFV0A(), float(col.multNTracksGlobal())};
+    std::array<float, 5> multarray = {col.multFT0C(), col.multFT0C(), col.multFT0C() + col.multFT0A(), col.multFV0A(), static_cast<float>(col.multNTracksGlobal())};
 
     histos.fill(HIST("MultiplicityHistograms/") + HIST(CentLabels[cent]), centarray[cent], multarray[cent]);
   }
