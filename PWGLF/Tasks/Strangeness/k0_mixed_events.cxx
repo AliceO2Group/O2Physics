@@ -501,30 +501,33 @@ struct K0MixedEvents {
     mixbins.clear();
   }
 
-
   using RecoMCCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>;
   using GenMCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
   SliceCache cache;
-  void processMC(RecoMCCollisions const& collisions,
-                 soa::Join<aod::Tracks, aod::TracksExtra,
+  void processMC(soa::Join<aod::Tracks, aod::TracksExtra,
                            aod::TracksDCA, aod::McTrackLabels,
                            aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                            aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
                            aod::TrackSelection> const& tracks,
+                 RecoMCCollisions const& collisions,
                  GenMCCollisions const& mcCollisions,
                  aod::McParticles const& mcParticles)
   {
-
     // Loop on reconstructed tracks
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
     for (const auto& trk1 : tracks) {
       if (!isTrackSelected(trk1)) {
         continue;
       }
+      if (!trk1.has_collision()) {
+        continue;
+      }
+      // LOG(info) << "COL1: Get";
       const auto& col1 = trk1.collision_as<RecoMCCollisions>();
+      // LOG(info) << "COL1";
       if (!col1.sel8()) {
         continue;
       }
@@ -535,6 +538,9 @@ struct K0MixedEvents {
         continue;
       }
       if (col1.centFT0M() > multPercentileCut.value.second) {
+        continue;
+      }
+      if (!trk1.has_mcParticle()) {
         continue;
       }
       const auto& part1 = trk1.mcParticle();
@@ -552,7 +558,12 @@ struct K0MixedEvents {
         if (!isTrackSelected(trk2)) {
           continue;
         }
+        if (!trk2.has_collision()) {
+          continue;
+        }
+        // LOG(info) << "COL2: Get";
         const auto& col2 = trk2.collision_as<RecoMCCollisions>();
+        // LOG(info) << "COL2";
         if (!col2.sel8()) {
           continue;
         }
@@ -563,6 +574,9 @@ struct K0MixedEvents {
           continue;
         }
         if (col2.centFT0M() > multPercentileCut.value.second) {
+          continue;
+        }
+        if (!trk2.has_mcParticle()) {
           continue;
         }
         const auto& part2 = trk2.mcParticle();
