@@ -58,10 +58,6 @@ struct FemtoUniversePairTaskTrackPhi {
 
   Service<o2::framework::O2DatabasePDG> pdgMC;
 
-  // using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  // Filter trackCutFilter = requireGlobalTrackInFilter(); // Global track cuts
-  // using FilteredFemtoFullParticles = soa::Filtered<FemtoFullParticles>;
-
   using FilteredFemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
 
   SliceCache cache;
@@ -69,14 +65,6 @@ struct FemtoUniversePairTaskTrackPhi {
 
   using FemtoRecoParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
   Preslice<FemtoRecoParticles> perColMC = aod::femtouniverseparticle::fdCollisionId;
-
-  // Efficiency
-  struct : o2::framework::ConfigurableGroup {
-    Configurable<std::string> confEfficiencyTrackPath{"confEfficiencyTrackPath", "", "Local path to proton efficiency TH2F file"};
-    Configurable<std::string> confEfficiencyPhiPath{"confEfficiencyPhiPath", "", "Local path to Phi efficiency TH2F file"};
-    Configurable<int64_t> confEfficiencyTrackTimestamp{"confEfficiencyTrackTimestamp", 0, "(int64_t) Timestamp for hadron"};
-    Configurable<int64_t> confEfficiencyPhiTimestamp{"confEfficiencyPhiTimestamp", 0, "(int64_t) Timestamp for phi"};
-  } ConfEff;
 
   struct : o2::framework::ConfigurableGroup {
     Configurable<bool> confCPRIsEnabled{"confCPRIsEnabled", false, "Close Pair Rejection"};
@@ -99,9 +87,6 @@ struct FemtoUniversePairTaskTrackPhi {
     Configurable<float> confPIDProtonNsigmaReject{"confPIDProtonNsigmaReject", 3.0, "Reject if particle could be a Proton combined nsigma value."};
     Configurable<float> confPIDPionNsigmaCombined{"confPIDPionNsigmaCombined", 3.0, "TPC and TOF Pion Sigma (combined) for momentum > 0.5"};
     Configurable<float> confPIDPionNsigmaTPC{"confPIDPionNsigmaTPC", 3.0, "TPC Pion Sigma for momentum < 0.5"};
-
-    // Configurable<LabeledArray<float>> confCutTable{"confCutTable", {cutsTable[0], NPart, NCuts, partNames, cutNames}, "Particle selections"}; //unused
-    // Configurable<int> confNspecies{"confNspecies", 2, "Number of particle spieces with PID info"}; //unused
     Configurable<bool> confIsMC{"confIsMC", false, "Enable additional Histograms in the case of a MonteCarlo Run"};
     Configurable<std::vector<float>> confTrkPIDnSigmaMax{"confTrkPIDnSigmaMax", std::vector<float>{4.f, 3.f, 2.f}, "This configurable needs to be the same as the one used in the producer task"};
     Configurable<bool> confUse3D{"confUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
@@ -211,10 +196,6 @@ struct FemtoUniversePairTaskTrackPhi {
   Configurable<bool> confDoEfficiency{"confDoEfficiency", true, "Do efficiency corrections."};
   EfficiencyConfigurableGroup effConfGroup;
   EfficiencyCalculator efficiencyCalculator{&effConfGroup};
-
-  // Service<ccdb::BasicCCDBManager> ccdb;
-  // TH2F* protoneff;
-  // TH2F* phieff;
 
   /// @brief Counter for particle swapping
   int fNeventsProcessed = 0;
@@ -468,27 +449,6 @@ struct FemtoUniversePairTaskTrackPhi {
     if (ConfCPR.confCPRIsEnabled.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value, ConfCPR.confCPRInvMassCutMin.value, ConfCPR.confCPRInvMassCutMax.value);
     }
-
-    /// Initializing CCDB
-    // ccdb->setURL("http://alice-ccdb.cern.ch");
-    // ccdb->setCaching(true);
-    // ccdb->setLocalObjectValidityChecking();
-
-    // int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    // ccdb->setCreatedNotAfter(now);
-
-    // if (!ConfEff.confEfficiencyTrackPath.value.empty()) {
-    // protoneff = ccdb->getForTimeStamp<TH2F>(ConfEff.confEfficiencyTrackPath.value.c_str(), ConfEff.confEfficiencyTrackTimestamp.value);
-    // if (!protoneff || protoneff->IsZombie()) {
-    //   LOGF(fatal, "Could not load efficiency protoneff histogram from %s", ConfEff.confEfficiencyTrackPath.value.c_str());
-    // }
-    // }
-    // if (!ConfEff.confEfficiencyPhiPath.value.empty()) {
-    // phieff = ccdb->getForTimeStamp<TH2F>(ConfEff.confEfficiencyPhiPath.value.c_str(), ConfEff.confEfficiencyPhiTimestamp.value);
-    // if (!phieff || phieff->IsZombie()) {
-    //   LOGF(fatal, "Could not load efficiency phieff histogram from %s", ConfEff.confEfficiencyPhiPath.value.c_str());
-    // }
-    // }
   }
 
   template <typename CollisionType>
