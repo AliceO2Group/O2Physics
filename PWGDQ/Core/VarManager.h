@@ -690,7 +690,6 @@ class VarManager : public TObject
     kM0111POIoverMp,
     kCORR2POIMp,
     kCORR4POIMp,
-
     kM01POIplus,
     kM0111POIplus,
     kM01POIminus,
@@ -704,12 +703,10 @@ class VarManager : public TObject
     kCORR2POIminus,
     kCORR4POIplus,
     kCORR4POIminus,
-
     kM11REFoverMpplus,
     kM1111REFoverMpplus,
     kM11REFoverMpminus,
     kM1111REFoverMpminus,
-
     kR2SP,
     kR2EP,
     kPsi2A,
