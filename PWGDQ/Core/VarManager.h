@@ -990,7 +990,7 @@ class VarManager : public TObject
   template <typename T>
   static void FillTwoMixEventsFlowResoFactor(T const& hs_sp, T const& hs_ep, float* values = nullptr);
   template <typename T, typename T1, typename T2>
-  static void FillTwoMixEventsCumulants(T const& h_v22m, T const& h_v24m, T const& h_v22p, T const& h_v24p,T1 const& t1, T2 const& t2, float* values = nullptr);
+  static void FillTwoMixEventsCumulants(T const& h_v22m, T const& h_v24m, T const& h_v22p, T const& h_v24p, T1 const& t1, T2 const& t2, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillTrack(T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T>
@@ -1932,22 +1932,22 @@ void VarManager::FillTwoMixEventsFlowResoFactor(T const& hs_sp, T const& hs_ep, 
 }
 
 template <typename T, typename T1, typename T2>
-void VarManager::FillTwoMixEventsCumulants(T const& h_v22m, T const& h_v24m, T const& h_v22p, T const& h_v24p,T1 const& t1, T2 const& t2, float* values)
+void VarManager::FillTwoMixEventsCumulants(T const& h_v22m, T const& h_v24m, T const& h_v22p, T const& h_v24p, T1 const& t1, T2 const& t2, float* values)
 {
   if (!values) {
     values = fgValues;
   }
   float ptp, ptm, centp, centm;
-  if (t1.sign()<0) {
-	  ptm = t1.sign();
-	  ptp = t2.sign();
-	  centm = values[kTwoEvCentFT0C1];
-	  centp = values[kTwoEvCentFT0C2];
-  }else{
-	  ptm = t2.sign();
-	  ptp = t1.sign();
-	  centm = values[kTwoEvCentFT0C2];
-	  centp = values[kTwoEvCentFT0C1];
+  if (t1.sign() < 0) {
+    ptm = t1.sign();
+    ptp = t2.sign();
+    centm = values[kTwoEvCentFT0C1];
+    centp = values[kTwoEvCentFT0C2];
+  } else {
+    ptm = t2.sign();
+    ptp = t1.sign();
+    centm = values[kTwoEvCentFT0C2];
+    centp = values[kTwoEvCentFT0C1];
   }
 
   if (centm >= 0.) {
@@ -1966,7 +1966,6 @@ void VarManager::FillTwoMixEventsCumulants(T const& h_v22m, T const& h_v24m, T c
     values[kV24p] = h_v24p->GetBinContent(idx_v24p);
   }
 }
-
 
 template <typename T>
 void VarManager::FillTwoEvents(T const& ev1, T const& ev2, float* values)
@@ -3054,14 +3053,13 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     values[kV2ME_EP] = std::isnan(V2ME_EP) || std::isinf(V2ME_EP) ? 0. : V2ME_EP;
     values[kWV2ME_EP] = std::isnan(V2ME_EP) || std::isinf(V2ME_EP) ? 0. : 1.0;
 
-    //Cumulant part
+    // Cumulant part
     float V22ME = values[kV22m] * values[kCos2DeltaPhiMu1] + values[kV22p] * values[kCos2DeltaPhiMu2];
     float V24ME = values[kV24m] * values[kCos2DeltaPhiMu1] + values[kV24p] * values[kCos2DeltaPhiMu2];
     values[kV22ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : V22ME;
     values[kWV22ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
     values[kV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : V24ME;
     values[kWV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
-
   }
   if constexpr (pairType == kDecayToMuMu) {
     if (fgUsedVars[kQuadDCAabsXY]) {
