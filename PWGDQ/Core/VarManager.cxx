@@ -1587,7 +1587,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kV22p"] = kV22p;
   fgVarNamesMap["kV24p"] = kV24p;
   fgVarNamesMap["kV22ME"] = kV22ME;
-  fgVarNamesMap["kV24ME"] = kV24ME
-    fgVarNamesMap["kWV22ME"] = kWV22ME;
+  fgVarNamesMap["kV24ME"] = kV24ME;
+  fgVarNamesMap["kWV22ME"] = kWV22ME;
   fgVarNamesMap["kWV24ME"] = kWV24ME;
 }
