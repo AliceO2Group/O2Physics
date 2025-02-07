@@ -18,3 +18,8 @@ o2physics_add_dpl_workflow(ucc-zdc
     SOURCES heavyionMultiplicity.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dndeta-mft-pp
+                    SOURCES dndeta-mft-pp.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

@@ -1380,7 +1380,13 @@ struct AnalysisSameEventPairing {
                                  VarManager::fgValues[VarManager::kPt],
                                  VarManager::fgValues[VarManager::kRap],
                                  VarManager::fgValues[VarManager::kCentFT0C],
-                                 VarManager::fgValues[VarManager::kCos2DeltaPhi]);
+                                 VarManager::fgValues[VarManager::kCos2DeltaPhi],
+                                 VarManager::fgValues[VarManager::kPt1],
+                                 VarManager::fgValues[VarManager::kEta1],
+                                 VarManager::fgValues[VarManager::kPhi1],
+                                 VarManager::fgValues[VarManager::kPt2],
+                                 VarManager::fgValues[VarManager::kEta2],
+                                 VarManager::fgValues[VarManager::kPhi2]);
               }
             }
           } else {
@@ -1987,7 +1993,7 @@ struct AnalysisDileptonTrackTrack {
         if (!CutDecision)
           continue;
         DileptonTrackTrackTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kQuadPhi], fValuesQuadruplet[VarManager::kRap],
-                                fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2],
+                                fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2], fValuesQuadruplet[VarManager::kDeltaR],
                                 dilepton.mass(), dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.sign(),
                                 fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kDitrackPt], t1.pt(), t2.pt(), t1.eta(), t2.eta(), t1.phi(), t2.phi(), t1.sign(), t2.sign());
       } // end loop over track-track pairs

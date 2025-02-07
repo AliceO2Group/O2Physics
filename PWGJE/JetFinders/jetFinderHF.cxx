@@ -100,7 +100,7 @@ struct JetFinderHFTask {
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
   int trackSelection = -1;
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   std::string particleSelection;
 
   JetFinder jetFinder;
@@ -112,7 +112,7 @@ struct JetFinderHFTask {
   {
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     particleSelection = static_cast<std::string>(particleSelections);
 
     jetFinder.etaMin = trackEtaMin;
@@ -173,7 +173,7 @@ struct JetFinderHFTask {
   template <bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N, typename O>
   void analyseCharged(T const& collision, U const& tracks, V const& candidate, M& jetsTableInput, N& constituentsTableInput, O& /*originalTracks*/, float minJetPt, float maxJetPt)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
     inputParticles.clear();

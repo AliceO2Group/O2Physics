@@ -201,6 +201,7 @@ struct highmasslambda {
     histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{1000, -0.5f, 0.5f}});
     histos.add("hDcaz", "Dcaz distribution", kTH1F, {{1000, -0.5f, 0.5f}});
+    histos.add("hNsigmaProtonITS", "NsigmaProton ITS distribution", kTH2F, {{100, -5.0f, 5.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonTPC", "NsigmaProton TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonTOF", "NsigmaProton TOF distribution", kTH2F, {{1000, -50.0f, 50.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonTPCPre", "NsigmaProton TPC distribution Pre sel", kTH2F, {{1000, -50.0f, 50.0f}, {60, 0.0f, 6.0f}});
@@ -622,6 +623,7 @@ struct highmasslambda {
       if (!selectionTrack(track1)) {
         continue;
       }
+      histos.fill(HIST("hNsigmaProtonITS"), itsResponse.nSigmaITS<o2::track::PID::Proton>(track1), track1.pt());
       if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -nsigmaCutITS && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < nsigmaCutITS)) {
         continue;
       }
@@ -794,9 +796,9 @@ struct highmasslambda {
         Proton = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPr);
         Kshort = ROOT::Math::PxPyPzMVector(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
         Lambdac = Proton + Kshort;
-        if (Lambdac.Pt() > 6.0 || Lambdac.Pt() < 2.0) {
-          continue;
-        }
+        // if (Lambdac.Pt() > 6.0 || Lambdac.Pt() < 2.0) {
+        //   continue;
+        // }
         if (std::abs(Lambdac.Rapidity()) > confRapidity) {
           continue;
         }
@@ -866,6 +868,7 @@ struct highmasslambda {
       if (!selectionTrack(track1)) {
         continue;
       }
+      histos.fill(HIST("hNsigmaProtonITS"), itsResponse.nSigmaITS<o2::track::PID::Proton>(track1), track1.pt());
       if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -nsigmaCutITS && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < nsigmaCutITS)) {
         continue;
       }

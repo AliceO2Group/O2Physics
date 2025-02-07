@@ -820,7 +820,7 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   reducedpair::SVertex);
 
 DECLARE_SOA_TABLE(DileptonsMiniTree, "AOD", "RTDILEPTMTREE", //!
-                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::CentFT0C, reducedpair::Cos2DeltaPhi);
+                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::CentFT0C, reducedpair::Cos2DeltaPhi, dilepton_track_index::Pt1, dilepton_track_index::Eta1, dilepton_track_index::Phi1, dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2);
 
 using Dielectron = Dielectrons::iterator;
 using StoredDielectron = StoredDielectrons::iterator;
@@ -909,6 +909,7 @@ DECLARE_SOA_COLUMN(Rap, rap, float);                   //!
 DECLARE_SOA_COLUMN(DeltaQ, deltaQ, float);             //!
 DECLARE_SOA_COLUMN(R1, r1, float);                     //! distance between the dilepton and the track1 in theta-phi plane
 DECLARE_SOA_COLUMN(R2, r2, float);                     //! distance between the dilepton and the track2 in theta-phi plane
+DECLARE_SOA_COLUMN(R, r, float);                       //!
 DECLARE_SOA_COLUMN(DileptonMass, dileptonMass, float); //!
 DECLARE_SOA_COLUMN(DileptonPt, dileptonPt, float);     //!
 DECLARE_SOA_COLUMN(DileptonEta, dileptonEta, float);   //!
@@ -935,6 +936,7 @@ DECLARE_SOA_TABLE(DileptonTrackTrackCandidates, "AOD", "RTDQUADPLET", //!
                   dileptonTrackTrackCandidate::DeltaQ,
                   dileptonTrackTrackCandidate::R1,
                   dileptonTrackTrackCandidate::R2,
+                  dileptonTrackTrackCandidate::R,
                   dileptonTrackTrackCandidate::DileptonMass,
                   dileptonTrackTrackCandidate::DileptonPt,
                   dileptonTrackTrackCandidate::DileptonEta,

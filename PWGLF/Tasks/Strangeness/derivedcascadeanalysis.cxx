@@ -74,7 +74,9 @@ struct Derivedcascadeanalysis {
   ConfigurableAxis axisMass{"axisMass", {200, 1.222f, 1.422f}, "range of invariant mass, in case of omega take 1.572f, 1.772f"};
 
   Configurable<bool> isXi{"isXi", 1, "Apply cuts for Xi identification"};
-  Configurable<bool> usePbPbCentrality{"usePbPbCentrality", 0, "If true, use centFt0C, else use centFT0M"};
+  Configurable<bool> useCentralityFT0M{"useCentralityFT0M", 0, "If true, use centFT0M"};
+  Configurable<bool> useCentralityFT0A{"useCentralityFT0A", 0, "If true, use centFT0A"};
+  Configurable<bool> useCentralityFT0Cvar1{"useCentralityFT0Cvar1", 0, "If true, use centFT0FT0Cvar1"};
   Configurable<int> minOccupancy{"minOccupancy", -1, "Minimal occupancy"};
   Configurable<int> maxOccupancy{"maxOccupancy", -1, "Maximal occupancy"};
   Configurable<float> minOccupancyFT0{"minOccupancyFT0", -1, "Minimal occupancy"};
@@ -111,11 +113,13 @@ struct Derivedcascadeanalysis {
     Configurable<bool> doVertexTRDmatch{"doVertexTRDmatch", false, "Checks wherher at least one of vertex contributors is matched to TRD"};
     Configurable<bool> doTimeRangeStandardCut{"doTimeRangeStandardCut", true, "It rejects a given collision if there are other events nearby in dtime +/- 2 μs, or mult above some threshold in -4..-2 μs"};
     Configurable<bool> doTimeRangeStrictCut{"doTimeRangeStrictCut", false, "It rejects a given collision if there are other events nearby in |dt|< 10 μs"};
-    Configurable<bool> doTimeRangeVzDependent{"doTimeRangeVzDependent", false, "It rejects collision with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ"};
     Configurable<bool> doNoCollInRofStrictCut{"doNoCollInRofStrictCut", false, "Enable an evevnt selection which rejects a collision if there are other events within the same ITS ROF"};
     Configurable<bool> doNoCollInRofStandardCut{"doNoCollInRofStandardCut", true, "Enable an evevnt selection which rejects a collision if there are other events within the same ITS ROF with mult above threshold"};
     Configurable<bool> doMultiplicityCorrCut{"doMultiplicityCorrCut", false, "Enable multiplicity vs centrality correlation cut"};
     Configurable<bool> doInel0{"doInel0", true, "Enable INEL > 0 selection"};
+    Configurable<bool> doITSallLayersCut{"doITSallLayersCut", false, "Enable event selection which rejects collisions when ITS was rebooting."};
+    Configurable<bool> doInel0MCGen{"doInel0MCGen", true, "Enable INEL > 0 selection for MC gen events"};
+    Configurable<bool> applyZVtxSelOnMCPV{"applyZVtxSelOnMCPV", false, "Enable z vertex cut selection on generated events"};
     Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
   } eventSelectionFlags;
 
@@ -341,7 +345,7 @@ struct Derivedcascadeanalysis {
     }
 
     if (doprocessCascadesMCforEff) {
-      histos.add("hGenEvents", "", HistType::kTH2F, {{axisNch}, {2, 0, 2}});
+      histos.add("hGenEvents", "", HistType::kTH2F, {{axisNch}, {4, 0, 4}});
       histos.add("hCentralityVsMultMC", "", kTH2F, {{101, 0.0f, 101.0f}, axisNch});
       histos.add("hRecMultVsMultMC", "", kTH2F, {axisNch, axisNch});
       histos.add("hGenMultMCFT0C", "", kTH1F, {{500, 0, 5000}});
@@ -375,10 +379,15 @@ struct Derivedcascadeanalysis {
       histos.add("h2dGenOmegaMinusVsCentOccupancy", "h2dGenOmegaMinusVsCentOccupancy", kTH3D, {axisPt, {101, 0.0f, 101.0f}, axisOccupancy});
       histos.add("h2dGenOmegaPlusVsCentOccupancy", "h2dGenOmegaPlusVsCentOccupancy", kTH3D, {axisPt, {101, 0.0f, 101.0f}, axisOccupancy});
 
-      histos.add("h2dGenXiMinusVsMultMC", "h2dGenXiMinusVsMultMC", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenXiPlusVsMultMC", "h2dGenXiPlusVsMultMC", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenOmegaMinusVsMultMC", "h2dGenOmegaMinusVsMultMC", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenOmegaPlusVsMultMC", "h2dGenOmegaPlusVsMultMC", kTH2D, {axisNch, axisPt});
+      histos.add("h2dGenXiMinusVsNchVsOccupancy", "h2dGenXiMinusVsNchVsOccupancy", kTH3D, {axisPt, axisNch, axisOccupancy});
+      histos.add("h2dGenXiPlusVsNchVsOccupancy", "h2dGenXiPlusVsNchVsOccupancy", kTH3D, {axisPt, axisNch, axisOccupancy});
+      histos.add("h2dGenOmegaMinusVsNchVsOccupancy", "h2dGenOmegaMinusVsNchVsOccupancy", kTH3D, {axisPt, axisNch, axisOccupancy});
+      histos.add("h2dGenOmegaPlusVsNchVsOccupancy", "h2dGenOmegaPlusVsNchVsOccupancy", kTH3D, {axisPt, axisNch, axisOccupancy});
+
+      histos.add("h2dGenXiMinusVsMultMCVsCentrality", "h2dGenXiMinusVsMultMCVsCentrality", kTH3D, {axisNch, {101, 0.0f, 101.0f}, axisPt});
+      histos.add("h2dGenXiPlusVsMultMCVsCentrality", "h2dGenXiPlusVsMultMCVsCentrality", kTH3D, {axisNch, {101, 0.0f, 101.0f}, axisPt});
+      histos.add("h2dGenOmegaMinusVsMultMCVsCentrality", "h2dGenOmegaMinusVsMultMCVsCentrality", kTH3D, {axisNch, {101, 0.0f, 101.0f}, axisPt});
+      histos.add("h2dGenOmegaPlusVsMultMCVsCentrality", "h2dGenOmegaPlusVsMultMCVsCentrality", kTH3D, {axisNch, {101, 0.0f, 101.0f}, axisPt});
     }
   }
   template <typename TCascade>
@@ -426,8 +435,12 @@ struct Derivedcascadeanalysis {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 0.5 /* all collisions */);
     float centrality = coll.centFT0C();
-    if (!usePbPbCentrality)
+    if (useCentralityFT0M)
       centrality = coll.centFT0M();
+    if (useCentralityFT0A)
+      centrality = coll.centFV0A();
+    if (useCentralityFT0Cvar1)
+      centrality = coll.centFT0CVariant1();
 
     if (qaFlags.doBefSelEventMultCorr) {
       histos.fill(HIST("hEventNchCorrelationBefCuts"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
@@ -546,11 +559,11 @@ struct Derivedcascadeanalysis {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 18.5 /*rejects a collision if there are other events within the same ITS ROF above mult threshold*/);
 
-    if (eventSelectionFlags.doTimeRangeVzDependent && !coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent)) {
+    if (eventSelectionFlags.doITSallLayersCut && !coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 19.5 /*rejects collision with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ*/);
+      histos.fill(HIST("hEventSelection"), 19.5 /*rejects collisions if ITS was in rebooting stage*/);
 
     float occupancyFT0 = coll.ft0cOccupancyInTimeRange();
     if (minOccupancyFT0 > 0 && occupancyFT0 < minOccupancyFT0) {
@@ -743,8 +756,12 @@ struct Derivedcascadeanalysis {
       return;
 
     float centrality = coll.centFT0C();
-    if (!usePbPbCentrality)
+    if (useCentralityFT0M)
       centrality = coll.centFT0M();
+    if (useCentralityFT0A)
+      centrality = coll.centFV0A();
+    if (useCentralityFT0Cvar1)
+      centrality = coll.centFT0CVariant1();
 
     for (const auto& casc : Cascades) {
 
@@ -1033,8 +1050,13 @@ struct Derivedcascadeanalysis {
     if (!isEventAccepted(coll, true))
       return;
     float centrality = coll.centFT0C();
-    if (!usePbPbCentrality)
+    if (useCentralityFT0M)
       centrality = coll.centFT0M();
+    if (useCentralityFT0A)
+      centrality = coll.centFV0A();
+    if (useCentralityFT0Cvar1)
+      centrality = coll.centFT0CVariant1();
+
     float nChEta05 = coll.multNTracksPVeta1();
     for (const auto& casc : Cascades) {
       float mass = -1;
@@ -1369,14 +1391,26 @@ struct Derivedcascadeanalysis {
         continue;
 
       auto mcCollision = cascMC.straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+      if (eventSelectionFlags.applyZVtxSelOnMCPV && std::abs(mcCollision.posZ()) > eventSelectionFlags.zVertexCut) {
+        continue;
+      }
+
+      if (eventSelectionFlags.doInel0MCGen && mcCollision.multMCNParticlesEta10() < 1) {
+        continue;
+      }
+
       float centrality = 100.5f;
       float occupancy = 49000;
       float nChEta05 = -1;
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
         auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
         centrality = collision.centFT0C();
-        if (!usePbPbCentrality)
+        if (useCentralityFT0M)
           centrality = collision.centFT0M();
+        if (useCentralityFT0A)
+          centrality = collision.centFV0A();
+        if (useCentralityFT0Cvar1)
+          centrality = collision.centFT0CVariant1();
         if (useTrackOccupancyDef)
           occupancy = collision.trackOccupancyInTimeRange();
         if (useFT0OccupancyDef)
@@ -1391,14 +1425,16 @@ struct Derivedcascadeanalysis {
         histos.fill(HIST("h2dGenXiMinusEtaPosDaughter"), RecoDecay::eta(std::array{cascMC.pxPosMC(), cascMC.pyPosMC(), cascMC.pzPosMC()}));
         histos.fill(HIST("h2dGenXiMinusEtaNegDaughter"), RecoDecay::eta(std::array{cascMC.pxNegMC(), cascMC.pyNegMC(), cascMC.pzNegMC()}));
         histos.fill(HIST("h2dGenXiMinusEtaBach"), RecoDecay::eta(std::array{cascMC.pxBachMC(), cascMC.pyBachMC(), cascMC.pzBachMC()}));
-        histos.fill(HIST("h2dGenXiMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        histos.fill(HIST("h2dGenXiMinusVsMultMCVsCentrality"), mcCollision.multMCNParticlesEta05(), centrality, ptmc);
         histos.fill(HIST("h2dGenXiMinusVsCentOccupancy"), ptmc, centrality, occupancy);
+        histos.fill(HIST("h2dGenXiMinusVsNchVsOccupancy"), ptmc, nChEta05, occupancy);
       }
       if (cascMC.pdgCode() == -3312) {
         histos.fill(HIST("h2dGenXiPlus"), centrality, ptmc);
         histos.fill(HIST("h2dGenXiPlusVsNch"), nChEta05, ptmc);
-        histos.fill(HIST("h2dGenXiPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        histos.fill(HIST("h2dGenXiPlusVsMultMCVsCentrality"), mcCollision.multMCNParticlesEta05(), centrality, ptmc);
         histos.fill(HIST("h2dGenXiPlusVsCentOccupancy"), ptmc, centrality, occupancy);
+        histos.fill(HIST("h2dGenXiPlusVsNchVsOccupancy"), ptmc, nChEta05, occupancy);
       }
       if (cascMC.pdgCode() == 3334) {
         histos.fill(HIST("h2dGenOmegaMinus"), centrality, ptmc);
@@ -1407,14 +1443,16 @@ struct Derivedcascadeanalysis {
         histos.fill(HIST("h2dGenOmegaMinusEtaPosDaughter"), RecoDecay::eta(std::array{cascMC.pxPosMC(), cascMC.pyPosMC(), cascMC.pzPosMC()}));
         histos.fill(HIST("h2dGenOmegaMinusEtaNegDaughter"), RecoDecay::eta(std::array{cascMC.pxNegMC(), cascMC.pyNegMC(), cascMC.pzNegMC()}));
         histos.fill(HIST("h2dGenOmegaMinusEtaBach"), RecoDecay::eta(std::array{cascMC.pxBachMC(), cascMC.pyBachMC(), cascMC.pzBachMC()}));
-        histos.fill(HIST("h2dGenOmegaMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        histos.fill(HIST("h2dGenOmegaMinusVsMultMCVsCentrality"), mcCollision.multMCNParticlesEta05(), centrality, ptmc);
         histos.fill(HIST("h2dGenOmegaMinusVsCentOccupancy"), ptmc, centrality, occupancy);
+        histos.fill(HIST("h2dGenOmegaMinusVsNchVsOccupancy"), ptmc, nChEta05, occupancy);
       }
       if (cascMC.pdgCode() == -3334) {
         histos.fill(HIST("h2dGenOmegaPlus"), centrality, ptmc);
         histos.fill(HIST("h2dGenOmegaPlusVsNch"), nChEta05, ptmc);
-        histos.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        histos.fill(HIST("h2dGenOmegaPlusVsMultMCVsCentrality"), mcCollision.multMCNParticlesEta05(), centrality, ptmc);
         histos.fill(HIST("h2dGenOmegaPlusVsCentOccupancy"), ptmc, centrality, occupancy);
+        histos.fill(HIST("h2dGenOmegaPlusVsNchVsOccupancy"), ptmc, nChEta05, occupancy);
       }
     }
   }
@@ -1426,6 +1464,16 @@ struct Derivedcascadeanalysis {
     std::vector<int> listBestCollisionIdx(mcCollisions.size());
     for (auto const& mcCollision : mcCollisions) {
       histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 0.5 /* all gen. events*/);
+
+      if (eventSelectionFlags.applyZVtxSelOnMCPV && std::abs(mcCollision.posZ()) > eventSelectionFlags.zVertexCut) {
+        continue;
+      }
+      histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 1.5 /* gen. events with vertex cut*/);
+
+      if (eventSelectionFlags.doInel0MCGen && mcCollision.multMCNParticlesEta10() < 1) {
+        continue;
+      }
+      histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 2.5 /* gen. events with INEL>0t*/);
 
       auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
       // Check if there is at least one of the reconstructed collisions associated to this MC collision
@@ -1445,9 +1493,12 @@ struct Derivedcascadeanalysis {
           biggestNContribs = collision.multPVTotalContributors();
           bestCollisionIndex = collision.globalIndex();
           centrality = collision.centFT0C();
-          nChEta05 = collision.multNTracksPVeta1();
-          if (!usePbPbCentrality)
+          if (useCentralityFT0M)
             centrality = collision.centFT0M();
+          if (useCentralityFT0A)
+            centrality = collision.centFV0A();
+          if (useCentralityFT0Cvar1)
+            centrality = collision.centFT0CVariant1();
         }
         nCollisions++;
 
@@ -1465,7 +1516,7 @@ struct Derivedcascadeanalysis {
       histos.fill(HIST("hGenMCNParticlesEta10"), mcCollision.multMCNParticlesEta10());
 
       if (atLeastOne) {
-        histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 1.5 /* at least 1 rec. event*/);
+        histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 3.5 /* at least 1 rec. event*/);
       }
     }
     return listBestCollisionIdx;

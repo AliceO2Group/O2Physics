@@ -305,6 +305,11 @@ o2physics_add_dpl_workflow(derived-data-creator-d0-to-k-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(derived-data-creator-dplus-to-pi-k-pi
+                    SOURCES derivedDataCreatorDplusToPiKPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(derived-data-creator-lc-to-p-k-pi
                     SOURCES derivedDataCreatorLcToPKPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

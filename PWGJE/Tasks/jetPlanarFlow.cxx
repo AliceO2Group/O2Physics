@@ -14,6 +14,7 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
+#include <vector>
 #include <MathUtils/Utils.h>
 
 #include "Framework/AnalysisTask.h"
@@ -106,7 +107,7 @@ struct JetPlanarFlowTask {
   Configurable<float> zCutSD{"zCutSD", 0.10, "SoftDrop z cut"};
 
   int trackSelection = -1;
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   std::string particleSelection;
 
   uint32_t precisionMask;
@@ -120,7 +121,7 @@ struct JetPlanarFlowTask {
   void init(o2::framework::InitContext&)
   {
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     particleSelection = static_cast<std::string>(particleSelections);
     precisionMask = 0xFFFFFC00;
   }
@@ -282,7 +283,7 @@ struct JetPlanarFlowTask {
                               soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
                               aod::JetTracks const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& jet : jets) {
@@ -300,7 +301,7 @@ struct JetPlanarFlowTask {
                                                soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
                                                aod::JetTracks const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& jet : jets) {
@@ -318,7 +319,7 @@ struct JetPlanarFlowTask {
                                           soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents> const& jets,
                                           aod::JetTracksSub const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& jet : jets) {
@@ -336,7 +337,7 @@ struct JetPlanarFlowTask {
                              soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets,
                              aod::JetTracks const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& jet : jets) {
