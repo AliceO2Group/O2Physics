@@ -106,8 +106,8 @@ struct NucleiInJets {
   Configurable<double> par0{"par0", 0.00164, "par 0"};
   Configurable<double> par1{"par1", 0.00231, "par 1"};
   Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum number of ITS clusters"};
-  Configurable<int> minTpcNclusters{"minTpcNclusters", 80, "minimum number of TPC clusters"};
   Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 80, "minimum number of TPC crossed pad rows"};
+  Configurable<double> minTpcNcrossedRowsOverFindable{"minTpcNcrossedRowsOverFindable", 0.8, "crossed rows/findable"};
   Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0, "maximum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareIts{"maxChiSquareIts", 36.0, "maximum ITS chi^2/Ncls"};
   Configurable<double> minPt{"minPt", 0.3, "minimum pt of the tracks"};
@@ -274,7 +274,7 @@ struct NucleiInJets {
       return false;
     if (track.tpcNClsCrossedRows() < 70)
       return false;
-    if (track.tpcNClsCrossedRows() / track.tpcNClsFindable() < 0.8)
+    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < 0.8)
       return false;
     if (track.tpcChi2NCl() > 4)
       return false;
@@ -320,9 +320,9 @@ struct NucleiInJets {
       return false;
     if (!track.hasTPC())
       return false;
-    if (track.tpcNClsFound() < minTpcNclusters)
-      return false;
     if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
+      return false;
+    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < minTpcNcrossedRowsOverFindable)
       return false;
     if (track.tpcChi2NCl() > maxChiSquareTpc)
       return false;
