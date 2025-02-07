@@ -14,6 +14,8 @@
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #include <CCDB/BasicCCDBManager.h>
+#include <vector>
+
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -468,7 +470,7 @@ struct femtoUniverseProducerTaskV0Only {
               postrack.sign(), (uint8_t)postrack.tpcNClsFound(),
               postrack.tpcNClsFindable(),
               (uint8_t)postrack.tpcNClsCrossedRows(),
-              postrack.tpcNClsShared(), postrack.tpcInnerParam(),
+              postrack.tpcNClsShared(), postrack.tpcFractionSharedCls(), postrack.tpcInnerParam(),
               postrack.itsNCls(), postrack.itsNClsInnerBarrel(),
               postrack.dcaXY(), postrack.dcaZ(), postrack.tpcSignal(),
               postrack.tpcNSigmaStoreEl(), postrack.tpcNSigmaStorePi(),
@@ -482,7 +484,7 @@ struct femtoUniverseProducerTaskV0Only {
               negtrack.sign(), (uint8_t)negtrack.tpcNClsFound(),
               negtrack.tpcNClsFindable(),
               (uint8_t)negtrack.tpcNClsCrossedRows(),
-              negtrack.tpcNClsShared(), negtrack.tpcInnerParam(),
+              negtrack.tpcNClsShared(), negtrack.tpcFractionSharedCls(), negtrack.tpcInnerParam(),
               negtrack.itsNCls(), negtrack.itsNClsInnerBarrel(),
               negtrack.dcaXY(), negtrack.dcaZ(), negtrack.tpcSignal(),
               negtrack.tpcNSigmaStoreEl(), negtrack.tpcNSigmaStorePi(),
@@ -492,7 +494,7 @@ struct femtoUniverseProducerTaskV0Only {
               negtrack.tofNSigmaStorePr(), negtrack.tofNSigmaStoreDe(), -999.,
               -999., -999., -999., -999.,
               -999.); // QA for negative daughter
-            outputDebugParts(-999., -999., -999., -999., -999., -999., -999.,
+            outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
                              -999., -999., -999., -999., -999., -999., -999.,
                              -999., -999., -999., -999., -999., -999., -999.,
                              v0.dcaV0daughters(), v0.v0radius(), v0.x(), v0.y(),

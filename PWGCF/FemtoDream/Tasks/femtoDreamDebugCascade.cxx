@@ -103,9 +103,6 @@ struct femtoDreamDebugCascade {
         continue;
       }
       // check cut on v0 children
-      // TODO: check if this should be possible
-      // auto posChild = part.template children_as<FemtoFullParticles>().front();
-      // auto negChild = part.template children_as<FemtoFullParticles>().back();
       const auto& posChild = parts.iteratorAt(part.index() - 3);
       const auto& negChild = parts.iteratorAt(part.index() - 2);
       const auto& bachChild = parts.iteratorAt(part.index() - 1);

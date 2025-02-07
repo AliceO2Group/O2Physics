@@ -36,6 +36,34 @@ AnalysisCompositeCut::AnalysisCompositeCut(const char* name, const char* title, 
 }
 
 //____________________________________________________________________________
+AnalysisCompositeCut::AnalysisCompositeCut(const AnalysisCompositeCut& c) : AnalysisCut(c)
+{
+  //
+  // copy constructor
+  //
+  if (this != &c) {
+    fOptionUseAND = c.fOptionUseAND;
+    fCutList = c.fCutList;
+    fCompositeCutList = c.fCompositeCutList;
+  }
+}
+
+//____________________________________________________________________________
+AnalysisCompositeCut& AnalysisCompositeCut::operator=(const AnalysisCompositeCut& c)
+{
+  //
+  // assignment
+  //
+  if (this != &c) {
+    AnalysisCut::operator=(c);
+    fOptionUseAND = c.fOptionUseAND;
+    fCutList = c.fCutList;
+    fCompositeCutList = c.fCompositeCutList;
+  }
+  return (*this);
+}
+
+//____________________________________________________________________________
 AnalysisCompositeCut::~AnalysisCompositeCut() = default;
 
 //____________________________________________________________________________

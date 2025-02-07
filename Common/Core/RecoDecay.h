@@ -1111,14 +1111,14 @@ struct RecoDecay {
             if (PDGParticleIMother < 9 || (PDGParticleIMother > 20 && PDGParticleIMother < 38)) {
               // auto PDGPaticle = std::abs(particleMother.pdgCode());
               if (
-                (PDGParticleIMother / 100 == 5 || // b mesons
-                 PDGParticleIMother / 1000 == 5)  // b baryons
+                (PDGParticle / 100 == 5 || // b mesons
+                 PDGParticle / 1000 == 5)  // b baryons
               ) {
                 return OriginType::NonPrompt; // beauty
               }
               if (
-                (PDGParticleIMother / 100 == 4 || // c mesons
-                 PDGParticleIMother / 1000 == 4)  // c baryons
+                (PDGParticle / 100 == 4 || // c mesons
+                 PDGParticle / 1000 == 4)  // c baryons
               ) {
                 return OriginType::Prompt; // charm
               }

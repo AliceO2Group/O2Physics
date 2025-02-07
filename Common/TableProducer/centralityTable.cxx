@@ -42,9 +42,12 @@ static constexpr int kCentFV0As = 6;
 static constexpr int kCentFT0Ms = 7;
 static constexpr int kCentFT0As = 8;
 static constexpr int kCentFT0Cs = 9;
-static constexpr int kCentFDDMs = 10;
-static constexpr int kCentNTPVs = 11;
-static constexpr int nTables = 12;
+static constexpr int kCentFT0CVariant1s = 10;
+static constexpr int kCentFDDMs = 11;
+static constexpr int kCentNTPVs = 12;
+static constexpr int kCentNGlobals = 13;
+static constexpr int kCentMFTs = 14;
+static constexpr int nTables = 15;
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{"CentRun2V0Ms",
                                                  "CentRun2V0As",
@@ -56,10 +59,13 @@ static const std::vector<std::string> tableNames{"CentRun2V0Ms",
                                                  "CentFT0Ms",
                                                  "CentFT0As",
                                                  "CentFT0Cs",
+                                                 "CentFT0CVariant1s",
                                                  "CentFDDMs",
-                                                 "CentNTPVs"};
+                                                 "CentNTPVs",
+                                                 "CentNGlobals",
+                                                 "CentMFTs"};
 static const std::vector<std::string> parameterNames{"Enable"};
-static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
 struct CentralityTable {
   Produces<aod::CentRun2V0Ms> centRun2V0M;
@@ -72,8 +78,11 @@ struct CentralityTable {
   Produces<aod::CentFT0Ms> centFT0M;
   Produces<aod::CentFT0As> centFT0A;
   Produces<aod::CentFT0Cs> centFT0C;
+  Produces<aod::CentFT0CVariant1s> centFT0CVariant1;
   Produces<aod::CentFDDMs> centFDDM;
   Produces<aod::CentNTPVs> centNTPV;
+  Produces<aod::CentNGlobals> centNGlobals;
+  Produces<aod::CentMFTs> centMFTs;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<LabeledArray<int>> enabledTables{"enabledTables",
                                                 {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
@@ -160,8 +169,11 @@ struct CentralityTable {
   calibrationInfo FT0MInfo = calibrationInfo("FT0");
   calibrationInfo FT0AInfo = calibrationInfo("FT0A");
   calibrationInfo FT0CInfo = calibrationInfo("FT0C");
+  calibrationInfo FT0CVariant1Info = calibrationInfo("FT0Cvar1");
   calibrationInfo FDDMInfo = calibrationInfo("FDD");
   calibrationInfo NTPVInfo = calibrationInfo("NTracksPV");
+  calibrationInfo NGlobalInfo = calibrationInfo("NGlobal");
+  calibrationInfo MFTInfo = calibrationInfo("MFT");
   std::vector<int> mEnabledTables; // Vector of enabled tables
   std::array<bool, nTables> isTableEnabled;
 
@@ -175,8 +187,8 @@ struct CentralityTable {
     if (doprocessRun3FT0 == true) {
       LOG(fatal) << "FT0 only mode is automatically enabled in Run3 mode. Please disable it and enable processRun3.";
     }
-    if (doprocessRun2 == false && doprocessRun3 == false) {
-      LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
+    if (doprocessRun2 == false && doprocessRun3 == false && doprocessRun3Complete == false) {
+      LOGF(fatal, "Neither processRun2 nor processRun3 nor processRun3Complete enabled. Please choose one.");
     }
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
@@ -189,11 +201,11 @@ struct CentralityTable {
       if (f == 1) {
         if (tableNames[i].find("Run2") != std::string::npos) {
           if (doprocessRun3) {
-            LOGF(fatal, "Cannot enable Run2 tables in Run3 mode. Please check and disable them.");
+            LOG(fatal) << "Cannot enable Run2 table `" << tableNames[i] << "` while running in Run3 mode. Please check and disable them.";
           }
         } else {
           if (doprocessRun2) {
-            LOGF(fatal, "Cannot enable Run3 tables in Run2 mode. Please check and disable them.");
+            LOG(fatal) << "Cannot enable Run3 table `" << tableNames[i] << "` while running in Run2 mode. Please check and disable them.";
           }
         }
         isTableEnabled[i] = true;
@@ -438,6 +450,8 @@ struct CentralityTable {
             bool enableCentFT0 = true,
             bool enableCentFDD = true,
             bool enableCentNTPV = true,
+            bool enableCentNGlobal = false,
+            bool enableCentMFT = false,
             typename CollisionType>
   void produceRun3Tables(CollisionType const& collisions)
   {
@@ -456,11 +470,20 @@ struct CentralityTable {
         case kCentFT0Cs:
           centFT0C.reserve(collisions.size());
           break;
+        case kCentFT0CVariant1s:
+          centFT0CVariant1.reserve(collisions.size());
+          break;
         case kCentFDDMs:
           centFDDM.reserve(collisions.size());
           break;
         case kCentNTPVs:
           centNTPV.reserve(collisions.size());
+          break;
+        case kCentNGlobals:
+          centNGlobals.reserve(collisions.size());
+          break;
+        case kCentMFTs:
+          centMFTs.reserve(collisions.size());
           break;
         default:
           LOGF(fatal, "Table %d not supported in Run3", table);
@@ -503,8 +526,11 @@ struct CentralityTable {
         FT0MInfo.mCalibrationStored = false;
         FT0AInfo.mCalibrationStored = false;
         FT0CInfo.mCalibrationStored = false;
+        FT0CVariant1Info.mCalibrationStored = false;
         FDDMInfo.mCalibrationStored = false;
         NTPVInfo.mCalibrationStored = false;
+        NGlobalInfo.mCalibrationStored = false;
+        MFTInfo.mCalibrationStored = false;
         if (callst != nullptr) {
           if (produceHistograms) {
             listCalib->Add(callst->Clone(Form("%i", bc.runNumber())));
@@ -546,11 +572,20 @@ struct CentralityTable {
               case kCentFT0Cs:
                 getccdb(FT0CInfo, ccdbConfig.genName);
                 break;
+              case kCentFT0CVariant1s:
+                getccdb(FT0CVariant1Info, ccdbConfig.genName);
+                break;
               case kCentFDDMs:
                 getccdb(FDDMInfo, ccdbConfig.genName);
                 break;
               case kCentNTPVs:
                 getccdb(NTPVInfo, ccdbConfig.genName);
+                break;
+              case kCentNGlobals:
+                getccdb(NGlobalInfo, ccdbConfig.genName);
+                break;
+              case kCentMFTs:
+                getccdb(MFTInfo, ccdbConfig.genName);
                 break;
               default:
                 LOGF(fatal, "Table %d not supported in Run3", table);
@@ -648,6 +683,11 @@ struct CentralityTable {
               }
             }
             break;
+          case kCentFT0CVariant1s:
+            if constexpr (enableCentFT0) {
+              populateTable(centFT0CVariant1, FT0CVariant1Info, collision.multZeqFT0C());
+            }
+            break;
           case kCentFDDMs:
             if constexpr (enableCentFDD) {
               populateTable(centFDDM, FDDMInfo, collision.multZeqFDDA() + collision.multZeqFDDC());
@@ -658,12 +698,27 @@ struct CentralityTable {
               populateTable(centNTPV, NTPVInfo, collision.multZeqNTracksPV());
             }
             break;
+          case kCentNGlobals:
+            if constexpr (enableCentNGlobal) {
+              populateTable(centNGlobals, NGlobalInfo, collision.multNTracksGlobal());
+            }
+            break;
+          case kCentMFTs:
+            if constexpr (enableCentMFT) {
+              populateTable(centMFTs, MFTInfo, collision.mftNtracks());
+            }
+            break;
           default:
             LOGF(fatal, "Table %d not supported in Run3", table);
             break;
         }
       }
     }
+  }
+
+  void processRun3Complete(soa::Join<aod::Collisions, aod::PVMults, aod::MultZeqs, aod::EvSels, aod::MultsGlobal, aod::MFTMults> const& collisions, BCsWithTimestamps const&)
+  {
+    produceRun3Tables<true, true, true, true, true, true>(collisions);
   }
 
   void processRun3(soa::Join<aod::Collisions, aod::PVMults, aod::MultZeqs, aod::EvSels> const& collisions, BCsWithTimestamps const&)
@@ -681,6 +736,7 @@ struct CentralityTable {
 
   // Process switches
   PROCESS_SWITCH(CentralityTable, processRun2, "Provide Run2 calibrated centrality/multiplicity percentiles tables", true);
+  PROCESS_SWITCH(CentralityTable, processRun3Complete, "Provide Run3 calibrated centrality/multiplicity percentiles tables using MFT and global tracks (requires extra subscriptions)", false);
   PROCESS_SWITCH(CentralityTable, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", false);
   PROCESS_SWITCH(CentralityTable, processRun3FT0, "Provide Run3 calibrated centrality/multiplicity percentiles tables for FT0 only", false);
 };

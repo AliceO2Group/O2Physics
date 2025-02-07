@@ -179,7 +179,7 @@ enum eParticleHistograms {
   etpcFractionSharedCls,
   etpcChi2NCl, // TBI 20250110 this one shall resemble aodTrack->GetTPCchi2()/aodTrack->GetTPCNcls(), but cross-check with the experts. Particles with tpcChi2NCl > 4. I reject now by default.
                //              See what I documented in AliPhysics below // task->SetParticleCuts("TPCChi2perNDF",4.,-44); // VAL
-
+               // 20250123 in some Run 2 analysis, 2.5 was used as a default. Check that value as a part of systematics
   // from o2::aod::TracksDCA
   edcaXY,
   edcaZ,
@@ -306,7 +306,11 @@ enum eQAEventHistograms2D {
   // ...
   // Specific (everything is hardwired):
   eMultNTracksPV_vs_MultNTracksGlobal,  // Run 3 multiplicity
+  eCentFT0C_vs_CentFT0CVariant1,        // Run 3 centrality
+  eCentFT0C_vs_CentFT0M,                // Run 3 centrality
+  eCentFT0C_vs_CentFV0A,                // Run 3 centrality
   eCentFT0C_vs_CentNTPV,                // Run 3 centrality
+  eCentFT0C_vs_CentNGlobal,             // Run 3 centrality
   eCentFT0M_vs_CentNTPV,                // Run 3 centrality
   eCentRun2V0M_vs_CentRun2SPDTracklets, // Run 2 centrality (do not use in Run 1 converted, because there is no centrality information)
   eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange,
@@ -367,9 +371,11 @@ enum eReferenceMultiplicityEstimators {
 enum eCentralityEstimators {
   // Run 3:
   eCentFT0C = 0,
+  eCentFT0CVariant1,
   eCentFT0M,
   eCentFV0A,
   eCentNTPV,
+  eCentNGlobal,
   // Run 2:
   eCentRun2V0M,
   eCentRun2SPDTracklets,

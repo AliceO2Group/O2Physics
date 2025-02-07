@@ -22,11 +22,8 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "ReconstructionDataFormats/PID.h"
-#include "Common/DataModel/PIDResponse.h"
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
@@ -34,12 +31,10 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseAngularContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
-#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEfficiencyCalculator.h"
 #include <TFile.h>
 #include <TH1.h>
-#include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
 using namespace o2::analysis::femto_universe;
@@ -63,8 +58,6 @@ struct FemtoUniversePairTaskTrackPhi {
 
   Service<o2::framework::O2DatabasePDG> pdgMC;
 
-  // using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  // Filter trackCutFilter = requireGlobalTrackInFilter();
   using FilteredFemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
 
   SliceCache cache;
@@ -72,14 +65,6 @@ struct FemtoUniversePairTaskTrackPhi {
 
   using FemtoRecoParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
   Preslice<FemtoRecoParticles> perColMC = aod::femtouniverseparticle::fdCollisionId;
-
-  // Efficiency
-  struct : o2::framework::ConfigurableGroup {
-    Configurable<std::string> confEfficiencyTrackPath{"confEfficiencyTrackPath", "", "Local path to proton efficiency TH2F file"};
-    Configurable<std::string> confEfficiencyPhiPath{"confEfficiencyPhiPath", "", "Local path to Phi efficiency TH2F file"};
-    Configurable<int64_t> confEfficiencyTrackTimestamp{"confEfficiencyTrackTimestamp", 0, "(int64_t) Timestamp for hadron"};
-    Configurable<int64_t> confEfficiencyPhiTimestamp{"confEfficiencyPhiTimestamp", 0, "(int64_t) Timestamp for phi"};
-  } ConfEff;
 
   struct : o2::framework::ConfigurableGroup {
     Configurable<bool> confCPRIsEnabled{"confCPRIsEnabled", false, "Close Pair Rejection"};
@@ -102,9 +87,6 @@ struct FemtoUniversePairTaskTrackPhi {
     Configurable<float> confPIDProtonNsigmaReject{"confPIDProtonNsigmaReject", 3.0, "Reject if particle could be a Proton combined nsigma value."};
     Configurable<float> confPIDPionNsigmaCombined{"confPIDPionNsigmaCombined", 3.0, "TPC and TOF Pion Sigma (combined) for momentum > 0.5"};
     Configurable<float> confPIDPionNsigmaTPC{"confPIDPionNsigmaTPC", 3.0, "TPC Pion Sigma for momentum < 0.5"};
-
-    // Configurable<LabeledArray<float>> confCutTable{"confCutTable", {cutsTable[0], NPart, NCuts, partNames, cutNames}, "Particle selections"}; //unused
-    // Configurable<int> confNspecies{"confNspecies", 2, "Number of particle spieces with PID info"}; //unused
     Configurable<bool> confIsMC{"confIsMC", false, "Enable additional Histograms in the case of a MonteCarlo Run"};
     Configurable<std::vector<float>> confTrkPIDnSigmaMax{"confTrkPIDnSigmaMax", std::vector<float>{4.f, 3.f, 2.f}, "This configurable needs to be the same as the one used in the producer task"};
     Configurable<bool> confUse3D{"confUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
@@ -119,6 +101,7 @@ struct FemtoUniversePairTaskTrackPhi {
     Configurable<int> confTrackSign{"confTrackSign", 1, "Track sign"};
     Configurable<bool> confTrackIsIdentified{"confTrackIsIdentified", true, "Enable PID for the track"};
     Configurable<bool> confTrackIsRejected{"confTrackIsRejected", true, "Enable PID rejection for the track other species than the identified one."};
+    Configurable<float> confTrackPtPIDLimit{"confTrackPtPIDLimit", 0.5, "Momentum threshold for change of the PID method (from using TPC to TPC and TOF)."};
     Configurable<float> confTrackPtLowLimit{"confTrackPtLowLimit", 0.5, "Lower limit of the hadron pT."};
     Configurable<float> confTrackPtHighLimit{"confTrackPtHighLimit", 2.5, "Higher limit of the hadron pT."};
   } ConfTrack;
@@ -135,8 +118,8 @@ struct FemtoUniversePairTaskTrackPhi {
                                                                                        (aod::femtouniverseparticle::pt < ConfTrack.confTrackPtHighLimit.value);
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsTrackMCTruth = aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
-                                                                                        (aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(ConfTrack.confTrackPDGCode.value)) &
-                                                                                          (aod::femtouniverseparticle::pt > ConfTrack.confTrackPtLowLimit.value) &&
+                                                                                        (aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(ConfTrack.confTrackPDGCode)) &&
+                                                                                        (aod::femtouniverseparticle::pt > ConfTrack.confTrackPtLowLimit.value) &&
                                                                                         (aod::femtouniverseparticle::pt < ConfTrack.confTrackPtHighLimit.value);
 
   /// Particle 2 --- PHI MESON
@@ -155,6 +138,7 @@ struct FemtoUniversePairTaskTrackPhi {
                                                                                      (aod::femtouniverseparticle::pt < ConfPhi.confPhiPtHighLimit.value);
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsPhiMCTruth = (aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
+
                                                                                       (aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(333)) &&
                                                                                       (aod::femtouniverseparticle::pt > ConfPhi.confPhiPtLowLimit.value) &&
                                                                                       (aod::femtouniverseparticle::pt < ConfPhi.confPhiPtHighLimit.value);
@@ -213,10 +197,6 @@ struct FemtoUniversePairTaskTrackPhi {
   EfficiencyConfigurableGroup effConfGroup;
   EfficiencyCalculator efficiencyCalculator{&effConfGroup};
 
-  // Service<ccdb::BasicCCDBManager> ccdb;
-  // TH2F* protoneff;
-  // TH2F* phieff;
-
   /// @brief Counter for particle swapping
   int fNeventsProcessed = 0;
   bool swpart = 0;
@@ -225,13 +205,13 @@ struct FemtoUniversePairTaskTrackPhi {
   // PID for protons
   bool isProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
   {
-    if (mom < 0.5) {
+    if (mom < ConfTrack.confTrackPtPIDLimit.value) {
       if (std::abs(nsigmaTPCPr) < ConfBothTracks.confPIDProtonNsigmaTPC.value) {
         return true;
       } else {
         return false;
       }
-    } else if (mom > 0.4) {
+    } else if (mom > ConfTrack.confTrackPtPIDLimit.value) {
       if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.confPIDProtonNsigmaCombined.value) {
         return true;
       } else {
@@ -402,16 +382,13 @@ struct FemtoUniversePairTaskTrackPhi {
     }
   }
 
-  void init(InitContext& ic)
+  void init(InitContext&)
   {
-    hMCTruth1.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, ConfTrack.confTrackPDGCode, false);
-    qaRegistry.add("Efficiency/part1", "Efficiency origin/generated part1; p_{T} (GeV/c); Efficiency", kTH1F, {{100, 0, 4}});
-
-    hMCTruth2.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, 333, false);
-    qaRegistry.add("Efficiency/part2", "Efficiency origin/generated part2; p_{T} (GeV/c); Efficiency", kTH1F, {{100, 0, 4}});
-
+    if (effConfGroup.confEfficiencyDoMCTruth) {
+      hMCTruth1.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, ConfTrack.confTrackPDGCode, false);
+      hMCTruth2.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, 333, false);
+    }
     efficiencyCalculator.init();
-    efficiencyCalculator.uploadOnStop(ic);
 
     eventHisto.init(&qaRegistry);
     qaRegistry.add("PhiDaugh_pos/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
@@ -472,27 +449,6 @@ struct FemtoUniversePairTaskTrackPhi {
     if (ConfCPR.confCPRIsEnabled.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value, ConfCPR.confCPRInvMassCutMin.value, ConfCPR.confCPRInvMassCutMax.value);
     }
-
-    /// Initializing CCDB
-    // ccdb->setURL("http://alice-ccdb.cern.ch");
-    // ccdb->setCaching(true);
-    // ccdb->setLocalObjectValidityChecking();
-
-    // int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    // ccdb->setCreatedNotAfter(now);
-
-    // if (!ConfEff.confEfficiencyTrackPath.value.empty()) {
-    // protoneff = ccdb->getForTimeStamp<TH2F>(ConfEff.confEfficiencyTrackPath.value.c_str(), ConfEff.confEfficiencyTrackTimestamp.value);
-    // if (!protoneff || protoneff->IsZombie()) {
-    //   LOGF(fatal, "Could not load efficiency protoneff histogram from %s", ConfEff.confEfficiencyTrackPath.value.c_str());
-    // }
-    // }
-    // if (!ConfEff.confEfficiencyPhiPath.value.empty()) {
-    // phieff = ccdb->getForTimeStamp<TH2F>(ConfEff.confEfficiencyPhiPath.value.c_str(), ConfEff.confEfficiencyPhiTimestamp.value);
-    // if (!phieff || phieff->IsZombie()) {
-    //   LOGF(fatal, "Could not load efficiency phieff histogram from %s", ConfEff.confEfficiencyPhiPath.value.c_str());
-    // }
-    // }
   }
 
   template <typename CollisionType>
@@ -609,7 +565,7 @@ struct FemtoUniversePairTaskTrackPhi {
 
       weight = 1.0f;
       if (confDoEfficiency.value) {
-        weight = efficiencyCalculator.getWeight<1>(phicandidate) * efficiencyCalculator.getWeight<2>(track);
+        weight = efficiencyCalculator.getWeight(ParticleNo::ONE, phicandidate) * efficiencyCalculator.getWeight(ParticleNo::TWO, track);
       }
       if (swpart)
         sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.confUse3D.value, weight);
@@ -667,36 +623,24 @@ struct FemtoUniversePairTaskTrackPhi {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(o2::aod::FdCollisions const& cols,
+  void processSameEventMC(o2::aod::FdCollision const& col,
                           soa::Join<FilteredFemtoFullParticles, o2::aod::FDMCLabels> const& parts,
                           o2::aod::FdMCParticles const&)
   {
-    for (const auto& col : cols) {
-      fillCollision(col);
+    fillCollision(col);
 
-      auto groupMCTruthTrack = partsTrackMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      efficiencyCalculator.doMCTruth<1>(hMCTruth1, groupMCTruthTrack);
+    auto groupMCTruthTrack = partsTrackMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    efficiencyCalculator.doMCTruth<1>(hMCTruth1, groupMCTruthTrack);
 
-      auto groupMCTruthPhi = partsPhiMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      efficiencyCalculator.doMCTruth<2>(hMCTruth2, groupMCTruthPhi);
+    auto groupMCTruthPhi = partsPhiMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    efficiencyCalculator.doMCTruth<2>(hMCTruth2, groupMCTruthPhi);
 
-      auto groupMCRecoTrack = partsTrackMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      auto groupMCRecoPhi = partsPhiMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      auto thegroupPartsPhiDaugh = partsPhiDaughMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      auto thegroupPartsKaons = partsKaonsMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsTrack = partsTrackMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsPhi = partsPhiMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsPhiDaugh = partsPhiDaughMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsKaons = partsKaonsMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-      doSameEvent<true>(groupMCRecoTrack, groupMCRecoPhi, thegroupPartsPhiDaugh, thegroupPartsKaons, parts, col.magField(), col.multNtr());
-    }
-
-    auto truthTrack = qaRegistry.get<TH1>(HIST("MCTruthTracks_one/hPt"));
-    auto recoTrack = qaRegistry.get<TH1>(HIST("Tracks_one_MC/hPt"));
-    auto effTrack = qaRegistry.get<TH1>(HIST("Efficiency/part1"));
-    efficiencyCalculator.calculate<1>(effTrack, truthTrack, recoTrack);
-
-    auto truthPhi = qaRegistry.get<TH1>(HIST("MCTruthTracks_two/hPt"));
-    auto recoPhi = qaRegistry.get<TH1>(HIST("Tracks_two_MC/hPt"));
-    auto effPhi = qaRegistry.get<TH1>(HIST("Efficiency/part2"));
-    efficiencyCalculator.calculate<2>(effPhi, truthPhi, recoPhi);
+    doSameEvent<true>(thegroupPartsTrack, thegroupPartsPhi, thegroupPartsPhiDaugh, thegroupPartsKaons, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
@@ -738,7 +682,7 @@ struct FemtoUniversePairTaskTrackPhi {
 
       weight = 1.0f;
       if (confDoEfficiency.value) {
-        weight = efficiencyCalculator.getWeight<1>(phicandidate) * efficiencyCalculator.getWeight<2>(track);
+        weight = efficiencyCalculator.getWeight(ParticleNo::ONE, phicandidate) * efficiencyCalculator.getWeight(ParticleNo::TWO, track);
       }
 
       if (swpart)

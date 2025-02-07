@@ -60,7 +60,9 @@ struct JetSpectraEseTask {
   Configurable<std::string> eventSelections{"eventSelections", "sel8FullPbPb", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
+
   Configurable<bool> cfgEvSelOccupancy{"cfgEvSelOccupancy", true, "Flag for occupancy cut"};
+
   Configurable<std::vector<int>> cfgCutOccupancy{"cfgCutOccupancy", {0, 1000}, "Occupancy cut"};
   Configurable<std::vector<float>> cfgOccupancyPtCut{"cfgOccupancyPtCut", {0, 100}, "pT cut"};
 
@@ -80,7 +82,7 @@ struct JetSpectraEseTask {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  int eventSelection{-1};
+  std::vector<int> eventSelectionBits;
   int trackSelection{-1};
 
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f) && nabs(aod::jet::eta) < 0.9f - jetR;
@@ -99,7 +101,7 @@ struct JetSpectraEseTask {
 
   void init(o2::framework::InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     LOGF(info, "jetSpectraEse::init()");
@@ -218,7 +220,7 @@ struct JetSpectraEseTask {
   {
     float counter{0.5f};
     registry.fill(HIST("hEventCounter"), counter++);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
     registry.fill(HIST("hEventCounter"), counter++);
 
@@ -271,7 +273,7 @@ struct JetSpectraEseTask {
     registry.fill(HIST("hPsiOccupancy"), collision.centrality(), vPsi2, occupancy);
     registry.fill(HIST("hOccupancy"), occupancy);
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
     registry.fill(HIST("hEventCounterOcc"), count++);
 

@@ -18,6 +18,9 @@
 #include <random>
 #include <chrono>
 #include <vector>
+#include <map>
+#include <memory>
+#include <utility>
 #include <TParameter.h>
 #include <TH1F.h>
 
@@ -118,7 +121,7 @@ struct FemtoCorrelations {
   std::pair<int, std::vector<float>> TOFcuts_2;
 
   using FilteredCollisions = soa::Join<aod::SingleCollSels, aod::SingleCollExtras>;
-  using FilteredTracks = aod::SingleTrackSels;
+  using FilteredTracks = soa::Join<aod::SingleTrackSels, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>;
 
   typedef std::shared_ptr<soa::Filtered<FilteredTracks>::iterator> trkType;
   typedef std::shared_ptr<soa::Filtered<FilteredCollisions>::iterator> colType;
