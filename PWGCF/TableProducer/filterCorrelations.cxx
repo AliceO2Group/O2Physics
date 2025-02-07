@@ -22,7 +22,6 @@
 #include "Common/DataModel/Centrality.h"
 
 #include <TH3F.h>
-#include <TDatabasePDG.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -329,7 +328,13 @@ struct MultiplicitySelector {
     if (doprocessFT0C) {
       enabledFunctions++;
     }
+    if (doprocessFT0CVariant1) {
+      enabledFunctions++;
+    }
     if (doprocessFT0A) {
+      enabledFunctions++;
+    }
+    if (doprocessCentNGlobal) {
       enabledFunctions++;
     }
     if (doprocessMCGen) {
@@ -363,6 +368,14 @@ struct MultiplicitySelector {
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0C, "Select FT0C centrality as multiplicity", false);
 
+  void processFT0CVariant1(aod::CentFT0CVariant1s const& centralities)
+  {
+    for (auto& c : centralities) {
+      output(c.centFT0CVariant1());
+    }
+  }
+  PROCESS_SWITCH(MultiplicitySelector, processFT0CVariant1, "Select FT0CVariant1 centrality as multiplicity", false);
+
   void processFT0A(aod::CentFT0As const& centralities)
   {
     for (auto& c : centralities) {
@@ -370,6 +383,14 @@ struct MultiplicitySelector {
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0A, "Select FT0A centrality as multiplicity", false);
+
+  void processCentNGlobal(aod::CentNGlobals const& centralities)
+  {
+    for (auto& c : centralities) {
+      output(c.centNGlobal());
+    }
+  }
+  PROCESS_SWITCH(MultiplicitySelector, processCentNGlobal, "Select CentNGlobal centrality as multiplicity", false);
 
   void processRun2V0M(aod::CentRun2V0Ms const& centralities)
   {

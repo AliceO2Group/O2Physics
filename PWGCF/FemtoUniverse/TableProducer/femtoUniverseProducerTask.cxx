@@ -913,7 +913,8 @@ struct FemtoUniverseProducerTask {
           col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
           col.selection_bit(aod::evsel::kIsGoodITSLayersAll) &&
           col.selection_bit(aod::evsel::kNoCollInRofStandard) &&
-          col.selection_bit(aod::evsel::kNoHighMultCollInPrevRof)) {
+          col.selection_bit(aod::evsel::kNoHighMultCollInPrevRof) &&
+          col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) {
         outputCollision(vtxZ, cent, multNtr, 2, mMagField);
         return true;
       } else {

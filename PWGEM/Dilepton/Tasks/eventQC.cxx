@@ -316,22 +316,15 @@ struct eventQC {
     }
 
     if (cfgFillPID) {
-      int nbin_nsigma_tpc = 100;
-      float min_nsigma_tpc = -5.f;
-      float max_nsigma_tpc = +5.f;
-      if (doprocessEventQC_V0_PID) {
-        nbin_nsigma_tpc = 200;
-        min_nsigma_tpc = -10.f;
-        max_nsigma_tpc = +10.f;
-      }
-
       fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
-      fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {nbin_nsigma_tpc, min_nsigma_tpc, max_nsigma_tpc}}, false);
-      fRegistry.add("Track/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {nbin_nsigma_tpc, min_nsigma_tpc, max_nsigma_tpc}}, false);
-      fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {nbin_nsigma_tpc, min_nsigma_tpc, max_nsigma_tpc}}, false);
-      fRegistry.add("Track/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {nbin_nsigma_tpc, min_nsigma_tpc, max_nsigma_tpc}}, false);
-      fRegistry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {nbin_nsigma_tpc, min_nsigma_tpc, max_nsigma_tpc}}, false);
-
+      fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
+      fRegistry.add("Track/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
+      fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
+      fRegistry.add("Track/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
+      fRegistry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
+      if (doprocessEventQC_V0_PID) {
+        fRegistry.add("Track/hsEID", "TPC n sigma el;p_{in} (GeV/c);#eta;n #sigma_{e}^{TPC};", kTHnSparseF, {{200, 0, 10}, {20, -1, +1}, {100, -5, +5}}, false);
+      }
       fRegistry.add("Track/hTOFbeta", "TOF #beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
       fRegistry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaMu", "TOF n sigma mu;p_{pv} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -357,8 +350,7 @@ struct eventQC {
     fRegistry.add("V0/hCosPA", "cos pointing angle", kTH1F, {{100, 0.99, 1}}, false);
     fRegistry.add("V0/hRadius", "radius", kTH1F, {{200, 0, 20}}, false);
     fRegistry.add("V0/K0S/pion/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
-    fRegistry.add("V0/K0S/pion/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {200, -10, +10}}, false);
-    fRegistry.add("V0/K0S/pion/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -10, +10}}, false);
+    fRegistry.add("V0/K0S/pion/hsEID", "TPC n sigma el;p_{in} (GeV/c);#eta;n #sigma_{e}^{TPC};", kTHnSparseF, {{200, 0, 10}, {20, -1, +1}, {100, -5, +5}}, false);
 
     fRegistry.add("V0/K0S/hMass", "mass vs. p_{T} of K^{0}_{S}", kTH2F, {{200, 0.4, 0.6}, {100, 0, 10}}, false);
     fRegistry.add("V0/Lambda/hMass", "mass vs. p_{T} of #Lambda", kTH2F, {{100, 1.08, 1.18}, {100, 0, 10}}, false);
@@ -369,8 +361,7 @@ struct eventQC {
     fRegistry.add("V0/Photon/hChi2", "radius vs. KF chi2", kTH2F, {{100, 0, 100}, {100, 0, 100}}, false);
     fRegistry.add("V0/Photon/hXY", "photon conversion point;X (cm);Y(cm)", kTH2F, {{400, -100, +100}, {400, -100, 100}}, false);
     fRegistry.add("V0/Photon/electron/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
-    fRegistry.add("V0/Photon/electron/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {200, -10, +10}}, false);
-    fRegistry.add("V0/Photon/electron/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {200, -10, +10}}, false);
+    fRegistry.add("V0/Photon/electron/hsEID", "TPC n sigma el;p_{in} (GeV/c);#eta;n #sigma_{e}^{TPC};", kTHnSparseF, {{200, 0, 10}, {20, -1, +1}, {100, -5, +5}}, false);
   }
 
   template <typename TTrack>
@@ -423,6 +414,9 @@ struct eventQC {
         fRegistry.fill(HIST("Track/hITSNsigmaKa"), track.p(), track.itsNSigmaKa());
         fRegistry.fill(HIST("Track/hITSNsigmaPr"), track.p(), track.itsNSigmaPr());
       }
+    }
+    if (doprocessEventQC_V0_PID) {
+      fRegistry.fill(HIST("Track/hsEID"), track.tpcInnerParam(), track.eta(), track.tpcNSigmaEl());
     }
   }
 
@@ -984,13 +978,11 @@ struct eventQC {
 
             if (isTPCOK_neg && isTOFOK_neg) { // K0S is tagged by neg and pos is probe.
               fRegistry.fill(HIST("V0/K0S/pion/hTPCdEdx"), pos.tpcInnerParam(), pos.tpcSignal());
-              fRegistry.fill(HIST("V0/K0S/pion/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
-              fRegistry.fill(HIST("V0/K0S/pion/hTPCNsigmaPi"), pos.tpcInnerParam(), pos.tpcNSigmaPi());
+              fRegistry.fill(HIST("V0/K0S/pion/hsEID"), pos.tpcInnerParam(), pos.eta(), pos.tpcNSigmaEl());
             }
             if (isTPCOK_pos && isTOFOK_pos) { // K0S is tagged by pos and neg is probe.
               fRegistry.fill(HIST("V0/K0S/pion/hTPCdEdx"), neg.tpcInnerParam(), neg.tpcSignal());
-              fRegistry.fill(HIST("V0/K0S/pion/hTPCNsigmaEl"), neg.tpcInnerParam(), neg.tpcNSigmaEl());
-              fRegistry.fill(HIST("V0/K0S/pion/hTPCNsigmaPi"), neg.tpcInnerParam(), neg.tpcNSigmaPi());
+              fRegistry.fill(HIST("V0/K0S/pion/hsEID"), neg.tpcInnerParam(), neg.eta(), neg.tpcNSigmaEl());
             }
           } // end of K0S
         } // end of v0hadron loop
@@ -1030,13 +1022,11 @@ struct eventQC {
 
           if (isTPCOK_neg && isTOFOK_neg) { // photon conversion is tagged by neg and pos is probe.
             fRegistry.fill(HIST("V0/Photon/electron/hTPCdEdx"), pos.tpcInnerParam(), pos.tpcSignal());
-            fRegistry.fill(HIST("V0/Photon/electron/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
-            fRegistry.fill(HIST("V0/Photon/electron/hTPCNsigmaPi"), pos.tpcInnerParam(), pos.tpcNSigmaPi());
+            fRegistry.fill(HIST("V0/Photon/electron/hsEID"), pos.tpcInnerParam(), pos.eta(), pos.tpcNSigmaEl());
           }
           if (isTPCOK_pos && isTOFOK_pos) { // photon conversion is tagged by pos and neg is probe.
             fRegistry.fill(HIST("V0/Photon/electron/hTPCdEdx"), neg.tpcInnerParam(), neg.tpcSignal());
-            fRegistry.fill(HIST("V0/Photon/electron/hTPCNsigmaEl"), neg.tpcInnerParam(), neg.tpcNSigmaEl());
-            fRegistry.fill(HIST("V0/Photon/electron/hTPCNsigmaPi"), neg.tpcInnerParam(), neg.tpcNSigmaPi());
+            fRegistry.fill(HIST("V0/Photon/electron/hsEID"), neg.tpcInnerParam(), neg.eta(), neg.tpcNSigmaEl());
           }
         } // end of v0photon loop
       } // end of V0 PID

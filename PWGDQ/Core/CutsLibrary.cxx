@@ -80,6 +80,17 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("MCHMID"));
     return cut;
   }
+  if (!nameStr.compare("ElectronForEMu")) {
+    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaLoose"));
+    return cut;
+  }
+  if (!nameStr.compare("MuonForEMu")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt5"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
   // ///////////////////////////////////////////////
   //           End of Cuts for CEFP               //
   // ///////////////////////////////////////////////
@@ -831,6 +842,17 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("protonPID_TPCnTOF"));
     cut->AddCut(GetAnalysisCut("negTrack"));
     cut->AddCut(GetAnalysisCut("muonLowPt"));
+    return cut;
+  }
+
+  if (!nameStr.compare("protonPIDPV")) {
+    cut->AddCut(GetAnalysisCut("protonPID_TPCnTOF2"));
+    cut->AddCut(GetAnalysisCut("protonPVcut"));
+    return cut;
+  }
+
+  if (!nameStr.compare("protonPIDPV2")) {
+    cut->AddCut(GetAnalysisCut("protonPID_TPCnTOF2"));
     return cut;
   }
 
@@ -3564,6 +3586,19 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("emu_electron_specialTest")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKineForEMu"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaVeryVeryLoose2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("emu_electron_specialTest2")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKineForEMu"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    return cut;
+  }
+
   if (!nameStr.compare("muonLooseTriggerTestCuts")) {
     cut->AddCut(GetAnalysisCut("muonLooseTriggerTestCuts"));
     return cut;
@@ -4083,6 +4118,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("jpsiStandardKineForEMu")) {
+    cut->AddCut(VarManager::kPt, 5.0, 1000.0);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    return cut;
+  }
+
   if (!nameStr.compare("lmeePrefilterKine")) {
     cut->AddCut(VarManager::kPt, 0., 20.0);
     cut->AddCut(VarManager::kEta, -1.2, 1.2);
@@ -4536,6 +4577,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
     cut->AddCut(VarManager::kTPCncls, 90, 161);
     cut->AddCut(VarManager::kTPCnclsCR, 70, 161);
+    return cut;
+  }
+
+  if (!nameStr.compare("protonPVcut")) {
+    cut->AddCut(VarManager::kTrackDCAxy, -0.1, 0.1);
+    cut->AddCut(VarManager::kTrackDCAz, -0.15, 0.15);
+    cut->AddCut(VarManager::kPt, 0.4, 3);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kIsSPDany, 0.5, 1.5);
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCncls, 80, 161.);
     return cut;
   }
 
@@ -5322,8 +5374,8 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("electronPIDnsigmaVeryVeryLoose2")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -4.0, 4.0);
-    cut->AddCut(VarManager::kTPCnSigmaPr, 2.5, 3000.0);
-    cut->AddCut(VarManager::kTPCnSigmaPi, 2.5, 3000.0);
+    cut->AddCut(VarManager::kTPCnSigmaPr, 1.5, 3000.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi, 1.5, 3000.0);
     return cut;
   }
 
@@ -5465,6 +5517,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("protonPID_TPCnTOF")) {
     cut->AddCut(VarManager::kTPCnSigmaPr, -3.0, 3.0);
     cut->AddCut(VarManager::kTOFnSigmaPr, -3.0, 3.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("protonPID_TPCnTOF2")) {
+    cut->AddCut(VarManager::kTPCnSigmaPr, -2.5, 2.5);
     return cut;
   }
 

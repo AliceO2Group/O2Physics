@@ -109,19 +109,26 @@ struct FlowSP {
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
-  using UsedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::SPTableZDC>>;
+  using UsedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals, aod::SPTableZDC>>;
   using UsedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
 
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
 
-  // from Generic Framework
-  // Adapted to hold weights for: inclusive, positive charged, negative charged
+  // struct to hold the correction histos/
   struct Config {
     std::vector<TH1D*> mEfficiency = {};
     std::vector<GFWWeights*> mAcceptance = {};
     bool correctionsLoaded = false;
     int lastRunNumber = 0;
+
+    TProfile* hcorrQQ = nullptr;
+    TProfile* hcorrQQx = nullptr;
+    TProfile* hcorrQQy = nullptr;
+    TProfile* hEvPlaneRes = nullptr;
+    bool clQQ = false;
+    bool clEvPlaneRes = false;
+
   } cfg;
 
   // define output objects
@@ -155,6 +162,16 @@ struct FlowSP {
     nEventSelections
   };
 
+  enum TrackSelections {
+    trackSel_FilteredTracks,
+    trackSel_NCls,
+    trackSel_FshCls,
+    trackSel_TPCBoundary,
+    trackSel_ZeroCharge,
+    trackSel_ParticleWeights,
+    nTrackSelections
+  };
+
   enum ChargeType {
     kInclusive,
     kPositive,
@@ -183,6 +200,8 @@ struct FlowSP {
     AxisSpec t0cAxis = {70, 0, 70000, "N_{ch} (T0C)"};
     AxisSpec t0aAxis = {200, 0, 200, "N_{ch}"};
     AxisSpec multpvAxis = {4000, 0, 4000, "N_{ch} (PV)"};
+    AxisSpec shclAxis = {200, 0, 1, "Fraction shared cl. TPC"};
+    AxisSpec clAxis = {160, 0, 160, "Number of cl. TPC"};
 
     int ptbins = ptbinning.size() - 1;
 
@@ -247,6 +266,11 @@ struct FlowSP {
         registry.add<TProfile>("incl/vnA_pt", "", kTProfile, {axisPt});
         registry.add<TProfile>("incl/vnC_pt_odd", "", kTProfile, {axisPt});
         registry.add<TProfile>("incl/vnA_pt_odd", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnCx_pt_odd", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnAx_pt_odd", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnCy_pt_odd", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnAy_pt_odd", "", kTProfile, {axisPt});
+
         registry.add<TProfile>("incl/vnA_pt_EP", "", kTProfile, {axisPt});
         registry.add<TProfile>("incl/vnC_pt_EP", "", kTProfile, {axisPt});
         registry.add<TProfile>("incl/vnFull_pt_EP", "", kTProfile, {axisPt});
@@ -303,8 +327,10 @@ struct FlowSP {
       registry.add<TH1>("incl/QA/hPhiCorrected", "", kTH1D, {axisPhi});
       registry.add<TH1>("incl/QA/hEta", "", kTH1D, {axisEta});
       registry.add<TH3>("incl/QA/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
-      registry.add<TH1>("incl/QA/hDCAxy", "", kTH1D, {axisDCAxy});
-      registry.add<TH1>("incl/QA/hDCAz", "", kTH1D, {axisDCAz});
+      registry.add<TH2>("incl/QA/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
+      registry.add<TH2>("incl/QA/hDCAz_pt", "", kTH2D, {axisPt, axisDCAz});
+      registry.add("incl/QA/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, shclAxis}});
+      registry.add("incl/QA/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, clAxis}});
 
       registry.addClone("incl/", "pos/");
       registry.addClone("incl/", "neg/");
@@ -327,6 +353,14 @@ struct FlowSP {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_CentCuts + 1, "Cenrality range");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected");
+
+    registry.add("hTrackCount", "Number of Tracks; Cut; #Tracks Passed Cut", {HistType::kTH1D, {{nTrackSelections, 0, nTrackSelections}}});
+    registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_FilteredTracks + 1, "Filtered Track");
+    registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_NCls + 1, "nClusters TPC");
+    registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_FshCls + 1, "Frac. sh. Cls TPC");
+    registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_TPCBoundary + 1, "TPC Boundary");
+    registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_ZeroCharge + 1, "Only charged");
+    registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_ParticleWeights + 1, "Apply weights");
 
     if (cfgUseAdditionalEventCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
@@ -523,9 +557,11 @@ struct FlowSP {
 
     if (track.tpcNClsFound() < cfgNcls)
       return false;
+    registry.fill(HIST("hTrackCount"), trackSel_NCls);
 
-    if (track.tpcFractionSharedCls() < cfgFshcls)
+    if (track.tpcFractionSharedCls() > cfgFshcls)
       return false;
+    registry.fill(HIST("hTrackCount"), trackSel_FshCls);
 
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field
@@ -544,6 +580,7 @@ struct FlowSP {
         return false; // reject track
     }
     registry.fill(HIST("QA/after/pt_phi"), track.pt(), phimodn);
+    registry.fill(HIST("hTrackCount"), trackSel_TPCBoundary);
     return true;
   }
 
@@ -630,12 +667,23 @@ struct FlowSP {
 
       registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_odd"), track.pt(), -1.0 * (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
       registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_odd"), track.pt(), -1.0 * (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+
+      registry.fill(HIST(Charge[ct]) + HIST("vnAx_pt_odd"), track.pt(), -1.0 * (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAy_pt_odd"), track.pt(), -1.0 * (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnCx_pt_odd"), track.pt(), -1.0 * (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnCy_pt_odd"), track.pt(), -1.0 * (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+
     } else {
       registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_plusEta"), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
       registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_plusEta"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
       registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_odd"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
       registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_odd"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+
+      registry.fill(HIST(Charge[ct]) + HIST("vnAx_pt_odd"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAy_pt_odd"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnCx_pt_odd"), track.pt(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnCy_pt_odd"), track.pt(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
     }
 
     registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_cent_MH"), centrality, (uxMH * qxA * qxC) / corrQQx, wacc * weff);
@@ -656,8 +704,10 @@ struct FlowSP {
     registry.fill(HIST(Charge[ct]) + HIST("QA/hPhiCorrected"), track.phi(), wacc * weff);
     registry.fill(HIST(Charge[ct]) + HIST("QA/hEta"), track.eta());
     registry.fill(HIST(Charge[ct]) + HIST("QA/hPhi_Eta_vz"), track.phi(), track.eta(), vz);
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAxy"), track.dcaXY());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAz"), track.dcaZ());
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAxy_pt"), track.pt(), track.dcaXY());
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAz_pt"), track.pt(), track.dcaZ());
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls());
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hCrossedRows_pt"), track.pt(), track.tpcNClsFound());
   }
 
   void processData(UsedCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
@@ -685,7 +735,8 @@ struct FlowSP {
       centrality = collision.centFT0M();
     if (cfgFV0A)
       centrality = collision.centFV0A();
-    // if (cfgNGlobal) centrality = collision.centNGlobal();
+    if (cfgNGlobal)
+      centrality = collision.centNGlobal();
 
     if (!eventSelected(collision, tracks.size(), centrality))
       return;
@@ -732,21 +783,28 @@ struct FlowSP {
       double corrQQ = 1., corrQQx = 1., corrQQy = 1.;
 
       // Load correlations and SP resolution needed for Scalar Product and event plane methods.
+      // Only load once!
       // If not loaded set to 1
       if (cfgLoadAverageQQ) {
-        TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir.value, bc.timestamp());
-        TProfile* hcorrQQ = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCXY"));
-        TProfile* hcorrQQx = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCX"));
-        TProfile* hcorrQQy = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCY"));
-        corrQQ = hcorrQQ->GetBinContent(hcorrQQ->FindBin(centrality));
-        corrQQx = hcorrQQx->GetBinContent(hcorrQQx->FindBin(centrality));
-        corrQQy = hcorrQQy->GetBinContent(hcorrQQy->FindBin(centrality));
+        if (!cfg.clQQ) {
+          TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir.value, bc.timestamp());
+          cfg.hcorrQQ = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCXY"));
+          cfg.hcorrQQx = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCX"));
+          cfg.hcorrQQy = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCY"));
+          cfg.clQQ = true;
+        }
+        corrQQ = cfg.hcorrQQ->GetBinContent(cfg.hcorrQQ->FindBin(centrality));
+        corrQQx = cfg.hcorrQQx->GetBinContent(cfg.hcorrQQx->FindBin(centrality));
+        corrQQy = cfg.hcorrQQy->GetBinContent(cfg.hcorrQQy->FindBin(centrality));
       }
 
       double evPlaneRes = 1.;
       if (cfgLoadSPPlaneRes) {
-        TProfile* hEvPlaneRes = ccdb->getForTimeStamp<TProfile>(cfgCCDBdir_SP.value, bc.timestamp());
-        evPlaneRes = hEvPlaneRes->GetBinContent(hEvPlaneRes->FindBin(centrality));
+        if (!cfg.clEvPlaneRes) {
+          cfg.hEvPlaneRes = ccdb->getForTimeStamp<TProfile>(cfgCCDBdir_SP.value, bc.timestamp());
+          cfg.clEvPlaneRes = true;
+        }
+        evPlaneRes = cfg.hEvPlaneRes->GetBinContent(cfg.hEvPlaneRes->FindBin(centrality));
         if (evPlaneRes < 0)
           LOGF(fatal, "<Cos(PsiA-PsiC)> > 0 for centrality %.2f! Cannot determine resolution.. Change centrality ranges!!!", centrality);
         evPlaneRes = std::sqrt(evPlaneRes);
@@ -754,6 +812,7 @@ struct FlowSP {
 
       for (const auto& track : tracks) {
         registry.fill(HIST("QA/before/hPt_inclusive"), track.pt());
+        registry.fill(HIST("hTrackCount"), trackSel_FilteredTracks);
 
         float weff = 1, wacc = 1;
         float weffP = 1, waccP = 1;
@@ -764,6 +823,7 @@ struct FlowSP {
 
         if (track.sign() == 0.0)
           return;
+        registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
         bool pos = (track.sign() > 0) ? true : false;
 
         // Fill NUA weights
@@ -785,7 +845,9 @@ struct FlowSP {
         if (!pos && !setCurrentParticleWeights(kNegative, weffN, waccN, track.phi(), track.eta(), track.pt(), vtxz))
           return;
 
-        registry.fill(HIST("QA/after/hPt_inclusive"), track.pt());
+        registry.fill(HIST("hTrackCount"), trackSel_ParticleWeights);
+
+        registry.fill(HIST("QA/after/hPt_inclusive"), track.pt(), wacc * weff);
 
         // // constrain angle to 0 -> [0,0+2pi]
         auto phi = RecoDecay::constrainAngle(track.phi(), 0);
@@ -816,13 +878,21 @@ struct FlowSP {
   }
   PROCESS_SWITCH(FlowSP, processData, "Process analysis for non-derived data", true);
 
-  void processMCReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
+  void processMCReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
 
     double vtxz = collision.posZ();
     float centrality = collision.centFT0C();
+    if (cfgFT0Cvariant1)
+      centrality = collision.centFT0CVariant1();
+    if (cfgFT0M)
+      centrality = collision.centFT0M();
+    if (cfgFV0A)
+      centrality = collision.centFV0A();
+    if (cfgNGlobal)
+      centrality = collision.centNGlobal();
 
     if (cfgFillQAHistos)
       fillEventQA<kBefore>(collision, tracks);
@@ -865,13 +935,21 @@ struct FlowSP {
   PROCESS_SWITCH(FlowSP, processMCReco, "Process analysis for MC reconstructed events", false);
 
   Filter mcCollFilter = nabs(aod::mccollision::posZ) < cfgVtxZ;
-  void processMCGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs>> const& collisions, aod::McParticles const& particles)
+  void processMCGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals>> const& collisions, aod::McParticles const& particles)
   {
     if (collisions.size() != 1)
       return;
     float centrality = -1;
     for (const auto& collision : collisions) {
       centrality = collision.centFT0C();
+      if (cfgFT0Cvariant1)
+        centrality = collision.centFT0CVariant1();
+      if (cfgFT0M)
+        centrality = collision.centFT0M();
+      if (cfgFV0A)
+        centrality = collision.centFV0A();
+      if (cfgNGlobal)
+        centrality = collision.centNGlobal();
     }
 
     if (particles.size() < 1)
