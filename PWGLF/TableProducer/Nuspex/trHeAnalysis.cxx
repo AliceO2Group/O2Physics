@@ -531,7 +531,6 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 12);
               continue;
             }
-          }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
                         track.tpcInnerParam() / (1.f * track.sign()),
                         track.tpcSignal());
@@ -609,7 +608,7 @@ struct TrHeAnalysis {
         }
       }
     }
-  }
+}
 
   template <class T>
   float getTPCnSigma(T const& track, Particle const& particle)
