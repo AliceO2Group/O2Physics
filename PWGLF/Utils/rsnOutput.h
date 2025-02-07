@@ -47,6 +47,7 @@ enum class PairType {
   likemm,
   unliketrue,
   unlikegen,
+  unlikegenold,
   mixingpm,
   mixingpp,
   mixingmm,
@@ -70,6 +71,22 @@ enum class PairAxisType {
   unknown
 };
 
+enum class MixingType {
+  ce,
+  mu,
+  none
+};
+
+MixingType mixingTypeName(std::string name)
+{
+  if (name == "ce")
+    return MixingType::ce;
+  else if (name == "mu")
+    return MixingType::mu;
+
+  return MixingType::none;
+}
+
 enum class SystematicsAxisType {
   ncl,
   unknown
@@ -83,12 +100,13 @@ namespace SystematicsAxis
 {
 std::vector<std::string> names{"ncl"};
 }
+
 class Output
 {
  public:
   virtual ~Output() = default;
 
-  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<AxisSpec> const& allAxes_sys, bool /*produceTrue*/ = false, bool /*eventMixing*/ = false, bool /*produceLikesign*/ = false, HistogramRegistry* registry = nullptr)
+  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<AxisSpec> const& allAxes_sys, bool /*produceTrue*/ = false, MixingType /*eventMixing*/ = MixingType::none, bool /*produceLikesign*/ = false, HistogramRegistry* registry = nullptr)
   {
     mHistogramRegistry = registry;
     if (mHistogramRegistry == nullptr)
@@ -190,6 +208,7 @@ class Output
   virtual void fillLikemm(double* point) = 0;
   virtual void fillUnliketrue(double* point) = 0;
   virtual void fillUnlikegen(double* point) = 0;
+  virtual void fillUnlikegenOld(double* point) = 0;
   virtual void fillMixingpm(double* point) = 0;
   virtual void fillMixingpp(double* point) = 0;
   virtual void fillMixingmm(double* point) = 0;
@@ -247,7 +266,7 @@ class Output
 class OutputSparse : public Output
 {
  public:
-  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<AxisSpec> const& allAxes_sys, bool produceTrue = false, bool eventMixing = false, bool produceLikesign = false, HistogramRegistry* registry = nullptr)
+  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<AxisSpec> const& allAxes_sys, bool produceTrue = false, MixingType eventMixing = MixingType::none, bool produceLikesign = false, HistogramRegistry* registry = nullptr)
   {
     Output::init(sparseAxes, allAxes, sysAxes, allAxes_sys, produceTrue, eventMixing, produceLikesign, registry);
 
@@ -260,8 +279,9 @@ class OutputSparse : public Output
     if (produceTrue) {
       mHistogramRegistry->add("unliketrue", "Unlike True", *mPairHisto);
       mHistogramRegistry->add("unlikegen", "Unlike Gen", *mPairHisto);
+      mHistogramRegistry->add("unlikegenold", "Unlike Gen Old", *mPairHisto);
     }
-    if (eventMixing) {
+    if (eventMixing != MixingType::none) {
       mHistogramRegistry->add("mixingpm", "Event Mixing pm", *mPairHisto);
       if (produceLikesign) {
         mHistogramRegistry->add("mixingpp", "Event Mixing pp", *mPairHisto);
@@ -306,6 +326,9 @@ class OutputSparse : public Output
       case PairType::unlikegen:
         fillUnlikegen(point);
         break;
+      case PairType::unlikegenold:
+        fillUnlikegenOld(point);
+        break;
       case PairType::mixingpm:
         fillMixingpm(point);
         break;
@@ -349,6 +372,10 @@ class OutputSparse : public Output
   virtual void fillUnlikegen(double* point)
   {
     fillSparse(HIST("unlikegen"), point);
+  }
+  virtual void fillUnlikegenOld(double* point)
+  {
+    fillSparse(HIST("unlikegenold"), point);
   }
   virtual void fillMixingpm(double* point)
   {
