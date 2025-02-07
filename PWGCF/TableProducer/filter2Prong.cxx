@@ -36,7 +36,7 @@ struct Filter2Prong {
   HfHelper hfHelper;
   Produces<aod::CF2ProngTracks> output2ProngTracks;
 
-  using HFCandidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
+  using HFCandidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
   void processData(aod::Collisions::iterator const&, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, HFCandidates const& candidates)
   {
     if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
@@ -64,10 +64,10 @@ struct Filter2Prong {
         continue;
       if (c.isSelD0() > 0)
         output2ProngTracks(cfcollisions.begin().globalIndex(),
-                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0ToPiK(c), aod::cf2prongtrack::D0ToPiK);
+                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0ToPiK(c), aod::cf2prongtrack::D0ToPiK, c.mlProbD0(), c.mlProbD0bar());
       if (c.isSelD0bar() > 0)
         output2ProngTracks(cfcollisions.begin().globalIndex(),
-                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0barToKPi(c), aod::cf2prongtrack::D0barToKPi);
+                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0barToKPi(c), aod::cf2prongtrack::D0barToKPi, c.mlProbD0(), c.mlProbD0bar());
     }
   }
   PROCESS_SWITCH(Filter2Prong, processData, "Process data D0 candidates", true);
