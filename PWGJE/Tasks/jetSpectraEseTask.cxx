@@ -327,7 +327,7 @@ struct JetSpectraEseTask {
   {
     float counter{0.5f};
     registry.fill(HIST("hMCDetEventCounter"), counter++);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
     registry.fill(HIST("hMCDetEventCounter"), counter++);
     if (cfgEvSelOccupancy && !isOccupancyWithin(collision))
@@ -371,7 +371,7 @@ struct JetSpectraEseTask {
       }
       registry.fill(HIST("hMCDMatchedEventCounter"), secCount++);
 
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
         return;
       registry.fill(HIST("hMCDMatchedEventCounter"), secCount++);
 
