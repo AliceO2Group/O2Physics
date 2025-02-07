@@ -53,8 +53,9 @@ using namespace o2::framework::expressions;
 struct FlowTask {
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgCentMin, float, 0.0f, "Minimum centrality")
-  O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 100.0f, "Maximum centrality")
+  O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
+  O2_DEFINE_CONFIGURABLE(cfgCentFT0CMin, float, 0.0f, "Minimum centrality (FT0C) to cut events in filter")
+  O2_DEFINE_CONFIGURABLE(cfgCentFT0CMax, float, 100.0f, "Maximum centrality (FT0C) to cut events in filter")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 10.0f, "Maximal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtRefMin, float, 0.2f, "Minimal pT for ref tracks")
@@ -116,7 +117,7 @@ struct FlowTask {
   ConfigurableAxis axisDCAz{"axisDCAz", {200, -2, 2}, "DCA_{z} (cm)"};
   ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -1, 1}, "DCA_{xy} (cm)"};
 
-  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex) && (aod::cent::centFT0C > cfgCentMin) && (aod::cent::centFT0C < cfgCentMax);
+  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex) && (aod::cent::centFT0C > cfgCentFT0CMin) && (aod::cent::centFT0C < cfgCentFT0CMax);
   Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   // Corrections
@@ -141,15 +142,13 @@ struct FlowTask {
   std::vector<GFW::CorrConfig> corrconfigs;
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
-  enum ExtraProfile {
-    // here are TProfiles for vn-pt correlations that are not implemented in GFW
-    kMeanPt_InGap08 = 0,
-    kC22_Gap08_Weff,
-    kC22_Gap08_MeanPt,
-    kPtVarParA_InGap08,
-    kPtVarParB_InGap08,
+  enum CentEstimators {
+    kCentFT0C = 0,
+    kCentFT0CVariant1,
+    kCentFT0M,
+    kCentFV0A,
     // Count the total number of enum
-    kCount_ExtraProfile
+    kCount_CentEstimators
   };
   int mRunNumber{-1};
   uint64_t mSOR{0};
@@ -159,7 +158,7 @@ struct FlowTask {
   TH2* gCurrentHadronicRate;
   std::vector<std::shared_ptr<GFWWeights>> groupNUAWeightPtr;
 
-  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
   // Track selection
@@ -215,7 +214,8 @@ struct FlowTask {
     }
     registry.add("hVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
     registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
-    registry.add("hCent", "Centrality distribution", {HistType::kTH1D, {{90, 0, 90}}});
+    std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
+    registry.add("hCent", hCentTitle.c_str(), {HistType::kTH1D, {{90, 0, 90}}});
     if (!cfgUseSmallMemory) {
       registry.add("BeforeSel8_globalTracks_centT0C", "before sel8;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
       registry.add("BeforeCut_globalTracks_centT0C", "before cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
@@ -232,6 +232,9 @@ struct FlowTask {
       registry.add("globalTracks_multV0A", "after cut;mulplicity V0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
       registry.add("multV0A_multT0A", "after cut;mulplicity T0A;mulplicity V0A", {HistType::kTH2D, {axisT0A, axisT0A}});
       registry.add("multT0C_centT0C", "after cut;Centrality T0C;mulplicity T0C", {HistType::kTH2D, {axisCentForQA, axisT0C}});
+      registry.add("centFT0CVar_centFT0C", "after cut;Centrality T0C;Centrality T0C Var", {HistType::kTH2D, {axisCentForQA, axisCentForQA}});
+      registry.add("centFT0M_centFT0C", "after cut;Centrality T0C;Centrality T0M", {HistType::kTH2D, {axisCentForQA, axisCentForQA}});
+      registry.add("centFV0A_centFT0C", "after cut;Centrality T0C;Centrality V0A", {HistType::kTH2D, {axisCentForQA, axisCentForQA}});
     }
     // Track QA
     registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
@@ -254,8 +257,8 @@ struct FlowTask {
     fPtAxis = new TAxis(nPtBins, ptBins);
 
     if (cfgOutputNUAWeights) {
-      fWeights->SetPtBins(nPtBins, ptBins);
-      fWeights->Init(true, false);
+      fWeights->setPtBins(nPtBins, ptBins);
+      fWeights->init(true, false);
     }
 
     TList* groupNUAWeightlist = new TList();
@@ -271,8 +274,8 @@ struct FlowTask {
         else
           groupweight = new GFWWeights(Form("groupweight_last"));
 
-        groupweight->SetPtBins(nPtBins, ptBins);
-        groupweight->Init(true, false);
+        groupweight->setPtBins(nPtBins, ptBins);
+        groupweight->init(true, false);
         groupNUAWeightlist->Add(groupweight);
         std::shared_ptr<GFWWeights> sharePtrGroupWeight(groupweight);
         groupNUAWeightPtr[i] = sharePtrGroupWeight;
@@ -531,14 +534,14 @@ struct FlowTask {
     weight_nue = 1. / eff;
     if (cfgAcceptanceGroupUse) {
       if (mGroupAcceptanceList && mGroupAcceptanceList->At(groupNUAIndex)) {
-        weight_nua = reinterpret_cast<GFWWeights*>(mGroupAcceptanceList->At(groupNUAIndex))->GetNUA(phi, eta, vtxz);
+        weight_nua = reinterpret_cast<GFWWeights*>(mGroupAcceptanceList->At(groupNUAIndex))->getNUA(phi, eta, vtxz);
       } else {
         weight_nua = 1;
       }
       return true;
     }
     if (mAcceptance)
-      weight_nua = mAcceptance->GetNUA(phi, eta, vtxz);
+      weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
     else
       weight_nua = 1;
     return true;
@@ -701,7 +704,23 @@ struct FlowTask {
       registry.fill(HIST("BeforeCut_multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
       registry.fill(HIST("BeforeCut_multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
     }
-    const auto cent = collision.centFT0C();
+    float cent;
+    switch (cfgCentEstimator) {
+      case kCentFT0C:
+        cent = collision.centFT0C();
+        break;
+      case kCentFT0CVariant1:
+        cent = collision.centFT0CVariant1();
+        break;
+      case kCentFT0M:
+        cent = collision.centFT0M();
+        break;
+      case kCentFV0A:
+        cent = collision.centFV0A();
+        break;
+      default:
+        cent = collision.centFT0C();
+    }
     if (cfgUseTentativeEventCounter)
       eventCounterQA(collision, tracks.size(), cent);
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent))
@@ -711,7 +730,7 @@ struct FlowTask {
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
     registry.fill(HIST("hMult"), tracks.size());
-    registry.fill(HIST("hCent"), collision.centFT0C());
+    registry.fill(HIST("hCent"), cent);
     fGFW->Clear();
     if (cfgGetInteractionRate) {
       initHadronicRate(bc);
@@ -733,6 +752,9 @@ struct FlowTask {
       registry.fill(HIST("globalTracks_multV0A"), collision.multFV0A(), tracks.size());
       registry.fill(HIST("multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
       registry.fill(HIST("multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
+      registry.fill(HIST("centFT0CVar_centFT0C"), collision.centFT0C(), collision.centFT0CVariant1());
+      registry.fill(HIST("centFT0M_centFT0C"), collision.centFT0C(), collision.centFT0M());
+      registry.fill(HIST("centFV0A_centFT0C"), collision.centFT0C(), collision.centFV0A());
     }
 
     // track weights
@@ -761,18 +783,18 @@ struct FlowTask {
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
           if (withinPtRef)
-            fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+            fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
         } else {
-          fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+          fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
         }
       }
       if (cfgOutputGroupNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
           if (withinPtRef) {
-            groupNUAWeightPtr[groupNUAIndex]->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+            groupNUAWeightPtr[groupNUAIndex]->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
           }
         } else {
-          groupNUAWeightPtr[groupNUAIndex]->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+          groupNUAWeightPtr[groupNUAIndex]->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
         }
       }
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz, groupNUAIndex))

@@ -12,12 +12,16 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 #include <string>
+// #include <iostream>
 
 #include <TPDGCode.h>
 #include "CommonConstants/PhysicsConstants.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
+#include "Framework/Logger.h"
 
 using namespace o2::constants::physics;
+// using std::cout;
+// using std::endl;
 
 MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 {
@@ -1566,4 +1570,419 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
   return nullptr;
+}
+
+//_______________________________________________________________________________________________
+std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* json)
+{
+  //
+  // configure MC signals using a json file
+  //
+  std::vector<MCSignal*> signals;
+  LOG(info) << "========================================== interpreting JSON for MC signals";
+  LOG(info) << "JSON string: " << json;
+  //
+  // Create a vector of MCSignal from a JSON formatted string
+  //   The JSON is expected to contain a list of objects, with each object containing the fields needed
+  //    to define an MCSignal
+  rapidjson::Document document;
+
+  // Check that the json is parsed correctly
+  rapidjson::ParseResult ok = document.Parse(json);
+  if (!ok) {
+    TString str = "";
+    for (int i = ok.Offset() - 30; i < static_cast<int>(ok.Offset()) + 50; i++) {
+      if ((i >= 0) && (i < static_cast<int>(strlen(json)))) {
+        str += json[i];
+      }
+    }
+    LOG(fatal) << "JSON parse error: " << rapidjson::GetParseErrorFunc(ok.Code()) << " (" << ok.Offset() << ")" << " **** Parsing error is somewhere here: " << str.Data();
+    return signals;
+  }
+
+  // loop over the top level objects in the json
+  for (rapidjson::Value::ConstMemberIterator it = document.MemberBegin(); it != document.MemberEnd(); it++) {
+
+    const char* sigName = it->name.GetString();
+    LOG(info) << "=================================================== Configuring MC signal " << sigName;
+    const auto& signal = it->value;
+
+    // Validate the entry for this MCSignal
+    if (!ValidateJSONMCSignal(&signal, sigName)) {
+      LOG(fatal) << "MCSignal JSON not properly defined for " << sigName << ". Skipping";
+      continue;
+    } else {
+      LOG(debug) << "MCSignal validated";
+    }
+
+    // Get the signal title
+    const char* title = (signal.HasMember("title") ? signal.FindMember("title")->value.GetString() : "");
+    LOG(info) << "Title is: " << title;
+
+    // Get the exclude common ancestor
+    bool excludeCommonAncestor = false;
+    if (signal.HasMember("excludeCommonAncestor")) {
+      excludeCommonAncestor = signal.FindMember("excludeCommonAncestor")->value.GetBool();
+    }
+    LOG(debug) << "exclude common ancestor " << excludeCommonAncestor;
+
+    // Check for MCProng objects in the json
+    std::vector<MCProng> prongs;
+    for (rapidjson::Value::ConstMemberIterator prongIt = signal.MemberBegin(); prongIt != signal.MemberEnd(); prongIt++) {
+
+      // If the name is not MCProng, continue
+      TString prongName = prongIt->name.GetString();
+      if (!prongName.Contains("MCProng")) {
+        continue;
+      }
+
+      // Call the function to parse the MCProng object and get the pointer to the created MCProng
+      MCProng* prong = ParseJSONMCProng(&prongIt->value, prongName.Data());
+      if (prong == nullptr) {
+        LOG(fatal) << "MCProng not built! MCSignal not configured";
+        return signals;
+      }
+      LOG(debug) << "MCProng defined";
+      // Print the contents of the configured prong
+      prong->Print();
+      // push the prong to the vector
+      prongs.push_back(*prong);
+    }
+
+    // Get the common ancestors array
+    std::vector<int8_t> commonAncestors;
+    if (signal.HasMember("commonAncestors")) {
+      for (auto& v : signal.FindMember("commonAncestors")->value.GetArray()) {
+        commonAncestors.push_back(v.GetInt());
+        LOG(debug) << "common ancestor " << v.GetInt();
+      }
+    } else {
+      for (uint32_t i = 0; i < prongs.size(); i++) {
+        commonAncestors.push_back(-1);
+      }
+    }
+
+    if (prongs.size() == 0) {
+      LOG(fatal) << "No prongs were defined for this MCSignal!";
+      return signals;
+    }
+
+    // Check that we have as many prongs defined as the size of the common ancestors array
+    if (prongs.size() != commonAncestors.size()) {
+      LOG(fatal) << "Number of defined prongs and size of commonAncestors array must coincide in MCSignal definition";
+      return signals;
+    }
+
+    // Create the signal and add it to the output vector
+    MCSignal* mcSignal = new MCSignal(sigName, title, prongs, commonAncestors, excludeCommonAncestor);
+    LOG(debug) << "MCSignal defined, adding to the output vector";
+    mcSignal->PrintConfig();
+    signals.push_back(mcSignal);
+  }
+
+  return signals;
+}
+
+//_______________________________________________________________________________________________
+template <typename T>
+bool o2::aod::dqmcsignals::ValidateJSONMCProng(T prongJSON, const char* prongName)
+{
+
+  // Check that the json entry for this prong is correctly given
+  LOG(debug) << "Validating the prong " << prongName;
+
+  // The fields for the number of generations, pdg codes and checkBothCharges are required
+  if (!prongJSON->HasMember("n") || !prongJSON->HasMember("pdgs") || !prongJSON->HasMember("checkBothCharges")) {
+    LOG(fatal) << "Missing either n, pdgs or checkBothCharges fields in MCProng JSON definition";
+    return false;
+  }
+  // the size of the pdgs array must be equal to n
+  int n = prongJSON->FindMember("n")->value.GetInt();
+  uint32_t nSigned = static_cast<uint64_t>(n);
+  if (prongJSON->FindMember("pdgs")->value.GetArray().Size() != nSigned) {
+    LOG(fatal) << "Size of the pdgs array must be equal to n in MCProng JSON definition";
+    return false;
+  }
+  // the size of the checkBothCharges array must be equal to n
+  if (prongJSON->FindMember("checkBothCharges")->value.GetArray().Size() != nSigned) {
+    LOG(fatal) << "Size of the checkBothCharges array must be equal to n in MCProng JSON definition";
+    return false;
+  }
+  // the size of the exclude pdg array must be equal to n
+  if (prongJSON->HasMember("excludePDG")) {
+    if (prongJSON->FindMember("excludePDG")->value.GetArray().Size() != nSigned) {
+      LOG(fatal) << "Size of the excludePDG array must be equal to n in MCProng JSON definition";
+      return false;
+    }
+  }
+
+  // Check the corectness of the source bits fields, if these are specified
+  // The sourceBits field should be an array of size n, with each element being another array containing an array of sources specified as strings
+  //    The source strings have to be the ones specified in MCProng::Source
+  //  If the excludeSource is specified in addition, then this field should be an array of size n, with each element being another array of booleans
+  //     corresponding to each source specified in sourceBits
+  if (prongJSON->HasMember("sourceBits")) {
+    if (prongJSON->FindMember("sourceBits")->value.GetArray().Size() != nSigned) {
+      LOG(fatal) << "Size of the sourceBits array must be equal to n in MCProng JSON definition";
+      return false;
+    }
+    std::vector<uint32_t> nSourceBits;
+    for (auto& ii : prongJSON->FindMember("sourceBits")->value.GetArray()) {
+      if (!ii.IsArray()) {
+        LOG(fatal) << "The sourceBits field should be an array of arrays of MCProng::Source";
+        return false;
+      }
+      nSourceBits.push_back(ii.GetArray().Size());
+      for (auto& iii : ii.GetArray()) {
+        if (MCProng::fgSourceNames.find(iii.GetString()) == MCProng::fgSourceNames.end()) {
+          LOG(fatal) << "Source " << iii.GetString() << " not implemented in MCProng";
+          return false;
+        }
+      }
+    }
+    if (prongJSON->HasMember("excludeSource")) {
+      if (prongJSON->FindMember("excludeSource")->value.GetArray().Size() != nSigned) {
+        LOG(fatal) << "Size of the excludeSource array must be equal to n in MCProng JSON definition";
+        return false;
+      }
+      int iElem = 0;
+      for (auto& ii : prongJSON->FindMember("excludeSource")->value.GetArray()) {
+        if (!ii.IsArray()) {
+          LOG(fatal) << "The excludeSource field should be an array of arrays of bool";
+          return false;
+        }
+        if (ii.GetArray().Size() != nSourceBits[iElem]) {
+          LOG(fatal) << "The size of excludeSource arrays does not match the size of the arrays in sourceBits";
+          return false;
+        }
+        iElem++;
+      }
+    }
+    // Check the useAND on source bit map
+    if (prongJSON->HasMember("useANDonSourceBitMap")) {
+      if (prongJSON->FindMember("useANDonSourceBitMap")->value.GetArray().Size() != nSigned) {
+        LOG(fatal) << "Size of the useANDonSourceBitMap array must be equal to n in MCProng JSON definition";
+        return false;
+      }
+    }
+  }
+
+  // sourceBits is needed in case the other source related fields are specified
+  if ((prongJSON->HasMember("excludeSource") || prongJSON->HasMember("useANDonSourceBitMap")) && !prongJSON->HasMember("sourceBits")) {
+    LOG(fatal) << "Field sourceBits is needed when specifying excludeSource or useANDonSourceBitMap";
+    return false;
+  }
+
+  // check checkGenerationsInTime
+  if (prongJSON->HasMember("checkGenerationsInTime")) {
+    if (!prongJSON->FindMember("checkGenerationsInTime")->value.IsBool()) {
+      LOG(fatal) << "Field checkGeneretionsInTime must be boolean";
+      return false;
+    }
+  }
+
+  if (prongJSON->HasMember("checkIfPDGInHistory")) {
+    if (!prongJSON->FindMember("checkIfPDGInHistory")->value.IsArray()) {
+      LOG(fatal) << "Field checkGeneretionsInTime must be an array of integers";
+      return false;
+    }
+    uint32_t vecSize = prongJSON->FindMember("checkIfPDGInHistory")->value.GetArray().Size();
+    if (prongJSON->HasMember("excludePDGInHistory")) {
+      if (!prongJSON->FindMember("excludePDGInHistory")->value.IsArray()) {
+        LOG(fatal) << "Field excludePDGInHistory must be an array of booleans";
+        return false;
+      }
+      if (prongJSON->FindMember("excludePDGInHistory")->value.GetArray().Size() != vecSize) {
+        LOG(fatal) << "Field excludePDGInHistory must be an array of equal size with the array specified by checkIfPDGInHistory";
+        return false;
+      }
+    }
+  } else {
+    if (prongJSON->HasMember("excludePDGInHistory")) {
+      LOG(fatal) << "Field checkIfPDGInHistory is required when excludePDGInHistory is specified";
+      return false;
+    }
+  }
+
+  return true;
+}
+
+//_______________________________________________________________________________________________
+template <typename T>
+MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongName)
+{
+
+  // Check that the entry for this prong is validated
+  LOG(debug) << "Parsing the prong " << prongName;
+  if (!ValidateJSONMCProng(prongJSON, prongName)) {
+    LOG(fatal) << "MCProng not properly defined in the JSON file.";
+    return nullptr;
+  }
+
+  // Get the number of generations
+  int n = prongJSON->FindMember("n")->value.GetInt();
+  LOG(debug) << "n: " << n;
+  // Get the array of PDG codes
+  std::vector<int> pdgs;
+  for (auto& pdg : prongJSON->FindMember("pdgs")->value.GetArray()) {
+    pdgs.push_back(pdg.GetInt());
+    LOG(debug) << "pdgs: " << pdg.GetInt();
+  }
+  // get the array of booleans for check both charges option
+  std::vector<bool> checkBothCharges;
+  for (auto& ii : prongJSON->FindMember("checkBothCharges")->value.GetArray()) {
+    checkBothCharges.push_back(ii.GetBool());
+    LOG(debug) << "check both charges " << ii.GetBool();
+  }
+
+  // get the array of booleans for the excludePDG option, defaults to false
+  std::vector<bool> excludePDG;
+  if (prongJSON->HasMember("excludePDG")) {
+    for (auto& ii : prongJSON->FindMember("excludePDG")->value.GetArray()) {
+      excludePDG.push_back(ii.GetBool());
+      LOG(debug) << "exclude pdg " << ii.GetBool();
+    }
+  } else {
+    for (int i = 0; i < n; i++) {
+      excludePDG.push_back(false);
+    }
+  }
+
+  // get the source bits, and transform from string to int
+  std::vector<std::vector<int>> sourceBitsVec;
+  if (prongJSON->HasMember("sourceBits")) {
+    for (auto& ii : prongJSON->FindMember("sourceBits")->value.GetArray()) {
+      std::vector<int> sourceBits;
+      for (auto& iii : ii.GetArray()) {
+        sourceBits.push_back(MCProng::fgSourceNames[iii.GetString()]);
+        LOG(debug) << "source bit " << iii.GetString();
+      }
+      sourceBitsVec.push_back(sourceBits);
+    }
+  }
+  // prepare the exclusion source options if specified
+  std::vector<std::vector<bool>> excludeSourceVec;
+  if (prongJSON->HasMember("excludeSource")) {
+    for (auto& ii : prongJSON->FindMember("excludeSource")->value.GetArray()) {
+      std::vector<bool> excludeSource;
+      for (auto& iii : ii.GetArray()) {
+        excludeSource.push_back(iii.GetBool());
+        LOG(debug) << "exclude source bit " << iii.GetBool();
+      }
+      excludeSourceVec.push_back(excludeSource);
+    }
+  }
+
+  // prepare the useANDonSourceBitMap vector, defaults to true for each generation
+  std::vector<bool> useANDonSourceBitMap;
+  if (prongJSON->HasMember("useANDonSourceBitMap")) {
+    for (auto& ii : prongJSON->FindMember("useANDonSourceBitMap")->value.GetArray()) {
+      useANDonSourceBitMap.push_back(ii.GetBool());
+      LOG(debug) << "use AND on source map " << ii.GetBool();
+    }
+  } else {
+    for (int i = 0; i < n; i++) {
+      useANDonSourceBitMap.push_back(true);
+    }
+  }
+
+  // prepare the bit maps suitable for the MCProng constructor
+  bool hasExclude = prongJSON->HasMember("excludeSource");
+  int igen = 0;
+  std::vector<uint64_t> sBitsVec;
+  std::vector<uint64_t> sBitsExcludeVec;
+  for (auto& itgen : sourceBitsVec) {
+    int is = 0;
+    uint64_t sBits = 0;
+    uint64_t sBitsExclude = 0;
+    auto excludeVec = (hasExclude ? excludeSourceVec[igen] : std::vector<bool>{});
+    for (auto& s : itgen) {
+      bool exclude = (hasExclude ? excludeVec[is] : false);
+      if (s != MCProng::kNothing) {
+        sBits |= (uint64_t(1) << s);
+        if (exclude) {
+          sBitsExclude |= (uint64_t(1) << s);
+        }
+      }
+      is++;
+    }
+    sBitsVec.push_back(sBits);
+    sBitsExcludeVec.push_back(sBitsExclude);
+    LOG(debug) << "igen " << igen;
+    LOG(debug) << "igen sBits " << sBits;
+    LOG(debug) << "igen exclude " << sBitsExclude;
+    igen++;
+  }
+
+  // check that the sourceBits has the size of n generations
+  if (prongJSON->HasMember("sourceBits")) {
+    if (sBitsVec.size() != static_cast<uint32_t>(n)) {
+      LOG(fatal) << "sourceBits array should have a size equal to n";
+    }
+  } else {
+    sBitsVec.clear();
+    for (int i = 0; i < n; i++) {
+      sBitsVec.push_back(0);
+    }
+  }
+  // check that the sourceBits exclude has the size of n generations
+  if (prongJSON->HasMember("excludeSource")) {
+    if (sBitsExcludeVec.size() != static_cast<uint32_t>(n)) {
+      LOG(fatal) << "sourceBits exclude array should have a size equal to n";
+    }
+  } else {
+    sBitsExcludeVec.clear();
+    for (int i = 0; i < n; i++) {
+      sBitsExcludeVec.push_back(0);
+    }
+  }
+
+  bool checkGenerationsInTime = false;
+  if (prongJSON->HasMember("checkGenerationsInTime")) {
+    checkGenerationsInTime = prongJSON->FindMember("checkGenerationsInTime")->value.GetBool();
+  }
+  LOG(debug) << "checkGenerationsInTime: " << checkGenerationsInTime;
+
+  std::vector<int> checkIfPDGInHistory = {};
+  if (prongJSON->HasMember("checkIfPDGInHistory")) {
+    for (auto& ii : prongJSON->FindMember("checkIfPDGInHistory")->value.GetArray()) {
+      checkIfPDGInHistory.push_back(ii.GetInt());
+      LOG(debug) << "checkIfPDGInHistory: " << ii.GetInt();
+    }
+  }
+
+  std::vector<bool> excludePDGInHistory = {};
+  if (prongJSON->HasMember("excludePDGInHistory")) {
+    for (auto& ii : prongJSON->FindMember("excludePDGInHistory")->value.GetArray()) {
+      excludePDGInHistory.push_back(ii.GetBool());
+      LOG(debug) << "excludePDGInHistory: " << ii.GetBool();
+    }
+  }
+
+  // Calling the MCProng constructor
+  MCProng* prong = new MCProng(n, pdgs, checkBothCharges, excludePDG, sBitsVec, sBitsExcludeVec, useANDonSourceBitMap,
+                               checkGenerationsInTime, checkIfPDGInHistory, excludePDGInHistory);
+  // Print the configuration
+  prong->Print();
+  return prong;
+}
+
+//_______________________________________________________________________________________________
+template <typename T>
+bool o2::aod::dqmcsignals::ValidateJSONMCSignal(T sigJSON, const char* sigName)
+{
+
+  LOG(info) << "Validating MC signal " << sigName;
+  if (sigJSON->HasMember("commonAncestors")) {
+    if (!sigJSON->FindMember("commonAncestors")->value.IsArray()) {
+      LOG(fatal) << "In MCSignal definition, commonAncestors must be an array";
+      return false;
+    }
+  }
+  if (sigJSON->HasMember("excludeCommonAncestor") && !sigJSON->HasMember("commonAncestors")) {
+    LOG(fatal) << "In MCSignal definition, commonAncestors field is needed if excludeCommonAncestor is specified";
+    return false;
+  }
+
+  return true;
 }

@@ -15,6 +15,8 @@
 ///
 /// \author Adrian Fereydon Nassirpour <adrian.fereydon.nassirpour@cern.ch>
 
+#include <string>
+#include <vector>
 #include <TLorentzVector.h>
 #include <TVector2.h>
 
@@ -83,7 +85,7 @@ struct phiInJets {
   // CONFIG DONE
   /////////////////////////////////////////  //INIT
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   void init(o2::framework::InitContext&)
   {
@@ -271,7 +273,7 @@ struct phiInJets {
     // JEhistos.add("hMCRec_nonmatch_hUSS_OUTSIDE_TRIG_1D_2_3", "hMCRec_nonmatch_hUSS_OUTSIDE_TRIG_1D_2_3", kTH1F, {MinvAxis});
 
     // EVENT SELECTION
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(cfgeventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(cfgeventSelections));
 
   } // end of init
 
@@ -588,7 +590,7 @@ struct phiInJets {
 
     if (fabs(collision.posZ()) > cfgVtxCut)
       return;
-    if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
 
     int nReso = 0;
@@ -672,7 +674,7 @@ struct phiInJets {
     JEhistos.fill(HIST("nEvents_MCRec"), 0.5);
     if (fabs(collision.posZ()) > cfgVtxCut)
       return;
-    if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
 
     bool INELgt0 = false;
@@ -901,7 +903,7 @@ struct phiInJets {
       return;
 
     for (auto& recocoll : recocolls) { // poorly reconstructed
-      if (!jetderiveddatautilities::selectCollision(recocoll, jetderiveddatautilities::JCollisionSel::sel8))
+      if (!jetderiveddatautilities::selectCollision(recocoll, eventSelectionBits))
         return;
     }
 
@@ -1084,7 +1086,7 @@ struct phiInJets {
     if (recocolls.size() <= 0) // not reconstructed
       return;
     for (auto& recocoll : recocolls) { // poorly reconstructed
-      if (!jetderiveddatautilities::selectCollision(recocoll, jetderiveddatautilities::JCollisionSel::sel8))
+      if (!jetderiveddatautilities::selectCollision(recocoll, eventSelectionBits))
         return;
     }
 
@@ -1318,7 +1320,7 @@ struct phiInJets {
 
     if (fabs(collision.posZ()) > cfgVtxCut)
       return;
-    if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
 
     bool INELgt0 = false;

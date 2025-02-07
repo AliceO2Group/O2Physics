@@ -85,18 +85,8 @@ struct Chk892Flow {
     kKstarN,
     kKstarP_Mix,
     kKstarN_Mix,
-    kKstarP_GenINEL10,
-    kKstarN_GenINEL10,
-    kKstarP_GenINELgt10,
-    kKstarN_GenINELgt10,
-    kKstarP_GenTrig10,
-    kKstarN_GenTrig10,
-    kKstarP_GenEvtSel,
-    kKstarN_GenEvtSel,
-    kKstarP_Rec,
-    kKstarN_Rec,
-    kKstarP_RecRot,
-    kKstarN_RecRot,
+    kKstarP_Rot,
+    kKstarN_Rot,
     kTYEnd
   };
 
@@ -125,14 +115,17 @@ struct Chk892Flow {
   ConfigurableAxis cfgBinsCent{"cfgBinsCent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
   ConfigurableAxis cfgBinsVtxZ{"cfgBinsVtxZ", {VARIABLE_WIDTH, -10.0, -9.0, -8.0, -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "Binning of the z-vertex axis"};
   Configurable<int> cNbinsDiv{"cNbinsDiv", 1, "Integer to divide the number of bins"};
+  Configurable<int> cNbinsDivQA{"cNbinsDivQA", 1, "Integer to divide the number of bins for QA"};
+  ConfigurableAxis cfgAxisV2{"cfgAxisV2", {200, -2, 2}, "Binning of the v2 axis"};
+  Configurable<bool> cfgFillAdditionalAxis{"cfgFillAdditionalAxis", false, "Fill additional axis"};
+  ConfigurableAxis cfgAxisPhi{"cfgAxisPhi", {8, 0, constants::math::PI}, "Binning of the #phi axis"};
 
-  /// Event cuts
+  // Event cuts
   o2::analysis::CollisonCuts colCuts;
   Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
   Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
   Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
-  Configurable<int> cfgEvtTriggerSel{"cfgEvtTriggerSel", 8, "Evt sel: trigger"};
   Configurable<bool> cfgEvtOfflineCheck{"cfgEvtOfflineCheck", true, "Evt sel: check for offline selection"};
   Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
   Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
@@ -183,6 +176,7 @@ struct Chk892Flow {
   Configurable<bool> cfgReturnFlag{"cfgReturnFlag", false, "Return Flag for debugging"};
   Configurable<bool> cSecondaryRequire{"cSecondaryRequire", true, "Secondary cuts on/off"};
   Configurable<bool> cSecondaryArmenterosCut{"cSecondaryArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
+  Configurable<bool> cSecondaryCrossMassHypothesisCut{"cSecondaryCrossMassHypothesisCut", false, "Apply cut based on the lambda mass hypothesis"};
 
   Configurable<bool> cfgByPassDauPIDSelection{"cfgByPassDauPIDSelection", true, "Bypass Daughters PID selection"};
   Configurable<float> cSecondaryDauDCAMax{"cSecondaryDauDCAMax", 0.2, "Maximum DCA Secondary daughters to PV"};
@@ -197,7 +191,8 @@ struct Chk892Flow {
   Configurable<float> cSecondaryDCAtoPVMax{"cSecondaryDCAtoPVMax", 0.4, "Maximum DCA Secondary to PV"};
   Configurable<float> cSecondaryProperLifetimeMax{"cSecondaryProperLifetimeMax", 20., "Maximum Secondary Lifetime"};
   Configurable<float> cSecondaryparamArmenterosCut{"cSecondaryparamArmenterosCut", 0.2, "parameter for Armenteros Cut"};
-  Configurable<float> cSecondaryMassWindow{"cSecondaryMassWindow", 0.03, "Secondary inv mass selciton window"};
+  Configurable<float> cSecondaryMassWindow{"cSecondaryMassWindow", 0.03, "Secondary inv mass selection window"};
+  Configurable<float> cSecondaryCrossMassCutWindow{"cSecondaryCrossMassCutWindow", 0.05, "Secondary inv mass selection window with (anti)lambda hypothesis"};
 
   // K* selection
   Configurable<float> cKstarMaxRap{"cKstarMaxRap", 0.5, "Kstar maximum rapidity"};
@@ -237,7 +232,7 @@ struct Chk892Flow {
   {
     lCentrality = -999;
 
-    colCuts.setCuts(cfgEvtZvtx, cfgEvtTriggerCheck, cfgEvtTriggerSel, cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, cfgEvtOccupancyInTimeRangeMax, cfgEvtOccupancyInTimeRangeMin);
+    colCuts.setCuts(cfgEvtZvtx, cfgEvtTriggerCheck, cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, cfgEvtOccupancyInTimeRangeMax, cfgEvtOccupancyInTimeRangeMin);
     colCuts.init(&histos);
     colCuts.setTriggerTVX(cfgEvtTriggerTVXSel);
     colCuts.setApplyTFBorderCut(cfgEvtTFBorderCut);
@@ -250,30 +245,27 @@ struct Chk892Flow {
     AxisSpec centAxis = {cfgBinsCent, "T0M (%)"};
     AxisSpec vtxzAxis = {cfgBinsVtxZ, "Z Vertex (cm)"};
     AxisSpec epAxis = {100, -1.0 * constants::math::PI, constants::math::PI};
-    AxisSpec epresAxis = {100, -1.02, 1.02};
     AxisSpec ptAxis = {cfgBinsPt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisQA = {cfgBinsPtQA, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec v2Axis = {200, -1, 1, "#v_{2}"};
+    AxisSpec v2Axis = {cfgAxisV2, "#v_{2}"};
+    AxisSpec phiAxis = {cfgAxisPhi, "2(#phi-#Psi_{2})"};
     AxisSpec radiusAxis = {50, 0, 5, "Radius (cm)"};
-    AxisSpec cpaAxis = {50, 0.95, 1.0, "CPA"};
+    AxisSpec cpaAxis = {30, 0.97, 1.0, "CPA"};
     AxisSpec tauAxis = {250, 0, 25, "Lifetime (cm)"};
-    AxisSpec dcaAxis = {200, 0, 2, "DCA (cm)"};
-    AxisSpec dcaxyAxis = {200, 0, 2, "DCA_{#it{xy}} (cm)"};
+    AxisSpec dcaAxis = {100, 0, 2, "DCA (cm)"};
+    AxisSpec dcaxyAxis = {100, 0, 1, "DCA_{#it{xy}} (cm)"};
     AxisSpec dcazAxis = {200, 0, 2, "DCA_{#it{z}} (cm)"};
-    AxisSpec yAxis = {100, -1, 1, "Rapidity"};
+    AxisSpec yAxis = {50, -1, 1, "Rapidity"};
     AxisSpec invMassAxisK0s = {400 / cNbinsDiv, 0.3, 0.7, "Invariant Mass (GeV/#it{c}^2)"};    // K0s ~497.611
     AxisSpec invMassAxisReso = {900 / cNbinsDiv, 0.5f, 1.4f, "Invariant Mass (GeV/#it{c}^2)"}; // chK(892) ~892
-    AxisSpec invMassAxisScan = {150, 0, 1.5, "Invariant Mass (GeV/#it{c}^2)"};                 // For selection
-    AxisSpec pidQAAxis = {130, -6.5, 6.5};
-    AxisSpec dataTypeAxis = {9, 0, 9, "Histogram types"};
-    AxisSpec mcTypeAxis = {4, 0, 4, "Histogram types"};
+    AxisSpec pidQAAxis = {130 / cNbinsDivQA, -6.5, 6.5};
 
     // THnSparse
     AxisSpec axisType = {BinType::kTYEnd, 0, BinType::kTYEnd, "Type of bin with charge and mix"};
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
 
     if (cfgReturnFlag) {
-      histos.add("QA/K0sCutCheck", "Check K0s cut", HistType::kTH1D, {AxisSpec{12, -0.5, 11.5, "Check"}});
+      histos.add("QA/K0sCutCheck", "Check K0s cut", HistType::kTH1D, {AxisSpec{13, -0.5, 12.5, "Check"}});
     }
     histos.add("QA/before/CentDist", "Centrality distribution", {HistType::kTH1D, {centAxis}});
     histos.add("QA/before/VtxZ", "Centrality distribution", {HistType::kTH1D, {vtxzAxis}});
@@ -353,8 +345,13 @@ struct Chk892Flow {
 
     // Kstar
     // Invariant mass nSparse
-    histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis});
-    histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis});
+    if (cfgFillAdditionalAxis) {
+      histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis});
+      histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis, phiAxis});
+    } else {
+      histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis});
+      histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis});
+    }
 
     // Mass QA (quick check)
     histos.add("QA/before/KstarRapidity", "Rapidity distribution of chK(892)", HistType::kTH1D, {yAxis});
@@ -429,7 +426,11 @@ struct Chk892Flow {
       histos.add("QAMC/kstarinvmass_noKstar", "Invariant mass of unlike-sign no chK(892)", HistType::kTH1D, {invMassAxisReso});
       histos.add("QAMC/kstarv2vsinvmass_noKstar", "Invariant mass vs v2 of unlike-sign no chK(892)", HistType::kTH2D, {invMassAxisReso, v2Axis});
 
-      histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis});
+      if (cfgFillAdditionalAxis) {
+        histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis});
+      } else {
+        histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis});
+      }
 
       ccdb->setURL(cfgURL);
       ccdbApi.init("http://alice-ccdb.cern.ch");
@@ -557,6 +558,8 @@ struct Chk892Flow {
     auto lCPA = candidate.v0cosPA();
     auto lPropTauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
     auto lMk0s = candidate.mK0Short();
+    auto lMLambda = candidate.mLambda();
+    auto lMALambda = candidate.mAntiLambda();
 
     auto checkCommonCuts = [&]() {
       if (lDauDCA > cSecondaryDauDCAMax)
@@ -580,6 +583,9 @@ struct Chk892Flow {
       if (candidate.qtarm() < cSecondaryparamArmenterosCut * std::abs(candidate.alpha()))
         return false;
       if (std::fabs(lMk0s - MassK0Short) > cSecondaryMassWindow)
+        return false;
+      if (cSecondaryCrossMassHypothesisCut &&
+          ((std::fabs(lMLambda - MassLambda0) < cSecondaryCrossMassCutWindow) || (std::fabs(lMALambda - MassLambda0Bar) < cSecondaryCrossMassCutWindow)))
         return false;
       return true;
     };
@@ -629,6 +635,11 @@ struct Chk892Flow {
       }
       if (std::fabs(lMk0s - MassK0Short) > cSecondaryMassWindow) {
         histos.fill(HIST("QA/K0sCutCheck"), 11);
+        returnFlag = false;
+      }
+      if (cSecondaryCrossMassHypothesisCut &&
+          ((std::fabs(lMLambda - MassLambda0) < cSecondaryCrossMassCutWindow) || (std::fabs(lMALambda - MassLambda0Bar) < cSecondaryCrossMassCutWindow))) {
+        histos.fill(HIST("QA/K0sCutCheck"), 12);
         returnFlag = false;
       }
       return returnFlag;
@@ -833,7 +844,11 @@ struct Chk892Flow {
         histos.fill(HIST("QA/after/hInvmassSecondary"), trkkMass);
 
         histos.fill(HIST("QA/after/k0sv2vsinvmass"), lResoSecondary.M(), v2K0s);
-        histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s);
+        if (cfgFillAdditionalAxis) {
+          histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s, static_cast<float>(nmode) * lPhiMinusPsiK0s);
+        } else {
+          histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s);
+        }
       }
       k0sIndicies.push_back(k0sCand.index());
     }
@@ -866,7 +881,11 @@ struct Chk892Flow {
           histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
           histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
           histos.fill(HIST("QA/after/kstarv2vsinvmass"), lResoKstar.M(), v2Kstar);
-          histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), v2Kstar);
+          if (cfgFillAdditionalAxis) {
+            histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), v2Kstar, static_cast<float>(nmode) * lPhiMinusPsiKstar);
+          } else {
+            histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), v2Kstar);
+          }
 
           if (cfgFillRotBkg) {
             for (int i = 0; i < cfgNrotBkg; i++) {
@@ -881,10 +900,14 @@ struct Chk892Flow {
                 lDaughterRot.RotateZ(lRotAngle);
                 lResonanceRot = lDecayDaughter_bach + lDaughterRot;
               }
-              auto lPhiMinusPsiKstar = RecoDecay::constrainAngle(lResonanceRot.Phi() - lEPDet, 0.0, 1); // constrain angle to range 0, Pi
+              auto lPhiMinusPsiKstar = RecoDecay::constrainAngle(lResonanceRot.Phi() - lEPDet, 0.0, 2); // constrain angle to range 0, Pi
               auto v2Kstar = std::cos(static_cast<float>(nmode) * lPhiMinusPsiKstar);
-              typeKstar = bTrack.sign() > 0 ? BinType::kKstarP_RecRot : BinType::kKstarN_RecRot;
-              histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), v2Kstar);
+              typeKstar = bTrack.sign() > 0 ? BinType::kKstarP_Rot : BinType::kKstarN_Rot;
+              if (cfgFillAdditionalAxis) {
+                histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), v2Kstar, static_cast<float>(nmode) * lPhiMinusPsiKstar);
+              } else {
+                histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), v2Kstar);
+              }
             }
           }
         } // IsMix

@@ -42,6 +42,7 @@ static const std::vector<std::string> tableNames{"Electron", // 0
                                                  "Helium",   // 7
                                                  "Alpha"};   // 8
 static const std::vector<std::string> parameterNames{"enable"};
+static const std::vector<std::string> selectionNames{"selection"};
 static const int defaultParameters[9][nParameters]{{0}, {0}, {1}, {1}, {1}, {0}, {0}, {0}, {0}};
 static const float defaultPIDSelection[9][nParameters]{{-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}};
 static constexpr int Np = 9;
@@ -146,10 +147,10 @@ struct itsPidQa {
                                                   {defaultParameters[0], 9, nParameters, tableNames, parameterNames},
                                                   "Produce QA for this species: 0 - no, 1 - yes"};
   Configurable<LabeledArray<float>> tofSelection{"tofSelection",
-                                                 {defaultPIDSelection[0], 9, nParameters, tableNames, parameterNames},
+                                                 {defaultPIDSelection[0], 9, nParameters, tableNames, selectionNames},
                                                  "Selection on the TOF nsigma"};
   Configurable<LabeledArray<float>> tpcSelection{"tpcSelection",
-                                                 {defaultPIDSelection[0], 9, nParameters, tableNames, parameterNames},
+                                                 {defaultPIDSelection[0], 9, nParameters, tableNames, selectionNames},
                                                  "Selection on the TPC nsigma"};
 
   Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
@@ -165,10 +166,8 @@ struct itsPidQa {
   ConfigurableAxis avClsBins{"avClsBins", {200, 0, 20}, "Binning in average cluster size"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
-  Configurable<bool> enableDeDxPlot{"enableDeDxPlot", true, "Enables the dEdx plot (reduces memory footprint if off)"};
   Configurable<int16_t> minTPCNcls{"minTPCNcls", 0, "Minimum number or TPC Clusters for tracks"};
   ConfigurableAxis tpcNclsBins{"tpcNclsBins", {16, 0, 160}, "Binning in number of clusters in TPC"};
-  Configurable<bool> fillTHnSparses{"fillTHnSparses", false, "Flag to fill multidimensional histograms for nsigma vs pt, eta, Ncls"};
 
   template <typename TrackType>
   float averageClusterSizeTrk(const TrackType& track)
@@ -196,7 +195,6 @@ struct itsPidQa {
       ptAxis.makeLogarithmic();
       pAxis.makeLogarithmic();
     }
-    const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
     const AxisSpec avClsAxis{avClsBins, "<ITS Cls. Size>"};
     const AxisSpec avClsEffAxis{avClsBins, "<ITS Cls. Size> / cosh(#eta)"};
 
@@ -217,11 +215,11 @@ struct itsPidQa {
     h = histos.add<TH1>("event/particlehypo", "", kTH1D, {{10, 0, 10, "PID in tracking"}});
     for (int id = 0; id < 9; id++) {
       h->GetXaxis()->SetBinLabel(id + 1, PID::getName(id));
-      tpcSelValues[id] = tpcSelection->get(tableNames[id].c_str(), "enable");
+      tpcSelValues[id] = tpcSelection->get(tableNames[id].c_str(), "selection");
       if (tpcSelValues[id] <= 0.f) {
         tpcSelValues[id] = 999.f;
       }
-      tofSelValues[id] = tofSelection->get(tableNames[id].c_str(), "enable");
+      tofSelValues[id] = tofSelection->get(tableNames[id].c_str(), "selection");
       if (tofSelValues[id] <= 0.f) {
         tofSelValues[id] = 999.f;
       }
@@ -245,16 +243,16 @@ struct itsPidQa {
       hNsigmaPos[id] = histos.add<TH2>(Form("nsigmaPos/%s", pN[id]), axisTitle, kTH2F, {pAxis, nSigmaAxis});
       hNsigmaNeg[id] = histos.add<TH2>(Form("nsigmaNeg/%s", pN[id]), axisTitle, kTH2F, {pAxis, nSigmaAxis});
     }
-    histos.add("event/averageClusterSize", "", kTH2F, {ptAxis, avClsAxis});
-    histos.add("event/averageClusterSizePerCoslInv", "", kTH2F, {ptAxis, avClsEffAxis});
-    histos.add("event/SelectedAverageClusterSize", "", kTH2F, {ptAxis, avClsAxis});
-    histos.add("event/SelectedAverageClusterSizePerCoslInv", "", kTH2F, {ptAxis, avClsEffAxis});
+    histos.add("event/averageClusterSize", "", kTH2D, {pAxis, avClsAxis});
+    histos.add("event/averageClusterSizePerCoslInv", "", kTH2D, {pAxis, avClsEffAxis});
+    histos.add("event/SelectedAverageClusterSize", "", kTH2D, {pAxis, avClsAxis});
+    histos.add("event/SelectedAverageClusterSizePerCoslInv", "", kTH2D, {pAxis, avClsEffAxis});
     LOG(info) << "QA PID ITS histograms:";
     histos.print();
   }
 
-  Filter eventFilter = (o2::aod::evsel::sel8 == true);
-  Filter trackFilter = (requireGlobalTrackInFilter());
+  Filter eventFilter = (o2::aod::evsel::sel8 == true && nabs(o2::aod::collision::posZ) < 10.f);
+  // Filter trackFilter = (requireGlobalTrackInFilter());
   using CollisionCandidate = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
                                     aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
@@ -264,29 +262,22 @@ struct itsPidQa {
                                     aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe,
                                     aod::pidTOFTr, aod::pidTOFHe, aod::pidTOFAl>;
   void process(CollisionCandidate const& collision,
-               soa::Filtered<TrackCandidates> const& tracks)
+               TrackCandidates const& tracks)
   {
     auto tracksWithPid = soa::Attach<TrackCandidates,
                                      aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi,
                                      aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe,
                                      aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe, aod::pidits::ITSNSigmaAl>(tracks);
 
+    if (tracks.size() != tracksWithPid.size()) {
+      LOG(fatal) << "Mismatch in track table size!" << tracks.size() << " vs " << tracksWithPid.size();
+    }
     histos.fill(HIST("event/evsel"), 1);
-    if (!collision.sel8()) {
-      return;
-    }
-
     histos.fill(HIST("event/evsel"), 2);
-
-    if (std::abs(collision.posZ()) > 10.f) {
-      return;
-    }
     histos.fill(HIST("event/evsel"), 3);
     histos.fill(HIST("event/vertexz"), collision.posZ());
 
-    int nTracks = -1;
     for (const auto& track : tracksWithPid) {
-      nTracks++;
       histos.fill(HIST("event/trackselection"), 1.f);
       if (!track.isGlobalTrack()) { // Skipping non global tracks
         continue;
@@ -312,23 +303,28 @@ struct itsPidQa {
       histos.fill(HIST("event/length"), track.length());
       histos.fill(HIST("event/pt"), track.pt());
       histos.fill(HIST("event/p"), track.p());
-      const auto& t = tracks.iteratorAt(nTracks);
-      histos.fill(HIST("event/averageClusterSize"), track.pt(), averageClusterSizeTrk(t));
-      histos.fill(HIST("event/averageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(t));
+      histos.fill(HIST("event/averageClusterSize"), track.p(), averageClusterSizeTrk(track));
+      histos.fill(HIST("event/averageClusterSizePerCoslInv"), track.p(), averageClusterSizePerCoslInv(track));
       bool discard = false;
       for (int id = 0; id < 9; id++) {
         if (std::abs(nsigmaTPC(track, id)) > tpcSelValues[id]) {
+          LOG(debug) << "Discarding based on TPC hypothesis " << id << " " << std::abs(nsigmaTPC(track, id)) << ">" << tpcSelValues[id];
           discard = true;
+          break;
         }
-        if (std::abs(nsigmaTOF(track, id)) > tofSelValues[id]) {
-          discard = true;
+        if (track.hasTOF()) {
+          if (std::abs(nsigmaTOF(track, id)) > tofSelValues[id]) {
+            LOG(debug) << "Discarding based on TOF hypothesis " << id << " " << std::abs(nsigmaTOF(track, id)) << ">" << tofSelValues[id];
+            discard = true;
+            break;
+          }
         }
       }
       if (discard) {
         continue;
       }
-      histos.fill(HIST("event/SelectedAverageClusterSize"), track.pt(), averageClusterSizeTrk(t));
-      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(t));
+      histos.fill(HIST("event/SelectedAverageClusterSize"), track.p(), averageClusterSizeTrk(track));
+      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.p(), averageClusterSizePerCoslInv(track));
 
       for (o2::track::PID::ID id = 0; id <= o2::track::PID::Last; id++) {
         if (!enableParticle[id]) {
@@ -340,10 +336,10 @@ struct itsPidQa {
           }
         }
         const float nsigma = nsigmaITS(track, id);
-        if (t.sign() > 0) {
-          hNsigmaPos[id]->Fill(t.p(), nsigma);
+        if (track.sign() > 0) {
+          hNsigmaPos[id]->Fill(track.pt(), nsigma);
         } else {
-          hNsigmaNeg[id]->Fill(t.p(), nsigma);
+          hNsigmaNeg[id]->Fill(track.pt(), nsigma);
         }
       }
     }

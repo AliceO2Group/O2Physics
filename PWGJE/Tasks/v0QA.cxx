@@ -14,6 +14,9 @@
 /// \author Gijs van Weelden <g.van.weelden@cern.ch>
 //
 
+#include <string>
+#include <vector>
+
 #include "TH1F.h"
 #include "TTree.h"
 
@@ -88,11 +91,11 @@ struct V0QA {
   ConfigurableAxis binTPCNClSharedFraction{"sharedFraction", {100, 0., 1.}, ""};
   ConfigurableAxis binTPCCrossedRowsOverFindableCl{"crossedOverFindable", {120, 0.0, 1.2}, ""};
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   void init(InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(evSel));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(evSel));
 
     const AxisSpec axisJetPt{binPtJet, "Jet Pt (GeV/c)"};
     const AxisSpec axisV0Pt{binPtV0, "V0 Pt (GeV/c)"};
@@ -393,12 +396,12 @@ struct V0QA {
   } // init
 
   template <typename T, typename U>
-  bool isCollisionReconstructed(T const& collision, U const& eventSelection)
+  bool isCollisionReconstructed(T const& collision, U const& eventSelectionBits)
   {
     if (!collision.has_mcCollision()) {
       return false;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return false;
     }
     return true;
@@ -719,7 +722,7 @@ struct V0QA {
   void processMcD(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, CandidatesV0MCDWithFlags const& v0s, aod::McParticles const&)
   {
     registry.fill(HIST("inclusive/hEvents"), 0.5);
-    if (!isCollisionReconstructed(jcoll, eventSelection)) {
+    if (!isCollisionReconstructed(jcoll, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("inclusive/hEvents"), 1.5);
@@ -759,7 +762,7 @@ struct V0QA {
     bool isReconstructed = false;
 
     for (auto collision : collisions) {
-      if (!isCollisionReconstructed(collision, eventSelection)) {
+      if (!isCollisionReconstructed(collision, eventSelectionBits)) {
         continue;
       }
       if (collision.mcCollision().globalIndex() != mccoll.globalIndex()) {
@@ -802,7 +805,7 @@ struct V0QA {
   void processMcDJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MCDV0JetsWithConstituents const& mcdjets, CandidatesV0MCDWithFlags const&, aod::McParticles const&)
   {
     registry.fill(HIST("jets/hJetEvents"), 0.5);
-    if (!isCollisionReconstructed(jcoll, eventSelection)) {
+    if (!isCollisionReconstructed(jcoll, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("jets/hJetEvents"), 1.5);
@@ -842,7 +845,7 @@ struct V0QA {
   void processMcDMatchedJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0JetsWithConstituents const& mcdjets, MatchedMCPV0JetsWithConstituents const&, CandidatesV0MCDWithFlags const&, aod::CandidatesV0MCP const&, aod::JetTracksMCD const& jTracks, aod::McParticles const&)
   {
     registry.fill(HIST("jets/hMatchedJetEvents"), 0.5);
-    if (!isCollisionReconstructed(jcoll, eventSelection)) {
+    if (!isCollisionReconstructed(jcoll, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("jets/hMatchedJetEvents"), 1.5);
@@ -891,7 +894,7 @@ struct V0QA {
     bool isReconstructed = false;
 
     for (auto collision : collisions) {
-      if (!isCollisionReconstructed(collision, eventSelection)) {
+      if (!isCollisionReconstructed(collision, eventSelectionBits)) {
         continue;
       }
       if (collision.mcCollision().globalIndex() != mccoll.globalIndex()) {
@@ -1260,7 +1263,7 @@ struct V0QA {
   using DaughterTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
   void processV0TrackQA(aod::JetCollision const& /*jcoll*/, soa::Join<aod::CandidatesV0Data, aod::V0SignalFlags> const& v0s, DaughterJTracks const&, DaughterTracks const&)
   {
-    //   if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    //   if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
     //     return;
     //   }
     for (const auto& v0 : v0s) {

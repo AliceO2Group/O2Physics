@@ -158,7 +158,7 @@ struct skimmerPrimaryElectron {
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
@@ -198,7 +198,7 @@ struct skimmerPrimaryElectron {
       }
     }
 
-    if (requireTOF && !(track.hasTOF() && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl)) {
+    if (requireTOF && !(track.hasTOF() && std::fabs(track.tofNSigmaEl()) < maxTOFNsigmaEl)) {
       return false;
     }
 
@@ -236,24 +236,24 @@ struct skimmerPrimaryElectron {
       return false;
     }
 
-    if (track.hasTOF() && (maxTOFNsigmaEl < fabs(track.tofNSigmaEl()))) {
+    if (track.hasTOF() && (maxTOFNsigmaEl < std::fabs(track.tofNSigmaEl()))) {
       return false;
     }
 
     gpu::gpustd::array<float, 2> dcaInfo;
     auto track_par_cov_recalc = getTrackParCov(track);
     track_par_cov_recalc.setPID(o2::track::PID::Electron);
-    std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
+    // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-    getPxPyPz(track_par_cov_recalc, pVec_recalc);
+    // getPxPyPz(track_par_cov_recalc, pVec_recalc);
     float dcaXY = dcaInfo[0];
     float dcaZ = dcaInfo[1];
 
-    if (fabs(dcaXY) > dca_xy_max || fabs(dcaZ) > dca_z_max) {
+    if (std::fabs(dcaXY) > dca_xy_max || std::fabs(dcaZ) > dca_z_max) {
       return false;
     }
 
-    if (track_par_cov_recalc.getPt() < minpt || fabs(track_par_cov_recalc.getEta()) > maxeta) {
+    if (track_par_cov_recalc.getPt() < minpt || std::fabs(track_par_cov_recalc.getEta()) > maxeta) {
       return false;
     }
 
@@ -293,7 +293,7 @@ struct skimmerPrimaryElectron {
     if (minTPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < maxTPCNsigmaPr) {
       return false;
     }
-    if (track.hasTOF() && (maxTOFNsigmaEl < fabs(track.tofNSigmaEl()))) {
+    if (track.hasTOF() && (maxTOFNsigmaEl < std::fabs(track.tofNSigmaEl()))) {
       return false;
     }
     return true;
@@ -305,7 +305,7 @@ struct skimmerPrimaryElectron {
     if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi && track.tpcInnerParam() < max_pin_for_pion_rejection) {
       return false;
     }
-    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && fabs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
+    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && std::fabs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
   }
 
   template <typename TCollision, typename TTrack>
@@ -315,9 +315,9 @@ struct skimmerPrimaryElectron {
       gpu::gpustd::array<float, 2> dcaInfo;
       auto track_par_cov_recalc = getTrackParCov(track);
       track_par_cov_recalc.setPID(o2::track::PID::Electron);
-      std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
+      // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-      getPxPyPz(track_par_cov_recalc, pVec_recalc);
+      // getPxPyPz(track_par_cov_recalc, pVec_recalc);
       float dcaXY = dcaInfo[0];
       float dcaZ = dcaInfo[1];
 
@@ -688,7 +688,7 @@ struct prefilterPrimaryElectron {
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
@@ -761,15 +761,16 @@ struct prefilterPrimaryElectron {
 
     gpu::gpustd::array<float, 2> dcaInfo;
     auto track_par_cov_recalc = getTrackParCov(track);
-    std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
+    track_par_cov_recalc.setPID(o2::track::PID::Electron);
+    // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-    getPxPyPz(track_par_cov_recalc, pVec_recalc);
+    // getPxPyPz(track_par_cov_recalc, pVec_recalc);
 
-    if (fabs(dcaInfo[0]) > max_dcaxy || fabs(dcaInfo[1]) > max_dcaz) {
+    if (std::fabs(dcaInfo[0]) > max_dcaxy || std::fabs(dcaInfo[1]) > max_dcaz) {
       return false;
     }
 
-    if (track_par_cov_recalc.getPt() < minpt || fabs(track_par_cov_recalc.getEta()) > maxeta) {
+    if (track_par_cov_recalc.getPt() < minpt || std::fabs(track_par_cov_recalc.getEta()) > maxeta) {
       return false;
     }
 
@@ -863,6 +864,7 @@ struct prefilterPrimaryElectron {
         gpu::gpustd::array<float, 2> dcaInfo;
         std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
         auto track_par_cov_recalc = getTrackParCov(ele);
+        track_par_cov_recalc.setPID(o2::track::PID::Electron);
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
         getPxPyPz(track_par_cov_recalc, pVec_recalc);
 
@@ -900,6 +902,7 @@ struct prefilterPrimaryElectron {
         gpu::gpustd::array<float, 2> dcaInfo;
         std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
         auto track_par_cov_recalc = getTrackParCov(pos);
+        track_par_cov_recalc.setPID(o2::track::PID::Electron);
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
         getPxPyPz(track_par_cov_recalc, pVec_recalc);
         for (auto& emele : electrons_per_coll) {
@@ -935,6 +938,7 @@ struct prefilterPrimaryElectron {
         gpu::gpustd::array<float, 2> dcaInfo;
         std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
         auto track_par_cov_recalc = getTrackParCov(pos);
+        track_par_cov_recalc.setPID(o2::track::PID::Electron);
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
         getPxPyPz(track_par_cov_recalc, pVec_recalc);
         for (auto& empos : positrons_per_coll) {
@@ -958,6 +962,7 @@ struct prefilterPrimaryElectron {
         gpu::gpustd::array<float, 2> dcaInfo;
         std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
         auto track_par_cov_recalc = getTrackParCov(ele);
+        track_par_cov_recalc.setPID(o2::track::PID::Electron);
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
         getPxPyPz(track_par_cov_recalc, pVec_recalc);
 

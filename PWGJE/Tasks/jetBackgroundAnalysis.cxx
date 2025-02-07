@@ -17,6 +17,7 @@
 #include <cmath>
 #include <TRandom3.h>
 #include <string>
+#include <vector>
 #include "TLorentzVector.h"
 
 #include "Framework/ASoA.h"
@@ -68,13 +69,13 @@ struct JetBackgroundAnalysisTask {
   Configurable<float> randomConeR{"randomConeR", 0.4, "size of random Cone for estimating background fluctuations"};
   Configurable<float> randomConeLeadJetDeltaR{"randomConeLeadJetDeltaR", -99.0, "min distance between leading jet axis and random cone (RC) axis; if negative, min distance is set to automatic value of R_leadJet+R_RC "};
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
   void init(o2::framework::InitContext&)
   {
     // selection settings initialisation
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     // histogram definitions
@@ -113,7 +114,7 @@ struct JetBackgroundAnalysisTask {
   template <typename TCollisions, typename TJets, typename TTracks>
   void bkgFluctuationsRandomCone(TCollisions const& collision, TJets const& jets, TTracks const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
@@ -200,7 +201,7 @@ struct JetBackgroundAnalysisTask {
 
   void processRho(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {

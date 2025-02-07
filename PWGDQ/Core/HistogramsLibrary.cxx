@@ -870,6 +870,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "hQ", "", false, 150, 0.0, 3.0, VarManager::kQ);
     hm->AddHistogram(histClass, "hDeltaR1", "", false, 100, 0.0, 10.0, VarManager::kDeltaR1);
     hm->AddHistogram(histClass, "hDeltaR2", "", false, 100, 0.0, 10.0, VarManager::kDeltaR2);
+    hm->AddHistogram(histClass, "hDeltaR", "", false, 100, 0.0, 10.0, VarManager::kDeltaR);
     hm->AddHistogram(histClass, "hDiTrackMass", "", false, 300, 0.0, 3.0, VarManager::kDitrackMass);
     hm->AddHistogram(histClass, "hMCPt_MCRap", "", false, 200, 0.0, 20.0, VarManager::kMCPt, 100, -2.0, 2.0, VarManager::kMCY);
     hm->AddHistogram(histClass, "hMCPhi", "", false, 100, -TMath::Pi(), TMath::Pi(), VarManager::kMCPhi);
@@ -1106,16 +1107,16 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_y_cosThetaCS_phiCS", "", 4, varsrapCS, binsy, xminy, xmaxy, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-vp")) {
-        int varspTCS[3] = {VarManager::kMass, VarManager::kPt, VarManager::kPhiVP};
-        int varsrapCS[3] = {VarManager::kMass, VarManager::kRap, VarManager::kPhiVP};
-        int binspT[3] = {100, 20, 24};
-        int binsy[3] = {100, 10, 24};
-        double xminpT[3] = {1., 0., 0.};
-        double xmaxpT[3] = {5., 20., +3.14};
-        double xminy[3] = {1., 2.5, 0.};
-        double xmaxy[3] = {5., 4.0, +3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_phiVP", "", 3, varspTCS, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_y_phiVP", "", 3, varsrapCS, binsy, xminy, xmaxy, 0, -1, kFALSE);
+        int varspTVP[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosPhiVP, VarManager::kPhiVP};
+        int varsrapVP[4] = {VarManager::kMass, VarManager::kRap, VarManager::kCosPhiVP, VarManager::kPhiVP};
+        int binspT[4] = {100, 20, 24, 24};
+        int binsy[4] = {100, 10, 24, 24};
+        double xminpT[4] = {1., 0., -1., 0.};
+        double xmaxpT[4] = {5., 20., 1., +3.14};
+        double xminy[4] = {1., 2.5, -1., 0.};
+        double xmaxy[4] = {5., 4.0, 1., +3.14};
+        hm->AddHistogram(histClass, "Mass_Pt_phiVP", "", 4, varspTVP, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_y_phiVP", "", 4, varsrapVP, binsy, xminy, xmaxy, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-rap")) {
         int vars[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kRap};
@@ -1153,18 +1154,18 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaCS_lowmass", "", 5, varsCSpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-vp-pbpb")) {
-        int varsHEpbpb[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kPhiVP};
-        int binspT[4] = {150, 30, 10, 24};
-        double xminpT[4] = {2., 0., 0, 0.};
-        double xmaxpT[4] = {5., 3., 100, 3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_Cent_phiVP", "", 4, varsHEpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+        int varsVPpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosPhiVP, VarManager::kPhiVP};
+        int binspT[5] = {150, 30, 10, 24, 24};
+        double xminpT[5] = {2., 0., 0, -1., 0.};
+        double xmaxpT[5] = {5., 3., 100, 1., 3.14};
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_phiVP", "", 5, varsVPpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-lowmass-vp-pbpb")) {
-        int varsHEpbpb[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kPhiVP};
-        int binspT[4] = {200, 30, 10, 24};
-        double xminpT[4] = {0.2, 0., 0, 0.};
-        double xmaxpT[4] = {1.2, 3., 100, 3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_Cent_phiVP_lowmass", "", 4, varsHEpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+        int varsVPpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosPhiVP, VarManager::kPhiVP};
+        int binspT[5] = {200, 30, 10, 24, 24};
+        double xminpT[5] = {0.2, 0., 0, -1., 0.};
+        double xmaxpT[5] = {1.2, 3., 100, 1., 3.14};
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_phiVP_lowmass", "", 5, varsVPpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-rap-polarization-he-pbpb")) {
         int varsHEpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kRap};
@@ -1247,13 +1248,13 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("flow-dimuon")) {
         int varV2[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU2Q2, VarManager::kCos2DeltaPhi};
-        int varV3[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU3Q3, VarManager::kCos3DeltaPhi};
+        // int varV3[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU3Q3, VarManager::kCos3DeltaPhi}; // removed temporarily
 
         int bins[6] = {250, 60, 6, 18, 200, 40};
         double minBins[6] = {0.0, 0.0, 2.5, 0.0, -10.0, -2.0};
         double maxBins[6] = {5.0, 30.0, 4.0, 90.0, 10.0, 2.0};
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2", "", 6, varV2, bins, minBins, maxBins, 0, -1, kTRUE);
-        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V3", "", 6, varV3, bins, minBins, maxBins, 0, -1, kTRUE);
+        // hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V3", "", 6, varV3, bins, minBins, maxBins, 0, -1, kTRUE); // removed temporarily
       }
       if (subGroupStr.Contains("flow-ccdb")) {
         hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2SPwR", "Mass_Pt_CentFT0C_V2SPwR", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2SP, VarManager::kWV2SP);
@@ -1290,13 +1291,13 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("res-flow-dimuon")) {
         int varV2[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kR2SP_AB, VarManager::kR2EP_AB};
-        int varV3[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kR3SP, VarManager::kR3EP};
+        // int varV3[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kR3SP, VarManager::kR3EP}; // removed temporarily
 
         int bins[6] = {125, 60, 6, 18, 200, 40};
         double minBins[6] = {0.0, 0.0, 2.5, 0.0, -10.0, -2.0};
         double maxBins[6] = {5.0, 30.0, 4.0, 90.0, 10.0, 2.0};
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_R2", "", 6, varV2, bins, minBins, maxBins, 0, -1, kTRUE);
-        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_R3", "", 6, varV3, bins, minBins, maxBins, 0, -1, kTRUE);
+        // hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_R3", "", 6, varV3, bins, minBins, maxBins, 0, -1, kTRUE); // removed temporarily
       }
       if (subGroupStr.Contains("z-boson")) {
         hm->AddHistogram(histClass, "MassZboson", "", false, 240, 20.0, 140.0, VarManager::kMass);
@@ -1586,6 +1587,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "hQ_X3872", "", false, 150, 0.0, 3.0, VarManager::kQ);
       hm->AddHistogram(histClass, "hDeltaR1_X3872", "", false, 100, 0.0, 10.0, VarManager::kDeltaR1);
       hm->AddHistogram(histClass, "hDeltaR2_X3872", "", false, 100, 0.0, 10.0, VarManager::kDeltaR2);
+      hm->AddHistogram(histClass, "hDeltaR_X3872", "", false, 100, 0.0, 10.0, VarManager::kDeltaR);
       hm->AddHistogram(histClass, "hMass_Q_X3872", "", false, 100, 3.0, 5.0, VarManager::kQuadMass, 150, 0.0, 3.0, VarManager::kQ);
       hm->AddHistogram(histClass, "hMass_defaultDileptonMass_Q_X3872", "", false, 100, 3.0, 5.0, VarManager::kQuadDefaultDileptonMass, 150, 0.0, 3.0, VarManager::kQ);
       hm->AddHistogram(histClass, "hMass_DeltaR1_X3872", "", false, 100, 3.0, 5.0, VarManager::kQuadMass, 100, 0.0, 10.0, VarManager::kDeltaR1);
@@ -1636,5 +1638,435 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Mass_Photon", "", false, 500, 0.0, 0.1, VarManager::kMassDau);
     hm->AddHistogram(histClass, "Mass_Pt", "", false, 500, 0.0, 5.0, VarManager::kMassDau, 200, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Rapidity", "", false, 400, -4.0, 4.0, VarManager::kRap);
+  }
+}
+
+//__________________________________________________________________
+template <typename T>
+bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist)
+{
+  //
+  // Validate JSON entry for this histogram
+  //
+
+  // The fields histClass, title and type are compulsory
+  if (!hist->HasMember("histClass") || !hist->HasMember("title") || !hist->HasMember("type")) {
+    LOG(fatal) << "Missing histClass, title or type fields";
+    return false;
+  }
+
+  TString histTypeStr = hist->FindMember("type")->value.GetString();
+  bool isTH1 = (histTypeStr.CompareTo("TH1") == 0);
+  bool isTH2 = (histTypeStr.CompareTo("TH2") == 0);
+  bool isTH3 = (histTypeStr.CompareTo("TH3") == 0);
+  bool isTHn = (histTypeStr.CompareTo("THn") == 0);
+  if (!(isTH1 || isTH2 || isTH3 || isTHn)) {
+    LOG(fatal) << "The type field must be one of the TH1, TH2, TH3 or THn";
+    return false;
+  }
+  // Check if the histogram uses constant binning
+  bool isConstantBinning = true;
+  if (!(hist->HasMember("xmin") && hist->HasMember("xmax"))) {
+    isConstantBinning = false;
+  }
+
+  if (!isTHn && (!hist->HasMember("isProfile") || !hist->HasMember("nXbins") || !hist->HasMember("varX"))) {
+    LOG(fatal) << "Missing isProfile, nXbins or varX information for histogram";
+    return false;
+  }
+  bool isProfile = (hist->HasMember("isProfile") ? hist->FindMember("isProfile")->value.GetBool() : false);
+
+  if (isConstantBinning) {
+    if (!hist->HasMember("xmin") || !hist->HasMember("xmax")) {
+      LOG(fatal) << "Missing xmin or xmax information for histogram";
+      return false;
+    }
+    if (isTHn) {
+      if (!hist->FindMember("xmin")->value.IsArray()) {
+        LOG(fatal) << "xmin field should be an array of arrays";
+        return false;
+      }
+      if (!hist->FindMember("xmax")->value.IsArray()) {
+        LOG(fatal) << "xmax field should be an array of arrays";
+        return false;
+      }
+    }
+  } else {
+    if (isTHn && !hist->HasMember("binLimits")) {
+      LOG(fatal) << "Missing binLimits information for histogram";
+      return false;
+    }
+    if (!isTHn && !hist->HasMember("xbins")) {
+      LOG(fatal) << "Missing xbins information for histogram";
+      return false;
+    }
+    if (isTHn && !hist->FindMember("binLimits")->value.IsArray()) {
+      LOG(fatal) << "binLimits field should be an array of arrays";
+      return false;
+    }
+    if (!isTHn && !hist->FindMember("xbins")->value.IsArray()) {
+      LOG(fatal) << "xbins field should be an array";
+      return false;
+    }
+  }
+  if (isProfile && !hist->HasMember("varY")) {
+    LOG(fatal) << "Missing varY information for histogram";
+    return false;
+  }
+
+  if (isTHn) {
+    if (!hist->HasMember("nDimensions") || !hist->HasMember("vars")) {
+      LOG(fatal) << "Missing nDimensions or vars fields for histogram";
+      return false;
+    }
+    if (isConstantBinning) {
+      if (!hist->HasMember("nBins")) {
+        LOG(fatal) << "Missing nBins field for histogram";
+        return false;
+      } else {
+        if (!hist->FindMember("nBins")->value.IsArray()) {
+          LOG(fatal) << "nBins field should be an array";
+          return false;
+        }
+      }
+    }
+    if (hist->HasMember("axLabels") && !hist->FindMember("axLabels")->value.IsArray()) {
+      LOG(fatal) << "axLabels field should be an array of strings";
+      return false;
+    }
+  }
+
+  if (isTH2 || isTH3) {
+    if (!hist->HasMember("nYbins") || !hist->HasMember("varY")) {
+      LOG(fatal) << "Missing nYbins or varY information for histogram";
+      return false;
+    }
+    if (isConstantBinning && (!hist->HasMember("ymin") || !hist->HasMember("ymax"))) {
+      LOG(fatal) << "Missing ymin or ymax information for histogram";
+      return false;
+    }
+    if (!isConstantBinning && !hist->HasMember("ybins")) {
+      LOG(fatal) << "Missing ybins information for histogram";
+      return false;
+    }
+    if (!isConstantBinning && !hist->FindMember("xbins")->value.IsArray()) {
+      LOG(fatal) << "ybins field should be an array";
+    }
+
+    if (isTH3) {
+      if (!hist->HasMember("nZbins") || !hist->HasMember("varZ")) {
+        LOG(fatal) << "Missing nZbins or varZ information for histogram";
+        return false;
+      }
+      if (isConstantBinning && (!hist->HasMember("zmin") || !hist->HasMember("zmax"))) {
+        LOG(fatal) << "Missing zmin or zmax information for histogram";
+        return false;
+      }
+      if (!isConstantBinning && !hist->HasMember("zbins")) {
+        LOG(fatal) << "Missing zbins information for histogram";
+        return false;
+      }
+      if (!isConstantBinning && !hist->FindMember("zbins")->value.IsArray()) {
+        LOG(fatal) << "zbins field should be an array";
+      }
+    }
+  }
+  if (isTH2 && isProfile && !hist->HasMember("varZ")) {
+    LOG(fatal) << "Missing varZ information for histogram";
+    return false;
+  }
+  if (isTH3 && isProfile && !hist->HasMember("varT")) {
+    LOG(fatal) << "Missing varT information for histogram";
+    return false;
+  }
+
+  if (!isTHn) {
+    TString varX = hist->FindMember("varX")->value.GetString();
+    if (VarManager::fgVarNamesMap.find(varX) == VarManager::fgVarNamesMap.end()) {
+      LOG(fatal) << "Bad varX variable (" << hist->FindMember("varX")->value.GetString() << ") specified for histogram";
+      return false;
+    }
+    if (hist->HasMember("varY") && (VarManager::fgVarNamesMap.find(hist->FindMember("varY")->value.GetString()) == VarManager::fgVarNamesMap.end())) {
+      LOG(fatal) << "Bad varY variable (" << hist->FindMember("varY")->value.GetString() << ") specified for histogram";
+      return false;
+    }
+    if (hist->HasMember("varZ") && (VarManager::fgVarNamesMap.find(hist->FindMember("varZ")->value.GetString()) == VarManager::fgVarNamesMap.end())) {
+      LOG(fatal) << "Bad varZ variable (" << hist->FindMember("varZ")->value.GetString() << ") specified for histogram";
+      return false;
+    }
+    if (hist->HasMember("varT") && (VarManager::fgVarNamesMap.find(hist->FindMember("varT")->value.GetString()) == VarManager::fgVarNamesMap.end())) {
+      LOG(fatal) << "Bad varT variable (" << hist->FindMember("varT")->value.GetString() << ") specified for histogram";
+      return false;
+    }
+    if (hist->HasMember("varW") && (VarManager::fgVarNamesMap.find(hist->FindMember("varW")->value.GetString()) == VarManager::fgVarNamesMap.end())) {
+      LOG(fatal) << "Bad varW variable (" << hist->FindMember("varW")->value.GetString() << ") specified for histogram";
+      return false;
+    }
+  }
+  if (isTHn) {
+    for (auto& v : hist->FindMember("vars")->value.GetArray()) {
+      if (VarManager::fgVarNamesMap.find(v.GetString()) == VarManager::fgVarNamesMap.end()) {
+        LOG(fatal) << "Bad variable in vars (" << v.GetString() << ") specified for histogram";
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+//__________________________________________________________________
+void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const char* json)
+{
+  //
+  // Add histograms to already existing histogram classes from a JSON formatted string
+  //   The JSON is expected to contain a list of objects, with each object containing the fields needed
+  //    to define a histogram via the HistogramManager::AddHistogram() functions
+
+  LOG(info) << "========================================== interpreting JSON for adding histograms";
+  LOG(info) << "      json string is: " << json;
+
+  TString jsonStr = json;
+  if (jsonStr == "") {
+    // No histograms to add
+    return;
+  }
+
+  rapidjson::Document document;
+  rapidjson::ParseResult ok = document.Parse(json);
+  if (!ok) {
+    LOG(fatal) << "JSON parse error: " << rapidjson::GetParseErrorFunc(ok.Code()) << " (" << ok.Offset() << ")";
+    TString str = "";
+    for (int i = ok.Offset() - 30; i < static_cast<int>(ok.Offset()) + 50; i++) {
+      if ((i >= 0) && (i < static_cast<int>(strlen(json)))) {
+        str += json[i];
+      }
+    }
+    LOG(fatal) << "**** Parsing error is somewhere here: " << str.Data() << endl;
+    return;
+  }
+
+  for (rapidjson::Value::ConstMemberIterator it = document.MemberBegin(); it != document.MemberEnd(); it++) {
+
+    const char* histName = it->name.GetString();
+    LOG(info) << "Configuring histogram " << histName;
+    const auto& hist = it->value;
+    if (!ValidateJSONHistogram(&hist)) {
+      LOG(fatal) << "Histogram not properly defined in the JSON file. Skipping it";
+      continue;
+    }
+
+    TString histTypeStr = hist.FindMember("type")->value.GetString();
+    bool isTH2 = (histTypeStr.CompareTo("TH2") == 0);
+    bool isTH3 = (histTypeStr.CompareTo("TH3") == 0);
+    bool isTHn = (histTypeStr.CompareTo("THn") == 0);
+    bool isConstantBinning = true;
+    if (!(hist.HasMember("xmin") && hist.HasMember("xmax"))) {
+      isConstantBinning = false;
+    }
+
+    const char* histClass = hist.FindMember("histClass")->value.GetString();
+    const char* title = hist.FindMember("title")->value.GetString();
+
+    if (isTHn) {
+      int nDimensions = hist.FindMember("nDimensions")->value.GetInt();
+      LOG(debug) << "nDimensions: " << nDimensions;
+
+      int* vars = new int[nDimensions];
+      int iDim = 0;
+      for (auto& v : hist.FindMember("vars")->value.GetArray()) {
+        LOG(debug) << "iDim " << iDim << ": " << v.GetString();
+        vars[iDim++] = VarManager::fgVarNamesMap[v.GetString()];
+      }
+
+      int* nBins = nullptr;
+      double* xmin = nullptr;
+      double* xmax = nullptr;
+      TArrayD* binLimits = nullptr;
+      if (isConstantBinning) {
+        nBins = new int[nDimensions];
+        xmin = new double[nDimensions];
+        xmax = new double[nDimensions];
+        int iDim = 0;
+        for (auto& v : hist.FindMember("nBins")->value.GetArray()) {
+          nBins[iDim++] = v.GetInt();
+          LOG(debug) << "nBins " << iDim << ": " << nBins[iDim - 1];
+        }
+        iDim = 0;
+        for (auto& v : hist.FindMember("xmin")->value.GetArray()) {
+          xmin[iDim++] = v.GetDouble();
+          LOG(debug) << "xmin " << iDim << ": " << xmin[iDim - 1];
+        }
+        iDim = 0;
+        for (auto& v : hist.FindMember("xmax")->value.GetArray()) {
+          xmax[iDim++] = v.GetDouble();
+          LOG(debug) << "xmax " << iDim << ": " << xmax[iDim - 1];
+        }
+      } else {
+        int iDim = 0;
+        binLimits = new TArrayD[nDimensions];
+        for (auto& v : hist.FindMember("binLimits")->value.GetArray()) {
+          double* lims = new double[v.GetArray().Size()];
+          int iElem = 0;
+          for (auto& lim : v.GetArray()) {
+            lims[iElem++] = lim.GetDouble();
+          }
+          binLimits[iDim++] = TArrayD(v.GetArray().Size(), lims);
+        }
+      }
+
+      TString* axLabels = nullptr;
+      if (hist.HasMember("axLabels")) {
+        axLabels = new TString[hist.FindMember("axLabels")->value.GetArray().Size()];
+        int iDim = 0;
+        for (auto& v : hist.FindMember("axLabels")->value.GetArray()) {
+          axLabels[iDim++] = v.GetString();
+        }
+      }
+
+      int varW = (hist.HasMember("varW") ? VarManager::fgVarNamesMap[hist.FindMember("varW")->value.GetString()] : -1);
+      bool useSparse = (hist.HasMember("useSparse") ? hist.FindMember("useSparse")->value.GetBool() : false);
+      bool isDouble = (hist.HasMember("isDouble") ? hist.FindMember("isDouble")->value.GetBool() : false);
+
+      if (isConstantBinning) {
+        hm->AddHistogram(histClass, histName, title, nDimensions, vars, nBins, xmin, xmax, axLabels, varW, useSparse, isDouble);
+      } else {
+        hm->AddHistogram(histClass, histName, title, nDimensions, vars, binLimits, axLabels, varW, useSparse, isDouble);
+      }
+
+    } else { // TH1, TH2 or TH3
+
+      LOG(debug) << "is TH1, TH2 or TH3 ";
+
+      bool isProfile = hist.FindMember("isProfile")->value.GetBool();
+      LOG(debug) << "isProfile: " << isProfile;
+
+      int nXbins = hist.FindMember("nXbins")->value.GetInt();
+      LOG(debug) << "nXbins: " << nXbins;
+
+      const char* varX = hist.FindMember("varX")->value.GetString();
+      LOG(debug) << "varX: " << varX;
+
+      double xmin = (hist.HasMember("xmin") ? hist.FindMember("xmin")->value.GetDouble() : 0.0);
+      LOG(debug) << "xmin: " << xmin;
+
+      double xmax = (hist.HasMember("xmax") ? hist.FindMember("xmax")->value.GetDouble() : 0.0);
+      LOG(debug) << "xmax: " << xmax;
+
+      std::vector<double> xbinsVec;
+      if (hist.HasMember("xbins")) {
+        LOG(debug) << "xbins: ";
+        for (auto& v : hist.FindMember("xbins")->value.GetArray()) {
+          xbinsVec.push_back(v.GetDouble());
+          LOG(debug) << v.GetDouble();
+        }
+      }
+
+      const char* varY = (hist.HasMember("varY") ? hist.FindMember("varY")->value.GetString() : "kNothing");
+      LOG(debug) << "varY: " << varY;
+
+      int nYbins = (hist.HasMember("nYbins") ? hist.FindMember("nYbins")->value.GetInt() : 0);
+      LOG(debug) << "nYbins: " << nYbins;
+
+      double ymin = (hist.HasMember("ymin") ? hist.FindMember("ymin")->value.GetDouble() : 0.0);
+      LOG(debug) << "ymin: " << ymin;
+
+      double ymax = (hist.HasMember("ymax") ? hist.FindMember("ymax")->value.GetDouble() : 0.0);
+      LOG(debug) << "ymax: " << ymax;
+
+      std::vector<double> ybinsVec;
+      if (hist.HasMember("ybins")) {
+        LOG(debug) << "ybins: ";
+        for (auto& v : hist.FindMember("ybins")->value.GetArray()) {
+          ybinsVec.push_back(v.GetDouble());
+          LOG(debug) << v.GetDouble();
+        }
+      }
+
+      const char* varZ = (hist.HasMember("varZ") ? hist.FindMember("varZ")->value.GetString() : "kNothing");
+      LOG(debug) << "varZ: " << varZ;
+
+      int nZbins = (hist.HasMember("nZbins") ? hist.FindMember("nZbins")->value.GetInt() : 0);
+      LOG(debug) << "nZbins: " << nZbins;
+
+      double zmin = (hist.HasMember("zmin") ? hist.FindMember("zmin")->value.GetDouble() : 0.0);
+      LOG(debug) << "zmin: " << zmin;
+
+      double zmax = (hist.HasMember("zmax") ? hist.FindMember("zmax")->value.GetDouble() : 0.0);
+      LOG(debug) << "zmax: " << zmax;
+
+      std::vector<double> zbinsVec;
+      if (hist.HasMember("zbins")) {
+        LOG(debug) << "zbins: ";
+        for (auto& v : hist.FindMember("zbins")->value.GetArray()) {
+          zbinsVec.push_back(v.GetDouble());
+          LOG(debug) << v.GetDouble();
+        }
+      }
+
+      const char* xLabels = (hist.HasMember("xLabels") ? hist.FindMember("xLabels")->value.GetString() : "");
+      LOG(debug) << "xLabels: " << xLabels;
+
+      const char* yLabels = (hist.HasMember("yLabels") ? hist.FindMember("yLabels")->value.GetString() : "");
+      LOG(debug) << "yLabels: " << yLabels;
+
+      const char* zLabels = (hist.HasMember("zLabels") ? hist.FindMember("zLabels")->value.GetString() : "");
+      LOG(debug) << "zLabels: " << zLabels;
+
+      const char* varT = (hist.HasMember("varT") ? hist.FindMember("varT")->value.GetString() : "kNothing");
+      LOG(debug) << "varT: " << varT;
+
+      const char* varW = (hist.HasMember("varW") ? hist.FindMember("varW")->value.GetString() : "kNothing");
+      LOG(debug) << "varW: " << varW;
+
+      bool isdouble = (hist.HasMember("isdouble") ? hist.FindMember("isdouble")->value.GetBool() : false);
+      LOG(debug) << "isdouble: " << isdouble;
+
+      bool isFillLabelx = (hist.HasMember("isFillLabelx") ? hist.FindMember("isFillLabelx")->value.GetBool() : false);
+      LOG(debug) << "isFillLabelx: " << isFillLabelx;
+
+      if (isConstantBinning) {
+        hm->AddHistogram(histClass, histName, title, isProfile,
+                         nXbins, xmin, xmax, VarManager::fgVarNamesMap[varX],
+                         nYbins, ymin, ymax, VarManager::fgVarNamesMap[varY],
+                         nZbins, zmin, zmax, VarManager::fgVarNamesMap[varZ],
+                         xLabels, yLabels, zLabels,
+                         VarManager::fgVarNamesMap[varT], VarManager::fgVarNamesMap[varW], isdouble, isFillLabelx);
+      } else {
+        int xBinsSize = xbinsVec.size();
+        if (xBinsSize != (nXbins + 1)) {
+          LOG(fatal) << "Histogram not properly defined in the JSON file. Wrong x binning for histogram";
+          continue;
+        }
+        double* xbins = new double[xbinsVec.size()];
+        std::copy(xbinsVec.begin(), xbinsVec.end(), xbins);
+
+        double* ybins = nullptr;
+        if (isTH2 || isTH3) {
+          if (static_cast<int>(ybinsVec.size()) != (nYbins + 1)) {
+            LOG(fatal) << "Histogram not properly defined in the JSON file. Wrong y binning for histogram";
+            continue;
+          }
+          ybins = new double[ybinsVec.size()];
+          std::copy(ybinsVec.begin(), ybinsVec.end(), ybins);
+        }
+
+        double* zbins = nullptr;
+        if (isTH3) {
+          if (static_cast<float>(zbinsVec.size()) != (nZbins + 1)) {
+            LOG(fatal) << "Histogram not properly defined in the JSON file. Wrong z binning for histogram";
+            continue;
+          }
+          zbins = new double[zbinsVec.size()];
+          std::copy(zbinsVec.begin(), zbinsVec.end(), zbins);
+        }
+        hm->AddHistogram(histClass, histName, title, isProfile,
+                         nXbins, xbins, VarManager::fgVarNamesMap[varX],
+                         nYbins, ybins, VarManager::fgVarNamesMap[varY],
+                         nZbins, zbins, VarManager::fgVarNamesMap[varZ],
+                         xLabels, yLabels, zLabels,
+                         VarManager::fgVarNamesMap[varT], VarManager::fgVarNamesMap[varW], isdouble, isFillLabelx);
+      } // end if (!isTHn)
+    }
   }
 }
