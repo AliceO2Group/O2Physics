@@ -172,6 +172,17 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       return false;
     if (track.itsChi2NCl() > maxChi2ITS)
       return false;
+
+    auto requiredItsHit = static_cast<std::vector<float>>(requiredHit);
+
+    if (requireItsHits) {
+      for (int i = 0; i < 7; i++) {
+        if (requiredItsHit[i] > 0 && !hasHitOnITSlayer(track.itsClusterMap(), i)) {
+          return false;
+        }
+      }
+    }
+
     return true;
   }
 
@@ -183,8 +194,6 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
       return;
     registryData.fill(HIST("number_of_events_data"), 1.5);
-
-    auto requiredItsHit = static_cast<std::vector<float>>(requiredHit);
 
     for (const auto& track : tracks) {
 
@@ -198,15 +207,6 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       if (!passedTrackSelectionIts(track))
         continue;
 
-      bool satisfyITSreq = true;
-      if (requireItsHits) {
-        for (int i = 0; i < 7; i++) {
-          if (requiredItsHit[i] > 0 && !hasHitOnITSlayer(track.itsClusterMap(), i)) {
-            satisfyITSreq = false;
-            break;
-          }
-        }
-      }
       registryData.fill(HIST("trkPionTpcIts"), track.pt());
     }
 
@@ -229,16 +229,6 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       registryData.fill(HIST("secPionTpc"), posTrack.pt());
       registryData.fill(HIST("secPionTpc"), negTrack.pt());
 
-      bool satisfyITSreq = true;
-      if (requireItsHits) {
-        for (int i = 0; i < 7; i++) {
-          if (requiredItsHit[i] > 0 && !hasHitOnITSlayer(track.itsClusterMap(), i)) {
-            satisfyITSreq = false;
-            break;
-          }
-        }
-      }
-
       if (!passedTrackSelectionIts(posTrack))
         continue;
       registryData.fill(HIST("secPionTpcIts"), posTrack.pt());
@@ -253,10 +243,8 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   Preslice<aod::V0Datas> perCollisionV0 = o2::aod::v0data::collisionId;
   Preslice<MCTracks> perCollisionTrk = o2::aod::track::collisionId;
 
-  void processMC(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, const aod::McParticles& mcParticles)
+  void processMC(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, const aod::McParticles&)
   {
-    auto requiredItsHit = static_cast<std::vector<float>>(requiredHit);
-
     for (const auto& collision : collisions) {
       registryMC.fill(HIST("number_of_events_mc"), 0.5);
 
@@ -275,22 +263,13 @@ struct LfITSTPCMatchingSecondaryTracksQA {
         if (!track.has_mcParticle())
           continue;
         const auto particle = track.mcParticle();
-        if (ats::fabs(particle.pdgCode()) != 211)
+        if (std::fabs(particle.pdgCode()) != 211)
           continue;
 
         registryMC.fill(HIST("trkPionTpcMc"), track.pt());
         if (!passedTrackSelectionIts(track))
           continue;
 
-        bool satisfyITSreq = true;
-        if (requireItsHits) {
-          for (int i = 0; i < 7; i++) {
-            if (requiredItsHit[i] > 0 && !hasHitOnITSlayer(track.itsClusterMap(), i)) {
-              satisfyITSreq = false;
-              break;
-            }
-          }
-        }
         registryMC.fill(HIST("trkPionTpcItsMc"), track.pt());
       }
 
@@ -334,15 +313,6 @@ struct LfITSTPCMatchingSecondaryTracksQA {
         registryMC.fill(HIST("secPionTpcMc"), posTrack.pt());
         registryMC.fill(HIST("secPionTpcMc"), negTrack.pt());
 
-        bool satisfyITSreq = true;
-        if (requireItsHits) {
-          for (int i = 0; i < 7; i++) {
-            if (requiredItsHit[i] > 0 && !hasHitOnITSlayer(track.itsClusterMap(), i)) {
-              satisfyITSreq = false;
-              break;
-            }
-          }
-        }
         if (!passedTrackSelectionIts(posTrack))
           continue;
         registryMC.fill(HIST("secPionTpcItsMc"), posTrack.pt());
