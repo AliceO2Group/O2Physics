@@ -1387,7 +1387,14 @@ struct Phik0shortanalysis {
 
     // V0 already reconstructed by the builder
     for (const auto& v0 : V0s) {
-      
+      if (cfgisRecMCWPDGForClosure) {
+        if (!v0.has_mcParticle())
+          continue;
+        auto v0mcparticle = v0.mcParticle();
+        if (v0mcparticle.pdgCode() != 310 || !v0mcparticle.isPhysicalPrimary())
+          continue;
+      }
+
       const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
       const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
 
@@ -1463,6 +1470,13 @@ struct Phik0shortanalysis {
 
     // Loop over all primary pion candidates
     for (const auto& track : fullMCTracks) {
+      if (cfgisRecMCWPDGForClosure) {
+        if (!track.has_mcParticle())
+          continue;
+        auto mcTrack = track.mcParticle_as<aod::McParticles>();
+        if (std::abs(mcTrack.pdgCode()) != 211 || !mcTrack.isPhysicalPrimary())
+          continue;
+      }
 
       // Pion selection
       if (!selectionPion<true>(track))
