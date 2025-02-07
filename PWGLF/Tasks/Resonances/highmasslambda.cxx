@@ -1093,7 +1093,7 @@ struct highmasslambda {
             double anglesignrot = decaylengthxrot * LambdacRot.Px() + decaylengthyrot * LambdacRot.Py() + decaylengthzrot * LambdacRot.Pz();
             double CPAlambdacrot = anglesignrot / (decaylengthrot * LambdacRot.P());
             if (LambdacRot.M() > cMinLambdaMass && LambdacRot.M() <= cMaxLambdaMass && std::abs(LambdacRot.Rapidity()) < confRapidity && LambdacRot.Pt() > 1.0 && LambdacRot.Pt() <= 6.0 && decaylengthrot < ConfMaxDecayLength && CPAlambdacrot > ConfMinCPA) {
-              histos.fill(HIST("hSparseV2SASameEventRotational_V2_SVX"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, decaylengthrot, CPAlambdacrot);
+              histos.fill(HIST("hSparseV2SASameEventRotational_V2_SVX"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, decaylength, CPAlambdacrot);
             }
           }
         }
