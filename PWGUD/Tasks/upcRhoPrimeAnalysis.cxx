@@ -81,7 +81,7 @@ DECLARE_SOA_TABLE(SYSTEMTREE, "AOD", "SystemTree", fourpi::RunNumber, fourpi::M,
                   fourpi::TotalFDDAmplitudeA, fourpi::TotalFDDAmplitudeC, fourpi::TimeFT0A, fourpi::TimeFT0C, fourpi::TimeFV0A, fourpi::TimeFDDA, fourpi::TimeFDDC);
 } // namespace o2::aod
 
-struct upcRhoFAnalysis {
+struct upcRhoPrimeAnalysis {
   Produces<aod::SYSTEMTREE> systemTree;
 
   double PcEtaCut = 0.9; // physics coordination recommendation
@@ -240,12 +240,12 @@ struct upcRhoFAnalysis {
     std::vector<decltype(tracks.begin())> cutTracks;
     std::vector<ROOT::Math::PxPyPzMVector> cutTracks4Vecs;
 
-    int trackCounter = 0;
+    // int trackCounter = 0;
     for (const auto& track : tracks) {
 
       if (!trackPassesCuts(track))
         continue;
-      trackCounter++;
+      // trackCounter++;
       cutTracks.push_back(track);
       cutTracks4Vecs.push_back(ROOT::Math::PxPyPzMVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged)); // apriori assume pion mass
     }
@@ -275,11 +275,11 @@ struct upcRhoFAnalysis {
     }
     // std::cout<<"Hello World"<<std::endl;
   }
-  PROCESS_SWITCH(upcRhoFAnalysis, processReco, "analyse reco tracks", true);
+  PROCESS_SWITCH(upcRhoPrimeAnalysis, processReco, "analyse reco tracks", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    o2::framework::adaptAnalysisTask<upcRhoFAnalysis>(cfgc)};
+    o2::framework::adaptAnalysisTask<upcRhoPrimeAnalysis>(cfgc)};
 }
