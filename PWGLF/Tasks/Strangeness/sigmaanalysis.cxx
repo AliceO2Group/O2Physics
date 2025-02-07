@@ -65,7 +65,7 @@ struct sigmaanalysis {
 
   // Interaction rate selection:
   Configurable<bool> fGetIR{"fGetIR", false, "Flag to retrieve the IR info."};
-  Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"}; 
+  Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   Configurable<float> minIR{"minIR", -1, "Min Interaction Rate (kHz). Leave -1 if no selection desired."};
   Configurable<float> maxIR{"maxIR", -1, "Max Interaction Rate (kHz). Leave -1 if no selection desired."};
 
@@ -215,7 +215,7 @@ struct sigmaanalysis {
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(28, "Lambda/ALambda DCAToPV");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(29, "Lambda/ALambda Mass");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(30, "Sigma Y");
-    
+
     // Photon Selection QA histos
     histos.add("GeneralQA/hPhotonV0Type", "hPhotonV0Type", kTH1F, {{8, 0.5f, 8.5f}});
     histos.add("GeneralQA/hPhotonMass", "hPhotonMass", kTH1F, {axisPhotonMass});
@@ -258,7 +258,7 @@ struct sigmaanalysis {
     histos.add("GeneralQA/hLambdaPosChi2PerNc", "hLambdaPosChi2PerNc", kTH1F, {axisChi2PerNcl});
     histos.add("GeneralQA/hLambdaNegChi2PerNc", "hLambdaNegChi2PerNc", kTH1F, {axisChi2PerNcl});
     histos.add("GeneralQA/hLambdaLifeTime", "hLambdaLifeTime", kTH1F, {axisLifetime});
-    
+
     histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPr", "h2dTPCvsTOFNSigma_LambdaPr", {HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
     histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPi", "h2dTPCvsTOFNSigma_LambdaPi", {HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
     histos.add("GeneralQA/hLambdaDCANegToPV", "hLambdaDCANegToPV", kTH1F, {axisDCAtoPV});
@@ -284,7 +284,7 @@ struct sigmaanalysis {
     histos.add("SigmaMassQA/h2dPhotonDCADauToPV", "h2dPhotonDCADauToPV", {HistType::kTH2F, {axisPt, axisSigmaMass}});
     histos.add("SigmaMassQA/h2dPhotonDCADau", "h2dPhotonDCADau", {HistType::kTH2F, {axisPt, axisSigmaMass}});
     histos.add("SigmaMassQA/h2dPhotonDauTPCCR", "h2dPhotonDauTPCCR", {HistType::kTH2F, {axisPt, axisSigmaMass}});
-    histos.add("SigmaMassQA/h2dPhotonTPCNSigmaEl", "h2dPhotonTPCNSigmaEl", {HistType::kTH2F, {axisPt, axisSigmaMass}}); 
+    histos.add("SigmaMassQA/h2dPhotonTPCNSigmaEl", "h2dPhotonTPCNSigmaEl", {HistType::kTH2F, {axisPt, axisSigmaMass}});
     histos.add("SigmaMassQA/h2dPhotonpT", "h2dPhotonpT", {HistType::kTH2F, {axisPt, axisSigmaMass}}); //
     histos.add("SigmaMassQA/h2dPhotonY", "h2dPhotonY", {HistType::kTH2F, {axisPt, axisSigmaMass}});
     histos.add("SigmaMassQA/h2dPhotonRadius", "h2dPhotonRadius", {HistType::kTH2F, {axisPt, axisSigmaMass}});
@@ -360,7 +360,7 @@ struct sigmaanalysis {
       histos.add("MC/hPtTrueAntiLambda_BeforeSel", "hPtTrueAntiLambda_BeforeSel", kTH1F, {axisPt}); // Signal only
       histos.add("MC/hPtTrueGamma_BeforeSel", "hPtTrueGamma_BeforeSel", kTH1F, {axisPt});   // Signal only
       histos.add("MC/hPtTrueSigma_BeforeSel", "hPtTrueSigma_BeforeSel", kTH1F, {axisPt});   // Signal only
-      histos.add("MC/hPtTrueAntiSigma_BeforeSel", "hPtTrueAntiSigma_BeforeSel", kTH1F, {axisPt});   // Signal only
+      histos.add("MC/hPtTrueAntiSigma_BeforeSel", "hPtTrueAntiSigma_BeforeSel", kTH1F, {axisPt}); // Signal only
       histos.add("MC/hPtLambdaCand_BeforeSel", "hPtLambdaCand_BeforeSel", kTH1F, {axisPt}); // Bkg + Signal
       histos.add("MC/hPtGammaCand_BeforeSel", "hPtGammaCand_BeforeSel", kTH1F, {axisPt});   // Bkg + Signal
       histos.add("MC/hPtSigmaCand_BeforeSel", "hPtGammaCand_BeforeSel", kTH1F, {axisPt});   // Bkg + Signal
@@ -430,18 +430,18 @@ struct sigmaanalysis {
       histos.fill(HIST("GeneralQA/hPhotonV0Type"), cand.photonV0Type());
       if (cand.photonV0Type() != Photonv0TypeSel && Photonv0TypeSel > -1)
         return false;
-      histos.fill(HIST("SigmaMassQA/h2dPhotonV0Type"), cand.sigmapT(), cand.sigmaMass()); 
+      histos.fill(HIST("SigmaMassQA/h2dPhotonV0Type"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hPhotonMass"), cand.photonMass());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 2.);
       if (TMath::Abs(cand.photonMass()) > PhotonMaxMass)
         return false;
-      histos.fill(HIST("SigmaMassQA/h2dPhotonMass"), cand.sigmapT(), cand.sigmaMass()); 
+      histos.fill(HIST("SigmaMassQA/h2dPhotonMass"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hPhotonNegpT"), cand.photonNegPt());
       histos.fill(HIST("GeneralQA/hPhotonPospT"), cand.photonPosPt());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 3.);
       if ((cand.photonPosPt() < PhotonDauMinPt) || (cand.photonNegPt() < PhotonDauMinPt))
         return false;
-      histos.fill(HIST("SigmaMassQA/h2dPhotonDaupT"), cand.sigmapT(), cand.sigmaMass()); 
+      histos.fill(HIST("SigmaMassQA/h2dPhotonDaupT"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hPhotonDCANegToPV"), cand.photonDCANegPV());
       histos.fill(HIST("GeneralQA/hPhotonDCAPosToPV"), cand.photonDCAPosPV());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 4.);
@@ -567,12 +567,12 @@ struct sigmaanalysis {
         return false;
       if (cand.lambdaNegITSCls() < LambdaMinITSclusters && (!LambdaRejectNegITSafterburner || negIsFromAfterburner))
         return false;
-      histos.fill(HIST("SigmaMassQA/h2dLambdaDauITSCls"), cand.sigmapT(), cand.sigmaMass());      
+      histos.fill(HIST("SigmaMassQA/h2dLambdaDauITSCls"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hLambdaLifeTime"), cand.lambdaLifeTime());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
       if (cand.lambdaLifeTime() > LambdaMaxLifeTime)
         return false;
-      histos.fill(HIST("SigmaMassQA/h2dLambdaLifeTime"), cand.sigmapT(), cand.sigmaMass()); 
+      histos.fill(HIST("SigmaMassQA/h2dLambdaLifeTime"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
       // Separating lambda and antilambda selections:
       if (isLambdalike) { // Lambda selection
@@ -675,15 +675,15 @@ struct sigmaanalysis {
       if (doMCAssociation && !(sigma.isSigma() || sigma.isAntiSigma())) {
         continue;
       }
-      if (fGetIR){
-        double interactionRate = rateFetcher.fetch(ccdb.service, sigma.sigmaTimestamp(), sigma.sigmaRunNumber(), irSource)*1.e-3;
+      if (fGetIR) {
+        double interactionRate = rateFetcher.fetch(ccdb.service, sigma.sigmaTimestamp(), sigma.sigmaRunNumber(), irSource) * 1.e-3;
         histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);
         histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), sigma.sigmaCentrality(), interactionRate);
-        if ((maxIR!=-1) && (minIR!=-1) && ((interactionRate<=minIR) || (interactionRate>=maxIR))){
+        if ((maxIR != -1) && (minIR != -1) && ((interactionRate <= minIR) || (interactionRate >= maxIR))) {
           continue;
         }
       }
-      
+
       // Filling histos before analysis selection
       histos.fill(HIST("MC/h2dArmenterosBeforeSel"), sigma.photonAlpha(), sigma.photonQt());
       histos.fill(HIST("MC/h2dArmenterosBeforeSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
@@ -698,14 +698,14 @@ struct sigmaanalysis {
       if (sigma.lambdaCandPDGCode() == 3122)
         histos.fill(HIST("MC/hPtTrueLambda_BeforeSel"), sigma.lambdaPt());
       if (sigma.lambdaCandPDGCode() == -3122)
-        histos.fill(HIST("MC/hPtTrueAntiLambda_BeforeSel"), sigma.lambdaPt()); 
+        histos.fill(HIST("MC/hPtTrueAntiLambda_BeforeSel"), sigma.lambdaPt());
       if (sigma.isSigma())
         histos.fill(HIST("MC/hPtTrueSigma_BeforeSel"), sigma.sigmapT());
       if (sigma.isAntiSigma())
-        histos.fill(HIST("MC/hPtTrueAntiSigma_BeforeSel"), sigma.sigmapT()); 
+        histos.fill(HIST("MC/hPtTrueAntiSigma_BeforeSel"), sigma.sigmapT());
 
       if (sigma.lambdaAlpha() > 0) { // Lambda Analysis
-        if (!processSigmaCandidate(sigma, true)) 
+        if (!processSigmaCandidate(sigma, true))
           continue;
 
         // For Lambda PID Studies
@@ -729,10 +729,9 @@ struct sigmaanalysis {
           histos.fill(HIST("MC/h3dSigma0PtResolution"), sigma.sigmapT(), TMath::Abs((sigma.sigmaMCPt() - sigma.sigmapT()) / sigma.sigmaMCPt()), sigma.sigmaMass()); // pT resolution
           histos.fill(HIST("MC/h2dPtVsMassSigma_SignalOnly"), sigma.sigmapT(), sigma.sigmaMass());
           histos.fill(HIST("MC/hPtTrueSigma_AfterSel"), sigma.sigmapT());
-        } 
-      }
-      else{ // AntiLambda Analysis
-        if (!processSigmaCandidate(sigma, false)) 
+        }
+      } else { // AntiLambda Analysis
+        if (!processSigmaCandidate(sigma, false))
           continue;
 
         if (sigma.lambdaCandPDGCode() == -3122) {
@@ -753,8 +752,8 @@ struct sigmaanalysis {
           histos.fill(HIST("MC/hPtTrueSigma_AfterSel"), sigma.sigmapT());
         }
       }
-        
-      // Fill histos after selection, please  
+
+      // Fill histos after selection, please
       histos.fill(HIST("MC/hPtGammaCand_AfterSel"), sigma.photonPt());
       histos.fill(HIST("GeneralQA/hPhotonMassSelected"), sigma.photonMass());
       histos.fill(HIST("MC/hPtSigmaCand_AfterSel"), sigma.sigmapT());
@@ -789,11 +788,11 @@ struct sigmaanalysis {
   void processRealData(V0Sigmas const& sigmas)
   {
     for (auto& sigma : sigmas) { // selecting Sigma0-like candidates
-      if (fGetIR){
-        double interactionRate = rateFetcher.fetch(ccdb.service, sigma.sigmaTimestamp(), sigma.sigmaRunNumber(), irSource)*1.e-3;
+      if (fGetIR) {
+        double interactionRate = rateFetcher.fetch(ccdb.service, sigma.sigmaTimestamp(), sigma.sigmaRunNumber(), irSource) * 1.e-3;
         histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);
         histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), sigma.sigmaCentrality(), interactionRate);
-        if ((maxIR!=-1) && (minIR!=-1) && ((interactionRate<=minIR) || (interactionRate>=maxIR))){
+        if ((maxIR != -1) && (minIR != -1) && ((interactionRate <= minIR) || (interactionRate >= maxIR))) {
           continue;
         }
       }
