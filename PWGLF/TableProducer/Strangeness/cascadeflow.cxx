@@ -66,7 +66,7 @@ std::shared_ptr<TH1> hSignalScoreBeforeSel[2];
 std::shared_ptr<TH1> hBkgScoreBeforeSel[2];
 std::shared_ptr<TH1> hSignalScoreAfterSel[2];
 std::shared_ptr<TH1> hBkgScoreAfterSel[2];
-std::shared_ptr<THnSparse> hSparseV2C[2];
+std::shared_ptr<THn> hSparseV2C[2];
 } // namespace cascadev2
 
 namespace cascade_flow_cuts_ml
@@ -138,15 +138,15 @@ struct cascadeFlow {
   ConfigurableAxis axisQVsNorm{"axisQVsNorm", {200, -1.f, 1.f}, "axisQVsNorm"};
 
   // THN axes
-  ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {80, 0, 80}, ""};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {50, 0, 10}, ""};
+  ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {8, 0, 80}, "FT0C centrality (%)"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {VARIABLE_WIDTH, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5, 6, 8, 10}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis thnConfigAxisCharge{"thnConfigAxisCharge", {2, 0, 2}, ""};
   ConfigurableAxis thnConfigAxisMassXi{"thnConfigAxisMassXi", {45, 1.300, 1.345}, ""};
   ConfigurableAxis thnConfigAxisMassOmega{"thnConfigAxisMassOmega", {45, 1.655, 1.690}, ""};
   ConfigurableAxis thnConfigAxisMassLambda{"thnConfigAxisMassLambda", {60, 1.1, 1.13}, ""};
-  ConfigurableAxis thnConfigAxisBDTScore{"thnConfigAxisBDTScore", {60, 0.4, 1}, ""};
+  ConfigurableAxis thnConfigAxisBDTScore{"thnConfigAxisBDTScore", {15, 0.4, 1}, ""};
   ConfigurableAxis thnConfigAxisV2{"thnConfigAxiV2", {100, -1., 1.}, ""};
-  ConfigurableAxis thnConfigAxisPzs2Xi{"thnConffigAxiPzs2Xi", {200, -2.8, 2.8}, ""};
+  ConfigurableAxis thnConfigAxisPzs2Xi{"thnConfigAxiPzs2Xi", {200, -2.8, 2.8}, ""};
   ConfigurableAxis thnConfigAxisPzs2Omega{"thnConfigAxiPzs2Omega", {200, -65, 65}, ""};
   ConfigurableAxis thnConfigAxisPzs2Lambda{"thnConfigAxiPzs2Lambda", {200, -2, 2}, ""};
   ConfigurableAxis thnConfigAxisCos2Theta{"thnConfigAxiCos2Theta", {100, 0, 1}, ""};
@@ -501,14 +501,18 @@ struct cascadeFlow {
     const AxisSpec thnAxisCos2Theta{thnConfigAxisCos2Theta, "Cos2Theta"};
 
     if (isFillTHNXi) {
-      histos.add("hXiV2", "THn for v2 of Xi", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisV2});
-      histos.add("hXiPzs2", "THn for Pzs2 of Xi", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisMassLambda, thnAxisBDTScore, thnAxisPzs2Xi, thnAxisPzs2Lambda});
-      histos.add("hXiCos2Theta", "THn for Cos2Theta of Xi", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisMassLambda, thnAxisBDTScore, thnAxisCos2Theta, thnAxisCos2Theta});
+      histos.add("hXiV2", "THn for v2 of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisV2});
+      histos.add("hXiPzs2", "THn for Pzs2 of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisPzs2Xi});
+      histos.add("hXiPzs2FromLambda", "THn for Pzs2 of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisPzs2Lambda});
+      histos.add("hXiCos2Theta", "THn for Cos2Theta of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisCos2Theta});
+      histos.add("hXiCos2ThetaFromLambda", "THn for Cos2Theta of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisCos2Theta});
     }
     if (isFillTHNOmega) {
-      histos.add("hOmegaV2", "THn for v2 of Omega", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisV2});
-      histos.add("hOmegaPzs2", "THn for Pzs2 of Omega", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisMassLambda, thnAxisBDTScore, thnAxisPzs2Omega, thnAxisPzs2Lambda});
-      histos.add("hOmegaCos2Theta", "THn for Cos2Theta of Omega", HistType::kTHnSparseF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisMassLambda, thnAxisBDTScore, thnAxisCos2Theta, thnAxisCos2Theta});
+      histos.add("hOmegaV2", "THn for v2 of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisV2});
+      histos.add("hOmegaPzs2", "THn for Pzs2 of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisPzs2Omega});
+      histos.add("hOmegaPzs2FromLambda", "THn for Pzs2 of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisPzs2Lambda});
+      histos.add("hOmegaCos2Theta", "THn for Cos2Theta of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisCos2Theta});
+      histos.add("hOmegaCos2ThetaFromLambda", "THn for Cos2Theta of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisCos2Theta});
     }
 
     histosMCGen.add("h2DGenXiEta08", "h2DGenXiEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
@@ -534,7 +538,7 @@ struct cascadeFlow {
       cascadev2::hBkgScoreBeforeSel[iS] = histos.add<TH1>(Form("hBkgScoreBeforeSel%s", cascadev2::speciesNames[iS].data()), "Bkg score before selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
       cascadev2::hSignalScoreAfterSel[iS] = histos.add<TH1>(Form("hSignalScoreAfterSel%s", cascadev2::speciesNames[iS].data()), "Signal score after selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
       cascadev2::hBkgScoreAfterSel[iS] = histos.add<TH1>(Form("hBkgScoreAfterSel%s", cascadev2::speciesNames[iS].data()), "Bkg score after selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
-      cascadev2::hSparseV2C[iS] = histos.add<THnSparse>(Form("hSparseV2C%s", cascadev2::speciesNames[iS].data()), "hSparseV2C", HistType::kTHnSparseF, {massCascAxis[iS], ptAxis, v2Axis, CentAxis});
+      cascadev2::hSparseV2C[iS] = histos.add<THn>(Form("hSparseV2C%s", cascadev2::speciesNames[iS].data()), "hSparseV2C", HistType::kTHnF, {massCascAxis[iS], ptAxis, v2Axis, CentAxis});
     }
     if (isApplyML) {
       // Configure and initialise the ML class
@@ -813,14 +817,18 @@ struct cascadeFlow {
 
       if (std::abs(casc.eta()) < etaCasc) {
         if (isFillTHNXi) {
-          histos.get<THnSparse>(HIST("hXiV2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], v2CEP);
-          histos.get<THnSparse>(HIST("hXiPzs2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), casc.mLambda(), BDTresponse[0], Pzs2Xi, Pzs2LambdaFromCasc);
-          histos.get<THnSparse>(HIST("hXiCos2Theta"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), casc.mLambda(), BDTresponse[0], Cos2ThetaXi, Cos2ThetaLambda);
+          histos.get<THn>(HIST("hXiV2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], v2CEP);
+          histos.get<THn>(HIST("hXiPzs2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], Pzs2Xi);
+          histos.get<THn>(HIST("hXiPzs2FromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], Pzs2LambdaFromCasc);
+          histos.get<THn>(HIST("hXiCos2Theta"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], Cos2ThetaXi);
+          histos.get<THn>(HIST("hXiCos2ThetaFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], Cos2ThetaLambda);
         }
         if (isFillTHNOmega) {
-          histos.get<THnSparse>(HIST("hOmegaV2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], v2CEP);
-          histos.get<THnSparse>(HIST("hOmegaPzs2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), casc.mLambda(), BDTresponse[1], Pzs2Omega, Pzs2LambdaFromCasc);
-          histos.get<THnSparse>(HIST("hOmegaCos2Theta"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), casc.mLambda(), BDTresponse[1], Cos2ThetaOmega, Cos2ThetaLambda);
+          histos.get<THn>(HIST("hOmegaV2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], v2CEP);
+          histos.get<THn>(HIST("hOmegaPzs2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], Pzs2Omega);
+          histos.get<THn>(HIST("hOmegaPzs2FromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], Pzs2LambdaFromCasc);
+          histos.get<THn>(HIST("hOmegaCos2Theta"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], Cos2ThetaOmega);
+          histos.get<THn>(HIST("hOmegaCos2ThetaFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], Cos2ThetaLambda);
         }
       }
 
