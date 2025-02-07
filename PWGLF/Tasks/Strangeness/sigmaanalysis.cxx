@@ -108,6 +108,7 @@ struct sigmaanalysis {
   Configurable<bool> LambdaRejectNegITSafterburner{"LambdaRejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
 
   //// Photon standard criteria:
+  Configurable<int> Photonv0TypeSel{"Photonv0TypeSel", 7, "select on a certain V0 type (leave negative if no selection desired)"};
   Configurable<float> PhotonDauMinPt{"PhotonDauMinPt", 0.0, "Min daughter pT (GeV/c)"};
   Configurable<float> PhotonMinDCADauToPv{"PhotonMinDCADauToPv", 0.0, "Min DCA daughter To PV (cm)"};
   Configurable<float> PhotonMaxDCAV0Dau{"PhotonMaxDCAV0Dau", 3.5, "Max DCA V0 Daughters (cm)"};
@@ -163,7 +164,7 @@ struct sigmaanalysis {
   ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA (cm)"};
   ConfigurableAxis axisCosPA{"axisCosPA", {200, 0.5f, 1.0f}, "Cosine of pointing angle"};
   ConfigurableAxis axisPsiPair{"axisPsiPair", {500, -5.0f, 5.0f}, "Psipair for photons"};
-  ConfigurableAxis axisCandSel{"axisCandSel", {30, 0.5f, +30.5f}, "Candidate Selection"};
+  ConfigurableAxis axisCandSel{"axisCandSel", {31, 0.5f, +31.5f}, "Candidate Selection"};
 
   // ML
   ConfigurableAxis MLProb{"MLOutput", {100, 0.0f, 1.0f}, ""};
@@ -185,36 +186,38 @@ struct sigmaanalysis {
     // Candidates Counters
     histos.add("GeneralQA/hCandidateAnalysisSelection", "hCandidateAnalysisSelection", kTH1F, {axisCandSel});
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(1, "No Sel");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(2, "Photon Mass");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(3, "Photon DauPt");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(4, "Photon DCAToPV");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(5, "Photon DCADau");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(6, "Photon TPCCrossedRows");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(7, "Photon TPCNSigmaEl");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(8, "Photon TPCNSigmaPi");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(9, "Photon Pt");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(10, "Photon Y/Eta");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(11, "Photon Radius");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(12, "Photon RZ line");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(13, "Photon QT");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(14, "Photon Alpha");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(15, "Photon CosPA");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(16, "Photon PsiPair");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(17, "Lambda Radius");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(18, "Lambda DCADau");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(19, "Lambda QT");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(20, "Lambda Alpha");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(21, "Lambda CosPA");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(22, "Lambda Y/Eta");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(23, "Lambda TPCCrossedRows");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(24, "Lambda ITSNCls");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(25, "Lambda Lifetime");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(26, "Lambda/ALambda PID");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(27, "Lambda/ALambda DCAToPV");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(28, "Lambda/ALambda Mass");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(29, "Sigma Y");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(2, "Photon V0Type");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(3, "Photon Mass");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(4, "Photon DauPt");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(5, "Photon DCAToPV");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(6, "Photon DCADau");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(7, "Photon TPCCrossedRows");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(8, "Photon TPCNSigmaEl");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(9, "Photon TPCNSigmaPi");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(10, "Photon Pt");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(11, "Photon Y/Eta");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(12, "Photon Radius");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(13, "Photon RZ line");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(14, "Photon QT");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(15, "Photon Alpha");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(16, "Photon CosPA");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(17, "Photon PsiPair");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(18, "Lambda Radius");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(19, "Lambda DCADau");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(20, "Lambda QT");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(21, "Lambda Alpha");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(22, "Lambda CosPA");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(23, "Lambda Y/Eta");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(24, "Lambda TPCCrossedRows");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(25, "Lambda ITSNCls");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(26, "Lambda Lifetime");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(27, "Lambda/ALambda PID");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(28, "Lambda/ALambda DCAToPV");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(29, "Lambda/ALambda Mass");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(30, "Sigma Y");
     
     // Photon Selection QA histos
+    histos.add("GeneralQA/hPhotonV0Type", "hPhotonV0Type", kTH1F, {{8, 0.5f, 8.5f}});
     histos.add("GeneralQA/hPhotonMass", "hPhotonMass", kTH1F, {axisPhotonMass});
     histos.add("GeneralQA/hPhotonNegpT", "hPhotonNegpT", kTH1F, {axisPt});
     histos.add("GeneralQA/hPhotonPospT", "hPhotonPospT", kTH1F, {axisPt});
@@ -273,6 +276,38 @@ struct sigmaanalysis {
 
     histos.add("GeneralQA/hSigmaY", "hSigmaY", kTH1F, {axisRapidity});
     histos.add("GeneralQA/hSigmaOPAngle", "hSigmaOPAngle", kTH1F, {{140, 0.0f, +7.0f}});
+
+    // Specific sigma0 QA
+    histos.add("SigmaMassQA/h2dPhotonV0Type", "h2dPhotonV0Type", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dPhotonMass", "h2dPhotonMass", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dPhotonDaupT", "h2dPhotonDaupT", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dPhotonDCADauToPV", "h2dPhotonDCADauToPV", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dPhotonDCADau", "h2dPhotonDCADau", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dPhotonDauTPCCR", "h2dPhotonDauTPCCR", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dPhotonTPCNSigmaEl", "h2dPhotonTPCNSigmaEl", {HistType::kTH2F, {axisPt, axisSigmaMass}}); 
+    histos.add("SigmaMassQA/h2dPhotonpT", "h2dPhotonpT", {HistType::kTH2F, {axisPt, axisSigmaMass}}); //
+    histos.add("SigmaMassQA/h2dPhotonY", "h2dPhotonY", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dPhotonRadius", "h2dPhotonRadius", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dRZCut", "h2dRZCut", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dPhotonArmenteros", "h2dPhotonArmenteros", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dPhotonCosPA", "h2dPhotonCosPA", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dPhotonPsiPair", "h2dPhotonPsiPair", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dLambdaRadius", "h2dLambdaRadius", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dLambdaDCADau", "h2dLambdaDCADau", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dLambdaArmenteros", "h2dLambdaArmenteros", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dLambdaCosPA", "h2dLambdaCosPA", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dLambdaY", "h2dLambdaY", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dLambdaDauTPCCR", "h2dLambdaDauTPCCR", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dLambdaDauITSCls", "h2dLambdaDauITSCls", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dLambdaLifeTime", "h2dLambdaLifeTime", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dTPCvsTOFNSigma_Lambda", "h2dTPCvsTOFNSigma_Lambda", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dLambdaDCADauToPV", "h2dLambdaDCADauToPV", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dLambdaMass", "h2dLambdaMass", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dTPCvsTOFNSigma_ALambda", "h2dTPCvsTOFNSigma_ALambda", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dALambdaDCADauToPV", "h2dALambdaDCADauToPV", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dAntiLambdaMass", "h2dAntiLambdaMass", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+    histos.add("SigmaMassQA/h2dSigmaY", "h2dSigmaY", {HistType::kTH2F, {axisPt, axisSigmaMass}});
+
     // For Signal Extraction
 
     // Sigma0
@@ -392,127 +427,153 @@ struct sigmaanalysis {
 
       // Photon Selections
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 1.);
+      histos.fill(HIST("GeneralQA/hPhotonV0Type"), cand.photonV0Type());
+      if (cand.photonV0Type() != Photonv0TypeSel && Photonv0TypeSel > -1)
+        return false;
+      histos.fill(HIST("SigmaMassQA/h2dPhotonV0Type"), cand.sigmapT(), cand.sigmaMass()); 
       histos.fill(HIST("GeneralQA/hPhotonMass"), cand.photonMass());
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 2.);
       if (TMath::Abs(cand.photonMass()) > PhotonMaxMass)
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dPhotonMass"), cand.sigmapT(), cand.sigmaMass()); 
       histos.fill(HIST("GeneralQA/hPhotonNegpT"), cand.photonNegPt());
       histos.fill(HIST("GeneralQA/hPhotonPospT"), cand.photonPosPt());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 2.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 3.);
       if ((cand.photonPosPt() < PhotonDauMinPt) || (cand.photonNegPt() < PhotonDauMinPt))
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dPhotonDaupT"), cand.sigmapT(), cand.sigmaMass()); 
       histos.fill(HIST("GeneralQA/hPhotonDCANegToPV"), cand.photonDCANegPV());
       histos.fill(HIST("GeneralQA/hPhotonDCAPosToPV"), cand.photonDCAPosPV());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 3.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 4.);
       if ((TMath::Abs(cand.photonDCAPosPV()) < PhotonMinDCADauToPv) || (TMath::Abs(cand.photonDCANegPV()) < PhotonMinDCADauToPv))
         return false;
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 4.);
+      histos.fill(HIST("SigmaMassQA/h2dPhotonDCADauToPV"), cand.sigmapT(), cand.sigmaMass());
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 5.);
       histos.fill(HIST("GeneralQA/hPhotonDCADau"), cand.photonDCADau());
       if (TMath::Abs(cand.photonDCADau()) > PhotonMaxDCAV0Dau)
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dPhotonDCADau"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hPhotonPosTPCCR"), cand.photonPosTPCCrossedRows());
       histos.fill(HIST("GeneralQA/hPhotonNegTPCCR"), cand.photonNegTPCCrossedRows());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 5.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 6.);
       if ((cand.photonPosTPCCrossedRows() < PhotonMinTPCCrossedRows) || (cand.photonNegTPCCrossedRows() < PhotonMinTPCCrossedRows))
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dPhotonDauTPCCR"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/h2dPhotonPosTPCNSigmaEl"), cand.photonPosPt(), cand.photonPosTPCNSigmaEl());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 6.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 7.);
       if (((cand.photonPosTPCNSigmaEl() < PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigmaEl() > PhotonMaxTPCNSigmas)))
         return false;
       histos.fill(HIST("GeneralQA/h2dPhotonNegTPCNSigmaEl"), cand.photonNegPt(), cand.photonNegTPCNSigmaEl());
       if (((cand.photonNegTPCNSigmaEl() < PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigmaEl() > PhotonMaxTPCNSigmas)))
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dPhotonTPCNSigmaEl"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/h2dPhotonPosTPCNSigmaPi"), cand.photonPosPt(), cand.photonPosTPCNSigmaPi());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 7.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 8.);
       if (((TMath::Abs(cand.photonPosTPCNSigmaPi()) < PiMaxTPCNSigmas) && cand.photonPosPt() <= piMaxpT))
         return false;
       histos.fill(HIST("GeneralQA/h2dPhotonNegTPCNSigmaPi"), cand.photonNegPt(), cand.photonNegTPCNSigmaPi());
       if (((TMath::Abs(cand.photonNegTPCNSigmaPi()) < PiMaxTPCNSigmas) && cand.photonNegPt() <= piMaxpT))
         return false;
       histos.fill(HIST("GeneralQA/hPhotonpT"), cand.photonPt());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 8.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 9.);
       if ((cand.photonPt() < PhotonMinPt) || (cand.photonPt() > PhotonMaxPt))
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dPhotonpT"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hPhotonY"), cand.photonY());
       histos.fill(HIST("GeneralQA/hPhotonPosEta"), cand.photonPosEta());
       histos.fill(HIST("GeneralQA/hPhotonNegEta"), cand.photonNegEta());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 9.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 10.);
       if ((TMath::Abs(cand.photonY()) > PhotonMaxRap) || (TMath::Abs(cand.photonPosEta()) > PhotonMaxDauEta) || (TMath::Abs(cand.photonNegEta()) > PhotonMaxDauEta))
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dPhotonY"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hPhotonRadius"), cand.photonRadius());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 10.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 11.);
       if ((cand.photonRadius() < PhotonMinRadius) || (cand.photonRadius() > PhotonMaxRadius))
         return false;
       float photonRZLineCut = TMath::Abs(cand.photonZconv()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-PhotonMaxDauEta))) - PhotonLineCutZ0;
+      histos.fill(HIST("SigmaMassQA/h2dPhotonRadius"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hPhotonZ"), cand.photonZconv());
       histos.fill(HIST("GeneralQA/h2dRZCut"), cand.photonRadius(), photonRZLineCut);
       histos.fill(HIST("GeneralQA/h2dRZPlane"), cand.photonZconv(), cand.photonRadius());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 11.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 12.);
       if ((TMath::Abs(cand.photonRadius()) < photonRZLineCut) || (TMath::Abs(cand.photonZconv()) > PhotonMaxZ))
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dRZCut"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/h2dPhotonArmenteros"), cand.photonAlpha(), cand.photonQt());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 12.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 13.);
       if (cand.photonQt() > PhotonMaxQt)
         return false;
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 13.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 14.);
       if (TMath::Abs(cand.photonAlpha()) > PhotonMaxAlpha)
         return false;
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 14.);
+      histos.fill(HIST("SigmaMassQA/h2dPhotonArmenteros"), cand.sigmapT(), cand.sigmaMass());
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 15.);
       histos.fill(HIST("GeneralQA/hPhotonCosPA"), cand.photonCosPA());
       if (cand.photonCosPA() < PhotonMinV0cospa)
         return false;
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 15.);
+      histos.fill(HIST("SigmaMassQA/h2dPhotonCosPA"), cand.sigmapT(), cand.sigmaMass());
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 16.);
       histos.fill(HIST("GeneralQA/hPhotonPsiPair"), cand.photonPsiPair());
       if (TMath::Abs(cand.photonPsiPair()) > PhotonPsiPairMax)
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dPhotonPsiPair"), cand.sigmapT(), cand.sigmaMass());
 
       // Lambda selections
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 16.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 17.);
       histos.fill(HIST("GeneralQA/hLambdaRadius"), cand.lambdaRadius());
       if ((cand.lambdaRadius() < LambdaMinv0radius) || (cand.lambdaRadius() > LambdaMaxv0radius))
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dLambdaRadius"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hLambdaDCADau"), cand.lambdaDCADau());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 17.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 18.);
       if (TMath::Abs(cand.lambdaDCADau()) > LambdaMaxDCAV0Dau)
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dLambdaDCADau"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/h2dLambdaArmenteros"), cand.lambdaAlpha(), cand.lambdaQt());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 18.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 19.);
       if ((cand.lambdaQt() < LambdaMinQt) || (cand.lambdaQt() > LambdaMaxQt))
         return false;
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 19.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 20.);
       if ((TMath::Abs(cand.lambdaAlpha()) < LambdaMinAlpha) || (TMath::Abs(cand.lambdaAlpha()) > LambdaMaxAlpha))
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dLambdaArmenteros"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hLambdaCosPA"), cand.lambdaCosPA());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 20.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 21.);
       if (cand.lambdaCosPA() < LambdaMinv0cospa)
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dLambdaCosPA"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hLambdaY"), cand.lambdaY());
       histos.fill(HIST("GeneralQA/hLambdaPosEta"), cand.lambdaPosEta());
       histos.fill(HIST("GeneralQA/hLambdaNegEta"), cand.lambdaNegEta());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 21.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 22.);
       if ((TMath::Abs(cand.lambdaY()) > LambdaMaxRap) || (TMath::Abs(cand.lambdaPosEta()) > LambdaMaxDauEta) || (TMath::Abs(cand.lambdaNegEta()) > LambdaMaxDauEta))
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dLambdaY"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hLambdaPosTPCCR"), cand.lambdaPosTPCCrossedRows());
       histos.fill(HIST("GeneralQA/hLambdaNegTPCCR"), cand.lambdaNegTPCCrossedRows());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 22.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 23.);
       if ((cand.lambdaPosTPCCrossedRows() < LambdaMinTPCCrossedRows) || (cand.lambdaNegTPCCrossedRows() < LambdaMinTPCCrossedRows))
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dLambdaDauTPCCR"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hLambdaPosITSCls"), cand.lambdaPosITSCls());
       histos.fill(HIST("GeneralQA/hLambdaNegITSCls"), cand.lambdaNegITSCls());
       histos.fill(HIST("GeneralQA/hLambdaPosChi2PerNc"), cand.lambdaPosChi2PerNcl());
       histos.fill(HIST("GeneralQA/hLambdaNegChi2PerNc"), cand.lambdaNegChi2PerNcl());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 23.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 24.);
       // check minimum number of ITS clusters + reject ITS afterburner tracks if requested
       bool posIsFromAfterburner = cand.lambdaPosChi2PerNcl() < 0;
       bool negIsFromAfterburner = cand.lambdaNegChi2PerNcl() < 0;
       if (cand.lambdaPosITSCls() < LambdaMinITSclusters && (!LambdaRejectPosITSafterburner || posIsFromAfterburner))
         return false;
       if (cand.lambdaNegITSCls() < LambdaMinITSclusters && (!LambdaRejectNegITSafterburner || negIsFromAfterburner))
-        return false;      
+        return false;
+      histos.fill(HIST("SigmaMassQA/h2dLambdaDauITSCls"), cand.sigmapT(), cand.sigmaMass());      
       histos.fill(HIST("GeneralQA/hLambdaLifeTime"), cand.lambdaLifeTime());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 24.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
       if (cand.lambdaLifeTime() > LambdaMaxLifeTime)
         return false;
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
+      histos.fill(HIST("SigmaMassQA/h2dLambdaLifeTime"), cand.sigmapT(), cand.sigmaMass()); 
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
       // Separating lambda and antilambda selections:
       if (isLambdalike) { // Lambda selection
         histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_LambdaPr"), cand.lambdaPosPrTPCNSigma(), cand.lambdaPrTOFNSigma());
@@ -530,18 +591,21 @@ struct sigmaanalysis {
         if (fselLambdaTOFPID && (TMath::Abs(cand.lambdaPiTOFNSigma()) > LambdaPiMaxTOFNSigmas))
           return false;
 
+        histos.fill(HIST("SigmaMassQA/h2dTPCvsTOFNSigma_Lambda"), cand.sigmapT(), cand.sigmaMass());
         // DCA Selection
         histos.fill(HIST("GeneralQA/hLambdaDCANegToPV"), cand.lambdaDCANegPV());
         histos.fill(HIST("GeneralQA/hLambdaDCAPosToPV"), cand.lambdaDCAPosPV());
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 27.);
         if ((TMath::Abs(cand.lambdaDCAPosPV()) < LambdaMinDCAPosToPv) || (TMath::Abs(cand.lambdaDCANegPV()) < LambdaMinDCANegToPv))
           return false;
+        histos.fill(HIST("SigmaMassQA/h2dLambdaDCADauToPV"), cand.sigmapT(), cand.sigmaMass());
 
         // Mass Selection
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 27.);
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 28.);
         histos.fill(HIST("GeneralQA/hLambdaMass"), cand.lambdaMass());
         if (TMath::Abs(cand.lambdaMass() - 1.115683) > LambdaWindow)
           return false;
+        histos.fill(HIST("SigmaMassQA/h2dLambdaMass"), cand.sigmapT(), cand.sigmaMass());
 
         // if constexpr (requires { cand.lambdaCandPDGCode(); }) {
         //   if (doPIDQA && passedTPC) {
@@ -576,27 +640,31 @@ struct sigmaanalysis {
         if (fselLambdaTOFPID && (TMath::Abs(cand.aLambdaPiTOFNSigma()) > LambdaPiMaxTOFNSigmas))
           return false;
 
+        histos.fill(HIST("SigmaMassQA/h2dTPCvsTOFNSigma_ALambda"), cand.sigmapT(), cand.sigmaMass());
         // DCA Selection
         histos.fill(HIST("GeneralQA/hALambdaDCANegToPV"), cand.lambdaDCANegPV());
         histos.fill(HIST("GeneralQA/hALambdaDCAPosToPV"), cand.lambdaDCAPosPV());
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 27.);
         if ((TMath::Abs(cand.lambdaDCAPosPV()) < ALambdaMinDCAPosToPv) || (TMath::Abs(cand.lambdaDCANegPV()) < ALambdaMinDCANegToPv))
           return false;
 
+        histos.fill(HIST("SigmaMassQA/h2dALambdaDCADauToPV"), cand.sigmapT(), cand.sigmaMass());
         // Mass Selection
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 27.);
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 28.);
         histos.fill(HIST("GeneralQA/hAntiLambdaMass"), cand.antilambdaMass());
         if (TMath::Abs(cand.antilambdaMass() - 1.115683) > LambdaWindow)
           return false;
+        histos.fill(HIST("SigmaMassQA/h2dAntiLambdaMass"), cand.sigmapT(), cand.sigmaMass());
       }
 
       // Sigma0 selection
       histos.fill(HIST("GeneralQA/hSigmaY"), cand.sigmaRapidity());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 28.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 29.);
       if (TMath::Abs(cand.sigmaRapidity()) > SigmaMaxRap)
         return false;
+      histos.fill(HIST("SigmaMassQA/h2dSigmaY"), cand.sigmapT(), cand.sigmaMass());
       histos.fill(HIST("GeneralQA/hSigmaOPAngle"), cand.sigmaOPAngle());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 29.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 30.);
     }
     return true;
   }
