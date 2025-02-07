@@ -509,7 +509,7 @@ struct cascadeFlow {
     }
     if (isFillTHNOmega) {
       histos.add("hOmegaV2", "THn for v2 of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisV2});
-      histos.add("hOmegaPzs2", "THn for Pzs2 of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega,thnAxisBDTScore, thnAxisPzs2Omega});
+      histos.add("hOmegaPzs2", "THn for Pzs2 of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisPzs2Omega});
       histos.add("hOmegaPzs2FromLambda", "THn for Pzs2 of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisPzs2Lambda});
       histos.add("hOmegaCos2Theta", "THn for Cos2Theta of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisMassLambda, thnAxisBDTScore, thnAxisCos2Theta, thnAxisCos2Theta});
       histos.add("hOmegaCos2ThetaFromLambda", "THn for Cos2Theta of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisCos2Theta});
