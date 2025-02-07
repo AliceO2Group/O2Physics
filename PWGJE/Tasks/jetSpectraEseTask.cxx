@@ -60,7 +60,6 @@ struct JetSpectraEseTask {
   Configurable<std::string> eventSelections{"eventSelections", "sel8FullPbPb", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
-
   Configurable<bool> cfgEvSelOccupancy{"cfgEvSelOccupancy", true, "Flag for occupancy cut"};
 
   Configurable<std::vector<int>> cfgCutOccupancy{"cfgCutOccupancy", {0, 1000}, "Occupancy cut"};
