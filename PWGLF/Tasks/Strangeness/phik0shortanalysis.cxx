@@ -142,7 +142,8 @@ struct Phik0shortanalysis {
   Configurable<bool> cfgiskNoITSROFrameBorder{"cfgiskNoITSROFrameBorder", false, "kNoITSROFrameBorder request on RecMC collisions"};
 
   // Configurable for MC closure
-  Configurable<bool> cfgisGenMCForClosure{"cfgisGenMCForClosure", false, "isGenMCForClosure"};
+  Configurable<bool> cfgisRecMCWPDGForClosure{"cfgisRecMCWPDGForClosure", false, "RecoMC with PDG Codes for Closure"};
+  Configurable<bool> cfgisGenMCForClosure{"cfgisGenMCForClosure", false, "GenMC for Closure"};
 
   // Constants
   double massKa = o2::constants::physics::MassKPlus;
@@ -1386,6 +1387,7 @@ struct Phik0shortanalysis {
 
     // V0 already reconstructed by the builder
     for (const auto& v0 : V0s) {
+      
       const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
       const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
 
