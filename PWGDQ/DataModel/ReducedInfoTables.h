@@ -820,7 +820,7 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   reducedpair::SVertex);
 
 DECLARE_SOA_TABLE(DileptonsMiniTree, "AOD", "RTDILEPTMTREE", //!
-                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::CentFT0C, reducedpair::Cos2DeltaPhi);
+                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::CentFT0C, reducedpair::Cos2DeltaPhi, dilepton_track_index::Pt1, dilepton_track_index::Eta1, dilepton_track_index::Phi1, dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2);
 
 using Dielectron = Dielectrons::iterator;
 using StoredDielectron = StoredDielectrons::iterator;
