@@ -9,8 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
+/// \file rsnOutput.h
+/// \brief Resonance output class.
 /// \author Veronika Barbasova (veronika.barbasova@cern.ch)
-/// \since April 3, 2024
 
 #ifndef PWGLF_UTILS_RSNOUTPUT_H_
 #define PWGLF_UTILS_RSNOUTPUT_H_
@@ -21,8 +22,6 @@
 
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
-
-using namespace o2::framework;
 
 namespace o2::analysis
 {
@@ -91,12 +90,12 @@ enum class SystematicsAxisType {
   ncl,
   unknown
 };
-namespace PairAxis
+namespace pair_axis
 {
 std::vector<std::string> names{"im", "pt", "mu", "ce", "ns1", "ns2", "eta", "y", "vz", "mum", "cem", "vzm"};
 }
 
-namespace SystematicsAxis
+namespace systematic_axis
 {
 std::vector<std::string> names{"ncl"};
 }
@@ -106,23 +105,23 @@ class Output
  public:
   virtual ~Output() = default;
 
-  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<AxisSpec> const& allAxes_sys, bool /*produceTrue*/ = false, MixingType /*eventMixing*/ = MixingType::none, bool /*produceLikesign*/ = false, HistogramRegistry* registry = nullptr)
+  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool /*produceTrue*/ = false, MixingType /*eventMixing*/ = MixingType::none, bool /*produceLikesign*/ = false, o2::framework::HistogramRegistry* registry = nullptr)
   {
     mHistogramRegistry = registry;
     if (mHistogramRegistry == nullptr)
-      mHistogramRegistry = new HistogramRegistry("registry");
+      mHistogramRegistry = new o2::framework::HistogramRegistry("registry");
 
     // check if all axes are added in correct order
     for (int i = 0; i < static_cast<int>(PairAxisType::unknown); i++) {
       auto aname = *std::move(allAxes[i].name);
       LOGF(debug, "Check axis '%s' %d", aname.c_str(), i);
-      if (aname.compare(PairAxis::names[static_cast<int>(i)])) {
-        LOGF(fatal, "rsn::Output::Error: Order in allAxes is not correct !!! Expected axis '%s' and has '%s'.", aname.c_str(), PairAxis::names[static_cast<int>(i)]);
+      if (aname.compare(pair_axis::names[static_cast<int>(i)])) {
+        LOGF(fatal, "rsn::Output::Error: Order in allAxes is not correct !!! Expected axis '%s' and has '%s'.", aname.c_str(), pair_axis::names[static_cast<int>(i)]);
       }
     }
 
     PairAxisType currentType;
-    for (auto& c : sparseAxes) {
+    for (const auto& c : sparseAxes) {
       currentType = type(c);
       if (currentType >= PairAxisType::unknown) {
         LOGF(warning, "Found unknown axis (rsn::PairAxisType = %d)!!! Skipping ...", static_cast<int>(currentType));
@@ -138,27 +137,27 @@ class Output
     mFillPoint = new double[mCurrentAxisTypes.size()];
 
     LOGF(info, "Number of axis added: %d", mCurrentAxes.size());
-    mPairHisto = new HistogramConfigSpec(HistType::kTHnSparseF, mCurrentAxes);
+    mPairHisto = new o2::framework::HistogramConfigSpec(o2::framework::HistType::kTHnSparseF, mCurrentAxes);
 
     // check if all systematic axes are added in correct order
     for (int i = 0; i < static_cast<int>(SystematicsAxisType::unknown); i++) {
       auto aname = *std::move(allAxes_sys[i].name);
       LOGF(debug, "Check axis '%s' %d", aname.c_str(), i);
-      if (aname.compare(SystematicsAxis::names[static_cast<int>(i)])) {
-        LOGF(fatal, "rsn::Output::Error: Order in allAxes_sys is not correct !!! Expected axis '%s' and has '%s'.", aname.c_str(), SystematicsAxis::names[static_cast<int>(i)]);
+      if (aname.compare(systematic_axis::names[static_cast<int>(i)])) {
+        LOGF(fatal, "rsn::Output::Error: Order in allAxes_sys is not correct !!! Expected axis '%s' and has '%s'.", aname.c_str(), systematic_axis::names[static_cast<int>(i)]);
       }
     }
 
-    SystematicsAxisType currentType_sys;
-    for (auto& c : sysAxes) {
-      currentType_sys = type_sys(c);
-      if (currentType_sys >= SystematicsAxisType::unknown) {
-        LOGF(warning, "Found unknown axis (rsn::SystematicsAxisType = %d)!!! Skipping ...", static_cast<int>(currentType_sys));
+    SystematicsAxisType currentTypeSys;
+    for (const auto& c : sysAxes) {
+      currentTypeSys = typeSys(c);
+      if (currentTypeSys >= SystematicsAxisType::unknown) {
+        LOGF(warning, "Found unknown axis (rsn::SystematicsAxisType = %d)!!! Skipping ...", static_cast<int>(currentTypeSys));
         continue;
       }
       LOGF(info, "Adding axis '%s' to systematic histogram", c.c_str());
-      mCurrentAxesSys.push_back(allAxes_sys[static_cast<int>(currentType_sys)]);
-      mCurrentAxisTypesSys.push_back(currentType_sys);
+      mCurrentAxesSys.push_back(allAxes_sys[static_cast<int>(currentTypeSys)]);
+      mCurrentAxisTypesSys.push_back(currentTypeSys);
     }
 
     if (mFillPointSys != nullptr)
@@ -166,14 +165,14 @@ class Output
     mFillPointSys = new double[mCurrentAxisTypesSys.size()];
 
     LOGF(info, "Number of systematic axis added: %d", mCurrentAxesSys.size());
-    mPairHistoSys = new HistogramConfigSpec(HistType::kTHnSparseF, mCurrentAxesSys);
+    mPairHistoSys = new o2::framework::HistogramConfigSpec(o2::framework::HistType::kTHnSparseF, mCurrentAxesSys);
   }
 
   template <typename T>
   void fillSparse(const T& h, double* point)
   {
     int i = 0;
-    for (auto& at : mCurrentAxisTypes) {
+    for (const auto& at : mCurrentAxisTypes) {
       mFillPoint[i++] = point[static_cast<int>(at)];
     }
     mHistogramRegistry->get<THnSparse>(h)->Fill(mFillPoint);
@@ -183,7 +182,7 @@ class Output
   void fillSparseSys(const T& h, double* point)
   {
     int i = 0;
-    for (auto& at : mCurrentAxisTypesSys) {
+    for (const auto& at : mCurrentAxisTypesSys) {
       mFillPointSys[i++] = point[static_cast<int>(at)];
     }
     mHistogramRegistry->get<THnSparse>(h)->Fill(mFillPointSys);
@@ -217,47 +216,47 @@ class Output
 
   PairAxisType type(std::string name)
   {
-    auto it = std::find(PairAxis::names.begin(), PairAxis::names.end(), name);
-    if (it == PairAxis::names.end()) {
+    auto it = std::find(pair_axis::names.begin(), pair_axis::names.end(), name);
+    if (it == pair_axis::names.end()) {
       return PairAxisType::unknown;
     }
-    return static_cast<PairAxisType>(std::distance(PairAxis::names.begin(), it));
+    return static_cast<PairAxisType>(std::distance(pair_axis::names.begin(), it));
   }
 
-  SystematicsAxisType type_sys(std::string name)
+  SystematicsAxisType typeSys(std::string name)
   {
-    auto it = std::find(SystematicsAxis::names.begin(), SystematicsAxis::names.end(), name);
-    if (it == SystematicsAxis::names.end()) {
+    auto it = std::find(systematic_axis::names.begin(), systematic_axis::names.end(), name);
+    if (it == systematic_axis::names.end()) {
       return SystematicsAxisType::unknown;
     }
-    return static_cast<SystematicsAxisType>(std::distance(SystematicsAxis::names.begin(), it));
+    return static_cast<SystematicsAxisType>(std::distance(systematic_axis::names.begin(), it));
   }
 
   std::string name(PairAxisType type)
   {
-    return PairAxis::names[(static_cast<int>(type))];
+    return pair_axis::names[(static_cast<int>(type))];
   }
 
-  std::string name_sys(SystematicsAxisType type)
+  std::string nameSys(SystematicsAxisType type)
   {
-    return SystematicsAxis::names[(static_cast<int>(type))];
+    return systematic_axis::names[(static_cast<int>(type))];
   }
 
-  AxisSpec axis(std::vector<AxisSpec> const& allAxes, PairAxisType type)
+  o2::framework::AxisSpec axis(std::vector<o2::framework::AxisSpec> const& allAxes, PairAxisType type)
   {
-    const AxisSpec unknownAxis = {1, 0., 1., "unknown axis", "unknown"};
+    const o2::framework::AxisSpec unknownAxis = {1, 0., 1., "unknown axis", "unknown"};
     if (type == PairAxisType::unknown)
       return unknownAxis;
     return allAxes[static_cast<int>(type)];
   }
 
  protected:
-  HistogramRegistry* mHistogramRegistry = nullptr;
-  HistogramConfigSpec* mPairHisto = nullptr;
-  HistogramConfigSpec* mPairHistoSys = nullptr;
-  std::vector<AxisSpec> mCurrentAxes;
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
+  o2::framework::HistogramConfigSpec* mPairHisto = nullptr;
+  o2::framework::HistogramConfigSpec* mPairHistoSys = nullptr;
+  std::vector<o2::framework::AxisSpec> mCurrentAxes;
   std::vector<PairAxisType> mCurrentAxisTypes;
-  std::vector<AxisSpec> mCurrentAxesSys;
+  std::vector<o2::framework::AxisSpec> mCurrentAxesSys;
   std::vector<SystematicsAxisType> mCurrentAxisTypesSys;
   double* mFillPoint = nullptr;
   double* mFillPointSys = nullptr;
@@ -266,7 +265,7 @@ class Output
 class OutputSparse : public Output
 {
  public:
-  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<AxisSpec> const& allAxes_sys, bool produceTrue = false, MixingType eventMixing = MixingType::none, bool produceLikesign = false, HistogramRegistry* registry = nullptr)
+  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool produceTrue = false, MixingType eventMixing = MixingType::none, bool produceLikesign = false, o2::framework::HistogramRegistry* registry = nullptr)
   {
     Output::init(sparseAxes, allAxes, sysAxes, allAxes_sys, produceTrue, eventMixing, produceLikesign, registry);
 
