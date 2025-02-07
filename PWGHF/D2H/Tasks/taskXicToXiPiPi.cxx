@@ -69,7 +69,7 @@ struct HfTaskXicToXiPiPi {
   ConfigurableAxis binsImpParErr{"binsImpParErr", {200, -0.1, 0.1}, ""};
   ConfigurableAxis binsSV{"binsSV", {200, -5., 5.}, ""};
   ConfigurableAxis binsChi2{"binsChi2", {200, 0., 0.1}, ""};
-    
+
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -277,9 +277,9 @@ struct HfTaskXicToXiPiPi {
 
     if constexpr (useMl) {
       // with ML information
-      double outputBkg = -99.;      // bkg score
-      double outputPrompt = -99.;   // prompt score
-      double outputFD = -99.;       // non-prompt score
+      double outputBkg = -99.;    // bkg score
+      double outputPrompt = -99.; // prompt score
+      double outputFD = -99.;     // non-prompt score
       if (candidate.mlProbXicToXiPiPi().size() > 0) {
         outputBkg = candidate.mlProbXicToXiPiPi()[0];
         outputPrompt = candidate.mlProbXicToXiPiPi()[1];
