@@ -608,7 +608,7 @@ struct TrHeAnalysis {
         }
       }
     }
-}
+  }
 
   template <class T>
   float getTPCnSigma(T const& track, Particle const& particle)
