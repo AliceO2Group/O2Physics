@@ -47,6 +47,18 @@ struct HfTaskXicToXiPiPi {
   Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "Flag to enable DecayType histogram"};
   // THnSparese for ML selection check
   Configurable<bool> enableTHn{"enableTHn", false, "Fill THnSparse for Xic"};
+
+  Service<o2::framework::O2DatabasePDG> pdg;
+
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= selectionFlagXic);
+
+  // Axis
+  ConfigurableAxis binsDecLength{"binsDecLength", {200, 0., 0.5}, ""};
+  ConfigurableAxis binsErrDecLength{"binsErrDecLength", {100, 0., 1.}, ""};
+  ConfigurableAxis binsDCA{"binsDCA", {100, -0.05, 0.05}, ""};
+  ConfigurableAxis binsImpParErr{"binsImpParErr", {200, -0.1, 0.1}, ""};
+  ConfigurableAxis binsSV{"binsSV", {200, -5., 5.}, ""};
+  ConfigurableAxis binsChi2{"binsChi2", {200, 0., 0.1}, ""};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {400, 0., 40.}, ""};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {300, 1.8, 3.0}, ""};
   ConfigurableAxis thnConfigAxisPtProng{"thnConfigAxisPtProng", {300, 0., 30.}, ""};
@@ -57,18 +69,7 @@ struct HfTaskXicToXiPiPi {
   ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisBdtScorePrompt{"thnConfigAxisBdtScorePrompt", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreNonPrompt{"thnConfigAxisBdtScoreNonPrompt", {100, 0., 1.}, ""};
-  // Axis
-  ConfigurableAxis binsDecLength{"binsDecLength", {200, 0., 0.5}, ""};
-  ConfigurableAxis binsErrDecLength{"binsErrDecLength", {100, 0., 1.}, ""};
-  ConfigurableAxis binsDCA{"binsDCA", {100, -0.05, 0.05}, ""};
-  ConfigurableAxis binsImpParErr{"binsImpParErr", {200, -0.1, 0.1}, ""};
-  ConfigurableAxis binsSV{"binsSV", {200, -5., 5.}, ""};
-  ConfigurableAxis binsChi2{"binsChi2", {200, 0., 0.1}, ""};
-
-  Service<o2::framework::O2DatabasePDG> pdg;
-
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= selectionFlagXic);
-
+    
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
