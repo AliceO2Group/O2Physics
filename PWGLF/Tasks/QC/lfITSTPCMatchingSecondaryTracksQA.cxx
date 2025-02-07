@@ -98,11 +98,11 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     }
 
     if (doprocessMC) {
-        registryData.add("number_of_events_mc", "number of events in mc", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
-        registryData.add("trkPionTpcMc", "trkPionTpcMc", HistType::kTH1D, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
-        registryData.add("trkPionTpcItsMc", "trkPionTpcItsMc", HistType::kTH1D, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
-        registryData.add("secPionTpcMc", "secPionTpcMc", HistType::kTH1D, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
-        registryData.add("secPionTpcItsMc", "secPionTpcItsMc", HistType::kTH1D, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+      registryData.add("number_of_events_mc", "number of events in mc", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
+      registryData.add("trkPionTpcMc", "trkPionTpcMc", HistType::kTH1D, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+      registryData.add("trkPionTpcItsMc", "trkPionTpcItsMc", HistType::kTH1D, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+      registryData.add("secPionTpcMc", "secPionTpcMc", HistType::kTH1D, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+      registryData.add("secPionTpcItsMc", "secPionTpcItsMc", HistType::kTH1D, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
     }
   }
 
@@ -149,7 +149,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   }
 
   template <typename pionTrack>
-  void passedPionSelection (const pionTrack& track)
+  void passedPionSelection(const pionTrack& track)
   {
     // TPC Selection
     if (track.tpcNSigmaPi() < nsigmaTPCmin || track.tpcNSigmaPi() > nsigmaTPCmax)
@@ -164,7 +164,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   }
 
   template <typename ItsTrack>
-  void passedTrackSelectionIts (const ItsTrack& track)
+  void passedTrackSelectionIts(const ItsTrack& track)
   {
     if (!track.hasITS())
       return false;
