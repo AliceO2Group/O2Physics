@@ -274,7 +274,7 @@ struct NucleiInJets {
       return false;
     if (track.tpcNClsCrossedRows() < 70)
       return false;
-    if ((static_cast<double>track.tpcNClsCrossedRows() / static_cast<double>track.tpcNClsFindable()) < 0.8)
+    if ((static_cast<double> track.tpcNClsCrossedRows() / static_cast<double> track.tpcNClsFindable()) < 0.8)
       return false;
     if (track.tpcChi2NCl() > 4)
       return false;
@@ -322,7 +322,7 @@ struct NucleiInJets {
       return false;
     if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
       return false;
-    if ((static_cast<double>track.tpcNClsCrossedRows() / static_cast<double>track.tpcNClsFindable()) < minTpcNcrossedRowsOverFindable)
+    if ((static_cast<double> track.tpcNClsCrossedRows() / static_cast<double> track.tpcNClsFindable()) < minTpcNcrossedRowsOverFindable)
       return false;
     if (track.tpcChi2NCl() > maxChiSquareTpc)
       return false;
