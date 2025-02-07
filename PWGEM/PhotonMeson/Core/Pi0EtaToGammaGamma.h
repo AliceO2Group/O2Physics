@@ -639,6 +639,13 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
+          if (pairtype == PairType::kEMCEMC) {
+            float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
+            if (openingAngle < emccuts.minOpenAngle) {
+              continue;
+            }
+          }
+
           fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), collision.weight());
 
           if constexpr (pairtype == PairType::kEMCEMC) {
