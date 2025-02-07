@@ -48,6 +48,7 @@ using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+// using CollisionCandidates = o2::soa::Join<>;
 
 struct NucleiEfficiencyTask {
 
@@ -167,6 +168,24 @@ struct NucleiEfficiencyTask {
 
   //***********************************************************************************
 
+  template <typename CollisionType>
+  int getCentralityMC(CollisionType const& collision)
+  {
+    float multiplicity{0.f};
+    int centrality = 0;
+    float collMult{0.f};
+    collMult = collision.numContrib();
+
+    if (collMult > multiplicity) {
+      centrality = collision.centFT0C();
+      multiplicity = collMult;
+    }
+
+    return centrality;
+  }
+
+  //***********************************************************************************
+
   template <typename McCollisionType, typename McParticlesType>
   void process_MC_gen(const McCollisionType& mcCollision, const McParticlesType& mcParticles)
   {
@@ -263,13 +282,17 @@ struct NucleiEfficiencyTask {
   template <typename CollisionType, typename TracksType, typename mcParticlesType>
   void process_MC_reco(const CollisionType& collision, const TracksType& tracks, const mcParticlesType& /*mcParticles*/)
   {
+
+    int centrality = getCentralityMC(collision);
     if (event_selection_MC_sel8 && !collision.sel8())
       return;
     if (collision.posZ() > cfgCutVertex)
       return;
     MC_recon_reg.fill(HIST("histRecVtxMC"), collision.posZ());
-    MC_recon_reg.fill(HIST("histCentrality"), collision.centFT0C());
+    MC_recon_reg.fill(HIST("histCentrality"), centrality);
     if (!isEventSelected(collision))
+      return;
+    if (centrality < minCentrality || centrality > maxCentrality)
       return;
 
     for (auto& track : tracks) {
