@@ -63,50 +63,50 @@ namespace jettaggingutilities
 const int cmTomum = 10000; // using cm -> #mum for impact parameter (dca)
 
 struct BJetParams {
-  float mJetpT = 0.0;
-  float mJetEta = 0.0;
-  float mJetPhi = 0.0;
-  int mNTracks = -1;
-  int mNSV = -1;
-  float mJetMass = 0.0;
+  float JetpT = 0.0;
+  float JetEta = 0.0;
+  float JetPhi = 0.0;
+  int NTracks = -1;
+  int NSV = -1;
+  float JetMass = 0.0;
 };
 
 struct BJetTrackParams {
-  double mTrackpT = 0.0;
-  double mTrackEta = 0.0;
-  double mDotProdTrackJet = 0.0;
-  double mDotProdTrackJetOverJet = 0.0;
-  double mDeltaRJetTrack = 0.0;
-  double mSignedIP2D = 0.0;
-  double mSignedIP2DSign = 0.0;
-  double mSignedIP3D = 0.0;
-  double mSignedIP3DSign = 0.0;
-  double mMomFraction = 0.0;
-  double mDeltaRTrackVertex = 0.0;
-  double mTrackPhi = 0.0;
-  double mTrackCharge = 0.0;
-  double mTrackITSChi2NCl = 0.0;
-  double mTrackTPCChi2NCl = 0.0;
-  double mTrackITSNCls = 0.0;
-  double mTrackTPCNCls = 0.0;
-  double mTrackTPCNCrossedRows = 0.0;
-  int mTrackOrigin = -1;
-  int mTrackVtxIndex = -1;
+  double TrackpT = 0.0;
+  double TrackEta = 0.0;
+  double DotProdTrackJet = 0.0;
+  double DotProdTrackJetOverJet = 0.0;
+  double DeltaRJetTrack = 0.0;
+  double SignedIP2D = 0.0;
+  double SignedIP2DSign = 0.0;
+  double SignedIP3D = 0.0;
+  double SignedIP3DSign = 0.0;
+  double MomFraction = 0.0;
+  double DeltaRTrackVertex = 0.0;
+  double TrackPhi = 0.0;
+  double TrackCharge = 0.0;
+  double TrackITSChi2NCl = 0.0;
+  double TrackTPCChi2NCl = 0.0;
+  double TrackITSNCls = 0.0;
+  double TrackTPCNCls = 0.0;
+  double TrackTPCNCrossedRows = 0.0;
+  int TrackOrigin = -1;
+  int TrackVtxIndex = -1;
 };
 
 struct BJetSVParams {
-  double mSVpT = 0.0;
-  double mDeltaRSVJet = 0.0;
-  double mSVMass = 0.0;
-  double mSVfE = 0.0;
-  double mIPXY = 0.0;
-  double mCPA = 0.0;
-  double mChi2PCA = 0.0;
-  double mDispersion = 0.0;
-  double mDecayLength2D = 0.0;
-  double mDecayLength2DError = 0.0;
-  double mDecayLength3D = 0.0;
-  double mDecayLength3DError = 0.0;
+  double SVpT = 0.0;
+  double DeltaRSVJet = 0.0;
+  double SVMass = 0.0;
+  double SVfE = 0.0;
+  double IPxy = 0.0;
+  double CPA = 0.0;
+  double Chi2PCA = 0.0;
+  double Dispersion = 0.0;
+  double DecayLength2D = 0.0;
+  double DecayLength2DError = 0.0;
+  double DecayLength3D = 0.0;
+  double DecayLength3DError = 0.0;
 };
 
 //________________________________________________________________________
@@ -1015,7 +1015,7 @@ void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*a
   }
 
   auto compare = [](BJetTrackParams& tr1, BJetTrackParams& tr2) {
-    return (tr1.mSignedIP2D / tr1.mSignedIP2DSign) > (tr2.mSignedIP2D / tr2.mSignedIP2DSign);
+    return (tr1.SignedIP2D / tr1.SignedIP2DSign) > (tr2.SignedIP2D / tr2.SignedIP2DSign);
   };
 
   // Sort the tracks based on their IP significance in descending order
@@ -1040,7 +1040,7 @@ void analyzeJetTrackInfo4MLnoSV(AnalysisJet const& analysisJet, AnyTracks const&
   }
 
   auto compare = [](BJetTrackParams& tr1, BJetTrackParams& tr2) {
-    return (tr1.mSignedIP2D / tr1.mSignedIP2DSign) > (tr2.mSignedIP2D / tr2.mSignedIP2DSign);
+    return (tr1.SignedIP2D / tr1.SignedIP2DSign) > (tr2.SignedIP2D / tr2.SignedIP2DSign);
   };
 
   // Sort the tracks based on their IP significance in descending order

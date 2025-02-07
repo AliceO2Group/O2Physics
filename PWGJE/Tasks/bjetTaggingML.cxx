@@ -259,7 +259,7 @@ struct BJetTaggingML {
     }
 
     auto compare = [](jettaggingutilities::BJetTrackParams& tr1, jettaggingutilities::BJetTrackParams& tr2) {
-      return (tr1.mSignedIP2D / tr1.mSignedIP2DSign) > (tr2.mSignedIP2D / tr2.mSignedIP2DSign);
+      return (tr1.SignedIP2D / tr1.SignedIP2DSign) > (tr2.SignedIP2D / tr2.SignedIP2DSign);
     };
 
     // Sort the tracks based on their IP significance in descending order
@@ -312,7 +312,7 @@ struct BJetTaggingML {
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass());
 
       if (doDataDriven) {
-        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), analysisJet.scoreML(), -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].mSVMass, svsParams[0].mSVfE);
+        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), analysisJet.scoreML(), -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].SVMass, svsParams[0].SVfE);
       }
     }
   }
@@ -373,13 +373,13 @@ struct BJetTaggingML {
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass(), eventWeight);
 
       if (doDataDriven) {
-        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), analysisJet.scoreML(), -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].mSVMass, svsParams[0].mSVfE);
+        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), analysisJet.scoreML(), -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].SVMass, svsParams[0].SVfE);
         if (jetFlavor == 2) {
-          registry.fill(HIST("hSparse_bjets"), analysisJet.pt(), analysisJet.scoreML(), -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].mSVMass, svsParams[0].mSVfE);
+          registry.fill(HIST("hSparse_bjets"), analysisJet.pt(), analysisJet.scoreML(), -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].SVMass, svsParams[0].SVfE);
         } else if (jetFlavor == 1) {
-          registry.fill(HIST("hSparse_cjets"), analysisJet.pt(), analysisJet.scoreML(), -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].mSVMass, svsParams[0].mSVfE);
+          registry.fill(HIST("hSparse_cjets"), analysisJet.pt(), analysisJet.scoreML(), -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].SVMass, svsParams[0].SVfE);
         } else {
-          registry.fill(HIST("hSparse_lfjets"), analysisJet.pt(), analysisJet.scoreML(), -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].mSVMass, svsParams[0].mSVfE);
+          registry.fill(HIST("hSparse_lfjets"), analysisJet.pt(), analysisJet.scoreML(), -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].SVMass, svsParams[0].SVfE);
         }
       }
 

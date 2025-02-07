@@ -58,44 +58,44 @@
 namespace o2::analysis
 {
 enum class InputFeaturesBTag : uint8_t {
-  mJetpT = 0,
-  mJetEta,
-  mJetPhi,
-  mNTracks,
-  mNSV,
-  mJetMass,
-  mTrackpT,
-  mTrackEta,
-  mDotProdTrackJet,
-  mDotProdTrackJetOverJet,
-  mDeltaRJetTrack,
-  mSignedIP2D,
-  mSignedIP2DSign,
-  mSignedIP3D,
-  mSignedIP3DSign,
-  mMomFraction,
-  mDeltaRTrackVertex,
-  mTrackPhi,
-  mTrackCharge,
-  mTrackITSChi2NCl,
-  mTrackTPCChi2NCl,
-  mTrackITSNCls,
-  mTrackTPCNCls,
-  mTrackTPCNCrossedRows,
-  mTrackOrigin,
-  mTrackVtxIndex,
-  mSVpT,
-  mDeltaRSVJet,
-  mSVMass,
-  mSVfE,
-  mIPXY,
-  mCPA,
-  mChi2PCA,
-  mDispersion,
-  mDecayLength2D,
-  mDecayLength2DError,
-  mDecayLength3D,
-  mDecayLength3DError,
+  JetpT = 0,
+  JetEta,
+  JetPhi,
+  NTracks,
+  NSV,
+  JetMass,
+  TrackpT,
+  TrackEta,
+  DotProdTrackJet,
+  DotProdTrackJetOverJet,
+  DeltaRJetTrack,
+  SignedIP2D,
+  SignedIP2DSign,
+  SignedIP3D,
+  SignedIP3DSign,
+  MomFraction,
+  DeltaRTrackVertex,
+  TrackPhi,
+  TrackCharge,
+  TrackITSChi2NCl,
+  TrackTPCChi2NCl,
+  TrackITSNCls,
+  TrackTPCNCls,
+  TrackTPCNCrossedRows,
+  TrackOrigin,
+  TrackVtxIndex,
+  SVpT,
+  DeltaRSVJet,
+  SVMass,
+  SVfE,
+  IPxy,
+  CPA,
+  Chi2PCA,
+  Dispersion,
+  DecayLength2D,
+  DecayLength2DError,
+  DecayLength3D,
+  DecayLength3DError,
 };
 
 template <typename TypeOutputScore = float>
@@ -125,12 +125,12 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
     // Jet features
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {
-        CHECK_AND_FILL_VEC_BTAG(jetInput, jet, mJetpT)
-        CHECK_AND_FILL_VEC_BTAG(jetInput, jet, mJetEta)
-        CHECK_AND_FILL_VEC_BTAG(jetInput, jet, mJetPhi)
-        CHECK_AND_FILL_VEC_BTAG(jetInput, jet, mNTracks)
-        CHECK_AND_FILL_VEC_BTAG(jetInput, jet, mNSV)
-        CHECK_AND_FILL_VEC_BTAG(jetInput, jet, mJetMass)
+        CHECK_AND_FILL_VEC_BTAG(jetInput, jet, JetpT)
+        CHECK_AND_FILL_VEC_BTAG(jetInput, jet, JetEta)
+        CHECK_AND_FILL_VEC_BTAG(jetInput, jet, JetPhi)
+        CHECK_AND_FILL_VEC_BTAG(jetInput, jet, NTracks)
+        CHECK_AND_FILL_VEC_BTAG(jetInput, jet, NSV)
+        CHECK_AND_FILL_VEC_BTAG(jetInput, jet, JetMass)
 
         default:
           break;
@@ -141,26 +141,26 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
     for (const auto& track : tracks) {
       for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
         switch (idx) {
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mTrackpT)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mTrackEta)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mDotProdTrackJet)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mDotProdTrackJetOverJet)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mDeltaRJetTrack)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mSignedIP2D)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mSignedIP2DSign)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mSignedIP3D)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mSignedIP3DSign)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mMomFraction)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mDeltaRTrackVertex)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mTrackPhi)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mTrackCharge)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mTrackITSChi2NCl)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mTrackTPCChi2NCl)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mTrackITSNCls)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mTrackTPCNCls)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mTrackTPCNCrossedRows)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mTrackOrigin)
-          CHECK_AND_FILL_VEC_BTAG(trackInput, track, mTrackVtxIndex)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, TrackpT)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, TrackEta)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, DotProdTrackJet)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, DotProdTrackJetOverJet)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, DeltaRJetTrack)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, SignedIP2D)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, SignedIP2DSign)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, SignedIP3D)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, SignedIP3DSign)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, MomFraction)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, DeltaRTrackVertex)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, TrackPhi)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, TrackCharge)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, TrackITSChi2NCl)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, TrackTPCChi2NCl)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, TrackITSNCls)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, TrackTPCNCls)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, TrackTPCNCrossedRows)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, TrackOrigin)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, TrackVtxIndex)
 
           default:
             break;
@@ -172,18 +172,18 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
     for (const auto& sv : svs) {
       for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
         switch (idx) {
-          CHECK_AND_FILL_VEC_BTAG(svInput, sv, mSVpT)
-          CHECK_AND_FILL_VEC_BTAG(svInput, sv, mDeltaRSVJet)
-          CHECK_AND_FILL_VEC_BTAG(svInput, sv, mSVMass)
-          CHECK_AND_FILL_VEC_BTAG(svInput, sv, mSVfE)
-          CHECK_AND_FILL_VEC_BTAG(svInput, sv, mIPXY)
-          CHECK_AND_FILL_VEC_BTAG(svInput, sv, mCPA)
-          CHECK_AND_FILL_VEC_BTAG(svInput, sv, mChi2PCA)
-          CHECK_AND_FILL_VEC_BTAG(svInput, sv, mDispersion)
-          CHECK_AND_FILL_VEC_BTAG(svInput, sv, mDecayLength2D)
-          CHECK_AND_FILL_VEC_BTAG(svInput, sv, mDecayLength2DError)
-          CHECK_AND_FILL_VEC_BTAG(svInput, sv, mDecayLength3D)
-          CHECK_AND_FILL_VEC_BTAG(svInput, sv, mDecayLength3DError)
+          CHECK_AND_FILL_VEC_BTAG(svInput, sv, SVpT)
+          CHECK_AND_FILL_VEC_BTAG(svInput, sv, DeltaRSVJet)
+          CHECK_AND_FILL_VEC_BTAG(svInput, sv, SVMass)
+          CHECK_AND_FILL_VEC_BTAG(svInput, sv, SVfE)
+          CHECK_AND_FILL_VEC_BTAG(svInput, sv, IPxy)
+          CHECK_AND_FILL_VEC_BTAG(svInput, sv, CPA)
+          CHECK_AND_FILL_VEC_BTAG(svInput, sv, Chi2PCA)
+          CHECK_AND_FILL_VEC_BTAG(svInput, sv, Dispersion)
+          CHECK_AND_FILL_VEC_BTAG(svInput, sv, DecayLength2D)
+          CHECK_AND_FILL_VEC_BTAG(svInput, sv, DecayLength2DError)
+          CHECK_AND_FILL_VEC_BTAG(svInput, sv, DecayLength3D)
+          CHECK_AND_FILL_VEC_BTAG(svInput, sv, DecayLength3DError)
 
           default:
             break;
@@ -246,48 +246,48 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
   {
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
       // Jet features
-      FILL_MAP_BJET(mJetpT),
-      FILL_MAP_BJET(mJetEta),
-      FILL_MAP_BJET(mJetPhi),
-      FILL_MAP_BJET(mNTracks),
-      FILL_MAP_BJET(mNSV),
-      FILL_MAP_BJET(mJetMass),
+      FILL_MAP_BJET(JetpT),
+      FILL_MAP_BJET(JetEta),
+      FILL_MAP_BJET(JetPhi),
+      FILL_MAP_BJET(NTracks),
+      FILL_MAP_BJET(NSV),
+      FILL_MAP_BJET(JetMass),
 
       // Track features
-      FILL_MAP_BJET(mTrackpT),
-      FILL_MAP_BJET(mTrackEta),
-      FILL_MAP_BJET(mDotProdTrackJet),
-      FILL_MAP_BJET(mDotProdTrackJetOverJet),
-      FILL_MAP_BJET(mDeltaRJetTrack),
-      FILL_MAP_BJET(mSignedIP2D),
-      FILL_MAP_BJET(mSignedIP2DSign),
-      FILL_MAP_BJET(mSignedIP3D),
-      FILL_MAP_BJET(mSignedIP3DSign),
-      FILL_MAP_BJET(mMomFraction),
-      FILL_MAP_BJET(mDeltaRTrackVertex),
-      FILL_MAP_BJET(mTrackPhi),
-      FILL_MAP_BJET(mTrackCharge),
-      FILL_MAP_BJET(mTrackITSChi2NCl),
-      FILL_MAP_BJET(mTrackTPCChi2NCl),
-      FILL_MAP_BJET(mTrackITSNCls),
-      FILL_MAP_BJET(mTrackTPCNCls),
-      FILL_MAP_BJET(mTrackTPCNCrossedRows),
-      FILL_MAP_BJET(mTrackOrigin),
-      FILL_MAP_BJET(mTrackVtxIndex),
+      FILL_MAP_BJET(TrackpT),
+      FILL_MAP_BJET(TrackEta),
+      FILL_MAP_BJET(DotProdTrackJet),
+      FILL_MAP_BJET(DotProdTrackJetOverJet),
+      FILL_MAP_BJET(DeltaRJetTrack),
+      FILL_MAP_BJET(SignedIP2D),
+      FILL_MAP_BJET(SignedIP2DSign),
+      FILL_MAP_BJET(SignedIP3D),
+      FILL_MAP_BJET(SignedIP3DSign),
+      FILL_MAP_BJET(MomFraction),
+      FILL_MAP_BJET(DeltaRTrackVertex),
+      FILL_MAP_BJET(TrackPhi),
+      FILL_MAP_BJET(TrackCharge),
+      FILL_MAP_BJET(TrackITSChi2NCl),
+      FILL_MAP_BJET(TrackTPCChi2NCl),
+      FILL_MAP_BJET(TrackITSNCls),
+      FILL_MAP_BJET(TrackTPCNCls),
+      FILL_MAP_BJET(TrackTPCNCrossedRows),
+      FILL_MAP_BJET(TrackOrigin),
+      FILL_MAP_BJET(TrackVtxIndex),
 
       // Secondary vertex features
-      FILL_MAP_BJET(mSVpT),
-      FILL_MAP_BJET(mDeltaRSVJet),
-      FILL_MAP_BJET(mSVMass),
-      FILL_MAP_BJET(mSVfE),
-      FILL_MAP_BJET(mIPXY),
-      FILL_MAP_BJET(mCPA),
-      FILL_MAP_BJET(mChi2PCA),
-      FILL_MAP_BJET(mDispersion),
-      FILL_MAP_BJET(mDecayLength2D),
-      FILL_MAP_BJET(mDecayLength2DError),
-      FILL_MAP_BJET(mDecayLength3D),
-      FILL_MAP_BJET(mDecayLength3DError)};
+      FILL_MAP_BJET(SVpT),
+      FILL_MAP_BJET(DeltaRSVJet),
+      FILL_MAP_BJET(SVMass),
+      FILL_MAP_BJET(SVfE),
+      FILL_MAP_BJET(IPxy),
+      FILL_MAP_BJET(CPA),
+      FILL_MAP_BJET(Chi2PCA),
+      FILL_MAP_BJET(Dispersion),
+      FILL_MAP_BJET(DecayLength2D),
+      FILL_MAP_BJET(DecayLength2DError),
+      FILL_MAP_BJET(DecayLength3D),
+      FILL_MAP_BJET(DecayLength3DError)};
   }
 };
 
