@@ -843,11 +843,11 @@ struct AnalysisEventMixing {
         TString ccdbPathMuv24m = Form("%s/SingleMuv24m", PathFlow.Data());
         TString ccdbPathMuv22p = Form("%s/SingleMuv22p", PathFlow.Data());
         TString ccdbPathMuv24p = Form("%s/SingleMuv24p", PathFlow.Data());
-        SingleMuv22m = ccdb->getForTimeStamp<TH1D>(ccdbPathMuv22m.Data(), events.begin().timestamp());
-        SingleMuv24m = ccdb->getForTimeStamp<TH1D>(ccdbPathMuv24m.Data(), events.begin().timestamp());
-        SingleMuv22p = ccdb->getForTimeStamp<TH1D>(ccdbPathMuv22p.Data(), events.begin().timestamp());
-        SingleMuv24p = ccdb->getForTimeStamp<TH1D>(ccdbPathMuv24p.Data(), events.begin().timestamp());
-        if (SingleMuv22m == nullptr || SingleMuv24m == nullptr || SingleMuv22p == nullptr || SingleMuv24p == nullptr) {
+        SingleMuv22m = ccdb->getForTimeStamp<TH2D>(ccdbPathMuv22m.Data(), events.begin().timestamp());
+        SingleMuv24m = ccdb->getForTimeStamp<TH2D>(ccdbPathMuv24m.Data(), events.begin().timestamp());
+        SingleMuv22p = ccdb->getForTimeStamp<TH2D>(ccdbPathMuv22p.Data(), events.begin().timestamp());
+        SingleMuv24p = ccdb->getForTimeStamp<TH2D>(ccdbPathMuv24p.Data(), events.begin().timestamp());
+        if (SingleMuv22m == nullptr || SingleMuv24m == nullptr || SingleMuv22p == nullptr || SingleMuv24p == nullptr) {
           LOGF(fatal, "Single muon cumulants are not available in CCDB at timestamp=%llu", events.begin().timestamp());
         }
       }
