@@ -14,6 +14,8 @@
 /// \author Aimeric Landou <aimeric.landou@cern.ch>
 
 #include <cmath>
+#include <string>
+#include <vector>
 #include <TRandom3.h>
 #include <TMath.h>
 
@@ -70,7 +72,7 @@ struct TrackEfficiencyJets {
   Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range; only applied for reconstructed tracks, not mc particles"};
   Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum occupancy of tracks in neighbouring collisions in a given time range; only applied for reconstructed tracks, not mc particles"};
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
   bool isChargedParticle(int code)
@@ -114,7 +116,7 @@ struct TrackEfficiencyJets {
 
   void init(o2::framework::InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     if (doprocessEFficiencyPurity) {
@@ -255,7 +257,7 @@ struct TrackEfficiencyJets {
     bool hasSel8Coll = false;
     bool centralityCheck = false;
     if (acceptSplitCollisions == 2) {                                                     // check only that the first reconstructed collision passes the check
-      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
         hasSel8Coll = true;
       }
       if (!checkCentrality || ((centralityMin < collisions.begin().centrality()) && (collisions.begin().centrality() < centralityMax))) { // effect unclear if mcColl is split
@@ -263,7 +265,7 @@ struct TrackEfficiencyJets {
       }
     } else { // check that at least one of the reconstructed collisions passes the checks
       for (auto& collision : collisions) {
-        if (jetderiveddatautilities::selectCollision(collision, eventSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
           hasSel8Coll = true;
         }
         if (!checkCentrality || ((centralityMin < collision.centrality()) && (collision.centrality() < centralityMax))) { // effect unclear if mcColl is split
@@ -314,7 +316,7 @@ struct TrackEfficiencyJets {
         return;
       }
 
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !(abs(collision.posZ()) < vertexZCut)) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(abs(collision.posZ()) < vertexZCut)) {
         continue;
       }
 
@@ -389,7 +391,7 @@ struct TrackEfficiencyJets {
   {
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -410,7 +412,7 @@ struct TrackEfficiencyJets {
     float eventWeight = collision.mcCollision().weight();
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -444,7 +446,7 @@ struct TrackEfficiencyJets {
     bool hasSel8Coll = false;
     bool centralityCheck = false;
     if (acceptSplitCollisions == 2) {                                                     // check only that the first reconstructed collision passes the check
-      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
         hasSel8Coll = true;
       }
       if (!checkCentrality || ((centralityMin < collisions.begin().centrality()) && (collisions.begin().centrality() < centralityMax))) { // effect unclear if mcColl is split
@@ -452,7 +454,7 @@ struct TrackEfficiencyJets {
       }
     } else { // check that at least one of the reconstructed collisions passes the checks
       for (auto& collision : collisions) {
-        if (jetderiveddatautilities::selectCollision(collision, eventSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
           hasSel8Coll = true;
         }
         if (!checkCentrality || ((centralityMin < collision.centrality()) && (collision.centrality() < centralityMax))) { // effect unclear if mcColl is split
@@ -494,7 +496,7 @@ struct TrackEfficiencyJets {
     bool hasSel8Coll = false;
     bool centralityCheck = false;
     if (acceptSplitCollisions == 2) {                                                     // check only that the first reconstructed collision passes the check
-      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
         hasSel8Coll = true;
       }
       if (!checkCentrality || ((centralityMin < collisions.begin().centrality()) && (collisions.begin().centrality() < centralityMax))) { // effect unclear if mcColl is split
@@ -502,7 +504,7 @@ struct TrackEfficiencyJets {
       }
     } else { // check that at least one of the reconstructed collisions passes the checks
       for (auto& collision : collisions) {
-        if (jetderiveddatautilities::selectCollision(collision, eventSelection)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
           hasSel8Coll = true;
         }
         if (!checkCentrality || ((centralityMin < collision.centrality()) && (collision.centrality() < centralityMax))) { // effect unclear if mcColl is split

@@ -21,6 +21,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "fastjet/contrib/LundGenerator.hh"
 #include "fastjet/PseudoJet.hh"
@@ -67,11 +68,11 @@ struct JetLundReclustering {
   Configurable<float> jet_max_eta{"jet_max_eta", 0.5, "maximum jet eta"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   void init(InitContext const&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
 
     registry.add("PrimaryLundPlane_kT", "Primary Lund 3D plane;ln(R/Delta);ln(k_{t}/GeV);{p}_{t}", {HistType::kTH3F, {{100, 0, 10}, {100, -10, 10}, {20, 0, 200}}});
     registry.add("PrimaryLundPlane_z", "Primary Lund 3D plane;ln(R/Delta);ln(1/z);{p}_{t}", {HistType::kTH3F, {{100, 0, 10}, {100, 0, 10}, {20, 0, 200}}});
@@ -122,7 +123,7 @@ struct JetLundReclustering {
                           soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets,
                           aod::JetTracks const&)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (const auto& jet : jets) {
