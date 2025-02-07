@@ -142,7 +142,8 @@ struct Phik0shortanalysis {
   Configurable<bool> cfgiskNoITSROFrameBorder{"cfgiskNoITSROFrameBorder", false, "kNoITSROFrameBorder request on RecMC collisions"};
 
   // Configurable for MC closure
-  Configurable<bool> cfgisRecMCWPDGForClosure{"cfgisRecMCWPDGForClosure", false, "RecoMC with PDG Codes for Closure"};
+  Configurable<bool> cfgisRecMCWPDGForClosure1{"cfgisRecMCWPDGForClosure1", false, "RecoMC with PDG Codes for Closure only for Associated particles"};
+  Configurable<bool> cfgisRecMCWPDGForClosure2{"cfgisRecMCWPDGForClosure2", false, "RecoMC with PDG Codes for Closure"};
   Configurable<bool> cfgisGenMCForClosure{"cfgisGenMCForClosure", false, "GenMC for Closure"};
 
   // Constants
@@ -1387,7 +1388,7 @@ struct Phik0shortanalysis {
 
     // V0 already reconstructed by the builder
     for (const auto& v0 : V0s) {
-      if (cfgisRecMCWPDGForClosure) {
+      if (cfgisRecMCWPDGForClosure1) {
         if (!v0.has_mcParticle())
           continue;
         auto v0mcparticle = v0.mcParticle();
@@ -1416,6 +1417,14 @@ struct Phik0shortanalysis {
 
         auto track1ID = track1.globalIndex();
 
+        if (cfgisRecMCWPDGForClosure2) {
+          if (!track1.has_mcParticle())
+            continue;
+          auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
+          if (mcTrack1.pdgCode() != 321 || !mcTrack1.isPhysicalPrimary())
+            continue;
+        }
+
         for (const auto& track2 : negThisColl) {
           if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
@@ -1423,6 +1432,29 @@ struct Phik0shortanalysis {
           auto track2ID = track2.globalIndex();
           if (track2ID == track1ID)
             continue; // condition to avoid double counting of pair
+
+          if (cfgisRecMCWPDGForClosure2) {
+            if (!track2.has_mcParticle())
+              continue;
+            auto mcTrack2 = track2.mcParticle_as<aod::McParticles>();
+            if (mcTrack2.pdgCode() != -321 || !mcTrack2.isPhysicalPrimary())
+              continue;
+
+            bool isMCMotherPhi = false;
+            for (const auto& motherOfMcTrack1 : mcTrack1.mothers_as<aod::McParticles>()) {
+              for (const auto& motherOfMcTrack2 : mcTrack2.mothers_as<aod::McParticles>()) {
+                if (motherOfMcTrack1.pdgCode() != motherOfMcTrack2.pdgCode())
+                  continue;
+                if (motherOfMcTrack1.globalIndex() != motherOfMcTrack2.globalIndex())
+                  continue;
+                if (motherOfMcTrack1.pdgCode() != 333)
+                  continue;
+                isMCMotherPhi = true;
+              }
+            }
+            if (!isMCMotherPhi)
+              continue;
+          }
 
           TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
 
@@ -1470,7 +1502,7 @@ struct Phik0shortanalysis {
 
     // Loop over all primary pion candidates
     for (const auto& track : fullMCTracks) {
-      if (cfgisRecMCWPDGForClosure) {
+      if (cfgisRecMCWPDGForClosure1) {
         if (!track.has_mcParticle())
           continue;
         auto mcTrack = track.mcParticle_as<aod::McParticles>();
@@ -1495,6 +1527,14 @@ struct Phik0shortanalysis {
 
         auto track1ID = track1.globalIndex();
 
+        if (cfgisRecMCWPDGForClosure2) {
+          if (!track1.has_mcParticle())
+            continue;
+          auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
+          if (mcTrack1.pdgCode() != 321 || !mcTrack1.isPhysicalPrimary())
+            continue;
+        }
+
         for (const auto& track2 : negThisColl) {
           if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
@@ -1502,6 +1542,29 @@ struct Phik0shortanalysis {
           auto track2ID = track2.globalIndex();
           if (track2ID == track1ID)
             continue; // condition to avoid double counting of pair
+
+          if (cfgisRecMCWPDGForClosure2) {
+            if (!track2.has_mcParticle())
+              continue;
+            auto mcTrack2 = track2.mcParticle_as<aod::McParticles>();
+            if (mcTrack2.pdgCode() != -321 || !mcTrack2.isPhysicalPrimary())
+              continue;
+
+            bool isMCMotherPhi = false;
+            for (const auto& motherOfMcTrack1 : mcTrack1.mothers_as<aod::McParticles>()) {
+              for (const auto& motherOfMcTrack2 : mcTrack2.mothers_as<aod::McParticles>()) {
+                if (motherOfMcTrack1.pdgCode() != motherOfMcTrack2.pdgCode())
+                  continue;
+                if (motherOfMcTrack1.globalIndex() != motherOfMcTrack2.globalIndex())
+                  continue;
+                if (motherOfMcTrack1.pdgCode() != 333)
+                  continue;
+                isMCMotherPhi = true;
+              }
+            }
+            if (!isMCMotherPhi)
+              continue;
+          }
 
           TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
 
