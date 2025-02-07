@@ -44,6 +44,8 @@ struct HfCandidateSelectorXicToPKPi {
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
   Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID at filtering level"};
+  // Combined PID options
+  Configurable<bool> usePidTpcAndTof{"usePidTpcAndTof", false, "Bool to decide how to combine TPC and TOF PID: true =  both (if present, only one otherwise); false = one is enough"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
@@ -81,7 +83,7 @@ struct HfCandidateSelectorXicToPKPi {
   TrackSelectorPr selectorProton;
   HfHelper hfHelper;
 
-  using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
+  using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
 
   void init(InitContext const&)
   {
@@ -269,11 +271,24 @@ struct HfCandidateSelectorXicToPKPi {
         pidXicToPiKP = 1;
       } else {
         // track-level PID selection
-        auto pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1);
-        auto pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2);
-        auto pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
-        auto pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
-        auto pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+        TrackSelectorPID::Status pidTrackPos1Proton = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackPos2Proton = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackPos1Pion = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackPos2Pion = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackNegKaon = TrackSelectorPID::Accepted;
+        if (usePidTpcAndTof) {
+          pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1);
+          pidTrackPos2Proton = selectorProton.statusTpcAndTof(trackPos2);
+          pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
+          pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
+          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+        } else {
+          pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1);
+          pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2);
+          pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
+          pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
+          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+        }
 
         if (pidTrackPos1Proton == TrackSelectorPID::Accepted &&
             pidTrackNegKaon == TrackSelectorPID::Accepted &&
