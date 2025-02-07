@@ -132,6 +132,14 @@ struct JetSpectraEseTask {
       registry.addClone("hPsi2FT0C", "hEPUncorV2");
       registry.addClone("hPsi2FT0C", "hEPRectrV2");
       registry.addClone("hPsi2FT0C", "hEPTwistV2");
+
+      registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(1, "Input event");
+      registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(2, "Event selection");
+      registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(3, "Occupancy cut");
+      registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(4, "ESE available");
+      registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(5, "Lead track");
+      registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(6, "Jet loop");
+      registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(7, "Centrality analyzed");
     }
     if (doprocessMCParticleLevel) {
       LOGF(info, "JetSpectraEseTask::init() - processMCParticleLevel");
@@ -142,6 +150,10 @@ struct JetSpectraEseTask {
       registry.add("hPartJetSparse", ";Centrality;#it{p}_{T,jet part} (GeV/#it{c})", {HistType::kTHnSparseF, {{110, -10, 100}, {jetPtAxis}, {100, -1.0, 1.0}, {80, -1.0, 7}}});
       registry.add("hPartJetEta", "particle level jet #eta;#eta_{jet part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
       registry.add("hPartJetPhi", "particle level jet #phi;#phi_{jet part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
+
+      registry.get<TH1>(HIST("hMCPartEventCounter"))->GetXaxis()->SetBinLabel(1, "Input event");
+      registry.get<TH1>(HIST("hMCPartEventCounter"))->GetXaxis()->SetBinLabel(2, "Collision size < 1");
+      registry.get<TH1>(HIST("hMCPartEventCounter"))->GetXaxis()->SetBinLabel(3, "MCD size != 1");
     }
     if (doprocessMCDetectorLevel) {
       LOGF(info, "JetSpectraEseTask::init() - processMCDetectorLevel");
@@ -151,6 +163,10 @@ struct JetSpectraEseTask {
       registry.add("hDetJetSparse", ";Centr;#it{p}_{T,jet part} (GeV/#it{c})", {HistType::kTHnSparseF, {{110, -10, 100}, {jetPtAxis}, {100, -1.0, 1.0}, {80, -1.0, 7}}});
       registry.add("hDetJetEta", "particle level jet #eta;#eta_{jet part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
       registry.add("hDetJetPhi", "particle level jet #phi;#phi_{jet part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
+
+      registry.get<TH1>(HIST("hMCDetEventCounter"))->GetXaxis()->SetBinLabel(1, "Input event");
+      registry.get<TH1>(HIST("hMCDetEventCounter"))->GetXaxis()->SetBinLabel(2, "Event eelection");
+      registry.get<TH1>(HIST("hMCDetEventCounter"))->GetXaxis()->SetBinLabel(3, "Occupancy cut");
     }
     if (doprocessMCChargedMatched) {
       LOGF(info, "JetSpectraEseTask::init() - processMCChargedMatched");
@@ -173,6 +189,17 @@ struct JetSpectraEseTask {
       registry.add("hMatchedJetsPhiDelta", "#phi_{jet part}; det - part", {HistType::kTH2F, {{80, -1.0, 7.}, {200, -10.0, 10.}}});
       registry.add("hRespMcDMcPMatch", ";Centrality,#it{p}_{T, jet det}; #it{p}_{T, jet part}", HistType::kTHnSparseF, {{100, 0, 100}, jetPtAxis, jetPtAxis});
       registry.add("hRespMcDMcPMatchSubBkg", ";Centrality,#it{p}_{T, jet det}; #it{p}_{T, jet part}", HistType::kTHnSparseF, {{100, 0, 100}, jetPtAxis, jetPtAxis});
+
+      registry.get<TH1>(HIST("hMCEventCounter"))->GetXaxis()->SetBinLabel(1, "Input event");
+      registry.get<TH1>(HIST("hMCEventCounter"))->GetXaxis()->SetBinLabel(2, "Collision size < 1");
+      registry.get<TH1>(HIST("hMCEventCounter"))->GetXaxis()->SetBinLabel(3, "Vertex cut");
+      registry.get<TH1>(HIST("hMCEventCounter"))->GetXaxis()->SetBinLabel(4, "After analysis");
+      registry.get<TH1>(HIST("hMCDMatchedEventCounter"))->GetXaxis()->SetBinLabel(1, "Input event");
+      registry.get<TH1>(HIST("hMCDMatchedEventCounter"))->GetXaxis()->SetBinLabel(2, "Vertex cut");
+      registry.get<TH1>(HIST("hMCDMatchedEventCounter"))->GetXaxis()->SetBinLabel(3, "Event selection");
+      registry.get<TH1>(HIST("hMCDMatchedEventCounter"))->GetXaxis()->SetBinLabel(4, "Occupancy cut");
+      registry.get<TH1>(HIST("hMCDMatchedEventCounter"))->GetXaxis()->SetBinLabel(5, "Centrality cut1:cut2");
+      registry.get<TH1>(HIST("hMCDMatchedEventCounter"))->GetXaxis()->SetBinLabel(6, "After analysis");
     }
     if (doprocessESEOccupancy) {
       LOGF(info, "JetSpectraEseTask::init() - processESEOccupancy");
@@ -298,10 +325,10 @@ struct JetSpectraEseTask {
                               aod::JetParticles const&)
   {
     float counter{0.5f};
+    registry.fill(HIST("hMCDetEventCounter"), counter++);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
       return;
     registry.fill(HIST("hMCDetEventCounter"), counter++);
-
     if (cfgEvSelOccupancy && !isOccupancyWithin(collision))
       return;
     registry.fill(HIST("hMCDetEventCounter"), counter++);
@@ -341,6 +368,7 @@ struct JetSpectraEseTask {
       if (!(std::abs(collision.posZ()) < vertexZCut)) {
         return;
       }
+      registry.fill(HIST("hMCDMatchedEventCounter"), secCount++);
 
       if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
         return;
