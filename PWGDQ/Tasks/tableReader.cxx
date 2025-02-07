@@ -1230,17 +1230,17 @@ struct AnalysisSameEventPairing {
       dileptonMiniTree.reserve(1);
     }
 
-   if (fConfigMultDimuons.value) {
+    if (fConfigMultDimuons.value) {
 
       uint32_t mult_dimuons = 0;
       uint32_t mult_antimuons = 0;
       uint32_t mult_muons = 0;
 
-      for (auto& t : tracks1){
-        if(static_cast<uint32_t>(t.isMuonSelected()) & fTwoMuonFilterMask){
-          if (t.sign() < 0){
+      for (auto& t : tracks1) {
+        if (static_cast<uint32_t>(t.isMuonSelected()) & fTwoMuonFilterMask) {
+          if (t.sign() < 0) {
             mult_muons++;
-          }else{
+          } else {
             mult_antimuons++;
           }
         }
