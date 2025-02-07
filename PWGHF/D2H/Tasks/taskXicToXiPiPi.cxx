@@ -284,8 +284,8 @@ struct HfTaskXicToXiPiPi {
       if (scoreSize > 0) {
         outputBkg = candidate.mlProbXicToXiPiPi()[0];
         outputPrompt = candidate.mlProbXicToXiPiPi()[1];
-        if(scoreSize==3) {
-            outputFD = candidate.mlProbXicToXiPiPi()[2];
+        if (scoreSize == 3) {
+          outputFD = candidate.mlProbXicToXiPiPi()[2];
         }
       }
       registry.get<THnSparse>(HIST("hXicToXiPiPiVarsWithML"))->Fill(candidate.pt(), candidate.invMassXicPlus(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), outputBkg, outputPrompt, outputFD);
