@@ -223,8 +223,6 @@ struct HfCorrelatorD0Hadrons {
 
   Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
 
-  BinningType corrBinning{{zPoolBins, multPoolBins}, true};
-
   ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "z vertex position pools"};
   ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 10000.0f}, "event multiplicity pools (FT0M)"};
   ConfigurableAxis multPoolBinsMcGen{"multPoolBinsMcGen", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
@@ -235,6 +233,8 @@ struct HfCorrelatorD0Hadrons {
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {10000, 0., 10000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
+
+  BinningType corrBinning{{zPoolBins, multPoolBins}, true};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
