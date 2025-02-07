@@ -14,6 +14,9 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #include <cmath>
+#include <vector>
+#include <string>
+#include <algorithm>
 #include <TRandom3.h>
 
 #include "Framework/ASoA.h"
