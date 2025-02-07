@@ -709,7 +709,7 @@ struct PhianalysisTHnSparse {
   }
   PROCESS_SWITCH(PhianalysisTHnSparse, processTrue, "Process Event for MC reconstruction.", false);
 
-  void processGen(aod::McCollision const& mcCollision, soa::SmallGroups<EventCandidatesMCGen> const& collisions, LabeledTracks const& particles, aod::McParticles const& mcParticles)
+  void processGen(aod::McCollision const& mcCollision, soa::SmallGroups<EventCandidatesMCGen> const& collisions, LabeledTracks const& /*particles*/, aod::McParticles const& mcParticles)
   {
     registry.fill(HIST("QAMC/Gen/hMCEvent"), 0.5);
     if (std::abs(mcCollision.posZ()) > static_cast<float>(cut.vZ))
