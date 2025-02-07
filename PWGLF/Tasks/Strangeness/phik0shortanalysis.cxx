@@ -1371,7 +1371,7 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processRecMCClosurePhiQA, "Process for ReCMCQA and Phi in RecMCClosure", false);
 
-  void processRecMCClosurePhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullV0s const& V0s, V0DauMCTracks const&, MCCollisions const&)
+  void processRecMCClosurePhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&)
   {
     if (!acceptEventQA<true>(collision, false))
       return;
@@ -1417,14 +1417,6 @@ struct Phik0shortanalysis {
 
         auto track1ID = track1.globalIndex();
 
-        if (cfgisRecMCWPDGForClosure2) {
-          if (!track1.has_mcParticle())
-            continue;
-          auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
-          if (mcTrack1.pdgCode() != 321 || !mcTrack1.isPhysicalPrimary())
-            continue;
-        }
-
         for (const auto& track2 : negThisColl) {
           if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
@@ -1434,6 +1426,12 @@ struct Phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           if (cfgisRecMCWPDGForClosure2) {
+            if (!track1.has_mcParticle())
+              continue;
+            auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
+            if (mcTrack1.pdgCode() != 321 || !mcTrack1.isPhysicalPrimary())
+              continue;
+
             if (!track2.has_mcParticle())
               continue;
             auto mcTrack2 = track2.mcParticle_as<aod::McParticles>();
@@ -1527,14 +1525,6 @@ struct Phik0shortanalysis {
 
         auto track1ID = track1.globalIndex();
 
-        if (cfgisRecMCWPDGForClosure2) {
-          if (!track1.has_mcParticle())
-            continue;
-          auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
-          if (mcTrack1.pdgCode() != 321 || !mcTrack1.isPhysicalPrimary())
-            continue;
-        }
-
         for (const auto& track2 : negThisColl) {
           if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
@@ -1544,6 +1534,12 @@ struct Phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           if (cfgisRecMCWPDGForClosure2) {
+            if (!track1.has_mcParticle())
+              continue;
+            auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
+            if (mcTrack1.pdgCode() != 321 || !mcTrack1.isPhysicalPrimary())
+              continue;
+
             if (!track2.has_mcParticle())
               continue;
             auto mcTrack2 = track2.mcParticle_as<aod::McParticles>();
