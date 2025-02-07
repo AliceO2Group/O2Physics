@@ -72,11 +72,11 @@ struct sigma0builder {
   Preslice<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;
 
   // Histogram registry
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject}; 
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Event selection
   Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
-  
+
   struct : ConfigurableGroup {
     Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
     Configurable<bool> requireTriggerTVX{"requireTriggerTVX", true, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level"};
@@ -745,7 +745,7 @@ struct sigma0builder {
                       fPhotonPosITSCls, fPhotonNegITSCls, fPhotonPosITSChi2PerNcl, fPhotonNegITSChi2PerNcl,
                       fPhotonV0Type, GammaBDTScore);
 
-    sigmaLambdaExtras(fLambdaPt, fLambdaMass, fAntiLambdaMass, fLambdaQt, fLambdaAlpha, fLambdaLifeTime, 
+    sigmaLambdaExtras(fLambdaPt, fLambdaMass, fAntiLambdaMass, fLambdaQt, fLambdaAlpha, fLambdaLifeTime,
                       fLambdaRadius, fLambdaCosPA, fLambdaDCADau, fLambdaDCANegPV,
                       fLambdaDCAPosPV, fLambdaEta, fLambdaY, fLambdaPhi, fLambdaPosPrTPCNSigma,
                       fLambdaPosPiTPCNSigma, fLambdaNegPrTPCNSigma, fLambdaNegPiTPCNSigma,
@@ -816,7 +816,7 @@ struct sigma0builder {
           if (!lambda.has_v0MCCore())
             continue;
 
-          if (lambda.v0Type() != 1){ // safeguard to avoid TPC-only photons
+          if (lambda.v0Type() != 1) { // safeguard to avoid TPC-only photons
             continue;
           }
 
@@ -902,10 +902,10 @@ struct sigma0builder {
           if (doPi0QA)                               // Pi0 QA study
             runPi0QA(gamma, lambda);
 
-          if (lambda.v0Type() != 1){ // safeguard to avoid TPC-only photons
+          if (lambda.v0Type() != 1) { // safeguard to avoid TPC-only photons
             continue;
           }
-          
+
           // Sigma0 candidate properties
           std::array<float, 3> pVecPhotons{gamma.px(), gamma.py(), gamma.pz()};
           std::array<float, 3> pVecLambda{lambda.px(), lambda.py(), lambda.pz()};
