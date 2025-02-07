@@ -55,7 +55,8 @@ struct HfTaskXicToXiPiPi {
   ConfigurableAxis thnConfigAxisDecLengthXY{"thnConfigAxisDecLengthXY", {200, 0., 0.5}, ""};
   ConfigurableAxis thnConfigAxisCPA{"thnConfigAxisCPA", {110, -1.1, 1.1}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {100, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisBdtScorePrompt{"thnConfigAxisBdtScorePrompt", {100, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisBdtScoreNonPrompt{"thnConfigAxisBdtScoreNonPrompt", {100, 0., 1.}, ""};
   // Axis
   ConfigurableAxis binsDecLength{"binsDecLength", {200, 0., 0.5}, ""};
   ConfigurableAxis binsErrDecLength{"binsErrDecLength", {100, 0., 1.}, ""};
@@ -251,11 +252,12 @@ struct HfTaskXicToXiPiPi {
       const AxisSpec thnAxisDecLengthXY{thnConfigAxisDecLengthXY, "decay length xy (cm)"};
       const AxisSpec thnAxisCPA{thnConfigAxisCPA, "#Xi^{#plus}_{c} candidate cosine of pointing angle"};
       const AxisSpec thnAxisBdtScoreBkg{thnConfigAxisBdtScoreBkg, "BDT score of background"};
-      const AxisSpec thnAxisBdtScoreSignal{thnConfigAxisBdtScoreSignal, "BDT score of prompt Xic"};
+      const AxisSpec thnAxisBdtScorePrompt{thnConfigAxisBdtScorePrompt, "BDT score of prompt #Xi^{#plus}_{c}"};
+      const AxisSpec thnAxisBdtScoreNonPrompt{thnConfigAxisBdtScoreNonPrompt, "BDT score of non-prompt #Xi^{#plus}_{c}"};
 
       if (doprocessWithKFParticleAndML || doprocessWithDCAFitterAndML || doprocessMcWithKFParticleAndML || doprocessMcWithDCAFitterAndML) {
         // with ML information
-        registry.add("hXicToXiPiPiVarsWithML", "THnSparse for Xic with ML", HistType::kTHnSparseF, {thnAxisPt, thnAxisMass, thnAxisChi2PCA, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisBdtScoreBkg, thnAxisBdtScoreSignal});
+        registry.add("hXicToXiPiPiVarsWithML", "THnSparse for Xic with ML", HistType::kTHnSparseF, {thnAxisPt, thnAxisMass, thnAxisChi2PCA, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisBdtScoreBkg, thnAxisBdtScorePrompt, thnAxisBdtScoreNonPrompt});
       } else {
         // without ML information
         registry.add("hXicToXiPiPiVars", "THnSparse for Xic", HistType::kTHnSparseF, {thnAxisPt, thnAxisMass, thnAxisChi2PCA, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA});
@@ -274,13 +276,15 @@ struct HfTaskXicToXiPiPi {
 
     if constexpr (useMl) {
       // with ML information
-      double outputBkg = -99.;
-      double outputPrompt = -99.;
+      double outputBkg = -99.;      // bkg score
+      double outputPrompt = -99.;   // prompt score
+      double outputFD = -99.;       // non-prompt score
       if (candidate.mlProbXicToXiPiPi().size() > 0) {
         outputBkg = candidate.mlProbXicToXiPiPi()[0];
         outputPrompt = candidate.mlProbXicToXiPiPi()[1];
+        outputFD = candidate.mlProbXicToXiPiPi()[2];
       }
-      registry.get<THnSparse>(HIST("hXicToXiPiPiVarsWithML"))->Fill(candidate.pt(), candidate.invMassXicPlus(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), outputBkg, outputPrompt);
+      registry.get<THnSparse>(HIST("hXicToXiPiPiVarsWithML"))->Fill(candidate.pt(), candidate.invMassXicPlus(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), outputBkg, outputPrompt, outputFD);
     } else {
       // without ML information
       registry.get<THnSparse>(HIST("hXicToXiPiPiVars"))->Fill(candidate.pt(), candidate.invMassXicPlus(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa());
