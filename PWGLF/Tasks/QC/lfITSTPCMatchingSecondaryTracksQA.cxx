@@ -149,7 +149,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   }
 
   template <typename pionTrack>
-  void passedPionSelection(const pionTrack& track)
+  bool passedPionSelection(const pionTrack& track)
   {
     // TPC Selection
     if (track.tpcNSigmaPi() < nsigmaTPCmin || track.tpcNSigmaPi() > nsigmaTPCmax)
@@ -164,7 +164,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   }
 
   template <typename ItsTrack>
-  void passedTrackSelectionIts(const ItsTrack& track)
+  bool passedTrackSelectionIts(const ItsTrack& track)
   {
     if (!track.hasITS())
       return false;
