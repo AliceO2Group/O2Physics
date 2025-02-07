@@ -63,11 +63,11 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
   O2_DEFINE_CONFIGURABLE(cfgMinCentFT0C, float, 0.0f, "Minimum FT0C Centrality")
   O2_DEFINE_CONFIGURABLE(cfgMaxCentFT0C, float, 100.0f, "Maximum FT0C Centrality")
-  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, true, "Use additional event cut on mult correlations")
-  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, true, "Use additional track cut on phi")
-  O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, true, "Use Nch for flow observables")
+  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
+  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
+  O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
-  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, true, "Fill and output NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
@@ -75,14 +75,14 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2, "Custom DCA Z cut")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.2f, "Custom DCA XY cut")
-  O2_DEFINE_CONFIGURABLE(cfgNoTimeFrameBorder, bool, true, "kNoTimeFrameBorder");
-  O2_DEFINE_CONFIGURABLE(cfgNoITSROFrameBorder, bool, true, "kNoITSROFrameBorder");
-  O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileup, bool, true, "kNoSameBunchPileup");
-  O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
-  O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
-  O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, true, "kIsGoodITSLayersAll")
-  O2_DEFINE_CONFIGURABLE(cfgOccupancy, bool, true, "Bool for event selection on detector occupancy");
-  O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional event cut on mult correlations");
+  O2_DEFINE_CONFIGURABLE(cfgNoTimeFrameBorder, bool, false, "kNoTimeFrameBorder");
+  O2_DEFINE_CONFIGURABLE(cfgNoITSROFrameBorder, bool, false, "kNoITSROFrameBorder");
+  O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileup, bool, false, "kNoSameBunchPileup");
+  O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, false, "kIsGoodZvtxFT0vsPV");
+  O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, false, "kNoCollInTimeRangeStandard");
+   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, false, "kIsGoodITSLayersAll")
+  O2_DEFINE_CONFIGURABLE(cfgOccupancy, bool, false, "Bool for event selection on detector occupancy");
+  O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, false, "Use additional event cut on mult correlations");
   O2_DEFINE_CONFIGURABLE(FineBinning, bool, false, "Manually change to fine binning")
   O2_DEFINE_CONFIGURABLE(cfgTrackSelRun3ITSMatch, bool, false, "System check: Run3ITSMatch")
   O2_DEFINE_CONFIGURABLE(cfgTrackSel, bool, false, "System check: track selection")
@@ -268,6 +268,7 @@ struct FlowGfwTask {
     registry.add("ZNvsZEMcollrest", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
 
     // Track plots
+    registry.add("Nch", "N_{ch 0-5%} vs #Events of;N_{ch 0-5%};No. of Events", {HistType::kTH1D, {axisNch}});
     registry.add("Events_per_Centrality_Bin", "Events_per_Centrality_Bin;Centrality FT0C;No. of Events", kTH1F, {axisCentrality});
     registry.add("Global_Tracks_Nch_vs_Cent", "Global Tracks;Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
 
@@ -558,8 +559,8 @@ struct FlowGfwTask {
       }
       registry.fill(HIST("hEventCount"), kNOCOLLINTIMERANGESTANDART);
     }
-    if (cfgEvSelkIsGoodITSLayersAll) {
-      if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (cfgEvSelkIsGoodITSLayersAll){
+     if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         // removes dead staves of ITS
         return false;
       }
@@ -643,6 +644,7 @@ struct FlowGfwTask {
     }
   }
 
+
   // Apply process filters
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex && (aod::cent::centFT0C > cfgMinCentFT0C) && (aod::cent::centFT0C < cfgMaxCentFT0C);
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
@@ -688,24 +690,25 @@ struct FlowGfwTask {
     }
 
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
-    if (foundBC.has_zdc()) {
-      registry.fill(HIST("hEventCounterForZDC"), 1);
+    if (foundBC.has_zdc())
+    {
+        registry.fill(HIST("hEventCounterForZDC"), 1);
 
       // FT0 amplitude to use in fine binning
       double ft0aAmp = 0;
       double ft0cAmp = 0;
       double ft0mAmp = 0;
 
-      if (foundBC.has_ft0()) {
+     if (foundBC.has_ft0()) {
         for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
-          ft0aAmp += amplitude;
+         ft0aAmp += amplitude;
         }
         for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
           ft0cAmp += amplitude;
-        }
-      } else {
+       }
+     } else{
         ft0aAmp = ft0cAmp = -999;
-      }
+     }
 
       registry.fill(HIST("FT0AAmp"), ft0aAmp);
       registry.fill(HIST("FT0CAmp"), ft0cAmp);
@@ -722,10 +725,10 @@ struct FlowGfwTask {
       auto aZEM1 = zdcread.amplitudeZEM1();
       auto aZEM2 = zdcread.amplitudeZEM2();
 
-      registry.fill(HIST("ZNAcoll"), aZNA);
-      registry.fill(HIST("ZNCcoll"), aZNC);
-      registry.fill(HIST("ZPAcoll"), aZPA);
-      registry.fill(HIST("ZPCcoll"), aZPC);
+      registry.fill(HIST("ZNAcoll"),aZNA);
+      registry.fill(HIST("ZNCcoll"),aZNC);
+      registry.fill(HIST("ZPAcoll"),aZPA);
+      registry.fill(HIST("ZPCcoll"),aZPC);
 
       registry.fill(HIST("ZNvsFT0correl"), (ft0aAmp + ft0cAmp) / 100., aZNC + aZNA);
 
@@ -736,18 +739,18 @@ struct FlowGfwTask {
 
       registry.fill(HIST("ZNvsZEMcoll"), aZEM1 + aZEM2, aZNA + aZNC);
 
-      if (centrality >= 0 && centrality <= 5) {
+      if(centrality>=0 && centrality<=5){
         registry.fill(HIST("ZNvsZEMcoll05"), aZEM1 + aZEM2, aZNA + aZNC);
-      } else if (centrality > 5 && centrality <= 10) {
+      }else if (centrality>5 && centrality<=10){
         registry.fill(HIST("ZNvsZEMcoll510"), aZEM1 + aZEM2, aZNA + aZNC);
-      } else if (centrality > 10 && centrality <= 20) {
+      }else if (centrality>10 && centrality<=20){
         registry.fill(HIST("ZNvsZEMcoll1020"), aZEM1 + aZEM2, aZNA + aZNC);
-      } else if (centrality > 20 && centrality <= 30) {
+      }else if (centrality>20 && centrality<=30){
         registry.fill(HIST("ZNvsZEMcoll2030"), aZEM1 + aZEM2, aZNA + aZNC);
-      } else {
+      }else{
         registry.fill(HIST("ZNvsZEMcollrest"), aZEM1 + aZEM2, aZNA + aZNC);
       }
-    } // End of ZDC
+    }//End of ZDC
 
     float vtxz = collision.posZ();
     float lRandom = fRndm->Rndm();
@@ -785,7 +788,8 @@ struct FlowGfwTask {
     // track loop
     int globalTracksNch = 0;
 
-    for (const auto& track : tracks) {
+    for (const auto& track : tracks)
+    {
       if (!trackSelected(track))
         continue;
 
@@ -886,6 +890,8 @@ struct FlowGfwTask {
       fillProfile(corrconfigs.at(5), bootstrapArray[sampleIndex][kc32Nch05], globalTracksNch);
       fillProfile(corrconfigs.at(6), bootstrapArray[sampleIndex][kc32Nch05etagap], globalTracksNch);
       fillProfile(corrconfigs.at(7), bootstrapArray[sampleIndex][kc34Nch05], globalTracksNch);
+
+      registry.fill(HIST("Nch"),globalTracksNch);
     }
 
     // Filling Flow Container
@@ -894,7 +900,7 @@ struct FlowGfwTask {
     }
 
   } // End of process
-  PROCESS_SWITCH(FlowGfwTask, processData, "Process analysis for Run 3 data", true);
+  PROCESS_SWITCH(FlowGfwTask, processData, "Process analysis for Run 3 data", false);
 
   // Filter the Reconstructed tracks
   Filter mytrackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
