@@ -237,9 +237,20 @@ struct FwdMuonsUPC {
       0.60, 0.70, 0.80, 0.90, 1.00, 1.20, 1.40, 1.60, 1.80, 2.00, 2.50,
       3.00, 3.50};
 
+    std::vector<double> ptFitBinningHalfWidth = {
+      0.00, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05,
+      0.055, 0.06, 0.065, 0.07, 0.075, 0.08, 0.085, 0.09, 0.095, 0.10,
+      0.105, 0.11, 0.115, 0.12, 0.125, 0.13, 0.135, 0.14, 0.145, 0.15,
+      0.1625, 0.175, 0.1875, 0.20, 0.225, 0.25, 0.275, 0.30, 0.35, 0.40,
+      0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00,
+      1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.25,
+      2.50, 2.75, 3.00, 3.25, 3.50
+    };
+
     // axis
     const AxisSpec axisPt{nBinsPt, lowPt, highPt, "#it{p}_{T} GeV/#it{c}"};
     const AxisSpec axisPtFit = {ptFitBinning, "#it{p}_{T} (GeV/c)"};
+    const AxisSpec axisPtFit2 = {ptFitBinningHalfWidth, "#it{p}_{T} (GeV/c)"};
     const AxisSpec axisMass{nBinsMass, lowMass, highMass, "m_{#mu#mu} GeV/#it{c}^{2}"};
     const AxisSpec axisEta{nBinsEta, lowEta, highEta, "#eta"};
     const AxisSpec axisRapidity{nBinsRapidity, lowRapidity, highRapidity, "Rapidity"};
@@ -256,6 +267,7 @@ struct FwdMuonsUPC {
     registry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
     registry.add("hPt", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPt});
     registry.add("hPtFit", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit});
+    registry.add("hPtFit2", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit2});
     registry.add("hEta", "Pseudorapidty of muon pairs;;#counts", kTH1D, {axisEta});
     registry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
     registry.add("hPhi", "#varphi of muon pairs;;#counts", kTH1D, {axisPhi});
@@ -314,6 +326,7 @@ struct FwdMuonsUPC {
     mcRecoRegistry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
     mcRecoRegistry.add("hPt", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPt});
     mcRecoRegistry.add("hPtFit", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit});
+    mcRecoRegistry.add("hPtFit2", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit2});
     mcRecoRegistry.add("hEta", "Pseudorapidty of muon pairs;;#counts", kTH1D, {axisEta});
     mcRecoRegistry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
     mcRecoRegistry.add("hPhi", "#varphi of muon pairs;;#counts", kTH1D, {axisPhi});
@@ -615,6 +628,7 @@ struct FwdMuonsUPC {
     registry.fill(HIST("hMass"), p.M());
     registry.fill(HIST("hPt"), p.Pt());
     registry.fill(HIST("hPtFit"), p.Pt());
+    registry.fill(HIST("hPtFit2"), p.Pt());
     registry.fill(HIST("hEta"), p.Eta());
     registry.fill(HIST("hRapidity"), p.Rapidity());
     registry.fill(HIST("hPhi"), p.Phi());
@@ -812,6 +826,7 @@ struct FwdMuonsUPC {
     mcRecoRegistry.fill(HIST("hMass"), p.M());
     mcRecoRegistry.fill(HIST("hPt"), p.Pt());
     mcRecoRegistry.fill(HIST("hPtFit"), p.Pt());
+    mcRecoRegistry.fill(HIST("hPtFit2"), p.Pt());
     mcRecoRegistry.fill(HIST("hEta"), p.Eta());
     mcRecoRegistry.fill(HIST("hRapidity"), p.Rapidity());
     mcRecoRegistry.fill(HIST("hPhi"), p.Phi());
