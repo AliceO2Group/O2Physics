@@ -377,7 +377,8 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
-            if (cfgCutMinItsClusterSizeH3 < getMeanItsClsSize(track) / std::cosh(track.eta()) && getMeanItsClsSize(track) / std::cosh(track.eta()) < cfgCutMaxItsClusterSizeH3) {
+            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeH3 || 
+              getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeH3) {
               histos.fill(HIST("histogram/cuts"), 12);
               continue;
             }
@@ -422,7 +423,8 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
-            if (cfgCutMinItsClusterSizeHe < getMeanItsClsSize(track) / std::cosh(track.eta()) && getMeanItsClsSize(track) / std::cosh(track.eta()) < cfgCutMaxItsClusterSizeHe) {
+            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe || 
+              getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeHe) {
               histos.fill(HIST("histogram/cuts"), 12);
               continue;
             }
@@ -524,9 +526,11 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
-            if (cfgCutMinItsClusterSizeH3 < getMeanItsClsSize(track) / std::cosh(track.eta()) && getMeanItsClsSize(track) / std::cosh(track.eta()) < cfgCutMaxItsClusterSizeH3) {
+            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeH3 || 
+              getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeH3) {
               histos.fill(HIST("histogram/cuts"), 12);
               continue;
+            }
             }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
                         track.tpcInnerParam() / (1.f * track.sign()),
@@ -568,7 +572,8 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
-            if (cfgCutMinItsClusterSizeHe < getMeanItsClsSize(track) / std::cosh(track.eta()) && getMeanItsClsSize(track) / std::cosh(track.eta()) < cfgCutMaxItsClusterSizeHe) {
+            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe || 
+              getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeHe) {
               histos.fill(HIST("histogram/cuts"), 12);
               continue;
             }
