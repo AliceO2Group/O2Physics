@@ -911,10 +911,10 @@ struct K0MixedEvents {
         // if (!trk.isGlobalTrackWoDCA()) {
         //   continue;
         // }
-        if (track.trackType() != aod::track::Track) {
+        if (trk.trackType() != aod::track::Track) {
           continue;
         }
-        if (track.tofChi2() >= 10.f) {
+        if (trk.tofChi2() >= 10.f) {
           continue;
         }
         const auto& part = trk.mcParticle();
