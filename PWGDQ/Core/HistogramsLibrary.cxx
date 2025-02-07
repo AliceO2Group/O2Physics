@@ -1273,8 +1273,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "centrFT0C_Corr2Corr4REF_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 250, -1.0, 1.0, VarManager::kCORR2CORR4REF, VarManager::kM11M1111REFoverMp);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M11REFoverMp", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM11REFoverMp);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M1111REFoverMp", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM1111REFoverMp);
-        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M01POIoverMp", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM11REFoverMp);
-        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M0111POIoverMp", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM1111REFoverMp);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M01POIoverMp", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM01POIoverMp);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M0111POIoverMp", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM0111POIoverMp);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M11M1111REFoverMp", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM11M1111REFoverMp);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M01M0111overMp", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM01M0111overMp);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M11M0111overMp", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM11M0111overMp);
@@ -1288,6 +1288,21 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2POICorr4POI", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2POICORR4POI, VarManager::kM01M0111overMp);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2REFCorr4POI", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2REFCORR4POI, VarManager::kM11M0111overMp);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2REFCorr2POI", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2REFCORR2POI, VarManager::kM11M01overMp);
+      }
+      if (subGroupStr.Contains("singlecumulant")) {
+        int var[4] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C};
+        int bins[4] = {250, 60, 6, 18};
+        double minBins[4] = {0.0, 0.0, 2.5, 0.0};
+        double maxBins[4] = {5.0, 30.0, 4.0, 90.0};
+        hm->AddHistogram(histClass, "Mass_Pt_Rapidity_CentFT0C", "", 4, var, bins, minBins, maxBins, 0, -1, kTRUE);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2REFminus", "", true, -1, -1, -1, -1, 60, 0.0, 30.0, VarManager::kPt2, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2REFbydimuons, VarManager::kM11REFoverMpminus);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr4REFminus", "", true, -1, -1, -1, -1, 60, 0.0, 30.0, VarManager::kPt2, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR4REFbydimuons, VarManager::kM1111REFoverMpminus);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2REFplus", "", true, -1, -1, -1, -1, 60, 0.0, 30.0, VarManager::kPt1, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2REFbydimuons, VarManager::kM11REFoverMpplus);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr4REFplus", "", true, -1, -1, -1, -1, 60, 0.0, 30.0, VarManager::kPt1, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR4REFbydimuons, VarManager::kM1111REFoverMpplus);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2POIminus", "", true, -1, -1, -1, -1, 60, 0.0, 30.0, VarManager::kPt2, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2POIminus, VarManager::kM01POIoverMpminus);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr4POIminus", "", true, -1, -1, -1, -1, 60, 0.0, 30.0, VarManager::kPt2, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR4POIminus, VarManager::kM0111POIoverMpminus);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2POIplus", "", true, -1, -1, -1, -1, 60, 0.0, 30.0, VarManager::kPt1, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2POIplus, VarManager::kM01POIoverMpplus);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr4POIplus", "", true, -1, -1, -1, -1, 60, 0.0, 30.0, VarManager::kPt1, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR4POIplus, VarManager::kM0111POIoverMpplus);
       }
       if (subGroupStr.Contains("res-flow-dimuon")) {
         int varV2[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kR2SP_AB, VarManager::kR2EP_AB};
