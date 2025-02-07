@@ -328,7 +328,13 @@ struct MultiplicitySelector {
     if (doprocessFT0C) {
       enabledFunctions++;
     }
+    if (doprocessFT0CVariant1) {
+      enabledFunctions++;
+    }
     if (doprocessFT0A) {
+      enabledFunctions++;
+    }
+    if (doprocessCentNGlobal) {
       enabledFunctions++;
     }
     if (doprocessMCGen) {
