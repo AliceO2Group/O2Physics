@@ -17,6 +17,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include <TParameter.h>
@@ -241,7 +242,7 @@ struct K0MixedEvents {
     const AxisSpec dcaZAxis{dcaXyBinning, "DCA_{z} (cm)"};
     const AxisSpec multPercentileAxis{multPercentileBinning, "Mult. Perc."};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{11, 0.f, 10.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{11, 0.f, 11.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "TVX");
@@ -337,9 +338,9 @@ struct K0MixedEvents {
         Pair->setPair(tracks[trk1], tracks[trk2]);
 
         registry.fill(HIST("SEcand"), 1.f);
-        if (!Pair->isClosePair()) {
-          continue;
-        }
+        // if (!Pair->isClosePair()) {
+        //   continue;
+        // }
         if (std::abs(Pair->getRapidity()) > 0.5f) {
           continue;
         }
@@ -362,9 +363,9 @@ struct K0MixedEvents {
         if constexpr (isSameEvent) {
           registry.fill(HIST("SEcand"), 1.f);
         }
-        if (!Pair->isClosePair()) {
-          continue;
-        }
+        // if (!Pair->isClosePair()) {
+        //   continue;
+        // }
         if (std::abs(Pair->getRapidity()) > 0.5f) {
           continue;
         }
@@ -704,14 +705,12 @@ struct K0MixedEvents {
       // if (!track.isGlobalTrackWoDCA()) {
       //   continue;
       // }
-
       if (track.trackType() != aod::track::Track) {
         continue;
       }
       if (track.tofChi2() >= 10.f) {
         continue;
       }
-
       if (!track.has_collision()) {
         continue;
       }
@@ -797,7 +796,7 @@ struct K0MixedEvents {
           continue;
       }
 
-      mixbins[std::pair<int, int>{round(collision.posZ() / _vertexbinwidth), floor(collision.multNTracksPV() / _multbinwidth)}].push_back(std::make_shared<decltype(collision)>(collision));
+      mixbins[std::pair<int, int>{round(collision.posZ() / _vertexbinwidth), floor(collision.multNTracksPVeta1() / _multbinwidth)}].push_back(std::make_shared<decltype(collision)>(collision));
     }
 
     //====================================== mixing starts here ======================================
@@ -909,7 +908,13 @@ struct K0MixedEvents {
         if (!isTrackSelected(trk)) {
           continue;
         }
-        if (!trk.isGlobalTrackWoDCA()) {
+        // if (!trk.isGlobalTrackWoDCA()) {
+        //   continue;
+        // }
+        if (track.trackType() != aod::track::Track) {
+          continue;
+        }
+        if (track.tofChi2() >= 10.f) {
           continue;
         }
         const auto& part = trk.mcParticle();
