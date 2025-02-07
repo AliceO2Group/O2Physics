@@ -361,7 +361,7 @@ struct AngularCorrelationsInJets {
   }
 
   template <class T>
-  bool singleSpeciesTPCNSigma(T const& track) // make cut configurable
+  bool singleSpeciesTPCNSigma(T const& track)              // make cut configurable
   {                                                        // reject any track that has nsigma < 3 for more than 1 species
     if (useRejectionCut && (track.tpcNSigmaStoreEl() < nsigmaRejection || track.tpcNSigmaStoreMu() < nsigmaRejection || track.tpcNSigmaStorePi() < nsigmaRejection || track.tpcNSigmaStoreKa() < nsigmaRejection || track.tpcNSigmaStoreTr() < nsigmaRejection || track.tpcNSigmaStoreAl() < nsigmaRejection || track.tpcNSigmaDe() < nsigmaRejection || track.tpcNSigmaHe() < nsigmaRejection))
       return false;
@@ -381,7 +381,6 @@ struct AngularCorrelationsInJets {
       if (TMath::Abs(track.dcaZ()) > protonDCAzCF)
         return false;
 
-      
       registryData.fill(HIST("hTPCnsigmaProtonCF"), track.pt(), track.tpcNSigmaPr());
       if (track.hasTOF())
         registryData.fill(HIST("hTOFnsigmaProtonCF"), track.pt(), track.tofNSigmaPr());
@@ -760,7 +759,7 @@ struct AngularCorrelationsInJets {
         registryData.fill(HIST("hTrackProtocol"), 14);
         continue;
       }
-      for (int j=0; j < static_cast<int>(particleVectorAnti.size()); j++) {
+      for (int j = 0; j < static_cast<int>(particleVectorAnti.size()); j++) {
         if (std::isnan(particleVectorAnti.at(j).phi()))
           continue;
         if (TMath::Abs(particleVectorAnti.at(j).phi()) > 2 * TMath::Pi()) {
@@ -1356,13 +1355,12 @@ struct AngularCorrelationsInJets {
   {
     registryData.fill(HIST("hEventProtocol"), 0);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
-      return
-    registryData.fill(HIST("hNumberOfEvents"), 0);
+      return registryData.fill(HIST("hNumberOfEvents"), 0);
     registryData.fill(HIST("hEventProtocol"), 1);
 
     int jetCounter = 0;
 
-    for (const auto& jet : allJets) {// loop over jets in event
+    for (const auto& jet : allJets) { // loop over jets in event
       jetCounter++;
       std::vector<FullTracksRun3::iterator> jetProtons;
       std::vector<FullTracksRun3::iterator> jetAntiprotons;
@@ -1414,7 +1412,7 @@ struct AngularCorrelationsInJets {
         registryQA.fill(HIST("hEtaJet"), track.eta());
         registryQA.fill(HIST("hEtaPtJet"), track.pt(), track.eta());
 
-        if (!std::isnan(track.phi()) && !std::isnan(jet.phi())) {// geometric jet cone
+        if (!std::isnan(track.phi()) && !std::isnan(jet.phi())) { // geometric jet cone
           double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - jet.phi());
           if (DeltaPhi > TMath::Pi())
             DeltaPhi = DeltaPhi - 2 * TMath::Pi();
