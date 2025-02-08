@@ -1233,6 +1233,20 @@ struct AnalysisSameEventPairing {
     if (fConfigMultDimuons.value) {
 
       uint32_t mult_dimuons = 0;
+      uint32_t mult_antimuons = 0;
+      uint32_t mult_muons = 0;
+
+      for (auto& t : tracks1) {
+        if constexpr (TPairType == VarManager::kDecayToMuMu) {
+          if (static_cast<uint32_t>(t.isMuonSelected()) & fTwoMuonFilterMask) {
+            if (t.sign() < 0) {
+              mult_muons++;
+            } else {
+              mult_antimuons++;
+            }
+          }
+        }
+      }
 
       for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
         if constexpr (TPairType == VarManager::kDecayToMuMu) {
@@ -1245,6 +1259,8 @@ struct AnalysisSameEventPairing {
       }
 
       VarManager::fgValues[VarManager::kMultDimuons] = mult_dimuons;
+      VarManager::fgValues[VarManager::kMultMuons] = mult_muons;
+      VarManager::fgValues[VarManager::kMultAntiMuons] = mult_antimuons;
     }
 
     if (fConfigFlowReso) {
