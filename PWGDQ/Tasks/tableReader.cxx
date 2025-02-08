@@ -1237,7 +1237,7 @@ struct AnalysisSameEventPairing {
       uint32_t mult_muons = 0;
 
       for (auto& t : tracks1) {
-        if constexpr (TPairType == VarManager::kDecayToMuMu){
+        if constexpr (TPairType == VarManager::kDecayToMuMu) {
           if (static_cast<uint32_t>(t.isMuonSelected()) & fTwoMuonFilterMask) {
             if (t.sign() < 0) {
               mult_muons++;
@@ -1246,7 +1246,6 @@ struct AnalysisSameEventPairing {
             }
           }
         }
-
       }
 
       for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
