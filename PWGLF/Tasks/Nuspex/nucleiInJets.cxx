@@ -172,7 +172,8 @@ struct NucleiInJets {
     registryQC.add("jet_ue_overlaps", "jet_ue_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
     registryQC.add("ue_ue_overlaps", "ue_ue_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
     registryQC.add("tot_overlaps", "tot_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
-    registryQC.add("hJetArea", "hJetArea", HistType::kTH1F, {{450, 0, 15, "Area"}});
+    registryQC.add("hJetArea", "hJetArea", HistType::kTH1F, {{2000, 0, 2, "Area"}});
+    registryQC.add("hError", "hError", HistType::kTH1F, {{5, 0, 5, "error"}});
 
     // Event Counters
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
@@ -530,7 +531,7 @@ struct NucleiInJets {
     std::vector<int> nParticlesInjet;
 
     do {
-      double dijMin(1e+06), diBmin(1e+06);
+      double dijMin(1e+300), diBmin(1e+300);
       int iMin(0), jMin(0), iBmin(0);
       for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
         if (trk[i].Mag() == 0)
@@ -1018,7 +1019,7 @@ struct NucleiInJets {
       std::vector<int> nParticlesInjet;
 
       do {
-        double dijMin(1e+06), diBmin(1e+06);
+        double dijMin(1e+300), diBmin(1e+300);
         int iMin(0), jMin(0), iBmin(0);
         for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
           if (trk[i].Mag() == 0)
@@ -1247,7 +1248,7 @@ struct NucleiInJets {
       std::vector<int> nParticlesInjet;
 
       do {
-        double dijMin(1e+06), diBmin(1e+06);
+        double dijMin(1e+300), diBmin(1e+300);
         int iMin(0), jMin(0), iBmin(0);
         for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
           if (trk[i].Mag() == 0)
@@ -1413,7 +1414,7 @@ struct NucleiInJets {
     std::vector<double> jetArea;
 
     do {
-      double dijMin(1e+06), diBmin(1e+06);
+      double dijMin(1e+300), diBmin(1e+300);
       int iMin(0), jMin(0), iBmin(0);
       int nGhostsInJet(0);
       for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
@@ -1446,10 +1447,15 @@ struct NucleiInJets {
       }
       if (dijMin > diBmin) {
         double area = (static_cast<double>(nGhostsInJet) / static_cast<double>(nGhosts)) * TwoPI * 1.6;
-        jetArea.push_back(area);
+        double alphaJet = area / (PI * rJet * rJet);
+        jetArea.push_back(alphaJet);
         jet.push_back(trk[iBmin]);
         trk[iBmin].SetXYZ(0, 0, 0);
         nParticlesRemoved++;
+      }
+      if (dijMin == diBmin) {
+        registryQC.fill(HIST("hError"), 0.5);
+        nParticlesRemoved = static_cast<int>(trk.size());
       }
     } while (nParticlesRemoved < static_cast<int>(trk.size()));
 
@@ -1507,7 +1513,7 @@ struct NucleiInJets {
       std::vector<int> nParticlesInjet;
 
       do {
-        double dijMin(1e+06), diBmin(1e+06);
+        double dijMin(1e+300), diBmin(1e+300);
         int iMin(0), jMin(0), iBmin(0);
         for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
           if (trk[i].Mag() == 0)
