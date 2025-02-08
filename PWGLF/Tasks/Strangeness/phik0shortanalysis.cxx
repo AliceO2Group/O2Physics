@@ -88,9 +88,11 @@ struct Phik0shortanalysis {
   Configurable<float> v0SettingDCAV0Dau{"v0SettingDCAV0Dau", 1, "DCA V0 Daughters"};
   Configurable<float> v0SettingDCAPosToPV{"v0SettingDCAPosToPV", 0.06, "DCA Pos To PV"};
   Configurable<float> v0SettingDCANegToPV{"v0SettingDCANegToPV", 0.06, "DCA Neg To PV"};
+
+  Configurable<bool> cfgisV0ForData{"cfgisV0ForData", true, "isV0ForData"};
   Configurable<float> nSigmaCutTPCPion{"nSigmaCutTPCPion", 4.0, "Value of the TPC Nsigma cut for Pions"};
 
-  Configurable<bool> cfgFurtherV0Selection{"cfgFurtherV0Selection", true, "Further V0 selection"};
+  Configurable<bool> cfgFurtherV0Selection{"cfgFurtherV0Selection", false, "Further V0 selection"};
   Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0s(cm)"};
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
   Configurable<float> v0rejK0s{"v0rejK0s", 0.005, "V0 rej K0s"};
@@ -242,22 +244,25 @@ struct Phik0shortanalysis {
     mcEventHist.add("hRecMCVertexZ", "hRecMCVertexZ", kTH1F, {vertexZAxis});
     mcEventHist.add("hRecMCMultiplicityPercent", "RecMC Multiplicity Percentile", kTH1F, {multAxis});
     mcEventHist.add("hRecMCGenMultiplicityPercent", "RecMC Gen Multiplicity Percentile", kTH1F, {binnedmultAxis});
+    mcEventHist.add("hRecMCGenMultiplicityPercentWithPhi", "RecMC Gen Multiplicity Percentile in Events with a Phi Candidate", kTH1F, {binnedmultAxis});
 
     mcEventHist.add("hGenMCVertexZ", "hGenMCVertexZ", kTH1F, {vertexZAxis});
     mcEventHist.add("hGenMCMultiplicityPercent", "GenMC Multiplicity Percentile", kTH1F, {binnedmultAxis});
 
     // Phi tpological/PID cuts
+    candPhiHist.add("hDCAxyPreCut", "Dcaxy distribution vs pt before DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    candPhiHist.add("hDCAzPreCut", "Dcaz distribution vs pt before DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    candPhiHist.add("hDCAxyPostCut", "Dcaxy distribution vs pt after DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    candPhiHist.add("hDCAzPostCut", "Dcaz distribution vs pt after DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
     candPhiHist.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
-    candPhiHist.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
-    candPhiHist.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
-    candPhiHist.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH2F, {ptK0SAxis, {100, -10.0f, 10.0f}});
-    candPhiHist.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH2F, {ptK0SAxis, {100, -10.0f, 10.0f}});
+    candPhiHist.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH2F, {{100, 0.0, 5.0, "#it{p} (GeV/#it{c})"}, {100, -10.0f, 10.0f}});
+    candPhiHist.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH2F, {{100, 0.0, 5.0, "#it{p} (GeV/#it{c})"}, {100, -10.0f, 10.0f}});
 
     // K0S topological/PID cuts
     candK0SHist.add("hDCAV0Daughters", "hDCAV0Daughters", kTH1F, {{55, 0.0f, 2.2f}});
     candK0SHist.add("hV0CosPA", "hV0CosPA", kTH1F, {{100, 0.95f, 1.f}});
-    candK0SHist.add("hNSigmaPosPionFromK0S", "hNSigmaPosPionFromK0Short", kTH2F, {ptK0SAxis, {100, -5.f, 5.f}});
-    candK0SHist.add("hNSigmaNegPionFromK0S", "hNSigmaNegPionFromK0Short", kTH2F, {ptK0SAxis, {100, -5.f, 5.f}});
+    candK0SHist.add("hNSigmaPosPionFromK0S", "hNSigmaPosPionFromK0Short", kTH2F, {{100, 0.0, 5.0, "#it{p} (GeV/#it{c})"}, {100, -10.0f, 10.0f}});
+    candK0SHist.add("hNSigmaNegPionFromK0S", "hNSigmaNegPionFromK0Short", kTH2F, {{100, 0.0, 5.0, "#it{p} (GeV/#it{c})"}, {100, -10.0f, 10.0f}});
 
     // Phi invariant mass for computing purities and normalisation
     dataPhiHist.add("h2PhipurInvMass", "Invariant mass of Phi for Purity (no K0S/Pi)", kTH2F, {binnedmultAxis, massPhiAxis});
@@ -479,10 +484,12 @@ struct Phik0shortanalysis {
     if (v0.v0radius() < v0SettingRadius)
       return false;
 
-    if (std::abs(daughter1.tpcNSigmaPi()) > nSigmaCutTPCPion)
-      return false;
-    if (std::abs(daughter2.tpcNSigmaPi()) > nSigmaCutTPCPion)
-      return false;
+    if (cfgisV0ForData) {
+      if (std::abs(daughter1.tpcNSigmaPi()) > nSigmaCutTPCPion)
+        return false;
+      if (std::abs(daughter2.tpcNSigmaPi()) > nSigmaCutTPCPion)
+        return false;
+    }
     return true;
   }
 
@@ -501,7 +508,7 @@ struct Phik0shortanalysis {
 
   // Topological track selection
   template <typename T>
-  bool selectionTrackResonance(const T& track)
+  bool selectionTrackResonance(const T& track, bool isQA)
   {
     if (cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
@@ -510,16 +517,25 @@ struct Phik0shortanalysis {
     if (cfgPVContributor && !track.isPVContributor())
       return false;
 
+    if (track.tpcNClsFound() < minTPCnClsFound)
+      return false;
+
     if (track.pt() < cMinKaonPtcut)
       return false;
     if (std::abs(track.eta()) > etaMax)
       return false;
 
-    if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
-      return false;
+    if (isQA) {
+      candPhiHist.fill(HIST("hDCAxyPreCut"), track.pt(), track.dcaXY());
+      candPhiHist.fill(HIST("hDCAzPreCut"), track.pt(), track.dcaZ());
+    }
     if (std::abs(track.dcaXY()) > cMaxDCArToPV1 + (cMaxDCArToPV2 / std::pow(track.pt(), cMaxDCArToPV3)))
       return false;
-    if (track.tpcNClsFound() < minTPCnClsFound)
+    if (isQA) {
+      candPhiHist.fill(HIST("hDCAxyPostCut"), track.pt(), track.dcaXY());
+      candPhiHist.fill(HIST("hDCAzPostCut"), track.pt(), track.dcaZ());
+    }
+    if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
     return true;
   }
@@ -667,12 +683,10 @@ struct Phik0shortanalysis {
 
     // Loop over all positive tracks
     for (const auto& track1 : posThisColl) {
-      if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
+      if (!selectionTrackResonance(track1, true) || !selectionPIDKaonpTdependent(track1))
         continue; // topological and PID selection
 
       candPhiHist.fill(HIST("hEta"), track1.eta());
-      candPhiHist.fill(HIST("hDcaxy"), track1.dcaXY());
-      candPhiHist.fill(HIST("hDcaz"), track1.dcaZ());
       candPhiHist.fill(HIST("hNsigmaKaonTPC"), track1.tpcInnerParam(), track1.tpcNSigmaKa());
       candPhiHist.fill(HIST("hNsigmaKaonTOF"), track1.tpcInnerParam(), track1.tofNSigmaKa());
 
@@ -680,7 +694,7 @@ struct Phik0shortanalysis {
 
       // Loop over all negative tracks
       for (const auto& track2 : negThisColl) {
-        if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
+        if (!selectionTrackResonance(track2, true) || !selectionPIDKaonpTdependent(track2))
           continue; // topological and PID selection
 
         auto track2ID = track2.globalIndex();
@@ -811,14 +825,14 @@ struct Phik0shortanalysis {
       // Phi reconstruction
       // Loop over positive tracks
       for (const auto& track1 : posThisColl) {
-        if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
+        if (!selectionTrackResonance(track1, false) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
 
         // Loop over all negative tracks
         for (const auto& track2 : negThisColl) {
-          if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
+          if (!selectionTrackResonance(track2, false) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
           auto track2ID = track2.globalIndex();
@@ -884,14 +898,14 @@ struct Phik0shortanalysis {
       // Phi reconstruction
       // Loop over positive tracks
       for (const auto& track1 : posThisColl) { // loop over all selected tracks
-        if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
+        if (!selectionTrackResonance(track1, false) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
 
         // Loop over all negative tracks
         for (const auto& track2 : negThisColl) {
-          if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
+          if (!selectionTrackResonance(track2, false) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
           auto track2ID = track2.globalIndex();
@@ -951,7 +965,7 @@ struct Phik0shortanalysis {
 
     // Loop over all positive tracks
     for (const auto& track1 : posThisColl) {
-      if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
+      if (!selectionTrackResonance(track1, false) || !selectionPIDKaonpTdependent(track1))
         continue; // topological and PID selection
 
       auto track1ID = track1.globalIndex();
@@ -964,7 +978,7 @@ struct Phik0shortanalysis {
 
       // Loop over all negative tracks
       for (const auto& track2 : negThisColl) {
-        if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
+        if (!selectionTrackResonance(track2, false) || !selectionPIDKaonpTdependent(track2))
           continue; // topological and PID selection
 
         auto track2ID = track2.globalIndex();
@@ -1258,7 +1272,7 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processRecMCPhiPion, "Process RecMC for Phi-Pion Analysis", false);
 
-  void processRecMCClosurePhiQA(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullV0s const& V0s, V0DauMCTracks const&, MCCollisions const&)
+  void processRecMCClosurePhiQA(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const&)
   {
     if (!acceptEventQA<true>(collision, true))
       return;
@@ -1279,14 +1293,14 @@ struct Phik0shortanalysis {
 
     // Loop over all positive tracks
     for (const auto& track1 : posThisColl) {
-      if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
+      if (!selectionTrackResonance(track1, true) || !selectionPIDKaonpTdependent(track1))
         continue; // topological and PID selection
 
       auto track1ID = track1.globalIndex();
 
       // Loop over all negative tracks
       for (const auto& track2 : negThisColl) {
-        if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
+        if (!selectionTrackResonance(track2, true) || !selectionPIDKaonpTdependent(track2))
           continue; // topological and PID selection
 
         auto track2ID = track2.globalIndex();
@@ -1299,6 +1313,7 @@ struct Phik0shortanalysis {
 
         if (!isCountedPhi) {
           mcEventHist.fill(HIST("hRecMCEventSelection"), 7); // at least a Phi in the event
+          mcEventHist.fill(HIST("hRecMCGenMultiplicityPercentWithPhi"), genmultiplicity);
           isCountedPhi = true;
         }
 
@@ -1308,6 +1323,14 @@ struct Phik0shortanalysis {
 
         // V0 already reconstructed by the builder
         for (const auto& v0 : V0s) {
+          if (cfgisRecMCWPDGForClosure1) {
+            if (!v0.has_mcParticle())
+              continue;
+            auto v0mcparticle = v0.mcParticle();
+            if (v0mcparticle.pdgCode() != 310 || !v0mcparticle.isPhysicalPrimary())
+              continue;
+          }
+
           const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
           const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
 
@@ -1341,6 +1364,13 @@ struct Phik0shortanalysis {
 
         // Loop over all primary pion candidates
         for (const auto& track : fullMCTracks) {
+          if (cfgisRecMCWPDGForClosure1) {
+            if (!track.has_mcParticle())
+              continue;
+            auto mcTrack = track.mcParticle_as<aod::McParticles>();
+            if (std::abs(mcTrack.pdgCode()) != 211 || !mcTrack.isPhysicalPrimary())
+              continue;
+          }
 
           if (!selectionPion<true>(track))
             continue;
@@ -1371,7 +1401,7 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processRecMCClosurePhiQA, "Process for ReCMCQA and Phi in RecMCClosure", false);
 
-  void processRecMCClosurePhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&)
+  void processRecMCClosurePhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const&)
   {
     if (!acceptEventQA<true>(collision, false))
       return;
@@ -1412,13 +1442,13 @@ struct Phik0shortanalysis {
 
       // Phi reconstruction
       for (const auto& track1 : posThisColl) { // loop over all selected tracks
-        if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
+        if (!selectionTrackResonance(track1, false) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
 
         for (const auto& track2 : negThisColl) {
-          if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
+          if (!selectionTrackResonance(track2, false) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
           auto track2ID = track2.globalIndex();
@@ -1483,7 +1513,7 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processRecMCClosurePhiK0S, "Process RecMC for MCClosure Phi-K0S Analysis", false);
 
-  void processRecMCClosurePhiPion(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, MCCollisions const&)
+  void processRecMCClosurePhiPion(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, MCCollisions const&, aod::McParticles const&)
   {
     if (!acceptEventQA<true>(collision, false))
       return;
@@ -1520,13 +1550,13 @@ struct Phik0shortanalysis {
 
       // Phi reconstruction
       for (const auto& track1 : posThisColl) { // loop over all selected tracks
-        if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
+        if (!selectionTrackResonance(track1, false) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
 
         for (const auto& track2 : negThisColl) {
-          if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
+          if (!selectionTrackResonance(track2, false) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
           auto track2ID = track2.globalIndex();
