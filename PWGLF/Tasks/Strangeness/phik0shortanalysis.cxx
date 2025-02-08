@@ -526,14 +526,14 @@ struct Phik0shortanalysis {
       return false;
 
     if (isQA) {
-      candPhiHist.fill(HIST("hDCAxyPreCut"), track1.pt(), track1.dcaXY());
-      candPhiHist.fill(HIST("hDCAzPreCut"), track1.pt(), track1.dcaZ());
+      candPhiHist.fill(HIST("hDCAxyPreCut"), track.pt(), track.dcaXY());
+      candPhiHist.fill(HIST("hDCAzPreCut"), track.pt(), track.dcaZ());
     }
     if (std::abs(track.dcaXY()) > cMaxDCArToPV1 + (cMaxDCArToPV2 / std::pow(track.pt(), cMaxDCArToPV3)))
       return false;
     if (isQA) {
-      candPhiHist.fill(HIST("hDCAxyPostCut"), track1.pt(), track1.dcaXY());
-      candPhiHist.fill(HIST("hDCAzPostCut"), track1.pt(), track1.dcaZ());
+      candPhiHist.fill(HIST("hDCAxyPostCut"), track.pt(), track.dcaXY());
+      candPhiHist.fill(HIST("hDCAzPostCut"), track.pt(), track.dcaZ());
     }
     if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
@@ -1313,7 +1313,7 @@ struct Phik0shortanalysis {
 
         if (!isCountedPhi) {
           mcEventHist.fill(HIST("hRecMCEventSelection"), 7); // at least a Phi in the event
-          mcEventHist.fill("hRecMCGenMultiplicityPercentWithPhi", genmultiplicity);
+          mcEventHist.fill(HIST("hRecMCGenMultiplicityPercentWithPhi"), genmultiplicity);
           isCountedPhi = true;
         }
 
