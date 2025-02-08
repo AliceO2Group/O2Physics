@@ -143,7 +143,7 @@ struct cascadeFlow {
   ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {8, 0, 80}, "FT0C centrality (%)"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {VARIABLE_WIDTH, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5, 6, 8, 10}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis thnConfigAxisCharge{"thnConfigAxisCharge", {2, 0, 2}, ""};
-  ConfigurableAxis thnConfigAxisPsiDiff{"thnConfigAxisPsiDiff", {100, 0, 2*TMath::Pi()}, ""};
+  ConfigurableAxis thnConfigAxisPsiDiff{"thnConfigAxisPsiDiff", {100, 0, 2 * TMath::Pi()}, ""};
   ConfigurableAxis thnConfigAxisMassXi{"thnConfigAxisMassXi", {45, 1.300, 1.345}, ""};
   ConfigurableAxis thnConfigAxisMassOmega{"thnConfigAxisMassOmega", {45, 1.655, 1.690}, ""};
   ConfigurableAxis thnConfigAxisMassLambda{"thnConfigAxisMassLambda", {60, 1.1, 1.13}, ""};
@@ -520,7 +520,7 @@ struct cascadeFlow {
     if (isFillTHNXi_PzVsPsi) {
       histos.add("hXiPzVsPsi", "THn for cosTheta of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisCosThetaXiAlpha, thnAxisPsiDiff});
       histos.add("hXiPzVsPsiFromLambda", "THn for cosTheta of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisCosThetaProtonAlpha, thnAxisPsiDiff});
-      histos.add("hXiCos2ThetaVsPsi", "THn for cos2Theta of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi,thnAxisBDTScore, thnAxisCos2Theta, thnAxisPsiDiff});
+      histos.add("hXiCos2ThetaVsPsi", "THn for cos2Theta of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisCos2Theta, thnAxisPsiDiff});
       histos.add("hXiCos2ThetaVsPsiFromLambda", "THn for cos2Theta of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisCos2Theta, thnAxisPsiDiff});
     }
     if (isFillTHNOmega) {
@@ -533,10 +533,10 @@ struct cascadeFlow {
     if (isFillTHNOmega_PzVsPsi) {
       histos.add("hOmegaPzVsPsi", "THn for cosTheta of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisCosThetaOmegaAlpha, thnAxisPsiDiff});
       histos.add("hOmegaPzVsPsiFromLambda", "THn for cosTheta of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisCosThetaProtonAlpha, thnAxisPsiDiff});
-      histos.add("hOmegaCos2ThetaVsPsi", "THn for cos2Theta of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega,thnAxisBDTScore, thnAxisCos2Theta, thnAxisPsiDiff});
+      histos.add("hOmegaCos2ThetaVsPsi", "THn for cos2Theta of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisCos2Theta, thnAxisPsiDiff});
       histos.add("hOmegaCos2ThetaVsPsiFromLambda", "THn for cos2Theta of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisCos2Theta, thnAxisPsiDiff});
     }
-	
+
     histosMCGen.add("h2DGenXiEta08", "h2DGenXiEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histosMCGen.add("h2DGenOmegaEta08", "h2DGenOmegaEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histosMCGen.add("h2DGenXiY05", "h2DGenXiY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
@@ -814,10 +814,10 @@ struct cascadeFlow {
       double Cos2ThetaOmega = cosThetaStarLambda[1] * cosThetaStarLambda[1];
       double Pzs2LambdaFromCasc = cosThetaStarProton * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaLambda[ChargeIndex];
       double Cos2ThetaLambda = cosThetaStarProton * cosThetaStarProton;
-      
-      double CosThetaXiWithAlpha = cosThetaStarLambda[0] /  cascadev2::AlphaXi[ChargeIndex];
-      double CosThetaOmegaWithAlpha = cosThetaStarLambda[1] /  cascadev2::AlphaOmega[ChargeIndex];
-      double CosThetaProtonWithAlpha = cosThetaStarProton /  cascadev2::AlphaLambda[ChargeIndex];
+
+      double CosThetaXiWithAlpha = cosThetaStarLambda[0] / cascadev2::AlphaXi[ChargeIndex];
+      double CosThetaOmegaWithAlpha = cosThetaStarLambda[1] / cascadev2::AlphaOmega[ChargeIndex];
+      double CosThetaProtonWithAlpha = cosThetaStarProton / cascadev2::AlphaLambda[ChargeIndex];
 
       histos.fill(HIST("hv2CEPvsFT0C"), coll.centFT0C(), v2CEP);
       histos.fill(HIST("hv2CEPvsv2CSP"), v2CSP, v2CEP);
@@ -849,12 +849,12 @@ struct cascadeFlow {
           histos.get<THn>(HIST("hXiCos2Theta"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], Cos2ThetaXi);
           histos.get<THn>(HIST("hXiCos2ThetaFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], Cos2ThetaLambda);
         }
-	if (isFillTHNXi_PzVsPsi){
-	  histos.get<THn>(HIST("hXiPzVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], CosThetaXiWithAlpha, 2*cascminuspsiT0C);
-	  histos.get<THn>(HIST("hXiPzVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], CosThetaProtonWithAlpha, 2*cascminuspsiT0C);
-	  histos.get<THn>(HIST("hXiCos2ThetaVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], Cos2ThetaXi, 2*cascminuspsiT0C);
-	  histos.get<THn>(HIST("hXiCos2ThetaVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], Cos2ThetaLambda, 2*cascminuspsiT0C);
-	}
+        if (isFillTHNXi_PzVsPsi) {
+          histos.get<THn>(HIST("hXiPzVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], CosThetaXiWithAlpha, 2 * cascminuspsiT0C);
+          histos.get<THn>(HIST("hXiPzVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], CosThetaProtonWithAlpha, 2 * cascminuspsiT0C);
+          histos.get<THn>(HIST("hXiCos2ThetaVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], Cos2ThetaXi, 2 * cascminuspsiT0C);
+          histos.get<THn>(HIST("hXiCos2ThetaVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], Cos2ThetaLambda, 2 * cascminuspsiT0C);
+        }
         if (isFillTHNOmega) {
           histos.get<THn>(HIST("hOmegaV2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], v2CEP);
           histos.get<THn>(HIST("hOmegaPzs2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], Pzs2Omega);
@@ -862,12 +862,12 @@ struct cascadeFlow {
           histos.get<THn>(HIST("hOmegaCos2Theta"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], Cos2ThetaOmega);
           histos.get<THn>(HIST("hOmegaCos2ThetaFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], Cos2ThetaLambda);
         }
-	if (isFillTHNOmega_PzVsPsi){
-	  histos.get<THn>(HIST("hOmegaPzVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[0], CosThetaOmegaWithAlpha, 2*cascminuspsiT0C);
-	  histos.get<THn>(HIST("hOmegaPzVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[0], CosThetaProtonWithAlpha, 2*cascminuspsiT0C);
-	  histos.get<THn>(HIST("hOmegaCos2ThetaVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[0], Cos2ThetaOmega, 2*cascminuspsiT0C);
-	  histos.get<THn>(HIST("hOmegaCos2ThetaVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[0], Cos2ThetaLambda, 2*cascminuspsiT0C);
-	}
+        if (isFillTHNOmega_PzVsPsi) {
+          histos.get<THn>(HIST("hOmegaPzVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[0], CosThetaOmegaWithAlpha, 2 * cascminuspsiT0C);
+          histos.get<THn>(HIST("hOmegaPzVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[0], CosThetaProtonWithAlpha, 2 * cascminuspsiT0C);
+          histos.get<THn>(HIST("hOmegaCos2ThetaVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[0], Cos2ThetaOmega, 2 * cascminuspsiT0C);
+          histos.get<THn>(HIST("hOmegaCos2ThetaVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[0], Cos2ThetaLambda, 2 * cascminuspsiT0C);
+        }
       }
 
       if (isSelectedCasc[0] || isSelectedCasc[1]) {
