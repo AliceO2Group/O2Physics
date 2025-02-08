@@ -225,11 +225,11 @@ auto matchedParticle(const T& candidate, const U& tracks, const V& particles)
  * @param candidate candidate that is being checked
  * @param table the table to be sliced
  */
-template <typename T, typename U, typename V, typename M, typename N, typename O>
-auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candidate, M const& perLcCandidate, N const& perBplusCandidate, O const& perDielectronCandidate)
+template <typename T, typename U, typename V, typename M, typename N, typename O, typename P>
+auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candidate, M const& perDplusCandidate, N const& perLcCandidate, O const& perBplusCandidate, P const& perDielectronCandidate)
 {
   if constexpr (jethfutilities::isHFCandidate<U>()) {
-    return jethfutilities::slicedPerHFCandidate(table, candidate, perD0Candidate, perLcCandidate, perBplusCandidate);
+    return jethfutilities::slicedPerHFCandidate(table, candidate, perD0Candidate, perDplusCandidate, perLcCandidate, perBplusCandidate);
   } else if constexpr (jetdqutilities::isDielectronCandidate<U>()) {
     return jetdqutilities::slicedPerDielectronCandidate(table, candidate, perDielectronCandidate);
   } else {
@@ -243,11 +243,11 @@ auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candid
  * @param candidate candidate that is being checked
  * @param table the table to be sliced
  */
-template <typename T, typename U, typename V, typename M, typename N, typename O, typename P>
-auto slicedPerCandidateCollision(T const& table, U const& candidates, V const& collision, M const& D0CollisionPerCollision, N const& LcCollisionPerCollision, O const& BplusCollisionPerCollision, P const& DielectronCollisionPerCollision)
+template <typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q>
+auto slicedPerCandidateCollision(T const& table, U const& candidates, V const& collision, M const& D0CollisionPerCollision, N const& DplusCollisionPerCollision, O const& LcCollisionPerCollision, P const& BplusCollisionPerCollision, Q const& DielectronCollisionPerCollision)
 {
   if constexpr (jethfutilities::isHFTable<U>() || jethfutilities::isHFMcTable<U>()) {
-    return jethfutilities::slicedPerHFCollision(table, candidates, collision, D0CollisionPerCollision, LcCollisionPerCollision, BplusCollisionPerCollision);
+    return jethfutilities::slicedPerHFCollision(table, candidates, collision, D0CollisionPerCollision, DplusCollisionPerCollision, LcCollisionPerCollision, BplusCollisionPerCollision);
   } else if constexpr (jetdqutilities::isDielectronTable<U>() || jetdqutilities::isDielectronMcTable<U>()) {
     return jetdqutilities::slicedPerDielectronCollision(table, candidates, collision, DielectronCollisionPerCollision);
   } else {

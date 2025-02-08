@@ -106,10 +106,12 @@ struct JetSubstructureHFOutputTask {
 
   PresliceUnsorted<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>> CollisionsPerMcCollision = aod::jmccollisionlb::mcCollisionId;
   PresliceOptional<aod::CollisionsD0> D0CollisionsPerCollision = aod::jd0indices::collisionId;
+  PresliceOptional<aod::CollisionsDplus> DplusCollisionsPerCollision = aod::jdplusindices::collisionId;
   PresliceOptional<aod::CollisionsLc> LcCollisionsPerCollision = aod::jlcindices::collisionId;
   PresliceOptional<aod::CollisionsBplus> BplusCollisionsPerCollision = aod::jbplusindices::collisionId;
   PresliceOptional<aod::CollisionsDielectron> DielectronCollisionsPerCollision = aod::jdielectronindices::collisionId;
   PresliceOptional<soa::Join<aod::McCollisionsD0, aod::HfD0McRCollIds>> D0McCollisionsPerMcCollision = aod::jd0indices::mcCollisionId;
+  PresliceOptional<soa::Join<aod::McCollisionsDplus, aod::HfDplusMcRCollIds>> DplusMcCollisionsPerMcCollision = aod::jdplusindices::mcCollisionId;
   PresliceOptional<soa::Join<aod::McCollisionsLc, aod::HfLcMcRCollIds>> LcMcCollisionsPerMcCollision = aod::jlcindices::mcCollisionId;
   PresliceOptional<soa::Join<aod::McCollisionsBplus, aod::HfBplusMcRCollIds>> BplusMcCollisionsPerMcCollision = aod::jbplusindices::mcCollisionId;
   PresliceOptional<aod::McCollisionsDielectron> DielectronMcCollisionsPerMcCollision = aod::jdielectronindices::mcCollisionId;
@@ -333,7 +335,7 @@ struct JetSubstructureHFOutputTask {
     if constexpr (!isMCPOnly) {
       for (const auto& collision : collisions) {
         if (collisionFlag[collision.globalIndex()]) {
-          const auto hfCollisionsPerCollision = jetcandidateutilities::slicedPerCandidateCollision(hfCollisions, candidates, collision, D0CollisionsPerCollision, LcCollisionsPerCollision, BplusCollisionsPerCollision, DielectronCollisionsPerCollision); // add Bplus later
+          const auto hfCollisionsPerCollision = jetcandidateutilities::slicedPerCandidateCollision(hfCollisions, candidates, collision, D0CollisionsPerCollision, DplusCollisionsPerCollision, LcCollisionsPerCollision, BplusCollisionsPerCollision, DielectronCollisionsPerCollision); // add Bplus later
           for (const auto& hfCollisionPerCollision : hfCollisionsPerCollision) { // should only ever be one
             auto hfCollisionTableIndex = candidateCollisionMapping.find(hfCollisionPerCollision.globalIndex());
             if (hfCollisionTableIndex != candidateCollisionMapping.end()) {
@@ -348,7 +350,7 @@ struct JetSubstructureHFOutputTask {
     if constexpr (isMC) {
       for (const auto& mcCollision : mcCollisions) {
         if (mcCollisionFlag[mcCollision.globalIndex()]) {
-          const auto hfMcCollisionsPerMcCollision = jetcandidateutilities::slicedPerCandidateCollision(hfMcCollisions, candidatesMCP, mcCollision, D0McCollisionsPerMcCollision, LcMcCollisionsPerMcCollision, BplusMcCollisionsPerMcCollision, DielectronMcCollisionsPerMcCollision); // add Bplus later
+          const auto hfMcCollisionsPerMcCollision = jetcandidateutilities::slicedPerCandidateCollision(hfMcCollisions, candidatesMCP, mcCollision, D0McCollisionsPerMcCollision, DplusMcCollisionsPerMcCollision, LcMcCollisionsPerMcCollision, BplusMcCollisionsPerMcCollision, DielectronMcCollisionsPerMcCollision); // add Bplus later
           for (const auto& hfMcCollisionPerMcCollision : hfMcCollisionsPerMcCollision) { // should only ever be one
             auto hfMcCollisionTableIndex = candidateMcCollisionMapping.find(hfMcCollisionPerMcCollision.globalIndex());
             if (hfMcCollisionTableIndex != candidateMcCollisionMapping.end()) {

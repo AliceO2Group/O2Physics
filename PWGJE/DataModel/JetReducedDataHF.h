@@ -63,6 +63,46 @@ DECLARE_SOA_TABLE(JDumD0MlDaus, "AOD", "JDumD0MLDAU",
                   jdummyd0::DummyD0,
                   o2::soa::Marker<2>);
 
+namespace jdplusindices
+{
+DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, JTracks, "_2");
+DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
+DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
+} // namespace jdplusindices
+
+DECLARE_SOA_TABLE_STAGED(JDplusCollisionIds, "JDPCOLLID",
+                         jdplusindices::JCollisionId);
+
+DECLARE_SOA_TABLE_STAGED(JDplusMcCollisionIds, "JDPMCCOLLID",
+                         jdplusindices::JMcCollisionId);
+
+DECLARE_SOA_TABLE_STAGED(JDplusIds, "JDPID",
+                         jdplusindices::JCollisionId,
+                         jdplusindices::Prong0Id,
+                         jdplusindices::Prong1Id,
+                         jdplusindices::Prong2Id);
+
+DECLARE_SOA_TABLE_STAGED(JDplusPIds, "JDPPID",
+                         jdplusindices::JMcCollisionId,
+                         jdplusindices::JMcParticleId);
+
+namespace jdummydplus
+{
+
+DECLARE_SOA_COLUMN(DummyDplus, dummyDplus, bool);
+
+} // namespace jdummydplus
+DECLARE_SOA_TABLE(JDumDplusParDaus, "AOD", "JDUMDPPARDAU",
+                  jdummydplus::DummyDplus,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(JDumDplusMlDaus, "AOD", "JDUMDPMLDAU",
+                  jdummydplus::DummyDplus,
+                  o2::soa::Marker<2>);
+
 namespace jlcindices
 {
 DECLARE_SOA_INDEX_COLUMN(JCollision, collision);

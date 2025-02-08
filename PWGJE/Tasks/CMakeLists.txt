@@ -68,11 +68,15 @@ if(FastJet_FOUND)
                         SOURCES jetSubstructureD0.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-substructure-dplus
+                        SOURCES jetSubstructureDplus.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-lc
                         SOURCES jetSubstructureLc.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(jet-substructure-bplus
+    o2physics_add_dpl_workflow(jet-substructure-bplus
                         SOURCES jetSubstructureBplus.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
@@ -82,6 +86,10 @@ o2physics_add_dpl_workflow(jet-substructure-bplus
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-d0-output
                         SOURCES jetSubstructureD0Output.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-substructure-dplus-output
+                        SOURCES jetSubstructureDplusOutput.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-lc-output
@@ -118,6 +126,10 @@ o2physics_add_dpl_workflow(jet-substructure-bplus
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-finder-d0-qa
                         SOURCES jetFinderD0QA.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-finder-dplus-qa
+                        SOURCES jetFinderDplusQA.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-finder-lc-qa
