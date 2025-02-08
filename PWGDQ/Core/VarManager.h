@@ -3056,10 +3056,10 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     // Cumulant part
     float V22ME = values[kV22m] * values[kCos2DeltaPhiMu1] + values[kV22p] * values[kCos2DeltaPhiMu2];
     float V24ME = values[kV24m] * values[kCos2DeltaPhiMu1] + values[kV24p] * values[kCos2DeltaPhiMu2];
-    values[kV22ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : V22ME;
-    values[kWV22ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
-    values[kV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : V24ME;
-    values[kWV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
+    values[kV22ME] = (std::isnan(V22ME) || std::isinf(V22ME) ||std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : V22ME;
+    values[kWV22ME] = (std::isnan(V22ME) || std::isinf(V22ME) ||std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
+    values[kV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) ||std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : V24ME;
+    values[kWV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) ||std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
   }
   if constexpr (pairType == kDecayToMuMu) {
     if (fgUsedVars[kQuadDCAabsXY]) {
