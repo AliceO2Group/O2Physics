@@ -149,7 +149,7 @@ struct FlowMc {
 
   using RecoTracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
 
-  void process(aod::McCollision const& mcCollision, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& mcParticles, RecoTracks const&)
+  void process(aod::McCollision const& mcCollision, aod::BCsWithTimestamps const&, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& mcParticles, RecoTracks const&)
   {
 
     float imp = mcCollision.impactParameter();
