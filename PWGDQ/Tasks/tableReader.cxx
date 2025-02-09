@@ -106,7 +106,7 @@ using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExt
 using MyEventsQvectorCentrMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra>;
 using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
-using MyEventsHashSelectedQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra>;
+using MyEventsHashSelectedQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, ReducedEventVtxCov, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra, aod::ReducedEventsRefFlow>;
 using MyEventsHashSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvectorCentr>;
 
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID>;
@@ -783,7 +783,8 @@ struct AnalysisEventMixing {
         for (unsigned int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             if (track1.sign() * track2.sign() < 0) {
-              mult_dimuons++ fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+              mult_dimuons++;
+              fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
               if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
                 fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][0].Data()), VarManager::fgValues);
               }
