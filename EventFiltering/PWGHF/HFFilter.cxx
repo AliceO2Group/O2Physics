@@ -1410,7 +1410,7 @@ struct HfFilter { // Main struct for HF triggers
                 cascTrack = trackedCascId.track_as<TracksIUPID>();
                 break;
               }
-            }            
+            }
           }
 
           CascCand cascCand;
@@ -1470,8 +1470,8 @@ struct HfFilter { // Main struct for HF triggers
               continue;
             }
 
-            if(!keepEvent[kCharmBarToXiBach] && track.sign() * cascCand.sign < 0) { // XiPi and XiKa
-              
+            if (!keepEvent[kCharmBarToXiBach] && track.sign() * cascCand.sign < 0) { // XiPi and XiKa
+
               bool isSelXiBach{false};
               if (requireStrangenessTracking->get(0u, 0u) > 0) {
                 if (!hasStrangeTrack) {
@@ -1491,7 +1491,7 @@ struct HfFilter { // Main struct for HF triggers
               continue;
             }
 
-            if(!keepEvent[kCharmBarToXiBachBach]) {
+            if (!keepEvent[kCharmBarToXiBachBach]) {
               for (const auto& trackIdSecond : trackIdsThisCollision) { // start loop over tracks (second bachelor)
                 auto trackSecond = tracks.rawIteratorAt(trackIdSecond.trackId());
 
@@ -1515,8 +1515,8 @@ struct HfFilter { // Main struct for HF triggers
                   continue;
                 }
 
-                if(!keepEvent[kCharmBarToXiBachBach]) { // XiPiPi
-                  
+                if (!keepEvent[kCharmBarToXiBachBach]) { // XiPiPi
+
                   bool isSelXiBachBach{false};
                   if (requireStrangenessTracking->get(0u, 1u) > 0) {
                     if (!hasStrangeTrack) {
