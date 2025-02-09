@@ -166,26 +166,26 @@ struct EmcalQC {
         continue;
       }
 
-      fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 1);
-      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-        fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 2);
+      fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 1, collision.weight());
+      if (!eventcuts.cfgRequireFT0AND || collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 2, collision.weight());
         if (std::abs(collision.posZ()) < eventcuts.cfgZvtxMax) {
-          fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 3);
-          if (collision.sel8()) {
-            fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 4);
-            if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-              fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 5);
-              if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-                fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 6);
-                if (collision.alias_bit(kTVXinEMC))
-                  fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 7);
+          fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 3, collision.weight());
+          if (!eventcuts.cfgRequireSel8 || collision.sel8()) {
+            fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 4, collision.weight());
+            if (!eventcuts.cfgRequireGoodZvtxFT0vsPV || collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+              fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 5, collision.weight());
+              if (!eventcuts.cfgRequireNoSameBunchPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+                fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 6, collision.weight());
+                if (!eventcuts.cfgRequireEMCReadoutInMB || collision.alias_bit(kTVXinEMC))
+                  fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 7, collision.weight());
               }
             }
           }
         }
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision);
+      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, collision.weight());
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
@@ -193,19 +193,17 @@ struct EmcalQC {
         continue;
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
+      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, collision.weight());
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0, collision.weight()); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0, collision.weight());  // accepted
 
       auto clustersPerColl = clusters.sliceBy(perCollision, collision.collisionId());
       fRegistry.fill(HIST("Cluster/before/hNgamma"), clustersPerColl.size(), collision.weight());
-      int ngBefore = 0;
       int ngAfter = 0;
       for (const auto& cluster : clustersPerColl) {
         // Fill the cluster properties before applying any cuts
         if (!fEMCCut.IsSelectedEMCal(EMCPhotonCut::EMCPhotonCuts::kDefinition, cluster))
           continue;
-        ngBefore++;
         o2::aod::pwgem::photonmeson::utils::clusterhistogram::fillClusterHistograms<0>(&fRegistry, cluster, cfgDo2DQA, collision.weight());
 
         // Apply cuts one by one and fill in hClusterQualityCuts histogram
@@ -233,7 +231,6 @@ struct EmcalQC {
           ngAfter++;
         }
       }
-      fRegistry.fill(HIST("Cluster/before/hNgamma"), ngBefore, collision.weight());
       fRegistry.fill(HIST("Cluster/after/hNgamma"), ngAfter, collision.weight());
     } // end of collision loop
   } // end of process

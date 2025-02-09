@@ -843,7 +843,7 @@ struct AnalysisEventMixing {
 
       VarManager::FillTwoMixEvents<TEventFillMap>(event1, event2, tracks1, tracks2);
       if (fConfigFlowReso) {
-        VarManager::FillEventFlowResoFactor(ResoFlowSP, ResoFlowEP);
+        VarManager::FillTwoMixEventsFlowResoFactor(ResoFlowSP, ResoFlowEP);
       }
       runMixedPairing<TEventFillMap, TPairType>(tracks1, tracks2);
     } // end event loop
@@ -1233,6 +1233,20 @@ struct AnalysisSameEventPairing {
     if (fConfigMultDimuons.value) {
 
       uint32_t mult_dimuons = 0;
+      uint32_t mult_antimuons = 0;
+      uint32_t mult_muons = 0;
+
+      for (auto& t : tracks1) {
+        if constexpr (TPairType == VarManager::kDecayToMuMu) {
+          if (static_cast<uint32_t>(t.isMuonSelected()) & fTwoMuonFilterMask) {
+            if (t.sign() < 0) {
+              mult_muons++;
+            } else {
+              mult_antimuons++;
+            }
+          }
+        }
+      }
 
       for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
         if constexpr (TPairType == VarManager::kDecayToMuMu) {
@@ -1245,6 +1259,8 @@ struct AnalysisSameEventPairing {
       }
 
       VarManager::fgValues[VarManager::kMultDimuons] = mult_dimuons;
+      VarManager::fgValues[VarManager::kMultMuons] = mult_muons;
+      VarManager::fgValues[VarManager::kMultAntiMuons] = mult_antimuons;
     }
 
     if (fConfigFlowReso) {
@@ -1380,7 +1396,13 @@ struct AnalysisSameEventPairing {
                                  VarManager::fgValues[VarManager::kPt],
                                  VarManager::fgValues[VarManager::kRap],
                                  VarManager::fgValues[VarManager::kCentFT0C],
-                                 VarManager::fgValues[VarManager::kCos2DeltaPhi]);
+                                 VarManager::fgValues[VarManager::kCos2DeltaPhi],
+                                 VarManager::fgValues[VarManager::kPt1],
+                                 VarManager::fgValues[VarManager::kEta1],
+                                 VarManager::fgValues[VarManager::kPhi1],
+                                 VarManager::fgValues[VarManager::kPt2],
+                                 VarManager::fgValues[VarManager::kEta2],
+                                 VarManager::fgValues[VarManager::kPhi2]);
               }
             }
           } else {
@@ -1987,7 +2009,7 @@ struct AnalysisDileptonTrackTrack {
         if (!CutDecision)
           continue;
         DileptonTrackTrackTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kQuadPhi], fValuesQuadruplet[VarManager::kRap],
-                                fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2],
+                                fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2], fValuesQuadruplet[VarManager::kDeltaR],
                                 dilepton.mass(), dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.sign(),
                                 fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kDitrackPt], t1.pt(), t2.pt(), t1.eta(), t2.eta(), t1.phi(), t2.phi(), t1.sign(), t2.sign());
       } // end loop over track-track pairs

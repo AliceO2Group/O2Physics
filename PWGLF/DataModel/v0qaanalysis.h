@@ -22,7 +22,6 @@ namespace o2::aod
 namespace myv0candidates
 {
 
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(V0Pt, v0pt, float);
 DECLARE_SOA_COLUMN(RapLambda, raplambda, float);
 DECLARE_SOA_COLUMN(RapK0Short, rapk0short, float);
@@ -54,6 +53,9 @@ DECLARE_SOA_COLUMN(NTOFSigmaPosPi, ntofsigmapospi, float);
 DECLARE_SOA_COLUMN(PosHasTOF, poshastof, float);
 DECLARE_SOA_COLUMN(NegHasTOF, neghastof, float);
 DECLARE_SOA_COLUMN(PDGCode, pdgcode, int);
+DECLARE_SOA_COLUMN(IsDauK0Short, isdauk0short, bool);
+DECLARE_SOA_COLUMN(IsDauLambda, isdaulambda, bool);
+DECLARE_SOA_COLUMN(IsDauAntiLambda, isdauantilambda, bool);
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isphysprimary, bool);
 DECLARE_SOA_COLUMN(MultFT0M, multft0m, float);
 DECLARE_SOA_COLUMN(MultFV0A, multfv0a, float);
@@ -63,8 +65,8 @@ DECLARE_SOA_COLUMN(QtArm, qtarm, float);
 
 } // namespace myv0candidates
 
-DECLARE_SOA_TABLE(MyV0Candidates, "AOD", "MYV0CANDIDATES", o2::soa::Index<>,
-                  myv0candidates::CollisionId, myv0candidates::V0Pt, myv0candidates::RapLambda, myv0candidates::RapK0Short,
+DECLARE_SOA_TABLE(MyV0Candidates, "AOD", "MYV0CANDIDATES",
+                  myv0candidates::V0Pt, myv0candidates::RapLambda, myv0candidates::RapK0Short,
                   myv0candidates::MassLambda, myv0candidates::MassAntiLambda, myv0candidates::MassK0Short,
                   myv0candidates::V0Radius, myv0candidates::V0CosPA, myv0candidates::V0DCAPosToPV,
                   myv0candidates::V0DCANegToPV, myv0candidates::V0DCAV0Daughters,
@@ -73,7 +75,7 @@ DECLARE_SOA_TABLE(MyV0Candidates, "AOD", "MYV0CANDIDATES", o2::soa::Index<>,
                   myv0candidates::NTPCSigmaNegPr, myv0candidates::NTPCSigmaPosPr, myv0candidates::NTPCSigmaNegPi, myv0candidates::NTPCSigmaPosPi,
                   myv0candidates::NTOFSigmaNegPr, myv0candidates::NTOFSigmaPosPr, myv0candidates::NTOFSigmaNegPi, myv0candidates::NTOFSigmaPosPi,
                   myv0candidates::PosHasTOF, myv0candidates::NegHasTOF,
-                  myv0candidates::PDGCode, myv0candidates::IsPhysicalPrimary,
+                  myv0candidates::PDGCode, myv0candidates::IsDauK0Short, myv0candidates::IsDauLambda, myv0candidates::IsDauAntiLambda, myv0candidates::IsPhysicalPrimary,
                   myv0candidates::MultFT0M, myv0candidates::MultFV0A,
                   myv0candidates::EvFlag, myv0candidates::Alpha, myv0candidates::QtArm);
 

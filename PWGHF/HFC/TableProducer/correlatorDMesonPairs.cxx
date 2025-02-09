@@ -73,6 +73,7 @@ struct HfCorrelatorDMesonPairs {
   Configurable<bool> selectSignalRegionOnly{"selectSignalRegionOnly", false, "only use events close to PDG peak"};
   Configurable<float> massCut{"massCut", 0.05, "Maximum deviation from PDG peak allowed for signal region"};
   Configurable<bool> daughterTracksCutFlag{"daughterTracksCutFlag", false, "Flag to add cut on daughter tracks"};
+  Configurable<bool> removeAmbiguous{"removeAmbiguous", false, "Flag to remove ambiguous candidates"};
 
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
@@ -123,16 +124,21 @@ struct HfCorrelatorDMesonPairs {
      {"hEta", "D meson candidates;candidate #it{#eta};entries", hTH1Y},
      {"hPhi", "D meson candidates;candidate #it{#varphi};entries", hTH1Phi},
      {"hY", "D meson candidates;candidate #it{y};entries", hTH1Y},
+     {"hPVContrib", "D meson candidates;candidate Number of PV contributors;entries", hTH1NContrib},
      // MC Gen plots
      {"hPtCandMcGen", "D meson candidates MC Gen;candidate #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
      {"hPtCandAfterCutMcGen", "D meson candidates after pT cut;candidate #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
      {"hEtaMcGen", "D meson candidates MC Gen;candidate #it{#eta};entries", hTH1Y},
      {"hPhiMcGen", "D meson candidates MC Gen;candidate #it{#varphi};entries", hTH1Phi},
      {"hPtVsYVsNContribMcGen", "D meson candidates MC Gen;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
-     {"hNContribMcGen", "D meson candidates MC Gen;Number of contributors", hTH1NContrib},
+     {"hPtVsYVsNContribMcGenPrompt", "D meson candidates MC Gen Prompt;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
+     {"hPtVsYVsNContribMcGenNonPrompt", "D meson candidates MC Gen Prompt;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
+     {"hNContribMcGen", "D meson candidates MC Gen;Number of PV contributors", hTH1NContrib},
      // MC Rec plots
      {"hPtVsYVsNContribMcRec", "D meson candidates MC Rec;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
-     {"hNContribMcRec", "D meson candidates MC Rec;Number of contributors", hTH1NContrib},
+     {"hPtVsYVsNContribMcRecPrompt", "D meson candidates MC Rec Prompt;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
+     {"hPtVsYVsNContribMcRecNonPrompt", "D meson candidates MC Rec Non-prompt;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
+     {"hNContribMcRec", "D meson candidates MC Rec;Number of PV contributors", hTH1NContrib},
      // PID plots ----- Not definitively here
      {"PID/hTofNSigmaPi", "(TOFsignal-time#pi)/tofSigPid;p[GeV/c];(TOFsignal-time#pi)/tofSigPid", hTH2Pid},
      {"PID/hTofNSigmaKa", "(TOFsignal-timeK)/tofSigPid;p[GeV/c];(TOFsignal-timeK)/tofSigPid", hTH2Pid},
@@ -416,7 +422,7 @@ struct HfCorrelatorDMesonPairs {
 
   /// Fill selection status histogram
   void fillEntry(const bool& isDCand1, const bool& isDbarCand1, const bool& isDCand2, const bool& isDbarCand2,
-                 const uint8_t& candidateType1, const uint8_t& candidateType2, float yCand1, float yCand2,
+                 const uint8_t& candidateType1, const uint8_t& candidateType2, float yCand1, float yCand2, float phiCand1, float phiCand2,
                  double ptCand1, double ptCand2, float massDCand1, float massDbarCand1, float massDCand2, float massDbarCand2)
   {
 
@@ -471,7 +477,7 @@ struct HfCorrelatorDMesonPairs {
       }
     }
 
-    entryD0Pair(ptCand1, ptCand2, yCand1, yCand2, massDCand1, massDbarCand1, massDCand2, massDbarCand2, pairType, candidateType1, candidateType2);
+    entryD0Pair(ptCand1, ptCand2, yCand1, yCand2, phiCand1, phiCand2, massDCand1, massDbarCand1, massDCand2, massDbarCand2, pairType, candidateType1, candidateType2);
   }
 
   void fillMcHistos(int8_t matchedRec1, int8_t matchedRec2, int8_t isTrueDCand1, int8_t isTrueDbarCand1, int8_t isTrueDCand2, int8_t isTrueDbarCand2)
@@ -572,12 +578,18 @@ struct HfCorrelatorDMesonPairs {
         }
       }
 
+      // Remove ambiguous D0 candidates if flag is true
+      if (removeAmbiguous && (isDCand1 && isDbarCand1)) {
+        continue;
+      }
+
       registry.fill(HIST("hPtProng0"), candidate1.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate1.ptProng1());
       registry.fill(HIST("hEta"), candidate1.eta());
       registry.fill(HIST("hPhi"), candidate1.phi());
       registry.fill(HIST("hY"), candidate1.y(MassD0));
       registry.fill(HIST("hPtCandAfterCut"), candidate1.pt());
+      registry.fill(HIST("hPVContrib"), collision.numContrib());
 
       if (isDCand1) {
         registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
@@ -631,14 +643,19 @@ struct HfCorrelatorDMesonPairs {
             continue;
           }
 
+          // Remove ambiguous D0 candidates if flag is true
+          if (removeAmbiguous && (isDCand2 && isDbarCand2)) {
+            continue;
+          }
+
           fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, hfHelper.yD0(candidate1), hfHelper.yD0(candidate2),
-                    candidate1.pt(), candidate2.pt(), hfHelper.invMassD0ToPiK(candidate1), hfHelper.invMassD0barToKPi(candidate1),
+                    candidate1.pt(), candidate2.pt(), candidate1.phi(), candidate2.phi(), hfHelper.invMassD0ToPiK(candidate1), hfHelper.invMassD0barToKPi(candidate1),
                     hfHelper.invMassD0ToPiK(candidate2), hfHelper.invMassD0barToKPi(candidate2));
 
           entryD0PairMl(outputMlD0Cand1, outputMlD0barCand1, outputMlD0Cand2, outputMlD0barCand2);
         } else {
           // Fill entries
-          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, hfHelper.yD0(candidate1), hfHelper.yD0(candidate2),
+          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, hfHelper.yD0(candidate1), hfHelper.yD0(candidate2), candidate1.phi(), candidate2.phi(),
                     candidate1.pt(), candidate2.pt(), hfHelper.invMassD0ToPiK(candidate1), hfHelper.invMassD0barToKPi(candidate1),
                     hfHelper.invMassD0ToPiK(candidate2), hfHelper.invMassD0barToKPi(candidate2));
         }
@@ -666,6 +683,7 @@ struct HfCorrelatorDMesonPairs {
 
       auto ptCandidate1 = candidate1.pt();
       auto yCandidate1 = hfHelper.yD0(candidate1);
+      auto phiCandidate1 = candidate1.phi();
       float massD0Cand1 = hfHelper.invMassD0ToPiK(candidate1);
       float massD0barCand1 = hfHelper.invMassD0barToKPi(candidate1);
       auto prong0Cand1 = candidate1.template prong0_as<aod::Tracks>();
@@ -714,6 +732,11 @@ struct HfCorrelatorDMesonPairs {
         }
       }
 
+      // Remove ambiguous D0 candidates if flag is true
+      if (removeAmbiguous && (isDCand1 && isDbarCand1)) {
+        continue;
+      }
+
       if (isTrueDCand1) {
         registry.fill(HIST("hStatusSinglePart"), 5);
       } else if (isTrueDbarCand1) {
@@ -734,8 +757,10 @@ struct HfCorrelatorDMesonPairs {
           registry.fill(HIST("hNContribMcRec"), collision.numContrib());
           if (originRec1 == 1) {
             registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+            registry.fill(HIST("hPtVsYVsNContribMcRecPrompt"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           } else if (originRec1 == 2) {
             registry.fill(HIST("hMassMcRecNonPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+            registry.fill(HIST("hPtVsYVsNContribMcRecNonPrompt"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           }
         } else if (isTrueDbarCand1) {
           registry.fill(HIST("hMassMcRecReflections"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
@@ -763,6 +788,7 @@ struct HfCorrelatorDMesonPairs {
 
         auto ptCandidate2 = candidate2.pt();
         auto yCandidate2 = hfHelper.yD0(candidate2);
+        auto phiCandidate2 = candidate2.phi();
         float massD0Cand2 = hfHelper.invMassD0ToPiK(candidate2);
         float massD0barCand2 = hfHelper.invMassD0barToKPi(candidate2);
         auto prong0Cand2 = candidate2.template prong0_as<aod::Tracks>();
@@ -813,8 +839,13 @@ struct HfCorrelatorDMesonPairs {
             continue;
           }
 
+          // Remove ambiguous D0 candidates if flag is true
+          if (removeAmbiguous && (isDCand2 && isDbarCand2)) {
+            continue;
+          }
+
           // Fill tables
-          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, yCandidate1, yCandidate2,
+          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, yCandidate1, yCandidate2, phiCandidate1, phiCandidate2,
                     ptCandidate1, ptCandidate2, massD0Cand1, massD0barCand1, massD0Cand2, massD0barCand2);
           fillMcHistos(matchedRec1, matchedRec2, isTrueDCand1, isTrueDbarCand1, isTrueDCand2, isTrueDbarCand2);
           entryD0PairMcInfo(originRec1, originRec2, matchedRec1, matchedRec2);
@@ -822,7 +853,7 @@ struct HfCorrelatorDMesonPairs {
 
         } else {
           // Fill tables
-          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, yCandidate1, yCandidate2,
+          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, yCandidate1, yCandidate2, phiCandidate1, phiCandidate2,
                     ptCandidate1, ptCandidate2, massD0Cand1, massD0barCand1, massD0Cand2, massD0barCand2);
           fillMcHistos(matchedRec1, matchedRec2, isTrueDCand1, isTrueDbarCand1, isTrueDCand2, isTrueDbarCand2);
           entryD0PairMcInfo(originRec1, originRec2, matchedRec1, matchedRec2);
@@ -927,6 +958,12 @@ struct HfCorrelatorDMesonPairs {
       }
 
       registry.fill(HIST("hPtVsYVsNContribMcGen"), particle1.pt(), particle1.y(), numPvContributorsGen);
+      if (originGen1 == 1) {
+        registry.fill(HIST("hPtVsYVsNContribMcGenPrompt"), particle1.pt(), particle1.y(), numPvContributorsGen);
+      }
+      if (originGen1 == 2) {
+        registry.fill(HIST("hPtVsYVsNContribMcGenNonPrompt"), particle1.pt(), particle1.y(), numPvContributorsGen);
+      }
       registry.fill(HIST("hNContribMcGen"), numPvContributorsGen);
 
       for (auto particle2 = particle1 + 1; particle2 != mcParticles.end(); ++particle2) {
@@ -1007,7 +1044,7 @@ struct HfCorrelatorDMesonPairs {
         }
 
         // Fill pair Selection Status
-        entryD0PairMcGen(particle1.pt(), particle2.pt(), particle1.y(), particle2.y(), massD, massDbar, massD, massDbar, pairType, particleType1, particleType2);
+        entryD0PairMcGen(particle1.pt(), particle2.pt(), particle1.y(), particle2.y(), particle1.phi(), particle2.phi(), massD, massDbar, massD, massDbar, pairType, particleType1, particleType2);
         entryD0PairMcGenInfo(originGen1, originGen2, matchedGen1, matchedGen2);
 
       } // end inner loop

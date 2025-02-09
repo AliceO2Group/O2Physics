@@ -95,8 +95,8 @@ struct lambdapolarization {
   Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
 
   Configurable<float> cfgv0radiusMin{"cfgv0radiusMin", 1.2, "minimum decay radius"};
-  Configurable<float> cfgDCAPosToPVMin{"cfgDCAPosToPVMin", 0.05, "minimum DCA to PV for positive track"};
-  Configurable<float> cfgDCANegToPVMin{"cfgDCANegToPVMin", 0.2, "minimum DCA to PV for negative track"};
+  Configurable<float> cfgDCAPrToPVMin{"cfgDCAPrToPVMin", 0.05, "minimum DCA to PV for proton track"};
+  Configurable<float> cfgDCAPiToPVMin{"cfgDCAPiToPVMin", 0.1, "minimum DCA to PV for pion track"};
   Configurable<float> cfgv0CosPA{"cfgv0CosPA", 0.995, "minimum v0 cosine"};
   Configurable<float> cfgDCAV0Dau{"cfgDCAV0Dau", 1.0, "maximum DCA between daughters"};
 
@@ -137,6 +137,7 @@ struct lambdapolarization {
   ConfigurableAxis massAxis{"massAxis", {30, 1.1, 1.13}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "Transverse momentum bins"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "Centrality interval"};
+  ConfigurableAxis cosAxis{"cosAxis", {110, -1.05, 1.05}, "Cosine axis"};
 
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
@@ -186,7 +187,6 @@ struct lambdapolarization {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec cosAxis = {110, -1.05, 1.05};
     AxisSpec centQaAxis = {80, 0.0, 80.0};
     AxisSpec PVzQaAxis = {300, -15.0, 15.0};
     AxisSpec epAxis = {6, 0.0, 2.0 * constants::math::PI};
@@ -352,14 +352,21 @@ struct lambdapolarization {
   } // event selection
 
   template <typename TCollision, typename V0>
-  bool SelectionV0(TCollision const& collision, V0 const& candidate)
+  bool SelectionV0(TCollision const& collision, V0 const& candidate, int LambdaTag)
   {
     if (candidate.v0radius() < cfgv0radiusMin)
       return false;
-    if (std::abs(candidate.dcapostopv()) < cfgDCAPosToPVMin)
-      return false;
-    if (std::abs(candidate.dcanegtopv()) < cfgDCANegToPVMin)
-      return false;
+    if (LambdaTag) {
+      if (std::abs(candidate.dcapostopv()) < cfgDCAPrToPVMin)
+        return false;
+      if (std::abs(candidate.dcanegtopv()) < cfgDCAPiToPVMin)
+        return false;
+    } else if (!LambdaTag) {
+      if (std::abs(candidate.dcapostopv()) < cfgDCAPiToPVMin)
+        return false;
+      if (std::abs(candidate.dcanegtopv()) < cfgDCAPrToPVMin)
+        return false;
+    }
     if (candidate.v0cosPA() < cfgv0CosPA)
       return false;
     if (std::abs(candidate.dcaV0daughters()) > cfgDCAV0Dau)
@@ -557,7 +564,7 @@ struct lambdapolarization {
       if (LambdaTag == aLambdaTag)
         continue;
 
-      if (!SelectionV0(collision, v0))
+      if (!SelectionV0(collision, v0, LambdaTag))
         continue;
 
       if (LambdaTag) {

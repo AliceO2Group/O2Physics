@@ -31,14 +31,15 @@
 namespace o2::aod
 {
 // basic species:
-// D0 -> K- + pi+ (done)
-// Lc -> pi+ K- p
-// D+ -> K- + pi+ + pi+ (3P table with adapted PID columns)
-// Ds+ -> K- + K+ + pi+ (3P table with adapted PID columns)
+// D0 → K− π+
+// Λc → p K− π+
+// D+ → K− π+ π+
+// Ds+ → K− K+ π+ (todo)
+
 // composite species
-// B0 -> D- + pi+
-// B+ -> D0 + pi+ (in progress)
-// D*+ -> D0 + pi+
+// B0 → D− π+ (todo)
+// B+ → D0 π+
+// D*+ → D0 π+ (todo)
 
 // ================
 // Collision tables
@@ -62,7 +63,7 @@ namespace hf_mc_coll
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! original global index of the MC collision
 } // namespace hf_mc_coll
 
-// Defines the collision table
+// Declares the base table with reconstructed collisions (CollBases) and joinable tables (CollIds).
 #define DECLARE_COLL_TABLE(_hf_type_, _hf_description_)                                \
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##CollBases, "HF" _hf_description_ "COLLBASE", \
                            o2::soa::Index<>,                                           \
@@ -84,7 +85,7 @@ DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! original global index of
                            hf_cand::CollisionId,                                       \
                            o2::soa::Marker<Marker##_hf_type_>);
 
-// Defines the mc collision table
+// Declares the base table with MC collisions (McCollBases) and joinable tables (McCollIds, McRCollIds).
 #define DECLARE_MCCOLL_TABLE(_hf_type_, _hf_description_, _hf_namespace_)                                           \
   namespace hf_mc_coll                                                                                              \
   {                                                                                                                 \
@@ -111,9 +112,14 @@ DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! original global index of
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##McRCollIds, "HF" _hf_description_ "MCRCOLLID",                            \
                            hf_mc_coll::der_##_hf_namespace_::Hf##_hf_type_##CollBaseIds);
 
+// Declares all tables with reconstructed and MC collisions.
 #define DECLARE_COLL_TABLES(_hf_type_, _hf_description_, _hf_namespace_) \
   DECLARE_COLL_TABLE(_hf_type_, _hf_description_)                        \
   DECLARE_MCCOLL_TABLE(_hf_type_, _hf_description_, _hf_namespace_)
+
+// ================
+// Candidate tables
+// ================
 
 namespace hf_cand_base
 {
@@ -161,6 +167,7 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! particle
 DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant decay channel flag, generator level
 } // namespace hf_mc_particle
 
+// Declares the base table with candidates (Bases).
 #define DECLARE_CAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_)                                 \
   namespace hf_cand_base                                                                                     \
   {                                                                                                          \
@@ -184,6 +191,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
                            hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,                             \
                            o2::soa::Marker<Marker##_hf_type_>);
 
+// Declares the table with global indices for 2-prong candidates (Ids).
 #define DECLARE_CAND_2P_ID_TABLE(_hf_type_, _hf_description_)              \
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##Ids, "HF" _hf_description_ "ID", \
                            hf_cand::CollisionId,                           \
@@ -191,6 +199,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
                            hf_track_index::Prong1Id,                       \
                            o2::soa::Marker<Marker##_hf_type_>);
 
+// Declares the table with global indices for 3-prong candidates (Ids).
 #define DECLARE_CAND_3P_ID_TABLE(_hf_type_, _hf_description_)              \
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##Ids, "HF" _hf_description_ "ID", \
                            hf_cand::CollisionId,                           \
@@ -199,11 +208,17 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
                            hf_track_index::Prong2Id,                       \
                            o2::soa::Marker<Marker##_hf_type_>);
 
+// Declares the table with candidate selection flags (Sels).
 #define DECLARE_CAND_SEL_TABLE(_hf_type_, _hf_description_)                  \
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##Sels, "HF" _hf_description_ "SEL", \
                            hf_cand_sel::CandidateSelFlag,                    \
                            o2::soa::Marker<Marker##_hf_type_>);
 
+// ================
+// MC particle tables
+// ================
+
+// Declares the base table with MC particles (PBases).
 #define DECLARE_MCCAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_)                                     \
   namespace hf_mc_particle                                                                                         \
   {                                                                                                                \
@@ -227,11 +242,16 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
                            hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,                                   \
                            o2::soa::Marker<Marker##_hf_type_>);
 
+// Declares the table with global indices for MC particles (PIds).
 #define DECLARE_MCCAND_ID_TABLE(_hf_type_, _hf_description_)                 \
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##PIds, "HF" _hf_description_ "PID", \
                            hf_mc_particle::McCollisionId,                    \
                            hf_mc_particle::McParticleId,                     \
                            o2::soa::Marker<Marker##_hf_type_>);
+
+// ================
+// Helper macros for combinations
+// ================
 
 #define DECLARE_CAND_TABLES(_hf_type_, _hf_description_, _hf_namespace_) \
   DECLARE_CAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_)   \
@@ -257,12 +277,17 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
   DECLARE_COLL_TABLES(_hf_type_, _hf_description_, _hf_namespace_)                      \
   DECLARE_CAND_3P_TABLES(_hf_type_, _hf_description_, _hf_namespace_)
 
+// ================
+// Declarations of common tables for individual species
+// ================
+
 DECLARE_2P_TABLES(D0, "D0", d0, 2);
 DECLARE_3P_TABLES(Lc, "LC", lc, 3);
-DECLARE_3P_TABLES(Bplus, "BP", bplus, 4);
+DECLARE_3P_TABLES(Dplus, "DP", dplus, 4);
+DECLARE_3P_TABLES(Bplus, "BP", bplus, 5);
 
 // ================
-// Candidate tables
+// Additional species-specific candidate tables
 // ================
 
 // Candidate properties used for selection
@@ -417,6 +442,10 @@ DECLARE_SOA_COLUMN(MlScoreNonPromptCharm, mlScoreNonPromptCharm, float);      //
 DECLARE_SOA_COLUMN(MlScoresCharm, mlScoresCharm, std::vector<float>);         //! vector of ML scores
 } // namespace hf_cand_mc_charm
 
+// ----------------
+// D0
+// ----------------
+
 // candidates for removal:
 // PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
 // XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
@@ -481,6 +510,10 @@ DECLARE_SOA_TABLE_STAGED(HfD0Mcs, "HFD0MC", //! Table with MC candidate info
                          hf_cand_mc::FlagMcMatchRec,
                          hf_cand_mc::OriginMcRec,
                          o2::soa::Marker<MarkerD0>);
+
+// ----------------
+// B+
+// ----------------
 
 // candidates for removal:
 // PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
@@ -558,6 +591,10 @@ DECLARE_SOA_TABLE_STAGED(HfBplusMcs, "HFBPMC", //! Table with MC candidate info
                          hf_cand_mc::OriginMcRec,
                          o2::soa::Marker<MarkerBplus>);
 
+// ----------------
+// Lc
+// ----------------
+
 // candidates for removal:
 // PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
 // XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
@@ -631,6 +668,78 @@ DECLARE_SOA_TABLE_STAGED(HfLcMcs, "HFLCMC", //! Table with MC candidate info
                          hf_cand_mc::OriginMcRec,
                          hf_cand_mc::IsCandidateSwapped,
                          o2::soa::Marker<MarkerLc>);
+
+// ----------------
+// D+
+// ----------------
+
+// candidates for removal:
+// PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
+// XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
+// normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
+DECLARE_SOA_TABLE_STAGED(HfDplusPars, "HFDPPAR", //! Table with candidate properties used for selection
+                         hf_cand::Chi2PCA,
+                         hf_cand::NProngsContributorsPV,
+                         hf_cand_par::Cpa,
+                         hf_cand_par::CpaXY,
+                         hf_cand_par::DecayLength,
+                         hf_cand_par::DecayLengthXY,
+                         hf_cand_par::DecayLengthNormalised,
+                         hf_cand_par::DecayLengthXYNormalised,
+                         hf_cand_par::PtProng0,
+                         hf_cand_par::PtProng1,
+                         hf_cand_par::PtProng2,
+                         hf_cand::ImpactParameter0,
+                         hf_cand::ImpactParameter1,
+                         hf_cand::ImpactParameter2,
+                         hf_cand_par::ImpactParameterNormalised0,
+                         hf_cand_par::ImpactParameterNormalised1,
+                         hf_cand_par::ImpactParameterNormalised2,
+                         hf_cand_par::NSigTpcPi0,
+                         hf_cand_par::NSigTofPi0,
+                         hf_cand_par::NSigTpcTofPi0,
+                         hf_cand_par::NSigTpcKa1,
+                         hf_cand_par::NSigTofKa1,
+                         hf_cand_par::NSigTpcTofKa1,
+                         hf_cand_par::NSigTpcPi2,
+                         hf_cand_par::NSigTofPi2,
+                         hf_cand_par::NSigTpcTofPi2,
+                         o2::soa::Marker<MarkerDplus>);
+
+DECLARE_SOA_TABLE_STAGED(HfDplusParEs, "HFDPPARE", //! Table with additional candidate properties used for selection
+                         hf_cand::XSecondaryVertex,
+                         hf_cand::YSecondaryVertex,
+                         hf_cand::ZSecondaryVertex,
+                         hf_cand::ErrorDecayLength,
+                         hf_cand::ErrorDecayLengthXY,
+                         hf_cand_par::RSecondaryVertex,
+                         hf_cand_par::PProng0,
+                         hf_cand_par::PProng1,
+                         hf_cand_par::PProng2,
+                         hf_cand::PxProng0,
+                         hf_cand::PyProng0,
+                         hf_cand::PzProng0,
+                         hf_cand::PxProng1,
+                         hf_cand::PyProng1,
+                         hf_cand::PzProng1,
+                         hf_cand::PxProng2,
+                         hf_cand::PyProng2,
+                         hf_cand::PzProng2,
+                         hf_cand::ErrorImpactParameter0,
+                         hf_cand::ErrorImpactParameter1,
+                         hf_cand::ErrorImpactParameter2,
+                         hf_cand_par::Ct,
+                         o2::soa::Marker<MarkerDplus>);
+
+DECLARE_SOA_TABLE_STAGED(HfDplusMls, "HFDPML", //! Table with candidate selection ML scores
+                         hf_cand_mc::MlScores,
+                         o2::soa::Marker<MarkerDplus>);
+
+DECLARE_SOA_TABLE_STAGED(HfDplusMcs, "HFDPMC", //! Table with MC candidate info
+                         hf_cand_mc::FlagMcMatchRec,
+                         hf_cand_mc::OriginMcRec,
+                         hf_cand_mc::IsCandidateSwapped, // useless
+                         o2::soa::Marker<MarkerDplus>);
 
 } // namespace o2::aod
 
