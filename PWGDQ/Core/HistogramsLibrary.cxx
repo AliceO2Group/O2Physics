@@ -1082,6 +1082,16 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2ME_SP", "Mass_Pt_CentFT0C_V2ME_SP", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2ME_SP, VarManager::kWV2ME_SP);
         hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2ME_EP", "Mass_Pt_CentFT0C_V2ME_EP", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2ME_EP, VarManager::kWV2ME_EP);
       }
+      if (subGroupStr.Contains("cumulantme")) {
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M11REFoverMpME", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 9, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM11REFoverMpME);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M1111REFoverMpME", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 9, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM1111REFoverMpME);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M01POIoverMpME", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 9, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM01POIoverMpME);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M0111POIoverMpME", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 9, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM0111POIoverMpME);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2REFME", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 9, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2REFbydimuonsME, VarManager::kM11REFoverMpME);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr4REFME", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 9, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR4REFbydimuonsME, VarManager::kM1111REFoverMpME);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2POIME", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 9, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2POIME, VarManager::kM01POIoverMpME);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr4POIME", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 9, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR4POIME, VarManager::kM0111POIoverMpME);
+      }
       if (subGroupStr.Contains("dimuon-polarization-he")) {
         int varspTHE[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaHE, VarManager::kPhiHE};
         int varsrapHE[4] = {VarManager::kMass, VarManager::kRap, VarManager::kCosThetaHE, VarManager::kPhiHE};

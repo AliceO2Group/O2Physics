@@ -707,6 +707,17 @@ class VarManager : public TObject
     kM1111REFoverMpplus,
     kM11REFoverMpminus,
     kM1111REFoverMpminus,
+    kM01POIME,
+    kMultDimuonsME,
+    kM0111POIME,
+    kCORR2POIME,
+    kCORR4POIME,
+    kM01POIoverMpME,
+    kM0111POIoverMpME,
+    kM11REFoverMpME,
+    kM1111REFoverMpME,
+    kCORR2REFbydimuonsME,
+    kCORR4REFbydimuonsME,
     kR2SP,
     kR2EP,
     kPsi2A,
@@ -3023,6 +3034,25 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     values[kWV2ME_SP] = std::isnan(V2ME_SP) || std::isinf(V2ME_SP) ? 0. : 1.0;
     values[kV2ME_EP] = std::isnan(V2ME_EP) || std::isinf(V2ME_EP) ? 0. : V2ME_EP;
     values[kWV2ME_EP] = std::isnan(V2ME_EP) || std::isinf(V2ME_EP) ? 0. : 1.0;
+
+    if constexpr ((fillMap & ReducedEventQvectorExtra) > 0) {
+      complex<double> Q21(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
+      complex<double> Q42(values[kQ42XA], values[kQ42YA]);
+      complex<double> Q23(values[kQ23XA], values[kQ23YA]);
+      complex<double> P2(TMath::Cos(2 * v12.Phi()), TMath::Sin(2 * v12.Phi()));
+      values[kM01POIME] = values[kMultDimuonsME] * values[kS11A];
+      values[kM0111POIME] = values[kMultDimuonsME] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
+      values[kCORR2POIME] = (P2 * conj(Q21)).real() / values[kM01POIME];
+      values[kCORR4POIME] = (P2 * Q21 * conj(Q21) * conj(Q21) - P2 * Q21 * conj(Q42) - 2. * values[kS12A] * P2 * conj(Q21) + 2. * P2 * conj(Q23)).real() / values[kM0111POIME];
+      values[kM01POIoverMpME] = values[kMultDimuonsME] > 0 && !(std::isnan(values[kM01POIME]) || std::isinf(values[kM01POIME]) || std::isnan(values[kCORR2POIME]) || std::isinf(values[kCORR2POIME]) || std::isnan(values[kM0111POIME]) || std::isinf(values[kM0111POIME]) || std::isnan(values[kCORR4POIME]) || std::isinf(values[kCORR4POIME])) ? values[kM01POIME] / values[kMultDimuonsME] : 0;
+      values[kM0111POIoverMpME] = values[kMultDimuonsME] > 0 && !(std::isnan(values[kM0111POIME]) || std::isinf(values[kM0111POIME]) || std::isnan(values[kCORR4POIME]) || std::isinf(values[kCORR4POIME]) || std::isnan(values[kM01POIME]) || std::isinf(values[kM01POIME]) || std::isnan(values[kCORR2POIME]) || std::isinf(values[kCORR2POIME])) ? values[kM0111POIME] / values[kMultDimuonsME] : 0;
+      values[kM11REFoverMpME] = values[kMultDimuonsME] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM11REF] / values[kMultDimuonsME] : 0;
+      values[kM1111REFoverMpME] = values[kMultDimuonsME] > 0 && !(std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) || std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF])) ? values[kM1111REF] / values[kMultDimuonsME] : 0;
+      values[kCORR2REFbydimuonsME] = std::isnan(values[kM11REFoverMpME]) || std::isinf(values[kM11REFoverMpME]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REFoverMpME]) || std::isinf(values[kM1111REFoverMpME]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR2REF];
+      values[kCORR4REFbydimuonsME] = std::isnan(values[kM1111REFoverMpME]) || std::isinf(values[kM1111REFoverMpME]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) || std::isnan(values[kM11REFoverMpME]) || std::isinf(values[kM11REFoverMpME]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR4REF];
+      values[kCORR2POIME] = std::isnan(values[kCORR2POIME]) || std::isinf(values[kCORR2POIME]) || std::isnan(values[kM01POIME]) || std::isinf(values[kM01POIME]) || std::isnan(values[kCORR4POIME]) || std::isinf(values[kCORR4POIME]) || std::isnan(values[kM0111POIME]) || std::isinf(values[kM0111POIME]) ? 0 : values[kCORR2POIME];
+      values[kCORR4POIME] = std::isnan(values[kCORR4POIME]) || std::isinf(values[kCORR4POIME]) || std::isnan(values[kM0111POIME]) || std::isinf(values[kM0111POIME]) || std::isnan(values[kCORR2POIME]) || std::isinf(values[kCORR2POIME]) || std::isnan(values[kM01POIME]) || std::isinf(values[kM01POIME]) ? 0 : values[kCORR4POIME];
+    }
   }
   if constexpr (pairType == kDecayToMuMu) {
     if (fgUsedVars[kQuadDCAabsXY]) {

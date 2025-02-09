@@ -106,7 +106,7 @@ using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExt
 using MyEventsQvectorCentrMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra>;
 using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
-using MyEventsHashSelectedQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra>;
+using MyEventsHashSelectedQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, ReducedEventVtxCov, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra, aod::ReducedEventsRefFlow>;
 using MyEventsHashSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvectorCentr>;
 
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID>;
@@ -701,7 +701,7 @@ struct AnalysisEventMixing {
         }
       }
     }
-    if (context.mOptions.get<bool>("processMuonSkimmed") || context.mOptions.get<bool>("processMuonVnSkimmed") || context.mOptions.get<bool>("processMuonVnCentrSkimmed")) {
+    if (context.mOptions.get<bool>("processMuonSkimmed") || context.mOptions.get<bool>("processMuonVnSkimmed") || context.mOptions.get<bool>("processMuonVnCentrSkimmed") || context.mOptions.get<bool>("processMuonVnExtraSkimmed")) {
       TString cutNames = fConfigMuonCuts.value;
       if (!cutNames.IsNull()) {
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
@@ -762,6 +762,7 @@ struct AnalysisEventMixing {
     }
 
     uint32_t twoTrackFilter = 0;
+    uint32_t mult_dimuons = 0;
     for (auto& track1 : tracks1) {
       for (auto& track2 : tracks2) {
         if constexpr (TPairType == VarManager::kDecayToEE) {
@@ -782,6 +783,7 @@ struct AnalysisEventMixing {
         for (unsigned int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             if (track1.sign() * track2.sign() < 0) {
+              mult_dimuons++;
               fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
               if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
                 fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][0].Data()), VarManager::fgValues);
@@ -803,6 +805,7 @@ struct AnalysisEventMixing {
         } // end for (cuts)
       } // end for (track2)
     } // end for (track1)
+    VarManager::fgValues[VarManager::kMultDimuonsME] = mult_dimuons;
   }
 
   // barrel-barrel and muon-muon event mixing
@@ -906,6 +909,10 @@ struct AnalysisEventMixing {
   {
     runSameSide<pairTypeMuMu, gkEventFillMapWithQvectorCentr>(events, muons, perEventsSelectedM);
   }
+  void processMuonVnExtraSkimmed(soa::Filtered<MyEventsHashSelectedQvectorExtra>& events, soa::Filtered<MyMuonTracksSelected> const& muons)
+  {
+    runSameSide<pairTypeMuMu, gkEventFillMapWithCovQvectorExtraWithRefFlow>(events, muons, perEventsSelectedM);
+  }
   // TODO: This is a dummy process function for the case when the user does not want to run any of the process functions (no event mixing)
   //    If there is no process function enabled, the workflow hangs
   void processDummy(MyEvents&)
@@ -919,6 +926,7 @@ struct AnalysisEventMixing {
   PROCESS_SWITCH(AnalysisEventMixing, processBarrelVnSkimmed, "Run barrel-barrel vn mixing on skimmed tracks", false);
   PROCESS_SWITCH(AnalysisEventMixing, processMuonVnSkimmed, "Run muon-muon vn mixing on skimmed tracks", false);
   PROCESS_SWITCH(AnalysisEventMixing, processMuonVnCentrSkimmed, "Run muon-muon vn mixing on skimmed tracks from central framework", false);
+  PROCESS_SWITCH(AnalysisEventMixing, processMuonVnExtraSkimmed, "Run muon-muon vn mixing on skimmed tracks from GFW", false);
   PROCESS_SWITCH(AnalysisEventMixing, processDummy, "Dummy function", false);
 };
 
