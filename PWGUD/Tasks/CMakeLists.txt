@@ -208,6 +208,11 @@ o2physics_add_dpl_workflow(upc-rho-analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(upc-rho-prime-analysis
+                           SOURCES upcRhoPrimeAnalysis.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(event-by-event
                            SOURCES eventByevent.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector

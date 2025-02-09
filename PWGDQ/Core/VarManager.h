@@ -230,6 +230,8 @@ class VarManager : public TObject
     kMultZNC,
     kMultTracklets,
     kMultDimuons,
+    kMultAntiMuons,
+    kMultMuons,
     kMultNTracksHasITS,
     kMultNTracksHasTPC,
     kMultNTracksHasTOF,
@@ -698,6 +700,34 @@ class VarManager : public TObject
     kM0111POIoverMp,
     kCORR2POIMp,
     kCORR4POIMp,
+    kM01POIplus,
+    kM0111POIplus,
+    kM01POIminus,
+    kM0111POIminus,
+    kM01POIoverMpminus,
+    kM01POIoverMpplus,
+    kM01POIoverMpmoins,
+    kM0111POIoverMpminus,
+    kM0111POIoverMpplus,
+    kCORR2POIplus,
+    kCORR2POIminus,
+    kCORR4POIplus,
+    kCORR4POIminus,
+    kM11REFoverMpplus,
+    kM1111REFoverMpplus,
+    kM11REFoverMpminus,
+    kM1111REFoverMpminus,
+    kM01POIME,
+    kMultDimuonsME,
+    kM0111POIME,
+    kCORR2POIME,
+    kCORR4POIME,
+    kM01POIoverMpME,
+    kM0111POIoverMpME,
+    kM11REFoverMpME,
+    kM1111REFoverMpME,
+    kCORR2REFbydimuonsME,
+    kCORR4REFbydimuonsME,
     kR2SP,
     kR2EP,
     kPsi2A,
@@ -3060,6 +3090,25 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     values[kWV22ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
     values[kV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : V24ME;
     values[kWV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
+
+    if constexpr ((fillMap & ReducedEventQvectorExtra) > 0) {
+      complex<double> Q21(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
+      complex<double> Q42(values[kQ42XA], values[kQ42YA]);
+      complex<double> Q23(values[kQ23XA], values[kQ23YA]);
+      complex<double> P2(TMath::Cos(2 * v12.Phi()), TMath::Sin(2 * v12.Phi()));
+      values[kM01POIME] = values[kMultDimuonsME] * values[kS11A];
+      values[kM0111POIME] = values[kMultDimuonsME] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
+      values[kCORR2POIME] = (P2 * conj(Q21)).real() / values[kM01POIME];
+      values[kCORR4POIME] = (P2 * Q21 * conj(Q21) * conj(Q21) - P2 * Q21 * conj(Q42) - 2. * values[kS12A] * P2 * conj(Q21) + 2. * P2 * conj(Q23)).real() / values[kM0111POIME];
+      values[kM01POIoverMpME] = values[kMultDimuonsME] > 0 && !(std::isnan(values[kM01POIME]) || std::isinf(values[kM01POIME]) || std::isnan(values[kCORR2POIME]) || std::isinf(values[kCORR2POIME]) || std::isnan(values[kM0111POIME]) || std::isinf(values[kM0111POIME]) || std::isnan(values[kCORR4POIME]) || std::isinf(values[kCORR4POIME])) ? values[kM01POIME] / values[kMultDimuonsME] : 0;
+      values[kM0111POIoverMpME] = values[kMultDimuonsME] > 0 && !(std::isnan(values[kM0111POIME]) || std::isinf(values[kM0111POIME]) || std::isnan(values[kCORR4POIME]) || std::isinf(values[kCORR4POIME]) || std::isnan(values[kM01POIME]) || std::isinf(values[kM01POIME]) || std::isnan(values[kCORR2POIME]) || std::isinf(values[kCORR2POIME])) ? values[kM0111POIME] / values[kMultDimuonsME] : 0;
+      values[kM11REFoverMpME] = values[kMultDimuonsME] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM11REF] / values[kMultDimuonsME] : 0;
+      values[kM1111REFoverMpME] = values[kMultDimuonsME] > 0 && !(std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) || std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF])) ? values[kM1111REF] / values[kMultDimuonsME] : 0;
+      values[kCORR2REFbydimuonsME] = std::isnan(values[kM11REFoverMpME]) || std::isinf(values[kM11REFoverMpME]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REFoverMpME]) || std::isinf(values[kM1111REFoverMpME]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR2REF];
+      values[kCORR4REFbydimuonsME] = std::isnan(values[kM1111REFoverMpME]) || std::isinf(values[kM1111REFoverMpME]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) || std::isnan(values[kM11REFoverMpME]) || std::isinf(values[kM11REFoverMpME]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR4REF];
+      values[kCORR2POIME] = std::isnan(values[kCORR2POIME]) || std::isinf(values[kCORR2POIME]) || std::isnan(values[kM01POIME]) || std::isinf(values[kM01POIME]) || std::isnan(values[kCORR4POIME]) || std::isinf(values[kCORR4POIME]) || std::isnan(values[kM0111POIME]) || std::isinf(values[kM0111POIME]) ? 0 : values[kCORR2POIME];
+      values[kCORR4POIME] = std::isnan(values[kCORR4POIME]) || std::isinf(values[kCORR4POIME]) || std::isnan(values[kM0111POIME]) || std::isinf(values[kM0111POIME]) || std::isnan(values[kCORR2POIME]) || std::isinf(values[kCORR2POIME]) || std::isnan(values[kM01POIME]) || std::isinf(values[kM01POIME]) ? 0 : values[kCORR4POIME];
+    }
   }
   if constexpr (pairType == kDecayToMuMu) {
     if (fgUsedVars[kQuadDCAabsXY]) {
@@ -4387,6 +4436,8 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+  values[kPt1] = t1.pt();
+  values[kPt2] = t2.pt();
 
   // TODO: provide different computations for vn
   // Compute the scalar product UQ using Q-vector from A, for second and third harmonic
@@ -4465,6 +4516,35 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kM01M0111overMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM01POI]) || std::isinf(values[kM01POI]) || std::isnan(values[kM0111POI]) || std::isinf(values[kM0111POI]) || std::isnan(values[kCORR2POI]) || std::isinf(values[kCORR2POI]) || std::isnan(values[kCORR4POI]) || std::isinf(values[kCORR4POI])) ? (values[kM01POI] * values[kM0111POI]) / values[kMultDimuons] : 0;
     values[kM11M0111overMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kM0111POI]) || std::isinf(values[kM0111POI]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kCORR4POI]) || std::isinf(values[kCORR4POI])) ? (values[kM11REF] * values[kM0111POI]) / values[kMultDimuons] : 0;
     values[kM11M01overMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kM01POI]) || std::isinf(values[kM01POI]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kCORR2POI]) || std::isinf(values[kCORR2POI])) ? (values[kM11REF] * values[kM01POI]) / values[kMultDimuons] : 0;
+
+    complex<double> P2plus(TMath::Cos(2 * v1.Phi()), TMath::Sin(2 * v1.Phi()));
+    complex<double> P2minus(TMath::Cos(2 * v2.Phi()), TMath::Sin(2 * v2.Phi()));
+    values[kM11REFoverMpplus] = values[kMultAntiMuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM11REF] / values[kMultAntiMuons] : 0;
+    values[kM1111REFoverMpplus] = values[kMultAntiMuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM1111REF] / values[kMultAntiMuons] : 0;
+    values[kM11REFoverMpminus] = values[kMultMuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM11REF] / values[kMultMuons] : 0;
+    values[kM1111REFoverMpminus] = values[kMultMuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM1111REF] / values[kMultMuons] : 0;
+    values[kCORR2POIplus] = (P2plus * conj(Q21)).real() / values[kM01POI];
+    values[kCORR2POIminus] = (P2minus * conj(Q21)).real() / values[kM01POI];
+    values[kM01POIplus] = values[kMultAntiMuons] * values[kS11A];
+    values[kM0111POIplus] = values[kMultAntiMuons] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
+    values[kCORR2POIplus] = (P2plus * conj(Q21)).real() / values[kM01POIplus];
+    values[kCORR4POIplus] = (P2plus * Q21 * conj(Q21) * conj(Q21) - P2plus * Q21 * conj(Q42) - 2. * values[kS12A] * P2plus * conj(Q21) + 2. * P2plus * conj(Q23)).real() / values[kM0111POIplus];
+    values[kM01POIminus] = values[kMultMuons] * values[kS11A];
+    values[kM0111POIminus] = values[kMultMuons] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
+    values[kCORR2POIminus] = (P2minus * conj(Q21)).real() / values[kM01POIminus];
+    values[kCORR4POIminus] = (P2minus * Q21 * conj(Q21) * conj(Q21) - P2minus * Q21 * conj(Q42) - 2. * values[kS12A] * P2minus * conj(Q21) + 2. * P2minus * conj(Q23)).real() / values[kM0111POIminus];
+    values[kM01POIplus] = std::isnan(values[kM01POIplus]) || std::isinf(values[kM01POIplus]) || std::isnan(values[kM0111POIplus]) || std::isinf(values[kM0111POIplus]) || std::isnan(values[kCORR2POIplus]) || std::isinf(values[kCORR2POIplus]) || std::isnan(values[kCORR4POIplus]) || std::isinf(values[kCORR4POIplus]) ? 0 : values[kM01POIplus];
+    values[kM0111POIplus] = std::isnan(values[kM0111POIplus]) || std::isinf(values[kM0111POIplus]) || std::isnan(values[kCORR2POIplus]) || std::isinf(values[kCORR2POIplus]) || std::isnan(values[kCORR4POIplus]) || std::isinf(values[kCORR4POIplus]) ? 0 : values[kM0111POIplus];
+    values[kCORR2POIplus] = std::isnan(values[kM01POIplus]) || std::isinf(values[kM01POIplus]) || std::isnan(values[kM0111POIplus]) || std::isinf(values[kM0111POIplus]) || std::isnan(values[kCORR2POIplus]) || std::isinf(values[kCORR2POIplus]) || std::isnan(values[kCORR4POIplus]) || std::isinf(values[kCORR4POIplus]) ? 0 : values[kCORR2POIplus];
+    values[kCORR4POIplus] = std::isnan(values[kM01POIplus]) || std::isinf(values[kM01POIplus]) || std::isnan(values[kM0111POIplus]) || std::isinf(values[kM0111POIplus]) || std::isnan(values[kCORR2POIplus]) || std::isinf(values[kCORR2POIplus]) || std::isnan(values[kCORR4POIplus]) || std::isinf(values[kCORR4POIplus]) ? 0 : values[kCORR4POIplus];
+    values[kM01POIminus] = std::isnan(values[kM01POIminus]) || std::isinf(values[kM01POIminus]) || std::isnan(values[kM0111POIminus]) || std::isinf(values[kM0111POIminus]) || std::isnan(values[kCORR2POIminus]) || std::isinf(values[kCORR2POIminus]) || std::isnan(values[kCORR4POIminus]) || std::isinf(values[kCORR4POIminus]) ? 0 : values[kM01POIminus];
+    values[kM0111POIminus] = std::isnan(values[kM01POIminus]) || std::isinf(values[kM01POIminus]) || std::isnan(values[kM0111POIminus]) || std::isinf(values[kM0111POIminus]) || std::isnan(values[kCORR2POIminus]) || std::isinf(values[kCORR2POIminus]) || std::isnan(values[kCORR4POIminus]) || std::isinf(values[kCORR4POIminus]) ? 0 : values[kM0111POIminus];
+    values[kCORR2POIminus] = std::isnan(values[kM01POIminus]) || std::isinf(values[kM01POIminus]) || std::isnan(values[kM0111POIminus]) || std::isinf(values[kM0111POIminus]) || std::isnan(values[kCORR2POIminus]) || std::isinf(values[kCORR2POIminus]) || std::isnan(values[kCORR4POIminus]) || std::isinf(values[kCORR4POIminus]) ? 0 : values[kCORR2POIminus];
+    values[kCORR4POIminus] = std::isnan(values[kM01POIminus]) || std::isinf(values[kM01POIminus]) || std::isnan(values[kM0111POIminus]) || std::isinf(values[kM0111POIminus]) || std::isnan(values[kCORR2POIminus]) || std::isinf(values[kCORR2POIminus]) || std::isnan(values[kCORR4POIminus]) || std::isinf(values[kCORR4POIminus]) ? 0 : values[kCORR4POIminus];
+    values[kM01POIoverMpminus] = values[kMultMuons] > 0 && !(std::isnan(values[kM0111POIminus]) || std::isinf(values[kM0111POIminus]) || std::isnan(values[kCORR4POIminus]) || std::isinf(values[kCORR4POIminus]) || std::isnan(values[kM01POIminus]) || std::isinf(values[kM01POIminus]) || std::isnan(values[kCORR2POIminus]) || std::isinf(values[kCORR2POIminus])) ? values[kM01POIminus] / values[kMultMuons] : 0;
+    values[kM0111POIoverMpminus] = values[kMultMuons] > 0 && !(std::isnan(values[kM0111POIminus]) || std::isinf(values[kM0111POIminus]) || std::isnan(values[kCORR4POIminus]) || std::isinf(values[kCORR4POIminus]) || std::isnan(values[kM01POIminus]) || std::isinf(values[kM01POIminus]) || std::isnan(values[kCORR2POIminus]) || std::isinf(values[kCORR2POIminus])) ? values[kM0111POIminus] / values[kMultMuons] : 0;
+    values[kM01POIoverMpplus] = values[kMultAntiMuons] > 0 && !(std::isnan(values[kM0111POIplus]) || std::isinf(values[kM0111POIplus]) || std::isnan(values[kCORR4POIplus]) || std::isinf(values[kCORR4POIplus]) || std::isnan(values[kM01POIplus]) || std::isinf(values[kM01POIplus]) || std::isnan(values[kCORR2POIplus]) || std::isinf(values[kCORR2POIplus])) ? values[kM01POIplus] / values[kMultAntiMuons] : 0;
+    values[kM0111POIoverMpplus] = values[kMultMuons] > 0 && !(std::isnan(values[kM0111POIplus]) || std::isinf(values[kM0111POIplus]) || std::isnan(values[kCORR4POIplus]) || std::isinf(values[kCORR4POIplus]) || std::isnan(values[kM01POIplus]) || std::isinf(values[kM01POIplus]) || std::isnan(values[kCORR2POIplus]) || std::isinf(values[kCORR2POIplus])) ? values[kM0111POIplus] / values[kMultAntiMuons] : 0;
   }
 
   ROOT::Math::PtEtaPhiMVector v1_vp(v1.Pt(), v1.Eta(), v1.Phi() - Psi2B, v1.M());
