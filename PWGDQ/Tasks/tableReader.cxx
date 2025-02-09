@@ -783,8 +783,7 @@ struct AnalysisEventMixing {
         for (unsigned int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             if (track1.sign() * track2.sign() < 0) {
-              mult_dimuons++
-              fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+              mult_dimuons++ fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
               if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
                 fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][0].Data()), VarManager::fgValues);
               }
@@ -909,7 +908,7 @@ struct AnalysisEventMixing {
   {
     runSameSide<pairTypeMuMu, gkEventFillMapWithQvectorCentr>(events, muons, perEventsSelectedM);
   }
-      void processMuonVnExtraSkimmed(soa::Filtered<MyEventsHashSelectedQvectorExtra>& events, soa::Filtered<MyMuonTracksSelected> const& muons)
+  void processMuonVnExtraSkimmed(soa::Filtered<MyEventsHashSelectedQvectorExtra>& events, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
     runSameSide<pairTypeMuMu, gkEventFillMapWithCovQvectorExtraWithRefFlow>(events, muons, perEventsSelectedM);
   }
