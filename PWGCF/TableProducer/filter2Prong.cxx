@@ -35,8 +35,9 @@ struct Filter2Prong {
 
   HfHelper hfHelper;
   Produces<aod::CF2ProngTracks> output2ProngTracks;
+  Produces<aod::CF2ProngTrackmls> output2ProngTrackmls;
 
-  using HFCandidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
+  using HFCandidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
   void processData(aod::Collisions::iterator const&, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, HFCandidates const& candidates)
   {
     if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
@@ -58,16 +59,38 @@ struct Filter2Prong {
         }
       }
       // look-up the collision id
+
+      std::vector<float> mlvecd{};
+      std::vector<float> mlvecdbar{};
+
       if ((c.hfflag() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) == 0)
         continue;
       if (cfgYMax >= 0.0f && std::abs(hfHelper.yD0(c)) > cfgYMax)
         continue;
-      if (c.isSelD0() > 0)
+      if (c.isSelD0() > 0){
         output2ProngTracks(cfcollisions.begin().globalIndex(),
                            prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0ToPiK(c), aod::cf2prongtrack::D0ToPiK);
-      if (c.isSelD0bar() > 0)
+        for (float val : c.mlProbD0()) {
+          mlvecd.push_back(val);
+        }
+        for (float val : c.mlProbD0bar()) {
+          mlvecdbar.push_back(val);
+        }
+        output2ProngTrackmls(cfcollisions.begin().globalIndex(),
+                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0ToPiK(c), aod::cf2prongtrack::D0ToPiK, mlvecd, mlvecdbar);
+      }
+      if (c.isSelD0bar() > 0){
         output2ProngTracks(cfcollisions.begin().globalIndex(),
                            prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0barToKPi(c), aod::cf2prongtrack::D0barToKPi);
+        for (float val : c.mlProbD0()) {
+          mlvecd.push_back(val);
+        }
+        for (float val : c.mlProbD0bar()) {
+          mlvecdbar.push_back(val);
+        }
+        output2ProngTrackmls(cfcollisions.begin().globalIndex(),
+                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0barToKPi(c), aod::cf2prongtrack::D0barToKPi, mlvecd, mlvecdbar);
+      }
     }
   }
   PROCESS_SWITCH(Filter2Prong, processData, "Process data D0 candidates", true);
