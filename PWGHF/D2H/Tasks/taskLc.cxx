@@ -595,7 +595,7 @@ struct HfTaskLc {
         }
         auto ptGen = particle.pt();
         auto originType = particle.originMcGen();
-        auto ptGenB = -1;
+        float ptGenB = -1.;
         unsigned int numPvContributors = 0;
         const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
         for (const auto& recCol : recoCollsPerMcColl) {
