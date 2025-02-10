@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-///
+/// \file k892analysispbpb.cxx
 /// \brief K*0 spectra in Pb-Pb
 /// \author Marta Urioni <marta.urioni@cern.ch>
 
@@ -53,7 +53,7 @@ using namespace o2::soa;
 using namespace o2::constants::physics;
 
 using std::array;
-struct k892analysis_PbPb {
+struct K892analysispbpb {
   SliceCache cache;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -849,7 +849,7 @@ struct k892analysis_PbPb {
     //                            <IsMC, IsMix, IsRot, IsRun2>
     callFillHistoswithPartitions<false, false, false, false>(collision, tracks);
   }
-  PROCESS_SWITCH(k892analysis_PbPb, processSameEvent, "Process Same event", true);
+  PROCESS_SWITCH(K892analysispbpb, processSameEvent, "Process Same event", true);
 
   void processSameEventRun2(Run2Events::iterator const& collision, TrackCandidates const& tracks, BCsWithRun2Info const& bcs)
   {
@@ -869,7 +869,7 @@ struct k892analysis_PbPb {
     //                            <IsMC, IsMix, IsRot, IsRun2>
     callFillHistoswithPartitions<false, false, false, true>(collision, tracks);
   }
-  PROCESS_SWITCH(k892analysis_PbPb, processSameEventRun2, "Process Same event  Run2", false);
+  PROCESS_SWITCH(K892analysispbpb, processSameEventRun2, "Process Same event  Run2", false);
 
   void processRotationalBkg(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
@@ -880,7 +880,7 @@ struct k892analysis_PbPb {
     //                            <IsMC, IsMix, IsRot, IsRun2>
     callFillHistoswithPartitions<false, false, true, false>(collision, tracks);
   }
-  PROCESS_SWITCH(k892analysis_PbPb, processRotationalBkg, "Process Rotational Background", false);
+  PROCESS_SWITCH(K892analysispbpb, processRotationalBkg, "Process Rotational Background", false);
 
   void processRotationalBkgMC(EventCandidatesMCrec::iterator const& recCollision, TrackCandidatesMCrec const& RecTracks)
   {
@@ -891,7 +891,7 @@ struct k892analysis_PbPb {
     //             <IsMC, IsMix, IsRot, IsRun2>
     fillHistograms<true, false, true, false>(recCollision, RecTracks, RecTracks);
   }
-  PROCESS_SWITCH(k892analysis_PbPb, processRotationalBkgMC, "Process Rotational Background MC", false);
+  PROCESS_SWITCH(K892analysispbpb, processRotationalBkgMC, "Process Rotational Background MC", false);
 
   void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
@@ -918,7 +918,7 @@ struct k892analysis_PbPb {
       callFillHistoswithPartitionsMixedEvt<false, true, false, false>(collision1, tracks1, collision2, tracks2);
     }
   }
-  PROCESS_SWITCH(k892analysis_PbPb, processMixedEvent, "Process Mixed event", true);
+  PROCESS_SWITCH(K892analysispbpb, processMixedEvent, "Process Mixed event", true);
 
   void processMixedEventRun2(Run2Events const& collisions, TrackCandidates const& tracks, BCsWithRun2Info const& bcs)
   {
@@ -943,7 +943,7 @@ struct k892analysis_PbPb {
       callFillHistoswithPartitionsMixedEvt<false, true, false, true>(collision1, tracks1, collision2, tracks2);
     }
   }
-  PROCESS_SWITCH(k892analysis_PbPb, processMixedEventRun2, "Process Mixed event Run2", false);
+  PROCESS_SWITCH(K892analysispbpb, processMixedEventRun2, "Process Mixed event Run2", false);
 
   void processMixedEventMC(EventCandidatesMCrec const& recCollisions, TrackCandidatesMCrec const& RecTracks, aod::McParticles const&)
   {
@@ -968,7 +968,7 @@ struct k892analysis_PbPb {
       fillHistograms<true, true, false, false>(collision1, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(k892analysis_PbPb, processMixedEventMC, "Process Mixed event MC", false);
+  PROCESS_SWITCH(K892analysispbpb, processMixedEventMC, "Process Mixed event MC", false);
 
   void processMixedEventMCRun2(EventCandidatesMCrecRun2 const& recCollisions, TrackCandidatesMCrec const& RecTracks, BCsWithRun2Info const& bcs, aod::McParticles const&)
   {
@@ -993,7 +993,7 @@ struct k892analysis_PbPb {
       fillHistograms<true, true, false, true>(collision1, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(k892analysis_PbPb, processMixedEventMCRun2, "Process Mixed event MC Run2", false);
+  PROCESS_SWITCH(K892analysispbpb, processMixedEventMCRun2, "Process Mixed event MC Run2", false);
 
   void processMC(aod::McCollisions::iterator const& /*mcCollision*/, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMCrec>& recCollisions, TrackCandidatesMCrec const& RecTracks)
   {
@@ -1068,7 +1068,7 @@ struct k892analysis_PbPb {
 
     } // end loop on rec collisions
   }
-  PROCESS_SWITCH(k892analysis_PbPb, processMC, "Process Monte Carlo", false);
+  PROCESS_SWITCH(K892analysispbpb, processMC, "Process Monte Carlo", false);
 
   void processMCRun2(aod::McCollisions::iterator const& /*mcCollision*/, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMCrecRun2>& recCollisions, TrackCandidatesMCrec const& RecTracks, BCsWithRun2Info const& bcs)
   {
@@ -1143,9 +1143,9 @@ struct k892analysis_PbPb {
 
     } // end loop on rec collisions
   }
-  PROCESS_SWITCH(k892analysis_PbPb, processMCRun2, "Process Monte Carlo Run2", false);
+  PROCESS_SWITCH(K892analysispbpb, processMCRun2, "Process Monte Carlo Run2", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<k892analysis_PbPb>(cfgc, TaskName{"k892analysis_PbPb"})};
+  return WorkflowSpec{adaptAnalysisTask<K892analysispbpb>(cfgc)};
 }
