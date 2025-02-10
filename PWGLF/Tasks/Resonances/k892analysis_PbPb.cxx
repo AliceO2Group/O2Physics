@@ -567,7 +567,8 @@ struct k892analysis_PbPb {
               ldaughterRot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta, massKa);
               lResonanceRot = lDecayDaughter1 + ldaughterRot;
             }
-
+	    if (std::abs(lResonanceRot.Rapidity()) >= 0.5)
+	      continue;
             if (cfgCutsOnMother) {
               if (lResonanceRot.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
                 continue;
