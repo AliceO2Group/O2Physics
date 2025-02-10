@@ -58,6 +58,8 @@ using MCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorL
 using MatchedMCDV0Jets = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 using MatchedMCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetConstituents, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 
+using CandidatesV0MCDWithLabels = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>;
+
 using MCPV0Jets = aod::V0ChargedMCParticleLevelJets;
 using MCPV0JetsWithConstituents = soa::Join<MCPV0Jets, aod::V0ChargedMCParticleLevelJetConstituents>;
 using MatchedMCPV0Jets = soa::Join<MCPV0Jets, aod::V0ChargedMCParticleLevelJetsMatchedToV0ChargedMCDetectorLevelJets>;
@@ -866,6 +868,9 @@ struct JetFragmentation {
     } // doprocessDataV0PerpCone
 
     if (doprocessMcV0PerpCone) {
+      registry.add("mcd/V0/nV0sEvent", "NV0s in event", HistType::kTH1D, {v0Count});
+      registry.add("mcd/V0/nV0sEventWeighted", "NV0s in event weighted", HistType::kTH1D, {v0Count});
+
       registry.add("mcd/PC/jetPtEtaFakeV0Pt", "JetPtEtaFakeV0Pt", HistType::kTH3D, {detJetPtAxis, etaAxis, V0PtAxis});
       registry.add("mcd/PC/fakeV0PtEtaPhi", "fakeV0PtEtaPhi", HistType::kTH3D, {V0PtAxis, V0EtaAxis, V0PhiAxis});
       registry.add("mcd/PC/fakeV0PtCtau", "fakeV0PtCtau", HistType::kTHnSparseD, {V0PtAxis, V0CtauAxis, V0CtauAxis, V0CtauAxis});
@@ -1050,8 +1055,6 @@ struct JetFragmentation {
   template <typename T, typename U, typename V>
   bool V0sAreMatched(T const& v0, U const& particle, V const& /*tracks*/)
   {
-    // FIXME: Can we use matchedV0Particle instead?
-    // https://github.com/AliceO2Group/O2Physics/blob/31ba54647675645b4669001e3ae9a99614f26d36/PWGJE/Core/JetV0Utilities.h#L131
     auto negId = v0.template negTrack_as<V>().mcParticleId();
     auto posId = v0.template posTrack_as<V>().mcParticleId();
     auto daughters = particle.daughtersIds();
@@ -1795,7 +1798,7 @@ struct JetFragmentation {
 
       double z = 0.;
       bool partIsInJet = false;
-      for (auto const& part : partJet.template candidates_as<U>()) {
+      for (auto const& part : partJet.template tracks_as<U>()) {
         if (posDecayed && (part == negMom)) {
           partIsInJet = true;
           z = TrackProj(partJet, part);
@@ -2847,7 +2850,7 @@ struct JetFragmentation {
   }
   PROCESS_SWITCH(JetFragmentation, processDataV0PerpCone, "Perpendicular cone V0s in data", false);
 
-  void processMcMatchedV0JetsFrag(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0JetsWithConstituents const& v0jetsMCD, MatchedMCPV0JetsWithConstituents const& v0jetsMCP, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const& v0s, aod::CandidatesV0MCP const& pv0s, aod::JetTracksMCD const& jTracks, aod::JetParticles const&)
+  void processMcMatchedV0JetsFrag(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0JetsWithConstituents const& v0jetsMCD, MatchedMCPV0JetsWithConstituents const& v0jetsMCP, CandidatesV0MCDWithLabels const& v0s, aod::CandidatesV0MCP const& pv0s, aod::JetTracksMCD const& jTracks, aod::JetParticles const&)
   {
     if (!jcoll.has_mcCollision()) {
       return;
@@ -2886,7 +2889,7 @@ struct JetFragmentation {
 
       int nV0inJet = 0, nLambdainJet = 0, nAntiLambdainJet = 0, nK0SinJet = 0;
       if (!detJet.has_matchedJetGeo()) {
-        for (const auto& detV0 : detJet.candidates_as<soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>>()) {
+        for (const auto& detV0 : detJet.candidates_as<CandidatesV0MCDWithLabels>()) {
           fillMatchingV0Fake(jcoll, detJet, detV0, weight);
         }
         continue;
@@ -2894,7 +2897,7 @@ struct JetFragmentation {
 
       for (const auto& partJet : detJet.template matchedJetGeo_as<MatchedMCPV0JetsWithConstituents>()) {
         fillMatchingHistogramsJet(detJet, partJet, weight);
-        for (const auto& detV0 : detJet.candidates_as<soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>>()) {
+        for (const auto& detV0 : detJet.candidates_as<CandidatesV0MCDWithLabels>()) {
           if (!detV0.has_mcParticle()) {
             fillMatchingV0Fake(jcoll, detJet, detV0, weight);
             fillMatchingV0DecayedHistograms<aod::JetTracksMCD, aod::JetParticles>(partJet, detJet, detV0, weight);
@@ -2948,7 +2951,7 @@ struct JetFragmentation {
         isJetMatched = true;
         for (const auto& partV0 : partJet.candidates_as<aod::CandidatesV0MCP>()) {
           bool isV0Matched = false;
-          for (const auto& detV0 : detJet.candidates_as<soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>>()) {
+          for (const auto& detV0 : detJet.candidates_as<CandidatesV0MCDWithLabels>()) {
             if (V0sAreMatched(detV0, partV0, jTracks)) {
               isV0Matched = true;
               break;
@@ -2970,7 +2973,7 @@ struct JetFragmentation {
   }
   PROCESS_SWITCH(JetFragmentation, processMcMatchedV0JetsFrag, "Matched V0 jets fragmentation", false);
 
-  void processMcV0PerpCone(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0Jets const& v0jets, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const& v0s, aod::McParticles const& particles)
+  void processMcV0PerpCone(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0Jets const& v0jets, CandidatesV0MCDWithLabels const& v0s, aod::McParticles const& particles)
   {
     if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
@@ -2991,7 +2994,7 @@ struct JetFragmentation {
   }
   PROCESS_SWITCH(JetFragmentation, processMcV0PerpCone, "Perpendicular cone V0s in MC", false);
 
-  void processMcV0MatchedPerpCone(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0Jets const& v0jets, MatchedMCPV0Jets const&, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const& v0s, aod::McParticles const& particles)
+  void processMcV0MatchedPerpCone(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0Jets const& v0jets, MatchedMCPV0Jets const&, CandidatesV0MCDWithLabels const& v0s, aod::McParticles const& particles)
   {
     if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
@@ -3007,7 +3010,7 @@ struct JetFragmentation {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, -99., -99., v0EtaMin, v0EtaMax)) {
         continue;
       }
-      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<MatchedMCPV0JetsWithConstituents>()) {
+      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<MatchedMCPV0Jets>()) {
         fillMcPerpConeHists(jcoll, mcdjet, mcpjet, v0s, particles, weight);
         break; // Make sure we only do this once
       }
