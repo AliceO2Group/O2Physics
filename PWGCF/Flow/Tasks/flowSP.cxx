@@ -78,6 +78,7 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgTrackCutSize, float, 0.06, "Spread of track cut");
   // Additional event selections
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, true, "Bool to enable Additional Event Cut");
+  O2_DEFINE_CONFIGURABLE(cfgnSigmaMultCuts, int, 1, "Sigma cut on Additional event cut: 1 (default), 2 or 3 sigma available");
   O2_DEFINE_CONFIGURABLE(cfgMaxOccupancy, int, 10000, "Maximum occupancy of selected events");
   O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
   O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
@@ -296,6 +297,7 @@ struct FlowSP {
         registry.add<TProfile>("qAqCXY", "", kTProfile, {axisCent});
         registry.add<TProfile>("qAXqCY", "", kTProfile, {axisCent});
         registry.add<TProfile>("qAYqCX", "", kTProfile, {axisCent});
+        registry.add<TProfile>("qAXYqCXY", "", kTProfile, {axisCent});
 
         if (cfgFillQAHistos) {
           registry.add("QA/after/PsiA_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
@@ -363,15 +365,34 @@ struct FlowSP {
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_ParticleWeights + 1, "Apply weights");
 
     if (cfgUseAdditionalEventCut) {
-      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
-      fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
-      fMultPVCutHigh->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
+      // Fitted for LHC23zzh_pass4
+      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      fMultPVCutLow->SetParameters(2942.55, -103.111, 1.4397, -0.00974862, 2.71433e-05);
+      if (cfgnSigmaMultCuts == 2)
+        fMultPVCutLow->SetParameters(2665.68, -93.3784, 1.27137, -0.00818936, 2.115e-05);
+      if (cfgnSigmaMultCuts == 3)
+        fMultPVCutLow->SetParameters(2389.99, -83.8483, 1.11062, -0.00672263, 1.54725e-05);
 
-      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultCutLow->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
-      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
+      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      fMultPVCutHigh->SetParameters(3508.13, -124.831, 1.87871, -0.0145343, 4.80688e-05);
+      if (cfgnSigmaMultCuts == 2)
+        fMultPVCutHigh->SetParameters(3787.93, -135.184, 2.07683, -0.0165997, 5.68725e-05);
+      if (cfgnSigmaMultCuts == 3)
+        fMultPVCutHigh->SetParameters(4067.4, -145.485, 2.27273, -0.0186308, 6.5501e-05);
+
+      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      fMultCutLow->SetParameters(1566.5, -48.2114, 0.529522, -0.00235284, 3.01132e-06);
+      if (cfgnSigmaMultCuts == 2)
+        fMultCutLow->SetParameters(1307.92, -39.9168, 0.412675, -0.00148081, 1.10868e-07);
+      if (cfgnSigmaMultCuts == 3)
+        fMultCutLow->SetParameters(1048.48, -31.4568, 0.287794, -0.00046847, -3.5909e-06);
+
+      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      fMultCutHigh->SetParameters(2089.73, -65.9772, 0.816781, -0.00496563, 1.34314e-05);
+      if (cfgnSigmaMultCuts == 2)
+        fMultCutHigh->SetParameters(2350.39, -74.6939, 0.953287, -0.006162, 1.80808e-05);
+      if (cfgnSigmaMultCuts == 3)
+        fMultCutHigh->SetParameters(2610.98, -83.3983, 1.0893, -0.00735094, 2.26929e-05);
     }
 
     if (cfgUseAdditionalTrackCut) {
@@ -573,13 +594,15 @@ struct FlowSP {
 
     phimodn += o2::constants::math::PI / 18.0; // to center gap in the middle
     phimodn = fmod(phimodn, o2::constants::math::PI / 9.0);
-    registry.fill(HIST("QA/before/pt_phi"), track.pt(), phimodn);
+    if (cfgFillQAHistos)
+      registry.fill(HIST("QA/before/pt_phi"), track.pt(), phimodn);
 
     if (cfgUseAdditionalTrackCut) {
       if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
         return false; // reject track
     }
-    registry.fill(HIST("QA/after/pt_phi"), track.pt(), phimodn);
+    if (cfgFillQAHistos)
+      registry.fill(HIST("QA/after/pt_phi"), track.pt(), phimodn);
     registry.fill(HIST("hTrackCount"), trackSel_TPCBoundary);
     return true;
   }
@@ -713,7 +736,6 @@ struct FlowSP {
   void processData(UsedCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), evSel_FilteredEvent);
-
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
 
@@ -776,6 +798,7 @@ struct FlowSP {
 
       registry.fill(HIST("qAXqCY"), centrality, qxA * qyC);
       registry.fill(HIST("qAYqCX"), centrality, qyA * qxC);
+      registry.fill(HIST("qAXYqCXY"), centrality, qyA * qxC + qxA * qyC);
 
       registry.fill(HIST("qAqCX"), centrality, qxA * qxC);
       registry.fill(HIST("qAqCY"), centrality, qyA * qyC);
@@ -811,7 +834,9 @@ struct FlowSP {
       }
 
       for (const auto& track : tracks) {
-        registry.fill(HIST("QA/before/hPt_inclusive"), track.pt());
+        if (cfgFillQAHistos)
+          registry.fill(HIST("QA/before/hPt_inclusive"), track.pt());
+
         registry.fill(HIST("hTrackCount"), trackSel_FilteredTracks);
 
         float weff = 1, wacc = 1;
@@ -819,10 +844,11 @@ struct FlowSP {
         float weffN = 1, waccN = 1;
 
         if (!trackSelected(track, field))
-          return;
+          continue;
 
         if (track.sign() == 0.0)
-          return;
+          continue;
+
         registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
         bool pos = (track.sign() > 0) ? true : false;
 
@@ -839,15 +865,16 @@ struct FlowSP {
 
         // Set weff and wacc for inclusice, negative and positive hadrons
         if (!setCurrentParticleWeights(kInclusive, weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
-          return;
+          continue;
         if (pos && !setCurrentParticleWeights(kPositive, weffP, waccP, track.phi(), track.eta(), track.pt(), vtxz))
-          return;
+          continue;
         if (!pos && !setCurrentParticleWeights(kNegative, weffN, waccN, track.phi(), track.eta(), track.pt(), vtxz))
-          return;
+          continue;
 
         registry.fill(HIST("hTrackCount"), trackSel_ParticleWeights);
 
-        registry.fill(HIST("QA/after/hPt_inclusive"), track.pt(), wacc * weff);
+        if (cfgFillQAHistos)
+          registry.fill(HIST("QA/after/hPt_inclusive"), track.pt(), wacc * weff);
 
         // // constrain angle to 0 -> [0,0+2pi]
         auto phi = RecoDecay::constrainAngle(track.phi(), 0);
@@ -907,26 +934,35 @@ struct FlowSP {
 
       auto mcParticle = track.mcParticle();
       if (!mcParticle.isPhysicalPrimary())
-        return;
+        continue;
 
       if (mcParticle.eta() < -cfgEta || mcParticle.eta() > cfgEta || mcParticle.pt() < cfgPtmin || mcParticle.pt() > cfgPtmax || track.tpcNClsFound() < cfgNcls)
-        return;
+        continue;
 
       if (track.sign() == 0.0)
-        return;
+        continue;
       bool pos = (track.sign() > 0) ? true : false;
 
-      registry.fill(HIST("QA/before/hPt_inclusive"), track.pt());
-      if (pos) {
-        registry.fill(HIST("QA/before/hPt_positive"), track.pt());
-      } else {
-        registry.fill(HIST("QA/before/hPt_negative"), track.pt());
+      if (cfgFillQAHistos) {
+        registry.fill(HIST("QA/before/hPt_inclusive"), track.pt());
+        if (pos) {
+          registry.fill(HIST("QA/before/hPt_positive"), track.pt());
+        } else {
+          registry.fill(HIST("QA/before/hPt_negative"), track.pt());
+        }
       }
 
       if (!trackSelected(track, field))
-        return;
+        continue;
 
-      registry.fill(HIST("QA/after/hPt_inclusive"), track.pt());
+      if (cfgFillQAHistos) {
+        registry.fill(HIST("QA/after/hPt_inclusive"), track.pt());
+        if (pos) {
+          registry.fill(HIST("QA/after/hPt_positive"), track.pt());
+        } else {
+          registry.fill(HIST("QA/after/hPt_negative"), track.pt());
+        }
+      }
 
       fillTrackQA<kInclusive>(track, vtxz);
 
@@ -937,8 +973,9 @@ struct FlowSP {
   Filter mcCollFilter = nabs(aod::mccollision::posZ) < cfgVtxZ;
   void processMCGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals>> const& collisions, aod::McParticles const& particles)
   {
-    if (collisions.size() != 1)
+    if (collisions.size() != 1) { // check if MC collision is only reconstructed once! (https://indico.cern.ch/event/1425820/contributions/6170879/attachments/2947721/5180548/DDChinellato-O2AT4-HandsOn-03a.pdf)
       return;
+    }
     float centrality = -1;
     for (const auto& collision : collisions) {
       centrality = collision.centFT0C();
@@ -959,19 +996,18 @@ struct FlowSP {
 
     float vtxz = mcCollision.posZ();
 
-    for (const auto& track : particles) {
-
-      if (!track.isPhysicalPrimary())
+    for (const auto& particle : particles) {
+      if (!particle.isPhysicalPrimary())
         continue;
 
-      registry.fill(HIST("trackMCGen/before/pt_gen_incl"), track.pt());
-      registry.fill(HIST("trackMCGen/before/phi_eta_vtxZ_gen"), track.phi(), track.eta(), vtxz);
+      registry.fill(HIST("trackMCGen/before/pt_gen_incl"), particle.pt());
+      registry.fill(HIST("trackMCGen/before/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
 
-      if (track.eta() < -cfgEta || track.eta() > cfgEta || track.pt() < cfgPtmin || track.pt() > cfgPtmax)
-        return;
+      if (particle.eta() < -cfgEta || particle.eta() > cfgEta || particle.pt() < cfgPtmin || particle.pt() > cfgPtmax)
+        continue;
 
-      registry.fill(HIST("trackMCGen/after/pt_gen_incl"), track.pt());
-      registry.fill(HIST("trackMCGen/after/phi_eta_vtxZ_gen"), track.phi(), track.eta(), vtxz);
+      registry.fill(HIST("trackMCGen/after/pt_gen_incl"), particle.pt());
+      registry.fill(HIST("trackMCGen/after/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
     }
   }
   PROCESS_SWITCH(FlowSP, processMCGen, "Process analysis for MC generated events", false);
