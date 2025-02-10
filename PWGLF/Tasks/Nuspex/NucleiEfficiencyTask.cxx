@@ -289,11 +289,11 @@ struct NucleiEfficiencyTask {
     if (collision.posZ() > cfgCutVertex)
       return;
     MC_recon_reg.fill(HIST("histRecVtxMC"), collision.posZ());
-    MC_recon_reg.fill(HIST("histCentrality"), centrality);
     if (!isEventSelected(collision))
       return;
     if (centrality < minCentrality || centrality > maxCentrality)
       return;
+    MC_recon_reg.fill(HIST("histCentrality"), centrality);
 
     for (auto& track : tracks) {
       const auto particle = track.mcParticle();
@@ -470,7 +470,7 @@ struct NucleiEfficiencyTask {
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta && requireGlobalTrackWoDCAInFilter());
 
-  void processMCreco(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator const& collision,
+  void processMCreco(soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>>::iterator const& collision,
                      soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension>> const& tracks,
                      aod::McParticles const& mcParticles)
   {
