@@ -71,7 +71,7 @@ struct Filter2Prong {
       std::vector<float> mlvecd{};
       std::vector<float> mlvecdbar{};
 
-      if (c.isSelD0() > 0){
+      if (c.isSelD0() > 0) {
         output2ProngTracks(cfcollisions.begin().globalIndex(),
                            prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0ToPiK(c), aod::cf2prongtrack::D0ToPiK);
         for (float val : c.mlProbD0()) {
@@ -86,7 +86,7 @@ struct Filter2Prong {
       mlvecd.clear();
       mlvecdbar.clear();
 
-      if (c.isSelD0bar() > 0){
+      if (c.isSelD0bar() > 0) {
         output2ProngTracks(cfcollisions.begin().globalIndex(),
                            prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0barToKPi(c), aod::cf2prongtrack::D0barToKPi);
         for (float val : c.mlProbD0()) {
