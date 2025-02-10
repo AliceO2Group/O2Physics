@@ -25,8 +25,7 @@
 #include <vector>
 
 #include "TRandom3.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
