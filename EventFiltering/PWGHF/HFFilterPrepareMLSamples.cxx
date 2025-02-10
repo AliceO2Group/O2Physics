@@ -135,7 +135,7 @@ struct HfFilterPrepareMlSamples { // Main struct
 
       auto flag = RecoDecay::OriginType::None;
 
-      if (fillOnlyBackground && !(isCharmHadronMassInSbRegions(invMassD0, invMassD0bar, massSbLeftMin, massSbLeftMax) || (isCharmHadronMassInSbRegions(invMassD0, invMassD0bar, massSbRightMin, massSbRightMax))))
+      if (fillOnlyBackground && !(helper.isCharmHadronMassInSbRegions(invMassD0, invMassD0bar, massSbLeftMin, massSbLeftMax) || (helper.isCharmHadronMassInSbRegions(invMassD0, invMassD0bar, massSbRightMin, massSbRightMax))))
         continue;
       float pseudoRndm = trackPos.pt() * 1000. - static_cast<int64_t>(trackPos.pt() * 1000);
       if (pseudoRndm < downSampleBkgFactor) {
