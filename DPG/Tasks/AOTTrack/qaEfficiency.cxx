@@ -203,6 +203,7 @@ struct QaEfficiency {
   Configurable<bool> checkForMothers{"checkForMothers", false, "Flag to use the array of mothers to check if the particle of interest come from any of those particles"};
   Configurable<std::vector<int>> mothersPDGs{"mothersPDGs", std::vector<int>{3312, -3312}, "PDGs of origin of the particle under study"};
   Configurable<bool> keepOnlyHfParticles{"keepOnlyHfParticles", false, "Flag to decide wheter to consider only HF particles"};
+  Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "Flag to check specific event generator (for HF): -1 -> no check, 0 -> MB events, 4 -> charm triggered, 5 -> beauty triggered"};
   // Track only selection, options to select only specific tracks
   Configurable<bool> trackSelection{"trackSelection", true, "Local track selection"};
   Configurable<int> globalTrackSelection{"globalTrackSelection", 0, "Global track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks, 6 -> custom track cuts via Configurable"};
@@ -1777,6 +1778,11 @@ struct QaEfficiency {
         }
       }
       histos.fill(HIST("MC/generatedCollisions"), 3);
+
+      if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+        LOG(debug) << "Skipping event with different type of generator than the one requested";
+        continue;
+      }
 
       /// loop over reconstructed collisions
       for (const auto& collision : groupedCollisions) {
