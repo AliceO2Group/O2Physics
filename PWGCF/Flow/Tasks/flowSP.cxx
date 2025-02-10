@@ -367,30 +367,30 @@ struct FlowSP {
       // Fitted for LHC23zzh_pass4
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
       fMultPVCutLow->SetParameters(2942.55, -103.111, 1.4397, -0.00974862, 2.71433e-05);
-      if(cfgnSigmaMultCuts == 2) 
+      if (cfgnSigmaMultCuts == 2)
         fMultPVCutLow->SetParameters(2665.68, -93.3784, 1.27137, -0.00818936, 2.115e-05);
-      if(cfgnSigmaMultCuts == 3) 
+      if (cfgnSigmaMultCuts == 3)
         fMultPVCutLow->SetParameters(2389.99, -83.8483, 1.11062, -0.00672263, 1.54725e-05);
 
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
       fMultPVCutHigh->SetParameters(3508.13, -124.831, 1.87871, -0.0145343, 4.80688e-05);
-      if(cfgnSigmaMultCuts == 2) 
+      if (cfgnSigmaMultCuts == 2)
         fMultPVCutHigh->SetParameters(3787.93, -135.184, 2.07683, -0.0165997, 5.68725e-05);
-      if(cfgnSigmaMultCuts == 3) 
+      if (cfgnSigmaMultCuts == 3)
         fMultPVCutHigh->SetParameters(4067.4, -145.485, 2.27273, -0.0186308, 6.5501e-05);
 
       fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
       fMultCutLow->SetParameters(1566.5, -48.2114, 0.529522, -0.00235284, 3.01132e-06);
-      if(cfgnSigmaMultCuts == 2) 
+      if (cfgnSigmaMultCuts == 2)
         fMultCutLow->SetParameters(1307.92, -39.9168, 0.412675, -0.00148081, 1.10868e-07);
-      if(cfgnSigmaMultCuts == 3) 
+      if (cfgnSigmaMultCuts == 3)
         fMultCutLow->SetParameters(1048.48, -31.4568, 0.287794, -0.00046847, -3.5909e-06);
 
       fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
       fMultCutHigh->SetParameters(2089.73, -65.9772, 0.816781, -0.00496563, 1.34314e-05);
-      if(cfgnSigmaMultCuts == 2) 
+      if (cfgnSigmaMultCuts == 2)
         fMultCutHigh->SetParameters(2350.39, -74.6939, 0.953287, -0.006162, 1.80808e-05);
-      if(cfgnSigmaMultCuts == 3) 
+      if (cfgnSigmaMultCuts == 3)
         fMultCutHigh->SetParameters(2610.98, -83.3983, 1.0893, -0.00735094, 2.26929e-05);
     }
 
@@ -593,13 +593,15 @@ struct FlowSP {
 
     phimodn += o2::constants::math::PI / 18.0; // to center gap in the middle
     phimodn = fmod(phimodn, o2::constants::math::PI / 9.0);
-    if (cfgFillQAHistos) registry.fill(HIST("QA/before/pt_phi"), track.pt(), phimodn);
+    if (cfgFillQAHistos)
+      registry.fill(HIST("QA/before/pt_phi"), track.pt(), phimodn);
 
     if (cfgUseAdditionalTrackCut) {
       if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
         return false; // reject track
     }
-    if (cfgFillQAHistos) registry.fill(HIST("QA/after/pt_phi"), track.pt(), phimodn);
+    if (cfgFillQAHistos)
+      registry.fill(HIST("QA/after/pt_phi"), track.pt(), phimodn);
     registry.fill(HIST("hTrackCount"), trackSel_TPCBoundary);
     return true;
   }
@@ -830,7 +832,7 @@ struct FlowSP {
       }
 
       for (const auto& track : tracks) {
-        if (cfgFillQAHistos) 
+        if (cfgFillQAHistos)
           registry.fill(HIST("QA/before/hPt_inclusive"), track.pt());
 
         registry.fill(HIST("hTrackCount"), trackSel_FilteredTracks);
@@ -844,7 +846,7 @@ struct FlowSP {
 
         if (track.sign() == 0.0)
           continue;
-        
+
         registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
         bool pos = (track.sign() > 0) ? true : false;
 
@@ -869,7 +871,7 @@ struct FlowSP {
 
         registry.fill(HIST("hTrackCount"), trackSel_ParticleWeights);
 
-        if (cfgFillQAHistos) 
+        if (cfgFillQAHistos)
           registry.fill(HIST("QA/after/hPt_inclusive"), track.pt(), wacc * weff);
 
         // // constrain angle to 0 -> [0,0+2pi]
@@ -939,7 +941,7 @@ struct FlowSP {
         continue;
       bool pos = (track.sign() > 0) ? true : false;
 
-      if (cfgFillQAHistos){
+      if (cfgFillQAHistos) {
         registry.fill(HIST("QA/before/hPt_inclusive"), track.pt());
         if (pos) {
           registry.fill(HIST("QA/before/hPt_positive"), track.pt());
@@ -969,7 +971,7 @@ struct FlowSP {
   Filter mcCollFilter = nabs(aod::mccollision::posZ) < cfgVtxZ;
   void processMCGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals>> const& collisions, aod::McParticles const& particles)
   {
-    if (collisions.size() != 1){ //check if MC collision is only reconstructed once! (https://indico.cern.ch/event/1425820/contributions/6170879/attachments/2947721/5180548/DDChinellato-O2AT4-HandsOn-03a.pdf)
+    if (collisions.size() != 1) { // check if MC collision is only reconstructed once! (https://indico.cern.ch/event/1425820/contributions/6170879/attachments/2947721/5180548/DDChinellato-O2AT4-HandsOn-03a.pdf)
       return;
     }
     float centrality = -1;
@@ -990,7 +992,6 @@ struct FlowSP {
     if (centrality < cfgCentMin || centrality > cfgCentMax)
       return;
 
-    
     float vtxz = mcCollision.posZ();
 
     for (const auto& particle : particles) {
@@ -1006,7 +1007,6 @@ struct FlowSP {
       registry.fill(HIST("trackMCGen/after/pt_gen_incl"), particle.pt());
       registry.fill(HIST("trackMCGen/after/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
     }
-
   }
   PROCESS_SWITCH(FlowSP, processMCGen, "Process analysis for MC generated events", false);
 };
