@@ -38,7 +38,6 @@
 #include "PWGCF/DataModel/SPTableZDC.h"
 #include "GFWWeights.h"
 #include "TF1.h"
-#include <TSystem.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -116,8 +115,6 @@ struct FlowSP {
 
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-
-  int counter = 0; 
 
   // struct to hold the correction histos/
   struct Config {
@@ -930,8 +927,6 @@ struct FlowSP {
       fillEventQA<kAfter>(collision, tracks);
 
     for (const auto& track : tracks) {
-      double wacc = 1.0; 
-      double weff = 1.0; 
 
       auto mcParticle = track.mcParticle();
       if (!mcParticle.isPhysicalPrimary())
@@ -1011,7 +1006,7 @@ struct FlowSP {
       registry.fill(HIST("trackMCGen/after/pt_gen_incl"), particle.pt());
       registry.fill(HIST("trackMCGen/after/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
     }
-    counter++; 
+
   }
   PROCESS_SWITCH(FlowSP, processMCGen, "Process analysis for MC generated events", false);
 };
