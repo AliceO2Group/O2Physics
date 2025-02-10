@@ -297,6 +297,7 @@ struct FlowSP {
         registry.add<TProfile>("qAqCXY", "", kTProfile, {axisCent});
         registry.add<TProfile>("qAXqCY", "", kTProfile, {axisCent});
         registry.add<TProfile>("qAYqCX", "", kTProfile, {axisCent});
+        registry.add<TProfile>("qAXYqCXY", "", kTProfile, {axisCent});
 
         if (cfgFillQAHistos) {
           registry.add("QA/after/PsiA_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
@@ -797,6 +798,7 @@ struct FlowSP {
 
       registry.fill(HIST("qAXqCY"), centrality, qxA * qyC);
       registry.fill(HIST("qAYqCX"), centrality, qyA * qxC);
+      registry.fill(HIST("qAXYqCXY"), centrality, qyA * qxC + qxA * qyC);
 
       registry.fill(HIST("qAqCX"), centrality, qxA * qxC);
       registry.fill(HIST("qAqCY"), centrality, qyA * qyC);
