@@ -421,6 +421,16 @@ class VarManager : public TObject
     kTwoR2EP2, // Event plane resolution of event2 for ME technique
     kNEventWiseVariables,
 
+    // Variables for event mixing with cumulant
+    kV22m,
+    kV24m,
+    kV22p,
+    kV24p,
+    kV22ME,
+    kV24ME,
+    kWV22ME,
+    kWV24ME,
+
     // Basic track/muon/pair wise variables
     kX,
     kY,
@@ -1009,6 +1019,8 @@ class VarManager : public TObject
   static void FillTwoMixEvents(T1 const& event1, T1 const& event2, T2 const& tracks1, T2 const& tracks2, float* values = nullptr);
   template <typename T>
   static void FillTwoMixEventsFlowResoFactor(T const& hs_sp, T const& hs_ep, float* values = nullptr);
+  template <typename T, typename T1, typename T2>
+  static void FillTwoMixEventsCumulants(T const& h_v22m, T const& h_v24m, T const& h_v22p, T const& h_v24p, T1 const& t1, T2 const& t2, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillTrack(T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T>
@@ -1946,6 +1958,42 @@ void VarManager::FillTwoMixEventsFlowResoFactor(T const& hs_sp, T const& hs_ep, 
 
     values[kTwoR2SP2] = hs_sp->GetBinContent(idx_sp2);
     values[kTwoR2EP2] = hs_ep->GetBinContent(idx_ep2);
+  }
+}
+
+template <typename T, typename T1, typename T2>
+void VarManager::FillTwoMixEventsCumulants(T const& h_v22m, T const& h_v24m, T const& h_v22p, T const& h_v24p, T1 const& t1, T2 const& t2, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+  float ptp, ptm, centp, centm;
+  if (t1.sign() < 0) {
+    ptm = t1.sign();
+    ptp = t2.sign();
+    centm = values[kTwoEvCentFT0C1];
+    centp = values[kTwoEvCentFT0C2];
+  } else {
+    ptm = t2.sign();
+    ptp = t1.sign();
+    centm = values[kTwoEvCentFT0C2];
+    centp = values[kTwoEvCentFT0C1];
+  }
+
+  if (centm >= 0.) {
+    int idx_v22m = h_v22m->FindBin(centm, ptm);
+    int idx_v24m = h_v24m->FindBin(centm, ptm);
+
+    values[kV22m] = h_v22m->GetBinContent(idx_v22m);
+    values[kV24m] = h_v24m->GetBinContent(idx_v24m);
+  }
+
+  if (centp >= 0.) {
+    int idx_v22p = h_v22p->FindBin(centp, ptp);
+    int idx_v24p = h_v24p->FindBin(centp, ptp);
+
+    values[kV22p] = h_v22p->GetBinContent(idx_v22p);
+    values[kV24p] = h_v24p->GetBinContent(idx_v24p);
   }
 }
 
@@ -3034,6 +3082,14 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     values[kWV2ME_SP] = std::isnan(V2ME_SP) || std::isinf(V2ME_SP) ? 0. : 1.0;
     values[kV2ME_EP] = std::isnan(V2ME_EP) || std::isinf(V2ME_EP) ? 0. : V2ME_EP;
     values[kWV2ME_EP] = std::isnan(V2ME_EP) || std::isinf(V2ME_EP) ? 0. : 1.0;
+
+    // Cumulant part
+    float V22ME = values[kV22m] * values[kCos2DeltaPhiMu1] + values[kV22p] * values[kCos2DeltaPhiMu2];
+    float V24ME = values[kV24m] * values[kCos2DeltaPhiMu1] + values[kV24p] * values[kCos2DeltaPhiMu2];
+    values[kV22ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : V22ME;
+    values[kWV22ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
+    values[kV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : V24ME;
+    values[kWV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
 
     if constexpr ((fillMap & ReducedEventQvectorExtra) > 0) {
       complex<double> Q21(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);

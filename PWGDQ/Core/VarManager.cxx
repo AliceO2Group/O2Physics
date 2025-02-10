@@ -1057,6 +1057,22 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDeltaR1] = "";
   fgVariableNames[kDeltaR2] = "angular distance prong 2";
   fgVariableUnits[kDeltaR2] = "";
+  fgVariableNames[kV22m] = "v_{2}(2)_{#mu^{-}}";
+  fgVariableUnits[kV22m] = "";
+  fgVariableNames[kV24m] = "v_{2}(4)_{#mu^{-}}";
+  fgVariableUnits[kV24m] = "";
+  fgVariableNames[kV22p] = "v_{2}(2)_{#mu^{+}}";
+  fgVariableUnits[kV22p] = "";
+  fgVariableNames[kV24p] = "v_{2}(4)_{#mu^{+}}";
+  fgVariableUnits[kV24p] = "";
+  fgVariableNames[kV22ME] = "v_{2}(2)_{ME}";
+  fgVariableUnits[kV22ME] = "";
+  fgVariableNames[kV24ME] = "v_{2}(4)_{ME}";
+  fgVariableUnits[kV24ME] = "";
+  fgVariableNames[kWV22ME] = "W_{2}(2)_{ME}";
+  fgVariableUnits[kWV22ME] = "";
+  fgVariableNames[kWV24ME] = "W_{2}(4)_{ME}";
+  fgVariableUnits[kWV24ME] = "";
 
   // Set the variables short names map. This is needed for dynamic configuration via JSON files
   fgVarNamesMap["kNothing"] = kNothing;
@@ -1661,4 +1677,12 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kBitMapIndex"] = kBitMapIndex;
   fgVarNamesMap["kDeltaMass"] = kDeltaMass;
   fgVarNamesMap["kDeltaMass_jpsi"] = kDeltaMass_jpsi;
+  fgVarNamesMap["kV22m"] = kV22m;
+  fgVarNamesMap["kV24m"] = kV24m;
+  fgVarNamesMap["kV22p"] = kV22p;
+  fgVarNamesMap["kV24p"] = kV24p;
+  fgVarNamesMap["kV22ME"] = kV22ME;
+  fgVarNamesMap["kV24ME"] = kV24ME;
+  fgVarNamesMap["kWV22ME"] = kWV22ME;
+  fgVarNamesMap["kWV24ME"] = kWV24ME;
 }

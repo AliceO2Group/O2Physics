@@ -645,12 +645,18 @@ struct AnalysisEventMixing {
   Configurable<bool> fConfigAmbiguousHist{"cfgAmbiHist", false, "Enable Ambiguous histograms for time association studies"};
   Configurable<string> ccdbPathFlow{"ccdb-path-flow", "Users/c/chizh/FlowResolution", "path to the ccdb object for flow resolution factors"};
   Configurable<bool> fConfigFlowReso{"cfgFlowReso", false, "Enable loading of flow resolution factors from CCDB"};
+  Configurable<bool> fConfigSingleMuCumulants{"cfgSingleMuCumulants", false, "Enable loading of flow resolution factors from CCDB"};
+  Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   o2::parameters::GRPMagField* grpmag = nullptr;
   TH1D* ResoFlowSP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
   TH1D* ResoFlowEP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
+  TH2D* SingleMuv22m = nullptr; // Single muon v22, loaded from CCDB
+  TH2D* SingleMuv24m = nullptr; // Single muon v24, loaded from CCDB
+  TH2D* SingleMuv22p = nullptr; // Single antimuon v22, loaded from CCDB
+  TH2D* SingleMuv24p = nullptr; // Single antimuon v24, loaded from CCDB
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
@@ -742,6 +748,8 @@ struct AnalysisEventMixing {
     }
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigAddEventMixingHistogram); // define all histograms
+    // Additional histograms via JSON
+    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());
     VarManager::SetUseVars(fHistMan->GetUsedVars());                              // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
@@ -770,6 +778,9 @@ struct AnalysisEventMixing {
         }
         if constexpr (TPairType == VarManager::kDecayToMuMu) {
           twoTrackFilter = static_cast<uint32_t>(track1.isMuonSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoMuonFilterMask;
+          if (fConfigSingleMuCumulants) {
+            VarManager::FillTwoMixEventsCumulants(SingleMuv22m, SingleMuv24m, SingleMuv22p, SingleMuv24p, track1, track2);
+          }
         }
         if constexpr (TPairType == VarManager::kElectronMuon) {
           twoTrackFilter = static_cast<uint32_t>(track1.isBarrelSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoTrackFilterMask;
@@ -827,6 +838,20 @@ struct AnalysisEventMixing {
         ResoFlowEP = ccdb->getForTimeStamp<TH1D>(ccdbPathFlowEP.Data(), events.begin().timestamp());
         if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
           LOGF(fatal, "Resolution factor is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+        }
+      }
+      if (fConfigSingleMuCumulants) {
+        TString PathFlow = ccdbPathFlow.value;
+        TString ccdbPathMuv22m = Form("%s/SingleMuv22m", PathFlow.Data());
+        TString ccdbPathMuv24m = Form("%s/SingleMuv24m", PathFlow.Data());
+        TString ccdbPathMuv22p = Form("%s/SingleMuv22p", PathFlow.Data());
+        TString ccdbPathMuv24p = Form("%s/SingleMuv24p", PathFlow.Data());
+        SingleMuv22m = ccdb->getForTimeStamp<TH2D>(ccdbPathMuv22m.Data(), events.begin().timestamp());
+        SingleMuv24m = ccdb->getForTimeStamp<TH2D>(ccdbPathMuv24m.Data(), events.begin().timestamp());
+        SingleMuv22p = ccdb->getForTimeStamp<TH2D>(ccdbPathMuv22p.Data(), events.begin().timestamp());
+        SingleMuv24p = ccdb->getForTimeStamp<TH2D>(ccdbPathMuv24p.Data(), events.begin().timestamp());
+        if (SingleMuv22m == nullptr || SingleMuv24m == nullptr || SingleMuv22p == nullptr || SingleMuv24p == nullptr) {
+          LOGF(fatal, "Single muon cumulants are not available in CCDB at timestamp=%llu", events.begin().timestamp());
         }
       }
       fCurrentRun = events.begin().runNumber();
@@ -976,6 +1001,7 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> fCollisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
   Configurable<float> fCenterMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
   Configurable<bool> fConfigCumulants{"cfgCumulants", false, "If true, fill Cumulants with Weights different than 0"};
+  Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
 
   // Configurables to create output tree (flat tables or minitree)
   struct : ConfigurableGroup {
@@ -1154,6 +1180,7 @@ struct AnalysisSameEventPairing {
     VarManager::SetCollisionSystem((TString)fCollisionSystem, fCenterMassEnergy); // set collision system and center of mass energy
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram); // define all histograms
+    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
     VarManager::SetUseVars(fHistMan->GetUsedVars());                      // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
