@@ -1780,7 +1780,7 @@ struct QaEfficiency {
       histos.fill(HIST("MC/generatedCollisions"), 3);
 
       if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
-        LOG(info) << "Skipping event with different type of generator than the one requested";
+        LOG(debug) << "Skipping event with different type of generator than the one requested";
         continue;
       }
 
