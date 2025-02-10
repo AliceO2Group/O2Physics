@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <string>
 #include <bitset>
 #include <algorithm>
 #include <random>
