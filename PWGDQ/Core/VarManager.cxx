@@ -1148,6 +1148,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMultNTracksITSOnly"] = kMultNTracksITSOnly;
   fgVarNamesMap["kMultNTracksTPCOnly"] = kMultNTracksTPCOnly;
   fgVarNamesMap["kMultNTracksITSTPC"] = kMultNTracksITSTPC;
+  fgVarNamesMap["kMultNTracksPVeta1"] = kMultNTracksPVeta1;
+  fgVarNamesMap["kMultNTracksPVetaHalf"] = kMultNTracksPVetaHalf;
   fgVarNamesMap["kTrackOccupancyInTimeRange"] = kTrackOccupancyInTimeRange;
   fgVarNamesMap["kFT0COccupancyInTimeRange"] = kFT0COccupancyInTimeRange;
   fgVarNamesMap["kNoCollInTimeRangeStandard"] = kNoCollInTimeRangeStandard;
