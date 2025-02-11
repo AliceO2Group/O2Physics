@@ -64,7 +64,7 @@ DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! original global index of
 } // namespace hf_mc_coll
 
 // Declares the base table with reconstructed collisions (CollBases) and joinable tables (CollIds).
-#define DECLARE_COLL_TABLE(_hf_type_, _hf_description_)                                \
+#define DECLARE_TABLES_COLL(_hf_type_, _hf_description_)                               \
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##CollBases, "HF" _hf_description_ "COLLBASE", \
                            o2::soa::Index<>,                                           \
                            collision::PosX,                                            \
@@ -86,7 +86,7 @@ DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! original global index of
                            o2::soa::Marker<Marker##_hf_type_>);
 
 // Declares the base table with MC collisions (McCollBases) and joinable tables (McCollIds, McRCollIds).
-#define DECLARE_MCCOLL_TABLE(_hf_type_, _hf_description_, _hf_namespace_)                                           \
+#define DECLARE_TABLES_MCCOLL(_hf_type_, _hf_description_, _hf_namespace_)                                          \
   namespace hf_mc_coll                                                                                              \
   {                                                                                                                 \
   namespace der_##_hf_namespace_                                                                                    \
@@ -111,11 +111,6 @@ DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! original global index of
                                                                                                                     \
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##McRCollIds, "HF" _hf_description_ "MCRCOLLID",                            \
                            hf_mc_coll::der_##_hf_namespace_::Hf##_hf_type_##CollBaseIds);
-
-// Declares all tables with reconstructed and MC collisions.
-#define DECLARE_COLL_TABLES(_hf_type_, _hf_description_, _hf_namespace_) \
-  DECLARE_COLL_TABLE(_hf_type_, _hf_description_)                        \
-  DECLARE_MCCOLL_TABLE(_hf_type_, _hf_description_, _hf_namespace_)
 
 // ================
 // Candidate tables
@@ -168,7 +163,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 } // namespace hf_mc_particle
 
 // Declares the base table with candidates (Bases).
-#define DECLARE_CAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_)                                 \
+#define DECLARE_TABLE_CAND_BASE(_hf_type_, _hf_description_, _hf_namespace_)                                 \
   namespace hf_cand_base                                                                                     \
   {                                                                                                          \
   namespace der_##_hf_namespace_                                                                             \
@@ -192,7 +187,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
                            o2::soa::Marker<Marker##_hf_type_>);
 
 // Declares the table with global indices for 2-prong candidates (Ids).
-#define DECLARE_CAND_2P_ID_TABLE(_hf_type_, _hf_description_)              \
+#define DECLARE_TABLE_CAND_ID_2P(_hf_type_, _hf_description_)              \
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##Ids, "HF" _hf_description_ "ID", \
                            hf_cand::CollisionId,                           \
                            hf_track_index::Prong0Id,                       \
@@ -200,7 +195,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
                            o2::soa::Marker<Marker##_hf_type_>);
 
 // Declares the table with global indices for 3-prong candidates (Ids).
-#define DECLARE_CAND_3P_ID_TABLE(_hf_type_, _hf_description_)              \
+#define DECLARE_TABLE_CAND_ID_3P(_hf_type_, _hf_description_)              \
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##Ids, "HF" _hf_description_ "ID", \
                            hf_cand::CollisionId,                           \
                            hf_track_index::Prong0Id,                       \
@@ -209,7 +204,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
                            o2::soa::Marker<Marker##_hf_type_>);
 
 // Declares the table with candidate selection flags (Sels).
-#define DECLARE_CAND_SEL_TABLE(_hf_type_, _hf_description_)                  \
+#define DECLARE_TABLE_CAND_SEL(_hf_type_, _hf_description_)                  \
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##Sels, "HF" _hf_description_ "SEL", \
                            hf_cand_sel::CandidateSelFlag,                    \
                            o2::soa::Marker<Marker##_hf_type_>);
@@ -219,7 +214,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 // ================
 
 // Declares the base table with MC particles (PBases).
-#define DECLARE_MCCAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_)                                     \
+#define DECLARE_TABLE_MCPARTICLE_BASE(_hf_type_, _hf_description_, _hf_namespace_)                                 \
   namespace hf_mc_particle                                                                                         \
   {                                                                                                                \
   namespace der_##_hf_namespace_                                                                                   \
@@ -243,7 +238,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
                            o2::soa::Marker<Marker##_hf_type_>);
 
 // Declares the table with global indices for MC particles (PIds).
-#define DECLARE_MCCAND_ID_TABLE(_hf_type_, _hf_description_)                 \
+#define DECLARE_TABLE_MCPARTICLE_ID(_hf_type_, _hf_description_)             \
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##PIds, "HF" _hf_description_ "PID", \
                            hf_mc_particle::McCollisionId,                    \
                            hf_mc_particle::McParticleId,                     \
@@ -253,38 +248,32 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 // Helper macros for combinations
 // ================
 
-#define DECLARE_CAND_TABLES(_hf_type_, _hf_description_, _hf_namespace_) \
-  DECLARE_CAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_)   \
-  DECLARE_CAND_SEL_TABLE(_hf_type_, _hf_description_)                    \
-  DECLARE_MCCAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_) \
-  DECLARE_MCCAND_ID_TABLE(_hf_type_, _hf_description_)
+#define DECLARE_TABLES_COMMON(_hf_type_, _hf_description_, _hf_namespace_)   \
+  DECLARE_TABLES_COLL(_hf_type_, _hf_description_)                           \
+  DECLARE_TABLES_MCCOLL(_hf_type_, _hf_description_, _hf_namespace_)         \
+  DECLARE_TABLE_CAND_BASE(_hf_type_, _hf_description_, _hf_namespace_)       \
+  DECLARE_TABLE_CAND_SEL(_hf_type_, _hf_description_)                        \
+  DECLARE_TABLE_MCPARTICLE_BASE(_hf_type_, _hf_description_, _hf_namespace_) \
+  DECLARE_TABLE_MCPARTICLE_ID(_hf_type_, _hf_description_)
 
-#define DECLARE_CAND_2P_TABLES(_hf_type_, _hf_description_, _hf_namespace_) \
-  DECLARE_CAND_TABLES(_hf_type_, _hf_description_, _hf_namespace_)          \
-  DECLARE_CAND_2P_ID_TABLE(_hf_type_, _hf_description_)
-
-#define DECLARE_CAND_3P_TABLES(_hf_type_, _hf_description_, _hf_namespace_) \
-  DECLARE_CAND_TABLES(_hf_type_, _hf_description_, _hf_namespace_)          \
-  DECLARE_CAND_3P_ID_TABLE(_hf_type_, _hf_description_)
-
-#define DECLARE_2P_TABLES(_hf_type_, _hf_description_, _hf_namespace_, _marker_number_) \
+#define DECLARE_TABLES_2P(_hf_type_, _hf_description_, _hf_namespace_, _marker_number_) \
   constexpr uint Marker##_hf_type_ = _marker_number_;                                   \
-  DECLARE_COLL_TABLES(_hf_type_, _hf_description_, _hf_namespace_)                      \
-  DECLARE_CAND_2P_TABLES(_hf_type_, _hf_description_, _hf_namespace_)
+  DECLARE_TABLES_COMMON(_hf_type_, _hf_description_, _hf_namespace_)                    \
+  DECLARE_TABLE_CAND_ID_2P(_hf_type_, _hf_description_)
 
-#define DECLARE_3P_TABLES(_hf_type_, _hf_description_, _hf_namespace_, _marker_number_) \
+#define DECLARE_TABLES_3P(_hf_type_, _hf_description_, _hf_namespace_, _marker_number_) \
   constexpr uint Marker##_hf_type_ = _marker_number_;                                   \
-  DECLARE_COLL_TABLES(_hf_type_, _hf_description_, _hf_namespace_)                      \
-  DECLARE_CAND_3P_TABLES(_hf_type_, _hf_description_, _hf_namespace_)
+  DECLARE_TABLES_COMMON(_hf_type_, _hf_description_, _hf_namespace_)                    \
+  DECLARE_TABLE_CAND_ID_3P(_hf_type_, _hf_description_)
 
 // ================
 // Declarations of common tables for individual species
 // ================
 
-DECLARE_2P_TABLES(D0, "D0", d0, 2);
-DECLARE_3P_TABLES(Lc, "LC", lc, 3);
-DECLARE_3P_TABLES(Dplus, "DP", dplus, 4);
-DECLARE_3P_TABLES(Bplus, "BP", bplus, 5);
+DECLARE_TABLES_2P(D0, "D0", d0, 2);
+DECLARE_TABLES_3P(Lc, "LC", lc, 3);
+DECLARE_TABLES_3P(Dplus, "DP", dplus, 4);
+DECLARE_TABLES_3P(Bplus, "BP", bplus, 5);
 
 // ================
 // Additional species-specific candidate tables

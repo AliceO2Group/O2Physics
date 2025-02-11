@@ -222,6 +222,14 @@ int FindCommonMotherFrom3Prongs(TMCParticle1 const& p1, TMCParticle2 const& p2, 
 }
 //_______________________________________________________________________
 template <typename TMCParticle, typename TMCParticles>
+int getMotherPDGCode(TMCParticle const& p, TMCParticles const& mcparticles)
+{
+  int motherid = p.mothersIds()[0];
+  auto mother = mcparticles.iteratorAt(motherid);
+  return (mother.pdgCode());
+}
+//_______________________________________________________________________
+template <typename TMCParticle, typename TMCParticles>
 int IsFromBeauty(TMCParticle const& p, TMCParticles const& mcparticles)
 {
   if (!p.has_mothers()) {

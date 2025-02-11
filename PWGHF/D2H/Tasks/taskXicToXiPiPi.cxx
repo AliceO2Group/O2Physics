@@ -280,10 +280,13 @@ struct HfTaskXicToXiPiPi {
       double outputBkg = -99.;    // bkg score
       double outputPrompt = -99.; // prompt score
       double outputFD = -99.;     // non-prompt score
-      if (candidate.mlProbXicToXiPiPi().size() > 0) {
+      int scoreSize = candidate.mlProbXicToXiPiPi().size();
+      if (scoreSize > 0) {
         outputBkg = candidate.mlProbXicToXiPiPi()[0];
         outputPrompt = candidate.mlProbXicToXiPiPi()[1];
-        outputFD = candidate.mlProbXicToXiPiPi()[2];
+        if (scoreSize == 3) {
+          outputFD = candidate.mlProbXicToXiPiPi()[2];
+        }
       }
       registry.get<THnSparse>(HIST("hXicToXiPiPiVarsWithML"))->Fill(candidate.pt(), candidate.invMassXicPlus(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), outputBkg, outputPrompt, outputFD);
     } else {

@@ -81,6 +81,7 @@ enum HfTriggers {
   kSingleCharm3P,
   kSingleNonPromptCharm2P,
   kSingleNonPromptCharm3P,
+  kCharmBarToXiBachBach,
   kNtriggersHF
 };
 
@@ -191,6 +192,7 @@ struct V0Cand {
 struct CascCand {
   std::array<float, 3> mom;
   std::array<float, 3> vtx;
+  std::array<float, 21> cov;
   V0Cand v0;
   float ptBach;
   float etaBach;
@@ -216,7 +218,7 @@ static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", 
 static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};
 static const std::array<int, kNCharmParticles> pdgCodesCharm{421, 411, 431, 4122, 4232};
 static const std::array<std::string, 2> eventTitles = {"all", "rejected"};
-static const std::vector<std::string> hfTriggerNames{filtering::HfHighPt2P::columnLabel(), filtering::HfHighPt3P::columnLabel(), filtering::HfBeauty3P::columnLabel(), filtering::HfBeauty4P::columnLabel(), filtering::HfFemto2P::columnLabel(), filtering::HfFemto3P::columnLabel(), filtering::HfDoubleCharm2P::columnLabel(), filtering::HfDoubleCharm3P::columnLabel(), filtering::HfDoubleCharmMix::columnLabel(), filtering::HfV0Charm2P::columnLabel(), filtering::HfV0Charm3P::columnLabel(), filtering::HfCharmBarToXiBach::columnLabel(), filtering::HfSigmaCPPK::columnLabel(), filtering::HfSigmaC0K0::columnLabel(), filtering::HfPhotonCharm2P::columnLabel(), filtering::HfPhotonCharm3P::columnLabel(), filtering::HfSingleCharm2P::columnLabel(), filtering::HfSingleCharm3P::columnLabel(), filtering::HfSingleNonPromptCharm2P::columnLabel(), filtering::HfSingleNonPromptCharm3P::columnLabel()};
+static const std::vector<std::string> hfTriggerNames{filtering::HfHighPt2P::columnLabel(), filtering::HfHighPt3P::columnLabel(), filtering::HfBeauty3P::columnLabel(), filtering::HfBeauty4P::columnLabel(), filtering::HfFemto2P::columnLabel(), filtering::HfFemto3P::columnLabel(), filtering::HfDoubleCharm2P::columnLabel(), filtering::HfDoubleCharm3P::columnLabel(), filtering::HfDoubleCharmMix::columnLabel(), filtering::HfV0Charm2P::columnLabel(), filtering::HfV0Charm3P::columnLabel(), filtering::HfCharmBarToXiBach::columnLabel(), filtering::HfSigmaCPPK::columnLabel(), filtering::HfSigmaC0K0::columnLabel(), filtering::HfPhotonCharm2P::columnLabel(), filtering::HfPhotonCharm3P::columnLabel(), filtering::HfSingleCharm2P::columnLabel(), filtering::HfSingleCharm3P::columnLabel(), filtering::HfSingleNonPromptCharm2P::columnLabel(), filtering::HfSingleNonPromptCharm3P::columnLabel(), filtering::HfCharmBarToXiBachBach::columnLabel()};
 
 static const std::array<std::string, kNV0> v0Labels{"#gamma", "K_{S}^{0}", "#Lambda", "#bar{#Lambda}"};
 static const std::array<std::string, kNV0> v0Names{"Photon", "K0S", "Lambda", "AntiLambda"};
@@ -260,7 +262,7 @@ static const o2::framework::AxisSpec alphaAxis{100, -1.f, 1.f};
 static const o2::framework::AxisSpec qtAxis{100, 0.f, 0.25f};
 static const o2::framework::AxisSpec bdtAxis{100, 0.f, 1.f};
 static const o2::framework::AxisSpec phiAxis{36, 0., o2::constants::math::TwoPI};
-static const std::array<o2::framework::AxisSpec, kNCharmParticles + 17> massAxisC = {o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.75f, 2.15f}, o2::framework::AxisSpec{100, 2.05f, 2.45f}, o2::framework::AxisSpec{100, 2.25f, 2.65f}, o2::framework::AxisSpec{100, 0.139f, 0.159f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{170, 0.13f, 0.3f}, o2::framework::AxisSpec{170, 0.13f, 0.3f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}};
+static const std::array<o2::framework::AxisSpec, kNCharmParticles + 18> massAxisC = {o2::framework::AxisSpec{250, 1.65f, 2.15f}, o2::framework::AxisSpec{250, 1.65f, 2.15f}, o2::framework::AxisSpec{250, 1.75f, 2.25f}, o2::framework::AxisSpec{250, 2.05f, 2.55f}, o2::framework::AxisSpec{250, 2.25f, 2.75f}, o2::framework::AxisSpec{200, 0.139f, 0.159f}, o2::framework::AxisSpec{250, 0.f, 0.25f}, o2::framework::AxisSpec{250, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{170, 0.13f, 0.3f}, o2::framework::AxisSpec{170, 0.13f, 0.3f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 2.3f, 2.9f}, o2::framework::AxisSpec{200, 2.3f, 2.9f}, o2::framework::AxisSpec{200, 2.3f, 2.9f}};
 static const std::array<o2::framework::AxisSpec, kNBeautyParticles> massAxisB = {o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}};
 
 // default values for configurables
@@ -328,8 +330,11 @@ static const std::vector<std::string> labelsColumnsV0s = {"CosPaGamma", "CosPaK0
 // cascades for Xi + bachelor triggers
 constexpr float cutsCascades[1][8] = {{0.2, 1., 0.01, 0.01, 0.99, 0.99, 0.3, 3.}}; // ptXiBachelor, deltaMassXi, deltaMassLambda, cosPaXi, cosPaLambda, DCAxyXi, nSigmaPid
 static const std::vector<std::string> labelsColumnsCascades = {"PtBachelor", "PtXi", "DeltaMassXi", "DeltaMassLambda", "CosPAXi", "CosPaLambda", "DCAxyXi", "NsigmaPid"};
-constexpr float cutsCharmBaryons[1][4] = {{3., 3., 2.35, 2.60}}; // MinPtXiPi, MinPtXiKa, MinMassXiPi, MinMassXiKa
-static const std::vector<std::string> labelsColumnsCharmBaryons = {"MinPtXiPi", "MinPtXiKa", "MinMassXiPi", "MinMassXiKa"};
+constexpr float cutsCharmBaryons[1][8] = {{5., 5., 1000., 2.35, 2.60, 2.35, -2., -2.}}; // MinPtXiPi, MinPtXiKa, MinPtXiPiPi, MinMassXiPi, MinMassXiKa, MinMassXiPiPi, CosPaXiBach, CosPaXiBachBach
+static const std::vector<std::string> labelsColumnsCharmBarCuts = {"MinPtXiPi", "MinPtXiKa", "MinPtXiPiPi", "MinMassXiPi", "MinMassXiKa", "MinMassXiPiPi", "CosPaXiBach", "CosPaXiBachBach"};
+
+constexpr int requireStrangenessTrackedXi[1][2] = {{1, 0}};
+static const std::vector<std::string> labelsColumnsCharmBaryons = {"CharmBarToXiBach", "CharmBarToXiBachBach"};
 
 // dummy array
 static const std::vector<std::string> labelsEmpty{};
@@ -337,7 +342,7 @@ static constexpr double cutsTrackDummy[o2::analysis::hf_cuts_single_track::nBins
 o2::framework::LabeledArray<double> cutsSingleTrackDummy{cutsTrackDummy[0], o2::analysis::hf_cuts_single_track::nBinsPtTrack, o2::analysis::hf_cuts_single_track::nCutVarsTrack, o2::analysis::hf_cuts_single_track::labelsPtTrack, o2::analysis::hf_cuts_single_track::labelsCutVarTrack};
 
 // manual downscale factors for tests
-constexpr double defDownscaleFactors[kNtriggersHF][1] = {{1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}}; // one for each trigger
+constexpr double defDownscaleFactors[kNtriggersHF][1] = {{1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}}; // one for each trigger
 static const std::vector<std::string> labelsDownscaleFactor = {"Downscale factor"};
 
 // Main helper class
@@ -480,6 +485,18 @@ class HfFilterHelper
     mNSigmaTofKaonFromXicResoToSigmaC = nSigmaTof;
   }
 
+  void setXiBachelorSelections(float ptMinXiPi, float ptMinXiKa, float ptMinXiPiPi, float massMinXiPi, float massMinXiKa, float massMinXiPiPi, float cosPaMinXiBach, float cosPaMinXiBachBach)
+  {
+    mPtMinXiBach[0] = ptMinXiPi;
+    mPtMinXiBach[1] = ptMinXiKa;
+    mPtMinXiBach[2] = ptMinXiPiPi;
+    mMassMinXiBach[0] = massMinXiPi;
+    mMassMinXiBach[1] = massMinXiKa;
+    mMassMinXiBach[2] = massMinXiPiPi;
+    mCosPaMinXiBach[0] = cosPaMinXiBach;
+    mCosPaMinXiBach[1] = cosPaMinXiBachBach;
+  }
+
   void setTpcPidCalibrationOption(int opt) { mTpcPidCalibrationOption = opt; }
 
   void setMassResolParametrisation(std::string recoPass)
@@ -549,6 +566,10 @@ class HfFilterHelper
   bool isSelectedBzeroToDstar(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, const T2& primVtx, const T3& secVtx);
   template <typename T1>
   bool isCharmHadronMassInSbRegions(T1 const& massHypo1, T1 const& massHypo2, const float& lowLimitSB, const float& upLimitSB);
+  template <typename T, typename C, typename H2>
+  bool isSelectedXiBach(T const& trackParCasc, T const& trackParBachelor, int8_t isSelBachelor, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPi, H2 hMassVsPtXiKa);
+  template <int Nprongs, typename T, typename C, typename H2>
+  bool isSelectedXiBachBach(T const& trackParCasc, std::array<T, 2> const& trackParBachelor, C const& collision, o2::vertexing::DCAFitterN<Nprongs>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPiPi);
 
   // helpers
   template <typename T>
@@ -656,6 +677,9 @@ class HfFilterHelper
   float mNSigmaTofKaonFromXicResoToSigmaC{3.};                                    // maximum Nsigma TOF for kaons in Xic*->SigmaC-Kaon
   bool mForceTofProtonForFemto = true;                                            // flag to force TOF PID for protons
   bool mForceTofDeuteronForFemto = false;                                         // flag to force TOF PID for deuterons
+  std::array<float, 3> mPtMinXiBach{5., 5., 5.};                                  // minimum pT for XiBachelor candidates
+  std::array<float, 3> mMassMinXiBach{2.35, 2.6, 2.35};                           // minimum invariant-mass for XiBachelor candidates
+  std::array<float, 2> mCosPaMinXiBach{-2.f, -2.f};                               // minimum cosine of pointing angle for XiBachelor candidates
   std::array<o2::framework::LabeledArray<double>, kNBeautyParticles> mCutsBhad{}; // selections for B-hadron candidates (DeltaMass, CPA, DecayLength, ImpactParameterProduct)
 
   // PID recalibrations
@@ -1944,7 +1968,7 @@ inline bool HfFilterHelper::isSelectedBhadronInMassRange(T1 const& ptCand, T2 co
 /// \param upLimitSB  is the dca of the pion daughter track
 /// \return true if the candidate passes the mass selection.
 template <typename T1>
-inline bool isCharmHadronMassInSbRegions(T1 const& massHypo1, T1 const& massHypo2, const float& lowLimitSB, const float& upLimitSB)
+inline bool HfFilterHelper::isCharmHadronMassInSbRegions(T1 const& massHypo1, T1 const& massHypo2, const float& lowLimitSB, const float& upLimitSB)
 {
 
   if ((massHypo1 < lowLimitSB || massHypo1 > upLimitSB) && (massHypo2 < lowLimitSB || massHypo2 > upLimitSB)) {
@@ -1952,6 +1976,162 @@ inline bool isCharmHadronMassInSbRegions(T1 const& massHypo1, T1 const& massHypo
   }
 
   return true;
+}
+
+/// Method to check if charm candidates has mass between sideband limits
+/// \param trackParCasc is the cascade track parametrisation
+/// \param trackParBachelor is the bachelor track parametrisation
+/// \param isSelBachelor flag for bachelor selection (Pi/Ka)
+/// \param collision is the collision containing the candidate
+/// \param dcaFitter is the DCAFitter
+/// \param activateQA is the flag to activate the QA
+/// \param hMassVsPtXiPi is the 2D histogram with pT vs mass(XiPi)
+/// \param hMassVsPtXiKa is the 2D histogram with pT vs mass(XiKa)
+template <typename T, typename C, typename H2>
+inline bool HfFilterHelper::isSelectedXiBach(T const& trackParCasc, T const& trackParBachelor, int8_t isSelBachelor, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPi, H2 hMassVsPtXiKa)
+{
+  bool isSelectedXiPi{false}, isSelectedXiKa{false};
+
+  // compute pT
+  std::array<float, 3> pVecBachelor{}, pVecCascade{};
+  getPxPyPz(trackParBachelor, pVecBachelor);
+  getPxPyPz(trackParCasc, pVecCascade);
+  auto ptXiBach = RecoDecay::pt(RecoDecay::pVec(pVecCascade, pVecBachelor));
+
+  // compute first mass hypo
+  float massXiPi{0.f};
+  if (TESTBIT(isSelBachelor, kPionForCharmBaryon)) {
+    massXiPi = RecoDecay::m(std::array{pVecCascade, pVecBachelor}, std::array{massXi, massPi});
+    if (ptXiBach >= mPtMinXiBach[0] && massXiPi >= mMassMinXiBach[0] && massXiPi <= 3.f) {
+      isSelectedXiPi = true;
+    }
+  }
+
+  // compute second mass hypo
+  float massXiKa{0.f};
+  if (TESTBIT(isSelBachelor, kKaonForCharmBaryon)) {
+    massXiKa = RecoDecay::m(std::array{pVecCascade, pVecBachelor}, std::array{massXi, massKa});
+    if (ptXiBach >= mPtMinXiBach[1] && massXiKa >= mMassMinXiBach[1] && massXiKa <= 3.f) {
+      isSelectedXiKa = true;
+    }
+  }
+
+  bool isSelected = isSelectedXiPi || isSelectedXiKa;
+
+  if (isSelected && mCosPaMinXiBach[0] > -1.f) { // if selected by pT and mass, check topology if applicable
+    int nCand = 0;
+    try {
+      nCand = dcaFitter.process(trackParCasc, trackParBachelor);
+    } catch (...) {
+      LOG(error) << "Exception caught in DCA fitter process call for Xi + bachelor!";
+      return false;
+    }
+    if (nCand == 0) {
+      return false;
+    }
+
+    const auto& vtx = dcaFitter.getPCACandidate();
+    const auto& trackCascProp = dcaFitter.getTrack(0);
+    const auto& trackBachProp = dcaFitter.getTrack(1);
+    std::array<float, 3> momCasc{}, momBach{};
+    trackCascProp.getPxPyPzGlo(momCasc);
+    trackBachProp.getPxPyPzGlo(momBach);
+    auto momXiBach = RecoDecay::pVec(momCasc, momBach);
+
+    std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
+    if (RecoDecay::cpa(primVtx, std::array{vtx[0], vtx[1], vtx[2]}, momXiBach) < mCosPaMinXiBach[0]) {
+      return false;
+    }
+
+    if (activateQA) {
+      if (isSelectedXiPi) {
+        hMassVsPtXiPi->Fill(ptXiBach, massXiPi);
+      }
+      if (isSelectedXiKa) {
+        hMassVsPtXiKa->Fill(ptXiBach, massXiKa);
+      }
+    }
+  }
+
+  return isSelected;
+}
+
+/// Method to check if charm candidates has mass between sideband limits
+/// \param trackParCasc is the cascade track parametrisation
+/// \param trackParBachelor is the array with two bachelor track parametrisations
+/// \param collision is the collision containing the candidate
+/// \param dcaFitter is the DCAFitter
+/// \param activateQA is the flag to activate the QA
+/// \param hMassVsPtXiPiPi is the 2D histogram with pT vs mass(XiPiPi)
+template <int Nprongs, typename T, typename C, typename H2>
+inline bool HfFilterHelper::isSelectedXiBachBach(T const& trackParCasc, std::array<T, 2> const& trackParBachelor, C const& collision, o2::vertexing::DCAFitterN<Nprongs>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPiPi)
+{
+  bool isSelected{false};
+
+  // compute pT
+  std::array<float, 3> pVecBachelorFirst{}, pVecBachelorSecond{}, pVecCascade{};
+  getPxPyPz(trackParBachelor[0], pVecBachelorFirst);
+  getPxPyPz(trackParBachelor[1], pVecBachelorSecond);
+  getPxPyPz(trackParCasc, pVecCascade);
+  auto ptXiBachBach = RecoDecay::pt(RecoDecay::pVec(pVecCascade, pVecBachelorFirst, pVecBachelorSecond));
+  if (ptXiBachBach < mPtMinXiBach[2]) {
+    return isSelected;
+  }
+
+  // compute mass
+  float massXiPiPi = RecoDecay::m(std::array{pVecCascade, pVecBachelorFirst, pVecBachelorSecond}, std::array{massXi, massPi, massPi});
+  if (massXiPiPi < mMassMinXiBach[2] || massXiPiPi > 3.f) {
+    return isSelected;
+  }
+
+  if (mCosPaMinXiBach[1] > -1.f) { // check topology if applicable
+    int nCand = 0;
+    if constexpr (Nprongs == 3) {
+      try {
+        nCand = dcaFitter.process(trackParBachelor[0], trackParBachelor[1], trackParCasc);
+      } catch (...) {
+        LOG(error) << "Exception caught in DCA fitter process call for Xi + bachelor + bachelor!";
+        return false;
+      }
+      if (nCand == 0) {
+        return false;
+      }
+    } else if constexpr (Nprongs == 2) {
+      try {
+        nCand = dcaFitter.process(trackParBachelor[0], trackParBachelor[1]);
+      } catch (...) {
+        LOG(error) << "Exception caught in DCA fitter process call for Xi + bachelor + bachelor!";
+        return false;
+      }
+      if (nCand == 0) {
+        return false;
+      }
+    }
+
+    const auto& vtx = dcaFitter.getPCACandidate();
+
+    std::array<float, 3> momCasc{pVecCascade}, momBachFirst{}, momBachSecond{};
+    const auto& trackBachFirstProp = dcaFitter.getTrack(0);
+    const auto& trackBachSecondProp = dcaFitter.getTrack(1);
+    trackBachFirstProp.getPxPyPzGlo(momBachFirst);
+    trackBachSecondProp.getPxPyPzGlo(momBachSecond);
+    if constexpr (Nprongs == 3) {
+      const auto& trackCascProp = dcaFitter.getTrack(2);
+      trackCascProp.getPxPyPzGlo(momCasc);
+    }
+    auto momXiBachBach = RecoDecay::pVec(momCasc, momBachFirst, momBachSecond);
+
+    std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
+    if (RecoDecay::cpa(primVtx, std::array{vtx[0], vtx[1], vtx[2]}, momXiBachBach) < mCosPaMinXiBach[1]) {
+      return false;
+    }
+
+    if (activateQA && isSelected) {
+      hMassVsPtXiPiPi->Fill(ptXiBachBach, massXiPiPi);
+    }
+  }
+
+  return isSelected;
 }
 
 /// Update the TPC PID baesd on the spline of particles
@@ -2147,7 +2327,7 @@ inline bool HfFilterHelper::buildV0(V const& v0Indices, T const& tracks, C const
   try {
     nCand = dcaFitter.process(trackParCovPos, trackParCovNeg);
   } catch (...) {
-    LOG(error) << "Exception caught in DCA fitter process call!";
+    LOG(error) << "Exception caught in DCA fitter process call in V0!";
     return false;
   }
   if (nCand == 0) {
@@ -2278,7 +2458,7 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
   try {
     nCand = dcaFitter.process(v0TrackParCov, bachTrackParCov);
   } catch (...) {
-    LOG(error) << "Exception caught in DCA fitter process call!";
+    LOG(error) << "Exception caught in DCA fitter process call in Xi!";
     return false;
   }
   if (nCand == 0) {
@@ -2309,8 +2489,24 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
   for (int iCoord{0}; iCoord < 3; ++iCoord) {
     cascCand.vtx[iCoord] = vtx[iCoord];
   }
+  auto covVtxV = dcaFitter.calcPCACovMatrix(0);
+  cascCand.cov = {};
+  cascCand.cov[0] = covVtxV(0, 0);
+  cascCand.cov[1] = covVtxV(1, 0);
+  cascCand.cov[2] = covVtxV(1, 1);
+  cascCand.cov[3] = covVtxV(2, 0);
+  cascCand.cov[4] = covVtxV(2, 1);
+  cascCand.cov[5] = covVtxV(2, 2);
+  std::array<float, 21> covTv0 = {0.};
+  std::array<float, 21> covTbachelor = {0.};
+  trackV0Prop.getCovXYZPxPyPzGlo(covTv0);
+  trackBachProp.getCovXYZPxPyPzGlo(covTbachelor);
+  constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+  for (int iCoord{0}; iCoord < 6; ++iCoord) {
+    cascCand.cov[MomInd[iCoord]] = covTv0[MomInd[iCoord]] + covTbachelor[MomInd[iCoord]];
+  }
+
   cascCand.cascradius = std::hypot(vtx[0], vtx[1]);
-  ;
   cascCand.casccosPA = RecoDecay::cpa(primVtx, vtx, cascCand.mom);
 
   auto trackParCasc = dcaFitter.createParentTrackParCov();
@@ -2322,7 +2518,6 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
   cascCand.dcacascdaughters = std::sqrt(dcaFitter.getChi2AtPCACandidate());
   cascCand.mXi = RecoDecay::m(std::array{momBach, momV0}, std::array{massPi, massLambda});
   cascCand.mOmega = RecoDecay::m(std::array{momBach, momV0}, std::array{massKa, massLambda});
-  ;
 
   cascCand.hasTofBach = trackBachelor.hasTOF();
   cascCand.nSigmaPiTpcBach = trackBachelor.tpcNSigmaPi();
