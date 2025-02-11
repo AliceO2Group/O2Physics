@@ -308,7 +308,16 @@ DECLARE_SOA_TABLE(HfCandLcFullPs, "AOD", "HFCANDLCFULLP",
                   full::Phi,
                   full::Y,
                   full::FlagMc,
-                  full::OriginMcGen);
+                  full::OriginMcGen,
+                  mc_match::P,
+                  mc_match::XDecay,
+                  mc_match::YDecay,
+                  mc_match::ZDecay,
+                  mc_match::LDecay,
+                  mc_match::TDecay,
+                  mc_match::XEvent,
+                  mc_match::YEvent,
+                  mc_match::ZEvent);
 
 } // namespace o2::aod
 
@@ -704,13 +713,29 @@ struct HfTreeCreatorLcToPKPi {
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
+        auto mcDaughter0 = particle.template daughters_as<aod::McParticles>().begin();
+        auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
+        auto p = particle.p();
+        const float p2m = p / MassLambdaCPlus;
+        const float gamma = std::sqrt(1 + p2m * p2m); // mother's particle Lorentz factor
+        const float pvX = mcCollision.posX();
+        const float pvY = mcCollision.posY();
+        const float pvZ = mcCollision.posZ();
+        const float svX = mcDaughter0.vx();
+        const float svY = mcDaughter0.vy();
+        const float svZ = mcDaughter0.vz();
+        const float l = std::sqrt((svX - pvX) * (svX - pvX) + (svY - pvY) * (svY - pvY) + (svZ - pvZ) * (svZ - pvZ));
+        const float t = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
         rowCandidateFullParticles(
           particle.pt(),
           particle.eta(),
           particle.phi(),
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus),
           particle.flagMcMatchGen(),
-          particle.originMcGen());
+          particle.originMcGen(),
+          p,
+          svX, svY, svZ, l, t,
+          pvX, pvY, pvZ);
       }
     }
   }
