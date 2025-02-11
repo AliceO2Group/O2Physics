@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file strange-yield-pbpb.cxx
+/// \file derivedupcanalysis.cxx
 /// \brief Strangeness in UPC analysis task
 /// \author Roman Nepeivoda (roman.nepeivoda@cern.ch)
 
@@ -200,7 +200,7 @@ struct Derivedupcanalysis {
 
   // Kinematic axes
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for v0 analysis"};
-  ConfigurableAxis axisPtXi{"axisPtCasc", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for cascade analysis"};
+  ConfigurableAxis axisPtXi{"axisPtXi", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for cascade analysis"};
   ConfigurableAxis axisPtCoarse{"axisPtCoarse", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 10.0f, 15.0f}, "pt axis for QA"};
   ConfigurableAxis axisEta{"axisEta", {100, -2.0f, 2.0f}, "#eta"};
   ConfigurableAxis axisRap{"axisRap", {100, -2.0f, 2.0f}, "y"};
@@ -248,7 +248,7 @@ struct Derivedupcanalysis {
   // Track quality axes
   ConfigurableAxis axisTPCrows{"axisTPCrows", {160, -0.5f, 159.5f}, "N TPC rows"};
   ConfigurableAxis axisITSclus{"axisITSclus", {7, -0.5f, 6.5f}, "N ITS Clusters"};
-  ConfigurableAxis axisITScluMap{"axisITSMap", {128, -0.5f, 127.5f}, "ITS Cluster map"};
+  ConfigurableAxis axisITScluMap{"axisITScluMap", {128, -0.5f, 127.5f}, "ITS Cluster map"};
   ConfigurableAxis axisDetMap{"axisDetMap", {16, -0.5f, 15.5f}, "Detector use map"};
   ConfigurableAxis axisITScluMapCoarse{"axisITScluMapCoarse", {16, -3.5f, 12.5f}, "ITS Coarse cluster map"};
   ConfigurableAxis axisDetMapCoarse{"axisDetMapCoarse", {5, -0.5f, 4.5f}, "Detector Coarse user map"};
@@ -890,7 +890,7 @@ struct Derivedupcanalysis {
     }
 
     if (doprocessGenerated) {
-      for (Int_t partID = 0; partID <= 6; partID++) {
+      for (int partID = 0; partID <= 6; partID++) {
         histos.add(Form("%s/mc/h6dGen", kParticlenames[partID].data()), "h6dGen", kTHnSparseF, {axisFT0Cqa, axisNchInvMass, axisNchInvMass, axisPt, axisSelGap, axisRap});
       }
     }
@@ -1216,9 +1216,9 @@ struct Derivedupcanalysis {
     auto negpt = std::sqrt(std::pow(casc.pxneg(), 2) + std::pow(casc.pyneg(), 2));
     auto bachpt = std::sqrt(std::pow(casc.pxbach(), 2) + std::pow(casc.pybach(), 2));
 
-    double posDcaXYLimit = 0.0105f + 0.035f / pow(pospt, 1.1f);
-    double negDcaXYLimit = 0.0105f + 0.035f / pow(negpt, 1.1f);
-    double bachDcaXYLimit = 0.0105f + 0.035f / pow(bachpt, 1.1f);
+    double posDcaXYLimit = 0.0105f + 0.035f / std::pow(pospt, 1.1f);
+    double negDcaXYLimit = 0.0105f + 0.035f / std::pow(negpt, 1.1f);
+    double bachDcaXYLimit = 0.0105f + 0.035f / std::pow(bachpt, 1.1f);
 
     // TODO: separate xy and z //
     if ((std::abs(casc.dcapostopv()) > posDcaXYLimit) &&
@@ -1376,8 +1376,8 @@ struct Derivedupcanalysis {
     auto pospt = std::sqrt(std::pow(v0.pxpos(), 2) + std::pow(v0.pypos(), 2));
     auto negpt = std::sqrt(std::pow(v0.pxneg(), 2) + std::pow(v0.pyneg(), 2));
 
-    double posDcaXYLimit = 0.0105f + 0.035f / pow(pospt, 1.1f);
-    double negDcaXYLimit = 0.0105f + 0.035f / pow(negpt, 1.1f);
+    double posDcaXYLimit = 0.0105f + 0.035f / std::pow(pospt, 1.1f);
+    double negDcaXYLimit = 0.0105f + 0.035f / std::pow(negpt, 1.1f);
 
     // TODO: separate xy and z //
     if ((std::abs(v0.dcapostopv()) > posDcaXYLimit) &&
