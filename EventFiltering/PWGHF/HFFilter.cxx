@@ -170,8 +170,8 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmDeuteronKstarDistr{};
   std::array<std::shared_ptr<TH2>, kNBeautyParticles> hMassVsPtB{};
   std::array<std::shared_ptr<TH2>, kNCharmParticles + 18> hMassVsPtC{}; // +9 for resonances (D*+, D*0, Ds*+, Ds1+, Ds2*+, Xic+* right sign, Xic+* wrong sign, Xic0* right sign, Xic0* wrong sign) +2 for SigmaC (SigmaC++, SigmaC0) +2 for SigmaCK pairs (SigmaC++K-, SigmaC0K0s) +3 for charm baryons (Xi+Pi, Xi+Ka, Xi+Pi+Pi)
-  std::shared_ptr<TH2> hProtonITSPID, hProtonTPCPID, hProtonTOFPID;
-  std::shared_ptr<TH2> hDeuteronITSPID, hDeuteronTPCPID, hDeuteronTOFPID;
+  std::shared_ptr<TH2> hProtonTPCPID, hProtonTOFPID;
+  std::shared_ptr<TH2> hDeuteronTPCPID, hDeuteronTOFPID;
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreBkg{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreNonPrompt{};
@@ -303,10 +303,8 @@ struct HfFilter { // Main struct for HF triggers
       hMassXi[1] = registry.add<TH1>("fMassTrackedXi", "#it{M} distribution of #Xi candidates;#it{M} (GeV/#it{c}^{2});counts", HistType::kTH1D, {{100, 1.28f, 1.36f}});
 
       if (activateQA > 1) {
-        hProtonITSPID = registry.add<TH2>("fProtonITSPID", "#it{N}_{#sigma}^{ITS} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{ITS}", HistType::kTH2D, {pAxis, nSigmaAxis});
         hProtonTPCPID = registry.add<TH2>("fProtonTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2D, {pAxis, nSigmaAxis});
         hProtonTOFPID = registry.add<TH2>("fProtonTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2D, {pAxis, nSigmaAxis});
-        hDeuteronITSPID = registry.add<TH2>("fDeuteronITSPID", "#it{N}_{#sigma}^{ITS} vs. #it{p} for selected deuterons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{ITS}", HistType::kTH2D, {pAxis, nSigmaAxis});
         hDeuteronTPCPID = registry.add<TH2>("fDeuteronTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected deuterons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2D, {pAxis, nSigmaAxis});
         hDeuteronTOFPID = registry.add<TH2>("fDeuteronTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected deuterons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2D, {pAxis, nSigmaAxis});
 
@@ -495,7 +493,7 @@ struct HfFilter { // Main struct for HF triggers
         auto massD0BarCand = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massKa, massPi});
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-        auto tracksWithItsPid = soa::Attach<BigTracksPID, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
+        const auto& tracksWithItsPid = soa::Attach<BigTracksPID, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
         for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
           auto track = tracksWithItsPid.rawIteratorAt(trackId.trackId());
 
@@ -658,7 +656,7 @@ struct HfFilter { // Main struct for HF triggers
 
           // 2-prong femto
           if (!keepEvent[kFemto2P] && enableFemtoChannels->get(0u, 0u) && isCharmTagged && track.collisionId() == thisCollId && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1) || !requireCharmMassForFemto)) {
-            bool isProton = helper.isSelectedTrack4Femto(track, trackParThird, activateQA, hProtonITSPID, hProtonTPCPID, hProtonTOFPID, kProtonForFemto);
+            bool isProton = helper.isSelectedTrack4Femto(track, trackParThird, activateQA, hProtonTPCPID, hProtonTOFPID, kProtonForFemto);
             if (isProton) {
               float relativeMomentum = helper.computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
               if (applyOptimisation) {
@@ -1061,8 +1059,8 @@ struct HfFilter { // Main struct for HF triggers
           } // end beauty selection
 
           // 3-prong femto
-          bool isProton = helper.isSelectedTrack4Femto(track, trackParFourth, activateQA, hProtonITSPID, hProtonTPCPID, hProtonTOFPID, kProtonForFemto);
-          bool isDeuteron = helper.isSelectedTrack4Femto(track, trackParFourth, activateQA, hDeuteronITSPID, hDeuteronTPCPID, hDeuteronTOFPID, kDeuteronForFemto);
+          bool isProton = helper.isSelectedTrack4Femto(track, trackParFourth, activateQA, hProtonTPCPID, hProtonTOFPID, kProtonForFemto);
+          bool isDeuteron = helper.isSelectedTrack4Femto(track, trackParFourth, activateQA, hDeuteronTPCPID, hDeuteronTOFPID, kDeuteronForFemto);
 
           if (isProton && track.collisionId() == thisCollId) {
             for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto3P]; ++iHypo) {
