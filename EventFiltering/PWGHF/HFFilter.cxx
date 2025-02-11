@@ -43,8 +43,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/PIDResponseITS.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -980,9 +978,10 @@ struct HfFilter { // Main struct for HF triggers
         } // end high-pT selection
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+        auto tracksWithItsPid = soa::Attach<BigTracksPID, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
 
         for (const auto& trackId : trackIdsThisCollision) { // start loop over track indices as associated to this collision in HF code
-          auto track = tracks.rawIteratorAt(trackId.trackId());
+          auto track = tracksWithItsPid.rawIteratorAt(trackId.trackId());
           if (track.globalIndex() == trackFirst.globalIndex() || track.globalIndex() == trackSecond.globalIndex() || track.globalIndex() == trackThird.globalIndex()) {
             continue;
           }
