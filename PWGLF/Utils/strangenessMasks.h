@@ -58,6 +58,7 @@ enum selectionsCombined : int { selV0CosPA = 0,
                                 selPhysPrimAntiLambda, // for mc tagging
                                 selPosEta,
                                 selNegEta,
+                                selDauDCA,
                                 // cascade selections
                                 selCascCosPA,
                                 selMassWinXi,
