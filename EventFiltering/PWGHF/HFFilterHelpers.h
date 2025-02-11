@@ -281,11 +281,14 @@ static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlu
 static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
 
 // PID cuts
-constexpr float cutsNsigma[3][7] = {{3., 3., 3., 5., 3., 3., 5.},             // TPC proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron
-                                    {3., 3., 3., 2.5, 3., 3., 5.},            // TOF proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron
-                                    {999., 999., 999., 2.5, 999., 999., 5.}}; // Sum in quadrature of TPC and TOF (used only for femto selected proton and deuteron for pT < 4 GeV/c)
+constexpr float cutsNsigma[4][7] = {
+  {3., 3., 3., 5., 3., 3., 5.},            // TPC proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron
+  {3., 3., 3., 2.5, 3., 3., 5.},           // TOF proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron
+  {999., 999., 999., 2.5, 999., 999., 5.}, // Sum in quadrature of TPC and TOF (used only for femto selected proton and deuteron for pT < 4 GeV/c)
+  {999., 999., 999., 999., 999., 999., 4.} // used only for femto selected deuteron for less than pt threshold
+};
 static const std::vector<std::string> labelsColumnsNsigma = {"PrFromLc", "PiKaFromDZero", "KaFrom3Prong", "PrForFemto", "PiKaFromCharmBaryon", "SoftKaonFromXicResoToSigmaC", "DeForFemto"};
-static const std::vector<std::string> labelsRowsNsigma = {"TPC", "TOF", "Comb"};
+static const std::vector<std::string> labelsRowsNsigma = {"TPC", "TOF", "Comb", "ITS"};
 
 // high pt
 constexpr float cutsHighPtThresholds[1][2] = {{8., 8.}}; // 2-prongs, 3-prongs
@@ -436,8 +439,8 @@ class HfFilterHelper
     mPtMaxCharmBaryonBachelor = maxPt;
   }
 
-  void setNsigmaProtonCutsForFemto(std::array<float, 3> nSigmaCuts) { mNSigmaPrCutsForFemto = nSigmaCuts; }
-  void setNsigmaDeuteronCutsForFemto(std::array<float, 3> nSigmaCuts) { mNSigmaDeCutsForFemto = nSigmaCuts; }
+  void setNsigmaProtonCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaPrCutsForFemto = nSigmaCuts; }
+  void setNsigmaDeuteronCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaDeCutsForFemto = nSigmaCuts; }
   void setNsigmaProtonCutsForCharmBaryons(float nSigmaTpc, float nSigmaTof)
   {
     mNSigmaTpcPrCutForCharmBaryons = nSigmaTpc;
@@ -633,8 +636,8 @@ class HfFilterHelper
   float mPtMinSigmaC2520Zero{0.f};                                                // pt min SigmaC(2520)0 candidate
   float mPtMinSigmaCPlusPlus{0.f};                                                // pt min SigmaC++ candidate
   float mPtMinSigmaC2520PlusPlus{0.f};                                            // pt min SigmaC(2520)++ candidate
-  std::array<float, 3> mNSigmaPrCutsForFemto{3., 3., 3.};                         // cut values for Nsigma TPC, TOF, combined for femto protons
-  std::array<float, 3> mNSigmaDeCutsForFemto{3., 3., 3.};                         // cut values for Nsigma TPC, TOF, combined for femto deuterons
+  std::array<float, 4> mNSigmaPrCutsForFemto{3., 3., 3., 4.};                     // cut values for Nsigma TPC, TOF, combined, ITS for femto protons
+  std::array<float, 4> mNSigmaDeCutsForFemto{3., 3., 3., 4.};                     // cut values for Nsigma TPC, TOF, combined, ITS for femto deuterons
   float mNSigmaTpcPrCutForCharmBaryons{3.};                                       // maximum Nsigma TPC for protons in Lc and Xic decays
   float mNSigmaTofPrCutForCharmBaryons{3.};                                       // maximum Nsigma TOF for protons in Lc and Xic decays
   float mNSigmaTpcKaCutFor3Prongs{3.};                                            // maximum Nsigma TPC for kaons in 3-prong decays
@@ -802,7 +805,7 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
 {
   float pt = trackPar.getPt();
   float ptMin, ptMax, ptThresholdPidStrategy;
-  std::array<float, 3> nSigmaCuts;
+  std::array<float, 4> nSigmaCuts;
   bool forceTof = false; // flag to force TOF PID
 
   // Assign particle-specific parameters
@@ -838,6 +841,7 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
     return false; // use only global tracks
   }
   // PID evaluation
+  float NSigmaITS = (trackSpecies == kProtonForFemto) ? track.itsNSigmaPr() : track.itsNSigmaDe(); // only used for deuteron
   float NSigmaTPC = (trackSpecies == kProtonForFemto) ? track.tpcNSigmaPr() : track.tpcNSigmaDe();
   float NSigmaTOF = (trackSpecies == kProtonForFemto) ? track.tofNSigmaPr() : track.tofNSigmaDe();
   if (!forceTof && !track.hasTOF()) {
@@ -872,7 +876,7 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
   if (trackSpecies == kDeuteronForFemto) {
     // Apply different PID strategy in different pt range
     if (pt <= ptThresholdPidStrategy) {
-      if (std::fabs(NSigmaTPC) > nSigmaCuts[0]) { // Use only TPC below the threshold
+      if (std::fabs(NSigmaTPC) > nSigmaCuts[0] && std::fabs(NSigmaITS) > nSigmaCuts[3]) { // Use TPC and ITS below the threshold
         return false;
       }
     } else {
