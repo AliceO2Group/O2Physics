@@ -1283,6 +1283,9 @@ struct hadronnucleicorrelation {
   }
   PROCESS_SWITCH(hadronnucleicorrelation, processMC, "processMC", false);
 
+  Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
+  SliceCache cache;
+
   void processGen(SimCollisions const& mcCollisions,
                   SimParticles const& mcParticles)
   {
