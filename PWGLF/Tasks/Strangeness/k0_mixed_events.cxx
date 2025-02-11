@@ -676,7 +676,7 @@ struct K0MixedEvents {
   }
   PROCESS_SWITCH(K0MixedEvents, processDerived, "process derived", true);
 
-  using RecoCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
+  using RecoCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
 
   void processData(RecoTracks const& tracks, RecoCollisions const& collisions, BCsWithTimestamps const& bcs)
   {
