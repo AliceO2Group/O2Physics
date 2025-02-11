@@ -54,6 +54,7 @@
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
+using namespace o2::soa;
 using namespace o2::analysis;
 using namespace o2::aod::hffilters;
 using namespace o2::framework;
@@ -493,7 +494,7 @@ struct HfFilter { // Main struct for HF triggers
         auto massD0BarCand = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massKa, massPi});
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-        const auto& tracksWithItsPid = soa::Attach<BigTracksPID, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
+        auto tracksWithItsPid = soa::Attach<BigTracksPID, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
         for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
           auto track = tracksWithItsPid.rawIteratorAt(trackId.trackId());
 
