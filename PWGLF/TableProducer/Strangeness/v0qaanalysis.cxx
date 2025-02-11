@@ -74,7 +74,7 @@ struct LfV0qaanalysis {
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "TFBorder");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "ITSROFBorder");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "isTOFVertexMatched");
-    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(8, "isGoodZvtxFT0vsPV");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(8, "isNoSameBunchPileup");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(9, "Applied selection");
 
     registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
@@ -134,14 +134,16 @@ struct LfV0qaanalysis {
 
   // Event selection criteria
   Configurable<float> cutzvertex{"cutzvertex", 15.0f, "Accepted z-vertex range (cm)"};
+  Configurable<float> MCcutzvertex{"MCcutzvertex", 100.0f, "Accepted true MC z-vertex range (cm)"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
   Configurable<bool> isMC{"isMC", 0, "Is MC"};
   Configurable<bool> isTriggerTVX{"isTriggerTVX", 1, "Is Trigger TVX"};
   Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", 1, "Is No Time Frame Border"};
   Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 1, "Is No ITS Readout Frame Border"};
   Configurable<bool> isVertexTOFmatched{"isVertexTOFmatched", 0, "Is Vertex TOF matched"};
-  Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 0, "isGoodZvtxFT0vsPV"};
+  Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", 0, "isNoSameBunchPileup"};
   Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
+  Configurable<bool> NotITSAfterburner{"NotITSAfterburner", 0, "NotITSAfterburner"};
 
   // V0 selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
@@ -172,7 +174,7 @@ struct LfV0qaanalysis {
       return false;
     }
     registry.fill(HIST("hNEvents"), 4.5);
-    if (!isMC && isNoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+    if (isNoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
     registry.fill(HIST("hNEvents"), 5.5);
@@ -180,7 +182,7 @@ struct LfV0qaanalysis {
       return false;
     }
     registry.fill(HIST("hNEvents"), 6.5);
-    if (isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (isNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     registry.fill(HIST("hNEvents"), 7.5);
@@ -235,6 +237,10 @@ struct LfV0qaanalysis {
       bool isPhysicalPrimary = isMC;
       bool isDauK0Short = false, isDauLambda = false, isDauAntiLambda = false;
 
+      if (NotITSAfterburner && (v0.negTrack_as<DauTracks>().isITSAfterburner() || v0.posTrack_as<DauTracks>().isITSAfterburner())) {
+        continue;
+      }
+
       if (v0.v0radius() > v0radius &&
           v0.v0cosPA() > v0cospa &&
           TMath::Abs(v0.posTrack_as<DauTracks>().eta()) < etadau &&
@@ -253,7 +259,13 @@ struct LfV0qaanalysis {
               v0.negTrack_as<DauTracks>().tofNSigmaPr(), v0.posTrack_as<DauTracks>().tofNSigmaPr(),
               v0.negTrack_as<DauTracks>().tofNSigmaPi(), v0.posTrack_as<DauTracks>().tofNSigmaPi(),
               v0.posTrack_as<DauTracks>().hasTOF(), v0.negTrack_as<DauTracks>().hasTOF(), lPDG, isDauK0Short, isDauLambda, isDauAntiLambda, isPhysicalPrimary,
-              collision.centFT0M(), collision.centFV0A(), evFlag, v0.alpha(), v0.qtarm());
+              collision.centFT0M(), collision.centFV0A(), evFlag, v0.alpha(), v0.qtarm(),
+              v0.posTrack_as<DauTracks>().tpcNClsCrossedRows(), v0.posTrack_as<DauTracks>().tpcCrossedRowsOverFindableCls(),
+              v0.posTrack_as<DauTracks>().tpcNClsShared(), v0.posTrack_as<DauTracks>().itsChi2NCl(),
+              v0.posTrack_as<DauTracks>().tpcChi2NCl(),
+              v0.negTrack_as<DauTracks>().tpcNClsCrossedRows(), v0.negTrack_as<DauTracks>().tpcCrossedRowsOverFindableCls(),
+              v0.negTrack_as<DauTracks>().tpcNClsShared(), v0.negTrack_as<DauTracks>().itsChi2NCl(),
+              v0.negTrack_as<DauTracks>().tpcChi2NCl());
       }
     }
   }
@@ -304,6 +316,10 @@ struct LfV0qaanalysis {
         }
 
         if (v0.v0Type() != v0TypeSelection) {
+          continue;
+        }
+
+        if (NotITSAfterburner && (v0.negTrack_as<DauTracks>().isITSAfterburner() || v0.posTrack_as<DauTracks>().isITSAfterburner())) {
           continue;
         }
 
@@ -383,7 +399,13 @@ struct LfV0qaanalysis {
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPr(), v0.posTrack_as<DauTracksMC>().tofNSigmaPr(),
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPi(), v0.posTrack_as<DauTracksMC>().tofNSigmaPi(),
                 v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isDauK0Short, isDauLambda, isDauAntiLambda, isprimary,
-                mcCollision.centFT0M(), cent, evFlag, v0.alpha(), v0.qtarm());
+                mcCollision.centFT0M(), cent, evFlag, v0.alpha(), v0.qtarm(),
+                v0.posTrack_as<DauTracks>().tpcNClsCrossedRows(), v0.posTrack_as<DauTracks>().tpcCrossedRowsOverFindableCls(),
+                v0.posTrack_as<DauTracks>().tpcNClsShared(), v0.posTrack_as<DauTracks>().itsChi2NCl(),
+                v0.posTrack_as<DauTracks>().tpcChi2NCl(),
+                v0.negTrack_as<DauTracks>().tpcNClsCrossedRows(), v0.negTrack_as<DauTracks>().tpcCrossedRowsOverFindableCls(),
+                v0.negTrack_as<DauTracks>().tpcNClsShared(), v0.negTrack_as<DauTracks>().itsChi2NCl(),
+                v0.negTrack_as<DauTracks>().tpcChi2NCl());
         }
       }
 
@@ -432,7 +454,7 @@ struct LfV0qaanalysis {
 
     registry.fill(HIST("hNEventsMCGen"), 0.5);
 
-    if (TMath::Abs(mcCollision.posZ()) > cutzvertex) {
+    if (TMath::Abs(mcCollision.posZ()) > MCcutzvertex) {
       return;
     }
     registry.fill(HIST("hNEventsMCGen"), 1.5);
