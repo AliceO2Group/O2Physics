@@ -102,7 +102,7 @@ struct LFNucleiBATask {
     // Configurable<float> nsigmaITSTr{"nsigmaITSTr", 3.f, "Value of the Nsigma ITS cut for tritons ( > nSigmaITSTr)"};
     Configurable<bool> useITSHeCut{"useITSHeCut", false, "Select Helium if compatible with helium hypothesis (via SigmaITS)"};
     Configurable<float> nsigmaITSHe{"nsigmaITSHe", -1.f, "Value of the Nsigma ITS cut for helium-3 ( > nSigmaITSHe)"};
-    Configurable<bool> showAverageClusterSize{"showAverageClusterSize", false, "Show average cluster size"}
+    Configurable<bool> showAverageClusterSize{"showAverageClusterSize", false, "Show average cluster size"};
   } nsigmaITSvar;
 
   // Set additional cuts (used for debug)
