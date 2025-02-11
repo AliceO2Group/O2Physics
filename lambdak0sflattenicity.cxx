@@ -1192,6 +1192,7 @@ struct Lambdak0sflattenicity {
 
     flattenicity =
       1.0 - getFlatenicity({rhoLatticeFV0AMC.data(), rhoLatticeFV0AMC.size()});
+
     rEventSelection.fill(HIST("hTrueFV0amplvsFlat"), multFV0, estimator[2]);
     return flattenicity;
   }
@@ -1204,19 +1205,15 @@ struct Lambdak0sflattenicity {
                         nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
                         aod::v0data::dcaV0daughters < v0setting_dcav0dau);
 
-  Filter trackFilter =
-    (nabs(aod::track::eta) < cfgTrkEtaCut && aod::track::pt > cfgTrkLowPtCut);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut && aod::track::pt > cfgTrkLowPtCut);
 
-  using TrackCandidates = soa::Filtered<
-    soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA,
-              aod::TrackSelection, aod::pidTPCPi, aod::pidTPCPr>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA,
+                                                  aod::TrackSelection, aod::pidTPCPi, aod::pidTPCPr>>;
 
-  void processDataRun3(
-    soa::Join<aod::Collisions, aod::EvSels,
-              aod::PVMults>::iterator const& collision,
-    soa::Filtered<aod::V0Datas> const& V0s, TrackCandidates const& tracks,
-    soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/, aod::FT0s const& /*ft0s*/,
-    aod::FV0As const& /*fv0s*/)
+  void processDataRun3(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>::iterator const& collision,
+                       soa::Filtered<aod::V0Datas> const& V0s, TrackCandidates const& tracks,
+                       soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/, aod::FT0s const& /*ft0s*/,
+                       aod::FV0As const& /*fv0s*/)
   {
     if (applyEvSel &&
         !(isEventSelected(collision))) { // Checking if the event passes the
