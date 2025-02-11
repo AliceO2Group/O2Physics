@@ -138,29 +138,29 @@ struct v0postprocessing {
         continue;
       if (TMath::Abs(candidate.v0negeta()) > etadau)
         continue;
-      if (TMath::Abs(candidate.v0positshits()) < minITShits)
+      if (candidate.v0positshits() < minITShits)
         continue;
-      if (TMath::Abs(candidate.v0negitshits()) < minITShits)
+      if (candidate.v0negitshits() < minITShits)
         continue;
-      if (TMath::Abs(candidate.v0postpcCrossedRows()) < min_TPC_nClusters)
+      if (candidate.v0postpcCrossedRows() < min_TPC_nClusters)
         continue;
-      if (TMath::Abs(candidate.v0negtpcCrossedRows()) < min_TPC_nClusters)
+      if (candidate.v0negtpcCrossedRows() < min_TPC_nClusters)
         continue;
-      if (TMath::Abs(candidate.v0postpcCRFindCls()) < min_TPC_nCrossedRowsOverFindableCls)
+      if (candidate.v0postpcCRFindCls() < min_TPC_nCrossedRowsOverFindableCls)
         continue;
-      if (TMath::Abs(candidate.v0negtpcCRFindCls()) < min_TPC_nCrossedRowsOverFindableCls)
+      if (candidate.v0negtpcCRFindCls() < min_TPC_nCrossedRowsOverFindableCls)
         continue;
-      if (TMath::Abs(candidate.v0postpcNClsShared()) > max_tpcSharedCls)
+      if (candidate.v0postpcNClsShared() > max_tpcSharedCls)
         continue;
-      if (TMath::Abs(candidate.v0negtpcNClsShared()) > max_tpcSharedCls)
+      if (candidate.v0negtpcNClsShared() > max_tpcSharedCls)
         continue;
-      if (TMath::Abs(candidate.v0positsChi2NCl()) > max_chi2_ITS)
+      if (candidate.v0positsChi2NCl() > max_chi2_ITS)
         continue;
-      if (TMath::Abs(candidate.v0negitsChi2NCl()) > max_chi2_ITS)
+      if (candidate.v0negitsChi2NCl() > max_chi2_ITS)
         continue;
-      if (TMath::Abs(candidate.v0postpcChi2NCl()) > max_chi2_TPC)
+      if (candidate.v0postpcChi2NCl() > max_chi2_TPC)
         continue;
-      if (TMath::Abs(candidate.v0negtpcChi2NCl()) > max_chi2_TPC)
+      if (candidate.v0negtpcChi2NCl() > max_chi2_TPC)
         continue;
       if (TMath::Abs(candidate.v0dcanegtopv()) < dcanegtopv)
         continue;
