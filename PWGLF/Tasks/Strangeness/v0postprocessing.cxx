@@ -31,7 +31,7 @@ using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::
 struct v0postprocessing {
 
   Configurable<float> radius{"radius", 0.5, "Radius"};
-  Configurable<float> maxradius{"maxradius", 0.5, "Radius"};
+  Configurable<float> maxradius{"maxradius", 1000, "Radius"};
   Configurable<float> dcanegtopv{"dcanegtopv", 0.05, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", 0.05, "DCA Pos To PV"};
   Configurable<double> cospaK0s{"cospaK0s", 0.97, "K0s CosPA"};
