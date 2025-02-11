@@ -818,7 +818,7 @@ struct PseudorapidityDensityMFT {
                         collision.posZ());
           ++moreThanOne;
         }
-    }
+      }
     }
     if (collisions.size() == 0) {
       registry.fill(HIST("NotFoundEventZvtx"), mcCollision.posZ());
