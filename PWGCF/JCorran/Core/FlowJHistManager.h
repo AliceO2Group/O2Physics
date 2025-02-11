@@ -161,7 +161,8 @@ class FlowJHistManager
         break;
     }
 
-    if (mDebugLog) LOGF(info, "The EventQA has been filled.");
+    if (mDebugLog)
+      LOGF(info, "The EventQA has been filled.");
   }
 
   /// \brief Hardcode the cBin for FillThisTrackQA if not constant.
