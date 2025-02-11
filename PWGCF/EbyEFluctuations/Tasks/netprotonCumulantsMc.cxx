@@ -32,6 +32,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/trackUtilities.h"
 #include "CommonConstants/PhysicsConstants.h"
@@ -133,8 +134,10 @@ struct NetprotonCumulantsMc {
   Configurable<float> cfgCutItsChi2NCl{"cfgCutItsChi2NCl", 36.0f, "Maximum ITSchi2NCl"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
-  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
+  Configurable<int> cfgITScluster{"cfgITScluster", 1, "Minimum Number of ITS cluster"};
+  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 80, "Minimum Number of TPC cluster"};
+  Configurable<int> cfgTPCnCrossedRows{"cfgTPCnCrossedRows", 70, "Minimum Number of TPC crossed-rows"};
+  Configurable<bool> cfgUseItsPid{"cfgUseItsPid", true, "Use ITS nSigma Cut"};
 
   // Calculation of cumulants central/error
   Configurable<int> cfgNSubsample{"cfgNSubsample", 10, "Number of subsamples for ERR"};
@@ -148,6 +151,8 @@ struct NetprotonCumulantsMc {
 
   Configurable<bool> cfgLoadEff{"cfgLoadEff", true, "Load efficiency from file"};
   Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
+
+  ConfigurableAxis cfgCentralityBins{"cfgCentralityBins", {90, 0., 90.}, "Centrality/Multiplicity percentile bining"};
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -207,11 +212,13 @@ struct NetprotonCumulantsMc {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
     std::vector<double> etaBinning = {-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
     AxisSpec etaAxis = {etaBinning, "#it{#eta}"};
-    std::vector<double> centBining = {0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90};
-    AxisSpec centAxis = {centBining, "Multiplicity percentile from FT0M (%)"};
+    // std::vector<double> centBining = {0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90};
+    // AxisSpec centAxis = {centBining, "Multiplicity percentile from FT0M (%)"};
+    const AxisSpec centAxis{cfgCentralityBins, "Multiplicity percentile from FT0M (%)"};
     AxisSpec netprotonAxis = {41, -20.5, 20.5, "net-proton number"};
     AxisSpec protonAxis = {21, -0.5, 20.5, "proton number"};
     AxisSpec antiprotonAxis = {21, -0.5, 20.5, "antiproton number"};
+    AxisSpec nSigmaAxis = {200, -5.0, 5.0, "nSigma(Proton)"};
 
     auto noSubsample = static_cast<int>(cfgNSubsample);
     float maxSubsample = 1.0 * noSubsample;
@@ -251,6 +258,11 @@ struct NetprotonCumulantsMc {
     histos.add("hrec2DEtaVsPtAntiproton", "2D hist of Reconstructed Anti-proton y: eta vs. x: pT", kTH2F, {ptAxis, etaAxis});
     histos.add("hgen2DEtaVsPtProton", "2D hist of Generated Proton y: eta vs. x: pT", kTH2F, {ptAxis, etaAxis});
     histos.add("hgen2DEtaVsPtAntiproton", "2D hist of Generated Anti-proton y: eta vs. x: pT", kTH2F, {ptAxis, etaAxis});
+
+    // 2D histograms of nSigma
+    histos.add("h2DnsigmaTpcVsPt", "2D hist of nSigmaTPC vs. pT", kTH2F, {ptAxis, nSigmaAxis});
+    histos.add("h2DnsigmaTofVsPt", "2D hist of nSigmaTOF vs. pT", kTH2F, {ptAxis, nSigmaAxis});
+    histos.add("h2DnsigmaItsVsPt", "2D hist of nSigmaITS vs. pT", kTH2F, {ptAxis, nSigmaAxis});
 
     if (cfgIsCalculateCentral) {
       // uncorrected
@@ -823,6 +835,48 @@ struct NetprotonCumulantsMc {
   template <typename T>
   bool selectionPIDold(const T& candidate)
   {
+    if (!candidate.hasTPC())
+      return false;
+
+    //! PID checking as done in Run2 my analysis
+    //! ----------------------------------------------------------------------
+    int flag = 0; //! pid check main flag
+
+    if (candidate.pt() > 0.2f && candidate.pt() <= cfgCutPtUpperTPC) {
+      if (std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC) {
+        flag = 1;
+      }
+    }
+    if (candidate.hasTOF() && candidate.pt() > cfgCutPtUpperTPC && candidate.pt() < 5.0f) {
+      const float combNSigmaPr = std::sqrt(std::pow(candidate.tpcNSigmaPr(), 2.0) + std::pow(candidate.tofNSigmaPr(), 2.0));
+      const float combNSigmaPi = std::sqrt(std::pow(candidate.tpcNSigmaPi(), 2.0) + std::pow(candidate.tofNSigmaPi(), 2.0));
+      const float combNSigmaKa = std::sqrt(std::pow(candidate.tpcNSigmaKa(), 2.0) + std::pow(candidate.tofNSigmaKa(), 2.0));
+
+      int flag2 = 0;
+      if (combNSigmaPr < 3.0)
+        flag2 += 1;
+      if (combNSigmaPi < 3.0)
+        flag2 += 1;
+      if (combNSigmaKa < 3.0)
+        flag2 += 1;
+      if (!(flag2 > 1) && !(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa)) {
+        if (combNSigmaPr < cfgnSigmaCutCombTPCTOF) {
+          flag = 1;
+        }
+      }
+    }
+    if (flag == 1)
+      return true;
+    else
+      return false;
+  }
+
+  template <typename T>
+  bool selectionPIDoldTOFveto(const T& candidate)
+  {
+    if (!candidate.hasTPC())
+      return false;
+
     //! PID checking as done in Run2 my analysis
     //! ----------------------------------------------------------------------
     int flag = 0; //! pid check main flag
@@ -860,7 +914,7 @@ struct NetprotonCumulantsMc {
   }
 
   template <typename T>
-  bool selectionPIDnew(const T& candidate)
+  bool selectionPIDnew(const T& candidate) // Victor's BF analysis
   {
     // electron rejection
     if (candidate.tpcNSigmaEl() > -3.0f && candidate.tpcNSigmaEl() < 5.0f && std::abs(candidate.tpcNSigmaPi()) > 3.0f && std::abs(candidate.tpcNSigmaKa()) > 3.0f && std::abs(candidate.tpcNSigmaPr()) > 3.0f) {
@@ -906,12 +960,12 @@ struct NetprotonCumulantsMc {
       // Find the pt bin index based on the track's pt value
       int binIndex = -1;
       // Get the array from the Configurable
-      auto ptBins = (std::vector<float>)cfgPtBins;
-      auto effProt = (std::vector<float>)cfgProtonEff;
-      auto effAntiprot = (std::vector<float>)cfgAntiprotonEff;
+      // auto ptBins = (std::vector<float>)cfgPtBins;
+      // auto effProt = (std::vector<float>)cfgProtonEff;
+      // auto effAntiprot = (std::vector<float>)cfgAntiprotonEff;
 
       for (int i = 0; i < 16; ++i) {
-        if (candidate.pt() >= ptBins[i] && candidate.pt() < ptBins[i + 1]) {
+        if (candidate.pt() >= cfgPtBins.value[i] && candidate.pt() < cfgPtBins.value[i + 1]) {
           binIndex = i;
           break;
         }
@@ -921,9 +975,9 @@ struct NetprotonCumulantsMc {
         return 0.0; // Default efficiency (0% if outside bins)
       }
       if (candidate.sign() > 0)
-        return effProt[binIndex];
+        return cfgProtonEff.value[binIndex];
       if (candidate.sign() < 0)
-        return effAntiprot[binIndex];
+        return cfgAntiprotonEff.value[binIndex];
       return 0.0;
     }
   }
@@ -1030,8 +1084,8 @@ struct NetprotonCumulantsMc {
 
     if (cfgIsCalculateError) {
 
-      float l_Random = fRndm->Rndm();
-      int sampleIndex = static_cast<int>(cfgNSubsample * l_Random);
+      float lRandom = fRndm->Rndm();
+      int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
 
       histos.get<TProfile2D>(HIST("GenProf2D_mu1_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 1.0));
       histos.get<TProfile2D>(HIST("GenProf2D_mu2_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 2.0));
@@ -1052,6 +1106,8 @@ struct NetprotonCumulantsMc {
 
   void processMCRec(MyMCRecCollision const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
+    // auto tracksWithITSPid = soa::Attach<MyMCTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(tracks);
+
     if (!collision.sel8()) {
       return;
     }
@@ -1071,6 +1127,8 @@ struct NetprotonCumulantsMc {
     std::array<float, 7> fTCP0 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     std::array<float, 7> fTCP1 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
+    o2::aod::ITSResponse itsResponse;
+
     // Start of the Monte-Carlo reconstructed tracks
     for (const auto& track : tracks) {
       if (!track.has_mcParticle()) //! check if track has corresponding MC particle
@@ -1086,6 +1144,10 @@ struct NetprotonCumulantsMc {
       if ((particle.pt() < cfgCutPtLower) || (particle.pt() > 5.0f) || (std::abs(particle.eta()) > 0.8f)) {
         continue;
       }
+      if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows)) {
+        continue;
+      }
+
       if (particle.isPhysicalPrimary()) {
         histos.fill(HIST("hrecPartPtAll"), particle.pt());
         histos.fill(HIST("hrecPtAll"), track.pt());
@@ -1096,12 +1158,24 @@ struct NetprotonCumulantsMc {
 
         bool trackSelected = false;
         if (cfgPIDchoice == 0)
-          trackSelected = selectionPIDold(track);
+          trackSelected = selectionPIDoldTOFveto(track);
         if (cfgPIDchoice == 1)
           trackSelected = selectionPIDnew(track);
+        if (cfgPIDchoice == 2)
+          trackSelected = selectionPIDold(track);
+
+        if (cfgUseItsPid) {
+          if (std::abs(itsResponse.nSigmaITS<o2::track::PID::Proton>(track)) > 3.0)
+            continue;
+        }
 
         if (trackSelected) {
           recEbyeCompleteCollisions(recCollisions.lastIndex(), particle.pt(), particle.eta(), track.sign());
+          // filling nSigma distribution
+          histos.fill(HIST("h2DnsigmaTpcVsPt"), track.pt(), track.tpcNSigmaPr());
+          histos.fill(HIST("h2DnsigmaTofVsPt"), track.pt(), track.tofNSigmaPr());
+          histos.fill(HIST("h2DnsigmaItsVsPt"), track.pt(), itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
+
           if (track.sign() > 0) {
             histos.fill(HIST("hrecPartPtProton"), particle.pt()); //! hist for p rec
             histos.fill(HIST("hrecPtProton"), track.pt());        //! hist for p rec
@@ -1959,6 +2033,8 @@ struct NetprotonCumulantsMc {
 
   void processDataRec(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
   {
+    // auto inputTracksWithPid = soa::Attach<AodTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(inputTracks);
+
     if (!coll.sel8()) {
       return;
     }
@@ -1982,6 +2058,8 @@ struct NetprotonCumulantsMc {
     std::array<float, 7> fTCP0 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     std::array<float, 7> fTCP1 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
+    o2::aod::ITSResponse itsResponse;
+
     // Start of the Monte-Carlo reconstructed tracks
     for (const auto& track : inputTracks) {
       if (!track.isPVContributor()) //! track check as used in data
@@ -1989,6 +2067,9 @@ struct NetprotonCumulantsMc {
         continue;
       }
       if ((track.pt() < cfgCutPtLower) || (track.pt() > 5.0f) || (std::abs(track.eta()) > 0.8f)) {
+        continue;
+      }
+      if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows)) {
         continue;
       }
 
@@ -2000,12 +2081,23 @@ struct NetprotonCumulantsMc {
 
       bool trackSelected = false;
       if (cfgPIDchoice == 0)
-        trackSelected = selectionPIDold(track);
+        trackSelected = selectionPIDoldTOFveto(track);
       if (cfgPIDchoice == 1)
         trackSelected = selectionPIDnew(track);
+      if (cfgPIDchoice == 2)
+        trackSelected = selectionPIDold(track);
+
+      if (cfgUseItsPid) {
+        if (std::abs(itsResponse.nSigmaITS<o2::track::PID::Proton>(track)) > 3.0)
+          continue;
+      }
 
       if (trackSelected) {
         recEbyeCompleteCollisions(recCollisions.lastIndex(), track.pt(), track.eta(), track.sign());
+        // filling nSigma distribution
+        histos.fill(HIST("h2DnsigmaTpcVsPt"), track.pt(), track.tpcNSigmaPr());
+        histos.fill(HIST("h2DnsigmaTofVsPt"), track.pt(), track.tofNSigmaPr());
+        histos.fill(HIST("h2DnsigmaItsVsPt"), track.pt(), itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
 
         // for protons
         if (track.sign() > 0) {

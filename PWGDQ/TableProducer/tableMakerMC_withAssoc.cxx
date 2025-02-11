@@ -1077,6 +1077,7 @@ struct TableMakerMC {
     if constexpr (static_cast<bool>(TMuonFillMap)) {
       fFwdTrackIndexMap.clear();
       fFwdTrackFilterMap.clear();
+      fBestMatch.clear();
       muonBasic.reserve(muons.size());
       muonExtra.reserve(muons.size());
       muonCov.reserve(muons.size());
