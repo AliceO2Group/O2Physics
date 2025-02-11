@@ -21,7 +21,7 @@ using namespace o2;
 using namespace o2::framework;
 
 /// \brief Create the histograms in the QA registry.
-void FlowJHistManager::CreateHistQA()
+void FlowJHistManager::createHistQA()
 {
   // Security checks for proper use of the method.
   if (!mHistRegistryQA) {
@@ -60,7 +60,7 @@ void FlowJHistManager::CreateHistQA()
   mHistRegistryQA->add("Centrality_00-01/After/histEta", "Pseudorapidity",
                        HistType::kTH1F, {axisEta}, true);
 
-  const AxisSpec axisPhi = {100, 0., 2. * M_PI, "#varphi"};
+  const AxisSpec axisPhi = {100, 0., o2::constants::math::twopi, "#varphi"};
   mHistRegistryQA->add("Centrality_00-01/After/histPhi", "Azimuthal angles (no NUA)",
                        HistType::kTH1F, {axisPhi}, true);
 
@@ -154,7 +154,7 @@ void FlowJHistManager::CreateHistQA()
 /// \brief Get the centrality bin value corresponding to the percentile.
 /// \param Centrality percentile of the collision.
 /// \return Bin for the histograms,...
-int FlowJHistManager::GetCentBin(float cValue)
+int FlowJHistManager::getCentBin(float cValue)
 {
   const float centClasses[] = {0., 1., 2., 5., 10., 20., 30., 40., 50., 60., 70.};
 

@@ -85,7 +85,7 @@ class FlowJSPCObservables
         memcpy(harmonicArray, harmonicArray03, sizeof(int) * maxNrComb * 8);
       } break;
       default:
-        LOGF(error,"ERROR: Invalid configuration index. Skipping this element.");
+        LOGF(error, "ERROR: Invalid configuration index. Skipping this element.");
     }
   }
 
