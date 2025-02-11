@@ -98,7 +98,7 @@ struct Derivedupcanalysis {
   Configurable<float> rapidityCut{"rapidityCut", 0.5, "rapidity"};
   Configurable<float> daughterEtaCut{"daughterEtaCut", 0.8, "max eta for daughters"};
 
-  Configurable<bool> doDaughterDCA{"daughterDCAxy", true, "dcaXY cut for daughter tracks"};
+  Configurable<bool> doDaughterDCA{"doDaughterDCA", true, "dcaXY cut for daughter tracks"};
 
   // Standard V0 topological criteria
   struct : ConfigurableGroup {
@@ -1751,7 +1751,7 @@ struct Derivedupcanalysis {
 
     fillHistogramsQA(collision, selGapSide);
 
-    for (auto& casc : fullCascades) {
+    for (const auto& casc : fullCascades) {
       std::bitset<kSelNum> selMap = computeBitmapCascade(casc, collision);
       // the candidate may belong to any particle species
       setBits(selMap, {selConsiderXi, selConsiderAntiXi, selConsiderOmega, selConsiderAntiOmega,
