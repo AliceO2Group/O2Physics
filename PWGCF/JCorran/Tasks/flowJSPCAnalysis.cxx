@@ -53,22 +53,22 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
 
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::JWeights>;
 
-struct flowJSPCAnalysis {
-  HistogramRegistry SPCHistograms{"SPCResults", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+struct FlowJSPCAnalysis {
+  HistogramRegistry spcHistograms{"SPCResults", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   FlowJSPCAnalysis spcAnalysis;
   FlowJSPCAnalysis::JQVectorsT jqvecs;
   template <class T>
-  using hasWeightNUA = decltype(std::declval<T&>().weightNUA());
+  using HasWeightNUA = decltype(std::declval<T&>().weightNUA());
 
   HistogramRegistry qaHistRegistry{"qaHistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   FlowJHistManager histManager;
 
-  FlowJSPCObservables SPCobservables;
+  FlowJSPCObservables spcObservables;
 
   // Set Configurables here
   Configurable<bool> cfgFillQA{"cfgFillQA", true, "Fill QA plots"};
 
-  Configurable<Int_t> cfgWhichSPC{"cfgWhichSPC", 0, "Which SPC observables to compute."};
+  Configurable<int> cfgWhichSPC{"cfgWhichSPC", 0, "Which SPC observables to compute."};
 
   struct : ConfigurableGroup {
     Configurable<float> cfgPtMin{"cfgPtMin", 0.2f, "Minimum pT used for track selection."};
@@ -76,12 +76,6 @@ struct flowJSPCAnalysis {
     Configurable<float> cfgEtaMax{"cfgEtaMax", 0.8f, "Maximum eta used for track selection."};
   } cfgTrackCuts;
 
-  // The centrality estimators are the ones available for Run 3.
-  enum centEstimators { FT0M,
-                        FT0A,
-                        FT0C,
-                        FDDM,
-                        NTPV };
   struct : ConfigurableGroup {
     Configurable<int> cfgCentEst{"cfgCentEst", 2, "Centrality estimator."};
     Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.0f, "Maximum primary vertex cut applied for the events."};
@@ -120,15 +114,15 @@ struct flowJSPCAnalysis {
     if (cent < 0. || cent > 70.) {
       return;
     }
-    Int_t cBin = histManager.GetCentBin(cent);
+    int cBin = histManager.GetCentBin(cent);
     SPCHistograms.fill(HIST("FullCentrality"), cent);
     int nTracks = tracks.size();
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (cfgFillQA) {
         // histManager.FillTrackQA<0>(track, cBin, collision.posZ());
 
         using JInputClassIter = typename TrackT::iterator;
-        if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value) {
+        if constexpr (std::experimental::is_detected<HasWeightNUA, const JInputClassIter>::value) {
           spcAnalysis.FillQAHistograms(cBin, track.phi(), 1. / track.weightNUA());
         }
       }
@@ -146,29 +140,29 @@ struct flowJSPCAnalysis {
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(flowJSPCAnalysis, processJDerived, "Process derived data", false);
+  PROCESS_SWITCH(FlowJSPCAnalysis, processJDerived, "Process derived data", false);
 
   void processJDerivedCorrected(aod::JCollision const& collision, soa::Filtered<soa::Join<aod::JTracks, aod::JWeights>> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(flowJSPCAnalysis, processJDerivedCorrected, "Process derived data with corrections", false);
+  PROCESS_SWITCH(FlowJSPCAnalysis, processJDerivedCorrected, "Process derived data with corrections", false);
 
   void processCFDerived(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(flowJSPCAnalysis, processCFDerived, "Process CF derived data", false);
+  PROCESS_SWITCH(FlowJSPCAnalysis, processCFDerived, "Process CF derived data", false);
 
   void processCFDerivedCorrected(aod::CFCollision const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(flowJSPCAnalysis, processCFDerivedCorrected, "Process CF derived data with corrections", true);
+  PROCESS_SWITCH(FlowJSPCAnalysis, processCFDerivedCorrected, "Process CF derived data with corrections", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<flowJSPCAnalysis>(cfgc)};
+    adaptAnalysisTask<FlowJSPCAnalysis>(cfgc)};
 }

@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 /// \author Jasper Parkkila (jparkkil@cern.ch)
 /// \since May 2024
+// o2-linter: disable='doc/file'
 
 #include <experimental/type_traits>
 #include <string>
@@ -41,7 +42,7 @@ using namespace o2::framework::expressions;
 
 // The standalone jfluc code expects the entire list of tracks for an event. At the same time, it expects weights together with other track attributes.
 // This workflow creates a table of weights that can be joined with track tables.
-struct jflucWeightsLoader {
+struct JflucWeightsLoader {
   O2_DEFINE_CONFIGURABLE(cfgPathPhiWeights, std::string, "http://alice-ccdb.cern.ch", "Local (local://) or CCDB path for the phi acceptance correction histogram");
   O2_DEFINE_CONFIGURABLE(cfgForRunNumber, bool, false, "Get CCDB object by run");
   O2_DEFINE_CONFIGURABLE(cfgCCDBPath, std::string, "Users/m/mavirta/corrections/NUA/LHC23zzh", "Internal path in CCDB");
@@ -53,7 +54,7 @@ struct jflucWeightsLoader {
   bool useCCDB = false;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  ~jflucWeightsLoader()
+  ~JflucWeightsLoader()
   {
     if (ph)
       delete ph;
@@ -67,8 +68,9 @@ struct jflucWeightsLoader {
   {
     if (cfgForRunNumber) {
       ph = ccdb->getForRun<THnF>(cfgCCDBPath, runNum);
-    } else
+    } else {
       ph = ccdb->getForTimeStamp<THnF>(cfgCCDBPath, ts);
+    }
   }
 
   void init(InitContext const&)
@@ -102,7 +104,7 @@ struct jflucWeightsLoader {
   }
 
   template <class T>
-  using hasDecay = decltype(std::declval<T&>().decay());
+  using HasDecay = decltype(std::declval<T&>().decay());
 
   template <class ProducesT, class CollisionT, class TrackT>
   void loadWeights(Produces<ProducesT>& outputT, CollisionT const& collision, TrackT const& tracks)
@@ -126,10 +128,10 @@ struct jflucWeightsLoader {
         initCCDB(runNumber, timestamp);
       }
     }
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       float phiWeight, effWeight;
       if (ph) {
-        UInt_t partType = 0; // partType 0 = all charged hadrons
+        uint partType = 0; // partType 0 = all charged hadrons
         // TODO: code below to be enabled
         /*if constexpr (std::experimental::is_detected<hasDecay, typename TrackT::iterator>::value) {
           switch (track.decay()) {
@@ -141,7 +143,7 @@ struct jflucWeightsLoader {
               break;
           }
         }*/
-        const Double_t coords[] = {collision.multiplicity(), static_cast<Double_t>(partType), track.phi(), track.eta(), collision.posZ()};
+        const double coords[] = {collision.multiplicity(), static_cast<double>(partType), track.phi(), track.eta(), collision.posZ()};
         phiWeight = ph->GetBinContent(ph->GetBin(coords));
       } else {
         phiWeight = 1.0f;
@@ -158,23 +160,23 @@ struct jflucWeightsLoader {
   {
     loadWeights(output, collision, tracks);
   }
-  PROCESS_SWITCH(jflucWeightsLoader, processLoadWeights, "Load weights histograms for derived data table", false);
+  PROCESS_SWITCH(JflucWeightsLoader, processLoadWeights, "Load weights histograms for derived data table", false);
 
   void processLoadWeightsCF(aod::CFCollision const& collision, aod::CFTracks const& tracks)
   {
     loadWeights(output, collision, tracks);
   }
-  PROCESS_SWITCH(jflucWeightsLoader, processLoadWeightsCF, "Load weights histograms for CF derived data table", true);
+  PROCESS_SWITCH(JflucWeightsLoader, processLoadWeightsCF, "Load weights histograms for CF derived data table", true);
 
   Produces<aod::J2ProngWeights> output2p;
   void processLoadWeightsCF2Prong(aod::CFCollision const& collision, aod::CF2ProngTracks const& tracks2p)
   {
     loadWeights(output2p, collision, tracks2p);
   }
-  PROCESS_SWITCH(jflucWeightsLoader, processLoadWeightsCF2Prong, "Load weights histograms for CF derived 2-prong tracks data table", false);
+  PROCESS_SWITCH(JflucWeightsLoader, processLoadWeightsCF2Prong, "Load weights histograms for CF derived 2-prong tracks data table", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<jflucWeightsLoader>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<JflucWeightsLoader>(cfgc)};
 }
