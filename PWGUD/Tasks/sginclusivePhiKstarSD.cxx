@@ -34,20 +34,6 @@
 #include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/DataModel/PIDResponse.h"
-<<<<<<< HEAD
-=======
-#include <TString.h>
-#include "TLorentzVector.h"
-#include <TMath.h>
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/GenVector/Boost.h"
-#include <vector>
-<<<<<<< HEAD
-#include <altivec.h>
->>>>>>> 236e9ce6d ( mixed event and rotational bkg added)
-=======
->>>>>>> 66433cf15 (c++ related error removed)
 
 using namespace std;
 using namespace o2;
@@ -318,7 +304,10 @@ struct SGResonanceAnalyzer {
     if (use_tof && pt >= pt2 && pt < pt3 && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut3) {
       return true;
     }
-    if (pt > pt3 && use_tof && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < nsigmatof_cut) {
+    if (use_tof && pt >= pt3 && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
+      return true;
+    }
+    if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < nsigmatof_cut) {
       return true;
     }
     if (!use_tof && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
@@ -341,7 +330,10 @@ struct SGResonanceAnalyzer {
     if (use_tof && pt >= pt2 && pt < pt3 && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut3) {
       return true;
     }
-    if (pt > pt3 && use_tof && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < nsigmatof_cut) {
+    if (use_tof && pt >= pt3 && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
+      return true;
+    }
+    if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < nsigmatof_cut) {
       return true;
     }
     if (!use_tof && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
@@ -990,11 +982,7 @@ struct SGResonanceAnalyzer {
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {10, 0, 100}, "multiplicity percentile for bin"};
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
-<<<<<<< HEAD
   void mixprocess(UDCollisionsFull1 const& collisions, udtracksfull const& /*track*/)
-=======
-  void mixprocess(UDCollisionsFull1 const& collisions, udtracksfull const& track)
->>>>>>> 27bc84459 (mixed event and rotational bkg added)
   {
     TLorentzVector v0;
     TLorentzVector v1;
