@@ -9,14 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Strangeness in UPC analysis task
-// ================
-// This code is meant to be run over derived data.
-//
-//    Comments, questions, complaints, suggestions?
-//    Please write to:
-//    roman.nepeivoda@cern.ch
-//
+/// \file strange-yield-pbpb.cxx
+/// \brief Strangeness in UPC analysis task
+/// \author Roman Nepeivoda (roman.nepeivoda@cern.ch)
 
 #include <bitset>
 #include <TFile.h>
@@ -24,9 +19,9 @@
 #include <TProfile.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
 #include <vector>
 #include <algorithm>
+#include <cmath>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -52,26 +47,26 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using dauMCTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackMCIds, aod::DauTrackTPCPIDs>;
+using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+using DauMCTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackMCIds, aod::DauTrackTPCPIDs>;
 
-using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
-using v0CandidatesMC = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0CoreMCLabels, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers>;
+using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
+using V0CandidatesMC = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0CoreMCLabels, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers>;
 
-using cascadeCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascTOFPIDs, aod::CascTOFNSigmas>;
-using cascadeCandidatesMC = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascCoreMCLabels>;
+using CascadeCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascTOFPIDs, aod::CascTOFNSigmas>;
+using CascadeCandidatesMC = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascCoreMCLabels>;
 
-using cascMCCoresFull = soa::Join<aod::CascMCCores, aod::CascMCCollRefs>;
+using CascMCCoresFull = soa::Join<aod::CascMCCores, aod::CascMCCollRefs>;
 
-using straCollisonFull = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator;
-using straCollisonFullMC = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>::iterator;
+using StraCollisonFull = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator;
+using StraCollisonFullMC = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>::iterator;
 
-using straCollisonsFullMC = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>;
+using StraCollisonsFullMC = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>;
 
-using straMCCollisionsFull = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
-using v0MCCoresFull = soa::Join<aod::V0MCCores, aod::V0MCCollRefs>;
+using StraMCCollisionsFull = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
+using V0MCCoresFull = soa::Join<aod::V0MCCores, aod::V0MCCollRefs>;
 
-struct strangeYieldPbPb {
+struct Derivedupcanalysis {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // master analysis switches
@@ -114,12 +109,12 @@ struct strangeYieldPbPb {
     Configurable<float> v0radius{"v0radius", 1.2, "minimum V0 radius (cm)"};
     Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
     // Additional selection on the AP plot (exclusive for K0Short)
-    // original equation: lArmPt*5>fabs(lArmAlpha)
+    // original equation: lArmPt*5>std::fabs(lArmAlpha)
     Configurable<float> armPodCut{"armPodCut", 5.0f, "pT * (cut) > |alpha|, AP cut. Negative: no cut"};
     Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
   } v0cuts;
-  static constexpr float lifetimeCutsV0[1][2] = {{30., 20.}};
-  Configurable<LabeledArray<float>> lifetimecutV0{"lifetimecutV0", {lifetimeCutsV0[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecutV0"};
+  static constexpr float kLifetimeCutsV0[1][2] = {{30., 20.}};
+  Configurable<LabeledArray<float>> lifetimecutV0{"lifetimecutV0", {kLifetimeCutsV0[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecutV0"};
 
   // Standard cascade topological criteria
   struct : ConfigurableGroup {
@@ -139,16 +134,16 @@ struct strangeYieldPbPb {
     Configurable<float> rejcomp{"rejcomp", 0.008, "competing Cascade rejection"};
   } casccuts;
   Configurable<bool> doBachelorBaryonCut{"doBachelorBaryonCut", false, "Enable Bachelor-Baryon cut "};
-  static constexpr float nCtauCutsCasc[1][2] = {{6., 6.}};
-  Configurable<LabeledArray<float>> nCtauCutCasc{"nCtauCutCasc", {nCtauCutsCasc[0], 2, {"lifetimecutXi", "lifetimecutOmega"}}, "nCtauCutCasc"};
+  static constexpr float kNCtauCutsCasc[1][2] = {{6., 6.}};
+  Configurable<LabeledArray<float>> nCtauCutCasc{"nCtauCutCasc", {kNCtauCutsCasc[0], 2, {"lifetimecutXi", "lifetimecutOmega"}}, "nCtauCutCasc"};
 
   // UPC selections
   SGSelector sgSelector;
   struct : ConfigurableGroup {
-    Configurable<float> FV0cut{"FV0cut", 50., "FV0A threshold"};
-    Configurable<float> FT0Acut{"FT0Acut", 100., "FT0A threshold"};
-    Configurable<float> FT0Ccut{"FT0Ccut", 50., "FT0C threshold"};
-    Configurable<float> ZDCcut{"ZDCcut", 1., "ZDC threshold"};
+    Configurable<float> fv0a{"fv0a", 50., "FV0A threshold"};
+    Configurable<float> ft0a{"ft0a", 100., "FT0A threshold"};
+    Configurable<float> ft0c{"ft0c", 50., "FT0C threshold"};
+    Configurable<float> zdc{"zdc", 1., "ZDC threshold"};
     Configurable<int> genGapSide{"genGapSide", 0, "0 -- A, 1 -- C, 2 -- double"};
   } upcCuts;
 
@@ -164,13 +159,13 @@ struct strangeYieldPbPb {
 
   // PID (TPC/TOF)
   struct : ConfigurableGroup {
-    Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 1e+6, "TpcPidNsigmaCut"};
-    Configurable<float> TofPidNsigmaCutLaPr{"TofPidNsigmaCutLaPr", 1e+6, "TofPidNsigmaCutLaPr"};
-    Configurable<float> TofPidNsigmaCutLaPi{"TofPidNsigmaCutLaPi", 1e+6, "TofPidNsigmaCutLaPi"};
-    Configurable<float> TofPidNsigmaCutK0Pi{"TofPidNsigmaCutK0Pi", 1e+6, "TofPidNsigmaCutK0Pi"};
+    Configurable<float> tpcPidNsigmaCut{"tpcPidNsigmaCut", 1e+6, "tpcPidNsigmaCut"};
+    Configurable<float> tofPidNsigmaCutLaPr{"tofPidNsigmaCutLaPr", 1e+6, "tofPidNsigmaCutLaPr"};
+    Configurable<float> tofPidNsigmaCutLaPi{"tofPidNsigmaCutLaPi", 1e+6, "tofPidNsigmaCutLaPi"};
+    Configurable<float> tofPidNsigmaCutK0Pi{"tofPidNsigmaCutK0Pi", 1e+6, "tofPidNsigmaCutK0Pi"};
 
-    Configurable<float> TofPidNsigmaCutXiPi{"TofPidNsigmaCutXiPi", 1e+6, "TofPidNsigmaCutXiPi"};
-    Configurable<float> TofPidNsigmaCutOmegaKaon{"TofPidNsigmaCutOmegaKaon", 1e+6, "TofPidNsigmaCutOmegaKaon"};
+    Configurable<float> tofPidNsigmaCutXiPi{"tofPidNsigmaCutXiPi", 1e+6, "tofPidNsigmaCutXiPi"};
+    Configurable<float> tofPidNsigmaCutOmegaKaon{"tofPidNsigmaCutOmegaKaon", 1e+6, "tofPidNsigmaCutOmegaKaon"};
 
     Configurable<bool> doTPCQA{"doTPCQA", false, "do TPC QA histograms"};
     Configurable<bool> doTOFQA{"doTOFQA", false, "do TOF QA histograms"};
@@ -230,7 +225,7 @@ struct strangeYieldPbPb {
   ConfigurableAxis axisNTracksTotalExceptITSonly{"axisNTracksTotalExceptITSonly", {100, -0.5f, 99.5f}, "Number of ITS-TPC and TPC only tracks"};
   ConfigurableAxis axisNchInvMass{"axisNchInvMass", {201, -1.5f, 199.5f}, "Number of charged particles for kTHnSparseF"};
 
-  ConfigurableAxis axisFT0C_QA{"axisFT0C_QA",
+  ConfigurableAxis axisFT0Cqa{"axisFT0Cqa",
                                {VARIABLE_WIDTH, -1.5, -0.5, 0., 0.01, 0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
                                "FT0C (%)"};
 
@@ -271,11 +266,11 @@ struct strangeYieldPbPb {
   // PDG database
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
-  static constexpr std::string_view particlenames[] = {"K0Short", "Lambda", "AntiLambda", "Xi", "AntiXi", "Omega", "AntiOmega"};
+  static constexpr std::string_view kParticlenames[] = {"K0Short", "Lambda", "AntiLambda", "Xi", "AntiXi", "Omega", "AntiOmega"};
 
   void setBits(std::bitset<selNum>& mask, std::initializer_list<int> selections)
   {
-    for (int sel : selections) {
+    for (const int& sel : selections) {
       mask.set(sel);
     }
   }
@@ -285,30 +280,30 @@ struct strangeYieldPbPb {
   {
     const bool isCascade = (partID > 2.5) ? true : false;
     if (isCascade) {
-      histos.add(Form("%s/hCascCosPA", particlenames[partID].data()), "hCascCosPA", kTH2F, {axisPtCoarse, {100, 0.9f, 1.0f}});
-      histos.add(Form("%s/hDCACascDaughters", particlenames[partID].data()), "hDCACascDaughters", kTH2F, {axisPtCoarse, {44, 0.0f, 2.2f}});
-      histos.add(Form("%s/hCascRadius", particlenames[partID].data()), "hCascRadius", kTH2D, {axisPtCoarse, {500, 0.0f, 50.0f}});
-      histos.add(Form("%s/hMesonDCAToPV", particlenames[partID].data()), "hMesonDCAToPV", kTH2F, {axisPtCoarse, axisDCAtoPV});
-      histos.add(Form("%s/hBaryonDCAToPV", particlenames[partID].data()), "hBaryonDCAToPV", kTH2F, {axisPtCoarse, axisDCAtoPV});
-      histos.add(Form("%s/hBachDCAToPV", particlenames[partID].data()), "hBachDCAToPV", kTH2F, {axisPtCoarse, {200, -1.0f, 1.0f}});
-      histos.add(Form("%s/hV0CosPA", particlenames[partID].data()), "hV0CosPA", kTH2F, {axisPtCoarse, {100, 0.9f, 1.0f}});
-      histos.add(Form("%s/hV0Radius", particlenames[partID].data()), "hV0Radius", kTH2D, {axisPtCoarse, axisV0Radius});
-      histos.add(Form("%s/hDCAV0Daughters", particlenames[partID].data()), "hDCAV0Daughters", kTH2F, {axisPtCoarse, axisDCAdau});
-      histos.add(Form("%s/hDCAV0ToPV", particlenames[partID].data()), "hDCAV0ToPV", kTH2F, {axisPtCoarse, {44, 0.0f, 2.2f}});
-      histos.add(Form("%s/hMassLambdaDau", particlenames[partID].data()), "hMassLambdaDau", kTH2F, {axisPtCoarse, axisLambdaMass});
-      histos.add(Form("%s/hNctau", particlenames[partID].data()), "hNctau", kTH2F, {axisPtCoarse, axisNctau});
+      histos.add(Form("%s/hCascCosPA", kParticlenames[partID].data()), "hCascCosPA", kTH2F, {axisPtCoarse, {100, 0.9f, 1.0f}});
+      histos.add(Form("%s/hDCACascDaughters", kParticlenames[partID].data()), "hDCACascDaughters", kTH2F, {axisPtCoarse, {44, 0.0f, 2.2f}});
+      histos.add(Form("%s/hCascRadius", kParticlenames[partID].data()), "hCascRadius", kTH2D, {axisPtCoarse, {500, 0.0f, 50.0f}});
+      histos.add(Form("%s/hMesonDCAToPV", kParticlenames[partID].data()), "hMesonDCAToPV", kTH2F, {axisPtCoarse, axisDCAtoPV});
+      histos.add(Form("%s/hBaryonDCAToPV", kParticlenames[partID].data()), "hBaryonDCAToPV", kTH2F, {axisPtCoarse, axisDCAtoPV});
+      histos.add(Form("%s/hBachDCAToPV", kParticlenames[partID].data()), "hBachDCAToPV", kTH2F, {axisPtCoarse, {200, -1.0f, 1.0f}});
+      histos.add(Form("%s/hV0CosPA", kParticlenames[partID].data()), "hV0CosPA", kTH2F, {axisPtCoarse, {100, 0.9f, 1.0f}});
+      histos.add(Form("%s/hV0Radius", kParticlenames[partID].data()), "hV0Radius", kTH2D, {axisPtCoarse, axisV0Radius});
+      histos.add(Form("%s/hDCAV0Daughters", kParticlenames[partID].data()), "hDCAV0Daughters", kTH2F, {axisPtCoarse, axisDCAdau});
+      histos.add(Form("%s/hDCAV0ToPV", kParticlenames[partID].data()), "hDCAV0ToPV", kTH2F, {axisPtCoarse, {44, 0.0f, 2.2f}});
+      histos.add(Form("%s/hMassLambdaDau", kParticlenames[partID].data()), "hMassLambdaDau", kTH2F, {axisPtCoarse, axisLambdaMass});
+      histos.add(Form("%s/hNctau", kParticlenames[partID].data()), "hNctau", kTH2F, {axisPtCoarse, axisNctau});
       if (doBachelorBaryonCut) {
-        histos.add(Form("%s/hBachBaryonCosPA", particlenames[partID].data()), "hBachBaryonCosPA", kTH2F, {axisPtCoarse, {100, 0.0f, 1.0f}});
-        histos.add(Form("%s/hBachBaryonDCAxyToPV", particlenames[partID].data()), "hBachBaryonDCAxyToPV", kTH2F, {axisPtCoarse, {300, -3.0f, 3.0f}});
+        histos.add(Form("%s/hBachBaryonCosPA", kParticlenames[partID].data()), "hBachBaryonCosPA", kTH2F, {axisPtCoarse, {100, 0.0f, 1.0f}});
+        histos.add(Form("%s/hBachBaryonDCAxyToPV", kParticlenames[partID].data()), "hBachBaryonDCAxyToPV", kTH2F, {axisPtCoarse, {300, -3.0f, 3.0f}});
       }
     } else {
-      histos.add(Form("%s/hPosDCAToPV", particlenames[partID].data()), "hPosDCAToPV", kTH1F, {axisDCAtoPV});
-      histos.add(Form("%s/hNegDCAToPV", particlenames[partID].data()), "hNegDCAToPV", kTH1F, {axisDCAtoPV});
-      histos.add(Form("%s/hDCADaughters", particlenames[partID].data()), "hDCADaughters", kTH1F, {axisDCAdau});
-      histos.add(Form("%s/hPointingAngle", particlenames[partID].data()), "hPointingAngle", kTH1F, {axisPointingAngle});
-      histos.add(Form("%s/hV0Radius", particlenames[partID].data()), "hV0Radius", kTH1F, {axisV0Radius});
-      histos.add(Form("%s/h2dPositiveITSvsTPCpts", particlenames[partID].data()), "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-      histos.add(Form("%s/h2dNegativeITSvsTPCpts", particlenames[partID].data()), "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+      histos.add(Form("%s/hPosDCAToPV", kParticlenames[partID].data()), "hPosDCAToPV", kTH1F, {axisDCAtoPV});
+      histos.add(Form("%s/hNegDCAToPV", kParticlenames[partID].data()), "hNegDCAToPV", kTH1F, {axisDCAtoPV});
+      histos.add(Form("%s/hDCADaughters", kParticlenames[partID].data()), "hDCADaughters", kTH1F, {axisDCAdau});
+      histos.add(Form("%s/hPointingAngle", kParticlenames[partID].data()), "hPointingAngle", kTH1F, {axisPointingAngle});
+      histos.add(Form("%s/hV0Radius", kParticlenames[partID].data()), "hV0Radius", kTH1F, {axisV0Radius});
+      histos.add(Form("%s/h2dPositiveITSvsTPCpts", kParticlenames[partID].data()), "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+      histos.add(Form("%s/h2dNegativeITSvsTPCpts", kParticlenames[partID].data()), "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
     }
   }
 
@@ -316,30 +311,30 @@ struct strangeYieldPbPb {
   void addTPCQAHistograms(HistogramRegistry& histos)
   {
     const bool isCascade = (partID > 2.5) ? true : false;
-    histos.add(Form("%s/h3dPosNsigmaTPC", particlenames[partID].data()), "h3dPosNsigmaTPC", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
-    histos.add(Form("%s/h3dNegNsigmaTPC", particlenames[partID].data()), "h3dNegNsigmaTPC", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
-    histos.add(Form("%s/h3dPosTPCsignal", particlenames[partID].data()), "h3dPosTPCsignal", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
-    histos.add(Form("%s/h3dNegTPCsignal", particlenames[partID].data()), "h3dNegTPCsignal", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
+    histos.add(Form("%s/h3dPosNsigmaTPC", kParticlenames[partID].data()), "h3dPosNsigmaTPC", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
+    histos.add(Form("%s/h3dNegNsigmaTPC", kParticlenames[partID].data()), "h3dNegNsigmaTPC", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
+    histos.add(Form("%s/h3dPosTPCsignal", kParticlenames[partID].data()), "h3dPosTPCsignal", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
+    histos.add(Form("%s/h3dNegTPCsignal", kParticlenames[partID].data()), "h3dNegTPCsignal", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
 
-    histos.add(Form("%s/h3dPosNsigmaTPCvsTrackPtot", particlenames[partID].data()), "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
-    histos.add(Form("%s/h3dNegNsigmaTPCvsTrackPtot", particlenames[partID].data()), "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
+    histos.add(Form("%s/h3dPosNsigmaTPCvsTrackPtot", kParticlenames[partID].data()), "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
+    histos.add(Form("%s/h3dNegNsigmaTPCvsTrackPtot", kParticlenames[partID].data()), "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
 
-    histos.add(Form("%s/h3dPosTPCsignalVsTrackPtot", particlenames[partID].data()), "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
-    histos.add(Form("%s/h3dNegTPCsignalVsTrackPtot", particlenames[partID].data()), "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
+    histos.add(Form("%s/h3dPosTPCsignalVsTrackPtot", kParticlenames[partID].data()), "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
+    histos.add(Form("%s/h3dNegTPCsignalVsTrackPtot", kParticlenames[partID].data()), "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
 
-    histos.add(Form("%s/h3dPosNsigmaTPCvsTrackPt", particlenames[partID].data()), "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
-    histos.add(Form("%s/h3dNegNsigmaTPCvsTrackPt", particlenames[partID].data()), "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
+    histos.add(Form("%s/h3dPosNsigmaTPCvsTrackPt", kParticlenames[partID].data()), "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
+    histos.add(Form("%s/h3dNegNsigmaTPCvsTrackPt", kParticlenames[partID].data()), "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
 
-    histos.add(Form("%s/h3dPosTPCsignalVsTrackPt", particlenames[partID].data()), "h3dPosTPCsignalVsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
-    histos.add(Form("%s/h3dNegTPCsignalVsTrackPt", particlenames[partID].data()), "h3dNegTPCsignalVsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
+    histos.add(Form("%s/h3dPosTPCsignalVsTrackPt", kParticlenames[partID].data()), "h3dPosTPCsignalVsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
+    histos.add(Form("%s/h3dNegTPCsignalVsTrackPt", kParticlenames[partID].data()), "h3dNegTPCsignalVsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
 
     if (isCascade) {
-      histos.add(Form("%s/h3dBachTPCsignal", particlenames[partID].data()), "h3dBachTPCsignal", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
-      histos.add(Form("%s/h3dBachNsigmaTPC", particlenames[partID].data()), "h3dBachNsigmaTPC", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
-      histos.add(Form("%s/h3dBachNsigmaTPCvsTrackPtot", particlenames[partID].data()), "h3dBachNsigmaTPCvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
-      histos.add(Form("%s/h3dBachTPCsignalVsTrackPtot", particlenames[partID].data()), "h3dBachTPCsignalVsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
-      histos.add(Form("%s/h3dBachNsigmaTPCvsTrackPt", particlenames[partID].data()), "h3dBachNsigmaTPCvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
-      histos.add(Form("%s/h3dBachTPCsignalVsTrackPt", particlenames[partID].data()), "h3dBachTPCsignalVsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
+      histos.add(Form("%s/h3dBachTPCsignal", kParticlenames[partID].data()), "h3dBachTPCsignal", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
+      histos.add(Form("%s/h3dBachNsigmaTPC", kParticlenames[partID].data()), "h3dBachNsigmaTPC", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
+      histos.add(Form("%s/h3dBachNsigmaTPCvsTrackPtot", kParticlenames[partID].data()), "h3dBachNsigmaTPCvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
+      histos.add(Form("%s/h3dBachTPCsignalVsTrackPtot", kParticlenames[partID].data()), "h3dBachTPCsignalVsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
+      histos.add(Form("%s/h3dBachNsigmaTPCvsTrackPt", kParticlenames[partID].data()), "h3dBachNsigmaTPCvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisNsigmaTPC});
+      histos.add(Form("%s/h3dBachTPCsignalVsTrackPt", kParticlenames[partID].data()), "h3dBachTPCsignalVsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTPCsignal});
     }
   }
 
@@ -347,16 +342,16 @@ struct strangeYieldPbPb {
   void addTOFQAHistograms(HistogramRegistry& histos)
   {
     const bool isCascade = (partID > 2.5) ? true : false;
-    histos.add(Form("%s/h3dPosTOFdeltaT", particlenames[partID].data()), "h3dPosTOFdeltaT", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
-    histos.add(Form("%s/h3dNegTOFdeltaT", particlenames[partID].data()), "h3dNegTOFdeltaT", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
-    histos.add(Form("%s/h3dPosTOFdeltaTvsTrackPtot", particlenames[partID].data()), "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
-    histos.add(Form("%s/h3dNegTOFdeltaTvsTrackPtot", particlenames[partID].data()), "h3dNegTOFdeltaTvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
-    histos.add(Form("%s/h3dPosTOFdeltaTvsTrackPt", particlenames[partID].data()), "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
-    histos.add(Form("%s/h3dNegTOFdeltaTvsTrackPt", particlenames[partID].data()), "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
+    histos.add(Form("%s/h3dPosTOFdeltaT", kParticlenames[partID].data()), "h3dPosTOFdeltaT", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
+    histos.add(Form("%s/h3dNegTOFdeltaT", kParticlenames[partID].data()), "h3dNegTOFdeltaT", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
+    histos.add(Form("%s/h3dPosTOFdeltaTvsTrackPtot", kParticlenames[partID].data()), "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
+    histos.add(Form("%s/h3dNegTOFdeltaTvsTrackPtot", kParticlenames[partID].data()), "h3dNegTOFdeltaTvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
+    histos.add(Form("%s/h3dPosTOFdeltaTvsTrackPt", kParticlenames[partID].data()), "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
+    histos.add(Form("%s/h3dNegTOFdeltaTvsTrackPt", kParticlenames[partID].data()), "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
     if (isCascade) {
-      histos.add(Form("%s/h3dBachTOFdeltaT", particlenames[partID].data()), "h3dBachTOFdeltaT", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
-      histos.add(Form("%s/h3dBachTOFdeltaTvsTrackPtot", particlenames[partID].data()), "h3dBachTOFdeltaTvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
-      histos.add(Form("%s/h3dBachTOFdeltaTvsTrackPt", particlenames[partID].data()), "h3dBachTOFdeltaTvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
+      histos.add(Form("%s/h3dBachTOFdeltaT", kParticlenames[partID].data()), "h3dBachTOFdeltaT", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
+      histos.add(Form("%s/h3dBachTOFdeltaTvsTrackPtot", kParticlenames[partID].data()), "h3dBachTOFdeltaTvsTrackPtot", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
+      histos.add(Form("%s/h3dBachTOFdeltaTvsTrackPt", kParticlenames[partID].data()), "h3dBachTOFdeltaTvsTrackPt", kTH3F, {axisFT0C, axisPtCoarse, axisTOFdeltaT});
     }
   }
 
@@ -364,11 +359,11 @@ struct strangeYieldPbPb {
   void addKinematicQAHistograms(HistogramRegistry& histos)
   {
     const bool isCascade = (partID > 2.5) ? true : false;
-    histos.add(Form("%s/h3dPosEtaPt", particlenames[partID].data()), "h3dPosEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
-    histos.add(Form("%s/h3dNegEtaPt", particlenames[partID].data()), "h3dNegEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
-    histos.add(Form("%s/h3dRapPt", particlenames[partID].data()), "h3dRapPt", kTH3F, {axisPtCoarse, axisRap, axisSelGap});
+    histos.add(Form("%s/h3dPosEtaPt", kParticlenames[partID].data()), "h3dPosEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
+    histos.add(Form("%s/h3dNegEtaPt", kParticlenames[partID].data()), "h3dNegEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
+    histos.add(Form("%s/h3dRapPt", kParticlenames[partID].data()), "h3dRapPt", kTH3F, {axisPtCoarse, axisRap, axisSelGap});
     if (isCascade) {
-      histos.add(Form("%s/h3dBachEtaPt", particlenames[partID].data()), "h3dBachEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
+      histos.add(Form("%s/h3dBachEtaPt", kParticlenames[partID].data()), "h3dBachEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
     }
   }
 
@@ -378,31 +373,31 @@ struct strangeYieldPbPb {
     const bool isCascade = (partID > 2.5) ? true : false;
     if (doDetectPropQA == 1) {
       if (isCascade) {
-        histos.add(Form("%s/h8dDetectPropVsCentrality", particlenames[partID].data()), "h8dDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
+        histos.add(Form("%s/h8dDetectPropVsCentrality", kParticlenames[partID].data()), "h8dDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
       } else {
-        histos.add(Form("%s/h6dDetectPropVsCentrality", particlenames[partID].data()), "h6dDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
+        histos.add(Form("%s/h6dDetectPropVsCentrality", kParticlenames[partID].data()), "h6dDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
       }
-      histos.add(Form("%s/h4dPosDetectPropVsCentrality", particlenames[partID].data()), "h4dPosDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
-      histos.add(Form("%s/h4dNegDetectPropVsCentrality", particlenames[partID].data()), "h4dNegDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
-      histos.add(Form("%s/h4dBachDetectPropVsCentrality", particlenames[partID].data()), "h4dBachDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
+      histos.add(Form("%s/h4dPosDetectPropVsCentrality", kParticlenames[partID].data()), "h4dPosDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
+      histos.add(Form("%s/h4dNegDetectPropVsCentrality", kParticlenames[partID].data()), "h4dNegDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
+      histos.add(Form("%s/h4dBachDetectPropVsCentrality", kParticlenames[partID].data()), "h4dBachDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
     }
     if (doDetectPropQA == 2) {
       if (isCascade) {
-        histos.add(Form("%s/h9dDetectPropVsCentrality", particlenames[partID].data()), "h9dDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisInvMass.at(partID)});
+        histos.add(Form("%s/h9dDetectPropVsCentrality", kParticlenames[partID].data()), "h9dDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisInvMass.at(partID)});
       } else {
-        histos.add(Form("%s/h7dDetectPropVsCentrality", particlenames[partID].data()), "h7dDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisInvMass.at(partID)});
+        histos.add(Form("%s/h7dDetectPropVsCentrality", kParticlenames[partID].data()), "h7dDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisInvMass.at(partID)});
       }
-      histos.add(Form("%s/h5dPosDetectPropVsCentrality", particlenames[partID].data()), "h5dPosDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
-      histos.add(Form("%s/h5dNegDetectPropVsCentrality", particlenames[partID].data()), "h5dNegDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
-      histos.add(Form("%s/h5dBachDetectPropVsCentrality", particlenames[partID].data()), "h5dBachDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
+      histos.add(Form("%s/h5dPosDetectPropVsCentrality", kParticlenames[partID].data()), "h5dPosDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
+      histos.add(Form("%s/h5dNegDetectPropVsCentrality", kParticlenames[partID].data()), "h5dNegDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
+      histos.add(Form("%s/h5dBachDetectPropVsCentrality", kParticlenames[partID].data()), "h5dBachDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
     }
   }
 
   template <int partID>
   void addHistograms(HistogramRegistry& histos)
   {
-    histos.add(Form("%s/h7dMass", particlenames[partID].data()), "h7dMass", kTHnSparseF, {axisFT0C, axisPt, axisInvMass.at(partID), axisSelGap, axisNchInvMass, axisRap, axisEta});
-    histos.add(Form("%s/h2dMass", particlenames[partID].data()), "h2dMass", kTH2F, {axisInvMass.at(partID), axisSelGap});
+    histos.add(Form("%s/h7dMass", kParticlenames[partID].data()), "h7dMass", kTHnSparseF, {axisFT0C, axisPt, axisInvMass.at(partID), axisSelGap, axisNchInvMass, axisRap, axisEta});
+    histos.add(Form("%s/h2dMass", kParticlenames[partID].data()), "h2dMass", kTH2F, {axisInvMass.at(partID), axisSelGap});
     if (doPlainTopoQA) {
       addTopoHistograms<partID>(histos);
     }
@@ -431,8 +426,8 @@ struct strangeYieldPbPb {
     float tofDeltaTPos = 0;
     float tofDeltaTNeg = 0;
 
-    auto posTrackExtra = cand.template posTrackExtra_as<dauTracks>();
-    auto negTrackExtra = cand.template negTrackExtra_as<dauTracks>();
+    auto posTrackExtra = cand.template posTrackExtra_as<DauTracks>();
+    auto negTrackExtra = cand.template negTrackExtra_as<DauTracks>();
 
     bool posIsFromAfterburner = posTrackExtra.itsChi2PerNcl() < 0;
     bool negIsFromAfterburner = negTrackExtra.itsChi2PerNcl() < 0;
@@ -480,53 +475,53 @@ struct strangeYieldPbPb {
       LOG(fatal) << "Particle is unknown!";
     }
 
-    histos.fill(HIST(particlenames[partID]) + HIST("/h2dMass"), invMass, gap);
-    histos.fill(HIST(particlenames[partID]) + HIST("/h7dMass"), centrality, pT, invMass, gap, coll.multNTracksGlobal(), rapidity, cand.eta());
+    histos.fill(HIST(kParticlenames[partID]) + HIST("/h2dMass"), invMass, gap);
+    histos.fill(HIST(kParticlenames[partID]) + HIST("/h7dMass"), centrality, pT, invMass, gap, coll.multNTracksGlobal(), rapidity, cand.eta());
     if (doKienmaticQA) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosEtaPt"), pT, cand.positiveeta(), gap);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegEtaPt"), pT, cand.negativeeta(), gap);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dRapPt"), pT, rapidity, gap);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosEtaPt"), pT, cand.positiveeta(), gap);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegEtaPt"), pT, cand.negativeeta(), gap);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dRapPt"), pT, rapidity, gap);
     }
     if (doPlainTopoQA) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/hPosDCAToPV"), cand.dcapostopv());
-      histos.fill(HIST(particlenames[partID]) + HIST("/hNegDCAToPV"), cand.dcanegtopv());
-      histos.fill(HIST(particlenames[partID]) + HIST("/hDCADaughters"), cand.dcaV0daughters());
-      histos.fill(HIST(particlenames[partID]) + HIST("/hPointingAngle"), TMath::ACos(cand.v0cosPA()));
-      histos.fill(HIST(particlenames[partID]) + HIST("/hV0Radius"), cand.v0radius());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hPosDCAToPV"), cand.dcapostopv());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hNegDCAToPV"), cand.dcanegtopv());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hDCADaughters"), cand.dcaV0daughters());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hPointingAngle"), std::acos(cand.v0cosPA()));
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hV0Radius"), cand.v0radius());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
     }
     if (doDetectPropQA == 1) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/h6dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pT);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pT);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pT);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h6dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pT);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pT);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pT);
     }
     if (doDetectPropQA == 2) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/h7dPosDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pT, invMass);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h5dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pT, invMass);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pT, invMass);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h7dPosDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pT, invMass);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h5dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pT, invMass);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pT, invMass);
     }
     if (PIDConfigurations.doTPCQA) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosTPCsignal"), centrality, pT, posTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegTPCsignal"), centrality, pT, negTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosTPCsignalVsTrackPtot"), centrality, cand.positivept() * TMath::CosH(cand.positiveeta()), posTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegTPCsignalVsTrackPtot"), centrality, cand.negativept() * TMath::CosH(cand.negativeeta()), negTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosTPCsignalVsTrackPt"), centrality, cand.positivept(), posTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegTPCsignalVsTrackPt"), centrality, cand.negativept(), negTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosNsigmaTPCvsTrackPt"), centrality, cand.positivept(), posTrackExtra.tpcNSigmaPi());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegNsigmaTPCvsTrackPt"), centrality, cand.negativept(), negTrackExtra.tpcNSigmaPi());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosNsigmaTPCvsTrackPtot"), centrality, cand.positivept() * TMath::CosH(cand.positiveeta()), tpcNsigmaPos);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegNsigmaTPCvsTrackPtot"), centrality, cand.negativept() * TMath::CosH(cand.negativeeta()), tpcNsigmaNeg);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosNsigmaTPC"), centrality, pT, tpcNsigmaPos);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegNsigmaTPC"), centrality, pT, tpcNsigmaNeg);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosTPCsignal"), centrality, pT, posTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTPCsignal"), centrality, pT, negTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosTPCsignalVsTrackPtot"), centrality, cand.positivept() * std::cosh(cand.positiveeta()), posTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTPCsignalVsTrackPtot"), centrality, cand.negativept() * std::cosh(cand.negativeeta()), negTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosTPCsignalVsTrackPt"), centrality, cand.positivept(), posTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTPCsignalVsTrackPt"), centrality, cand.negativept(), negTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosNsigmaTPCvsTrackPt"), centrality, cand.positivept(), posTrackExtra.tpcNSigmaPi());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegNsigmaTPCvsTrackPt"), centrality, cand.negativept(), negTrackExtra.tpcNSigmaPi());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosNsigmaTPCvsTrackPtot"), centrality, cand.positivept() * std::cosh(cand.positiveeta()), tpcNsigmaPos);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegNsigmaTPCvsTrackPtot"), centrality, cand.negativept() * std::cosh(cand.negativeeta()), tpcNsigmaNeg);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosNsigmaTPC"), centrality, pT, tpcNsigmaPos);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegNsigmaTPC"), centrality, pT, tpcNsigmaNeg);
     }
     if (PIDConfigurations.doTOFQA) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosTOFdeltaTvsTrackPt"), centrality, cand.positivept(), tofDeltaTPos);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegTOFdeltaTvsTrackPt"), centrality, cand.negativept(), tofDeltaTNeg);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosTOFdeltaT"), centrality, pT, tofDeltaTPos);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegTOFdeltaT"), centrality, pT, tofDeltaTNeg);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosTOFdeltaTvsTrackPtot"), centrality, cand.positivept() * TMath::CosH(cand.positiveeta()), tofDeltaTPos);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegTOFdeltaTvsTrackPtot"), centrality, cand.negativept() * TMath::CosH(cand.negativeeta()), tofDeltaTNeg);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosTOFdeltaTvsTrackPt"), centrality, cand.positivept(), tofDeltaTPos);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTOFdeltaTvsTrackPt"), centrality, cand.negativept(), tofDeltaTNeg);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosTOFdeltaT"), centrality, pT, tofDeltaTPos);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTOFdeltaT"), centrality, pT, tofDeltaTNeg);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosTOFdeltaTvsTrackPtot"), centrality, cand.positivept() * std::cosh(cand.positiveeta()), tofDeltaTPos);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTOFdeltaTvsTrackPtot"), centrality, cand.negativept() * std::cosh(cand.negativeeta()), tofDeltaTNeg);
     }
   }
 
@@ -539,9 +534,9 @@ struct strangeYieldPbPb {
     float rapidity = 1e6;
 
     // Access daughter tracks
-    auto posTrackExtra = cand.template posTrackExtra_as<dauTracks>();
-    auto negTrackExtra = cand.template negTrackExtra_as<dauTracks>();
-    auto bachTrackExtra = cand.template bachTrackExtra_as<dauTracks>();
+    auto posTrackExtra = cand.template posTrackExtra_as<DauTracks>();
+    auto negTrackExtra = cand.template negTrackExtra_as<DauTracks>();
+    auto bachTrackExtra = cand.template bachTrackExtra_as<DauTracks>();
 
     bool posIsFromAfterburner = posTrackExtra.itsChi2PerNcl() < 0;
     bool negIsFromAfterburner = negTrackExtra.itsChi2PerNcl() < 0;
@@ -569,7 +564,7 @@ struct strangeYieldPbPb {
 
     if (partID == 3) {
       invMass = cand.mXi();
-      ctau = totalMom != 0 ? pdgDB->Mass(3312) * decayPos / (totalMom * ctauxiPDG) : 1e6;
+      ctau = totalMom != 0 ? o2::constants::physics::MassXiMinus * decayPos / (totalMom * ctauxiPDG) : 1e6;
       rapidity = cand.yXi();
 
       if (PIDConfigurations.doTPCQA) {
@@ -584,7 +579,7 @@ struct strangeYieldPbPb {
       }
     } else if (partID == 4) {
       invMass = cand.mXi();
-      ctau = totalMom != 0 ? pdgDB->Mass(3312) * decayPos / (totalMom * ctauxiPDG) : 1e6;
+      ctau = totalMom != 0 ? o2::constants::physics::MassXiPlusBar * decayPos / (totalMom * ctauxiPDG) : 1e6;
       rapidity = cand.yXi();
 
       if (PIDConfigurations.doTPCQA) {
@@ -600,7 +595,7 @@ struct strangeYieldPbPb {
 
     } else if (partID == 5) {
       invMass = cand.mOmega();
-      ctau = totalMom != 0 ? pdgDB->Mass(3334) * decayPos / (totalMom * ctauomegaPDG) : 1e6;
+      ctau = totalMom != 0 ? o2::constants::physics::MassOmegaMinus * decayPos / (totalMom * ctauomegaPDG) : 1e6;
       rapidity = cand.yOmega();
 
       if (PIDConfigurations.doTPCQA) {
@@ -616,7 +611,7 @@ struct strangeYieldPbPb {
 
     } else if (partID == 6) {
       invMass = cand.mOmega();
-      ctau = totalMom != 0 ? pdgDB->Mass(3334) * decayPos / (totalMom * ctauomegaPDG) : 1e6;
+      ctau = totalMom != 0 ? o2::constants::physics::MassOmegaPlusBar * decayPos / (totalMom * ctauomegaPDG) : 1e6;
       rapidity = cand.yOmega();
 
       if (PIDConfigurations.doTPCQA) {
@@ -630,70 +625,70 @@ struct strangeYieldPbPb {
         tofDeltaTBach = cand.bachTOFDeltaTOmKa();
       }
     }
-    histos.fill(HIST(particlenames[partID]) + HIST("/h2dMass"), invMass, gap);
-    histos.fill(HIST(particlenames[partID]) + HIST("/h7dMass"), centrality, pT, invMass, gap, coll.multNTracksGlobal(), rapidity, cand.eta());
+    histos.fill(HIST(kParticlenames[partID]) + HIST("/h2dMass"), invMass, gap);
+    histos.fill(HIST(kParticlenames[partID]) + HIST("/h7dMass"), centrality, pT, invMass, gap, coll.multNTracksGlobal(), rapidity, cand.eta());
     if (doKienmaticQA) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosEtaPt"), pT, cand.positiveeta(), gap);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegEtaPt"), pT, cand.negativeeta(), gap);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dBachEtaPt"), pT, cand.bacheloreta(), gap);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dRapPt"), pT, rapidity, gap);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosEtaPt"), pT, cand.positiveeta(), gap);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegEtaPt"), pT, cand.negativeeta(), gap);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dBachEtaPt"), pT, cand.bacheloreta(), gap);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dRapPt"), pT, rapidity, gap);
     }
     if (doPlainTopoQA) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/hCascCosPA"), pT, cand.casccosPA(coll.posX(), coll.posY(), coll.posZ()));
-      histos.fill(HIST(particlenames[partID]) + HIST("/hDCACascDaughters"), pT, cand.dcacascdaughters());
-      histos.fill(HIST(particlenames[partID]) + HIST("/hCascRadius"), pT, cand.cascradius());
-      histos.fill(HIST(particlenames[partID]) + HIST("/hMesonDCAToPV"), pT, cand.dcanegtopv());
-      histos.fill(HIST(particlenames[partID]) + HIST("/hBaryonDCAToPV"), pT, cand.dcapostopv());
-      histos.fill(HIST(particlenames[partID]) + HIST("/hBachDCAToPV"), pT, cand.dcabachtopv());
-      histos.fill(HIST(particlenames[partID]) + HIST("/hV0CosPA"), pT, cand.v0cosPA(coll.posX(), coll.posY(), coll.posZ()));
-      histos.fill(HIST(particlenames[partID]) + HIST("/hV0Radius"), pT, cand.v0radius());
-      histos.fill(HIST(particlenames[partID]) + HIST("/hDCAV0Daughters"), pT, cand.dcaV0daughters());
-      histos.fill(HIST(particlenames[partID]) + HIST("/hDCAV0ToPV"), pT, fabs(cand.dcav0topv(coll.posX(), coll.posY(), coll.posZ())));
-      histos.fill(HIST(particlenames[partID]) + HIST("/hMassLambdaDau"), pT, cand.mLambda());
-      histos.fill(HIST(particlenames[partID]) + HIST("/hNctau"), pT, ctau);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hCascCosPA"), pT, cand.casccosPA(coll.posX(), coll.posY(), coll.posZ()));
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hDCACascDaughters"), pT, cand.dcacascdaughters());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hCascRadius"), pT, cand.cascradius());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hMesonDCAToPV"), pT, cand.dcanegtopv());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hBaryonDCAToPV"), pT, cand.dcapostopv());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hBachDCAToPV"), pT, cand.dcabachtopv());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hV0CosPA"), pT, cand.v0cosPA(coll.posX(), coll.posY(), coll.posZ()));
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hV0Radius"), pT, cand.v0radius());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hDCAV0Daughters"), pT, cand.dcaV0daughters());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hDCAV0ToPV"), pT, std::fabs(cand.dcav0topv(coll.posX(), coll.posY(), coll.posZ())));
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hMassLambdaDau"), pT, cand.mLambda());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hNctau"), pT, ctau);
     }
     if (PIDConfigurations.doTPCQA) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosNsigmaTPC"), centrality, pT, tpcNsigmaPos);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegNsigmaTPC"), centrality, pT, tpcNsigmaNeg);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dBachNsigmaTPC"), centrality, pT, tpcNsigmaBach);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosTPCsignal"), centrality, pT, posTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegTPCsignal"), centrality, pT, negTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dBachTPCsignal"), centrality, pT, bachTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosNsigmaTPCvsTrackPtot"), centrality, cand.positivept() * TMath::CosH(cand.positiveeta()), tpcNsigmaPos);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegNsigmaTPCvsTrackPtot"), centrality, cand.negativept() * TMath::CosH(cand.negativeeta()), tpcNsigmaNeg);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dBachNsigmaTPCvsTrackPtot"), centrality, cand.bachelorpt() * TMath::CosH(cand.bacheloreta()), tpcNsigmaBach);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosTPCsignalVsTrackPtot"), centrality, cand.positivept() * TMath::CosH(cand.positiveeta()), posTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegTPCsignalVsTrackPtot"), centrality, cand.negativept() * TMath::CosH(cand.negativeeta()), negTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dBachTPCsignalVsTrackPtot"), centrality, cand.bachelorpt() * TMath::CosH(cand.bacheloreta()), bachTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosNsigmaTPCvsTrackPt"), centrality, cand.positivept(), tpcNsigmaPos);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegNsigmaTPCvsTrackPt"), centrality, cand.negativept(), tpcNsigmaNeg);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dBachNsigmaTPCvsTrackPt"), centrality, cand.bachelorpt(), tpcNsigmaBach);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosTPCsignalVsTrackPt"), centrality, cand.positivept(), posTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegTPCsignalVsTrackPt"), centrality, cand.negativept(), negTrackExtra.tpcSignal());
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dBachTPCsignalVsTrackPt"), centrality, cand.bachelorpt(), bachTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosNsigmaTPC"), centrality, pT, tpcNsigmaPos);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegNsigmaTPC"), centrality, pT, tpcNsigmaNeg);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dBachNsigmaTPC"), centrality, pT, tpcNsigmaBach);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosTPCsignal"), centrality, pT, posTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTPCsignal"), centrality, pT, negTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dBachTPCsignal"), centrality, pT, bachTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosNsigmaTPCvsTrackPtot"), centrality, cand.positivept() * std::cosh(cand.positiveeta()), tpcNsigmaPos);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegNsigmaTPCvsTrackPtot"), centrality, cand.negativept() * std::cosh(cand.negativeeta()), tpcNsigmaNeg);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dBachNsigmaTPCvsTrackPtot"), centrality, cand.bachelorpt() * std::cosh(cand.bacheloreta()), tpcNsigmaBach);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosTPCsignalVsTrackPtot"), centrality, cand.positivept() * std::cosh(cand.positiveeta()), posTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTPCsignalVsTrackPtot"), centrality, cand.negativept() * std::cosh(cand.negativeeta()), negTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dBachTPCsignalVsTrackPtot"), centrality, cand.bachelorpt() * std::cosh(cand.bacheloreta()), bachTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosNsigmaTPCvsTrackPt"), centrality, cand.positivept(), tpcNsigmaPos);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegNsigmaTPCvsTrackPt"), centrality, cand.negativept(), tpcNsigmaNeg);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dBachNsigmaTPCvsTrackPt"), centrality, cand.bachelorpt(), tpcNsigmaBach);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosTPCsignalVsTrackPt"), centrality, cand.positivept(), posTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTPCsignalVsTrackPt"), centrality, cand.negativept(), negTrackExtra.tpcSignal());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dBachTPCsignalVsTrackPt"), centrality, cand.bachelorpt(), bachTrackExtra.tpcSignal());
     }
     if (PIDConfigurations.doTOFQA) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosTOFdeltaT"), centrality, pT, tofDeltaTPos);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegTOFdeltaT"), centrality, pT, tofDeltaTNeg);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dBachTOFdeltaT"), centrality, pT, tofDeltaTBach);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosTOFdeltaTvsTrackPtot"), centrality, cand.positivept() * TMath::CosH(cand.positiveeta()), tofDeltaTPos);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegTOFdeltaTvsTrackPtot"), centrality, cand.negativept() * TMath::CosH(cand.negativeeta()), tofDeltaTNeg);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dBachTOFdeltaTvsTrackPtot"), centrality, cand.bachelorpt() * TMath::CosH(cand.bacheloreta()), tofDeltaTBach);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosTOFdeltaTvsTrackPt"), centrality, cand.positivept(), tofDeltaTPos);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegTOFdeltaTvsTrackPt"), centrality, cand.negativept(), tofDeltaTNeg);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h3dBachTOFdeltaTvsTrackPt"), centrality, cand.bachelorpt(), tofDeltaTBach);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosTOFdeltaT"), centrality, pT, tofDeltaTPos);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTOFdeltaT"), centrality, pT, tofDeltaTNeg);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dBachTOFdeltaT"), centrality, pT, tofDeltaTBach);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosTOFdeltaTvsTrackPtot"), centrality, cand.positivept() * std::cosh(cand.positiveeta()), tofDeltaTPos);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTOFdeltaTvsTrackPtot"), centrality, cand.negativept() * std::cosh(cand.negativeeta()), tofDeltaTNeg);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dBachTOFdeltaTvsTrackPtot"), centrality, cand.bachelorpt() * std::cosh(cand.bacheloreta()), tofDeltaTBach);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosTOFdeltaTvsTrackPt"), centrality, cand.positivept(), tofDeltaTPos);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTOFdeltaTvsTrackPt"), centrality, cand.negativept(), tofDeltaTNeg);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dBachTOFdeltaTvsTrackPt"), centrality, cand.bachelorpt(), tofDeltaTBach);
     }
     if (doDetectPropQA == 1) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/h8dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, bachDetMap, bachITSclusMap, pT);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pT);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pT);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h4dBachDetectPropVsCentrality"), centrality, bachTrackExtra.detectorMap(), bachTrackExtra.itsClusterMap(), pT);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h8dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, bachDetMap, bachITSclusMap, pT);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pT);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pT);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h4dBachDetectPropVsCentrality"), centrality, bachTrackExtra.detectorMap(), bachTrackExtra.itsClusterMap(), pT);
     }
     if (doDetectPropQA == 2) {
-      histos.fill(HIST(particlenames[partID]) + HIST("/h9dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, bachDetMap, bachITSclusMap, pT, invMass);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h5dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pT, invMass);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pT, invMass);
-      histos.fill(HIST(particlenames[partID]) + HIST("/h5dBachDetectPropVsCentrality"), centrality, bachTrackExtra.detectorMap(), bachTrackExtra.itsClusterMap(), pT, invMass);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h9dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, bachDetMap, bachITSclusMap, pT, invMass);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h5dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pT, invMass);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pT, invMass);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h5dBachDetectPropVsCentrality"), centrality, bachTrackExtra.detectorMap(), bachTrackExtra.itsClusterMap(), pT, invMass);
     }
   }
 
@@ -735,7 +730,7 @@ struct strangeYieldPbPb {
     } else {
       setBits(maskTrackPropertiesV0, {selPosGoodTPCTrack, selPosGoodITSTrack});
       // TPC signal is available: ask for positive track PID
-      if (PIDConfigurations.TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
+      if (PIDConfigurations.tpcPidNsigmaCut < 1e+5) { // safeguard for no cut
         maskK0ShortSpecific.set(selTPCPIDPositivePion);
         maskLambdaSpecific.set(selTPCPIDPositiveProton);
         maskAntiLambdaSpecific.set(selTPCPIDPositivePion);
@@ -746,15 +741,15 @@ struct strangeYieldPbPb {
         maskAntiOmegaSpecific.set(selTPCPIDPositivePion);
       }
       // TOF PID
-      if (PIDConfigurations.TofPidNsigmaCutK0Pi < 1e+5) { // safeguard for no cut
+      if (PIDConfigurations.tofPidNsigmaCutK0Pi < 1e+5) { // safeguard for no cut
         setBits(maskK0ShortSpecific, {selTOFNSigmaPositivePionK0Short, selTOFDeltaTPositivePionK0Short});
       }
-      if (PIDConfigurations.TofPidNsigmaCutLaPr < 1e+5) { // safeguard for no cut
+      if (PIDConfigurations.tofPidNsigmaCutLaPr < 1e+5) { // safeguard for no cut
         setBits(maskLambdaSpecific, {selTOFNSigmaPositiveProtonLambda, selTOFDeltaTPositiveProtonLambda});
         setBits(maskXiSpecific, {selTOFNSigmaPositiveProtonLambdaXi, selTOFDeltaTPositiveProtonLambdaXi});
         setBits(maskOmegaSpecific, {selTOFNSigmaPositiveProtonLambdaOmega, selTOFDeltaTPositiveProtonLambdaOmega});
       }
-      if (PIDConfigurations.TofPidNsigmaCutLaPi < 1e+5) { // safeguard for no cut
+      if (PIDConfigurations.tofPidNsigmaCutLaPi < 1e+5) { // safeguard for no cut
         setBits(maskAntiLambdaSpecific, {selTOFNSigmaPositivePionLambda, selTOFDeltaTPositivePionLambda});
         setBits(maskAntiXiSpecific, {selTOFNSigmaPositivePionLambdaXi, selTOFDeltaTPositivePionLambdaXi});
         setBits(maskAntiOmegaSpecific, {selTOFNSigmaPositivePionLambdaOmega, selTOFDeltaTPositivePionLambdaOmega});
@@ -766,7 +761,7 @@ struct strangeYieldPbPb {
     } else {
       setBits(maskTrackPropertiesV0, {selNegGoodTPCTrack, selNegGoodITSTrack});
       // TPC signal is available: ask for negative track PID
-      if (PIDConfigurations.TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
+      if (PIDConfigurations.tpcPidNsigmaCut < 1e+5) { // safeguard for no cut
         maskK0ShortSpecific.set(selTPCPIDNegativePion);
         maskLambdaSpecific.set(selTPCPIDNegativePion);
         maskAntiLambdaSpecific.set(selTPCPIDNegativeProton);
@@ -777,15 +772,15 @@ struct strangeYieldPbPb {
         maskAntiOmegaSpecific.set(selTPCPIDPositiveProton);
       }
       // TOF PID
-      if (PIDConfigurations.TofPidNsigmaCutK0Pi < 1e+5) { // safeguard for no cut
+      if (PIDConfigurations.tofPidNsigmaCutK0Pi < 1e+5) { // safeguard for no cut
         setBits(maskK0ShortSpecific, {selTOFNSigmaNegativePionK0Short, selTOFDeltaTNegativePionK0Short});
       }
-      if (PIDConfigurations.TofPidNsigmaCutLaPr < 1e+5) { // safeguard for no cut
+      if (PIDConfigurations.tofPidNsigmaCutLaPr < 1e+5) { // safeguard for no cut
         setBits(maskAntiLambdaSpecific, {selTOFNSigmaNegativeProtonLambda, selTOFDeltaTNegativeProtonLambda});
         setBits(maskAntiXiSpecific, {selTOFNSigmaNegativeProtonLambdaXi, selTOFDeltaTNegativeProtonLambdaXi});
         setBits(maskAntiOmegaSpecific, {selTOFNSigmaNegativeProtonLambdaOmega, selTOFDeltaTNegativeProtonLambdaOmega});
       }
-      if (PIDConfigurations.TofPidNsigmaCutLaPi < 1e+5) { // safeguard for no cut
+      if (PIDConfigurations.tofPidNsigmaCutLaPi < 1e+5) { // safeguard for no cut
         setBits(maskLambdaSpecific, {selTOFNSigmaNegativePionLambda, selTOFDeltaTNegativePionLambda});
         setBits(maskXiSpecific, {selTOFNSigmaNegativePionLambdaXi, selTOFDeltaTNegativePionLambdaXi});
         setBits(maskOmegaSpecific, {selTOFNSigmaNegativePionLambdaOmega, selTOFDeltaTNegativePionLambdaOmega});
@@ -798,18 +793,18 @@ struct strangeYieldPbPb {
     } else {
       setBits(maskTrackPropertiesCasc, {selBachGoodTPCTrack, selBachGoodITSTrack});
       // TPC signal is available: ask for positive track PID
-      if (PIDConfigurations.TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
+      if (PIDConfigurations.tpcPidNsigmaCut < 1e+5) { // safeguard for no cut
         maskXiSpecific.set(selTPCPIDBachPion);
         maskAntiXiSpecific.set(selTPCPIDBachPion);
         maskOmegaSpecific.set(selTPCPIDBachKaon);
         maskAntiOmegaSpecific.set(selTPCPIDBachKaon);
       }
       // TOF PID
-      if (PIDConfigurations.TofPidNsigmaCutXiPi < 1e+5) { // safeguard for no cut
+      if (PIDConfigurations.tofPidNsigmaCutXiPi < 1e+5) { // safeguard for no cut
         setBits(maskXiSpecific, {selTOFNSigmaBachPionXi, selTOFDeltaTBachPionXi});
         setBits(maskAntiXiSpecific, {selTOFNSigmaBachPionXi, selTOFDeltaTBachPionXi});
       }
-      if (PIDConfigurations.TofPidNsigmaCutOmegaKaon < 1e+5) { // safeguard for no cut
+      if (PIDConfigurations.tofPidNsigmaCutOmegaKaon < 1e+5) { // safeguard for no cut
         setBits(maskOmegaSpecific, {selTOFNSigmaBachKaonOmega, selTOFDeltaTBachKaonOmega});
         setBits(maskAntiOmegaSpecific, {selTOFNSigmaBachKaonOmega, selTOFDeltaTBachKaonOmega});
       }
@@ -854,13 +849,13 @@ struct strangeYieldPbPb {
     histos.get<TH1>(HIST("eventQA/hEventSelection"))->GetXaxis()->SetBinLabel(16, "has UPC flag");
 
     // Event QA
-    histos.add("eventQA/hCentrality", "hCentrality", kTH2F, {axisFT0C_QA, axisSelGap});
-    histos.add("eventQA/hCentralityVsTracksPVeta1", "hCentralityVsTracksPVeta1", kTH3F, {axisFT0C_QA, axisNTracksPVeta1, axisSelGap});
-    histos.add("eventQA/hCentralityVsTracksTotalExceptITSonly", "hCentralityVsTracksTotalExceptITSonly", kTH3F, {axisFT0C_QA, axisNTracksTotalExceptITSonly, axisSelGap});
+    histos.add("eventQA/hCentrality", "hCentrality", kTH2F, {axisFT0Cqa, axisSelGap});
+    histos.add("eventQA/hCentralityVsTracksPVeta1", "hCentralityVsTracksPVeta1", kTH3F, {axisFT0Cqa, axisNTracksPVeta1, axisSelGap});
+    histos.add("eventQA/hCentralityVsTracksTotalExceptITSonly", "hCentralityVsTracksTotalExceptITSonly", kTH3F, {axisFT0Cqa, axisNTracksTotalExceptITSonly, axisSelGap});
     histos.add("eventQA/hOccupancy", "hOccupancy", kTH2F, {axisOccupancy, axisSelGap});
-    histos.add("eventQA/hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH3F, {axisFT0C_QA, axisOccupancy, axisSelGap});
+    histos.add("eventQA/hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH3F, {axisFT0Cqa, axisOccupancy, axisSelGap});
     histos.add("eventQA/hTracksPVeta1VsTracksGlobal", "hTracksPVeta1VsTracksGlobal", kTH3F, {axisNTracksPVeta1, axisNTracksGlobal, axisSelGap});
-    histos.add("eventQA/hCentralityVsTracksGlobal", "hCentralityVsTracksGlobal", kTH3F, {axisFT0C_QA, axisNTracksGlobal, axisSelGap});
+    histos.add("eventQA/hCentralityVsTracksGlobal", "hCentralityVsTracksGlobal", kTH3F, {axisFT0Cqa, axisNTracksGlobal, axisSelGap});
     histos.add("eventQA/hGapSide", "Gap side; Entries", kTH1F, {{5, -0.5, 4.5}});
     histos.add("eventQA/hSelGapSide", "Selected gap side; Entries", kTH1F, {axisSelGap});
     histos.add("eventQA/hPosX", "Vertex position in x", kTH2F, {{100, -0.1, 0.1}, axisSelGap});
@@ -882,7 +877,7 @@ struct strangeYieldPbPb {
       histos.add("eventQA/mc/hTracksGlobalVsNcoll_afterEvSel", "hTracksGlobalVsNcoll_afterEvSel", kTH2F, {axisNTracksGlobal, axisNAssocColl});
       histos.add("eventQA/mc/hTracksGlobalVsPVzMC", "hTracksGlobalVsPVzMC", kTH2F, {axisNTracksGlobal, {100, -20., 20.}});
       histos.add("eventQA/mc/hEventPVzMC", "hEventPVzMC", kTH1F, {{100, -20., 20.}});
-      histos.add("eventQA/mc/hGenEventCentrality", "hGenEventCentrality", kTH1F, {axisFT0C_QA});
+      histos.add("eventQA/mc/hGenEventCentrality", "hGenEventCentrality", kTH1F, {axisFT0Cqa});
     }
 
     if (doprocessV0sMC || doprocessCascadesMC) {
@@ -896,7 +891,7 @@ struct strangeYieldPbPb {
 
     if (doprocessGenerated) {
       for (Int_t partID = 0; partID <= 6; partID++) {
-        histos.add(Form("%s/mc/h6dGen", particlenames[partID].data()), "h6dGen", kTHnSparseF, {axisFT0C_QA, axisNchInvMass, axisNchInvMass, axisPt, axisSelGap, axisRap});
+        histos.add(Form("%s/mc/h6dGen", kParticlenames[partID].data()), "h6dGen", kTHnSparseF, {axisFT0Cqa, axisNchInvMass, axisNchInvMass, axisPt, axisSelGap, axisRap});
       }
     }
 
@@ -980,7 +975,7 @@ struct strangeYieldPbPb {
   template <typename TCollision>
   int getGapSide(TCollision const& collision)
   {
-    int selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
+    int selGapSide = sgSelector.trueGap(collision, upcCuts.fv0a, upcCuts.ft0a, upcCuts.ft0c, upcCuts.zdc);
     histos.fill(HIST("eventQA/hGapSide"), collision.gapSide());
     histos.fill(HIST("eventQA/hSelGapSide"), selGapSide);
     histos.fill(HIST("eventQA/hFT0"), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), selGapSide);
@@ -1009,16 +1004,16 @@ struct strangeYieldPbPb {
   template <typename TCollision>
   bool acceptEvent(TCollision const& collision, bool fillQA)
   {
-    struct selectionCheck {
+    struct SelectionCheck {
       bool selection;
       bool condition;
       float qaBin;
     };
 
-    const std::array<selectionCheck, 13> checks = {{
+    const std::array<SelectionCheck, 13> checks = {{
       {true, true, 0.0},                                                                                         // All collisions
       {requireIsTriggerTVX, collision.selection_bit(aod::evsel::kIsTriggerTVX), 1.0},                            // Triggered by FT0M
-      {true, fabs(collision.posZ()) <= 10.f, 2.0},                                                               // Vertex-Z selected
+      {true, std::fabs(collision.posZ()) <= 10.f, 2.0},                                                               // Vertex-Z selected
       {rejectITSROFBorder, collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder), 3.0},                   // Not at ITS ROF border
       {rejectTFBorder, collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder), 4.0},                        // Not at TF border
       {requireIsVertexITSTPC, collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC), 5.0},                    // At least one ITS-TPC track
@@ -1080,7 +1075,7 @@ struct strangeYieldPbPb {
       int afterburnerBitmap;
     };
 
-    constexpr MaskBitmapPair configs[] = {
+    constexpr MaskBitmapPair kConfigs[] = {
       // L6 <-- L0
       {0x7F, 12, 12}, // 01111 111 (L0 to L6)
       {0x7E, 11, 11}, // 01111 110 (L1 to L6)
@@ -1096,7 +1091,7 @@ struct strangeYieldPbPb {
       {0x0F, 1, 1},   // 00001 111 (L0 to L3)
     };
 
-    for (const auto& config : configs) {
+    for (const auto& config : kConfigs) {
       if (verifyMask(itsClusMap, config.mask)) {
         bitMap = fromAfterburner ? config.afterburnerBitmap : config.bitmap;
         break;
@@ -1115,14 +1110,14 @@ struct strangeYieldPbPb {
       int bitmap;
     };
 
-    constexpr MaskBitmapPair configs[] = {
+    constexpr MaskBitmapPair kConfigs[] = {
       {o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF, 4}, // ITS-TPC-TRD-TOF
       {o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF, 3},                       // ITS-TPC-TOF
       {o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD, 2},                       // ITS-TPC-TRD
       {o2::aod::track::ITS | o2::aod::track::TPC, 1}                                              // ITS-TPC
     };
 
-    for (const auto& config : configs) {
+    for (const auto& config : kConfigs) {
       if (verifyMask(detMap, config.mask)) {
         bitMap = config.bitmap;
         break;
@@ -1139,15 +1134,15 @@ struct strangeYieldPbPb {
     float rapidityOmega = casc.yOmega();
 
     // Access daughter tracks
-    auto posTrackExtra = casc.template posTrackExtra_as<dauTracks>();
-    auto negTrackExtra = casc.template negTrackExtra_as<dauTracks>();
-    auto bachTrackExtra = casc.template bachTrackExtra_as<dauTracks>();
+    auto posTrackExtra = casc.template posTrackExtra_as<DauTracks>();
+    auto negTrackExtra = casc.template negTrackExtra_as<DauTracks>();
+    auto bachTrackExtra = casc.template bachTrackExtra_as<DauTracks>();
 
     // c x tau
     float decayPos = std::hypot(casc.x() - coll.posX(), casc.y() - coll.posY(), casc.z() - coll.posZ());
     float totalMom = std::hypot(casc.px(), casc.py(), casc.pz());
-    float ctauXi = totalMom != 0 ? pdgDB->Mass(3312) * decayPos / totalMom : 1e6;
-    float ctauOmega = totalMom != 0 ? pdgDB->Mass(3334) * decayPos / totalMom : 1e6;
+    float ctauXi = totalMom != 0 ? o2::constants::physics::MassXiMinus * decayPos / totalMom : 1e6;
+    float ctauOmega = totalMom != 0 ? o2::constants::physics::MassOmegaMinus * decayPos / totalMom : 1e6;
 
     std::bitset<selNum> bitMap = 0;
 
@@ -1159,31 +1154,31 @@ struct strangeYieldPbPb {
       bitMap.set(selCascRadius);
     if (casc.cascradius() < casccuts.cascradiusMax)
       bitMap.set(selCascRadiusMax);
-    if (doBachelorBaryonCut && (casc.bachBaryonCosPA() < casccuts.bachbaryoncospa) && (fabs(casc.bachBaryonDCAxyToPV()) > casccuts.bachbaryondcaxytopv))
+    if (doBachelorBaryonCut && (casc.bachBaryonCosPA() < casccuts.bachbaryoncospa) && (std::fabs(casc.bachBaryonDCAxyToPV()) > casccuts.bachbaryondcaxytopv))
       bitMap.set(selBachBaryon);
-    if (fabs(casc.dcabachtopv()) > casccuts.dcabachtopv)
+    if (std::fabs(casc.dcabachtopv()) > casccuts.dcabachtopv)
       bitMap.set(selBachToPV);
 
     if (casc.sign() > 0) {
-      if (fabs(casc.dcanegtopv()) > casccuts.dcabaryontopv)
+      if (std::fabs(casc.dcanegtopv()) > casccuts.dcabaryontopv)
         bitMap.set(selBaryonToPV);
-      if (fabs(casc.dcapostopv()) > casccuts.dcamesontopv)
+      if (std::fabs(casc.dcapostopv()) > casccuts.dcamesontopv)
         bitMap.set(selMesonToPV);
     } else { // no sign == 0, in principle
-      if (fabs(casc.dcapostopv()) > casccuts.dcabaryontopv)
+      if (std::fabs(casc.dcapostopv()) > casccuts.dcabaryontopv)
         bitMap.set(selBaryonToPV);
-      if (fabs(casc.dcanegtopv()) > casccuts.dcamesontopv)
+      if (std::fabs(casc.dcanegtopv()) > casccuts.dcamesontopv)
         bitMap.set(selMesonToPV);
     }
 
-    if (fabs(casc.mXi() - pdgDB->Mass(3312)) < casccuts.masswin)
+    if (std::fabs(casc.mXi() - o2::constants::physics::MassXiMinus) < casccuts.masswin)
       bitMap.set(selMassWinXi);
-    if (fabs(casc.mOmega() - pdgDB->Mass(3334)) < casccuts.masswin)
+    if (std::fabs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < casccuts.masswin)
       bitMap.set(selMassWinOmega);
-    if (fabs(casc.mLambda() - pdgDB->Mass(3122)) < casccuts.lambdamasswin)
+    if (std::fabs(casc.mLambda() - o2::constants::physics::MassLambda0) < casccuts.lambdamasswin)
       bitMap.set(selLambdaMassWin);
 
-    if (fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) > casccuts.dcav0topv)
+    if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) > casccuts.dcav0topv)
       bitMap.set(selDCAV0ToPV);
     if (casc.v0radius() > v0cuts.v0radius)
       bitMap.set(selV0Radius);
@@ -1205,15 +1200,15 @@ struct strangeYieldPbPb {
     auto bacheta = RecoDecay::eta(std::array{casc.pxbach(), casc.pybach(), casc.pzbach()});
 
     // kinematic
-    if (fabs(rapidityXi) < rapidityCut)
+    if (std::fabs(rapidityXi) < rapidityCut)
       bitMap.set(selXiRapidity);
-    if (fabs(rapidityOmega) < rapidityCut)
+    if (std::fabs(rapidityOmega) < rapidityCut)
       bitMap.set(selOmegaRapidity);
-    if (fabs(poseta) < daughterEtaCut)
+    if (std::fabs(poseta) < daughterEtaCut)
       bitMap.set(selNegEta);
-    if (fabs(negeta) < daughterEtaCut)
+    if (std::fabs(negeta) < daughterEtaCut)
       bitMap.set(selPosEta);
-    if (fabs(bacheta) < daughterEtaCut)
+    if (std::fabs(bacheta) < daughterEtaCut)
       bitMap.set(selBachEta);
 
     // DCA cuts
@@ -1250,70 +1245,70 @@ struct strangeYieldPbPb {
 
     // TPC PID
     // positive track
-    if (fabs(posTrackExtra.tpcNSigmaPi()) < PIDConfigurations.TpcPidNsigmaCut)
+    if (std::fabs(posTrackExtra.tpcNSigmaPi()) < PIDConfigurations.tpcPidNsigmaCut)
       bitMap.set(selTPCPIDPositivePion);
-    if (fabs(posTrackExtra.tpcNSigmaPr()) < PIDConfigurations.TpcPidNsigmaCut)
+    if (std::fabs(posTrackExtra.tpcNSigmaPr()) < PIDConfigurations.tpcPidNsigmaCut)
       bitMap.set(selTPCPIDPositiveProton);
     // negative track
-    if (fabs(negTrackExtra.tpcNSigmaPi()) < PIDConfigurations.TpcPidNsigmaCut)
+    if (std::fabs(negTrackExtra.tpcNSigmaPi()) < PIDConfigurations.tpcPidNsigmaCut)
       bitMap.set(selTPCPIDNegativePion);
-    if (fabs(negTrackExtra.tpcNSigmaPr()) < PIDConfigurations.TpcPidNsigmaCut)
+    if (std::fabs(negTrackExtra.tpcNSigmaPr()) < PIDConfigurations.tpcPidNsigmaCut)
       bitMap.set(selTPCPIDNegativeProton);
     // bachelor track
-    if (fabs(bachTrackExtra.tpcNSigmaPi()) < PIDConfigurations.TpcPidNsigmaCut)
+    if (std::fabs(bachTrackExtra.tpcNSigmaPi()) < PIDConfigurations.tpcPidNsigmaCut)
       bitMap.set(selTPCPIDBachPion);
-    if (fabs(bachTrackExtra.tpcNSigmaKa()) < PIDConfigurations.TpcPidNsigmaCut)
+    if (std::fabs(bachTrackExtra.tpcNSigmaKa()) < PIDConfigurations.tpcPidNsigmaCut)
       bitMap.set(selTPCPIDBachKaon);
 
     // TOF PID in DeltaT
     // positive track
-    if (fabs(casc.posTOFDeltaTXiPr()) < PIDConfigurations.maxDeltaTimeProton)
+    if (std::fabs(casc.posTOFDeltaTXiPr()) < PIDConfigurations.maxDeltaTimeProton)
       bitMap.set(selTOFDeltaTPositiveProtonLambdaXi);
-    if (fabs(casc.posTOFDeltaTXiPi()) < PIDConfigurations.maxDeltaTimePion)
+    if (std::fabs(casc.posTOFDeltaTXiPi()) < PIDConfigurations.maxDeltaTimePion)
       bitMap.set(selTOFDeltaTPositivePionLambdaXi);
-    if (fabs(casc.posTOFDeltaTOmPr()) < PIDConfigurations.maxDeltaTimeProton)
+    if (std::fabs(casc.posTOFDeltaTOmPr()) < PIDConfigurations.maxDeltaTimeProton)
       bitMap.set(selTOFDeltaTPositiveProtonLambdaOmega);
-    if (fabs(casc.posTOFDeltaTOmPi()) < PIDConfigurations.maxDeltaTimePion)
+    if (std::fabs(casc.posTOFDeltaTOmPi()) < PIDConfigurations.maxDeltaTimePion)
       bitMap.set(selTOFDeltaTPositivePionLambdaOmega);
     // negative track
-    if (fabs(casc.negTOFDeltaTXiPr()) < PIDConfigurations.maxDeltaTimeProton)
+    if (std::fabs(casc.negTOFDeltaTXiPr()) < PIDConfigurations.maxDeltaTimeProton)
       bitMap.set(selTOFDeltaTNegativeProtonLambdaXi);
-    if (fabs(casc.negTOFDeltaTXiPi()) < PIDConfigurations.maxDeltaTimePion)
+    if (std::fabs(casc.negTOFDeltaTXiPi()) < PIDConfigurations.maxDeltaTimePion)
       bitMap.set(selTOFDeltaTNegativePionLambdaXi);
-    if (fabs(casc.negTOFDeltaTOmPr()) < PIDConfigurations.maxDeltaTimeProton)
+    if (std::fabs(casc.negTOFDeltaTOmPr()) < PIDConfigurations.maxDeltaTimeProton)
       bitMap.set(selTOFDeltaTNegativeProtonLambdaOmega);
-    if (fabs(casc.negTOFDeltaTOmPi()) < PIDConfigurations.maxDeltaTimePion)
+    if (std::fabs(casc.negTOFDeltaTOmPi()) < PIDConfigurations.maxDeltaTimePion)
       bitMap.set(selTOFDeltaTNegativePionLambdaOmega);
     // bachelor track
-    if (fabs(casc.bachTOFDeltaTOmKa()) < PIDConfigurations.maxDeltaTimeKaon)
+    if (std::fabs(casc.bachTOFDeltaTOmKa()) < PIDConfigurations.maxDeltaTimeKaon)
       bitMap.set(selTOFDeltaTBachKaonOmega);
-    if (fabs(casc.bachTOFDeltaTXiPi()) < PIDConfigurations.maxDeltaTimePion)
+    if (std::fabs(casc.bachTOFDeltaTXiPi()) < PIDConfigurations.maxDeltaTimePion)
       bitMap.set(selTOFDeltaTBachPionXi);
 
     // TOF PID in NSigma
     // meson track
-    if (fabs(casc.tofNSigmaXiLaPi()) < PIDConfigurations.TofPidNsigmaCutLaPi) {
+    if (std::fabs(casc.tofNSigmaXiLaPi()) < PIDConfigurations.tofPidNsigmaCutLaPi) {
       bitMap.set(selTOFNSigmaPositivePionLambdaXi);
       bitMap.set(selTOFNSigmaNegativePionLambdaXi);
     }
-    if (fabs(casc.tofNSigmaOmLaPi()) < PIDConfigurations.TofPidNsigmaCutLaPi) {
+    if (std::fabs(casc.tofNSigmaOmLaPi()) < PIDConfigurations.tofPidNsigmaCutLaPi) {
       bitMap.set(selTOFNSigmaPositivePionLambdaOmega);
       bitMap.set(selTOFNSigmaNegativePionLambdaOmega);
     }
     // baryon track
-    if (fabs(casc.tofNSigmaXiLaPr()) < PIDConfigurations.TofPidNsigmaCutLaPr) {
+    if (std::fabs(casc.tofNSigmaXiLaPr()) < PIDConfigurations.tofPidNsigmaCutLaPr) {
       bitMap.set(selTOFNSigmaNegativeProtonLambdaXi);
       bitMap.set(selTOFNSigmaPositiveProtonLambdaXi);
     }
-    if (fabs(casc.tofNSigmaOmLaPr()) < PIDConfigurations.TofPidNsigmaCutLaPr) {
+    if (std::fabs(casc.tofNSigmaOmLaPr()) < PIDConfigurations.tofPidNsigmaCutLaPr) {
       bitMap.set(selTOFNSigmaNegativePionLambdaOmega);
       bitMap.set(selTOFNSigmaPositivePionLambdaOmega);
     }
     // bachelor track
-    if (fabs(casc.tofNSigmaXiPi()) < PIDConfigurations.TofPidNsigmaCutXiPi) {
+    if (std::fabs(casc.tofNSigmaXiPi()) < PIDConfigurations.tofPidNsigmaCutXiPi) {
       bitMap.set(selTOFNSigmaBachPionXi);
     }
-    if (fabs(casc.tofNSigmaOmKa()) < PIDConfigurations.TofPidNsigmaCutOmegaKaon) {
+    if (std::fabs(casc.tofNSigmaOmKa()) < PIDConfigurations.tofPidNsigmaCutOmegaKaon) {
       bitMap.set(selTOFNSigmaBachKaonOmega);
     }
 
@@ -1326,9 +1321,9 @@ struct strangeYieldPbPb {
       bitMap.set(selBachItsOnly);
 
     // rej. comp.
-    if (fabs(casc.mOmega() - pdgDB->Mass(3334)) > casccuts.rejcomp)
+    if (std::fabs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > casccuts.rejcomp)
       bitMap.set(selRejCompXi);
-    if (fabs(casc.mXi() - pdgDB->Mass(3312)) > casccuts.rejcomp)
+    if (std::fabs(casc.mXi() - o2::constants::physics::MassXiMinus) > casccuts.rejcomp)
       bitMap.set(selRejCompOmega);
 
     // TPC only tag
@@ -1355,9 +1350,9 @@ struct strangeYieldPbPb {
       bitMap.set(selV0Radius);
     if (v0.v0radius() < v0cuts.v0radiusMax)
       bitMap.set(selV0RadiusMax);
-    if (fabs(v0.dcapostopv()) > v0cuts.dcapostopv)
+    if (std::fabs(v0.dcapostopv()) > v0cuts.dcapostopv)
       bitMap.set(selDCAPosToPV);
-    if (fabs(v0.dcanegtopv()) > v0cuts.dcanegtopv)
+    if (std::fabs(v0.dcanegtopv()) > v0cuts.dcanegtopv)
       bitMap.set(selDCANegToPV);
     if (v0.v0cosPA() > v0cuts.v0cospa)
       bitMap.set(selV0CosPA);
@@ -1365,17 +1360,17 @@ struct strangeYieldPbPb {
       bitMap.set(selDCAV0Dau);
 
     // kinematic
-    if (fabs(rapidityLambda) < rapidityCut)
+    if (std::fabs(rapidityLambda) < rapidityCut)
       bitMap.set(selLambdaRapidity);
-    if (fabs(rapidityK0Short) < rapidityCut)
+    if (std::fabs(rapidityK0Short) < rapidityCut)
       bitMap.set(selK0ShortRapidity);
-    if (fabs(v0.negativeeta()) < daughterEtaCut)
+    if (std::fabs(v0.negativeeta()) < daughterEtaCut)
       bitMap.set(selNegEta);
-    if (fabs(v0.positiveeta()) < daughterEtaCut)
+    if (std::fabs(v0.positiveeta()) < daughterEtaCut)
       bitMap.set(selPosEta);
 
-    auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
-    auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
+    auto posTrackExtra = v0.template posTrackExtra_as<DauTracks>();
+    auto negTrackExtra = v0.template negTrackExtra_as<DauTracks>();
 
     // DCA cuts
     auto pospt = std::sqrt(std::pow(v0.pxpos(), 2) + std::pow(v0.pypos(), 2));
@@ -1403,45 +1398,45 @@ struct strangeYieldPbPb {
       bitMap.set(selNegGoodTPCTrack);
 
     // TPC PID
-    if (fabs(posTrackExtra.tpcNSigmaPi()) < PIDConfigurations.TpcPidNsigmaCut)
+    if (std::fabs(posTrackExtra.tpcNSigmaPi()) < PIDConfigurations.tpcPidNsigmaCut)
       bitMap.set(selTPCPIDPositivePion);
-    if (fabs(posTrackExtra.tpcNSigmaPr()) < PIDConfigurations.TpcPidNsigmaCut)
+    if (std::fabs(posTrackExtra.tpcNSigmaPr()) < PIDConfigurations.tpcPidNsigmaCut)
       bitMap.set(selTPCPIDPositiveProton);
-    if (fabs(negTrackExtra.tpcNSigmaPi()) < PIDConfigurations.TpcPidNsigmaCut)
+    if (std::fabs(negTrackExtra.tpcNSigmaPi()) < PIDConfigurations.tpcPidNsigmaCut)
       bitMap.set(selTPCPIDNegativePion);
-    if (fabs(negTrackExtra.tpcNSigmaPr()) < PIDConfigurations.TpcPidNsigmaCut)
+    if (std::fabs(negTrackExtra.tpcNSigmaPr()) < PIDConfigurations.tpcPidNsigmaCut)
       bitMap.set(selTPCPIDNegativeProton);
 
     // TOF PID in DeltaT
     // positive track
-    if (fabs(v0.posTOFDeltaTLaPr()) < PIDConfigurations.maxDeltaTimeProton)
+    if (std::fabs(v0.posTOFDeltaTLaPr()) < PIDConfigurations.maxDeltaTimeProton)
       bitMap.set(selTOFDeltaTPositiveProtonLambda);
-    if (fabs(v0.posTOFDeltaTLaPi()) < PIDConfigurations.maxDeltaTimePion)
+    if (std::fabs(v0.posTOFDeltaTLaPi()) < PIDConfigurations.maxDeltaTimePion)
       bitMap.set(selTOFDeltaTPositivePionLambda);
-    if (fabs(v0.posTOFDeltaTK0Pi()) < PIDConfigurations.maxDeltaTimePion)
+    if (std::fabs(v0.posTOFDeltaTK0Pi()) < PIDConfigurations.maxDeltaTimePion)
       bitMap.set(selTOFDeltaTPositivePionK0Short);
     // negative track
-    if (fabs(v0.negTOFDeltaTLaPr()) < PIDConfigurations.maxDeltaTimeProton)
+    if (std::fabs(v0.negTOFDeltaTLaPr()) < PIDConfigurations.maxDeltaTimeProton)
       bitMap.set(selTOFDeltaTNegativeProtonLambda);
-    if (fabs(v0.negTOFDeltaTLaPi()) < PIDConfigurations.maxDeltaTimePion)
+    if (std::fabs(v0.negTOFDeltaTLaPi()) < PIDConfigurations.maxDeltaTimePion)
       bitMap.set(selTOFDeltaTNegativePionLambda);
-    if (fabs(v0.negTOFDeltaTK0Pi()) < PIDConfigurations.maxDeltaTimePion)
+    if (std::fabs(v0.negTOFDeltaTK0Pi()) < PIDConfigurations.maxDeltaTimePion)
       bitMap.set(selTOFDeltaTNegativePionK0Short);
 
     // TOF PID in NSigma
     // positive track
-    if (fabs(v0.tofNSigmaLaPr()) < PIDConfigurations.TofPidNsigmaCutLaPr)
+    if (std::fabs(v0.tofNSigmaLaPr()) < PIDConfigurations.tofPidNsigmaCutLaPr)
       bitMap.set(selTOFNSigmaPositiveProtonLambda);
-    if (fabs(v0.tofNSigmaALaPi()) < PIDConfigurations.TofPidNsigmaCutLaPi)
+    if (std::fabs(v0.tofNSigmaALaPi()) < PIDConfigurations.tofPidNsigmaCutLaPi)
       bitMap.set(selTOFNSigmaPositivePionLambda);
-    if (fabs(v0.tofNSigmaK0PiPlus()) < PIDConfigurations.TofPidNsigmaCutK0Pi)
+    if (std::fabs(v0.tofNSigmaK0PiPlus()) < PIDConfigurations.tofPidNsigmaCutK0Pi)
       bitMap.set(selTOFNSigmaPositivePionK0Short);
     // negative track
-    if (fabs(v0.tofNSigmaALaPr()) < PIDConfigurations.TofPidNsigmaCutLaPr)
+    if (std::fabs(v0.tofNSigmaALaPr()) < PIDConfigurations.tofPidNsigmaCutLaPr)
       bitMap.set(selTOFNSigmaNegativeProtonLambda);
-    if (fabs(v0.tofNSigmaLaPi()) < PIDConfigurations.TofPidNsigmaCutLaPi)
+    if (std::fabs(v0.tofNSigmaLaPi()) < PIDConfigurations.tofPidNsigmaCutLaPi)
       bitMap.set(selTOFNSigmaNegativePionLambda);
-    if (fabs(v0.tofNSigmaK0PiMinus()) < PIDConfigurations.TofPidNsigmaCutK0Pi)
+    if (std::fabs(v0.tofNSigmaK0PiMinus()) < PIDConfigurations.tofPidNsigmaCutK0Pi)
       bitMap.set(selTOFNSigmaNegativePionK0Short);
 
     // ITS only tag
@@ -1463,7 +1458,7 @@ struct strangeYieldPbPb {
       bitMap.set(selK0ShortCTau);
 
     // armenteros
-    if (v0.qtarm() * v0cuts.armPodCut > fabs(v0.alpha()) || v0cuts.armPodCut < 1e-4)
+    if (v0.qtarm() * v0cuts.armPodCut > std::fabs(v0.alpha()) || v0cuts.armPodCut < 1e-4)
       bitMap.set(selK0ShortArmenteros);
 
     return bitMap;
@@ -1473,9 +1468,9 @@ struct strangeYieldPbPb {
   void analyseCascCandidate(TCasc const& casc, TCollision const& coll, int const& gap, std::bitset<selNum> const& selMap)
   {
     // Access daughter tracks
-    auto posTrackExtra = casc.template posTrackExtra_as<dauTracks>();
-    auto negTrackExtra = casc.template negTrackExtra_as<dauTracks>();
-    auto bachTrackExtra = casc.template bachTrackExtra_as<dauTracks>();
+    auto posTrackExtra = casc.template posTrackExtra_as<DauTracks>();
+    auto negTrackExtra = casc.template negTrackExtra_as<DauTracks>();
+    auto bachTrackExtra = casc.template bachTrackExtra_as<DauTracks>();
 
     if (doPlainTopoQA) {
       histos.fill(HIST("generalQA/hPt"), casc.pt());
@@ -1488,7 +1483,7 @@ struct strangeYieldPbPb {
       histos.fill(HIST("generalQA/hV0CosPA"), casc.pt(), casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()));
       histos.fill(HIST("generalQA/hV0Radius"), casc.pt(), casc.v0radius());
       histos.fill(HIST("generalQA/hDCAV0Daughters"), casc.pt(), casc.dcaV0daughters());
-      histos.fill(HIST("generalQA/hDCAV0ToPV"), casc.pt(), fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())));
+      histos.fill(HIST("generalQA/hDCAV0ToPV"), casc.pt(), std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())));
       histos.fill(HIST("generalQA/hMassLambdaDau"), casc.pt(), casc.mLambda());
       histos.fill(HIST("generalQA/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
       histos.fill(HIST("generalQA/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
@@ -1557,8 +1552,8 @@ struct strangeYieldPbPb {
   template <typename TV0, typename TCollision>
   void analyseV0Candidate(TV0 const& v0, TCollision const& coll, int const& gap, std::bitset<selNum> const& selMap)
   {
-    auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
-    auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
+    auto posTrackExtra = v0.template posTrackExtra_as<DauTracks>();
+    auto negTrackExtra = v0.template negTrackExtra_as<DauTracks>();
 
     // QA plots
     if (doPlainTopoQA) {
@@ -1566,7 +1561,7 @@ struct strangeYieldPbPb {
       histos.fill(HIST("generalQA/hPosDCAToPV"), v0.dcapostopv());
       histos.fill(HIST("generalQA/hNegDCAToPV"), v0.dcanegtopv());
       histos.fill(HIST("generalQA/hDCADaughters"), v0.dcaV0daughters());
-      histos.fill(HIST("generalQA/hPointingAngle"), TMath::ACos(v0.v0cosPA()));
+      histos.fill(HIST("generalQA/hPointingAngle"), std::acos(v0.v0cosPA()));
       histos.fill(HIST("generalQA/hV0Radius"), v0.v0radius());
       histos.fill(HIST("generalQA/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
       histos.fill(HIST("generalQA/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
@@ -1590,10 +1585,10 @@ struct strangeYieldPbPb {
     }
   }
 
-  PresliceUnsorted<straCollisonsFullMC> perMcCollision = aod::v0data::straMCCollisionId;
+  PresliceUnsorted<StraCollisonsFullMC> perMcCollision = aod::v0data::straMCCollisionId;
 
-  std::vector<int> getListOfRecoCollIndices(straMCCollisionsFull const& mcCollisions,
-                                            straCollisonsFullMC const& collisions)
+  std::vector<int> getListOfRecoCollIndices(StraMCCollisionsFull const& mcCollisions,
+                                            StraCollisonsFullMC const& collisions)
   {
     std::vector<int> listBestCollisionIdx(mcCollisions.size(), -1);
 
@@ -1615,13 +1610,13 @@ struct strangeYieldPbPb {
     return listBestCollisionIdx;
   }
 
-  void fillGenMCHistogramsQA(straMCCollisionsFull const& mcCollisions, straCollisonsFullMC const& collisions)
+  void fillGenMCHistogramsQA(StraMCCollisionsFull const& mcCollisions, StraCollisonsFullMC const& collisions)
   {
     for (auto const& mcCollision : mcCollisions) {
       histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 0.0);
       histos.fill(HIST("eventQA/mc/hMCNParticlesEta10"), mcCollision.multMCNParticlesEta10(), 0 /* all gen. events*/);
 
-      if (TMath::Abs(mcCollision.posZ()) > 10.f)
+      if (std::abs(mcCollision.posZ()) > 10.f)
         continue;
 
       histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 1.0);
@@ -1669,7 +1664,7 @@ struct strangeYieldPbPb {
     }
   }
 
-  void processV0s(straCollisonFull const& collision, v0Candidates const& fullV0s, dauTracks const&)
+  void processV0s(StraCollisonFull const& collision, V0Candidates const& fullV0s, DauTracks const&)
   {
     if (!acceptEvent(collision, true)) {
       return;
@@ -1681,7 +1676,7 @@ struct strangeYieldPbPb {
 
     fillHistogramsQA(collision, selGapSide);
 
-    for (auto& v0 : fullV0s) {
+    for (const auto& v0 : fullV0s) {
       if ((v0.v0Type() != v0cuts.v0TypeSelection) && (v0cuts.v0TypeSelection > 0))
         continue; // skip V0s that are not standard
 
@@ -1695,12 +1690,12 @@ struct strangeYieldPbPb {
     } // end v0 loop
   }
 
-  void processV0sMC(straCollisonFullMC const& collision,
-                    v0CandidatesMC const& fullV0s,
-                    dauTracks const&,
+  void processV0sMC(StraCollisonFullMC const& collision,
+                    V0CandidatesMC const& fullV0s,
+                    DauTracks const&,
                     aod::MotherMCParts const&,
-                    straMCCollisionsFull const&,
-                    v0MCCoresFull const&)
+                    StraMCCollisionsFull const&,
+                    V0MCCoresFull const&)
   {
     if (!acceptEvent(collision, true)) {
       return;
@@ -1717,14 +1712,14 @@ struct strangeYieldPbPb {
     fillHistogramsQA(collision, selGapSide);
 
     if (collision.has_straMCCollision()) {
-      const auto& mcCollision = collision.straMCCollision_as<straMCCollisionsFull>();
+      const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>();
       histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta10rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta10());
       histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
       histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
       histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
     }
 
-    for (auto& v0 : fullV0s) {
+    for (const auto& v0 : fullV0s) {
       if ((v0.v0Type() != v0cuts.v0TypeSelection) && (v0cuts.v0TypeSelection > 0))
         continue; // skip V0s that are not standard
 
@@ -1732,7 +1727,7 @@ struct strangeYieldPbPb {
 
       if (doMCAssociation) {
         if (v0.has_v0MCCore()) {
-          const auto& v0MC = v0.v0MCCore_as<v0MCCoresFull>();
+          const auto& v0MC = v0.v0MCCore_as<V0MCCoresFull>();
           computeV0MCAssociation(v0MC, selMap);
         }
       } else {
@@ -1745,11 +1740,11 @@ struct strangeYieldPbPb {
     } // end v0 loop
   }
 
-  void processCascadesMC(straCollisonFullMC const& collision,
-                         cascadeCandidatesMC const& fullCascades,
-                         dauTracks const&,
-                         straMCCollisionsFull const&,
-                         cascMCCoresFull const&)
+  void processCascadesMC(StraCollisonFullMC const& collision,
+                         CascadeCandidatesMC const& fullCascades,
+                         DauTracks const&,
+                         StraMCCollisionsFull const&,
+                         CascMCCoresFull const&)
   {
     if (!acceptEvent(collision, true)) {
       return;
@@ -1766,7 +1761,7 @@ struct strangeYieldPbPb {
     fillHistogramsQA(collision, selGapSide);
 
     if (collision.has_straMCCollision()) {
-      const auto& mcCollision = collision.straMCCollision_as<straMCCollisionsFull>();
+      const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>();
       histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta10rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta10());
       histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
       histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
@@ -1774,10 +1769,10 @@ struct strangeYieldPbPb {
     }
   }
 
-  void processGenerated(straMCCollisionsFull const& mcCollisions,
-                        v0MCCoresFull const& V0MCCores,
-                        cascMCCoresFull const& CascMCCores,
-                        straCollisonsFullMC const& collisions)
+  void processGenerated(StraMCCollisionsFull const& mcCollisions,
+                        V0MCCoresFull const& V0MCCores,
+                        CascMCCoresFull const& CascMCCores,
+                        StraCollisonsFullMC const& collisions)
   {
     fillGenMCHistogramsQA(mcCollisions, collisions);
     std::vector<int> listBestCollisionIdx = getListOfRecoCollIndices(mcCollisions, collisions);
@@ -1792,13 +1787,13 @@ struct strangeYieldPbPb {
       float ymc = 1e3;
       if (v0MC.pdgCode() == 310)
         ymc = v0MC.rapidityMC(0);
-      else if (TMath::Abs(v0MC.pdgCode()) == 3122)
+      else if (std::abs(v0MC.pdgCode()) == 3122)
         ymc = v0MC.rapidityMC(1);
-      if (TMath::Abs(ymc) > rapidityCut)
+      if (std::abs(ymc) > rapidityCut)
         continue;
 
-      auto mcCollision = v0MC.straMCCollision_as<straMCCollisionsFull>(); // take gen. collision
-      if (TMath::Abs(mcCollision.posZ()) > 10.f)
+      auto mcCollision = v0MC.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision
+      if (std::abs(mcCollision.posZ()) > 10.f)
         continue;
 
       float centrality = -1.f;
@@ -1811,25 +1806,25 @@ struct strangeYieldPbPb {
 
       // Fill histograms
       if (v0MC.pdgCode() == 310) {
-        histos.fill(HIST(particlenames[0]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+        histos.fill(HIST(kParticlenames[0]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
       }
       if (v0MC.pdgCode() == 3122) {
-        histos.fill(HIST(particlenames[1]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+        histos.fill(HIST(kParticlenames[1]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
       }
       if (v0MC.pdgCode() == -3122) {
-        histos.fill(HIST(particlenames[2]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+        histos.fill(HIST(kParticlenames[2]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
       }
     } // V0 end
   }
 
-  PROCESS_SWITCH(strangeYieldPbPb, processV0s, "Process V0s", true);
-  PROCESS_SWITCH(strangeYieldPbPb, processV0sMC, "Process V0s MC", false);
-  PROCESS_SWITCH(strangeYieldPbPb, processCascades, "Process Cascades", false);
-  PROCESS_SWITCH(strangeYieldPbPb, processGenerated, "Process Generated Level", false);
+  PROCESS_SWITCH(Derivedupcanalysis, processV0s, "Process V0s", true);
+  PROCESS_SWITCH(Derivedupcanalysis, processV0sMC, "Process V0s MC", false);
+  PROCESS_SWITCH(Derivedupcanalysis, processCascades, "Process Cascades", false);
+  PROCESS_SWITCH(Derivedupcanalysis, processGenerated, "Process Generated Level", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<strangeYieldPbPb>(cfgc)};
+    adaptAnalysisTask<Derivedupcanalysis>(cfgc)};
 }
