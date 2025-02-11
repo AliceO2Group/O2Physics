@@ -10,13 +10,13 @@
 // or submit itself to any jurisdiction.
 
 // Header files.
+#include <vector>
 
 // O2 headers.
 
 // O2 Physics headers.
 #include "PWGCF/JCorran/Core/FlowJHistManager.h"
 #include "CommonConstants/MathConstants.h"
-#include <vector>
 
 // Namespaces.
 using namespace o2;
