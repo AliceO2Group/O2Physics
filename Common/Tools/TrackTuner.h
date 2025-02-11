@@ -24,6 +24,8 @@
 #include <utility>
 #include <vector>
 #include <algorithm>
+#include <numbers>
+#include <fmt/core.h>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -77,7 +79,8 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> cfgUsePvRefitCorrections{"usePvRefitCorrections", false, "Flag to establish whether to use corrections obtained with or w/o PV refit"};
   o2::framework::Configurable<float> cfgQOverPtMC{"qOverPtMC", -1., "Scaling factor on q/pt of MC"};
   o2::framework::Configurable<float> cfgQOverPtData{"qOverPtData", -1., "Scaling factor on q/pt of data"};
-
+ o2::framework::Configurable<int> cfgNPhiBins{"nPhiBins", 0, "Number of phi bins"};
+  
   ///////////////////////////////
   /// parameters to be configured
   bool debugInfo = false;
@@ -97,30 +100,31 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
   ///////////////////////////////
   bool isConfigFromString = false;
   bool isConfigFromConfigurables = false;
+  int nPhiBins=1;
 
   o2::ccdb::CcdbApi ccdbApi;
   std::map<std::string, std::string> metadata;
 
-  std::unique_ptr<TGraphErrors> grDcaXYResVsPtPionMC;
-  std::unique_ptr<TGraphErrors> grDcaXYResVsPtPionData;
+  std::vector<std::unique_ptr<TGraphErrors>> grDcaXYResVsPtPionMC;
+  std::vector<std::unique_ptr<TGraphErrors>> grDcaXYResVsPtPionData;
 
-  std::unique_ptr<TGraphErrors> grDcaZResVsPtPionMC;
-  std::unique_ptr<TGraphErrors> grDcaZResVsPtPionData;
+  std::vector<std::unique_ptr<TGraphErrors>> grDcaZResVsPtPionMC;
+  std::vector<std::unique_ptr<TGraphErrors>> grDcaZResVsPtPionData;
 
-  std::unique_ptr<TGraphErrors> grDcaXYMeanVsPtPionMC;
-  std::unique_ptr<TGraphErrors> grDcaXYMeanVsPtPionData;
+  std::vector<std::unique_ptr<TGraphErrors>> grDcaXYMeanVsPtPionMC;
+  std::vector<std::unique_ptr<TGraphErrors>> grDcaXYMeanVsPtPionData;
 
-  std::unique_ptr<TGraphErrors> grDcaZMeanVsPtPionMC;
-  std::unique_ptr<TGraphErrors> grDcaZMeanVsPtPionData;
+  std::vector<std::unique_ptr<TGraphErrors>> grDcaZMeanVsPtPionMC;
+  std::vector<std::unique_ptr<TGraphErrors>> grDcaZMeanVsPtPionData;
 
   std::unique_ptr<TGraphErrors> grOneOverPtPionMC;   // MC
   std::unique_ptr<TGraphErrors> grOneOverPtPionData; // Data
 
-  std::unique_ptr<TGraphErrors> grDcaXYPullVsPtPionMC;
-  std::unique_ptr<TGraphErrors> grDcaXYPullVsPtPionData;
+  std::vector<std::unique_ptr<TGraphErrors>> grDcaXYPullVsPtPionMC;
+  std::vector<std::unique_ptr<TGraphErrors>> grDcaXYPullVsPtPionData;
 
-  std::unique_ptr<TGraphErrors> grDcaZPullVsPtPionMC;
-  std::unique_ptr<TGraphErrors> grDcaZPullVsPtPionData;
+  std::vector<std::unique_ptr<TGraphErrors>> grDcaZPullVsPtPionMC;
+  std::vector<std::unique_ptr<TGraphErrors>> grDcaZPullVsPtPionData;
 
   /// @brief Function doing a few sanity-checks on the configurations
   void checkConfig()
@@ -191,6 +195,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
                           UsePvRefitCorrections,
                           QOverPtMC,
                           QOverPtData,
+			  NPhiBins,
                           NPars };
     std::map<uint8_t, std::string> mapParNames = {
       std::make_pair(DebugInfo, "debugInfo"),
@@ -206,7 +211,9 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       std::make_pair(NameFileQoverPt, "nameFileQoverPt"),
       std::make_pair(UsePvRefitCorrections, "usePvRefitCorrections"),
       std::make_pair(QOverPtMC, "qOverPtMC"),
-      std::make_pair(QOverPtData, "qOverPtData")};
+      std::make_pair(QOverPtData, "qOverPtData"),
+      std::make_pair(NPhiBins,"nPhiBins")
+    };
     ///////////////////////////////////////////////////////////////////////////////////
     LOG(info) << "[TrackTuner]";
     LOG(info) << "[TrackTuner] >>> Parameters before the custom settings";
@@ -224,6 +231,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     LOG(info) << "[TrackTuner]     usePvRefitCorrections = " << usePvRefitCorrections;
     LOG(info) << "[TrackTuner]     qOverPtMC = " << qOverPtMC;
     LOG(info) << "[TrackTuner]     qOverPtData = " << qOverPtData;
+    LOG(info) << "[TrackTuner]     nPhiBins = " << nPhiBins;
 
     // ##############################################################################################
     // ########   split the original string, separating substrings delimited by "|" symbol   ########
@@ -337,7 +345,11 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     qOverPtData = std::stof(getValueString(QOverPtData));
     outputString += ", qOverPtData=" + std::to_string(qOverPtData);
     LOG(info) << "[TrackTuner]     qOverPtData = " << qOverPtData;
-
+    // Configure nPhiBins
+    nPhiBins = std::stof(getValueString(NPhiBins));
+    outputString += ", nPhiBins=" + std::to_string(nPhiBins);
+    if(nPhiBins<0)LOG(fatal) << "[TrackTuner]   negative nPhiBins!" << nPhiBins;
+    LOG(info) << "[TrackTuner]     nPhiBins = " << nPhiBins;
     /// declare that the configuration is done via an input string
     isConfigFromString = true;
 
@@ -417,6 +429,11 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     qOverPtData = cfgQOverPtData;
     outputString += ", qOverPtData=" + std::to_string(qOverPtData);
     LOG(info) << "[TrackTuner]     qOverPtData = " << qOverPtData;
+    // Configure nPhiBins
+    nPhiBins = cfgNPhiBins; 
+    outputString += ", nPhiBins=" + std::to_string(nPhiBins);
+    if(nPhiBins<0)LOG(fatal) << "[TrackTuner]   negative nPhiBins!" << nPhiBins;
+    LOG(info) << "[TrackTuner]     nPhiBins = " << nPhiBins;
 
     /// declare that the configuration is done via the Configurables
     isConfigFromConfigurables = true;
@@ -476,38 +493,99 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       LOG(fatal) << "TDirectory " << td << " not found in input file" << inputFile->GetName() << ". Fix it!";
     }
 
-    std::string grDcaXYResNameMC = "resCurrentDcaXY";
-    std::string grDcaXYMeanNameMC = "meanCurrentDcaXY";
-    std::string grDcaXYPullNameMC = "pullsCurrentDcaXY";
-    std::string grDcaXYResNameData = "resUpgrDcaXY";
-    std::string grDcaXYMeanNameData = "meanUpgrDcaXY";
-    std::string grDcaXYPullNameData = "pullsUpgrDcaXY";
+    int inputNphiBins=nPhiBins;
+    if(inputNphiBins==0)nPhiBins=1;// old phi_independent settings
+    
+    // reserve memory for needed number of graphs
+    grDcaXYResVsPtPionMC.reserve(nPhiBins);
+    grDcaXYResVsPtPionData.reserve(nPhiBins);
 
-    grDcaXYResVsPtPionMC.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYResNameMC.c_str())));
-    grDcaXYResVsPtPionData.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYResNameData.c_str())));
-    grDcaXYMeanVsPtPionMC.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYMeanNameMC.c_str())));
-    grDcaXYMeanVsPtPionData.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYMeanNameData.c_str())));
-    grDcaXYPullVsPtPionMC.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYPullNameMC.c_str())));
-    grDcaXYPullVsPtPionData.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYPullNameData.c_str())));
-    if (!grDcaXYResVsPtPionMC.get() || !grDcaXYResVsPtPionData.get() || !grDcaXYMeanVsPtPionMC.get() || !grDcaXYMeanVsPtPionData.get() || !grDcaXYPullVsPtPionMC.get() || !grDcaXYPullVsPtPionData.get()) {
-      LOG(fatal) << "Something wrong with the names of the correction graphs for dcaXY. Fix it!";
-    }
+    grDcaZResVsPtPionMC.reserve(nPhiBins);
+    grDcaZResVsPtPionData.reserve(nPhiBins);
+    
+    grDcaXYMeanVsPtPionMC.reserve(nPhiBins);
+    grDcaXYMeanVsPtPionData.reserve(nPhiBins);
+    
+    grDcaZMeanVsPtPionMC.reserve(nPhiBins);
+    grDcaZMeanVsPtPionData.reserve(nPhiBins);
+        
+    grDcaXYPullVsPtPionMC.reserve(nPhiBins);
+    grDcaXYPullVsPtPionData.reserve(nPhiBins);
+    
+    grDcaZPullVsPtPionMC.reserve(nPhiBins);
+    grDcaZPullVsPtPionData.reserve(nPhiBins);
 
-    std::string grDcaZResNameMC = "resCurrentDcaZ";
-    std::string grDcaZMeanNameMC = "meanCurrentDcaZ";
-    std::string grDcaZPullNameMC = "pullsCurrentDcaZ";
-    std::string grDcaZResNameData = "resUpgrDcaZ";
-    std::string grDcaZMeanNameData = "meanUpgrDcaZ";
-    std::string grDcaZPullNameData = "pullsUpgrDcaZ";
+    
+   
 
-    grDcaZResVsPtPionMC.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZResNameMC.c_str())));
-    grDcaZResVsPtPionData.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZResNameData.c_str())));
-    grDcaZMeanVsPtPionMC.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZMeanNameMC.c_str())));
-    grDcaZMeanVsPtPionData.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZMeanNameData.c_str())));
-    grDcaZPullVsPtPionMC.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZPullNameMC.c_str())));
-    grDcaZPullVsPtPionData.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZPullNameData.c_str())));
-    if (!grDcaZResVsPtPionMC.get() || !grDcaZResVsPtPionData.get() || !grDcaZMeanVsPtPionMC.get() || !grDcaZMeanVsPtPionData.get() || !grDcaZPullVsPtPionMC.get() || !grDcaZPullVsPtPionData.get()) {
-      LOG(fatal) << "Something wrong with the names of the correction graphs for dcaZ. Fix it!";
+    for(int iphibin=0;iphibin<nPhiBins;++iphibin){
+
+      std::string grDcaXYResNameMC = "resCurrentDcaXY";
+      std::string grDcaXYMeanNameMC =  "meanCurrentDcaXY";
+      std::string grDcaXYPullNameMC =  "pullsCurrentDcaXY";
+      std::string grDcaXYResNameData = "resUpgrDcaXY";
+      std::string grDcaXYMeanNameData =  "meanUpgrDcaXY";
+      std::string grDcaXYPullNameData =  "pullsUpgrDcaXY";
+      
+      if(inputNphiBins!=0){
+	LOG(info)<< "[Track-tuner]    Loading phi-dependent XY TGraphErrors";
+	grDcaXYResNameMC = fmt::format("{}_{}","resCurrentDcaXY",iphibin);
+	grDcaXYMeanNameMC =  fmt::format("{}_{}","meanCurrentDcaXY",iphibin);
+	grDcaXYPullNameMC =  fmt::format("{}_{}","pullsCurrentDcaXY",iphibin);
+	grDcaXYResNameData =  fmt::format("{}_{}","resUpgrDcaXY",iphibin);
+	grDcaXYMeanNameData =  fmt::format("{}_{}","meanUpgrDcaXY",iphibin);
+	grDcaXYPullNameData =  fmt::format("{}_{}","pullsUpgrDcaXY",iphibin);
+      }
+      
+      TObject *obj=td->Get(grDcaXYResNameMC.c_str());
+      if (!obj) {
+	LOG(error) << "[Track-tuner]     TGraphErrors not found in the Input Root file: " << grDcaXYResNameMC;
+	td->ls();
+      };
+    
+      grDcaXYResVsPtPionMC[iphibin].reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYResNameMC.c_str())));
+      grDcaXYResVsPtPionData[iphibin].reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYResNameData.c_str())));
+      grDcaXYMeanVsPtPionMC[iphibin].reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYMeanNameMC.c_str())));
+      grDcaXYMeanVsPtPionData[iphibin].reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYMeanNameData.c_str())));
+      grDcaXYPullVsPtPionMC[iphibin].reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYPullNameMC.c_str())));
+      grDcaXYPullVsPtPionData[iphibin].reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYPullNameData.c_str())));
+      if (!grDcaXYResVsPtPionMC[iphibin].get() || !grDcaXYResVsPtPionData[iphibin].get() || !grDcaXYMeanVsPtPionMC[iphibin].get() || !grDcaXYMeanVsPtPionData[iphibin].get() || !grDcaXYPullVsPtPionMC[iphibin].get() || !grDcaXYPullVsPtPionData[iphibin].get()) {
+	LOG(fatal) << "Something wrong with the names of the correction graphs for dcaXY. Fix it!"<< grDcaXYResNameMC << " and " << grDcaXYResNameData << "for" <<inputNphiBins<<"phi bins";
+      }
+
+      
+       std::string grDcaZResNameMC = "resCurrentDcaZ";
+       std::string grDcaZMeanNameMC = "meanCurrentDcaZ";
+       std::string grDcaZPullNameMC = "pullsCurrentDcaZ";
+       std::string grDcaZResNameData = "resUpgrDcaZ";
+       std::string grDcaZMeanNameData = "meanUpgrDcaZ";
+       std::string grDcaZPullNameData = "pullsUpgrDcaZ";
+       if(inputNphiBins!=0){
+	 LOG(info)<< "[Track-tuner]    Loading phi-dependent Z TGraphErrors";
+	 grDcaZResNameMC = fmt::format("{}_{}","resCurrentDcaZ",iphibin);
+	 grDcaZMeanNameMC = fmt::format("{}_{}","meanCurrentDcaZ",iphibin);
+	 grDcaZPullNameMC = fmt::format("{}_{}","pullsCurrentDcaZ",iphibin);
+	 grDcaZResNameData = fmt::format("{}_{}","resUpgrDcaZ",iphibin);
+	 grDcaZMeanNameData = fmt::format("{}_{}","meanUpgrDcaZ",iphibin);
+	 grDcaZPullNameData = fmt::format("{}_{}","pullsUpgrDcaZ",iphibin);
+       }
+
+       obj=td->Get(grDcaZResNameMC.c_str());
+       if (!obj) {
+	 LOG(error) << "[Track-tuner]     TGraphErrors not found in the Input Root file: " << grDcaXYResNameMC;
+	 td->ls();
+       };
+    
+       
+       grDcaZResVsPtPionMC[iphibin].reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZResNameMC.c_str())));
+       grDcaZResVsPtPionData[iphibin].reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZResNameData.c_str())));
+       grDcaZMeanVsPtPionMC[iphibin].reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZMeanNameMC.c_str())));
+       grDcaZMeanVsPtPionData[iphibin].reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZMeanNameData.c_str())));
+       grDcaZPullVsPtPionMC[iphibin].reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZPullNameMC.c_str())));
+       grDcaZPullVsPtPionData[iphibin].reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZPullNameData.c_str())));
+       if (!grDcaZResVsPtPionMC[iphibin].get() || !grDcaZResVsPtPionData[iphibin].get() || !grDcaZMeanVsPtPionMC[iphibin].get() || !grDcaZMeanVsPtPionData[iphibin].get() || !grDcaZPullVsPtPionMC[iphibin].get() || !grDcaZPullVsPtPionData[iphibin].get()) {
+	 LOG(fatal) << "Something wrong with the names of the correction graphs for dcaZ. Fix it!";
+       }
     }
 
     std::string grOneOverPtPionNameMC = "sigmaVsPtMc";
@@ -538,11 +616,16 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     double dcaZPullMC = 1.0;
     double dcaZPullData = 1.0;
 
-    dcaXYResMC = evalGraph(ptMC, grDcaXYResVsPtPionMC.get());
-    dcaXYResData = evalGraph(ptMC, grDcaXYResVsPtPionData.get());
+    // get phibin
+    double phiMC = mcparticle.phi();
+    if(phiMC<0.)phiMC+= o2::constants::math::TwoPI; //2 * std::numbers::pi;//
+    int phibin=phiMC/(o2::constants::math::TwoPI + 0.0000001) * nPhiBins;// 0.0000001 just a numerical protection
+      
+    dcaXYResMC = evalGraph(ptMC, grDcaXYResVsPtPionMC[phibin].get());
+    dcaXYResData = evalGraph(ptMC, grDcaXYResVsPtPionData[phibin].get());
 
-    dcaZResMC = evalGraph(ptMC, grDcaZResVsPtPionMC.get());
-    dcaZResData = evalGraph(ptMC, grDcaZResVsPtPionData.get());
+    dcaZResMC = evalGraph(ptMC, grDcaZResVsPtPionMC[phibin].get());
+    dcaZResData = evalGraph(ptMC, grDcaZResVsPtPionData[phibin].get());
 
     // For Q/Pt corrections, files on CCDB will be used if both qOverPtMC and qOverPtData are null
     if (updateCurvature || updateCurvatureIU) {
@@ -560,14 +643,15 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     } // updateCurvature, updateCurvatureIU block ends here
 
     if (updateTrackDCAs) {
-      dcaXYMeanMC = evalGraph(ptMC, grDcaXYMeanVsPtPionMC.get());
-      dcaXYMeanData = evalGraph(ptMC, grDcaXYMeanVsPtPionData.get());
+	 
+      dcaXYMeanMC = evalGraph(ptMC, grDcaXYMeanVsPtPionMC[phibin].get());
+      dcaXYMeanData = evalGraph(ptMC, grDcaXYMeanVsPtPionData[phibin].get());
 
-      dcaXYPullMC = evalGraph(ptMC, grDcaXYPullVsPtPionMC.get());
-      dcaXYPullData = evalGraph(ptMC, grDcaXYPullVsPtPionData.get());
+      dcaXYPullMC = evalGraph(ptMC, grDcaXYPullVsPtPionMC[phibin].get());
+      dcaXYPullData = evalGraph(ptMC, grDcaXYPullVsPtPionData[phibin].get());
 
-      dcaZPullMC = evalGraph(ptMC, grDcaZPullVsPtPionMC.get());
-      dcaZPullData = evalGraph(ptMC, grDcaZPullVsPtPionData.get());
+      dcaZPullMC = evalGraph(ptMC, grDcaZPullVsPtPionMC[phibin].get());
+      dcaZPullData = evalGraph(ptMC, grDcaZPullVsPtPionData[phibin].get());
     }
     //  Unit conversion, is it required ??
     dcaXYResMC *= 1.e-4;
@@ -676,12 +760,17 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     if (updateTrackDCAs) {
       // propagate to DCA with respect to the Production point
       o2::base::Propagator::Instance()->propagateToDCABxByBz(vtxMC, trackParCov, 2.f, matCorr, dcaInfoCov);
+      if(debugInfo){
+	LOG(info) << "phi MC" << mcparticle.phi();
+	LOG(info) << "alpha track" << trackParCov.getAlpha();
+      }
       // double d0zo  =param  [1];
       double trackParDcaZRec = trackParCov.getZ();
       // double d0rpo =param  [0];
       double trackParDcaXYRec = trackParCov.getY();
       float mcVxRotated = mcparticle.vx() * std::cos(trackParCov.getAlpha()) + mcparticle.vy() * std::sin(trackParCov.getAlpha()); // invert
       float mcVyRotated = mcparticle.vy() * std::cos(trackParCov.getAlpha()) - mcparticle.vx() * std::sin(trackParCov.getAlpha());
+
       if (debugInfo) {
         // LOG(info) << "mcVy " <<  mcparticle.vy()   <<  std::endl;
         LOG(info) << "mcVxRotated " << mcVxRotated;
@@ -954,7 +1043,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
   {
 
     if (!graph) {
-      printf("\tevalGraph fails !\n");
+      LOG(fatal) << "\t evalGraph fails !\n";
       return 0.;
     }
     int nPoints = graph->GetN();
