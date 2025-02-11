@@ -80,8 +80,8 @@ struct studyMCTruth {
     fRegistry.add("Event/hPtY_kaon", "K^{#pm} yield;y;p_{T} (GeV/c)", kTH2D, {{20, -1, +1}, {100, 0, 10}}, false);
     fRegistry.add("Event/hPtY_proton", "p(#bar{p}) yield;y;p_{T} (GeV/c)", kTH2D, {{20, -1, +1}, {100, 0, 10}}, false);
 
-    fRegistry.add("Track/default/hPt", "p_{T,e}", kTH1D, {{1000, 0, 10}}, true);
-    fRegistry.add("Track/default/hEtaPhi", "#eta_{e} vs. #varphi_{e};#varphi_{e} (rad.);#eta_{e};", kTH2D, {{90, 0, 2 * M_PI}, {60, -5, +1}}, true);
+    fRegistry.add("Track/default/hPt", "p_{T,l};p_{T,l} (GeV/c)", kTH1D, {{1000, 0, 10}}, true);
+    fRegistry.add("Track/default/hEtaPhi", "#eta_{l} vs. #varphi_{l};#varphi_{l} (rad.);#eta_{l};", kTH2D, {{90, 0, 2 * M_PI}, {60, -5, +1}}, true);
     fRegistry.addClone("Track/default/", "Track/mllPF0/");
     fRegistry.addClone("Track/default/", "Track/mllPF1/");
     fRegistry.addClone("Track/default/", "Track/mllPF2/");
@@ -106,7 +106,6 @@ struct studyMCTruth {
     fRegistry.addClone("Pair/default/", "Pair/mllPF0/");
     fRegistry.addClone("Pair/default/", "Pair/mllPF1/");
     fRegistry.addClone("Pair/default/", "Pair/mllPF2/");
-    fRegistry.addClone("Pair/default/Pi0/uls/", "Pair/PF/all/uls/");
   }
 
   template <typename TTrack, typename TMCParticles>
@@ -301,8 +300,6 @@ struct studyMCTruth {
           continue;
         }
         fillTrackInfo<0>(pos);
-        // fRegistry.fill(HIST("Track/default/hPt"), pos.pt());
-        // fRegistry.fill(HIST("Track/default/hEtaPhi"), pos.phi(), pos.eta());
       }
       for (const auto& neg : negLeptons_per_mccollision) {
         map_pfb[neg.globalIndex()] = 0;
@@ -310,21 +307,31 @@ struct studyMCTruth {
           continue;
         }
         fillTrackInfo<0>(neg);
-        // fRegistry.fill(HIST("Track/default/hPt"), neg.pt());
-        // fRegistry.fill(HIST("Track/default/hEtaPhi"), neg.phi(), neg.eta());
       }
 
-      for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posLeptonsPF_per_mccollision, negLeptonsPF_per_mccollision))) { // ULS to set prefilter bits
+      for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posLeptons_per_mccollision, negLeptonsPF_per_mccollision))) { // ULS to set prefilter bits, default pos + loose neg
         if (!isSelectedMCParticle(pos, mcParticles) || !isSelectedMCParticle(neg, mcParticles)) {
           continue;
         }
         ROOT::Math::PtEtaPhiMVector v1(pos.pt(), pos.eta(), pos.phi(), leptonMass);
         ROOT::Math::PtEtaPhiMVector v2(neg.pt(), neg.eta(), neg.phi(), leptonMass);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-        fRegistry.fill(HIST("Pair/PF/all/uls/hMvsPt"), v12.M(), v12.Pt());
         for (int i = 0; i < static_cast<int>(max_mll_vec->size()); i++) {
           if (v12.M() < max_mll_vec->at(i)) {
             map_pfb[pos.globalIndex()] |= (uint8_t(1) << i);
+          }
+        }
+      } // end of ULS pair loop to set prefilter bits
+
+      for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posLeptonsPF_per_mccollision, negLeptons_per_mccollision))) { // ULS to set prefilter bits, loose pos + default neg
+        if (!isSelectedMCParticle(pos, mcParticles) || !isSelectedMCParticle(neg, mcParticles)) {
+          continue;
+        }
+        ROOT::Math::PtEtaPhiMVector v1(pos.pt(), pos.eta(), pos.phi(), leptonMass);
+        ROOT::Math::PtEtaPhiMVector v2(neg.pt(), neg.eta(), neg.phi(), leptonMass);
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        for (int i = 0; i < static_cast<int>(max_mll_vec->size()); i++) {
+          if (v12.M() < max_mll_vec->at(i)) {
             map_pfb[neg.globalIndex()] |= (uint8_t(1) << i);
           }
         }
@@ -338,8 +345,6 @@ struct studyMCTruth {
           constexpr int index = i.value;
           if ((map_pfb[pos.globalIndex()] & (uint8_t(1) << index)) == 0) {
             fillTrackInfo<index + 1>(pos);
-            // fRegistry.fill(HIST("Track/") + HIST(pfNames[index + 1]) + HIST("hPt"), pos.pt());
-            // fRegistry.fill(HIST("Track/") + HIST(pfNames[index + 1]) + HIST("hEtaPhi"), pos.phi(), pos.eta());
           }
         });
       }
@@ -351,8 +356,6 @@ struct studyMCTruth {
           constexpr int index = i.value;
           if ((map_pfb[neg.globalIndex()] & (uint8_t(1) << index)) == 0) {
             fillTrackInfo<index + 1>(neg);
-            // fRegistry.fill(HIST("Track/") + HIST(pfNames[index + 1]) + HIST("hPt"), neg.pt());
-            // fRegistry.fill(HIST("Track/") + HIST(pfNames[index + 1]) + HIST("hEtaPhi"), neg.phi(), neg.eta());
           }
         });
       }
