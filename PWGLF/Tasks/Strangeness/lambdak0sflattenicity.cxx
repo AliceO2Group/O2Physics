@@ -1192,7 +1192,7 @@ struct Lambdak0sflattenicity {
 
     flattenicity =
       1.0 - getFlatenicity({rhoLatticeFV0AMC.data(), rhoLatticeFV0AMC.size()});
-      rEventSelection.fill(HIST("hTrueFV0amplvsFlat"), multFV0, estimator[2]);
+    rEventSelection.fill(HIST("hTrueFV0amplvsFlat"), multFV0, estimator[2]);
     return flattenicity;
   }
   // ====================== Flattenicity estimation ends =====================
