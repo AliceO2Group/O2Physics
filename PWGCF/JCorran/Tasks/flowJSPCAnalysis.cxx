@@ -35,7 +35,6 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGCF/JCorran/DataModel/JCatalyst.h"
 #include "PWGCF/JCorran/Core/FlowJSPCAnalysis.h"
@@ -112,7 +111,7 @@ struct flowJSPCAnalysis {
 
   template <class CollisionT, class TrackT>
   void analyze(CollisionT const& collision, TrackT const& tracks)
-// void process(soa::Filtered<MyCollisions>::iterator const& coll, soa::Filtered<soa::Join<aod::MyTracks, aod::JWeights>> const& tracks)
+  // void process(soa::Filtered<MyCollisions>::iterator const& coll, soa::Filtered<soa::Join<aod::MyTracks, aod::JWeights>> const& tracks)
   {
     if (tracks.size() < cfgEventCuts.cfgMultMin)
       return;
@@ -125,12 +124,12 @@ struct flowJSPCAnalysis {
     SPCHistograms.fill(HIST("FullCentrality"), cent);
     int nTracks = tracks.size();
     for (auto& track : tracks) {
-      if (cfgFillQA){
+      if (cfgFillQA) {
         // histManager.FillTrackQA<0>(track, cBin, collision.posZ());
 
         using JInputClassIter = typename TrackT::iterator;
         if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value) {
-          spcAnalysis.FillQAHistograms(cBin, track.phi(), 1./track.weightNUA());
+          spcAnalysis.FillQAHistograms(cBin, track.phi(), 1. / track.weightNUA());
         }
       }
     }
@@ -142,7 +141,6 @@ struct flowJSPCAnalysis {
     spcAnalysis.SetQvectors(&jqvecs);
     spcAnalysis.CalculateCorrelators(cBin);
   }
-
 
   void processJDerived(aod::JCollision const& collision, soa::Filtered<aod::JTracks> const& tracks)
   {
@@ -168,8 +166,6 @@ struct flowJSPCAnalysis {
   }
   PROCESS_SWITCH(flowJSPCAnalysis, processCFDerivedCorrected, "Process CF derived data with corrections", true);
 };
-
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

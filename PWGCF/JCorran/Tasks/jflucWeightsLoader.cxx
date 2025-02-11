@@ -63,13 +63,13 @@ struct jflucWeightsLoader {
     }
   }
 
-  void initCCDB(int runNum, int ts) {
+  void initCCDB(int runNum, int ts)
+  {
     if (cfgForRunNumber) {
       ph = ccdb->getForRun<THnF>(cfgCCDBPath, runNum);
     } else
-      ph = ccdb->getForTimeStamp<THnF>(cfgCCDBPath,ts);
+      ph = ccdb->getForTimeStamp<THnF>(cfgCCDBPath, ts);
   }
-
 
   void init(InitContext const&)
   {
@@ -94,7 +94,7 @@ struct jflucWeightsLoader {
         pf = 0;
         LOGF(fatal, "NUA correction weights file not found: %s", cfgPathPhiWeights.value.substr(8).c_str());
       }
-      useCCDB=false;
+      useCCDB = false;
     } else {
       LOGF(info, "Didn't find \"local://\" or \"ccdb\"");
       return;

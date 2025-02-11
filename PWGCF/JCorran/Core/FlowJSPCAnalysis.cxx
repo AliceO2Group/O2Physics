@@ -232,7 +232,6 @@ void FlowJSPCAnalysis::FillQAHistograms(const Int_t fCentBin, Double_t phi, Doub
   }
 }
 
-
 void FlowJSPCAnalysis::Correlation(Int_t c_nPart, Int_t c_nHarmo, Int_t* harmo, Double_t* correlData)
 {
   // Calculate the correlators for the provided set of harmonics using Q-vectors.
