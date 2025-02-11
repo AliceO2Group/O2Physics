@@ -691,8 +691,12 @@ struct Derivedupcanalysis {
 
   void init(InitContext const&)
   {
-    if (((doprocessV0s == true) && (doprocessCascades == true)) || (doprocessV0sMC == true)) {
+    if (doprocessV0s && doprocessCascades) {
       LOG(fatal) << "Unable to analyze both v0s and cascades simultaneously. Please enable only one process at a time";
+    }
+
+    if ((doprocessV0sMC || doprocessGenerated) && (doprocessV0s || doprocessCascades)) {
+      LOG(fatal) << "Cannot analyze both data and MC simultaneously. Please select one of them.";
     }
 
     // initialise bit masks
