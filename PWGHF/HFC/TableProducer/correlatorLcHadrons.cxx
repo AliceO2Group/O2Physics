@@ -226,8 +226,8 @@ struct HfCorrelatorLcHadrons {
   Filter lcFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (nabs(aod::track::pt) > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
 
-  //Preslice<aod::McParticles> perTrueCollision = o2::aod::mcparticle::McCollisionId;
-Preslice<aod::McParticles> perTrueCollision = o2::aod::mcparticle::mcCollisionId;
+  // Preslice<aod::McParticles> perTrueCollision = o2::aod::mcparticle::McCollisionId;
+  Preslice<aod::McParticles> perTrueCollision = o2::aod::mcparticle::mcCollisionId;
   // configurable axis definition
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
@@ -249,7 +249,7 @@ Preslice<aod::McParticles> perTrueCollision = o2::aod::mcparticle::mcCollisionId
     AxisSpec axisPhi = {binsPhi, "#it{#varphi}"};
     AxisSpec axisPtLc = {(std::vector<double>)binsPtLc, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T} Hadron (GeV/#it{c})"};
-    AxisSpec axisTrackPt = {500,0,50, "#it{p}_{T} Hadron (GeV/#it{c})"};
+    AxisSpec axisTrackPt = {500, 0, 50, "#it{p}_{T} Hadron (GeV/#it{c})"};
     AxisSpec axisMultiplicity = {binsMultiplicity, "Multiplicity"};
     AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
     AxisSpec axisPosZ = {binsZVtx, "PosZ"};
@@ -450,7 +450,7 @@ Preslice<aod::McParticles> perTrueCollision = o2::aod::mcparticle::mcCollisionId
           }
         }
         if (countLc == 0) {
-          entryHadron(track.phi(), track.eta(), track.pt()*track.sign(), poolBin, gCollisionId, timeStamp);
+          entryHadron(track.phi(), track.eta(), track.pt() * track.sign(), poolBin, gCollisionId, timeStamp);
           if (fillTrkPID) {
             entryTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
           }
@@ -589,42 +589,41 @@ Preslice<aod::McParticles> perTrueCollision = o2::aod::mcparticle::mcCollisionId
         }
       }
       registry.fill(HIST("hLcBin"), poolBin);
-      
 
-      if(calTrkEff && countLc==1 && (isLcSignal || !calEffLcEvent)){
-        //genrated tracks
-        decltype(trackPos1.mcParticle_as<aod::McParticles>()) mctrk{}; 
-        if(trackPos1.has_mcParticle()){//ambiguous tracks should be small 
+      if (calTrkEff && countLc == 1 && (isLcSignal || !calEffLcEvent)) {
+        // genrated tracks
+        decltype(trackPos1.mcParticle_as<aod::McParticles>()) mctrk{};
+        if (trackPos1.has_mcParticle()) { // ambiguous tracks should be small
           mctrk = trackPos1.template mcParticle_as<aod::McParticles>();
-        } else if (trackPos2.has_mcParticle()){
+        } else if (trackPos2.has_mcParticle()) {
           mctrk = trackPos2.template mcParticle_as<aod::McParticles>();
         } else {
           continue;
         }
         auto Gentracks = mcParticles.sliceBy(perTrueCollision, mctrk.mcCollisionId());
-      for (const auto& track : Gentracks) {
-        if (std::abs(track.eta()) > etaTrackMax || track.pt() < ptTrackMin || track.pt() > ptTrackMax) {
-          continue;
+        for (const auto& track : Gentracks) {
+          if (std::abs(track.eta()) > etaTrackMax || track.pt() < ptTrackMin || track.pt() > ptTrackMax) {
+            continue;
+          }
+          if ((std::abs(track.pdgCode()) != kElectron) && (std::abs(track.pdgCode()) != kMuonMinus) && (std::abs(track.pdgCode()) != kPiPlus) && (std::abs(track.pdgCode()) != kKPlus) && (std::abs(track.pdgCode()) != kProton)) {
+            continue;
+          }
+
+          if (pidTrkApplied && (std::abs(track.pdgCode()) != kProton))
+            continue; // proton PID
+
+          if (!track.isPhysicalPrimary()) {
+            continue;
+          }
+
+          auto motherTrkGen = mcParticles.iteratorAt(track.mothersIds()[0]);
+          if (std::abs(motherTrkGen.pdgCode() == kLambdaCPlus))
+            continue;
+
+          auto chargeTrack = pdg->GetParticle(track.pdgCode())->Charge(); // Retrieve charge
+          registry.fill(HIST("hPtTracksVsSignGen"), track.pt(), chargeTrack / (2 * std::abs(chargeTrack)));
         }
-        if ((std::abs(track.pdgCode()) != kElectron) && (std::abs(track.pdgCode()) != kMuonMinus) && (std::abs(track.pdgCode()) != kPiPlus) && (std::abs(track.pdgCode()) != kKPlus) && (std::abs(track.pdgCode()) != kProton)) {
-          continue;
-        }
-
-        if (pidTrkApplied && (std::abs(track.pdgCode()) != kProton))
-          continue; // proton PID
-
-        if (!track.isPhysicalPrimary()) {
-          continue;
-        }
-
-        auto motherTrkGen = mcParticles.iteratorAt(track.mothersIds()[0]);
-        if(std::abs(motherTrkGen.pdgCode() == kLambdaCPlus)) continue;
-
-        auto chargeTrack = pdg->GetParticle(track.pdgCode())->Charge(); // Retrieve charge
-        registry.fill(HIST("hPtTracksVsSignGen"), track.pt(),chargeTrack/(2*std::abs(chargeTrack)));
-      }
-      //}
-              
+        //}
       }
 
       // Lc-Hadron correlation dedicated section
@@ -641,16 +640,19 @@ Preslice<aod::McParticles> perTrueCollision = o2::aod::mcparticle::mcCollisionId
             continue;
         }
 
-        if(calTrkEff && countLc==1 && (isLcSignal || !calEffLcEvent) && track.has_mcParticle()){
-            auto mcParticle = track.template mcParticle_as<aod::McParticles>();
-            if(!mcParticle.isPhysicalPrimary() && isRecTrkPhyPrimary) continue;
+        if (calTrkEff && countLc == 1 && (isLcSignal || !calEffLcEvent) && track.has_mcParticle()) {
+          auto mcParticle = track.template mcParticle_as<aod::McParticles>();
+          if (!mcParticle.isPhysicalPrimary() && isRecTrkPhyPrimary)
+            continue;
 
-            auto motherTrk = mcParticles.iteratorAt(mcParticle.mothersIds()[0]);
-            if(std::abs(motherTrk.pdgCode() == kLambdaCPlus)) continue;
+          auto motherTrk = mcParticles.iteratorAt(mcParticle.mothersIds()[0]);
+          if (std::abs(motherTrk.pdgCode() == kLambdaCPlus))
+            continue;
 
-            registry.fill(HIST("hPtTracksVsSignRec"), track.pt(),track.sign()/2.);
-            if(std::abs(mcParticle.pdgCode()) == kProton) registry.fill(HIST("hPtTracksVsSignRecTrue"), track.pt(),track.sign()/2.);
-          }
+          registry.fill(HIST("hPtTracksVsSignRec"), track.pt(), track.sign() / 2.);
+          if (std::abs(mcParticle.pdgCode()) == kProton)
+            registry.fill(HIST("hPtTracksVsSignRecTrue"), track.pt(), track.sign() / 2.);
+        }
 
         // Removing Lc daughters by checking track indices
         if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
