@@ -629,6 +629,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingTauzProjected] = "ns";
   fgVariableNames[kVertexingTauxyProjected] = "Pair pseudo-proper Tauxy";
   fgVariableUnits[kVertexingTauxyProjected] = "ns";
+  fgVariableNames[kVertexingTauxyProjectedPoleJPsiMass] = "Pair pseudo-proper Tauxy (with pole JPsi mass)";
+  fgVariableUnits[kVertexingTauxyProjectedPoleJPsiMass] = "ns";
   fgVariableNames[kVertexingTauxyzProjected] = "Pair pseudo-proper Tauxyz";
   fgVariableUnits[kVertexingTauxyzProjected] = "ns";
   fgVariableNames[kCosPointingAngle] = "cos(#theta_{pointing})";
