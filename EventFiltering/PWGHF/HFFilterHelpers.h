@@ -528,7 +528,7 @@ class HfFilterHelper
   template <typename T, typename T1, typename T2>
   int8_t isSelectedTrackForSoftPionOrBeauty(const T& track, const T1& trackPar, const T2& dca, const int& whichTrigger);
   template <typename T1, typename T2, typename H2>
-  bool isSelectedTrack4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hITSPID, H2 hTPCPID, H2 hTOFPID, const int& trackSpecies);
+  bool isSelectedTrack4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hTPCPID, H2 hTOFPID, const int& trackSpecies);
   template <typename T>
   int8_t isDzeroPreselected(const T& trackPos, const T& trackNeg);
   template <typename T>
@@ -796,13 +796,12 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track,
 /// \param track is a track
 /// \param trackPar is a track parameter
 /// \param activateQA flag to activate the filling of QA histos
-/// \param hProtonITSPID histo with NsigmaITS vs. p
 /// \param hProtonTPCPID histo with NsigmaTPC vs. p
 /// \param hProtonTOFPID histo with NsigmaTOF vs. p
 /// \param trackSpecies flag to choose proton or deuteron
 /// \return true if track passes all cuts
 template <typename T1, typename T2, typename H2>
-inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hITSPID, H2 hTPCPID, H2 hTOFPID, const int& trackSpecies)
+inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hTPCPID, H2 hTOFPID, const int& trackSpecies)
 {
   float pt = trackPar.getPt();
   float ptMin, ptMax, ptThresholdPidStrategy;
@@ -895,8 +894,6 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
       else if (trackSpecies == kDeuteronForFemto && pt > ptThresholdPidStrategy)
         hTOFPID->Fill(track.p(), NSigmaTOF);
     }
-    if (trackSpecies == kDeuteronForFemto && pt < ptThresholdPidStrategy)
-      hITSPID->Fill(track.p(), NSigmaITS);
   }
 
   return true;
