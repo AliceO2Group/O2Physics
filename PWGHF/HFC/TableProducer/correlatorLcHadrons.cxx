@@ -592,10 +592,9 @@ Preslice<aod::McParticles> perTrueCollision = o2::aod::mcparticle::mcCollisionId
       
 
       if(calTrkEff && countLc==1 && (isLcSignal || !calEffLcEvent)){
-        //for (const auto& col : cols) {
         //genrated tracks
         decltype(trackPos1.mcParticle_as<aod::McParticles>()) mctrk{}; 
-        if(trackPos1.has_mcParticle()){//
+        if(trackPos1.has_mcParticle()){//ambiguous tracks should be small 
           mctrk = trackPos1.template mcParticle_as<aod::McParticles>();
         } else if (trackPos2.has_mcParticle()){
           mctrk = trackPos2.template mcParticle_as<aod::McParticles>();
