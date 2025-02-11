@@ -600,8 +600,8 @@ struct HfCorrelatorLcHadrons {
         } else {
           continue;
         }
-        auto Gentracks = mcParticles.sliceBy(perTrueCollision, mctrk.mcCollisionId());
-        for (const auto& track : Gentracks) {
+        auto gentracks = mcParticles.sliceBy(perTrueCollision, mctrk.mcCollisionId());
+        for (const auto& track : gentracks) {
           if (std::abs(track.eta()) > etaTrackMax || track.pt() < ptTrackMin || track.pt() > ptTrackMax) {
             continue;
           }
