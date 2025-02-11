@@ -42,12 +42,12 @@ class FlowJHistManager
   FlowJHistManager() = default;
 
   // Setters and getters, in the same order as the data members.
-  void setHistRegistryQA(HistogramRegistry* myRegistry)
+  void setHistRegistryQA(o2::framework::HistogramRegistry* myRegistry)
   {
     mHistRegistryQA = myRegistry;
     LOGF(info, "QA histogram registry successfully set.");
   }
-  HistogramRegistry* getHistRegistryQA() const { return mHistRegistryQA; }
+  o2::framework::HistogramRegistry* getHistRegistryQA() const { return mHistRegistryQA; }
 
   void setDebugLog(bool debug)
   {
@@ -291,7 +291,7 @@ class FlowJHistManager
   }
 
  private:
-  HistogramRegistry* mHistRegistryQA = nullptr; ///< For the QA output.
+  o2::framework::HistogramRegistry* mHistRegistryQA = nullptr; ///< For the QA output.
 
   bool mDebugLog = false;          ///< Enable to print additional log for debug.
   bool mObtainNUA = false;         ///< Enable to get the 3D Zvtx-eta-phi distribution for NUA.

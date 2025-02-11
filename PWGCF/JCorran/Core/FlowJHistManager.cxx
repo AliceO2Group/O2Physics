@@ -15,6 +15,7 @@
 
 // O2 Physics headers.
 #include "PWGCF/JCorran/Core/FlowJHistManager.h"
+#include "CommonConstants/MathConstants.h"
 
 // Namespaces.
 using namespace o2;
@@ -60,7 +61,7 @@ void FlowJHistManager::createHistQA()
   mHistRegistryQA->add("Centrality_00-01/After/histEta", "Pseudorapidity",
                        HistType::kTH1F, {axisEta}, true);
 
-  const AxisSpec axisPhi = {100, 0., o2::constants::math::twopi, "#varphi"};
+  const AxisSpec axisPhi = {100, 0., o2::constants::math::TwoPI, "#varphi"};
   mHistRegistryQA->add("Centrality_00-01/After/histPhi", "Azimuthal angles (no NUA)",
                        HistType::kTH1F, {axisPhi}, true);
 
@@ -145,7 +146,7 @@ void FlowJHistManager::createHistQA()
 
   // Clone the first centrality class into the other classes.
   for (int iBin = 1; iBin < mNcentBins; iBin++) {
-    mHistRegistryQA->addClone("Centrality_00-01/", mCentClasses[iBin].data());
+    mHistRegistryQA->addClone("Centrality_00-01/", MCentClasses[iBin].data());
   }
 
   LOGF(info, "QA histograms created.");

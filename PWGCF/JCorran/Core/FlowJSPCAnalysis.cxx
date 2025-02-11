@@ -241,7 +241,7 @@ void FlowJSPCAnalysis::correlation(int c_nPart, int c_nHarmo, int* harmo, double
     sumHarmo += harmo[i];
   }
   if (sumHarmo != 0) {
-    LOGF("\nOups, this correlator is not isotropic(sum = %d). Bye\n", sumHarmo);
+    LOGF(error, "\nOups, this correlator is not isotropic(sum = %d). Bye\n", sumHarmo);
     return;
   }
 

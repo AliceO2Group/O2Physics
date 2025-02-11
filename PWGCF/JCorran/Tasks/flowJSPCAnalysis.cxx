@@ -53,7 +53,7 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
 
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::JWeights>;
 
-struct FlowJSPCAnalysis {
+struct flowJSPCAnalysis {
   HistogramRegistry spcHistograms{"SPCResults", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   FlowJSPCAnalysis spcAnalysis;
   FlowJSPCAnalysis::JQVectorsT jqvecs;
@@ -92,15 +92,15 @@ struct FlowJSPCAnalysis {
   void init(InitContext const&)
   {
     // Add histomanager here
-    spcAnalysis.SetHistRegistry(&SPCHistograms);
-    spcAnalysis.CreateHistos();
+    spcAnalysis.setHistRegistry(&spcHistograms);
+    spcAnalysis.createHistos();
 
-    SPCobservables.SetSPCObservables(cfgWhichSPC);
-    spcAnalysis.SetFullCorrSet(SPCobservables.harmonicArray);
+    spcObservables.setSPCObservables(cfgWhichSPC);
+    spcAnalysis.setFullCorrSet(spcObservables.harmonicArray);
 
-    histManager.SetHistRegistryQA(&qaHistRegistry);
-    histManager.SetDebugLog(false);
-    histManager.CreateHistQA();
+    histManager.setHistRegistryQA(&qaHistRegistry);
+    histManager.setDebugLog(false);
+    histManager.createHistQA();
   }
 
   template <class CollisionT, class TrackT>
@@ -114,8 +114,8 @@ struct FlowJSPCAnalysis {
     if (cent < 0. || cent > 70.) {
       return;
     }
-    int cBin = histManager.GetCentBin(cent);
-    SPCHistograms.fill(HIST("FullCentrality"), cent);
+    int cBin = histManager.getCentBin(cent);
+    spcHistograms.fill(HIST("FullCentrality"), cent);
     int nTracks = tracks.size();
     for (const auto& track : tracks) {
       if (cfgFillQA) {
@@ -123,46 +123,46 @@ struct FlowJSPCAnalysis {
 
         using JInputClassIter = typename TrackT::iterator;
         if constexpr (std::experimental::is_detected<HasWeightNUA, const JInputClassIter>::value) {
-          spcAnalysis.FillQAHistograms(cBin, track.phi(), 1. / track.weightNUA());
+          spcAnalysis.fillQAHistograms(cBin, track.phi(), 1. / track.weightNUA());
         }
       }
     }
 
     if (cfgFillQA)
-      histManager.FillEventQA<1>(collision, cBin, cent, nTracks);
+      histManager.fillEventQA<1>(collision, cBin, cent, nTracks);
 
     jqvecs.Calculate(tracks, 0.0, cfgTrackCuts.cfgEtaMax);
-    spcAnalysis.SetQvectors(&jqvecs);
-    spcAnalysis.CalculateCorrelators(cBin);
+    spcAnalysis.setQvectors(&jqvecs);
+    spcAnalysis.calculateCorrelators(cBin);
   }
 
   void processJDerived(aod::JCollision const& collision, soa::Filtered<aod::JTracks> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(FlowJSPCAnalysis, processJDerived, "Process derived data", false);
+  PROCESS_SWITCH(flowJSPCAnalysis, processJDerived, "Process derived data", false);
 
   void processJDerivedCorrected(aod::JCollision const& collision, soa::Filtered<soa::Join<aod::JTracks, aod::JWeights>> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(FlowJSPCAnalysis, processJDerivedCorrected, "Process derived data with corrections", false);
+  PROCESS_SWITCH(flowJSPCAnalysis, processJDerivedCorrected, "Process derived data with corrections", false);
 
   void processCFDerived(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(FlowJSPCAnalysis, processCFDerived, "Process CF derived data", false);
+  PROCESS_SWITCH(flowJSPCAnalysis, processCFDerived, "Process CF derived data", false);
 
   void processCFDerivedCorrected(aod::CFCollision const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(FlowJSPCAnalysis, processCFDerivedCorrected, "Process CF derived data with corrections", true);
+  PROCESS_SWITCH(flowJSPCAnalysis, processCFDerivedCorrected, "Process CF derived data with corrections", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<FlowJSPCAnalysis>(cfgc)};
+    adaptAnalysisTask<flowJSPCAnalysis>(cfgc)};
 }

@@ -24,6 +24,7 @@
 // O2 headers. //
 #include "Framework/HistogramRegistry.h"
 #include "PWGCF/JCorran/Core/JQVectors.h"
+#include "CommonConstants/MathConstants.h"
 
 
 class FlowJSPCAnalysis
@@ -31,7 +32,7 @@ class FlowJSPCAnalysis
  public:
   FlowJSPCAnalysis() = default;
 
-  void setHistRegistry(HistogramRegistry* histReg) { mHistRegistry = histReg; }
+  void setHistRegistry(o2::framework::HistogramRegistry* histReg) { mHistRegistry = histReg; }
   int getCentBin(float cValue);
 
   using JQVectorsT = JQVectors<TComplex, 113, 15, false>;
@@ -49,13 +50,13 @@ class FlowJSPCAnalysis
       LOGF(error, "QA histogram registry missing. Quitting...");
       return;
     }
-    mHistRegistry->add("FullCentrality", "FullCentrality", HistType::kTH1D, {{100, 0., 100.}}, true);
-    mHistRegistry->add("Centrality_0/fResults", "Numerators and denominators", {HistType::kTProfile, {{24, 0., 24.}}}, true);
-    mHistRegistry->add("Centrality_0/fCovResults", "Covariance N*D", {HistType::kTProfile, {{48, 0., 48.}}}, true);
-    mHistRegistry->add("Centrality_0/phiBefore", "Phi before", {HistType::kTH1D, {{100, 0., o2::constants::math::twopi}}}, true);
-    mHistRegistry->add("Centrality_0/phiAfter", "Phi after", {HistType::kTH1D, {{100, 0., o2::constants::math::twopi}}}, true);
+    mHistRegistry->add("FullCentrality", "FullCentrality", o2::framework::HistType::kTH1D, {{100, 0., 100.}}, true);
+    mHistRegistry->add("Centrality_0/fResults", "Numerators and denominators", {o2::framework::HistType::kTProfile, {{24, 0., 24.}}}, true);
+    mHistRegistry->add("Centrality_0/fCovResults", "Covariance N*D", {o2::framework::HistType::kTProfile, {{48, 0., 48.}}}, true);
+    mHistRegistry->add("Centrality_0/phiBefore", "Phi before", {o2::framework::HistType::kTH1D, {{100, 0., o2::constants::math::TwoPI}}}, true);
+    mHistRegistry->add("Centrality_0/phiAfter", "Phi after", {o2::framework::HistType::kTH1D, {{100, 0., o2::constants::math::TwoPI}}}, true);
 
-    for (Uint i = 1; i < 8; i++) {
+    for (uint i = 1; i < 8; i++) {
       mHistRegistry->addClone("Centrality_0/", Form("Centrality_%u/", i));
     }
   }
@@ -88,7 +89,7 @@ class FlowJSPCAnalysis
   const int mNqPowers = 15;  ///< Max power for Q(n,p): 14part+1.
   const JQVectorsT* qvecs;
 
-  HistogramRegistry* mHistRegistry = nullptr;
+  o2::framework::HistogramRegistry* mHistRegistry = nullptr;
 
   int fHarmosArray[12][8];
 
