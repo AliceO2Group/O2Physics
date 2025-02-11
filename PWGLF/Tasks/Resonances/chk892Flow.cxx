@@ -279,6 +279,12 @@ struct Chk892Flow {
     histos.add("QA/EP/hEPResAC", "cos(n(A-C))", {HistType::kTH2D, {centAxis, epAxis}});
     histos.add("QA/EP/hEPResBC", "cos(n(B-C))", {HistType::kTH2D, {centAxis, epAxis}});
 
+    if (cfgUseScalProduct) {
+      histos.add("QA/EP/hEPSPResAB", "cos(n(A-B))", {HistType::kTH2D, {centAxis, epAxis}});
+      histos.add("QA/EP/hEPSPResAC", "cos(n(A-C))", {HistType::kTH2D, {centAxis, epAxis}});
+      histos.add("QA/EP/hEPSPResBC", "cos(n(B-C))", {HistType::kTH2D, {centAxis, epAxis}});
+    }
+
     // Rotated background
     if (cfgFillRotBkg) {
       histos.add("QA/RotBkg/hRotBkg", "Rotated angle of rotated background", HistType::kTH1F, {{360, 0.0, o2::constants::math::TwoPI}});
@@ -706,12 +712,23 @@ struct Chk892Flow {
     double lEPResAC = std::cos(static_cast<float>(nmode) * (lEPDet - lEPRefC));
     double lEPResBC = std::cos(static_cast<float>(nmode) * (lEPRefB - lEPRefC));
 
+    // EP method
     histos.fill(HIST("QA/EP/hEPDet"), lCentrality, lEPDet);
     histos.fill(HIST("QA/EP/hEPB"), lCentrality, lEPRefB);
     histos.fill(HIST("QA/EP/hEPC"), lCentrality, lEPRefC);
     histos.fill(HIST("QA/EP/hEPResAB"), lCentrality, lEPResAB);
     histos.fill(HIST("QA/EP/hEPResAC"), lCentrality, lEPResAC);
     histos.fill(HIST("QA/EP/hEPResBC"), lCentrality, lEPResBC);
+    // Scalar product method
+    if (cfgUseScalProduct) {
+      double lEPSPResAB = collision.qvecRe()[lQvecDetInd] * collision.qvecRe()[lQvecRefBInd] + collision.qvecIm()[lQvecDetInd] * collision.qvecIm()[lQvecRefBInd] * lEPResAB;
+      double lEPSPResAC = collision.qvecRe()[lQvecDetInd] * collision.qvecRe()[lQvecRefCInd] + collision.qvecIm()[lQvecDetInd] * collision.qvecIm()[lQvecRefCInd] * lEPResAC;
+      double lEPSPResBC = collision.qvecRe()[lQvecRefBInd] * collision.qvecRe()[lQvecRefCInd] + collision.qvecIm()[lQvecRefBInd] * collision.qvecIm()[lQvecRefCInd] * lEPResBC;
+
+      histos.fill(HIST("QA/EP/hEPSPResAB"), lCentrality, lEPSPResAB);
+      histos.fill(HIST("QA/EP/hEPSPResAC"), lCentrality, lEPSPResAC);
+      histos.fill(HIST("QA/EP/hEPSPResBC"), lCentrality, lEPSPResBC);
+    }
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot, lResonanceRot;
     std::vector<int> trackIndicies = {};
