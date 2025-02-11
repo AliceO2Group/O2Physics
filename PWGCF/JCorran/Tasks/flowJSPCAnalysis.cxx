@@ -25,7 +25,6 @@
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "Framework/HistogramRegistry.h"
 
 // O2 Physics headers. //
@@ -68,8 +67,6 @@ struct flowJSPCAnalysis {
   FlowJSPCObservables SPCobservables;
 
   // Set Configurables here
-  Configurable<bool> cfgUseNUA{"cfgUseNUA", false, "Use NUA correction"};
-  Configurable<bool> cfgUseNUE{"cfgUseNUE", false, "Use NUE correction"};
   Configurable<bool> cfgFillQA{"cfgFillQA", true, "Fill QA plots"};
 
   Configurable<Int_t> cfgWhichSPC{"cfgWhichSPC", 0, "Which SPC observables to compute."};
@@ -92,17 +89,6 @@ struct flowJSPCAnalysis {
     Configurable<int> cfgMultMin{"cfgMultMin", 10, "Minimum number of particles required for the event to have."};
   } cfgEventCuts;
 
-  // Set the access to the CCDB for the NUA/NUE weights.
-  struct : ConfigurableGroup {
-    Configurable<bool> cfgUseCCDB{"cfgUseCCDB", true, "Use CCDB for NUA/NUE corrections."};
-    Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch",
-                                     "Address of the CCDB to get the NUA/NUE."};
-    Configurable<int64_t> cfgTime{"ccdb-no-later-than",
-                                  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                                  "Latest acceptable timestamp of creation for the object."};
-  } cfgCCDB;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-
   // // Filters to be applied to the received data.
   // // The analysis assumes the data has been subjected to a QA of its selection,
   // // and thus only the final distributions of the data for analysis are saved.
@@ -122,13 +108,6 @@ struct flowJSPCAnalysis {
     histManager.SetHistRegistryQA(&qaHistRegistry);
     histManager.SetDebugLog(false);
     histManager.CreateHistQA();
-
-    /////////////////////
-
-    ccdb->setURL(cfgCCDB.cfgURL);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setCreatedNotAfter(cfgCCDB.cfgTime.value);
   }
 
   template <class CollisionT, class TrackT>
@@ -139,23 +118,6 @@ struct flowJSPCAnalysis {
       return;
 
     float cent = collision.multiplicity();
-    // switch (cfgEventCuts.cfgCentEst) {
-    //   case FT0M:
-    //     cent = collision.centFT0M();
-    //     break;
-    //   case FT0A:
-    //     cent = collision.centFT0A();
-    //     break;
-    //   case FT0C:
-    //     cent = collision.centFT0C();
-    //     break;
-    //   case FDDM:
-    //     cent = collision.centFDDM();
-    //     break;
-    //   case NTPV:
-    //     cent = collision.centNTPV();
-    //     break;
-    // }
     if (cent < 0. || cent > 70.) {
       return;
     }
@@ -168,15 +130,8 @@ struct flowJSPCAnalysis {
 
         using JInputClassIter = typename TrackT::iterator;
         if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value) {
-          // LOGF(info, "Filling phi");
           spcAnalysis.FillQAHistograms(cBin, track.phi(), 1./track.weightNUA());
         }
-
-    //   if (cfgUseNUE) {
-    //     ;
-    //   }
-    //   if (cfgUseNUA) {
-    //     ;
       }
     }
 
@@ -186,8 +141,6 @@ struct flowJSPCAnalysis {
     jqvecs.Calculate(tracks, 0.0, cfgTrackCuts.cfgEtaMax);
     spcAnalysis.SetQvectors(&jqvecs);
     spcAnalysis.CalculateCorrelators(cBin);
-
-    //LOGF(info, "Collision analysed. Next...");
   }
 
 

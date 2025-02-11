@@ -27,7 +27,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "ReconstructionDataFormats/V0.h"
 
-// #include "CCDB/BasicCCDBManager.h"
+#include "CCDB/BasicCCDBManager.h"
 
 #include "PWGCF/JCorran/DataModel/JCatalyst.h"
 #include "PWGCF/DataModel/CorrelationsDerived.h"
@@ -42,11 +42,16 @@ using namespace o2::framework::expressions;
 // The standalone jfluc code expects the entire list of tracks for an event. At the same time, it expects weights together with other track attributes.
 // This workflow creates a table of weights that can be joined with track tables.
 struct jflucWeightsLoader {
-  O2_DEFINE_CONFIGURABLE(pathPhiWeights, std::string, "local:///home/maxim/Documents/Work/Run3_local/corrections/correction_LHC23zzh_pass4-local.root", "Local (local://) or CCDB path for the phi acceptance correction histogram");
+  O2_DEFINE_CONFIGURABLE(cfgPathPhiWeights, std::string, "http://alice-ccdb.cern.ch", "Local (local://) or CCDB path for the phi acceptance correction histogram");
+  O2_DEFINE_CONFIGURABLE(cfgForRunNumber, bool, false, "Get CCDB object by run");
+  O2_DEFINE_CONFIGURABLE(cfgCCDBPath, std::string, "Users/m/mavirta/corrections/NUA/LHC23zzh", "Internal path in CCDB");
 
   THnF* ph = 0;
   TFile* pf = 0;
   int runNumber = 0;
+  int timestamp = 0;
+  bool useCCDB = false;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   ~jflucWeightsLoader()
   {
@@ -58,23 +63,41 @@ struct jflucWeightsLoader {
     }
   }
 
+  void initCCDB(int runNum, int ts) {
+    if (cfgForRunNumber) {
+      ph = ccdb->getForRun<THnF>(cfgCCDBPath, runNum);
+    } else
+      ph = ccdb->getForTimeStamp<THnF>(cfgCCDBPath,ts);
+  }
+
+
   void init(InitContext const&)
   {
     if (!doprocessLoadWeights && !doprocessLoadWeightsCF) {
       return;
     }
+
     if (doprocessLoadWeights && doprocessLoadWeightsCF)
       LOGF(fatal, "Only one of JTracks or CFTracks processing can be enabled at a time.");
-    if (pathPhiWeights.value.substr(0, 8) == "local://") {
-      LOGF(info, "Using corrections from: %s", pathPhiWeights.value.substr(8).c_str());
-      pf = new TFile(pathPhiWeights.value.substr(8).c_str(), "read");
+    if (cfgPathPhiWeights.value.find("ccdb") != std::string::npos) {
+      LOGF(info, "Using corrections from: ccdb");
+      useCCDB = true;
+      ccdb->setURL(cfgPathPhiWeights);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(false);
+    } else if (cfgPathPhiWeights.value.substr(0, 8) == "local://") {
+      LOGF(info, "Using corrections from: %s", cfgPathPhiWeights.value.substr(8).c_str());
+      pf = new TFile(cfgPathPhiWeights.value.substr(8).c_str(), "read");
       if (!pf->IsOpen()) {
         delete pf;
         pf = 0;
-        LOGF(fatal, "NUA correction weights file not found: %s", pathPhiWeights.value.substr(8).c_str());
+        LOGF(fatal, "NUA correction weights file not found: %s", cfgPathPhiWeights.value.substr(8).c_str());
       }
+      useCCDB=false;
     } else {
-      LOGF(info, "Didn't find \"local://\"");
+      LOGF(info, "Didn't find \"local://\" or \"ccdb\"");
+      return;
     }
   }
 
@@ -84,16 +107,24 @@ struct jflucWeightsLoader {
   template <class ProducesT, class CollisionT, class TrackT>
   void loadWeights(Produces<ProducesT>& outputT, CollisionT const& collision, TrackT const& tracks)
   {
-    if (!pf)
+
+    if (!pf && !useCCDB)
       LOGF(fatal, "NUA correction weights file has not been opened.");
     if (collision.runNumber() != runNumber) {
       if (ph)
         delete ph;
-      if (!(ph = static_cast<THnF*>(pf->Get(Form("NUAWeights_%d", collision.runNumber())))))
+      // Check if NUA correction can be found from a local file and load it
+      if (!useCCDB && !(ph = static_cast<THnF*>(pf->Get(Form("NUAWeights_%d", collision.runNumber()))))) {
         LOGF(warning, "NUA correction histogram not found for run %d.", collision.runNumber());
-      else
-        LOGF(info, "Loaded NUA correction histogram for run %d.", collision.runNumber());
+      } else if (useCCDB) { // Check if ccdb file is used and load it
+        LOGF(info, "Loaded NUA correction histogram from CCDB for run %d.", collision.runNumber());
+      } else {
+        LOGF(info, "Loaded NUA correction histogram locally for run %d.", collision.runNumber());
+      }
       runNumber = collision.runNumber();
+      if (useCCDB) {
+        initCCDB(runNumber, timestamp);
+      }
     }
     for (auto& track : tracks) {
       float phiWeight, effWeight;
