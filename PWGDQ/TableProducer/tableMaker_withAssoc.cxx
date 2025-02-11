@@ -893,7 +893,8 @@ struct TableMaker {
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
         multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
-               collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+               collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(),
+               collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
 
         multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
                 fOccup.oContribLongA[collision.globalIndex()], fOccup.oContribLongC[collision.globalIndex()],

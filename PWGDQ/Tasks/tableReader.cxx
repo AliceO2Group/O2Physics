@@ -1434,6 +1434,13 @@ struct AnalysisSameEventPairing {
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
   }
+  void processDecayToEESkimmedWithMult(soa::Filtered<MyEventsVtxCovSelectedMultExtra>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
+  {
+    // Reset the fValues array
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<gkEventFillMapWithMultExtra>(event, VarManager::fgValues);
+    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithMultExtra, gkTrackFillMap>(event, tracks, tracks);
+  }
   void processDecayToEESkimmedNoTwoProngFitter(soa::Filtered<MyEventsSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {
     // Reset the fValues array
@@ -1585,6 +1592,7 @@ struct AnalysisSameEventPairing {
   }
 
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmed, "Run electron-electron pairing, with skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedWithMult, "Run electron-electron pairing, with skimmed tracks and multiplicity", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedNoTwoProngFitter, "Run electron-electron pairing, with skimmed tracks but no two prong fitter", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedWithCov, "Run electron-electron pairing, with skimmed covariant tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedWithCovNoTwoProngFitter, "Run electron-electron pairing, with skimmed covariant tracks but no two prong fitter", false);
