@@ -146,13 +146,13 @@ struct jflucAnalysisTask {
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(jflucAnalysisTask, processCFDerived, "Process CF derived data", true);
+  PROCESS_SWITCH(jflucAnalysisTask, processCFDerived, "Process CF derived data", false);
 
   void processCFDerivedCorrected(aod::CFCollision const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(jflucAnalysisTask, processCFDerivedCorrected, "Process CF derived data with corrections", false);
+  PROCESS_SWITCH(jflucAnalysisTask, processCFDerivedCorrected, "Process CF derived data with corrections", true);
 
   void processCF2ProngDerived(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks> const& tracks, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
   {
