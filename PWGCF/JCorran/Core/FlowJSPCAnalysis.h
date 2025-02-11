@@ -26,7 +26,6 @@
 #include "PWGCF/JCorran/Core/JQVectors.h"
 #include "CommonConstants/MathConstants.h"
 
-
 class FlowJSPCAnalysis
 {
  public:
