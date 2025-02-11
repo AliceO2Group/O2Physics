@@ -332,7 +332,7 @@ void FlowJSPCAnalysis::correlation(int c_nPart, int c_nHarmo, int* harmo, double
     } break;
     case 8: {
       int harmonicsEightNum[8] = {harmo[0], harmo[1], harmo[2], harmo[3],
-                                    harmo[4], harmo[5], harmo[6], harmo[7]};
+                                  harmo[4], harmo[5], harmo[6], harmo[7]};
       int harmonicsEightDen[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
       if (!fCorrelDenoms[7]) {
@@ -347,7 +347,7 @@ void FlowJSPCAnalysis::correlation(int c_nPart, int c_nHarmo, int* harmo, double
     } break;
     case 9: {
       int harmonicsNineNum[9] = {harmo[0], harmo[1], harmo[2], harmo[3], harmo[4],
-                                   harmo[5], harmo[6], harmo[7], harmo[8]};
+                                 harmo[5], harmo[6], harmo[7], harmo[8]};
       int harmonicsNineDen[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
       if (!fCorrelDenoms[8]) {
@@ -362,7 +362,7 @@ void FlowJSPCAnalysis::correlation(int c_nPart, int c_nHarmo, int* harmo, double
     } break;
     case 10: {
       int harmonicsTenNum[10] = {harmo[0], harmo[1], harmo[2], harmo[3], harmo[4],
-                                   harmo[5], harmo[6], harmo[7], harmo[8], harmo[9]};
+                                 harmo[5], harmo[6], harmo[7], harmo[8], harmo[9]};
       int harmonicsTenDen[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
       if (!fCorrelDenoms[9]) {
@@ -377,7 +377,7 @@ void FlowJSPCAnalysis::correlation(int c_nPart, int c_nHarmo, int* harmo, double
     } break;
     case 12: {
       int harmonicsTwelveNum[12] = {harmo[0], harmo[1], harmo[2], harmo[3], harmo[4], harmo[5],
-                                      harmo[6], harmo[7], harmo[8], harmo[9], harmo[10], harmo[11]};
+                                    harmo[6], harmo[7], harmo[8], harmo[9], harmo[10], harmo[11]};
       int harmonicsTwelveDen[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
       if (!fCorrelDenoms[11]) {
@@ -392,7 +392,7 @@ void FlowJSPCAnalysis::correlation(int c_nPart, int c_nHarmo, int* harmo, double
     } break;
     case 14: {
       int harmonicsFourteenNum[14] = {harmo[0], harmo[1], harmo[2], harmo[3], harmo[4], harmo[5], harmo[6],
-                                        harmo[7], harmo[8], harmo[9], harmo[10], harmo[11], harmo[12], harmo[13]};
+                                      harmo[7], harmo[8], harmo[9], harmo[10], harmo[11], harmo[12], harmo[13]};
       int harmonicsFourteenDen[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
       if (!fCorrelDenoms[13]) {
