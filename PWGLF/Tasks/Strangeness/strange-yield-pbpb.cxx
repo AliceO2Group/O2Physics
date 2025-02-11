@@ -63,7 +63,6 @@ using cascadeCandidatesMC = soa::Join<aod::CascCollRefs, aod::CascCores, aod::Ca
 
 using cascMCCoresFull = soa::Join<aod::CascMCCores, aod::CascMCCollRefs>;
 
-
 using straCollisonFull = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator;
 using straCollisonFullMC = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>::iterator;
 
@@ -1017,50 +1016,50 @@ struct strangeYieldPbPb {
     };
 
     const std::array<selectionCheck, 13> checks = {{
-        {true, true, 0.0}, // All collisions
-        {requireIsTriggerTVX, collision.selection_bit(aod::evsel::kIsTriggerTVX), 1.0}, // Triggered by FT0M
-        {true, fabs(collision.posZ()) <= 10.f, 2.0}, // Vertex-Z selected
-        {rejectITSROFBorder, collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder), 3.0}, // Not at ITS ROF border
-        {rejectTFBorder, collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder), 4.0}, // Not at TF border
-        {requireIsVertexITSTPC, collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC), 5.0}, // At least one ITS-TPC track
-        {requireIsGoodZvtxFT0VsPV, collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV), 6.0}, // PV position consistency
-        {requireIsVertexTOFmatched, collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched), 7.0}, // PV with TOF match
-        {requireIsVertexTRDmatched, collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched), 8.0}, // PV with TRD match
-        {rejectSameBunchPileup, collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup), 9.0}, // No same-bunch pileup
-        {requireNoCollInTimeRangeStd, collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard), 10.0}, // No collision within +-10 µs
-        {requireNoCollInTimeRangeNarrow, collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow), 11.0}, // No collision within +-4 µs
-        {minOccupancy > 0, collision.trackOccupancyInTimeRange() >= minOccupancy, 12.0}, // Above min occupancy
+      {true, true, 0.0},                                                                                         // All collisions
+      {requireIsTriggerTVX, collision.selection_bit(aod::evsel::kIsTriggerTVX), 1.0},                            // Triggered by FT0M
+      {true, fabs(collision.posZ()) <= 10.f, 2.0},                                                               // Vertex-Z selected
+      {rejectITSROFBorder, collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder), 3.0},                   // Not at ITS ROF border
+      {rejectTFBorder, collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder), 4.0},                        // Not at TF border
+      {requireIsVertexITSTPC, collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC), 5.0},                    // At least one ITS-TPC track
+      {requireIsGoodZvtxFT0VsPV, collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV), 6.0},              // PV position consistency
+      {requireIsVertexTOFmatched, collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched), 7.0},            // PV with TOF match
+      {requireIsVertexTRDmatched, collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched), 8.0},            // PV with TRD match
+      {rejectSameBunchPileup, collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup), 9.0},                 // No same-bunch pileup
+      {requireNoCollInTimeRangeStd, collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard), 10.0},  // No collision within +-10 µs
+      {requireNoCollInTimeRangeNarrow, collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow), 11.0}, // No collision within +-4 µs
+      {minOccupancy > 0, collision.trackOccupancyInTimeRange() >= minOccupancy, 12.0},                           // Above min occupancy
     }};
 
     for (const auto& check : checks) {
-        if (check.selection && !check.condition) {
-            return false;
-        }
-        if (fillQA && check.selection) {
-            histos.fill(HIST("eventQA/hEventSelection"), check.qaBin);
-        }
+      if (check.selection && !check.condition) {
+        return false;
+      }
+      if (fillQA && check.selection) {
+        histos.fill(HIST("eventQA/hEventSelection"), check.qaBin);
+      }
     }
 
     // Additional checks
     if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
-        return false;
+      return false;
     }
     if (fillQA) {
-        histos.fill(HIST("eventQA/hEventSelection"), 13.0); // Below max occupancy
+      histos.fill(HIST("eventQA/hEventSelection"), 13.0); // Below max occupancy
     }
 
     if (studyUPConly && !collision.isUPC()) {
-        return false;
+      return false;
     }
     if (collision.isUPC() && fillQA) {
-        histos.fill(HIST("eventQA/hEventSelection"), 14.0); // UPC compatible
+      histos.fill(HIST("eventQA/hEventSelection"), 14.0); // UPC compatible
     }
 
     if (useUPCflag && collision.flags() < 1) {
-        return false;
+      return false;
     }
     if (collision.flags() >= 1 && fillQA) {
-        histos.fill(HIST("eventQA/hEventSelection"), 15.0); // UPC event
+      histos.fill(HIST("eventQA/hEventSelection"), 15.0); // UPC event
     }
 
     return true;
@@ -1227,8 +1226,8 @@ struct strangeYieldPbPb {
     double bachDcaXYLimit = 0.0105f + 0.035f / pow(bachpt, 1.1f);
 
     // TODO: separate xy and z //
-    if ((std::abs(casc.dcapostopv()) > posDcaXYLimit) && 
-        (std::abs(casc.dcanegtopv()) > negDcaXYLimit) && 
+    if ((std::abs(casc.dcapostopv()) > posDcaXYLimit) &&
+        (std::abs(casc.dcanegtopv()) > negDcaXYLimit) &&
         (std::abs(casc.dcabachtopv()) > bachDcaXYLimit)) {
       bitMap.set(selDauDCA);
     }
@@ -1386,7 +1385,7 @@ struct strangeYieldPbPb {
     double negDcaXYLimit = 0.0105f + 0.035f / pow(negpt, 1.1f);
 
     // TODO: separate xy and z //
-    if ((std::abs(v0.dcapostopv()) > posDcaXYLimit) && 
+    if ((std::abs(v0.dcapostopv()) > posDcaXYLimit) &&
         (std::abs(v0.dcanegtopv()) > negDcaXYLimit)) {
       bitMap.set(selDauDCA);
     }
@@ -1518,38 +1517,41 @@ struct strangeYieldPbPb {
   }
 
   template <typename TV0>
-  void computeV0MCAssociation(const TV0& v0, std::bitset<selNum>& bitMap) 
+  void computeV0MCAssociation(const TV0& v0, std::bitset<selNum>& bitMap)
   {
-      const int pdgPos = v0.pdgCodePositive();
-      const int pdgNeg = v0.pdgCodeNegative();
-      const int pdgV0 = v0.pdgCode();
-      const bool isPhysPrim = v0.isPhysicalPrimary();
+    const int pdgPos = v0.pdgCodePositive();
+    const int pdgNeg = v0.pdgCodeNegative();
+    const int pdgV0 = v0.pdgCode();
+    const bool isPhysPrim = v0.isPhysicalPrimary();
 
-      const bool isPositiveProton = (pdgPos == 2212);
-      const bool isPositivePion = (pdgPos == 211) || (doTreatPiToMuon && pdgPos == -13);
-      const bool isNegativeProton = (pdgNeg == -2212);
-      const bool isNegativePion = (pdgNeg == -211) || (doTreatPiToMuon && pdgNeg == 13);
+    const bool isPositiveProton = (pdgPos == 2212);
+    const bool isPositivePion = (pdgPos == 211) || (doTreatPiToMuon && pdgPos == -13);
+    const bool isNegativeProton = (pdgNeg == -2212);
+    const bool isNegativePion = (pdgNeg == -211) || (doTreatPiToMuon && pdgNeg == 13);
 
-      switch (pdgV0) {
-          case 310:  // K0Short
-              if (isPositivePion && isNegativePion) {
-                  bitMap.set(selConsiderK0Short);
-                  if (isPhysPrim) bitMap.set(selPhysPrimK0Short);
-              }
-              break;
-          case 3122:  // Lambda
-              if (isPositiveProton && isNegativePion) {
-                  bitMap.set(selConsiderLambda);
-                  if (isPhysPrim) bitMap.set(selPhysPrimLambda);
-              }
-              break;
-          case -3122:  // AntiLambda
-              if (isPositivePion && isNegativeProton) {
-                  bitMap.set(selConsiderAntiLambda);
-                  if (isPhysPrim) bitMap.set(selPhysPrimAntiLambda);
-              }
-              break;
-      }
+    switch (pdgV0) {
+      case 310: // K0Short
+        if (isPositivePion && isNegativePion) {
+          bitMap.set(selConsiderK0Short);
+          if (isPhysPrim)
+            bitMap.set(selPhysPrimK0Short);
+        }
+        break;
+      case 3122: // Lambda
+        if (isPositiveProton && isNegativePion) {
+          bitMap.set(selConsiderLambda);
+          if (isPhysPrim)
+            bitMap.set(selPhysPrimLambda);
+        }
+        break;
+      case -3122: // AntiLambda
+        if (isPositivePion && isNegativeProton) {
+          bitMap.set(selConsiderAntiLambda);
+          if (isPhysPrim)
+            bitMap.set(selPhysPrimAntiLambda);
+        }
+        break;
+    }
   }
 
   template <typename TV0, typename TCollision>
@@ -1590,83 +1592,82 @@ struct strangeYieldPbPb {
 
   PresliceUnsorted<straCollisonsFullMC> perMcCollision = aod::v0data::straMCCollisionId;
 
-  std::vector<int> getListOfRecoCollIndices(straMCCollisionsFull const& mcCollisions, 
+  std::vector<int> getListOfRecoCollIndices(straMCCollisionsFull const& mcCollisions,
                                             straCollisonsFullMC const& collisions)
   {
-      std::vector<int> listBestCollisionIdx(mcCollisions.size(), -1);
+    std::vector<int> listBestCollisionIdx(mcCollisions.size(), -1);
 
-      for (auto const& mcCollision : mcCollisions) {
-        auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
-        // Find the collision with the biggest nbr of PV contributors
-        // Follows what was done here: https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/mcCollsExtra.cxx#L93
-        int biggestNContribs = -1;
-        int bestCollisionIndex = -1;
-        for (auto const& collision : groupedCollisions) {
-          if (biggestNContribs < collision.multPVTotalContributors()) {
-            biggestNContribs = collision.multPVTotalContributors();
-            bestCollisionIndex = collision.globalIndex();
-          }
+    for (auto const& mcCollision : mcCollisions) {
+      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
+      // Find the collision with the biggest nbr of PV contributors
+      // Follows what was done here: https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/mcCollsExtra.cxx#L93
+      int biggestNContribs = -1;
+      int bestCollisionIndex = -1;
+      for (auto const& collision : groupedCollisions) {
+        if (biggestNContribs < collision.multPVTotalContributors()) {
+          biggestNContribs = collision.multPVTotalContributors();
+          bestCollisionIndex = collision.globalIndex();
         }
-        listBestCollisionIdx[mcCollision.globalIndex()] = bestCollisionIndex;
       }
+      listBestCollisionIdx[mcCollision.globalIndex()] = bestCollisionIndex;
+    }
 
-      return listBestCollisionIdx;
+    return listBestCollisionIdx;
   }
 
   void fillGenMCHistogramsQA(straMCCollisionsFull const& mcCollisions, straCollisonsFullMC const& collisions)
   {
-      for (auto const& mcCollision : mcCollisions) {
-          histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 0.0);
-          histos.fill(HIST("eventQA/mc/hMCNParticlesEta10"), mcCollision.multMCNParticlesEta10(), 0 /* all gen. events*/);
+    for (auto const& mcCollision : mcCollisions) {
+      histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 0.0);
+      histos.fill(HIST("eventQA/mc/hMCNParticlesEta10"), mcCollision.multMCNParticlesEta10(), 0 /* all gen. events*/);
 
-          if (TMath::Abs(mcCollision.posZ()) > 10.f)
-            continue;
+      if (TMath::Abs(mcCollision.posZ()) > 10.f)
+        continue;
 
-          histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 1.0);
+      histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 1.0);
 
-          // Group collisions by MC collision index
-          auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
+      // Group collisions by MC collision index
+      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
 
-          bool atLeastOne = false;
-          float centrality = -1.f;
-          int nCollisions = 0;
-          int biggestNContribs = -1;
-          int nTracksGlobal = -1;
+      bool atLeastOne = false;
+      float centrality = -1.f;
+      int nCollisions = 0;
+      int biggestNContribs = -1;
+      int nTracksGlobal = -1;
 
-          // Find the max contributors and count accepted collisions
-          for (auto const& collision : groupedCollisions) {
-              if (!acceptEvent(collision, false)) {
-                  continue;
-              }
+      // Find the max contributors and count accepted collisions
+      for (auto const& collision : groupedCollisions) {
+        if (!acceptEvent(collision, false)) {
+          continue;
+        }
 
-              int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
-              if (studyUPConly && (selGapSide < -0.5))
-                continue;
+        int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
+        if (studyUPConly && (selGapSide < -0.5))
+          continue;
 
-              if (biggestNContribs < collision.multPVTotalContributors()) {
-                  biggestNContribs = collision.multPVTotalContributors();
-                  centrality = collision.centFT0C();
-                  nTracksGlobal = collision.multNTracksGlobal();
-              }
+        if (biggestNContribs < collision.multPVTotalContributors()) {
+          biggestNContribs = collision.multPVTotalContributors();
+          centrality = collision.centFT0C();
+          nTracksGlobal = collision.multNTracksGlobal();
+        }
 
-              ++nCollisions;
-              atLeastOne = true;
-          }
-
-          // Fill histograms
-          histos.fill(HIST("eventQA/mc/hTracksGlobalVsNcoll_beforeEvSel"), nTracksGlobal, groupedCollisions.size());
-          histos.fill(HIST("eventQA/mc/hTracksGlobalVsNcoll_afterEvSel"), nTracksGlobal, nCollisions);
-          histos.fill(HIST("eventQA/mc/hTracksGlobalvsMCNParticlesEta10gen"), nTracksGlobal, mcCollision.multMCNParticlesEta10());
-          histos.fill(HIST("eventQA/mc/hTracksGlobalVsPVzMC"), nTracksGlobal, mcCollision.posZ());
-          histos.fill(HIST("eventQA/mc/hEventPVzMC"), mcCollision.posZ());
-
-          if (atLeastOne) {
-              histos.fill(HIST("eventQA/mc/hMCNParticlesEta10"), mcCollision.multMCNParticlesEta10(), 1 /* at least 1 rec. event*/);
-              histos.fill(HIST("eventQA/mc/hGenEventCentrality"), centrality);
-          }
+        ++nCollisions;
+        atLeastOne = true;
       }
-  }
 
+      // Fill histograms
+      histos.fill(HIST("eventQA/mc/hTracksGlobalVsNcoll_beforeEvSel"), nTracksGlobal, groupedCollisions.size());
+      histos.fill(HIST("eventQA/mc/hTracksGlobalVsNcoll_afterEvSel"), nTracksGlobal, nCollisions);
+      histos.fill(HIST("eventQA/mc/hTracksGlobalvsMCNParticlesEta10gen"), nTracksGlobal, mcCollision.multMCNParticlesEta10());
+      histos.fill(HIST("eventQA/mc/hTracksGlobalVsPVzMC"), nTracksGlobal, mcCollision.posZ());
+      histos.fill(HIST("eventQA/mc/hEventPVzMC"), mcCollision.posZ());
+
+      if (atLeastOne) {
+        histos.fill(HIST("eventQA/mc/hMCNParticlesEta10"), mcCollision.multMCNParticlesEta10(), 1 /* at least 1 rec. event*/);
+        histos.fill(HIST("eventQA/mc/hGenEventCentrality"), centrality);
+      }
+    }
+  }
 
   void processV0s(straCollisonFull const& collision, v0Candidates const& fullV0s, dauTracks const&)
   {
@@ -1695,9 +1696,9 @@ struct strangeYieldPbPb {
   }
 
   void processV0sMC(straCollisonFullMC const& collision,
-                    v0CandidatesMC const& fullV0s, 
+                    v0CandidatesMC const& fullV0s,
                     dauTracks const&,
-                    aod::MotherMCParts const&, 
+                    aod::MotherMCParts const&,
                     straMCCollisionsFull const&,
                     v0MCCoresFull const&)
   {
@@ -1716,11 +1717,11 @@ struct strangeYieldPbPb {
     fillHistogramsQA(collision, selGapSide);
 
     if (collision.has_straMCCollision()) {
-        const auto& mcCollision = collision.straMCCollision_as<straMCCollisionsFull>();
-        histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta10rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta10());
-        histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
-        histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
-        histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
+      const auto& mcCollision = collision.straMCCollision_as<straMCCollisionsFull>();
+      histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta10rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta10());
+      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
+      histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
+      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
     }
 
     for (auto& v0 : fullV0s) {
@@ -1744,7 +1745,7 @@ struct strangeYieldPbPb {
     } // end v0 loop
   }
 
-  void processCascadesMC(straCollisonFullMC const& collision, 
+  void processCascadesMC(straCollisonFullMC const& collision,
                          cascadeCandidatesMC const& fullCascades,
                          dauTracks const&,
                          straMCCollisionsFull const&,
@@ -1765,17 +1766,17 @@ struct strangeYieldPbPb {
     fillHistogramsQA(collision, selGapSide);
 
     if (collision.has_straMCCollision()) {
-        const auto& mcCollision = collision.straMCCollision_as<straMCCollisionsFull>();
-        histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta10rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta10());
-        histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
-        histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
-        histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
+      const auto& mcCollision = collision.straMCCollision_as<straMCCollisionsFull>();
+      histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta10rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta10());
+      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
+      histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
+      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
     }
   }
 
-  void processGenerated(straMCCollisionsFull const& mcCollisions, 
-                        v0MCCoresFull const& V0MCCores, 
-                        cascMCCoresFull const& CascMCCores, 
+  void processGenerated(straMCCollisionsFull const& mcCollisions,
+                        v0MCCoresFull const& V0MCCores,
+                        cascMCCoresFull const& CascMCCores,
                         straCollisonsFullMC const& collisions)
   {
     fillGenMCHistogramsQA(mcCollisions, collisions);
