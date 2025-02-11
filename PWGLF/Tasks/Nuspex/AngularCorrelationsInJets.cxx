@@ -129,7 +129,6 @@ struct AngularCorrelationsInJets {
   Configurable<bool> useRejectionCut{"useRejectionCut", true, "use nsigmaRejection"};
   Configurable<float> nsigmaRejection{"nsigmaRejection", 1.0, "reject tracks with nsigma < nsigmaRejection for >1 species"};
   Configurable<bool> deuteronAnalysis{"deuteronAnalysis", true, "true [false]: analyse (anti)deuterons [(anti)helium-3]"};
-  Configurable<bool> useTOFmass{"useTOFmass", false, "use TOF mass instead of pion mass if available"};
 
   Configurable<int> trackBufferSize{"trackBufferSize", 200, "Number of mixed-event tracks being stored"};
 
@@ -141,13 +140,13 @@ struct AngularCorrelationsInJets {
   int mRunNumber;
 
   using FullTracksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::TrackSelection,
-                                   aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa>;
+                                   aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa>;
   using FullTracksRun3 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, aod::TrackSelectionExtension,
-                                   aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa>;
+                                   aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa>;
   using McTracksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::TrackSelection,
-                                 aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa, aod::McTrackLabels>;
+                                 aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa, aod::McTrackLabels>;
   using McTracksRun3 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, aod::TrackSelectionExtension,
-                                 aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa, aod::McTrackLabels>;
+                                 aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa, aod::McTrackLabels>;
   using JTracksRun3 = soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>;
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
   using McCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
@@ -290,8 +289,6 @@ struct AngularCorrelationsInJets {
     registryQA.add("hRhoMEstimateArea", "Background #rho_{m} (area)", HistType::kTH2F, {{axisSpecs.ptAxisPos}, {200, 0, 20}});
     registryQA.add("hJetBkgDeltaPt", "#Delta p_{T} Clustered Cone - Pure Jet", HistType::kTH1F, {{200, 0, 10}});
 
-    registryQA.add("hTOFmass", "TOF mass vs p_{T}", HistType::kTH2F, {axisSpecs.ptAxisPos, {1000, 0, 5, "#it{m} [GeV/#it{c}^{2}]"}});
-    registryQA.get<TH2>(HIST("hTOFmass"))->Sumw2();
     registryQA.add("hPtFullEvent", "p_{T} after basic cuts", HistType::kTH1F, {axisSpecs.ptAxisPos});
     registryQA.add("hCrossedRowsTPC", "Crossed rows TPC", HistType::kTH2I, {axisSpecs.ptAxisPos, {135, 65, 200}});
     registryQA.add("hClusterITS", "ITS clusters", HistType::kTH2I, {axisSpecs.ptAxisPos, {10, 0, 10}});
@@ -1025,7 +1022,6 @@ struct AngularCorrelationsInJets {
         registryData.fill(HIST("hTrackProtocol"), 10); // # antinuclei
         registryData.fill(HIST("hDCAzJetAntinuclei"), jetParticle.pt(), jetParticle.dcaZ());
       } else if (isPion(jetParticle)) {
-        registryData.fill(HIST("hPtJetPion"), jetParticle.pt());
         registryQA.fill(HIST("hPtJetPionVsTotalJet"), jetParticle.pt(), subtractedJetPerp.pt());
         registryData.fill(HIST("hTrackProtocol"), 11); // # antinuclei
         registryData.fill(HIST("hDCAzJetPion"), jetParticle.pt(), jetParticle.dcaZ());
@@ -1035,7 +1031,6 @@ struct AngularCorrelationsInJets {
           jetPiMinus.emplace_back(jetParticle);
         }
       } else if (isKaon(jetParticle)) {
-        registryData.fill(HIST("hPtJetKaon"), jetParticle.pt());
         registryQA.fill(HIST("hPtJetKaonVsTotalJet"), jetParticle.pt(), subtractedJetPerp.pt());
         registryData.fill(HIST("hTrackProtocol"), 12); // # antinuclei
         registryData.fill(HIST("hDCAzJetKaon"), jetParticle.pt(), jetParticle.dcaZ());
@@ -1096,19 +1091,7 @@ struct AngularCorrelationsInJets {
       if (!selectTrack(track))
         continue;
 
-      double mass;
-      if (useTOFmass) {
-        if (track.hasTOF()) {
-          mass = track.mass(); // check reliability, maybe use only pion mass
-          registryQA.fill(HIST("hTOFmass"), track.pt(), track.mass());
-          registryData.fill(HIST("hTrackProtocol"), 1);
-        } else {
-          mass = 0.139; // pion mass as default, ~80% are pions
-          registryData.fill(HIST("hTrackProtocol"), 2);
-        }
-      } else {
-        mass = 0.139;
-      }
+      double mass = 0.139;
 
       if (track.tpcNClsFindable() != 0) {
         registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows() / track.tpcNClsFindable());
@@ -1198,19 +1181,7 @@ struct AngularCorrelationsInJets {
       if (!selectTrack(track))
         continue;
 
-      double mass;
-      if (useTOFmass) {
-        if (track.hasTOF()) {
-          mass = track.mass(); // check reliability, maybe use only pion mass
-          registryQA.fill(HIST("hTOFmass"), track.pt(), track.mass());
-          registryData.fill(HIST("hTrackProtocol"), 1);
-        } else {
-          mass = 0.139; // pion mass as default, ~80% are pions
-          registryData.fill(HIST("hTrackProtocol"), 2);
-        }
-      } else {
-        mass = 0.139;
-      }
+      double mass = 0.139; // pion mass for input because 80% is pions anyway
 
       if (track.tpcNClsFindable() != 0) {
         registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows() / track.tpcNClsFindable());
@@ -1351,7 +1322,7 @@ struct AngularCorrelationsInJets {
   PROCESS_SWITCH(AngularCorrelationsInJets, processRun3, "process Run 3 data", false);
 
   // using JetTracksMCDwID = soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>;
-  void processRun3revised(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs>>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& allJets, /* JTracksRun3 const& jtracks, soa::Join<aod::Collisions, aod::EvSels> const&, */ soa::Filtered<FullTracksRun3> const&) // check how to use bkg sub jets --- table or recluster + bkg sub?
+  void processRun3revised(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs>>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& allJets, soa::Filtered<FullTracksRun3> const&) // check how to use bkg sub jets --- table or recluster + bkg sub?
   {
     registryData.fill(HIST("hEventProtocol"), 0);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
@@ -1463,7 +1434,6 @@ struct AngularCorrelationsInJets {
           registryData.fill(HIST("hTrackProtocol"), 10); // # antinuclei
           registryData.fill(HIST("hDCAzJetAntinuclei"), track.pt(), track.dcaZ());
         } else if (isPion(track)) {
-          registryData.fill(HIST("hPtJetPion"), track.pt());
           registryQA.fill(HIST("hPtJetPionVsTotalJet"), track.pt(), jet.pt());
           registryData.fill(HIST("hTrackProtocol"), 11); // # antinuclei
           registryData.fill(HIST("hDCAzJetPion"), track.pt(), track.dcaZ());
@@ -1473,7 +1443,6 @@ struct AngularCorrelationsInJets {
             jetPiMinus.emplace_back(track);
           }
         } else if (isKaon(track)) {
-          registryData.fill(HIST("hPtJetKaon"), track.pt());
           registryQA.fill(HIST("hPtJetKaonVsTotalJet"), track.pt(), jet.pt());
           registryData.fill(HIST("hTrackProtocol"), 12); // # antinuclei
           registryData.fill(HIST("hDCAzJetKaon"), track.pt(), track.dcaZ());
