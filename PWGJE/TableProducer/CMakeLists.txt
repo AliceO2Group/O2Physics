@@ -23,33 +23,8 @@ o2physics_add_dpl_workflow(jet-deriveddata-trigger-producer
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy
-                    SOURCES derivedDataProducerDummy.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy-charged
-                    SOURCES derivedDataProducerDummyCharged.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy-d0
-                    SOURCES derivedDataProducerDummyD0.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy-lc
-                    SOURCES derivedDataProducerDummyLc.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy-bplus
-                    SOURCES derivedDataProducerDummyBplus.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy-dielectron
-                    SOURCES derivedDataProducerDummyDielectron.cxx
+o2physics_add_dpl_workflow(jet-deriveddata-selector
+                    SOURCES derivedDataSelector.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

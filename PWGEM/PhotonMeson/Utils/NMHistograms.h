@@ -48,6 +48,8 @@ void addNMHistograms(HistogramRegistry* fRegistry, bool isMC, const char* pairna
     fRegistry->add("Pair/Pi0/hs_Primary", "rec. true pi0", kTHnSparseD, {axis_mass, axis_pt}, true);
     fRegistry->add("Pair/Pi0/hs_FromWD", "rec. true pi0 from weak decay", kTHnSparseD, {axis_mass, axis_pt}, true);
     fRegistry->add("Pair/Pi0/hs_FromHS", "rec. true pi0 from hadronic shower in material", kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Pi0/hs_FromSameGamma", "Two clusters from same gamma that is a pi0 daughter (conversion)", kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Eta/hs_FromSameGamma", "Two clusters from same gamma that is a eta daughter (conversion)", kTHnSparseD, {axis_mass, axis_pt}, true);
     fRegistry->add("Pair/Eta/hs_Primary", "rec. true eta", kTHnSparseD, {axis_mass, axis_pt}, true);
 
     const AxisSpec axis_rapidity{{0.0, +0.8, +0.9}, "rapidity |y|"};
