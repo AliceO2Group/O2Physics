@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file strangenessMasks.cxx
+/// \file strangenessMasks.h
 /// \brief Defines selection criteria and bit masks for identifying v0 and cascade particles
 /// \author Roman Nepeivoda (roman.nepeivoda@cern.ch)
 

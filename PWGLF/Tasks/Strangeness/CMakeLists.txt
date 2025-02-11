@@ -35,7 +35,7 @@ o2physics_add_dpl_workflow(sigmaminus-task
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cascadeanalysismc
-    SOURCES cascadeanalysisMC.cxx
+    SOURCES cascadeanalysismc.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 

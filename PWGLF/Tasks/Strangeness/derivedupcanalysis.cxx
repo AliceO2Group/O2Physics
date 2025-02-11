@@ -263,12 +263,9 @@ struct Derivedupcanalysis {
   ConfigurableAxis axisTOFdeltaT{"axisTOFdeltaT", {200, -5000.0f, 5000.0f}, "TOF Delta T (ps)"};
   ConfigurableAxis axisNctau{"axisNctau", {100, 0.0f, 10.0f}, "n c x tau"};
 
-  // PDG database
-  Service<o2::framework::O2DatabasePDG> pdgDB;
-
   static constexpr std::string_view kParticlenames[] = {"K0Short", "Lambda", "AntiLambda", "Xi", "AntiXi", "Omega", "AntiOmega"};
 
-  void setBits(std::bitset<selNum>& mask, std::initializer_list<int> selections)
+  void setBits(std::bitset<kSelNum>& mask, std::initializer_list<int> selections)
   {
     for (const int& sel : selections) {
       mask.set(sel);
@@ -694,7 +691,7 @@ struct Derivedupcanalysis {
 
   void init(InitContext const&)
   {
-    if (((doprocessV0s == true) && (doprocessCascades == true)) || ((doprocessCascadesMC == true) && (doprocessV0sMC == true))) {
+    if (((doprocessV0s == true) && (doprocessCascades == true)) || (doprocessV0sMC == true)) {
       LOG(fatal) << "Unable to analyze both v0s and cascades simultaneously. Please enable only one process at a time";
     }
 
@@ -821,13 +818,13 @@ struct Derivedupcanalysis {
     }
 
     // Primary particle selection, central to analysis
-    maskSelectionK0Short = maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskK0ShortSpecific | (std::bitset<selNum>(1) << selPhysPrimK0Short);
-    maskSelectionLambda = maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskLambdaSpecific | (std::bitset<selNum>(1) << selPhysPrimLambda);
-    maskSelectionAntiLambda = maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskAntiLambdaSpecific | (std::bitset<selNum>(1) << selPhysPrimAntiLambda);
-    maskSelectionXi = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskXiSpecific | (std::bitset<selNum>(1) << selPhysPrimXi);
-    maskSelectionAntiXi = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskAntiXiSpecific | (std::bitset<selNum>(1) << selPhysPrimAntiXi);
-    maskSelectionOmega = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskOmegaSpecific | (std::bitset<selNum>(1) << selPhysPrimOmega);
-    maskSelectionAntiOmega = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskAntiOmegaSpecific | (std::bitset<selNum>(1) << selPhysPrimAntiOmega);
+    maskSelectionK0Short = maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskK0ShortSpecific | (std::bitset<kSelNum>(1) << selPhysPrimK0Short);
+    maskSelectionLambda = maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskLambdaSpecific | (std::bitset<kSelNum>(1) << selPhysPrimLambda);
+    maskSelectionAntiLambda = maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskAntiLambdaSpecific | (std::bitset<kSelNum>(1) << selPhysPrimAntiLambda);
+    maskSelectionXi = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskXiSpecific | (std::bitset<kSelNum>(1) << selPhysPrimXi);
+    maskSelectionAntiXi = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskAntiXiSpecific | (std::bitset<kSelNum>(1) << selPhysPrimAntiXi);
+    maskSelectionOmega = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskOmegaSpecific | (std::bitset<kSelNum>(1) << selPhysPrimOmega);
+    maskSelectionAntiOmega = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskAntiOmegaSpecific | (std::bitset<kSelNum>(1) << selPhysPrimAntiOmega);
 
     // Event Counter
     histos.add("eventQA/hEventSelection", "hEventSelection", kTH1F, {{16, -0.5f, +15.5f}});
@@ -880,7 +877,7 @@ struct Derivedupcanalysis {
       histos.add("eventQA/mc/hGenEventCentrality", "hGenEventCentrality", kTH1F, {axisFT0Cqa});
     }
 
-    if (doprocessV0sMC || doprocessCascadesMC) {
+    if (doprocessV0sMC) {
       // Event QA
       histos.add("eventQA/mc/hFakeEvents", "hFakeEvents", {kTH1F, {{1, -0.5f, 0.5f}}});
       histos.add("eventQA/mc/hNTracksGlobalvsMCNParticlesEta10rec", "hNTracksGlobalvsMCNParticlesEta10rec", kTH2F, {axisNTracksGlobal, axisNTracksPVeta1});
@@ -1060,7 +1057,7 @@ struct Derivedupcanalysis {
     return true;
   }
 
-  bool verifyMask(std::bitset<selNum> bitmap, std::bitset<selNum> mask)
+  bool verifyMask(std::bitset<kSelNum> bitmap, std::bitset<kSelNum> mask)
   {
     return (bitmap & mask) == mask;
   }
@@ -1128,7 +1125,7 @@ struct Derivedupcanalysis {
   }
 
   template <typename TCasc, typename TCollision>
-  std::bitset<selNum> computeBitmapCascade(TCasc const& casc, TCollision const& coll)
+  std::bitset<kSelNum> computeBitmapCascade(TCasc const& casc, TCollision const& coll)
   {
     float rapidityXi = casc.yXi();
     float rapidityOmega = casc.yOmega();
@@ -1144,7 +1141,7 @@ struct Derivedupcanalysis {
     float ctauXi = totalMom != 0 ? o2::constants::physics::MassXiMinus * decayPos / totalMom : 1e6;
     float ctauOmega = totalMom != 0 ? o2::constants::physics::MassOmegaMinus * decayPos / totalMom : 1e6;
 
-    std::bitset<selNum> bitMap = 0;
+    std::bitset<kSelNum> bitMap = 0;
 
     if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) > casccuts.casccospa)
       bitMap.set(selCascCosPA);
@@ -1338,12 +1335,12 @@ struct Derivedupcanalysis {
   }
 
   template <typename TV0, typename TCollision>
-  std::bitset<selNum> computeBitmapV0(TV0 const& v0, TCollision const& collision)
+  std::bitset<kSelNum> computeBitmapV0(TV0 const& v0, TCollision const& collision)
   {
     float rapidityLambda = v0.yLambda();
     float rapidityK0Short = v0.yK0Short();
 
-    std::bitset<selNum> bitMap = 0;
+    std::bitset<kSelNum> bitMap = 0;
 
     // base topological variables
     if (v0.v0radius() > v0cuts.v0radius)
@@ -1465,7 +1462,7 @@ struct Derivedupcanalysis {
   }
 
   template <typename TCasc, typename TCollision>
-  void analyseCascCandidate(TCasc const& casc, TCollision const& coll, int const& gap, std::bitset<selNum> const& selMap)
+  void analyseCascCandidate(TCasc const& casc, TCollision const& coll, int const& gap, std::bitset<kSelNum> const& selMap)
   {
     // Access daughter tracks
     auto posTrackExtra = casc.template posTrackExtra_as<DauTracks>();
@@ -1512,7 +1509,7 @@ struct Derivedupcanalysis {
   }
 
   template <typename TV0>
-  void computeV0MCAssociation(const TV0& v0, std::bitset<selNum>& bitMap)
+  void computeV0MCAssociation(const TV0& v0, std::bitset<kSelNum>& bitMap)
   {
     const int pdgPos = v0.pdgCodePositive();
     const int pdgNeg = v0.pdgCodeNegative();
@@ -1550,7 +1547,7 @@ struct Derivedupcanalysis {
   }
 
   template <typename TV0, typename TCollision>
-  void analyseV0Candidate(TV0 const& v0, TCollision const& coll, int const& gap, std::bitset<selNum> const& selMap)
+  void analyseV0Candidate(TV0 const& v0, TCollision const& coll, int const& gap, std::bitset<kSelNum> const& selMap)
   {
     auto posTrackExtra = v0.template posTrackExtra_as<DauTracks>();
     auto negTrackExtra = v0.template negTrackExtra_as<DauTracks>();
@@ -1680,7 +1677,7 @@ struct Derivedupcanalysis {
       if ((v0.v0Type() != v0cuts.v0TypeSelection) && (v0cuts.v0TypeSelection > 0))
         continue; // skip V0s that are not standard
 
-      std::bitset<selNum> selMap = computeBitmapV0(v0, collision);
+      std::bitset<kSelNum> selMap = computeBitmapV0(v0, collision);
 
       // consider all species for the candidate
       setBits(selMap, {selConsiderK0Short, selConsiderLambda, selConsiderAntiLambda,
@@ -1723,7 +1720,7 @@ struct Derivedupcanalysis {
       if ((v0.v0Type() != v0cuts.v0TypeSelection) && (v0cuts.v0TypeSelection > 0))
         continue; // skip V0s that are not standard
 
-      std::bitset<selNum> selMap = computeBitmapV0(v0, collision);
+      std::bitset<kSelNum> selMap = computeBitmapV0(v0, collision);
 
       if (doMCAssociation) {
         if (v0.has_v0MCCore()) {
@@ -1740,19 +1737,13 @@ struct Derivedupcanalysis {
     } // end v0 loop
   }
 
-  void processCascadesMC(StraCollisonFullMC const& collision,
-                         CascadeCandidatesMC const& fullCascades,
-                         DauTracks const&,
-                         StraMCCollisionsFull const&,
-                         CascMCCoresFull const&)
+  void processCascades(StraCollisonFull const& collision, 
+                       CascadeCandidates const& fullCascades, 
+                       DauTracks const&)
   {
     if (!acceptEvent(collision, true)) {
       return;
     } // event is accepted
-
-    if (!collision.has_straMCCollision()) {
-      histos.fill(HIST("eventQA/mc/hFakeEvents"), 0); // no assoc. MC collisions
-    }
 
     int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
     if (studyUPConly && (selGapSide < -0.5))
@@ -1760,13 +1751,14 @@ struct Derivedupcanalysis {
 
     fillHistogramsQA(collision, selGapSide);
 
-    if (collision.has_straMCCollision()) {
-      const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>();
-      histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta10rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta10());
-      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
-      histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
-      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
-    }
+    for (auto& casc : fullCascades) {
+      std::bitset<kSelNum> selMap = computeBitmapCascade(casc, collision);
+      // the candidate may belong to any particle species
+      setBits(selMap, {selConsiderXi, selConsiderAntiXi, selConsiderOmega, selConsiderAntiOmega,
+                       selPhysPrimXi, selPhysPrimAntiXi, selPhysPrimOmega, selPhysPrimAntiOmega});
+
+      analyseCascCandidate(casc, collision, selGapSide, selMap);
+    } // end casc loop
   }
 
   void processGenerated(StraMCCollisionsFull const& mcCollisions,
