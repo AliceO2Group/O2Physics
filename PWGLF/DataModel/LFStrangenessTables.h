@@ -236,7 +236,7 @@ DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to comp
                   epcalibrationtable::TriggerEventEP);
 DECLARE_SOA_TABLE(StraZDCSP, "AOD", "STRAZDCSP", //! ZDC SP information
                   spcalibrationtable::TriggerEventSP,
-                  spcalibrationtable::PsiZDCA, spcalibrationtable::PsiZDCC);
+                  spcalibrationtable::PsiZDCA, spcalibrationtable::PsiZDCC, spcalibrationtable::QXZDCA, spcalibrationtable::QXZDCC, spcalibrationtable::QYZDCA, spcalibrationtable::QYZDCC);
 DECLARE_SOA_TABLE(StraStamps_000, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
                   bc::RunNumber, timestamp::Timestamp);
 DECLARE_SOA_TABLE_VERSIONED(StraStamps_001, "AOD", "STRASTAMPS", 1, //! information for ID-ing mag field if needed
