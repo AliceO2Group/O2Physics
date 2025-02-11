@@ -617,7 +617,7 @@ struct HfCorrelatorLcHadrons {
           }
 
           auto motherTrkGen = mcParticles.iteratorAt(track.mothersIds()[0]);
-          if (std::abs(motherTrkGen.pdgCode() == kLambdaCPlus))
+          if (std::abs(motherTrkGen.pdgCode()) == kLambdaCPlus)
             continue;
 
           auto chargeTrack = pdg->GetParticle(track.pdgCode())->Charge(); // Retrieve charge
@@ -646,7 +646,7 @@ struct HfCorrelatorLcHadrons {
             continue;
 
           auto motherTrk = mcParticles.iteratorAt(mcParticle.mothersIds()[0]);
-          if (std::abs(motherTrk.pdgCode() == kLambdaCPlus))
+          if (std::abs(motherTrk.pdgCode()) == kLambdaCPlus)
             continue;
 
           registry.fill(HIST("hPtTracksVsSignRec"), track.pt(), track.sign() / 2.);
