@@ -16,6 +16,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
+#include <string>
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -82,19 +84,15 @@ struct BjetTaggingGNN {
 
   Configurable<bool> doDataDriven{"doDataDriven", false, "Flag whether to use fill THnSpase for data driven methods"};
 
-  std::vector<int> eventSelectionBits;
+  int eventSelection = -1;
 
   std::vector<double> jetRadiiValues;
 
   void init(InitContext const&)
   {
-    // Seed the random number generator using current time
-    // std::srand(static_cast<unsigned int>(std::time(nullptr)));
-    // std::srand(42);
-
     jetRadiiValues = (std::vector<double>)jetRadii;
 
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
+    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
 
     registry.add("h_vertexZ", "Vertex Z;#it{Z} (cm)", {HistType::kTH1F, {{40, -20.0, 20.0}}});
 
@@ -173,13 +171,13 @@ struct BjetTaggingGNN {
     }
 
     if (doDataDriven) {
-      registry.add("hSparse_Incljets", "", {HistType::kTHnSparseF, {axisJetpT, axisDbFine, axisSVMass, axisSVEnergy, axisSLxy, axisJetMass, axisJetProb, axisNTracks}});
+      registry.add("hSparse_Incljets", "", {HistType::kTHnSparseF, {axisJetpT, axisDbFine, axisSVMass, axisJetMass, axisNTracks}});
       if (doprocessMCJets) {
-        registry.add("hSparse_bjets", "", {HistType::kTHnSparseF, {axisJetpT, axisDbFine, axisSVMass, axisSVEnergy, axisSLxy, axisJetMass, axisJetProb, axisNTracks}});
-        registry.add("hSparse_cjets", "", {HistType::kTHnSparseF, {axisJetpT, axisDbFine, axisSVMass, axisSVEnergy, axisSLxy, axisJetMass, axisJetProb, axisNTracks}});
-        registry.add("hSparse_lfjets", "", {HistType::kTHnSparseF, {axisJetpT, axisDbFine, axisSVMass, axisSVEnergy, axisSLxy, axisJetMass, axisJetProb, axisNTracks}});
-        registry.add("hSparse_lfjets_none", "", {HistType::kTHnSparseF, {axisJetpT, axisDbFine, axisSVMass, axisSVEnergy, axisSLxy, axisJetMass, axisJetProb, axisNTracks}});
-        registry.add("hSparse_lfjets_matched", "", {HistType::kTHnSparseF, {axisJetpT, axisDbFine, axisSVMass, axisSVEnergy, axisSLxy, axisJetMass, axisJetProb, axisNTracks}});
+        registry.add("hSparse_bjets", "", {HistType::kTHnSparseF, {axisJetpT, axisDbFine, axisSVMass, axisJetMass, axisNTracks}});
+        registry.add("hSparse_cjets", "", {HistType::kTHnSparseF, {axisJetpT, axisDbFine, axisSVMass, axisJetMass, axisNTracks}});
+        registry.add("hSparse_lfjets", "", {HistType::kTHnSparseF, {axisJetpT, axisDbFine, axisSVMass, axisJetMass, axisNTracks}});
+        registry.add("hSparse_lfjets_none", "", {HistType::kTHnSparseF, {axisJetpT, axisDbFine, axisSVMass, axisJetMass, axisNTracks}});
+        registry.add("hSparse_lfjets_matched", "", {HistType::kTHnSparseF, {axisJetpT, axisDbFine, axisSVMass, axisJetMass, axisNTracks}});
       }
     }
   }
@@ -205,6 +203,8 @@ struct BjetTaggingGNN {
         continue;
       }
 
+      // ...
+
       ++nTracks;
     }
     return nTracks;
@@ -215,15 +215,12 @@ struct BjetTaggingGNN {
   {
     using SVType = typename SecondaryVertices::iterator;
 
-    // Min-heap to store the top 30 SVs by decayLengthXY/errorDecayLengthXY
     auto compare = [](SVType& sv1, SVType& sv2) {
       return (sv1.decayLengthXY() / sv1.errorDecayLengthXY()) > (sv2.decayLengthXY() / sv2.errorDecayLengthXY());
     };
 
     auto svs = analysisJet.template secondaryVertices_as<SecondaryVertices>();
 
-    // Sort the SVs based on their decay length significance in descending order
-    // This is needed in order to select longest SVs since some jets could have thousands of SVs
     std::sort(svs.begin(), svs.end(), compare);
 
     checkSV = false;
@@ -235,27 +232,10 @@ struct BjetTaggingGNN {
 
       checkSV = true;
       return candSV;
-
-      // double deltaRJetSV = jetutilities::deltaR(myJet, candSV);
-      // double massSV = candSV.m();
-      // double energySV = candSV.e();
     }
 
     // No SV found
     return *allSVs.begin();
-
-    // auto isValidSV = [this](const SVType& sv) {
-    //   return sv.pt() > this->svPtMin;
-    // };
-    // auto compare = [&isValidSV](const SVType& sv1, const SVType& sv2) {
-    //   return (sv1.decayLengthXY() / sv1.errorDecayLengthXY() < sv2.decayLengthXY() / sv2.errorDecayLengthXY() && isValidSV(sv2)) || (!isValidSV(sv1) && isValidSV(sv2));
-    // };
-
-    // auto svs = analysisJet.template secondaryVertices_as<SecondaryVertices>();
-    // auto maxSV = std::max_element(svs.begin(), svs.end(), compare);
-    // checkSV = (maxSV != svs.end()) && isValidSV(*maxSV);
-
-    // return *maxSV;
   }
 
   void processDummy(FilteredCollision::iterator const& /*collision*/)
@@ -265,7 +245,7 @@ struct BjetTaggingGNN {
 
   void processDataJets(FilteredCollision::iterator const& collision, DataJets const& alljets, JetTrackswID const& allTracks, SVTable const& allSVs)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
 
@@ -312,7 +292,7 @@ struct BjetTaggingGNN {
       registry.fill(HIST("h2_jetpT_nTracks"), analysisJet.pt(), nTracks);
 
       if (doDataDriven) {
-        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), analysisJet.scoreML(), mSV, eSV, slXY, analysisJet.mass(), analysisJet.jetProb(), nTracks);
+        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), analysisJet.scoreML(), mSV, analysisJet.mass(), nTracks);
       }
     }
   }
@@ -324,7 +304,7 @@ struct BjetTaggingGNN {
 
   void processMCJets(FilteredCollisionMCD::iterator const& collision, MCDJetTable const& MCDjets, MCPJetTable const& /*MCPjets*/, JetTracksMCDwID const& allTracks, MCDSVTable const& allSVs, aod::JetParticles const& /*MCParticles*/)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
 
@@ -441,17 +421,17 @@ struct BjetTaggingGNN {
       }
 
       if (doDataDriven) {
-        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), analysisJet.scoreML(), mSV, eSV, slXY, analysisJet.mass(), analysisJet.jetProb(), nTracks, weight);
+        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), analysisJet.scoreML(), mSV, analysisJet.mass(), nTracks, weight);
         if (jetFlavor == JetTaggingSpecies::beauty) {
-          registry.fill(HIST("hSparse_bjets"), analysisJet.pt(), analysisJet.scoreML(), mSV, eSV, slXY, analysisJet.mass(), analysisJet.jetProb(), nTracks, weight);
+          registry.fill(HIST("hSparse_bjets"), analysisJet.pt(), analysisJet.scoreML(), mSV, analysisJet.mass(), nTracks, weight);
         } else if (jetFlavor == JetTaggingSpecies::charm) {
-          registry.fill(HIST("hSparse_cjets"), analysisJet.pt(), analysisJet.scoreML(), mSV, eSV, slXY, analysisJet.mass(), analysisJet.jetProb(), nTracks, weight);
+          registry.fill(HIST("hSparse_cjets"), analysisJet.pt(), analysisJet.scoreML(), mSV, analysisJet.mass(), nTracks, weight);
         } else {
-          registry.fill(HIST("hSparse_lfjets"), analysisJet.pt(), analysisJet.scoreML(), mSV, eSV, slXY, analysisJet.mass(), analysisJet.jetProb(), nTracks, weight);
+          registry.fill(HIST("hSparse_lfjets"), analysisJet.pt(), analysisJet.scoreML(), mSV, analysisJet.mass(), nTracks, weight);
           if (jetFlavor == JetTaggingSpecies::none) {
-            registry.fill(HIST("hSparse_lfjets_none"), analysisJet.pt(), analysisJet.scoreML(), mSV, eSV, slXY, analysisJet.mass(), analysisJet.jetProb(), nTracks, weight);
+            registry.fill(HIST("hSparse_lfjets_none"), analysisJet.pt(), analysisJet.scoreML(), mSV, analysisJet.mass(), nTracks, weight);
           } else {
-            registry.fill(HIST("hSparse_lfjets_matched"), analysisJet.pt(), analysisJet.scoreML(), mSV, eSV, slXY, analysisJet.mass(), analysisJet.jetProb(), nTracks, weight);
+            registry.fill(HIST("hSparse_lfjets_matched"), analysisJet.pt(), analysisJet.scoreML(), mSV, analysisJet.mass(), nTracks, weight);
           }
         }
       }
