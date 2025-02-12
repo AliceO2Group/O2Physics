@@ -514,12 +514,10 @@ struct BjetTaggingGNN {
     }
   }
   PROCESS_SWITCH(BjetTaggingGNN, processMCTruthJets, "truth jet information", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<BjetTaggingGNN>(cfgc, TaskName{"bjet-tagging-gnn"})
-  };
+    adaptAnalysisTask<BjetTaggingGNN>(cfgc, TaskName{"bjet-tagging-gnn"})};
 }
