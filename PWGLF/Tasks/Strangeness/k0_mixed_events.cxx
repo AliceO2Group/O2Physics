@@ -254,8 +254,8 @@ struct K0MixedEvents {
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(8, "isGoodZvtxFT0vsPV");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(9, "isNoSameBunchPileup");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(10, "InelGT0");
-    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(11, Form("collision.centFT0M() < %f",  multPercentileCut.value.second));
-    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(12, Form("collision.centFT0M() > %f",  multPercentileCut.value.first));
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(11, Form("collision.centFT0M() < %f", multPercentileCut.value.second));
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(12, Form("collision.centFT0M() > %f", multPercentileCut.value.first));
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(13, "Applied selection");
 
     registry.add("Trks", "Trks", kTH1D, {{2, 0.5, 2.5, "Tracks"}});
