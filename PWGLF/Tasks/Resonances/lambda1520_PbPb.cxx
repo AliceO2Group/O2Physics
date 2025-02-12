@@ -561,7 +561,7 @@ struct lambdaAnalysis_pb {
   {
 
     // LOGF(info, " collisions: Index = %d %d", collision.globalIndex(),tracks.size());
-    histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
+    histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent(), 100);
     fillDataHistos<false, false>(tracks, tracks, collision.cent());
   }
 
