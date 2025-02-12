@@ -651,7 +651,9 @@ struct HfDataCreatorCharmHadPiReduced {
           auto particleProng1 = vecDaughtersB[1].mcParticle();
           auto particleProng2 = vecDaughtersB[2].mcParticle();
           // b-hadron hypothesis
-          std::array<int, 3> bHadronMotherHypos = {Pdg::kBPlus, Pdg::kB0, Pdg::kBS};
+          std::array<int, 4> bHadronMotherHypos = {Pdg::kBPlus, Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
+          // c-hadron hypothesis
+          std::array<int, 5> cHadronMotherHypos = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kDSStar, Pdg::kLambdaCPlus};
 
           for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
             int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
@@ -667,12 +669,33 @@ struct HfDataCreatorCharmHadPiReduced {
                 pdgCodeProng0 = particleProng0.pdgCode();
                 pdgCodeProng1 = particleProng1.pdgCode();
                 pdgCodeProng2 = particleProng2.pdgCode();
+                // look for common c-hadron mother among prongs 0, 1 and 2
+                for (const auto& cHadronMotherHypo : cHadronMotherHypos) {
+                  int8_t depthMax = 2;
+                  if (cHadronMotherHypo == Pdg::kDStar || cHadronMotherHypo == Pdg::kDSStar) { // to include D* -> D π0/γ, D* -> D0 π, and Ds* -> Ds π0/γ
+                    depthMax += 1;
+                  }
+                  int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
+                  int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
+                  if (index0CharmMother > -1 && index1CharmMother > -1) {
+                    if (index0CharmMother == index1CharmMother) {
+                      // pdgCodeCharmMother =
+                      //   Pdg::kDPlus (if D+ is the mother and does not come from D*+)
+                      //   Pdg::kDPlus + Pdg::kDStar (if D+ is the mother and D*+ -> D+ π0/γ)
+                      //   Pdg::kDStar (if D*+ is the mother and D*+ -> D0 π+)
+                      //   Pdg::kDS (if Ds is the mother and does not come from Ds*)
+                      //   Pdg::kDS + Pdg::kDSStar (if Ds is the mother and Ds* -> Ds π0/γ)
+                      //   Pdg::kLambdaCPlus (if Λc+ is the mother)
+                      pdgCodeCharmMother += std::abs(particlesMc.rawIteratorAt(index0CharmMother).pdgCode());
+                    }
+                  }
+                }
                 break;
               }
             }
           }
         }
-        rowHfD0PiMcCheckReduced(pdgCodeBeautyMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2);
+        rowHfD0PiMcCheckReduced(pdgCodeBeautyMother, pdgCodeCharmMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2);
       }
       rowHfD0PiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
     }

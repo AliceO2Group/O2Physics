@@ -40,10 +40,10 @@ namespace aod
 {
 namespace hf_reduced_collision
 {
-DECLARE_SOA_COLUMN(Bz, bz, float); //! Magnetic field in z-direction
+DECLARE_SOA_COLUMN(Bz, bz, float);                                              //! Magnetic field in z-direction
 DECLARE_SOA_COLUMN(HfCollisionRejectionMap, hfCollisionRejectionMap, uint16_t); //! Bitmask with failed selection criteria
 // keep track of the number of studied events (for normalization purposes)
-DECLARE_SOA_COLUMN(OriginalCollisionCount, originalCollisionCount, int); //! Size of COLLISION table processed
+DECLARE_SOA_COLUMN(OriginalCollisionCount, originalCollisionCount, int);                                                         //! Size of COLLISION table processed
 DECLARE_SOA_COLUMN(ZvtxSelectedCollisionCount, zvtxSelectedCollisionCount, int);                                                 //! Number of COLLISIONS with |zvtx| < zvtxMax
 DECLARE_SOA_COLUMN(TriggerSelectedCollisionCount, triggerSelectedCollisionCount, int);                                           //! Number of COLLISIONS with sel8
 DECLARE_SOA_COLUMN(ZvtxAndTriggerSelectedCollisionCount, zvtxAndTriggerSelectedCollisionCount, int);                             //! Number of COLLISIONS with |zvtx| < zvtxMax and sel8
@@ -516,6 +516,7 @@ DECLARE_SOA_COLUMN(YProng1, yProng1, float);     //! Rapidity of the track's pro
 DECLARE_SOA_COLUMN(EtaProng1, etaProng1, float); //! Pseudorapidity of the track's prong1
 
 DECLARE_SOA_COLUMN(PdgCodeBeautyMother, pdgCodeBeautyMother, int); //! Pdg code of beauty mother
+DECLARE_SOA_COLUMN(PdgCodeCharmMother, pdgCodeCharmMother, int);   //! Pdg code of charm mother
 DECLARE_SOA_COLUMN(PdgCodeProng0, pdgCodeProng0, int);             //! Pdg code of prong0
 DECLARE_SOA_COLUMN(PdgCodeProng1, pdgCodeProng1, int);             //! Pdg code of prong1
 DECLARE_SOA_COLUMN(PdgCodeProng2, pdgCodeProng2, int);             //! Pdg code of prong2
@@ -533,6 +534,7 @@ DECLARE_SOA_TABLE(HfMcRecRedD0Pis, "AOD", "HFMCRECREDD0PI", //! Table with recon
 // DECLARE_SOA_EXTENDED_TABLE_USER(ExTable, Tracks, "EXTABLE",
 DECLARE_SOA_TABLE(HfMcCheckD0Pis, "AOD", "HFMCCHECKD0PI", //! Table with reconstructed MC information on D0Pi(<-B0) pairs for MC checks in reduced workflow
                   hf_bplus_mc::PdgCodeBeautyMother,
+                  hf_bplus_mc::PdgCodeCharmMother,
                   hf_bplus_mc::PdgCodeProng0,
                   hf_bplus_mc::PdgCodeProng1,
                   hf_bplus_mc::PdgCodeProng2,
@@ -547,6 +549,7 @@ DECLARE_SOA_TABLE(HfMcRecRedBps, "AOD", "HFMCRECREDBP", //! Reconstruction-level
 
 DECLARE_SOA_TABLE(HfMcCheckBps, "AOD", "HFMCCHECKBP", //! Table with reconstructed MC information on B+ candidates for MC checks in reduced workflow
                   hf_bplus_mc::PdgCodeBeautyMother,
+                  hf_bplus_mc::PdgCodeCharmMother,
                   hf_bplus_mc::PdgCodeProng0,
                   hf_bplus_mc::PdgCodeProng1,
                   hf_bplus_mc::PdgCodeProng2,
@@ -687,7 +690,7 @@ DECLARE_SOA_COLUMN(Dca, dca, float);         //! DCA of V0 candidate
 DECLARE_SOA_COLUMN(Radius, radius, float);   //! Radius of V0 candidate
 DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! Bitmap with mass hypothesis of the V0
 
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px,           //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pxProng0, float pxProng1) -> float { return 1.f * pxProng0 + 1.f * pxProng1; });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
                            [](float pyProng0, float pyProng1) -> float { return 1.f * pyProng0 + 1.f * pyProng1; });
