@@ -38,7 +38,6 @@
 #include "PWGCF/DataModel/SPTableZDC.h"
 #include "GFWWeights.h"
 #include "TF1.h"
-#include "Tsystem.h"
 
 using namespace o2;
 using namespace o2::framework;
