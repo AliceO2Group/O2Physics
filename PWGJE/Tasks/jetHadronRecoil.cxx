@@ -421,7 +421,7 @@ struct JetHadronRecoil {
         }
         if (dR == 0 || dRp == 0) {
           return;
-        } 
+        }
         registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
         registry.fill(HIST("hPhiMatched"), jetBase.phi(), jetTag.phi(), weight);
         registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - (jetBase.pt() - (rho * jetBase.area()))) / jetTag.pt(), weight);
