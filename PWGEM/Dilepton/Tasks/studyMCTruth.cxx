@@ -238,7 +238,7 @@ struct studyMCTruth {
         default:
           break;
       }
-    } else if (hfll_type > 0) { // HFll
+    } else if (hfll_type > -1) { // HFll
       switch (hfll_type) {
         case static_cast<int>(EM_HFeeType::kCe_Ce): // ULS
           fRegistry.fill(HIST("Pair/") + HIST(pfNames[pftype]) + HIST("ccbar/") + HIST(dileptonSigns[signtype]) + HIST("hMvsPt"), v12.M(), v12.Pt());

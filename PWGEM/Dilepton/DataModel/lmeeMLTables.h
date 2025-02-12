@@ -16,7 +16,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-#include <TMath.h>
 
 #ifndef PWGEM_DILEPTON_DATAMODEL_LMEEMLTABLES_H_
 #define PWGEM_DILEPTON_DATAMODEL_LMEEMLTABLES_H_
@@ -33,7 +32,7 @@ enum class PID_Label : int {
   kPion = 2,
   kKaon = 3,
   kProton = 4,
-}; // this can be used for eID with ITSsa.
+}; // this can be used for eID.
 
 enum class Track_Type : int {
   kPrimary = 0,
