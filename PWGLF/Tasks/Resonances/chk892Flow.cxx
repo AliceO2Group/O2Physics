@@ -161,6 +161,7 @@ struct Chk892Flow {
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
   Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};          // PV Contriuibutor
+  Configurable<bool> cfgpTdepDCAxyCut{"cfgpTdepDCAxyCut", false, "pT-dependent DCAxy cut"};
 
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"};
@@ -521,8 +522,14 @@ struct Chk892Flow {
       return false;
     if (cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
-    if (std::abs(track.dcaXY()) > cMaxbDCArToPVcut)
-      return false;
+    if (cfgpTdepDCAxyCut) {
+      // Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
+      if (std::abs(track.dcaXY()) > 0.004 + 0.013 / track.pt())
+        return false;
+    } else {
+      if (std::abs(track.dcaXY()) > cMaxbDCArToPVcut)
+        return false;
+    }
     if (std::abs(track.dcaZ()) > cMaxbDCAzToPVcut)
       return false;
     return true;
