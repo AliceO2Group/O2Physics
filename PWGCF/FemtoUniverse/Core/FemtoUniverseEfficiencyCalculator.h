@@ -27,13 +27,13 @@
 
 namespace o2::analysis::femto_universe::efficiency
 {
-enum Part : size_t {
+enum PartNo : size_t {
   ONE = 1,
   TWO
 };
 
 template <size_t T>
-concept isOneOrTwo = T == Part::ONE || T == Part::TWO;
+concept isOneOrTwo = T == PartNo::ONE || T == PartNo::TWO;
 
 template <typename T>
 consteval auto getHistDim() -> int
@@ -81,8 +81,8 @@ class EfficiencyCalculator
 
     if (config->confEfficiencyApplyCorrections) {
       hLoaded = {
-        loadEfficiencyFromCCDB(Part::ONE),
-        loadEfficiencyFromCCDB(Part::TWO), //
+        loadEfficiencyFromCCDB(PartNo::ONE),
+        loadEfficiencyFromCCDB(PartNo::TWO), //
       };
     }
   }
