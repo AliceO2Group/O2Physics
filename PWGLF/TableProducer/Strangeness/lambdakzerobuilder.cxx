@@ -1217,7 +1217,7 @@ struct lambdakzeroBuilder {
         if (createV0PosAtDCAs)
           v0dauPositions(v0candidate.posPosition[0], v0candidate.posPosition[1], v0candidate.posPosition[2],
                          v0candidate.negPosition[0], v0candidate.negPosition[1], v0candidate.negPosition[2]);
-        if (createV0PosAtDCAs) {
+        if (createV0PosAtIUs) {
           std::array<float, 3> posPositionIU;
           std::array<float, 3> negPositionIU;
           lPositiveTrackIU.getXYZGlo(posPositionIU);
