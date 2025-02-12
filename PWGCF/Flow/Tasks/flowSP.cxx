@@ -51,7 +51,7 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgFillQAHistos, bool, true, "Fill histograms for event and track QA");
   // Flags to make and fill histograms 
   O2_DEFINE_CONFIGURABLE(cfgFillMixedHarmonics, bool, true, "Flag to make and fill histos for mixed harmonics");
-  O2_DEFINE_CONFIGURABLE(cfgFillEventPlane, bool, true, "Flag to make and fill histos with ");
+  O2_DEFINE_CONFIGURABLE(cfgFillEventPlane, bool, true, "Flag to make and fill histos with Event Plane");
   O2_DEFINE_CONFIGURABLE(cfgFillXandYterms, bool, true, "Flag to make and fill histos for with separate x and y terms for SPM");
   O2_DEFINE_CONFIGURABLE(cfgFillChargeDependence, bool, true, "Flag to make and fill histos for charge dependent flow");
   // Centrality Estimators -> standard is FT0C
