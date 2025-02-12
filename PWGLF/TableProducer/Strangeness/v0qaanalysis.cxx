@@ -359,7 +359,7 @@ struct LfV0qaanalysis {
           }
         }
 
-        const int posITSNhits = v0.posTrack_as<DauTracksMC>().itsNCls(); 
+        const int posITSNhits = v0.posTrack_as<DauTracksMC>().itsNCls();
         const int negITSNhits = v0.negTrack_as<DauTracksMC>().itsNCls();
 
         float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
