@@ -194,7 +194,7 @@ struct BjetTaggingGNN {
   using MCDSVTable = aod::MCDSecondaryVertex3Prongs;
 
   template <typename AnyCollision, typename AnalysisJet, typename AnyTracks>
-  int analyzeJetTrackInfo(AnyCollision const& /*collision*/, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*//*, int8_t jetFlavor = 0, double weight = 1.0*/)
+  int analyzeJetTrackInfo(AnyCollision const& /*collision*/, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/ /*, int8_t jetFlavor = 0, double weight = 1.0*/)
   {
     int nTracks = 0;
     for (auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
@@ -211,7 +211,7 @@ struct BjetTaggingGNN {
   }
 
   template <typename AnalysisJet, typename SecondaryVertices>
-  SecondaryVertices::iterator analyzeJetSVInfo(AnalysisJet const& analysisJet, SecondaryVertices const& allSVs, bool& checkSV/*, int8_t jetFlavor = 0, double weight = 1.0*/)
+  SecondaryVertices::iterator analyzeJetSVInfo(AnalysisJet const& analysisJet, SecondaryVertices const& allSVs, bool& checkSV /*, int8_t jetFlavor = 0, double weight = 1.0*/)
   {
     using SVType = typename SecondaryVertices::iterator;
 
@@ -332,7 +332,7 @@ struct BjetTaggingGNN {
 
       int8_t jetFlavor = analysisJet.origin();
 
-      int nTracks = analyzeJetTrackInfo(collision, analysisJet, allTracks/*, jetFlavor, weight*/);
+      int nTracks = analyzeJetTrackInfo(collision, analysisJet, allTracks /*, jetFlavor, weight*/);
 
       int nNppTracks = 0;
       for (auto& constituent : analysisJet.template tracks_as<JetTracksMCDwID>()) {
@@ -347,7 +347,7 @@ struct BjetTaggingGNN {
 
       bool checkSV;
       // auto sv = jettaggingutilities::jetFromProngMaxDecayLength<MCDSVTable>(analysisJet, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, false, &checkSV);
-      auto sv = analyzeJetSVInfo(analysisJet, allSVs, checkSV/*, jetFlavor, weight*/);
+      auto sv = analyzeJetSVInfo(analysisJet, allSVs, checkSV /*, jetFlavor, weight*/);
 
       if (checkSV) {
         mSV = sv.m();
