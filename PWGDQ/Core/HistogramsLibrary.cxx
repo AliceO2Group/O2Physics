@@ -182,7 +182,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     }
     if (subGroupStr.Contains("occupancy")) {
       hm->AddHistogram(histClass, "ITStrackOccupancy", "ITStrackOccupancy", false, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange);
-      hm->AddHistogram(histClass, "Ft0cOccupancy", "Ft0cOccupancy vs time from SOR", true, 10000, 0.0, 1000.0, VarManager::kTimeFromSOR, 10, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange);
+      hm->AddHistogram(histClass, "Ft0cOccupancy", "Ft0cOccupancy", false, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange);
     }
     if (subGroupStr.Contains("mc")) {
       hm->AddHistogram(histClass, "MCVtxX_VtxX", "Vtx X (MC vs rec)", false, 100, -0.5, 0.5, VarManager::kVtxX, 100, -0.5, 0.5, VarManager::kMCVtxX);
