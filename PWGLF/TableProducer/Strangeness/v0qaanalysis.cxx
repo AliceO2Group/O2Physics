@@ -13,6 +13,9 @@
 ///
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 
+#include <vector>
+#include <utility>
+
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
