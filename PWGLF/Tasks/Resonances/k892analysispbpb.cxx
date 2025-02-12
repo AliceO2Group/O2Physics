@@ -104,13 +104,14 @@ struct K892analysispbpb {
   Configurable<float> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"}; // TOF
   Configurable<float> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"}; // TPC
   Configurable<float> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"}; // TOF
-  Configurable<bool> cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"};            // By pass TOF PID selection
-  Configurable<bool> cTofBetaCut{"cTofBetaCut", false, "selection on TOF beta"};
+  Configurable<bool>  cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"};            // By pass TOF PID selection
+  Configurable<bool>  cTofBetaCut{"cTofBetaCut", false, "selection on TOF beta"};
 
-  Configurable<bool> tofAndTpcPID{"tofAndTpcPID", false, "apply both TOF and TPC PID"};
 
-  Configurable<bool> tpclowpt{"tpclowpt", true, "apply TPC at low pt"};
-  Configurable<bool> tofhighpt{"tofhighpt", false, "apply TOF at high pt"};
+
+  Configurable<bool> cTPClowpt{"cTPClowpt", true, "apply TPC at low pt"};
+  Configurable<bool> cTOFonlyHighpt{"cTOFonlyHighpt", false, "apply TOF only at high pt"};
+  Configurable<bool> cTOFandTPCHighpt{"cTOFandTPCHighpt", false, "apply TOF and TPC at high pt"};
 
   // rotational bkg
   Configurable<int> cfgNoRotations{"cfgNoRotations", 3, "Number of rotations per pair for rotbkg"};
@@ -374,8 +375,13 @@ struct K892analysispbpb {
   template <typename T>
   bool selectionPIDKaon(const T& candidate)
   {
+    if (cTOFonlyHighpt) {
 
-    if (tofAndTpcPID) {
+      if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) <= cMaxTOFnSigmaKaon) { // tof cut only
+        return true;
+      }
+      
+    } else if (cTOFandTPCHighpt) {
 
       if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) <= cMaxTOFnSigmaKaon && candidate.hasTPC() && std::abs(candidate.tpcNSigmaKa()) <= cMaxTPCnSigmaKaon) { // tof and tpc cut
         return true;
@@ -407,8 +413,13 @@ struct K892analysispbpb {
   template <typename T>
   bool selectionPIDPion(const T& candidate)
   {
+    if (cTOFonlyHighpt) {
 
-    if (tofAndTpcPID) {
+      if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) <= cMaxTOFnSigmaPion) { // tof cut only
+        return true;
+      }
+      
+    } else if (cTOFandTPCHighpt) {
 
       if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) <= cMaxTOFnSigmaPion && candidate.hasTPC() && std::abs(candidate.tpcNSigmaPi()) <= cMaxTPCnSigmaPion) { // tof and tpc cut
         return true;
@@ -440,6 +451,7 @@ struct K892analysispbpb {
   template <bool IsMC, bool IsMix, bool IsRot, bool IsRun2, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
+    LOG(info) << "Son quaaaa";
     auto multiplicity = -999;
 
     if constexpr (!IsRun2)
@@ -483,10 +495,10 @@ struct K892analysispbpb {
         continue;
 
       if constexpr (IsMC) {
-        if (tpclowpt) {
+        if (cTPClowpt) {
           if (trk1ptPi >= cMaxPtTPC || trk2ptKa >= cMaxPtTPC)
             continue;
-        } else if (tofhighpt) {
+        } else if (cTOFonlyHighpt || cTOFandTPCHighpt) {
           if (trk1ptPi <= cMinPtTOF || trk2ptKa <= cMinPtTOF)
             continue;
         }
@@ -762,47 +774,23 @@ struct K892analysispbpb {
   Partition<TrackCandidates> negKatpc = (aod::track::signed1Pt < static_cast<float>(0)) && (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon) && (nabs(aod::track::pt) < cMaxPtTPC);
 
   // tpc & tof, high pt
-  Partition<TrackCandidates> negPitof = (aod::track::signed1Pt < static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion) && (nabs(aod::track::pt) > cMinPtTOF);
-  Partition<TrackCandidates> posKatof = (aod::track::signed1Pt > static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon) && (nabs(aod::track::pt) > cMinPtTOF);
+  Partition<TrackCandidates> negPitoftpc = (aod::track::signed1Pt < static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion) && (nabs(aod::track::pt) > cMinPtTOF);
+  Partition<TrackCandidates> posKatoftpc = (aod::track::signed1Pt > static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon) && (nabs(aod::track::pt) > cMinPtTOF);
 
-  Partition<TrackCandidates> posPitof = (aod::track::signed1Pt > static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion) && (nabs(aod::track::pt) > cMinPtTOF);
-  Partition<TrackCandidates> negKatof = (aod::track::signed1Pt < static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon) && (nabs(aod::track::pt) > cMinPtTOF);
+  Partition<TrackCandidates> posPitoftpc = (aod::track::signed1Pt > static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion) && (nabs(aod::track::pt) > cMinPtTOF);
+  Partition<TrackCandidates> negKatoftpc = (aod::track::signed1Pt < static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon) && (nabs(aod::track::pt) > cMinPtTOF);
 
-  template <bool IsMC, bool IsMix, bool IsRot, bool IsRun2, typename CollisionType, typename TracksType>
-  void callFillHistoswithPartitions(const CollisionType& collision, const TracksType&)
-  {
-    if (tpclowpt) {
-      //+-
-      auto candPosPitpc = posPitpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      auto candNegKatpc = negKatpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+  // tof only, high pt
+  Partition<TrackCandidates> negPitof = (aod::track::signed1Pt < static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (nabs(aod::track::pt) > cMinPtTOF);
+  Partition<TrackCandidates> posKatof = (aod::track::signed1Pt > static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (nabs(aod::track::pt) > cMinPtTOF);
 
-      fillHistograms<IsMC, IsMix, IsRot, IsRun2>(collision, candPosPitpc, candNegKatpc);
-
-      //-+
-      auto candNegPitpc = negPitpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      auto candPosKatpc = posKatpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-
-      fillHistograms<IsMC, IsMix, IsRot, IsRun2>(collision, candNegPitpc, candPosKatpc);
-
-    } else if (tofhighpt) {
-      //+-
-      auto candPosPitof = posPitof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      auto candNegKatof = negKatof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-
-      fillHistograms<IsMC, IsMix, IsRot, IsRun2>(collision, candPosPitof, candNegKatof);
-
-      //-+
-      auto candNegPitof = negPitof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      auto candPosKatof = posKatof->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-
-      fillHistograms<IsMC, IsMix, IsRot, IsRun2>(collision, candNegPitof, candPosKatof);
-    }
-  }
+  Partition<TrackCandidates> posPitof = (aod::track::signed1Pt > static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (nabs(aod::track::pt) > cMinPtTOF);
+  Partition<TrackCandidates> negKatof = (aod::track::signed1Pt < static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (nabs(aod::track::pt) > cMinPtTOF);
 
   template <bool IsMC, bool IsMix, bool IsRot, bool IsRun2, typename CollisionType, typename TracksType>
-  void callFillHistoswithPartitionsMixedEvt(const CollisionType& collision1, const TracksType&, const CollisionType& collision2, const TracksType&)
+  void callFillHistoswithPartitions(const CollisionType& collision1, const TracksType&, const CollisionType& collision2, const TracksType&)
   {
-    if (tpclowpt) {
+    if (cTPClowpt) {
       //+-
       auto candPosPitpc = posPitpc->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
       auto candNegKatpc = negKatpc->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
@@ -815,7 +803,20 @@ struct K892analysispbpb {
 
       fillHistograms<IsMC, IsMix, IsRot, IsRun2>(collision1, candNegPitpc, candPosKatpc);
 
-    } else if (tofhighpt) {
+    } else if (cTOFandTPCHighpt) {
+      //+-
+      auto candPosPitoftpc = posPitoftpc->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+      auto candNegKatoftpc = negKatoftpc->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
+
+      fillHistograms<IsMC, IsMix, IsRot, IsRun2>(collision1, candPosPitoftpc, candNegKatoftpc);
+
+      //-+
+      auto candNegPitoftpc = negPitoftpc->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+      auto candPosKatoftpc = posKatoftpc->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
+
+      fillHistograms<IsMC, IsMix, IsRot, IsRun2>(collision1, candNegPitoftpc, candPosKatoftpc);
+      
+    } else if (cTOFonlyHighpt) {
       //+-
       auto candPosPitof = posPitof->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
       auto candNegKatof = negKatof->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
@@ -847,7 +848,7 @@ struct K892analysispbpb {
       histos.fill(HIST("TestME/hnTrksSameE"), tracks.size());
     }
     //                            <IsMC, IsMix, IsRot, IsRun2>
-    callFillHistoswithPartitions<false, false, false, false>(collision, tracks);
+    callFillHistoswithPartitions<false, false, false, false>(collision, tracks, collision, tracks);
   }
   PROCESS_SWITCH(K892analysispbpb, processSameEvent, "Process Same event", true);
 
@@ -867,7 +868,7 @@ struct K892analysispbpb {
     }
 
     //                            <IsMC, IsMix, IsRot, IsRun2>
-    callFillHistoswithPartitions<false, false, false, true>(collision, tracks);
+    callFillHistoswithPartitions<false, false, false, true>(collision, tracks, collision, tracks);
   }
   PROCESS_SWITCH(K892analysispbpb, processSameEventRun2, "Process Same event  Run2", false);
 
@@ -878,7 +879,7 @@ struct K892analysispbpb {
       return;
 
     //                            <IsMC, IsMix, IsRot, IsRun2>
-    callFillHistoswithPartitions<false, false, true, false>(collision, tracks);
+    callFillHistoswithPartitions<false, false, true, false>(collision, tracks, collision, tracks);
   }
   PROCESS_SWITCH(K892analysispbpb, processRotationalBkg, "Process Rotational Background", false);
 
@@ -914,8 +915,8 @@ struct K892analysispbpb {
         histos.fill(HIST("TestME/hnTrksMixedE"), tracks1.size());
       }
 
-      //                                   <IsMC, IsMix, IsRot, IsRun2>
-      callFillHistoswithPartitionsMixedEvt<false, true, false, false>(collision1, tracks1, collision2, tracks2);
+      //                          <IsMC, IsMix, IsRot, IsRun2>
+      callFillHistoswithPartitions<false, true, false, false>(collision1, tracks1, collision2, tracks2);
     }
   }
   PROCESS_SWITCH(K892analysispbpb, processMixedEvent, "Process Mixed event", true);
@@ -939,8 +940,8 @@ struct K892analysispbpb {
         histos.fill(HIST("TestME/hnTrksMixedE"), tracks1.size());
       }
 
-      //                                  <IsMC, IsMix, IsRot, IsRun2>
-      callFillHistoswithPartitionsMixedEvt<false, true, false, true>(collision1, tracks1, collision2, tracks2);
+      //                          <IsMC, IsMix, IsRot, IsRun2>
+      callFillHistoswithPartitions<false, true, false, true>(collision1, tracks1, collision2, tracks2);
     }
   }
   PROCESS_SWITCH(K892analysispbpb, processMixedEventRun2, "Process Mixed event Run2", false);
