@@ -17,8 +17,6 @@
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 /// \author Andrea Tavira García <tavira-garcia@ijclab.in2p3.fr>, IJCLab
 
-#include <vector>
-
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
