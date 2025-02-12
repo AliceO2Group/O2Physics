@@ -13,6 +13,9 @@
 ///
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 
+#include <vector>
+#include <utility>
+
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -217,15 +220,8 @@ struct LfV0qaanalysis {
       float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
 
       // ITS clusters
-      int posITSNhits = 0, negITSNhits = 0;
-      for (unsigned int i = 0; i < 7; i++) {
-        if (v0.posTrack_as<DauTracks>().itsClusterMap() & (1 << i)) {
-          posITSNhits++;
-        }
-        if (v0.negTrack_as<DauTracks>().itsClusterMap() & (1 << i)) {
-          negITSNhits++;
-        }
-      }
+      const int posITSNhits = v0.posTrack_as<DauTracks>().itsNCls();
+      const int negITSNhits = v0.negTrack_as<DauTracks>().itsNCls();
 
       // Event flags
       int evFlag = 0;
@@ -366,15 +362,8 @@ struct LfV0qaanalysis {
           }
         }
 
-        int posITSNhits = 0, negITSNhits = 0;
-        for (unsigned int i = 0; i < 7; i++) {
-          if (v0.posTrack_as<DauTracksMC>().itsClusterMap() & (1 << i)) {
-            posITSNhits++;
-          }
-          if (v0.negTrack_as<DauTracksMC>().itsClusterMap() & (1 << i)) {
-            negITSNhits++;
-          }
-        }
+        const int posITSNhits = v0.posTrack_as<DauTracksMC>().itsNCls();
+        const int negITSNhits = v0.negTrack_as<DauTracksMC>().itsNCls();
 
         float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
         float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
