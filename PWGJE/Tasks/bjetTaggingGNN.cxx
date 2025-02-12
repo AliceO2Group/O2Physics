@@ -84,7 +84,7 @@ struct BjetTaggingGNN {
 
   Configurable<bool> doDataDriven{"doDataDriven", false, "Flag whether to use fill THnSpase for data driven methods"};
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   std::vector<double> jetRadiiValues;
 
@@ -92,7 +92,7 @@ struct BjetTaggingGNN {
   {
     jetRadiiValues = (std::vector<double>)jetRadii;
 
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
 
     registry.add("h_vertexZ", "Vertex Z;#it{Z} (cm)", {HistType::kTH1F, {{40, -20.0, 20.0}}});
 
@@ -245,7 +245,7 @@ struct BjetTaggingGNN {
 
   void processDataJets(FilteredCollision::iterator const& collision, DataJets const& alljets, JetTrackswID const& allTracks, SVTable const& allSVs)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
 
@@ -304,7 +304,7 @@ struct BjetTaggingGNN {
 
   void processMCJets(FilteredCollisionMCD::iterator const& collision, MCDJetTable const& MCDjets, MCPJetTable const& /*MCPjets*/, JetTracksMCDwID const& allTracks, MCDSVTable const& allSVs, aod::JetParticles const& /*MCParticles*/)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
 
