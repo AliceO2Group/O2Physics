@@ -283,7 +283,7 @@ struct K892analysispbpb {
       histos.add("k892GenInvmass", "Invariant mass of generated K(892)0", kTH1F, {invMassAxis});
       histos.add("k892GenInvmassAnti", "Invariant mass of generated Anti-K(892)0", kTH1F, {invMassAxis});
 
-      histos.add("h3Reck892invmass", "Invariant mass of Reconstructed MC K(892)0", kTH3F, {centAxis, ptAxis, invMassAxis});
+      histos.add("h3Reck892invmass",     "Invariant mass of Reconstructed MC K(892)0", kTH3F, {centAxis, ptAxis, invMassAxis});
       histos.add("h3Reck892invmassAnti", "Invariant mass of Reconstructed MC Anti-K(892)0", kTH3F, {centAxis, ptAxis, invMassAxis});
       histos.add("k892Gen", "pT distribution of True MC K(892)0", kTH3F, {mcLabelAxis, ptAxis, centAxis});
       histos.add("k892GenAnti", "pT distribution of True MC Anti-K(892)0", kTH3F, {mcLabelAxis, ptAxis, centAxis});
@@ -292,6 +292,11 @@ struct K892analysispbpb {
       histos.add("h3k892GenInvmass", "Invariant mass of generated K(892)0", kTH3F, {centAxis, ptAxis, invMassAxis});
       histos.add("h3k892GenInvmassAnti", "Invariant mass of generated Anti-K(892)0", kTH3F, {centAxis, ptAxis, invMassAxis});
 
+      histos.add("h3Reck892invmassPtGen"    ,"Invariant mass of Reconstructed MC K(892)0 with Pt Gen", kTH3F, {centAxis, ptAxis, invMassAxis});
+      histos.add("h3Reck892invmassAntiPtGen","Invariant mass of Reconstructed MC Anti-K(892)0 with Pt Gen", kTH3F, {centAxis, ptAxis, invMassAxis});
+      histos.add("h3PtRecvsPtGenAnti"       ,"reconstructed K* Pt vs generated K* pt", kTH3F, {centAxis, ptAxis, ptAxis});
+      histos.add("h3PtRecvsPtGen"           ,"reconstructed Anti-K* Pt vs generated Anti-K* pt", kTH3F, {centAxis, ptAxis, ptAxis});
+      
       histos.add("h3k892invmassWrongDaughters_DS", "Invariant mass of K*0 with wrong daughters DS", kTH3F, {centAxis, ptAxis, invMassAxis});
       histos.add("h3k892invmassWrongDaughters_DSAnti", "Invariant mass of K*0 with wrong daughters DS anti", kTH3F, {centAxis, ptAxis, invMassAxis});
       histos.add("h3k892invmassRightDaughters_DS", "Invariant mass of K*0 with right daughters DS", kTH3F, {centAxis, ptAxis, invMassAxis});
@@ -451,7 +456,7 @@ struct K892analysispbpb {
   template <bool IsMC, bool IsMix, bool IsRot, bool IsRun2, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
-    LOG(info) << "Son quaaaa";
+
     auto multiplicity = -999;
 
     if constexpr (!IsRun2)
@@ -683,7 +688,8 @@ struct K892analysispbpb {
 
             bool ismotherok = false;
             int pdgcodeMother = -999;
-            for (const auto& mothertrack1 : mctrack1.template mothers_as<aod::McParticles>()) {
+	    auto ptmother = -9999;
+	    for (const auto& mothertrack1 : mctrack1.template mothers_as<aod::McParticles>()) {
               for (const auto& mothertrack2 : mctrack2.template mothers_as<aod::McParticles>()) {
                 if (mothertrack1.pdgCode() != mothertrack2.pdgCode())
                   continue;
@@ -698,6 +704,7 @@ struct K892analysispbpb {
                 }
                 oldindex = mothertrack1.globalIndex();
                 pdgcodeMother = mothertrack1.pdgCode();
+		ptmother = mothertrack1.pt();
                 ismotherok = true;
               }
             }
@@ -721,10 +728,14 @@ struct K892analysispbpb {
               histos.fill(HIST("k892Rec"), lResonance.Pt(), multiplicity);
               histos.fill(HIST("k892Recinvmass"), lResonance.M());
               histos.fill(HIST("h3Reck892invmass"), multiplicity, lResonance.Pt(), lResonance.M());
+	      histos.fill(HIST("h3Reck892invmassPtGen"), multiplicity, ptmother, lResonance.M());
+	      histos.fill(HIST("h3PtRecvsPtGen"),  multiplicity, lResonance.Pt(), ptmother);
             } else {
               histos.fill(HIST("k892RecAnti"), lResonance.Pt(), multiplicity);
               histos.fill(HIST("k892RecinvmassAnti"), lResonance.M());
               histos.fill(HIST("h3Reck892invmassAnti"), multiplicity, lResonance.Pt(), lResonance.M());
+	      histos.fill(HIST("h3Reck892invmassAntiPtGen"), multiplicity, ptmother, lResonance.M());
+	      histos.fill(HIST("h3PtRecvsPtGenAnti"),  multiplicity, lResonance.Pt(), ptmother);
             }
           }
         } // end of IsMC
