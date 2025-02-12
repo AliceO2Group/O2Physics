@@ -446,7 +446,7 @@ struct lambdalambda {
           }
           if (cfgRotBkg) {
             for (int nr = 0; nr < cfgNRotBkg; nr++) {
-              auto RanPhi = rn->Uniform(o2::constants::math::PI * 5.0 /6.0, o2::constants::math::PI * 7.0 /6.0);
+              auto RanPhi = rn->Uniform(o2::constants::math::PI * 5.0 / 6.0, o2::constants::math::PI * 7.0 / 6.0);
               RanPhi += RecoV02.Phi();
               RecoV02Rot = ROOT::Math::PxPyPzMVector(RecoV02.Pt() * std::cos(RanPhi), RecoV02.Pt() * std::sin(RanPhi), RecoV02.Pz(), RecoV02.M());
               RecoV0V0Rot = RecoV01 + RecoV02Rot;
