@@ -753,9 +753,7 @@ struct FemtoUniversePairTaskTrackPhi {
             registryMCreco.fill(HIST("MCrecoPpos"), mcpart.pt(), mcpart.eta());
             registryMCreco.fill(HIST("MCrecoPposPt"), mcpart.pt());
           }
-        }
-
-        else if (part.sign() < 0) {
+        } else if (part.sign() < 0) {
           registryMCreco.fill(HIST("MCrecoAllNegativePt"), mcpart.pt());
           if (mcpart.pdgMCTruth() == -2212 && isParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
             registryMCreco.fill(HIST("MCrecoPneg"), mcpart.pt(), mcpart.eta());
