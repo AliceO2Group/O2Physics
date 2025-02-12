@@ -31,8 +31,8 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 
 struct MultPVConverter000_001 {
-  Produces<o2::aod::ReducedEventsMultPV_001> multPV_001;
-  void process(o2::aod::ReducedEventsMultPV_000 const& multsPV)
+  Produces<aod::ReducedEventsMultPV_001> multPV_001;
+  void processConverting(aod::ReducedEventsMultPV_000 const& multsPV)
   {
     for (const auto& r : multsPV) {
       multPV_001(r.multNTracksHasITS(), r.multNTracksHasTPC(), r.multNTracksHasTOF(), r.multNTracksHasTRD(),
@@ -45,8 +45,8 @@ struct MultPVConverter000_001 {
     // do nothing
   }
 
-  PROCESS_SWITCH(MultPVConverter000_001, process, "Convert Table MultPV_000 to Table MultPV_001", false);
-  PROCESS_SWITCH(MultPVConverter000_001, processDummy, "do nothing", false);
+  PROCESS_SWITCH(MultPVConverter000_001, processConverting, "Convert Table MultPV_000 to Table MultPV_001", false);
+  PROCESS_SWITCH(MultPVConverter000_001, processDummy, "do nothing", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
