@@ -243,7 +243,7 @@ struct K0MixedEvents {
     const AxisSpec dcaZAxis{dcaXyBinning, "DCA_{z} (cm)"};
     const AxisSpec multPercentileAxis{multPercentileBinning, "Mult. Perc."};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{14, 0.f, 14.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{14, 0.f, 14.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "TVX");
