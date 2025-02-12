@@ -172,6 +172,7 @@ struct K0MixedEvents {
   Configurable<bool> isNoITSROFrameBorder{"evSelisNoITSROFrameBorder", 1, "Is No ITS Readout Frame Border"};
   Configurable<bool> isVertexTOFmatched{"evSelisVertexTOFmatched", 0, "Is Vertex TOF matched"};
   Configurable<bool> isGoodZvtxFT0vsPV{"evSelisGoodZvtxFT0vsPV", 0, "isGoodZvtxFT0vsPV"};
+  Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", 0, "isNoSameBunchPileup"};
   Configurable<bool> isInelGt0{"evSelisInelGt0", 0, "isInelGt0"};
 
   // Binnings
@@ -242,7 +243,7 @@ struct K0MixedEvents {
     const AxisSpec dcaZAxis{dcaXyBinning, "DCA_{z} (cm)"};
     const AxisSpec multPercentileAxis{multPercentileBinning, "Mult. Perc."};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{11, 0.f, 11.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{14, 0.f, 14.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "TVX");
@@ -251,8 +252,11 @@ struct K0MixedEvents {
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "ITSROFBorder");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "isTOFVertexMatched");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(8, "isGoodZvtxFT0vsPV");
-    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(9, "InelGT0");
-    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(10, "Applied selection");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(9, "isNoSameBunchPileup");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(10, "InelGT0");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(11, Form("collision.centFT0M() < %f", multPercentileCut.value.second));
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(12, Form("collision.centFT0M() > %f", multPercentileCut.value.first));
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(13, "Applied selection");
 
     registry.add("Trks", "Trks", kTH1D, {{2, 0.5, 2.5, "Tracks"}});
     registry.add("VTXc", "VTXc", kTH1D, {{100, -20., 20., "vtx"}});
@@ -484,16 +488,31 @@ struct K0MixedEvents {
     if (fill) {
       registry.fill(HIST("hNEvents"), 7.5);
     }
-    if (isInelGt0 && !collision.isInelGt0()) {
+    if (isNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     if (fill) {
       registry.fill(HIST("hNEvents"), 8.5);
     }
+    if (isInelGt0 && !collision.isInelGt0()) {
+      return false;
+    }
+    if (fill) {
+      registry.fill(HIST("hNEvents"), 9.5);
+    }
     if (collision.centFT0M() > multPercentileCut.value.second)
       return false;
+    if (fill) {
+      registry.fill(HIST("hNEvents"), 10.5);
+    }
     if (collision.centFT0M() < multPercentileCut.value.first)
       return false;
+    if (fill) {
+      registry.fill(HIST("hNEvents"), 11.5);
+    }
+    if (fill) {
+      registry.fill(HIST("hNEvents"), 12.5);
+    }
     return true;
   }
 
@@ -507,7 +526,7 @@ struct K0MixedEvents {
       LOGF(fatal, "One of passed PDG is 0!!!");
     }
     registry.fill(HIST("Trks"), 2.f, tracks.size());
-    for (auto collision : collisions) {
+    for (const auto& collision : collisions) {
       LOG(debug) << "Collision index " << collision.globalIndex();
       registry.fill(HIST("VTXc"), collision.posZ());
       registry.fill(HIST("multPerc"), collision.multPerc());
