@@ -277,7 +277,7 @@ struct HfTreeCreatorD0ToKPi {
 
   template <bool applyMl, typename T>
   auto fillTable(const T& candidate, int candFlag, double invMass, double cosThetaStar, double topoChi2,
-                 double ct, double y, double e, int8_t flagMc, int8_t origin, std::vector<float> mlProbD0)
+                 double ct, double y, double e, int8_t flagMc, int8_t origin, std::vector<float> const& mlProbD0)
   {
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -429,14 +429,16 @@ struct HfTreeCreatorD0ToKPi {
         massD0 = hfHelper.invMassD0ToPiK(candidate);
         massD0bar = hfHelper.invMassD0barToKPi(candidate);
       }
-      if constexpr (applyMl) {
-        mlProbD0 = std::vector<float>(candidate.mlProbD0().begin(), candidate.mlProbD0().end());
-        mlProbD0bar = std::vector<float>(candidate.mlProbD0bar().begin(), candidate.mlProbD0bar().end());
-      }
       if (candidate.isSelD0()) {
+        if constexpr (applyMl) {
+          mlProbD0 = std::vector<float>(candidate.mlProbD0().begin(), candidate.mlProbD0().end());
+        }
         fillTable<applyMl>(candidate, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, 0, 0, mlProbD0);
       }
       if (candidate.isSelD0bar()) {
+        if constexpr (applyMl) {
+          mlProbD0bar = std::vector<float>(candidate.mlProbD0bar().begin(), candidate.mlProbD0bar().end());
+        }
         fillTable<applyMl>(candidate, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, 0, 0, mlProbD0bar);
       }
     }
@@ -532,14 +534,16 @@ struct HfTreeCreatorD0ToKPi {
         massD0 = hfHelper.invMassD0ToPiK(candidate);
         massD0bar = hfHelper.invMassD0barToKPi(candidate);
       }
-      if constexpr (applyMl) {
-        mlProbD0 = std::vector<float>(candidate.mlProbD0().begin(), candidate.mlProbD0().end());
-        mlProbD0bar = std::vector<float>(candidate.mlProbD0bar().begin(), candidate.mlProbD0bar().end());
-      }
       if (candidate.isSelD0()) {
+        if constexpr (applyMl) {
+          mlProbD0 = std::vector<float>(candidate.mlProbD0().begin(), candidate.mlProbD0().end());
+        }
         fillTable<applyMl>(candidate, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec(), mlProbD0);
       }
       if (candidate.isSelD0bar()) {
+        if constexpr (applyMl) {
+          mlProbD0bar = std::vector<float>(candidate.mlProbD0bar().begin(), candidate.mlProbD0bar().end());
+        }
         fillTable<applyMl>(candidate, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec(), mlProbD0bar);
       }
     }
