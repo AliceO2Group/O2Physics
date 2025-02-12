@@ -220,7 +220,7 @@ struct LfV0qaanalysis {
       float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
 
       // ITS clusters
-      cosnt int posITSNhits = v0.posTrack_as<DauTracks>().itsNCls();
+      const int posITSNhits = v0.posTrack_as<DauTracks>().itsNCls();
       const int negITSNhits = v0.negTrack_as<DauTracks>().itsNCls();
 
       // Event flags
