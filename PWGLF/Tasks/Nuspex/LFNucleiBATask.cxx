@@ -102,6 +102,7 @@ struct LFNucleiBATask {
     // Configurable<float> nsigmaITSTr{"nsigmaITSTr", 3.f, "Value of the Nsigma ITS cut for tritons ( > nSigmaITSTr)"};
     Configurable<bool> useITSHeCut{"useITSHeCut", false, "Select Helium if compatible with helium hypothesis (via SigmaITS)"};
     Configurable<float> nsigmaITSHe{"nsigmaITSHe", -1.f, "Value of the Nsigma ITS cut for helium-3 ( > nSigmaITSHe)"};
+    Configurable<bool> showAverageClusterSize{"showAverageClusterSize", false, "Show average cluster size"};
   } nsigmaITSvar;
 
   // Set additional cuts (used for debug)
@@ -123,6 +124,7 @@ struct LFNucleiBATask {
   ConfigurableAxis binsMassDe{"binsMassDe", {180, -1.8, 1.8f}, ""};
   ConfigurableAxis binsMassTr{"binsMassTr", {250, -2.5, 2.5f}, ""};
   ConfigurableAxis binsMassHe{"binsMassHe", {300, -3., 3.f}, ""};
+  ConfigurableAxis avClsBins{"avClsBins", {200, 0, 20}, "Binning in average cluster size"};
 
   // Enable custom cuts/debug functions
   Configurable<bool> enableFiltering{"enableFiltering", false, "Flag to enable filtering for p,d,t,He only -- disable if launch on skimmed dataset!"};
@@ -190,11 +192,26 @@ struct LFNucleiBATask {
   static constexpr float MassHeliumVal = 2.80839f;
   static constexpr float MassAlphaVal = 3.72738f;
 
+  template <typename TrackType>
+  float averageClusterSizeTrk(const TrackType& track)
+  {
+    return o2::aod::ITSResponse::averageClusterSize(track.itsClusterSizes());
+  }
+
+  float averageClusterSizePerCoslInv(uint32_t itsClusterSizes, float eta) { return o2::aod::ITSResponse::averageClusterSize(itsClusterSizes) * std::cosh(eta); }
+
+  template <typename TrackType>
+  float averageClusterSizePerCoslInv(const TrackType& track)
+  {
+    return averageClusterSizePerCoslInv(track.itsClusterSizes(), track.eta());
+  }
+
   void init(o2::framework::InitContext&)
   {
     const AxisSpec pAxis{binsPt, "#it{p} (GeV/#it{c})"};
     const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec ptHeAxis{binsPtHe, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec pZAxis{binsPt, "#it{p}/z (GeV/#it{c})"};
     const AxisSpec ptZHeAxis{binsPtZHe, "#it{p}_{T}/z (GeV/#it{c})"};
     const AxisSpec dedxAxis{binsdEdx, "d#it{E}/d#it{x} A.U."};
     const AxisSpec betaAxis{binsBeta, "TOF #beta"};
@@ -207,6 +224,8 @@ struct LFNucleiBATask {
     const AxisSpec sigmaITSAxis{binsSigmaITS, ""};
     const AxisSpec sigmaTPCAxis{binsSigmaTPC, ""};
     const AxisSpec sigmaTOFAxis{binsSigmaTOF, ""};
+    const AxisSpec avClsAxis{avClsBins, "<ITS Cls. Size>"};
+    const AxisSpec avClsEffAxis{avClsBins, "<ITS Cls. Size> / cosh(#eta)"};
 
     if (doprocessData == true && doprocessMCReco == true) {
       LOG(fatal) << "Can't enable processData and processMCReco in the same time, pick one!";
@@ -1424,6 +1443,10 @@ struct LFNucleiBATask {
 
     //  Bethe-Bloch TPC distribution and Beta vs pT TOF distribution
     histos.add<TH2>("tracks/h2TPCsignVsTPCmomentum", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, -8.f, 8.f}, {dedxAxis}});
+    if (nsigmaITSvar.showAverageClusterSize) {
+      histos.add<TH2>("tracks/averageClusterSize", "", HistType::kTH2F, {{pZAxis}, {avClsAxis}});
+      histos.add<TH2>("tracks/averageClusterSizePerCoslInv", "", HistType::kTH2F, {{pZAxis}, {avClsEffAxis}});
+    }
     if (enableDebug) {
       debugHistos.add<TH2>("debug/h2TPCsignVsTPCmomentum_AllTracks", "TPC <-dE/dX> vs #it{p}/Z (w/o rejection); Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, -8.f, 8.f}, {dedxAxis}});
       debugHistos.add<TH2>("debug/h2TPCsignVsTPCmomentum_FakeHits", "TPC <-dE/dX> vs #it{p}/Z (Fake hits); Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, -8.f, 8.f}, {dedxAxis}});
@@ -1444,6 +1467,10 @@ struct LFNucleiBATask {
       if (enableHe) {
         histos.add<TH2>("tracks/helium/h2TPCsignVsTPCmomentumHelium", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, 0.f, 8.f}, {dedxAxis}});
         histos.add<TH2>("tracks/helium/h2TPCsignVsTPCmomentumantiHelium", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, 0.f, 8.f}, {dedxAxis}});
+        if (nsigmaITSvar.showAverageClusterSize) {
+          histos.add<TH2>("tracks/helium/averageClusterSize", "", HistType::kTH2F, {{pZAxis}, {avClsAxis}});
+          histos.add<TH2>("tracks/helium/averageClusterSizePerCoslInv", "", HistType::kTH2F, {{pZAxis}, {avClsEffAxis}});
+        }
       }
       if (enableAl) {
         histos.add<TH2>("tracks/alpha/h2TPCsignVsTPCmomentumAlpha", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, 0.f, 8.f}, {dedxAxis}});
@@ -1503,17 +1530,17 @@ struct LFNucleiBATask {
       histos.add<TH2>("tracks/triton/h2antiTritonVspTNSigmaTPC", "NSigmaTPC(#bar{t}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
     }
     if (enableHe) {
-      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITSHe", "NSigmaITS(He) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(He)", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
-      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITSHe", "NSigmaITS(#bar{He}) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(#bar{He})", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITSHe", "NSigmaITS(He) vs p/z; #it{p}/z (GeV/#it{c}); NSigmaITS(He)", HistType::kTH2F, {{pZAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITSHe", "NSigmaITS(#bar{He}) vs p/z; #it{p}/z (GeV/#it{c}); NSigmaITS(#bar{He})", HistType::kTH2F, {{pZAxis}, {sigmaITSAxis}});
 
-      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITSTr", "NSigmaITS(t) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(t)", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
-      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITSTr", "NSigmaITS(#bar{t}) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(#bar{t})", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITSTr", "NSigmaITS(t) vs p/z; #it{p}/z (GeV/#it{c}); NSigmaITS(t)", HistType::kTH2F, {{pZAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITSTr", "NSigmaITS(#bar{t}) vs p/z; #it{p}/z (GeV/#it{c}); NSigmaITS(#bar{t})", HistType::kTH2F, {{pZAxis}, {sigmaITSAxis}});
 
-      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITSHe_wTPCpid", "NSigmaITS(He) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(He)", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
-      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITSHe_wTPCpid", "NSigmaITS(#bar{He}) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(#bar{He})", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITSHe_wTPCpid", "NSigmaITS(He) vs p/z; #it{p}/z (GeV/#it{c}); NSigmaITS(He)", HistType::kTH2F, {{pZAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITSHe_wTPCpid", "NSigmaITS(#bar{He}) vs p/z; #it{p}/z (GeV/#it{c}); NSigmaITS(#bar{He})", HistType::kTH2F, {{pZAxis}, {sigmaITSAxis}});
 
-      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITSTr_wTPCpid", "NSigmaITS(t) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(t)", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
-      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITSTr_wTPCpid", "NSigmaITS(#bar{t}) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(#bar{t})", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITSTr_wTPCpid", "NSigmaITS(t) vs p/z; #it{p}/z (GeV/#it{c}); NSigmaITS(t)", HistType::kTH2F, {{pZAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITSTr_wTPCpid", "NSigmaITS(#bar{t}) vs p/z; #it{p}/z (GeV/#it{c}); NSigmaITS(#bar{t})", HistType::kTH2F, {{pZAxis}, {sigmaITSAxis}});
 
       histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaTPC", "NSigmaTPC(He) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptZHeAxis}, {sigmaTPCAxis}});
       histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaTPC", "NSigmaTPC(#bar{He}) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptZHeAxis}, {sigmaTPCAxis}});
@@ -3629,6 +3656,12 @@ struct LFNucleiBATask {
         }
 
         histos.fill(HIST("tracks/h2TPCsignVsTPCmomentum"), track.tpcInnerParam() / (1.f * track.sign()), track.tpcSignal());
+        if constexpr (!IsFilteredData) {
+          if (nsigmaITSvar.showAverageClusterSize) {
+            histos.fill(HIST("tracks/averageClusterSize"), track.p(), averageClusterSizeTrk(track));
+            histos.fill(HIST("tracks/averageClusterSizePerCoslInv"), track.p(), averageClusterSizePerCoslInv(track));
+          }
+        }
 
         if (track.sign() > 0) {
           if (enablePr && prRapCut) {
@@ -4045,24 +4078,32 @@ struct LFNucleiBATask {
       if (isHeWoTPCpid) {
         if (outFlagOptions.enableExpSignalTPC)
           histos.fill(HIST("tracks/helium/h2HeliumTPCExpSignalDiffVsPt"), hePt, track.tpcExpSignalDiffHe());
-        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSTr"), hePt, nITSTr);
-        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSHe"), hePt, nITSHe);
+        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSTr"), track.p(), nITSTr);
+        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSHe"), track.p(), nITSHe);
         histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaTPC"), hePt, track.tpcNSigmaHe());
       }
       if (isAntiHeWoTPCpid) {
         if (outFlagOptions.enableExpSignalTPC)
           histos.fill(HIST("tracks/helium/h2antiHeliumTPCExpSignalDiffVsPt"), antihePt, track.tpcExpSignalDiffHe());
-        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITSTr"), antihePt, nITSTr);
-        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITSHe"), antihePt, nITSHe);
+        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITSTr"), track.p(), nITSTr);
+        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITSHe"), track.p(), nITSHe);
         histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaTPC"), antihePt, track.tpcNSigmaHe());
       }
       if (isHeWTPCpid) {
-        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSTr_wTPCpid"), hePt, nITSTr);
-        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSHe_wTPCpid"), hePt, nITSHe);
+        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSTr_wTPCpid"), track.p(), nITSTr);
+        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSHe_wTPCpid"), track.p(), nITSHe);
       }
       if (isAntiHeWTPCpid) {
-        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITSTr_wTPCpid"), antihePt, nITSTr);
-        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITSHe_wTPCpid"), antihePt, nITSHe);
+        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITSTr_wTPCpid"), track.p(), nITSTr);
+        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITSHe_wTPCpid"), track.p(), nITSHe);
+      }
+      if constexpr (!IsFilteredData) {
+        if (isHeWTPCpid || isAntiHeWTPCpid) {
+          if (nsigmaITSvar.showAverageClusterSize) {
+            histos.fill(HIST("tracks/helium/averageClusterSize"), track.p(), averageClusterSizeTrk(track));
+            histos.fill(HIST("tracks/helium/averageClusterSizePerCoslInv"), track.p(), averageClusterSizePerCoslInv(track));
+          }
+        }
       }
 
       //  TOF
