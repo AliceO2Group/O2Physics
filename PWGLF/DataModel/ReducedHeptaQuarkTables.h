@@ -29,7 +29,7 @@ namespace o2::aod
 {
 namespace redhqevent
 {
-DECLARE_SOA_COLUMN(NumPhi, numPhi, int); //! Number of negative K
+DECLARE_SOA_COLUMN(NumPhi, numPhi, int);       //! Number of negative K
 DECLARE_SOA_COLUMN(NumLambda, numLambda, int); //! Number of lambda
 } // namespace redhqevent
 DECLARE_SOA_TABLE(RedHQEvents, "AOD", "REDHQEVENT",

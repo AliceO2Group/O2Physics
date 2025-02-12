@@ -159,18 +159,18 @@ struct heptaquarktable {
 
   template <typename T1, typename T2>
   bool selectionPair(const T1& candidate1, const T2& candidate2)
-  {       
+  {
     double pt1, pt2, pz1, pz2, p1, p2, angle;
     pt1 = candidate1.pt();
     pt2 = candidate2.pt();
-    pz1 = candidate1.pz(); 
+    pz1 = candidate1.pz();
     pz2 = candidate2.pz();
     p1 = candidate1.p();
     p2 = candidate2.p();
     angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
     if (cfgDeepAngleFlag && angle < cfgDeepAngle) {
       return false;
-    }     
+    }
     return true;
   }
 
@@ -259,12 +259,12 @@ struct heptaquarktable {
       if (!(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 3.0))
         continue;
 
-/*
-        qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), track1.tpcNSigmaKa(), track1.pt());
-        if (track1.hasTOF()) {
-          qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track1.tofNSigmaKa(), track1.pt());
-        }
-*/
+      /*
+              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), track1.tpcNSigmaKa(), track1.pt());
+              if (track1.hasTOF()) {
+                qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track1.tofNSigmaKa(), track1.pt());
+              }
+      */
       auto track1ID = track1.globalIndex();
       for (auto track2 : negThisColl) {
         if (!selectionTrack(track2))
@@ -290,7 +290,7 @@ struct heptaquarktable {
           continue;
 
         numberPhi++;
-		ROOT::Math::PtEtaPhiMVector temp1(track1.pt(), track1.eta(), track1.phi(), massKa);
+        ROOT::Math::PtEtaPhiMVector temp1(track1.pt(), track1.eta(), track1.phi(), massKa);
         ROOT::Math::PtEtaPhiMVector temp2(track2.pt(), track2.eta(), track2.phi(), massKa);
         ROOT::Math::PtEtaPhiMVector temp3(HQMesonMother.pt(), HQMesonMother.eta(), HQMesonMother.phi(), HQMesonMother.M());
 
@@ -331,19 +331,19 @@ struct heptaquarktable {
 
       if (LambdaTag) {
         if (v0.mLambda() < cfgMinLambdaMass || v0.mLambda() > cfgMaxLambdaMass) {
-            continue;
-          }
-          DauVec1 = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
-          DauVec2 = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+          continue;
+        }
+        DauVec1 = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
+        DauVec2 = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
 
-          HQId.push_back(3122);
+        HQId.push_back(3122);
       } else if (aLambdaTag) {
         if (v0.mAntiLambda() < cfgMinLambdaMass || v0.mAntiLambda() > cfgMaxLambdaMass) {
-            continue;
-          }
-          DauVec1 = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
-          DauVec2 = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
-          HQId.push_back(-3122);
+          continue;
+        }
+        DauVec1 = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
+        DauVec2 = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
+        HQId.push_back(-3122);
       }
       numberLambda++;
 
@@ -384,11 +384,11 @@ struct heptaquarktable {
         HQd1dummy = hqresonanced1.at(i5);
         HQd2dummy = hqresonanced2.at(i5);
         hqTrack(indexEvent, HQId.at(i5), HQVectorDummy.Px(), HQVectorDummy.Py(), HQVectorDummy.Pz(),
-                 HQd1dummy.Px(), HQd1dummy.Py(), HQd1dummy.Pz(), HQd2dummy.Px(), HQd2dummy.Py(), HQd2dummy.Pz(),
-                 HQVectorDummy.M(),
-                 HQd1Index.at(i5), HQd2Index.at(i5),
-                 HQd1Charge.at(i5), HQd2Charge.at(i5),
-                 HQd1TPC.at(i5), HQd2TPC.at(i5)); 
+                HQd1dummy.Px(), HQd1dummy.Py(), HQd1dummy.Pz(), HQd2dummy.Px(), HQd2dummy.Py(), HQd2dummy.Pz(),
+                HQVectorDummy.M(),
+                HQd1Index.at(i5), HQd2Index.at(i5),
+                HQd1Charge.at(i5), HQd2Charge.at(i5),
+                HQd1TPC.at(i5), HQd2TPC.at(i5));
       }
     }
   } // process
