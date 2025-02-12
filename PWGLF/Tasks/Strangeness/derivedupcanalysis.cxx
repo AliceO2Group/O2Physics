@@ -1811,6 +1811,48 @@ struct Derivedupcanalysis {
         histos.fill(HIST(kParticlenames[2]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
       }
     } // V0 end
+
+    // Cascade start
+    for (auto const& cascMC : CascMCCores) {
+      // Consider only primaries
+      if (!cascMC.has_straMCCollision() || !cascMC.isPhysicalPrimary())
+        continue;
+      // Kinematics (|y| < rapidityCut)
+      float pTmc = cascMC.ptMC();
+      float ymc = 1e3;
+      if (std::abs(cascMC.pdgCode()) == 3312)
+        ymc = RecoDecay::y(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}, o2::constants::physics::MassXiMinus);
+      else if (std::abs(cascMC.pdgCode()) == 3334)
+        ymc = RecoDecay::y(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}, o2::constants::physics::MassOmegaMinus);
+      if (std::abs(ymc) > rapidityCut)
+        continue;
+
+      auto mcCollision = cascMC.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision
+      if (std::abs(mcCollision.posZ()) > 10.f)
+        continue;
+
+      float centrality = -1.f;
+      int nTracksGlobal = -1;
+      if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
+        auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
+        centrality = collision.centFT0C();
+        nTracksGlobal = collision.multNTracksGlobal();
+      }
+
+      // Fill histograms
+      if (cascMC.pdgCode() == 3312) {
+        histos.fill(HIST(kParticlenames[3]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+      }
+      if (cascMC.pdgCode() == -3312) {
+        histos.fill(HIST(kParticlenames[4]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+      }
+      if (cascMC.pdgCode() == 3334) {
+        histos.fill(HIST(kParticlenames[5]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+      }
+      if (cascMC.pdgCode() == -3334) {
+        histos.fill(HIST(kParticlenames[6]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+      }
+    } // Cascade end
   }
 
   PROCESS_SWITCH(Derivedupcanalysis, processV0s, "Process V0s", true);
