@@ -95,7 +95,7 @@ struct flowTest {
         int pdgCode = TMath::Abs(mcParticle.pdgCode());
         if (pdgCode != 11 && pdgCode != 13 && pdgCode != 211 && pdgCode != 321 && pdgCode != 2212)
           continue;
-        if( pdgSelection.value != 0 && (pdgCode != pdgSelection.value)
+        if((pdgSelection.value != 0) && (pdgCode != pdgSelection.value) )
           continue; // isn't of desired species and pdgSelection is requested
 
         if (!mcParticle.isPhysicalPrimary())
