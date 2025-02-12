@@ -49,6 +49,11 @@ using namespace o2::framework::expressions;
 struct FlowSP {
   // QA Plots
   O2_DEFINE_CONFIGURABLE(cfgFillQAHistos, bool, true, "Fill histograms for event and track QA");
+  // Flags to make and fill histograms
+  O2_DEFINE_CONFIGURABLE(cfgFillMixedHarmonics, bool, true, "Flag to make and fill histos for mixed harmonics");
+  O2_DEFINE_CONFIGURABLE(cfgFillEventPlane, bool, true, "Flag to make and fill histos with Event Plane");
+  O2_DEFINE_CONFIGURABLE(cfgFillXandYterms, bool, true, "Flag to make and fill histos for with separate x and y terms for SPM");
+  O2_DEFINE_CONFIGURABLE(cfgFillChargeDependence, bool, true, "Flag to make and fill histos for charge dependent flow");
   // Centrality Estimators -> standard is FT0C
   O2_DEFINE_CONFIGURABLE(cfgFT0Cvariant1, bool, false, "Set centrality estimator to cfgFT0Cvariant1");
   O2_DEFINE_CONFIGURABLE(cfgFT0M, bool, false, "Set centrality estimator to cfgFT0M");
@@ -107,6 +112,13 @@ struct FlowSP {
   ConfigurableAxis axisVz = {"axisVz", {40, -10, 10}, "v_{z}"};
   ConfigurableAxis axisCent = {"axisCent", {90, 0, 90}, "Centrality(%)"};
   ConfigurableAxis axisPhiPlane = {"axisPhiPlane", {100, -constants::math::PI, constants::math::PI}, "#Psi"};
+  ConfigurableAxis axisNch = {"axisNch", {400, 0, 4000}, "N_{ch}"};
+  ConfigurableAxis axisT0c = {"axisT0c", {70, 0, 70000}, "N_{ch} (T0C)"};
+  ConfigurableAxis axisT0a = {"axisT0a", {70, 0, 70000}, "N_{ch} (T0A)"};
+  ConfigurableAxis axisV0a = {"axisV0a", {70, 0, 70000}, "N_{ch} (V0A)"};
+  ConfigurableAxis axisMultpv = {"axisMultpv", {400, 0, 4000}, "N_{ch} (PV)"};
+  ConfigurableAxis axisShCl = {"axisShCl", {200, 0, 1}, "Fraction shared cl. TPC"};
+  ConfigurableAxis axisCl = {"axisCl", {160, 0, 160}, "Number of cl. TPC"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
@@ -188,6 +200,7 @@ struct FlowSP {
 
   void init(InitContext const&)
   {
+
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -197,12 +210,6 @@ struct FlowSP {
 
     std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
     AxisSpec axisPt = {ptbinning, "#it{p}_{T} GeV/#it{c}"};
-    AxisSpec nchAxis = {4000, 0, 4000, "N_{ch}"};
-    AxisSpec t0cAxis = {70, 0, 70000, "N_{ch} (T0C)"};
-    AxisSpec t0aAxis = {200, 0, 200, "N_{ch}"};
-    AxisSpec multpvAxis = {4000, 0, 4000, "N_{ch} (PV)"};
-    AxisSpec shclAxis = {200, 0, 1, "Fraction shared cl. TPC"};
-    AxisSpec clAxis = {160, 0, 160, "Number of cl. TPC"};
 
     int ptbins = ptbinning.size() - 1;
 
@@ -224,82 +231,98 @@ struct FlowSP {
         registry.add("QA/after/hPt_inclusive", "", {HistType::kTH1D, {axisPt}});
         registry.add("QA/after/hPt_positive", "", {HistType::kTH1D, {axisPt}});
         registry.add("QA/after/hPt_negative", "", {HistType::kTH1D, {axisPt}});
-        registry.add("QA/after/globalTracks_centT0C", "", {HistType::kTH2D, {axisCent, nchAxis}});
-        registry.add("QA/after/PVTracks_centT0C", "", {HistType::kTH2D, {axisCent, multpvAxis}});
-        registry.add("QA/after/globalTracks_PVTracks", "", {HistType::kTH2D, {multpvAxis, nchAxis}});
-        registry.add("QA/after/globalTracks_multT0A", "", {HistType::kTH2D, {t0aAxis, nchAxis}});
-        registry.add("QA/after/globalTracks_multV0A", "", {HistType::kTH2D, {t0aAxis, nchAxis}});
-        registry.add("QA/after/multV0A_multT0A", "", {HistType::kTH2D, {t0aAxis, t0aAxis}});
-        registry.add("QA/after/multT0C_centT0C", "", {HistType::kTH2D, {axisCent, t0cAxis}});
+        registry.add("QA/after/globalTracks_centT0C", "", {HistType::kTH2D, {axisCent, axisNch}});
+        registry.add("QA/after/PVTracks_centT0C", "", {HistType::kTH2D, {axisCent, axisMultpv}});
+        registry.add("QA/after/globalTracks_PVTracks", "", {HistType::kTH2D, {axisMultpv, axisNch}});
+        registry.add("QA/after/globalTracks_multT0A", "", {HistType::kTH2D, {axisT0a, axisNch}});
+        registry.add("QA/after/globalTracks_multV0A", "", {HistType::kTH2D, {axisV0a, axisNch}});
+        registry.add("QA/after/multV0A_multT0A", "", {HistType::kTH2D, {axisT0a, axisV0a}});
+        registry.add("QA/after/multT0C_centT0C", "", {HistType::kTH2D, {axisCent, axisT0c}});
+
+        registry.add("QA/after/CentFT0C_vs_CentFT0Cvariant1", " ; Cent FT0C (%); Cent FT0Cvariant1 (%) ", {HistType::kTH2D, {axisCent, axisCent}});
+        registry.add("QA/after/CentFT0C_vs_CentFT0M", " ; Cent FT0C (%); Cent FT0M (%) ", {HistType::kTH2D, {axisCent, axisCent}});
+        registry.add("QA/after/CentFT0C_vs_CentFV0A", " ; Cent FT0C (%); Cent FV0A (%) ", {HistType::kTH2D, {axisCent, axisCent}});
+        registry.add("QA/after/CentFT0C_vs_CentNGlobal", " ; Cent FT0C (%); Cent NGlobal (%) ", {HistType::kTH2D, {axisCent, axisCent}});
       }
 
       if (doprocessData) {
-        registry.add<TH1>("hSPplaneA", "hSPplaneA", kTH1D, {axisPhiPlane});
-        registry.add<TH1>("hSPplaneC", "hSPplaneC", kTH1D, {axisPhiPlane});
-        registry.add<TH1>("hSPplaneFull", "hSPplaneFull", kTH1D, {axisPhiPlane});
-
-        registry.add<TProfile>("hCosPhiACosPhiC", "hCosPhiACosPhiC; Centrality(%); #LT Cos(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
-        registry.add<TProfile>("hSinPhiASinPhiC", "hSinPhiASinPhiC; Centrality(%); #LT Sin(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
-        registry.add<TProfile>("hSinPhiACosPhiC", "hSinPhiACosPhiC; Centrality(%); #LT Sin(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
-        registry.add<TProfile>("hCosPhiASinsPhiC", "hCosPhiASinsPhiC; Centrality(%); #LT Cos(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
-        registry.add<TProfile>("hFullEvPlaneRes", "hFullEvPlaneRes; Centrality(%); -#LT Cos(#Psi^{A} - #Psi^{C})#GT ", kTProfile, {axisCent});
 
         // track properties per centrality and per eta, pt bin
-        registry.add<TProfile>("incl/vnAx_eta", "", kTProfile, {axisEtaVn});
-        registry.add<TProfile>("incl/vnAy_eta", "", kTProfile, {axisEtaVn});
-        registry.add<TProfile>("incl/vnCx_eta", "", kTProfile, {axisEtaVn});
-        registry.add<TProfile>("incl/vnCy_eta", "", kTProfile, {axisEtaVn});
         registry.add<TProfile>("incl/vnC_eta", "", kTProfile, {axisEtaVn});
         registry.add<TProfile>("incl/vnA_eta", "", kTProfile, {axisEtaVn});
-        registry.add<TProfile>("incl/vnA_eta_EP", "", kTProfile, {axisEtaVn});
-        registry.add<TProfile>("incl/vnC_eta_EP", "", kTProfile, {axisEtaVn});
-        registry.add<TProfile>("incl/vnFull_eta_EP", "", kTProfile, {axisEtaVn});
-        registry.add<TProfile>("incl/vnAxCxUx_eta_MH", "", kTProfile, {axisEtaVn});
-        registry.add<TProfile>("incl/vnAxCyUx_eta_MH", "", kTProfile, {axisEtaVn});
-        registry.add<TProfile>("incl/vnAxCyUy_eta_MH", "", kTProfile, {axisEtaVn});
-        registry.add<TProfile>("incl/vnAyCxUy_eta_MH", "", kTProfile, {axisEtaVn});
 
-        registry.add<TProfile>("incl/vnAx_pt", "", kTProfile, {axisPt});
-        registry.add<TProfile>("incl/vnAy_pt", "", kTProfile, {axisPt});
-        registry.add<TProfile>("incl/vnCx_pt", "", kTProfile, {axisPt});
-        registry.add<TProfile>("incl/vnCy_pt", "", kTProfile, {axisPt});
         registry.add<TProfile>("incl/vnC_pt", "", kTProfile, {axisPt});
         registry.add<TProfile>("incl/vnA_pt", "", kTProfile, {axisPt});
         registry.add<TProfile>("incl/vnC_pt_odd", "", kTProfile, {axisPt});
         registry.add<TProfile>("incl/vnA_pt_odd", "", kTProfile, {axisPt});
-        registry.add<TProfile>("incl/vnCx_pt_odd", "", kTProfile, {axisPt});
-        registry.add<TProfile>("incl/vnAx_pt_odd", "", kTProfile, {axisPt});
-        registry.add<TProfile>("incl/vnCy_pt_odd", "", kTProfile, {axisPt});
-        registry.add<TProfile>("incl/vnAy_pt_odd", "", kTProfile, {axisPt});
-
-        registry.add<TProfile>("incl/vnA_pt_EP", "", kTProfile, {axisPt});
-        registry.add<TProfile>("incl/vnC_pt_EP", "", kTProfile, {axisPt});
-        registry.add<TProfile>("incl/vnFull_pt_EP", "", kTProfile, {axisPt});
-        registry.add<TProfile>("incl/vnAxCxUx_pt_MH", "", kTProfile, {axisPt});
-        registry.add<TProfile>("incl/vnAxCyUx_pt_MH", "", kTProfile, {axisPt});
-        registry.add<TProfile>("incl/vnAxCyUy_pt_MH", "", kTProfile, {axisPt});
-        registry.add<TProfile>("incl/vnAyCxUy_pt_MH", "", kTProfile, {axisPt});
 
         registry.add<TProfile>("incl/vnC_cent_minEta", "", kTProfile, {axisCent});
         registry.add<TProfile>("incl/vnA_cent_minEta", "", kTProfile, {axisCent});
         registry.add<TProfile>("incl/vnC_cent_plusEta", "", kTProfile, {axisCent});
         registry.add<TProfile>("incl/vnA_cent_plusEta", "", kTProfile, {axisCent});
-        registry.add<TProfile>("incl/vnA_cent_EP", "", kTProfile, {axisCent});
-        registry.add<TProfile>("incl/vnC_cent_EP", "", kTProfile, {axisCent});
-        registry.add<TProfile>("incl/vnFull_cent_EP", "", kTProfile, {axisCent});
-        registry.add<TProfile>("incl/vnAxCxUx_cent_MH", "", kTProfile, {axisCent});
-        registry.add<TProfile>("incl/vnAxCyUx_cent_MH", "", kTProfile, {axisCent});
-        registry.add<TProfile>("incl/vnAxCyUy_cent_MH", "", kTProfile, {axisCent});
-        registry.add<TProfile>("incl/vnAyCxUy_cent_MH", "", kTProfile, {axisCent});
 
-        registry.add<TProfile>("qAqCX", "", kTProfile, {axisCent});
-        registry.add<TProfile>("qAqCY", "", kTProfile, {axisCent});
-        registry.add<TProfile>("qAqCXY", "", kTProfile, {axisCent});
-        registry.add<TProfile>("qAXqCY", "", kTProfile, {axisCent});
-        registry.add<TProfile>("qAYqCX", "", kTProfile, {axisCent});
-        registry.add<TProfile>("qAXYqCXY", "", kTProfile, {axisCent});
+        if (cfgFillXandYterms) {
+          registry.add<TProfile>("incl/vnAx_eta", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/vnAy_eta", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/vnCx_eta", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/vnCy_eta", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/vnAx_pt", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/vnAy_pt", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/vnCx_pt", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/vnCy_pt", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/vnCx_pt_odd", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/vnAx_pt_odd", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/vnCy_pt_odd", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/vnAy_pt_odd", "", kTProfile, {axisPt});
+        }
+
+        if (cfgFillMixedHarmonics) {
+          registry.add<TProfile>("incl/vnAxCxUx_pt_MH", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/vnAxCyUx_pt_MH", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/vnAxCyUy_pt_MH", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/vnAyCxUy_pt_MH", "", kTProfile, {axisPt});
+
+          registry.add<TProfile>("incl/vnAxCxUx_cent_MH", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/vnAxCyUx_cent_MH", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/vnAxCyUy_cent_MH", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/vnAyCxUy_cent_MH", "", kTProfile, {axisCent});
+
+          registry.add<TProfile>("incl/vnAxCxUx_eta_MH", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/vnAxCyUx_eta_MH", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/vnAxCyUy_eta_MH", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/vnAyCxUy_eta_MH", "", kTProfile, {axisEtaVn});
+        }
+
+        if (cfgFillEventPlane) {
+          registry.add<TProfile>("incl/vnA_cent_EP", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/vnC_cent_EP", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/vnFull_cent_EP", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/vnA_pt_EP", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/vnC_pt_EP", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/vnFull_pt_EP", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/vnA_eta_EP", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/vnC_eta_EP", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/vnFull_eta_EP", "", kTProfile, {axisEtaVn});
+        }
 
         if (cfgFillQAHistos) {
+          registry.add<TProfile>("QA/qAqCX", "", kTProfile, {axisCent});
+          registry.add<TProfile>("QA/qAqCY", "", kTProfile, {axisCent});
+          registry.add<TProfile>("QA/qAqCXY", "", kTProfile, {axisCent});
+          registry.add<TProfile>("QA/qAXqCY", "", kTProfile, {axisCent});
+          registry.add<TProfile>("QA/qAYqCX", "", kTProfile, {axisCent});
+          registry.add<TProfile>("QA/qAXYqCXY", "", kTProfile, {axisCent});
+
+          registry.add<TH1>("QA/hSPplaneA", "hSPplaneA", kTH1D, {axisPhiPlane});
+          registry.add<TH1>("QA/hSPplaneC", "hSPplaneC", kTH1D, {axisPhiPlane});
+          registry.add<TH1>("QA/hSPplaneFull", "hSPplaneFull", kTH1D, {axisPhiPlane});
+
+          registry.add<TProfile>("QA/hCosPhiACosPhiC", "hCosPhiACosPhiC; Centrality(%); #LT Cos(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
+          registry.add<TProfile>("QA/hSinPhiASinPhiC", "hSinPhiASinPhiC; Centrality(%); #LT Sin(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
+          registry.add<TProfile>("QA/hSinPhiACosPhiC", "hSinPhiACosPhiC; Centrality(%); #LT Sin(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
+          registry.add<TProfile>("QA/hCosPhiASinsPhiC", "hCosPhiASinsPhiC; Centrality(%); #LT Cos(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
+          registry.add<TProfile>("QA/hFullEvPlaneRes", "hFullEvPlaneRes; Centrality(%); -#LT Cos(#Psi^{A} - #Psi^{C})#GT ", kTProfile, {axisCent});
+
           registry.add("QA/after/PsiA_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
           registry.add("QA/after/PsiC_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
           registry.add("QA/after/PsiFull_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
@@ -316,26 +339,24 @@ struct FlowSP {
           registry.add("QA/after/PsiC_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
           registry.add("QA/after/PsiFull_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
 
-          registry.add("QA/after/CentFT0C_vs_CentFT0Cvariant1", "", {HistType::kTH2D, {axisCent, axisCent}});
-          registry.add("QA/after/CentFT0C_vs_CentFT0M", "", {HistType::kTH2D, {axisCent, axisCent}});
-          registry.add("QA/after/CentFT0C_vs_CentFV0A", "", {HistType::kTH2D, {axisCent, axisCent}});
-          // registry.add("QA/after/CentFT0C_vs_CentNGlobal", "", {HistType::kTH2D, {axisCent, axisCent}};
+          registry.addClone("QA/after/", "QA/before/");
+          // track QA for pos, neg, incl
+          registry.add<TH1>("incl/QA/hPt", "", kTH1D, {axisPt});
+          registry.add<TH1>("incl/QA/hPhi", "", kTH1D, {axisPhi});
+          registry.add<TH1>("incl/QA/hPhiCorrected", "", kTH1D, {axisPhi});
+          registry.add<TH1>("incl/QA/hEta", "", kTH1D, {axisEta});
+          registry.add<TH3>("incl/QA/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
+          registry.add<TH2>("incl/QA/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
+          registry.add<TH2>("incl/QA/hDCAz_pt", "", kTH2D, {axisPt, axisDCAz});
+          registry.add("incl/QA/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, axisShCl}});
+          registry.add("incl/QA/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
         }
       }
-      registry.addClone("QA/after/", "QA/before/");
-      // track QA for pos, neg, incl
-      registry.add<TH1>("incl/QA/hPt", "", kTH1D, {axisPt});
-      registry.add<TH1>("incl/QA/hPhi", "", kTH1D, {axisPhi});
-      registry.add<TH1>("incl/QA/hPhiCorrected", "", kTH1D, {axisPhi});
-      registry.add<TH1>("incl/QA/hEta", "", kTH1D, {axisEta});
-      registry.add<TH3>("incl/QA/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
-      registry.add<TH2>("incl/QA/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
-      registry.add<TH2>("incl/QA/hDCAz_pt", "", kTH2D, {axisPt, axisDCAz});
-      registry.add("incl/QA/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, shclAxis}});
-      registry.add("incl/QA/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, clAxis}});
 
-      registry.addClone("incl/", "pos/");
-      registry.addClone("incl/", "neg/");
+      if (cfgFillChargeDependence) {
+        registry.addClone("incl/", "pos/");
+        registry.addClone("incl/", "neg/");
+      }
     } else if (doprocessMCGen) {
       registry.add("trackMCGen/before/pt_gen_incl", "", {HistType::kTH1D, {axisPt}});
       registry.add("trackMCGen/before/phi_eta_vtxZ_gen", "", {HistType::kTH3D, {axisPhi, axisEta, axisVz}});
@@ -625,7 +646,7 @@ struct FlowSP {
       registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0Cvariant1"), collision.centFT0C(), collision.centFT0CVariant1());
       registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0M"), collision.centFT0C(), collision.centFT0M());
       registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFV0A"), collision.centFT0C(), collision.centFV0A());
-      // registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal());
+      registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal());
 
       double psiA = 1.0 * std::atan2(collision.qyA(), collision.qxA());
       double psiC = 1.0 * std::atan2(collision.qyC(), collision.qxC());
@@ -650,37 +671,55 @@ struct FlowSP {
   template <ChargeType ct, typename TrackObject>
   inline void fillHistograms(TrackObject track, float wacc, float weff, double ux, double uy, double uxMH, double uyMH, double qxA, double qyA, double qxC, double qyC, double corrQQx, double corrQQy, double corrQQ, double vnA, double vnC, double vnFull, double centrality)
   {
-    registry.fill(HIST(Charge[ct]) + HIST("vnAx_eta"), track.eta(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnAy_eta"), track.eta(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnCx_eta"), track.eta(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnCy_eta"), track.eta(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+
     registry.fill(HIST(Charge[ct]) + HIST("vnA_eta"), track.eta(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
     registry.fill(HIST(Charge[ct]) + HIST("vnC_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
-    registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_eta_MH"), track.eta(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_eta_MH"), track.eta(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_eta_MH"), track.eta(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_eta_MH"), track.eta(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
-
-    registry.fill(HIST(Charge[ct]) + HIST("vnAx_pt"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnAy_pt"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnCx_pt"), track.pt(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnCy_pt"), track.pt(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
     registry.fill(HIST(Charge[ct]) + HIST("vnA_pt"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
     registry.fill(HIST(Charge[ct]) + HIST("vnC_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
-    registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_pt_MH"), track.pt(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_pt_MH"), track.pt(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_pt_MH"), track.pt(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_pt_MH"), track.pt(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+    if (cfgFillMixedHarmonics) {
+      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_eta_MH"), track.eta(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_eta_MH"), track.eta(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_eta_MH"), track.eta(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_eta_MH"), track.eta(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
-    registry.fill(HIST(Charge[ct]) + HIST("vnA_eta_EP"), track.eta(), vnA, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnC_eta_EP"), track.eta(), vnC, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnFull_eta_EP"), track.eta(), vnFull, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_pt_MH"), track.pt(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_pt_MH"), track.pt(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_pt_MH"), track.pt(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_pt_MH"), track.pt(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
-    registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_EP"), track.pt(), vnA, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_EP"), track.pt(), vnC, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnFull_pt_EP"), track.pt(), vnFull, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_cent_MH"), centrality, (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_cent_MH"), centrality, (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_cent_MH"), centrality, (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_cent_MH"), centrality, (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+    }
+
+    if (cfgFillXandYterms) {
+      registry.fill(HIST(Charge[ct]) + HIST("vnAx_eta"), track.eta(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAy_eta"), track.eta(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnCx_eta"), track.eta(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnCy_eta"), track.eta(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+
+      registry.fill(HIST(Charge[ct]) + HIST("vnAx_pt"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnAy_pt"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnCx_pt"), track.pt(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnCy_pt"), track.pt(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+    }
+
+    if (cfgFillEventPlane) {
+      registry.fill(HIST(Charge[ct]) + HIST("vnA_eta_EP"), track.eta(), vnA, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnC_eta_EP"), track.eta(), vnC, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnFull_eta_EP"), track.eta(), vnFull, wacc * weff);
+
+      registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_EP"), track.pt(), vnA, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_EP"), track.pt(), vnC, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnFull_pt_EP"), track.pt(), vnFull, wacc * weff);
+
+      registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_EP"), centrality, vnA, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_EP"), centrality, vnC, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnFull_cent_EP"), centrality, vnFull, wacc * weff);
+    }
 
     // For integrated v1 take only tracks from eta>0.
     // Following https://arxiv.org/pdf/1306.4145
@@ -691,11 +730,12 @@ struct FlowSP {
       registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_odd"), track.pt(), -1.0 * (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
       registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_odd"), track.pt(), -1.0 * (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
-      registry.fill(HIST(Charge[ct]) + HIST("vnAx_pt_odd"), track.pt(), -1.0 * (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAy_pt_odd"), track.pt(), -1.0 * (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnCx_pt_odd"), track.pt(), -1.0 * (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnCy_pt_odd"), track.pt(), -1.0 * (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
-
+      if (cfgFillXandYterms) {
+        registry.fill(HIST(Charge[ct]) + HIST("vnAx_pt_odd"), track.pt(), -1.0 * (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAy_pt_odd"), track.pt(), -1.0 * (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnCx_pt_odd"), track.pt(), -1.0 * (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnCy_pt_odd"), track.pt(), -1.0 * (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+      }
     } else {
       registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_plusEta"), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
       registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_plusEta"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
@@ -703,20 +743,13 @@ struct FlowSP {
       registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_odd"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
       registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_odd"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
-      registry.fill(HIST(Charge[ct]) + HIST("vnAx_pt_odd"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAy_pt_odd"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnCx_pt_odd"), track.pt(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnCy_pt_odd"), track.pt(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+      if (cfgFillXandYterms) {
+        registry.fill(HIST(Charge[ct]) + HIST("vnAx_pt_odd"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAy_pt_odd"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnCx_pt_odd"), track.pt(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnCy_pt_odd"), track.pt(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+      }
     }
-
-    registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_cent_MH"), centrality, (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_cent_MH"), centrality, (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_cent_MH"), centrality, (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_cent_MH"), centrality, (uyMH * qyA * qxC) / corrQQy, wacc * weff);
-
-    registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_EP"), centrality, vnA, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_EP"), centrality, vnC, wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("vnFull_cent_EP"), centrality, vnFull, wacc * weff);
   }
 
   template <ChargeType ct, typename TrackObject>
@@ -773,35 +806,30 @@ struct FlowSP {
       double qyC = collision.qyC();
 
       double vtxz = collision.posZ();
-
       double psiA = 1.0 * std::atan2(qyA, qxA);
-      registry.fill(HIST("hSPplaneA"), psiA, 1);
-
       double psiC = 1.0 * std::atan2(qyC, qxC);
-      registry.fill(HIST("hSPplaneC"), psiC, 1);
 
       // https://twiki.cern.ch/twiki/pub/ALICE/DirectedFlowAnalysisNote/vn_ZDC_ALICE_INT_NOTE_version02.pdf
       double psiFull = 1.0 * std::atan2(qyA + qyC, qxA + qxC);
-      registry.fill(HIST("hSPplaneFull"), psiFull, 1);
 
-      if (cfgFillQAHistos)
+      if (cfgFillQAHistos) {
         fillEventQA<kAfter>(collision, tracks);
 
-      registry.fill(HIST("hCosPhiACosPhiC"), centrality, std::cos(psiA) * std::cos(psiC));
-      registry.fill(HIST("hSinPhiASinPhiC"), centrality, std::sin(psiA) * std::sin(psiC));
-      registry.fill(HIST("hSinPhiACosPhiC"), centrality, std::sin(psiA) * std::cos(psiC));
-      registry.fill(HIST("hCosPhiASinsPhiC"), centrality, std::cos(psiA) * std::sin(psiC));
-
-      registry.fill(HIST("hFullEvPlaneRes"), centrality, -1 * std::cos(psiA - psiC));
-
-      registry.fill(HIST("qAqCXY"), centrality, qxA * qxC + qyA * qyC);
-
-      registry.fill(HIST("qAXqCY"), centrality, qxA * qyC);
-      registry.fill(HIST("qAYqCX"), centrality, qyA * qxC);
-      registry.fill(HIST("qAXYqCXY"), centrality, qyA * qxC + qxA * qyC);
-
-      registry.fill(HIST("qAqCX"), centrality, qxA * qxC);
-      registry.fill(HIST("qAqCY"), centrality, qyA * qyC);
+        registry.fill(HIST("QA/hSPplaneA"), psiA, 1);
+        registry.fill(HIST("QA/hSPplaneC"), psiC, 1);
+        registry.fill(HIST("QA/hSPplaneFull"), psiFull, 1);
+        registry.fill(HIST("QA/hCosPhiACosPhiC"), centrality, std::cos(psiA) * std::cos(psiC));
+        registry.fill(HIST("QA/hSinPhiASinPhiC"), centrality, std::sin(psiA) * std::sin(psiC));
+        registry.fill(HIST("QA/hSinPhiACosPhiC"), centrality, std::sin(psiA) * std::cos(psiC));
+        registry.fill(HIST("QA/hCosPhiASinsPhiC"), centrality, std::cos(psiA) * std::sin(psiC));
+        registry.fill(HIST("QA/hFullEvPlaneRes"), centrality, -1 * std::cos(psiA - psiC));
+        registry.fill(HIST("QA/qAqCXY"), centrality, qxA * qxC + qyA * qyC);
+        registry.fill(HIST("QA/qAXqCY"), centrality, qxA * qyC);
+        registry.fill(HIST("QA/qAYqCX"), centrality, qyA * qxC);
+        registry.fill(HIST("QA/qAXYqCXY"), centrality, qyA * qxC + qxA * qyC);
+        registry.fill(HIST("QA/qAqCX"), centrality, qxA * qxC);
+        registry.fill(HIST("QA/qAqCY"), centrality, qyA * qyC);
+      }
 
       double corrQQ = 1., corrQQx = 1., corrQQy = 1.;
 
@@ -892,13 +920,18 @@ struct FlowSP {
         double vnFull = std::cos(cfgHarm * (phi - psiFull)) / evPlaneRes;
 
         fillHistograms<kInclusive>(track, wacc, weff, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-        fillTrackQA<kInclusive>(track, vtxz, wacc, weff);
-        if (pos) {
-          fillHistograms<kPositive>(track, waccP, weffP, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-          fillTrackQA<kPositive>(track, vtxz, wacc, weff);
-        } else {
-          fillHistograms<kNegative>(track, waccN, weffN, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-          fillTrackQA<kNegative>(track, vtxz, wacc, weff);
+
+        if (cfgFillQAHistos)
+          fillTrackQA<kInclusive>(track, vtxz, wacc, weff);
+
+        if (cfgFillChargeDependence) {
+          if (pos) {
+            fillHistograms<kPositive>(track, waccP, weffP, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
+            fillTrackQA<kPositive>(track, vtxz, wacc, weff);
+          } else {
+            fillHistograms<kNegative>(track, waccN, weffN, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
+            fillTrackQA<kNegative>(track, vtxz, wacc, weff);
+          }
         }
       } // end of track loop
     } // end of collision isSelected loop
