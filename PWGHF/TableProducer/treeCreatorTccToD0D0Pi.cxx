@@ -292,7 +292,7 @@ struct HfTreeCreatorTccToD0D0Pi {
             std::copy(candidateD1.mlProbD0().begin(), candidateD1.mlProbD0().end(), std::back_inserter(mlScoresD1));
             massD01 = hfHelper.invMassD0ToPiK(candidateD1);
           } else if (candidateD1.isSelD0bar()) {
-            candFlagD1 = (candidateD1.isSelD0()) ? 3 : 2;            
+            candFlagD1 = (candidateD1.isSelD0()) ? 3 : 2;
             std::copy(candidateD1.mlProbD0bar().begin(), candidateD1.mlProbD0bar().end(), std::back_inserter(mlScoresD1));
             massD01 = hfHelper.invMassD0barToKPi(candidateD1);
           }
