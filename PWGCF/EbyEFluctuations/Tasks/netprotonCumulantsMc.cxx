@@ -155,7 +155,6 @@ struct NetprotonCumulantsMc {
   Configurable<bool> cfgIfRejectElectron{"cfgIfRejectElectron", true, "Remove electrons"};
   Configurable<bool> cfgIfMandatoryTOF{"cfgIfMandatoryTOF", true, "Mandatory TOF requirement to remove pileup"};
 
-
   ConfigurableAxis cfgCentralityBins{"cfgCentralityBins", {90, 0., 90.}, "Centrality/Multiplicity percentile bining"};
 
   // Connect to ccdb
@@ -917,7 +916,7 @@ struct NetprotonCumulantsMc {
       return false;
   }
 
-  //electron rejection function
+  // electron rejection function
   template <typename T>
   bool isElectron(const T& candidate) // Victor's BF analysis
   {
@@ -926,7 +925,7 @@ struct NetprotonCumulantsMc {
     }
     return false;
   }
-  
+
   template <typename T>
   bool selectionPIDnew(const T& candidate) // Victor's BF analysis
   {
@@ -973,7 +972,7 @@ struct NetprotonCumulantsMc {
     } else {
       // Find the pt bin index based on the track's pt value
       int binIndex = -1;
-  
+
       for (int i = 0; i < 16; ++i) {
         if (candidate.pt() >= cfgPtBins.value[i] && candidate.pt() < cfgPtBins.value[i + 1]) {
           binIndex = i;
@@ -1021,10 +1020,10 @@ struct NetprotonCumulantsMc {
         continue;
       }
       if (cfgUseGoodITSLayerAllCut && !(collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
-	continue;
+        continue;
       }
       if (cfgEvSelkNoSameBunchPileup && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
-	continue;
+        continue;
       }
 
       cent = collision.centFT0M();
@@ -1134,7 +1133,8 @@ struct NetprotonCumulantsMc {
       return;
     }
     if (cfgEvSelkNoSameBunchPileup && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
-      return;;
+      return;
+      ;
     }
 
     auto cent = collision.centFT0M();
@@ -1179,19 +1179,19 @@ struct NetprotonCumulantsMc {
         histos.fill(HIST("hrecDcaXYAll"), track.dcaXY());
         histos.fill(HIST("hrecDcaZAll"), track.dcaZ());
 
-	// rejecting electron
-	if (cfgIfRejectElectron && isElectron(track)) {
-	  continue;
-	}
-	// use ITS pid as well
-        if (cfgUseItsPid && (std::abs(itsResponse.nSigmaITS<o2::track::PID::Proton>(track)) > 3.0)) {
-	  continue;
+        // rejecting electron
+        if (cfgIfRejectElectron && isElectron(track)) {
+          continue;
         }
-	// required tracks with TOF mandatory to avoid pileup
-	if (cfgIfMandatoryTOF && !track.hasTOF()) {
-	  continue;
-	} 
-		
+        // use ITS pid as well
+        if (cfgUseItsPid && (std::abs(itsResponse.nSigmaITS<o2::track::PID::Proton>(track)) > 3.0)) {
+          continue;
+        }
+        // required tracks with TOF mandatory to avoid pileup
+        if (cfgIfMandatoryTOF && !track.hasTOF()) {
+          continue;
+        }
+
         bool trackSelected = false;
         if (cfgPIDchoice == 0)
           trackSelected = selectionPIDoldTOFveto(track);
@@ -2112,17 +2112,17 @@ struct NetprotonCumulantsMc {
 
       // rejecting electron
       if (cfgIfRejectElectron && isElectron(track)) {
-	continue;
+        continue;
       }
       // use ITS pid as well
       if (cfgUseItsPid && (std::abs(itsResponse.nSigmaITS<o2::track::PID::Proton>(track)) > 3.0)) {
-	continue;
+        continue;
       }
       // required tracks with TOF mandatory to avoid pileup
       if (cfgIfMandatoryTOF && !track.hasTOF()) {
-	continue;
-      } 
-     
+        continue;
+      }
+
       bool trackSelected = false;
       if (cfgPIDchoice == 0)
         trackSelected = selectionPIDoldTOFveto(track);
