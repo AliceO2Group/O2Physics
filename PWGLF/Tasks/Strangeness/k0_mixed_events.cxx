@@ -440,7 +440,6 @@ struct K0MixedEvents {
   }
 
   // Event selection
-  // Event selection
   template <typename TCollision>
   bool acceptEvent(TCollision const& collision, bool fill = true)
   {
@@ -527,7 +526,7 @@ struct K0MixedEvents {
       LOGF(fatal, "One of passed PDG is 0!!!");
     }
     registry.fill(HIST("Trks"), 2.f, tracks.size());
-    for (auto collision : collisions) {
+    for (const auto& collision : collisions) {
       LOG(debug) << "Collision index " << collision.globalIndex();
       registry.fill(HIST("VTXc"), collision.posZ());
       registry.fill(HIST("multPerc"), collision.multPerc());
