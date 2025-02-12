@@ -11,6 +11,8 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+#include <vector>
+#include <algorithm>
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "VarManager.h"
 #include "CommonConstants/MathConstants.h"
