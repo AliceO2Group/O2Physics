@@ -112,6 +112,13 @@ struct FlowSP {
   ConfigurableAxis axisVz = {"axisVz", {40, -10, 10}, "v_{z}"};
   ConfigurableAxis axisCent = {"axisCent", {90, 0, 90}, "Centrality(%)"};
   ConfigurableAxis axisPhiPlane = {"axisPhiPlane", {100, -constants::math::PI, constants::math::PI}, "#Psi"};
+  ConfigurableAxis axisNch = {"axisNch", {400, 0, 4000}, "N_{ch}"};
+  ConfigurableAxis axisT0c = {"axisT0c", {70, 0, 70000}, "N_{ch} (T0C)"};
+  ConfigurableAxis axisT0a = {"axisT0a", {70, 0, 70000}, "N_{ch} (T0A)"};
+  ConfigurableAxis axisV0a = {"axisV0a", {70, 0, 70000}, "N_{ch} (V0A)"};
+  ConfigurableAxis axisMultpv = {"axisMultpv", {400, 0, 4000}, "N_{ch} (PV)"};
+  ConfigurableAxis axisShCl = {"axisShCl", {200, 0, 1}, "Fraction shared cl. TPC"};
+  ConfigurableAxis axisCl = {"axisCl", {160, 0, 160}, "Number of cl. TPC"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
@@ -203,13 +210,6 @@ struct FlowSP {
 
     std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
     AxisSpec axisPt = {ptbinning, "#it{p}_{T} GeV/#it{c}"};
-    AxisSpec nchAxis = {400, 0, 4000, "N_{ch}"};
-    AxisSpec t0cAxis = {70, 0, 70000, "N_{ch} (T0C)"};
-    AxisSpec t0aAxis = {70, 0, 70000, "N_{ch} (T0A)"};
-    AxisSpec v0aAxis = {70, 0, 70000, "N_{ch} (V0A)"};
-    AxisSpec multpvAxis = {400, 0, 4000, "N_{ch} (PV)"};
-    AxisSpec shclAxis = {200, 0, 1, "Fraction shared cl. TPC"};
-    AxisSpec clAxis = {160, 0, 160, "Number of cl. TPC"};
 
     int ptbins = ptbinning.size() - 1;
 
@@ -231,13 +231,13 @@ struct FlowSP {
         registry.add("QA/after/hPt_inclusive", "", {HistType::kTH1D, {axisPt}});
         registry.add("QA/after/hPt_positive", "", {HistType::kTH1D, {axisPt}});
         registry.add("QA/after/hPt_negative", "", {HistType::kTH1D, {axisPt}});
-        registry.add("QA/after/globalTracks_centT0C", "", {HistType::kTH2D, {axisCent, nchAxis}});
-        registry.add("QA/after/PVTracks_centT0C", "", {HistType::kTH2D, {axisCent, multpvAxis}});
-        registry.add("QA/after/globalTracks_PVTracks", "", {HistType::kTH2D, {multpvAxis, nchAxis}});
-        registry.add("QA/after/globalTracks_multT0A", "", {HistType::kTH2D, {t0aAxis, nchAxis}});
-        registry.add("QA/after/globalTracks_multV0A", "", {HistType::kTH2D, {v0aAxis, nchAxis}});
-        registry.add("QA/after/multV0A_multT0A", "", {HistType::kTH2D, {t0aAxis, v0aAxis}});
-        registry.add("QA/after/multT0C_centT0C", "", {HistType::kTH2D, {axisCent, t0cAxis}});
+        registry.add("QA/after/globalTracks_centT0C", "", {HistType::kTH2D, {axisCent, axisNch}});
+        registry.add("QA/after/PVTracks_centT0C", "", {HistType::kTH2D, {axisCent, axisMultpv}});
+        registry.add("QA/after/globalTracks_PVTracks", "", {HistType::kTH2D, {axisMultpv, axisNch}});
+        registry.add("QA/after/globalTracks_multT0A", "", {HistType::kTH2D, {axisT0a, axisNch}});
+        registry.add("QA/after/globalTracks_multV0A", "", {HistType::kTH2D, {axisV0a, axisNch}});
+        registry.add("QA/after/multV0A_multT0A", "", {HistType::kTH2D, {axisT0a, axisV0a}});
+        registry.add("QA/after/multT0C_centT0C", "", {HistType::kTH2D, {axisCent, axisT0c}});
 
         registry.add("QA/after/CentFT0C_vs_CentFT0Cvariant1", " ; Cent FT0C (%); Cent FT0Cvariant1 (%) ", {HistType::kTH2D, {axisCent, axisCent}});
         registry.add("QA/after/CentFT0C_vs_CentFT0M", " ; Cent FT0C (%); Cent FT0M (%) ", {HistType::kTH2D, {axisCent, axisCent}});
@@ -348,8 +348,8 @@ struct FlowSP {
           registry.add<TH3>("incl/QA/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
           registry.add<TH2>("incl/QA/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
           registry.add<TH2>("incl/QA/hDCAz_pt", "", kTH2D, {axisPt, axisDCAz});
-          registry.add("incl/QA/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, shclAxis}});
-          registry.add("incl/QA/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, clAxis}});
+          registry.add("incl/QA/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, axisShCl}});
+          registry.add("incl/QA/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
 
         }
       }
