@@ -27,13 +27,24 @@
 
 namespace o2::analysis::femto_universe::efficiency
 {
-enum ParticleNo : size_t {
+enum Part : size_t {
   ONE = 1,
   TWO
 };
 
 template <size_t T>
-concept isOneOrTwo = T == ParticleNo::ONE || T == ParticleNo::TWO;
+concept isOneOrTwo = T == Part::ONE || T == Part::TWO;
+
+template <typename T>
+consteval auto getHistDim() -> int
+{
+  if (std::is_same_v<T, TH1>)
+    return 1;
+  else if (std::is_same_v<T, TH2>)
+    return 2;
+  else
+    return -1;
+}
 
 struct EfficiencyConfigurableGroup : ConfigurableGroup {
   Configurable<bool> confEfficiencyDoMCTruth{"confEfficiencyDoMCTruth", false, "Should fill MC Truth histogram"};
@@ -47,6 +58,8 @@ struct EfficiencyConfigurableGroup : ConfigurableGroup {
   Configurable<std::string> confCCDBPath{"confCCDBPath", "", "CCDB base path to where to upload objects"};
 };
 
+template <typename HistType>
+  requires std::is_base_of_v<TH1, HistType>
 class EfficiencyCalculator
 {
  public:
@@ -68,8 +81,8 @@ class EfficiencyCalculator
 
     if (config->confEfficiencyApplyCorrections) {
       hLoaded = {
-        loadEfficiencyFromCCDB(ParticleNo::ONE),
-        loadEfficiencyFromCCDB(ParticleNo::TWO), //
+        loadEfficiencyFromCCDB(Part::ONE),
+        loadEfficiencyFromCCDB(Part::TWO), //
       };
     }
   }
@@ -87,13 +100,15 @@ class EfficiencyCalculator
     }
   }
 
-  auto getWeight(const size_t partNo, const auto& particle) const -> float
+  template <size_t N, typename... BinVars>
+    requires(sizeof...(BinVars) == getHistDim<HistType>()) && isOneOrTwo<N>
+  auto getWeight(const BinVars&... binVars) const -> float
   {
     auto weight = 1.0f;
-    auto hEff = hLoaded[partNo - 1];
+    auto hEff = hLoaded[N - 1];
 
     if (shouldApplyCorrections && hEff) {
-      auto bin = hEff->FindBin(particle.pt());
+      auto bin = hEff->FindBin(binVars...);
       auto eff = hEff->GetBinContent(bin);
       weight /= eff > 0 ? eff : 1.0f;
     }
@@ -107,7 +122,20 @@ class EfficiencyCalculator
     return fmt::format("[EFFICIENCY] {}", msg);
   }
 
-  auto loadEfficiencyFromCCDB(const size_t partNo) const -> TH1*
+  static auto isHistEmpty(HistType* hist) -> bool
+  {
+    if (!hist) {
+      return true;
+    }
+    for (auto idx = 0; idx <= hist->GetNbinsX() + 1; idx++) {
+      if (hist->GetBinContent(idx) > 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  auto loadEfficiencyFromCCDB(const size_t partNo) const -> HistType*
   {
     std::map<std::string, std::string> metadata{};
 
@@ -122,10 +150,14 @@ class EfficiencyCalculator
                        ? std::stoll(config->confEfficiencyCCDBTimestamps.value[partNo - 1])
                        : -1;
 
-    auto hEff = ccdb.getSpecific<TH1>(config->confCCDBPath, timestamp, metadata);
+    auto hEff = ccdb.getSpecific<HistType>(config->confCCDBPath, timestamp, metadata);
     if (!hEff || hEff->IsZombie()) {
       LOGF(error, notify("Could not load histogram from %s for particle %d"), config->confCCDBPath.value, partNo);
       return nullptr;
+    }
+
+    if (isHistEmpty(hEff)) {
+      LOGF(warn, notify("Loaded histogram \"%s\" is empty"), config->confCCDBPath.value);
     }
 
     LOGF(info, notify("Histogram for particle %d loaded from \"%s\""), partNo, config->confCCDBPath.value);
@@ -138,7 +170,7 @@ class EfficiencyCalculator
   bool shouldApplyCorrections = false;
 
   o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
-  std::array<TH1*, 2> hLoaded{};
+  std::array<HistType*, 2> hLoaded{};
 };
 
 } // namespace o2::analysis::femto_universe::efficiency

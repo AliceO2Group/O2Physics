@@ -168,7 +168,7 @@ struct FemtoUniversePairTaskTrackPhi {
   HistogramRegistry registryDCA{"registryDCA", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   EfficiencyConfigurableGroup effConfGroup;
-  EfficiencyCalculator efficiencyCalculator{&effConfGroup};
+  EfficiencyCalculator<TH1> efficiencyCalculator{&effConfGroup};
 
   /// @brief Counter for particle swapping
   int fNeventsProcessed = 0;
@@ -553,8 +553,7 @@ struct FemtoUniversePairTaskTrackPhi {
         continue;
       }
 
-      weight = efficiencyCalculator.getWeight(ParticleNo::ONE, phicandidate) * efficiencyCalculator.getWeight(ParticleNo::TWO, track);
-
+      weight = efficiencyCalculator.getWeight<Part::ONE>(phicandidate) * efficiencyCalculator.getWeight<Part::TWO>(track);
       if (swpart)
         sameEventCont.setPair<isMC>(track, phicandidate, multCol, ConfUse3D, weight);
       else
@@ -643,7 +642,7 @@ struct FemtoUniversePairTaskTrackPhi {
         }
       }
 
-      weight = efficiencyCalculator.getWeight(ParticleNo::ONE, phicandidate) * efficiencyCalculator.getWeight(ParticleNo::TWO, track);
+      weight = efficiencyCalculator.getWeight<Part::ONE>(phicandidate) * efficiencyCalculator.getWeight<Part::TWO>(track);
 
       if (swpart)
         mixedEventCont.setPair<isMC>(track, phicandidate, multCol, ConfUse3D, weight);
