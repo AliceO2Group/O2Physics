@@ -713,7 +713,7 @@ struct HfTreeCreatorLcToPKPi {
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
-        auto mcDaughter0 = particle.template daughters_as<aod::McParticles>().begin();
+        auto mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
         auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
         auto p = particle.p();
         const float p2m = p / MassLambdaCPlus;
