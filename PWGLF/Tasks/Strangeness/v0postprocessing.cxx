@@ -31,6 +31,7 @@ using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::
 struct v0postprocessing {
 
   Configurable<float> radius{"radius", 0.5, "Radius"};
+  Configurable<float> maxradius{"maxradius", 1000, "Radius"};
   Configurable<float> dcanegtopv{"dcanegtopv", 0.05, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", 0.05, "DCA Pos To PV"};
   Configurable<double> cospaK0s{"cospaK0s", 0.97, "K0s CosPA"};
@@ -45,6 +46,11 @@ struct v0postprocessing {
   Configurable<float> ntpcsigmaMC{"ntpcsigmaMC", 100, "N sigma TPC for MC"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
   Configurable<float> minITShits{"minITShits", 2, "min ITS hits"};
+  Configurable<float> min_TPC_nClusters{"min_TPC_nClusters", 80, "min_TPC_nClusters"};
+  Configurable<float> min_TPC_nCrossedRowsOverFindableCls{"min_TPC_nCrossedRowsOverFindableCls", 0.8, "min_TPC_nCrossedRowsOverFindableCls"};
+  Configurable<float> max_tpcSharedCls{"max_tpcSharedCls", 0.4, "max_tpcSharedCls"};
+  Configurable<float> max_chi2_ITS{"max_chi2_ITS", 36, "max_chi2_ITS"};
+  Configurable<float> max_chi2_TPC{"max_chi2_TPC", 4, "max_chi2_TPC"};
   Configurable<bool> isMC{"isMC", 1, "isMC"};
   Configurable<bool> evSel{"evSel", 1, "evSel"};
   Configurable<bool> hasTOF2Leg{"hasTOF2Leg", 0, "hasTOF2Leg"};
@@ -126,15 +132,35 @@ struct v0postprocessing {
     for (auto& candidate : myv0s) {
 
       // common selections
-      if (candidate.v0radius() < radius)
+      if (candidate.v0radius() < radius && candidate.v0radius() > maxradius)
         continue;
       if (TMath::Abs(candidate.v0poseta()) > etadau)
         continue;
       if (TMath::Abs(candidate.v0negeta()) > etadau)
         continue;
-      if (TMath::Abs(candidate.v0positshits()) < minITShits)
+      if (candidate.v0positshits() < minITShits)
         continue;
-      if (TMath::Abs(candidate.v0negitshits()) < minITShits)
+      if (candidate.v0negitshits() < minITShits)
+        continue;
+      if (candidate.v0postpcCrossedRows() < min_TPC_nClusters)
+        continue;
+      if (candidate.v0negtpcCrossedRows() < min_TPC_nClusters)
+        continue;
+      if (candidate.v0postpcCRFindCls() < min_TPC_nCrossedRowsOverFindableCls)
+        continue;
+      if (candidate.v0negtpcCRFindCls() < min_TPC_nCrossedRowsOverFindableCls)
+        continue;
+      if (candidate.v0postpcNClsShared() > max_tpcSharedCls)
+        continue;
+      if (candidate.v0negtpcNClsShared() > max_tpcSharedCls)
+        continue;
+      if (candidate.v0positsChi2NCl() > max_chi2_ITS)
+        continue;
+      if (candidate.v0negitsChi2NCl() > max_chi2_ITS)
+        continue;
+      if (candidate.v0postpcChi2NCl() > max_chi2_TPC)
+        continue;
+      if (candidate.v0negtpcChi2NCl() > max_chi2_TPC)
         continue;
       if (TMath::Abs(candidate.v0dcanegtopv()) < dcanegtopv)
         continue;
@@ -160,26 +186,28 @@ struct v0postprocessing {
 
         registry.fill(HIST("hArmenterosPodolanski"), candidate.alpha(), candidate.qtarm());
 
-        if (doArmenterosCut && candidate.qtarm() > (paramArmenterosCut * TMath::Abs(candidate.alpha()))) {
-          registry.fill(HIST("hArmenterosPodolanski_Sel"), candidate.alpha(), candidate.qtarm());
-          registry.fill(HIST("hMassK0Short"), candidate.massk0short());
-          registry.fill(HIST("hMassVsPtK0Short"), candidate.v0pt(), candidate.massk0short());
-          registry.fill(HIST("hMassVsPtK0ShortVsCentFT0M"), candidate.v0pt(), candidate.multft0m(), candidate.massk0short());
-          registry.fill(HIST("hMassVsPtK0ShortVsCentFV0A"), candidate.v0pt(), candidate.multfv0a(), candidate.massk0short());
+        if (doArmenterosCut && candidate.qtarm() <= (paramArmenterosCut * TMath::Abs(candidate.alpha()))) {
+          continue;
+        }
 
-          // QA
-          if (!isMC) {
-            registry.fill(HIST("hK0sV0Radius"), candidate.v0radius());
-            registry.fill(HIST("hK0sCosPA"), candidate.v0cospa());
-            registry.fill(HIST("hK0sV0DCANegToPV"), candidate.v0dcanegtopv());
-            registry.fill(HIST("hK0sV0DCAPosToPV"), candidate.v0dcapostopv());
-            registry.fill(HIST("hK0sV0DCAV0Daughters"), candidate.v0dcav0daughters());
-            registry.fill(HIST("hK0sCtau"), candidate.ctauk0short());
-            registry.fill(HIST("hK0sEtaDau"), candidate.v0poseta());
-            registry.fill(HIST("hK0sRap"), candidate.rapk0short());
-            registry.fill(HIST("hK0sTPCNSigmaPosPi"), candidate.ntpcsigmapospi());
-            registry.fill(HIST("hK0sTPCNSigmaNegPi"), candidate.ntpcsigmanegpi());
-          }
+        registry.fill(HIST("hArmenterosPodolanski_Sel"), candidate.alpha(), candidate.qtarm());
+        registry.fill(HIST("hMassK0Short"), candidate.massk0short());
+        registry.fill(HIST("hMassVsPtK0Short"), candidate.v0pt(), candidate.massk0short());
+        registry.fill(HIST("hMassVsPtK0ShortVsCentFT0M"), candidate.v0pt(), candidate.multft0m(), candidate.massk0short());
+        registry.fill(HIST("hMassVsPtK0ShortVsCentFV0A"), candidate.v0pt(), candidate.multfv0a(), candidate.massk0short());
+
+        // QA
+        if (!isMC) {
+          registry.fill(HIST("hK0sV0Radius"), candidate.v0radius());
+          registry.fill(HIST("hK0sCosPA"), candidate.v0cospa());
+          registry.fill(HIST("hK0sV0DCANegToPV"), candidate.v0dcanegtopv());
+          registry.fill(HIST("hK0sV0DCAPosToPV"), candidate.v0dcapostopv());
+          registry.fill(HIST("hK0sV0DCAV0Daughters"), candidate.v0dcav0daughters());
+          registry.fill(HIST("hK0sCtau"), candidate.ctauk0short());
+          registry.fill(HIST("hK0sEtaDau"), candidate.v0poseta());
+          registry.fill(HIST("hK0sRap"), candidate.rapk0short());
+          registry.fill(HIST("hK0sTPCNSigmaPosPi"), candidate.ntpcsigmapospi());
+          registry.fill(HIST("hK0sTPCNSigmaNegPi"), candidate.ntpcsigmanegpi());
         }
       }
 
