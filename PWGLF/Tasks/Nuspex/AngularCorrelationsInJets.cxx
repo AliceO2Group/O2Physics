@@ -14,6 +14,7 @@
 #include <vector>
 #include <utility>
 #include <map>
+#include <string>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
