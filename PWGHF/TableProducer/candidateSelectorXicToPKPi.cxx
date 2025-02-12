@@ -100,7 +100,7 @@ struct HfCandidateSelectorXicToPKPi {
     selectorKaon = selectorPion;
     selectorProton = selectorPion;
 
-     if (activateQA) {
+    if (activateQA) {
       constexpr int kNBinsSelections = 1 + aod::SelectionStep::NSelectionSteps;
       std::string labels[kNBinsSelections];
       labels[0] = "No selection";
@@ -108,7 +108,8 @@ struct HfCandidateSelectorXicToPKPi {
       labels[1 + aod::SelectionStep::RecoTopol] = "Skims & Topological selections";
       labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
       labels[1 + aod::SelectionStep::RecoMl] = "ML selection";
-      static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""}; registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+      static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
+      registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
       for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
         registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
@@ -242,12 +243,12 @@ struct HfCandidateSelectorXicToPKPi {
           hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
         }
         if (activateQA) {
-            registry.fill(HIST("hSelections"), 1, ptCand);
+          registry.fill(HIST("hSelections"), 1, ptCand);
         }
         continue;
       }
-      if(activateQA) {
-          registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoSkims, ptCand);
+      if (activateQA) {
+        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoSkims, ptCand);
       }
       SETBIT(statusXicToPKPi, aod::SelectionStep::RecoSkims);
       SETBIT(statusXicToPiKP, aod::SelectionStep::RecoSkims);
@@ -285,7 +286,7 @@ struct HfCandidateSelectorXicToPKPi {
       if (topolXicToPiKP) {
         SETBIT(statusXicToPiKP, aod::SelectionStep::RecoTopol);
       }
-      
+
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoTopol, candidate.pt());
       }
@@ -299,25 +300,25 @@ struct HfCandidateSelectorXicToPKPi {
         pidXicToPiKP = 1;
       } else {
         // track-level PID selection
-         TrackSelectorPID::Status pidTrackPos1Proton = TrackSelectorPID::Accepted;
-         TrackSelectorPID::Status pidTrackPos2Proton = TrackSelectorPID::Accepted;
-         TrackSelectorPID::Status pidTrackPos1Pion = TrackSelectorPID::Accepted;
-         TrackSelectorPID::Status pidTrackPos2Pion = TrackSelectorPID::Accepted;
-         TrackSelectorPID::Status pidTrackNegKaon = TrackSelectorPID::Accepted;
-          if(usePidTpcAndTof){
+        TrackSelectorPID::Status pidTrackPos1Proton = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackPos2Proton = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackPos1Pion = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackPos2Pion = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackNegKaon = TrackSelectorPID::Accepted;
+        if (usePidTpcAndTof) {
 
-             pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1);
-             pidTrackPos2Proton = selectorProton.statusTpcAndTof(trackPos2);
-             pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
-             pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
-             pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
-            } else {
-             pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1);
-             pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2);
-             pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
-             pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
-             pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
-            }
+          pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1);
+          pidTrackPos2Proton = selectorProton.statusTpcAndTof(trackPos2);
+          pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
+          pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
+          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+        } else {
+          pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1);
+          pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2);
+          pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
+          pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
+          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+        }
 
         if (pidTrackPos1Proton == TrackSelectorPID::Accepted &&
             pidTrackNegKaon == TrackSelectorPID::Accepted &&
@@ -384,7 +385,7 @@ struct HfCandidateSelectorXicToPKPi {
         if (isSelectedMlXicToPiKP) {
           SETBIT(statusXicToPiKP, aod::SelectionStep::RecoMl);
         }
-         if (activateQA) {
+        if (activateQA) {
           registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoMl, candidate.pt());
         }
       }
