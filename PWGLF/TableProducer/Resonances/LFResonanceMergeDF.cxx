@@ -88,8 +88,8 @@ struct reso2dfmerged {
   Produces<aod::ResoTrackDFs> reso2trksdf;
   int df = 0;
 
-  std::vector<std::tuple<int, float, float, float, float, float, float>> vecOfTuples;
-  std::vector<std::vector<std::tuple<int, float, float, float, float,
+  std::vector<std::tuple<float, float, float, float, float, float>> vecOfTuples;
+  std::vector<std::vector<std::tuple<float, float, float, float,
                                      float, float, signed char, unsigned char, unsigned char, unsigned char,
                                      float, float, float, float,
                                      bool, bool, bool, float, float, float,
@@ -101,8 +101,8 @@ struct reso2dfmerged {
   {
 
     int nCollisions = nDF;
-    vecOfTuples.push_back(std::make_tuple(collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl()));
-    std::vector<std::tuple<int, float, float, float, float,
+    vecOfTuples.push_back(std::make_tuple(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl()));
+    std::vector<std::tuple<float, float, float, float,
                            float, float, signed char, unsigned char, unsigned char, unsigned char,
                            float, float, float, float,
                            bool, bool, bool, float, float, float,
@@ -134,7 +134,7 @@ struct reso2dfmerged {
       }
 
       innerVector.push_back(std::make_tuple(
-        track.globalIndex(),
+        //  track.trackId(),
         track.pt(),
         track.px(),
         track.py(),
@@ -184,7 +184,7 @@ struct reso2dfmerged {
       const auto& innerVector = vecOfVecOfTuples[i];
 
       histos.fill(HIST("Event/h1d_ft0_mult_percentile"), std::get<3>(tuple));
-      resoCollisionsdf(std::get<0>(tuple), 0, std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple), std::get<6>(tuple), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
+      resoCollisionsdf(0, std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
       //  LOGF(info, "collisions: Index = %d ) %f - %f - %f %f %d -- %d", std::get<0>(tuple).globalIndex(),std::get<1>(tuple),std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple).size(),resoCollisionsdf.lastIndex());
 
       for (const auto& tuple : innerVector) {
@@ -223,8 +223,7 @@ struct reso2dfmerged {
                     std::get<31>(tuple),
                     std::get<32>(tuple),
                     std::get<33>(tuple),
-                    std::get<34>(tuple),
-                    std::get<35>(tuple));
+                    std::get<34>(tuple));
       }
     }
 
@@ -243,7 +242,7 @@ struct reso2dfmerged {
 
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
 
-    resoCollisionsdf(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
+    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
 
     for (auto& track : tracks) {
       if (isPrimary && !track.isPrimaryTrack())
@@ -271,7 +270,7 @@ struct reso2dfmerged {
         continue;
 
       reso2trksdf(resoCollisionsdf.lastIndex(),
-                  track.globalIndex(),
+                  // track.trackId(),
                   track.pt(),
                   track.px(),
                   track.py(),
