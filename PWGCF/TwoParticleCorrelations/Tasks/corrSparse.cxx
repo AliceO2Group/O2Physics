@@ -146,14 +146,14 @@ struct CorrSparse {
   // event mixing
 
   SliceCache cache;
-  using mixedBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
+  using MixedBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
 
   // the process for filling the mixed events
   void processMixed(AodCollisions const& collisions, AodTracks const& tracks)
   {
-    mixedBinning binningOnVtxAndMult{{vtxMix, multMix}, true}; // true is for 'ignore overflows' (true by default)
+    MixedBinning binningOnVtxAndMult{{vtxMix, multMix}, true}; // true is for 'ignore overflows' (true by default)
     auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<AodCollisions, AodTracks, mixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    SameKindPair<AodCollisions, AodTracks, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairs) {
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
