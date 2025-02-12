@@ -136,7 +136,7 @@ struct upcRhoAnalysis {
 
   Configurable<float> systemMassMinCut{"systemMassMinCut", 0.4, "min M cut for reco system"};
   Configurable<float> systemMassMaxCut{"systemMassMaxCut", 1.2, "max M cut for reco system"};
-  Configurable<float> systemPtCut{"systemPtMaxCut", 0.1, "max pT cut for reco system"};
+  Configurable<float> systemPtCut{"systemPtCut", 0.1, "max pT cut for reco system"};
   Configurable<float> systemYCut{"systemYCut", 0.9, "rapiditiy cut for reco system"};
 
   ConfigurableAxis mAxis{"mAxis", {1000, 0.0, 10.0}, "m (GeV/#it{c}^{2})"};
