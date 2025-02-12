@@ -400,12 +400,12 @@ struct LfV0qaanalysis {
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPi(), v0.posTrack_as<DauTracksMC>().tofNSigmaPi(),
                 v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isDauK0Short, isDauLambda, isDauAntiLambda, isprimary,
                 mcCollision.centFT0M(), cent, evFlag, v0.alpha(), v0.qtarm(),
-                v0.posTrack_as<DauTracks>().tpcNClsCrossedRows(), v0.posTrack_as<DauTracks>().tpcCrossedRowsOverFindableCls(),
-                v0.posTrack_as<DauTracks>().tpcNClsShared(), v0.posTrack_as<DauTracks>().itsChi2NCl(),
-                v0.posTrack_as<DauTracks>().tpcChi2NCl(),
-                v0.negTrack_as<DauTracks>().tpcNClsCrossedRows(), v0.negTrack_as<DauTracks>().tpcCrossedRowsOverFindableCls(),
-                v0.negTrack_as<DauTracks>().tpcNClsShared(), v0.negTrack_as<DauTracks>().itsChi2NCl(),
-                v0.negTrack_as<DauTracks>().tpcChi2NCl());
+                v0.posTrack_as<DauTracksMC>().tpcNClsCrossedRows(), v0.posTrack_as<DauTracks>().tpcCrossedRowsOverFindableCls(),
+                v0.posTrack_as<DauTracksMC>().tpcNClsShared(), v0.posTrack_as<DauTracks>().itsChi2NCl(),
+                v0.posTrack_as<DauTracksMC>().tpcChi2NCl(),
+                v0.negTrack_as<DauTracksMC>().tpcNClsCrossedRows(), v0.negTrack_as<DauTracks>().tpcCrossedRowsOverFindableCls(),
+                v0.negTrack_as<DauTracksMC>().tpcNClsShared(), v0.negTrack_as<DauTracks>().itsChi2NCl(),
+                v0.negTrack_as<DauTracksMC>().tpcChi2NCl());
         }
       }
 
