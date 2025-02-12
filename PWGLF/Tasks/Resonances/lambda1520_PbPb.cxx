@@ -43,7 +43,7 @@ struct lambdaAnalysis_pb {
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   // Configurables.
 
-  Configurable<int> ConfEvtOccupancyInTimeRange{"ConfEvtOccupancyInTimeRange", -1, "Evt sel: maximum track occupancy"};
+  Configurable<bool> ConfEvtOccupancyInTimeRange{"ConfEvtOccupancyInTimeRange", false, "occupancy selection true or false"};
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histogram"};
   Configurable<int> nBinsInvM{"nBinsInvM", 120, "N bins in InvMass histogram"};
   Configurable<int> lambda1520id{"lambda1520id", 3124, "pdg"};
@@ -106,7 +106,7 @@ struct lambdaAnalysis_pb {
   ConfigurableAxis cMixVtxBins{"cMixVtxBins", {VARIABLE_WIDTH, -10.0f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis cMixMultBins{"cMixMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis cMixEPAngle{"cMixEPAngle", {VARIABLE_WIDTH, -1.5708f, -1.25664f, -0.942478f, -0.628319f, 0.f, 0.628319f, 0.942478f, 1.25664f, 1.5708f}, "event plane"};
-
+  ConfigurableAxis occupancy_bins{"occupancy_bins", {VARIABLE_WIDTH, 0.0, 100, 500, 600, 1000, 1100, 1500, 1600, 2000, 2100, 2500, 2600, 3000, 3100, 3500, 3600, 4000, 4100, 4500, 4600, 5000, 5100, 9999}, "Binning of the occupancy axis"};
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -126,8 +126,9 @@ struct lambdaAnalysis_pb {
     const AxisSpec axisVz(120, -12, 12, {"vz"});
     const AxisSpec axisEP(120, -3.14, 3.14, {"#theta"});
     const AxisSpec axisInvM(nBinsInvM, 1.44, 2.04, {"M_{inv} (GeV/c^{2})"});
+    AxisSpec axisOccupancy = {occupancy_bins, "Occupancy [-40,100]"};
 
-    histos.add("Event/h1d_ft0_mult_percentile", "FT0 (%)", kTH1F, {axisCent});
+    histos.add("Event/h1d_ft0_mult_percentile", "FT0 (%)", kTH2F, {axisCent, axisOccupancy});
     if (doprocessMix || doprocessMixDF || doprocessMixepDF) {
       histos.add("Event/mixing_vzVsmultpercentile", "FT0(%)", kTH3F, {axisCent, axisVz, axisEP});
     }
@@ -174,15 +175,15 @@ struct lambdaAnalysis_pb {
     // Analysis
     // Lambda Invariant Mass
     if (!doprocessMC) {
-      histos.add("Analysis/h4d_lstar_invm_US_PM", "THn #Lambda(1520)", kTHnSparseF, {axisInvM, axisPt, axisCent});
-      histos.add("Analysis/h4d_lstar_invm_US_MP", "THn #bar #Lambda(1520)", kTHnSparseF, {axisInvM, axisPt, axisCent});
-      histos.add("Analysis/h4d_lstar_invm_PP", "THn Like Signs p K^{+}", kTHnSparseF, {axisInvM, axisPt, axisCent});
-      histos.add("Analysis/h4d_lstar_invm_MM", "THn Like Signs #bar{p} K^{-}", kTHnSparseF, {axisInvM, axisPt, axisCent});
-      histos.add("Analysis/h4d_lstar_invm_rot", "THn Rotated", kTHnSparseF, {axisInvM, axisPt, axisCent});
-      histos.add("Analysis/h4d_lstar_invm_US_PM_mix", "THn Mixed Events", kTHnSparseF, {axisInvM, axisPt, axisCent});
-      histos.add("Analysis/h4d_lstar_invm_US_MP_mix", "THn anti Mixed Events", kTHnSparseF, {axisInvM, axisPt, axisCent});
-      histos.add("Analysis/h4d_lstar_invm_LS_PP_mix", "THn Mixed Events PP", kTHnSparseF, {axisInvM, axisPt, axisCent});
-      histos.add("Analysis/h4d_lstar_invm_LS_MM_mix", "THn Mixed Events MM", kTHnSparseF, {axisInvM, axisPt, axisCent});
+      histos.add("Analysis/h4d_lstar_invm_US_PM", "THn #Lambda(1520)", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
+      histos.add("Analysis/h4d_lstar_invm_US_MP", "THn #bar #Lambda(1520)", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
+      histos.add("Analysis/h4d_lstar_invm_PP", "THn Like Signs p K^{+}", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
+      histos.add("Analysis/h4d_lstar_invm_MM", "THn Like Signs #bar{p} K^{-}", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
+      histos.add("Analysis/h4d_lstar_invm_rot", "THn Rotated", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
+      histos.add("Analysis/h4d_lstar_invm_US_PM_mix", "THn Mixed Events", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
+      histos.add("Analysis/h4d_lstar_invm_US_MP_mix", "THn anti Mixed Events", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
+      histos.add("Analysis/h4d_lstar_invm_LS_PP_mix", "THn Mixed Events PP", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
+      histos.add("Analysis/h4d_lstar_invm_LS_MM_mix", "THn Mixed Events MM", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
     }
     // MC
     if (doprocessMC) {
@@ -366,7 +367,7 @@ struct lambdaAnalysis_pb {
   }
 
   template <bool mix, bool mc, typename trackType>
-  void fillDataHistos(trackType const& trk1, trackType const& trk2, float const& mult)
+  void fillDataHistos(trackType const& trk1, trackType const& trk2, float mult, int occup = 100)
   {
 
     TLorentzVector p1, p2, p;
@@ -497,22 +498,22 @@ struct lambdaAnalysis_pb {
       if constexpr (!mix && !mc) {
         if (trkPr.sign() * trkKa.sign() < 0) {
           if (trkPr.sign() > 0)
-            histos.fill(HIST("Analysis/h4d_lstar_invm_US_PM"), _M, _pt, mult);
+            histos.fill(HIST("Analysis/h4d_lstar_invm_US_PM"), _M, _pt, mult, occup);
           else
-            histos.fill(HIST("Analysis/h4d_lstar_invm_US_MP"), _M, _pt, mult);
+            histos.fill(HIST("Analysis/h4d_lstar_invm_US_MP"), _M, _pt, mult, occup);
           if (doRotate) {
             float theta = rn->Uniform(1.56, 1.58);
             p1.RotateZ(theta);
             p = p1 + p2;
             if (std::abs(p.Rapidity()) < 0.5) {
-              histos.fill(HIST("Analysis/h4d_lstar_invm_rot"), p.M(), p.Pt(), mult);
+              histos.fill(HIST("Analysis/h4d_lstar_invm_rot"), p.M(), p.Pt(), mult, occup);
             }
           }
         } else {
           if (trkPr.sign() > 0) {
-            histos.fill(HIST("Analysis/h4d_lstar_invm_PP"), _M, _pt, mult);
+            histos.fill(HIST("Analysis/h4d_lstar_invm_PP"), _M, _pt, mult, occup);
           } else {
-            histos.fill(HIST("Analysis/h4d_lstar_invm_MM"), _M, _pt, mult);
+            histos.fill(HIST("Analysis/h4d_lstar_invm_MM"), _M, _pt, mult, occup);
           }
         }
       }
@@ -520,14 +521,14 @@ struct lambdaAnalysis_pb {
       if constexpr (mix) {
         if (trkPr.sign() * trkKa.sign() < 0) {
           if (trkPr.sign() > 0)
-            histos.fill(HIST("Analysis/h4d_lstar_invm_US_PM_mix"), _M, _pt, mult);
+            histos.fill(HIST("Analysis/h4d_lstar_invm_US_PM_mix"), _M, _pt, mult, occup);
           else
-            histos.fill(HIST("Analysis/h4d_lstar_invm_US_MP_mix"), _M, _pt, mult);
+            histos.fill(HIST("Analysis/h4d_lstar_invm_US_MP_mix"), _M, _pt, mult, occup);
         } else {
           if (trkPr.sign() > 0)
-            histos.fill(HIST("Analysis/h4d_lstar_invm_LS_PP_mix"), _M, _pt, mult);
+            histos.fill(HIST("Analysis/h4d_lstar_invm_LS_PP_mix"), _M, _pt, mult, occup);
           else
-            histos.fill(HIST("Analysis/h4d_lstar_invm_LS_MM_mix"), _M, _pt, mult);
+            histos.fill(HIST("Analysis/h4d_lstar_invm_LS_MM_mix"), _M, _pt, mult, occup);
         }
       }
 
@@ -560,9 +561,7 @@ struct lambdaAnalysis_pb {
   {
 
     // LOGF(info, " collisions: Index = %d %d", collision.globalIndex(),tracks.size());
-    if (ConfEvtOccupancyInTimeRange > 0 && collision.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange)
-      return;
-    histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
+    histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent(), 100);
     fillDataHistos<false, false>(tracks, tracks, collision.cent());
   }
 
@@ -643,8 +642,6 @@ struct lambdaAnalysis_pb {
 
     SameKindPair<resoCols, resoTracks, BinningType2> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [c1, t1, c2, t2] : pairs) {
-      if (ConfEvtOccupancyInTimeRange > 0 && c1.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange && c2.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange)
-        return;
       // LOGF(info, "processMCMixedDerived: Mixed collisions : %d (%.3f, %.3f,%d), %d (%.3f, %.3f,%d)",c1.globalIndex(), c1.posZ(), c1.cent(),c1.mult(), c2.globalIndex(), c2.posZ(), c2.cent(),c2.mult());
       histos.fill(HIST("Event/mixing_vzVsmultpercentile"), c1.cent(), c1.posZ(), c1.evtPl());
       fillDataHistos<true, false>(t1, t2, c1.cent());
@@ -663,11 +660,13 @@ struct lambdaAnalysis_pb {
 
     if (doprocessData)
       LOG(error) << "Disable processData() first!";
-    if (ConfEvtOccupancyInTimeRange > 0 && collision.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange)
-      return;
+    auto _occup = 100;
+    if (ConfEvtOccupancyInTimeRange)
+      _occup = collision.trackOccupancyInTimeRange();
+
     // LOGF(info, "inside df collisions: Index = %d %d", collision.globalIndex(),tracks.size());
-    histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
-    fillDataHistos<false, false>(tracks, tracks, collision.cent());
+    histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent(), _occup);
+    fillDataHistos<false, false>(tracks, tracks, collision.cent(), _occup);
   }
 
   PROCESS_SWITCH(lambdaAnalysis_pb, processDatadf, "Process for data merged DF", false);
@@ -684,12 +683,13 @@ struct lambdaAnalysis_pb {
 
     SameKindPair<resoColDFs, resoTrackDFs, BinningTypeDF> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [c1, t1, c2, t2] : pairs) {
-      if (ConfEvtOccupancyInTimeRange > 0 && c1.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange && c2.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange)
-        return;
+      auto _occup = 100;
+      if (ConfEvtOccupancyInTimeRange)
+        _occup = c1.trackOccupancyInTimeRange();
 
       // LOGF(info, "processMCMixedDerived: Mixed collisions : %d (%.3f, %.3f,%d), %d (%.3f, %.3f,%d)",c1.globalIndex(), c1.posZ(), c1.cent(),c1.mult(), c2.globalIndex(), c2.posZ(), c2.cent(),c2.mult());
       histos.fill(HIST("Event/mixing_vzVsmultpercentile"), c1.cent(), c1.posZ(), c1.evtPl());
-      fillDataHistos<true, false>(t1, t2, c1.cent());
+      fillDataHistos<true, false>(t1, t2, c1.cent(), _occup);
     }
   }
 
@@ -706,8 +706,6 @@ struct lambdaAnalysis_pb {
 
     SameKindPair<resoColDFs, resoTrackDFs, BinningTypeEP> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [c1, t1, c2, t2] : pairs) {
-      if (ConfEvtOccupancyInTimeRange > 0 && c1.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange && c2.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange)
-        return;
       //  LOGF(info, "processMCMixedDerived: Mixed collisions : %d (%.3f, %.3f,%.3f), %d (%.3f, %.3f, %.3f)",c1.globalIndex(), c1.posZ(), c1.cent(),c1.evtPl(), c2.globalIndex(), c2.posZ(), c2.cent(),c2.evtPl());
       histos.fill(HIST("Event/mixing_vzVsmultpercentile"), c1.cent(), c1.posZ(), c1.evtPl());
       fillDataHistos<true, false>(t1, t2, c1.cent());
