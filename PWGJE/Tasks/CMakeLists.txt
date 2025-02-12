@@ -248,4 +248,8 @@ o2physics_add_dpl_workflow(jet-substructure-bplus
                         SOURCES dijetFinderQA.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(bjet-tagging-gnn
+                        SOURCES bjetTaggingGNN.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
 endif()
