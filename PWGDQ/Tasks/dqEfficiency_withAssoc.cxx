@@ -538,8 +538,11 @@ struct AnalysisTrackSelection {
       VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       // fill event information which might be needed in histograms/cuts that combine track and event properties
       VarManager::FillEvent<TEventFillMap>(event);
-      auto eventMC = event.reducedMCevent();
-      VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(eventMC);
+      ReducedMCEvent *eventMC = nullptr;
+      if (event.has_reducedMCevent()) {
+        auto eventMC = event.reducedMCevent();
+        VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(eventMC);
+      }
 
       auto track = assoc.template reducedtrack_as<TTracks>();
       VarManager::FillTrack<TTrackFillMap>(track);
@@ -550,7 +553,9 @@ struct AnalysisTrackSelection {
       if (track.has_reducedMCTrack()) {
         auto trackMC = track.reducedMCTrack();
         auto eventMCfromTrack = trackMC.reducedMCevent();
-        isCorrectAssoc = (eventMCfromTrack.globalIndex() == eventMC.globalIndex());
+        if (eventMC != nullptr) {
+          isCorrectAssoc = (eventMCfromTrack.globalIndex() == eventMC->globalIndex());
+        }
         VarManager::FillTrackMC(tracksMC, trackMC);
       }
 
@@ -1970,7 +1975,7 @@ struct AnalysisSameEventPairing {
               continue;
             }
             if (sig->CheckSignal(true, t1_raw, t2_raw)) {
-              VarManager::FillPairMC(t1, t2);
+              VarManager::FillPairMC<VarManager::kDecayToEE>(t1, t2);
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
             }
           } // end loop over MC signals
@@ -2052,6 +2057,7 @@ struct AnalysisAsymmetricPairing {
   Configurable<uint32_t> fConfigLegCFilterMask{"cfgLegCFilterMask", 0, "Filter mask corresponding to cuts in event-selection"};
   Configurable<string> fConfigCommonTrackCuts{"cfgCommonTrackCuts", "", "Comma separated list of cuts to be applied to all legs"};
   Configurable<string> fConfigPairCuts{"cfgPairCuts", "", "Comma separated list of pair cuts"};
+  Configurable<string> fConfigPairCutsJSON{"cfgPairCutsJSON", "", "Additional list of pair cuts in JSON format"};
   Configurable<bool> fConfigSkipAmbiguousIdCombinations{"cfgSkipAmbiguousIdCombinations", true, "Choose whether to skip pairs/triples which pass a stricter combination of cuts, e.g. KKPi triplets for D+ -> KPiPi"};
 
   Configurable<std::string> fConfigHistogramSubgroups{"cfgAsymmetricPairingHistogramsSubgroups", "barrel,vertexing", "Comma separated list of asymmetric-pairing histogram subgroups"};
@@ -2080,7 +2086,7 @@ struct AnalysisAsymmetricPairing {
 
   std::map<int, std::vector<TString>> fTrackHistNames;
   std::map<int, std::vector<TString>> fBarrelHistNamesMCmatched;
-  std::vector<AnalysisCompositeCut> fPairCuts;
+  std::vector<AnalysisCompositeCut*> fPairCuts;
 
   std::vector<MCSignal> fRecMCSignals;
   std::vector<MCSignal> fGenMCSignals;
@@ -2129,7 +2135,16 @@ struct AnalysisAsymmetricPairing {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fPairCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+      }
+    }
+    // Extra pair cuts via JSON
+    TString addPairCutsStr = fConfigPairCutsJSON.value;
+    if (addPairCutsStr != "") {
+      std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
+      for (auto& t : addPairCuts) {
+        fPairCuts.push_back((AnalysisCompositeCut*)t);
+        cutNamesStr += Form(",%s", t->GetName());
       }
     }
 
@@ -2148,6 +2163,15 @@ struct AnalysisAsymmetricPairing {
     string tempCuts;
     getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", tempCuts, false);
     TString tempCutsStr = tempCuts;
+    // check also the cuts added via JSON and add them to the string of cuts
+    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
+    TString addTrackCutsStr = tempCuts;
+    if (addTrackCutsStr != "") {
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      for (auto& t : addTrackCuts) {
+        tempCutsStr += Form(",%s", t->GetName());
+      }
+    }
     std::unique_ptr<TObjArray> objArray(tempCutsStr.Tokenize(","));
     // Get the common leg cuts
     int commonCutIdx;
@@ -2573,6 +2597,7 @@ struct AnalysisAsymmetricPairing {
         mcDecision = 0;
         for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
           if (t1.has_reducedMCTrack() && t2.has_reducedMCTrack()) {
+            VarManager::FillPairMC<TPairType>(t1.reducedMCTrack(), t2.reducedMCTrack());
             if ((*sig).CheckSignal(true, t1.reducedMCTrack(), t2.reducedMCTrack())) {
               mcDecision |= static_cast<uint32_t>(1) << isig;
             }
@@ -2648,9 +2673,9 @@ struct AnalysisAsymmetricPairing {
                 }
               }
             } // end loop (common cuts)
-            for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
-              AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
-              if (!(cut.IsSelected(VarManager::fgValues))) // apply pair cuts
+            int iPairCut = 0;
+            for (auto cut = fPairCuts.begin(); cut != fPairCuts.end(); cut++, iPairCut++) {
+              if (!((*cut)->IsSelected(VarManager::fgValues))) // apply pair cuts
                 continue;
               pairFilter |= (static_cast<uint32_t>(1) << iPairCut);
               // Histograms with pair cuts
@@ -2881,11 +2906,10 @@ struct AnalysisAsymmetricPairing {
             } // end loop (MC signals)
           }
         } // end loop (common cuts)
-        for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
-          AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
-          if (!(cut.IsSelected(VarManager::fgValues))) { // apply pair cuts
+        int iPairCut = 0;
+        for (auto cut = fPairCuts.begin(); cut != fPairCuts.end(); cut++, iPairCut++) {
+          if (!((*cut)->IsSelected(VarManager::fgValues))) // apply pair cuts
             continue;
-          }
           // Histograms with pair cuts
           fHistMan->FillHistClass(histNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][0].Data(), VarManager::fgValues);
           for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals

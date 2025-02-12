@@ -591,7 +591,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCPy] = "GeV/c";
   fgVariableNames[kMCPz] = "MC pz";
   fgVariableUnits[kMCPz] = "GeV/c";
-  fgVariableNames[kMCPt] = "MC pt";
+  fgVariableNames[kMCPt] = "MC p_{T}";
   fgVariableUnits[kMCPt] = "GeV/c";
   fgVariableNames[kMCPhi] = "#varphi";
   fgVariableUnits[kMCPhi] = "rad";
@@ -601,6 +601,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCY] = "";
   fgVariableNames[kMCE] = "MC Energy";
   fgVariableUnits[kMCE] = "GeV";
+  fgVariableNames[kMCMass] = "MC Mass";
+  fgVariableUnits[kMCMass] = "GeV/c2";
   fgVariableNames[kMCVx] = "MC vx";
   fgVariableUnits[kMCVx] = "cm"; // TODO: check the unit
   fgVariableNames[kMCVy] = "MC vy";
