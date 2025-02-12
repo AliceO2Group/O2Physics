@@ -1011,7 +1011,7 @@ struct Derivedupcanalysis {
       float qaBin;
     };
 
-    const std::array<SelectionCheck, 13> checks = {{
+    const std::array<SelectionCheck, 15> checks = {{
       {true, true, 0.0},                                                                                         // All collisions
       {requireIsTriggerTVX, collision.selection_bit(aod::evsel::kIsTriggerTVX), 1.0},                            // Triggered by FT0M
       {true, std::fabs(collision.posZ()) <= 10.f, 2.0},                                                          // Vertex-Z selected
@@ -1024,7 +1024,9 @@ struct Derivedupcanalysis {
       {rejectSameBunchPileup, collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup), 9.0},                 // No same-bunch pileup
       {requireNoCollInTimeRangeStd, collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard), 10.0},  // No collision within +-10 µs
       {requireNoCollInTimeRangeNarrow, collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow), 11.0}, // No collision within +-4 µs
-      {minOccupancy > 0, collision.trackOccupancyInTimeRange() >= minOccupancy, 12.0},                           // Above min occupancy
+      {minOccupancy >= 0, collision.trackOccupancyInTimeRange() >= minOccupancy, 12.0},                          // Above min occupancy
+      {maxOccupancy > 0, collision.trackOccupancyInTimeRange() < maxOccupancy, 13.0},                            // Below max occupancy
+      {studyUPConly, collision.isUPC(), 14.0},                                                                   // Study UPC collisions only
     }};
 
     for (const auto& check : checks) {
@@ -1036,21 +1038,7 @@ struct Derivedupcanalysis {
       }
     }
 
-    // Additional checks
-    if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
-      return false;
-    }
-    if (fillQA) {
-      histos.fill(HIST("eventQA/hEventSelection"), 13.0); // Below max occupancy
-    }
-
-    if (studyUPConly && !collision.isUPC()) {
-      return false;
-    }
-    if (collision.isUPC() && fillQA) {
-      histos.fill(HIST("eventQA/hEventSelection"), 14.0); // UPC compatible
-    }
-
+    // Additional check for UPC collision flag
     if (useUPCflag && collision.flags() < 1) {
       return false;
     }
