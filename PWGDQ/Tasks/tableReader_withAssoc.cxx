@@ -2252,6 +2252,7 @@ struct AnalysisAsymmetricPairing {
         } // end if (pair cuts)
       }
     }
+
     // Make sure the leg cuts are covered by the configured filter masks
     if (fLegAFilterMask != fConstructedLegAFilterMask) {
       LOGF(fatal, "cfgLegAFilterMask (%d) is not equal to the mask constructed by the cuts specified in cfgLegCuts (%d)!", fLegAFilterMask, fConstructedLegAFilterMask);
@@ -2369,21 +2370,19 @@ struct AnalysisAsymmetricPairing {
         uint32_t twoTrackFilter = static_cast<uint32_t>(0);
         uint32_t twoTrackCommonFilter = static_cast<uint32_t>(0);
         uint32_t pairFilter = static_cast<uint32_t>(0);
-        bool isPairIdWrong = false;
         for (int icut = 0; icut < fNLegCuts; ++icut) {
           // Find leg pair definitions both candidates participate in
           if ((a1.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) && (a2.isBarrelSelected_raw() & fConstructedLegBFilterMasksMap[icut])) {
             twoTrackFilter |= (static_cast<uint32_t>(1) << icut);
             // If the supposed pion passes a kaon cut, this is a K+K-. Skip it.
             if (TPairType == VarManager::kDecayToKPi && fConfigSkipAmbiguousIdCombinations.value) {
-              if (a2.isBarrelSelected_raw() & fLegAFilterMask) {
-                isPairIdWrong = true;
+              if (a2.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) {
+                twoTrackFilter &= ~(static_cast<uint32_t>(1) << icut);
               }
             }
           }
         }
-
-        if (!twoTrackFilter || isPairIdWrong) {
+        if (!twoTrackFilter) {
           continue;
         }
 
@@ -2554,17 +2553,17 @@ struct AnalysisAsymmetricPairing {
         threeTrackFilter |= (static_cast<uint32_t>(1) << icut);
         if (tripletType == VarManager::kTripleCandidateToPKPi && fConfigSkipAmbiguousIdCombinations.value) {
           // Check if the supposed pion passes as a proton or kaon, if so, skip this triplet. It is pKp or pKK.
-          if ((a3.isBarrelSelected_raw() & fLegAFilterMask) || (a3.isBarrelSelected_raw() & fLegBFilterMask)) {
+          if ((a3.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) || (a3.isBarrelSelected_raw() & fConstructedLegBFilterMasksMap[icut])) {
             return;
           }
           // Check if the supposed kaon passes as a proton, if so, skip this triplet. It is ppPi.
-          if (a2.isBarrelSelected_raw() & fLegAFilterMask) {
+          if (a2.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) {
             return;
           }
         }
         if (tripletType == VarManager::kTripleCandidateToKPiPi && fConfigSkipAmbiguousIdCombinations.value) {
           // Check if one of the supposed pions pass as a kaon, if so, skip this triplet. It is KKPi.
-          if ((a2.isBarrelSelected_raw() & fLegAFilterMask) || (a3.isBarrelSelected_raw() & fLegAFilterMask)) {
+          if ((a2.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) || (a3.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut])) {
             return;
           }
         }
