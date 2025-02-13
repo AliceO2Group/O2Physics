@@ -15,6 +15,9 @@
 /// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 
+#include <string>
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
