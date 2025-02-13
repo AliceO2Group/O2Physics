@@ -410,6 +410,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kNTPCmedianTimeShortC] = "#mu s";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
+  fgVariableNames[kPt1] = "p_{T1}";
+  fgVariableUnits[kPt1] = "GeV/c";
+  fgVariableNames[kPt2] = "p_{T2}";
+  fgVariableUnits[kPt2] = "GeV/c";
   fgVariableNames[kInvPt] = "1/p_{T}";
   fgVariableUnits[kInvPt] = "1/(GeV/c)";
   fgVariableNames[kP] = "p";

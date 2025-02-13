@@ -151,6 +151,9 @@ struct NetprotonCumulantsMc {
 
   Configurable<bool> cfgLoadEff{"cfgLoadEff", true, "Load efficiency from file"};
   Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
+  Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
+  Configurable<bool> cfgIfRejectElectron{"cfgIfRejectElectron", true, "Remove electrons"};
+  Configurable<bool> cfgIfMandatoryTOF{"cfgIfMandatoryTOF", true, "Mandatory TOF requirement to remove pileup"};
 
   ConfigurableAxis cfgCentralityBins{"cfgCentralityBins", {90, 0., 90.}, "Centrality/Multiplicity percentile bining"};
 
@@ -170,7 +173,7 @@ struct NetprotonCumulantsMc {
 
   // Filter command for rec (data)***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (aod::track::itsChi2NCl < cfgCutItsChi2NCl) && (aod::track::dcaZ < cfgCutDCAz) && (aod::track::dcaXY < cfgCutDCAxy);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (aod::track::itsChi2NCl < cfgCutItsChi2NCl) && (aod::track::dcaZ < cfgCutDCAz) && (aod::track::dcaXY < cfgCutDCAxy);
 
   // filtering collisions and tracks for real data***********
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>>;
@@ -913,6 +916,16 @@ struct NetprotonCumulantsMc {
       return false;
   }
 
+  // electron rejection function
+  template <typename T>
+  bool isElectron(const T& candidate) // Victor's BF analysis
+  {
+    if (candidate.tpcNSigmaEl() > -3.0f && candidate.tpcNSigmaEl() < 5.0f && std::abs(candidate.tpcNSigmaPi()) > 3.0f && std::abs(candidate.tpcNSigmaKa()) > 3.0f && std::abs(candidate.tpcNSigmaPr()) > 3.0f) {
+      return true;
+    }
+    return false;
+  }
+
   template <typename T>
   bool selectionPIDnew(const T& candidate) // Victor's BF analysis
   {
@@ -959,10 +972,6 @@ struct NetprotonCumulantsMc {
     } else {
       // Find the pt bin index based on the track's pt value
       int binIndex = -1;
-      // Get the array from the Configurable
-      // auto ptBins = (std::vector<float>)cfgPtBins;
-      // auto effProt = (std::vector<float>)cfgProtonEff;
-      // auto effAntiprot = (std::vector<float>)cfgAntiprotonEff;
 
       for (int i = 0; i < 16; ++i) {
         if (candidate.pt() >= cfgPtBins.value[i] && candidate.pt() < cfgPtBins.value[i + 1]) {
@@ -1010,6 +1019,13 @@ struct NetprotonCumulantsMc {
       if (!collision.sel8() || std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
         continue;
       }
+      if (cfgUseGoodITSLayerAllCut && !(collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
+        continue;
+      }
+      if (cfgEvSelkNoSameBunchPileup && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
+        continue;
+      }
+
       cent = collision.centFT0M();
 
       selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
@@ -1030,7 +1046,7 @@ struct NetprotonCumulantsMc {
 
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary()) {
-        if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < 5.0f) && (std::abs(mcParticle.eta()) < 0.8f)) {
+        if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < 5.0f) && (std::abs(mcParticle.eta()) < cfgCutEta)) {
           histos.fill(HIST("hgenPtAll"), mcParticle.pt());
           histos.fill(HIST("hgenEtaAll"), mcParticle.eta());
           histos.fill(HIST("hgenPhiAll"), mcParticle.phi());
@@ -1106,14 +1122,21 @@ struct NetprotonCumulantsMc {
 
   void processMCRec(MyMCRecCollision const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
-    // auto tracksWithITSPid = soa::Attach<MyMCTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(tracks);
+    if (!collision.has_mcCollision()) {
+      return;
+    }
 
     if (!collision.sel8()) {
       return;
     }
-    if (!collision.has_mcCollision()) {
+    if (cfgUseGoodITSLayerAllCut && !(collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
       return;
     }
+    if (cfgEvSelkNoSameBunchPileup && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
+      return;
+      ;
+    }
+
     auto cent = collision.centFT0M();
     histos.fill(HIST("hCentrec"), cent);
     histos.fill(HIST("hMC"), 5.5);
@@ -1141,7 +1164,7 @@ struct NetprotonCumulantsMc {
       }
 
       auto particle = track.mcParticle();
-      if ((particle.pt() < cfgCutPtLower) || (particle.pt() > 5.0f) || (std::abs(particle.eta()) > 0.8f)) {
+      if ((particle.pt() < cfgCutPtLower) || (particle.pt() > 5.0f) || (std::abs(particle.eta()) > cfgCutEta)) {
         continue;
       }
       if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows)) {
@@ -1156,6 +1179,19 @@ struct NetprotonCumulantsMc {
         histos.fill(HIST("hrecDcaXYAll"), track.dcaXY());
         histos.fill(HIST("hrecDcaZAll"), track.dcaZ());
 
+        // rejecting electron
+        if (cfgIfRejectElectron && isElectron(track)) {
+          continue;
+        }
+        // use ITS pid as well
+        if (cfgUseItsPid && (std::abs(itsResponse.nSigmaITS<o2::track::PID::Proton>(track)) > 3.0)) {
+          continue;
+        }
+        // required tracks with TOF mandatory to avoid pileup
+        if (cfgIfMandatoryTOF && !track.hasTOF()) {
+          continue;
+        }
+
         bool trackSelected = false;
         if (cfgPIDchoice == 0)
           trackSelected = selectionPIDoldTOFveto(track);
@@ -1163,11 +1199,6 @@ struct NetprotonCumulantsMc {
           trackSelected = selectionPIDnew(track);
         if (cfgPIDchoice == 2)
           trackSelected = selectionPIDold(track);
-
-        if (cfgUseItsPid) {
-          if (std::abs(itsResponse.nSigmaITS<o2::track::PID::Proton>(track)) > 3.0)
-            continue;
-        }
 
         if (trackSelected) {
           recEbyeCompleteCollisions(recCollisions.lastIndex(), particle.pt(), particle.eta(), track.sign());
@@ -2033,13 +2064,13 @@ struct NetprotonCumulantsMc {
 
   void processDataRec(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
   {
-    // auto inputTracksWithPid = soa::Attach<AodTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(inputTracks);
-
     if (!coll.sel8()) {
       return;
     }
-
-    if (cfgEvSelkNoSameBunchPileup && !coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (cfgUseGoodITSLayerAllCut && !(coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
+      return;
+    }
+    if (cfgEvSelkNoSameBunchPileup && !(coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return;
@@ -2066,7 +2097,7 @@ struct NetprotonCumulantsMc {
       {
         continue;
       }
-      if ((track.pt() < cfgCutPtLower) || (track.pt() > 5.0f) || (std::abs(track.eta()) > 0.8f)) {
+      if ((track.pt() < cfgCutPtLower) || (track.pt() > 5.0f) || (std::abs(track.eta()) > cfgCutEta)) {
         continue;
       }
       if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows)) {
@@ -2079,6 +2110,19 @@ struct NetprotonCumulantsMc {
       histos.fill(HIST("hrecDcaXYAll"), track.dcaXY());
       histos.fill(HIST("hrecDcaZAll"), track.dcaZ());
 
+      // rejecting electron
+      if (cfgIfRejectElectron && isElectron(track)) {
+        continue;
+      }
+      // use ITS pid as well
+      if (cfgUseItsPid && (std::abs(itsResponse.nSigmaITS<o2::track::PID::Proton>(track)) > 3.0)) {
+        continue;
+      }
+      // required tracks with TOF mandatory to avoid pileup
+      if (cfgIfMandatoryTOF && !track.hasTOF()) {
+        continue;
+      }
+
       bool trackSelected = false;
       if (cfgPIDchoice == 0)
         trackSelected = selectionPIDoldTOFveto(track);
@@ -2086,11 +2130,6 @@ struct NetprotonCumulantsMc {
         trackSelected = selectionPIDnew(track);
       if (cfgPIDchoice == 2)
         trackSelected = selectionPIDold(track);
-
-      if (cfgUseItsPid) {
-        if (std::abs(itsResponse.nSigmaITS<o2::track::PID::Proton>(track)) > 3.0)
-          continue;
-      }
 
       if (trackSelected) {
         recEbyeCompleteCollisions(recCollisions.lastIndex(), track.pt(), track.eta(), track.sign());
