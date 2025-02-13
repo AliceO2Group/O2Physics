@@ -58,8 +58,7 @@ enum DataType { Data = 0,
                 kDataTypes };
 
 template <typename T>
-concept hasDsMlInfo = requires(T candidate)
-{
+concept hasDsMlInfo = requires(T candidate) {
   candidate.mlProbDsToKKPi();
   candidate.mlProbDsToPiKK();
 };
@@ -182,9 +181,9 @@ struct HfTaskDs {
     std::vector<AxisSpec> axesFd = {massbins, ptbins, centralitybins, ptBHad, flagBHad};
     std::vector<AxisSpec> axesFdMl = {massbins, ptbins, centralitybins, mlscore0bins, mlscore1bins, mlscore2bins, ptBHad, flagBHad};
     std::vector<AxisSpec> axesWithNpv = {massbins, ptbins, centralitybins, npvcontributorsbins};
-    std::vector<AxisSpec> axesWithNpvMl = {massbins, ptbins, centralitybins, npvcontributorsbins, mlscore0bins, mlscore1bins, mlscore2bins};
+    std::vector<AxisSpec> axesWithNpvMl = {massbins, ptbins, centralitybins, mlscore0bins, mlscore1bins, mlscore2bins, npvcontributorsbins};
     std::vector<AxisSpec> axesGenPrompt = {ptbins, ybins, npvcontributorsbins, centralitybins};
-    std::vector<AxisSpec> axesGenFd = {ptbins, ybins, npvcontributorsbins, ptBHad, flagBHad, centralitybins};
+    std::vector<AxisSpec> axesGenFd = {ptbins, ybins, npvcontributorsbins, centralitybins, ptBHad, flagBHad};
 
     if (storeOccupancy) {
       axes.insert(axes.end(), {occupancybins});
@@ -464,10 +463,10 @@ struct HfTaskDs {
         }
       } else {
         if (storeOccupancy) {
-          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib(), outputMl[0], outputMl[1], outputMl[2], o2::hf_occupancy::getOccupancyColl(candidate.template collision_as<Coll>(), occEstimator));
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib(), o2::hf_occupancy::getOccupancyColl(candidate.template collision_as<Coll>(), occEstimator));
           return;
         } else {
-          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib(), outputMl[0], outputMl[1], outputMl[2]);
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib());
           return;
         }
       }
@@ -712,9 +711,9 @@ struct HfTaskDs {
               int flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
               float ptGenB = bHadMother.pt();
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-                std::get<THnSparsePtr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent, occ);
+                std::get<THnSparsePtr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ, ptGenB, flagGenB);
               } else {
-                std::get<THnSparsePtr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent);
+                std::get<THnSparsePtr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, ptGenB, flagGenB);
               }
             }
           } else if (fillDplusMc) {
@@ -738,9 +737,9 @@ struct HfTaskDs {
               int flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
               float ptGenB = bHadMother.pt();
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-                std::get<THnSparsePtr>(histosPtr[DataType::McDplusNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent, occ);
+                std::get<THnSparsePtr>(histosPtr[DataType::McDplusNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ, ptGenB, flagGenB);
               } else {
-                std::get<THnSparsePtr>(histosPtr[DataType::McDplusNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent);
+                std::get<THnSparsePtr>(histosPtr[DataType::McDplusNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, ptGenB, flagGenB);
               }
             }
           }
