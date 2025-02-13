@@ -1514,6 +1514,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kVertexingLxyzProjected"] = kVertexingLxyzProjected;
   fgVarNamesMap["kVertexingTauzProjected"] = kVertexingTauzProjected;
   fgVarNamesMap["kVertexingTauxyProjected"] = kVertexingTauxyProjected;
+  fgVarNamesMap["kVertexingTauxyProjectedPoleJPsiMass"] = kVertexingTauxyProjectedPoleJPsiMass;
   fgVarNamesMap["kVertexingTauxyProjectedNs"] = kVertexingTauxyProjectedNs;
   fgVarNamesMap["kVertexingTauxyzProjected"] = kVertexingTauxyzProjected;
   fgVarNamesMap["kVertexingTauz"] = kVertexingTauz;
