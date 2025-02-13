@@ -17,6 +17,7 @@
 #ifndef PWGDQ_CORE_VARMANAGER_H_
 #define PWGDQ_CORE_VARMANAGER_H_
 
+#include <Framework/AnalysisDataModel.h>
 #include <Math/Vector4Dfwd.h>
 #include <cstdint>
 #ifndef HomogeneousField
@@ -104,6 +105,7 @@ class VarManager : public TObject
     CollisionMultExtra = BIT(18),
     ReducedEventMultExtra = BIT(19),
     CollisionQvectCentr = BIT(20),
+    RapidityGapFilter = BIT(21),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -1533,13 +1535,22 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & CollisionMult) > 0 || (fillMap & ReducedEventExtended) > 0) {
+    if constexpr ((fillMap & RapidityGapFilter) > 0) {
+      // UPC: Use the FIT signals from the nearest BC with FIT amplitude above threshold
+      values[kMultFV0A] = event.newBcMultFV0A();
+      values[kMultFT0A] = event.newBcMultFT0A();
+      values[kMultFT0C] = event.newBcMultFT0C();
+      values[kMultFDDA] = event.newBcMultFDDA();
+      values[kMultFDDC] = event.newBcMultFDDC();
+    } else {
+      values[kMultFV0A] = event.multFV0A();
+      values[kMultFT0A] = event.multFT0A();
+      values[kMultFT0C] = event.multFT0C();
+      values[kMultFDDA] = event.multFDDA();
+      values[kMultFDDC] = event.multFDDC();
+    }
     values[kMultTPC] = event.multTPC();
-    values[kMultFV0A] = event.multFV0A();
     values[kMultFV0C] = event.multFV0C();
-    values[kMultFT0A] = event.multFT0A();
-    values[kMultFT0C] = event.multFT0C();
-    values[kMultFDDA] = event.multFDDA();
-    values[kMultFDDC] = event.multFDDC();
     values[kMultZNA] = event.multZNA();
     values[kMultZNC] = event.multZNC();
     values[kMultTracklets] = event.multTracklets();
@@ -1856,7 +1867,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMCEventImpParam] = event.impactParameter();
   }
 
-  if constexpr ((fillMap & EventFilter) > 0) {
+  if constexpr ((fillMap & EventFilter) > 0 || (fillMap & RapidityGapFilter) > 0) {
     values[kIsDoubleGap] = (event.eventFilter() & (static_cast<uint64_t>(1) << kDoubleGap)) > 0;
     values[kIsSingleGapA] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapA)) > 0;
     values[kIsSingleGapC] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapC)) > 0;
@@ -2988,6 +2999,7 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
     values[kEta] = v123.Eta();
     values[kPhi] = v123.Phi();
     values[kRap] = -v123.Rapidity();
+    values[kCharge] = t1.sign() + t2.sign() + t3.sign();
   }
 
   if (pairType == kTripleCandidateToPKPi) {
