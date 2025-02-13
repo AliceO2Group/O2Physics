@@ -122,6 +122,8 @@ struct UpcTauRl {
     Configurable<float> cutMaxElectronNsigmaKa{"cutMaxElectronNsigmaKa", 4.0, {"Good Ka hypo out. Upper n sigma cut on Ka hypo of selected electron. What is less till lower cut goes away."}};
     Configurable<float> cutMinElectronNsigmaPr{"cutMinElectronNsigmaPr", -4.0, {"Good Pr hypo out. Lower n sigma cut on Pr hypo of selected electron. What is more till upper cut goes away."}};
     Configurable<float> cutMaxElectronNsigmaPr{"cutMaxElectronNsigmaPr", 4.0, {"Good Pr hypo out. Upper n sigma cut on Pr hypo of selected electron. What is less till lower cut goes away."}};
+    Configurable<float> cutMinElectronTofNsigmaEl{"cutMinElectronTofNsigmaEl", 3.0, {"Good el TOF hypo in. Upper n sigma cut on el hypo of selected electron. What is more goes away."}};
+    Configurable<float> cutMaxElectronTofNsigmaEl{"cutMaxElectronTofNsigmaEl", -3.0, {"Good el TOF hypo in. Lower n sigma cut on el hypo of selected electron. What is less goes away."}};
     Configurable<float> cutMinElectronTofNsigmaKa{"cutMinElectronTofNsigmaKa", -4.0, {"Good Ka TOF hypo out. Lower n sigma cut on Ka TOF hypo of selected electron. What is more till upper cut goes away."}};
     Configurable<float> cutMaxElectronTofNsigmaKa{"cutMaxElectronTofNsigmaKa", 4.0, {"Good Ka TOF hypo out. Upper n sigma cut on Ka TOF hypo of selected electron. What is less till lower cut goes away."}};
     Configurable<bool> cutPionHasTOF{"cutPionHasTOF", true, {"Pion is required to hit TOF."}};
@@ -130,6 +132,8 @@ struct UpcTauRl {
     Configurable<float> cutMaxPionNsigmaPi{"cutMaxPionNsigmaPi", -4.0, {"Good pi hypo in. Lower n sigma cut on pi hypo of selected electron. What is less goes away."}};
     Configurable<float> cutMinPionNsigmaKa{"cutMinPionNsigmaKa", -4.0, {"Good Ka hypo out. Lower n sigma cut on Ka hypo of selected electron. What is more till upper cut goes away."}};
     Configurable<float> cutMaxPionNsigmaKa{"cutMaxPionNsigmaKa", 4.0, {"Good Ka hypo out. Upper n sigma cut on Ka hypo of selected electron. What is less till lower cut goes away."}};
+    Configurable<float> cutMinPionTofNsigmaPi{"cutMinPionTofNsigmaPi", 4.0, {"Good pi TOF hypo in. Upper n sigma cut on pi hypo of selected electron. What is more goes away."}};
+    Configurable<float> cutMaxPionTofNsigmaPi{"cutMaxPionTofNsigmaPi", -4.0, {"Good pi TOF hypo in. Lower n sigma cut on pi hypo of selected electron. What is less goes away."}};
     Configurable<float> cutElectronPt{"cutElectronPt", 0.9, {"Pt, where PiKaon invariant mass histos will split."}};
   } cutTauEvent;
 
@@ -956,6 +960,8 @@ struct UpcTauRl {
     if (cutTauEvent.cutElectronHasTOF && !electronCandidate.hasTOF())
       return false;
     if (electronCandidate.hasTOF()) {
+      if (electronCandidate.tofNSigmaEl() < cutTauEvent.cutMaxElectronTofNsigmaEl || electronCandidate.tofNSigmaEl() > cutTauEvent.cutMinElectronTofNsigmaEl)
+        return false;
       if (electronCandidate.tofNSigmaPr() > cutTauEvent.cutMinElectronNsigmaPr && electronCandidate.tofNSigmaPr() < cutTauEvent.cutMaxElectronNsigmaPr)
         return false;
       if (momentum(electronCandidate.px(), electronCandidate.py(), electronCandidate.pz()) < 1.0) {
@@ -977,6 +983,8 @@ struct UpcTauRl {
     if (cutTauEvent.cutPionHasTOF && !pionCandidate.hasTOF())
       return false;
     if (pionCandidate.hasTOF()) {
+      if (pionCandidate.tofNSigmaPi() < cutTauEvent.cutMaxPionTofNsigmaPi || pionCandidate.tofNSigmaPi() > cutTauEvent.cutMinPionTofNsigmaPi)
+        return false;
       if (pionCandidate.tofNSigmaPr() > cutTauEvent.cutMinElectronNsigmaPr && pionCandidate.tofNSigmaPr() < cutTauEvent.cutMaxElectronNsigmaPr)
         return false;
       if (momentum(pionCandidate.px(), pionCandidate.py(), pionCandidate.pz()) < 1.0) {
