@@ -723,7 +723,7 @@ struct DndetaMFTPbPb {
   }
 
   template <bool isCent, typename P>
-  void fillHistMC(P const& particles, float c, float occ, float zvtx, bool const gt0Coll)
+  void fillHistMC(P const& particles, float c, float occ, float zvtx, bool const gtZeroColl)
   {
     for (auto const& particle : particles) {
       if (!isChrgParticle(particle.pdgCode())) {
@@ -743,7 +743,7 @@ struct DndetaMFTPbPb {
         registry.fill(HIST("Tracks/PhiEtaGen_t"), phi, particle.eta());
       }
 
-      if (gt0Coll) {
+      if (gtZeroColl) {
         float phi = particle.phi();
         o2::math_utils::bringTo02Pi(phi);
         if (phi < 0.f || TwoPI < phi) {
@@ -947,8 +947,8 @@ struct DndetaMFTPbPb {
   template <typename MC, typename C>
   void processMC(typename MC::iterator const& mcCollision, soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions, FiltParticles const& particles, FiltMcMftTracks const& tracks)
   {
-    bool gt0Coll = false;
-    int gt1Coll = 0;
+    bool gtZeroColl = false;
+    int gtOneColl = 0;
 
     float cgen = -1;
     if constexpr (has_reco_cent<C>) {
@@ -986,8 +986,8 @@ struct DndetaMFTPbPb {
       }
 
       if (isGoodEvent<false>(collision)) {
-        gt0Coll = true;
-        ++gt1Coll;
+        gtZeroColl = true;
+        ++gtOneColl;
         auto z = collision.posZ();
 
         if constexpr (has_reco_cent<C>) {
@@ -1029,7 +1029,7 @@ struct DndetaMFTPbPb {
 
     auto perCollMCsample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto nchrg = countPart(perCollMCsample);
-    if (gt1Coll > 1) {
+    if (gtOneColl > 1) {
       if constexpr (has_reco_cent<C>) {
         qaregistry.fill(HIST("Events/Centrality/SplitMult"), nchrg, cgen);
       } else {
@@ -1045,7 +1045,7 @@ struct DndetaMFTPbPb {
       registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, zvtxMC);
     }
 
-    fillHistMC<has_reco_cent<C>>(particles, cgen, occgen, zvtxMC, gt0Coll);
+    fillHistMC<has_reco_cent<C>>(particles, cgen, occgen, zvtxMC, gtZeroColl);
 
     if (collisions.size() == 0) {
       if constexpr (has_reco_cent<C>) {
@@ -1104,9 +1104,7 @@ struct DndetaMFTPbPb {
   template <typename MC, typename C>
   void processMCwBestTracks(typename MC::iterator const& mcCollision, soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions, FiltParticles const& particles, FiltMcMftTracks const& tracks, FiltBestTracks const& besttracks)
   {
-    bool gt0Coll = false;
-    int gt1Coll = 0;
-
+    bool gtZeroColl = false;
     float cgen = -1;
     if constexpr (has_reco_cent<C>) {
       float crec_min = 105.f;
@@ -1143,8 +1141,7 @@ struct DndetaMFTPbPb {
       }
 
       if (isGoodEvent<false>(collision)) {
-        gt0Coll = true;
-        ++gt1Coll;
+        gtZeroColl = true;
         auto z = collision.posZ();
 
         if constexpr (has_reco_cent<C>) {
@@ -1179,7 +1176,7 @@ struct DndetaMFTPbPb {
       registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, zvtxMC);
     }
 
-    fillHistMC<has_reco_cent<C>>(particles, cgen, occgen, zvtxMC, gt0Coll);
+    fillHistMC<has_reco_cent<C>>(particles, cgen, occgen, zvtxMC, gtZeroColl);
 
     if (collisions.size() == 0) {
       if constexpr (has_reco_cent<C>) {
