@@ -156,6 +156,7 @@ struct HfCandidateSelectorToOmegaPi {
   HistogramRegistry registry{"registry"}; // for QA of selections
 
   OutputObj<TH1D> hInvMassCharmBaryon{TH1D("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.3, 3.1)};
+  OutputObj<TH1D> hPtCharmBaryon{TH1D("hPtCharmBaryon", "Charm baryon transverse momentum before sel;Pt;entries", 8000, 0., 80)};
 
   void init(InitContext const&)
   {
@@ -192,6 +193,7 @@ struct HfCandidateSelectorToOmegaPi {
     registry.add("hStatusCheck", "Check consecutive selections status;status;entries", {HistType::kTH1D, {{12, 0., 12.}}});
 
     // for QA of the selections (bin 0 -> candidates that did not pass the selection, bin 1 -> candidates that passed the selection)
+    registry.add("hSelPtOmegac", "hSelPtOmegac;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelSignDec", "hSelSignDec;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelEtaPosV0Dau", "hSelEtaPosV0Dau;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelEtaNegV0Dau", "hSelEtaNegV0Dau;status;entries", {HistType::kTH1D, {axisSel}});
@@ -423,6 +425,15 @@ struct HfCandidateSelectorToOmegaPi {
               registry.fill(HIST("hSelCompetingCasc"), 1);
               registry.fill(HIST("hInvMassXiMinus_rej_cut"), candidate.cascRejectInvmass());
             }
+          }
+
+          // Omegac Pt selection
+          hPtCharmBaryon->Fill(std::abs(candidate.kfptOmegac()));
+          if (std::abs(candidate.kfptOmegac()) < ptCandMin || std::abs(candidate.kfptOmegac()) > ptCandMax) {
+            resultSelections = false;
+            registry.fill(HIST("hSelPtOmegac"), 0);
+          } else {
+            registry.fill(HIST("hSelPtOmegac"), 1);
           }
 
           // v0&Casc&Omegac ldl selection

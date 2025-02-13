@@ -207,6 +207,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   Produces<o2::aod::HfToOmegaPiEvs> rowEv;
 
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
+  Configurable<bool> keepOnlyMcSignal{"keepOnlyMcSignal", true, "Fill MC tree only with signal candidates"};
 
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
   using MyEventTable = soa::Join<aod::Collisions, aod::EvSels>;
@@ -425,7 +426,13 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillKfCandidate(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+      if (keepOnlyMcSignal) {
+        if (candidate.originRec() != 0) {
+          fillKfCandidate(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+        }
+      } else {
+        fillKfCandidate(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+      }
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMcFull, "Process KF MC", false);
