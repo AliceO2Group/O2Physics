@@ -427,7 +427,7 @@ struct HfCandidateSelectorToOmegaPi {
             }
           }
 
-          //Omegac Pt selection
+          // Omegac Pt selection
           hPtCharmBaryon->Fill(std::abs(candidate.kfptOmegac()));
           if (std::abs(candidate.kfptOmegac()) < ptCandMin || std::abs(candidate.kfptOmegac()) > ptCandMax) {
             resultSelections = false;
