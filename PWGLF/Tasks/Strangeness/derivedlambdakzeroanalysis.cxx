@@ -461,6 +461,8 @@ struct derivedlambdakzeroanalysis {
     histos.add("hInteractionRate", "hInteractionRate", kTH1F, {axisIRBinning});
     histos.add("hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2F, {{101, 0.0f, 101.0f}, axisIRBinning});
 
+    histos.add("hInteractionRateVsOccupancy", "hInteractionRateVsOccupancy", kTH2F, {axisIRBinning, axisOccupancy});
+
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
 
@@ -1750,6 +1752,8 @@ struct derivedlambdakzeroanalysis {
     histos.fill(HIST("hInteractionRate"), interactionRate);
     histos.fill(HIST("hCentralityVsInteractionRate"), centrality, interactionRate);
 
+    histos.fill(HIST("hInteractionRateVsOccupancy"), interactionRate, collisionOccupancy);
+
     // __________________________________________
     // perform main analysis
     int nK0Shorts = 0;
@@ -1834,6 +1838,8 @@ struct derivedlambdakzeroanalysis {
 
     histos.fill(HIST("hInteractionRate"), interactionRate);
     histos.fill(HIST("hCentralityVsInteractionRate"), centrality, interactionRate);
+
+    histos.fill(HIST("hInteractionRateVsOccupancy"), interactionRate, collisionOccupancy);
 
     // __________________________________________
     // perform main analysis
