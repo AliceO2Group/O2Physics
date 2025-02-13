@@ -100,6 +100,8 @@ struct UpcTauRl {
     Configurable<int> cutMinTPCnClsXrows{"cutMinTPCnClsXrows", 70, {"Global track cut"}};
     Configurable<float> cutMinTPCnClsXrowsOverNcls{"cutMinTPCnClsXrowsOverNcls", 0.8f, {"Global track cut"}};
     Configurable<float> cutMaxTPCchi2{"cutMaxTPCchi2", 4.f, {"Global track cut"}};
+    Configurable<bool> cutGoodITSTPCmatching{"cutGoodITSTPCmatching", true, {"Global track cut"}};
+    Configurable<float> cutMaxTOFchi2{"cutMaxTOFchi2", 3.f, {"Global track cut"}};
   } cutGlobalTrack;
 
   struct : ConfigurableGroup {
@@ -838,6 +840,15 @@ struct UpcTauRl {
       return false;
     if (track.tpcChi2NCl() > cutGlobalTrack.cutMaxTPCchi2)
       return false; // TPC chi2
+    if (cutGlobalTrack.cutGoodITSTPCmatching) {
+      if (track.itsChi2NCl() < 0.)
+        return false; // TPC chi2
+    }
+    //  TOF
+    if (track.hasTOF()){
+      if (track.tpcChi2NCl() > cutGlobalTrack.cutMaxTOFchi2)
+        return false; // TOF chi2
+    }
 
     return true;
   }
