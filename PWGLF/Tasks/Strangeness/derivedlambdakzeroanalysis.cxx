@@ -1593,7 +1593,8 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
     }
 
-    double interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3;
+    // Fetch interaction rate only if required (in order to limit ccdb calls)
+    double interactionRate = (eventSelections.minIR >= 0 || eventSelections.maxIR >= 0) ? interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
     if (eventSelections.minIR >= 0 && interactionRate < eventSelections.minIR) {
       return false;
     }
@@ -1721,7 +1722,8 @@ struct derivedlambdakzeroanalysis {
       centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(doPPAnalysis ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
     }
     float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-    double interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3;
+    // Fetch interaction rate only if required (in order to limit ccdb calls)
+    double interactionRate = !irSource.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
 
     // gap side
     int gapSide = collision.gapSide();
@@ -1805,7 +1807,8 @@ struct derivedlambdakzeroanalysis {
       centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(doPPAnalysis ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
     }
     float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-    double interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3;
+    // Fetch interaction rate only if required (in order to limit ccdb calls)
+    double interactionRate = !irSource.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
 
     // gap side
     int gapSide = collision.gapSide();
