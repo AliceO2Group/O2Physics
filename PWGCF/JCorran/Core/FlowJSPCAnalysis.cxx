@@ -83,6 +83,9 @@ void FlowJSPCAnalysis::calculateCorrelators(const int fCentBin)
   double correlationDenom;
   double weightCorrelationDenom;
 
+  for (int i = 0; i < 14; ++i)
+    fCorrelDenoms[i] = 0;
+
   for (int j = 0; j < 12; j++) {
     if (fHarmosArray[j][0] == 0) {
       continue;
@@ -126,66 +129,66 @@ void FlowJSPCAnalysis::fillHistograms(const int fCentBin, int ind, double cNum, 
     case 0: {
       mHistRegistry->fill(HIST(MCentClasses[0]) + HIST("fResults"), 2. * static_cast<float>(ind) + 0.5, cNum, wNum);
       mHistRegistry->fill(HIST(MCentClasses[0]) + HIST("fResults"), 2. * static_cast<float>(ind) + 1.5, cDenom, wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[0]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[0]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[0]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 2.5, wNum, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[0]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 3.5, wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[0]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
+      mHistRegistry->fill(HIST(MCentClasses[0]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[0]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 2.5, wNum, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[0]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 3.5, wDenom, 1.);
     } break;
     case 1: {
       mHistRegistry->fill(HIST(MCentClasses[1]) + HIST("fResults"), 2. * static_cast<float>(ind) + 0.5, cNum, wNum);
       mHistRegistry->fill(HIST(MCentClasses[1]) + HIST("fResults"), 2. * static_cast<float>(ind) + 1.5, cDenom, wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[1]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[1]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[1]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 2.5, wNum, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[1]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 3.5, wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[1]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
+      mHistRegistry->fill(HIST(MCentClasses[1]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[1]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 2.5, wNum, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[1]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 3.5, wDenom, 1.);
     } break;
     case 2: {
       mHistRegistry->fill(HIST(MCentClasses[2]) + HIST("fResults"), 2. * static_cast<float>(ind) + 0.5, cNum, wNum);
       mHistRegistry->fill(HIST(MCentClasses[2]) + HIST("fResults"), 2. * static_cast<float>(ind) + 1.5, cDenom, wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[2]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[2]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[2]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 2.5, wNum, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[2]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 3.5, wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[2]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
+      mHistRegistry->fill(HIST(MCentClasses[2]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[2]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 2.5, wNum, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[2]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 3.5, wDenom, 1.);
     } break;
     case 3: {
       mHistRegistry->fill(HIST(MCentClasses[3]) + HIST("fResults"), 2. * static_cast<float>(ind) + 0.5, cNum, wNum);
       mHistRegistry->fill(HIST(MCentClasses[3]) + HIST("fResults"), 2. * static_cast<float>(ind) + 1.5, cDenom, wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[3]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[3]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[3]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 2.5, wNum, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[3]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 3.5, wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[3]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
+      mHistRegistry->fill(HIST(MCentClasses[3]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[3]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 2.5, wNum, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[3]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 3.5, wDenom, 1.);
     } break;
     case 4: {
       mHistRegistry->fill(HIST(MCentClasses[4]) + HIST("fResults"), 2. * static_cast<float>(ind) + 0.5, cNum, wNum);
       mHistRegistry->fill(HIST(MCentClasses[4]) + HIST("fResults"), 2. * static_cast<float>(ind) + 1.5, cDenom, wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[4]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[4]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[4]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 2.5, wNum, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[4]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 3.5, wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[4]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
+      mHistRegistry->fill(HIST(MCentClasses[4]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[4]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 2.5, wNum, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[4]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 3.5, wDenom, 1.);
     } break;
     case 5: {
       mHistRegistry->fill(HIST(MCentClasses[5]) + HIST("fResults"), 2. * static_cast<float>(ind) + 0.5, cNum, wNum);
       mHistRegistry->fill(HIST(MCentClasses[5]) + HIST("fResults"), 2. * static_cast<float>(ind) + 1.5, cDenom, wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[5]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[5]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[5]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 2.5, wNum, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[5]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 3.5, wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[5]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
+      mHistRegistry->fill(HIST(MCentClasses[5]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[5]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 2.5, wNum, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[5]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 3.5, wDenom, 1.);
     } break;
     case 6: {
       mHistRegistry->fill(HIST(MCentClasses[6]) + HIST("fResults"), 2. * static_cast<float>(ind) + 0.5, cNum, wNum);
       mHistRegistry->fill(HIST(MCentClasses[6]) + HIST("fResults"), 2. * static_cast<float>(ind) + 1.5, cDenom, wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[6]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[6]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[6]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 2.5, wNum, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[6]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 3.5, wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[6]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
+      mHistRegistry->fill(HIST(MCentClasses[6]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[6]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 2.5, wNum, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[6]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 3.5, wDenom, 1.);
     } break;
     case 7: {
       mHistRegistry->fill(HIST(MCentClasses[7]) + HIST("fResults"), 2. * static_cast<float>(ind) + 0.5, cNum, wNum);
       mHistRegistry->fill(HIST(MCentClasses[7]) + HIST("fResults"), 2. * static_cast<float>(ind) + 1.5, cDenom, wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[7]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
-      mHistRegistry->fill(HIST(MCentClasses[7]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[7]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 2.5, wNum, 1.);
-      mHistRegistry->fill(HIST(MCentClasses[7]) + HIST("fCovResults"), 2. * static_cast<float>(ind) + 3.5, wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[7]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 0.5, cNum * cDenom, wNum * wDenom);
+      mHistRegistry->fill(HIST(MCentClasses[7]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 1.5, wNum * wDenom, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[7]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 2.5, wNum, 1.);
+      mHistRegistry->fill(HIST(MCentClasses[7]) + HIST("fCovResults"), 4. * static_cast<float>(ind) + 3.5, wDenom, 1.);
     } break;
     default:
       return;
