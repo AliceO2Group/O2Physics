@@ -259,30 +259,30 @@ struct flowQC {
     float centrality = getCentrality(collision);
 
     // EP method
+    float QmodFT0A_EP = collision.qFT0A();
     float psiFT0A_EP = collision.psiFT0A();
-    float QxFT0A_EP = std::cos(2 * psiFT0A_EP);
-    float QyFT0A_EP = std::sin(2 * psiFT0A_EP);
-    float QmodFT0A_EP = std::hypot(QxFT0A_EP, QyFT0A_EP);
+    float QxFT0A_EP = QmodFT0A_EP * std::cos(2 * psiFT0A_EP);
+    float QyFT0A_EP = QmodFT0A_EP * std::sin(2 * psiFT0A_EP);
 
+    float QmodFT0C_EP = collision.qFT0C();
     float psiFT0C_EP = collision.psiFT0C();
-    float QxFT0C_EP = std::cos(2 * psiFT0C_EP);
-    float QyFT0C_EP = std::sin(2 * psiFT0C_EP);
-    float QmodFT0C_EP = std::hypot(QxFT0C_EP, QyFT0C_EP);
+    float QxFT0C_EP = QmodFT0C_EP * std::cos(2 * psiFT0C_EP);
+    float QyFT0C_EP = QmodFT0C_EP * std::sin(2 * psiFT0C_EP);
 
+    float QmodTPCl_EP = collision.qTPCL();
     float psiTPCl_EP = collision.psiTPCL();
-    float QxTPCl_EP = std::cos(2 * psiTPCl_EP);
-    float QyTPCl_EP = std::sin(2 * psiTPCl_EP);
-    float QmodTPCl_EP = std::hypot(QxTPCl_EP, QyTPCl_EP);
+    float QxTPCl_EP = QmodTPCl_EP * std::cos(2 * psiTPCl_EP);
+    float QyTPCl_EP = QmodTPCl_EP * std::sin(2 * psiTPCl_EP);
 
+    float QmodTPCr_EP = collision.qTPCR();
     float psiTPCr_EP = collision.psiTPCR();
-    float QxTPCr_EP = std::cos(2 * psiTPCr_EP);
-    float QyTPCr_EP = std::sin(2 * psiTPCr_EP);
-    float QmodTPCr_EP = std::hypot(QxTPCr_EP, QyTPCr_EP);
+    float QxTPCr_EP = QmodTPCr_EP * std::cos(2 * psiTPCr_EP);
+    float QyTPCr_EP = QmodTPCr_EP * std::sin(2 * psiTPCr_EP);
 
+    float QmodTPC_EP = collision.qTPC();
     float psiTPC_EP = collision.psiTPC();
-    float QxTPC_EP = std::cos(2 * psiTPC_EP);
-    float QyTPC_EP = std::sin(2 * psiTPC_EP);
-    float QmodTPC_EP = std::hypot(QxTPC_EP, QyTPC_EP);
+    float QxTPC_EP = QmodTPC_EP * std::cos(2 * psiTPC_EP);
+    float QyTPC_EP = QmodTPC_EP * std::sin(2 * psiTPC_EP);
 
     // Qvec method
     float QxFT0A_Qvec = collision.qvecFT0ARe();
