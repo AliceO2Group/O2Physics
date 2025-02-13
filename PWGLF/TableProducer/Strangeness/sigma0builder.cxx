@@ -33,15 +33,15 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-#include "PWGLF/DataModel/LFStrangenessMLTables.h"
-#include "PWGLF/DataModel/LFSigmaTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessMLTables.h"
+#include "PWGLF/DataModel/LFSigmaTables.h"
 #include "CCDB/BasicCCDBManager.h"
 #include <TFile.h>
 #include <TH2F.h>
@@ -76,23 +76,24 @@ struct sigma0builder {
 
   // Event selection
   Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
+
   struct : ConfigurableGroup {
     Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
     Configurable<bool> requireTriggerTVX{"requireTriggerTVX", true, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level"};
     Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
     Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
-    Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track"};
+    Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", true, "require events with at least one ITS-TPC track"};
     Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference"};
     Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
     Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
-    Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
+    Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", false, "reject collisions in case of pileup with another collision in the same foundBC"};
     Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds"};
     Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
     Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds"};
     Configurable<bool> requireNoCollInTimeRangeVzDep{"requireNoCollInTimeRangeVzDep", false, "reject collisions corrupted by the cannibalism, with other collisions with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ"};
     Configurable<bool> requireNoCollInROFStd{"requireNoCollInROFStd", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF with mult. above a certain threshold"};
     Configurable<bool> requireNoCollInROFStrict{"requireNoCollInROFStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF"};
-    Configurable<bool> requireINEL0{"requireINEL0", true, "require INEL>0 event selection"};
+    Configurable<bool> requireINEL0{"requireINEL0", false, "require INEL>0 event selection"};
     Configurable<bool> requireINEL1{"requireINEL1", false, "require INEL>1 event selection"};
     Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position"};
     Configurable<bool> useFT0CbasedOccupancy{"useFT0CbasedOccupancy", false, "Use sum of FT0-C amplitudes for estimating occupancy? (if not, use track-based definition)"};
@@ -541,10 +542,10 @@ struct sigma0builder {
       if ((gamma.v0radius() < PhotonMinRadius) || (gamma.v0radius() > PhotonMaxRadius))
         return false;
 
+      // Lambda basic selection criteria:
       histos.fill(HIST("hCandidateBuilderSelection"), 6.);
       histos.fill(HIST("Selection/hLambdaMass"), lambda.mLambda());
       histos.fill(HIST("Selection/hAntiLambdaMass"), lambda.mAntiLambda());
-      // Lambda basic selection criteria:
       if ((TMath::Abs(lambda.mLambda() - 1.115683) > LambdaWindow) && (TMath::Abs(lambda.mAntiLambda() - 1.115683) > LambdaWindow))
         return false;
       histos.fill(HIST("Selection/hLambdaNegEta"), lambda.negativeeta());
@@ -669,8 +670,8 @@ struct sigma0builder {
     float fPhotonPsiPair = gamma.psipair();
     int fPhotonPosITSCls = posTrackGamma.itsNCls();
     int fPhotonNegITSCls = negTrackGamma.itsNCls();
-    uint32_t fPhotonPosITSClSize = posTrackGamma.itsClusterSizes();
-    uint32_t fPhotonNegITSClSize = negTrackGamma.itsClusterSizes();
+    float fPhotonPosITSChi2PerNcl = posTrackGamma.itsChi2PerNcl();
+    float fPhotonNegITSChi2PerNcl = negTrackGamma.itsChi2PerNcl();
     uint8_t fPhotonV0Type = gamma.v0Type();
 
     // Lambda
@@ -682,6 +683,7 @@ struct sigma0builder {
     float fAntiLambdaMass = lambda.mAntiLambda();
     float fLambdaQt = lambda.qtarm();
     float fLambdaAlpha = lambda.alpha();
+    float fLambdaLifeTime = lambda.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassLambda0;
     float fLambdaRadius = lambda.v0radius();
     float fLambdaCosPA = lambda.v0cosPA();
     float fLambdaDCADau = lambda.dcaV0daughters();
@@ -712,8 +714,8 @@ struct sigma0builder {
     float fLambdaNegPiY = RecoDecay::y(std::array{lambda.pxneg(), lambda.pyneg(), lambda.pzneg()}, o2::constants::physics::MassPionCharged);
     int fLambdaPosITSCls = posTrackLambda.itsNCls();
     int fLambdaNegITSCls = negTrackLambda.itsNCls();
-    uint32_t fLambdaPosITSClSize = posTrackLambda.itsClusterSizes();
-    uint32_t fLambdaNegITSClSize = negTrackLambda.itsClusterSizes();
+    float fLambdaPosITSChi2PerNcl = posTrackLambda.itsChi2PerNcl();
+    float fLambdaNegITSChi2PerNcl = negTrackLambda.itsChi2PerNcl();
     uint8_t fLambdaV0Type = lambda.v0Type();
 
     // Sigma0 candidate properties
@@ -729,26 +731,28 @@ struct sigma0builder {
     float fSigmaRap = RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0);
     float fSigmaOPAngle = v1.Angle(v2);
     float fSigmaCentrality = coll.centFT0C();
+    float fSigmaTimeStamp = coll.timestamp();
+    float fSigmaRunNumber = coll.runNumber();
 
     // Filling TTree for ML analysis
-    sigma0cores(fSigmapT, fSigmaMass, fSigmaRap, fSigmaOPAngle, fSigmaCentrality);
+    sigma0cores(fSigmapT, fSigmaMass, fSigmaRap, fSigmaOPAngle, fSigmaCentrality, fSigmaRunNumber, fSigmaTimeStamp);
 
     sigmaPhotonExtras(fPhotonPt, fPhotonMass, fPhotonQt, fPhotonAlpha, fPhotonRadius,
                       fPhotonCosPA, fPhotonDCADau, fPhotonDCANegPV, fPhotonDCAPosPV, fPhotonZconv,
                       fPhotonEta, fPhotonY, fPhotonPhi, fPhotonPosTPCNSigmaEl, fPhotonNegTPCNSigmaEl, fPhotonPosTPCNSigmaPi, fPhotonNegTPCNSigmaPi, fPhotonPosTPCCrossedRows,
                       fPhotonNegTPCCrossedRows, fPhotonPosPt, fPhotonNegPt, fPhotonPosEta,
                       fPhotonNegEta, fPhotonPosY, fPhotonNegY, fPhotonPsiPair,
-                      fPhotonPosITSCls, fPhotonNegITSCls, fPhotonPosITSClSize, fPhotonNegITSClSize,
+                      fPhotonPosITSCls, fPhotonNegITSCls, fPhotonPosITSChi2PerNcl, fPhotonNegITSChi2PerNcl,
                       fPhotonV0Type, GammaBDTScore);
 
-    sigmaLambdaExtras(fLambdaPt, fLambdaMass, fAntiLambdaMass, fLambdaQt, fLambdaAlpha,
+    sigmaLambdaExtras(fLambdaPt, fLambdaMass, fAntiLambdaMass, fLambdaQt, fLambdaAlpha, fLambdaLifeTime,
                       fLambdaRadius, fLambdaCosPA, fLambdaDCADau, fLambdaDCANegPV,
                       fLambdaDCAPosPV, fLambdaEta, fLambdaY, fLambdaPhi, fLambdaPosPrTPCNSigma,
                       fLambdaPosPiTPCNSigma, fLambdaNegPrTPCNSigma, fLambdaNegPiTPCNSigma,
                       fLambdaPrTOFNSigma, fLambdaPiTOFNSigma, fALambdaPrTOFNSigma, fALambdaPiTOFNSigma,
                       fLambdaPosTPCCrossedRows, fLambdaNegTPCCrossedRows, fLambdaPosPt, fLambdaNegPt, fLambdaPosEta,
                       fLambdaNegEta, fLambdaPosPrY, fLambdaPosPiY, fLambdaNegPrY, fLambdaNegPiY,
-                      fLambdaPosITSCls, fLambdaNegITSCls, fLambdaPosITSClSize, fLambdaNegITSClSize,
+                      fLambdaPosITSCls, fLambdaNegITSCls, fLambdaPosITSChi2PerNcl, fLambdaNegITSChi2PerNcl,
                       fLambdaV0Type, LambdaBDTScore, AntiLambdaBDTScore);
   }
 
@@ -811,6 +815,10 @@ struct sigma0builder {
         for (auto& lambda : V0Table_thisCollision) { // selecting lambdas from Sigma0
           if (!lambda.has_v0MCCore())
             continue;
+
+          if (lambda.v0Type() != 1) { // safeguard to avoid TPC-only photons
+            continue;
+          }
 
           auto lambdaMC = lambda.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
@@ -888,12 +896,15 @@ struct sigma0builder {
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionSTDDerived, collIdx);
 
       histos.fill(HIST("hEventCentrality"), coll.centFT0C());
-
       // V0 table sliced
       for (auto& gamma : V0Table_thisCollision) {    // selecting photons from Sigma0
         for (auto& lambda : V0Table_thisCollision) { // selecting lambdas from Sigma0
           if (doPi0QA)                               // Pi0 QA study
             runPi0QA(gamma, lambda);
+
+          if (lambda.v0Type() != 1) { // safeguard to avoid TPC-only photons
+            continue;
+          }
 
           // Sigma0 candidate properties
           std::array<float, 3> pVecPhotons{gamma.px(), gamma.py(), gamma.pz()};

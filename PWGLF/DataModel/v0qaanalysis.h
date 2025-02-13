@@ -10,7 +10,6 @@
 // or submit itself to any jurisdiction.
 ///
 /// \brief QA task for V0 analysis using derived data
-///
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 
 #ifndef PWGLF_DATAMODEL_V0QAANALYSIS_H_
@@ -62,6 +61,16 @@ DECLARE_SOA_COLUMN(MultFV0A, multfv0a, float);
 DECLARE_SOA_COLUMN(EvFlag, evflag, int);
 DECLARE_SOA_COLUMN(Alpha, alpha, float);
 DECLARE_SOA_COLUMN(QtArm, qtarm, float);
+DECLARE_SOA_COLUMN(V0PosTPCCrossedRows, v0postpcCrossedRows, float);
+DECLARE_SOA_COLUMN(V0PosTPCCRFindCls, v0postpcCRFindCls, float);
+DECLARE_SOA_COLUMN(V0PosTPCNClsShared, v0postpcNClsShared, float);
+DECLARE_SOA_COLUMN(V0PosITSChi2NCl, v0positsChi2NCl, float);
+DECLARE_SOA_COLUMN(V0PosTPCChi2NCl, v0postpcChi2NCl, float);
+DECLARE_SOA_COLUMN(V0NegTPCCrossedRows, v0negtpcCrossedRows, float);
+DECLARE_SOA_COLUMN(V0NegTPCCRFindCls, v0negtpcCRFindCls, float);
+DECLARE_SOA_COLUMN(V0NegTPCNClsShared, v0negtpcNClsShared, float);
+DECLARE_SOA_COLUMN(V0NegITSChi2NCl, v0negitsChi2NCl, float);
+DECLARE_SOA_COLUMN(V0NegTPCChi2NCl, v0negtpcChi2NCl, float);
 
 } // namespace myv0candidates
 
@@ -77,7 +86,11 @@ DECLARE_SOA_TABLE(MyV0Candidates, "AOD", "MYV0CANDIDATES",
                   myv0candidates::PosHasTOF, myv0candidates::NegHasTOF,
                   myv0candidates::PDGCode, myv0candidates::IsDauK0Short, myv0candidates::IsDauLambda, myv0candidates::IsDauAntiLambda, myv0candidates::IsPhysicalPrimary,
                   myv0candidates::MultFT0M, myv0candidates::MultFV0A,
-                  myv0candidates::EvFlag, myv0candidates::Alpha, myv0candidates::QtArm);
+                  myv0candidates::EvFlag, myv0candidates::Alpha, myv0candidates::QtArm,
+                  myv0candidates::V0PosTPCCrossedRows, myv0candidates::V0PosTPCCRFindCls, myv0candidates::V0PosTPCNClsShared,
+                  myv0candidates::V0PosITSChi2NCl, myv0candidates::V0PosTPCChi2NCl,
+                  myv0candidates::V0NegTPCCrossedRows, myv0candidates::V0NegTPCCRFindCls, myv0candidates::V0NegTPCNClsShared,
+                  myv0candidates::V0NegITSChi2NCl, myv0candidates::V0NegTPCChi2NCl);
 
 } // namespace o2::aod
 

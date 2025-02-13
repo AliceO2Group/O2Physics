@@ -106,8 +106,8 @@ struct NucleiInJets {
   Configurable<double> par0{"par0", 0.00164, "par 0"};
   Configurable<double> par1{"par1", 0.00231, "par 1"};
   Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum number of ITS clusters"};
-  Configurable<int> minTpcNclusters{"minTpcNclusters", 80, "minimum number of TPC clusters"};
   Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 80, "minimum number of TPC crossed pad rows"};
+  Configurable<double> minTpcNcrossedRowsOverFindable{"minTpcNcrossedRowsOverFindable", 0.8, "crossed rows/findable"};
   Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0, "maximum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareIts{"maxChiSquareIts", 36.0, "maximum ITS chi^2/Ncls"};
   Configurable<double> minPt{"minPt", 0.3, "minimum pt of the tracks"};
@@ -172,7 +172,8 @@ struct NucleiInJets {
     registryQC.add("jet_ue_overlaps", "jet_ue_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
     registryQC.add("ue_ue_overlaps", "ue_ue_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
     registryQC.add("tot_overlaps", "tot_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
-    registryQC.add("hJetArea", "hJetArea", HistType::kTH1F, {{450, 0, 15, "Area"}});
+    registryQC.add("hJetArea", "hJetArea", HistType::kTH1F, {{2000, 0, 2, "Area"}});
+    registryQC.add("hError", "hError", HistType::kTH1F, {{5, 0, 5, "error"}});
 
     // Event Counters
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
@@ -274,7 +275,7 @@ struct NucleiInJets {
       return false;
     if (track.tpcNClsCrossedRows() < 70)
       return false;
-    if (track.tpcNClsCrossedRows() / track.tpcNClsFindable() < 0.8)
+    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < 0.8)
       return false;
     if (track.tpcChi2NCl() > 4)
       return false;
@@ -320,9 +321,9 @@ struct NucleiInJets {
       return false;
     if (!track.hasTPC())
       return false;
-    if (track.tpcNClsFound() < minTpcNclusters)
-      return false;
     if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
+      return false;
+    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < minTpcNcrossedRowsOverFindable)
       return false;
     if (track.tpcChi2NCl() > maxChiSquareTpc)
       return false;
@@ -530,7 +531,7 @@ struct NucleiInJets {
     std::vector<int> nParticlesInjet;
 
     do {
-      double dijMin(1e+06), diBmin(1e+06);
+      double dijMin(1e+300), diBmin(1e+300);
       int iMin(0), jMin(0), iBmin(0);
       for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
         if (trk[i].Mag() == 0)
@@ -1018,7 +1019,7 @@ struct NucleiInJets {
       std::vector<int> nParticlesInjet;
 
       do {
-        double dijMin(1e+06), diBmin(1e+06);
+        double dijMin(1e+300), diBmin(1e+300);
         int iMin(0), jMin(0), iBmin(0);
         for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
           if (trk[i].Mag() == 0)
@@ -1247,7 +1248,7 @@ struct NucleiInJets {
       std::vector<int> nParticlesInjet;
 
       do {
-        double dijMin(1e+06), diBmin(1e+06);
+        double dijMin(1e+300), diBmin(1e+300);
         int iMin(0), jMin(0), iBmin(0);
         for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
           if (trk[i].Mag() == 0)
@@ -1413,7 +1414,7 @@ struct NucleiInJets {
     std::vector<double> jetArea;
 
     do {
-      double dijMin(1e+06), diBmin(1e+06);
+      double dijMin(1e+300), diBmin(1e+300);
       int iMin(0), jMin(0), iBmin(0);
       int nGhostsInJet(0);
       for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
@@ -1446,10 +1447,15 @@ struct NucleiInJets {
       }
       if (dijMin > diBmin) {
         double area = (static_cast<double>(nGhostsInJet) / static_cast<double>(nGhosts)) * TwoPI * 1.6;
-        jetArea.push_back(area);
+        double alphaJet = area / (PI * rJet * rJet);
+        jetArea.push_back(alphaJet);
         jet.push_back(trk[iBmin]);
         trk[iBmin].SetXYZ(0, 0, 0);
         nParticlesRemoved++;
+      }
+      if (dijMin == diBmin) {
+        registryQC.fill(HIST("hError"), 0.5);
+        nParticlesRemoved = static_cast<int>(trk.size());
       }
     } while (nParticlesRemoved < static_cast<int>(trk.size()));
 
@@ -1507,7 +1513,7 @@ struct NucleiInJets {
       std::vector<int> nParticlesInjet;
 
       do {
-        double dijMin(1e+06), diBmin(1e+06);
+        double dijMin(1e+300), diBmin(1e+300);
         int iMin(0), jMin(0), iBmin(0);
         for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
           if (trk[i].Mag() == 0)
