@@ -61,6 +61,7 @@ struct hadronnucleicorrelation {
   Configurable<bool> isMC{"isMC", false, "is MC"};
   Configurable<bool> isMCGen{"isMCGen", false, "is isMCGen"};
   Configurable<bool> isPrim{"isPrim", true, "is isPrim"};
+  Configurable<bool> domatterGen{"domatterGen", true, "domatterGen"};
   Configurable<bool> mcCorrelation{"mcCorrelation", false, "true: build the correlation function only for SE"};
   Configurable<bool> docorrection{"docorrection", false, "do efficiency correction"};
 
@@ -1303,10 +1304,14 @@ struct hadronnucleicorrelation {
         selectedparticlesMC_antid[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
       }
       if (particle.pdgCode() == pdgProton) {
-        selectedparticlesMC_p[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
+        if (!particle.has_daughters()) {
+          selectedparticlesMC_p[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
+        }
       }
       if (particle.pdgCode() == -pdgProton) {
-        selectedparticlesMC_antip[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
+        if (!particle.has_daughters()) {
+          selectedparticlesMC_antip[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
+        }
       }
     }
 
@@ -1341,28 +1346,30 @@ struct hadronnucleicorrelation {
       }
 
       // d - p correlation
-      if (selectedparticlesMC_d.find(collision1.globalIndex()) != selectedparticlesMC_d.end()) {
-        if (selectedparticlesMC_p.find(collision1.globalIndex()) != selectedparticlesMC_p.end()) {
-          mixMCParticles<0>(selectedparticlesMC_d[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()]); // mixing SE
-        }
-
-        int stop2 = 0;
-
-        for (auto collision2 : mcCollisions) { // nested loop on collisions
-
-          if (collision1.globalIndex() == collision2.globalIndex()) {
-            continue;
+      if (domatterGen) {
+        if (selectedparticlesMC_d.find(collision1.globalIndex()) != selectedparticlesMC_d.end()) {
+          if (selectedparticlesMC_p.find(collision1.globalIndex()) != selectedparticlesMC_p.end()) {
+            mixMCParticles<0>(selectedparticlesMC_d[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()]); // mixing SE
           }
 
-          if (stop2 > maxmixcollsGen) {
-            break;
-          }
+          int stop2 = 0;
 
-          if (selectedparticlesMC_p.find(collision2.globalIndex()) != selectedparticlesMC_p.end()) {
-            mixMCParticles<1>(selectedparticlesMC_d[collision1.globalIndex()], selectedparticlesMC_p[collision2.globalIndex()]); // mixing ME
-          }
+          for (auto collision2 : mcCollisions) { // nested loop on collisions
 
-          stop2++;
+            if (collision1.globalIndex() == collision2.globalIndex()) {
+              continue;
+            }
+
+            if (stop2 > maxmixcollsGen) {
+              break;
+            }
+
+            if (selectedparticlesMC_p.find(collision2.globalIndex()) != selectedparticlesMC_p.end()) {
+              mixMCParticles<1>(selectedparticlesMC_d[collision1.globalIndex()], selectedparticlesMC_p[collision2.globalIndex()]); // mixing ME
+            }
+
+            stop2++;
+          }
         }
       }
     }
