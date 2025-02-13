@@ -156,7 +156,7 @@ struct HfCandidateSelectorToOmegaPi {
   HistogramRegistry registry{"registry"}; // for QA of selections
 
   OutputObj<TH1D> hInvMassCharmBaryon{TH1D("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.3, 3.1)};
-  OutputObj<TH1D> PtCharmBaryon{TH1D("PtCharmBaryon", "Charm baryon transverse momentum before sel;Pt;entries", 8000, 0., 80)};
+  OutputObj<TH1D> hPtCharmBaryon{TH1D("hPtCharmBaryon", "Charm baryon transverse momentum before sel;Pt;entries", 8000, 0., 80)};
 
   void init(InitContext const&)
   {
@@ -428,7 +428,7 @@ struct HfCandidateSelectorToOmegaPi {
           }
 
           //Omegac Pt selection
-          PtCharmBaryon->Fill(std::abs(candidate.kfptOmegac()));
+          hPtCharmBaryon->Fill(std::abs(candidate.kfptOmegac()));
           if (std::abs(candidate.kfptOmegac()) < ptCandMin || std::abs(candidate.kfptOmegac()) > ptCandMax) {
             resultSelections = false;
             registry.fill(HIST("hSelPtOmegac"), 0);
