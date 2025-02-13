@@ -152,7 +152,7 @@ uint16_t setEventSelectionBit(T const& collision)
   }
   if (collision.sel7()) {
     SETBIT(bit, JCollisionSel::sel7);
-    }
+  }
     if (collision.alias_bit(kINT7)) {
       SETBIT(bit, JCollisionSel::selKINT7);
     }
