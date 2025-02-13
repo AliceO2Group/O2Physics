@@ -1596,7 +1596,7 @@ struct derivedlambdakzeroanalysis {
     }
 
     // Fetch interaction rate only if required (in order to limit ccdb calls)
-    double interactionRate = (eventSelections.minIR >= 0 || eventSelections.maxIR >= 0) ? interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
+    double interactionRate = (eventSelections.minIR >= 0 || eventSelections.maxIR >= 0) ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
     if (eventSelections.minIR >= 0 && interactionRate < eventSelections.minIR) {
       return false;
     }
@@ -1725,7 +1725,7 @@ struct derivedlambdakzeroanalysis {
     }
     float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
     // Fetch interaction rate only if required (in order to limit ccdb calls)
-    double interactionRate = !irSource.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
+    double interactionRate = !irSource.value.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
 
     // gap side
     int gapSide = collision.gapSide();
@@ -1812,7 +1812,7 @@ struct derivedlambdakzeroanalysis {
     }
     float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
     // Fetch interaction rate only if required (in order to limit ccdb calls)
-    double interactionRate = !irSource.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
+    double interactionRate = !irSource.value.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
 
     // gap side
     int gapSide = collision.gapSide();
