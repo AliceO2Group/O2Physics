@@ -13,6 +13,9 @@
 ///
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 
+#include <vector>
+#include <utility>
+
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -66,7 +69,7 @@ struct LfV0qaanalysis {
     }
     LOG(info) << "Number of process functions enabled: " << nProc;
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{10, 0.f, 10.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{10, 0.f, 10.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "TVX");
@@ -86,14 +89,14 @@ struct LfV0qaanalysis {
       registry.add("hCentFT0M_GenRecoColl_MC_INELgt0", "hCentFT0M_GenRecoColl_MC_INELgt0", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
       registry.add("hCentFT0M_GenColl_MC", "hCentFT0M_GenColl_MC", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
       registry.add("hCentFT0M_GenColl_MC_INELgt0", "hCentFT0M_GenColl_MC_INELgt0", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
-      registry.add("hNEventsMCGen", "hNEventsMCGen", {HistType::kTH1I, {{4, 0.f, 4.f}}});
+      registry.add("hNEventsMCGen", "hNEventsMCGen", {HistType::kTH1D, {{4, 0.f, 4.f}}});
       registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(1, "all");
       registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(2, "zvertex_true");
       registry.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(3, "INELgt0_true");
-      registry.add("hNEventsMCGenReco", "hNEventsMCGenReco", {HistType::kTH1I, {{2, 0.f, 2.f}}});
+      registry.add("hNEventsMCGenReco", "hNEventsMCGenReco", {HistType::kTH1D, {{2, 0.f, 2.f}}});
       registry.get<TH1>(HIST("hNEventsMCGenReco"))->GetXaxis()->SetBinLabel(1, "INEL");
       registry.get<TH1>(HIST("hNEventsMCGenReco"))->GetXaxis()->SetBinLabel(2, "INELgt0");
-      registry.add("hNEventsMCReco", "hNEventsMCReco", {HistType::kTH1I, {{4, 0.f, 4.f}}});
+      registry.add("hNEventsMCReco", "hNEventsMCReco", {HistType::kTH1D, {{4, 0.f, 4.f}}});
       registry.get<TH1>(HIST("hNEventsMCReco"))->GetXaxis()->SetBinLabel(1, "all");
       registry.get<TH1>(HIST("hNEventsMCReco"))->GetXaxis()->SetBinLabel(2, "pass ev sel");
       registry.get<TH1>(HIST("hNEventsMCReco"))->GetXaxis()->SetBinLabel(3, "INELgt0");
@@ -217,15 +220,8 @@ struct LfV0qaanalysis {
       float ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
 
       // ITS clusters
-      int posITSNhits = 0, negITSNhits = 0;
-      for (unsigned int i = 0; i < 7; i++) {
-        if (v0.posTrack_as<DauTracks>().itsClusterMap() & (1 << i)) {
-          posITSNhits++;
-        }
-        if (v0.negTrack_as<DauTracks>().itsClusterMap() & (1 << i)) {
-          negITSNhits++;
-        }
-      }
+      const int posITSNhits = v0.posTrack_as<DauTracks>().itsNCls();
+      const int negITSNhits = v0.negTrack_as<DauTracks>().itsNCls();
 
       // Event flags
       int evFlag = 0;
@@ -366,15 +362,8 @@ struct LfV0qaanalysis {
           }
         }
 
-        int posITSNhits = 0, negITSNhits = 0;
-        for (unsigned int i = 0; i < 7; i++) {
-          if (v0.posTrack_as<DauTracksMC>().itsClusterMap() & (1 << i)) {
-            posITSNhits++;
-          }
-          if (v0.negTrack_as<DauTracksMC>().itsClusterMap() & (1 << i)) {
-            negITSNhits++;
-          }
-        }
+        const int posITSNhits = v0.posTrack_as<DauTracksMC>().itsNCls();
+        const int negITSNhits = v0.negTrack_as<DauTracksMC>().itsNCls();
 
         float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
         float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
@@ -400,11 +389,11 @@ struct LfV0qaanalysis {
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPi(), v0.posTrack_as<DauTracksMC>().tofNSigmaPi(),
                 v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isDauK0Short, isDauLambda, isDauAntiLambda, isprimary,
                 mcCollision.centFT0M(), cent, evFlag, v0.alpha(), v0.qtarm(),
-                v0.posTrack_as<DauTracksMC>().tpcNClsCrossedRows(), v0.posTrack_as<DauTracks>().tpcCrossedRowsOverFindableCls(),
-                v0.posTrack_as<DauTracksMC>().tpcNClsShared(), v0.posTrack_as<DauTracks>().itsChi2NCl(),
+                v0.posTrack_as<DauTracksMC>().tpcNClsCrossedRows(), v0.posTrack_as<DauTracksMC>().tpcCrossedRowsOverFindableCls(),
+                v0.posTrack_as<DauTracksMC>().tpcNClsShared(), v0.posTrack_as<DauTracksMC>().itsChi2NCl(),
                 v0.posTrack_as<DauTracksMC>().tpcChi2NCl(),
-                v0.negTrack_as<DauTracksMC>().tpcNClsCrossedRows(), v0.negTrack_as<DauTracks>().tpcCrossedRowsOverFindableCls(),
-                v0.negTrack_as<DauTracksMC>().tpcNClsShared(), v0.negTrack_as<DauTracks>().itsChi2NCl(),
+                v0.negTrack_as<DauTracksMC>().tpcNClsCrossedRows(), v0.negTrack_as<DauTracksMC>().tpcCrossedRowsOverFindableCls(),
+                v0.negTrack_as<DauTracksMC>().tpcNClsShared(), v0.negTrack_as<DauTracksMC>().itsChi2NCl(),
                 v0.negTrack_as<DauTracksMC>().tpcChi2NCl());
         }
       }
