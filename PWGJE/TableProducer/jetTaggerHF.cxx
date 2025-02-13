@@ -36,7 +36,7 @@
 #include "PWGJE/DataModel/JetTagging.h"
 #include "PWGJE/Core/JetTaggingUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "Tools/ML/MlResponse.h"
+#include "PWGJE/Core/MlResponseHfTagging.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,13 +64,13 @@ struct JetTaggerHFTask {
   Configurable<bool> trackProbQA{"trackProbQA", false, "fill track probability histograms separately for geometric positive and negative tracks for QA"};
   Configurable<int> numCount{"numCount", 3, "number of track counting"};
   Configurable<int> resoFuncMatching{"resoFuncMatching", 0, "matching parameters of resolution function as MC samble (0: custom, 1: custom & inc, 2: MB, 3: MB & inc, 4: JJ, 5: JJ & inc)"};
-  Configurable<std::vector<std::string>> IPparameterPathsCCDB{"IPparameterPathsCCDB", std::vector<std::string>{"Users/l/leehy/LHC24g4/f_inclusive_0", "Users/l/leehy/LHC24g4/f_inclusive_1", "Users/l/leehy/LHC24g4/f_inclusive_2", "Users/l/leehy/LHC24g4/f_inclusive_3", "Users/l/leehy/LHC24g4/f_inclusive_4", "Users/l/leehy/LHC24g4/f_inclusive_5", "Users/l/leehy/LHC24g4/f_inclusive_6"}, "Paths for fitting parameters of resolution functions for IP method on CCDB"};
+  Configurable<std::vector<std::string>> pathsCCDBforIPparamer{"pathsCCDBforIPparamer", std::vector<std::string>{"Users/l/leehy/LHC24g4/f_inclusive_0"}, "Paths for fitting parameters of resolution functions for IP method on CCDB"};
   Configurable<bool> usepTcategorize{"usepTcategorize", false, "p_T categorize TF1 function with Inclusive jet"};
-  Configurable<std::vector<float>> paramsResoFuncData{"paramsResoFuncData", std::vector<float>{1306800, -0.1049, 0.861425, 13.7547, 0.977967, 8.96823, 0.151595, 6.94499, 0.0250301}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7))"};
-  Configurable<std::vector<float>> paramsResoFuncIncJetMC{"paramsResoFuncIncJetMC", std::vector<float>{1908803.027, -0.059, 0.895, 13.467, 1.005, 8.867, 0.098, 6.929, 0.011}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
-  Configurable<std::vector<float>> paramsResoFuncCharmJetMC{"paramsResoFuncCharmJetMC", std::vector<float>{282119.753, -0.065, 0.893, 11.608, 0.945, 8.029, 0.131, 6.244, 0.027}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
-  Configurable<std::vector<float>> paramsResoFuncBeautyJetMC{"paramsResoFuncBeautyJetMC", std::vector<float>{74901.583, -0.082, 0.874, 10.332, 0.941, 7.352, 0.097, 6.220, 0.022}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
-  Configurable<std::vector<float>> paramsResoFuncLfJetMC{"paramsResoFuncLfJetMC", std::vector<float>{1539435.343, -0.061, 0.896, 13.272, 1.034, 5.884, 0.004, 7.843, 0.090}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
+  Configurable<std::vector<float>> paramsResoFuncData{"paramsResoFuncData", std::vector<float>{-1.0}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7))"};
+  Configurable<std::vector<float>> paramsResoFuncIncJetMC{"paramsResoFuncIncJetMC", std::vector<float>{-1.0}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
+  Configurable<std::vector<float>> paramsResoFuncCharmJetMC{"paramsResoFuncCharmJetMC", std::vector<float>{-1.0}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
+  Configurable<std::vector<float>> paramsResoFuncBeautyJetMC{"paramsResoFuncBeautyJetMC", std::vector<float>{-1.0}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
+  Configurable<std::vector<float>> paramsResoFuncLfJetMC{"paramsResoFuncLfJetMC", std::vector<float>{-1.0}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
   Configurable<float> minSignImpXYSig{"minSignImpXYSig", -40.0, "minimum of signed impact parameter significance"};
   Configurable<float> tagPointForIP{"tagPointForIP", 2.5, "tagging working point for IP"};
   Configurable<float> tagPointForIPxyz{"tagPointForIPxyz", 2.5, "tagging working point for IP xyz"};
@@ -103,23 +103,23 @@ struct JetTaggerHFTask {
   Configurable<int64_t> nTrkFeat{"nTrkFeat", 13, "Number of track GNN input features"};
   Configurable<int64_t> nTrkOrigin{"nTrkOrigin", 5, "Number of track origin categories"};
   Configurable<std::vector<float>> transformFeatureJetMean{"transformFeatureJetMean",
-                                                           std::vector<float>{3.7093048e+01, 3.1462731e+00, -8.9617318e-04, 4.5036483e+00},
+                                                           std::vector<float>{-999},
                                                            "Mean values for each GNN input feature (jet)"};
   Configurable<std::vector<float>> transformFeatureJetStdev{"transformFeatureJetStdev",
-                                                            std::vector<float>{3.9559139e+01, 1.8156786e+00, 2.8845072e-01, 4.6293869e+00},
+                                                            std::vector<float>{-999},
                                                             "Stdev values for each GNN input feature (jet)"};
   Configurable<std::vector<float>> transformFeatureTrkMean{"transformFeatureTrkMean",
-                                                           std::vector<float>{5.8772368e+00, 3.1470699e+00, -1.4703944e-03, 1.9976571e-03, 1.7700187e-03, 3.5821514e-03, 1.9987826e-03, 7.3673888e-03, 6.6411214e+00, 1.3810074e+02, 1.4888744e+02, 6.5751970e-01, 1.6469173e+00},
+                                                           std::vector<float>{-999},
                                                            "Mean values for each GNN input feature (track)"};
   Configurable<std::vector<float>> transformFeatureTrkStdev{"transformFeatureTrkStdev",
-                                                            std::vector<float>{9.2763824e+00, 1.8162115e+00, 3.1512174e-01, 9.9999982e-01, 5.6147423e-02, 2.3086982e-02, 1.6523319e+00, 4.8507337e-02, 8.1565088e-01, 1.2891182e+01, 1.1064601e+01, 9.5457840e-01, 2.8930053e-01},
+                                                            std::vector<float>{-999},
                                                             "Stdev values for each GNN input feature (track)"};
 
   // axis spec
   ConfigurableAxis binTrackProbability{"binTrackProbability", {100, 0.f, 1.f}, ""};
   ConfigurableAxis binJetFlavour{"binJetFlavour", {6, -0.5, 5.5}, ""};
 
-  o2::analysis::MlResponse<float> bMlResponse;
+  o2::analysis::MlResponseHfTagging<float> bMlResponse;
   o2::ccdb::CcdbApi ccdbApi;
 
   using JetTracksExt = soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>;
@@ -141,7 +141,7 @@ struct JetTaggerHFTask {
   std::vector<uint16_t> decisionNonML;
   std::vector<float> scoreML;
 
-  jettaggingutilities::GNNBjetAllocator tensorAlloc;
+  o2::analysis::GNNBjetAllocator tensorAlloc;
 
   template <typename T, typename U>
   float calculateJetProbability(int origin, T const& jet, U const& tracks, bool const& isMC = false)
@@ -263,7 +263,7 @@ struct JetTaggerHFTask {
       std::map<std::string, std::string> metadata; // dummy meta data (will be updated)
                                                    // fill the timestamp directly of each TF1 according to p_T track range (0, 0.5, 1, 2, 4, 6, 9)
       for (int i = 0; i < 7; i++) {
-        resoFuncCCDB.push_back(ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB->at(i), metadata, -1));
+        resoFuncCCDB.push_back(ccdbApi.retrieveFromTFileAny<TF1>(pathsCCDBforIPparamer->at(i), metadata, -1));
       }
     }
 
@@ -364,12 +364,12 @@ struct JetTaggerHFTask {
       } else {
         bMlResponse.setModelPathsLocal(onnxFileNames);
       }
-      // bMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      bMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       bMlResponse.init();
     }
 
     if (doprocessAlgorithmGNN) {
-      tensorAlloc = jettaggingutilities::GNNBjetAllocator(nJetFeat.value, nTrkFeat.value, nClassesMl.value, nTrkOrigin.value, transformFeatureJetMean.value, transformFeatureJetStdev.value, transformFeatureTrkMean.value, transformFeatureTrkStdev.value, nJetConst);
+      tensorAlloc = o2::analysis::GNNBjetAllocator(nJetFeat.value, nTrkFeat.value, nClassesMl.value, nTrkOrigin.value, transformFeatureJetMean.value, transformFeatureJetStdev.value, transformFeatureTrkMean.value, transformFeatureTrkStdev.value, nJetConst);
       registry.add("h_db_b", "#it{D}_{b} b-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
       registry.add("h_db_c", "#it{D}_{b} c-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
       registry.add("h_db_lf", "#it{D}_{b} lf-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
@@ -385,8 +385,8 @@ struct JetTaggerHFTask {
       std::vector<jettaggingutilities::BJetTrackParams> tracksParams;
       std::vector<jettaggingutilities::BJetSVParams> svsParams;
 
-      analyzeJetSVInfo4ML(analysisJet, allTracks, allSVs, svsParams, svPtMin, svReductionFactor);
-      analyzeJetTrackInfo4ML(analysisJet, allTracks, allSVs, tracksParams, trackPtMin);
+      jettaggingutilities::analyzeJetSVInfo4ML(analysisJet, allTracks, allSVs, svsParams, svPtMin, svReductionFactor);
+      jettaggingutilities::analyzeJetTrackInfo4ML(analysisJet, allTracks, allSVs, tracksParams, trackPtMin);
 
       int nSVs = analysisJet.template secondaryVertices_as<SecondaryVertices>().size();
 
@@ -394,11 +394,42 @@ struct JetTaggerHFTask {
       tracksParams.resize(nJetConst); // resize to the number of inputs of the ML
       svsParams.resize(nJetConst);    // resize to the number of inputs of the ML
 
-      auto inputML = getInputsForML(jetparam, tracksParams, svsParams, nJetConst);
+      std::vector<float> output;
+
+      if (bMlResponse.getInputShape().size() > 1) {
+        auto inputML = bMlResponse.getInputFeatures2D(jetparam, tracksParams, svsParams);
+        bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
+      } else {
+        auto inputML = bMlResponse.getInputFeatures1D(jetparam, tracksParams, svsParams);
+        bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
+      }
+
+      scoreML[analysisJet.globalIndex()] = output[0];
+    }
+  }
+
+  template <typename AnyJets, typename AnyTracks>
+  void analyzeJetAlgorithmMLnoSV(AnyJets const& alljets, AnyTracks const& allTracks)
+  {
+    for (const auto& analysisJet : alljets) {
+
+      std::vector<jettaggingutilities::BJetTrackParams> tracksParams;
+      std::vector<jettaggingutilities::BJetSVParams> svsParams;
+
+      jettaggingutilities::analyzeJetTrackInfo4MLnoSV(analysisJet, allTracks, tracksParams, trackPtMin);
+
+      jettaggingutilities::BJetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), 0, analysisJet.mass()};
+      tracksParams.resize(nJetConst); // resize to the number of inputs of the ML
 
       std::vector<float> output;
-      // bool isSelectedMl = bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
-      bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
+
+      if (bMlResponse.getInputShape().size() > 1) {
+        auto inputML = bMlResponse.getInputFeatures2D(jetparam, tracksParams, svsParams);
+        bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
+      } else {
+        auto inputML = bMlResponse.getInputFeatures1D(jetparam, tracksParams, svsParams);
+        bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
+      }
 
       scoreML[analysisJet.globalIndex()] = output[0];
     }
@@ -419,7 +450,7 @@ struct JetTaggerHFTask {
         tensorAlloc.getGNNInput(jetFeat, trkFeat, feat, gnnInput);
 
         auto modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
-        scoreML[jet.globalIndex()] = jettaggingutilities::Db(modelOutput, fC);
+        scoreML[jet.globalIndex()] = jettaggingutilities::getDb(modelOutput, fC);
       } else {
         scoreML[jet.globalIndex()] = -999.;
         LOGF(debug, "doprocessAlgorithmGNN, trkFeat.size() <= 0 (%d)", jet.globalIndex());
@@ -464,6 +495,12 @@ struct JetTaggerHFTask {
     analyzeJetAlgorithmML(allJets, allTracks, allSVs);
   }
   PROCESS_SWITCH(JetTaggerHFTask, processAlgorithmML, "Fill ML evaluation score for charged jets", false);
+
+  void processAlgorithmMLnoSV(JetTable const& allJets, JetTracksExt const& allTracks)
+  {
+    analyzeJetAlgorithmMLnoSV(allJets, allTracks);
+  }
+  PROCESS_SWITCH(JetTaggerHFTask, processAlgorithmMLnoSV, "Fill ML evaluation score for charged jets but without using SVs", false);
 
   void processAlgorithmGNN(JetTable const& jets, JetTracksExt const& jtracks, OriginalTracks const& origTracks)
   {
