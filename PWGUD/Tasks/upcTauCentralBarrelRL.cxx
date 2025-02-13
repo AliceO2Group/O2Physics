@@ -845,7 +845,7 @@ struct UpcTauRl {
         return false; // TPC chi2
     }
     //  TOF
-    if (track.hasTOF()){
+    if (track.hasTOF()) {
       if (track.tpcChi2NCl() > cutGlobalTrack.cutMaxTOFchi2)
         return false; // TOF chi2
     }
