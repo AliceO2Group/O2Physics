@@ -69,7 +69,7 @@ struct K892analysispbpb {
   Configurable<int> cPIDBins{"cPIDBins", 65, "PID binning"};
   Configurable<float> cPIDQALimit{"cPIDQALimit", 6.5, "PID QA limit"};
   Configurable<int> cDCABins{"cDCABins", 300, "DCA binning"};
-  Configurable<int> cPDGbins{"cPDGBins", 5000, "number of PDG bins"};
+  Configurable<int> cPDGbins{"cPDGbins", 5000, "number of PDG bins"};
   Configurable<float> cPDGMax{"cPDGMax", 9500000.0f, "PDG limit"};
   
   // events
