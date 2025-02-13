@@ -80,6 +80,26 @@ struct Phik0shortanalysis {
   // Configurables on phi pT bins
   Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi"};
 
+  // Configurables on phi mass
+  Configurable<int> nBinsMPhi{"nBinsMPhi", 13, "N bins in cfgmassPhiaxis"};
+  Configurable<float> lowMPhi{"lowMPhi", 1.0095, "Upper limits on Phi mass for signal extraction"};
+  Configurable<float> upMPhi{"upMPhi", 1.029, "Upper limits on Phi mass for signal extraction"};
+
+  // Configurables for Phi selection
+  Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "Cut on charge"};
+  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};
+  Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
+  Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
+  Configurable<float> cMinKaonPtcut{"cMinKaonPtcut", 0.15f, "Track minimum pt cut"};
+  Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0f, "Track DCAz cut to PV Maximum"};
+  Configurable<float> cMaxDCArToPV1{"cMaxDCArToPV1", 0.004f, "Track DCAr cut to PV config 1"};
+  Configurable<float> cMaxDCArToPV2{"cMaxDCArToPV2", 0.013f, "Track DCAr cut to PV config 2"};
+  Configurable<float> cMaxDCArToPV3{"cMaxDCArToPV3", 1.0f, "Track DCAr cut to PV config 3"};
+
+  Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
+  Configurable<float> nSigmaCutTPCKa{"nSigmaCutTPCKa", 3.0, "Value of the TPC Nsigma cut for Kaons"};
+  Configurable<float> nSigmaCutCombinedKa{"nSigmaCutCombinedKa", 3.0, "Value of the TOF Nsigma cut for Kaons"};
+
   // Configurables for V0 selection
   Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
   Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80, "min number of TPC crossed rows"};
@@ -106,26 +126,6 @@ struct Phik0shortanalysis {
 
   // Configurable on K0S pT bins
   Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
-
-  // Configurables on Phi mass
-  Configurable<int> nBinsMPhi{"nBinsMPhi", 13, "N bins in cfgmassPhiaxis"};
-  Configurable<float> lowMPhi{"lowMPhi", 1.0095, "Upper limits on Phi mass for signal extraction"};
-  Configurable<float> upMPhi{"upMPhi", 1.029, "Upper limits on Phi mass for signal extraction"};
-
-  // Configurables for phi selection
-  Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "Cut on charge"};
-  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};
-  Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
-  Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
-  Configurable<float> cMinKaonPtcut{"cMinKaonPtcut", 0.15f, "Track minimum pt cut"};
-  Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0f, "Track DCAz cut to PV Maximum"};
-  Configurable<float> cMaxDCArToPV1{"cMaxDCArToPV1", 0.004f, "Track DCAr cut to PV config 1"};
-  Configurable<float> cMaxDCArToPV2{"cMaxDCArToPV2", 0.013f, "Track DCAr cut to PV config 2"};
-  Configurable<float> cMaxDCArToPV3{"cMaxDCArToPV3", 1.0f, "Track DCAr cut to PV config 3"};
-
-  Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
-  Configurable<float> nSigmaCutTPCKa{"nSigmaCutTPCKa", 3.0, "Value of the TPC Nsigma cut for Kaons"};
-  Configurable<float> nSigmaCutCombinedKa{"nSigmaCutCombinedKa", 3.0, "Value of the TOF Nsigma cut for Kaons"};
 
   // Configurables for pions selection(extra with respect to a few of those defined for V0)
   Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
