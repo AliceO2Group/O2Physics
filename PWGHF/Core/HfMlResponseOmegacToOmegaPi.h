@@ -13,8 +13,8 @@
 /// \brief Class to compute the ML response for Ωc± → Ω∓ π±  analysis selections
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 
-#ifndef PWGHF_CORE_HFMLRESPONSEOMEGAC0TOOMEGAPI_H_
-#define PWGHF_CORE_HFMLRESPONSEOMEGAC0TOOMEGAPI_H_
+#ifndef PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPI_H_
+#define PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPI_H_
 
 #include <map>
 #include <string>
