@@ -159,7 +159,7 @@ struct UpcTauRl {
     ConfigurableAxis zzAxisEta{"zzAxisEta", {50, -1.2, 1.2}, "Pseudorapidity (a.u.)"};
     ConfigurableAxis zzAxisRap{"zzAxisRap", {50, -1.2, 1.2}, "Rapidity (a.u.)"};
     ConfigurableAxis zzAxisFraction{"zzAxisFraction", {500, 0., 1.}, "Fraction (-)"};
-    ConfigurableAxis zzAxisMirrorFraction{"zzAxisMirrorFraction", {500, 0., 1.}, "Fraction (-)"};
+    ConfigurableAxis zzAxisMirrorFraction{"zzAxisMirrorFraction", {500, -1., 1.}, "Fraction (-)"};
     ConfigurableAxis zzAxisAcoplanarity{"zzAxisAcoplanarity", {32, 0.0, o2::constants::math::PI}, "Acoplanarity (rad)"};
     ConfigurableAxis zzAxisCollinearity{"zzAxisCollinearity", {200, 0, 20}, "Collinearity (-)"};
     ConfigurableAxis zzAxisTPCdEdx{"zzAxisTPCdEdx", {2000, 0., 200.}, "TPC dE/dx (a.u.)"};
