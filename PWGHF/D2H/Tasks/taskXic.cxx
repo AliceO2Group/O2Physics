@@ -77,9 +77,9 @@ struct HfTaskXic {
     "registry", // histo not in pt bins
     {
       {"Data/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},    // pt Xic
-      {"Data/hEta", "3-prong candidates;candidate #it{eta};entries", {HistType::kTH1D, {{100, -5., 5.}}}},                  // eta Xic
+      {"Data/hEta", "3-prong candidates;candidate #it{eta};entries", {HistType::kTH1D, {{100, -2., 2.}}}},                  // eta Xic
       {"Data/hPhi", "3-prong candidates;candidate #varphi;entries", {HistType::kTH1D, {{72, 0., constants::math::TwoPI}}}}, // phi Xic
-      {"Data/hMass", "3-prong candidates; inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1D, {{600, 2.18, 2.58}}}},   // mass Xic
+      {"Data/hMass", "3-prong candidates; inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1D, {{600, 1.98, 2.58}}}},   // mass Xic
       {"Data/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1D, {{1000, 0., 1000.}}}},
       {"MC/generated/signal/hPtGenSig", "3-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},
       {"MC/generated/signal/hPtGen", "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},
