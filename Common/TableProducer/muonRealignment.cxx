@@ -18,6 +18,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/ASoAHelpers.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CCDBTimeStampUtils.h"
@@ -38,6 +39,8 @@
 #include "GlobalTracking/MatchGlobalFwd.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "Common/DataModel/FwdTrackReAlignTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 
 using namespace std;
 using namespace o2;
@@ -47,6 +50,24 @@ using namespace o2::framework::expressions;
 
 const int fgNDetElemCh[10] = {4, 4, 4, 4, 18, 18, 26, 26, 26, 26};
 const int fgSNDetElemCh[11] = {0, 4, 8, 12, 16, 34, 52, 78, 104, 130, 156};
+
+struct FwdTrkCovRealignInfo {
+  float sigX = 0.f;
+  float sigY = 0.f;
+  float sigPhi = 0.f;
+  float sigTgl = 0.f;
+  float sig1Pt = 0.f;
+  int8_t rhoXY = 0;
+  int8_t rhoPhiX = 0;
+  int8_t rhoPhiY = 0;
+  int8_t rhoTglX = 0;
+  int8_t rhoTglY = 0;
+  int8_t rhoTglPhi = 0;
+  int8_t rho1PtX = 0;
+  int8_t rho1PtY = 0;
+  int8_t rho1PtPhi = 0;
+  int8_t rho1PtTgl = 0;
+};
 
 struct MuonRealignment {
   Produces<aod::StoredFwdTracksReAlign> realignFwdTrks;
@@ -80,6 +101,7 @@ struct MuonRealignment {
   TGeoManager* geoRef = nullptr;
 
   Preslice<aod::FwdTrkCl> perMuon = aod::fwdtrkcl::fwdtrackId;
+  Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
 
   int GetDetElemId(int iDetElemNumber)
   {
@@ -200,7 +222,8 @@ struct MuonRealignment {
     mImproveCutChi2 = 2. * cfgSigmaCutImprove.value * cfgSigmaCutImprove.value;
   }
 
-  void process(aod::Collision const& collision, aod::FwdTracks const& tracks, aod::FwdTrkCls const& clusters, aod::BCsWithTimestamps const&)
+  template <typename TEvent, typename TMuons, typename TMuonCls, typename AssocMuons>
+  void runMuonRealignment(TEvent const& collision, aod::BCsWithTimestamps const&, TMuons const&, TMuonCls const& clusters, AssocMuons const& fwdtrackIndices)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (fCurrentRun != bc.runNumber()) {
@@ -273,96 +296,115 @@ struct MuonRealignment {
     }
 
     // Reserve storage for output table
-    realignFwdTrks.reserve(tracks.size());
-    realignFwdTrksCov.reserve(tracks.size());
+    realignFwdTrks.reserve(fwdtrackIndices.size());
+    realignFwdTrksCov.reserve(fwdtrackIndices.size());
 
-    // Loop over forward tracks
-    for (auto const& track : tracks) {
-      if (track.has_collision()) {
-        if (track.trackType() == aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack || track.trackType() == aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack) {
+    // Loop over forward tracks using association indices
+    FwdTrkCovRealignInfo fwdTrkCovRealignInfo;
+    for (auto const& muonId : fwdtrackIndices) {
+      auto muon = muonId.template fwdtrack_as<TMuons>();
+      int muonRealignId = muon.globalIndex();
+      if ((muon.trackType() == aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) || (muon.trackType() == aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack)) {
 
-          auto clustersSliced = clusters.sliceBy(perMuon, track.globalIndex()); // Slice clusters by muon id
-          mch::Track convertedTrack = mch::Track();                             // Temporary variable to store re-aligned clusters
-          int clIndex = -1;
-          // Get re-aligned clusters associated to current track
-          for (auto const& cluster : clustersSliced) {
-            clIndex += 1;
+        auto clustersSliced = clusters.sliceBy(perMuon, muon.globalIndex()); // Slice clusters by muon id
+        mch::Track convertedTrack = mch::Track();                            // Temporary variable to store re-aligned clusters
+        int clIndex = -1;
+        // Get re-aligned clusters associated to current track
+        for (auto const& cluster : clustersSliced) {
+          clIndex += 1;
 
-            mch::Cluster* clusterMCH = new mch::Cluster();
+          mch::Cluster* clusterMCH = new mch::Cluster();
 
-            math_utils::Point3D<double> local;
-            math_utils::Point3D<double> master;
-            master.SetXYZ(cluster.x(), cluster.y(), cluster.z());
+          math_utils::Point3D<double> local;
+          math_utils::Point3D<double> master;
+          master.SetXYZ(cluster.x(), cluster.y(), cluster.z());
 
-            // Transformation from reference geometry frame to new geometry frame
-            transformRef[cluster.deId()].MasterToLocal(master, local);
-            transformNew[cluster.deId()].LocalToMaster(local, master);
+          // Transformation from reference geometry frame to new geometry frame
+          transformRef[cluster.deId()].MasterToLocal(master, local);
+          transformNew[cluster.deId()].LocalToMaster(local, master);
 
-            clusterMCH->x = master.x();
-            clusterMCH->y = master.y();
-            clusterMCH->z = master.z();
+          clusterMCH->x = master.x();
+          clusterMCH->y = master.y();
+          clusterMCH->z = master.z();
 
-            uint32_t ClUId = mch::Cluster::buildUniqueId(static_cast<int>(cluster.deId() / 100) - 1, cluster.deId(), clIndex);
-            clusterMCH->uid = ClUId;
-            clusterMCH->ex = cluster.isGoodX() ? 0.2 : 10.0;
-            clusterMCH->ey = cluster.isGoodY() ? 0.2 : 10.0;
+          uint32_t ClUId = mch::Cluster::buildUniqueId(static_cast<int>(cluster.deId() / 100) - 1, cluster.deId(), clIndex);
+          clusterMCH->uid = ClUId;
+          clusterMCH->ex = cluster.isGoodX() ? 0.2 : 10.0;
+          clusterMCH->ey = cluster.isGoodY() ? 0.2 : 10.0;
 
-            // Add transformed cluster into temporary variable
-            convertedTrack.createParamAtCluster(*clusterMCH);
-            LOGF(debug, "Track %d, cluster DE%d:  x:%g  y:%g  z:%g", track.globalIndex(), cluster.deId(), cluster.x(), cluster.y(), cluster.z());
-            LOGF(debug, "Track %d, re-aligned cluster DE%d:  x:%g  y:%g  z:%g", track.globalIndex(), cluster.deId(), clusterMCH->getX(), clusterMCH->getY(), clusterMCH->getZ());
-          }
-
-          // Refit the re-aligned track
-          int removable = 0;
-          if (convertedTrack.getNClusters() != 0) {
-            removable = RemoveTrack(convertedTrack);
-          } else {
-            LOGF(fatal, "Muon track %d has no associated clusters.", track.globalIndex());
-          }
-
-          // Get the re-aligned track parameter: track param at the first cluster
-          mch::TrackParam trackParam = mch::TrackParam(convertedTrack.first());
-
-          // Convert MCH track to FWD track and get new parameters
-          auto fwdtrack = mMatching.MCHtoFwd(trackParam);
-          fwdtrack.setTrackChi2(trackParam.getTrackChi2() / convertedTrack.getNDF());
-          float sigX = TMath::Sqrt(fwdtrack.getCovariances()(0, 0));
-          float sigY = TMath::Sqrt(fwdtrack.getCovariances()(1, 1));
-          float sigPhi = TMath::Sqrt(fwdtrack.getCovariances()(2, 2));
-          float sigTgl = TMath::Sqrt(fwdtrack.getCovariances()(3, 3));
-          float sig1Pt = TMath::Sqrt(fwdtrack.getCovariances()(4, 4));
-          float rhoXY = (Char_t)(128. * fwdtrack.getCovariances()(0, 1) / (sigX * sigY));
-          float rhoPhiX = (Char_t)(128. * fwdtrack.getCovariances()(0, 2) / (sigPhi * sigX));
-          float rhoPhiY = (Char_t)(128. * fwdtrack.getCovariances()(1, 2) / (sigPhi * sigY));
-          float rhoTglX = (Char_t)(128. * fwdtrack.getCovariances()(0, 3) / (sigTgl * sigX));
-          float rhoTglY = (Char_t)(128. * fwdtrack.getCovariances()(1, 3) / (sigTgl * sigY));
-          float rhoTglPhi = (Char_t)(128. * fwdtrack.getCovariances()(2, 3) / (sigTgl * sigPhi));
-          float rho1PtX = (Char_t)(128. * fwdtrack.getCovariances()(0, 4) / (sig1Pt * sigX));
-          float rho1PtY = (Char_t)(128. * fwdtrack.getCovariances()(1, 4) / (sig1Pt * sigY));
-          float rho1PtPhi = (Char_t)(128. * fwdtrack.getCovariances()(2, 4) / (sig1Pt * sigPhi));
-          float rho1PtTgl = (Char_t)(128. * fwdtrack.getCovariances()(3, 4) / (sig1Pt * sigTgl));
-
-          LOGF(debug, "TrackParm %d, x:%g  y:%g  z:%g  phi:%g  tgl:%g  InvQPt:%g  chi2:%g  nClusters:%d", track.globalIndex(), track.x(), track.y(), track.z(), track.phi(), track.tgl(), track.signed1Pt(), track.chi2(), track.nClusters());
-          LOGF(debug, "Re-aligned trackParm %d, x:%g  y:%g  z:%g  phi:%g  tgl:%g  InvQPt:%g  chi2:%g  nClusters:%d  removable:%d", track.globalIndex(), fwdtrack.getX(), fwdtrack.getY(), fwdtrack.getZ(), fwdtrack.getPhi(), fwdtrack.getTgl(), fwdtrack.getInvQPt(), fwdtrack.getTrackChi2(), convertedTrack.getNClusters(), removable);
-          // Fill refitted track info
-          realignFwdTrks(fwdtrack.getX(), fwdtrack.getY(), fwdtrack.getZ(), fwdtrack.getPhi(), fwdtrack.getTgl(), fwdtrack.getInvQPt(), fwdtrack.getTrackChi2(), removable);
-          realignFwdTrksCov(sigX, sigY, sigPhi, sigTgl, sig1Pt, rhoXY, rhoPhiX, rhoPhiY, rhoTglX, rhoTglY, rhoTglPhi, rho1PtX, rho1PtY, rho1PtPhi, rho1PtTgl);
-        } else {
-          // Fill nothing for global muons
-          realignFwdTrks(-999., -999., -999., -999., -999., -999., -999., -999.);
-          realignFwdTrksCov(-999., -999., -999., -999., -999., 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+          // Add transformed cluster into temporary variable
+          convertedTrack.createParamAtCluster(*clusterMCH);
+          LOGF(debug, "Track %d, cluster DE%d:  x:%g  y:%g  z:%g", muon.globalIndex(), cluster.deId(), cluster.x(), cluster.y(), cluster.z());
+          LOGF(debug, "Track %d, re-aligned cluster DE%d:  x:%g  y:%g  z:%g", muonRealignId, cluster.deId(), clusterMCH->getX(), clusterMCH->getY(), clusterMCH->getZ());
         }
+
+        // Refit the re-aligned track
+        int removable = 0;
+        if (convertedTrack.getNClusters() != 0) {
+          removable = RemoveTrack(convertedTrack);
+        } else {
+          LOGF(fatal, "Muon track %d has no associated clusters.", muon.globalIndex());
+        }
+
+        // Get the re-aligned track parameter: track param at the first cluster
+        mch::TrackParam trackParam = mch::TrackParam(convertedTrack.first());
+
+        // Convert MCH track to FWD track and get new parameters
+        auto fwdtrack = mMatching.MCHtoFwd(trackParam);
+        fwdtrack.setTrackChi2(trackParam.getTrackChi2() / convertedTrack.getNDF());
+        fwdTrkCovRealignInfo.sigX = TMath::Sqrt(fwdtrack.getCovariances()(0, 0));
+        fwdTrkCovRealignInfo.sigY = TMath::Sqrt(fwdtrack.getCovariances()(1, 1));
+        fwdTrkCovRealignInfo.sigPhi = TMath::Sqrt(fwdtrack.getCovariances()(2, 2));
+        fwdTrkCovRealignInfo.sigTgl = TMath::Sqrt(fwdtrack.getCovariances()(3, 3));
+        fwdTrkCovRealignInfo.sig1Pt = TMath::Sqrt(fwdtrack.getCovariances()(4, 4));
+        fwdTrkCovRealignInfo.rhoXY = (Char_t)(128. * fwdtrack.getCovariances()(0, 1) / (fwdTrkCovRealignInfo.sigX * fwdTrkCovRealignInfo.sigY));
+        fwdTrkCovRealignInfo.rhoPhiX = (Char_t)(128. * fwdtrack.getCovariances()(0, 2) / (fwdTrkCovRealignInfo.sigPhi * fwdTrkCovRealignInfo.sigX));
+        fwdTrkCovRealignInfo.rhoPhiY = (Char_t)(128. * fwdtrack.getCovariances()(1, 2) / (fwdTrkCovRealignInfo.sigPhi * fwdTrkCovRealignInfo.sigY));
+        fwdTrkCovRealignInfo.rhoTglX = (Char_t)(128. * fwdtrack.getCovariances()(0, 3) / (fwdTrkCovRealignInfo.sigTgl * fwdTrkCovRealignInfo.sigX));
+        fwdTrkCovRealignInfo.rhoTglY = (Char_t)(128. * fwdtrack.getCovariances()(1, 3) / (fwdTrkCovRealignInfo.sigTgl * fwdTrkCovRealignInfo.sigY));
+        fwdTrkCovRealignInfo.rhoTglPhi = (Char_t)(128. * fwdtrack.getCovariances()(2, 3) / (fwdTrkCovRealignInfo.sigTgl * fwdTrkCovRealignInfo.sigPhi));
+        fwdTrkCovRealignInfo.rho1PtX = (Char_t)(128. * fwdtrack.getCovariances()(0, 4) / (fwdTrkCovRealignInfo.sig1Pt * fwdTrkCovRealignInfo.sigX));
+        fwdTrkCovRealignInfo.rho1PtY = (Char_t)(128. * fwdtrack.getCovariances()(1, 4) / (fwdTrkCovRealignInfo.sig1Pt * fwdTrkCovRealignInfo.sigY));
+        fwdTrkCovRealignInfo.rho1PtPhi = (Char_t)(128. * fwdtrack.getCovariances()(2, 4) / (fwdTrkCovRealignInfo.sig1Pt * fwdTrkCovRealignInfo.sigPhi));
+        fwdTrkCovRealignInfo.rho1PtTgl = (Char_t)(128. * fwdtrack.getCovariances()(3, 4) / (fwdTrkCovRealignInfo.sig1Pt * fwdTrkCovRealignInfo.sigTgl));
+        LOGF(debug, "TrackParm %d, x:%g  y:%g  z:%g  phi:%g  tgl:%g  InvQPt:%g  chi2:%g  nClusters:%d", muon.globalIndex(), muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(), muon.chi2(), muon.nClusters());
+        LOGF(debug, "Re-aligned trackParm %d, x:%g  y:%g  z:%g  phi:%g  tgl:%g  InvQPt:%g  chi2:%g  nClusters:%d  removable:%d", muonRealignId, fwdtrack.getX(), fwdtrack.getY(), fwdtrack.getZ(), fwdtrack.getPhi(), fwdtrack.getTgl(), fwdtrack.getInvQPt(), fwdtrack.getTrackChi2(), convertedTrack.getNClusters(), removable);
+        // Fill refitted track info
+        realignFwdTrks(muonId.collisionId(), muonId.fwdtrackId(), muon.trackType(), fwdtrack.getX(), fwdtrack.getY(), fwdtrack.getZ(), fwdtrack.getPhi(), fwdtrack.getTgl(), fwdtrack.getInvQPt(), fwdtrack.getTrackChi2(), removable);
+        realignFwdTrksCov(fwdTrkCovRealignInfo.sigX, fwdTrkCovRealignInfo.sigY, fwdTrkCovRealignInfo.sigPhi,
+                          fwdTrkCovRealignInfo.sigTgl, fwdTrkCovRealignInfo.sig1Pt, fwdTrkCovRealignInfo.rhoXY,
+                          fwdTrkCovRealignInfo.rhoPhiX, fwdTrkCovRealignInfo.rhoPhiY, fwdTrkCovRealignInfo.rhoTglX,
+                          fwdTrkCovRealignInfo.rhoTglY, fwdTrkCovRealignInfo.rhoTglPhi, fwdTrkCovRealignInfo.rho1PtX,
+                          fwdTrkCovRealignInfo.rho1PtY, fwdTrkCovRealignInfo.rho1PtPhi, fwdTrkCovRealignInfo.rho1PtTgl);
+        muonRealignId++;
       } else {
-        // Fill nothing for tracks having no associated collision
-        realignFwdTrks(-999., -999., -999., -999., -999., -999., -999., -999.);
-        realignFwdTrksCov(-999., -999., -999., -999., -999., 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        // Fill nothing for global muons
+        realignFwdTrks(muonId.collisionId(), muonId.fwdtrackId(), muon.trackType(), 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, -1.0);
+        realignFwdTrksCov(0.f, 0.f, 0.f, 0.f, 0.f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        muonRealignId++;
       }
     }
   }
+
+  void processMuonReAlignmentWithAssoc(aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs, aod::FwdTracks const& tracks, aod::FwdTrkCls const& clusters, aod::FwdTrackAssoc const& fwdtrackIndices)
+  {
+    for (auto& collision : collisions) {
+      auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
+      runMuonRealignment(collision, bcs, tracks, clusters, muonIdsThisCollision);
+    }
+  }
+  PROCESS_SWITCH(MuonRealignment, processMuonReAlignmentWithAssoc, "Process to produce realigned muons based on associated fwdtracks info", true);
+};
+
+// Extends the fwdtracksrealign table with expression columns
+struct MuonRealignmentSpawner {
+  Spawns<aod::FwdTrksCovReAlign> realignFwdTrksCov;
+  Spawns<aod::FwdTracksReAlign> realignFwdTrks;
+  void init(InitContext const&) {}
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<MuonRealignment>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<MuonRealignment>(cfgc),
+                      adaptAnalysisTask<MuonRealignmentSpawner>(cfgc)};
 }
