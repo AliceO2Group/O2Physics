@@ -152,8 +152,8 @@ struct HfCandidateSelectorToOmegaPi {
   Configurable<float> cosPaV0ToCascMin{"cosPaV0ToCascMin", 0.99, "Minimum cosPA of V0<-cascade"};
 	} KfconfigurableGroup;
   // topological cuts
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_Omegac_to_omega_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_Omegac_to_omega_pi::cuts[0], hf_cuts_Omegac_to_omega_pi::nBinsPt, hf_cuts_Omegac_to_omega_pi::nCutVars, hf_cuts_Omegac_to_omega_pi::labelsPt, hf_cuts_Omegac_to_omega_pi::labelsCutVar}, "OmegaC0 candidate selection per pT bin"};
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_omegac_to_omega_pi::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_omegac_to_omega_pi::cuts[0], hf_cuts_omegac_to_omega_pi::nBinsPt, hf_cuts_omegac_to_omega_pi::nCutVars, hf_cuts_omegac_to_omega_pi::labelsPt, hf_cuts_omegac_to_omega_pi::labelsCutVar}, "OmegaC0 candidate selection per pT bin"};
   // ML inference          
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
