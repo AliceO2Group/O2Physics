@@ -668,7 +668,7 @@ constexpr double binsPt[nBinsPt + 1] = {
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // default values for the cuts
-// 											pi_pT
+// pi_pT
 constexpr double cuts[nBinsPt][nCutVars] = {{0.2},  /* 1 < pt < 2 */
                                             {0.2},  /* 2 < pt < 4 */
                                             {0.6},  /* 4 < pt < 6 */
