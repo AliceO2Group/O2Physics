@@ -218,6 +218,9 @@ struct JetHadronRecoil {
         double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -o2::constants::math::PI);
         double deltaEta = jetWTA.eta() - jet.eta();
         double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
+        if (dR == 0) {
+          return;
+        }
         registry.fill(HIST("hDeltaR"), dR, weight);
         registry.fill(HIST("hDeltaRpT"), jet.pt() - (rho * jet.area()), dR, weight);
       }
@@ -323,6 +326,9 @@ struct JetHadronRecoil {
         double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -o2::constants::math::PI);
         double deltaEta = jetWTA.eta() - jet.eta();
         double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
+        if (dR == 0) {
+          return;
+        }
         registry.fill(HIST("hDeltaRPart"), dR, weight);
         registry.fill(HIST("hDeltaRpTPart"), jet.pt(), dR, weight);
       }
@@ -412,6 +418,9 @@ struct JetHadronRecoil {
             dRp = djetp;
             break;
           }
+        }
+        if (dR == 0 || dRp == 0) {
+          return;
         }
         registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
         registry.fill(HIST("hPhiMatched"), jetBase.phi(), jetTag.phi(), weight);
