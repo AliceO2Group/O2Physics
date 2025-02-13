@@ -364,8 +364,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMultNTracksTPCOnly] = "";
   fgVariableNames[kMultNTracksITSTPC] = "# ITS-TPC tracks in PV";
   fgVariableUnits[kMultNTracksITSTPC] = "";
+  fgVariableNames[kMultNTracksPVeta1] = "# Mult Tracks PV |#eta| < 1";
+  fgVariableUnits[kMultNTracksPVeta1] = "";
+  fgVariableNames[kMultNTracksPVetaHalf] = "# Mult Tracks PV |#eta| < 0.5";
+  fgVariableUnits[kMultNTracksPVetaHalf] = "";
   fgVariableNames[kTrackOccupancyInTimeRange] = "track occupancy in TPC drift time (PV tracks)";
   fgVariableUnits[kTrackOccupancyInTimeRange] = "";
+  fgVariableNames[kFT0COccupancyInTimeRange] = "FT0C occupancy";
+  fgVariableUnits[kFT0COccupancyInTimeRange] = "";
   fgVariableNames[kNoCollInTimeRangeStandard] = "track occupancy in TPC drift standart time";
   fgVariableUnits[kNoCollInTimeRangeStandard] = "";
   fgVariableNames[kMultAllTracksITSTPC] = "# ITS-TPC tracks";
@@ -1146,7 +1152,10 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMultNTracksITSOnly"] = kMultNTracksITSOnly;
   fgVarNamesMap["kMultNTracksTPCOnly"] = kMultNTracksTPCOnly;
   fgVarNamesMap["kMultNTracksITSTPC"] = kMultNTracksITSTPC;
+  fgVarNamesMap["kMultNTracksPVeta1"] = kMultNTracksPVeta1;
+  fgVarNamesMap["kMultNTracksPVetaHalf"] = kMultNTracksPVetaHalf;
   fgVarNamesMap["kTrackOccupancyInTimeRange"] = kTrackOccupancyInTimeRange;
+  fgVarNamesMap["kFT0COccupancyInTimeRange"] = kFT0COccupancyInTimeRange;
   fgVarNamesMap["kNoCollInTimeRangeStandard"] = kNoCollInTimeRangeStandard;
   fgVarNamesMap["kMultAllTracksTPCOnly"] = kMultAllTracksTPCOnly;
   fgVarNamesMap["kMultAllTracksITSTPC"] = kMultAllTracksITSTPC;

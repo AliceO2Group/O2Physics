@@ -241,7 +241,10 @@ class VarManager : public TObject
     kMultNTracksITSOnly,
     kMultNTracksTPCOnly,
     kMultNTracksITSTPC,
+    kMultNTracksPVeta1,
+    kMultNTracksPVetaHalf,
     kTrackOccupancyInTimeRange,
+    kFT0COccupancyInTimeRange,
     kNoCollInTimeRangeStandard,
     kMultAllTracksTPCOnly,
     kMultAllTracksITSTPC,
@@ -1448,6 +1451,9 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kTrackOccupancyInTimeRange]) {
       values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
     }
+    if (fgUsedVars[kFT0COccupancyInTimeRange]) {
+      values[kFT0COccupancyInTimeRange] = event.ft0cOccupancyInTimeRange();
+    }
     if (fgUsedVars[kNoCollInTimeRangeStandard]) {
       values[kNoCollInTimeRangeStandard] = event.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
     }
@@ -1565,9 +1571,12 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultNTracksITSOnly] = event.multNTracksITSOnly();
     values[kMultNTracksTPCOnly] = event.multNTracksTPCOnly();
     values[kMultNTracksITSTPC] = event.multNTracksITSTPC();
+    values[kMultNTracksPVeta1] = event.multNTracksPVeta1();
+    values[kMultNTracksPVetaHalf] = event.multNTracksPVetaHalf();
     values[kMultAllTracksTPCOnly] = event.multAllTracksTPCOnly();
     values[kMultAllTracksITSTPC] = event.multAllTracksITSTPC();
     values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
+    values[kFT0COccupancyInTimeRange] = event.ft0cOccupancyInTimeRange();
     if constexpr ((fillMap & ReducedEventMultExtra) > 0) {
       values[kNTPCcontribLongA] = event.nTPCoccupContribLongA();
       values[kNTPCcontribLongC] = event.nTPCoccupContribLongC();
