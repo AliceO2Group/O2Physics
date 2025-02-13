@@ -197,13 +197,13 @@ DECLARE_SOA_TABLE(HfKfOmegacFulls, "AOD", "HFKFOMEGACFULL",
                   full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf,
                   full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf, full::CascRejectInvmass,
                   full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched);
-				  
+
 DECLARE_SOA_TABLE(HfKfOmegacLites, "AOD", "HFKFOMEGACLITE",
                   full::NSigmaTPCPiFromOmegac, full::NSigmaTOFPiFromOmegac, full::NSigmaTPCKaFromCasc, full::NSigmaTOFKaFromCasc,
                   full::NSigmaTPCPiFromV0, full::NSigmaTPCPrFromV0,
                   full::KfDcaXYPiFromOmegac, full::DcaCharmBaryonDau, full::KfDcaXYCascToPv,
                   full::V0ldl, full::Cascldl, full::Omegacldl, full::Chi2TopoPiFromOmegacToPv,
-				  full::DecayLenXYOmegac,
+                  full::DecayLenXYOmegac,
                   full::CosPaCascToPv, full::CosPaOmegacToPv,
                   full::InvMassCascade, full::InvMassCharmBaryon,
                   full::KfptPiFromOmegac, full::KfptOmegac,
@@ -376,7 +376,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
         collisionMatched);
     }
   }
-  
+
   template <typename T>
   void fillKfCandidateLite(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
   {
@@ -416,7 +416,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
         originMc,
         collisionMatched);
     }
-  }//fillKfCandidateLite end       
+  } // fillKfCandidateLite end
 
   void processDataLite(MyEventTable const& collisions, MyTrackTable const&,
                        soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi> const& candidates)
@@ -451,7 +451,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataFull, "Process KF data", false);
-  
+
   void processKfDataLite(MyEventTable const& collisions, MyTrackTable const&,
                          soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi> const& candidates)
   {

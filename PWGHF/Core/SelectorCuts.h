@@ -663,13 +663,12 @@ constexpr double binsPt[nBinsPt + 1] = {
   2.0,
   4.0,
   6.0,
-  12.0
-  };
+  12.0};
 
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // default values for the cuts
-// 											pi_pT 
+// 											pi_pT
 constexpr double cuts[nBinsPt][nCutVars] = {{0.2},  /* 1 < pt < 2 */
                                             {0.2},  /* 2 < pt < 4 */
                                             {0.6},  /* 4 < pt < 6 */
@@ -680,8 +679,7 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 0",
   "pT bin 1",
   "pT bin 2",
-  "pT bin 3"
-  };
+  "pT bin 3"};
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"pT pi from Omegac"};
