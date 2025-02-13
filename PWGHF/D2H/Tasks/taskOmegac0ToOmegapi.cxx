@@ -9,9 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskomegac0ToOmegapi.cxx
+/// \file taskOmegac0ToOmegapi.cxx
 /// \brief OmegaC0 analysis task
-///
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 
 #include <vector>
