@@ -83,7 +83,8 @@ void FlowJSPCAnalysis::calculateCorrelators(const int fCentBin)
   double correlationDenom;
   double weightCorrelationDenom;
 
-  for (int i = 0; i < 14; ++i) fCorrelDenoms[i] = 0;
+  for (int i = 0; i < 14; ++i)
+    fCorrelDenoms[i] = 0;
 
   for (int j = 0; j < 12; j++) {
     if (fHarmosArray[j][0] == 0) {
@@ -115,13 +116,11 @@ void FlowJSPCAnalysis::calculateCorrelators(const int fCentBin)
 
     fillHistograms(fCentBin, j, correlationNum, correlationDenom, weightCorrelationNum, weightCorrelationDenom);
 
-
     correlationNum = 0.;
     weightCorrelationNum = 0.;
     correlationDenom = 0.;
     weightCorrelationDenom = 0.;
   }
-
 }
 
 void FlowJSPCAnalysis::fillHistograms(const int fCentBin, int ind, double cNum, double cDenom, double wNum, double wDenom)
