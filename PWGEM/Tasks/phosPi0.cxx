@@ -67,6 +67,7 @@ struct PhosPi0 {
   Configurable<float> nonlinB{"nonlinB", 0., "nonlinsrity param B (a+b*exp(-e/c))"};
   Configurable<float> nonlinC{"nonlinC", 1., "nonlinsrity param C (a+b*exp(-e/c))"};
   Configurable<int> tofEffParam{"tofEffParam", 0, "parameterization of TOF cut efficiency"};
+  Configurable<float> timeOffset{"timeOffset", 0., "time offset to compensate imperfection of time calibration"};
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using SelCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
@@ -261,16 +262,16 @@ struct PhosPi0 {
     hMiBoth = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiBoth", "inv mass for centrality",
                                                               HistType::kTH2F, {mggAxis, ptAxis}))
                 .get();
-    hMiOneAll = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiAll", "inv mass for centrality",
+    hMiOneAll = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiOneAll", "inv mass for centrality",
                                                                 HistType::kTH2F, {mggAxis, ptAxis}))
                   .get();
-    hMiOneCPV = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiCPV", "inv mass for centrality",
+    hMiOneCPV = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiOneCPV", "inv mass for centrality",
                                                                 HistType::kTH2F, {mggAxis, ptAxis}))
                   .get();
-    hMiOneDisp = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiDisp", "inv mass for centrality",
+    hMiOneDisp = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiOneDisp", "inv mass for centrality",
                                                                  HistType::kTH2F, {mggAxis, ptAxis}))
                    .get();
-    hMiOneBoth = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiBoth", "inv mass for centrality",
+    hMiOneBoth = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiOneBoth", "inv mass for centrality",
                                                                  HistType::kTH2F, {mggAxis, ptAxis}))
                    .get();
     if (isMC) {
@@ -549,28 +550,28 @@ struct PhosPi0 {
           }
         }
         // Test time eff
-        if (std::abs(ph1.time) < 12.5e-9) { // strict cut on first photon
-          if (std::abs(ph2.time) < 100.e-9) {
+        if (std::abs(ph1.time - timeOffset) < 12.5e-9) { // strict cut on first photon
+          if (std::abs(ph2.time - timeOffset) < 100.e-9) {
             hReTime100->Fill(m, ph2.pt());
-            if (std::abs(ph2.time) < 50.e-9) {
+            if (std::abs(ph2.time - timeOffset) < 50.e-9) {
               hReTime50->Fill(m, ph2.pt());
-              if (std::abs(ph2.time) < 30.e-9) {
+              if (std::abs(ph2.time - timeOffset) < 30.e-9) {
                 hReTime30->Fill(m, ph2.pt());
-                if (std::abs(ph2.time) < 12.5e-9) {
+                if (std::abs(ph2.time - timeOffset) < 12.5e-9) {
                   hReTime12->Fill(m, ph2.pt());
                 }
               }
             }
           }
         }
-        if (std::abs(ph2.time) < 12.5e-9) { // strict cut on first photon
-          if (std::abs(ph1.time) < 100.e-9) {
+        if (std::abs(ph2.time - timeOffset) < 12.5e-9) { // strict cut on first photon
+          if (std::abs(ph1.time - timeOffset) < 100.e-9) {
             hReTime100->Fill(m, ph1.pt());
-            if (std::abs(ph1.time) < 50.e-9) {
+            if (std::abs(ph1.time - timeOffset) < 50.e-9) {
               hReTime50->Fill(m, ph1.pt());
-              if (std::abs(ph1.time) < 30.e-9) {
+              if (std::abs(ph1.time - timeOffset) < 30.e-9) {
                 hReTime30->Fill(m, ph1.pt());
-                if (std::abs(ph1.time) < 12.5e-9) {
+                if (std::abs(ph1.time - timeOffset) < 12.5e-9) {
                   hReTime12->Fill(m, ph1.pt());
                 }
               }
