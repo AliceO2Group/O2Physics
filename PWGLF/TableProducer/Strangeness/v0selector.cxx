@@ -15,6 +15,7 @@
 
 #include <vector>
 #include <string>
+#include <algorithm>
 #include <TRandom3.h>
 
 #include "Framework/runDataProcessing.h"
