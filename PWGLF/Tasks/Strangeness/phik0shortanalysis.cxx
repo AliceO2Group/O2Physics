@@ -552,7 +552,7 @@ struct Phik0shortanalysis {
       if constexpr (!isMC) {
         dataPhiHist.fill(HIST("h2DauTracksPhiDCAxyPreCutData"), track.pt(), track.dcaXY());
         dataPhiHist.fill(HIST("h2DauTracksPhiDCAzPreCutData"), track.pt(), track.dcaZ());
-      } else {        
+      } else {
         mcPhiHist.fill(HIST("h2DauTracksPhiDCAxyPreCutMCReco"), track.pt(), track.dcaXY());
         mcPhiHist.fill(HIST("h2DauTracksPhiDCAzPreCutMCReco"), track.pt(), track.dcaZ());
       }
@@ -865,7 +865,7 @@ struct Phik0shortanalysis {
       if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
         continue;
 
-        dataK0SHist.fill(HIST("h3K0SRapidityData"), multiplicity, v0.pt(), v0.yK0Short());
+      dataK0SHist.fill(HIST("h3K0SRapidityData"), multiplicity, v0.pt(), v0.yK0Short());
 
       if (std::abs(v0.yK0Short()) > cfgYAcceptance)
         continue;
