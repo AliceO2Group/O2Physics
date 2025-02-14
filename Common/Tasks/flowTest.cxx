@@ -39,6 +39,7 @@ struct flowTest {
 
   Configurable<float> minB{"minB", 0.0f, "min impact parameter"};
   Configurable<float> maxB{"maxB", 20.0f, "max impact parameter"};
+  Configurable<int> pdgSelection{"pdgSelection", 0, "pdg code selection for tracking study (0: no selection)"};
 
   ConfigurableAxis axisB{"axisB", {100, 0.0f, 20.0f}, ""};
   ConfigurableAxis axisPhi{"axisPhi", {100, 0.0f, 2.0f * TMath::Pi()}, ""};
@@ -94,6 +95,8 @@ struct flowTest {
         int pdgCode = TMath::Abs(mcParticle.pdgCode());
         if (pdgCode != 11 && pdgCode != 13 && pdgCode != 211 && pdgCode != 321 && pdgCode != 2212)
           continue;
+        if ((pdgSelection.value != 0) && (pdgCode != pdgSelection.value))
+          continue; // isn't of desired species and pdgSelection is requested
 
         if (!mcParticle.isPhysicalPrimary())
           continue;

@@ -82,7 +82,7 @@ struct FlowPtEfficiency {
 
   // Filter for collisions
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  using MyCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
+  using MyCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>>;
 
   // Filter for MCParticle
   Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPtMin) && (aod::mcparticle::pt < cfgCutPtMax);
@@ -345,7 +345,7 @@ struct FlowPtEfficiency {
     return myTrackSel.IsSelected(track);
   }
 
-  void processReco(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::McParticles const&)
+  void processReco(MyCollisions::iterator const& collision, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::McParticles const&, aod::McCollisions const&)
   {
     registry.fill(HIST("eventCounter"), 0.5);
     if (!collision.sel8())
