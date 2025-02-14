@@ -578,7 +578,7 @@ struct Phik0shortanalysis {
   template <typename T>
   bool selectionPIDKaon(const T& track)
   {
-    if (!trackConfigs.isNoTOF && track.hasTOF() && (track.tofNSigmaKa() * track.tofNSigmaKa() + track.tpcNSigmaKa() * track.tpcNSigmaKa()) < (trackConfigs.nSigmaCutCombinedKa * trackConfigs.nSigmaCutCombinedKa))
+    if (!trackConfigs.isNoTOF && track.hasTOF() && (std::pow(track.tofNSigmaKa(), 2) + std::pow(track.tpcNSigmaKa(), 2)) < std::pow(trackConfigs.nSigmaCutCombinedKa, 2))
       return true;
     if (!trackConfigs.isNoTOF && !track.hasTOF() && std::abs(track.tpcNSigmaKa()) < trackConfigs.nSigmaCutTPCKa)
       return true;
@@ -592,7 +592,7 @@ struct Phik0shortanalysis {
   {
     if (track.pt() < 0.5 && std::abs(track.tpcNSigmaKa()) < trackConfigs.nSigmaCutTPCKa)
       return true;
-    if (track.pt() >= 0.5 && track.hasTOF() && ((track.tofNSigmaKa() * track.tofNSigmaKa()) + (track.tpcNSigmaKa() * track.tpcNSigmaKa())) < (trackConfigs.nSigmaCutCombinedKa * trackConfigs.nSigmaCutCombinedKa))
+    if (track.pt() >= 0.5 && track.hasTOF() && (std::pow(track.tofNSigmaKa(), 2) + std::pow(track.tpcNSigmaKa(), 2)) < std::pow(trackConfigs.nSigmaCutCombinedKa, 2))
       return true;
     return false;
   }
