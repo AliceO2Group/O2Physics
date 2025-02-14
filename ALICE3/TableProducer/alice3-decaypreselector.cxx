@@ -22,7 +22,7 @@
 #include <cstdlib>
 #include <map>
 #include <iterator>
-#inclide <vector>
+#include <vector>
 #include <utility>
 
 #include "Framework/runDataProcessing.h"
