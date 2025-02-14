@@ -1055,24 +1055,24 @@ struct K892analysispbpb {
     if (recCollisions.size() > 0) {
       auto numcontributors = -999;
       for (const auto& RecCollision : recCollisions) {
-	if (!myEventSelections(RecCollision))
-	  continue;
+        if (!myEventSelections(RecCollision))
+          continue;
 
-	if (RecCollision.numContrib() <= numcontributors)
-	  continue;
-	else
-	  numcontributors = RecCollision.numContrib();
+        if (RecCollision.numContrib() <= numcontributors)
+          continue;
+        else
+          numcontributors = RecCollision.numContrib();
 
-	centrality = RecCollision.centFT0C();
-	isSel = true;
+        centrality = RecCollision.centFT0C();
+        isSel = true;
       }
     }
-    
+
     if (isSel) {
       histos.fill(HIST("QAevent/hImpactParameterRec"), impactPar);
       histos.fill(HIST("QAevent/hImpactParvsCentrRec"), centrality, impactPar);
     }
-      
+
     // Generated MC
     for (const auto& mcPart : mcParticles) {
       if (std::abs(mcPart.y()) >= 0.5 || std::abs(mcPart.pdgCode()) != 313)
@@ -1083,14 +1083,13 @@ struct K892analysispbpb {
         histos.fill(HIST("QAevent/k892genBeforeEvtSel"), mcPart.pt(), impactPar);
       else
         histos.fill(HIST("QAevent/k892genBeforeEvtSelAnti"), mcPart.pt(), impactPar);
-      
 
       if (isSel) {
-	// signal loss estimation
-	if (mcPart.pdgCode() > 0) // no cuts, purely generated
-	  histos.fill(HIST("QAevent/k892genAfterEvtSel"), mcPart.pt(), impactPar);
-	else
-	  histos.fill(HIST("QAevent/k892genAfterEvtSelAnti"), mcPart.pt(), impactPar);
+        // signal loss estimation
+        if (mcPart.pdgCode() > 0) // no cuts, purely generated
+          histos.fill(HIST("QAevent/k892genAfterEvtSel"), mcPart.pt(), impactPar);
+        else
+          histos.fill(HIST("QAevent/k892genAfterEvtSelAnti"), mcPart.pt(), impactPar);
       }
     } // end loop on gen particles
   }
