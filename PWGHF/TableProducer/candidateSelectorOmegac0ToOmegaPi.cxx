@@ -669,6 +669,8 @@ struct HfCandidateSelectorToOmegaPi {
         if (resultSelections) {
           registry.fill(HIST("hStatusCheck"), 0.5);
         }
+      } else {
+        resultSelections = false;
       }
 
       if (statusPidPrFromLam == TrackSelectorPID::Accepted && statusPidPiFromLam == TrackSelectorPID::Accepted && statusPidKaFromCasc == TrackSelectorPID::Accepted) {
@@ -676,6 +678,8 @@ struct HfCandidateSelectorToOmegaPi {
         if (resultSelections) {
           registry.fill(HIST("hStatusCheck"), 1.5);
         }
+      } else {
+        resultSelections = false;
       }
 
       if (statusPidPrFromLam == TrackSelectorPID::Accepted && statusPidPiFromLam == TrackSelectorPID::Accepted && statusPidKaFromCasc == TrackSelectorPID::Accepted && statusPidPiFromCharmBaryon == TrackSelectorPID::Accepted) {
@@ -683,6 +687,8 @@ struct HfCandidateSelectorToOmegaPi {
         if (resultSelections) {
           registry.fill(HIST("hStatusCheck"), 2.5);
         }
+      } else {
+        resultSelections = false;
       }
 
       // invariant mass cuts
@@ -698,6 +704,7 @@ struct HfCandidateSelectorToOmegaPi {
         }
       } else {
         registry.fill(HIST("hSelMassLam"), 0);
+		resultSelections = false;
       }
 
       if (std::abs(invMassCascade - o2::constants::physics::MassOmegaMinus) < cascadeMassWindow) {
@@ -708,6 +715,7 @@ struct HfCandidateSelectorToOmegaPi {
         }
       } else {
         registry.fill(HIST("hSelMassCasc"), 0);
+		resultSelections = false;
       }
 
       if ((invMassCharmBaryon >= invMassCharmBaryonMin) && (invMassCharmBaryon <= invMassCharmBaryonMax)) {
@@ -718,6 +726,7 @@ struct HfCandidateSelectorToOmegaPi {
         }
       } else {
         registry.fill(HIST("hSelMassCharmBaryon"), 0);
+		resultSelections = false;
       }
       // ML selections
       if constexpr (ConstructMethod == hf_cand_casc_lf::ConstructMethod::KfParticle) {

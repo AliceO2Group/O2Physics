@@ -36,7 +36,7 @@ using namespace o2::framework::expressions;
 struct HfTaskOmegac0 {
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
-  Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for HF flagged candidates"};
+  Configurable<int> selectionFlagOmegac0{"selectionFlagOmegac0", 1, "Selection Flag for Omegac0 candidates"};
 
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
@@ -60,7 +60,7 @@ struct HfTaskOmegac0 {
   using Omegac0CandidatesKF = soa::Join<Omegac0Candidates, aod::HfOmegacKf>;
   using OmegaC0CandidatesMcKF = soa::Join<Omegac0CandidatesKF, aod::HfToOmegaPiMCRec>;
 
-  using Omegac0CandidatesMl = soa::Join<aod::HfCandToOmegaPi, aod::HfMlSelOmegacToOmegaPi>;
+  using Omegac0CandidatesMl = soa::Join<Omegac0Candidates, aod::HfMlSelOmegacToOmegaPi>;
   using Omegac0CandidatesMlKF = soa::Join<Omegac0CandidatesMl, aod::HfOmegacKf>;
   using Omegac0CandidatesMlMcKF = soa::Join<Omegac0CandidatesMlKF, aod::HfToOmegaPiMCRec>;
 
@@ -69,6 +69,9 @@ struct HfTaskOmegac0 {
   PresliceUnsorted<CollisionsWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   SliceCache cache;
 
+  Partition<Omegac0CandidatesKF> selectedOmegac0CandidatesKF = aod::hf_sel_toomegapii::resultSelections >= selectionFlagOmegac0;
+  Partition<Omegac0CandidatesMlKF> selectedOmegac0CandidatesMlKF = aod::hf_sel_toomegapi::resultSelections >= selectionFlagOmegac0;
+  
   HistogramRegistry registry{
     "registry",
     {}};
@@ -140,16 +143,16 @@ struct HfTaskOmegac0 {
     }
   }
 
-  void processDataWithKFParticle(Omegac0CandidatesKF const& omegac0CandidatesKF, Collisions const& collisions)
+  void processDataWithKFParticle(Omegac0CandidatesKF const&, Collisions const& collisions)
   {
-    processData<false>(omegac0CandidatesKF, collisions);
+    processData<false>(selectedOmegac0CandidatesKF, collisions);
   }
   PROCESS_SWITCH(HfTaskOmegac0, processDataWithKFParticle, "process taskOmegac0 with KFParticle", false);
   // TODO: add processKFParticleCent
 
-  void processDataWithKFParticleMl(Omegac0CandidatesMlKF const& omegac0CandidatesMlKF, Collisions const& collisions)
+  void processDataWithKFParticleMl(Omegac0CandidatesMlKF const&, Collisions const& collisions)
   {
-    processData<true>(omegac0CandidatesMlKF, collisions);
+    processData<true>(selectedOmegac0CandidatesMlKF, collisions);
   }
   PROCESS_SWITCH(HfTaskOmegac0, processDataWithKFParticleMl, "process taskOmegac0 with KFParticle and ML selections", false);
   // TODO: add processKFParticleMlCent
@@ -175,7 +178,7 @@ struct HfTaskOmegac0 {
       massOmegac0 = candidate.invMassCharmBaryon();
       auto ptCandidate = candidate.ptCharmBaryon();
       auto rapidityCandidate = candidate.kfRapOmegac();
-
+      if(candidate.resultSelections() >= selectionFlagOmegac0)
       if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi)) {
         if constexpr (applyMl) {
           registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.mlProbOmegac()[0], massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), numPvContributors);
