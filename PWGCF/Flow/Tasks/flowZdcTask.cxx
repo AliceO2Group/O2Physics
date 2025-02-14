@@ -118,7 +118,6 @@ struct FlowZdcTask {
   ConfigurableAxis multHistBin{"multHistBin", {501, -0.5, 500.5}, ""};
   ConfigurableAxis axisCent{"axisCent", {10, 0, 100}, "axisCent"};
 
-
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
   using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
