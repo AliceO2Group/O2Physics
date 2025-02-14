@@ -80,14 +80,14 @@ struct alice3decayFinder {
   Configurable<float> kaFromD_dcaXYconstant{"kaFromD_dcaXYconstant", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> kaFromD_dcaXYpTdep{"kaFromD_dcaXYpTdep", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
 
-  Configurable<float> DCosPA{"Cos of pointing angle", 0.99, " Cos of pointing angle: pt < 3 GeV"};
-  Configurable<float> DCosPAHighPt{"Cos of pointing angle high pt", 0.995, " Cos of pointing angle: 3 GeV < pt"};
-  Configurable<float> DCosPAxy{"Cos of pointing angle xy", 0.99, " Cos of pointing angle xy: pt < 3 GeV"};
-  Configurable<float> DCosPAxyHighPt{"Cos of pointing angle xy high pt", 0.995, " Cos of pointing angle xy: 3 GeV < pt"};
-  Configurable<float> DCosThetaStarLowPt{"Cos theta low pt", 0.8, "Cos theta; pt < 9"};
-  Configurable<float> DCosThetaStarHighPt{"Cos theta high pt", 0.9, "Cos theta; 9 < pt < 16"};
-  Configurable<float> DCosThetaStarVHighPt{"Cos theta vhigh", 1.0, "Cos theta; 16 < pt"};
-  Configurable<float> DDauDecayLength{"Normalized dau decay length", 3, "|Normalized dau decay length| > [0]"};
+  Configurable<float> DCosPA{"DCosPA", 0.99, " Cos of pointing angle: pt < 3 GeV"};
+  Configurable<float> DCosPAHighPt{"DCosPAHighPt", 0.995, " Cos of pointing angle: 3 GeV < pt"};
+  Configurable<float> DCosPAxy{"DCosPAxy", 0.99, " Cos of pointing angle xy: pt < 3 GeV"};
+  Configurable<float> DCosPAxyHighPt{"DCosPAxyHighPt", 0.995, " Cos of pointing angle xy: 3 GeV < pt"};
+  Configurable<float> DCosThetaStarLowPt{"DCosThetaStarLowPt", 0.8, "Cos theta; pt < 9"};
+  Configurable<float> DCosThetaStarHighPt{"DCosThetaStarHighPt", 0.9, "Cos theta; 9 < pt < 16"};
+  Configurable<float> DCosThetaStarVHighPt{"DCosThetaStarVHighPt", 1.0, "Cos theta; 16 < pt"};
+  Configurable<float> DDauDecayLength{"DDauDecayLength", 3, "|Normalized dau decay length| > [0]"};
 
   Configurable<float> piFromLc_dcaXYconstant{"piFromLc_dcaXYconstant", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> piFromLc_dcaXYpTdep{"piFromLc_dcaXYpTdep", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
@@ -427,7 +427,7 @@ struct alice3decayFinder {
         else if (dmeson.pt > 16 && std::fabs(dmeson.cosThetaStar) > DCosThetaStarVHighPt)
           continue;
 
-        if (dmeson.normalizedDecayLength < DDauDecayLength)
+        if (dmeson.normalizedDecayLength > DDauDecayLength)
           continue;
 
         histos.fill(HIST("hDCADDaughters"), dmeson.dcaDau * 1e+4);
@@ -474,7 +474,7 @@ struct alice3decayFinder {
         else if (dmeson.pt > 16 && std::fabs(dmeson.cosThetaStar) > DCosThetaStarVHighPt)
           continue;
 
-        if (dmeson.normalizedDecayLength < DDauDecayLength)
+        if (dmeson.normalizedDecayLength > DDauDecayLength)
           continue;
 
         histos.fill(HIST("hDCADbarDaughters"), dmeson.dcaDau * 1e+4);
