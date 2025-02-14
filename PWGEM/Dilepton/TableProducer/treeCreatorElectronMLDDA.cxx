@@ -184,7 +184,6 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_max_mass_lambda{"cfg_max_mass_lambda", 1.12, "max mass for Lambda rejection"};
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.999, "min cospa for v0"};
     Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.5, "max distance between 2 legs for v0"};
-    Configurable<float> cfg_min_radius{"cfg_min_radius", 1.0, "min rxy for v0"};
     Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
     Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
