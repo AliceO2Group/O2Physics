@@ -479,7 +479,7 @@ struct nucleiSpectra {
   float getCentrality(Tcoll const& collision)
   {
     float centrality = 1.;
-    if constexpr (std::is_same<Tcoll, CollWithCent>::value || std::is_same<Tcoll, CollWithEP>::value || std::is_same<Tcoll, CollWithQvec>::value) {
+    if constexpr (o2::aod::HasCentrality<Tcoll>) {
       if (cfgCentralityEstimator == nuclei::centDetectors::kFV0A) {
         centrality = collision.centFV0A();
       } else if (cfgCentralityEstimator == nuclei::centDetectors::kFT0M) {
@@ -640,13 +640,18 @@ struct nucleiSpectra {
                 }
 
                 if (cfgFlowHist->get(iS) && doprocessDataFlow) {
-                  if constexpr (std::is_same<Tcoll, CollWithEP>::value) {
+                  if constexpr (requires {
+                                  collision.psiFT0C();
+                                }) {
                     auto deltaPhiInRange = RecoDecay::constrainAngle(fvector.phi() - collision.psiFT0C(), 0.f, 2);
                     auto v2 = std::cos(2.0 * deltaPhiInRange);
                     nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMasses[iS], v2, track.itsNCls(), track.tpcNClsFound());
                   }
                 } else if (cfgFlowHist->get(iS) && doprocessDataFlowAlternative) {
-                  if constexpr (std::is_same<Tcoll, CollWithQvec>::value) {
+                  if constexpr (requires {
+                                  collision.qvecFT0CIm();
+                                  collision.qvecFT0CRe();
+                                }) {
                     auto deltaPhiInRange = RecoDecay::constrainAngle(fvector.phi() - computeEventPlane(collision.qvecFT0CIm(), collision.qvecFT0CRe()), 0.f, 2);
                     auto v2 = std::cos(2.0 * deltaPhiInRange);
                     nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMasses[iS], v2, track.itsNCls(), track.tpcNClsFound());
@@ -672,7 +677,9 @@ struct nucleiSpectra {
         }
       }
       if (flag & (kProton | kDeuteron | kTriton | kHe3 | kHe4) || doprocessMC) { /// ignore PID pre-selections for the MC
-        if constexpr (std::is_same<Tcoll, CollWithEP>::value) {
+        if constexpr (requires {
+                        collision.psiFT0A();
+                      }) {
           nuclei::candidates_flow.emplace_back(NucleusCandidateFlow{
             collision.centFV0A(),
             collision.centFT0M(),
@@ -689,7 +696,9 @@ struct nucleiSpectra {
             collision.qTPCL(),
             collision.qTPCR(),
           });
-        } else if constexpr (std::is_same<Tcoll, CollWithQvec>::value) {
+        } else if constexpr (requires {
+                               collision.qvecFT0AIm();
+                             }) {
           nuclei::candidates_flow.emplace_back(NucleusCandidateFlow{
             collision.centFV0A(),
             collision.centFT0M(),
