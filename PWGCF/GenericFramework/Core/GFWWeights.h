@@ -17,7 +17,6 @@
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTS_H_
 
 #include "Framework/Logger.h"
-#include "Framework/AnalysisTask.h"
 
 #include "TObjArray.h"
 #include "TNamed.h"
@@ -27,8 +26,6 @@
 #include "TFile.h"
 #include "TCollection.h"
 #include "TString.h"
-
-using namespace o2::constants::math;
 
 class GFWWeights : public TNamed
 {
