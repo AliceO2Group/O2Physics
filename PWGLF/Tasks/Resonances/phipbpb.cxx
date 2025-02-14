@@ -206,6 +206,7 @@ struct phipbpb {
     histos.add("hSparseV2MixedEventCosDeltaPhi", "hSparseV2MixedEventCosDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
     histos.add("hSparseV2SameEventCosDeltaPhiSquare", "hSparseV2SameEventCosDeltaPhiSquare", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, squareAxis, thnAxisCentrality});
+    histos.add("hSparseV2SameEventCosDeltaPhiCube", "hSparseV2SameEventCosDeltaPhiCube", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     histos.add("hSparseV2MixedEventCosDeltaPhiSquare", "hSparseV2MixedEventCosDeltaPhiSquare", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, squareAxis, thnAxisCentrality});
 
     histos.add("hSparseV2SameEventSinDeltaPhi", "hSparseV2SameEventSinDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
@@ -259,6 +260,8 @@ struct phipbpb {
       histos.add("hSparseMCGenWeight", "hSparseMCGenWeight", HistType::kTHnSparseF, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {50, 0.0f, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
       histos.add("hSparseMCRecWeight", "hSparseMCRecWeight", HistType::kTHnSparseF, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {50, 0.0f, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
       histos.add("hSparseMCRecAllTrackWeight", "hSparseMCRecAllTrackWeight", HistType::kTHnSparseF, {thnAxisCentrality, {36, 0.0, TMath::Pi()}, {50, 0.0f, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+      histos.add("hSparseMCGenV2", "hSparseMCGenV2", HistType::kTHnSparseF, {thnAxisCentrality, {200, -1.0, 1.0}, axisPtKaonWeight});
+      histos.add("hSparseMCRecV2", "hSparseMCRecV2", HistType::kTHnSparseF, {thnAxisCentrality, {200, -1.0, 1.0}, axisPtKaonWeight});
     }
     // Event selection cut additional - Alex
     if (additionalEvsel) {
@@ -572,6 +575,7 @@ struct phipbpb {
               histos.fill(HIST("hSparseV2SameEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
             }
             histos.fill(HIST("hSparseV2SameEventCosDeltaPhiSquare"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * v2, centrality);
+            histos.fill(HIST("hSparseV2SameEventCosDeltaPhiCube"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * v2 * v2, centrality);
             histos.fill(HIST("hSparseV2SameEventSinDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2sin * QFT0C, centrality);
 
             histos.fill(HIST("hSparseV2SameEventCosPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Cos(2.0 * phimother), centrality);
@@ -952,6 +956,7 @@ struct phipbpb {
         if (TMath::Abs(mcParticle.eta()) > 0.8) // main acceptance
           continue;
         histos.fill(HIST("hSparseMCGenWeight"), centclass, GetPhiInRange(deltaPhi), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), 2.0), mcParticle.pt(), mcParticle.eta());
+        histos.fill(HIST("hSparseMCGenV2"), centclass, TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), mcParticle.pt());
         nCh++;
         bool validGlobal = false;
         bool validAny = false;
@@ -969,6 +974,7 @@ struct phipbpb {
         // if valid global, fill
         if (validGlobal) {
           histos.fill(HIST("hSparseMCRecWeight"), centclass, GetPhiInRange(deltaPhi), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), 2.0), mcParticle.pt(), mcParticle.eta());
+          histos.fill(HIST("hSparseMCRecV2"), centclass, TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), mcParticle.pt());
         }
         if (validAny) {
           histos.fill(HIST("hSparseMCRecAllTrackWeight"), centclass, GetPhiInRange(deltaPhi), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), 2.0), mcParticle.pt(), mcParticle.eta());

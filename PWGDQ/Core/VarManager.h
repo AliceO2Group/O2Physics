@@ -131,7 +131,9 @@ class VarManager : public TObject
     TrackTPCPID = BIT(22),
     TrackMFT = BIT(23),
     ReducedTrackCollInfo = BIT(24), // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
-    ReducedMuonCollInfo = BIT(25)   // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
+    ReducedMuonCollInfo = BIT(25),  // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
+    MuonRealign = BIT(26),
+    MuonCovRealign = BIT(27)
   };
 
   enum PairCandidateType {
@@ -241,7 +243,10 @@ class VarManager : public TObject
     kMultNTracksITSOnly,
     kMultNTracksTPCOnly,
     kMultNTracksITSTPC,
+    kMultNTracksPVeta1,
+    kMultNTracksPVetaHalf,
     kTrackOccupancyInTimeRange,
+    kFT0COccupancyInTimeRange,
     kNoCollInTimeRangeStandard,
     kMultAllTracksTPCOnly,
     kMultAllTracksITSTPC,
@@ -1347,7 +1352,7 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     }
   }
 
-  if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
+  if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0 || (fillMap & MuonCovRealign) > 0) {
     o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
     values[kPt] = propmuon.getPt();
     values[kX] = propmuon.getX();
@@ -1447,6 +1452,9 @@ void VarManager::FillEvent(T const& event, float* values)
     }
     if (fgUsedVars[kTrackOccupancyInTimeRange]) {
       values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
+    }
+    if (fgUsedVars[kFT0COccupancyInTimeRange]) {
+      values[kFT0COccupancyInTimeRange] = event.ft0cOccupancyInTimeRange();
     }
     if (fgUsedVars[kNoCollInTimeRangeStandard]) {
       values[kNoCollInTimeRangeStandard] = event.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
@@ -1565,9 +1573,12 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultNTracksITSOnly] = event.multNTracksITSOnly();
     values[kMultNTracksTPCOnly] = event.multNTracksTPCOnly();
     values[kMultNTracksITSTPC] = event.multNTracksITSTPC();
+    values[kMultNTracksPVeta1] = event.multNTracksPVeta1();
+    values[kMultNTracksPVetaHalf] = event.multNTracksPVetaHalf();
     values[kMultAllTracksTPCOnly] = event.multAllTracksTPCOnly();
     values[kMultAllTracksITSTPC] = event.multAllTracksITSTPC();
     values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
+    values[kFT0COccupancyInTimeRange] = event.ft0cOccupancyInTimeRange();
     if constexpr ((fillMap & ReducedEventMultExtra) > 0) {
       values[kNTPCcontribLongA] = event.nTPCoccupContribLongA();
       values[kNTPCcontribLongC] = event.nTPCoccupContribLongC();
@@ -2101,7 +2112,7 @@ void VarManager::FillTrack(T const& track, float* values)
   }
 
   // Quantities based on the basic table (contains just kine information and filter bits)
-  if constexpr ((fillMap & Track) > 0 || (fillMap & Muon) > 0 || (fillMap & ReducedTrack) > 0 || (fillMap & ReducedMuon) > 0) {
+  if constexpr ((fillMap & Track) > 0 || (fillMap & Muon) > 0 || (fillMap & MuonRealign) > 0 || (fillMap & ReducedTrack) > 0 || (fillMap & ReducedMuon) > 0) {
     values[kPt] = track.pt();
     values[kSignedPt] = track.pt() * track.sign();
     if (fgUsedVars[kP]) {
@@ -2159,6 +2170,10 @@ void VarManager::FillTrack(T const& track, float* values)
       for (int i = 0; i < 8; i++) {
         values[kIsDalitzLeg + i] = track.filteringFlags_bit(VarManager::kDalitzBits + i);
       }
+    }
+
+    if constexpr ((fillMap & MuonRealign) > 0) {
+      values[kMuonChi2] = track.chi2();
     }
   }
 
@@ -2486,7 +2501,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMuonTimeRes] = track.trackTimeRes();
   }
   // Quantities based on the muon covariance table
-  if constexpr ((fillMap & ReducedMuonCov) > 0 || (fillMap & MuonCov) > 0) {
+  if constexpr ((fillMap & ReducedMuonCov) > 0 || (fillMap & MuonCov) > 0 || (fillMap & MuonCovRealign) > 0) {
     values[kX] = track.x();
     values[kY] = track.y();
     values[kZ] = track.z();
@@ -2543,7 +2558,7 @@ void VarManager::FillTrackCollision(T const& track, C const& collision, float* v
       }
     }
   }
-  if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
+  if constexpr ((fillMap & MuonCov) > 0 || (fillMap & MuonCovRealign) > 0 || (fillMap & ReducedMuonCov) > 0) {
 
     o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(track, collision, kToDCA);
 
