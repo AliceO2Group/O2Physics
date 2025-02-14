@@ -716,7 +716,7 @@ struct K892analysispbpb {
                 if (mothertrack1.globalIndex() != mothertrack2.globalIndex())
                   continue;
 
-                if (std::abs(mothertrack1.pdgCode() == 1000822080)) // Pb PDG code
+                if (std::abs(mothertrack1.pdgCode()) == 1000822080) // Pb PDG code
                   continue;
 
                 pdgCodeMother = mothertrack1.pdgCode();
@@ -1102,7 +1102,7 @@ struct K892analysispbpb {
   }
   PROCESS_SWITCH(K892analysispbpb, processEvtLossSigLossMC, "Process Signal Loss, Event Loss", false);
 
-  void processMC(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMCrec>& recCollisions, TrackCandidatesMCrec const& RecTracks)
+  void processMC(aod::McCollisions::iterator const& /*mcCollision*/, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMCrec>& recCollisions, TrackCandidatesMCrec const& RecTracks)
   {
 
     histos.fill(HIST("QAevent/hMCrecCollSels"), 0);
