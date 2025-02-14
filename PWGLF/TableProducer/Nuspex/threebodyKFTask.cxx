@@ -183,6 +183,9 @@ struct threebodyKFTask {
         float genPt = -1.;
         std::array<float, 3> genDecVtx{-1.f};
         int vtx3bodyPDGcode = -1;
+        int daughter0PDGcode = -1;
+        int daughter1PDGcode = -1;
+        int daughter2PDGcode = -1;
         double MCmassPrPi = -1.;
         float genPosP = -1.;
         float genPosPt = -1.;
@@ -197,15 +200,18 @@ struct threebodyKFTask {
 
         if (vtx3bodydata.has_mcParticle() && vtx3bodydata.mcParticleId() > -1 && vtx3bodydata.mcParticleId() <= particlesMC.size()) { // mother to daughter association already checked in decay3bodybuilder
           auto MCvtx3body = vtx3bodydata.mcParticle();
+          vtx3bodyPDGcode = MCvtx3body.pdgCode();
           registry.fill(HIST("hLabelCounter"), 1.5);
           if (MCvtx3body.has_daughters()) {
             auto lMCTrack0 = track0.mcParticle_as<aod::McParticles>();
             auto lMCTrack1 = track1.mcParticle_as<aod::McParticles>();
             auto lMCTrack2 = track2.mcParticle_as<aod::McParticles>();
+            daughter0PDGcode = lMCTrack0.pdgCode();
+            daughter1PDGcode = lMCTrack1.pdgCode();
+            daughter2PDGcode = lMCTrack2.pdgCode();
             // check PDG codes
             if ((MCvtx3body.pdgCode() == motherPdgCode && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == bachelorPdgCode) ||
                 (MCvtx3body.pdgCode() == -motherPdgCode && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -bachelorPdgCode)) {
-              vtx3bodyPDGcode = MCvtx3body.pdgCode();
               genDecVtx = {lMCTrack0.vx(), lMCTrack0.vy(), lMCTrack0.vz()};
               MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - MCvtx3body.vx(), lMCTrack2.vy() - MCvtx3body.vy(), lMCTrack2.vz() - MCvtx3body.vz()) * o2::constants::physics::MassHyperTriton / MCvtx3body.p();
               genPhi = MCvtx3body.phi();
@@ -264,9 +270,12 @@ struct threebodyKFTask {
           vtx3bodydata.pxtrack1(), vtx3bodydata.pytrack1(), vtx3bodydata.pztrack1(),                                  // pion
           vtx3bodydata.pxtrack2(), vtx3bodydata.pytrack2(), vtx3bodydata.pztrack2(),                                  // deuteron
           vtx3bodydata.tpcinnerparamtrack0(), vtx3bodydata.tpcinnerparamtrack1(), vtx3bodydata.tpcinnerparamtrack2(), // proton, pion, deuteron
-          vtx3bodydata.dcatrack0topvkf(), vtx3bodydata.dcatrack1topvkf(), vtx3bodydata.dcatrack2topvkf(),             // proton, pion, deuteron
-          vtx3bodydata.dcaxytrack0topvkf(), vtx3bodydata.dcaxytrack1topvkf(), vtx3bodydata.dcaxytrack2topvkf(),       // proton, pion, deuteron
-          vtx3bodydata.dcaxytrack0tosvkf(), vtx3bodydata.dcaxytrack1tosvkf(), vtx3bodydata.dcaxytrack2tosvkf(),       // proton, pion, deuteron
+          vtx3bodydata.tpcncltrack0(), vtx3bodydata.tpcncltrack1(), vtx3bodydata.tpcncltrack1(),                      // proton, pion, deuteron
+          vtx3bodydata.tpcchi2ncldeuteron(),
+          vtx3bodydata.deltaphideuteron(), vtx3bodydata.deltaphiproton(),
+          vtx3bodydata.dcatrack0topvkf(), vtx3bodydata.dcatrack1topvkf(), vtx3bodydata.dcatrack2topvkf(),       // proton, pion, deuteron
+          vtx3bodydata.dcaxytrack0topvkf(), vtx3bodydata.dcaxytrack1topvkf(), vtx3bodydata.dcaxytrack2topvkf(), // proton, pion, deuteron
+          vtx3bodydata.dcaxytrack0tosvkf(), vtx3bodydata.dcaxytrack1tosvkf(), vtx3bodydata.dcaxytrack2tosvkf(), // proton, pion, deuteron
           vtx3bodydata.dcatrack0totrack1kf(), vtx3bodydata.dcatrack0totrack2kf(), vtx3bodydata.dcatrack1totrack2kf(),
           vtx3bodydata.dcavtxdaughterskf(),
           vtx3bodydata.dcaxytrackpostopv(), vtx3bodydata.dcaxytracknegtopv(), vtx3bodydata.dcaxytrackbachtopv(),
@@ -287,7 +296,7 @@ struct threebodyKFTask {
           genRap,
           genPosP, genPosPt, genNegP, genNegPt, genBachP, genBachPt,
           isTrueH3L, isTrueAntiH3L,
-          vtx3bodyPDGcode,
+          vtx3bodyPDGcode, daughter0PDGcode, daughter1PDGcode, daughter2PDGcode,
           true,  // is reconstructed
           true); // reco event passed event selection
       } // end vtx3bodydatas loop
@@ -306,6 +315,9 @@ struct threebodyKFTask {
       float genPtPos = -1.;
       float genPNeg = -1.;
       float genPtNeg = -1.;
+      int posDauPdgCode = -1;
+      int negDauPdgCode = -1;
+      int bachDauPdgCode = -1;
 
       // check if mcparticle was reconstructed and already filled in the table
       if (std::find(filledMothers.begin(), filledMothers.end(), mcparticle.globalIndex()) != std::end(filledMothers)) {
@@ -347,10 +359,12 @@ struct threebodyKFTask {
             protonMom = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
             genPPos = mcparticleDaughter.p();
             genPtPos = mcparticleDaughter.pt();
+            posDauPdgCode = mcparticleDaughter.pdgCode();
           } else if (mcparticleDaughter.pdgCode() == -211) {
             piMinusMom = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
             genPNeg = mcparticleDaughter.p();
             genPtNeg = mcparticleDaughter.pt();
+            negDauPdgCode = mcparticleDaughter.pdgCode();
           }
         }
         genMCmassPrPi = RecoDecay::m(array{protonMom, piMinusMom}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
@@ -367,10 +381,12 @@ struct threebodyKFTask {
             antiProtonMom = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
             genPNeg = mcparticleDaughter.p();
             genPtNeg = mcparticleDaughter.pt();
+            negDauPdgCode = mcparticleDaughter.pdgCode();
           } else if (mcparticleDaughter.pdgCode() == 211) {
             piPlusMom = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
             genPPos = mcparticleDaughter.p();
             genPtPos = mcparticleDaughter.pt();
+            posDauPdgCode = mcparticleDaughter.pdgCode();
           }
         }
         genMCmassPrPi = RecoDecay::m(array{antiProtonMom, piPlusMom}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
@@ -388,6 +404,7 @@ struct threebodyKFTask {
           genDecayVtx = {mcDaughter.vx(), mcDaughter.vy(), mcDaughter.vz()};
           genPBach = mcDaughter.p();
           genPtBach = mcDaughter.pt();
+          bachDauPdgCode = mcDaughter.pdgCode();
         }
       }
       double genMClifetime = RecoDecay::sqrtSumOfSquares(genDecayVtx[0] - mcparticle.vx(), genDecayVtx[1] - mcparticle.vy(), genDecayVtx[2] - mcparticle.vz()) * o2::constants::physics::MassHyperTriton / mcparticle.p();
@@ -412,6 +429,9 @@ struct threebodyKFTask {
         -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
+        -1,
+        -1, -1,
+        -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
@@ -434,7 +454,7 @@ struct threebodyKFTask {
         mcparticle.y(),
         genPPos, genPtPos, genPNeg, genPtNeg, genPBach, genPtBach,
         isTrueGenH3L, isTrueGenAntiH3L,
-        mcparticle.pdgCode(),
+        mcparticle.pdgCode(), posDauPdgCode, negDauPdgCode, bachDauPdgCode,
         false, // is reconstructed
         survEvSel);
     } // end mcparticles loop
