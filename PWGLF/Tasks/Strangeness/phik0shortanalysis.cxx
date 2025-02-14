@@ -125,7 +125,7 @@ struct Phik0shortanalysis {
     Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0s(cm)"};
     Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
     Configurable<float> v0rejK0s{"v0rejK0s", 0.005, "V0 rej K0s"};
-  }v0Configs;
+  } v0Configs;
 
   // Configurables on K0S mass
   Configurable<float> lowMK0S{"lowMK0S", 0.48, "Lower limit on K0Short mass"};
