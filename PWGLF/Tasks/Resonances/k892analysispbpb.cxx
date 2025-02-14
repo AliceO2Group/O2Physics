@@ -708,7 +708,7 @@ struct K892analysispbpb {
             bool isSameMother = false;
             bool isMotherOk = false;
             int pdgCodeMother = -999;
-            auto ptMother = -9999;
+            float ptMother = -9999.;
             for (const auto& mothertrack1 : mctrack1.template mothers_as<aod::McParticles>()) {
               for (const auto& mothertrack2 : mctrack2.template mothers_as<aod::McParticles>()) {
                 if (mothertrack1.pdgCode() != mothertrack2.pdgCode())
