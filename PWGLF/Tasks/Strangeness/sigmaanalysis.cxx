@@ -607,23 +607,6 @@ struct sigmaanalysis {
           return false;
         histos.fill(HIST("SigmaMassQA/h2dLambdaMass"), cand.sigmapT(), cand.sigmaMass());
 
-        // if constexpr (requires { cand.lambdaCandPDGCode(); }) {
-        //   if (doPIDQA && passedTPC) {
-        //     histos.fill(HIST("MC/hPtLambdaCandidates_passedTPCPID"), cand.lambdaPt());
-        //     if (cand.lambdaCandPDGCode() == 3122)
-        //       histos.fill(HIST("MC/hPtTrueLambda_passedTPCPID"), cand.lambdaPt());
-        //   }
-        //   if (doPIDQA && passedTOF) {
-        //     histos.fill(HIST("MC/hPtLambdaCandidates_passedTOFPID"), cand.lambdaPt());
-        //     if (cand.lambdaCandPDGCode() == 3122)
-        //       histos.fill(HIST("MC/hPtTrueLambda_passedTOFPID"), cand.lambdaPt());
-        //   }
-        //   if (doPIDQA && passedTPC && passedTOF) {
-        //     histos.fill(HIST("MC/hPtLambdaCandidates_passedTPCTOFPID"), cand.lambdaPt());
-        //     if (cand.lambdaCandPDGCode() == 3122)
-        //       histos.fill(HIST("MC/hPtTrueLambda_passedTPCTOFPID"), cand.lambdaPt());
-        //   }
-        // }
       } else { // AntiLambda selection
         histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPr"), cand.lambdaNegPrTPCNSigma(), cand.aLambdaPrTOFNSigma());
         histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPi"), cand.lambdaPosPiTPCNSigma(), cand.aLambdaPiTOFNSigma());
@@ -818,9 +801,6 @@ struct sigmaanalysis {
         histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
         histos.fill(HIST("Sigma0/h3dMassSigma0"), sigma.sigmaCentrality(), sigma.sigmapT(), sigma.sigmaMass());
 
-        // Low-IR
-        // Normal IR
-        // High-IR
       } else {
 
         // Perform analysis selection for antisigma0
