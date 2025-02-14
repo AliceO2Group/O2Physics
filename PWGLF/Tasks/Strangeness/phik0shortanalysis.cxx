@@ -762,7 +762,7 @@ struct Phik0shortanalysis {
           isCountedPhi = true;
         }
 
-        dataPhiHist.fill(HIST("h3PhipurInvMass"), multiplicity, recPhi.M());
+        dataPhiHist.fill(HIST("h3PhipurInvMass"), multiplicity, recPhi.Pt(), recPhi.M());
 
         std::array<bool, 3> isCountedK0S{false, false, false};
 
@@ -791,19 +791,19 @@ struct Phik0shortanalysis {
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
             continue;
           if (!isCountedK0S.at(0)) {
-            dataPhiHist.fill(HIST("h3PhipurK0SInvMassInc"), multiplicity, v0.pt(), recPhi.M());
+            dataPhiHist.fill(HIST("h3PhipurK0SInvMassInc"), multiplicity, recPhi.Pt(), recPhi.M());
             isCountedK0S.at(0) = true;
           }
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedK0S.at(1)) {
-            dataPhiHist.fill(HIST("h3PhipurK0SInvMassFCut"), multiplicity, v0.pt(), recPhi.M());
+            dataPhiHist.fill(HIST("h3PhipurK0SInvMassFCut"), multiplicity, recPhi.Pt(), recPhi.M());
             isCountedK0S.at(1) = true;
           }
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedK0S.at(2)) {
-            dataPhiHist.fill(HIST("h3PhipurK0SInvMassSCut"), multiplicity, v0.pt(), recPhi.M());
+            dataPhiHist.fill(HIST("h3PhipurK0SInvMassSCut"), multiplicity, recPhi.Pt(), recPhi.M());
             isCountedK0S.at(2) = true;
           }
         }
@@ -820,19 +820,19 @@ struct Phik0shortanalysis {
           if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
             continue;
           if (!isCountedPi.at(0)) {
-            dataPhiHist.fill(HIST("h3PhipurPiInvMassInc"), multiplicity, track.pt(), recPhi.M());
+            dataPhiHist.fill(HIST("h3PhipurPiInvMassInc"), multiplicity, recPhi.Pt(), recPhi.M());
             isCountedPi.at(0) = true;
           }
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedPi.at(1)) {
-            dataPhiHist.fill(HIST("h3PhipurPiInvMassFCut"), multiplicity, track.pt(), recPhi.M());
+            dataPhiHist.fill(HIST("h3PhipurPiInvMassFCut"), multiplicity, recPhi.Pt(), recPhi.M());
             isCountedPi.at(1) = true;
           }
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedPi.at(2)) {
-            dataPhiHist.fill(HIST("h3PhipurPiInvMassSCut"), multiplicity, track.pt(), recPhi.M());
+            dataPhiHist.fill(HIST("h3PhipurPiInvMassSCut"), multiplicity, recPhi.Pt(), recPhi.M());
             isCountedPi.at(2) = true;
           }
         }
@@ -1368,7 +1368,7 @@ struct Phik0shortanalysis {
           isCountedPhi = true;
         }
 
-        closureMCPhiHist.fill(HIST("h3MCPhipurInvMass"), genmultiplicity, recPhi.M());
+        closureMCPhiHist.fill(HIST("h3MCPhipurInvMass"), genmultiplicity, recPhi.Pt(), recPhi.M());
 
         std::array<bool, 3> isCountedK0S{false, false, false};
 
@@ -1394,19 +1394,19 @@ struct Phik0shortanalysis {
             continue;
 
           if (!isCountedK0S.at(0)) {
-            closureMCPhiHist.fill(HIST("h3MCPhipurK0SInvMassInc"), genmultiplicity, v0.pt(), recPhi.M());
+            closureMCPhiHist.fill(HIST("h3MCPhipurK0SInvMassInc"), genmultiplicity, recPhi.Pt(), recPhi.M());
             isCountedK0S.at(0) = true;
           }
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedK0S.at(1)) {
-            closureMCPhiHist.fill(HIST("h3MCPhipurK0SInvMassFCut"), genmultiplicity, v0.pt(), recPhi.M());
+            closureMCPhiHist.fill(HIST("h3MCPhipurK0SInvMassFCut"), genmultiplicity, recPhi.Pt(), recPhi.M());
             isCountedK0S.at(1) = true;
           }
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedK0S.at(2)) {
-            closureMCPhiHist.fill(HIST("h3MCPhipurK0SInvMassSCut"), genmultiplicity, v0.pt(), recPhi.M());
+            closureMCPhiHist.fill(HIST("h3MCPhipurK0SInvMassSCut"), genmultiplicity, recPhi.Pt(), recPhi.M());
             isCountedK0S.at(2) = true;
           }
         }
@@ -1430,19 +1430,19 @@ struct Phik0shortanalysis {
             continue;
 
           if (!isCountedPi.at(0)) {
-            closureMCPhiHist.fill(HIST("h3MCPhipurPiInvMassInc"), genmultiplicity, track.pt(), recPhi.M());
+            closureMCPhiHist.fill(HIST("h3MCPhipurPiInvMassInc"), genmultiplicity, recPhi.Pt(), recPhi.M());
             isCountedPi.at(0) = true;
           }
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedPi.at(1)) {
-            closureMCPhiHist.fill(HIST("h3MCPhipurPiInvMassFCut"), genmultiplicity, track.pt(), recPhi.M());
+            closureMCPhiHist.fill(HIST("h3MCPhipurPiInvMassFCut"), genmultiplicity, recPhi.Pt(), recPhi.M());
             isCountedPi.at(1) = true;
           }
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedPi.at(2)) {
-            closureMCPhiHist.fill(HIST("h3MCPhipurPiInvMassSCut"), genmultiplicity, track.pt(), recPhi.M());
+            closureMCPhiHist.fill(HIST("h3MCPhipurPiInvMassSCut"), genmultiplicity, recPhi.Pt(), recPhi.M());
             isCountedPi.at(2) = true;
           }
         }
