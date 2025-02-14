@@ -524,7 +524,7 @@ struct Chk892Flow {
       return false;
     if (cfgpTdepDCAxyCut) {
       // Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
-      if (std::abs(track.dcaXY()) > 0.004 + 0.013 / track.pt())
+      if (std::abs(track.dcaXY()) > (0.004 + (0.013 / track.pt())))
         return false;
     } else {
       if (std::abs(track.dcaXY()) > cMaxbDCArToPVcut)
