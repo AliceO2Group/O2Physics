@@ -97,15 +97,15 @@ struct TreeCreatorElectronMLDDA {
       {"V0/hTOFbeta_P_Ka", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
       {"V0/hTOFbeta_P_Pr", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
 
-      {"V0/hITSobClusterSize_P_El", "mean ITSob cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      {"V0/hITSobClusterSize_P_Mu", "mean ITSob cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      {"V0/hITSobClusterSize_P_Pi", "mean ITSob cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      {"V0/hITSobClusterSize_P_Ka", "mean ITSob cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      {"V0/hITSobClusterSize_P_Pr", "mean ITSob cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
+      {"V0/hITSClusterSize_P_El", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
+      {"V0/hITSClusterSize_P_Mu", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
+      {"V0/hITSClusterSize_P_Pi", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
+      {"V0/hITSClusterSize_P_Ka", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
+      {"V0/hITSClusterSize_P_Pr", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
 
       {"PrimaryTrack/hTPCdEdx_P", "TPC dEdx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
       {"PrimaryTrack/hTOFbeta_P", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
-      {"PrimaryTrack/hITSobClusterSize_P", "mean ITSob cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
+      {"PrimaryTrack/hITSClusterSize_P", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
       {"PrimaryTrack/hTPCNsigmaEl_P", "TPC n#sigma_{e} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
       {"PrimaryTrack/hTPCNsigmaMu_P", "TPC n#sigma_{#mu} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{#mu}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
       {"PrimaryTrack/hTPCNsigmaPi_P", "TPC n#sigma_{#pi} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{#pi}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
@@ -129,10 +129,10 @@ struct TreeCreatorElectronMLDDA {
       {"Cascade/hMassAntiLambda", "V0 mass AntiLambda in cascade", {HistType::kTH1F, {{100, 1.05, 1.15}}}},
       {"Cascade/hMassXi", "cascade mass #Xi", {HistType::kTH1F, {{200, 1.2, 1.4}}}},
       {"Cascade/hMassOmega", "cascade mass #Omega", {HistType::kTH1F, {{200, 1.6, 1.8}}}},
-      {"Cascade/hMassPt_Xi", "cascade mass #Xi;m_{#Lambda#pi} (GeV/c^{2});p_{T,#Lambda#pi} (GeV/c)", {HistType::kTH2F, {{200, 1.2, 1.4}, {100, 0, 10}}}},
-      {"Cascade/hMassPt_Xi_bachelor", "cascade mass #Xi;m_{#Lambda#pi} (GeV/c^{2});p_{T,#pi} (GeV/c)", {HistType::kTH2F, {{200, 1.2, 1.4}, {100, 0, 10}}}},
-      {"Cascade/hMassPt_Omega", "cascade mass;#Omegam_{#LambdaK} (GeV/c^{2});p_{T,#LambdaK} (GeV/c)", {HistType::kTH2F, {{200, 1.6, 1.8}, {100, 0, 10}}}},
-      {"Cascade/hMassPt_Omega_bachelor", "cascade mass #Omega;m_{#LambdaK} (GeV/c^{2});p_{T,K} (GeV/c)", {HistType::kTH2F, {{200, 1.6, 1.8}, {100, 0, 10}}}},
+      {"Cascade/hMassPt_Xi", "cascade mass #Xi^{#pm};m_{#Lambda#pi} (GeV/c^{2});p_{T,#Lambda#pi} (GeV/c)", {HistType::kTH2F, {{200, 1.2, 1.4}, {100, 0, 10}}}},
+      {"Cascade/hMassPt_Xi_bachelor", "cascade mass #Xi^{#pm};m_{#Lambda#pi} (GeV/c^{2});p_{T,#pi} (GeV/c)", {HistType::kTH2F, {{200, 1.2, 1.4}, {100, 0, 10}}}},
+      {"Cascade/hMassPt_Omega", "cascade mass #Omega^{#pm};m_{#LambdaK} (GeV/c^{2});p_{T,#LambdaK} (GeV/c)", {HistType::kTH2F, {{200, 1.6, 1.8}, {100, 0, 10}}}},
+      {"Cascade/hMassPt_Omega_bachelor", "cascade mass #Omega^{#pm};m_{#LambdaK} (GeV/c^{2});p_{T,K} (GeV/c)", {HistType::kTH2F, {{200, 1.6, 1.8}, {100, 0, 10}}}},
     },
   };
 
@@ -153,7 +153,7 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> downscaling_pion{"downscaling_pion", 0.001, "down scaling factor to store pion"};
   Configurable<float> downscaling_kaon{"downscaling_kaon", 1.1, "down scaling factor to store kaon"};
   Configurable<float> downscaling_proton{"downscaling_proton", 0.01, "down scaling factor to store proton"};
-  Configurable<bool> store_v0photons{"store_v0photons", false, "create training data from v0 photons"};
+  Configurable<bool> store_v0photons{"store_v0photons", true, "create training data from v0 photons"};
   Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
   Configurable<float> intercept{"intercept", -0.0380, "intercept for m vs. phiv"};
 
@@ -165,8 +165,8 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
     Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
-    Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 4, "min ncluster its"};
-    Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 1, "min ncluster itsib"};
+    Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 2, "min ncluster its"};
+    Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 5.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 6.0, "max chi2/NclsITS"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.3, "max dca XY in cm"};
@@ -188,8 +188,8 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
     Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
-    Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 4, "min ncluster its"};
-    Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 1, "min ncluster itsib"};
+    Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 2, "min ncluster its"};
+    Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 5.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 6.0, "max chi2/NclsITS"};
     Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
@@ -237,6 +237,8 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.4, "max distance between bachelor and V0"};
     Configurable<float> cfg_min_rxy_v0{"cfg_min_rxy_v0", 1.2, "minimum V0 rxy in cascade"};
     Configurable<float> cfg_min_rxy{"cfg_min_rxy", 0.5, "minimum V0 rxy in cascade"};
+    Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
+    Configurable<float> cfg_min_dcaxy_bachelor{"cfg_min_dcaxy_bachelor", 0.1, "min dca XY for bachelor in cm"};
   } cascadecuts;
 
   int mRunNumber;
@@ -391,9 +393,9 @@ struct TreeCreatorElectronMLDDA {
       return false;
     }
 
-    if (std::fabs(track.dcaXY()) < v0cuts.cfg_min_dcaxy_v0leg) {
-      return false;
-    }
+    // if (std::fabs(track.dcaXY()) < v0cuts.cfg_min_dcaxy_v0leg) { // this is applied in filter.
+    //   return false;
+    // }
 
     if (track.itsNCls() < v0cuts.cfg_min_ncluster_its) {
       return false;
@@ -488,18 +490,19 @@ struct TreeCreatorElectronMLDDA {
   }
 
   //! type of V0. 0: built solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1.
-  Filter v0Filter = o2::aod::v0data::v0Type == uint8_t(1) && o2::aod::v0data::v0cosPA > v0cuts.cfg_min_cospa.value&& o2::aod::v0data::dcaV0daughters < v0cuts.cfg_max_dcadau.value;
+  Filter v0Filter = o2::aod::v0data::v0Type == uint8_t(1) && o2::aod::v0data::v0cosPA > v0cuts.cfg_min_cospa.value&& o2::aod::v0data::dcaV0daughters<v0cuts.cfg_max_dcadau.value && nabs(o2::aod::v0data::dcanegtopv)> v0cuts.cfg_min_dcaxy_v0leg&& nabs(o2::aod::v0data::dcanegtopv) > v0cuts.cfg_min_dcaxy_v0leg;
   using filteredV0s = soa::Filtered<aod::V0Datas>;
+
+  Filter cascadeFilter = o2::aod::cascdata::dcacascdaughters < cascadecuts.cfg_max_dcadau.value && nabs(o2::aod::cascdata::dcanegtopv) > cascadecuts.cfg_min_dcaxy_v0leg&& nabs(o2::aod::cascdata::dcanegtopv) > cascadecuts.cfg_min_dcaxy_v0leg&& nabs(o2::aod::cascdata::dcabachtopv) > cascadecuts.cfg_min_dcaxy_bachelor;
+  using filteredCascades = soa::Filtered<aod::CascDatas>;
 
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::evsel::sel8 == true;
   using filteredMyCollisions = soa::Filtered<MyCollisions>;
 
-  //! type of V0. 0: built solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1 or 3.
   Preslice<aod::V0Datas> perCollision_v0 = o2::aod::v0data::collisionId;
   Preslice<aod::CascDatas> perCollision_cascade = o2::aod::cascdata::collisionId;
   Preslice<MyTracks> perCollision_track = o2::aod::track::collisionId;
 
-  // Don't apply filter to tracks, because posTrack_as<>, negTrack_as<> is used.
   Partition<MyTracks> posTracks = o2::aod::track::signed1Pt > 0.f && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
   Partition<MyTracks> negTracks = o2::aod::track::signed1Pt < 0.f && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
   std::vector<uint64_t> stored_trackIds;
@@ -717,7 +720,7 @@ struct TreeCreatorElectronMLDDA {
 
         registry.fill(HIST("PrimaryTrack/hTPCdEdx_P"), track.p(), track.tpcSignal());
         registry.fill(HIST("PrimaryTrack/hTOFbeta_P"), track.p(), track.beta());
-        registry.fill(HIST("PrimaryTrack/hITSobClusterSize_P"), track.p(), meanClusterSizeITS<3, 7>(track) * std::cos(std::atan(track.tgl())));
+        registry.fill(HIST("PrimaryTrack/hITSClusterSize_P"), track.p(), meanClusterSizeITS<0, 7>(track) * std::cos(std::atan(track.tgl())));
         registry.fill(HIST("PrimaryTrack/hTPCNsigmaEl_P"), track.p(), track.tpcNSigmaEl());
         registry.fill(HIST("PrimaryTrack/hTOFNsigmaEl_P"), track.p(), track.tofNSigmaEl());
         registry.fill(HIST("PrimaryTrack/hTPCNsigmaMu_P"), track.p(), track.tpcNSigmaMu());
