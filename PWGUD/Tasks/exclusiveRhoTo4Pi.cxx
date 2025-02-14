@@ -56,8 +56,8 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   Configurable<float> zdcCut{"zdcCut", 10., "ZDC threshold"};
 
   Configurable<float> pvCut{"pvCut", 1.0, "Use Only PV tracks"};
-  Configurable<float> dcaZcut{"dcaZcut", 3.2, "dcaZ cut"};
-  Configurable<float> dcaXYcut{"dcaXYcut", 2.4, "dcaXY cut (0 for Pt-function)"};
+  Configurable<float> dcaZcut{"dcaZcut", 2, "dcaZ cut"};
+  Configurable<float> dcaXYcut{"dcaXYcut", 0, "dcaXY cut (0 for Pt-function)"};
   Configurable<float> tpcChi2Cut{"tpcChi2Cut", 4, "Max tpcChi2NCl"};
   Configurable<float> tpcNClsFindableCut{"tpcNClsFindableCut", 70, "Min tpcNClsFindable"};
   Configurable<float> itsChi2Cut{"itsChi2Cut", 36, "Max itsChi2NCl"};
@@ -67,8 +67,8 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   Configurable<float> nSigmaTPCcut{"nSigmaTPCcut", 3, "TPC cut"};
   Configurable<float> nSigmaTOFcut{"nSigmaTOFcut", 3, "TOF cut"};
   Configurable<bool> strictEventSelection{"strictEventSelection", true, "Event Selection"};
-  Configurable<bool> ifDataAnalysis{"ifDataAnalysis", false, "Data Analysis"};
-  Configurable<bool> ifMCAnalysis{"ifMCAnalysis", true, "MC Analysis"};
+  Configurable<bool> ifDataAnalysis{"ifDataAnalysis", true, "Data Analysis"};
+  Configurable<bool> ifMCAnalysis{"ifMCAnalysis", false, "MC Analysis"};
 
   Configurable<int> nBinsPt{"nBinsPt", 1000, "Number of bins for pT"};
   Configurable<int> nBinsInvariantMass{"nBinsInvariantMass", 1000, "Number of bins for Invariant Mass"};
@@ -542,21 +542,24 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
 
       for (const auto& mother : particle.mothers_as<aod::UDMcParticles>()) {
         if (mother.pdgCode() == 30113) {
-
           if (flag == false) {
             histosMCgen.fill(HIST("rhoPrimeCounts"), 5);
           }
           flag = true;
 
           if (particle.pdgCode() == 211) {
-            piPlusvectors.push_back(tempVector);
-            histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
-            histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
+            if (std::abs(tempVector.Rapidity()) < 0.9) {
+              piPlusvectors.push_back(tempVector);
+              histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
+              histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
+            }
           }
           if (particle.pdgCode() == -211) {
-            piMinusvectors.push_back(tempVector);
-            histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
-            histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
+            if (std::abs(tempVector.Rapidity()) < 0.9) {
+              piMinusvectors.push_back(tempVector);
+              histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
+              histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
+            }
           }
         } // End of Mother ID 30113 rho prime
       } // End of loop over mothers
@@ -598,7 +601,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   } // End of 4 Pion MC Generation Process function
   PROCESS_SWITCH(exclusiveRhoTo4Pi, processMCgen, "The Process for 4 Pion Analysis from MC Generation", ifMCAnalysis);
 
-  using CollisionStuff = soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>; //
+  using CollisionStuff = soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>;
   using CollisionTotal = CollisionStuff::iterator;
   using TrackStuff = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
 
