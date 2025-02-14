@@ -338,7 +338,7 @@ struct FlowZdcTask {
     const auto cent = collision.centFT0C();
     int globalTracks = tracks.size();
     if (globalTracks < 1)
-      return;       
+      return;
     // this is the q vector for the TPC data. it is a complex function
     double qTpcReal = 0.0; // Initialize qTPC_real
     double qTpcIm = 0.0;   // init qTPC_imaginary
@@ -513,7 +513,7 @@ struct FlowZdcTask {
   }
 
   void processCorrelation(CollisionDataTable::iterator const& collision, FilTrackDataTable const& tracks)
-  { 
+  {
     if (!isEventSelected(collision)) {
       return;
     }
