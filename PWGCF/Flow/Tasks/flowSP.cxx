@@ -339,7 +339,6 @@ struct FlowSP {
           registry.add("QA/after/PsiC_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
           registry.add("QA/after/PsiFull_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
 
-          registry.addClone("QA/after/", "QA/before/");
           // track QA for pos, neg, incl
           registry.add<TH1>("incl/QA/hPt", "", kTH1D, {axisPt});
           registry.add<TH1>("incl/QA/hPhi", "", kTH1D, {axisPhi});
@@ -352,6 +351,8 @@ struct FlowSP {
           registry.add("incl/QA/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
         }
       }
+
+      registry.addClone("QA/after/", "QA/before/");
 
       if (cfgFillChargeDependence) {
         registry.addClone("incl/", "pos/");
@@ -927,10 +928,10 @@ struct FlowSP {
         if (cfgFillChargeDependence) {
           if (pos) {
             fillHistograms<kPositive>(track, waccP, weffP, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            fillTrackQA<kPositive>(track, vtxz, wacc, weff);
+            fillTrackQA<kPositive>(track, vtxz, waccP, weffP);
           } else {
             fillHistograms<kNegative>(track, waccN, weffN, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            fillTrackQA<kNegative>(track, vtxz, wacc, weff);
+            fillTrackQA<kNegative>(track, vtxz, waccN, weffN);
           }
         }
       } // end of track loop
