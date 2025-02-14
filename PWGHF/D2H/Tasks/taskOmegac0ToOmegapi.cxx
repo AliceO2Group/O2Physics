@@ -69,7 +69,7 @@ struct HfTaskOmegac0 {
   PresliceUnsorted<CollisionsWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   SliceCache cache;
 
-  Partition<Omegac0CandidatesKF> selectedOmegac0CandidatesKF = aod::hf_sel_toomegapii::resultSelections >= selectionFlagOmegac0;
+  Partition<Omegac0CandidatesKF> selectedOmegac0CandidatesKF = aod::hf_sel_toomegapi::resultSelections >= selectionFlagOmegac0;
   Partition<Omegac0CandidatesMlKF> selectedOmegac0CandidatesMlKF = aod::hf_sel_toomegapi::resultSelections >= selectionFlagOmegac0;
 
   HistogramRegistry registry{
