@@ -546,7 +546,7 @@ struct sigma0builder {
       histos.fill(HIST("hCandidateBuilderSelection"), 6.);
       histos.fill(HIST("Selection/hLambdaMass"), lambda.mLambda());
       histos.fill(HIST("Selection/hAntiLambdaMass"), lambda.mAntiLambda());
-      if ((TMath::Abs(lambda.mLambda() - 1.115683) > LambdaWindow) && (TMath::Abs(lambda.mAntiLambda() - 1.115683) > LambdaWindow))
+      if ((TMath::Abs(lambda.mLambda() - o2::constants::physics::MassLambda0) > LambdaWindow) && (TMath::Abs(lambda.mAntiLambda() - o2::constants::physics::MassLambda0) > LambdaWindow))
         return false;
       histos.fill(HIST("Selection/hLambdaNegEta"), lambda.negativeeta());
       histos.fill(HIST("Selection/hLambdaPosEta"), lambda.positiveeta());

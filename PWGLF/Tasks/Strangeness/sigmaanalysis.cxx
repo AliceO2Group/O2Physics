@@ -603,7 +603,7 @@ struct sigmaanalysis {
         // Mass Selection
         histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 28.);
         histos.fill(HIST("GeneralQA/hLambdaMass"), cand.lambdaMass());
-        if (TMath::Abs(cand.lambdaMass() - 1.115683) > LambdaWindow)
+        if (TMath::Abs(cand.lambdaMass() - o2::constants::physics::MassLambda0) > LambdaWindow)
           return false;
         histos.fill(HIST("SigmaMassQA/h2dLambdaMass"), cand.sigmapT(), cand.sigmaMass());
 
@@ -652,7 +652,7 @@ struct sigmaanalysis {
         // Mass Selection
         histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 28.);
         histos.fill(HIST("GeneralQA/hAntiLambdaMass"), cand.antilambdaMass());
-        if (TMath::Abs(cand.antilambdaMass() - 1.115683) > LambdaWindow)
+        if (TMath::Abs(cand.antilambdaMass() - o2::constants::physics::MassLambda0) > LambdaWindow)
           return false;
         histos.fill(HIST("SigmaMassQA/h2dAntiLambdaMass"), cand.sigmapT(), cand.sigmaMass());
       }
