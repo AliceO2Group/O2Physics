@@ -704,7 +704,7 @@ struct HfCandidateSelectorToOmegaPi {
         }
       } else {
         registry.fill(HIST("hSelMassLam"), 0);
-		resultSelections = false;
+        resultSelections = false;
       }
 
       if (std::abs(invMassCascade - o2::constants::physics::MassOmegaMinus) < cascadeMassWindow) {
@@ -715,7 +715,7 @@ struct HfCandidateSelectorToOmegaPi {
         }
       } else {
         registry.fill(HIST("hSelMassCasc"), 0);
-		resultSelections = false;
+        resultSelections = false;
       }
 
       if ((invMassCharmBaryon >= invMassCharmBaryonMin) && (invMassCharmBaryon <= invMassCharmBaryonMax)) {
@@ -726,7 +726,7 @@ struct HfCandidateSelectorToOmegaPi {
         }
       } else {
         registry.fill(HIST("hSelMassCharmBaryon"), 0);
-		resultSelections = false;
+        resultSelections = false;
       }
       // ML selections
       if constexpr (ConstructMethod == hf_cand_casc_lf::ConstructMethod::KfParticle) {

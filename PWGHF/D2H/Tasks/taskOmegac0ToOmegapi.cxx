@@ -71,7 +71,7 @@ struct HfTaskOmegac0 {
 
   Partition<Omegac0CandidatesKF> selectedOmegac0CandidatesKF = aod::hf_sel_toomegapii::resultSelections >= selectionFlagOmegac0;
   Partition<Omegac0CandidatesMlKF> selectedOmegac0CandidatesMlKF = aod::hf_sel_toomegapi::resultSelections >= selectionFlagOmegac0;
-  
+
   HistogramRegistry registry{
     "registry",
     {}};
@@ -178,15 +178,15 @@ struct HfTaskOmegac0 {
       massOmegac0 = candidate.invMassCharmBaryon();
       auto ptCandidate = candidate.ptCharmBaryon();
       auto rapidityCandidate = candidate.kfRapOmegac();
-      if(candidate.resultSelections() >= selectionFlagOmegac0)
-      if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi)) {
-        if constexpr (applyMl) {
-          registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.mlProbOmegac()[0], massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), numPvContributors);
+      if (candidate.resultSelections() >= selectionFlagOmegac0)
+        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi)) {
+          if constexpr (applyMl) {
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.mlProbOmegac()[0], massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), numPvContributors);
 
-        } else {
-          registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), numPvContributors);
+          } else {
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), numPvContributors);
+          }
         }
-      }
     }
     // MC gen.
     for (const auto& particle : mcParticles) {
