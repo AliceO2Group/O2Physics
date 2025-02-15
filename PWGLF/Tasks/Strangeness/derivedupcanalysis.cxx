@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 //
 /// \file derivedupcanalysis.cxx
-/// \brief Strangeness in UPC analysis task
+/// \brief Analysis of strangeness production in UPC collisions
 /// \author Roman Nepeivoda (roman.nepeivoda@cern.ch)
 
 #include <bitset>
