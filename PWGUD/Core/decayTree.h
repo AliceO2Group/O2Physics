@@ -206,7 +206,6 @@ class reconstructedParticle
   //  0: not defined
   //  1: ULS
   //  2: LS
-  int fStatus;
   TLorentzVector fIVM;
   std::vector<int> fComb;
 };
