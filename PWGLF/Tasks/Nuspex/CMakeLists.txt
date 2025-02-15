@@ -154,4 +154,9 @@ o2physics_add_dpl_workflow(angular-correlations-in-jets
     SOURCES AngularCorrelationsInJets.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(antinuclei-in-jets
+    SOURCES antinucleiInJets.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
+    COMPONENT_NAME Analysis)
 endif()
