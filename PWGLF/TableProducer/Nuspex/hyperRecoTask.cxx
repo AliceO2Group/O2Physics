@@ -700,9 +700,9 @@ struct hyperRecoTask {
 
     for (auto& hypCand : hyperCandidates) {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
-          if (isEventUsedForEPCalibration && !collision.triggereventep()) {
-          return;
-          }
+      if (isEventUsedForEPCalibration && !collision.triggereventep()) {
+        return;
+      }
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputDataTableWithFlow(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                               collision.psiFT0A(), collision.multFT0A(),
