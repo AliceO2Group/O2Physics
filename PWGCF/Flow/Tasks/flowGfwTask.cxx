@@ -202,16 +202,16 @@ struct FlowGfwTask {
 
   // Contruct Global+ITS sample
   static constexpr TrackSelectionFlags::flagtype TrackSelectionITS =
-  TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
-  TrackSelectionFlags::kITSHits;
+    TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
+    TrackSelectionFlags::kITSHits;
   static constexpr TrackSelectionFlags::flagtype TrackSelectionTPC =
-  TrackSelectionFlags::kTPCNCls |
-  TrackSelectionFlags::kTPCCrossedRowsOverNCls |
-  TrackSelectionFlags::kTPCChi2NDF;
+    TrackSelectionFlags::kTPCNCls |
+    TrackSelectionFlags::kTPCCrossedRowsOverNCls |
+    TrackSelectionFlags::kTPCChi2NDF;
   static constexpr TrackSelectionFlags::flagtype TrackSelectionDCA =
-  TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
+    TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
   static constexpr TrackSelectionFlags::flagtype TrackSelectionDCAXYonly =
-  TrackSelectionFlags::kDCAxy;
+    TrackSelectionFlags::kDCAxy;
 
   // Additional Event selection cuts - Copy from flowGenericFramework.cxx
   TrackSelection myTrackSel;
@@ -317,7 +317,6 @@ struct FlowGfwTask {
     registry.add("phi_Cen_GlobalOnly", "phi_Cen_Global;Centrality (%); #phi;", {HistType::kTH2D, {axisCentrality, axisPhi}});
     registry.add("pt_Cen_ITSOnly", "pt_Cen_ITS;Centrality (%); p_{T} (GeV/c);", {HistType::kTH2D, {axisCentrality, axisPt}});
     registry.add("phi_Cen_ITSOnly", "phi_Cen_ITS;Centrality (%); #phi;", {HistType::kTH2D, {axisCentrality, axisPhi}});
-
 
     // Track types
     registry.add("GlobalplusITS", "Global plus ITS;Centrality FT0C;Nch", kTH1F, {axisCentrality});
@@ -699,12 +698,12 @@ struct FlowGfwTask {
   // Apply process filters
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex && (aod::cent::centFT0C > cfgMinCentFT0C) && (aod::cent::centFT0C < cfgMaxCentFT0C);
   Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-                                         ncheckbit(aod::track::trackCutFlag, TrackSelectionITS) &&
-                                         ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
-                                                ncheckbit(aod::track::trackCutFlag, TrackSelectionTPC), true) &&
-                                         ifnode(dcaZ > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDCAXYonly),
-                                                ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA)) &&
-                                        (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+                       ncheckbit(aod::track::trackCutFlag, TrackSelectionITS) &&
+                       ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
+                              ncheckbit(aod::track::trackCutFlag, TrackSelectionTPC), true) &&
+                       ifnode(dcaZ > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDCAXYonly),
+                              ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA)) &&
+                       (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0CVariant1s>>; // collisions filter
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>; // tracks filter
@@ -723,27 +722,29 @@ struct FlowGfwTask {
 
     // Choose centrality estimator -- Only one can be true
     float centrality = 0;
-    if (cfgcentEstFt0c){
+    if (cfgcentEstFt0c) {
       const auto centrality = collision.centFT0C();
       registry.fill(HIST("hCentEstimators"), kCentFT0C);
-      registry.fill(HIST("hCentFT0C"), centrality);}
-    else if (cfgcentEstFt0a) {
+      registry.fill(HIST("hCentFT0C"), centrality);
+    } else if (cfgcentEstFt0a) {
       const auto centrality = collision.centFT0A();
       registry.fill(HIST("hCentEstimators"), kCentFT0A);
-      registry.fill(HIST("hCentFT0A"), centrality);}
-    else if (cfgcentEstFt0m) {
+      registry.fill(HIST("hCentFT0A"), centrality);
+    } else if (cfgcentEstFt0m) {
       const auto centrality = collision.centFT0M();
       registry.fill(HIST("hCentEstimators"), kCentFT0M);
-      registry.fill(HIST("hCentFT0M"), centrality);}
-    else if (cfgcentEstFv0a) {
+      registry.fill(HIST("hCentFT0M"), centrality);
+    } else if (cfgcentEstFv0a) {
       const auto centrality = collision.centFV0A();
       registry.fill(HIST("hCentEstimators"), kCentFV0A);
-      registry.fill(HIST("hCentFV0A"), centrality);}
-    else if (cfgcentEstFt0cVariant1) {
+      registry.fill(HIST("hCentFV0A"), centrality);
+    } else if (cfgcentEstFt0cVariant1) {
       const auto centrality = collision.centFT0CVariant1();
-    registry.fill(HIST("hCentEstimators"), kCentFT0CVariant1);
-    registry.fill(HIST("hCentFT0CVariant1"), centrality);}
-    else {return;}
+      registry.fill(HIST("hCentEstimators"), kCentFT0CVariant1);
+      registry.fill(HIST("hCentFT0CVariant1"), centrality);
+    } else {
+      return;
+    }
 
     // fill event QA before cuts
     registry.fill(HIST("BeforeCut_globalTracks_centT0C"), collision.centFT0C(), tracks.size());
@@ -897,35 +898,30 @@ struct FlowGfwTask {
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
       }
 
-     globalPlusitsNch++;
+      globalPlusitsNch++;
 
-     registry.fill(HIST("GlobalplusITS"), centrality);
+      registry.fill(HIST("GlobalplusITS"), centrality);
 
-     if (cfgGlobalplusITS){
-        if (withinPtRef){
-          fGFW->Fill(track.eta(),fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+      if (cfgGlobalplusITS) {
+        if (withinPtRef) {
+          fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
         }
       }
 
-     if (track.hasTPC()){
-        if (cfgGlobalonly)
-        {
-          if (withinPtRef){
-            fGFW->Fill(track.eta(),fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+      if (track.hasTPC()) {
+        if (cfgGlobalonly) {
+          if (withinPtRef) {
+            fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
             gloabalOnlyNch++;
             registry.fill(HIST("Globalonly"), centrality);
             registry.fill(HIST("pt_Cen_ITSOnly"), centrality, track.pt());
             registry.fill(HIST("phi_Cen_GlobalOnly"), centrality, track.pt());
-
           }
         }
-      }
-     else
-      {
-       if (cfgITSonly)
-        {
-          if (withinPtRef){
-            fGFW->Fill(track.eta(),fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+      } else {
+        if (cfgITSonly) {
+          if (withinPtRef) {
+            fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
             itsOnlyNch++;
             registry.fill(HIST("ITSonly"), centrality);
             registry.fill(HIST("pt_Cen_ITSOnly"), centrality, track.pt());
