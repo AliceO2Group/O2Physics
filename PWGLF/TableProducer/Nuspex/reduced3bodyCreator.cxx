@@ -271,7 +271,7 @@ struct reduced3bodyCreator {
       }
 
       // save reduced decay3body table
-      reducedDecay3Bodys(reducedCollisions.lastIndex(), reducedFullTracksPIDIU.lastIndex(), reducedFullTracksPIDIU.lastIndex() + 1, reducedFullTracksPIDIU.lastIndex() + 2);
+      reducedDecay3Bodys(reducedCollisions.lastIndex(), reducedFullTracksPIDIU.lastIndex() - 2, reducedFullTracksPIDIU.lastIndex() - 1, reducedFullTracksPIDIU.lastIndex());
     }
   }
   PROCESS_SWITCH(reduced3bodyCreator, process, "default process function", true);
