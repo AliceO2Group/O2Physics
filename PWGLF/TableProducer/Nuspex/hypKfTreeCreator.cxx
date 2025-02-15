@@ -56,10 +56,10 @@ struct TrackProperties {
 };
 
 struct HyperNucleus {
-  HyperNucleus() : pdgCode(0), isReconstructed(0), globalIndex(0), species(0), isMatter(0), passedEvSel(0), isMatterMC(0), passedEvSelMC(0), isPhysicalPrimary(0), collisionMcTrue(0), mass(0), y(0), pt(0), ct(0), yGen(0), ptGen(0), ctGen(0), cpaPvGen(0), cpaPv(0), cpaSv(0), maxDcaTracks(0), maxDcaTracksSv(0), dcaToPvXY(0), dcaToPvZ(0), dcaToVtxXY(0), dcaToVtxZ(0), devToPvXY(0), chi2(0), pvx(0), pvy(0), pvz(0), svx(0), svy(0), svz(0), px(0), py(0), pz(0), pvxGen(0), pvyGen(0), pvzGen(0), svxGen(0), svyGen(0), svzGen(0), pxGen(0), pyGen(0), pzGen(0), nSingleDaughters(0), nCascadeDaughters(0), mcTrue(0), mcTrueVtx(0), mcPhysicalPrimary(0), hypNucDaughter(0) {}
+  HyperNucleus() : pdgCode(0), isReconstructed(0), globalIndex(0), species(0), isPrimaryCandidate(0), isMatter(0), passedEvSel(0), isMatterMC(0), passedEvSelMC(0), isPhysicalPrimary(0), collisionMcTrue(0), mass(0), y(0), pt(0), ct(0), yGen(0), ptGen(0), ctGen(0), cpaPvGen(0), cpaPv(0), cpaSv(0), maxDcaTracks(0), maxDcaTracksSv(0), dcaToPvXY(0), dcaToPvZ(0), dcaToVtxXY(0), dcaToVtxZ(0), devToPvXY(0), chi2(0), pvx(0), pvy(0), pvz(0), svx(0), svy(0), svz(0), px(0), py(0), pz(0), pvxGen(0), pvyGen(0), pvzGen(0), svxGen(0), svyGen(0), svzGen(0), pxGen(0), pyGen(0), pzGen(0), nSingleDaughters(0), nCascadeDaughters(0), mcTrue(0), mcTrueVtx(0), mcPhysicalPrimary(0), hypNucDaughter(0) {}
   int pdgCode, isReconstructed, globalIndex;
   uint8_t species;
-  bool isMatter, passedEvSel, isMatterMC, passedEvSelMC, isPhysicalPrimary, collisionMcTrue;
+  bool isPrimaryCandidate, isMatter, passedEvSel, isMatterMC, passedEvSelMC, isPhysicalPrimary, collisionMcTrue;
   float mass, y, pt, ct, yGen, ptGen, ctGen, cpaPvGen, cpaPv, cpaSv, maxDcaTracks, maxDcaTracksSv;
   float dcaToPvXY, dcaToPvZ, dcaToVtxXY, dcaToVtxZ, devToPvXY, chi2;
   float pvx, pvy, pvz, svx, svy, svz, px, py, pz;
@@ -360,7 +360,7 @@ struct HypKfTreeCreator {
   void processData(aod::HypKfHypNucs const& hypNucs, aod::HypKfColls const& hypKfColls, aod::HypKfTracks const& hypKfTrks, aod::HypKfDaughtAdds const& hypKfDAdd, aod::HypKfSubDs const& hypKfDSub)
   {
     for (const auto& hypNuc : hypNucs) {
-      if (std::abs(hypNuc.species()) != cfgSpecies)
+      if (cfgSpecies && std::abs(hypNuc.species()) != cfgSpecies)
         continue;
       HyperNucleus candidate, hypNucDaughter;
       fillCandidatePrim(candidate, hypNuc, hypNucs, hypKfColls, hypKfTrks, hypKfDAdd, hypKfDSub);
@@ -409,7 +409,7 @@ struct HypKfTreeCreator {
           d2.x, d2.y, d2.z, d2.px, d2.py, d2.pz, d2.tpcNcls, d2.tpcChi2, d2.itsNcls, d2.itsChi2, d2.itsMeanClsSizeL,
           d2.rigidity, d2.tpcSignal, d2.tpcNsigma, d2.tpcNsigmaNhp, d2.tpcNsigmaNlp, d2.tofMass, d2.dcaXY, d2.dcaZ, d2.isPvContributor);
     }
-    if (cfgNprimDaughters == 3 && cfgNsecDaughters == 0) {
+    if (cand.isPrimaryCandidate && ((cfgNprimDaughters == 3 && cfgNsecDaughters == 0) || (cfgNsecDaughters == 3 && cfgSpecies == 0))) {
       const auto& d1 = cand.daughterTracks.at(0);
       const auto& d2 = cand.daughterTracks.at(1);
       const auto& d3 = cand.daughterTracks.at(2);
@@ -545,6 +545,7 @@ struct HypKfTreeCreator {
     auto addOns = hypNuc.hypKfDaughtAdd_as<aod::HypKfDaughtAdds>();
     auto posVec = posVector(addOns);
     cand.species = std::abs(hypNuc.species());
+    cand.isPrimaryCandidate = hypNuc.primary();
     cand.isMatter = hypNuc.isMatter();
     cand.cent = coll.centFT0C();
     cand.occu = coll.occupancy();
@@ -619,7 +620,7 @@ struct HypKfTreeCreator {
   {
     isMC = true;
     for (const auto& mcHypNuc : mcHypNucs) {
-      if (std::abs(mcHypNuc.species()) != cfgSpecies)
+      if (cfgSpecies && std::abs(mcHypNuc.species()) != cfgSpecies)
         continue;
       auto mcColl = mcHypNuc.hypKfMcColl();
       const auto mcParticleIdx = mcHypNuc.globalIndex();
