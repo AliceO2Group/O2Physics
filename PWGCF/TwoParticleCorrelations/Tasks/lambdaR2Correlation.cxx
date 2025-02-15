@@ -23,6 +23,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/RecoDecay.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -134,8 +135,7 @@ using LambdaMcGenTrack = LambdaMcGenTracks::iterator;
 enum CollisionLabels {
   kTotColBeforeHasMcCollision = 1,
   kTotCol,
-  kPassSelCol,
-  kPassMultSelCol
+  kPassSelCol
 };
 
 enum TrackLabels {
@@ -281,6 +281,9 @@ struct LambdaTableProducer {
                                                             {"hEffVsPtYVzLambda", "hEffVsPtYVzAntiLambda"},
                                                             {"hEffVsPtEtaVzLambda", "hEffVsPtEtaVzAntiLambda"}};
 
+  // Initialize Global Variables
+  float cent = 0.;
+
   void init(InitContext const&)
   {
     // Set CCDB url
@@ -367,7 +370,7 @@ struct LambdaTableProducer {
     histos.addClone("McRec/Lambda/", "McRec/AntiLambda/");
 
     // MC Generated Histograms
-    if (doprocessMCGenRun3 || doprocessMCGenRun2) {
+    if (doprocessMCRun3 || doprocessMCRun2) {
       // McReco Histos
       histos.add("Tracks/h2f_tracks_pid_before_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
       histos.add("Tracks/h2f_tracks_pid_after_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
@@ -376,8 +379,9 @@ struct LambdaTableProducer {
       histos.add("Tracks/h2f_lambda_from_omega", "PIDs", kTH2F, {axisPID, axisV0Pt});
 
       // McGen Histos
+      histos.add("McGen/h1f_collision_recgen", "# of Reco Collision Associated to One Mc Generator Collision", kTH1F, {axisMult});
       histos.add("McGen/h1f_collisions_info", "# of collisions", kTH1F, {axisCols});
-      histos.add("McGen/h1f_collision_posZ", "V_{z}-distribution", kTH1F, {axisVz});
+      histos.add("McGen/h2f_collision_posZ", "V_{z}-distribution", kTH2F, {axisVz, axisVz});
       histos.add("McGen/h1f_lambda_daughter_PDG", "PDG Daughters", kTH1F, {axisPID});
       histos.add("McGen/h1f_antilambda_daughter_PDG", "PDG Daughters", kTH1F, {axisPID});
 
@@ -396,7 +400,6 @@ struct LambdaTableProducer {
       histos.get<TH1>(HIST("Events/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kTotColBeforeHasMcCollision, "kTotColBeforeHasMcCollision");
       histos.get<TH1>(HIST("McGen/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kTotCol, "kTotCol");
       histos.get<TH1>(HIST("McGen/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kPassSelCol, "kPassSelCol");
-      histos.get<TH1>(HIST("McGen/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kPassMultSelCol, "kPassMultSelCol");
       histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kTracksBeforeHasMcParticle, "kTracksBeforeHasMcParticle");
       histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kNotPrimaryLambda, "kNotPrimaryLambda");
       histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kNotSecondaryLambda, "kNotSecondaryLambda");
@@ -412,7 +415,6 @@ struct LambdaTableProducer {
     // set bin labels
     histos.get<TH1>(HIST("Events/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kTotCol, "kTotCol");
     histos.get<TH1>(HIST("Events/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kPassSelCol, "kPassSelCol");
-    histos.get<TH1>(HIST("Events/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kPassMultSelCol, "kPassMultSelCol");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kAllV0Tracks, "kAllV0Tracks");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kV0KShortMassRej, "kV0KShortMassRej");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kNotLambdaNotAntiLambda, "kNotLambdaNotAntiLambda");
@@ -432,22 +434,29 @@ struct LambdaTableProducer {
   template <RunType run, typename C>
   bool selCollision(C const& col)
   {
+    // VtxZ Selection
     if (col.posZ() <= cMinZVtx || col.posZ() >= cMaxZVtx) {
       return false;
     }
 
-    if constexpr (run == kRun3) {
+    if constexpr (run == kRun3) { // Run3 Min-Bias Trigger
+      cent = col.centFT0M();
       if (cSel8Trig && !col.sel8()) {
         return false;
       }
-    } else {
+    } else { // Run2 Min-Bias Trigger
+      cent = col.centRun2V0M();
       if (cInt7Trig && !col.alias_bit(kINT7)) {
         return false;
       }
-
       if (cSel7Trig && !col.sel7()) {
         return false;
       }
+    }
+
+    // Multiplicity Selection
+    if (cent <= cMinMult || cent >= cMaxMult) {
+      return false;
     }
 
     if (cTriggerTvxSel && !col.selection_bit(aod::evsel::kIsTriggerTVX)) {
@@ -850,39 +859,20 @@ struct LambdaTableProducer {
   template <RunType run, DMCType dmc, typename C, typename V, typename T>
   void fillLambdaRecoTables(C const& collision, V const& v0tracks, T const& tracks)
   {
-    // Check for corresponding MC Collision
-    if constexpr (dmc == kMC) {
-      histos.fill(HIST("Events/h1f_collisions_info"), kTotColBeforeHasMcCollision);
-      if (!collision.has_mcCollision()) {
-        return;
-      }
-    }
-
+    // Total Collisions
     histos.fill(HIST("Events/h1f_collisions_info"), kTotCol);
 
-    // Select Collision
-    if (!selCollision<run>(collision)) {
-      return;
+    // Select Collision (Only for Data... McRec has been selected already !!!)
+    if constexpr (dmc == kData) {
+      if (!selCollision<run>(collision)) {
+        return;
+      }
     }
 
     histos.fill(HIST("Events/h1f_collisions_info"), kPassSelCol);
     histos.fill(HIST("Events/h1f_collision_posZ"), collision.posZ());
 
-    float cent = 0.;
-
-    if constexpr (run == kRun3) {
-      cent = collision.centFT0M();
-    } else {
-      cent = collision.centRun2V0M();
-    }
-
-    // Multiplicity Selection
-    if (cent <= cMinMult || cent >= cMaxMult) {
-      return;
-    }
-
-    histos.fill(HIST("Events/h1f_collisions_info"), kPassMultSelCol);
-
+    // Fill Collision Table
     lambdaCollisionTable(cent, collision.posX(), collision.posY(), collision.posZ());
 
     // initialize v0track objects
@@ -946,33 +936,10 @@ struct LambdaTableProducer {
 
   // MC Generater Level Tables
   template <RunType run, typename C, typename M>
-  void fillLambdaMcGenTables(C const& collision, M const& mcParticles)
+  void fillLambdaMcGenTables(C const& mcCollision, M const& mcParticles)
   {
-    histos.fill(HIST("McGen/h1f_collisions_info"), kTotCol);
-
-    // Select Collision
-    if (!collision.has_mcCollision() || !selCollision<run>(collision)) {
-      return;
-    }
-
-    histos.fill(HIST("McGen/h1f_collisions_info"), kPassSelCol);
-
-    float cent = 0.;
-    if constexpr (run == kRun3) {
-      cent = collision.centFT0M();
-    } else {
-      cent = collision.centRun2V0M();
-    }
-
-    // Multiplicity Selection
-    if (cent <= cMinMult || cent >= cMaxMult) {
-      return;
-    }
-
-    histos.fill(HIST("McGen/h1f_collisions_info"), kPassMultSelCol);
-
     // Fill McGen Collision Table
-    lambdaMCGenCollisionTable(cent, collision.posX(), collision.posY(), collision.posZ());
+    lambdaMCGenCollisionTable(mcCollision.centFT0M(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
 
     // initialize track objects
     ParticleType v0Type = kLambda;
@@ -1074,6 +1041,33 @@ struct LambdaTableProducer {
     }
   }
 
+  template <RunType run, DMCType dmc, typename M, typename C, typename V, typename T, typename P>
+  void analyzeMcRecoGen(M const& mcCollision, C const& collisions, V const& V0s, T const& tracks, P const& mcParticles)
+  {
+    // Number of Rec Collisions Associated to One Mc Gen Collision
+    int nRecCols = collisions.size();
+    if (nRecCols != 0) {
+      histos.fill(HIST("McGen/h1f_collision_recgen"), nRecCols);
+    }
+    // Do not analyze if more than one reco collision is accociated to one mc gen collision
+    if (nRecCols != 1) {
+      return;
+    }
+    histos.fill(HIST("McGen/h1f_collisions_info"), kTotCol);
+    // Check the reco collision
+    if (!collisions.begin().has_mcCollision() || !selCollision<run>(collisions.begin()) || collisions.begin().mcCollisionId() != mcCollision.globalIndex()) {
+      return;
+    }
+    histos.fill(HIST("McGen/h1f_collisions_info"), kPassSelCol);
+    histos.fill(HIST("McGen/h2f_collision_posZ"), mcCollision.posZ(), collisions.begin().posZ());
+    auto v0Tracks = V0s.sliceBy(perCollision, collisions.begin().globalIndex());
+    fillLambdaRecoTables<run, dmc>(collisions.begin(), v0Tracks, tracks);
+    fillLambdaMcGenTables<run>(mcCollision, mcParticles);
+  }
+
+  SliceCache cache;
+  Preslice<soa::Join<aod::V0Datas, aod::McV0Labels>> perCollision = aod::track::collisionId;
+
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using CollisionsRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
   using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
@@ -1094,47 +1088,25 @@ struct LambdaTableProducer {
 
   PROCESS_SWITCH(LambdaTableProducer, processDataRun2, "Process for Run2 DATA", false);
 
-  void processMCRecoRun3(soa::Join<CollisionsRun3, aod::McCollisionLabels>::iterator const& collision,
-                         aod::McCollisions const&,
-                         McV0Tracks const& V0s, TracksMC const& tracks,
-                         aod::McParticles const&)
+  void processMCRun3(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
+                     soa::SmallGroups<soa::Join<CollisionsRun3, aod::McCollisionLabels>> const& collisions,
+                     McV0Tracks const& V0s, TracksMC const& tracks,
+                     aod::McParticles const& mcParticles)
   {
-    fillLambdaRecoTables<kRun3, kMC>(collision, V0s, tracks);
+    analyzeMcRecoGen<kRun3, kMC>(mcCollision, collisions, V0s, tracks, mcParticles);
   }
 
-  PROCESS_SWITCH(LambdaTableProducer, processMCRecoRun3, "Process for Run3 MC Reconstructed", false);
+  PROCESS_SWITCH(LambdaTableProducer, processMCRun3, "Process for Run3 MC Generated", false);
 
-  void processMCRecoRun2(soa::Join<CollisionsRun2, aod::McCollisionLabels>::iterator const& collision,
-                         aod::McCollisions const&,
-                         McV0Tracks const& V0s, TracksMC const& tracks,
-                         aod::McParticles const&)
+  void processMCRun2(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
+                     soa::SmallGroups<soa::Join<CollisionsRun2, aod::McCollisionLabels>> const& collisions,
+                     McV0Tracks const& V0s, TracksMC const& tracks,
+                     aod::McParticles const& mcParticles)
   {
-    fillLambdaRecoTables<kRun2, kMC>(collision, V0s, tracks);
+    analyzeMcRecoGen<kRun2, kMC>(mcCollision, collisions, V0s, tracks, mcParticles);
   }
 
-  PROCESS_SWITCH(LambdaTableProducer, processMCRecoRun2, "Process for Run2 MC Reconstructed", false);
-
-  void processMCGenRun3(aod::McCollisions::iterator const&,
-                        soa::SmallGroups<soa::Join<CollisionsRun3, aod::McCollisionLabels>> const& collisions,
-                        aod::McParticles const& mcParticles)
-  {
-    for (auto const& collision : collisions) {
-      fillLambdaMcGenTables<kRun3>(collision, mcParticles);
-    }
-  }
-
-  PROCESS_SWITCH(LambdaTableProducer, processMCGenRun3, "Process for Run3 MC Generated", false);
-
-  void processMCGenRun2(aod::McCollisions::iterator const&,
-                        soa::SmallGroups<soa::Join<CollisionsRun2, aod::McCollisionLabels>> const& collisions,
-                        aod::McParticles const& mcParticles)
-  {
-    for (auto const& collision : collisions) {
-      fillLambdaMcGenTables<kRun2>(collision, mcParticles);
-    }
-  }
-
-  PROCESS_SWITCH(LambdaTableProducer, processMCGenRun2, "Process for Run2 MC Generated", false);
+  PROCESS_SWITCH(LambdaTableProducer, processMCRun2, "Process for Run2 MC Generated", false);
 };
 
 struct LambdaTracksExtProducer {
