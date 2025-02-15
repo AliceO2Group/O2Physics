@@ -109,9 +109,13 @@ DECLARE_SOA_TABLE(McTree, "AOD", "MCTREE",
                   mc_tree::PhiRandom, mc_tree::PhiCharge, mc_tree::TrackSign, mc_tree::TrackPt, mc_tree::TrackEta, mc_tree::TrackPhi);
 } // namespace o2::aod
 
-struct upcRhoAnalysis {
+struct UpcRhoAnalysis {
   Produces<o2::aod::RecoTree> recoTree;
   Produces<o2::aod::McTree> mcTree;
+
+  Configurable<bool> savePions{"savePions", true, "save pion tracks into derived tables"};
+  Configurable<bool> saveElectrons{"saveElectrons", false, "save electron tracks into derived tables"};
+  Configurable<bool> saveKaons{"saveKaons", false, "save kaon tracks into derived tables"};
 
   float pcEtaCut = 0.9; // physics coordination recommendation
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
@@ -422,6 +426,24 @@ struct upcRhoAnalysis {
   }
 
   template <typename T>
+  bool tracksPassElPID(const T& cutTracks) // n-dimensional electron PID cut
+  {
+    float radius = 0.0;
+    for (const auto& track : cutTracks)
+      radius += std::pow(track.tpcNSigmaEl(), 2);
+    return radius < std::pow(tracksTpcNSigmaElCut, 2);
+  }
+
+  template <typename T>
+  bool tracksPassKaPID(const T& cutTracks) // n-dimensional kaon PID cut
+  {
+    float radius = 0.0;
+    for (const auto& track : cutTracks)
+      radius += std::pow(track.tpcNSigmaKa(), 2);
+    return radius < std::pow(tracksTpcNSigmaKaCut, 2);
+  }
+
+  template <typename T>
   int tracksTotalCharge(const T& cutTracks) // total charge of selected tracks
   {
     int charge = 0;
@@ -431,7 +453,7 @@ struct upcRhoAnalysis {
   }
 
   template <typename T>
-  int tracksTotalChargeMC(const T& cutTracks) // total charge of selected tracks
+  int tracksTotalChargeMC(const T& cutTracks) // total charge of selected MC tracks
   {
     int charge = 0;
     for (const auto& track : cutTracks)
@@ -566,11 +588,12 @@ struct upcRhoAnalysis {
     float trackDcaXYs[2] = {leadingMomentumTrack.dcaXY(), subleadingMomentumTrack.dcaXY()};
     float trackDcaZs[2] = {leadingMomentumTrack.dcaZ(), subleadingMomentumTrack.dcaZ()};
     float trackTpcSignals[2] = {leadingMomentumTrack.tpcSignal(), subleadingMomentumTrack.tpcSignal()};
-    recoTree(collision.runNumber(), localBc, collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(),
-             collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
-             collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
-             collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(), 
-             phiRandom, phiCharge, trackSigns, trackPts, trackEtas, trackPhis, trackPiPIDs, trackElPIDs, trackKaPIDs, trackDcaXYs, trackDcaZs, trackTpcSignals);
+    if ((savePions && tracksPassPiPID(cutTracks)) || (saveElectrons && tracksPassElPID(cutTracks)) || (saveKaons && tracksPassKaPID(cutTracks)))
+      recoTree(collision.runNumber(), localBc, collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(),
+               collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
+               collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
+               collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(), 
+               phiRandom, phiCharge, trackSigns, trackPts, trackEtas, trackPhis, trackPiPIDs, trackElPIDs, trackKaPIDs, trackDcaXYs, trackDcaZs, trackTpcSignals);
     
     if (!tracksPassPiPID(cutTracks)) // apply PID cut
       return;
