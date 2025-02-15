@@ -441,7 +441,7 @@ struct AntinucleiInJets {
 
     // cluster particles using the anti-kt algorithm
     fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
-    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));// active_area_explicit_ghosts
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0)); // active_area_explicit_ghosts
     fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
     std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
     auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
@@ -543,7 +543,7 @@ struct AntinucleiInJets {
 
       // perpendicular cone
       double coneRadius = std::sqrt(jet.area() / PI);
-      TVector3 jetAxis (jet.px(), jet.py(), jet.pz());
+      TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
       TVector3 ueAxis1(0, 0, 0);
       TVector3 ueAxis2(0, 0, 0);
       getPerpendicularAxis(jetAxis, ueAxis1, +1);
@@ -664,7 +664,7 @@ struct AntinucleiInJets {
 
     // cluster particles using the anti-kt algorithm
     fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
-    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));// active_area_explicit_ghosts
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0)); // active_area_explicit_ghosts
     fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
     std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
     auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
@@ -687,7 +687,7 @@ struct AntinucleiInJets {
 
       // jet properties and perpendicular cone
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
-      TVector3 jetAxis (jet.px(), jet.py(), jet.pz());
+      TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
       double coneRadius = std::sqrt(jet.area() / PI);
       TVector3 ueAxis1(0, 0, 0);
       TVector3 ueAxis2(0, 0, 0);
