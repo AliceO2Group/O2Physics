@@ -86,8 +86,6 @@ struct reduced3bodyCreator {
   // Zorro counting
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
 
-  Preslice<aod::Decay3Bodys> perCollision = o2::aod::decay3body::collisionId;
-
   int mRunNumber;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
 
@@ -189,6 +187,8 @@ struct reduced3bodyCreator {
   void process(ColwithEvTimesMultsCents const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
 
+    int lastCollisionID = -1; // collisionId of last analysed decay3body. Table is sorted.
+
     for (const auto& d3body : decay3bodys) {
 
       daughterTracks.clear();
@@ -220,17 +220,20 @@ struct reduced3bodyCreator {
       }
 
       // Save the collision
-      int runNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
-      reducedCollisions(
-        collision.bcId(),
-        collision.posX(), collision.posY(), collision.posZ(),
-        collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(),
-        collision.flags(), collision.chi2(), collision.numContrib(),
-        collision.collisionTime(), collision.collisionTimeRes(),
-        runNumber);
-      reducedPVMults(collision.multNTracksPV());
-      reducedCentFTOCs(collision.centFT0C());
+      if (collision.globalIndex() != lastCollisionID) {
+        int runNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
+        reducedCollisions(
+          collision.bcId(),
+          collision.posX(), collision.posY(), collision.posZ(),
+          collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(),
+          collision.flags(), collision.chi2(), collision.numContrib(),
+          collision.collisionTime(), collision.collisionTimeRes(),
+          runNumber);
+        reducedPVMults(collision.multNTracksPV());
+        reducedCentFTOCs(collision.centFT0C());
 
+        lastCollisionID = collision.globalIndex();
+      }
 
       // Save daughter tracks
       const auto daughter0 = d3body.template track0_as<TrackExtPIDIUwithEvTimes>();
@@ -252,7 +255,7 @@ struct reduced3bodyCreator {
         reducedFullTracksPIDIU(
           // TrackIU
           // reducedTrackID + i,
-          reducedCollisions.lastIndex() + 1,
+          reducedCollisions.lastIndex(),
           daughterTracks[i].x(), daughterTracks[i].alpha(),
           daughterTracks[i].y(), daughterTracks[i].z(), daughterTracks[i].snp(), daughterTracks[i].tgl(),
           daughterTracks[i].signed1Pt(),
