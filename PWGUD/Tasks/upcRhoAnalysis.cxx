@@ -754,29 +754,29 @@ struct UpcRhoAnalysis {
       return;
     processReco(collision, tracks);
   }
-  PROCESS_SWITCH(upcRhoAnalysis, processSGdata, "analyse SG data", true);
+  PROCESS_SWITCH(UpcRhoAnalysis, processSGdata, "analyse SG data", true);
 
   void processDGdata(FullUdDgCollision const& collision, FullUdTracks const& tracks)
   {
     processReco(collision, tracks);
   }
-  PROCESS_SWITCH(upcRhoAnalysis, processDGdata, "analyse DG data", false);
+  PROCESS_SWITCH(UpcRhoAnalysis, processDGdata, "analyse DG data", false);
 
   void processMCdata(aod::UDMcCollision const& mcCollision, aod::UDMcParticles const& mcParticles)
   {
     processMC(mcCollision, mcParticles);
   }
-  PROCESS_SWITCH(upcRhoAnalysis, processMCdata, "analyse MC data", false);
+  PROCESS_SWITCH(UpcRhoAnalysis, processMCdata, "analyse MC data", false);
 
   void processCollisionRecoCheck(aod::McCollision const& /* mcCollision */, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions)
   {
     checkNumberOfCollisionReconstructions(collisions);
   }
-  PROCESS_SWITCH(upcRhoAnalysis, processCollisionRecoCheck, "check number of collision reconstructions", false);
+  PROCESS_SWITCH(UpcRhoAnalysis, processCollisionRecoCheck, "check number of collision reconstructions", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    o2::framework::adaptAnalysisTask<upcRhoAnalysis>(cfgc)};
+    o2::framework::adaptAnalysisTask<UpcRhoAnalysis>(cfgc)};
 }
