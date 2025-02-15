@@ -86,6 +86,8 @@ struct reduced3bodyCreator {
   // Zorro counting
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
 
+  Preslice<aod::Decay3Bodys> perCollision = o2::aod::decay3body::collisionId;
+
   int mRunNumber;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
 
