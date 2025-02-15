@@ -1466,23 +1466,20 @@ struct decay3bodyBuilder {
   PROCESS_SWITCH(decay3bodyBuilder, processRun3, "Produce DCA fitter decay3body tables", true);
 
   //------------------------------------------------------------------
-  void processRun3Reduced(aod::ReducedCollisions const& collisions, aod::ReducedTracksIU const& /*reducedTracksIU*/, aod::ReducedDecay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void processRun3Reduced(aod::ReducedCollisions const& /*collisions*/, aod::ReducedTracksIU const&, aod::ReducedDecay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
     vtxCandidates.clear();
 
-    for (const auto& collision : collisions) {
+    for (const auto& d3body : decay3bodys) {
+      //LOG(info) << "index of t0: " << d3body.track0Id() << " index of t1: " << d3body.track1Id() << " index of t2: " << d3body.track2Id();
+      //LOG(info) << "index of collision: " << d3body.collisionId();
+      auto t0 = d3body.template track0_as<aod::ReducedTracksIU>();
+      auto t1 = d3body.template track1_as<aod::ReducedTracksIU>();
+      auto t2 = d3body.template track2_as<aod::ReducedTracksIU>();
+      auto collision = d3body.template collision_as<aod::ReducedCollisions>();
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      registry.fill(HIST("hEventCounter"), 0.5);
-
-      const auto& d3bodys_thisCollision = decay3bodys.sliceBy(perReducedCollision, collision.globalIndex());
-      for (auto& d3body : d3bodys_thisCollision) {
-        auto t0 = d3body.template track0_as<aod::ReducedTracksIU>();
-        auto t1 = d3body.template track1_as<aod::ReducedTracksIU>();
-        auto t2 = d3body.template track2_as<aod::ReducedTracksIU>();
-
-        fillVtxCand<aod::ReducedCollisions>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, t2.tofNSigmaDe());
-      }
+      fillVtxCand<aod::ReducedCollisions>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, t2.tofNSigmaDe());
     }
 
     for (auto& candVtx : vtxCandidates) {
@@ -1760,10 +1757,15 @@ struct decay3bodyDataLinkBuilder {
   {
     std::vector<int> lIndices;
     lIndices.reserve(decay3bodytable.size());
+    LOG(info) << "size of decay3bodytable" << decay3bodytable.size();
+    LOG(info) << "size of vtxdatatable" << vtxdatatable.size();
     for (int ii = 0; ii < decay3bodytable.size(); ii++)
       lIndices[ii] = -1;
     for (auto& vtxdata : vtxdatatable) {
       if (vtxdata.decay3bodyId() != -1) {
+        if (vtxdata.decay3bodyId() >= decay3bodytable.size()) {
+          LOG(info) << "vtxdata.decay3bodyId: " << vtxdata.decay3bodyId() << " out of size of decay3bodytable:" << decay3bodytable.size();
+        }
         lIndices[vtxdata.decay3bodyId()] = vtxdata.globalIndex();
       }
     }

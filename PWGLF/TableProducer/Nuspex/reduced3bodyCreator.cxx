@@ -75,6 +75,8 @@ struct reduced3bodyCreator {
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
   Configurable<bool> mc_event_selection{"mc_event_selection", true, "mc event selection count post kIsTriggerTVX and kNoTimeFrameBorder"};
   Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
+  // CCDB options
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   // CCDB TOF PID paras
   Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
   Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
@@ -96,6 +98,11 @@ struct reduced3bodyCreator {
     mRunNumber = 0;
     zorroSummary.setObject(zorro.getZorroSummary());
     bachelorTOFPID.SetPidType(o2::track::PID::Deuteron);
+
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
 
     registry.add("hAllSelEventsVtxZ", "hAllSelEventsVtxZ", HistType::kTH1F, {{500, -15.0f, 15.0f, "PV Z (cm)"}});
 
@@ -189,11 +196,8 @@ struct reduced3bodyCreator {
 
     int lastCollisionID = -1; // collisionId of last analysed decay3body. Table is sorted.
 
-    for (const auto& d3body : decay3bodys) {
-
-      daughterTracks.clear();
-
-      auto collision = d3body.template collision_as<ColwithEvTimesMultsCents>();
+    // Event counting
+    for (const auto& collision : collisions) {
       // Zorro event counting
       bool isZorroSelected = false;
       if (cfgSkimmedProcessing) {
@@ -218,10 +222,28 @@ struct reduced3bodyCreator {
       if (cfgSkimmedProcessing && isZorroSelected) {
         registry.fill(HIST("hEventCounterZorro"), 1.5);
       }
+    }
+
+    // Creat reduced table
+    for (const auto& d3body : decay3bodys) {
+
+      daughterTracks.clear();
+
+      auto collision = d3body.template collision_as<ColwithEvTimesMultsCents>();
+
+      if (event_sel8_selection && !collision.sel8()) {
+        continue;
+      }
+      if (event_posZ_selection && (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) { // 10cm
+        continue;
+      }
+
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
 
       // Save the collision
       if (collision.globalIndex() != lastCollisionID) {
-        int runNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
+        int runNumber = bc.runNumber();
         reducedCollisions(
           collision.bcId(),
           collision.posX(), collision.posY(), collision.posZ(),
