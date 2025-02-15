@@ -131,28 +131,28 @@ struct flowTest {
         bool validITSTrackFake = false;
         bool validITSABTrack = false;
         bool validITSABTrackFake = false;
-        bool validAnalysisTrack = false; 
+        bool validAnalysisTrack = false;
         bool validAnalysisTrackFake = false;
         if (mcParticle.has_tracks()) {
           auto const& tracks = mcParticle.tracks_as<recoTracks>();
           for (auto const& track : tracks) {
             bool isITSFake = false;
 
-            for(int bit = 0; bit < 7; bit++){ 
-              if(bitcheck(track.mcMask(), bit)){ 
+            for (int bit = 0; bit < 7; bit++) {
+              if (bitcheck(track.mcMask(), bit)) {
                 isITSFake = true;
               }
             }
 
-            if (track.tpcNClsFound() >= analysisMinimumTPCClusters && track.itsNCls() >= analysisMinimumITSClusters){
+            if (track.tpcNClsFound() >= analysisMinimumTPCClusters && track.itsNCls() >= analysisMinimumITSClusters) {
               validAnalysisTrack = true;
-              if(isITSFake){ 
+              if (isITSFake) {
                 validAnalysisTrackFake = true;
               }
             }
             if (track.hasTPC() && track.hasITS()) {
               validGlobal = true;
-              if(isITSFake){ 
+              if (isITSFake) {
                 validGlobalFake = true;
               }
             }
@@ -164,13 +164,13 @@ struct flowTest {
             }
             if (track.hasITS() && track.itsChi2NCl() > -1e-6) {
               validITSTrack = true;
-              if(isITSFake){ 
+              if (isITSFake) {
                 validITSTrackFake = true;
               }
             }
             if (track.hasITS() && track.itsChi2NCl() < -1e-6) {
               validITSABTrack = true;
-              if(isITSFake){ 
+              if (isITSFake) {
                 validITSABTrackFake = true;
               }
             }
@@ -182,13 +182,13 @@ struct flowTest {
           histos.fill(HIST("hPtVsPhiGlobal"), deltaPhi, mcParticle.pt());
           histos.fill(HIST("hBVsPtVsPhiGlobal"), imp, deltaPhi, mcParticle.pt());
         }
-        if (validGlobalFake){
+        if (validGlobalFake) {
           histos.fill(HIST("hBVsPtVsPhiGlobalFake"), imp, deltaPhi, mcParticle.pt());
         }
         if (validAnalysisTrack) {
           histos.fill(HIST("hBVsPtVsPhiAnalysis"), imp, deltaPhi, mcParticle.pt());
         }
-        if (validAnalysisTrackFake){
+        if (validAnalysisTrackFake) {
           histos.fill(HIST("hBVsPtVsPhiAnalysisFake"), imp, deltaPhi, mcParticle.pt());
         }
         // if any track present, fill
