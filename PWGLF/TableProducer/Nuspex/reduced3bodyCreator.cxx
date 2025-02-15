@@ -86,6 +86,8 @@ struct reduced3bodyCreator {
   // Zorro counting
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
 
+  Preslice<aod::Decay3Bodys> perCollision = o2::aod::decay3body::collisionId;
+
   int mRunNumber;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
 
@@ -216,7 +218,9 @@ struct reduced3bodyCreator {
 
       bool flag_saveCol = false;
 
-      for (const auto& d3body : decay3bodys) {
+      const auto& d3bodys_thisCollision = decay3bodys.sliceBy(perCollision, collision.globalIndex());
+
+      for (const auto& d3body : d3bodys_thisCollision) {
 
         daughterTracks.clear();
 

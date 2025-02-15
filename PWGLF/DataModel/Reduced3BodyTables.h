@@ -16,6 +16,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "PWGLF/DataModel/Vtx3BodyTables.h"
 
 namespace o2::aod
 {
@@ -251,14 +252,17 @@ using ReducedTrackIU = ReducedTracksIU::iterator;
 
 namespace reduceddecay3body
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Track0, track0, int, ReducedTracksIU, "_0"); //! Track 0 index
-DECLARE_SOA_INDEX_COLUMN_FULL(Track1, track1, int, ReducedTracksIU, "_1"); //! Track 1 index
-DECLARE_SOA_INDEX_COLUMN_FULL(Track2, track2, int, ReducedTracksIU, "_2"); //! Track 2 index
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                            //! Collision index
+DECLARE_SOA_INDEX_COLUMN_FULL(Track0, track0, int, ReducedTracksIU, "_0");       //! Track 0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Track1, track1, int, ReducedTracksIU, "_1");       //! Track 1 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Track2, track2, int, ReducedTracksIU, "_2");       //! Track 2 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Collision, collision, int, ReducedCollisions, ""); //! Collision index
 } // namespace reduceddecay3body
 
 DECLARE_SOA_TABLE(ReducedDecay3Bodys, "AOD", "REDUCEDDECAY3BODY", //! reduced 3-body decay table
                   o2::soa::Index<>, reduceddecay3body::CollisionId, reduceddecay3body::Track0Id, reduceddecay3body::Track1Id, reduceddecay3body::Track2Id);
+
+using ReducedDecay3BodysLinked = soa::Join<ReducedDecay3Bodys, Decay3BodyDataLink>;
+using ReducedDecay3BodyLinked = ReducedDecay3BodysLinked::iterator;
 
 } // namespace o2::aod
 

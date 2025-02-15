@@ -1442,8 +1442,8 @@ struct decay3bodyBuilder {
       initCCDB(bc);
       registry.fill(HIST("hEventCounter"), 0.5);
 
-      const auto& d3bodysInCollision = decay3bodys.sliceBy(perCollision, collision.globalIndex());
-      for (auto& d3body : d3bodysInCollision) {
+      const auto& d3bodys_thisCollision = decay3bodys.sliceBy(perCollision, collision.globalIndex());
+      for (auto& d3body : d3bodys_thisCollision) {
         auto t0 = d3body.template track0_as<TrackExtPIDIUwithEvTimes>();
         auto t1 = d3body.template track1_as<TrackExtPIDIUwithEvTimes>();
         auto t2 = d3body.template track2_as<TrackExtPIDIUwithEvTimes>();
@@ -1454,6 +1454,7 @@ struct decay3bodyBuilder {
           auto originalcol = t2.template collision_as<ColwithEvTimes>();
           tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(t2, originalcol, collision);
         }
+
         fillVtxCand<ColwithEvTimes>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, tofNSigmaBach);
       }
     }
@@ -1474,13 +1475,13 @@ struct decay3bodyBuilder {
       initCCDB(bc);
       registry.fill(HIST("hEventCounter"), 0.5);
 
-      const auto& d3bodysInCollision = decay3bodys.sliceBy(perReducedCollision, collision.globalIndex());
-      for (auto& d3body : d3bodysInCollision) {
+      const auto& d3bodys_thisCollision = decay3bodys.sliceBy(perReducedCollision, collision.globalIndex());
+      for (auto& d3body : d3bodys_thisCollision) {
         auto t0 = d3body.template track0_as<aod::ReducedTracksIU>();
         auto t1 = d3body.template track1_as<aod::ReducedTracksIU>();
         auto t2 = d3body.template track2_as<aod::ReducedTracksIU>();
 
-        fillVtxCand<aod::Collisions>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, t2.tofNSigmaDe());
+        fillVtxCand<aod::ReducedCollisions>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, t2.tofNSigmaDe());
       }
     }
 
