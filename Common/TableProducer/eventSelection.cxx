@@ -262,7 +262,7 @@ struct BcSelectionTask {
 
     int run = bcs.iteratorAt(0).runNumber();
 
-    if (run != lastRun && run >= 500000) {
+    if (run != lastRun && run >= 300000) {
       lastRun = run;
       auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
       // first bc of the first orbit
