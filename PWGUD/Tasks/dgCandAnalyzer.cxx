@@ -14,6 +14,8 @@
 // \since  06.06.2022
 
 #include <set>
+#include <string>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
