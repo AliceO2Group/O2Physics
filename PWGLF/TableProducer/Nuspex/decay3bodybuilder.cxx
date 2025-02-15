@@ -513,7 +513,7 @@ struct decay3bodyBuilder {
       KFParticle::SetField(d_bz);
 #endif
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
@@ -718,7 +718,7 @@ struct decay3bodyBuilder {
     }
     registry.fill(HIST("hVtx3BodyCounter"), kVtxDcaDau);
 
-    float VtxcosPA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, array{pos[0], pos[1], pos[2]}, array{p3B[0], p3B[1], p3B[2]});
+    float VtxcosPA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, std::array{pos[0], pos[1], pos[2]}, std::array{p3B[0], p3B[1], p3B[2]});
     if (VtxcosPA < minCosPA3body) {
       return;
     }
@@ -1443,7 +1443,7 @@ struct decay3bodyBuilder {
       registry.fill(HIST("hEventCounter"), 0.5);
 
       const auto& d3bodys_thisCollision = decay3bodys.sliceBy(perCollision, collision.globalIndex());
-      for (auto& d3body : d3bodys_thisCollision) {
+      for (const auto& d3body : d3bodys_thisCollision) {
         auto t0 = d3body.template track0_as<TrackExtPIDIUwithEvTimes>();
         auto t1 = d3body.template track1_as<TrackExtPIDIUwithEvTimes>();
         auto t2 = d3body.template track2_as<TrackExtPIDIUwithEvTimes>();
@@ -1459,20 +1459,20 @@ struct decay3bodyBuilder {
       }
     }
 
-    for (auto& candVtx : vtxCandidates) {
+    for (const auto& candVtx : vtxCandidates) {
       fillVtx3BodyTable(candVtx);
     }
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3, "Produce DCA fitter decay3body tables", true);
 
   //------------------------------------------------------------------
-  void processRun3Reduced(aod::ReducedCollisions const& /*collisions*/, aod::ReducedTracksIU const&, aod::ReducedDecay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void processRun3Reduced(aod::ReducedCollisions const& collisions, aod::ReducedTracksIU const&, aod::ReducedDecay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
     vtxCandidates.clear();
 
+    registry.fill(HIST("hEventCounter"), 0.5, collisions.size());
+
     for (const auto& d3body : decay3bodys) {
-      //LOG(info) << "index of t0: " << d3body.track0Id() << " index of t1: " << d3body.track1Id() << " index of t2: " << d3body.track2Id();
-      //LOG(info) << "index of collision: " << d3body.collisionId();
       auto t0 = d3body.template track0_as<aod::ReducedTracksIU>();
       auto t1 = d3body.template track1_as<aod::ReducedTracksIU>();
       auto t2 = d3body.template track2_as<aod::ReducedTracksIU>();
@@ -1482,7 +1482,7 @@ struct decay3bodyBuilder {
       fillVtxCand<aod::ReducedCollisions>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, t2.tofNSigmaDe());
     }
 
-    for (auto& candVtx : vtxCandidates) {
+    for (const auto& candVtx : vtxCandidates) {
       fillVtx3BodyTable(candVtx);
     }
   }
@@ -1512,7 +1512,7 @@ struct decay3bodyBuilder {
     candBachelors.bindTable(tracksIU);
     candAntiBachelors.bindTable(tracksIU);
 
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+    for (const auto& [c1, tracks1, c2, tracks2] : pair) {
       if (EMTrackSel.em_event_sel8_selection && (!c1.sel8() || !c2.sel8())) {
         continue;
       }
@@ -1540,7 +1540,7 @@ struct decay3bodyBuilder {
       return a.collisionId < b.collisionId;
     });
 
-    for (auto& candVtx : vtxCandidates) {
+    for (const auto& candVtx : vtxCandidates) {
       fillVtx3BodyTable(candVtx);
     }
   }
@@ -1570,7 +1570,7 @@ struct decay3bodyBuilder {
     candBachelors.bindTable(tracksIU);
     candAntiBachelors.bindTable(tracksIU);
 
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+    for (const auto& [c1, tracks1, c2, tracks2] : pair) {
       if (EMTrackSel.em_event_sel8_selection && (!c1.sel8() || !c2.sel8())) {
         continue;
       }
@@ -1598,7 +1598,7 @@ struct decay3bodyBuilder {
       return a.collisionId < b.collisionId;
     });
 
-    for (auto& candVtx : vtxCandidates) {
+    for (const auto& candVtx : vtxCandidates) {
       fillVtx3BodyTable(candVtx);
     }
   }
@@ -1757,15 +1757,10 @@ struct decay3bodyDataLinkBuilder {
   {
     std::vector<int> lIndices;
     lIndices.reserve(decay3bodytable.size());
-    LOG(info) << "size of decay3bodytable" << decay3bodytable.size();
-    LOG(info) << "size of vtxdatatable" << vtxdatatable.size();
     for (int ii = 0; ii < decay3bodytable.size(); ii++)
       lIndices[ii] = -1;
-    for (auto& vtxdata : vtxdatatable) {
+    for (const auto& vtxdata : vtxdatatable) {
       if (vtxdata.decay3bodyId() != -1) {
-        if (vtxdata.decay3bodyId() >= decay3bodytable.size()) {
-          LOG(info) << "vtxdata.decay3bodyId: " << vtxdata.decay3bodyId() << " out of size of decay3bodytable:" << decay3bodytable.size();
-        }
         lIndices[vtxdata.decay3bodyId()] = vtxdata.globalIndex();
       }
     }
@@ -1774,11 +1769,11 @@ struct decay3bodyDataLinkBuilder {
     }
   }
 
-  void process(aod::Decay3Bodys const& decay3bodytable, aod::Vtx3BodyDatas const& vtxdatatable)
+  void processStandard(aod::Decay3Bodys const& decay3bodytable, aod::Vtx3BodyDatas const& vtxdatatable)
   {
     buildDecay3BodyLabel(decay3bodytable, vtxdatatable);
   }
-  PROCESS_SWITCH(decay3bodyDataLinkBuilder, process, "Produce label from decay3body to vtx3body", true);
+  PROCESS_SWITCH(decay3bodyDataLinkBuilder, processStandard, "Produce label from decay3body to vtx3body", true);
 
   void processReduced(aod::ReducedDecay3Bodys const& decay3bodytable, aod::Vtx3BodyDatas const& vtxdatatable)
   {
@@ -1857,7 +1852,7 @@ struct decay3bodyLabelBuilder {
       lIndices[ii] = -1;
     }
 
-    for (auto& decay3body : decay3bodys) {
+    for (const auto& decay3body : decay3bodys) {
 
       int lLabel = -1;
       int lPDG = -1;
@@ -1885,9 +1880,9 @@ struct decay3bodyLabelBuilder {
         continue;
       }
 
-      for (auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
-        for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
-          for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
+      for (const auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
+        for (const auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
+          for (const auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
             if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) {
               lGlobalIndex = lMother1.globalIndex();
               lPt = lMother1.pt();
@@ -1907,7 +1902,7 @@ struct decay3bodyLabelBuilder {
       // Intended for hypertriton cross-checks only
       if (lPDG == 1010010030 && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == 1000010020) {
         lLabel = lGlobalIndex;
-        double hypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
+        double hypertritonMCMass = RecoDecay::m(std::array{std::array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, std::array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, std::array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
         registry.fill(HIST("hLabelCounter"), 2.5);
         registry.fill(HIST("hHypertritonMCPt"), lPt);
         registry.fill(HIST("hHypertritonMCLifetime"), MClifetime);
@@ -1915,7 +1910,7 @@ struct decay3bodyLabelBuilder {
       }
       if (lPDG == -1010010030 && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -1000010020) {
         lLabel = lGlobalIndex;
-        double antiHypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron});
+        double antiHypertritonMCMass = RecoDecay::m(std::array{std::array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, std::array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, std::array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron});
         registry.fill(HIST("hLabelCounter"), 2.5);
         registry.fill(HIST("hAntiHypertritonMCPt"), lPt);
         registry.fill(HIST("hAntiHypertritonMCLifetime"), MClifetime);

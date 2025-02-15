@@ -110,6 +110,7 @@ struct reduced3bodyCreator {
     hEventCounter->GetXaxis()->SetBinLabel(1, "total");
     hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
     hEventCounter->GetXaxis()->SetBinLabel(3, "vertexZ");
+    hEventCounter->GetXaxis()->SetBinLabel(4, "reduced");
     hEventCounter->LabelsOption("v");
 
     auto hEventCounterZorro = registry.add<TH1>("hEventCounterZorro", "hEventCounterZorro", HistType::kTH1D, {{2, -0.5, 1.5}});
@@ -298,8 +299,9 @@ struct reduced3bodyCreator {
       // save reduced decay3body table
       reducedDecay3Bodys(reducedCollisions.lastIndex(), reducedFullTracksPIDIU.lastIndex() - 2, reducedFullTracksPIDIU.lastIndex() - 1, reducedFullTracksPIDIU.lastIndex());
     }
+
+    registry.fill(HIST("hEventCounter"), 3.5, reducedCollisions.lastIndex() + 1);
   }
-  PROCESS_SWITCH(reduced3bodyCreator, process, "default process function", true);
 };
 
 struct reduced3bodyInitializer {
