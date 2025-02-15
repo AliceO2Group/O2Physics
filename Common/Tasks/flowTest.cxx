@@ -131,15 +131,15 @@ struct flowTest {
           for (auto const& track : tracks) {
             bool isITSFake = false;
 
-            for(int bit = 0; bit < 7; bit++){ 
-              if(bitcheck(track.mcMask(), bit)){ 
+            for (int bit = 0; bit < 7; bit++) {
+              if (bitcheck(track.mcMask(), bit)) {
                 isITSFake = true;
               }
             }
 
             if (track.hasTPC() && track.hasITS()) {
               validGlobal = true;
-              if(isITSFake){ 
+              if (isITSFake) {
                 validGlobalFake = true;
               }
             }
@@ -151,13 +151,13 @@ struct flowTest {
             }
             if (track.hasITS() && track.itsChi2NCl() > -1e-6) {
               validITSTrack = true;
-              if(isITSFake){ 
+              if (isITSFake) {
                 validITSTrackFake = true;
               }
             }
             if (track.hasITS() && track.itsChi2NCl() < -1e-6) {
               validITSABTrack = true;
-              if(isITSFake){ 
+              if (isITSFake) {
                 validITSABTrackFake = true;
               }
             }
@@ -169,7 +169,7 @@ struct flowTest {
           histos.fill(HIST("hPtVsPhiGlobal"), deltaPhi, mcParticle.pt());
           histos.fill(HIST("hBVsPtVsPhiGlobal"), imp, deltaPhi, mcParticle.pt());
         }
-        if (validGlobalFake){
+        if (validGlobalFake) {
           histos.fill(HIST("hBVsPtVsPhiGlobalFake"), imp, deltaPhi, mcParticle.pt());
         }
         // if any track present, fill
