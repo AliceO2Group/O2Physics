@@ -43,6 +43,9 @@ struct flowTest {
   Configurable<float> maxB{"maxB", 20.0f, "max impact parameter"};
   Configurable<int> pdgSelection{"pdgSelection", 0, "pdg code selection for tracking study (0: no selection)"};
 
+  Configurable<int> analysisMinimumITSClusters{"analysisMinimumITSClusters", 5, "minimum ITS clusters for analysis track category"};
+  Configurable<int> analysisMinimumTPCClusters{"analysisMinimumTPCClusters", 70, "minimum TPC clusters for analysis track category"};
+
   ConfigurableAxis axisB{"axisB", {100, 0.0f, 20.0f}, ""};
   ConfigurableAxis axisPhi{"axisPhi", {100, 0.0f, 2.0f * TMath::Pi()}, ""};
   ConfigurableAxis axisNch{"axisNch", {300, 0.0f, 3000.0f}, "Nch in |eta|<0.8"};
@@ -60,6 +63,8 @@ struct flowTest {
     histos.add<TH3>("hBVsPtVsPhiGenerated", "hBVsPtVsPhiGenerated", HistType::kTH3D, {axisB, axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiGlobal", "hBVsPtVsPhiGlobal", HistType::kTH3D, {axisB, axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiGlobalFake", "hBVsPtVsPhiGlobalFake", HistType::kTH3D, {axisB, axisPhi, axisPt});
+    histos.add<TH3>("hBVsPtVsPhiAnalysis", "hBVsPtVsPhiAnalysis", HistType::kTH3D, {axisB, axisPhi, axisPt});
+    histos.add<TH3>("hBVsPtVsPhiAnalysisFake", "hBVsPtVsPhiAnalysisFake", HistType::kTH3D, {axisB, axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiAny", "hBVsPtVsPhiAny", HistType::kTH3D, {axisB, axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiTPCTrack", "hBVsPtVsPhiTPCTrack", HistType::kTH3D, {axisB, axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiITSTrack", "hBVsPtVsPhiITSTrack", HistType::kTH3D, {axisB, axisPhi, axisPt});
@@ -126,6 +131,8 @@ struct flowTest {
         bool validITSTrackFake = false;
         bool validITSABTrack = false;
         bool validITSABTrackFake = false;
+        bool validAnalysisTrack = false;
+        bool validAnalysisTrackFake = false;
         if (mcParticle.has_tracks()) {
           auto const& tracks = mcParticle.tracks_as<recoTracks>();
           for (auto const& track : tracks) {
@@ -137,6 +144,12 @@ struct flowTest {
               }
             }
 
+            if (track.tpcNClsFound() >= analysisMinimumTPCClusters && track.itsNCls() >= analysisMinimumITSClusters) {
+              validAnalysisTrack = true;
+              if (isITSFake) {
+                validAnalysisTrackFake = true;
+              }
+            }
             if (track.hasTPC() && track.hasITS()) {
               validGlobal = true;
               if (isITSFake) {
@@ -171,6 +184,12 @@ struct flowTest {
         }
         if (validGlobalFake) {
           histos.fill(HIST("hBVsPtVsPhiGlobalFake"), imp, deltaPhi, mcParticle.pt());
+        }
+        if (validAnalysisTrack) {
+          histos.fill(HIST("hBVsPtVsPhiAnalysis"), imp, deltaPhi, mcParticle.pt());
+        }
+        if (validAnalysisTrackFake) {
+          histos.fill(HIST("hBVsPtVsPhiAnalysisFake"), imp, deltaPhi, mcParticle.pt());
         }
         // if any track present, fill
         if (validTrack)
