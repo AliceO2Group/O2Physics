@@ -157,7 +157,7 @@ struct AntinucleiInJets {
       registryQC.add("nJetsSelectedHighPt", "nJetsSelectedHighPt", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
       registryQC.add("jetEffectiveArea", "jetEffectiveArea", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
     }
-    
+
     // event counter MC
     registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
@@ -530,7 +530,7 @@ struct AntinucleiInJets {
             registryData.fill(HIST("antihelium3_jet_tpc"), 2.0 * pt, nsigmaTPCHe);
           }
         }
-        
+
         // matter
         if (track.sign() > 0) {
           if (passedItsPidDeut && nsigmaTPCDe > minNsigmaTpc && nsigmaTPCDe < maxNsigmaTpc && track.hasTOF())
