@@ -147,7 +147,7 @@ template <typename TTrack>
 template <typename TCollision>
 float TofPidNewCollision<TTrack>::GetTOFNSigma(o2::track::PID::ID pidId, TTrack const& track, TCollision const& originalcol, TCollision const& correctedcol, bool EnableBCAO2D)
 {
-  
+
   if (!track.has_collision() || !track.hasTOF()) {
     return -999;
   }
@@ -190,7 +190,7 @@ float TofPidNewCollision<TTrack>::GetTOFNSigma(TTrack const& track, TCollision c
 }
 
 template <typename TTrack>
-float TofPidNewCollision<TTrack>::GetTOFNSigma(o2::track::PID::ID pidId, TTrack const& track) 
+float TofPidNewCollision<TTrack>::GetTOFNSigma(o2::track::PID::ID pidId, TTrack const& track)
 {
 
   if (!track.has_collision() || !track.hasTOF()) {
@@ -213,7 +213,6 @@ float TofPidNewCollision<TTrack>::GetTOFNSigma(TTrack const& track)
 {
   return GetTOFNSigma(pidType, track);
 }
-
 
 } // namespace pidtofgeneric
 } // namespace o2::aod
