@@ -723,9 +723,9 @@ struct Chk892Flow {
     histos.fill(HIST("QA/EP/hEPResBC"), lCentrality, lEPResBC);
     // Scalar product method
     if (cfgUseScalProduct) {
-      double lEPSPResAB = collision.qvecRe()[lQvecDetInd] * collision.qvecRe()[lQvecRefAInd] + collision.qvecIm()[lQvecDetInd] * collision.qvecIm()[lQvecRefAInd] * lEPResAB;
-      double lEPSPResAC = collision.qvecRe()[lQvecDetInd] * collision.qvecRe()[lQvecRefBInd] + collision.qvecIm()[lQvecDetInd] * collision.qvecIm()[lQvecRefBInd] * lEPResAC;
-      double lEPSPResBC = collision.qvecRe()[lQvecRefAInd] * collision.qvecRe()[lQvecRefBInd] + collision.qvecIm()[lQvecRefAInd] * collision.qvecIm()[lQvecRefBInd] * lEPResBC;
+      double lEPSPResAB = (collision.qvecRe()[lQvecDetInd] * collision.qvecRe()[lQvecRefAInd] + collision.qvecIm()[lQvecDetInd] * collision.qvecIm()[lQvecRefAInd]) * lEPResAB;
+      double lEPSPResAC = (collision.qvecRe()[lQvecDetInd] * collision.qvecRe()[lQvecRefBInd] + collision.qvecIm()[lQvecDetInd] * collision.qvecIm()[lQvecRefBInd]) * lEPResAC;
+      double lEPSPResBC = (collision.qvecRe()[lQvecRefAInd] * collision.qvecRe()[lQvecRefBInd] + collision.qvecIm()[lQvecRefAInd] * collision.qvecIm()[lQvecRefBInd]) * lEPResBC;
 
       histos.fill(HIST("QA/EP/hEPSPResAB"), lCentrality, lEPSPResAB);
       histos.fill(HIST("QA/EP/hEPSPResAC"), lCentrality, lEPSPResAC);
