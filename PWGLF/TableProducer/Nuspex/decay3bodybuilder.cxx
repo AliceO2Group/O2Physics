@@ -117,15 +117,20 @@ struct kfCandidate {
   float chi2topoNDF;
   float ctau;
   float trackedClSize;
+  float DeltaPhiRotDeuteron;
+  float DeltaPhiRotProton;
   // V0
   float massV0;
   float chi2massV0;
   float cpaV0ToPV;
-  // daughter momenta at vertex
+  // daughter momenta
   float protonMom[3];
   float pionMom[3];
   float deuteronMom[3];
   float tpcInnerParam[3]; // proton, pion, deuteron
+  // daughter track quality
+  int tpcNClDaughters[3]; // proton, pion, deuteron
+  float tpcChi2NClDeuteron;
   // daughter DCAs KF
   float DCAdaughterToPV[3];   // proton, pion, deuteron
   float DCAdaughterToPVxy[3]; // proton, pion, deuteron
@@ -816,13 +821,17 @@ struct decay3bodyBuilder {
       candidate.ctau,
       candidate.trackedClSize,
       // V0
-      candidate.massV0, candidate.chi2massV0,
+      candidate.massV0,
       candidate.cpaV0ToPV,
       // daughter momenta at vertex
       candidate.protonMom[0], candidate.protonMom[1], candidate.protonMom[2],
       candidate.pionMom[0], candidate.pionMom[1], candidate.pionMom[2],
       candidate.deuteronMom[0], candidate.deuteronMom[1], candidate.deuteronMom[2],
       candidate.tpcInnerParam[0], candidate.tpcInnerParam[1], candidate.tpcInnerParam[2], // proton, pion, deuteron
+      // daughter track quality
+      candidate.tpcNClDaughters[0], candidate.tpcNClDaughters[1], candidate.tpcNClDaughters[2], // proton, pion, deuteron
+      candidate.tpcChi2NClDeuteron,
+      candidate.DeltaPhiRotDeuteron, candidate.DeltaPhiRotProton,
       // daughter DCAs KF
       candidate.DCAdaughterToPV[0], candidate.DCAdaughterToPV[1], candidate.DCAdaughterToPV[2],       // proton, pion, deuteron
       candidate.DCAdaughterToPVxy[0], candidate.DCAdaughterToPVxy[1], candidate.DCAdaughterToPVxy[2], // proton, pion, deuteron
@@ -833,7 +842,6 @@ struct decay3bodyBuilder {
       candidate.daughterCharge[0], candidate.daughterCharge[1], candidate.daughterCharge[2], // proton, pion, deuteron
       // daughter PID
       candidate.tpcNsigma[0], candidate.tpcNsigma[1], candidate.tpcNsigma[2], candidate.tpcNsigma[3], // proton, pion, deuteron, bach with pion hyp
-      candidate.tpcdEdx[0], candidate.tpcdEdx[1], candidate.tpcdEdx[2],                               // proton, pion, deuteron
       candidate.tofNsigmaDeuteron,
       candidate.averageClusterSizeDeuteron,
       candidate.pidForTrackingDeuteron);
@@ -864,6 +872,10 @@ struct decay3bodyBuilder {
         candidate.pionMom[0], candidate.pionMom[1], candidate.pionMom[2],
         candidate.deuteronMom[0], candidate.deuteronMom[1], candidate.deuteronMom[2],
         candidate.tpcInnerParam[0], candidate.tpcInnerParam[1], candidate.tpcInnerParam[2], // proton, pion, deuteron
+        // daughter track quality
+        candidate.tpcNClDaughters[0], candidate.tpcNClDaughters[1], candidate.tpcNClDaughters[2], // proton, pion, deuteron
+        candidate.tpcChi2NClDeuteron,
+        candidate.DeltaPhiRotDeuteron, candidate.DeltaPhiRotProton,
         // daughter DCAs KF
         candidate.DCAdaughterToPV[0], candidate.DCAdaughterToPV[1], candidate.DCAdaughterToPV[2],       // proton, pion, deuteron
         candidate.DCAdaughterToPVxy[0], candidate.DCAdaughterToPVxy[1], candidate.DCAdaughterToPVxy[2], // proton, pion, deuteron
@@ -1011,13 +1023,25 @@ struct decay3bodyBuilder {
     registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxEta);
 
     // number of TPC clusters
+    int tpcNClProton;
+    int tpcNClPion;
+    int tpcNClDeuteron = trackBach.tpcNClsFound();
+    float tpcChi2NCl = trackBach.tpcChi2NCl();
     if (trackBach.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsBach) {
       return;
     }
-    if (isMatter && ((kfparticleConfigurations.useTPCforPion && trackNeg.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsPion) || trackPos.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsProton)) {
-      return;
-    } else if (!isMatter && ((kfparticleConfigurations.useTPCforPion && trackPos.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsPion) || trackNeg.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsProton)) {
-      return;
+    if (isMatter) {
+      tpcNClPion = trackNeg.tpcNClsFound();
+      tpcNClProton = trackPos.tpcNClsFound();
+      if ((kfparticleConfigurations.useTPCforPion && trackNeg.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsPion) || trackPos.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsProton) {
+        return;
+      }
+    } else if (!isMatter) {
+      tpcNClPion = trackPos.tpcNClsFound();
+      tpcNClProton = trackNeg.tpcNClsFound();
+      if ((kfparticleConfigurations.useTPCforPion && trackPos.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsPion) || trackNeg.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsProton) {
+        return;
+      }
     }
     registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxTPCNcls);
 
@@ -1195,6 +1219,13 @@ struct decay3bodyBuilder {
     kfpDeuteron = createKFParticleFromTrackParCov(trackParCovBach, trackBach.sign() * bachelorcharge, constants::physics::MassDeuteron);
     LOG(debug) << "KFParticle created from deuteron track.";
     float kfpvPos[3] = {kfpv.GetX(), kfpv.GetY(), kfpv.GetZ()};
+    // Check phi angle of "default" candidate daughter tracks
+    float phiDeuteron_noRotation;
+    float phiDeuteronSigma_noRotation;
+    float phiProton_noRotation;
+    float phiProtonSigma_noRotation;
+    kfpDeuteron.GetPhi(phiDeuteron_noRotation, phiDeuteronSigma_noRotation);
+    kfpProton.GetPhi(phiProton_noRotation, phiProtonSigma_noRotation);
 
     // Construct vertex
     /// BRIEF: Case 1: fully uncorrelated bkg via rotation of proton track
@@ -1340,6 +1371,14 @@ struct decay3bodyBuilder {
         trackedClSize = !fTrackedClSizeVector.empty() ? fTrackedClSizeVector[decay3bodyID] : 0;
       }
 
+      // get deuteron and proton phi after rotation
+      float phiDeuteron_afterRotation;
+      float phiDeuteronSigma_afterRotation;
+      float phiProton_afterRotation;
+      float phiProtonSigma_afterRotation;
+      kfDeuteronDaughters[i].GetPhi(phiDeuteron_afterRotation, phiDeuteronSigma_afterRotation);
+      kfProtonDaughters[i].GetPhi(phiProton_afterRotation, phiProtonSigma_afterRotation);
+
       // candidate filling
       kfCandidate candidate;
       candidate.collisionID = collision.globalIndex();
@@ -1377,6 +1416,8 @@ struct decay3bodyBuilder {
       candidate.chi2topoNDF = chi2topoNDF;
       candidate.ctau = KFHtPV.GetLifeTime();
       candidate.trackedClSize = trackedClSize;
+      candidate.DeltaPhiRotDeuteron = phiDeuteron_noRotation - phiDeuteron_afterRotation;
+      candidate.DeltaPhiRotProton = phiProton_noRotation - phiProton_afterRotation;
       // V0
       candidate.massV0 = massV0;
       candidate.chi2massV0 = chi2massV0;
@@ -1394,6 +1435,11 @@ struct decay3bodyBuilder {
       candidate.tpcInnerParam[0] = tpcInnerParamProton;
       candidate.tpcInnerParam[1] = tpcInnerParamPion;
       candidate.tpcInnerParam[2] = tpcInnerParamDeuteron;
+      // daughter track quality
+      candidate.tpcNClDaughters[0] = tpcNClProton;
+      candidate.tpcNClDaughters[1] = tpcNClPion;
+      candidate.tpcNClDaughters[2] = tpcNClDeuteron;
+      candidate.tpcChi2NClDeuteron = tpcChi2NCl;
       // daughter DCAs with KF
       candidate.DCAdaughterToPV[0] = kfProtonDaughters[i].GetDistanceFromVertex(kfpv);
       candidate.DCAdaughterToPV[1] = kfPionDaughters[i].GetDistanceFromVertex(kfpv);
