@@ -40,7 +40,6 @@
 #include "GFW.h"
 #include "GFWCumulant.h"
 #include "GFWWeights.h"
-#include "GFWWeightsList.h"
 #include "FlowContainer.h"
 #include "TList.h"
 #include <TProfile.h>
@@ -93,7 +92,6 @@ struct FlowRunbyRun {
 
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
-  OutputObj<GFWWeightsList> fGFWWeightsList{GFWWeightsList("GFWWeightsList")};
   HistogramRegistry registry{"registry"};
 
   // define global variables
@@ -105,6 +103,7 @@ struct FlowRunbyRun {
   int lastRunNumer = -1;
   std::vector<int> runNumbers;                                        // vector of run numbers
   std::map<int, std::vector<std::shared_ptr<TH1>>> th1sList;          // map of histograms for all runs
+  std::map<int, std::vector<std::shared_ptr<TH3>>> th3sList;          // map of TH3 histograms for all runs
   std::map<int, std::vector<std::shared_ptr<TProfile>>> profilesList; // map of profiles for all runs
   enum OutputTH1Names {
     // here are TProfiles for vn-pt correlations that are not implemented in GFW
@@ -114,6 +113,10 @@ struct FlowRunbyRun {
     hMult,
     hCent,
     kCount_TH1Names
+  };
+  enum OutputTH3Names {
+    hPhiEtaVtxz = 0,
+    kCount_TH3Names
   };
   enum OutputTProfileNames {
     c22 = 0,
@@ -135,8 +138,6 @@ struct FlowRunbyRun {
     ccdb->setURL(ccdbUrl.value);
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
-
-    fGFWWeightsList->init("weightList");
 
     // Add output histograms to the registry
     runNumbers = cfgRunNumbers;
@@ -239,11 +240,9 @@ struct FlowRunbyRun {
     profilesList.insert(std::make_pair(runNumber, profiles));
 
     if (cfgOutputNUAWeights) {
-      // weightsList
-      o2::framework::AxisSpec axis = axisPt;
-      int nPtBins = axis.binEdges.size() - 1;
-      double* ptBins = &(axis.binEdges)[0];
-      fGFWWeightsList->addGFWWeightsByRun(runNumber, nPtBins, ptBins, true, false);
+      std::vector<std::shared_ptr<TH3>> tH3s(kCount_TH3Names);
+      tH3s[hPhiEtaVtxz] = registry.add<TH3>(Form("%d/hPhiEtaVtxz", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+      th3sList.insert(std::make_pair(runNumber, tH3s));
     }
   }
 
@@ -259,7 +258,7 @@ struct FlowRunbyRun {
       mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
       double maxSec = std::ceil(runDuration.second * 1.e-3); /// round tsEOR to the lowest integer higher than tsEOR
       const AxisSpec axisSeconds{static_cast<int>((maxSec - mMinSeconds) / 20.f), 0, maxSec - mMinSeconds, "Seconds since SOR"};
-      gHadronicRate[mRunNumber] = registry.add<TH2>(Form("HadronicRate/%i", mRunNumber), ";Time since SOR (s);Hadronic rate (kHz)", kTH2D, {axisSeconds, {510, 0., 51.}}).get();
+      gHadronicRate[mRunNumber] = registry.add<TH2>(Form("HadronicRate/%i", mRunNumber), ";Time since SOR (s);Hadronic rate (kHz)", kTH2D, {axisSeconds, {cfgCutMaxIR-cfgCutMinIR, cfgCutMinIR, cfgCutMaxIR}}).get();
     }
     gCurrentHadronicRate = gHadronicRate[mRunNumber];
   }
@@ -314,20 +313,10 @@ struct FlowRunbyRun {
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
           if (withinPtRef) {
-            GFWWeights* weight = fGFWWeightsList->getGFWWeightsByRun(runNumber);
-            if (!weight) {
-              LOGF(fatal, "Could not find the weight for run %d", runNumber);
-              return;
-            }
-            weight->fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
+            th3sList[runNumber][hPhiEtaVtxz]->Fill(track.phi(), track.eta(), collision.posZ());
           }
         } else {
-          GFWWeights* weight = fGFWWeightsList->getGFWWeightsByRun(runNumber);
-          if (!weight) {
-            LOGF(fatal, "Could not find the weight for run %d", runNumber);
-            return;
-          }
-          weight->fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
+          th3sList[runNumber][hPhiEtaVtxz]->Fill(track.phi(), track.eta(), collision.posZ());
         }
       }
     }
