@@ -54,10 +54,14 @@ struct flowTest {
 
   void init(InitContext&)
   {
-    // pT histograms
+    // QA and detailed studies
     histos.add<TH1>("hImpactParameter", "hImpactParameter", HistType::kTH1D, {axisB});
     histos.add<TH2>("hNchVsImpactParameter", "hNchVsImpactParameter", HistType::kTH2D, {axisB, axisNch});
     histos.add<TH1>("hEventPlaneAngle", "hEventPlaneAngle", HistType::kTH1D, {axisPhi});
+    histos.add<TH2>("hTrackPhiVsEventPlaneAngle", "hTrackPhiVsEventPlaneAngle", HistType::kTH2D, {axisPhi, axisPhi});
+    histos.add<TH2>("hTrackDeltaPhiVsEventPlaneAngle", "hTrackDeltaPhiVsEventPlaneAngle", HistType::kTH2D, {axisPhi, axisPhi});
+
+    // analysis
     histos.add<TH2>("hPtVsPhiGenerated", "hPtVsPhiGenerated", HistType::kTH2D, {axisPhi, axisPt});
     histos.add<TH2>("hPtVsPhiGlobal", "hPtVsPhiGlobal", HistType::kTH2D, {axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiGenerated", "hBVsPtVsPhiGenerated", HistType::kTH3D, {axisB, axisPhi, axisPt});
@@ -83,9 +87,10 @@ struct flowTest {
     histos.add<TH3>("hBVsPtVsPhiGlobalOmega", "hBVsPtVsPhiGlobalOmega", HistType::kTH3D, {axisB, axisPhi, axisPt});
   }
 
-  using recoTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels>;
+  using recoTracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
+  using recoTracksWithLabels = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels>;
 
-  void process(aod::McCollision const& mcCollision, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& mcParticles, recoTracks const&)
+  void process(aod::McCollision const& mcCollision, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& mcParticles, recoTracksWithLabels const&)
   {
 
     float imp = mcCollision.impactParameter();
@@ -118,6 +123,9 @@ struct flowTest {
           deltaPhi += 2. * TMath::Pi();
         if (deltaPhi > 2. * TMath::Pi())
           deltaPhi -= 2. * TMath::Pi();
+
+        histos.fill(HIST("hTrackDeltaPhiVsEventPlaneAngle"), evPhi, deltaPhi);
+        histos.fill(HIST("hTrackPhiVsEventPlaneAngle"), evPhi, mcParticle.phi());
         histos.fill(HIST("hPtVsPhiGenerated"), deltaPhi, mcParticle.pt());
         histos.fill(HIST("hBVsPtVsPhiGenerated"), imp, deltaPhi, mcParticle.pt());
 
@@ -134,7 +142,7 @@ struct flowTest {
         bool validAnalysisTrack = false;
         bool validAnalysisTrackFake = false;
         if (mcParticle.has_tracks()) {
-          auto const& tracks = mcParticle.tracks_as<recoTracks>();
+          auto const& tracks = mcParticle.tracks_as<recoTracksWithLabels>();
           for (auto const& track : tracks) {
             bool isITSFake = false;
 
