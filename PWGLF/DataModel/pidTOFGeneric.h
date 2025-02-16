@@ -88,19 +88,76 @@ class TofPidNewCollision
 
   template <typename TCollision>
   float GetTOFNSigma(TTrack const& track, TCollision const& originalcol, TCollision const& correctedcol, bool EnableBCAO2D = true);
+
+  float GetTOFNSigma(TTrack const& track);
+  float GetTOFNSigma(o2::track::PID::ID pidId, TTrack const& track);
+
+  float CalculateTOFNSigma(o2::track::PID::ID pidId, TTrack const& track, double tofsignal, double evTime, double evTimeErr)
+  {
+
+    float expSigma, tofNsigma = -999;
+
+    switch (pidId) {
+      case 0:
+        expSigma = responseEl.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
+        tofNsigma = (tofsignal - evTime - responseEl.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
+        break;
+      case 1:
+        expSigma = responseMu.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
+        tofNsigma = (tofsignal - evTime - responseMu.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
+        break;
+      case 2:
+        expSigma = responsePi.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
+        tofNsigma = (tofsignal - evTime - responsePi.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
+        break;
+      case 3:
+        expSigma = responseKa.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
+        tofNsigma = (tofsignal - evTime - responseKa.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
+        break;
+      case 4:
+        expSigma = responsePr.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
+        tofNsigma = (tofsignal - evTime - responsePr.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
+        break;
+      case 5:
+        expSigma = responseDe.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
+        tofNsigma = (tofsignal - evTime - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
+        break;
+      case 6:
+        expSigma = responseTr.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
+        tofNsigma = (tofsignal - evTime - responseTr.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
+        break;
+      case 7:
+        expSigma = responseHe.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
+        tofNsigma = (tofsignal - evTime - responseHe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
+        break;
+      case 8:
+        expSigma = responseAl.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
+        tofNsigma = (tofsignal - evTime - responseAl.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
+        break;
+      default:
+        LOG(fatal) << "Wrong particle ID in TofPidSecondary class";
+        return -999;
+    }
+
+    return tofNsigma;
+  }
 };
 
 template <typename TTrack>
 template <typename TCollision>
 float TofPidNewCollision<TTrack>::GetTOFNSigma(o2::track::PID::ID pidId, TTrack const& track, TCollision const& originalcol, TCollision const& correctedcol, bool EnableBCAO2D)
 {
+
+  if (!track.has_collision() || !track.hasTOF()) {
+    return -999;
+  }
+
   float mMassHyp = o2::track::pid_constants::sMasses2Z[track.pidForTracking()];
   float expTime = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
 
   float evTime = correctedcol.evTime();
   float evTimeErr = correctedcol.evTimeErr();
   float tofsignal = track.trackTime() * 1000 + expTime; // in ps
-  float expSigma, tofNsigma;
 
   if (originalcol.globalIndex() == correctedcol.globalIndex()) {
     evTime = track.evTimeForTrack();
@@ -121,48 +178,7 @@ float TofPidNewCollision<TTrack>::GetTOFNSigma(o2::track::PID::ID pidId, TTrack 
     }
   }
 
-  switch (pidId) {
-    case 0:
-      expSigma = responseEl.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
-      tofNsigma = (tofsignal - evTime - responseEl.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
-      break;
-    case 1:
-      expSigma = responseMu.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
-      tofNsigma = (tofsignal - evTime - responseMu.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
-      break;
-    case 2:
-      expSigma = responsePi.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
-      tofNsigma = (tofsignal - evTime - responsePi.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
-      break;
-    case 3:
-      expSigma = responseKa.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
-      tofNsigma = (tofsignal - evTime - responseKa.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
-      break;
-    case 4:
-      expSigma = responsePr.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
-      tofNsigma = (tofsignal - evTime - responsePr.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
-      break;
-    case 5:
-      expSigma = responseDe.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
-      tofNsigma = (tofsignal - evTime - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
-      break;
-    case 6:
-      expSigma = responseTr.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
-      tofNsigma = (tofsignal - evTime - responseTr.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
-      break;
-    case 7:
-      expSigma = responseHe.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
-      tofNsigma = (tofsignal - evTime - responseHe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
-      break;
-    case 8:
-      expSigma = responseAl.GetExpectedSigma(mRespParamsV2, track, tofsignal, evTimeErr);
-      tofNsigma = (tofsignal - evTime - responseAl.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
-      break;
-    default:
-      LOG(fatal) << "Wrong particle ID in TofPidSecondary class";
-      return -999;
-  }
-
+  float tofNsigma = CalculateTOFNSigma(pidId, track, tofsignal, evTime, evTimeErr);
   return tofNsigma;
 }
 
@@ -171,6 +187,31 @@ template <typename TCollision>
 float TofPidNewCollision<TTrack>::GetTOFNSigma(TTrack const& track, TCollision const& originalcol, TCollision const& correctedcol, bool EnableBCAO2D)
 {
   return GetTOFNSigma(pidType, track, originalcol, correctedcol, EnableBCAO2D);
+}
+
+template <typename TTrack>
+float TofPidNewCollision<TTrack>::GetTOFNSigma(o2::track::PID::ID pidId, TTrack const& track)
+{
+
+  if (!track.has_collision() || !track.hasTOF()) {
+    return -999;
+  }
+
+  float mMassHyp = o2::track::pid_constants::sMasses2Z[track.pidForTracking()];
+  float expTime = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
+
+  float evTime = track.evTimeForTrack();
+  float evTimeErr = track.evTimeErrForTrack();
+  float tofsignal = track.trackTime() * 1000 + expTime; // in ps
+
+  float tofNsigma = CalculateTOFNSigma(pidId, track, tofsignal, evTime, evTimeErr);
+  return tofNsigma;
+}
+
+template <typename TTrack>
+float TofPidNewCollision<TTrack>::GetTOFNSigma(TTrack const& track)
+{
+  return GetTOFNSigma(pidType, track);
 }
 
 } // namespace pidtofgeneric
