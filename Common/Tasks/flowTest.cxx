@@ -152,7 +152,7 @@ struct flowTest {
               }
             }
 
-            if (track.tpcNClsFound() > analysisMinimumTPCClusters && track.itsNCls() > analysisMinimumITSClusters) {
+            if (track.tpcNClsFound() >= analysisMinimumTPCClusters && track.itsNCls() >= analysisMinimumITSClusters) {
               validAnalysisTrack = true;
               if (isITSFake) {
                 validAnalysisTrackFake = true;
