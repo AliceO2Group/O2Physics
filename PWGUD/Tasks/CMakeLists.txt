@@ -233,3 +233,8 @@ o2physics_add_dpl_workflow(test-mc-std-tabs-rl
                            SOURCES testMCstdTabsRL.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsBase O2::DetectorsCommonDataFormats
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(decaytree-analyzer
+                           SOURCES decayTreeAnalyzer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UDGoodRunSelector O2Physics::decayTree
+                           COMPONENT_NAME Analysis)

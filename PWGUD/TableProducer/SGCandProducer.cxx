@@ -620,7 +620,12 @@ struct McSGCandProducer {
               auto track = sgtrack.track_as<TCs>();
               if (track.has_mcParticle()) {
                 auto mcPart = track.mcParticle();
-                updateUDMcParticle(mcPart, -1, mcPartIsSaved);
+                auto mcCol = mcPart.mcCollision();
+                if (mcColIsSaved.find(mcCol.globalIndex()) == mcColIsSaved.end()) {
+                  updateUDMcCollisions(mcCol, mcCol.bc_as<BCs>().globalBC());
+                  mcColIsSaved[mcCol.globalIndex()] = outputMcCollisions.lastIndex();
+                }
+                updateUDMcParticle(mcPart, mcColIsSaved[mcCol.globalIndex()], mcPartIsSaved);
                 updateUDMcTrackLabel(sgtrack, mcPartIsSaved);
               } else {
                 outputMcTrackLabels(-1, track.mcMask());
