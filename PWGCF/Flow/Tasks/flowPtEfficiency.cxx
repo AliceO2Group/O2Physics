@@ -191,7 +191,7 @@ struct FlowPtEfficiency {
       corrconfigsTruth.push_back(fGFWTrue->GetCorrelatorConfig("refN10 {2} refP10 {-2}", "Ch10Gap22", kFALSE));
       corrconfigsTruth.push_back(fGFWTrue->GetCorrelatorConfig("poiN10 refN10 | olN10 {2} refP10 {-2}", "Ch10Gap22", kTRUE));
       fGFWTrue->CreateRegions();
-      
+
       fGFWReco->AddRegion("full", -0.8, 0.8, 1, 1);
       fGFWReco->AddRegion("refN10", -0.8, -0.5, 1, 1);
       fGFWReco->AddRegion("refP10", 0.5, 0.8, 1, 1);
