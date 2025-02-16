@@ -119,8 +119,8 @@ o2physics_add_dpl_workflow(v0ptinvmassplots
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(strange-yield-pbpb
-    SOURCES strange-yield-pbpb.cxx
+o2physics_add_dpl_workflow(derivedupcanalysis
+    SOURCES derivedupcanalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 

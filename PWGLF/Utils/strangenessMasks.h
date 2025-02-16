@@ -1,4 +1,4 @@
-// Copyright 2019-2024 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -8,14 +8,15 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
+//
+/// \file strangenessMasks.h
+/// \brief Defines selection criteria and bit masks for identifying v0 and cascade particles
 /// \author Roman Nepeivoda (roman.nepeivoda@cern.ch)
-/// \since August 27, 2024
 
 #ifndef PWGLF_UTILS_STRANGENESSMASKS_H_
 #define PWGLF_UTILS_STRANGENESSMASKS_H_
 
-enum selectionsCombined : int { selV0CosPA = 0,
+enum SelectionsCombined : int { selV0CosPA = 0,
                                 selV0Radius,
                                 selV0RadiusMax,
                                 selDCANegToPV,
@@ -58,6 +59,7 @@ enum selectionsCombined : int { selV0CosPA = 0,
                                 selPhysPrimAntiLambda, // for mc tagging
                                 selPosEta,
                                 selNegEta,
+                                selDauDCA,
                                 // cascade selections
                                 selCascCosPA,
                                 selMassWinXi,
@@ -115,36 +117,36 @@ enum selectionsCombined : int { selV0CosPA = 0,
                                 selCount,
 };
 
-static constexpr int selNum = static_cast<int>(selectionsCombined::selCount);
+static constexpr int kSelNum = static_cast<int>(SelectionsCombined::selCount);
 
 // constants
 const float ctauxiPDG = 4.91;     // from PDG
 const float ctauomegaPDG = 2.461; // from PDG
 
 // bit masks
-std::bitset<selNum> maskTopologicalV0;
-std::bitset<selNum> maskTopologicalCasc;
+std::bitset<kSelNum> maskTopologicalV0;
+std::bitset<kSelNum> maskTopologicalCasc;
 
-std::bitset<selNum> maskKinematicV0;
-std::bitset<selNum> maskKinematicCasc;
+std::bitset<kSelNum> maskKinematicV0;
+std::bitset<kSelNum> maskKinematicCasc;
 
-std::bitset<selNum> maskTrackPropertiesV0;
-std::bitset<selNum> maskTrackPropertiesCasc;
+std::bitset<kSelNum> maskTrackPropertiesV0;
+std::bitset<kSelNum> maskTrackPropertiesCasc;
 
-std::bitset<selNum> maskK0ShortSpecific;
-std::bitset<selNum> maskLambdaSpecific;
-std::bitset<selNum> maskAntiLambdaSpecific;
-std::bitset<selNum> maskXiSpecific;
-std::bitset<selNum> maskAntiXiSpecific;
-std::bitset<selNum> maskOmegaSpecific;
-std::bitset<selNum> maskAntiOmegaSpecific;
+std::bitset<kSelNum> maskK0ShortSpecific;
+std::bitset<kSelNum> maskLambdaSpecific;
+std::bitset<kSelNum> maskAntiLambdaSpecific;
+std::bitset<kSelNum> maskXiSpecific;
+std::bitset<kSelNum> maskAntiXiSpecific;
+std::bitset<kSelNum> maskOmegaSpecific;
+std::bitset<kSelNum> maskAntiOmegaSpecific;
 
-std::bitset<selNum> maskSelectionK0Short;
-std::bitset<selNum> maskSelectionLambda;
-std::bitset<selNum> maskSelectionAntiLambda;
-std::bitset<selNum> maskSelectionXi;
-std::bitset<selNum> maskSelectionAntiXi;
-std::bitset<selNum> maskSelectionOmega;
-std::bitset<selNum> maskSelectionAntiOmega;
+std::bitset<kSelNum> maskSelectionK0Short;
+std::bitset<kSelNum> maskSelectionLambda;
+std::bitset<kSelNum> maskSelectionAntiLambda;
+std::bitset<kSelNum> maskSelectionXi;
+std::bitset<kSelNum> maskSelectionAntiXi;
+std::bitset<kSelNum> maskSelectionOmega;
+std::bitset<kSelNum> maskSelectionAntiOmega;
 
 #endif // PWGLF_UTILS_STRANGENESSMASKS_H_
