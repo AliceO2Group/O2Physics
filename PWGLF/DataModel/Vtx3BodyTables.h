@@ -388,6 +388,12 @@ DECLARE_SOA_COLUMN(Track2Sign, track2sign, float);                   //! sign of
 DECLARE_SOA_COLUMN(TPCInnerParamTrack0, tpcinnerparamtrack0, float); //! momentum at inner wall of TPC of proton daughter
 DECLARE_SOA_COLUMN(TPCInnerParamTrack1, tpcinnerparamtrack1, float); //! momentum at inner wall of TPC of pion daughter
 DECLARE_SOA_COLUMN(TPCInnerParamTrack2, tpcinnerparamtrack2, float); //! momentum at inner wall of TPC of deuteron daughter
+DECLARE_SOA_COLUMN(TPCNClTrack0, tpcncltrack0, int);                 //! Number of TPC clusters of proton daughter
+DECLARE_SOA_COLUMN(TPCNClTrack1, tpcncltrack1, int);                 //! Number of TPC clusters of pion daughter
+DECLARE_SOA_COLUMN(TPCNClTrack2, tpcncltrack2, int);                 //! Number of TPC clusters of deuteron daughter
+DECLARE_SOA_COLUMN(TPCChi2NClDeuteron, tpcchi2ncldeuteron, float);   //! TPC Chi2 / cluster of deuteron daughter
+DECLARE_SOA_COLUMN(DeltaPhiDeuteron, deltaphideuteron, float);       //! phi before track rotation - phi after track rotation for deuteron track
+DECLARE_SOA_COLUMN(DeltaPhiProton, deltaphiproton, float);           //! phi before track rotation - phi after track rotation for proton track
 // PID
 DECLARE_SOA_COLUMN(TPCNSigmaProton, tpcnsigmaproton, float);            //! nsigma proton of TPC PID of the proton daughter
 DECLARE_SOA_COLUMN(TPCNSigmaPion, tpcnsigmapion, float);                //! nsigma pion of TPC PID of the pion daughter
@@ -418,7 +424,10 @@ DECLARE_SOA_COLUMN(GenBachP, genbachp, float);          //! generated momentum b
 DECLARE_SOA_COLUMN(GenBachPt, genbachpt, float);        //! generated transverse momentum bachelor daughter particle
 DECLARE_SOA_COLUMN(IsTrueH3L, istrueh3l, bool);         //! flag for true hypertriton candidate
 DECLARE_SOA_COLUMN(IsTrueAntiH3L, istrueantih3l, bool); //! flag for true anti-hypertriton candidate
-DECLARE_SOA_COLUMN(PdgCode, pdgcode, int);              //! MC particle PDG code
+DECLARE_SOA_COLUMN(PdgCode, pdgcode, int);              //! MC particle mother PDG code
+DECLARE_SOA_COLUMN(PdgCodeDau0, pdgcodedau0, int);      //! MC particle daughter 0 PDG code
+DECLARE_SOA_COLUMN(PdgCodeDau1, pdgcodedau1, int);      //! MC particle daughter 1 PDG code
+DECLARE_SOA_COLUMN(PdgCodeDau2, pdgcodedau2, int);      //! MC particle daughter 2 PDG code
 DECLARE_SOA_COLUMN(SurvEvSel, survevsel, int);          //! flag if reco collision survived event selection
 DECLARE_SOA_COLUMN(IsReco, isreco, int);                //! flag if candidate was reconstructed
 
@@ -455,6 +464,9 @@ DECLARE_SOA_TABLE(KFVtx3BodyDatas, "AOD", "KFVTX3BODYDATA",
                   vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1,                                        // pion
                   vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2,                                        // deuteron
                   kfvtx3body::TPCInnerParamTrack0, kfvtx3body::TPCInnerParamTrack1, kfvtx3body::TPCInnerParamTrack2, // proton, pion, deuteron
+                  kfvtx3body::TPCNClTrack0, kfvtx3body::TPCNClTrack1, kfvtx3body::TPCNClTrack2,                      // proton, pion, deuteron
+                  kfvtx3body::TPCChi2NClDeuteron,
+                  kfvtx3body::DeltaPhiDeuteron, kfvtx3body::DeltaPhiProton,
                   kfvtx3body::DCATrack0ToPVKF, kfvtx3body::DCATrack1ToPVKF, kfvtx3body::DCATrack2ToPVKF, kfvtx3body::DCAxyTrack0ToPVKF, kfvtx3body::DCAxyTrack1ToPVKF, kfvtx3body::DCAxyTrack2ToPVKF,
                   kfvtx3body::DCAxyTrack0ToSVKF, kfvtx3body::DCAxyTrack1ToSVKF, kfvtx3body::DCAxyTrack2ToSVKF,
                   kfvtx3body::DCATrack0ToTrack1KF, kfvtx3body::DCATrack0ToTrack2KF, kfvtx3body::DCATrack1ToTrack2KF,
@@ -495,7 +507,7 @@ DECLARE_SOA_TABLE(KFVtx3BodyDatasLite, "AOD", "KF3BODYLITE",
                   kfvtx3body::CTauKFtopo, kfvtx3body::TrackedClSize,
 
                   // V0
-                  kfvtx3body::MassV0, kfvtx3body::Chi2MassV0,
+                  kfvtx3body::MassV0,
                   kfvtx3body::CosPAV0,
 
                   // daughters
@@ -503,13 +515,15 @@ DECLARE_SOA_TABLE(KFVtx3BodyDatasLite, "AOD", "KF3BODYLITE",
                   vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1,                                        // pion
                   vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2,                                        // deuteron
                   kfvtx3body::TPCInnerParamTrack0, kfvtx3body::TPCInnerParamTrack1, kfvtx3body::TPCInnerParamTrack2, // proton, pion, deuteron
+                  kfvtx3body::TPCNClTrack0, kfvtx3body::TPCNClTrack1, kfvtx3body::TPCNClTrack2,                      // proton, pion, deuteron
+                  kfvtx3body::TPCChi2NClDeuteron,
+                  kfvtx3body::DeltaPhiDeuteron, kfvtx3body::DeltaPhiProton,
                   kfvtx3body::DCATrack0ToPVKF, kfvtx3body::DCATrack1ToPVKF, kfvtx3body::DCATrack2ToPVKF, kfvtx3body::DCAxyTrack0ToPVKF, kfvtx3body::DCAxyTrack1ToPVKF, kfvtx3body::DCAxyTrack2ToPVKF,
                   kfvtx3body::DCAxyTrack0ToSVKF, kfvtx3body::DCAxyTrack1ToSVKF, kfvtx3body::DCAxyTrack2ToSVKF,
                   kfvtx3body::DCATrack0ToTrack1KF, kfvtx3body::DCATrack0ToTrack2KF, kfvtx3body::DCATrack1ToTrack2KF,
                   kfvtx3body::DCAVtxDaughtersKF,
                   kfvtx3body::Track0Sign, kfvtx3body::Track1Sign, kfvtx3body::Track2Sign, // track sing: proton, pion, deuteron
                   kfvtx3body::TPCNSigmaProton, kfvtx3body::TPCNSigmaPion, kfvtx3body::TPCNSigmaDeuteron, kfvtx3body::TPCNSigmaPionBach,
-                  kfvtx3body::TPCdEdxProton, kfvtx3body::TPCdEdxPion, kfvtx3body::TPCdEdxDeuteron,
                   kfvtx3body::TOFNSigmaDeuteron,
                   kfvtx3body::ITSClusSizeDeuteron,
                   kfvtx3body::PIDTrackingDeuteron);
@@ -542,6 +556,9 @@ DECLARE_SOA_TABLE(McKFVtx3BodyDatas, "AOD", "MCKF3BODYDATAS",
                   vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1,                                        // pion
                   vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2,                                        // deuteron
                   kfvtx3body::TPCInnerParamTrack0, kfvtx3body::TPCInnerParamTrack1, kfvtx3body::TPCInnerParamTrack2, // proton, pion, deuteron
+                  kfvtx3body::TPCNClTrack0, kfvtx3body::TPCNClTrack1, kfvtx3body::TPCNClTrack2,                      // proton, pion, deuteron
+                  kfvtx3body::TPCChi2NClDeuteron,
+                  kfvtx3body::DeltaPhiDeuteron, kfvtx3body::DeltaPhiProton,
                   kfvtx3body::DCATrack0ToPVKF, kfvtx3body::DCATrack1ToPVKF, kfvtx3body::DCATrack2ToPVKF, kfvtx3body::DCAxyTrack0ToPVKF, kfvtx3body::DCAxyTrack1ToPVKF, kfvtx3body::DCAxyTrack2ToPVKF,
                   kfvtx3body::DCAxyTrack0ToSVKF, kfvtx3body::DCAxyTrack1ToSVKF, kfvtx3body::DCAxyTrack2ToSVKF,
                   kfvtx3body::DCATrack0ToTrack1KF, kfvtx3body::DCATrack0ToTrack2KF, kfvtx3body::DCATrack1ToTrack2KF,
@@ -567,7 +584,7 @@ DECLARE_SOA_TABLE(McKFVtx3BodyDatas, "AOD", "MCKF3BODYDATAS",
                   kfvtx3body::GenNegP, kfvtx3body::GenNegPt,
                   kfvtx3body::GenBachP, kfvtx3body::GenBachPt,
                   kfvtx3body::IsTrueH3L, kfvtx3body::IsTrueAntiH3L,
-                  kfvtx3body::PdgCode,
+                  kfvtx3body::PdgCode, kfvtx3body::PdgCodeDau0, kfvtx3body::PdgCodeDau1, kfvtx3body::PdgCodeDau2,
                   kfvtx3body::IsReco,
                   kfvtx3body::SurvEvSel);
 
