@@ -289,7 +289,7 @@ struct FlowMc {
     float imp = mcCollision.impactParameter();
 
     int pdgCode = std::abs(mcParticle.pdgCode());
-    if (pdgCode != PDG_t::kK0Short  && pdgCode != PDG_t::kLambda0)
+    if (pdgCode != PDG_t::kK0Short && pdgCode != PDG_t::kLambda0)
       return;
 
     if (!mcParticle.isPhysicalPrimary())
