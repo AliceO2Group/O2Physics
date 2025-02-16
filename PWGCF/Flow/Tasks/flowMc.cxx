@@ -99,6 +99,7 @@ struct FlowMc {
 
     histos.add<TH1>("hPhi", "#phi distribution", HistType::kTH1D, {axisPhi});
     histos.add<TH1>("hPhiWeighted", "corrected #phi distribution", HistType::kTH1D, {axisPhi});
+    histos.add<TH2>("hEPVsPhi", "hEPVsPhi;Event Plane Angle; #varphi", HistType::kTH2D, {axisPhi, axisPhi});
 
     if (cfgOutputNUAWeights) {
       o2::framework::AxisSpec axis = axisPt;
@@ -225,6 +226,7 @@ struct FlowMc {
         if (withinPtRef) {
           histos.fill(HIST("hPhi"), mcParticle.phi());
           histos.fill(HIST("hPhiWeighted"), mcParticle.phi(), wacc);
+          histos.fill(HIST("hEPVsPhi"), evPhi, mcParticle.phi());
         }
 
         // if valid global, fill
