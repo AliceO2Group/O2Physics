@@ -25,7 +25,7 @@ o2physics_add_dpl_workflow(k892analysis
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(k892analysispbpb
-    SOURCES k892analysis_PbPb.cxx
+    SOURCES k892analysispbpb.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 

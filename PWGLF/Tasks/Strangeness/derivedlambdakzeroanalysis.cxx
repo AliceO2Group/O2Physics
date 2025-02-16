@@ -461,6 +461,8 @@ struct derivedlambdakzeroanalysis {
     histos.add("hInteractionRate", "hInteractionRate", kTH1F, {axisIRBinning});
     histos.add("hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2F, {{101, 0.0f, 101.0f}, axisIRBinning});
 
+    histos.add("hInteractionRateVsOccupancy", "hInteractionRateVsOccupancy", kTH2F, {axisIRBinning, axisOccupancy});
+
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
 
@@ -1593,7 +1595,8 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
     }
 
-    double interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3;
+    // Fetch interaction rate only if required (in order to limit ccdb calls)
+    double interactionRate = (eventSelections.minIR >= 0 || eventSelections.maxIR >= 0) ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
     if (eventSelections.minIR >= 0 && interactionRate < eventSelections.minIR) {
       return false;
     }
@@ -1721,7 +1724,8 @@ struct derivedlambdakzeroanalysis {
       centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(doPPAnalysis ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
     }
     float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-    double interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3;
+    // Fetch interaction rate only if required (in order to limit ccdb calls)
+    double interactionRate = !irSource.value.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
 
     // gap side
     int gapSide = collision.gapSide();
@@ -1747,6 +1751,8 @@ struct derivedlambdakzeroanalysis {
 
     histos.fill(HIST("hInteractionRate"), interactionRate);
     histos.fill(HIST("hCentralityVsInteractionRate"), centrality, interactionRate);
+
+    histos.fill(HIST("hInteractionRateVsOccupancy"), interactionRate, collisionOccupancy);
 
     // __________________________________________
     // perform main analysis
@@ -1805,7 +1811,8 @@ struct derivedlambdakzeroanalysis {
       centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(doPPAnalysis ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
     }
     float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-    double interactionRate = rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3;
+    // Fetch interaction rate only if required (in order to limit ccdb calls)
+    double interactionRate = !irSource.value.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
 
     // gap side
     int gapSide = collision.gapSide();
@@ -1831,6 +1838,8 @@ struct derivedlambdakzeroanalysis {
 
     histos.fill(HIST("hInteractionRate"), interactionRate);
     histos.fill(HIST("hCentralityVsInteractionRate"), centrality, interactionRate);
+
+    histos.fill(HIST("hInteractionRateVsOccupancy"), interactionRate, collisionOccupancy);
 
     // __________________________________________
     // perform main analysis

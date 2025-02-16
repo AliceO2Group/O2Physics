@@ -32,6 +32,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
+
 #include "Framework/runDataProcessing.h"
 
 struct flowTest {
@@ -40,6 +42,9 @@ struct flowTest {
   Configurable<float> minB{"minB", 0.0f, "min impact parameter"};
   Configurable<float> maxB{"maxB", 20.0f, "max impact parameter"};
   Configurable<int> pdgSelection{"pdgSelection", 0, "pdg code selection for tracking study (0: no selection)"};
+
+  Configurable<int> analysisMinimumITSClusters{"analysisMinimumITSClusters", 5, "minimum ITS clusters for analysis track category"};
+  Configurable<int> analysisMinimumTPCClusters{"analysisMinimumTPCClusters", 70, "minimum TPC clusters for analysis track category"};
 
   ConfigurableAxis axisB{"axisB", {100, 0.0f, 20.0f}, ""};
   ConfigurableAxis axisPhi{"axisPhi", {100, 0.0f, 2.0f * TMath::Pi()}, ""};
@@ -57,10 +62,15 @@ struct flowTest {
     histos.add<TH2>("hPtVsPhiGlobal", "hPtVsPhiGlobal", HistType::kTH2D, {axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiGenerated", "hBVsPtVsPhiGenerated", HistType::kTH3D, {axisB, axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiGlobal", "hBVsPtVsPhiGlobal", HistType::kTH3D, {axisB, axisPhi, axisPt});
+    histos.add<TH3>("hBVsPtVsPhiGlobalFake", "hBVsPtVsPhiGlobalFake", HistType::kTH3D, {axisB, axisPhi, axisPt});
+    histos.add<TH3>("hBVsPtVsPhiAnalysis", "hBVsPtVsPhiAnalysis", HistType::kTH3D, {axisB, axisPhi, axisPt});
+    histos.add<TH3>("hBVsPtVsPhiAnalysisFake", "hBVsPtVsPhiAnalysisFake", HistType::kTH3D, {axisB, axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiAny", "hBVsPtVsPhiAny", HistType::kTH3D, {axisB, axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiTPCTrack", "hBVsPtVsPhiTPCTrack", HistType::kTH3D, {axisB, axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiITSTrack", "hBVsPtVsPhiITSTrack", HistType::kTH3D, {axisB, axisPhi, axisPt});
+    histos.add<TH3>("hBVsPtVsPhiITSTrackFake", "hBVsPtVsPhiITSTrackFake", HistType::kTH3D, {axisB, axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiITSABTrack", "hBVsPtVsPhiITSABTrack", HistType::kTH3D, {axisB, axisPhi, axisPt});
+    histos.add<TH3>("hBVsPtVsPhiITSABTrackFake", "hBVsPtVsPhiITSABTrackFake", HistType::kTH3D, {axisB, axisPhi, axisPt});
 
     histos.add<TH3>("hBVsPtVsPhiGeneratedK0Short", "hBVsPtVsPhiGeneratedK0Short", HistType::kTH3D, {axisB, axisPhi, axisPt});
     histos.add<TH3>("hBVsPtVsPhiGlobalK0Short", "hBVsPtVsPhiGlobalK0Short", HistType::kTH3D, {axisB, axisPhi, axisPt});
@@ -73,7 +83,7 @@ struct flowTest {
     histos.add<TH3>("hBVsPtVsPhiGlobalOmega", "hBVsPtVsPhiGlobalOmega", HistType::kTH3D, {axisB, axisPhi, axisPt});
   }
 
-  using recoTracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
+  using recoTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels>;
 
   void process(aod::McCollision const& mcCollision, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& mcParticles, recoTracks const&)
   {
@@ -114,15 +124,37 @@ struct flowTest {
         nCh++;
 
         bool validGlobal = false;
+        bool validGlobalFake = false;
         bool validTrack = false;
         bool validTPCTrack = false;
         bool validITSTrack = false;
+        bool validITSTrackFake = false;
         bool validITSABTrack = false;
+        bool validITSABTrackFake = false;
+        bool validAnalysisTrack = false;
+        bool validAnalysisTrackFake = false;
         if (mcParticle.has_tracks()) {
           auto const& tracks = mcParticle.tracks_as<recoTracks>();
           for (auto const& track : tracks) {
+            bool isITSFake = false;
+
+            for (int bit = 0; bit < 7; bit++) {
+              if (bitcheck(track.mcMask(), bit)) {
+                isITSFake = true;
+              }
+            }
+
+            if (track.tpcNClsFound() >= analysisMinimumTPCClusters && track.itsNCls() >= analysisMinimumITSClusters) {
+              validAnalysisTrack = true;
+              if (isITSFake) {
+                validAnalysisTrackFake = true;
+              }
+            }
             if (track.hasTPC() && track.hasITS()) {
               validGlobal = true;
+              if (isITSFake) {
+                validGlobalFake = true;
+              }
             }
             if (track.hasTPC() || track.hasITS()) {
               validTrack = true;
@@ -132,9 +164,15 @@ struct flowTest {
             }
             if (track.hasITS() && track.itsChi2NCl() > -1e-6) {
               validITSTrack = true;
+              if (isITSFake) {
+                validITSTrackFake = true;
+              }
             }
             if (track.hasITS() && track.itsChi2NCl() < -1e-6) {
               validITSABTrack = true;
+              if (isITSFake) {
+                validITSABTrackFake = true;
+              }
             }
           }
         }
@@ -144,6 +182,15 @@ struct flowTest {
           histos.fill(HIST("hPtVsPhiGlobal"), deltaPhi, mcParticle.pt());
           histos.fill(HIST("hBVsPtVsPhiGlobal"), imp, deltaPhi, mcParticle.pt());
         }
+        if (validGlobalFake) {
+          histos.fill(HIST("hBVsPtVsPhiGlobalFake"), imp, deltaPhi, mcParticle.pt());
+        }
+        if (validAnalysisTrack) {
+          histos.fill(HIST("hBVsPtVsPhiAnalysis"), imp, deltaPhi, mcParticle.pt());
+        }
+        if (validAnalysisTrackFake) {
+          histos.fill(HIST("hBVsPtVsPhiAnalysisFake"), imp, deltaPhi, mcParticle.pt());
+        }
         // if any track present, fill
         if (validTrack)
           histos.fill(HIST("hBVsPtVsPhiAny"), imp, deltaPhi, mcParticle.pt());
@@ -151,8 +198,12 @@ struct flowTest {
           histos.fill(HIST("hBVsPtVsPhiTPCTrack"), imp, deltaPhi, mcParticle.pt());
         if (validITSTrack)
           histos.fill(HIST("hBVsPtVsPhiITSTrack"), imp, deltaPhi, mcParticle.pt());
+        if (validITSTrackFake)
+          histos.fill(HIST("hBVsPtVsPhiITSTrackFake"), imp, deltaPhi, mcParticle.pt());
         if (validITSABTrack)
           histos.fill(HIST("hBVsPtVsPhiITSABTrack"), imp, deltaPhi, mcParticle.pt());
+        if (validITSABTrackFake)
+          histos.fill(HIST("hBVsPtVsPhiITSABTrackFake"), imp, deltaPhi, mcParticle.pt());
       }
     }
     histos.fill(HIST("hNchVsImpactParameter"), imp, nCh);

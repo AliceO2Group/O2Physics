@@ -46,14 +46,44 @@ concept iterator_with_FT0C = requires(IC const& c) {
   c.centFT0C();
 };
 
+template <typename C>
+concept has_centFT0CVariant1 = requires(C::iterator const& c) {
+  c.centFT0CVariant1();
+};
+
+template <typename IC>
+concept iterator_with_centFT0CVariant1 = requires(IC const& c) {
+  c.centFT0CVariant1();
+};
+
+template <typename C>
+concept has_FT0M = requires(C::iterator const& c) {
+  c.centFT0M();
+};
+
 template <typename IC>
 concept iterator_with_FT0M = requires(IC const& c) {
   c.centFT0M();
 };
 
 template <typename C>
-concept has_FT0M = requires(C::iterator const& c) {
-  c.centFT0M();
+concept has_centNGlobal = requires(C::iterator const& c) {
+  c.centNGlobal();
+};
+
+template <typename IC>
+concept iterator_with_centNGlobal = requires(IC const& c) {
+  c.centNGlobal();
+};
+
+template <typename C>
+concept has_centMFT = requires(C::iterator const& c) {
+  c.centMFT();
+};
+
+template <typename IC>
+concept iterator_with_centMFT = requires(IC const& c) {
+  c.centMFT();
 };
 
 template <typename C>
@@ -77,7 +107,7 @@ concept iterator_with_genFT0M = requires(C const& c) {
 };
 
 template <typename C>
-concept has_reco_cent = has_FT0C<C> || has_FT0M<C>;
+concept has_reco_cent = has_FT0C<C> || has_centFT0CVariant1<C> || has_FT0M<C> || has_centNGlobal<C> || has_centMFT<C>;
 
 template <typename C>
 concept has_gen_cent = has_genFT0C<C> && has_genFT0M<C>;
@@ -93,7 +123,7 @@ concept iterator_with_Centrality = requires(MCC const& mcc) {
 };
 
 template <typename C>
-  requires(!(iterator_with_FT0C<C> || iterator_with_FT0M<C>))
+  requires(!(iterator_with_FT0C<C> || iterator_with_centFT0CVariant1<C> || iterator_with_FT0M<C> || iterator_with_centNGlobal<C> || iterator_with_centMFT<C>))
 static float getRecoCent(C const&)
 {
   return -1;
@@ -105,10 +135,28 @@ static float getRecoCent(C const& collision)
   return collision.centFT0C();
 }
 
+template <iterator_with_centFT0CVariant1 C>
+static float getRecoCent(C const& collision)
+{
+  return collision.centFT0CVariant1();
+}
+
 template <iterator_with_FT0M C>
 static float getRecoCent(C const& collision)
 {
   return collision.centFT0M();
+}
+
+template <iterator_with_centNGlobal C>
+static float getRecoCent(C const& collision)
+{
+  return collision.centNGlobal();
+}
+
+template <iterator_with_centMFT C>
+static float getRecoCent(C const& collision)
+{
+  return collision.centMFT();
 }
 
 template <typename MCC>
