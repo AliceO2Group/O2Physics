@@ -35,6 +35,7 @@
 #include "FlowContainer.h"
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TPDGCode.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -125,15 +126,15 @@ struct FlowPtEfficiency {
 
   bool isStable(int pdg)
   {
-    if (std::abs(pdg) == 211)
+    if (std::abs(pdg) == PDG_t::kPiPlus)
       return true;
-    if (std::abs(pdg) == 321)
+    if (std::abs(pdg) == PDG_t::kKPlus)
       return true;
-    if (std::abs(pdg) == 2212)
+    if (std::abs(pdg) == PDG_t::kProton)
       return true;
-    if (std::abs(pdg) == 11)
+    if (std::abs(pdg) == PDG_t::kElectron)
       return true;
-    if (std::abs(pdg) == 13)
+    if (std::abs(pdg) == PDG_t::kMuonMinus)
       return true;
     return false;
   }
