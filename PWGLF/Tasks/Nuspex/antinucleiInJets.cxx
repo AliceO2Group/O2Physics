@@ -152,9 +152,9 @@ struct AntinucleiInJets {
       registryQC.add("sumPtJetCone", "sumPtJetCone", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
       registryQC.add("sumPtJet", "sumPtJet", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
       registryQC.add("sumPtUE", "sumPtUE", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
-      registryQC.add("nJetsFound", "nJetsFound", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
-      registryQC.add("nJetsInAcceptance", "nJetsInAcceptance", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
-      registryQC.add("nJetsSelectedHighPt", "nJetsSelectedHighPt", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
+      registryQC.add("nJetsFound", "nJetsFound", HistType::kTH1F, {{50, 0, 50, "#it{n}_{Jet}"}});
+      registryQC.add("nJetsInAcceptance", "nJetsInAcceptance", HistType::kTH1F, {{50, 0, 50, "#it{n}_{Jet}"}});
+      registryQC.add("nJetsSelectedHighPt", "nJetsSelectedHighPt", HistType::kTH1F, {{50, 0, 50, "#it{n}_{Jet}"}});
       registryQC.add("jetEffectiveArea", "jetEffectiveArea", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
     }
 
@@ -451,7 +451,7 @@ struct AntinucleiInJets {
     for (auto& jet : jets) { // o2-linter: disable=[const-ref-in-for-loop]
 
       // jet must be fully contained in the acceptance
-      if ((std::fabs(jet.eta()) + rJet) > (maxEta - 0.5))
+      if ((std::fabs(jet.eta()) + rJet) > (maxEta - 0.05))
         continue;
 
       // jet pt must be larger than threshold
@@ -675,7 +675,7 @@ struct AntinucleiInJets {
     for (auto& jet : jets) { // o2-linter: disable=[const-ref-in-for-loop]
 
       // jet must be fully contained in the acceptance
-      if ((std::fabs(jet.eta()) + rJet) > (maxEta - 0.5))
+      if ((std::fabs(jet.eta()) + rJet) > (maxEta - 0.05))
         continue;
       njetsInAcc++;
 
