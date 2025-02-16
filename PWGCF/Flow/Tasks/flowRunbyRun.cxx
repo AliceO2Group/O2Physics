@@ -380,7 +380,6 @@ struct FlowRunbyRun {
       return false;
 
     return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
-
   }
 
   void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
