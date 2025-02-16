@@ -776,7 +776,23 @@ struct AnalysisEventMixing {
     }
 
     uint32_t twoTrackFilter = 0;
-    uint32_t mult_dimuons = 0;
+
+    if (fConfigSingleMuCumulants) {
+      uint32_t mult_dimuons = 0;
+      for (auto& track1 : tracks1) {
+        for (auto& track2 : tracks2) {
+          if constexpr (TPairType == VarManager::kDecayToMuMu) {
+            twoTrackFilter = static_cast<uint32_t>(track1.isMuonSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoMuonFilterMask;
+          }
+          if (twoTrackFilter && track1.sign() * track2.sign() < 0) {
+            mult_dimuons++;
+          }
+        } // end for (track2)
+      } // end for (track1)
+      VarManager::fgValues[VarManager::kMultDimuonsME] = mult_dimuons;
+    }
+
+    twoTrackFilter = 0;
     for (auto& track1 : tracks1) {
       for (auto& track2 : tracks2) {
         if constexpr (TPairType == VarManager::kDecayToEE) {
@@ -800,7 +816,6 @@ struct AnalysisEventMixing {
         for (unsigned int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             if (track1.sign() * track2.sign() < 0) {
-              mult_dimuons++;
               fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
               if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
                 fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][0].Data()), VarManager::fgValues);
@@ -822,7 +837,6 @@ struct AnalysisEventMixing {
         } // end for (cuts)
       } // end for (track2)
     } // end for (track1)
-    VarManager::fgValues[VarManager::kMultDimuonsME] = mult_dimuons;
   }
 
   // barrel-barrel and muon-muon event mixing
