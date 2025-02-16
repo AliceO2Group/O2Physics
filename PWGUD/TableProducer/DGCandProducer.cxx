@@ -15,10 +15,14 @@
 #include <vector>
 #include <string>
 #include <map>
-#include "CCDB/BasicCCDBManager.h"
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/Vertex.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UPCHelpers.h"
@@ -29,17 +33,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct DGCandProducer {
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  ctpRateFetcher mRateFetcher;
-  // get a DGCutparHolder
-  DGCutparHolder diffCuts = DGCutparHolder();
-  Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
-  Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
-  Configurable<bool> fillFIThistos{"fillFIThistos", false, "fill the histograms with the FIT amplitudes"};
-
-  // DG selector
-  DGSelector dgSelector;
-
   // data tables
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
@@ -57,10 +50,32 @@ struct DGCandProducer {
   Produces<aod::UDFwdTracksExtra> outputFwdTracksExtra;
   Produces<aod::UDTracksLabels> outputTracksLabel;
 
+  // get a DGCutparHolder
+  DGCutparHolder diffCuts = DGCutparHolder();
+  Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+
+  // DG selector
+  DGSelector dgSelector;
+
+  // configurables
+  Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
+  Configurable<bool> fillFIThistos{"fillFIThistos", false, "fill the histograms with the FIT amplitudes"};
+
+  // zorro object
+  int mRunNumber;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+  Configurable<std::string> cfgCCDBurl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> cfgZorroCCDBpath{"cfgZorroCCDBpath", "/Users/m/mpuccio/EventFiltering/OTS/", "path to the zorro ccdb objects"};
+  Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
+  Configurable<std::string> triggerName{"triggerName", "fUDiff,fUDdiffSmall,fUDiffLarge", "Name of the software trigger"};
+
+  // ctpRateFetcher
+  ctpRateFetcher mRateFetcher;
+
   // initialize histogram registry
-  HistogramRegistry registry{
-    "registry",
-    {}};
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   // data inputs
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
@@ -203,14 +218,20 @@ struct DGCandProducer {
   void init(InitContext&)
   {
     LOGF(debug, "<DGCandProducer> beginning of init reached");
-    ccdb->setURL("http://alice-ccdb.cern.ch");
+    // initialize zorro
+    mRunNumber = -1;
+    zorroSummary.setObject(zorro.getZorroSummary());
+    zorro.setBaseCCDBPath(cfgZorroCCDBpath.value);
+    ccdb->setURL(cfgCCDBurl);
     ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    // DGCuts
     diffCuts = (DGCutparHolder)DGCuts;
 
-    const int nXbinsInStatH = 25;
-
     // add histograms for the different process functions
+    const int nXbinsInStatH = 26;
     registry.add("reco/Stat", "Cut statistics;; Collisions", {HistType::kTH1F, {{nXbinsInStatH, -0.5, static_cast<float>(nXbinsInStatH - 0.5)}}});
     registry.add("reco/pt1Vspt2", "2 prong events, p_{T} versus p_{T}", {HistType::kTH2F, {{100, -3., 3.}, {100, -3., 3.0}}});
     registry.add("reco/TPCsignal1", "2 prong events, TPC signal versus p_{T} of particle 1", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
@@ -232,9 +253,10 @@ struct DGCandProducer {
     registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
     registry.add("reco/fddC", "FDDC amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
 
-    std::string labels[nXbinsInStatH] = {"all", "hasBC", "accepted", "FITveto", "MID trk", "global not PV trk", "not global PV trk",
+    std::string labels[nXbinsInStatH] = {"all", "hasBC", "zorro", "accepted", "FITveto", "MID trk", "global not PV trk", "not global PV trk",
                                          "ITS-only PV trk", "TOF PV trk fraction", "n PV trks", "PID", "pt", "eta", "net charge",
-                                         "inv mass", "evsel TF border", "evsel no pile-up", "evsel ITSROF", "evsel z-vtx", "evsel ITSTPC vtx", "evsel TRD vtx", "evsel TOF vtx", "", "", ""};
+                                         "inv mass", "evsel TF border", "evsel no pile-up", "evsel ITSROF", "evsel z-vtx", "evsel ITSTPC vtx",
+                                         "evsel TRD vtx", "evsel TOF vtx", "", "", ""};
 
     registry.get<TH1>(HIST("reco/Stat"))->SetNdivisions(nXbinsInStatH, "X");
     for (int iXbin(1); iXbin < nXbinsInStatH + 1; iXbin++) {
@@ -244,9 +266,9 @@ struct DGCandProducer {
     LOGF(debug, "<DGCandProducer> end of init reached");
   }
 
-  // process function for real data
-  void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
-               aod::Zdcs& /*zdcs*/, aod::FV0As& fv0as, aod::FT0s& ft0s, aod::FDDs& fdds)
+  // process function for reconstructed data
+  void process(CC const& collision, BCs const& bcs, TCs const& tracks, FWs const& fwdtracks,
+               aod::Zdcs const& /*zdcs*/, aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
   {
     LOGF(debug, "<DGCandProducer>  collision %d", collision.globalIndex());
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
@@ -257,6 +279,10 @@ struct DGCandProducer {
     }
     registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
     auto bc = collision.foundBC_as<BCs>();
+    LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
+    const uint64_t ts = bc.timestamp();
+    const int runnumber = bc.runNumber();
+
     int trs = 0;
     if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       trs = 1;
@@ -270,8 +296,6 @@ struct DGCandProducer {
       hmpr = 1;
     }
     double ir = 0.;
-    const uint64_t ts = bc.timestamp();
-    const int runnumber = bc.runNumber();
     if (bc.has_zdc()) {
       ir = mRateFetcher.fetch(ccdb.service, ts, runnumber, "ZNC hadronic") * 1.e-3;
     }
@@ -282,7 +306,15 @@ struct DGCandProducer {
     uint8_t chFV0A = 0;
     int occ = 0;
     occ = collision.trackOccupancyInTimeRange();
-    LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
+
+    if (cfgSkimmedProcessing) {
+      // update ccdb setting for zorro
+      if (mRunNumber != bc.runNumber()) {
+        mRunNumber = bc.runNumber();
+        zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerName.value);
+        zorro.populateHistRegistry(registry, bc.runNumber());
+      }
+    }
 
     // fill FIT histograms
     fillFIThistograms(bc);
@@ -295,9 +327,18 @@ struct DGCandProducer {
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
     // save DG candidates
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(isDGEvent + 2, 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(isDGEvent + 3, 1.);
     if (isDGEvent == 0) {
       LOGF(debug, "<DGCandProducer>  Data: good collision!");
+
+      if (cfgSkimmedProcessing) {
+        // let zorro do the accounting
+        auto zorroDecision = zorro.isSelected(bc.globalBC());
+        LOGF(info, "<DGCandProducer>  zorroDecision %d", zorroDecision);
+        if (zorroDecision) {
+          registry.get<TH1>(HIST("reco/Stat"))->Fill(2, 1.);
+        }
+      }
 
       // fill FITInfo
       upchelpers::FITInfo fitInfo{};
@@ -325,14 +366,14 @@ struct DGCandProducer {
       outputCollsLabels(collision.globalIndex());
 
       // update DGTracks tables
-      for (auto& track : tracks) {
+      for (const auto& track : tracks) {
         if (saveAllTracks || track.isPVContributor()) {
           updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
         }
       }
 
       // update DGFwdTracks tables
-      for (auto& fwdtrack : fwdtracks) {
+      for (const auto& fwdtrack : fwdtracks) {
         updateUDFwdTrackTables(fwdtrack, bc.globalBC());
       }
 
@@ -359,7 +400,7 @@ struct DGCandProducer {
         auto cnt = 0;
         float pt1 = 0., pt2 = 0.;
         float signalTPC1 = 0., signalTPC2 = 0.;
-        for (auto tr : tracks) {
+        for (const auto& tr : tracks) {
           if (tr.isPVContributor()) {
             cnt++;
             switch (cnt) {
@@ -410,6 +451,7 @@ struct McDGCandProducer {
   template <typename TMcCollision>
   void updateUDMcCollisions(TMcCollision const& mccol)
   {
+    LOGF(debug, "<updateUDMcCollisions>");
     // save mccol
     auto bc = mccol.template bc_as<BCs>();
     outputMcCollisions(bc.globalBC(),
@@ -425,6 +467,8 @@ struct McDGCandProducer {
   template <typename TMcParticle>
   void updateUDMcParticle(TMcParticle const& McPart, int64_t McCollisionId, std::map<int64_t, int64_t>& mcPartIsSaved)
   {
+    LOGF(debug, "<updateUDMcParticle> McCollisionId %d", McCollisionId);
+
     // save McPart
     // mother and daughter indices are set to -1
     // ATTENTION: this can be improved to also include mother and daughter indices
@@ -451,7 +495,23 @@ struct McDGCandProducer {
   template <typename TMcParticles>
   void updateUDMcParticles(TMcParticles const& McParts, int64_t McCollisionId, std::map<int64_t, int64_t>& mcPartIsSaved)
   {
-    LOGF(debug, "number of McParticles %d", McParts.size());
+    LOGF(debug, "<updateUDMcParticles> number of McParticles %d", McParts.size());
+    LOGF(debug, "                      McCollisionId %d", McCollisionId);
+
+    /*
+    LOGF(info, "PStack");
+    for (auto const& part : McParts) {
+      LOGF(info, "P - Id %d PID %d", part.globalIndex(), part.pdgCode());
+      for (auto const& mother : part.template mothers_as<aod::McParticles>()) {
+        LOGF(info, "  M - Id %d PID %d", mother.globalIndex(), mother.pdgCode());
+      }
+      for (auto const& daughter : part.template daughters_as<aod::McParticles>()) {
+        LOGF(info, "  D - Id %d PID %d", daughter.globalIndex(), daughter.pdgCode());
+      }
+    }
+    LOGF(info, "");
+    */
+
     // save McParts
     // new mother and daughter ids
     std::vector<int32_t> newmids;
@@ -463,7 +523,7 @@ struct McDGCandProducer {
     // This is needed to be able to assign the new daughter indices
     std::map<int64_t, int64_t> oldnew;
     auto lastId = outputMcParticles.lastIndex();
-    for (auto mcpart : McParts) {
+    for (const auto& mcpart : McParts) {
       auto oldId = mcpart.globalIndex();
       if (mcPartIsSaved.find(oldId) != mcPartIsSaved.end()) {
         oldnew[oldId] = mcPartIsSaved[oldId];
@@ -474,13 +534,13 @@ struct McDGCandProducer {
     }
 
     // all particles of the McCollision are saved
-    for (auto mcpart : McParts) {
+    for (const auto& mcpart : McParts) {
       LOGF(debug, "  p (%d) %d", mcpart.pdgCode(), mcpart.globalIndex());
       if (mcPartIsSaved.find(mcpart.globalIndex()) == mcPartIsSaved.end()) {
         // mothers
         newmids.clear();
         auto oldmids = mcpart.mothersIds();
-        for (auto oldmid : oldmids) {
+        for (const auto& oldmid : oldmids) {
           auto m = McParts.rawIteratorAt(oldmid);
           LOGF(debug, "    m %d", m.globalIndex());
           if (mcPartIsSaved.find(oldmid) != mcPartIsSaved.end()) {
@@ -549,7 +609,7 @@ struct McDGCandProducer {
   void updateUDMcTrackLabels(TTrack const& udtracks, std::map<int64_t, int64_t>& mcPartIsSaved)
   {
     // loop over all tracks
-    for (auto udtrack : udtracks) {
+    for (const auto& udtrack : udtracks) {
       // udtrack (UDTCs) -> track (TCs) -> mcTrack (McParticles) -> udMcTrack (UDMcParticles)
       auto trackId = udtrack.trackId();
       if (trackId >= 0) {
@@ -586,9 +646,9 @@ struct McDGCandProducer {
                  UDCCs const& dgcands, UDTCs const& udtracks,
                  CCs const& /*collisions*/, BCs const& /*bcs*/, TCs const& /*tracks*/)
   {
-    LOGF(info, "Number of McCollisions %d", mccols.size());
-    LOGF(info, "Number of DG candidates %d", dgcands.size());
-    LOGF(info, "Number of UD tracks %d", udtracks.size());
+    LOGF(debug, "Number of McCollisions %d", mccols.size());
+    LOGF(debug, "Number of DG candidates %d", dgcands.size());
+    LOGF(debug, "Number of UD tracks %d", udtracks.size());
     if (dgcands.size() <= 0) {
       LOGF(info, "No DG candidates to save!");
       return;
@@ -675,12 +735,17 @@ struct McDGCandProducer {
 
           // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
           // loop over tracks of dgcand
-          for (auto dgtrack : dgTracks) {
+          for (const auto& dgtrack : dgTracks) {
             if (dgtrack.has_track()) {
               auto track = dgtrack.track_as<TCs>();
               if (track.has_mcParticle()) {
                 auto mcPart = track.mcParticle();
-                updateUDMcParticle(mcPart, -1, mcPartIsSaved);
+                auto mcCol = mcPart.mcCollision();
+                if (mcColIsSaved.find(mcCol.globalIndex()) == mcColIsSaved.end()) {
+                  updateUDMcCollisions(mcCol);
+                  mcColIsSaved[mcCol.globalIndex()] = outputMcCollisions.lastIndex();
+                }
+                updateUDMcParticle(mcPart, mcColIsSaved[mcCol.globalIndex()], mcPartIsSaved);
                 updateUDMcTrackLabel(dgtrack, mcPartIsSaved);
               } else {
                 outputMcTrackLabels(-1, track.mcMask());
