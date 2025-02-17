@@ -462,7 +462,7 @@ struct AntinucleiInJets {
 
       // perpendicular cone
       double coneRadius = std::sqrt(jet.area() / PI);
-      TVector3 jetAxis(jet.px(), jet.py(), jet.pz());// before or after subtraction of perpendicular cone?
+      TVector3 jetAxis(jet.px(), jet.py(), jet.pz()); // before or after subtraction of perpendicular cone?
       TVector3 ueAxis1(0, 0, 0);
       TVector3 ueAxis2(0, 0, 0);
       getPerpendicularAxis(jetAxis, ueAxis1, +1);
