@@ -477,11 +477,7 @@ struct converterV0s_000 {
 
 struct converterV0s_001 {
   Produces<aod::V0s_002> V0s_002;
-  void init(o2::framework::InitContext& initContext)
-  {
-    printTablesInWorkflow(initContext);
-    autoSetProcessFunction(initContext, "V0s_002", doprocessConverter);
-  }
+  void init(o2::framework::InitContext& initContext) { autoSetProcessFunction(initContext, "V0s_002", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::V0s_001 const& v0s)
   {
