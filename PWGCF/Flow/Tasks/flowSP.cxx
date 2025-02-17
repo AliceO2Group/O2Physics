@@ -243,10 +243,28 @@ struct FlowSP {
         registry.add("QA/after/CentFT0C_vs_CentFT0M", " ; Cent FT0C (%); Cent FT0M (%) ", {HistType::kTH2D, {axisCent, axisCent}});
         registry.add("QA/after/CentFT0C_vs_CentFV0A", " ; Cent FT0C (%); Cent FV0A (%) ", {HistType::kTH2D, {axisCent, axisCent}});
         registry.add("QA/after/CentFT0C_vs_CentNGlobal", " ; Cent FT0C (%); Cent NGlobal (%) ", {HistType::kTH2D, {axisCent, axisCent}});
+
+        // track QA for pos, neg, incl
+        registry.add<TH1>("incl/QA/hPt", "", kTH1D, {axisPt});
+        registry.add<TH1>("incl/QA/hPhi", "", kTH1D, {axisPhi});
+        registry.add<TH1>("incl/QA/hPhiCorrected", "", kTH1D, {axisPhi});
+        registry.add<TH1>("incl/QA/hEta", "", kTH1D, {axisEta});
+        registry.add<TH3>("incl/QA/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
+        registry.add<TH2>("incl/QA/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
+        registry.add<TH2>("incl/QA/hDCAz_pt", "", kTH2D, {axisPt, axisDCAz});
+        registry.add("incl/QA/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, axisShCl}});
+        registry.add("incl/QA/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
+      }
+
+      if (doprocessMCReco) {
+        registry.add("trackMCReco/after/hPt_inclusive", "", {HistType::kTH1D, {axisPt}});
+        registry.add("trackMCReco/after/hPt_positive", "", {HistType::kTH1D, {axisPt}});
+        registry.add("trackMCReco/after/hPt_negative", "", {HistType::kTH1D, {axisPt}});
+
+        registry.addClone("trackMCReco/after/", "trackMCReco/before/");
       }
 
       if (doprocessData) {
-
         // track properties per centrality and per eta, pt bin
         registry.add<TProfile>("incl/vnC_eta", "", kTProfile, {axisEtaVn});
         registry.add<TProfile>("incl/vnA_eta", "", kTProfile, {axisEtaVn});
@@ -338,17 +356,6 @@ struct FlowSP {
           registry.add("QA/after/PsiA_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
           registry.add("QA/after/PsiC_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
           registry.add("QA/after/PsiFull_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
-
-          // track QA for pos, neg, incl
-          registry.add<TH1>("incl/QA/hPt", "", kTH1D, {axisPt});
-          registry.add<TH1>("incl/QA/hPhi", "", kTH1D, {axisPhi});
-          registry.add<TH1>("incl/QA/hPhiCorrected", "", kTH1D, {axisPhi});
-          registry.add<TH1>("incl/QA/hEta", "", kTH1D, {axisEta});
-          registry.add<TH3>("incl/QA/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
-          registry.add<TH2>("incl/QA/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
-          registry.add<TH2>("incl/QA/hDCAz_pt", "", kTH2D, {axisPt, axisDCAz});
-          registry.add("incl/QA/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, axisShCl}});
-          registry.add("incl/QA/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
         }
       }
 
@@ -642,13 +649,12 @@ struct FlowSP {
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_multV0A"), collision.multFV0A(), tracks.size());
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0Cvariant1"), collision.centFT0C(), collision.centFT0CVariant1());
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0M"), collision.centFT0C(), collision.centFT0M());
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFV0A"), collision.centFT0C(), collision.centFV0A());
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal());
 
     if constexpr (framework::has_type_v<aod::sptablezdc::Vx, typename CollisionObject::all_columns>) {
-      registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0Cvariant1"), collision.centFT0C(), collision.centFT0CVariant1());
-      registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0M"), collision.centFT0C(), collision.centFT0M());
-      registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFV0A"), collision.centFT0C(), collision.centFV0A());
-      registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal());
-
       double psiA = 1.0 * std::atan2(collision.qyA(), collision.qxA());
       double psiC = 1.0 * std::atan2(collision.qyC(), collision.qxC());
       double psiFull = 1.0 * std::atan2(collision.qyA() + collision.qyC(), collision.qxA() + collision.qxC());
@@ -977,28 +983,25 @@ struct FlowSP {
         continue;
       bool pos = (track.sign() > 0) ? true : false;
 
-      if (cfgFillQAHistos) {
-        registry.fill(HIST("QA/before/hPt_inclusive"), track.pt());
-        if (pos) {
-          registry.fill(HIST("QA/before/hPt_positive"), track.pt());
-        } else {
-          registry.fill(HIST("QA/before/hPt_negative"), track.pt());
-        }
+      registry.fill(HIST("trackMCReco/before/hPt_inclusive"), track.pt());
+      if (pos) {
+        registry.fill(HIST("trackMCReco/before/hPt_positive"), track.pt());
+      } else {
+        registry.fill(HIST("trackMCReco/before/hPt_negative"), track.pt());
       }
 
       if (!trackSelected(track, field))
         continue;
 
-      if (cfgFillQAHistos) {
-        registry.fill(HIST("QA/after/hPt_inclusive"), track.pt());
-        if (pos) {
-          registry.fill(HIST("QA/after/hPt_positive"), track.pt());
-        } else {
-          registry.fill(HIST("QA/after/hPt_negative"), track.pt());
-        }
+      registry.fill(HIST("trackMCReco/after/hPt_inclusive"), track.pt());
+      if (pos) {
+        registry.fill(HIST("trackMCReco/after/hPt_positive"), track.pt());
+      } else {
+        registry.fill(HIST("trackMCReco/after/hPt_negative"), track.pt());
       }
 
-      fillTrackQA<kInclusive>(track, vtxz);
+      if (cfgFillQAHistos)
+        fillTrackQA<kInclusive>(track, vtxz);
 
     } // end of track loop
   }
