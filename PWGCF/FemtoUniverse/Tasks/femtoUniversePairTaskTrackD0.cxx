@@ -122,7 +122,7 @@ struct FemtoUniversePairTaskTrackD0 {
     Configurable<float> minInvMassD0D0barLeftSB{"minInvMassD0D0barLeftSB", 1.65, "Min. inv. mass of D0/D0bar for left SB region"};
     Configurable<float> maxInvMassD0D0barLeftSB{"maxInvMassD0D0barLeftSB", 1.754, "Max. inv. mass of D0/D0bar for left SB region"};
     Configurable<float> minInvMassD0D0barRightSB{"minInvMassD0D0barRightSB", 1.978, "Min. inv. mass of D0/D0bar for right SB region"};
-    Configurable<float> maxInvMassD0D0barRightSB{"maxInvMassD0D0barRightSB", 2.09,"Max. inv. mass of D0/D0bar for right SB region"};
+    Configurable<float> maxInvMassD0D0barRightSB{"maxInvMassD0D0barRightSB", 2.09, "Max. inv. mass of D0/D0bar for right SB region"};
   } ConfDmesons;
 
   struct : o2::framework::ConfigurableGroup {
@@ -139,7 +139,7 @@ struct FemtoUniversePairTaskTrackD0 {
 
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<uint8_t> confChooseD0trackCorr{"confChooseD0trackCorr", 0, "If 0 correlations with D0s, if 1 with D0bars"};
-  
+
   // Efficiency
   struct : o2::framework::ConfigurableGroup {
     Configurable<std::string> confEfficiencyTrackPath{"confEfficiencyTrackPath", "", "Local path to hadron efficiency TH2F file"};
@@ -549,7 +549,7 @@ struct FemtoUniversePairTaskTrackD0 {
         if (charmCand.mLambda() > 0.0f && charmCand.mAntiLambda() < 0.0f) {
           if (charmCand.tempFitVar() < ConfMlOpt.confClass1BgProbStart)
             registry.fill(HIST("D0D0bar_MLSel/hMassVsPt1"), charmCand.mLambda(), charmCand.pt());
-          if (charmCand.tempFitVar() < ConfMlOpt.confClass1BgProbStart + ConfMlOpt.confClass1BgProbStep )
+          if (charmCand.tempFitVar() < ConfMlOpt.confClass1BgProbStart + ConfMlOpt.confClass1BgProbStep)
             registry.fill(HIST("D0D0bar_MLSel/hMassVsPt2"), charmCand.mLambda(), charmCand.pt());
           if (charmCand.tempFitVar() < ConfMlOpt.confClass1BgProbStart + 2.0 * ConfMlOpt.confClass1BgProbStep)
             registry.fill(HIST("D0D0bar_MLSel/hMassVsPt3"), charmCand.mLambda(), charmCand.pt());
@@ -745,8 +745,8 @@ struct FemtoUniversePairTaskTrackD0 {
         }
       }
       // Soft Pion Removal
-      if(confRemoveSoftPions) {
-        if(softPionRemoval.isSoftPion(track, d0candidate, parts, confSoftPionD0Flag, confSoftPionD0barFlag, sigmaSoftPiInvMass)) {
+      if (confRemoveSoftPions) {
+        if (softPionRemoval.isSoftPion(track, d0candidate, parts, confSoftPionD0Flag, confSoftPionD0barFlag, sigmaSoftPiInvMass)) {
           continue;
         }
       }
@@ -800,7 +800,7 @@ struct FemtoUniversePairTaskTrackD0 {
 
     auto groupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsD0sFromSB = partsD0sFromSB->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    
+
     doSameEvent<false>(groupPartsTrack, groupPartsD0sFromSB, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackD0, processSameEventSB, "Enable processing same event", true);
@@ -843,8 +843,8 @@ struct FemtoUniversePairTaskTrackD0 {
         }
       }
       // // Soft Pion Removal
-      if(confRemoveSoftPions) {
-        if(softPionRemoval.isSoftPion(track, d0candidate, parts, confSoftPionD0Flag, confSoftPionD0barFlag, sigmaSoftPiInvMass)) {
+      if (confRemoveSoftPions) {
+        if (softPionRemoval.isSoftPion(track, d0candidate, parts, confSoftPionD0Flag, confSoftPionD0barFlag, sigmaSoftPiInvMass)) {
           continue;
         }
       }
@@ -988,26 +988,26 @@ struct FemtoUniversePairTaskTrackD0 {
         mcTruthRegistry.fill(HIST("MCTruthAllPositivePt"), part.pt());
       }
       if (pdgCode == 321) {
-        //mcTruthRegistry.fill(HIST("MCtruthKp"), part.pt(), part.eta());
-        //mcTruthRegistry.fill(HIST("MCtruthKpPt"), part.pt());
+        // mcTruthRegistry.fill(HIST("MCtruthKp"), part.pt(), part.eta());
+        // mcTruthRegistry.fill(HIST("MCtruthKpPt"), part.pt());
       }
       if (pdgCode == 333) {
-        //mcTruthRegistry.fill(HIST("MCtruthPhi"), part.pt(), part.eta());
-        //continue;
+        // mcTruthRegistry.fill(HIST("MCtruthPhi"), part.pt(), part.eta());
+        // continue;
       }
       if (pdgCode == 2212) {
-        //mcTruthRegistry.fill(HIST("MCtruthPpos"), part.pt(), part.eta());
+        // mcTruthRegistry.fill(HIST("MCtruthPpos"), part.pt(), part.eta());
       }
 
       if (pdgParticle->Charge() < 0.0) {
         mcTruthRegistry.fill(HIST("MCTruthAllNegativePt"), part.pt());
       }
       if (pdgCode == -321) {
-        //mcTruthRegistry.fill(HIST("MCtruthKm"), part.pt(), part.eta());
-        //mcTruthRegistry.fill(HIST("MCtruthKmPt"), part.pt());
+        // mcTruthRegistry.fill(HIST("MCtruthKm"), part.pt(), part.eta());
+        // mcTruthRegistry.fill(HIST("MCtruthKmPt"), part.pt());
       }
       if (pdgCode == -2212) {
-        //mcTruthRegistry.fill(HIST("MCtruthPneg"), part.pt(), part.eta());
+        // mcTruthRegistry.fill(HIST("MCtruthPneg"), part.pt(), part.eta());
       }
     }
   }
