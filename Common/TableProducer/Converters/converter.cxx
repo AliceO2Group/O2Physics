@@ -523,17 +523,15 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       {"O2fdd", {[&]() { workflow.push_back(adaptAnalysisTask<converterFDDs_000>(cfgc)); }}},
       {"O2hmpid", {[&]() { workflow.push_back(adaptAnalysisTask<converterHMPID_000>(cfgc)); }}},
       {"O2mccalolabel", {[&]() { workflow.push_back(adaptAnalysisTask<converterMcCaloLabels_000>(cfgc)); }}},
-      {"O2mfttrack", {[&]() { workflow.push_back(adaptAnalysisTask<converterStoredMFTTracks_001>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<spawnerMFTTracks>(cfgc)); }}},
-      {"O2v0", {[&]() { workflow.push_back(adaptAnalysisTask<converterV0s_001>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<converterV0s_000>(cfgc)); }}},
+      {"O2mfttrack", {[&]() { workflow.push_back(adaptAnalysisTask<converterStoredMFTTracks_000>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<spawnerMFTTracks>(cfgc)); }}},
+      {"O2v0", {[&]() { workflow.push_back(adaptAnalysisTask<converterV0s_000>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<converterV0s_000>(cfgc)); }}},
       {"O2v0_001", {[&]() { workflow.push_back(adaptAnalysisTask<converterV0s_001>(cfgc)); }}},
       {"O2cascades", {[&]() { workflow.push_back(adaptAnalysisTask<converterCascades_000>(cfgc)); }}},
-      {"O2mccollision", {[&]() { workflow.push_back(adaptAnalysisTask<converterMcCollisions_001>(cfgc)); }}},
-      {"O2mccollisionlabel", {[&]() { workflow.push_back(adaptAnalysisTask<converterMcCollisions_001>(cfgc)); }}},
+      {"O2mccollision", {[&]() { workflow.push_back(adaptAnalysisTask<converterMcCollisions_000>(cfgc)); }}},
       {"O2mcparticle", {[&]() { workflow.push_back(adaptAnalysisTask<converterStoredMcParticles_000>(cfgc)); }}},
       {"O2trackextra", {[&]() { workflow.push_back(adaptAnalysisTask<converterStoredTracksExtra_000>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<spawnerTracksExtra_002>(cfgc)); }}},
       {"O2trackextra_001", {[&]() { workflow.push_back(adaptAnalysisTask<converterStoredTracksExtra_001>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<spawnerTracksExtra_002>(cfgc)); }}},
-      {"O2trackextra_002", {[&]() { workflow.push_back(adaptAnalysisTask<converterStoredTracksExtra_002>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<spawnerTracksExtra_002>(cfgc)); }}},
-      {"O2zdc", {[&]() { workflow.push_back(adaptAnalysisTask<converterZdcs_001>(cfgc)); }}},
+      {"O2zdc", {[&]() { workflow.push_back(adaptAnalysisTask<converterZdcs_000>(cfgc)); }}},
     };
 
     // Iterate through the tables and process based on the mapping
