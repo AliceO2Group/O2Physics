@@ -238,7 +238,7 @@ struct Hypertriton3bodyMcqa {
     registry.get<TH1>(HIST("hDauDeuteronMatchCounter"))->GetXaxis()->SetBinLabel(3, "hasTOF");
     registry.get<TH1>(HIST("hDauDeuteronMatchCounter"))->GetXaxis()->SetBinLabel(4, "hasTOF & correct collsion");
 
-    registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter"))->GetXaxis()->SetBinLabel(1, "Origin |n#sigma| >= 6");
+    registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter"))->GetXaxis()->SetBinLabel(1, "Origin |n#sigma| >= 5");
     registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter"))->GetXaxis()->SetBinLabel(2, "BothBC work");
     registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter"))->GetXaxis()->SetBinLabel(3, "Only BCAO2D work");
     registry.get<TH1>(HIST("hDauDeuteronTOFPIDCounter"))->GetXaxis()->SetBinLabel(4, "Only BCEvSel work");
@@ -361,7 +361,7 @@ struct Hypertriton3bodyMcqa {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 1.5);
-      if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+      if (event_posZ_selection && std::abs(collision.posZ()) > 10.f) { // 10cm
         continue;
       }
       registry.fill(HIST("hEventCounter"), 2.5);
@@ -663,26 +663,26 @@ struct Hypertriton3bodyMcqa {
             registry.fill(HIST("hDauDeuteronTOFNSigmaVsColTimeRes_v2_AO2D"), originalcollision.collisionTimeRes(), tofNsigmaDeAO2D);
             registry.fill(HIST("hDauDeuteronTOFNSigmaVsColTimeRes_v2_EvSel"), originalcollision.collisionTimeRes(), tofNsigmaDeEvSel);
 
-            if (std::abs(track.tofNSigmaDe()) >= 6) {
+            if (std::abs(track.tofNSigmaDe()) >= 5) {
               registry.fill(HIST("hDauDeuteronTOFPIDCounter"), 0.5);
-              if (std::abs(tofNsigmaDeAO2D) < 6 && std::abs(tofNsigmaDeEvSel) < 6) {
+              if (std::abs(tofNsigmaDeAO2D) < 5 && std::abs(tofNsigmaDeEvSel) < 5) {
                 registry.fill(HIST("hDauDeuteronTOFPIDCounter"), 1.5);
-              } else if (std::abs(tofNsigmaDeAO2D) < 6 && std::abs(tofNsigmaDeEvSel) >= 6) {
+              } else if (std::abs(tofNsigmaDeAO2D) < 5 && std::abs(tofNsigmaDeEvSel) >= 5) {
                 registry.fill(HIST("hDauDeuteronTOFPIDCounter"), 2.5);
-              } else if (std::abs(tofNsigmaDeAO2D) >= 6 && std::abs(tofNsigmaDeEvSel) < 6) {
+              } else if (std::abs(tofNsigmaDeAO2D) >= 5 && std::abs(tofNsigmaDeEvSel) < 5) {
                 registry.fill(HIST("hDauDeuteronTOFPIDCounter"), 3.5);
-              } else if (std::abs(tofNsigmaDeAO2D) >= 6 && std::abs(tofNsigmaDeEvSel) >= 6) {
+              } else if (std::abs(tofNsigmaDeAO2D) >= 5 && std::abs(tofNsigmaDeEvSel) >= 5) {
                 registry.fill(HIST("hDauDeuteronTOFPIDCounter"), 4.5);
               }
-            } else if (std::abs(track.tofNSigmaDe()) < 6) {
+            } else if (std::abs(track.tofNSigmaDe()) < 5) {
               registry.fill(HIST("hDauDeuteronTOFPIDCounter_CloseBC"), 0.5);
-              if (std::abs(tofNsigmaDeAO2D) < 6 && std::abs(tofNsigmaDeEvSel) < 6) {
+              if (std::abs(tofNsigmaDeAO2D) < 5 && std::abs(tofNsigmaDeEvSel) < 5) {
                 registry.fill(HIST("hDauDeuteronTOFPIDCounter_CloseBC"), 1.5);
-              } else if (std::abs(tofNsigmaDeAO2D) < 6 && std::abs(tofNsigmaDeEvSel) >= 6) {
+              } else if (std::abs(tofNsigmaDeAO2D) < 5 && std::abs(tofNsigmaDeEvSel) >= 5) {
                 registry.fill(HIST("hDauDeuteronTOFPIDCounter_CloseBC"), 2.5);
-              } else if (std::abs(tofNsigmaDeAO2D) >= 6 && std::abs(tofNsigmaDeEvSel) < 6) {
+              } else if (std::abs(tofNsigmaDeAO2D) >= 5 && std::abs(tofNsigmaDeEvSel) < 5) {
                 registry.fill(HIST("hDauDeuteronTOFPIDCounter_CloseBC"), 3.5);
-              } else if (std::abs(tofNsigmaDeAO2D) >= 6 && std::abs(tofNsigmaDeEvSel) >= 6) {
+              } else if (std::abs(tofNsigmaDeAO2D) >= 5 && std::abs(tofNsigmaDeEvSel) >= 5) {
                 registry.fill(HIST("hDauDeuteronTOFPIDCounter_CloseBC"), 4.5);
               }
             }
@@ -723,7 +723,7 @@ struct Hypertriton3bodyMcParticleCheck {
   void init(InitContext&)
   {
     registry.get<TH1>(HIST("hMcCollCounter"))->GetXaxis()->SetBinLabel(1, "Total Counter");
-    registry.get<TH1>(HIST("hMcCollCounter"))->GetXaxis()->SetBinLabel(2, "Recoonstructed");
+    registry.get<TH1>(HIST("hMcCollCounter"))->GetXaxis()->SetBinLabel(2, "Reconstructed");
 
     registry.get<TH1>(HIST("hMcHypertritonCounter"))->GetXaxis()->SetBinLabel(1, "Hypertriton All");
     registry.get<TH1>(HIST("hMcHypertritonCounter"))->GetXaxis()->SetBinLabel(2, "Matter All");
@@ -736,7 +736,6 @@ struct Hypertriton3bodyMcParticleCheck {
     registry.get<TH1>(HIST("hMcHypertritonCounter"))->GetXaxis()->SetBinLabel(9, "PtCut");
   }
 
-  Configurable<float> rapidityMCcut{"rapidityMCcut", 1, "rapidity cut MC count"};
   Configurable<bool> mc_event_selection{"mc_event_selection", true, "mc event selection count post kIsTriggerTVX and kNoTimeFrameBorder"};
   Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
 
@@ -770,7 +769,7 @@ struct Hypertriton3bodyMcParticleCheck {
     }
   }
 
-  void process(aod::McCollisions const& mcCollisions, aod::McParticles const& particlesMC, const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions, MCLabeledTracksIU const& tracks)
+  void process(aod::McCollisions const& mcCollisions, aod::McParticles const& particlesMC, const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>& collisions, MCLabeledTracksIU const& tracks)
   {
     SetTrackIDForMC(particlesMC, tracks);
     std::vector<int64_t> SelectedEvents(collisions.size());
@@ -779,7 +778,7 @@ struct Hypertriton3bodyMcParticleCheck {
       if (mc_event_selection && (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         continue;
       }
-      if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+      if (event_posZ_selection && std::abs(collision.posZ()) > 10.f) { // 10cm
         continue;
       }
       SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
