@@ -821,10 +821,10 @@ struct FemtoUniverseProducerTask {
       if (hfCand.originMcRec() == RecoDecay::OriginType::Prompt) {
         if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
           hfCandOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrompt;
-          pdgCode = 421;
+          pdgCode = static_cast<int>(Pdg::kD0);
         } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
           hfCandOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrompt;
-          pdgCode = -421;
+          pdgCode = static_cast<int>(Pdg::kD0Bar);
         } else {
           hfCandOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kFake;
           pdgCode = 0;
@@ -832,10 +832,10 @@ struct FemtoUniverseProducerTask {
       } else {
         if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
           hfCandOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kNonPrompt;
-          pdgCode = 421;
+          pdgCode = static_cast<int>(Pdg::kD0);;
         } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
           hfCandOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kNonPrompt;
-          pdgCode = -421;
+          pdgCode = static_cast<int>(Pdg::kD0Bar);
         } else {
           hfCandOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kFake;
           pdgCode = 0;

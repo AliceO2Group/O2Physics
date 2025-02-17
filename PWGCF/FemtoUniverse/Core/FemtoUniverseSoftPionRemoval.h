@@ -21,8 +21,6 @@
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
 
-using namespace o2::constants::physics;
-
 namespace o2::analysis::femto_universe
 {
 
@@ -66,17 +64,19 @@ class FemtoUniverseSoftPionRemoval
       // Getting D0 (part2) children
       const auto& posChild = particles.iteratorAt(part2.index() - 2);
       const auto& negChild = particles.iteratorAt(part2.index() - 1);
-
+      // Pion and kaon mass
+      double massPion = o2::constants::physics::MassPiPlus;
+      double massKaon = o2::constants::physics::MassKPlus;
       // D* reconstruction
       double pSum2 = std::pow(posChild.px() + negChild.px() + part1.px(), 2.0) + std::pow(posChild.py() + negChild.py() + part1.py(), 2.0) + std::pow(posChild.pz() + negChild.pz() + part1.pz(), 2.0);
       // Energies of the daughters -> D0->K-pi+
-      double e1Pi = std::sqrt(std::pow(MassPiPlus, 2.0) + std::pow(posChild.px(), 2.0) + std::pow(posChild.py(), 2.0) + std::pow(posChild.pz(), 2.0));
-      double e1K = std::sqrt(std::pow(MassKPlus, 2.0) + std::pow(negChild.px(), 2.0) + std::pow(negChild.py(), 2.0) + std::pow(negChild.pz(), 2.0));
+      double e1Pi = std::sqrt(std::pow(massPion, 2.0) + std::pow(posChild.px(), 2.0) + std::pow(posChild.py(), 2.0) + std::pow(posChild.pz(), 2.0));
+      double e1K = std::sqrt(std::pow(massKaon, 2.0) + std::pow(negChild.px(), 2.0) + std::pow(negChild.py(), 2.0) + std::pow(negChild.pz(), 2.0));
       // Energies of the daughters -> D0bar->K+pi-
-      double e2Pi = std::sqrt(std::pow(MassPiPlus, 2.0) + std::pow(negChild.px(), 2.0) + std::pow(negChild.py(), 2.0) + std::pow(negChild.pz(), 2.0));
-      double e2K = std::sqrt(std::pow(MassKPlus, 2.0) + std::pow(posChild.px(), 2.0) + std::pow(posChild.py(), 2.0) + std::pow(posChild.pz(), 2.0));
+      double e2Pi = std::sqrt(std::pow(massPion, 2.0) + std::pow(negChild.px(), 2.0) + std::pow(negChild.py(), 2.0) + std::pow(negChild.pz(), 2.0));
+      double e2K = std::sqrt(std::pow(massKaon, 2.0) + std::pow(posChild.px(), 2.0) + std::pow(posChild.py(), 2.0) + std::pow(posChild.pz(), 2.0));
       // Soft pion energy
-      auto ePion = RecoDecay::e(MassPiPlus, part1.p());
+      auto ePion = RecoDecay::e(massPion, part1.p());
       // D* masses
       double mDstar1 = std::sqrt(std::pow(e1Pi + e1K + ePion, 2.0) - pSum2);
       double mDstar2 = std::sqrt(std::pow(e2Pi + e2K + ePion, 2.0) - pSum2);

@@ -965,11 +965,9 @@ struct FemtoUniversePairTaskTrackD0 {
 
   void processMCReco(FemtoMCParticles const& parts, aod::FdMCParticles const& mcparts)
   {
-    for (auto const& part : parts) {
-      // WORK IN PROGRESS
-    }
+    // WORK IN PROGRESS
+    //for (auto const& part : parts) {}
   }
-
   PROCESS_SWITCH(FemtoUniversePairTaskTrackD0, processMCReco, "Process MC reco data", false);
 
   void processMCTruth(aod::FDParticles const& parts) // WORK IN PROGRESS
