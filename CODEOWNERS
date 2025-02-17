@@ -50,7 +50,7 @@
 
 # PWG-MM
 /PWGMM      @alibuild @njacazio @skundu692 @aalkin
-/PWGMM/Mult @alibuild @njacazio @skundu692 @aalkin @aortizve @ddobrigk
+/PWGMM/Mult @alibuild @njacazio @skundu692 @aalkin @aortizve @ddobrigk @gbencedi
 /PWGMM/Lumi @alibuild @aalkin
 /PWGMM/UE   @alibuild @aalkin @aortizve
 
