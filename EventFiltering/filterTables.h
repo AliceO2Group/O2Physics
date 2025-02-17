@@ -83,7 +83,7 @@ DECLARE_SOA_COLUMN(HfDoubleCharmMix, hasHfDoubleCharmMix, bool);                
 DECLARE_SOA_COLUMN(HfV0Charm2P, hasHfV0Charm2P, bool);                           //! V0 with 2-prong charm hadron
 DECLARE_SOA_COLUMN(HfV0Charm3P, hasHfV0Charm3P, bool);                           //! V0 with 3-prong charm hadron
 DECLARE_SOA_COLUMN(HfCharmBarToXiBach, hasHfCharmBarToXiBach, bool);             //! Charm baryon to Xi + bachelor
-DECLARE_SOA_COLUMN(HfCharmBarToXiBachBach, hasHfCharmBarToXiBachBach, bool);     //! Charm baryon to Xi + 2 bachelors
+DECLARE_SOA_COLUMN(HfCharmBarToXi2Bach, hasHfCharmBarToXi2Bach, bool);           //! Charm baryon to Xi + 2 bachelors
 DECLARE_SOA_COLUMN(HfSigmaCPPK, hasHfSigmaCPPK, bool);                           //! SigmaC(2455)++K- and SigmaC(2520)++K- + c.c.
 DECLARE_SOA_COLUMN(HfSigmaC0K0, hasHfSigmaC0K0, bool);                           //! SigmaC(2455)0KS0 and SigmaC(2520)0KS0
 DECLARE_SOA_COLUMN(HfPhotonCharm2P, hasHfPhotonCharm2P, bool);                   //! photon with 2-prong charm hadron
@@ -92,6 +92,11 @@ DECLARE_SOA_COLUMN(HfSingleCharm2P, hasHfSingleCharm2P, bool);                  
 DECLARE_SOA_COLUMN(HfSingleCharm3P, hasHfSingleCharm3P, bool);                   //! 3-prong charm hadron (for efficiency studies)
 DECLARE_SOA_COLUMN(HfSingleNonPromptCharm2P, hasHfSingleNonPromptCharm2P, bool); //! 2-prong charm hadron (for efficiency studies)
 DECLARE_SOA_COLUMN(HfSingleNonPromptCharm3P, hasHfSingleNonPromptCharm3P, bool); //! 3-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfBtoJPsiKa, hasHfBtoJPsiKa, bool);                           //! B+ -> JPsi(->mumu)K+
+DECLARE_SOA_COLUMN(HfBtoJPsiKstar, hasHfBtoJPsiKstar, bool);                     //! B0 -> JPsi(->mumu)K*+(->Kpi)
+DECLARE_SOA_COLUMN(HfBtoJPsiPhi, hasHfBtoJPsiPhi, bool);                         //! B0s -> JPsi(->mumu)phi(->KK)
+DECLARE_SOA_COLUMN(HfBtoJPsiPrKa, hasHfBtoJPsiPrKa, bool);                       //! Lb -> JPsi(->mumu)pK+
+DECLARE_SOA_COLUMN(HfBtoJPsiPi, hasHfBtoJPsiPi, bool);                           //! Bc -> JPsi(->mumu)pi+
 
 // CF two body triggers
 DECLARE_SOA_COLUMN(PD, hasPD, bool); //! has d-p pair
@@ -235,7 +240,12 @@ DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
                   filtering::HfSingleCharm3P,
                   filtering::HfSingleNonPromptCharm2P,
                   filtering::HfSingleNonPromptCharm3P,
-                  filtering::HfCharmBarToXiBachBach);
+                  filtering::HfCharmBarToXi2Bach,
+                  filtering::HfBtoJPsiKa,
+                  filtering::HfBtoJPsiKstar,
+                  filtering::HfBtoJPsiPhi,
+                  filtering::HfBtoJPsiPrKa,
+                  filtering::HfBtoJPsiPi);
 
 using HfFilter = HfFilters::iterator;
 
