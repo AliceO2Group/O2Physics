@@ -442,6 +442,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDeltaPtotTracks] = "GeV/c";
   fgVariableNames[kCharge] = "charge";
   fgVariableUnits[kCharge] = "";
+  fgVariableNames[kCharge1] = "charge track 1";
+  fgVariableUnits[kCharge1] = "";
+  fgVariableNames[kCharge2] = "charge track 2";
+  fgVariableUnits[kCharge2] = "";
   fgVariableNames[kPin] = "p_{IN}";
   fgVariableUnits[kPin] = "GeV/c";
   fgVariableNames[kPin_leg1] = "p_{IN}";
