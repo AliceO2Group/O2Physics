@@ -105,11 +105,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! Compute the theta of the track
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! Compute the momentum in x in GeV/c
                            [](float pt, float phi) -> float {
-                             return pt * std::sin(phi);
+                             return pt * std::cos(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! Compute the momentum in y in GeV/c
                            [](float pt, float phi) -> float {
-                             return pt * std::cos(phi);
+                             return pt * std::sin(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! Compute the momentum in z in GeV/c
                            [](float pt, float eta) -> float {
@@ -260,6 +260,8 @@ enum ParticleOriginMCTruth {
   kFake,              //! particle, that has NOT the PDG code of the current analysed particle
   kDaughterLambda,    //! Daughter from a Lambda decay
   kDaughterSigmaplus, //! Daughter from a Sigma^plus decay
+  kPrompt,            //! Orgin for D0/D0bar mesons
+  kNonPrompt,         //! Orgin for D0/D0bar mesons
   kNOriginMCTruthTypes
 };
 
@@ -271,7 +273,9 @@ static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes
   "_NotPrimary",
   "_Fake",
   "_DaughterLambda",
-  "DaughterSigmaPlus"};
+  "DaughterSigmaPlus",
+  "_Prompt",
+  "_NonPrompt"};
 
 /// Distinguished between reconstructed and truth
 enum MCType {
