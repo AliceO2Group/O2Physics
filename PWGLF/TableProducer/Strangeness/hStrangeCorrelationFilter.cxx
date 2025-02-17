@@ -29,7 +29,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "TF1.h"
-#include <string>
+#include "string"
 
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
