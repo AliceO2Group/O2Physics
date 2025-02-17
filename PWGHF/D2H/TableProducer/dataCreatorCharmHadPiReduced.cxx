@@ -653,7 +653,7 @@ struct HfDataCreatorCharmHadPiReduced {
           // b-hadron hypothesis
           std::array<int, 4> bHadronMotherHypos = {Pdg::kBPlus, Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
           // c-hadron hypothesis
-          std::array<int, 5> cHadronMotherHypos = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kDSStar, Pdg::kLambdaCPlus};
+          std::array<int, 7> cHadronMotherHypos = {Pdg::kD0, Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, 423, Pdg::kDSStar, Pdg::kLambdaCPlus};
 
           for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
             int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
