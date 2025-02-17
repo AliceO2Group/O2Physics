@@ -234,7 +234,7 @@ class FemtoUniverseContainer
       if (!isiden) {
         femtoObs = FemtoUniverseMath::getkstar(part1, mMassOne, part2, mMassTwo);
       } else {
-        femtoObs = 2.0*FemtoUniverseMath::getkstar(part1, mMassOne, part2, mMassTwo);
+        femtoObs = 2.0 * FemtoUniverseMath::getkstar(part1, mMassOne, part2, mMassTwo);
       }
     }
     const float mT = FemtoUniverseMath::getmT(part1, mMassOne, part2, mMassTwo);
@@ -249,7 +249,7 @@ class FemtoUniverseContainer
             if (!isiden) {
               femtoObsMC = FemtoUniverseMath::getkstar(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
             } else {
-              femtoObsMC = 2.0*FemtoUniverseMath::getkstar(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
+              femtoObsMC = 2.0 * FemtoUniverseMath::getkstar(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
             }
           }
           const float mTMC = FemtoUniverseMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
