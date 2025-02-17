@@ -202,7 +202,7 @@ struct converterMcCaloLabels_000 {
 // Converts MCParticle table from version 000 to 001
 struct converterStoredMcParticles_000 {
   Produces<aod::StoredMcParticles_001> StoredMcParticles_001;
-  void init(o2::framework::InitContext& initContext) { autoSetProcessFunction(initContext, "StoredMcParticles_001", doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { autoSetProcessFunction(initContext, "McParticles", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::StoredMcParticles_000 const& mcParticles_000)
   {
@@ -236,7 +236,7 @@ struct converterStoredMcParticles_000 {
 // Tracks extra table 000 to 002
 struct converterStoredTracksExtra_000 {
   Produces<aod::StoredTracksExtra_002> StoredTracksExtra_002;
-  void init(o2::framework::InitContext& initContext) { autoSetProcessFunction(initContext, "StoredTracksExtra_002", doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { autoSetProcessFunction(initContext, "TracksExtra", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::TracksExtra_000 const& inputTable)
   {
@@ -277,7 +277,7 @@ struct converterStoredTracksExtra_000 {
 // Tracks extra table 001 to 002
 struct converterStoredTracksExtra_001 {
   Produces<aod::StoredTracksExtra_002> StoredTracksExtra_002;
-  void init(o2::framework::InitContext& initContext) { autoSetProcessFunction(initContext, "StoredTracksExtra_002", doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { autoSetProcessFunction(initContext, "TracksExtra", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::TracksExtra_001 const& inputTable)
   {
@@ -426,7 +426,7 @@ struct converterMcCollisions_000 {
 
 struct converterStoredMFTTracks_000 {
   Produces<aod::StoredMFTTracks_001> StoredMFTTracks_001;
-  void init(o2::framework::InitContext& initContext) { autoSetProcessFunction(initContext, "StoredMFTTracks_001", doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { autoSetProcessFunction(initContext, "MFTTracks", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::MFTTracks_000 const& mftTracks_000)
   {
@@ -477,7 +477,7 @@ struct converterV0s_000 {
 
 struct converterV0s_001 {
   Produces<aod::V0s_002> V0s_002;
-  void init(o2::framework::InitContext& initContext) { autoSetProcessFunction(initContext, "V0s_002", doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { printTablesInWorkflow(initContext); autoSetProcessFunction(initContext, "V0s_002", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::V0s_001 const& v0s)
   {
@@ -557,12 +557,12 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       {"O2hmpid", {[&]() { workflow.push_back(adaptAnalysisTask<converterHMPID_000>(cfgc)); }}},
       {"O2mccalolabel", {[&]() { workflow.push_back(adaptAnalysisTask<converterMcCaloLabels_000>(cfgc)); }}},
       {"O2mfttrack", {[&]() { workflow.push_back(adaptAnalysisTask<converterStoredMFTTracks_000>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<spawnerMFTTracks>(cfgc)); }}},
-      {"O2v0", {[&]() { workflow.push_back(adaptAnalysisTask<converterV0s_000>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<converterV0s_000>(cfgc)); }}},
+      {"O2v0", {[&]() { workflow.push_back(adaptAnalysisTask<converterV0s_000>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<converterV0s_001>(cfgc)); }}},
       {"O2v0_001", {[&]() { workflow.push_back(adaptAnalysisTask<converterV0s_001>(cfgc)); }}},
       {"O2cascades", {[&]() { workflow.push_back(adaptAnalysisTask<converterCascades_000>(cfgc)); }}},
       {"O2mccollision", {[&]() { workflow.push_back(adaptAnalysisTask<converterMcCollisions_000>(cfgc)); }}},
       {"O2mcparticle", {[&]() { workflow.push_back(adaptAnalysisTask<converterStoredMcParticles_000>(cfgc)); }}},
-      {"O2run2bcinfos", {[&]() { workflow.push_back(adaptAnalysisTask<converterRun2BCInfos_000>(cfgc)); }}},
+      {"O2run2bcinfo", {[&]() { workflow.push_back(adaptAnalysisTask<converterRun2BCInfos_000>(cfgc)); }}},
       {"O2run2trackextras", {[&]() { workflow.push_back(adaptAnalysisTask<converterRun2TrackExtras_000>(cfgc)); }}},
       {"O2trackextra", {[&]() { workflow.push_back(adaptAnalysisTask<converterStoredTracksExtra_000>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<spawnerTracksExtra_002>(cfgc)); }}},
       {"O2trackextra_001", {[&]() { workflow.push_back(adaptAnalysisTask<converterStoredTracksExtra_001>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<spawnerTracksExtra_002>(cfgc)); }}},
