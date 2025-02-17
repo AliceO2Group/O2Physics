@@ -21,7 +21,7 @@ o2physics_add_library(PWGDQCore
                         AnalysisCompositeCut.cxx
                         MCProng.cxx
                         MCSignal.cxx
-               PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2::GlobalTracking O2Physics::AnalysisCore  KFParticle::KFParticle)
+               PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2::GlobalTracking O2Physics::AnalysisCore KFParticle::KFParticle)
 
 o2physics_target_root_dictionary(PWGDQCore
                           HEADERS   AnalysisCut.h

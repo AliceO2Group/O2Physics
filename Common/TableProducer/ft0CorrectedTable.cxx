@@ -73,7 +73,8 @@ struct ft0CorrectedTable {
     histos.add("t0A", "t0A", kTH1D, {{1000, -1, 1, "t0A (ns)"}});
     histos.add("t0C", "t0C", kTH1D, {{1000, -1, 1, "t0C (ns)"}});
     histos.add("t0AC", "t0AC", kTH1D, {{1000, -1000, 1000, "t0AC (ns)"}});
-    histos.add("deltat0AC", "deltat0AC", kTH1D, {{1000, -10, 10, "#Deltat0AC (ns)"}});
+    histos.add("deltat0AC", "deltat0AC", kTH1D, {{1000, -1, 1, "#Deltat0AC (ns)"}});
+    histos.add("deltat0ACps", "deltat0ACps", kTH1D, {{1000, -1000, 1000, "#Deltat0AC (ps)"}});
     if (doprocessWithBypassFT0timeInMC) {
       histos.add("MC/deltat0A", "t0A", kTH1D, {{1000, -50, 50, "t0A (ps)"}});
       histos.add("MC/deltat0C", "t0C", kTH1D, {{1000, -50, 50, "t0C (ps)"}});
@@ -88,7 +89,7 @@ struct ft0CorrectedTable {
     table.reserve(collisions.size());
     float t0A = 1e10f;
     float t0C = 1e10f;
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       t0A = 1e10f;
       t0C = 1e10f;
       const float vertexPV = collision.posZ();
@@ -112,8 +113,11 @@ struct ft0CorrectedTable {
       if (addHistograms) {
         histos.fill(HIST("t0A"), t0A);
         histos.fill(HIST("t0C"), t0C);
-        histos.fill(HIST("t0AC"), (t0A + t0C) * 0.5f);
-        histos.fill(HIST("deltat0AC"), t0A - t0C);
+        if (t0A < 1e10f && t0C < 1e10f) {
+          histos.fill(HIST("t0AC"), (t0A + t0C) * 0.5f);
+          histos.fill(HIST("deltat0AC"), (t0A - t0C) * 0.5f);
+          histos.fill(HIST("deltat0ACps"), (t0A - t0C) * 500.f);
+        }
       }
       table(t0A, t0C);
     }
@@ -152,7 +156,7 @@ struct ft0CorrectedTable {
     float posZMC = 0;
     bool hasMCcoll = false;
 
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       hasMCcoll = false;
       eventtimeMC = 1e10f;
       t0A = 1e10f;

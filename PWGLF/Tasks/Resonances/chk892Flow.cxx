@@ -116,9 +116,11 @@ struct Chk892Flow {
   ConfigurableAxis cfgBinsVtxZ{"cfgBinsVtxZ", {VARIABLE_WIDTH, -10.0, -9.0, -8.0, -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "Binning of the z-vertex axis"};
   Configurable<int> cNbinsDiv{"cNbinsDiv", 1, "Integer to divide the number of bins"};
   Configurable<int> cNbinsDivQA{"cNbinsDivQA", 1, "Integer to divide the number of bins for QA"};
-  ConfigurableAxis cfgAxisV2{"cfgAxisV2", {200, -2, 2}, "Binning of the v2 axis"};
+  ConfigurableAxis cfgAxisV2{"cfgAxisV2", {200, -1, 1}, "Binning of the v2 axis (+-1 for EP method)"};
   Configurable<bool> cfgFillAdditionalAxis{"cfgFillAdditionalAxis", false, "Fill additional axis"};
   ConfigurableAxis cfgAxisPhi{"cfgAxisPhi", {8, 0, constants::math::PI}, "Binning of the #phi axis"};
+  Configurable<bool> cfgUseScalProduct{"cfgUseScalProduct", false, "Use scalar product method"};
+  Configurable<bool> cfgFillQAPlots{"cfgFillQAPlots", true, "Fill QA plots"};
 
   // Event cuts
   o2::analysis::CollisonCuts colCuts;
@@ -126,7 +128,6 @@ struct Chk892Flow {
   Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
   Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
   Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
-  Configurable<int> cfgEvtTriggerSel{"cfgEvtTriggerSel", 8, "Evt sel: trigger"};
   Configurable<bool> cfgEvtOfflineCheck{"cfgEvtOfflineCheck", true, "Evt sel: check for offline selection"};
   Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
   Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
@@ -177,6 +178,7 @@ struct Chk892Flow {
   Configurable<bool> cfgReturnFlag{"cfgReturnFlag", false, "Return Flag for debugging"};
   Configurable<bool> cSecondaryRequire{"cSecondaryRequire", true, "Secondary cuts on/off"};
   Configurable<bool> cSecondaryArmenterosCut{"cSecondaryArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
+  Configurable<bool> cSecondaryCrossMassHypothesisCut{"cSecondaryCrossMassHypothesisCut", false, "Apply cut based on the lambda mass hypothesis"};
 
   Configurable<bool> cfgByPassDauPIDSelection{"cfgByPassDauPIDSelection", true, "Bypass Daughters PID selection"};
   Configurable<float> cSecondaryDauDCAMax{"cSecondaryDauDCAMax", 0.2, "Maximum DCA Secondary daughters to PV"};
@@ -191,7 +193,8 @@ struct Chk892Flow {
   Configurable<float> cSecondaryDCAtoPVMax{"cSecondaryDCAtoPVMax", 0.4, "Maximum DCA Secondary to PV"};
   Configurable<float> cSecondaryProperLifetimeMax{"cSecondaryProperLifetimeMax", 20., "Maximum Secondary Lifetime"};
   Configurable<float> cSecondaryparamArmenterosCut{"cSecondaryparamArmenterosCut", 0.2, "parameter for Armenteros Cut"};
-  Configurable<float> cSecondaryMassWindow{"cSecondaryMassWindow", 0.03, "Secondary inv mass selciton window"};
+  Configurable<float> cSecondaryMassWindow{"cSecondaryMassWindow", 0.03, "Secondary inv mass selection window"};
+  Configurable<float> cSecondaryCrossMassCutWindow{"cSecondaryCrossMassCutWindow", 0.05, "Secondary inv mass selection window with (anti)lambda hypothesis"};
 
   // K* selection
   Configurable<float> cKstarMaxRap{"cKstarMaxRap", 0.5, "Kstar maximum rapidity"};
@@ -231,7 +234,7 @@ struct Chk892Flow {
   {
     lCentrality = -999;
 
-    colCuts.setCuts(cfgEvtZvtx, cfgEvtTriggerCheck, cfgEvtTriggerSel, cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, cfgEvtOccupancyInTimeRangeMax, cfgEvtOccupancyInTimeRangeMin);
+    colCuts.setCuts(cfgEvtZvtx, cfgEvtTriggerCheck, cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, cfgEvtOccupancyInTimeRangeMax, cfgEvtOccupancyInTimeRangeMin);
     colCuts.init(&histos);
     colCuts.setTriggerTVX(cfgEvtTriggerTVXSel);
     colCuts.setApplyTFBorderCut(cfgEvtTFBorderCut);
@@ -264,7 +267,7 @@ struct Chk892Flow {
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
 
     if (cfgReturnFlag) {
-      histos.add("QA/K0sCutCheck", "Check K0s cut", HistType::kTH1D, {AxisSpec{12, -0.5, 11.5, "Check"}});
+      histos.add("QA/K0sCutCheck", "Check K0s cut", HistType::kTH1D, {AxisSpec{13, -0.5, 12.5, "Check"}});
     }
     histos.add("QA/before/CentDist", "Centrality distribution", {HistType::kTH1D, {centAxis}});
     histos.add("QA/before/VtxZ", "Centrality distribution", {HistType::kTH1D, {vtxzAxis}});
@@ -277,93 +280,155 @@ struct Chk892Flow {
     histos.add("QA/EP/hEPResAC", "cos(n(A-C))", {HistType::kTH2D, {centAxis, epAxis}});
     histos.add("QA/EP/hEPResBC", "cos(n(B-C))", {HistType::kTH2D, {centAxis, epAxis}});
 
-    // Rotated background
-    if (cfgFillRotBkg) {
-      histos.add("QA/RotBkg/hRotBkg", "Rotated angle of rotated background", HistType::kTH1F, {{360, 0.0, o2::constants::math::TwoPI}});
+    if (cfgUseScalProduct) {
+      histos.add("QA/EP/hEPSPResAB", "cos(n(A-B))", {HistType::kTH2D, {centAxis, epAxis}});
+      histos.add("QA/EP/hEPSPResAC", "cos(n(A-C))", {HistType::kTH2D, {centAxis, epAxis}});
+      histos.add("QA/EP/hEPSPResBC", "cos(n(B-C))", {HistType::kTH2D, {centAxis, epAxis}});
     }
 
-    // Bachelor pion
-    histos.add("QA/before/trkbpionDCAxy", "DCAxy distribution of bachelor pion candidates", HistType::kTH1D, {dcaxyAxis});
-    histos.add("QA/before/trkbpionDCAz", "DCAz distribution of bachelor pion candidates", HistType::kTH1D, {dcazAxis});
-    histos.add("QA/before/trkbpionpT", "pT distribution of bachelor pion candidates", HistType::kTH1D, {ptAxisQA});
-    histos.add("QA/before/trkbpionTPCPID", "TPC PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
-    histos.add("QA/before/trkbpionTOFPID", "TOF PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
-    histos.add("QA/before/trkbpionTPCTOFPID", "TPC-TOF PID map of bachelor pion candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
+    if (cfgFillQAPlots) {
+      // Rotated background
+      if (cfgFillRotBkg) {
+        histos.add("QA/RotBkg/hRotBkg", "Rotated angle of rotated background", HistType::kTH1F, {{360, 0.0, o2::constants::math::TwoPI}});
+      }
 
-    histos.add("QA/after/trkbpionDCAxy", "DCAxy distribution of bachelor pion candidates", HistType::kTH1D, {dcaxyAxis});
-    histos.add("QA/after/trkbpionDCAz", "DCAz distribution of bachelor pion candidates", HistType::kTH1D, {dcazAxis});
-    histos.add("QA/after/trkbpionpT", "pT distribution of bachelor pion candidates", HistType::kTH1D, {ptAxisQA});
-    histos.add("QA/after/trkbpionTPCPID", "TPC PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
-    histos.add("QA/after/trkbpionTOFPID", "TOF PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
-    histos.add("QA/after/trkbpionTPCTOFPID", "TPC-TOF PID map of bachelor pion candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
+      // Bachelor pion
+      histos.add("QA/before/trkbpionDCAxy", "DCAxy distribution of bachelor pion candidates", HistType::kTH1D, {dcaxyAxis});
+      histos.add("QA/before/trkbpionDCAz", "DCAz distribution of bachelor pion candidates", HistType::kTH1D, {dcazAxis});
+      histos.add("QA/before/trkbpionpT", "pT distribution of bachelor pion candidates", HistType::kTH1D, {ptAxisQA});
+      histos.add("QA/before/trkbpionTPCPID", "TPC PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+      histos.add("QA/before/trkbpionTOFPID", "TOF PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+      histos.add("QA/before/trkbpionTPCTOFPID", "TPC-TOF PID map of bachelor pion candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
 
-    // Secondary pion 1
-    histos.add("QA/before/trkppionTPCPID", "TPC PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
-    histos.add("QA/before/trkppionTOFPID", "TOF PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
-    histos.add("QA/before/trkppionTPCTOFPID", "TPC-TOF PID map of secondary pion 1 (positive) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
-    histos.add("QA/before/trkppionpT", "pT distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {ptAxisQA});
-    histos.add("QA/before/trkppionDCAxy", "DCAxy distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcaxyAxis});
-    histos.add("QA/before/trkppionDCAz", "DCAz distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcazAxis});
+      histos.add("QA/after/trkbpionDCAxy", "DCAxy distribution of bachelor pion candidates", HistType::kTH1D, {dcaxyAxis});
+      histos.add("QA/after/trkbpionDCAz", "DCAz distribution of bachelor pion candidates", HistType::kTH1D, {dcazAxis});
+      histos.add("QA/after/trkbpionpT", "pT distribution of bachelor pion candidates", HistType::kTH1D, {ptAxisQA});
+      histos.add("QA/after/trkbpionTPCPID", "TPC PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+      histos.add("QA/after/trkbpionTOFPID", "TOF PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+      histos.add("QA/after/trkbpionTPCTOFPID", "TPC-TOF PID map of bachelor pion candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
 
-    histos.add("QA/after/trkppionTPCPID", "TPC PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
-    histos.add("QA/after/trkppionTOFPID", "TOF PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
-    histos.add("QA/after/trkppionTPCTOFPID", "TPC-TOF PID map of secondary pion 1 (positive) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
-    histos.add("QA/after/trkppionpT", "pT distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {ptAxisQA});
-    histos.add("QA/after/trkppionDCAxy", "DCAxy distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcaxyAxis});
-    histos.add("QA/after/trkppionDCAz", "DCAz distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcazAxis});
+      // Secondary pion 1
+      histos.add("QA/before/trkppionTPCPID", "TPC PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+      histos.add("QA/before/trkppionTOFPID", "TOF PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+      histos.add("QA/before/trkppionTPCTOFPID", "TPC-TOF PID map of secondary pion 1 (positive) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
+      histos.add("QA/before/trkppionpT", "pT distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {ptAxisQA});
+      histos.add("QA/before/trkppionDCAxy", "DCAxy distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcaxyAxis});
+      histos.add("QA/before/trkppionDCAz", "DCAz distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcazAxis});
 
-    // Secondary pion 2
-    histos.add("QA/before/trknpionTPCPID", "TPC PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
-    histos.add("QA/before/trknpionTOFPID", "TOF PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
-    histos.add("QA/before/trknpionTPCTOFPID", "TPC-TOF PID map of secondary pion 2 (negative) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
-    histos.add("QA/before/trknpionpT", "pT distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {ptAxisQA});
-    histos.add("QA/before/trknpionDCAxy", "DCAxy distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcaxyAxis});
-    histos.add("QA/before/trknpionDCAz", "DCAz distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcazAxis});
+      histos.add("QA/after/trkppionTPCPID", "TPC PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+      histos.add("QA/after/trkppionTOFPID", "TOF PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+      histos.add("QA/after/trkppionTPCTOFPID", "TPC-TOF PID map of secondary pion 1 (positive) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
+      histos.add("QA/after/trkppionpT", "pT distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {ptAxisQA});
+      histos.add("QA/after/trkppionDCAxy", "DCAxy distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcaxyAxis});
+      histos.add("QA/after/trkppionDCAz", "DCAz distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcazAxis});
 
-    histos.add("QA/after/trknpionTPCPID", "TPC PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
-    histos.add("QA/after/trknpionTOFPID", "TOF PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
-    histos.add("QA/after/trknpionTPCTOFPID", "TPC-TOF PID map of secondary pion 2 (negative) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
-    histos.add("QA/after/trknpionpT", "pT distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {ptAxisQA});
-    histos.add("QA/after/trknpionDCAxy", "DCAxy distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcaxyAxis});
-    histos.add("QA/after/trknpionDCAz", "DCAz distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcazAxis});
+      // Secondary pion 2
+      histos.add("QA/before/trknpionTPCPID", "TPC PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+      histos.add("QA/before/trknpionTOFPID", "TOF PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+      histos.add("QA/before/trknpionTPCTOFPID", "TPC-TOF PID map of secondary pion 2 (negative) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
+      histos.add("QA/before/trknpionpT", "pT distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {ptAxisQA});
+      histos.add("QA/before/trknpionDCAxy", "DCAxy distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcaxyAxis});
+      histos.add("QA/before/trknpionDCAz", "DCAz distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcazAxis});
 
-    // K0s
-    histos.add("QA/before/hDauDCASecondary", "DCA of daughters of secondary resonance", HistType::kTH1D, {dcaAxis});
-    histos.add("QA/before/hy_Secondary", "Rapidity distribution of secondary resonance", HistType::kTH1D, {yAxis});
-    histos.add("QA/before/hCPASecondary", "Cosine pointing angle distribution of secondary resonance", HistType::kTH1D, {cpaAxis});
-    histos.add("QA/before/hDCAtoPVSecondary", "DCA to PV distribution of secondary resonance", HistType::kTH1D, {dcaAxis});
-    histos.add("QA/before/hPropTauSecondary", "Proper Lifetime distribution of secondary resonance", HistType::kTH1D, {tauAxis});
-    histos.add("QA/before/hInvmassSecondary", "Invariant mass of unlike-sign secondary resonance", HistType::kTH1D, {invMassAxisK0s});
+      histos.add("QA/after/trknpionTPCPID", "TPC PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+      histos.add("QA/after/trknpionTOFPID", "TOF PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+      histos.add("QA/after/trknpionTPCTOFPID", "TPC-TOF PID map of secondary pion 2 (negative) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
+      histos.add("QA/after/trknpionpT", "pT distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {ptAxisQA});
+      histos.add("QA/after/trknpionDCAxy", "DCAxy distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcaxyAxis});
+      histos.add("QA/after/trknpionDCAz", "DCAz distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcazAxis});
 
-    histos.add("QA/after/hDauDCASecondary", "DCA of daughters of secondary resonance", HistType::kTH1D, {dcaAxis});
-    histos.add("QA/after/hy_Secondary", "Rapidity distribution of secondary resonance", HistType::kTH1D, {yAxis});
-    histos.add("QA/after/hCPASecondary", "Cosine pointing angle distribution of secondary resonance", HistType::kTH1D, {cpaAxis});
-    histos.add("QA/after/hDCAtoPVSecondary", "DCA to PV distribution of secondary resonance", HistType::kTH1D, {dcaAxis});
-    histos.add("QA/after/hPropTauSecondary", "Proper Lifetime distribution of secondary resonance", HistType::kTH1D, {tauAxis});
-    histos.add("QA/after/hInvmassSecondary", "Invariant mass of unlike-sign secondary resonance", HistType::kTH1D, {invMassAxisK0s});
+      // K0s
+      histos.add("QA/before/hDauDCASecondary", "DCA of daughters of secondary resonance", HistType::kTH1D, {dcaAxis});
+      histos.add("QA/before/hy_Secondary", "Rapidity distribution of secondary resonance", HistType::kTH1D, {yAxis});
+      histos.add("QA/before/hCPASecondary", "Cosine pointing angle distribution of secondary resonance", HistType::kTH1D, {cpaAxis});
+      histos.add("QA/before/hDCAtoPVSecondary", "DCA to PV distribution of secondary resonance", HistType::kTH1D, {dcaAxis});
+      histos.add("QA/before/hPropTauSecondary", "Proper Lifetime distribution of secondary resonance", HistType::kTH1D, {tauAxis});
+      histos.add("QA/before/hInvmassSecondary", "Invariant mass of unlike-sign secondary resonance", HistType::kTH1D, {invMassAxisK0s});
 
-    // Kstar
+      histos.add("QA/after/hDauDCASecondary", "DCA of daughters of secondary resonance", HistType::kTH1D, {dcaAxis});
+      histos.add("QA/after/hy_Secondary", "Rapidity distribution of secondary resonance", HistType::kTH1D, {yAxis});
+      histos.add("QA/after/hCPASecondary", "Cosine pointing angle distribution of secondary resonance", HistType::kTH1D, {cpaAxis});
+      histos.add("QA/after/hDCAtoPVSecondary", "DCA to PV distribution of secondary resonance", HistType::kTH1D, {dcaAxis});
+      histos.add("QA/after/hPropTauSecondary", "Proper Lifetime distribution of secondary resonance", HistType::kTH1D, {tauAxis});
+      histos.add("QA/after/hInvmassSecondary", "Invariant mass of unlike-sign secondary resonance", HistType::kTH1D, {invMassAxisK0s});
+
+      // Mass QA (quick check)
+      histos.add("QA/before/KstarRapidity", "Rapidity distribution of chK(892)", HistType::kTH1D, {yAxis});
+      histos.add("QA/before/kstarinvmass", "Invariant mass of unlike-sign chK(892)", HistType::kTH1D, {invMassAxisReso});
+      histos.add("QA/before/k0sv2vsinvmass", "Invariant mass vs v2 of unlike-sign K0s", HistType::kTH2D, {invMassAxisK0s, v2Axis});
+      histos.add("QA/before/kstarv2vsinvmass", "Invariant mass vs v2 of unlike-sign chK(892)", HistType::kTH2D, {invMassAxisReso, v2Axis});
+      histos.add("QA/before/kstarinvmass_Mix", "Invariant mass of unlike-sign chK(892) from mixed event", HistType::kTH1D, {invMassAxisReso});
+
+      histos.add("QA/after/KstarRapidity", "Rapidity distribution of chK(892)", HistType::kTH1D, {yAxis});
+      histos.add("QA/after/kstarinvmass", "Invariant mass of unlike-sign chK(892)", HistType::kTH1D, {invMassAxisReso});
+      histos.add("QA/after/k0sv2vsinvmass", "Invariant mass vs v2 of unlike-sign K0s", HistType::kTH2D, {invMassAxisK0s, v2Axis});
+      histos.add("QA/after/kstarv2vsinvmass", "Invariant mass vs v2 of unlike-sign chK(892)", HistType::kTH2D, {invMassAxisReso, v2Axis});
+      histos.add("QA/after/kstarinvmass_Mix", "Invariant mass of unlike-sign chK(892) from mixed event", HistType::kTH1D, {invMassAxisReso});
+
+      // MC
+      if (doprocessMC) {
+        // Bachelor pion
+        histos.add("QAMC/trkbpionDCAxy", "DCAxy distribution of bachelor pion candidates", HistType::kTH1D, {dcaxyAxis});
+        histos.add("QAMC/trkbpionDCAz", "DCAz distribution of bachelor pion candidates", HistType::kTH1D, {dcazAxis});
+        histos.add("QAMC/trkbpionpT", "pT distribution of bachelor pion candidates", HistType::kTH1D, {ptAxis});
+        histos.add("QAMC/trkbpionTPCPID", "TPC PID of bachelor pion candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
+        histos.add("QAMC/trkbpionTOFPID", "TOF PID of bachelor pion candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
+        histos.add("QAMC/trkbpionTPCTOFPID", "TPC-TOF PID map of bachelor pion candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
+
+        // Secondary pion 1
+        histos.add("QAMC/trkppionDCAxy", "DCAxy distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcaxyAxis});
+        histos.add("QAMC/trkppionDCAz", "DCAz distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcazAxis});
+        histos.add("QAMC/trkppionpT", "pT distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {ptAxis});
+        histos.add("QAMC/trkppionTPCPID", "TPC PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
+        histos.add("QAMC/trkppionTOFPID", "TOF PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
+        histos.add("QAMC/trkppionTPCTOFPID", "TPC-TOF PID map of secondary pion 1 (positive) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
+
+        // Secondary pion 2
+        histos.add("QAMC/trknpionTPCPID", "TPC PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
+        histos.add("QAMC/trknpionTOFPID", "TOF PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
+        histos.add("QAMC/trknpionTPCTOFPID", "TPC-TOF PID map of secondary pion 2 (negative) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
+        histos.add("QAMC/trknpionpT", "pT distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {ptAxis});
+        histos.add("QAMC/trknpionDCAxy", "DCAxy distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcaxyAxis});
+        histos.add("QAMC/trknpionDCAz", "DCAz distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcazAxis});
+
+        // Secondary Resonance (K0s candidates)
+        histos.add("QAMC/hDauDCASecondary", "DCA of daughters of secondary resonance", HistType::kTH1D, {dcaAxis});
+        histos.add("QAMC/hDauPosDCAtoPVSecondary", "Pos DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
+        histos.add("QAMC/hDauNegDCAtoPVSecondary", "Neg DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
+
+        histos.add("QAMC/hy_Secondary", "Rapidity distribution of secondary resonance", HistType::kTH1D, {yAxis});
+        histos.add("QAMC/hCPASecondary", "Cosine pointing angle distribution of secondary resonance", HistType::kTH1D, {cpaAxis});
+        histos.add("QAMC/hDCAtoPVSecondary", "DCA to PV distribution of secondary resonance", HistType::kTH1D, {dcaAxis});
+        histos.add("QAMC/hPropTauSecondary", "Proper Lifetime distribution of secondary resonance", HistType::kTH1D, {tauAxis});
+        histos.add("QAMC/hInvmassSecondary", "Invariant mass of unlike-sign secondary resonance", HistType::kTH1D, {invMassAxisK0s});
+
+        // K892
+        histos.add("QAMC/KstarOA", "Opening angle of chK(892)", HistType::kTH1D, {AxisSpec{100, 0, 3.14, "Opening angle"}});
+        histos.add("QAMC/KstarPairAsym", "Pair asymmetry of chK(892)", HistType::kTH1D, {AxisSpec{100, -1, 1, "Pair asymmetry"}});
+        histos.add("QAMC/KstarRapidity", "Rapidity distribution of chK(892)", HistType::kTH1D, {yAxis});
+
+        histos.add("QAMC/kstarinvmass", "Invariant mass of unlike-sign chK(892)", HistType::kTH1D, {invMassAxisReso});
+        histos.add("QAMC/k0sv2vsinvmass", "Invariant mass vs v2 of unlike-sign K0s", HistType::kTH2D, {invMassAxisK0s, v2Axis});
+        histos.add("QAMC/kstarv2vsinvmass", "Invariant mass vs v2 of unlike-sign chK(892)", HistType::kTH2D, {invMassAxisReso, v2Axis});
+        histos.add("QAMC/kstarinvmass_noKstar", "Invariant mass of unlike-sign no chK(892)", HistType::kTH1D, {invMassAxisReso});
+        histos.add("QAMC/kstarv2vsinvmass_noKstar", "Invariant mass vs v2 of unlike-sign no chK(892)", HistType::kTH2D, {invMassAxisReso, v2Axis});
+      }
+    }
+
     // Invariant mass nSparse
     if (cfgFillAdditionalAxis) {
       histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis});
       histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis, phiAxis});
+      if (doprocessMC) {
+        histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis});
+      }
     } else {
       histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis});
       histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis});
+      if (doprocessMC) {
+        histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis});
+      }
     }
-
-    // Mass QA (quick check)
-    histos.add("QA/before/KstarRapidity", "Rapidity distribution of chK(892)", HistType::kTH1D, {yAxis});
-    histos.add("QA/before/kstarinvmass", "Invariant mass of unlike-sign chK(892)", HistType::kTH1D, {invMassAxisReso});
-    histos.add("QA/before/k0sv2vsinvmass", "Invariant mass vs v2 of unlike-sign K0s", HistType::kTH2D, {invMassAxisK0s, v2Axis});
-    histos.add("QA/before/kstarv2vsinvmass", "Invariant mass vs v2 of unlike-sign chK(892)", HistType::kTH2D, {invMassAxisReso, v2Axis});
-    histos.add("QA/before/kstarinvmass_Mix", "Invariant mass of unlike-sign chK(892) from mixed event", HistType::kTH1D, {invMassAxisReso});
-
-    histos.add("QA/after/KstarRapidity", "Rapidity distribution of chK(892)", HistType::kTH1D, {yAxis});
-    histos.add("QA/after/kstarinvmass", "Invariant mass of unlike-sign chK(892)", HistType::kTH1D, {invMassAxisReso});
-    histos.add("QA/after/k0sv2vsinvmass", "Invariant mass vs v2 of unlike-sign K0s", HistType::kTH2D, {invMassAxisK0s, v2Axis});
-    histos.add("QA/after/kstarv2vsinvmass", "Invariant mass vs v2 of unlike-sign chK(892)", HistType::kTH2D, {invMassAxisReso, v2Axis});
-    histos.add("QA/after/kstarinvmass_Mix", "Invariant mass of unlike-sign chK(892) from mixed event", HistType::kTH1D, {invMassAxisReso});
 
     lDetId = getlDetId(cfgQvecDetName);
     lRefAId = getlDetId(cfgQvecRefAName);
@@ -377,66 +442,11 @@ struct Chk892Flow {
       lRefBId = 5;
     }
 
-    // MC
-    if (doprocessMC) {
-      // Bachelor pion
-      histos.add("QAMC/trkbpionDCAxy", "DCAxy distribution of bachelor pion candidates", HistType::kTH1D, {dcaxyAxis});
-      histos.add("QAMC/trkbpionDCAz", "DCAz distribution of bachelor pion candidates", HistType::kTH1D, {dcazAxis});
-      histos.add("QAMC/trkbpionpT", "pT distribution of bachelor pion candidates", HistType::kTH1D, {ptAxis});
-      histos.add("QAMC/trkbpionTPCPID", "TPC PID of bachelor pion candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
-      histos.add("QAMC/trkbpionTOFPID", "TOF PID of bachelor pion candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
-      histos.add("QAMC/trkbpionTPCTOFPID", "TPC-TOF PID map of bachelor pion candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
-
-      // Secondary pion 1
-      histos.add("QAMC/trkppionDCAxy", "DCAxy distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcaxyAxis});
-      histos.add("QAMC/trkppionDCAz", "DCAz distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcazAxis});
-      histos.add("QAMC/trkppionpT", "pT distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {ptAxis});
-      histos.add("QAMC/trkppionTPCPID", "TPC PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
-      histos.add("QAMC/trkppionTOFPID", "TOF PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
-      histos.add("QAMC/trkppionTPCTOFPID", "TPC-TOF PID map of secondary pion 1 (positive) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
-
-      // Secondary pion 2
-      histos.add("QAMC/trknpionTPCPID", "TPC PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
-      histos.add("QAMC/trknpionTOFPID", "TOF PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
-      histos.add("QAMC/trknpionTPCTOFPID", "TPC-TOF PID map of secondary pion 2 (negative) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
-      histos.add("QAMC/trknpionpT", "pT distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {ptAxis});
-      histos.add("QAMC/trknpionDCAxy", "DCAxy distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcaxyAxis});
-      histos.add("QAMC/trknpionDCAz", "DCAz distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcazAxis});
-
-      // Secondary Resonance (K0s candidates)
-      histos.add("QAMC/hDauDCASecondary", "DCA of daughters of secondary resonance", HistType::kTH1D, {dcaAxis});
-      histos.add("QAMC/hDauPosDCAtoPVSecondary", "Pos DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
-      histos.add("QAMC/hDauNegDCAtoPVSecondary", "Neg DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
-
-      histos.add("QAMC/hy_Secondary", "Rapidity distribution of secondary resonance", HistType::kTH1D, {yAxis});
-      histos.add("QAMC/hCPASecondary", "Cosine pointing angle distribution of secondary resonance", HistType::kTH1D, {cpaAxis});
-      histos.add("QAMC/hDCAtoPVSecondary", "DCA to PV distribution of secondary resonance", HistType::kTH1D, {dcaAxis});
-      histos.add("QAMC/hPropTauSecondary", "Proper Lifetime distribution of secondary resonance", HistType::kTH1D, {tauAxis});
-      histos.add("QAMC/hInvmassSecondary", "Invariant mass of unlike-sign secondary resonance", HistType::kTH1D, {invMassAxisK0s});
-
-      // K892
-      histos.add("QAMC/KstarOA", "Opening angle of chK(892)", HistType::kTH1D, {AxisSpec{100, 0, 3.14, "Opening angle"}});
-      histos.add("QAMC/KstarPairAsym", "Pair asymmetry of chK(892)", HistType::kTH1D, {AxisSpec{100, -1, 1, "Pair asymmetry"}});
-      histos.add("QAMC/KstarRapidity", "Rapidity distribution of chK(892)", HistType::kTH1D, {yAxis});
-
-      histos.add("QAMC/kstarinvmass", "Invariant mass of unlike-sign chK(892)", HistType::kTH1D, {invMassAxisReso});
-      histos.add("QAMC/k0sv2vsinvmass", "Invariant mass vs v2 of unlike-sign K0s", HistType::kTH2D, {invMassAxisK0s, v2Axis});
-      histos.add("QAMC/kstarv2vsinvmass", "Invariant mass vs v2 of unlike-sign chK(892)", HistType::kTH2D, {invMassAxisReso, v2Axis});
-      histos.add("QAMC/kstarinvmass_noKstar", "Invariant mass of unlike-sign no chK(892)", HistType::kTH1D, {invMassAxisReso});
-      histos.add("QAMC/kstarv2vsinvmass_noKstar", "Invariant mass vs v2 of unlike-sign no chK(892)", HistType::kTH2D, {invMassAxisReso, v2Axis});
-
-      if (cfgFillAdditionalAxis) {
-        histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis});
-      } else {
-        histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis});
-      }
-
-      ccdb->setURL(cfgURL);
-      ccdbApi.init("http://alice-ccdb.cern.ch");
-      ccdb->setCaching(true);
-      ccdb->setLocalObjectValidityChecking();
-      ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    }
+    ccdb->setURL(cfgURL);
+    ccdbApi.init("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
     // Print output histograms statistics
     LOG(info) << "Size of the histograms in chK(892) Analysis Task";
@@ -557,6 +567,8 @@ struct Chk892Flow {
     auto lCPA = candidate.v0cosPA();
     auto lPropTauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
     auto lMk0s = candidate.mK0Short();
+    auto lMLambda = candidate.mLambda();
+    auto lMALambda = candidate.mAntiLambda();
 
     auto checkCommonCuts = [&]() {
       if (lDauDCA > cSecondaryDauDCAMax)
@@ -580,6 +592,9 @@ struct Chk892Flow {
       if (candidate.qtarm() < cSecondaryparamArmenterosCut * std::abs(candidate.alpha()))
         return false;
       if (std::fabs(lMk0s - MassK0Short) > cSecondaryMassWindow)
+        return false;
+      if (cSecondaryCrossMassHypothesisCut &&
+          ((std::fabs(lMLambda - MassLambda0) < cSecondaryCrossMassCutWindow) || (std::fabs(lMALambda - MassLambda0Bar) < cSecondaryCrossMassCutWindow)))
         return false;
       return true;
     };
@@ -629,6 +644,11 @@ struct Chk892Flow {
       }
       if (std::fabs(lMk0s - MassK0Short) > cSecondaryMassWindow) {
         histos.fill(HIST("QA/K0sCutCheck"), 11);
+        returnFlag = false;
+      }
+      if (cSecondaryCrossMassHypothesisCut &&
+          ((std::fabs(lMLambda - MassLambda0) < cSecondaryCrossMassCutWindow) || (std::fabs(lMALambda - MassLambda0Bar) < cSecondaryCrossMassCutWindow))) {
+        histos.fill(HIST("QA/K0sCutCheck"), 12);
         returnFlag = false;
       }
       return returnFlag;
@@ -694,12 +714,23 @@ struct Chk892Flow {
     double lEPResAC = std::cos(static_cast<float>(nmode) * (lEPDet - lEPRefC));
     double lEPResBC = std::cos(static_cast<float>(nmode) * (lEPRefB - lEPRefC));
 
+    // EP method
     histos.fill(HIST("QA/EP/hEPDet"), lCentrality, lEPDet);
     histos.fill(HIST("QA/EP/hEPB"), lCentrality, lEPRefB);
     histos.fill(HIST("QA/EP/hEPC"), lCentrality, lEPRefC);
     histos.fill(HIST("QA/EP/hEPResAB"), lCentrality, lEPResAB);
     histos.fill(HIST("QA/EP/hEPResAC"), lCentrality, lEPResAC);
     histos.fill(HIST("QA/EP/hEPResBC"), lCentrality, lEPResBC);
+    // Scalar product method
+    if (cfgUseScalProduct) {
+      double lEPSPResAB = (collision.qvecRe()[lQvecDetInd] * collision.qvecRe()[lQvecRefAInd] + collision.qvecIm()[lQvecDetInd] * collision.qvecIm()[lQvecRefAInd]) * lEPResAB;
+      double lEPSPResAC = (collision.qvecRe()[lQvecDetInd] * collision.qvecRe()[lQvecRefBInd] + collision.qvecIm()[lQvecDetInd] * collision.qvecIm()[lQvecRefBInd]) * lEPResAC;
+      double lEPSPResBC = (collision.qvecRe()[lQvecRefAInd] * collision.qvecRe()[lQvecRefBInd] + collision.qvecIm()[lQvecRefAInd] * collision.qvecIm()[lQvecRefBInd]) * lEPResBC;
+
+      histos.fill(HIST("QA/EP/hEPSPResAB"), lCentrality, lEPSPResAB);
+      histos.fill(HIST("QA/EP/hEPSPResAC"), lCentrality, lEPSPResAC);
+      histos.fill(HIST("QA/EP/hEPSPResBC"), lCentrality, lEPSPResBC);
+    }
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot, lResonanceRot;
     std::vector<int> trackIndicies = {};
@@ -712,15 +743,17 @@ struct Chk892Flow {
       auto trkbNSigmaPiTOF = (istrkbhasTOF) ? bTrack.tofNSigmaPi() : -999.;
 
       if constexpr (!IsMix) {
-        // Bachelor pion QA plots
-        histos.fill(HIST("QA/before/trkbpionTPCPID"), trkbpt, trkbNSigmaPiTPC);
-        if (istrkbhasTOF) {
-          histos.fill(HIST("QA/before/trkbpionTOFPID"), trkbpt, trkbNSigmaPiTOF);
-          histos.fill(HIST("QA/before/trkbpionTPCTOFPID"), trkbNSigmaPiTPC, trkbNSigmaPiTOF);
+        if (cfgFillQAPlots) {
+          // Bachelor pion QA plots
+          histos.fill(HIST("QA/before/trkbpionTPCPID"), trkbpt, trkbNSigmaPiTPC);
+          if (istrkbhasTOF) {
+            histos.fill(HIST("QA/before/trkbpionTOFPID"), trkbpt, trkbNSigmaPiTOF);
+            histos.fill(HIST("QA/before/trkbpionTPCTOFPID"), trkbNSigmaPiTPC, trkbNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/before/trkbpionpT"), trkbpt);
+          histos.fill(HIST("QA/before/trkbpionDCAxy"), bTrack.dcaXY());
+          histos.fill(HIST("QA/before/trkbpionDCAz"), bTrack.dcaZ());
         }
-        histos.fill(HIST("QA/before/trkbpionpT"), trkbpt);
-        histos.fill(HIST("QA/before/trkbpionDCAxy"), bTrack.dcaXY());
-        histos.fill(HIST("QA/before/trkbpionDCAz"), bTrack.dcaZ());
       }
 
       if (!trackCut(bTrack))
@@ -729,15 +762,17 @@ struct Chk892Flow {
         continue;
 
       if constexpr (!IsMix) {
-        // Bachelor pion QA plots after applying cuts
-        histos.fill(HIST("QA/after/trkbpionTPCPID"), trkbpt, trkbNSigmaPiTPC);
-        if (istrkbhasTOF) {
-          histos.fill(HIST("QA/after/trkbpionTOFPID"), trkbpt, trkbNSigmaPiTOF);
-          histos.fill(HIST("QA/after/trkbpionTPCTOFPID"), trkbNSigmaPiTPC, trkbNSigmaPiTOF);
+        if (cfgFillQAPlots) {
+          // Bachelor pion QA plots after applying cuts
+          histos.fill(HIST("QA/after/trkbpionTPCPID"), trkbpt, trkbNSigmaPiTPC);
+          if (istrkbhasTOF) {
+            histos.fill(HIST("QA/after/trkbpionTOFPID"), trkbpt, trkbNSigmaPiTOF);
+            histos.fill(HIST("QA/after/trkbpionTPCTOFPID"), trkbNSigmaPiTPC, trkbNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/after/trkbpionpT"), trkbpt);
+          histos.fill(HIST("QA/after/trkbpionDCAxy"), bTrack.dcaXY());
+          histos.fill(HIST("QA/after/trkbpionDCAz"), bTrack.dcaZ());
         }
-        histos.fill(HIST("QA/after/trkbpionpT"), trkbpt);
-        histos.fill(HIST("QA/after/trkbpionDCAxy"), bTrack.dcaXY());
-        histos.fill(HIST("QA/after/trkbpionDCAz"), bTrack.dcaZ());
       }
       trackIndicies.push_back(bTrack.index());
     }
@@ -770,32 +805,34 @@ struct Chk892Flow {
       auto lPhiMinusPsiK0s = RecoDecay::constrainAngle(lResoSecondary.Phi() - lEPDet, 0.0, 2); // constrain angle to range 0, Pi
       auto v2K0s = std::cos(static_cast<float>(nmode) * lPhiMinusPsiK0s);
       if constexpr (!IsMix) {
-        // Seconddary QA plots
-        histos.fill(HIST("QA/before/trkppionTPCPID"), trkppt, trkpNSigmaPiTPC);
-        if (istrkphasTOF) {
-          histos.fill(HIST("QA/before/trkppionTOFPID"), trkppt, trkpNSigmaPiTOF);
-          histos.fill(HIST("QA/before/trkppionTPCTOFPID"), trkpNSigmaPiTPC, trkpNSigmaPiTOF);
-        }
-        histos.fill(HIST("QA/before/trkppionpT"), trkppt);
-        histos.fill(HIST("QA/before/trkppionDCAxy"), posDauTrack.dcaXY());
-        histos.fill(HIST("QA/before/trkppionDCAz"), posDauTrack.dcaZ());
+        if (cfgFillQAPlots) {
+          // Seconddary QA plots
+          histos.fill(HIST("QA/before/trkppionTPCPID"), trkppt, trkpNSigmaPiTPC);
+          if (istrkphasTOF) {
+            histos.fill(HIST("QA/before/trkppionTOFPID"), trkppt, trkpNSigmaPiTOF);
+            histos.fill(HIST("QA/before/trkppionTPCTOFPID"), trkpNSigmaPiTPC, trkpNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/before/trkppionpT"), trkppt);
+          histos.fill(HIST("QA/before/trkppionDCAxy"), posDauTrack.dcaXY());
+          histos.fill(HIST("QA/before/trkppionDCAz"), posDauTrack.dcaZ());
 
-        histos.fill(HIST("QA/before/trknpionTPCPID"), trknpt, trknNSigmaPiTPC);
-        if (istrknhasTOF) {
-          histos.fill(HIST("QA/before/trknpionTOFPID"), trknpt, trknNSigmaPiTOF);
-          histos.fill(HIST("QA/before/trknpionTPCTOFPID"), trknNSigmaPiTPC, trknNSigmaPiTOF);
-        }
-        histos.fill(HIST("QA/before/trknpionpT"), trknpt);
-        histos.fill(HIST("QA/before/trknpionDCAxy"), negDauTrack.dcaXY());
-        histos.fill(HIST("QA/before/trknpionDCAz"), negDauTrack.dcaZ());
-        histos.fill(HIST("QA/before/hDauDCASecondary"), trkkDauDCA);
-        histos.fill(HIST("QA/before/hy_Secondary"), trkky);
-        histos.fill(HIST("QA/before/hDCAtoPVSecondary"), trkkDCAtoPV);
-        histos.fill(HIST("QA/before/hCPASecondary"), trkkCPA);
-        histos.fill(HIST("QA/before/hPropTauSecondary"), trkkPropTau);
-        histos.fill(HIST("QA/before/hInvmassSecondary"), trkkMass);
+          histos.fill(HIST("QA/before/trknpionTPCPID"), trknpt, trknNSigmaPiTPC);
+          if (istrknhasTOF) {
+            histos.fill(HIST("QA/before/trknpionTOFPID"), trknpt, trknNSigmaPiTOF);
+            histos.fill(HIST("QA/before/trknpionTPCTOFPID"), trknNSigmaPiTPC, trknNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/before/trknpionpT"), trknpt);
+          histos.fill(HIST("QA/before/trknpionDCAxy"), negDauTrack.dcaXY());
+          histos.fill(HIST("QA/before/trknpionDCAz"), negDauTrack.dcaZ());
+          histos.fill(HIST("QA/before/hDauDCASecondary"), trkkDauDCA);
+          histos.fill(HIST("QA/before/hy_Secondary"), trkky);
+          histos.fill(HIST("QA/before/hDCAtoPVSecondary"), trkkDCAtoPV);
+          histos.fill(HIST("QA/before/hCPASecondary"), trkkCPA);
+          histos.fill(HIST("QA/before/hPropTauSecondary"), trkkPropTau);
+          histos.fill(HIST("QA/before/hInvmassSecondary"), trkkMass);
 
-        histos.fill(HIST("QA/before/k0sv2vsinvmass"), lResoSecondary.M(), v2K0s);
+          histos.fill(HIST("QA/before/k0sv2vsinvmass"), lResoSecondary.M(), v2K0s);
+        }
       }
 
       if (!cfgByPassDauPIDSelection && !selectionPIDPion(posDauTrack))
@@ -806,38 +843,40 @@ struct Chk892Flow {
         continue;
 
       if constexpr (!IsMix) {
-        // Seconddary QA plots after applying cuts
-        histos.fill(HIST("QA/after/trkppionTPCPID"), trkppt, trkpNSigmaPiTPC);
-        if (istrkphasTOF) {
-          histos.fill(HIST("QA/after/trkppionTOFPID"), trkppt, trkpNSigmaPiTOF);
-          histos.fill(HIST("QA/after/trkppionTPCTOFPID"), trkpNSigmaPiTPC, trkpNSigmaPiTOF);
-        }
-        histos.fill(HIST("QA/after/trkppionpT"), trkppt);
-        histos.fill(HIST("QA/after/trkppionDCAxy"), posDauTrack.dcaXY());
-        histos.fill(HIST("QA/after/trkppionDCAz"), posDauTrack.dcaZ());
+        if (cfgFillQAPlots) {
+          // Seconddary QA plots after applying cuts
+          histos.fill(HIST("QA/after/trkppionTPCPID"), trkppt, trkpNSigmaPiTPC);
+          if (istrkphasTOF) {
+            histos.fill(HIST("QA/after/trkppionTOFPID"), trkppt, trkpNSigmaPiTOF);
+            histos.fill(HIST("QA/after/trkppionTPCTOFPID"), trkpNSigmaPiTPC, trkpNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/after/trkppionpT"), trkppt);
+          histos.fill(HIST("QA/after/trkppionDCAxy"), posDauTrack.dcaXY());
+          histos.fill(HIST("QA/after/trkppionDCAz"), posDauTrack.dcaZ());
 
-        histos.fill(HIST("QA/after/trknpionTPCPID"), trknpt, trknNSigmaPiTPC);
-        if (istrknhasTOF) {
-          histos.fill(HIST("QA/after/trknpionTOFPID"), trknpt, trknNSigmaPiTOF);
-          histos.fill(HIST("QA/after/trknpionTPCTOFPID"), trknNSigmaPiTPC, trknNSigmaPiTOF);
-        }
-        histos.fill(HIST("QA/after/trknpionpT"), trknpt);
-        histos.fill(HIST("QA/after/trknpionDCAxy"), negDauTrack.dcaXY());
-        histos.fill(HIST("QA/after/trknpionDCAz"), negDauTrack.dcaZ());
+          histos.fill(HIST("QA/after/trknpionTPCPID"), trknpt, trknNSigmaPiTPC);
+          if (istrknhasTOF) {
+            histos.fill(HIST("QA/after/trknpionTOFPID"), trknpt, trknNSigmaPiTOF);
+            histos.fill(HIST("QA/after/trknpionTPCTOFPID"), trknNSigmaPiTPC, trknNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/after/trknpionpT"), trknpt);
+          histos.fill(HIST("QA/after/trknpionDCAxy"), negDauTrack.dcaXY());
+          histos.fill(HIST("QA/after/trknpionDCAz"), negDauTrack.dcaZ());
 
-        histos.fill(HIST("QA/after/hDauDCASecondary"), trkkDauDCA);
-        histos.fill(HIST("QA/after/hy_Secondary"), trkky);
-        histos.fill(HIST("QA/after/hDCAtoPVSecondary"), trkkDCAtoPV);
-        histos.fill(HIST("QA/after/hCPASecondary"), trkkCPA);
-        histos.fill(HIST("QA/after/hPropTauSecondary"), trkkPropTau);
-        histos.fill(HIST("QA/after/hInvmassSecondary"), trkkMass);
+          histos.fill(HIST("QA/after/hDauDCASecondary"), trkkDauDCA);
+          histos.fill(HIST("QA/after/hy_Secondary"), trkky);
+          histos.fill(HIST("QA/after/hDCAtoPVSecondary"), trkkDCAtoPV);
+          histos.fill(HIST("QA/after/hCPASecondary"), trkkCPA);
+          histos.fill(HIST("QA/after/hPropTauSecondary"), trkkPropTau);
+          histos.fill(HIST("QA/after/hInvmassSecondary"), trkkMass);
 
-        histos.fill(HIST("QA/after/k0sv2vsinvmass"), lResoSecondary.M(), v2K0s);
-        if (cfgFillAdditionalAxis) {
-          histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s, static_cast<float>(nmode) * lPhiMinusPsiK0s);
-        } else {
-          histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s);
+          histos.fill(HIST("QA/after/k0sv2vsinvmass"), lResoSecondary.M(), v2K0s);
         }
+      }
+      if (cfgFillAdditionalAxis) {
+        histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s, static_cast<float>(nmode) * lPhiMinusPsiK0s);
+      } else {
+        histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s);
       }
       k0sIndicies.push_back(k0sCand.index());
     }
@@ -850,15 +889,24 @@ struct Chk892Flow {
         lDecayDaughter_bach.SetXYZM(bTrack.px(), bTrack.py(), bTrack.pz(), MassPionCharged);
         lResoSecondary.SetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), MassK0Short);
         lResoKstar = lResoSecondary + lDecayDaughter_bach;
-
-        auto lPhiMinusPsiKstar = RecoDecay::constrainAngle(lResoKstar.Phi() - lEPDet, 0.0, 2); // constrain angle to range 0, Pi
-        auto v2Kstar = std::cos(static_cast<float>(nmode) * lPhiMinusPsiKstar);
+        auto resoPhi = lResoKstar.Phi();
+        // EP method
+        auto lPhiMinusPsiKstar = RecoDecay::constrainAngle(resoPhi - lEPDet, 0.0, 2); // constrain angle to range 0, Pi
+        auto resoFlowValue = std::cos(static_cast<float>(nmode) * lPhiMinusPsiKstar);
+        // Scalar product method
+        if (cfgUseScalProduct) {
+          float cosNPhi = std::cos(static_cast<float>(nmode) * resoPhi);
+          float sinNPhi = std::sin(static_cast<float>(nmode) * resoPhi);
+          resoFlowValue = cosNPhi * collision.qvecRe()[lQvecDetInd] + sinNPhi * collision.qvecIm()[lQvecDetInd];
+        }
 
         // QA plots
         if constexpr (!IsMix) {
-          histos.fill(HIST("QA/before/KstarRapidity"), lResoKstar.Rapidity());
-          histos.fill(HIST("QA/before/kstarinvmass"), lResoKstar.M());
-          histos.fill(HIST("QA/before/kstarv2vsinvmass"), lResoKstar.M(), v2Kstar);
+          if (cfgFillQAPlots) {
+            histos.fill(HIST("QA/before/KstarRapidity"), lResoKstar.Rapidity());
+            histos.fill(HIST("QA/before/kstarinvmass"), lResoKstar.M());
+            histos.fill(HIST("QA/before/kstarv2vsinvmass"), lResoKstar.M(), resoFlowValue);
+          }
         }
 
         if (lResoKstar.Rapidity() > cKstarMaxRap || lResoKstar.Rapidity() < cKstarMinRap)
@@ -867,19 +915,23 @@ struct Chk892Flow {
         if constexpr (!IsMix) {
           unsigned int typeKstar = bTrack.sign() > 0 ? BinType::kKstarP : BinType::kKstarN;
 
-          histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
-          histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
-          histos.fill(HIST("QA/after/kstarv2vsinvmass"), lResoKstar.M(), v2Kstar);
+          if (cfgFillQAPlots) {
+            histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
+            histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
+            histos.fill(HIST("QA/after/kstarv2vsinvmass"), lResoKstar.M(), resoFlowValue);
+          }
           if (cfgFillAdditionalAxis) {
-            histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), v2Kstar, static_cast<float>(nmode) * lPhiMinusPsiKstar);
+            histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), resoFlowValue, static_cast<float>(nmode) * lPhiMinusPsiKstar);
           } else {
-            histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), v2Kstar);
+            histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), resoFlowValue);
           }
 
           if (cfgFillRotBkg) {
             for (int i = 0; i < cfgNrotBkg; i++) {
               auto lRotAngle = cfgMinRot + i * (cfgMaxRot - cfgMinRot) / (1.0 * (cfgNrotBkg - 1));
-              histos.fill(HIST("QA/RotBkg/hRotBkg"), lRotAngle);
+              if (cfgFillQAPlots) {
+                histos.fill(HIST("QA/RotBkg/hRotBkg"), lRotAngle);
+              }
               if (cfgRotPion) {
                 lDaughterRot = lDecayDaughter_bach;
                 lDaughterRot.RotateZ(lRotAngle);
@@ -889,13 +941,19 @@ struct Chk892Flow {
                 lDaughterRot.RotateZ(lRotAngle);
                 lResonanceRot = lDecayDaughter_bach + lDaughterRot;
               }
-              auto lPhiMinusPsiKstar = RecoDecay::constrainAngle(lResonanceRot.Phi() - lEPDet, 0.0, 2); // constrain angle to range 0, Pi
-              auto v2Kstar = std::cos(static_cast<float>(nmode) * lPhiMinusPsiKstar);
+              resoPhi = lResonanceRot.Phi();
+              auto lPhiMinusPsiKstar = RecoDecay::constrainAngle(resoPhi - lEPDet, 0.0, 2); // constrain angle to range 0, Pi
+              auto resoFlowValue = std::cos(static_cast<float>(nmode) * lPhiMinusPsiKstar);
+              if (cfgUseScalProduct) {
+                float cosNPhi = std::cos(static_cast<float>(nmode) * resoPhi);
+                float sinNPhi = std::sin(static_cast<float>(nmode) * resoPhi);
+                resoFlowValue = cosNPhi * collision.qvecRe()[lQvecDetInd] + sinNPhi * collision.qvecIm()[lQvecDetInd];
+              }
               typeKstar = bTrack.sign() > 0 ? BinType::kKstarP_Rot : BinType::kKstarN_Rot;
               if (cfgFillAdditionalAxis) {
-                histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), v2Kstar, static_cast<float>(nmode) * lPhiMinusPsiKstar);
+                histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), resoFlowValue, static_cast<float>(nmode) * lPhiMinusPsiKstar);
               } else {
-                histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), v2Kstar);
+                histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), resoFlowValue);
               }
             }
           }

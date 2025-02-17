@@ -170,6 +170,8 @@ struct NucleiEfficiencyTask {
   template <typename McCollisionType, typename McParticlesType>
   void process_MC_gen(const McCollisionType& mcCollision, const McParticlesType& mcParticles)
   {
+    if (mcCollision.posZ() < -cfgCutVertex || mcCollision.posZ() > cfgCutVertex)
+      return;
     MC_gen_reg.fill(HIST("histGenVtxMC"), mcCollision.posZ());
     MC_gen_reg.fill(HIST("histCentrality"), mcCollision.impactParameter());
 
@@ -263,14 +265,15 @@ struct NucleiEfficiencyTask {
   template <typename CollisionType, typename TracksType, typename mcParticlesType>
   void process_MC_reco(const CollisionType& collision, const TracksType& tracks, const mcParticlesType& /*mcParticles*/)
   {
+
     if (event_selection_MC_sel8 && !collision.sel8())
       return;
-    if (collision.posZ() > cfgCutVertex)
-      return;
     MC_recon_reg.fill(HIST("histRecVtxMC"), collision.posZ());
-    MC_recon_reg.fill(HIST("histCentrality"), collision.centFT0C());
     if (!isEventSelected(collision))
       return;
+    if (collision.centFT0C() < minCentrality || collision.centFT0C() > maxCentrality)
+      return;
+    MC_recon_reg.fill(HIST("histCentrality"), collision.centFT0C());
 
     for (auto& track : tracks) {
       const auto particle = track.mcParticle();
@@ -447,7 +450,7 @@ struct NucleiEfficiencyTask {
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta && requireGlobalTrackWoDCAInFilter());
 
-  void processMCreco(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator const& collision,
+  void processMCreco(soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>>::iterator const& collision,
                      soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension>> const& tracks,
                      aod::McParticles const& mcParticles)
   {
