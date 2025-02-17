@@ -869,11 +869,18 @@ struct tofPidMerge {
   Produces<o2::aod::pidTOFFullHe> tablePIDFullHe;
   Produces<o2::aod::pidTOFFullAl> tablePIDFullAl;
 
+  // Beta tables
+  Produces<aod::pidTOFbeta> tablePIDBeta;
+  Produces<aod::pidTOFmass> tablePIDTOFMass;
+  bool enableTableBeta = false;
+  bool enableTableMass = false;
+
   // Detector response parameters
   o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   TOFCalibConfig mTOFCalibConfig; // TOF Calib configuration
   Configurable<bool> enableQaHistograms{"enableQaHistograms", false, "Flag to enable the QA histograms"};
+  Configurable<bool> enableTOFParamsForBetaMass{"enableTOFParamsForBetaMass", false, "Flag to use TOF parameters for TOF Beta and Mass"};
 
   // Configuration flags to include and exclude particle hypotheses
   Configurable<LabeledArray<int>> enableParticle{"enableParticle",
@@ -946,6 +953,27 @@ struct tofPidMerge {
         continue;
       }
       hnsigmaFull[i] = histos.add<TH2>(Form("nsigmaFull/%s", particleNames[i].c_str()), Form("N_{#sigma}^{TOF}(%s)", particleNames[i].c_str()), kTH2F, {pAxis, nSigmaAxis});
+    }
+
+    // Checking the TOF mass and TOF beta tables
+    enableTableBeta = isTableRequiredInWorkflow(initContext, "pidTOFbeta");
+    enableTableMass = isTableRequiredInWorkflow(initContext, "pidTOFmass");
+
+    if (!enableTableBeta && !enableTableMass) {
+      LOG(info) << "No table for TOF mass and beta is required. Disabling beta and mass tables";
+      doprocessRun2.value = false;
+      doprocessRun3.value = false;
+    } else if (mTOFCalibConfig.autoSetProcessFunctions()) {
+      LOG(info) << "Autodetecting process functions for mass and beta";
+      if (metadataInfo.isFullyDefined()) {
+        if (metadataInfo.isRun3()) {
+          doprocessRun3.value = true;
+          doprocessRun2.value = false;
+        } else {
+          doprocessRun2.value = true;
+          doprocessRun3.value = false;
+        }
+      }
     }
   }
 
@@ -1438,54 +1466,9 @@ struct tofPidMerge {
     }
   }
   PROCESS_SWITCH(tofPidMerge, processRun2, "Produce tables. Set to off if the tables are not required", false);
-};
-
-// Part 4 Beta and TOF mass computation
-
-struct tofPidBeta {
-  Produces<aod::pidTOFbeta> tablePIDBeta;
-  Produces<aod::pidTOFmass> tablePIDTOFMass;
-  Configurable<float> expreso{"tof-expreso", 80, "Expected resolution for the computation of the expected beta"};
-  // Detector response and input parameters
-  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
-  TOFCalibConfig mTOFCalibConfig; // TOF Calib configuration
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<bool> enableTOFParams{"enableTOFParams", false, "Flag to use TOF parameters"};
-
-  bool enableTableBeta = false;
-  bool enableTableMass = false;
-  void init(o2::framework::InitContext& initContext)
-  {
-    mTOFCalibConfig.inheritFromBaseTask(initContext);
-    enableTableBeta = isTableRequiredInWorkflow(initContext, "pidTOFbeta");
-    enableTableMass = isTableRequiredInWorkflow(initContext, "pidTOFmass");
-    if (!enableTableBeta && !enableTableMass && !doprocessRun2 && !doprocessRun3) {
-      LOG(info) << "No table or process is enabled. Disabling task";
-      return;
-    }
-
-    if (mTOFCalibConfig.autoSetProcessFunctions()) {
-      LOG(info) << "Autodetecting process functions";
-      if (metadataInfo.isFullyDefined()) {
-        if (metadataInfo.isRun3()) {
-          doprocessRun3.value = true;
-        } else {
-          doprocessRun2.value = true;
-        }
-      }
-    }
-
-    responseBeta.mExpectedResolution = expreso.value;
-    if (!enableTOFParams) {
-      return;
-    }
-    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
-  }
-
-  void process(aod::BCs const&) {}
 
   o2::pid::tof::Beta responseBetaRun2;
-  void processRun2(Run2TrksWtofWevTime const& tracks)
+  void processBetaMRun2(Run2TrksWtofWevTime const& tracks)
   {
     if (!enableTableBeta && !enableTableMass) {
       return;
@@ -1498,7 +1481,7 @@ struct tofPidBeta {
         tablePIDBeta(beta, responseBetaRun2.GetExpectedSigma(trk));
       }
       if (enableTableMass) {
-        if (enableTOFParams) {
+        if (enableTOFParamsForBetaMass) {
           tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
         } else {
           tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk, beta));
@@ -1506,10 +1489,10 @@ struct tofPidBeta {
       }
     }
   }
-  PROCESS_SWITCH(tofPidBeta, processRun2, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", true);
+  PROCESS_SWITCH(tofPidMerge, processBetaMRun2, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", true);
 
   o2::pid::tof::Beta responseBeta;
-  void processRun3(Run3TrksWtofWevTime const& tracks)
+  void processBetaMRun3(Run3TrksWtofWevTime const& tracks)
   {
     if (!enableTableBeta && !enableTableMass) {
       return;
@@ -1523,7 +1506,7 @@ struct tofPidBeta {
                      responseBeta.GetExpectedSigma(trk));
       }
       if (enableTableMass) {
-        if (enableTOFParams) {
+        if (enableTOFParamsForBetaMass) {
           tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
         } else {
           tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk, beta));
@@ -1531,7 +1514,7 @@ struct tofPidBeta {
       }
     }
   }
-  PROCESS_SWITCH(tofPidBeta, processRun3, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", true);
+  PROCESS_SWITCH(tofPidMerge, processBetaMRun3, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -1541,6 +1524,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   auto workflow = WorkflowSpec{adaptAnalysisTask<tofSignal>(cfgc)};
   workflow.push_back(adaptAnalysisTask<tofEventTime>(cfgc));
   workflow.push_back(adaptAnalysisTask<tofPidMerge>(cfgc));
-  workflow.push_back(adaptAnalysisTask<tofPidBeta>(cfgc));
   return workflow;
 }
