@@ -931,7 +931,7 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
   if (trackSpecies == kDeuteronForFemto) {
     // Apply different PID strategy in different pt range
     if (pt <= ptThresholdPidStrategy) {
-      if (std::fabs(NSigmaTPC) > nSigmaCuts[0] && NSigmaITS > nSigmaCuts[3]) { // Use TPC and ITS below the threshold, NSigmaITS for deuteron with a lower limit
+      if (std::fabs(NSigmaTPC) > nSigmaCuts[0] || NSigmaITS < nSigmaCuts[3]) { // Use TPC and ITS below the threshold, NSigmaITS for deuteron with a lower limit
         return false;
       }
     } else {
