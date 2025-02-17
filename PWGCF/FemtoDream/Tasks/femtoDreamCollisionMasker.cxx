@@ -264,6 +264,8 @@ struct femoDreamCollisionMasker {
             FilterTempFitVarMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
           } else if (option.name.compare(std::string("ConfMinDCAxy")) == 0) {
             FilterTempFitVarMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfDCACutPtDep")) == 0) {
+            TrackDCACutPtDep.push_back(option.defaultValue.get<bool>());
           }
         }
       } else if (device.name.find("femto-dream-triplet-task-track-track-v0") != std::string::npos) {
@@ -308,6 +310,8 @@ struct femoDreamCollisionMasker {
             FilterPtMin.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<float>());
           } else if (option.name.compare(std::string("Conf_maxPt_V0")) == 0) {
             FilterPtMax.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfDCACutPtDep")) == 0) {
+            TrackDCACutPtDep.push_back(option.defaultValue.get<bool>());
           }
         }
       }
@@ -388,12 +392,24 @@ struct femoDreamCollisionMasker {
         if (track.partType() != static_cast<uint8_t>(femtodreamparticle::kTrack)) {
           continue;
         }
+
         // check filter cuts
-        if (track.pt() < FilterPtMin.at(P).at(index) || track.pt() > FilterPtMax.at(P).at(index) ||
-            track.tempFitVar() > FilterTempFitVarMax.at(P).at(index) || track.tempFitVar() < FilterTempFitVarMin.at(P).at(index)) {
+        if (track.pt() < FilterPtMin.at(P).at(index) || track.pt() > FilterPtMax.at(P).at(index)) {
           // if they are not passed, skip the particle
           continue;
         }
+
+        if (TrackDCACutPtDep.at(index)) {
+          if (std::fabs(track.tempFitVar()) > 0.0105f + (0.035f / std::pow(track.pt(), 1.1f))) {
+            continue;
+          }
+        } else {
+          // or cut on the DCA directly
+          if (track.tempFitVar() < FilterTempFitVarMin.at(P).at(index) || track.tempFitVar() > FilterTempFitVarMax.at(P).at(index)) {
+            continue;
+          }
+        }
+
         // set the bit at the index of the selection equal to one if the track passes all selections
         // check track cuts
         if ((track.cut() & TrackCutBits.at(P).at(index)) == TrackCutBits.at(P).at(index)) {

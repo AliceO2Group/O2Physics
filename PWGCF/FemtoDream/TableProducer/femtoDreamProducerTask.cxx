@@ -246,6 +246,16 @@ struct femtoDreamProducerTask {
   // (aod::v0data::v0radius > V0TranRadV0Min.value); to be added, not working
   // for now do not know why
 
+  /// General options
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<float> ConfTrkMinChi2PerClusterTPC{"ConfTrkMinChi2PerClusterTPC", 0.f, "Lower limit for chi2 of TPC; currently for testing only"};
+    Configurable<float> ConfTrkMaxChi2PerClusterTPC{"ConfTrkMaxChi2PerClusterTPC", 1000.f, "Upper limit for chi2 of TPC; currently for testing only"};
+    Configurable<float> ConfTrkMaxChi2PerClusterITS{"ConfTrkMaxChi2PerClusterITS", 1000.0f, "Minimal track selection: max allowed chi2 per ITS cluster"}; // 36.0 is default
+    Configurable<bool> ConfTrkTPCRefit{"ConfTrkTPCRefit", false, "True: require TPC refit"};
+    Configurable<bool> ConfTrkITSRefit{"ConfTrkITSRefit", false, "True: require ITS refit"};
+
+  } OptionTrackSpecialSelections;
+
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry V0Registry{"V0", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -270,6 +280,8 @@ struct femtoDreamProducerTask {
 
     int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
+    TrackRegistry.add("AnalysisQA/Chi2ITSTPCperCluster", "; ITS_Chi2; TPC_Chi2", kTH2F, {{100, 0, 50}, {100, 0, 20}});
+    TrackRegistry.add("AnalysisQA/RefitITSTPC", "; ITS_Refit; TPC_Refit", kTH2F, {{2, 0, 2}, {2, 0, 2}});
     TrackRegistry.add("AnalysisQA/getGenStatusCode", "; Bit; Entries", kTH1F, {{200, 0, 200}});
     TrackRegistry.add("AnalysisQA/getProcess", "; Bit; Entries", kTH1F, {{200, 0, 200}});
     TrackRegistry.add("AnalysisQA/Mother", "; Bit; Entries", kTH1F, {{4000, -4000, 4000}});
@@ -700,9 +712,24 @@ struct femtoDreamProducerTask {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, 0>(track);
+
+      if (track.tpcChi2NCl() < OptionTrackSpecialSelections.ConfTrkMinChi2PerClusterTPC || track.tpcChi2NCl() > OptionTrackSpecialSelections.ConfTrkMaxChi2PerClusterTPC) {
+        continue;
+      }
+      if (track.itsChi2NCl() > OptionTrackSpecialSelections.ConfTrkMaxChi2PerClusterITS) {
+        continue;
+      }
+      if ((OptionTrackSpecialSelections.ConfTrkTPCRefit && !track.hasTPC()) || (OptionTrackSpecialSelections.ConfTrkITSRefit && !track.hasITS())) {
+        continue;
+      }
+
       if (!trackCuts.isSelectedMinimal(track)) {
         continue;
       }
+
+      TrackRegistry.fill(HIST("AnalysisQA/Chi2ITSTPCperCluster"), track.itsChi2NCl(), track.tpcChi2NCl());
+      TrackRegistry.fill(HIST("AnalysisQA/RefitITSTPC"), track.hasITS(), track.hasTPC());
+
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, 1>(track);
       // the bit-wise container of the systematic variations is obtained
       std::array<o2::aod::femtodreamparticle::cutContainerType, 2> cutContainer;
