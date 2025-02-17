@@ -89,7 +89,7 @@ struct ft0CorrectedTable {
     table.reserve(collisions.size());
     float t0A = 1e10f;
     float t0C = 1e10f;
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       t0A = 1e10f;
       t0C = 1e10f;
       const float vertexPV = collision.posZ();
@@ -156,7 +156,7 @@ struct ft0CorrectedTable {
     float posZMC = 0;
     bool hasMCcoll = false;
 
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       hasMCcoll = false;
       eventtimeMC = 1e10f;
       t0A = 1e10f;
