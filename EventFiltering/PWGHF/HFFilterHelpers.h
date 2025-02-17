@@ -301,8 +301,8 @@ static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
 
 // PID cuts
 constexpr float cutsNsigma[4][8] = {
-  {3., 3., 3., 5., 3., 3., 5., 3.},             // TPC proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX
-  {3., 3., 3., 2.5, 3., 3., 5., 3.},            // TOF proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX
+  {3., 3., 3., 5., 3., 3., 5., 3.},               // TPC proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX
+  {3., 3., 3., 2.5, 3., 3., 5., 3.},              // TOF proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX
   {999., 999., 999., 2.5, 999., 999., 5., 999.},  // Sum in quadrature of TPC and TOF (used only for femto selected proton and deuteron for pT < 4 GeV/c)
   {999., 999., 999., 999., 999., 999., -4., 999.} // ITS used only for femto selected deuteron for less than pt threshold
 };
@@ -2043,7 +2043,7 @@ inline bool HfFilterHelper::isSelectedBhadronInMassRange(T1 const& ptCand, T2 co
 /// \param tracksDauNoMu is the array of tracks for the daughters that are no muons
 /// \param primVtx is the primary vertex
 /// \param secVtx is the secondary vertex
-/// \param activateQA is the flag to enable the 
+/// \param activateQA is the flag to enable the
 /// \param hMassVsPt is the array of histograms for QA
 /// \return true if the beauty candidate passes all cuts
 template <int Nprongs, typename T1, typename T2, typename T3, typename T4, typename H2>

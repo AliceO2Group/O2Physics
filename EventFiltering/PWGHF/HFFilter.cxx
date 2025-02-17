@@ -171,7 +171,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmDeuteronKstarDistr{};
   std::array<std::shared_ptr<TH2>, nTotBeautyParts> hMassVsPtB{};
   std::array<std::shared_ptr<TH2>, kNCharmParticles + 19> hMassVsPtC{}; // +9 for resonances (D*+, D*0, Ds*+, Ds1+, Ds2*+, Xic+* right sign, Xic+* wrong sign, Xic0* right sign, Xic0* wrong sign) +2 for SigmaC (SigmaC++, SigmaC0) +2 for SigmaCK pairs (SigmaC++K-, SigmaC0K0s) +3 for charm baryons (Xi+Pi, Xi+Ka, Xi+Pi+Pi) + JPsi
-  std::array<std::shared_ptr<TH2>, 4> hPrDePID; // proton TPC, proton TOF, deuteron TPC, deuteron TOF
+  std::array<std::shared_ptr<TH2>, 4> hPrDePID;                         // proton TPC, proton TOF, deuteron TPC, deuteron TOF
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreBkg{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreNonPrompt{};
@@ -421,7 +421,7 @@ struct HfFilter { // Main struct for HF triggers
       auto cand2ProngsThisColl = cand2Prongs.sliceBy(hf2ProngPerCollision, thisCollId);
       for (const auto& cand2Prong : cand2ProngsThisColl) {                                // start loop over 2 prongs
 
-        int8_t preselD0 = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK); // check if it's a D0
+        int8_t preselD0 = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK);            // check if it's a D0
         int8_t preselJPsiToMuMu = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::JpsiToMuMu); // check if it's a JPsi
         if (preselD0 == 0 && preselJPsiToMuMu == 0) {
           continue;
@@ -494,7 +494,7 @@ struct HfFilter { // Main struct for HF triggers
         int8_t selD0InMass{0};
         double massD0Cand{-1.}, massD0BarCand{-1.};
         if (isD0SignalTagged) {
-           // single D0
+          // single D0
           keepEvent[kSingleCharm2P] = true;
           if (isD0BeautyTagged) {
             keepEvent[kSingleNonPromptCharm2P] = true;
@@ -509,7 +509,7 @@ struct HfFilter { // Main struct for HF triggers
           // multi-charm selection
           if (isD0CharmTagged) {
             indicesDau2Prong.push_back(std::vector<int64_t>{trackPos.globalIndex(), trackNeg.globalIndex()});
-          } 
+          }
 
           if (applyOptimisation) {
             optimisationTreeCharm(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scores[0], scores[1], scores[2]);
@@ -710,7 +710,7 @@ struct HfFilter { // Main struct for HF triggers
             std::array<float, 3> pVecPosVtx{}, pVecNegVtx{}, pVecThirdVtx{}, pVecFourthVtx{};
             // 3-prong vertices
             if (!keepEvent[kBtoJPsiKa] || !keepEvent[kBtoJPsiPi]) {
-              if(df3.process(trackParPos, trackParNeg, trackParThird) != 0) {
+              if (df3.process(trackParPos, trackParNeg, trackParThird) != 0) {
                 df3.propagateTracksToVertex();
                 const auto& secondaryVertexBto3tracks = df3.getPCACandidate();
                 df3.getTrack(0).getPxPyPzGlo(pVecPosVtx);
