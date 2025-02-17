@@ -86,9 +86,9 @@ struct HfTaskFlowCharmHadrons {
   ConfigurableAxis thnConfigAxisNoCollInTimeRangeNarrow{"thnConfigAxisNoCollInTimeRangeNarrow", {2, 0, 2}, ""};
   ConfigurableAxis thnConfigAxisNoCollInTimeRangeStandard{"thnConfigAxisNoCollInTimeRangeStandard", {2, 0, 2}, ""};
   ConfigurableAxis thnConfigAxisNoCollInRofStandard{"thnConfigAxisNoCollInRofStandard", {2, 0, 2}, ""};
-  ConfigurableAxis thnConfigAxisResoFT0cFV0a{"thnConfigAxisResoFT0cFV0a", {160, -8, -8}, ""};
-  ConfigurableAxis thnConfigAxisResoFT0cTPCtot{"thnConfigAxisResoFT0cTPCtot", {160, -8, -8}, ""};
-  ConfigurableAxis thnConfigAxisResoFV0aTPCtot{"thnConfigAxisResoFV0aTPCtot", {160, -8, -8}, ""};
+  ConfigurableAxis thnConfigAxisResoFT0cFV0a{"thnConfigAxisResoFT0cFV0a", {160, -8, 8}, ""};
+  ConfigurableAxis thnConfigAxisResoFT0cTPCtot{"thnConfigAxisResoFT0cTPCtot", {160, -8, 8}, ""};
+  ConfigurableAxis thnConfigAxisResoFV0aTPCtot{"thnConfigAxisResoFV0aTPCtot", {160, -8, 8}, ""};
 
   using CandDsDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
@@ -210,18 +210,18 @@ struct HfTaskFlowCharmHadrons {
         registry.add("epReso/hEpResoFV0aTPCneg", "hEpResoFV0aTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
         registry.add("epReso/hEpResoFV0aTPCtot", "hEpResoFV0aTPCtot; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
         registry.add("epReso/hEpResoTPCposTPCneg", "hEpResoTPCposTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
+      }
 
-        if (storeResoOccu) {
-          std::vector<AxisSpec> axes_reso = {thnAxisCent, thnAxisResoFT0cFV0a, thnAxisResoFT0cTPCtot, thnAxisResoFV0aTPCtot};
-          if (occEstimator == 1) {
-            axes_reso.push_back(thnAxisOccupancyITS, thnAxisNoSameBunchPileup, thnAxisOccupancy,
-                                thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard);
-            } else {
-            axes_reso.push_back(thnAxisOccupancyFT0C, thnAxisNoSameBunchPileup, thnAxisOccupancy,
-                                thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard);
-          }
-          registry.add("hSparseReso", "THn for resolution with occupancy", HistType::kTHnSparseF, axes_reso);
+      if (storeResoOccu) {
+        std::vector<AxisSpec> axes_reso = {thnAxisCent, thnAxisResoFT0cFV0a, thnAxisResoFT0cTPCtot, thnAxisResoFV0aTPCtot};
+        if (occEstimator == 1) {
+          axes_reso.insert(axes_reso.end(), {thnAxisOccupancyITS, thnAxisNoSameBunchPileup, thnAxisOccupancy,
+                                            thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
+          } else {
+          axes_reso.insert(axes_reso.end(), {thnAxisOccupancyFT0C, thnAxisNoSameBunchPileup, thnAxisOccupancy,
+                                            thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
         }
+        registry.add("spReso/hSparseReso", "THn for resolution with occupancy", HistType::kTHnSparseF, axes_reso);
       }
 
       hfEvSel.addHistograms(registry); // collision monitoring
@@ -292,7 +292,7 @@ struct HfTaskFlowCharmHadrons {
       TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::Occupancy),
       TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
       TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
-      TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard)};
+      TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard)
     };
   }
 
@@ -692,16 +692,19 @@ struct HfTaskFlowCharmHadrons {
       registry.fill(HIST("epReso/hEpResoFV0aTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFV0a, epBNegs)));
       registry.fill(HIST("epReso/hEpResoFV0aTPCtot"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFV0a, epBTots)));
       registry.fill(HIST("epReso/hEpResoTPCposTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epBPoss, epBNegs)));
+    }
 
-      if (storeResoOccu) {
-        float occupancy = 0.;
-        uint16_t hfevflag{};
-        occupancy = getOccupancyColl(collision, occEstimator);
-        registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
-        hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-        std::vector<int> evtSelFlags = getEventSelectionFlags(hfevselflag);
-        registry.fill(HIST("hSparseReso"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a, xQVexFT0c * xQVecTPCtot + yQVecFT0c * yQVecTPCtot, xQVecFV0a * xQVecTPCtot + yQVecFV0a * yQVecTPCtot, evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
-      }
+    if (storeResoOccu) {
+      float occupancy = 0.;
+      uint16_t hfevflag{};
+      occupancy = getOccupancyColl(collision, occEstimator);
+      registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+      hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      std::vector<int> evtSelFlags = getEventSelectionFlags(hfevflag);
+      registry.fill(HIST("spReso/hSparseReso"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a,
+                                                     xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot, 
+                                                     xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot, 
+                                                     occupancy, evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
     }
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processResolution, "Process resolution", false);
