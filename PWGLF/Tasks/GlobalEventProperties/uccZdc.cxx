@@ -126,8 +126,8 @@ struct UccZdc {
   Configurable<float> zemCut{"zemCut", 1000.0, "ZEM cut"};
   Configurable<float> tdcCut{"tdcCut", 1.0, "TDC cut"};
 
-  enum evCutLabel { aLL = 1,
-                    sEl8,
+  enum evCutLabel { aLl = 1,
+                    selEigth,
                     noSameBunchPileup,
                     isGoodZvtxFT0vsPV,
                     isVertexITSTPC,
@@ -293,11 +293,11 @@ struct UccZdc {
   template <typename CheckCol>
   bool isEventSelected(CheckCol const& col)
   {
-    registry.fill(HIST("hEventCounter"), evCutLabel::aLL);
+    registry.fill(HIST("hEventCounter"), evCutLabel::aLl);
     if (!col.sel8()) {
       return false;
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::sEl8);
+    registry.fill(HIST("hEventCounter"), evCutLabel::selEigth);
 
     if (isApplySameBunchPileup &&
         !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -560,7 +560,7 @@ struct UccZdc {
   {
     // Generated MC
     for (const auto& mccollision : mcCollisions) {
-      registry.fill(HIST("hEventCounter_MC"), evCutLabel::aLL);
+      registry.fill(HIST("hEventCounter_MC"), evCutLabel::aLl);
       // Z-vtx position cut
       if (std::fabs(mccollision.posZ()) > posZcut) {
         continue;
