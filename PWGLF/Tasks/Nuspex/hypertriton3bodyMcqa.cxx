@@ -489,8 +489,8 @@ struct Hypertriton3bodyMcqa {
           // float bachExpTime = track.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
 
           float mMassHyp = o2::track::pid_constants::sMasses2Z[track.pidForTracking()];
-          float bachExpTime = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
-          float tofsignal = track.trackTime() * 1000 + bachExpTime;                                                                                   // in ps
+          float bachExpTime = track.length() * std::sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
+          float tofsignal = track.trackTime() * 1000 + bachExpTime;                                                                                        // in ps
 
           float expSigma = responseDe.GetExpectedSigma(mRespParamsV2, track, tofsignal, track.tofEvTimeErr());
           // tofNsigmaDe = (track.tofSignal() - track.tofEvTime() - responseDe.GetCorrectedExpectedSignal(mRespParamsV2, track)) / expSigma;
@@ -581,7 +581,7 @@ struct Hypertriton3bodyMcqa {
             if (isPairedH3LDaughters<aod::McParticles>(mctrack0, mctrack1, mctrack2)) {
               registry.fill(HIST("hPairedH3LDaughers"), 0);
               // MC mass cut, to check if the daughters are from materials
-              double hypertritonMCMass = RecoDecay::m(array{array{mctrack0.px(), mctrack0.py(), mctrack0.pz()}, array{mctrack1.px(), mctrack1.py(), mctrack1.pz()}, array{mctrack2.px(), mctrack2.py(), mctrack2.pz()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
+              double hypertritonMCMass = RecoDecay::m(std::array{std::array{mctrack0.px(), mctrack0.py(), mctrack0.pz()}, std::array{mctrack1.px(), mctrack1.py(), mctrack1.pz()}, std::array{mctrack2.px(), mctrack2.py(), mctrack2.pz()}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
               registry.fill(HIST("hPairedH3LDaughersInvMass"), hypertritonMCMass);
               if (hypertritonMCMass < 2.990 || hypertritonMCMass > 2.993)
                 continue;
@@ -641,7 +641,7 @@ struct Hypertriton3bodyMcqa {
             /*auto responseDe = o2::pid::tof::ExpTimes<MCLabeledTracksIU::iterator, o2::track::PID::Deuteron>();
             //float bachExpTime = track.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
             float mMassHyp = o2::track::pid_constants::sMasses2Z[track.pidForTracking()];
-            float bachExpTime = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
+            float bachExpTime = track.length() * std::sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
              */
 
             tofNsigmaDeAO2D = bachelorTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, track, originalcollision, collision);
@@ -865,7 +865,7 @@ struct Hypertriton3bodyMcParticleCheck {
             registry.fill(HIST("hMcHypertritonCounter"), 3.5);
             registry.fill(HIST("hMcHypertritonCounter"), 5.5);
           }
-          double hypertritonMCMass = RecoDecay::m(array{array{dauProtonMom[0], dauProtonMom[1], dauProtonMom[2]}, array{dauPionMom[0], dauPionMom[1], dauPionMom[2]}, array{dauDeuteronMom[0], dauDeuteronMom[1], dauDeuteronMom[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
+          double hypertritonMCMass = RecoDecay::m(std::array{std::array{dauProtonMom[0], dauProtonMom[1], dauProtonMom[2]}, std::array{dauPionMom[0], dauPionMom[1], dauPionMom[2]}, std::array{dauDeuteronMom[0], dauDeuteronMom[1], dauDeuteronMom[2]}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
           registry.fill(HIST("hMcRecoInvMass"), hypertritonMCMass);
 
           if (hypertritonMCMass > 2.990 && hypertritonMCMass < 2.993) {
