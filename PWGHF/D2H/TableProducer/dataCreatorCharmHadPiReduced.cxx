@@ -653,7 +653,7 @@ struct HfDataCreatorCharmHadPiReduced {
           // b-hadron hypothesis
           std::array<int, 4> bHadronMotherHypos = {Pdg::kBPlus, Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
           // c-hadron hypothesis
-          std::array<int, 5> cHadronMotherHypos = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kDSStar, Pdg::kLambdaCPlus};
+          std::array<int, 7> cHadronMotherHypos = {Pdg::kD0, Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, 423, Pdg::kDSStar, Pdg::kLambdaCPlus};
 
           for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
             int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
@@ -672,7 +672,7 @@ struct HfDataCreatorCharmHadPiReduced {
                 // look for common c-hadron mother among prongs 0, 1 and 2
                 for (const auto& cHadronMotherHypo : cHadronMotherHypos) {
                   int8_t depthMax = 2;
-                  if (cHadronMotherHypo == Pdg::kDStar || cHadronMotherHypo == Pdg::kDSStar) { // to include D* -> D π0/γ, D* -> D0 π, and Ds* -> Ds π0/γ
+                  if (cHadronMotherHypo == Pdg::kDStar || cHadronMotherHypo == 423 || cHadronMotherHypo == Pdg::kDSStar) { // to include D* -> D π0/γ, D* -> D0 π, and Ds* -> Ds π0/γ
                     depthMax += 1;
                   }
                   int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
