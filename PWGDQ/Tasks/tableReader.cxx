@@ -789,7 +789,6 @@ struct AnalysisEventMixing {
     } // end for (track1)
     VarManager::fgValues[VarManager::kMultDimuonsME] = mult_dimuons;
 
-
     twoTrackFilter = 0;
     for (auto& track1 : tracks1) {
       for (auto& track2 : tracks2) {
