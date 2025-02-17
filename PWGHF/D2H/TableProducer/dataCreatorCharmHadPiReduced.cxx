@@ -672,7 +672,7 @@ struct HfDataCreatorCharmHadPiReduced {
                 // look for common c-hadron mother among prongs 0, 1 and 2
                 for (const auto& cHadronMotherHypo : cHadronMotherHypos) {
                   int8_t depthMax = 2;
-                  if (cHadronMotherHypo == Pdg::kDStar || cHadronMotherHypo == Pdg::kDSStar) { // to include D* -> D π0/γ, D* -> D0 π, and Ds* -> Ds π0/γ
+                  if (cHadronMotherHypo == Pdg::kDStar || cHadronMotherHypo == 423 || cHadronMotherHypo == Pdg::kDSStar) { // to include D* -> D π0/γ, D* -> D0 π, and Ds* -> Ds π0/γ
                     depthMax += 1;
                   }
                   int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
