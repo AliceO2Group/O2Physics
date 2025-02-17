@@ -256,13 +256,12 @@ struct FlowSP {
         registry.add("incl/QA/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
       }
 
-      if (doprocessMCReco){
+      if (doprocessMCReco) {
         registry.add("trackMCReco/after/hPt_inclusive", "", {HistType::kTH1D, {axisPt}});
         registry.add("trackMCReco/after/hPt_positive", "", {HistType::kTH1D, {axisPt}});
         registry.add("trackMCReco/after/hPt_negative", "", {HistType::kTH1D, {axisPt}});
 
         registry.addClone("trackMCReco/after/", "trackMCReco/before/");
-
       }
 
       if (doprocessData) {
@@ -654,7 +653,6 @@ struct FlowSP {
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0M"), collision.centFT0C(), collision.centFT0M());
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFV0A"), collision.centFT0C(), collision.centFV0A());
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal());
-
 
     if constexpr (framework::has_type_v<aod::sptablezdc::Vx, typename CollisionObject::all_columns>) {
       double psiA = 1.0 * std::atan2(collision.qyA(), collision.qxA());
