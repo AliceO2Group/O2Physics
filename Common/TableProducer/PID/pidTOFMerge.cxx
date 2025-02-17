@@ -929,6 +929,12 @@ struct tofPidMerge {
           doprocessRun3.value = false;
         }
       }
+      if (doprocessRun2 && doprocessRun3) {
+        LOG(fatal) << "Both processRun2 and processRun3 are enabled. Pick one of the two";
+      }
+      if (!doprocessRun2 && !doprocessRun3) {
+        LOG(fatal) << "Neither processRun2 nor processRun3 are enabled. Pick one of the two";
+      }
     }
     mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
 
@@ -970,6 +976,12 @@ struct tofPidMerge {
           doprocessBetaMRun3.value = false;
         }
       }
+    }
+    if (doprocessBetaMRun2 && doprocessBetaMRun3) {
+      LOG(fatal) << "Both processBetaMRun2 and processBetaMRun3 are enabled. Pick one of the two";
+    }
+    if (!doprocessBetaMRun2 && !doprocessBetaMRun3) {
+      LOG(fatal) << "Neither processBetaMRun2 nor processBetaMRun3 are enabled. Pick one of the two";
     }
   }
 
