@@ -75,7 +75,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgTriggerCharge, int, 0, "Select on charge of trigger particle: 0 = all; 1 = positive; -1 = negative");
   O2_DEFINE_CONFIGURABLE(cfgAssociatedCharge, int, 0, "Select on charge of associated particle: 0 = all; 1 = positive; -1 = negative");
   O2_DEFINE_CONFIGURABLE(cfgPairCharge, int, 0, "Select on charge of particle pair: 0 = all; 1 = like sign; -1 = unlike sign");
-  O2_DEFINE_CONFIGURABLE(cfgCorrelateTheSame, int, 0, "Correlate the d0 with d0 or d0bar with d0bar, 0 = no, 1 = yes");
+  O2_DEFINE_CONFIGURABLE(cfgCorrelationMethod, int, 0, "Correlation method, 0 = all, 1 = dd, 2 = ddbar");
 
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCut, float, -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)");
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCutMinRadius, float, 0.8f, "Two track cut: radius in m from which two track cuts are applied");
@@ -157,11 +157,11 @@ struct CorrelationTask {
   {
     registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
-    if (doprocessSame2ProngDerived || doprocessMixed2ProngDerived || doprocessSame2Prong2Prong) {
+    if (doprocessSame2ProngDerived || doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML) {
       registry.add("yieldsTrigger", "multiplicity/centrality vs pT vs eta (triggers)", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
       registry.add("etaphiTrigger", "multiplicity/centrality vs eta vs phi (triggers)", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
       registry.add("invMass", "2-prong invariant mass (GeV/c^2)", {HistType::kTH3F, {axisInvMassHistogram, axisPtTrigger, axisMultiplicity}});
-      if (doprocessSame2Prong2Prong) {
+      if (doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML) {
         registry.add("invMassTwoPart", "2D 2-prong invariant mass (GeV/c^2)", {HistType::kTHnSparseF, {axisInvMassHistogram, axisInvMassHistogram, axisPtTrigger, axisPtAssoc, axisMultiplicity}});
       }
     }
@@ -204,9 +204,9 @@ struct CorrelationTask {
       userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
       userMixingAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
     }
-    if (doprocessSame2Prong2Prong)
+    if (doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML)
       userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
-    if (doprocessMixed2Prong2Prong)
+    if (doprocessMixed2Prong2Prong || doprocessMixed2Prong2ProngML)
       userMixingAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
 
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
@@ -263,18 +263,45 @@ struct CorrelationTask {
   void fillQA(const TCollision& collision, float multiplicity, const TTracks1& tracks1, const TTracks2& tracks2)
   {
     for (const auto& track1 : tracks1) {
-      if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value) {
-        if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
-          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
-            continue;
-        }
+      if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
+        if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
+          continue;
         registry.fill(HIST("invMass"), track1.invMass(), track1.pt(), multiplicity);
         for (const auto& track2 : tracks2) {
           if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
-            if (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong) {
+            if (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong || doprocessSame2Prong2ProngML || doprocessMixed2Prong2ProngML) {
               if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
                 continue;
-              if ((track1.decay() != 0) || (track2.decay() != 1)) // D0 in trk1, D0bar in trk2
+
+              if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks1::iterator>::value) {
+                if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks2::iterator>::value) {
+                  if (track1.cfTrackProng0Id() == track2.cfTrackProng0Id()) {
+                    continue;
+                  }
+                }
+                if constexpr (std::experimental::is_detected<HasProng1Id, typename TTracks2::iterator>::value) {
+                  if (track1.cfTrackProng0Id() == track2.cfTrackProng1Id()) {
+                    continue;
+                  }
+                }
+              }
+
+              if constexpr (std::experimental::is_detected<HasProng1Id, typename TTracks1::iterator>::value) {
+                if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks2::iterator>::value) {
+                  if (track1.cfTrackProng1Id() == track2.cfTrackProng0Id()) {
+                    continue;
+                  }
+                }
+                if constexpr (std::experimental::is_detected<HasProng1Id, typename TTracks2::iterator>::value) {
+                  if (track1.cfTrackProng1Id() == track2.cfTrackProng1Id()) {
+                    continue;
+                  }
+                }
+              } // no shared prong for two mothers
+
+              if (cfgCorrelationMethod == 1 && track1.decay() != track2.decay())
+                continue;
+              if (cfgCorrelationMethod == 2 && track1.decay() == track2.decay())
                 continue;
               registry.fill(HIST("invMassTwoPart"), track1.invMass(), track2.invMass(), track1.pt(), track2.pt(), multiplicity);
             }
@@ -386,7 +413,7 @@ struct CorrelationTask {
             continue;
           }
         }
-      }
+      } // ML selection
 
       if (cfgMassAxis) {
         if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value)
@@ -430,11 +457,10 @@ struct CorrelationTask {
         }
 
         if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
-          if (cfgCorrelateTheSame == 0 && (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong) && (track1.decay() == track2.decay() || track1.decay() > 1 || track2.decay() > 1)) {
-            continue; // D0 and anti-D0 selection
-          } else if (cfgCorrelateTheSame == 1 && (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong) && (track1.decay() != track2.decay() || track1.decay() > 1 || track2.decay() > 1)) {
-            continue; // the same particle selection
-          }
+          if (cfgCorrelationMethod == 1 && track1.decay() != track2.decay())
+            continue;
+          if (cfgCorrelationMethod == 2 && track1.decay() == track2.decay())
+            continue;
         }
 
         if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks1::iterator>::value) {
@@ -511,10 +537,10 @@ struct CorrelationTask {
               continue;
             }
           }
-        }
+        } // ML selection
 
         // last param is the weight
-        if (cfgMassAxis && (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong) && !(doprocessSame2ProngDerived || doprocessMixed2ProngDerived)) {
+        if (cfgMassAxis && (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong || doprocessSame2Prong2ProngML || doprocessMixed2Prong2ProngML) && !(doprocessSame2ProngDerived || doprocessMixed2ProngDerived)) {
           if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value)
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track2.invMass(), track1.invMass(), associatedWeight);
           else
