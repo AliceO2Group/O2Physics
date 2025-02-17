@@ -126,17 +126,17 @@ struct UccZdc {
   Configurable<float> zemCut{"zemCut", 1000.0, "ZEM cut"};
   Configurable<float> tdcCut{"tdcCut", 1.0, "TDC cut"};
 
-  enum evCutLabel { all = 1,
-                    sel8,
+  enum evCutLabel { aLL = 1,
+                    sEl8,
                     noSameBunchPileup,
                     isGoodZvtxFT0vsPV,
                     isVertexITSTPC,
                     isVertexTOFmatched,
-                    centrality,
+                    cEntrality,
                     vtxZ,
                     centralityCut,
                     zDC,
-                    t0,
+                    tZero,
                     tDC,
                     zEM };
 
@@ -293,11 +293,11 @@ struct UccZdc {
   template <typename CheckCol>
   bool isEventSelected(CheckCol const& col)
   {
-    registry.fill(HIST("hEventCounter"), evCutLabel::all);
+    registry.fill(HIST("hEventCounter"), evCutLabel::aLL);
     if (!col.sel8()) {
       return false;
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::sel8);
+    registry.fill(HIST("hEventCounter"), evCutLabel::sEl8);
 
     if (isApplySameBunchPileup &&
         !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -332,7 +332,7 @@ struct UccZdc {
     if (col.centFT0C() < 0. || col.centFT0C() > 100.) {
       return false;
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::centrality);
+    registry.fill(HIST("hEventCounter"), evCutLabel::cEntrality);
 
     // Z-vertex position cut
     if (std::fabs(col.posZ()) > posZcut) {
@@ -457,7 +457,7 @@ struct UccZdc {
     } else {
       return;
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::t0);
+    registry.fill(HIST("hEventCounter"), evCutLabel::tZero);
 
     if (foundBC.has_fv0a()) {
       for (const auto& amplitude : foundBC.fv0a().amplitude()) {
@@ -560,7 +560,7 @@ struct UccZdc {
   {
     // Generated MC
     for (const auto& mccollision : mcCollisions) {
-      registry.fill(HIST("hEventCounter_MC"), evCutLabel::all);
+      registry.fill(HIST("hEventCounter_MC"), evCutLabel::aLL);
       // Z-vtx position cut
       if (std::fabs(mccollision.posZ()) > posZcut) {
         continue;
