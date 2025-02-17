@@ -68,7 +68,7 @@ class FemtoUniverseSoftPionRemoval
       const auto& negChild = particles.iteratorAt(part2.index() - 1);
 
       // D* reconstruction
-      double pSum2 = std::pow(posChild.px()+negChild.px()+part1.px(), 2.0) + std::pow(posChild.py()+negChild.py()+part1.py(), 2.0) + std::pow(posChild.pz()+negChild.pz()+part1.pz(), 2.0);
+      double pSum2 = std::pow(posChild.px() + negChild.px() + part1.px(), 2.0) + std::pow(posChild.py() + negChild.py() + part1.py(), 2.0) + std::pow(posChild.pz() + negChild.pz() + part1.pz(), 2.0);
       // Energies of the daughters -> D0->K-pi+
       double e1Pi = std::sqrt(std::pow(MassPiPlus, 2.0) + std::pow(posChild.px(), 2.0) + std::pow(posChild.py(), 2.0) + std::pow(posChild.pz(), 2.0));
       double e1K = std::sqrt(std::pow(MassKPlus, 2.0) + std::pow(negChild.px(), 2.0) + std::pow(negChild.py(), 2.0) + std::pow(negChild.pz(), 2.0));
@@ -83,12 +83,12 @@ class FemtoUniverseSoftPionRemoval
 
       bool isSoftPion = false;
       double softPiMass = 0.14542; // pion mass in D*->D0pi decay
-      double lowMassLimitSoftPion = softPiMass - 3.0*sigma;
-      double highMassLimitSoftPion = softPiMass + 3.0*sigma;
+      double lowMassLimitSoftPion = softPiMass - 3.0 * sigma;
+      double highMassLimitSoftPion = softPiMass + 3.0 * sigma;
 
       if (isD0Cand) {
-        if (mDstar1-part2.mLambda() > 0.) {
-          mHistogramRegistry->fill(HIST("SoftPion/softPionMassVsPt"), mDstar1-part2.mLambda(), part2.pt());
+        if (mDstar1 - part2.mLambda() > 0.) {
+          mHistogramRegistry->fill(HIST("SoftPion/softPionMassVsPt"), mDstar1 - part2.mLambda(), part2.pt());
         }
         if ((std::abs(mDstar1 - part2.mLambda()) > lowMassLimitSoftPion) && (std::abs(mDstar1 - part2.mLambda()) < highMassLimitSoftPion)) {
           isSoftPion = true;
@@ -96,8 +96,8 @@ class FemtoUniverseSoftPionRemoval
       }
 
       if (isD0barCand) {
-        if (mDstar2-part2.mAntiLambda() > 0.) {
-          mHistogramRegistry->fill(HIST("SoftPion/softPionMassVsPt"), mDstar2-part2.mAntiLambda(), part2.pt());
+        if (mDstar2 - part2.mAntiLambda() > 0.) {
+          mHistogramRegistry->fill(HIST("SoftPion/softPionMassVsPt"), mDstar2 - part2.mAntiLambda(), part2.pt());
         }
         if ((std::abs(mDstar2 - part2.mAntiLambda()) > lowMassLimitSoftPion) && (std::abs(mDstar2 - part2.mAntiLambda()) < highMassLimitSoftPion)) {
           isSoftPion = true;
