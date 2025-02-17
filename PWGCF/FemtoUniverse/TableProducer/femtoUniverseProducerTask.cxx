@@ -931,15 +931,15 @@ struct FemtoUniverseProducerTask {
   bool fillMCTruthCollisionsCentRun3(CollisionType const& col)
   {
     const auto vtxZ = col.posZ();
-        
+
     if (std::abs(vtxZ) > confEvtZvtx) {
       return false;
     } else {
       outputCollision(vtxZ, 0, 0, 2, mMagField);
       return true;
-    }  
+    }
   }
-  
+
   template <bool isMC, typename CollisionType>
   void fillCollisionsCentRun3ColExtra(CollisionType const& col, double irrate)
   {
@@ -2071,9 +2071,9 @@ struct FemtoUniverseProducerTask {
   void processTruthAndFullMCCentRun3(aod::McCollisions const& mccols,
                                      aod::McParticles const& mcParticles,
                                      aod::FemtoFullCollisionCentRun3MCs const& collisions,
-                                     soa::Filtered<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> const& tracks,    
+                                     soa::Filtered<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> const& tracks,
                                      aod::BCsWithTimestamps const&)
-  {    
+  {
     // recos
     std::set<int> recoMcIds;
     for (const auto& col : collisions) {
@@ -2083,7 +2083,7 @@ struct FemtoUniverseProducerTask {
       const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
 
       // fill the tables
-      const auto colcheck = fillCollisionsCentRun3<true>(col);      
+      const auto colcheck = fillCollisionsCentRun3<true>(col);
       if (colcheck) {
         fillCollisionsCentRun3ColExtra<true>(col, ir);
         fillTracks<true>(groupedTracks);
@@ -2097,8 +2097,8 @@ struct FemtoUniverseProducerTask {
     // truth
     for (const auto& mccol : mccols) {
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCCollCentPbPb, mccol.globalIndex());
-      for (const auto& col : groupedCollisions) {        
-        const auto colcheck = fillMCTruthCollisionsCentRun3(col);                           // fills the reco collisions for mc collision
+      for (const auto& col : groupedCollisions) {
+        const auto colcheck = fillMCTruthCollisionsCentRun3(col); // fills the reco collisions for mc collision
         if (colcheck) {
           auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
           outputCollExtra(1.0, 1.0);
