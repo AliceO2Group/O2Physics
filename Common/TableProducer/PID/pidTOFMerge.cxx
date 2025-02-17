@@ -8,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
 ///
 /// \file   tofPidMerge.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
@@ -516,9 +515,9 @@ struct tofEventTime {
   Produces<o2::aod::EvTimeTOFOnly> tableEvTimeTOFOnly;
   Produces<o2::aod::pidEvTimeFlags> tableFlags;
   static constexpr bool removeTOFEvTimeBias = true; // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
-  static constexpr float diamond = 6.0;             // Collision diamond used in the estimation of the TOF event time
-  static constexpr float errDiamond = diamond * 33.356409f;
-  static constexpr float weightDiamond = 1.f / (errDiamond * errDiamond);
+  static constexpr float kDiamond = 6.0;            // Collision diamond used in the estimation of the TOF event time
+  static constexpr float kErrDiamond = kDiamond * 33.356409f;
+  static constexpr float kWeightDiamond = 1.f / (kErrDiamond * kErrDiamond);
 
   bool enableTableTOFEvTime = false;
   bool enableTableEvTimeTOFOnly = false;
@@ -692,7 +691,7 @@ struct tofEventTime {
         const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
 
         // Compute the TOF event time
-        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
+        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, kDiamond);
 
         float t0AC[2] = {.0f, 999.f};                                                                                             // Value and error of T0A or T0C or T0AC
         float t0TOF[2] = {static_cast<float_t>(evTimeMakerTOF.mEventTime), static_cast<float_t>(evTimeMakerTOF.mEventTimeError)}; // Value and error of TOF
@@ -714,7 +713,7 @@ struct tofEventTime {
           if constexpr (removeTOFEvTimeBias) {
             evTimeMakerTOF.removeBias<Run3TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
           }
-          if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || std::abs(t0TOF[0]) < maxEvTimeTOF)) {
+          if (t0TOF[1] < kErrDiamond && (maxEvTimeTOF <= 0 || std::abs(t0TOF[0]) < maxEvTimeTOF)) {
             flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
 
             weight = 1.f / (t0TOF[1] * t0TOF[1]);
@@ -735,9 +734,9 @@ struct tofEventTime {
             sumOfWeights += weight;
           }
 
-          if (sumOfWeights < weightDiamond) { // avoiding sumOfWeights = 0 or worse that diamond
+          if (sumOfWeights < kWeightDiamond) { // avoiding sumOfWeights = 0 or worse that kDiamond
             eventTime = 0;
-            sumOfWeights = weightDiamond;
+            sumOfWeights = kWeightDiamond;
             tableFlags(0);
           } else {
             tableFlags(flags);
@@ -768,7 +767,7 @@ struct tofEventTime {
         const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
 
         // First make table for event time
-        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
+        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, kDiamond);
         int nGoodTracksForTOF = 0;
         float et = evTimeMakerTOF.mEventTime;
         float erret = evTimeMakerTOF.mEventTimeError;
@@ -778,11 +777,11 @@ struct tofEventTime {
             evTimeMakerTOF.removeBias<Run3TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
           }
           uint8_t flags = 0;
-          if (erret < errDiamond && (maxEvTimeTOF <= 0.f || std::abs(et) < maxEvTimeTOF)) {
+          if (erret < kErrDiamond && (maxEvTimeTOF <= 0.f || std::abs(et) < maxEvTimeTOF)) {
             flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
           } else {
             et = 0.f;
-            erret = errDiamond;
+            erret = kErrDiamond;
           }
           tableFlags(flags);
           tableEvTime(et, erret);
@@ -919,19 +918,16 @@ struct tofPidMerge {
       LOG(info) << "No PID tables are required, disabling the task";
       doprocessRun3.value = false;
       doprocessRun2.value = false;
-      return;
-    } else if (doprocessRun3.value == false && doprocessRun2.value == false) {
-      LOG(fatal) << "PID tables are required but process data is disabled. Please enable it";
-    }
-    if (doprocessRun3.value == true && doprocessRun2.value == true) {
-      LOG(fatal) << "Both processRun2 and processRun3 are enabled. Pick one of the two";
-    }
-    if (metadataInfo.isFullyDefined()) {
-      if (metadataInfo.isRun3() && doprocessRun2) {
-        LOG(fatal) << "Run2 process function is enabled but the metadata says it is Run3";
-      }
-      if (!metadataInfo.isRun3() && doprocessRun3) {
-        LOG(fatal) << "Run3 process function is enabled but the metadata says it is Run2";
+    } else if (mTOFCalibConfig.autoSetProcessFunctions()) {
+      LOG(info) << "Autodetecting process functions for mass and beta";
+      if (metadataInfo.isFullyDefined()) {
+        if (metadataInfo.isRun3()) {
+          doprocessRun3.value = true;
+          doprocessRun2.value = false;
+        } else {
+          doprocessRun2.value = true;
+          doprocessRun3.value = false;
+        }
       }
     }
     mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
@@ -961,17 +957,17 @@ struct tofPidMerge {
 
     if (!enableTableBeta && !enableTableMass) {
       LOG(info) << "No table for TOF mass and beta is required. Disabling beta and mass tables";
-      doprocessRun2.value = false;
-      doprocessRun3.value = false;
+      doprocessBetaMRun2.value = false;
+      doprocessBetaMRun3.value = false;
     } else if (mTOFCalibConfig.autoSetProcessFunctions()) {
       LOG(info) << "Autodetecting process functions for mass and beta";
       if (metadataInfo.isFullyDefined()) {
         if (metadataInfo.isRun3()) {
-          doprocessRun3.value = true;
-          doprocessRun2.value = false;
+          doprocessBetaMRun3.value = true;
+          doprocessBetaMRun2.value = false;
         } else {
-          doprocessRun2.value = true;
-          doprocessRun3.value = false;
+          doprocessBetaMRun2.value = true;
+          doprocessBetaMRun3.value = false;
         }
       }
     }
@@ -1303,7 +1299,7 @@ struct tofPidMerge {
       }
     }
   }
-  PROCESS_SWITCH(tofPidMerge, processRun3, "Produce tables. Set to off if the tables are not required", true);
+  PROCESS_SWITCH(tofPidMerge, processRun3, "Produce Run 3 Nsigma table. Set to off if the tables are not required, or autoset is on", false);
 
   template <o2::track::PID::ID pid>
   using ResponseImplementationRun2 = o2::pid::tof::ExpTimes<Run2TrksWtofWevTime::iterator, pid>;
@@ -1465,7 +1461,7 @@ struct tofPidMerge {
       }
     }
   }
-  PROCESS_SWITCH(tofPidMerge, processRun2, "Produce tables. Set to off if the tables are not required", false);
+  PROCESS_SWITCH(tofPidMerge, processRun2, "Produce Run 2 Nsigma table. Set to off if the tables are not required, or autoset is on", false);
 
   o2::pid::tof::Beta responseBetaRun2;
   void processBetaMRun2(Run2TrksWtofWevTime const& tracks)
@@ -1489,7 +1485,7 @@ struct tofPidMerge {
       }
     }
   }
-  PROCESS_SWITCH(tofPidMerge, processBetaMRun2, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", true);
+  PROCESS_SWITCH(tofPidMerge, processBetaMRun2, "Produce Run 2 Beta and Mass table. Set to off if the tables are not required, or autoset is on", false);
 
   o2::pid::tof::Beta responseBeta;
   void processBetaMRun3(Run3TrksWtofWevTime const& tracks)
@@ -1514,7 +1510,7 @@ struct tofPidMerge {
       }
     }
   }
-  PROCESS_SWITCH(tofPidMerge, processBetaMRun3, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", true);
+  PROCESS_SWITCH(tofPidMerge, processBetaMRun3, "Produce Run 3 Beta and Mass table. Set to off if the tables are not required, or autoset is on", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
