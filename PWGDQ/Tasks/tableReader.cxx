@@ -776,21 +776,18 @@ struct AnalysisEventMixing {
     }
 
     uint32_t twoTrackFilter = 0;
-
-    if (fConfigSingleMuCumulants) {
-      uint32_t mult_dimuons = 0;
-      for (auto& track1 : tracks1) {
-        for (auto& track2 : tracks2) {
-          if constexpr (TPairType == VarManager::kDecayToMuMu) {
-            twoTrackFilter = static_cast<uint32_t>(track1.isMuonSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoMuonFilterMask;
-          }
-          if (twoTrackFilter && track1.sign() * track2.sign() < 0) {
-            mult_dimuons++;
-          }
-        } // end for (track2)
-      } // end for (track1)
-      VarManager::fgValues[VarManager::kMultDimuonsME] = mult_dimuons;
-    }
+    uint32_t mult_dimuons = 0;
+    for (auto& track1 : tracks1) {
+      for (auto& track2 : tracks2) {
+        if constexpr (TPairType == VarManager::kDecayToMuMu) {
+          twoTrackFilter = static_cast<uint32_t>(track1.isMuonSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoMuonFilterMask;
+        }
+        if (twoTrackFilter && track1.sign() * track2.sign() < 0) {
+          mult_dimuons++;
+        }
+      } // end for (track2)
+    } // end for (track1)
+    VarManager::fgValues[VarManager::kMultDimuonsME] = mult_dimuons;
 
     twoTrackFilter = 0;
     for (auto& track1 : tracks1) {
