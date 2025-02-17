@@ -21,18 +21,18 @@
 namespace o2::aod
 {
 
-DECLARE_SOA_TABLE(ReducedCollisions, "AOD", "REDUCEDCOLLISION", //! reduced collision table (same structure as the original collision table)
-                  o2::soa::Index<>, collision::BCId,
+DECLARE_SOA_TABLE(ReducedCollisions, "AOD", "REDCOLLISION", //! reduced collision table (same structure as the original collision table)
+                  o2::soa::Index<>,
                   collision::PosX, collision::PosY, collision::PosZ,
                   collision::CovXX, collision::CovXY, collision::CovYY, collision::CovXZ, collision::CovYZ, collision::CovZZ,
                   collision::Flags, collision::Chi2, collision::NumContrib,
                   collision::CollisionTime, collision::CollisionTimeRes,
                   bc::RunNumber);
 
-DECLARE_SOA_TABLE(ReducedPVMults, "AOD", "REDUCEDPVMULT", //! Multiplicity from the PV contributors, joinable with reducedCollisions
+DECLARE_SOA_TABLE(ReducedPVMults, "AOD", "REDPVMULT", //! Multiplicity from the PV contributors, joinable with reducedCollisions
                   mult::MultNTracksPV);
 
-DECLARE_SOA_TABLE(ReducedCentFT0Cs, "AOD", "REDUCEDCENTFT0C", //! Reduced Run 3 FT0C centrality table, joinable with reducedCollisions
+DECLARE_SOA_TABLE(ReducedCentFT0Cs, "AOD", "REDCENTFT0C", //! Reduced Run 3 FT0C centrality table, joinable with reducedCollisions
                   cent::CentFT0C);
 
 namespace reducedtracks3body
@@ -189,7 +189,7 @@ DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float); //! Nsigma separation with 
 
 } // namespace reducedtracks3body
 
-DECLARE_SOA_TABLE_FULL(StoredReducedTracksIU, "ReducedTracks_IU", "AOD", "REDUCEDTRACK_IU", //! On disk version of the track parameters at inner most update (e.g. ITS) as it comes from the tracking
+DECLARE_SOA_TABLE_FULL(StoredReducedTracksIU, "ReducedTracks_IU", "AOD", "REDTRACK_IU", //! On disk version of the track parameters at inner most update (e.g. ITS) as it comes from the tracking
                        o2::soa::Index<>, reducedtracks3body::CollisionId,
                        reducedtracks3body::X, reducedtracks3body::Alpha,
                        reducedtracks3body::Y, reducedtracks3body::Z, reducedtracks3body::Snp, reducedtracks3body::Tgl,
@@ -224,7 +224,7 @@ DECLARE_SOA_TABLE_FULL(StoredReducedTracksIU, "ReducedTracks_IU", "AOD", "REDUCE
                        reducedtracks3body::ITSClsSizeInLayer<reducedtracks3body::ITSClusterSizes>,
                        reducedtracks3body::TPCCrossedRowsOverFindableCls<reducedtracks3body::TPCNClsFindable, reducedtracks3body::TPCNClsFindableMinusCrossedRows>);
 
-DECLARE_SOA_EXTENDED_TABLE(ReducedTracksIU, StoredReducedTracksIU, "EXREDUCEDTRACK_IU", 0, //! Track parameters at inner most update (e.g. ITS) as it comes from the tracking
+DECLARE_SOA_EXTENDED_TABLE(ReducedTracksIU, StoredReducedTracksIU, "EXREDTRACK_IU", 0, //! Track parameters at inner most update (e.g. ITS) as it comes from the tracking
                            reducedtracks3body::Pt,
                            reducedtracks3body::P,
                            reducedtracks3body::Eta,
@@ -258,7 +258,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Track2, track2, int, ReducedTracksIU, "_2");      
 DECLARE_SOA_INDEX_COLUMN_FULL(Collision, collision, int, ReducedCollisions, ""); //! Collision index
 } // namespace reduceddecay3body
 
-DECLARE_SOA_TABLE(ReducedDecay3Bodys, "AOD", "REDUCEDDECAY3BODY", //! reduced 3-body decay table
+DECLARE_SOA_TABLE(ReducedDecay3Bodys, "AOD", "REDDECAY3BODY", //! reduced 3-body decay table
                   o2::soa::Index<>, reduceddecay3body::CollisionId, reduceddecay3body::Track0Id, reduceddecay3body::Track1Id, reduceddecay3body::Track2Id);
 
 using ReducedDecay3BodysLinked = soa::Join<ReducedDecay3Bodys, Decay3BodyDataLink>;
