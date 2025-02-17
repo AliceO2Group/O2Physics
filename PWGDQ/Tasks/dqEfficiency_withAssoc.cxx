@@ -538,7 +538,7 @@ struct AnalysisTrackSelection {
       VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       // fill event information which might be needed in histograms/cuts that combine track and event properties
       VarManager::FillEvent<TEventFillMap>(event);
-      ReducedMCEvent *eventMC = nullptr;
+      ReducedMCEvent* eventMC = nullptr;
       if (event.has_reducedMCevent()) {
         auto eventMC = event.reducedMCevent();
         VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(eventMC);
@@ -2088,7 +2088,7 @@ struct AnalysisAsymmetricPairing {
   std::map<int, std::vector<TString>> fTrackHistNames;
   std::map<int, std::vector<TString>> fBarrelHistNamesMCmatched;
   std::vector<AnalysisCompositeCut*> fPairCuts;
-  int fNPairHistPrefixes; 
+  int fNPairHistPrefixes;
 
   std::vector<MCSignal> fRecMCSignals;
   std::vector<MCSignal> fGenMCSignals;

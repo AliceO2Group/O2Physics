@@ -2017,7 +2017,7 @@ struct AnalysisAsymmetricPairing {
 
   std::map<int, std::vector<TString>> fTrackHistNames;
   std::vector<AnalysisCompositeCut*> fPairCuts;
-  int fNPairHistPrefixes; 
+  int fNPairHistPrefixes;
 
   // Filter masks to find legs in BarrelTrackCuts table
   uint32_t fLegAFilterMask;
