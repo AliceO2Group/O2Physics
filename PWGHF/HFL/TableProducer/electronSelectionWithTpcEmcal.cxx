@@ -282,20 +282,23 @@ struct HfElectronSelectionWithTpcEmcal {
       if (!selAssoTracks(pTrack)) {
         continue;
       }
-      int PDGe1 = kElectron;
-      int PDGe2 = kElectron;
+      if (electron.pt() <= pTrack.pt()) {
+        continue;
+      }
+      int pdgE1 = kElectron;
+      int pdgE2 = kElectron;
       if (electron.sign() > 0) {
-        PDGe1 = kPositron;
+        pdgE1 = kPositron; 
       }
 
       if (pTrack.sign() > 0) {
-        PDGe2 = kPositron;
+        pdgE2 = kPositron;
       }
 
       KFPTrack kfpTrack = createKFPTrackFromTrack(electron);
       KFPTrack kfpAssociatedTrack = createKFPTrackFromTrack(pTrack);
-      KFParticle KFTrack(kfpTrack, PDGe1);
-      KFParticle kfAssociatedTrack(kfpAssociatedTrack, PDGe2);
+      KFParticle KFTrack(kfpTrack, pdgE1);
+      KFParticle kfAssociatedTrack(kfpAssociatedTrack, pdgE2);
       const KFParticle* electronPairs[2] = {&KFTrack, &kfAssociatedTrack};
       KFNonHfe.SetConstructMethod(2);
       KFNonHfe.Construct(electronPairs, 2);
@@ -598,6 +601,7 @@ struct HfElectronSelectionWithTpcEmcal {
             registry.fill(HIST("hEtaeEmbTrkPt"), particleMc.pt());
           }
         }
+        std::cout << " collision id" << mcCollision.globalIndex() << " coll id " << particleMc.mcCollisionId() << std::endl;
         HfGenElectronSel(mcCollision.globalIndex(), particleMc.globalIndex(), particleMc.eta(), particleMc.phi(), particleMc.pt(), isNonHfe);
       }
     }
