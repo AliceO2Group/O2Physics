@@ -174,7 +174,7 @@ class FemtoDreamCascadeSelection
     } else if (child == femtoDreamCascadeSelection::kNegTrack) {
       NegDaughTrack.setSelection(selVal, selVar, selType);
     } else if (child == femtoDreamCascadeSelection::kBachTrack) {
-      BachDaugTrack.setSelection(selVal, selVar, selType);
+      BachDaughTrack.setSelection(selVal, selVar, selType);
     }
   }
 
@@ -187,7 +187,7 @@ class FemtoDreamCascadeSelection
     } else if (child == femtoDreamCascadeSelection::kNegTrack) {
       NegDaughTrack.setPIDSpecies(pids);
     } else if (child == femtoDreamCascadeSelection::kBachTrack) {
-      BachDaugTrack.setPIDSpecies(pids);
+      BachDaughTrack.setPIDSpecies(pids);
     }
   }
 
@@ -315,7 +315,7 @@ class FemtoDreamCascadeSelection
 
   FemtoDreamTrackSelection PosDaughTrack;
   FemtoDreamTrackSelection NegDaughTrack;
-  FemtoDreamTrackSelection BachDaugTrack;
+  FemtoDreamTrackSelection BachDaughTrack;
 
   static constexpr int kNcascadeSelection = 16;
 
@@ -431,9 +431,9 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
                        aod::femtodreamparticle::TrackType::kNegChild,
                        aod::femtodreamparticle::cutContainerType>(mQAHistogramRegistry, mHistogramRegistry);
 
-    BachDaugTrack.init<aod::femtodreamparticle::ParticleType::kCascadeBachelor,
-                       aod::femtodreamparticle::TrackType::kBachelor,
-                       aod::femtodreamparticle::cutContainerType>(mQAHistogramRegistry, mHistogramRegistry);
+    BachDaughTrack.init<aod::femtodreamparticle::ParticleType::kCascadeBachelor,
+                        aod::femtodreamparticle::TrackType::kBachelor,
+                        aod::femtodreamparticle::cutContainerType>(mQAHistogramRegistry, mHistogramRegistry);
   }
 
   /// check whether the most open cuts are fulfilled - most of this should have
@@ -506,7 +506,9 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   const float invMass = isCascOmega ? cascade.mOmega() : cascade.mXi();
   // const float invMass = cascade.mXi();
 
-  // LOGF(info, "GG producer: Charge %i", cascade.sign());
+
+  
+  
   if (invMassLambda < fV0InvMassLowLimit || invMassLambda > fV0InvMassUpLimit) {
     return false;
   }
@@ -579,10 +581,23 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   if (!NegDaughTrack.isSelectedMinimal(negTrack)) {
     return false;
   }
-  if (!BachDaugTrack.isSelectedMinimal(bachTrack)) {
+  if (!BachDaughTrack.isSelectedMinimal(bachTrack)) {
     return false;
   }
-
+  /*
+  LOGF(info, "       -------       GG PRODUCER: NEW CASCADE: Is selected Minimal       -------        ");
+  LOGF(info, " Pos");
+  std::cout<< "CutBit " << static_cast<int>(PosDaughTrack.getCutContainer<false, aod::femtodreamparticle::cutContainerType>(posTrack, cascade.positivept(), cascade.positiveeta(), cascade.dcapostopv())[0])<<std::endl;
+  std::cout<< "CutBit Tracks " << static_cast<int>(PosDaughTrack.getCutContainer<false, aod::femtodreamparticle::cutContainerType>(posTrack, posTrack.pt(), posTrack.eta(), posTrack.dcaXY())[0])<<std::endl;
+  LOGF(info, " Neg");
+  std::cout<< "CutBit " << static_cast<int>(PosDaughTrack.getCutContainer<false, aod::femtodreamparticle::cutContainerType>(negTrack, cascade.negativept(), cascade.negativeeta(), cascade.dcanegtopv())[0])<<std::endl;
+  std::cout<< "CutBit Tracks " << static_cast<int>(PosDaughTrack.getCutContainer<false, aod::femtodreamparticle::cutContainerType>(negTrack, negTrack.pt(), negTrack.eta(), negTrack.dcaXY())[0])<<std::endl;
+  LOGF(info, " Bach");
+  std::cout<< "CutBit " << static_cast<int>(PosDaughTrack.getCutContainer<false, aod::femtodreamparticle::cutContainerType>(bachTrack, cascade.bachelorpt(), cascade.bacheloreta(), cascade.dcabachtopv())[0])<<std::endl;
+  std::cout<< "CutBit Tracks " << static_cast<int>(PosDaughTrack.getCutContainer<false, aod::femtodreamparticle::cutContainerType>(bachTrack, bachTrack.pt(), bachTrack.eta(), bachTrack.dcaXY())[0])<<std::endl;
+  // LOGF(info, "GG producer: Charge %i", cascade.sign());
+  */
+  
   return true;
 }
 
@@ -590,11 +605,37 @@ template <typename cutContainerType, typename Col, typename Casc, typename Track
 std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col const& col, Casc const& casc, Track const& posTrack, Track const& negTrack, Track const& bachTrack)
 {
   // Cut bit
+  LOGF(info, "----- NEW CASCADE -----");
+  LOGF(info, "Positive Track");
   auto outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, casc.positivept(), casc.positiveeta(), casc.dcapostopv());
+  LOGF(info, "-> Cut %i", static_cast<int>(outputPosTrack[0]));
+  LOGF(info, "-> PID %i", static_cast<int>(outputPosTrack[1]));
+  LOGF(info, "     using track infos");
+  //outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, posTrack.pt(), posTrack.eta(), sqrtf(powf(posTrack.dcaXY(), 2.f) + powf(posTrack.dcaZ(), 2.f)));
+  outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, casc.positivept(), casc.positiveeta(), sqrtf(powf(posTrack.dcaXY(), 2.f) + powf(posTrack.dcaZ(), 2.f)));
+  LOGF(info, "     -> Cut %i", static_cast<int>(outputPosTrack[0]));
+  LOGF(info, "     -> PID %i", static_cast<int>(outputPosTrack[1]));
+  
+  LOGF(info, "Negative Track");
   auto outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, casc.negativept(), casc.negativeeta(), casc.dcanegtopv());
-  auto outputBachTrack = BachDaugTrack.getCutContainer<false, cutContainerType>(bachTrack, casc.bachelorpt(), casc.bacheloreta(), casc.dcabachtopv());
+  LOGF(info, "-> Cut %i", static_cast<int>(outputNegTrack[0]));
+  LOGF(info, "-> PID %i", static_cast<int>(outputNegTrack[1]));
+  //outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, negTrack.pt(), negTrack.eta(), sqrtf(powf(negTrack.dcaXY(), 2.f) + powf(negTrack.dcaZ(), 2.f)));
+  outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, casc.negativept(), casc.negativeeta(), sqrtf(powf(negTrack.dcaXY(), 2.f) + powf(negTrack.dcaZ(), 2.f)));
+  LOGF(info, "     -> Cut %i", static_cast<int>(outputNegTrack[0]));
+  LOGF(info, "     -> PID %i", static_cast<int>(outputNegTrack[1]));
+  
+  LOGF(info, "Bachelor Track");
+  auto outputBachTrack = BachDaughTrack.getCutContainer<false, cutContainerType>(bachTrack, casc.bachelorpt(), casc.bacheloreta(), casc.dcabachtopv());
+  LOGF(info, "-> Cut %i", static_cast<int>(outputBachTrack[0]));
+  LOGF(info, "-> PID %i", static_cast<int>(outputBachTrack[1]));
+  //outputNegTrack = BachDaughTrack.getCutContainer<false, cutContainerType>(bachTrack, bachTrack.pt(), bachTrack.eta(), sqrtf(powf(bachTrack.dcaXY(), 2.f) + powf(bachTrack.dcaZ(), 2.f)));
+  outputNegTrack = BachDaughTrack.getCutContainer<false, cutContainerType>(bachTrack, casc.bachelorpt(), casc.bacheloreta(), sqrtf(powf(bachTrack.dcaXY(), 2.f) + powf(bachTrack.dcaZ(), 2.f)));
+  LOGF(info, "     -> Cut %i", static_cast<int>(outputBachTrack[0]));
+  LOGF(info, "     -> PID %i", static_cast<int>(outputBachTrack[1]));
   cutContainerType output = 0;
   size_t counter = 0;
+
 
   float sign = 0.;
   if (casc.sign() < 0) {
@@ -671,6 +712,19 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
     //}
   } // for loop
 
+  /*
+  LOGF(info, "       -------       GG PRODUCER: NEW CASCADE Get Cut Containter      -------        ");
+  LOGF(info, " Pos");
+  std::cout<< "Cut: "<<static_cast<int>(outputPosTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts))<<std::endl;
+  std::cout<< "PID: "<<static_cast<int>(outputPosTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kPID))<<std::endl;
+  LOGF(info, " Neg");
+  std::cout<< "Cut: "<<static_cast<int>(outputNegTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts))<<std::endl;
+  std::cout<< "PID: "<<static_cast<int>(outputNegTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kPID))<<std::endl;
+  LOGF(info, " Bach");
+  std::cout<< "Cut: "<<static_cast<int>(outputBachTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts))<<std::endl;
+  std::cout<< "PID: "<<static_cast<int>(outputBachTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kPID))<<std::endl;
+  // LOGF(info, "GG producer: Charge %i", cascade.sign());
+  */
   return {
     output,
     outputPosTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
@@ -711,8 +765,8 @@ void FemtoDreamCascadeSelection::fillQA(Col const& col, Casc const& casc, Track 
                          aod::femtodreamparticle::TrackType::kPosChild, false, cutstage>(posTrack);
     NegDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kCascadeV0Child,
                          aod::femtodreamparticle::TrackType::kNegChild, false, cutstage>(negTrack);
-    BachDaugTrack.fillQA<aod::femtodreamparticle::ParticleType::kCascadeBachelor,
-                         aod::femtodreamparticle::TrackType::kBachelor, false, cutstage>(bachTrack);
+    BachDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kCascadeBachelor,
+                          aod::femtodreamparticle::TrackType::kBachelor, false, cutstage>(bachTrack);
   }
 }
 

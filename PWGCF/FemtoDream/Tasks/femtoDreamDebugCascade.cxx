@@ -29,6 +29,8 @@
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamMath.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -66,6 +68,13 @@ struct femtoDreamDebugCascade {
   Configurable<aod::femtodreamparticle::cutContainerType> ConfCascade_ChildBach_CutBit{"ConfCascade_ChildBach_CutBit", 149, "Bachelor Child of Cascade - PID bit from cutCulator"};
   Configurable<aod::femtodreamparticle::cutContainerType> ConfCascade_ChildBach_TPCBit{"ConfCascade_ChildBach_TPCBit", 8, "Bachelor Child of Cascade - PID bit from cutCulator"};
   Configurable<bool> ConfUseChildCuts{"ConfUseChildCuts", true, "Use cuts on the children of the Cascades additional to those of the selection of the cascade builder"};
+  
+  Configurable<bool> ConfIsOmega{"ConfIsOmega", false, "Switch between Xi and Omaga Cascades: If true: Omega; else: Xi"};
+  Configurable<bool> ConfRejectCompetingMass{"ConfRejectCompetingMass", false, "Reject the competing Cascade Mass (use only for debugging. More efficient to exclude it already at the producer level)"};
+  Configurable<float> ConfCompetingCascadeMassLowLimit{"ConfCompetingCascadeMassLowLimit", 0. , "Lower Limit of the invariant mass window within which to reject the cascade"};
+  Configurable<float> ConfCompetingCascadeMassUpLimit{"ConfCompetingCascadeMassUpLimit", 0. , "Upper Limit of the invariant mass window within which to reject the cascade"};
+
+  
   ConfigurableAxis ConfCascadeChildTempFitVarBins{"ConfCascadeChildTempFitVarBins", {300, -0.15, 0.15}, "Cascade child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfCascadeChildTempFitVarpTBins{"ConfCascadeChildTempFitVarpTBins", {20, 0.5, 4.05}, "Cascade child: pT binning of the pT vs. TempFitVar plot"};
 
@@ -84,6 +93,12 @@ struct femtoDreamDebugCascade {
   HistogramRegistry EventRegistry{"Event", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry CascadeRegistry{"FullCascQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  float massProton;
+  float massPion;
+  float massKaon;
+  float massLambda;
+  float massCompetingBach;
+
   void init(InitContext&)
   {
     eventHisto.init(&EventRegistry, false);
@@ -91,6 +106,17 @@ struct femtoDreamDebugCascade {
     negChildHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_ChildNeg_PDGCode.value, true);
     bachelorHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_Bach_PDGCode.value, true);
     CascadeHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_PDGCode.value, false);
+    
+    massProton = o2::analysis::femtoDream::getMass(2212);
+    massPion = o2::analysis::femtoDream::getMass(211);
+    massKaon = o2::analysis::femtoDream::getMass(321);
+    massLambda = o2::analysis::femtoDream::getMass(3122);
+    if (ConfIsOmega){ // if the Cascade is an Omega, then the bachelor is a Kaon
+      massCompetingBach = o2::analysis::femtoDream::getMass(211);
+    } else { // if the Cascade is a Xi, then the bachelor is a Pion
+      massCompetingBach = o2::analysis::femtoDream::getMass(321);
+    }
+
   }
 
   /// Porduce QA plots for V0 selection in FemtoDream framework
@@ -115,6 +141,8 @@ struct femtoDreamDebugCascade {
           negChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kCascadeV0Child) &&
           bachChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kCascadeBachelor)) {
 
+
+
         if (ConfUseChildCuts &&
             !((posChild.cut() & ConfCascade_ChildPos_CutBit) == ConfCascade_ChildPos_CutBit &&
               (posChild.pidcut() & ConfCascade_ChildPos_TPCBit) == ConfCascade_ChildPos_TPCBit &&
@@ -122,8 +150,49 @@ struct femtoDreamDebugCascade {
               (negChild.pidcut() & ConfCascade_ChildNeg_TPCBit) == ConfCascade_ChildNeg_TPCBit &&
               (bachChild.cut() & ConfCascade_ChildBach_CutBit) == ConfCascade_ChildBach_CutBit &&
               (bachChild.pidcut() & ConfCascade_ChildBach_TPCBit) == ConfCascade_ChildBach_TPCBit)) {
+
+          /*
+          LOGF(info, "       -------       GG DEBUG: NEW CASCADE       -------        ");
+          LOGF(info, " Pos");
+          std::cout <<"PosChild Cut:"<< static_cast<int>(posChild.cut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildPos_CutBit) << std::endl;
+          std::cout <<"PosChild PID:"<< static_cast<int>(posChild.pidcut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildPos_TPCBit) << std::endl;
+          LOGF(info, " Neg");
+          std::cout <<"NegChildCut:"<< static_cast<int>(negChild.cut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildNeg_CutBit) << std::endl;
+          std::cout <<"NegChildCut:"<< static_cast<int>(negChild.pidcut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildNeg_TPCBit) << std::endl;
+          LOGF(info, " Bach");
+          std::cout <<"BachChildCut:"<< static_cast<int>(bachChild.cut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildBach_CutBit) << std::endl;
+          std::cout <<"BachChildCut:"<< static_cast<int>(bachChild.pidcut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildBach_TPCBit) << std::endl;
+          */ 
           continue;
         }
+
+          /*
+          LOGF(info, "       -------       GG DEBUG: PASSED CASCADE       -------        ");
+          LOGF(info, " Pos");
+          std::cout <<"PosChild Cut:"<< static_cast<int>(posChild.cut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildPos_CutBit) << std::endl;
+          std::cout <<"PosChild PID:"<< static_cast<int>(posChild.pidcut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildPos_TPCBit) << std::endl;
+          LOGF(info, " Neg");
+          std::cout <<"NegChildCut:"<< static_cast<int>(negChild.cut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildNeg_CutBit) << std::endl;
+          std::cout <<"NegChildCut:"<< static_cast<int>(negChild.pidcut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildNeg_TPCBit) << std::endl;
+          LOGF(info, " Bach");
+          std::cout <<"BachChildCut:"<< static_cast<int>(bachChild.cut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildBach_CutBit) << std::endl;
+          std::cout <<"BachChildCut:"<< static_cast<int>(bachChild.pidcut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildBach_TPCBit) << std::endl;
+          */ 
+    
+
+        //Competing mass rejection
+        if(ConfRejectCompetingMass){
+          float invMassCompetingCasc;
+          if (part.sign() < 0){
+            invMassCompetingCasc = FemtoDreamMath::getInvMassCascade(posChild, massProton, negChild, massPion, bachChild, massCompetingBach, massLambda);
+          } else {
+            invMassCompetingCasc = FemtoDreamMath::getInvMassCascade(posChild, massPion, negChild, massProton, bachChild, massCompetingBach, massLambda);
+          }
+          if (invMassCompetingCasc > ConfCompetingCascadeMassLowLimit.value&&
+              invMassCompetingCasc < ConfCompetingCascadeMassUpLimit.value) {
+            continue;
+          }
+        } 
         CascadeHistos.fillQA<false, false>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M()); // set isDebug to true
         posChildHistos.fillQA<false, true>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
         negChildHistos.fillQA<false, true>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
