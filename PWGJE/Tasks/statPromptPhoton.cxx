@@ -885,8 +885,8 @@ struct statPromptPhoton {
             histos.fill(HIST("REC_Cluster_ParticleWITHOUTtrack_Pt_Eta"), clusterparticle.pt(), clusterparticle.eta());
           }
         } // pdg code check
-	
-	double phidiff = TVector2::Phi_mpi_pi(mccluster.phi() - clusterparticle.phi());
+
+        double phidiff = TVector2::Phi_mpi_pi(mccluster.phi() - clusterparticle.phi());
         double etadiff = mccluster.eta() - clusterparticle.eta();
 
         if (pdgcode == 211 || pdgcode == 321 || pdgcode == 2212 || pdgcode == 11) {
