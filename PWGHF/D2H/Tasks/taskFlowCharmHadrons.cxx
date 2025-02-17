@@ -216,10 +216,10 @@ struct HfTaskFlowCharmHadrons {
         std::vector<AxisSpec> axes_reso = {thnAxisCent, thnAxisResoFT0cFV0a, thnAxisResoFT0cTPCtot, thnAxisResoFV0aTPCtot};
         if (occEstimator == 1) {
           axes_reso.insert(axes_reso.end(), {thnAxisOccupancyITS, thnAxisNoSameBunchPileup, thnAxisOccupancy,
-                                            thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
-          } else {
+                                             thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
+        } else {
           axes_reso.insert(axes_reso.end(), {thnAxisOccupancyFT0C, thnAxisNoSameBunchPileup, thnAxisOccupancy,
-                                            thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
+                                             thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
         }
         registry.add("spReso/hSparseReso", "THn for resolution with occupancy", HistType::kTHnSparseF, axes_reso);
       }
@@ -292,8 +292,7 @@ struct HfTaskFlowCharmHadrons {
       TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::Occupancy),
       TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
       TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
-      TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard)
-    };
+      TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard)};
   }
 
   /// Fill THnSparse
@@ -702,9 +701,9 @@ struct HfTaskFlowCharmHadrons {
       hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
       std::vector<int> evtSelFlags = getEventSelectionFlags(hfevflag);
       registry.fill(HIST("spReso/hSparseReso"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a,
-                                                     xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot, 
-                                                     xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot, 
-                                                     occupancy, evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
+                    xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot,
+                    xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot,
+                    occupancy, evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
     }
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processResolution, "Process resolution", false);
