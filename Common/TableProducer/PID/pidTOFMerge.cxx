@@ -965,26 +965,26 @@ struct tofPidMerge {
 
     if (!enableTableBeta && !enableTableMass) {
       LOG(info) << "No table for TOF mass and beta is required. Disabling beta and mass tables";
-      doprocessBetaMRun2.value = false;
-      doprocessBetaMRun3.value = false;
+      doprocessRun2BetaM.value = false;
+      doprocessRun3BetaM.value = false;
     } else {
       if (mTOFCalibConfig.autoSetProcessFunctions()) {
         LOG(info) << "Autodetecting process functions for mass and beta";
         if (metadataInfo.isFullyDefined()) {
           if (metadataInfo.isRun3()) {
-            doprocessBetaMRun3.value = true;
-            doprocessBetaMRun2.value = false;
+            doprocessRun3BetaM.value = true;
+            doprocessRun2BetaM.value = false;
           } else {
-            doprocessBetaMRun2.value = true;
-            doprocessBetaMRun3.value = false;
+            doprocessRun2BetaM.value = true;
+            doprocessRun3BetaM.value = false;
           }
         }
       }
-      if (doprocessBetaMRun2 && doprocessBetaMRun3) {
-        LOG(fatal) << "Both processBetaMRun2 and processBetaMRun3 are enabled. Pick one of the two";
+      if (doprocessRun2BetaM && doprocessRun3BetaM) {
+        LOG(fatal) << "Both processRun2BetaM and processRun3BetaM are enabled. Pick one of the two";
       }
-      if (!doprocessBetaMRun2 && !doprocessBetaMRun3) {
-        LOG(fatal) << "Neither processBetaMRun2 nor processBetaMRun3 are enabled. Pick one of the two";
+      if (!doprocessRun2BetaM && !doprocessRun3BetaM) {
+        LOG(fatal) << "Neither processRun2BetaM nor processRun3BetaM are enabled. Pick one of the two";
       }
     }
   }
@@ -1480,7 +1480,7 @@ struct tofPidMerge {
   PROCESS_SWITCH(tofPidMerge, processRun2, "Produce Run 2 Nsigma table. Set to off if the tables are not required, or autoset is on", false);
 
   o2::pid::tof::Beta responseBetaRun2;
-  void processBetaMRun2(Run2TrksWtofWevTime const& tracks)
+  void processRun2BetaM(Run2TrksWtofWevTime const& tracks)
   {
     if (!enableTableBeta && !enableTableMass) {
       return;
@@ -1501,10 +1501,10 @@ struct tofPidMerge {
       }
     }
   }
-  PROCESS_SWITCH(tofPidMerge, processBetaMRun2, "Produce Run 2 Beta and Mass table. Set to off if the tables are not required, or autoset is on", false);
+  PROCESS_SWITCH(tofPidMerge, processRun2BetaM, "Produce Run 2 Beta and Mass table. Set to off if the tables are not required, or autoset is on", false);
 
   o2::pid::tof::Beta responseBeta;
-  void processBetaMRun3(Run3TrksWtofWevTime const& tracks)
+  void processRun3BetaM(Run3TrksWtofWevTime const& tracks)
   {
     if (!enableTableBeta && !enableTableMass) {
       return;
@@ -1526,7 +1526,7 @@ struct tofPidMerge {
       }
     }
   }
-  PROCESS_SWITCH(tofPidMerge, processBetaMRun3, "Produce Run 3 Beta and Mass table. Set to off if the tables are not required, or autoset is on", false);
+  PROCESS_SWITCH(tofPidMerge, processRun3BetaM, "Produce Run 3 Beta and Mass table. Set to off if the tables are not required, or autoset is on", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
