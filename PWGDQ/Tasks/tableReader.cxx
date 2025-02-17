@@ -1449,12 +1449,12 @@ struct AnalysisSameEventPairing {
                                  VarManager::fgValues[VarManager::kRap],
                                  VarManager::fgValues[VarManager::kCentFT0C],
                                  VarManager::fgValues[VarManager::kCos2DeltaPhi],
-                                 VarManager::fgValues[VarManager::kPt1],
-                                 VarManager::fgValues[VarManager::kEta1],
-                                 VarManager::fgValues[VarManager::kPhi1],
-                                 VarManager::fgValues[VarManager::kPt2],
-                                 VarManager::fgValues[VarManager::kEta2],
-                                 VarManager::fgValues[VarManager::kPhi2]);
+                                 t1.pt(),
+                                 t1.eta(),
+                                 t1.phi(),
+                                 t2.pt(),
+                                 t2.eta(),
+                                 t2.phi());
               }
             }
           } else {
