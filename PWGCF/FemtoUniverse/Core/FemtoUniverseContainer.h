@@ -268,7 +268,6 @@ class FemtoUniverseContainer
     }
   }
 
-
  protected:
   HistogramRegistry* mHistogramRegistry = nullptr;                                 ///< For QA output
   static constexpr std::string_view FolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to EventType
