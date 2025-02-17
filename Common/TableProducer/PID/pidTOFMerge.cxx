@@ -822,19 +822,19 @@ struct tofEventTime {
 
 // Part 3 Nsigma computation
 
-static constexpr int nParameters2 = 2;
-static const std::vector<std::string> parameterNames2{"Enable", "EnableFull"};
-static constexpr int idxEl = 0;
-static constexpr int idxMu = 1;
-static constexpr int idxPi = 2;
-static constexpr int idxKa = 3;
-static constexpr int idxPr = 4;
-static constexpr int idxDe = 5;
-static constexpr int idxTr = 6;
-static constexpr int idxHe = 7;
-static constexpr int idxAl = 8;
+static constexpr int kParEnabledN = 2;
+static constexpr int kIdxEl = 0;
+static constexpr int kIdxMu = 1;
+static constexpr int kIdxPi = 2;
+static constexpr int kIdxKa = 3;
+static constexpr int kIdxPr = 4;
+static constexpr int kIdxDe = 5;
+static constexpr int kIdxTr = 6;
+static constexpr int kIdxHe = 7;
+static constexpr int kIdxAl = 8;
 
-static constexpr int defaultParameters2[nSpecies][nParameters2]{{-1, -1},
+static const std::vector<std::string> kParEnabledNames{"Enable", "EnableFull"};
+static constexpr int kDefaultParEnabled[nSpecies][kParEnabledN]{{-1, -1},
                                                                 {-1, -1},
                                                                 {-1, -1},
                                                                 {-1, -1},
@@ -883,7 +883,7 @@ struct tofPidMerge {
 
   // Configuration flags to include and exclude particle hypotheses
   Configurable<LabeledArray<int>> enableParticle{"enableParticle",
-                                                 {defaultParameters2[0], nSpecies, nParameters2, particleNames, parameterNames2},
+                                                 {kDefaultParEnabled[0], nSpecies, kParEnabledN, particleNames, kParEnabledNames},
                                                  "Produce PID information for the various mass hypotheses. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
 
   // Histograms for QA
@@ -918,15 +918,17 @@ struct tofPidMerge {
       LOG(info) << "No PID tables are required, disabling the task";
       doprocessRun3.value = false;
       doprocessRun2.value = false;
-    } else if (mTOFCalibConfig.autoSetProcessFunctions()) {
-      LOG(info) << "Autodetecting process functions for mass and beta";
-      if (metadataInfo.isFullyDefined()) {
-        if (metadataInfo.isRun3()) {
-          doprocessRun3.value = true;
-          doprocessRun2.value = false;
-        } else {
-          doprocessRun2.value = true;
-          doprocessRun3.value = false;
+    } else {
+      if (mTOFCalibConfig.autoSetProcessFunctions()) {
+        LOG(info) << "Autodetecting process functions for mass and beta";
+        if (metadataInfo.isFullyDefined()) {
+          if (metadataInfo.isRun3()) {
+            doprocessRun3.value = true;
+            doprocessRun2.value = false;
+          } else {
+            doprocessRun2.value = true;
+            doprocessRun3.value = false;
+          }
         }
       }
       if (doprocessRun2 && doprocessRun3) {
@@ -965,23 +967,25 @@ struct tofPidMerge {
       LOG(info) << "No table for TOF mass and beta is required. Disabling beta and mass tables";
       doprocessBetaMRun2.value = false;
       doprocessBetaMRun3.value = false;
-    } else if (mTOFCalibConfig.autoSetProcessFunctions()) {
-      LOG(info) << "Autodetecting process functions for mass and beta";
-      if (metadataInfo.isFullyDefined()) {
-        if (metadataInfo.isRun3()) {
-          doprocessBetaMRun3.value = true;
-          doprocessBetaMRun2.value = false;
-        } else {
-          doprocessBetaMRun2.value = true;
-          doprocessBetaMRun3.value = false;
+    } else {
+      if (mTOFCalibConfig.autoSetProcessFunctions()) {
+        LOG(info) << "Autodetecting process functions for mass and beta";
+        if (metadataInfo.isFullyDefined()) {
+          if (metadataInfo.isRun3()) {
+            doprocessBetaMRun3.value = true;
+            doprocessBetaMRun2.value = false;
+          } else {
+            doprocessBetaMRun2.value = true;
+            doprocessBetaMRun3.value = false;
+          }
         }
       }
-    }
-    if (doprocessBetaMRun2 && doprocessBetaMRun3) {
-      LOG(fatal) << "Both processBetaMRun2 and processBetaMRun3 are enabled. Pick one of the two";
-    }
-    if (!doprocessBetaMRun2 && !doprocessBetaMRun3) {
-      LOG(fatal) << "Neither processBetaMRun2 nor processBetaMRun3 are enabled. Pick one of the two";
+      if (doprocessBetaMRun2 && doprocessBetaMRun3) {
+        LOG(fatal) << "Both processBetaMRun2 and processBetaMRun3 are enabled. Pick one of the two";
+      }
+      if (!doprocessBetaMRun2 && !doprocessBetaMRun3) {
+        LOG(fatal) << "Neither processBetaMRun2 nor processBetaMRun3 are enabled. Pick one of the two";
+      }
     }
   }
 
@@ -989,7 +993,7 @@ struct tofPidMerge {
   void reserveTable(const int id, const int64_t& size, const bool fullTable = false)
   {
     switch (id) {
-      case idxEl: {
+      case kIdxEl: {
         if (fullTable) {
           tablePIDFullEl.reserve(size);
         } else {
@@ -997,7 +1001,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxMu: {
+      case kIdxMu: {
         if (fullTable) {
           tablePIDFullMu.reserve(size);
         } else {
@@ -1005,7 +1009,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxPi: {
+      case kIdxPi: {
         if (fullTable) {
           tablePIDFullPi.reserve(size);
         } else {
@@ -1013,7 +1017,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxKa: {
+      case kIdxKa: {
         if (fullTable) {
           tablePIDFullKa.reserve(size);
         } else {
@@ -1021,7 +1025,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxPr: {
+      case kIdxPr: {
         if (fullTable) {
           tablePIDFullPr.reserve(size);
         } else {
@@ -1029,7 +1033,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxDe: {
+      case kIdxDe: {
         if (fullTable) {
           tablePIDFullDe.reserve(size);
         } else {
@@ -1037,7 +1041,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxTr: {
+      case kIdxTr: {
         if (fullTable) {
           tablePIDFullTr.reserve(size);
         } else {
@@ -1045,7 +1049,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxHe: {
+      case kIdxHe: {
         if (fullTable) {
           tablePIDFullHe.reserve(size);
         } else {
@@ -1053,7 +1057,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxAl: {
+      case kIdxAl: {
         if (fullTable) {
           tablePIDFullAl.reserve(size);
         } else {
@@ -1071,7 +1075,7 @@ struct tofPidMerge {
   void makeTableEmpty(const int id, bool fullTable = false)
   {
     switch (id) {
-      case idxEl:
+      case kIdxEl:
         if (fullTable) {
           tablePIDFullEl(-999.f, -999.f);
         } else {
@@ -1079,7 +1083,7 @@ struct tofPidMerge {
                                                                 tablePIDEl);
         }
         break;
-      case idxMu:
+      case kIdxMu:
         if (fullTable) {
           tablePIDFullMu(-999.f, -999.f);
         } else {
@@ -1087,7 +1091,7 @@ struct tofPidMerge {
                                                                 tablePIDMu);
         }
         break;
-      case idxPi:
+      case kIdxPi:
         if (fullTable) {
           tablePIDFullPi(-999.f, -999.f);
         } else {
@@ -1095,7 +1099,7 @@ struct tofPidMerge {
                                                                 tablePIDPi);
         }
         break;
-      case idxKa:
+      case kIdxKa:
         if (fullTable) {
           tablePIDFullKa(-999.f, -999.f);
         } else {
@@ -1103,7 +1107,7 @@ struct tofPidMerge {
                                                                 tablePIDKa);
         }
         break;
-      case idxPr:
+      case kIdxPr:
         if (fullTable) {
           tablePIDFullPr(-999.f, -999.f);
         } else {
@@ -1111,7 +1115,7 @@ struct tofPidMerge {
                                                                 tablePIDPr);
         }
         break;
-      case idxDe:
+      case kIdxDe:
         if (fullTable) {
           tablePIDFullDe(-999.f, -999.f);
         } else {
@@ -1119,7 +1123,7 @@ struct tofPidMerge {
                                                                 tablePIDDe);
         }
         break;
-      case idxTr:
+      case kIdxTr:
         if (fullTable) {
           tablePIDFullTr(-999.f, -999.f);
         } else {
@@ -1127,7 +1131,7 @@ struct tofPidMerge {
                                                                 tablePIDTr);
         }
         break;
-      case idxHe:
+      case kIdxHe:
         if (fullTable) {
           tablePIDFullHe(-999.f, -999.f);
         } else {
@@ -1135,7 +1139,7 @@ struct tofPidMerge {
                                                                 tablePIDHe);
         }
         break;
-      case idxAl:
+      case kIdxAl:
         if (fullTable) {
           tablePIDFullAl(-999.f, -999.f);
         } else {
@@ -1192,47 +1196,47 @@ struct tofPidMerge {
 
       for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
         switch (pidId) {
-          case idxEl: {
+          case kIdxEl: {
             nsigma = responseEl.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDEl);
             break;
           }
-          case idxMu: {
+          case kIdxMu: {
             nsigma = responseMu.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDMu);
             break;
           }
-          case idxPi: {
+          case kIdxPi: {
             nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPi);
             break;
           }
-          case idxKa: {
+          case kIdxKa: {
             nsigma = responseKa.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDKa);
             break;
           }
-          case idxPr: {
+          case kIdxPr: {
             nsigma = responsePr.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPr);
             break;
           }
-          case idxDe: {
+          case kIdxDe: {
             nsigma = responseDe.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDDe);
             break;
           }
-          case idxTr: {
+          case kIdxTr: {
             nsigma = responseTr.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDTr);
             break;
           }
-          case idxHe: {
+          case kIdxHe: {
             nsigma = responseHe.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDHe);
             break;
           }
-          case idxAl: {
+          case kIdxAl: {
             nsigma = responseAl.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDAl);
             break;
@@ -1247,55 +1251,55 @@ struct tofPidMerge {
       }
       for (auto const& pidId : mEnabledParticlesFull) { // Loop on enabled particle hypotheses with full tables
         switch (pidId) {
-          case idxEl: {
+          case kIdxEl: {
             resolution = responseEl.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseEl.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullEl(resolution, nsigma);
             break;
           }
-          case idxMu: {
+          case kIdxMu: {
             resolution = responseMu.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseMu.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullMu(resolution, nsigma);
             break;
           }
-          case idxPi: {
+          case kIdxPi: {
             resolution = responsePi.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
             tablePIDFullPi(resolution, nsigma);
             break;
           }
-          case idxKa: {
+          case kIdxKa: {
             resolution = responseKa.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseKa.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullKa(resolution, nsigma);
             break;
           }
-          case idxPr: {
+          case kIdxPr: {
             resolution = responsePr.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responsePr.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullPr(resolution, nsigma);
             break;
           }
-          case idxDe: {
+          case kIdxDe: {
             resolution = responseDe.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseDe.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullDe(resolution, nsigma);
             break;
           }
-          case idxTr: {
+          case kIdxTr: {
             resolution = responseTr.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseTr.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullTr(resolution, nsigma);
             break;
           }
-          case idxHe: {
+          case kIdxHe: {
             resolution = responseHe.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseHe.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullHe(resolution, nsigma);
             break;
           }
-          case idxAl: {
+          case kIdxAl: {
             resolution = responseAl.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseAl.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullAl(resolution, nsigma);
@@ -1354,47 +1358,47 @@ struct tofPidMerge {
 
       for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
         switch (pidId) {
-          case idxEl: {
+          case kIdxEl: {
             nsigma = responseEl.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDEl);
             break;
           }
-          case idxMu: {
+          case kIdxMu: {
             nsigma = responseMu.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDMu);
             break;
           }
-          case idxPi: {
+          case kIdxPi: {
             nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPi);
             break;
           }
-          case idxKa: {
+          case kIdxKa: {
             nsigma = responseKa.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDKa);
             break;
           }
-          case idxPr: {
+          case kIdxPr: {
             nsigma = responsePr.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPr);
             break;
           }
-          case idxDe: {
+          case kIdxDe: {
             nsigma = responseDe.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDDe);
             break;
           }
-          case idxTr: {
+          case kIdxTr: {
             nsigma = responseTr.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDTr);
             break;
           }
-          case idxHe: {
+          case kIdxHe: {
             nsigma = responseHe.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDHe);
             break;
           }
-          case idxAl: {
+          case kIdxAl: {
             nsigma = responseAl.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDAl);
             break;
@@ -1409,55 +1413,55 @@ struct tofPidMerge {
       }
       for (auto const& pidId : mEnabledParticlesFull) { // Loop on enabled particle hypotheses with full tables
         switch (pidId) {
-          case idxEl: {
+          case kIdxEl: {
             resolution = responseEl.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseEl.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullEl(resolution, nsigma);
             break;
           }
-          case idxMu: {
+          case kIdxMu: {
             resolution = responseMu.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseMu.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullMu(resolution, nsigma);
             break;
           }
-          case idxPi: {
+          case kIdxPi: {
             resolution = responsePi.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
             tablePIDFullPi(resolution, nsigma);
             break;
           }
-          case idxKa: {
+          case kIdxKa: {
             resolution = responseKa.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseKa.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullKa(resolution, nsigma);
             break;
           }
-          case idxPr: {
+          case kIdxPr: {
             resolution = responsePr.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responsePr.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullPr(resolution, nsigma);
             break;
           }
-          case idxDe: {
+          case kIdxDe: {
             resolution = responseDe.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseDe.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullDe(resolution, nsigma);
             break;
           }
-          case idxTr: {
+          case kIdxTr: {
             resolution = responseTr.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseTr.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullTr(resolution, nsigma);
             break;
           }
-          case idxHe: {
+          case kIdxHe: {
             resolution = responseHe.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseHe.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullHe(resolution, nsigma);
             break;
           }
-          case idxAl: {
+          case kIdxAl: {
             resolution = responseAl.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseAl.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullAl(resolution, nsigma);
