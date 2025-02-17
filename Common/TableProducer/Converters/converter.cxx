@@ -507,6 +507,39 @@ struct converterCascades_000 {
   PROCESS_SWITCH(converterCascades_000, processConverter, "Process converter (autoset)", true);
 };
 
+// Run 2 converters
+struct converterRun2BCInfos_000 {
+  Produces<aod::Run2BCInfos_001> Run2BCInfos_001;
+  void init(o2::framework::InitContext& initContext) { autoSetProcessFunction(initContext, "Run2BCInfos_001", doprocessConverter); }
+  void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
+  void processConverter(aod::Run2BCInfos_000 const& entries)
+  {
+    for (const auto& entry : entries) {
+      Run2BCInfos_001(entry.eventCuts(),
+                      entry.triggerMaskNext50(), entry.l0TriggerInputMask(),
+                      entry.spdClustersL0(), entry.spdClustersL1(),
+                      entry.spdFiredChipsL0(), entry.spdFiredChipsL1(),
+                      entry.spdFiredFastOrL0(), entry.spdFiredFastOrL1(),
+                      entry.v0TriggerChargeA(), entry.v0TriggerChargeC(),
+                      0, 0);
+    }
+  }
+  PROCESS_SWITCH(converterRun2BCInfos_000, processConverter, "Process converter (autoset)", true);
+};
+
+struct converterRun2TrackExtras_000 {
+  Produces<aod::Run2TrackExtras_001> Run2TrackExtras_001;
+  void init(o2::framework::InitContext& initContext) { autoSetProcessFunction(initContext, "Run2TrackExtras_001", doprocessConverter); }
+  void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
+  void processConverter(aod::Run2TrackExtras_000 const& tracks)
+  {
+    for (const auto& track0 : tracks) {
+      Run2TrackExtras_001(track0.itsSignal(), 0);
+    }
+  }
+  PROCESS_SWITCH(converterRun2TrackExtras_000, processConverter, "Process converter (autoset)", true);
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{};
@@ -529,6 +562,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       {"O2cascades", {[&]() { workflow.push_back(adaptAnalysisTask<converterCascades_000>(cfgc)); }}},
       {"O2mccollision", {[&]() { workflow.push_back(adaptAnalysisTask<converterMcCollisions_000>(cfgc)); }}},
       {"O2mcparticle", {[&]() { workflow.push_back(adaptAnalysisTask<converterStoredMcParticles_000>(cfgc)); }}},
+      {"O2run2bcinfos", {[&]() { workflow.push_back(adaptAnalysisTask<converterRun2BCInfos_000>(cfgc)); }}},
+      {"O2run2trackextras", {[&]() { workflow.push_back(adaptAnalysisTask<converterRun2TrackExtras_000>(cfgc)); }}},
       {"O2trackextra", {[&]() { workflow.push_back(adaptAnalysisTask<converterStoredTracksExtra_000>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<spawnerTracksExtra_002>(cfgc)); }}},
       {"O2trackextra_001", {[&]() { workflow.push_back(adaptAnalysisTask<converterStoredTracksExtra_001>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<spawnerTracksExtra_002>(cfgc)); }}},
       {"O2zdc", {[&]() { workflow.push_back(adaptAnalysisTask<converterZdcs_000>(cfgc)); }}},
