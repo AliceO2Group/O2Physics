@@ -546,9 +546,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
               }
               float weight = 1.0f;
               if constexpr (std::is_same<PartType, FilteredFemtoRecoParticles>::value) {
-                sameEventCont1D.setPair<true>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight);
+                sameEventCont1D.setPair<true>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
               } else {
-                sameEventCont1D.setPair<false>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight);
+                sameEventCont1D.setPair<false>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
               }
             } else {
               if (!cfgProcessMultBins) {
@@ -559,9 +559,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
               }
               float weight = 1.0f;
               if constexpr (std::is_same<PartType, FemtoRecoParticles>::value) {
-                sameEventCont1D.setPair<true>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight);
+                sameEventCont1D.setPair<true>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
               } else {
-                sameEventCont1D.setPair<false>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight);
+                sameEventCont1D.setPair<false>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
               }
             }
             break;
@@ -581,9 +581,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
               }
               float weight = 1.0f;
               if constexpr (std::is_same<PartType, FilteredFemtoRecoParticles>::value) {
-                sameEventCont1D.setPair<true>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight);
+                sameEventCont1D.setPair<true>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
               } else {
-                sameEventCont1D.setPair<false>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight);
+                sameEventCont1D.setPair<false>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
               }
             } else {
               if (!cfgProcessMultBins) {
@@ -594,9 +594,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
               }
               float weight = 1.0f;
               if constexpr (std::is_same<PartType, FemtoRecoParticles>::value) {
-                sameEventCont1D.setPair<true>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight);
+                sameEventCont1D.setPair<true>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
               } else {
-                sameEventCont1D.setPair<false>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight);
+                sameEventCont1D.setPair<false>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
               }
             }
             break;
