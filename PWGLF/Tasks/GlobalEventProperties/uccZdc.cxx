@@ -126,21 +126,19 @@ struct UccZdc {
   Configurable<float> zemCut{"zemCut", 1000.0, "ZEM cut"};
   Configurable<float> tdcCut{"tdcCut", 1.0, "TDC cut"};
 
-  enum evCutLabel {
-    All = 1,
-    sel8,
-    NoSameBunchPileup,
-    IsGoodZvtxFT0vsPV,
-    IsVertexITSTPC,
-    IsVertexTOFmatched,
-    Centrality,
-    VtxZ,
-    CentralityCut,
-    ZDC,
-    T0,
-    TDC,
-    ZEM
-  };
+  enum evCutLabel { all = 1,
+                    sel8,
+                    noSameBunchPileup,
+                    isGoodZvtxFT0vsPV,
+                    isVertexITSTPC,
+                    isVertexTOFmatched,
+                    centrality,
+                    vtxZ,
+                    centralityCut,
+                    zDC,
+                    t0,
+                    tDC,
+                    zEM };
 
   // Filters
   Filter collFilter = (nabs(aod::collision::posZ) < posZcut);
@@ -295,7 +293,7 @@ struct UccZdc {
   template <typename CheckCol>
   bool isEventSelected(CheckCol const& col)
   {
-    registry.fill(HIST("hEventCounter"), evCutLabel::All);
+    registry.fill(HIST("hEventCounter"), evCutLabel::all);
     if (!col.sel8()) {
       return false;
     }
@@ -305,25 +303,25 @@ struct UccZdc {
         !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::NoSameBunchPileup);
+    registry.fill(HIST("hEventCounter"), evCutLabel::noSameBunchPileup);
 
     if (isApplyGoodZvtxFT0vsPV &&
         !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::IsGoodZvtxFT0vsPV);
+    registry.fill(HIST("hEventCounter"), evCutLabel::isGoodZvtxFT0vsPV);
 
     if (isApplyVertexITSTPC &&
         !col.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::IsVertexITSTPC);
+    registry.fill(HIST("hEventCounter"), evCutLabel::isVertexITSTPC);
 
     if (isApplyVertexTOFmatched &&
         !col.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
       return false;
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::IsVertexTOFmatched);
+    registry.fill(HIST("hEventCounter"), evCutLabel::isVertexTOFmatched);
 
     // if (isApplyVertexTRDmatched &&
     //     !col.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
@@ -334,19 +332,19 @@ struct UccZdc {
     if (col.centFT0C() < 0. || col.centFT0C() > 100.) {
       return false;
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::Centrality);
+    registry.fill(HIST("hEventCounter"), evCutLabel::centrality);
 
     // Z-vertex position cut
     if (std::fabs(col.posZ()) > posZcut) {
       return false;
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::VtxZ);
+    registry.fill(HIST("hEventCounter"), evCutLabel::vtxZ);
 
     // T0C centrality cut
     if (col.centFT0C() < minT0CcentCut || col.centFT0C() > maxT0CcentCut) {
       return false;
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::CentralityCut);
+    registry.fill(HIST("hEventCounter"), evCutLabel::centralityCut);
 
     // if (isApplyExtraCorrCut && col.multNTracksPV() > npvTracksCut &&
     //     col.multFT0C() < (10 * col.multNTracksPV() - ft0cCut)) {
@@ -388,7 +386,7 @@ struct UccZdc {
     if (!foundBC.has_zdc()) { // has ZDC?
       return;
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::ZDC);
+    registry.fill(HIST("hEventCounter"), evCutLabel::zDC);
 
     float aT0A{0.0};
     float aT0C{0.0};
@@ -459,7 +457,7 @@ struct UccZdc {
     } else {
       return;
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::T0);
+    registry.fill(HIST("hEventCounter"), evCutLabel::t0);
 
     if (foundBC.has_fv0a()) {
       for (const auto& amplitude : foundBC.fv0a().amplitude()) {
@@ -475,7 +473,7 @@ struct UccZdc {
         return;
       }
     }
-    registry.fill(HIST("hEventCounter"), evCutLabel::TDC);
+    registry.fill(HIST("hEventCounter"), evCutLabel::tDC);
 
     // ZEM cut
     if (isZEMcut) {
@@ -484,7 +482,7 @@ struct UccZdc {
       }
     }
 
-    registry.fill(HIST("hEventCounter"), evCutLabel::ZEM);
+    registry.fill(HIST("hEventCounter"), evCutLabel::zEM);
     registry.fill(HIST("zPos"), collision.posZ());
     registry.fill(HIST("T0Ccent"), collision.centFT0C());
     registry.fill(HIST("ZNA"), znA);
@@ -562,13 +560,13 @@ struct UccZdc {
   {
     // Generated MC
     for (const auto& mccollision : mcCollisions) {
-      registry.fill(HIST("hEventCounter_MC"), evCutLabel::All);
+      registry.fill(HIST("hEventCounter_MC"), evCutLabel::all);
       // Z-vtx position cut
       if (std::fabs(mccollision.posZ()) > posZcut) {
         continue;
       }
       registry.fill(HIST("zPos_MC"), mccollision.posZ());
-      registry.fill(HIST("hEventCounter_MC"), evCutLabel::VtxZ);
+      registry.fill(HIST("hEventCounter_MC"), evCutLabel::vtxZ);
 
       auto mcParticlesPerColl =
         mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
