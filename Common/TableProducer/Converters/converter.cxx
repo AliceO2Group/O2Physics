@@ -42,7 +42,7 @@ struct bcConverter {
   Produces<aod::BCs_001> bc_001;
   void process(aod::BCs_000 const& bcTable) // BC converter is always needed
   {
-    for (auto& bc : bcTable) {
+    for (const auto& bc : bcTable) {
       constexpr uint64_t lEmptyTriggerInputs = 0;
       bc_001(bc.runNumber(), bc.globalBC(), bc.triggerMask(), lEmptyTriggerInputs);
     }
