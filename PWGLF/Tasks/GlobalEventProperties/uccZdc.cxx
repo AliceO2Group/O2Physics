@@ -15,9 +15,11 @@
 /// \author Omar Vazquez (omar.vazquez.rueda@cern.ch)
 /// \since January 29, 2025
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <string>
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
@@ -110,14 +112,17 @@ struct UccZdc {
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
 
   // Configurable event selectiond and flags ZDC
+  Configurable<bool> isOccupancyCut{"isOccupancyCut", true, "Occupancy cut?"};
+  Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy",
+                                               false, "T0C Occu cut?"};
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true,
-                                            "Enable SameBunchPileup cut"};
+                                            "SameBunchPileup cut?"};
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true,
-                                            "Enable GoodZvtxFT0vsPV cut"};
+                                            "GoodZvtxFT0vsPV cut?"};
   Configurable<bool> isApplyVertexITSTPC{"isApplyVertexITSTPC", true,
-                                         "Enable VertexITSTPC cut"};
+                                         "VertexITSTPC cut?"};
   Configurable<bool> isApplyVertexTOFmatched{"isApplyVertexTOFmatched", true,
-                                             "Enable VertexTOFmatched cut"};
+                                             "VertexTOFmatched cut?"};
   Configurable<bool> isAmpZDC{"isAmpZDC", false, "Use amplitude ZDC?"};
   Configurable<bool> isCommPMT{"isCommPMT", false, "Use common PMT ZDC?"};
   Configurable<bool> isSumTowers{"isSumTowers", false, "Use sum of Tow ZDC?"};
@@ -125,20 +130,31 @@ struct UccZdc {
   Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut?"};
   Configurable<float> zemCut{"zemCut", 1000.0, "ZEM cut"};
   Configurable<float> tdcCut{"tdcCut", 1.0, "TDC cut"};
+  Configurable<float> minOccCut{"minOccCut", 0, "min Occu cut"};
+  Configurable<float> maxOccCut{"maxOccCut", 500, "max Occu cut"};
 
-  enum EvCutLabel { All = 1,
-                    SelEigth,
-                    NoSameBunchPileup,
-                    IsGoodZvtxFT0vsPV,
-                    IsVertexITSTPC,
-                    IsVertexTOFmatched,
-                    Centrality,
-                    VtxZ,
-                    CentralityCut,
-                    Zdc,
-                    TZero,
-                    Tdc,
-                    Zem };
+  constexpr static int nLabels{14};
+  constexpr static std::array<std::string, nLabels> EvCutLabeling{
+    {"All", "SelEigth", "NoSameBunchPileup", "IsGoodZvtxFT0vsPV",
+     "IsVertexITSTPC", "IsVertexTOFmatched", "Occupancy Cut", "Centrality",
+     "VtxZ cut", "Centrality cut", "has ZDC?", "has T0?", "Within TDC cut?",
+     "Within ZEM cut?"}};
+  enum EvCutLabel {
+    All = 1,
+    SelEigth,
+    NoSameBunchPileup,
+    IsGoodZvtxFT0vsPV,
+    IsVertexITSTPC,
+    IsVertexTOFmatched,
+    OccuCut,
+    Centrality,
+    VtxZ,
+    CentralityCut,
+    Zdc,
+    TZero,
+    Tdc,
+    Zem
+  };
 
   // Filters
   Filter collFilter = (nabs(aod::collision::posZ) < posZcut);
@@ -177,19 +193,9 @@ struct UccZdc {
     registry.add("hEventCounter", ";;Events", kTH1F, {axisEvent});
     auto hstat = registry.get<TH1>(HIST("hEventCounter"));
     auto* x = hstat->GetXaxis();
-    x->SetBinLabel(1, "All events");
-    x->SetBinLabel(2, "sel8");
-    x->SetBinLabel(3, "kNoSameBunchPileup");
-    x->SetBinLabel(4, "kIsGoodZvtxFT0vsPV");
-    x->SetBinLabel(5, "kIsVertexITSTPC");
-    x->SetBinLabel(6, "kIsVertexTOFmatched");
-    x->SetBinLabel(7, "Centrality");
-    x->SetBinLabel(8, "VtxZ");
-    x->SetBinLabel(9, "Centrality cut");
-    x->SetBinLabel(10, "has ZDC?");
-    x->SetBinLabel(11, "has T0?");
-    x->SetBinLabel(12, "inside TDC cut?");
-    x->SetBinLabel(13, "within ZEM cut?");
+    for (int i = 0; i < nLabels; i++) {
+      x->SetBinLabel(i, EvCutLabeling.at(i).c_str());
+    }
 
     //  Histograms: paritcle-level info
     if (doprocessZdcCollAss) {
@@ -322,6 +328,16 @@ struct UccZdc {
       return false;
     }
     registry.fill(HIST("hEventCounter"), EvCutLabel::IsVertexTOFmatched);
+
+    if (isOccupancyCut) {
+      auto occuValue{isApplyFT0CbasedOccupancy
+                       ? col.ft0cOccupancyInTimeRange()
+                       : col.trackOccupancyInTimeRange()};
+
+      if (occuValue < minOccCut || occuValue > maxOccCut)
+        return false;
+    }
+    registry.fill(HIST("hEventCounter"), EvCutLabel::OccuCut);
 
     // if (isApplyVertexTRDmatched &&
     //     !col.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
