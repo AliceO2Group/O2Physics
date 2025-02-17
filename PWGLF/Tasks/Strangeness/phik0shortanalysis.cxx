@@ -13,22 +13,26 @@
 /// \brief Analysis task for the Phi and K0S rapidity correlations analysis
 /// \author Stefano Cannito (stefano.cannito@cern.ch)
 
+#include <array>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+
 #include <TH1F.h>
+#include <TH2F.h>
+#include <THn.h>
 #include <TRandom.h>
 #include <TDirectory.h>
-#include <THn.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TFile.h>
-#include <TH2F.h>
+#include <TList.h>
+#include <TF1.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <Math/Vector4D.h>
-#include <array>
-#include <vector>
-#include <cmath>
-#include <cstdlib>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -48,6 +52,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "PWGLF/Utils/inelGt.h"
 #include "PWGLF/DataModel/mcCentrality.h"
+#include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -147,10 +152,18 @@ struct Phik0shortanalysis {
   // Configurable for RecMC
   Configurable<bool> cfgiskNoITSROFrameBorder{"cfgiskNoITSROFrameBorder", false, "kNoITSROFrameBorder request on RecMC collisions"};
 
-  // Configurable for MC closure
+  // Configurables for MC closure
   Configurable<bool> cfgisRecMCWPDGForClosure1{"cfgisRecMCWPDGForClosure1", false, "RecoMC with PDG Codes for Closure only for Associated particles"};
   Configurable<bool> cfgisRecMCWPDGForClosure2{"cfgisRecMCWPDGForClosure2", false, "RecoMC with PDG Codes for Closure"};
   Configurable<bool> cfgisGenMCForClosure{"cfgisGenMCForClosure", false, "GenMC for Closure"};
+
+  // Configurables to choose the filling method
+  Configurable<bool> doLoadPurities{"doLoadPurities", false, "Load purities"};
+  Configurable<bool> fillMethodMultipleWeights{"fillMethodMultipleWeights", false, "Fill method Multiple Weights"};
+  Configurable<bool> fillMethodSingleWeight{"fillMethodSingleWeight", false, "Fill method Single Weight"};
+
+  // Configurable for CCDB
+  Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
 
   // Constants
   double massKa = o2::constants::physics::MassKPlus;
@@ -195,6 +208,12 @@ struct Phik0shortanalysis {
 
   // Necessary to flag INEL>0 events in GenMC
   Service<o2::framework::O2DatabasePDG> pdgDB;
+
+  // Necessary to get the CCDB for phi purities
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  // Set of functions for phi purity
+  std::vector<std::vector<TF1*>> phiPurityFunctions;
 
   void init(InitContext&)
   {
@@ -425,6 +444,16 @@ struct Phik0shortanalysis {
     mcPionHist.add("h4PiRapiditySmearing", "Rapidity Smearing Matrix for Pion", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, yAxis, yAxis});
 
     mcPionHist.add("h3PiRapidityGenMC", "Rapidity for Pion for GenMC", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
+
+    // Initialize CCDB only if purity is requested in the task
+    if (doLoadPurities) {
+      ccdb->setURL(ccdburl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(false);
+
+      getPhiPurityFunctionsFromCCDB();
+    }
   }
 
   // Event selection and QA filling
@@ -663,6 +692,38 @@ struct Phik0shortanalysis {
     if (std::abs(track.dcaZ()) > trackConfigs.cMaxDCAzToPVcut)
       return false;
     return true;
+  }
+
+  // Get phi-meson purity functions from CCDB
+  void getPhiPurityFunctionsFromCCDB()
+  {
+    TList* listPhiPurityFunctions = ccdb->get<TList>();
+    if (!listPhiPurityFunctions)
+      LOG(fatal) << "Problem getting TList object with phi purity functions!";
+
+    for (size_t multIdx = 0; multIdx < binsMult.size() - 1; multIdx++) {
+      for (size_t ptIdx = 0; ptIdx < binsPtPhi.size() - 1; ptIdx++) {
+        //phiPurityFunctions[multIdx][ptIdx] = static_cast<TF1*>(ccdb->get<TF1>());
+        phiPurityFunctions[multIdx][ptIdx] = static_cast<TF1*>(listPhiPurityFunctions->FindObject(Form("funcFitPhiPur_%zu_%zu", multIdx, ptIdx)));
+      }
+    }
+  }
+
+  // Get the phi purity choosing the correct purity function according to the multiplicity and pt of the phi
+  double getPhiPurity(float multiplicity, const TLorentVector& Phi)
+  {
+    // Find multiplicity bin using lower_bound
+    auto multIt = std::lower_bound(binsMult.begin(), binsMult.end(), multiplicity);
+    size_t multIdx = multIt != binsMult.end() ? std::distance(binsMult.begin(), multIt) - 1 : -1;
+
+    // Find phi-pT bin using lower_bound
+    auto pTIt = std::lower_bound(binsPtPhi.begin(), binsPtPhi.end(), Phi.Pt());
+    size_t pTIdx = pTIt != binsPtPhi.end() ? std::distance(binsPtPhi.begin(), pTIt) - 1 : -1;
+
+    if (multIdx == -1 || ptIdx == -1)
+      LOG(fatal) << "Problem computing phi purity!";
+
+    return phiPurityFunctions[multIdx][ptIdx]->Eval(Phi.M());
   }
 
   // Fill 2D invariant mass histogram for V0 and Phi
