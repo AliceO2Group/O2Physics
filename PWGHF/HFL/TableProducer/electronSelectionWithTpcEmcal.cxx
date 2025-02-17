@@ -288,7 +288,7 @@ struct HfElectronSelectionWithTpcEmcal {
       int pdgE1 = kElectron;
       int pdgE2 = kElectron;
       if (electron.sign() > 0) {
-        pdgE1 = kPositron; 
+        pdgE1 = kPositron;
       }
 
       if (pTrack.sign() > 0) {
