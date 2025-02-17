@@ -40,11 +40,11 @@
 #include "GFW.h"
 #include "GFWCumulant.h"
 #include "GFWWeights.h"
-#include "GFWWeightsList.h"
 #include "FlowContainer.h"
 #include "TList.h"
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TF1.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -63,7 +63,22 @@ struct FlowRunbyRun {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAzPtDepEnabled, bool, false, "switch of DCAz pt dependent cut")
+  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkNoSameBunchPileup, bool, false, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodZvtxFT0vsPV, bool, false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInTimeRangeStandard, bool, false, "no collisions in specified time range")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, true, "cut time intervals with dead ITS staves")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInRofStandard, bool, false, "no other collisions in this Readout Frame with per-collision multiplicity above threshold")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkNoHighMultCollInPrevRof, bool, false, "veto an event if FT0C amplitude in previous ITS ROF is above threshold")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, true, "V0A T0A 5 sigma cut")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelOccupancy, bool, true, "Occupancy cut")
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 30, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "NUA weights are filled in ref pt bins")
@@ -93,7 +108,6 @@ struct FlowRunbyRun {
 
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
-  OutputObj<GFWWeightsList> fGFWWeightsList{GFWWeightsList("GFWWeightsList")};
   HistogramRegistry registry{"registry"};
 
   // define global variables
@@ -105,6 +119,7 @@ struct FlowRunbyRun {
   int lastRunNumer = -1;
   std::vector<int> runNumbers;                                        // vector of run numbers
   std::map<int, std::vector<std::shared_ptr<TH1>>> th1sList;          // map of histograms for all runs
+  std::map<int, std::vector<std::shared_ptr<TH3>>> th3sList;          // map of TH3 histograms for all runs
   std::map<int, std::vector<std::shared_ptr<TProfile>>> profilesList; // map of profiles for all runs
   enum OutputTH1Names {
     // here are TProfiles for vn-pt correlations that are not implemented in GFW
@@ -115,9 +130,16 @@ struct FlowRunbyRun {
     hCent,
     kCount_TH1Names
   };
+  enum OutputTH3Names {
+    hPhiEtaVtxz = 0,
+    kCount_TH3Names
+  };
   enum OutputTProfileNames {
     c22 = 0,
     c22_gap10,
+    c32,
+    c32_gap10,
+    c3232,
     kCount_TProfileNames
   };
   int mRunNumber{-1};
@@ -127,6 +149,15 @@ struct FlowRunbyRun {
   ctpRateFetcher mRateFetcher;
   TH2* gCurrentHadronicRate;
 
+  // Additional Event selection cuts - Copy from flowGenericFramework.cxx
+  TF1* fMultPVCutLow = nullptr;
+  TF1* fMultPVCutHigh = nullptr;
+  TF1* fMultCutLow = nullptr;
+  TF1* fMultCutHigh = nullptr;
+  TF1* fMultMultPVCut = nullptr;
+  TF1* fT0AV0AMean = nullptr;
+  TF1* fT0AV0ASigma = nullptr;
+
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
@@ -135,8 +166,6 @@ struct FlowRunbyRun {
     ccdb->setURL(ccdbUrl.value);
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
-
-    fGFWWeightsList->init("weightList");
 
     // Add output histograms to the registry
     runNumbers = cfgRunNumbers;
@@ -169,6 +198,9 @@ struct FlowRunbyRun {
     corrconfigs.resize(kCount_TProfileNames);
     corrconfigs[c22] = fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE);
     corrconfigs[c22_gap10] = fGFW->GetCorrelatorConfig("refN10 {2} refP10 {-2}", "Ch10Gap22", kFALSE);
+    corrconfigs[c32] = fGFW->GetCorrelatorConfig("full {3 -3}", "ChFull32", kFALSE);
+    corrconfigs[c32_gap10] = fGFW->GetCorrelatorConfig("refN10 {3} refP10 {-3}", "Ch10Gap32", kFALSE);
+    corrconfigs[c3232] = fGFW->GetCorrelatorConfig("full {3 2 -3 -2}", "ChFull3232", kFALSE);
     if (!userDefineGFWCorr.empty() && !userDefineGFWName.empty()) {
       LOGF(info, "User adding GFW CorrelatorConfig:");
       // attentaion: here we follow the index of cfgUserDefineGFWCorr
@@ -182,6 +214,23 @@ struct FlowRunbyRun {
       }
     }
     fGFW->CreateRegions();
+
+    if (cfgUseAdditionalEventCut) {
+      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+      fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
+      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+      fMultPVCutHigh->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
+
+      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultCutLow->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
+      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
+
+      fT0AV0AMean = new TF1("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
+      fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
+      fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
+      fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
+    }
   }
 
   template <char... chars>
@@ -236,14 +285,15 @@ struct FlowRunbyRun {
     std::vector<std::shared_ptr<TProfile>> profiles(kCount_TProfileNames);
     profiles[c22] = registry.add<TProfile>(Form("%d/c22", runNumber), "", {HistType::kTProfile, {axisIndependent}});
     profiles[c22_gap10] = registry.add<TProfile>(Form("%d/c22_gap10", runNumber), "", {HistType::kTProfile, {axisIndependent}});
+    profiles[c32] = registry.add<TProfile>(Form("%d/c32", runNumber), "", {HistType::kTProfile, {axisIndependent}});
+    profiles[c32_gap10] = registry.add<TProfile>(Form("%d/c32_gap10", runNumber), "", {HistType::kTProfile, {axisIndependent}});
+    profiles[c3232] = registry.add<TProfile>(Form("%d/c3232", runNumber), "", {HistType::kTProfile, {axisIndependent}});
     profilesList.insert(std::make_pair(runNumber, profiles));
 
     if (cfgOutputNUAWeights) {
-      // weightsList
-      o2::framework::AxisSpec axis = axisPt;
-      int nPtBins = axis.binEdges.size() - 1;
-      double* ptBins = &(axis.binEdges)[0];
-      fGFWWeightsList->addGFWWeightsByRun(runNumber, nPtBins, ptBins, true, false);
+      std::vector<std::shared_ptr<TH3>> tH3s(kCount_TH3Names);
+      tH3s[hPhiEtaVtxz] = registry.add<TH3>(Form("%d/hPhiEtaVtxz", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+      th3sList.insert(std::make_pair(runNumber, tH3s));
     }
   }
 
@@ -259,9 +309,78 @@ struct FlowRunbyRun {
       mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
       double maxSec = std::ceil(runDuration.second * 1.e-3); /// round tsEOR to the lowest integer higher than tsEOR
       const AxisSpec axisSeconds{static_cast<int>((maxSec - mMinSeconds) / 20.f), 0, maxSec - mMinSeconds, "Seconds since SOR"};
-      gHadronicRate[mRunNumber] = registry.add<TH2>(Form("HadronicRate/%i", mRunNumber), ";Time since SOR (s);Hadronic rate (kHz)", kTH2D, {axisSeconds, {510, 0., 51.}}).get();
+      int hadronicRateBins = static_cast<int>(cfgCutMaxIR - cfgCutMinIR);
+      gHadronicRate[mRunNumber] = registry.add<TH2>(Form("HadronicRate/%i", mRunNumber), ";Time since SOR (s);Hadronic rate (kHz)", kTH2D, {axisSeconds, {hadronicRateBins, cfgCutMinIR, cfgCutMaxIR}}).get();
     }
     gCurrentHadronicRate = gHadronicRate[mRunNumber];
+  }
+
+  template <typename TCollision>
+  bool eventSelected(TCollision collision, const int multTrk, const float centrality)
+  {
+    if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      // rejects collisions which are associated with the same "found-by-T0" bunch crossing
+      // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
+      return 0;
+    }
+
+    if (cfgEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
+      // use this cut at low multiplicities with caution
+      return 0;
+    }
+
+    if (cfgEvSelkNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      // no collisions in specified time range
+      return 0;
+    }
+
+    if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      // from Jan 9 2025 AOT meeting
+      // cut time intervals with dead ITS staves
+      return 0;
+    }
+
+    if (cfgEvSelkNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      // no other collisions in this Readout Frame with per-collision multiplicity above threshold
+      return 0;
+    }
+
+    if (cfgEvSelkNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      // veto an event if FT0C amplitude in previous ITS ROF is above threshold
+      return 0;
+    }
+
+    auto multNTracksPV = collision.multNTracksPV();
+    auto occupancy = collision.trackOccupancyInTimeRange();
+    if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh))
+      return 0;
+
+    if (cfgEvSelMultCorrelation) {
+      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+        return 0;
+      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+        return 0;
+      if (multTrk < fMultCutLow->Eval(centrality))
+        return 0;
+      if (multTrk > fMultCutHigh->Eval(centrality))
+        return 0;
+    }
+
+    // V0A T0A 5 sigma cut
+    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A())))
+      return 0;
+
+    return 1;
+  }
+
+  template <typename TTrack>
+  bool trackSelected(TTrack track)
+  {
+    if (cfgCutDCAzPtDepEnabled && (std::fabs(track.dcaZ()) > (0.004f + 0.013f / track.pt())))
+      return false;
+
+    return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
   }
 
   void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
@@ -272,6 +391,9 @@ struct FlowRunbyRun {
       return;
     // detect run number
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    const auto cent = collision.centFT0C();
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent))
+      return;
     if (cfgGetInteractionRate) {
       initHadronicRate(bc);
       double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
@@ -301,9 +423,10 @@ struct FlowRunbyRun {
     th1sList[runNumber][hCent]->Fill(collision.centFT0C());
 
     fGFW->Clear();
-    const auto cent = collision.centFT0C();
     float weff = 1, wacc = 1;
     for (const auto& track : tracks) {
+      if (!trackSelected(track))
+        continue;
       th1sList[runNumber][hPhi]->Fill(track.phi());
       th1sList[runNumber][hEta]->Fill(track.eta());
       // bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
@@ -314,20 +437,10 @@ struct FlowRunbyRun {
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
           if (withinPtRef) {
-            GFWWeights* weight = fGFWWeightsList->getGFWWeightsByRun(runNumber);
-            if (!weight) {
-              LOGF(fatal, "Could not find the weight for run %d", runNumber);
-              return;
-            }
-            weight->fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
+            th3sList[runNumber][hPhiEtaVtxz]->Fill(track.phi(), track.eta(), collision.posZ());
           }
         } else {
-          GFWWeights* weight = fGFWWeightsList->getGFWWeightsByRun(runNumber);
-          if (!weight) {
-            LOGF(fatal, "Could not find the weight for run %d", runNumber);
-            return;
-          }
-          weight->fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
+          th3sList[runNumber][hPhiEtaVtxz]->Fill(track.phi(), track.eta(), collision.posZ());
         }
       }
     }

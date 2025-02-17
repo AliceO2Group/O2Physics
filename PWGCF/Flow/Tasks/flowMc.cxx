@@ -35,6 +35,7 @@
 #include "GFW.h"
 #include "GFWCumulant.h"
 #include "GFWWeights.h"
+#include <TPDGCode.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -98,6 +99,7 @@ struct FlowMc {
 
     histos.add<TH1>("hPhi", "#phi distribution", HistType::kTH1D, {axisPhi});
     histos.add<TH1>("hPhiWeighted", "corrected #phi distribution", HistType::kTH1D, {axisPhi});
+    histos.add<TH2>("hEPVsPhi", "hEPVsPhi;Event Plane Angle; #varphi", HistType::kTH2D, {axisPhi, axisPhi});
 
     if (cfgOutputNUAWeights) {
       o2::framework::AxisSpec axis = axisPt;
@@ -172,7 +174,7 @@ struct FlowMc {
       for (auto const& mcParticle : mcParticles) {
         // focus on bulk: e, mu, pi, k, p
         int pdgCode = std::abs(mcParticle.pdgCode());
-        if (pdgCode != 11 && pdgCode != 13 && pdgCode != 211 && pdgCode != 321 && pdgCode != 2212)
+        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
           continue;
 
         if (!mcParticle.isPhysicalPrimary())
@@ -224,6 +226,7 @@ struct FlowMc {
         if (withinPtRef) {
           histos.fill(HIST("hPhi"), mcParticle.phi());
           histos.fill(HIST("hPhiWeighted"), mcParticle.phi(), wacc);
+          histos.fill(HIST("hEPVsPhi"), evPhi, mcParticle.phi());
         }
 
         // if valid global, fill
@@ -253,7 +256,7 @@ struct FlowMc {
     float imp = mcCollision.impactParameter();
 
     int pdgCode = std::abs(mcParticle.pdgCode());
-    if (pdgCode != 3312 && pdgCode != 3334)
+    if (pdgCode != PDG_t::kXiMinus && pdgCode != PDG_t::kOmegaMinus)
       return;
 
     if (!mcParticle.isPhysicalPrimary())
@@ -266,15 +269,15 @@ struct FlowMc {
       deltaPhi += constants::math::TwoPI;
     if (deltaPhi > constants::math::TwoPI)
       deltaPhi -= constants::math::TwoPI;
-    if (pdgCode == 3312)
+    if (pdgCode == PDG_t::kXiMinus)
       histos.fill(HIST("hBVsPtVsPhiGeneratedXi"), imp, deltaPhi, mcParticle.pt());
-    if (pdgCode == 3334)
+    if (pdgCode == PDG_t::kOmegaMinus)
       histos.fill(HIST("hBVsPtVsPhiGeneratedOmega"), imp, deltaPhi, mcParticle.pt());
 
     if (cascades.size() > 0) {
-      if (pdgCode == 3312)
+      if (pdgCode == PDG_t::kXiMinus)
         histos.fill(HIST("hBVsPtVsPhiGlobalXi"), imp, deltaPhi, mcParticle.pt());
-      if (pdgCode == 3334)
+      if (pdgCode == PDG_t::kOmegaMinus)
         histos.fill(HIST("hBVsPtVsPhiGlobalOmega"), imp, deltaPhi, mcParticle.pt());
     }
   }
@@ -288,7 +291,7 @@ struct FlowMc {
     float imp = mcCollision.impactParameter();
 
     int pdgCode = std::abs(mcParticle.pdgCode());
-    if (pdgCode != 310 && pdgCode != 3122)
+    if (pdgCode != PDG_t::kK0Short && pdgCode != PDG_t::kLambda0)
       return;
 
     if (!mcParticle.isPhysicalPrimary())
@@ -301,15 +304,15 @@ struct FlowMc {
       deltaPhi += constants::math::TwoPI;
     if (deltaPhi > constants::math::TwoPI)
       deltaPhi -= constants::math::TwoPI;
-    if (pdgCode == 310)
+    if (pdgCode == PDG_t::kK0Short)
       histos.fill(HIST("hBVsPtVsPhiGeneratedK0Short"), imp, deltaPhi, mcParticle.pt());
-    if (pdgCode == 3122)
+    if (pdgCode == PDG_t::kLambda0)
       histos.fill(HIST("hBVsPtVsPhiGeneratedLambda"), imp, deltaPhi, mcParticle.pt());
 
     if (v0s.size() > 0) {
-      if (pdgCode == 310)
+      if (pdgCode == PDG_t::kK0Short)
         histos.fill(HIST("hBVsPtVsPhiGlobalK0Short"), imp, deltaPhi, mcParticle.pt());
-      if (pdgCode == 3122)
+      if (pdgCode == PDG_t::kLambda0)
         histos.fill(HIST("hBVsPtVsPhiGlobalLambda"), imp, deltaPhi, mcParticle.pt());
     }
   }
