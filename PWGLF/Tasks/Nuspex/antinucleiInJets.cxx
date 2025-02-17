@@ -453,7 +453,7 @@ struct AntinucleiInJets {
       // jet must be fully contained in the acceptance
       if ((std::fabs(jet.eta()) + rJet) > (maxEta - 0.05))
         continue;
-      
+
       // jet pt must be larger than threshold
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
       if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
@@ -467,7 +467,7 @@ struct AntinucleiInJets {
       TVector3 ueAxis2(0, 0, 0);
       getPerpendicularAxis(jetAxis, ueAxis1, +1);
       getPerpendicularAxis(jetAxis, ueAxis2, -1);
-      
+
       // get jet constituents
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
       o2::aod::ITSResponse itsResponse;
