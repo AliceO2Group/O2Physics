@@ -9,10 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file   tofPidMerge.cxx
-/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
+/// \file   pidTOFMerge.cxx
 /// \brief  Task to produce PID tables for TOF split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
+/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 ///
 
 #include <utility>
@@ -514,7 +514,7 @@ struct tofEventTime {
   Produces<o2::aod::TOFEvTime> tableEvTime;
   Produces<o2::aod::EvTimeTOFOnly> tableEvTimeTOFOnly;
   Produces<o2::aod::pidEvTimeFlags> tableFlags;
-  static constexpr bool removeTOFEvTimeBias = true; // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
+  static constexpr bool kRemoveTOFEvTimeBias = true; // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
   static constexpr float kDiamond = 6.0;            // Collision diamond used in the estimation of the TOF event time
   static constexpr float kErrDiamond = kDiamond * 33.356409f;
   static constexpr float kWeightDiamond = 1.f / (kErrDiamond * kErrDiamond);
@@ -710,7 +710,7 @@ struct tofEventTime {
           sumOfWeights = 0.f;
           weight = 0.f;
           // Remove the bias on TOF ev. time
-          if constexpr (removeTOFEvTimeBias) {
+          if constexpr (kRemoveTOFEvTimeBias) {
             evTimeMakerTOF.removeBias<Run3TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
           }
           if (t0TOF[1] < kErrDiamond && (maxEvTimeTOF <= 0 || std::abs(t0TOF[0]) < maxEvTimeTOF)) {
@@ -773,7 +773,7 @@ struct tofEventTime {
         float erret = evTimeMakerTOF.mEventTimeError;
 
         for (auto const& trk : tracksInCollision) { // Loop on Tracks
-          if constexpr (removeTOFEvTimeBias) {
+          if constexpr (kRemoveTOFEvTimeBias) {
             evTimeMakerTOF.removeBias<Run3TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
           }
           uint8_t flags = 0;
