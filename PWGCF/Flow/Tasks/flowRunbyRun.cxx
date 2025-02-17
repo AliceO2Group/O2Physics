@@ -309,7 +309,8 @@ struct FlowRunbyRun {
       mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
       double maxSec = std::ceil(runDuration.second * 1.e-3); /// round tsEOR to the lowest integer higher than tsEOR
       const AxisSpec axisSeconds{static_cast<int>((maxSec - mMinSeconds) / 20.f), 0, maxSec - mMinSeconds, "Seconds since SOR"};
-      gHadronicRate[mRunNumber] = registry.add<TH2>(Form("HadronicRate/%i", mRunNumber), ";Time since SOR (s);Hadronic rate (kHz)", kTH2D, {axisSeconds, {cfgCutMaxIR - cfgCutMinIR, cfgCutMinIR, cfgCutMaxIR}}).get();
+      int hadronicRateBins = static_cast<int>(cfgCutMaxIR - cfgCutMinIR);
+      gHadronicRate[mRunNumber] = registry.add<TH2>(Form("HadronicRate/%i", mRunNumber), ";Time since SOR (s);Hadronic rate (kHz)", kTH2D, {axisSeconds, {hadronicRateBins, cfgCutMinIR, cfgCutMaxIR}}).get();
     }
     gCurrentHadronicRate = gHadronicRate[mRunNumber];
   }
