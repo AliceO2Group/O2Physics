@@ -775,64 +775,64 @@ struct AnalysisEventMixing {
       histNames = fTrackMuonHistNames;
     }
 
-      uint32_t twoTrackFilter = 0;
-      uint32_t mult_dimuons = 0;
-      for (auto& track1 : tracks1) {
-        for (auto& track2 : tracks2) {
-          if constexpr (TPairType == VarManager::kDecayToMuMu) {
-            twoTrackFilter = static_cast<uint32_t>(track1.isMuonSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoMuonFilterMask;
-          }
-          if (twoTrackFilter && track1.sign() * track2.sign() < 0) {
-            mult_dimuons++;
-          }
-        } // end for (track2)
+    uint32_t twoTrackFilter = 0;
+    uint32_t mult_dimuons = 0;
+    for (auto& track1 : tracks1) {
+      for (auto& track2 : tracks2) {
+        if constexpr (TPairType == VarManager::kDecayToMuMu) {
+          twoTrackFilter = static_cast<uint32_t>(track1.isMuonSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoMuonFilterMask;
+        }
+        if (twoTrackFilter && track1.sign() * track2.sign() < 0) {
+          mult_dimuons++;
+        }
+      } // end for (track2)
       } // end for (track1)
       VarManager::fgValues[VarManager::kMultDimuonsME] = mult_dimuons;
 
-    twoTrackFilter = 0;
-    for (auto& track1 : tracks1) {
-      for (auto& track2 : tracks2) {
-        if constexpr (TPairType == VarManager::kDecayToEE) {
-          twoTrackFilter = static_cast<uint32_t>(track1.isBarrelSelected()) & static_cast<uint32_t>(track2.isBarrelSelected()) & fTwoTrackFilterMask;
-        }
-        if constexpr (TPairType == VarManager::kDecayToMuMu) {
-          twoTrackFilter = static_cast<uint32_t>(track1.isMuonSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoMuonFilterMask;
-          if (fConfigSingleMuCumulants) {
-            VarManager::FillTwoMixEventsCumulants(SingleMuv22m, SingleMuv24m, SingleMuv22p, SingleMuv24p, track1, track2);
+      twoTrackFilter = 0;
+      for (auto& track1 : tracks1) {
+        for (auto& track2 : tracks2) {
+          if constexpr (TPairType == VarManager::kDecayToEE) {
+            twoTrackFilter = static_cast<uint32_t>(track1.isBarrelSelected()) & static_cast<uint32_t>(track2.isBarrelSelected()) & fTwoTrackFilterMask;
           }
-        }
-        if constexpr (TPairType == VarManager::kElectronMuon) {
-          twoTrackFilter = static_cast<uint32_t>(track1.isBarrelSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoTrackFilterMask;
-        }
+          if constexpr (TPairType == VarManager::kDecayToMuMu) {
+            twoTrackFilter = static_cast<uint32_t>(track1.isMuonSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoMuonFilterMask;
+            if (fConfigSingleMuCumulants) {
+              VarManager::FillTwoMixEventsCumulants(SingleMuv22m, SingleMuv24m, SingleMuv22p, SingleMuv24p, track1, track2);
+            }
+          }
+          if constexpr (TPairType == VarManager::kElectronMuon) {
+            twoTrackFilter = static_cast<uint32_t>(track1.isBarrelSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoTrackFilterMask;
+          }
 
-        if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
-          continue;
-        }
-        VarManager::FillPairME<TEventFillMap, TPairType>(track1, track2);
+          if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
+            continue;
+          }
+          VarManager::FillPairME<TEventFillMap, TPairType>(track1, track2);
 
-        for (unsigned int icut = 0; icut < ncuts; icut++) {
-          if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-            if (track1.sign() * track2.sign() < 0) {
-              fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
-              if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
-                fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][0].Data()), VarManager::fgValues);
-              }
-            } else {
-              if (track1.sign() > 0) {
-                fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+          for (unsigned int icut = 0; icut < ncuts; icut++) {
+            if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+              if (track1.sign() * track2.sign() < 0) {
+                fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
                 if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
-                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][1].Data()), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][0].Data()), VarManager::fgValues);
                 }
               } else {
-                fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
-                if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
-                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][2].Data()), VarManager::fgValues);
+                if (track1.sign() > 0) {
+                  fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+                  if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
+                    fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][1].Data()), VarManager::fgValues);
+                  }
+                } else {
+                  fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+                  if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
+                    fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][2].Data()), VarManager::fgValues);
+                  }
                 }
               }
-            }
-          } // end if (filter bits)
-        } // end for (cuts)
-      } // end for (track2)
+            } // end if (filter bits)
+          } // end for (cuts)
+        } // end for (track2)
     } // end for (track1)
   }
 
