@@ -460,6 +460,14 @@ struct AntinucleiInJets {
         continue;
       isAtLeastOneJetSelected = true;
 
+      // perpendicular cone
+      double coneRadius = std::sqrt(jet.area() / PI);
+      TVector3 jetAxis(jet.px(), jet.py(), jet.pz()); // before or after subtraction of perpendicular cone?
+      TVector3 ueAxis1(0, 0, 0);
+      TVector3 ueAxis2(0, 0, 0);
+      getPerpendicularAxis(jetAxis, ueAxis1, +1);
+      getPerpendicularAxis(jetAxis, ueAxis2, -1);
+
       // get jet constituents
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
       o2::aod::ITSResponse itsResponse;
@@ -541,14 +549,7 @@ struct AntinucleiInJets {
         }
       }
 
-      // perpendicular cone
-      double coneRadius = std::sqrt(jet.area() / PI);
-      TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
-      TVector3 ueAxis1(0, 0, 0);
-      TVector3 ueAxis2(0, 0, 0);
-      getPerpendicularAxis(jetAxis, ueAxis1, +1);
-      getPerpendicularAxis(jetAxis, ueAxis2, -1);
-
+      // underlying event
       for (auto track : tracks) { // o2-linter: disable=[const-ref-in-for-loop]
 
         // get corresponding track and apply track selection criteria
@@ -678,12 +679,14 @@ struct AntinucleiInJets {
       if ((std::fabs(jet.eta()) + rJet) > (maxEta - 0.05))
         continue;
       njetsInAcc++;
+      registryQC.fill(HIST("sumPtJetCone"), jet.pt());
 
       // jet pt must be larger than threshold
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
       if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
         continue;
       njetsHighPt++;
+      registryQC.fill(HIST("sumPtJet"), jet.pt());
 
       // jet properties and perpendicular cone
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
@@ -696,7 +699,6 @@ struct AntinucleiInJets {
 
       registryQC.fill(HIST("jetEffectiveArea"), jet.area() / (PI * rJet * rJet));
       registryQC.fill(HIST("NchJetCone"), static_cast<int>(jetConstituents.size()));
-      registryQC.fill(HIST("sumPtJetCone"), jet.pt());
 
       // loop over jet constituents
       for (const auto& particle : jetConstituents) { // o2-linter: disable=[const-ref-in-for-loop]
@@ -731,7 +733,6 @@ struct AntinucleiInJets {
       registryQC.fill(HIST("NchUE"), 0.5 * nParticlesPerp);
       registryQC.fill(HIST("NchJet"), static_cast<double>(jetConstituents.size()) - 0.5 * nParticlesPerp);
       registryQC.fill(HIST("sumPtUE"), 0.5 * ptPerp);
-      registryQC.fill(HIST("sumPtJet"), jet.pt() - 0.5 * ptPerp);
     }
     registryQC.fill(HIST("nJetsFound"), static_cast<int>(jets.size()));
     registryQC.fill(HIST("nJetsInAcceptance"), njetsInAcc);
