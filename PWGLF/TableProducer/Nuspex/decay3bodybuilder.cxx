@@ -626,23 +626,14 @@ struct decay3bodyBuilder {
 
   void initCCDBReduced(const int& runNumber)
   {
-    o2::parameters::GRPObject* grpo = ccdb->getForRun<o2::parameters::GRPObject>(grpPath, runNumber);
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (grpo) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for run number " << runNumber << " with magnetic field of " << d_bz << " kZG";
-    } else {
-      grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, runNumber);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for run number " << runNumber;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = o2::base::Propagator::Instance()->getNominalBz();
-      LOG(info) << "Retrieved GRP for run number " << runNumber << " with magnetic field of " << d_bz << " kZG";
+    o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, runNumber);
+    if (!grpmag) {
+      LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for run number " << runNumber;
     }
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+    // Fetch magnetic field from ccdb for current collision
+    d_bz = o2::base::Propagator::Instance()->getNominalBz();
+    LOG(info) << "Retrieved GRP for run number " << runNumber << " with magnetic field of " << d_bz << " kZG";
 
     // Set magnetic field for KF vertexing
 #ifdef HomogeneousField
@@ -1526,7 +1517,7 @@ struct decay3bodyBuilder {
 
     registry.fill(HIST("hEventCounter"), 0.5, collisions.size());
 
-    bool isCCDBInitialized = false;
+    int lastRunNumber = -1;
 
     for (const auto& d3body : decay3bodys) {
       auto t0 = d3body.template track0_as<aod::ReducedTracksIU>();
@@ -1535,11 +1526,11 @@ struct decay3bodyBuilder {
       auto collision = d3body.template collision_as<aod::ReducedCollisions>();
       // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       // initCCDB(bc);
-      // set magnetic field only once
-      if (!isCCDBInitialized) {
+      // set magnetic field only when run number changes
+      if (collision.runNumber() != lastRunNumber) {
         initCCDBReduced(collision.runNumber());
-        isCCDBInitialized = true;
-        LOG(debug) << "CCDB initialised.";
+        lastRunNumber = collision.runNumber(); // Update the last run number
+        LOG(debug) << "CCDB initialized for run " << lastRunNumber;
       }
       fillVtxCand<aod::ReducedCollisions>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, t2.tofNSigmaDe());
     }
@@ -1806,14 +1797,14 @@ struct decay3bodyBuilder {
 
   void processRun3withKFParticleReduced(aod::ReducedCollisions const& collisions, aod::ReducedTracksIU const&, aod::ReducedDecay3Bodys const& decay3bodys)
   {
-    bool isCCDBInitialized = false;
+    int lastRunNumber = -1;
 
     for (const auto& collision : collisions) {
-      // set magnetic field only once
-      if (!isCCDBInitialized) {
+      // set magnetic field only when run number changes
+      if (collision.runNumber() != lastRunNumber) {
         initCCDBReduced(collision.runNumber());
-        isCCDBInitialized = true;
-        LOG(debug) << "CCDB initialised.";
+        lastRunNumber = collision.runNumber(); // Update the last run number
+        LOG(debug) << "CCDB initialized for run " << lastRunNumber;
       }
 
       // event selection
@@ -1840,18 +1831,18 @@ struct decay3bodyBuilder {
     BinningTypeKF binningOnPosAndMult{{kfparticleConfigurations.binsVtxZ, kfparticleConfigurations.binsMultiplicity}, true};
     SameKindPair<ReducedCollisionsMults, aod::ReducedDecay3Bodys, BinningTypeKF> pair{binningOnPosAndMult, kfparticleConfigurations.nEvtMixing, -1, collisions, tuple, &cache}; // indicates that under/overflow (-1) to be ignored
 
-    bool isCCDBInitialized = false;
+    int lastRunNumber = -1;
 
     for (auto& [c1, decays3body1, c2, decays3body2] : pair) {
       registry.fill(HIST("QA/EM/hPairCounterMixing"), 0.5);
 
       // event selection already applied in reducer task
 
-      // set magnetic field only once
-      if (!isCCDBInitialized) {
+      // set magnetic field only when run number changes
+      if (c1.runNumber() != lastRunNumber) {
         initCCDBReduced(c1.runNumber());
-        isCCDBInitialized = true;
-        LOG(debug) << "CCDB initialised.";
+        lastRunNumber = c1.runNumber(); // Update the last run number
+        LOG(debug) << "CCDB initialized for run " << lastRunNumber;
       }
 
       for (auto& [decay3body1, decay3body2] : soa::combinations(soa::CombinationsFullIndexPolicy(decays3body1, decays3body2))) {
