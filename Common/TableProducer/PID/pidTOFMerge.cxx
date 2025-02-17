@@ -515,7 +515,7 @@ struct tofEventTime {
   Produces<o2::aod::EvTimeTOFOnly> tableEvTimeTOFOnly;
   Produces<o2::aod::pidEvTimeFlags> tableFlags;
   static constexpr bool kRemoveTOFEvTimeBias = true; // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
-  static constexpr float kDiamond = 6.0;            // Collision diamond used in the estimation of the TOF event time
+  static constexpr float kDiamond = 6.0;             // Collision diamond used in the estimation of the TOF event time
   static constexpr float kErrDiamond = kDiamond * 33.356409f;
   static constexpr float kWeightDiamond = 1.f / (kErrDiamond * kErrDiamond);
 
