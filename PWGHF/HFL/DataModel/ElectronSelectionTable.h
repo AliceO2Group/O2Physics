@@ -102,7 +102,7 @@ DECLARE_SOA_TABLE(HfCorrSelEl, "AOD", "HfCORRSELEL", //! Electron Informations
                   hf_corr_sel_electron::IsEmcal);
 
 // definition of columns and tables for Mc Gen HfElectron Selection
-namespace hf_mcGen_sel_electron
+namespace hf_mcgen_sel_electron
 {
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! collisioniD of the electron track
 DECLARE_SOA_INDEX_COLUMN(Track, track);             //! trackid of of the electron track
@@ -115,12 +115,12 @@ DECLARE_SOA_COLUMN(IsNonHfeMc, isNonHfeMc, bool);   //! Non-Heavy flavour  elect
 
 DECLARE_SOA_TABLE(HfMcGenSelEl, "AOD", "HFMCGENSELEL", //! Electron Informations
                   o2::soa::Index<>,
-                  hf_mcGen_sel_electron::McCollisionId,
-                  hf_mcGen_sel_electron::TrackId,
-                  hf_mcGen_sel_electron::EtaTrackMc,
-                  hf_mcGen_sel_electron::PhiTrackMc,
-                  hf_mcGen_sel_electron::PtTrackMc,
-                  hf_mcGen_sel_electron::IsNonHfeMc);
+                  hf_mcgen_sel_electron::McCollisionId,
+                  hf_mcgen_sel_electron::TrackId,
+                  hf_mcgen_sel_electron::EtaTrackMc,
+                  hf_mcgen_sel_electron::PhiTrackMc,
+                  hf_mcgen_sel_electron::PtTrackMc,
+                  hf_mcgen_sel_electron::IsNonHfeMc);
 } // namespace o2::aod
 
 #endif // PWGHF_HFL_DATAMODEL_ELECTRONSELECTIONTABLE_H_
