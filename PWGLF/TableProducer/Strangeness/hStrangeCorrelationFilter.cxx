@@ -29,6 +29,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "TF1.h"
+#include "string"
 
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
@@ -137,8 +138,8 @@ struct hstrangecorrelationfilter {
 
   using V0LinkedTagged = soa::Join<aod::V0sLinked, aod::V0Tags>;
   using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
-  using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
+  using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA>;
   using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::McTrackLabels>;
   // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
