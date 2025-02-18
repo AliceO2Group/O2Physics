@@ -929,7 +929,7 @@ struct Phik0shortanalysis {
         continue;
 
       std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
-      std::array<int, 3> counts{};
+      std::array<int, 3> counts{}, weights{1, 1, 1};
 
       // Phi reconstruction
       // Loop over positive tracks
@@ -962,23 +962,30 @@ struct Phik0shortanalysis {
 
           if (fillMethodMultipleWeights)
             listrecPhi.push_back(std::move(recPhi));
+
           counts.at(0)++;
+          weights.at(0) *= (1 - phiPurity);
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
           counts.at(1)++;
+          weights.at(1) *= (1 - phiPurity);
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSCutOnDeltaY)
             continue;
           counts.at(2)++;
+          weights.at(2) *= (1 - phiPurity);
         }
       }
 
       if (fillMethodMultipleWeights){
-        std::array<float, 3> weights{};
         for (unsigned int i = 0; i < counts.size(); i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
         }
-
         fillInvMass2D<false>(v0, listrecPhi, multiplicity, weights);
+      } else if (fillMethodSingleWeight) {
+        for (unsigned int i = 0; i < counts.size(); i++) {
+          weights.at(i) = (counts.at(i) > 0 ? 1 - weights.at(i) : 0);
+        }
+        fillInvMass<false>(v0, multiplicity, weights);
       }
     }
   }
@@ -1010,7 +1017,7 @@ struct Phik0shortanalysis {
         continue;
 
       std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
-      std::array<int, 3> counts{};
+      std::array<int, 3> counts{}, weights{1, 1, 1};
 
       // Phi reconstruction
       // Loop over positive tracks
@@ -1043,23 +1050,30 @@ struct Phik0shortanalysis {
 
           if (fillMethodMultipleWeights)
             listrecPhi.push_back(std::move(recPhi));
+
           counts.at(0)++;
+          weights.at(0) *= (1 - phiPurity);
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
           counts.at(1)++;
+          weights.at(1) *= (1 - phiPurity);
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgSCutOnDeltaY)
             continue;
           counts.at(2)++;
+          weights.at(2) *= (1 - phiPurity);
         }
       }
 
-      if (fillMethodMultipleWeights) {
-        std::array<float, 3> weights{};
+      if (fillMethodMultipleWeights){
         for (unsigned int i = 0; i < counts.size(); i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
         }
-
         fillInvMassNSigma<false>(track, listrecPhi, multiplicity, weights);
+      } else if (fillMethodSingleWeight) {
+        for (unsigned int i = 0; i < counts.size(); i++) {
+          weights.at(i) = (counts.at(i) > 0 ? 1 - weights.at(i) : 0);
+        }
+        fillNSigma<false>(track, multiplicity, weights);
       }
     }
   }
@@ -1563,7 +1577,7 @@ struct Phik0shortanalysis {
         continue;
 
       std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
-      std::array<int, 3> counts{};
+      std::array<int, 3> counts{}, weights{1, 1, 1};
 
       // Phi reconstruction
       for (const auto& track1 : posThisColl) { // loop over all selected tracks
@@ -1623,23 +1637,30 @@ struct Phik0shortanalysis {
 
           if (fillMethodMultipleWeights)
             listrecPhi.push_back(std::move(recPhi));
+
           counts.at(0)++;
+          weights.at(0) *= (1 - phiPurity);
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
           counts.at(1)++;
+          weights.at(1) *= (1 - phiPurity);
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSCutOnDeltaY)
             continue;
           counts.at(2)++;
+          weights.at(2) *= (1 - phiPurity);
         }
       }
 
-      if (fillMethodMultipleWeights) {
-        std::array<float, 3> weights{};
+      if (fillMethodMultipleWeights){
         for (unsigned int i = 0; i < counts.size(); i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
         }
-
         fillInvMass2D<true>(v0, listrecPhi, genmultiplicity, weights);
+      } else if (fillMethodSingleWeight) {
+        for (unsigned int i = 0; i < counts.size(); i++) {
+          weights.at(i) = (counts.at(i) > 0 ? 1 - weights.at(i) : 0);
+        }
+        fillInvMass<true>(v0, genmultiplicity, weights);
       }
     }
   }
@@ -1679,7 +1700,7 @@ struct Phik0shortanalysis {
         continue;
 
       std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
-      std::array<int, 3> counts{};
+      std::array<int, 3> counts{}, weights{1, 1, 1};
 
       // Phi reconstruction
       for (const auto& track1 : posThisColl) { // loop over all selected tracks
@@ -1739,18 +1760,21 @@ struct Phik0shortanalysis {
 
           if (fillMethodMultipleWeights)
             listrecPhi.push_back(std::move(recPhi));
+
           counts.at(0)++;
+          weights.at(0) *= (1 - phiPurity);
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
           counts.at(1)++;
+          weights.at(1) *= (1 - phiPurity);
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgSCutOnDeltaY)
             continue;
           counts.at(2)++;
+          weights.at(2) *= (1 - phiPurity);
         }
       }
 
       if (fillMethodMultipleWeights) {
-        std::array<float, 3> weights{};
         for (unsigned int i = 0; i < counts.size(); i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
         }
