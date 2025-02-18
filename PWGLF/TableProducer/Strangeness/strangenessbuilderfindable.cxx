@@ -1259,7 +1259,7 @@ struct StrangenessBuilder {
           if (mcParticleIsReco[mcParticle.globalIndex()] == true)
             continue; // skip if already created in list
 
-          if (TMath::Abs(mcParticle.y()) > v0BuilderOpts.mc_rapidityWindow)
+          if (std::fabs(mcParticle.y()) > v0BuilderOpts.mc_rapidityWindow)
             continue; // skip outside midrapidity
 
           if (
@@ -1647,7 +1647,7 @@ struct StrangenessBuilder {
             if (mcParticleIsReco[mcParticle.globalIndex()] == true)
               continue; // skip if already created in list
 
-            if (TMath::Abs(mcParticle.y()) > cascadeBuilderOpts.mc_rapidityWindow)
+            if (std::fabs(mcParticle.y()) > cascadeBuilderOpts.mc_rapidityWindow)
               continue; // skip outside midrapidity
 
             if (
@@ -1672,7 +1672,7 @@ struct StrangenessBuilder {
                   if (dau.getProcess() != 4) // check whether the daughter comes from a decay
                     continue;
 
-                  if (TMath::Abs(dau.pdgCode()) == 211 || TMath::Abs(dau.pdgCode()) == 321) {
+                  if (std::abs(dau.pdgCode()) == 211 || std::abs(dau.pdgCode()) == 321) {
                     thisCascInfo.pdgCodeBachelor = dau.pdgCode();
                     thisCascInfo.bachP[0] = dau.px();
                     thisCascInfo.bachP[1] = dau.py();
@@ -1682,7 +1682,7 @@ struct StrangenessBuilder {
                     thisCascInfo.xyz[2] = dau.vz();
                     thisCascInfo.mcParticleBachelor = dau.globalIndex();
                   }
-                  if (TMath::Abs(dau.pdgCode()) == 2212) {
+                  if (std::abs(dau.pdgCode()) == 2212) {
                     thisCascInfo.pdgCodeV0 = dau.pdgCode();
 
                     for (const auto& v0Dau : dau.template daughters_as<aod::McParticles>()) {
