@@ -110,14 +110,17 @@ struct UccZdc {
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
 
   // Configurable event selectiond and flags ZDC
+  Configurable<bool> isOccupancyCut{"isOccupancyCut", true, "Occupancy cut?"};
+  Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy",
+                                               false, "T0C Occu cut?"};
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true,
-                                            "Enable SameBunchPileup cut"};
+                                            "SameBunchPileup cut?"};
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true,
-                                            "Enable GoodZvtxFT0vsPV cut"};
+                                            "GoodZvtxFT0vsPV cut?"};
   Configurable<bool> isApplyVertexITSTPC{"isApplyVertexITSTPC", true,
-                                         "Enable VertexITSTPC cut"};
+                                         "VertexITSTPC cut?"};
   Configurable<bool> isApplyVertexTOFmatched{"isApplyVertexTOFmatched", true,
-                                             "Enable VertexTOFmatched cut"};
+                                             "VertexTOFmatched cut?"};
   Configurable<bool> isAmpZDC{"isAmpZDC", false, "Use amplitude ZDC?"};
   Configurable<bool> isCommPMT{"isCommPMT", false, "Use common PMT ZDC?"};
   Configurable<bool> isSumTowers{"isSumTowers", false, "Use sum of Tow ZDC?"};
@@ -125,20 +128,25 @@ struct UccZdc {
   Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut?"};
   Configurable<float> zemCut{"zemCut", 1000.0, "ZEM cut"};
   Configurable<float> tdcCut{"tdcCut", 1.0, "TDC cut"};
+  Configurable<float> minOccCut{"minOccCut", 0, "min Occu cut"};
+  Configurable<float> maxOccCut{"maxOccCut", 500, "max Occu cut"};
 
-  enum EvCutLabel { All = 1,
-                    SelEigth,
-                    NoSameBunchPileup,
-                    IsGoodZvtxFT0vsPV,
-                    IsVertexITSTPC,
-                    IsVertexTOFmatched,
-                    Centrality,
-                    VtxZ,
-                    CentralityCut,
-                    Zdc,
-                    TZero,
-                    Tdc,
-                    Zem };
+  enum EvCutLabel {
+    All = 1,
+    SelEigth,
+    NoSameBunchPileup,
+    IsGoodZvtxFT0vsPV,
+    IsVertexITSTPC,
+    IsVertexTOFmatched,
+    OccuCut,
+    Centrality,
+    VtxZ,
+    CentralityCut,
+    Zdc,
+    TZero,
+    Tdc,
+    Zem
+  };
 
   // Filters
   Filter collFilter = (nabs(aod::collision::posZ) < posZcut);
@@ -177,19 +185,20 @@ struct UccZdc {
     registry.add("hEventCounter", ";;Events", kTH1F, {axisEvent});
     auto hstat = registry.get<TH1>(HIST("hEventCounter"));
     auto* x = hstat->GetXaxis();
-    x->SetBinLabel(1, "All events");
-    x->SetBinLabel(2, "sel8");
-    x->SetBinLabel(3, "kNoSameBunchPileup");
-    x->SetBinLabel(4, "kIsGoodZvtxFT0vsPV");
-    x->SetBinLabel(5, "kIsVertexITSTPC");
-    x->SetBinLabel(6, "kIsVertexTOFmatched");
-    x->SetBinLabel(7, "Centrality");
-    x->SetBinLabel(8, "VtxZ");
-    x->SetBinLabel(9, "Centrality cut");
-    x->SetBinLabel(10, "has ZDC?");
-    x->SetBinLabel(11, "has T0?");
-    x->SetBinLabel(12, "inside TDC cut?");
-    x->SetBinLabel(13, "within ZEM cut?");
+    x->SetBinLabel(1, "All");
+    x->SetBinLabel(2, "SelEigth");
+    x->SetBinLabel(3, "NoSameBunchPileup");
+    x->SetBinLabel(4, "IsGoodZvtxFT0vsPV");
+    x->SetBinLabel(5, "IsVertexITSTPC");
+    x->SetBinLabel(6, "IsVertexTOFmatched");
+    x->SetBinLabel(7, "Occupancy Cut");
+    x->SetBinLabel(8, "Centrality");
+    x->SetBinLabel(9, "VtxZ cut");
+    x->SetBinLabel(10, "Centrality cut");
+    x->SetBinLabel(11, "has ZDC?");
+    x->SetBinLabel(12, "has T0?");
+    x->SetBinLabel(13, "Within TDC cut?");
+    x->SetBinLabel(14, "Within ZEM cut?");
 
     //  Histograms: paritcle-level info
     if (doprocessZdcCollAss) {
@@ -323,6 +332,16 @@ struct UccZdc {
     }
     registry.fill(HIST("hEventCounter"), EvCutLabel::IsVertexTOFmatched);
 
+    if (isOccupancyCut) {
+      auto occuValue{isApplyFT0CbasedOccupancy
+                       ? col.ft0cOccupancyInTimeRange()
+                       : col.trackOccupancyInTimeRange()};
+
+      if (occuValue < minOccCut || occuValue > maxOccCut)
+        return false;
+    }
+    registry.fill(HIST("hEventCounter"), EvCutLabel::OccuCut);
+
     // if (isApplyVertexTRDmatched &&
     //     !col.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
     //   return false;
@@ -346,29 +365,6 @@ struct UccZdc {
     }
     registry.fill(HIST("hEventCounter"), EvCutLabel::CentralityCut);
 
-    // if (isApplyExtraCorrCut && col.multNTracksPV() > npvTracksCut &&
-    //     col.multFT0C() < (10 * col.multNTracksPV() - ft0cCut)) {
-    //   return false;
-    // }
-    // histos.fill(HIST("EventHist"), 9);
-    //
-    // if (isApplyNoCollInTimeRangeStandard &&
-    //     !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-    //   return false;
-    // }
-    // histos.fill(HIST("EventHist"), 10);
-    //
-    // if (isApplyNoCollInRofStandard &&
-    //     !col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
-    //   return false;
-    // }
-    // histos.fill(HIST("EventHist"), 11);
-    //
-    // if (isApplyNoHighMultCollInPrevRof &&
-    //     !col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
-    //   return false;
-    // }
-    // histos.fill(HIST("EventHist"), 12);
     return true;
   }
 
