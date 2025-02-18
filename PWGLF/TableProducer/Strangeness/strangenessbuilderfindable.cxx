@@ -533,10 +533,10 @@ struct StrangenessBuilder {
   {
     std::vector<std::size_t> idx(v.size());
     std::iota(idx.begin(), idx.end(), 0);
-    if(doSorting){
+    if (doSorting) {
       // do sorting only if requested (not always necessary)
       std::stable_sort(idx.begin(), idx.end(),
-                     [&v](std::size_t i1, std::size_t i2) { return v[i1].collisionId < v[i2].collisionId; });
+                       [&v](std::size_t i1, std::size_t i2) { return v[i1].collisionId < v[i2].collisionId; });
     }
     return idx;
   }
