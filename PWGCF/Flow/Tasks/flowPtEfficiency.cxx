@@ -153,7 +153,7 @@ struct FlowPtEfficiency {
     registry.add("mcEventCounter", "Monte Carlo Truth EventCounter", kTH1F, {axisCounter});
     registry.add("hPtMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
     registry.add("hPtNchMCGen", "Truth production; pT (GeV/c); multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
-    registry.add("numberOfRecoCollisions", "numberOfRecoCollisions", kTH1F, {{10,-0.5f, 9.5f}});
+    registry.add("numberOfRecoCollisions", "numberOfRecoCollisions", kTH1F, {{10, -0.5f, 9.5f}});
 
     if (cfgFlowEnabled) {
       registry.add("hImpactParameterReco", "hImpactParameterReco", {HistType::kTH1D, {axisB}});
