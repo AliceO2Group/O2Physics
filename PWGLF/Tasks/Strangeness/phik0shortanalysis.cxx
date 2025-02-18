@@ -809,7 +809,7 @@ struct Phik0shortanalysis {
     }
   }
 
-  // Fill nSigmaTPC/TOF histogram for Pion 
+  // Fill nSigmaTPC/TOF histogram for Pion
   template <bool isMC, typename T>
   void fillNSigma(const T& Pi, float multiplicity, const std::array<float, 3>& weights)
   {
