@@ -538,7 +538,7 @@ struct HfElectronSelectionWithTpcEmcal {
       if (!mcGensel(particleMc)) {
         continue;
       }
-      if (abs(particleMc.pdgCode()) == 11) {
+      if (std::abs(particleMc.pdgCode()) == 11) {
 
         registry.fill(HIST("hMcgenInElectron"), particleMc.pt());
         bool isEmbEta = false;
@@ -548,7 +548,7 @@ struct HfElectronSelectionWithTpcEmcal {
           // Check first mother
           auto const& mother = particleMc.mothers_first_as<aod::McParticles>();
 
-          if (abs(mother.pdgCode()) == 221 || abs(mother.pdgCode()) == 111 || abs(mother.pdgCode()) == 22) {
+          if (std::abs(mother.pdgCode()) == 221 || std::abs(mother.pdgCode()) == 111 || std::abs(mother.pdgCode()) == 22) {
             registry.fill(HIST("hMcgenAllNonHfeElectron"), particleMc.pt());
             if (mother.has_mothers()) {
               auto const& gmother = mother.mothers_first_as<aod::McParticles>();
@@ -558,29 +558,29 @@ struct HfElectronSelectionWithTpcEmcal {
                 // cases to consider: eta->e, eta->pi0->e, eta->gamma->e, eta->pi0->gamma->e, pi0->e, pi0->gamma->e
 
                 //=================  eta->e ======================================
-                if (abs(mother.pdgCode()) == 221) {
+                if (std::abs(mother.pdgCode()) == 221) {
                   isEmbEta = true;
                 }
                 //=================  eta->pi0->e ======================================
 
-                if (abs(mother.pdgCode()) == 111) {
+                if (std::abs(mother.pdgCode()) == 111) {
                   isEmbPi0 = kTRUE; // pi0 -> e
 
-                  if (abs(gmother.pdgCode()) == 221) {
+                  if (std::abs(gmother.pdgCode()) == 221) {
                     isEmbEta = kTRUE; // eta->pi0-> e
                   }
                 }
 
                 /// ====================================  eta->gamma->e  and eta->pi0->gamma->e============
-                if (abs(mother.pdgCode()) == 22) {
-                  if (abs(gmother.pdgCode()) == 221) {
+                if (std::abs(mother.pdgCode()) == 22) {
+                  if (std::abs(gmother.pdgCode()) == 221) {
                     isEmbEta = kTRUE; // eta->gamma-> e
                   }
 
-                  if (abs(gmother.pdgCode()) == 111) {
+                  if (std::abs(gmother.pdgCode()) == 111) {
                     isEmbPi0 = kTRUE; // pi0-> gamma-> e
 
-                    if (abs(ggmother.pdgCode()) == 221) {
+                    if (std::abs(ggmother.pdgCode()) == 221) {
 
                       isEmbEta = kTRUE; // eta->pi0->gamma-> e
                     }
