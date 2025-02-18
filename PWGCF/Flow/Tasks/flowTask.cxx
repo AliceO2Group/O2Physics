@@ -89,11 +89,8 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 30, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
-  O2_DEFINE_CONFIGURABLE(cfgOutputGroupNUAWeights, bool, false, "Fill and output group NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
-  O2_DEFINE_CONFIGURABLE(cfgAcceptanceGroup, std::string, "", "CCDB path to group acceptance object")
-  O2_DEFINE_CONFIGURABLE(cfgAcceptanceGroupUse, bool, false, "Apply group acceptance, this option overrides cfgAcceptance")
   O2_DEFINE_CONFIGURABLE(cfgEvSelOccupancy, bool, true, "Occupancy cut")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
@@ -101,7 +98,6 @@ struct FlowTask {
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN02 {2} refP02 {-2}", "refN12 {2} refP12 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch02Gap22", "Ch12Gap22"}, "User defined GFW Name"};
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
-  Configurable<std::vector<int>> cfgGroupSplitRunNumber{"cfgGroupSplitRunNumber", std::vector<int>{544510, 544653}, "runnumbers for group splitting (suppose run numbers are increasing monotonically) "};
 
   ConfigurableAxis axisVertex{"axisVertex", {40, -20, 20}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -123,7 +119,6 @@ struct FlowTask {
   // Corrections
   TH1D* mEfficiency = nullptr;
   GFWWeights* mAcceptance = nullptr;
-  TList* mGroupAcceptanceList = nullptr;
   bool correctionsLoaded = false;
 
   // Connect to ccdb
@@ -135,7 +130,6 @@ struct FlowTask {
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   HistogramRegistry registry{"registry"};
-  OutputObj<TList> fGroupNUAList{"GroupNUAList", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
 
   // define global variables
   GFW* fGFW = new GFW();
@@ -156,7 +150,6 @@ struct FlowTask {
   std::unordered_map<int, TH2*> gHadronicRate;
   ctpRateFetcher mRateFetcher;
   TH2* gCurrentHadronicRate;
-  std::vector<std::shared_ptr<GFWWeights>> groupNUAWeightPtr;
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
@@ -259,27 +252,6 @@ struct FlowTask {
     if (cfgOutputNUAWeights) {
       fWeights->setPtBins(nPtBins, ptBins);
       fWeights->init(true, false);
-    }
-
-    TList* groupNUAWeightlist = new TList();
-    groupNUAWeightlist->SetOwner(true);
-    fGroupNUAList.setObject(groupNUAWeightlist);
-
-    if (cfgOutputGroupNUAWeights) {
-      groupNUAWeightPtr.resize(cfgGroupSplitRunNumber.value.size() + 1);
-      for (uint i = 0; i < cfgGroupSplitRunNumber.value.size() + 1; i++) {
-        GFWWeights* groupweight = nullptr;
-        if (i < cfgGroupSplitRunNumber.value.size())
-          groupweight = new GFWWeights(Form("groupweight_%d", cfgGroupSplitRunNumber.value[i]));
-        else
-          groupweight = new GFWWeights(Form("groupweight_last"));
-
-        groupweight->setPtBins(nPtBins, ptBins);
-        groupweight->init(true, false);
-        groupNUAWeightlist->Add(groupweight);
-        std::shared_ptr<GFWWeights> sharePtrGroupWeight(groupweight);
-        groupNUAWeightPtr[i] = sharePtrGroupWeight;
-      }
     }
 
     // add in FlowContainer to Get boostrap sample automatically
@@ -505,13 +477,6 @@ struct FlowTask {
       else
         LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
     }
-    if (cfgAcceptanceGroup.value.empty() == false) {
-      mGroupAcceptanceList = ccdb->getForTimeStamp<TList>(cfgAcceptance, timestamp);
-      if (mGroupAcceptanceList == nullptr) {
-        LOGF(fatal, "Could not load grouped acceptance weights from %s", cfgAcceptanceGroup.value.c_str());
-      }
-      LOGF(info, "Loaded grouped acceptance weights from %s (%p)", cfgAcceptanceGroup.value.c_str(), (void*)mGroupAcceptanceList);
-    }
     if (cfgEfficiency.value.empty() == false) {
       mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
       if (mEfficiency == nullptr) {
@@ -522,7 +487,7 @@ struct FlowTask {
     correctionsLoaded = true;
   }
 
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float phi, float eta, float pt, float vtxz, int groupNUAIndex = 0)
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float phi, float eta, float pt, float vtxz)
   {
     float eff = 1.;
     if (mEfficiency)
@@ -532,14 +497,7 @@ struct FlowTask {
     if (eff == 0)
       return false;
     weight_nue = 1. / eff;
-    if (cfgAcceptanceGroupUse) {
-      if (mGroupAcceptanceList && mGroupAcceptanceList->At(groupNUAIndex)) {
-        weight_nua = reinterpret_cast<GFWWeights*>(mGroupAcceptanceList->At(groupNUAIndex))->getNUA(phi, eta, vtxz);
-      } else {
-        weight_nua = 1;
-      }
-      return true;
-    }
+
     if (mAcceptance)
       weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
     else
@@ -764,17 +722,6 @@ struct FlowTask {
     if (cfgUseNch)
       independent = static_cast<float>(tracks.size());
 
-    int groupNUAIndex = 0;
-    if (cfgOutputGroupNUAWeights || cfgAcceptanceGroupUse) {
-      for (uint i = 0; i < cfgGroupSplitRunNumber.value.size(); i++) {
-        if (currentRunNumber < cfgGroupSplitRunNumber.value.at(i)) {
-          break;
-        } else {
-          groupNUAIndex++;
-        }
-      }
-    }
-
     for (const auto& track : tracks) {
       if (!trackSelected(track))
         continue;
@@ -788,16 +735,7 @@ struct FlowTask {
           fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
         }
       }
-      if (cfgOutputGroupNUAWeights) {
-        if (cfgOutputNUAWeightsRefPt) {
-          if (withinPtRef) {
-            groupNUAWeightPtr[groupNUAIndex]->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
-          }
-        } else {
-          groupNUAWeightPtr[groupNUAIndex]->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
-        }
-      }
-      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz, groupNUAIndex))
+      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         continue;
       registry.fill(HIST("hPt"), track.pt());
       if (withinPtRef) {
