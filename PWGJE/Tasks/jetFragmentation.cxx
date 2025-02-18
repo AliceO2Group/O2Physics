@@ -59,7 +59,7 @@ using MCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorL
 using MatchedMCDV0Jets = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 using MatchedMCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetConstituents, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 
-using CandidatesV0MCDWithLabels = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels, aod::V0Flags>;
+using CandidatesV0MCDWithLabels = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels, aod::V0SignalFlags>;
 
 using MCPV0Jets = aod::V0ChargedMCParticleLevelJets;
 using MCPV0JetsWithConstituents = soa::Join<MCPV0Jets, aod::V0ChargedMCParticleLevelJetConstituents>;
@@ -94,7 +94,7 @@ struct JetFragmentation {
   // Binning
   ConfigurableAxis binJetPt{"binJetPt", {40, 0.f, 200.f}, ""};
   ConfigurableAxis binEta{"binEta", {20, -1.f, 1.f}, ""};
-  ConfigurableAxis binPhi{"binPhi", {18 * 8, 0.f, 2. * TMath::Pi()}, ""};
+  ConfigurableAxis binPhi{"binPhi", {18 * 8, 0.f, constants::math::TwoPI}, ""};
   ConfigurableAxis binZ{"binZ", {40, 0.0001f, 1.0001f}, ""};
   ConfigurableAxis binXi{"binXi", {50, 0.f, 10.f}, ""};
   ConfigurableAxis binTheta{"binTheta", {40, -0.05f, 0.395f}, ""};
@@ -123,7 +123,7 @@ struct JetFragmentation {
 
   ConfigurableAxis binV0Pt{"binV0Pt", {120, 0.0f, 60.0f}, ""};
   ConfigurableAxis binV0Eta{"binV0Eta", {20, -1.f, 1.f}, ""};
-  ConfigurableAxis binV0Phi{"binV0Phi", {18 * 8, 0.f, 2. * TMath::Pi()}, ""};
+  ConfigurableAxis binV0Phi{"binV0Phi", {18 * 8, 0.f, constants::math::TwoPI}, ""};
   ConfigurableAxis binV0Ctau{"binV0Ctau", {200, 0.0f, 40.0f}, ""};
   ConfigurableAxis binV0Radius{"binV0Radius", {100, 0.0f, 100.0f}, ""};
   ConfigurableAxis binV0CosPA{"binV0CosPA", {100, 0.95f, 1.0f}, ""};
@@ -976,8 +976,8 @@ struct JetFragmentation {
   std::vector<int> convertState(uint32_t state, int nParticles, int nClasses = 4)
   {
     std::vector<int> v(nParticles, nClasses);
-    int nStates = pow(nClasses, nParticles);
-    int nBitsPerParticle = round(log2(nClasses));
+    int nStates = std::pow(nClasses, nParticles);
+    int nBitsPerParticle = std::round(std::log2(nClasses));
     int nBitsPerInt = sizeof(uint32_t) * 8;
 
     // Check if the input configuration is parseable
@@ -1005,7 +1005,7 @@ struct JetFragmentation {
       for (int ib = 0; ib < nBitsPerParticle; ib++) {
         int bit = startBit + ib;
         int bitVal = ((state & (1 << bit)) > 0);
-        value += bitVal * TMath::Power(2, ib);
+        value += bitVal * std::pow(2, ib);
       }
       v[ip] = value;
     }
@@ -1065,15 +1065,15 @@ struct JetFragmentation {
     // If V0 is Lambda, posTrack = proton, negTrack = pion
     // In that case, we assign pion mass to posTrack and proton mass to negTrack to calculate the reflection
     // Vice versa for AntiLambda
-    double negM = (isLambda ? o2::constants::physics::MassProton : o2::constants::physics::MassPionCharged);
-    double posM = (isLambda ? o2::constants::physics::MassPionCharged : o2::constants::physics::MassProton);
+    double negM = (isLambda ? constants::physics::MassProton : constants::physics::MassPionCharged);
+    double posM = (isLambda ? constants::physics::MassPionCharged : constants::physics::MassProton);
     double negPsq = v0.pxneg() * v0.pxneg() + v0.pyneg() * v0.pyneg() + v0.pzneg() * v0.pzneg();
     double posPsq = v0.pxpos() * v0.pxpos() + v0.pypos() * v0.pypos() + v0.pzpos() * v0.pzpos();
-    double negE = TMath::Sqrt(negM * negM + negPsq);
-    double posE = TMath::Sqrt(posM * posM + posPsq);
+    double negE = std::sqrt(negM * negM + negPsq);
+    double posE = std::sqrt(posM * posM + posPsq);
     double Esquared = (negE + posE) * (negE + posE);
     double psquared = v0.p() * v0.p();
-    return TMath::Sqrt(Esquared - psquared);
+    return std::sqrt(Esquared - psquared);
   }
 
   template <typename Jet, typename Constituent>
@@ -1104,7 +1104,7 @@ struct JetFragmentation {
     double xi = -1., trackProj = -1.;
     trackProj = TrackProj(jet, constituent);
     if (trackProj > 0) {
-      xi = TMath::Log(1. / trackProj);
+      xi = std::log(1. / trackProj);
     }
     return xi;
   }
@@ -1123,9 +1123,9 @@ struct JetFragmentation {
     if (!mcNegTrack.has_mothers() || !mcPosTrack.has_mothers()) {
       return;
     }
-    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
-    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
-    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
+    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
+    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
+    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
     // Can tracks have multiple mothers?
     for (auto& particleMotherOfNeg : mcNegTrack.template mothers_as<aod::McParticles>()) {
       for (auto& particleMotherOfPos : mcPosTrack.template mothers_as<aod::McParticles>()) {
@@ -1135,7 +1135,7 @@ struct JetFragmentation {
           registry.fill(HIST("matching/V0/V0PartPtDetPt"), ptPartV0, v0.pt(), weight);
           registry.fill(HIST("matching/V0/V0PartPtRatioPtRelDiffPt"), ptPartV0, v0.pt() / ptPartV0, (v0.pt() - ptPartV0) / ptPartV0, weight);
 
-          if (TMath::Abs(pdg) == 310) { // K0S
+          if (std::abs(pdg) == 310) { // K0S
             registry.fill(HIST("matching/V0/K0SPtEtaPhi"), ptPartV0, v0.pt(), v0.eta(), v0.phi(), weight);
             registry.fill(HIST("matching/V0/K0SPtCtauMass"), ptPartV0, v0.pt(), ctauK0s, v0.mK0Short(), weight);
             registry.fill(HIST("matching/V0/K0SPtRadiusCosPA"), ptPartV0, v0.pt(), v0.v0radius(), v0.v0cosPA(), weight);
@@ -1204,9 +1204,9 @@ struct JetFragmentation {
   void fillDataV0Histograms(CollisionType const& collision, V0Type const& V0s, double weight = 1.)
   {
     for (const auto& v0 : V0s) {
-      double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
-      double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
-      double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
+      double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
+      double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
+      double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
 
       double massDiff = v0.mLambda() - v0.mAntiLambda();
       double massRatio = v0.mAntiLambda() / v0.mLambda();
@@ -1221,7 +1221,7 @@ struct JetFragmentation {
       registry.fill(HIST("data/V0/V0PtDCAposneg"), v0.pt(), v0.dcapostopv(), v0.dcanegtopv(), weight);
       registry.fill(HIST("data/V0/V0PtDCAd"), v0.pt(), v0.dcaV0daughters(), weight);
 
-      registry.fill(HIST("data/V0/V0CutVariation"), v0.pt(), v0.mK0Short(), v0.mLambda(), v0.mAntiLambda(), v0.v0radius(), ctauK0s, v0.v0cosPA(), TMath::Abs(v0.dcapostopv()), TMath::Abs(v0.dcanegtopv()), v0.dcaV0daughters(), weight);
+      registry.fill(HIST("data/V0/V0CutVariation"), v0.pt(), v0.mK0Short(), v0.mLambda(), v0.mAntiLambda(), v0.v0radius(), ctauK0s, v0.v0cosPA(), std::abs(v0.dcapostopv()), std::abs(v0.dcanegtopv()), v0.dcaV0daughters(), weight);
 
       if (v0.isLambdaCandidate()) {
         registry.fill(HIST("data/V0/LambdaPtEtaPhi"), v0.pt(), v0.eta(), v0.phi(), weight);
@@ -1253,9 +1253,9 @@ struct JetFragmentation {
   void fillDataV0FragHistograms(CollisionType const& collision, JetType const& jet, V0Type const& v0, double weight = 1.)
   {
     double trackProj = TrackProj(jet, v0);
-    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
-    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
-    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
+    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
+    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
+    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
 
     double massDiff = v0.mLambda() - v0.mAntiLambda();
     double massRatio = v0.mAntiLambda() / v0.mLambda();
@@ -1345,9 +1345,9 @@ struct JetFragmentation {
       double z = values[ip];
       ip++;
 
-      double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
-      double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
-      double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
+      double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
+      double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
+      double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
 
       switch (state[ip]) {
         case 0: // Background
@@ -1395,7 +1395,7 @@ struct JetFragmentation {
   void fillMatchingHistogramsJet(DetJet const& detJet, PartJet const& partJet, double weight = 1.)
   {
     double deltaEta = detJet.eta() - partJet.eta();
-    double deltaPhi = RecoDecay::constrainAngle(detJet.phi() - partJet.phi(), -M_PI);
+    double deltaPhi = RecoDecay::constrainAngle(detJet.phi() - partJet.phi(), -constants::math::PI);
     double dR = jetutilities::deltaR(detJet, partJet);
 
     registry.fill(HIST("matching/jets/matchDetJetPtEtaPhi"), detJet.pt(), detJet.eta(), detJet.phi(), weight);
@@ -1502,7 +1502,7 @@ struct JetFragmentation {
 
     registry.fill(HIST("matching/jets/V0/missJetPtV0TrackProj"), jet.pt(), trackProj, weight);
     registry.fill(HIST("matching/jets/V0/missJetPtV0PtEtaPhi"), jet.pt(), v0.pt(), v0.eta(), v0.phi(), weight);
-    if (TMath::Abs(v0.pdgCode()) == 310) { // K0S
+    if (std::abs(v0.pdgCode()) == 310) { // K0S
       registry.fill(HIST("matching/jets/V0/missJetPtK0SPtEtaPhi"), jet.pt(), v0.pt(), v0.eta(), v0.phi(), weight);
       registry.fill(HIST("matching/jets/V0/missJetPtK0STrackProj"), jet.pt(), trackProj, weight);
     } else if (v0.pdgCode() == 3122) { // Lambda
@@ -1518,9 +1518,9 @@ struct JetFragmentation {
   void fillMatchingV0Fake(CollisionType const& collision, JetType const& jet, V0Type const& v0, double weight = 1.)
   {
     double trackProj = TrackProj(jet, v0);
-    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
-    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
-    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
+    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
+    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
+    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
     double massDiff = v0.mLambda() - v0.mAntiLambda();
     double massRatio = v0.mAntiLambda() / v0.mLambda();
     double massRelDiff = (v0.mLambda() - v0.mAntiLambda()) / v0.mLambda();
@@ -1602,9 +1602,9 @@ struct JetFragmentation {
   template <typename T, typename U>
   void fillMatchingV0FakeHistograms(T const& coll, U const& v0, double weight = 1.)
   {
-    double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassLambda0;
-    double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassLambda0Bar;
-    double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassK0Short;
+    double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0;
+    double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0Bar;
+    double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassK0Short;
 
     registry.fill(HIST("matching/V0/fakeV0PtEtaPhi"), v0.pt(), v0.eta(), v0.phi(), weight);
     registry.fill(HIST("matching/V0/fakeV0PtCtau"), v0.pt(), ctauK0s, ctauLambda, ctauAntiLambda, weight);
@@ -1659,7 +1659,7 @@ struct JetFragmentation {
       double pt = posDecayed ? negMom.pt() : posMom.pt();
       int pdg = posDecayed ? negMom.pdgCode() : posMom.pdgCode();
 
-      if (TMath::Abs(pdg) == 310) {
+      if (std::abs(pdg) == 310) {
         registry.fill(HIST("matching/V0/decayedK0SV0PtMass"), pt, v0.pt(), v0.mK0Short(), v0.mLambda(), v0.mAntiLambda(), weight);
       } else if (pdg == 3122) {
         registry.fill(HIST("matching/V0/decayedLambdaV0PtMass"), pt, v0.pt(), v0.mK0Short(), v0.mLambda(), v0.mAntiLambda(), weight);
@@ -1734,7 +1734,7 @@ struct JetFragmentation {
         }
       }
 
-      if (TMath::Abs(pdg) == 310) {
+      if (std::abs(pdg) == 310) {
         registry.fill(HIST("matching/jets/V0/decayedK0SV0PtMass"), partJet.pt(), detJet.pt(), pt, v0.pt(), v0.mK0Short(), v0.mLambda(), v0.mAntiLambda(), weight);
         if (partIsInJet) {
           registry.fill(HIST("matching/jets/V0/decayedK0SV0TrackProjMass"), partJet.pt(), detJet.pt(), z, zv0, v0.mK0Short(), v0.mLambda(), v0.mAntiLambda(), weight);
@@ -1769,14 +1769,14 @@ struct JetFragmentation {
   template <typename CollisionType, typename V0Type, typename particleType>
   void fillMatchingV0Histograms(CollisionType const& collision, V0Type const& v0, particleType const& particle, double weight = 1.)
   {
-    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
-    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
-    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
+    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
+    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
+    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
 
     registry.fill(HIST("matching/V0/V0PartPtDetPt"), particle.pt(), v0.pt(), weight);
     registry.fill(HIST("matching/V0/V0PartPtRatioPtRelDiffPt"), particle.pt(), v0.pt() / particle.pt(), (v0.pt() - particle.pt()) / particle.pt(), weight);
 
-    if (TMath::Abs(particle.pdgCode()) == 310) { // K0S
+    if (std::abs(particle.pdgCode()) == 310) { // K0S
       registry.fill(HIST("matching/V0/K0SPtEtaPhi"), particle.pt(), v0.pt(), v0.eta(), v0.phi(), weight);
       registry.fill(HIST("matching/V0/K0SPtCtauMass"), particle.pt(), v0.pt(), ctauK0s, v0.mK0Short(), weight);
       registry.fill(HIST("matching/V0/K0SPtRadiusCosPA"), particle.pt(), v0.pt(), v0.v0radius(), v0.v0cosPA(), weight);
@@ -1836,9 +1836,9 @@ struct JetFragmentation {
     double detTrackProj = TrackProj(detJet, v0);
     double partTrackProj = TrackProj(partJet, particle);
 
-    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
-    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
-    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
+    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
+    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
+    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
 
     registry.fill(HIST("matching/jets/V0/matchDetJetPtV0TrackProjPartJetPtV0TrackProj"), detJet.pt(), detTrackProj, partJet.pt(), partTrackProj, weight);
     registry.fill(HIST("matching/jets/V0/partJetPtV0PtDetJetPtV0Pt"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
@@ -1867,7 +1867,7 @@ struct JetFragmentation {
     registry.fill(HIST("matching/jets/V0/partJetPtV0TrackProjDetJetPtV0TrackProjDCAposneg"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, v0.dcapostopv(), v0.dcanegtopv(), weight);
     registry.fill(HIST("matching/jets/V0/partJetPtV0TrackProjDetJetPtV0TrackProjDCAd"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, v0.dcaV0daughters(), weight);
 
-    if (TMath::Abs(particle.pdgCode()) == 310) { // K0S
+    if (std::abs(particle.pdgCode()) == 310) { // K0S
       registry.fill(HIST("matching/jets/V0/matchDetJetPtK0STrackProjPartJetPtK0STrackProj"), detJet.pt(), detTrackProj, partJet.pt(), partTrackProj, weight);
       registry.fill(HIST("matching/jets/V0/partJetPtK0SPtDetJetPtK0SPt"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
 
@@ -2017,18 +2017,18 @@ struct JetFragmentation {
   void fillDataPerpConeHists(T const& coll, U const& jet, V const& v0s, double weight = 1.)
   {
     double perpConeR = jet.r() * 1e-2;
-    double conePhi[2] = {RecoDecay::constrainAngle(jet.phi() - M_PI / 2, -M_PI),
-                         RecoDecay::constrainAngle(jet.phi() + M_PI / 2, -M_PI)};
+    double conePhi[2] = {RecoDecay::constrainAngle(jet.phi() - constants::math::PIHalf, -constants::math::PI),
+                         RecoDecay::constrainAngle(jet.phi() + constants::math::PIHalf, -constants::math::PI)};
     double conePt[2] = {0., 0.};
     int nV0sinCone[2] = {0, 0};
     for (const auto& v0 : v0s) {
       // Need to check if v0 passed jet finder selection/preselector cuts
       bool v0InCones = false;
       double dEta = v0.eta() - jet.eta();
-      double dPhi[2] = {RecoDecay::constrainAngle(v0.phi() - conePhi[0], -M_PI),
-                        RecoDecay::constrainAngle(v0.phi() - conePhi[1], -M_PI)};
+      double dPhi[2] = {RecoDecay::constrainAngle(v0.phi() - conePhi[0], -constants::math::PI),
+                        RecoDecay::constrainAngle(v0.phi() - conePhi[1], -constants::math::PI)};
       for (int i = 0; i < 2; i++) {
-        if (TMath::Sqrt(dEta * dEta + dPhi[i] * dPhi[i]) < perpConeR) {
+        if (std::sqrt(dEta * dEta + dPhi[i] * dPhi[i]) < perpConeR) {
           conePt[i] += v0.pt();
           nV0sinCone[i]++;
           v0InCones = true;
@@ -2038,9 +2038,9 @@ struct JetFragmentation {
         continue;
       }
 
-      double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassLambda0;
-      double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassLambda0Bar;
-      double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassK0Short;
+      double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0;
+      double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0Bar;
+      double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassK0Short;
 
       registry.fill(HIST("data/PC/JetPtEtaV0Pt"), jet.pt(), jet.eta(), v0.pt(), weight);
       registry.fill(HIST("data/PC/V0PtEtaPhi"), v0.pt(), v0.eta(), v0.phi(), weight);
@@ -2095,8 +2095,8 @@ struct JetFragmentation {
   void fillMcPerpConeHists(T const& coll, U const& mcdjet, V const& v0s, W const& /* V0 particles */, double weight = 1.)
   {
     double perpConeR = mcdjet.r() * 1e-2;
-    double conePhi[2] = {RecoDecay::constrainAngle(mcdjet.phi() - M_PI / 2, -M_PI),
-                         RecoDecay::constrainAngle(mcdjet.phi() + M_PI / 2, -M_PI)};
+    double conePhi[2] = {RecoDecay::constrainAngle(mcdjet.phi() - constants::math::PIHalf, -constants::math::PI),
+                         RecoDecay::constrainAngle(mcdjet.phi() + constants::math::PIHalf, -constants::math::PI)};
     double coneMatchedPt[2] = {0., 0.};
     double coneFakePt[2] = {0., 0.};
     int nMatchedV0sinCone[2] = {0, 0};
@@ -2104,16 +2104,16 @@ struct JetFragmentation {
 
     for (const auto& v0 : v0s) {
       double dEta = v0.eta() - mcdjet.eta();
-      double dPhi[2] = {RecoDecay::constrainAngle(v0.phi() - conePhi[0], -M_PI),
-                        RecoDecay::constrainAngle(v0.phi() - conePhi[1], -M_PI)};
+      double dPhi[2] = {RecoDecay::constrainAngle(v0.phi() - conePhi[0], -constants::math::PI),
+                        RecoDecay::constrainAngle(v0.phi() - conePhi[1], -constants::math::PI)};
       for (int i = 0; i < 2; i++) {
-        if (TMath::Sqrt(dEta * dEta + dPhi[i] * dPhi[i]) > perpConeR) {
+        if (std::sqrt(dEta * dEta + dPhi[i] * dPhi[i]) > perpConeR) {
           continue;
         }
 
-        double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassLambda0;
-        double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassLambda0Bar;
-        double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassK0Short;
+        double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0;
+        double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0Bar;
+        double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassK0Short;
 
         if (!v0.has_mcParticle()) { // The V0 is combinatorial background
           coneFakePt[i] += v0.pt();
@@ -2139,7 +2139,7 @@ struct JetFragmentation {
           registry.fill(HIST("mcd/PC/matchedV0PtDCAd"), v0.pt(), v0.dcaV0daughters(), weight);
 
           auto particle = v0.template mcParticle_as<W>();
-          if (TMath::Abs(particle.pdgCode()) == 310) { // K0S
+          if (std::abs(particle.pdgCode()) == 310) { // K0S
             registry.fill(HIST("mcd/PC/matchedJetPtK0SPtMass"), mcdjet.pt(), v0.pt(), v0.mK0Short(), weight);
           } else if (particle.pdgCode() == 3122) { // Lambda
             registry.fill(HIST("mcd/PC/matchedJetPtLambda0PtMass"), mcdjet.pt(), v0.pt(), v0.mLambda(), weight);
@@ -2164,8 +2164,8 @@ struct JetFragmentation {
   void fillMcPerpConeHists(T const& coll, U const& mcdjet, V const& mcpjet, W const& v0s, X const& /* V0 particles */, double weight = 1.)
   {
     double perpConeR = mcdjet.r() * 1e-2;
-    double conePhi[2] = {RecoDecay::constrainAngle(mcdjet.phi() - M_PI / 2, -M_PI),
-                         RecoDecay::constrainAngle(mcdjet.phi() + M_PI / 2, -M_PI)};
+    double conePhi[2] = {RecoDecay::constrainAngle(mcdjet.phi() - constants::math::PIHalf, -constants::math::PI),
+                         RecoDecay::constrainAngle(mcdjet.phi() + constants::math::PIHalf, -constants::math::PI)};
     double coneMatchedPt[2] = {0., 0.};
     double coneFakePt[2] = {0., 0.};
     int nMatchedV0sinCone[2] = {0, 0};
@@ -2173,16 +2173,16 @@ struct JetFragmentation {
 
     for (const auto& v0 : v0s) {
       double dEta = v0.eta() - mcdjet.eta();
-      double dPhi[2] = {RecoDecay::constrainAngle(v0.phi() - conePhi[0], -M_PI),
-                        RecoDecay::constrainAngle(v0.phi() - conePhi[1], -M_PI)};
+      double dPhi[2] = {RecoDecay::constrainAngle(v0.phi() - conePhi[0], -constants::math::PI),
+                        RecoDecay::constrainAngle(v0.phi() - conePhi[1], -constants::math::PI)};
       for (int i = 0; i < 2; i++) {
-        if (TMath::Sqrt(dEta * dEta + dPhi[i] * dPhi[i]) > perpConeR) {
+        if (std::sqrt(dEta * dEta + dPhi[i] * dPhi[i]) > perpConeR) {
           continue;
         }
 
-        double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassLambda0;
-        double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassLambda0Bar;
-        double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassK0Short;
+        double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0;
+        double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0Bar;
+        double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassK0Short;
 
         if (!v0.has_mcParticle()) { // The V0 is combinatorial background
           coneFakePt[i] += v0.pt();
@@ -2210,7 +2210,7 @@ struct JetFragmentation {
           registry.fill(HIST("matching/PC/matchedV0PtDCAd"), v0.pt(), v0.dcaV0daughters(), weight);
 
           auto particle = v0.template mcParticle_as<X>();
-          if (TMath::Abs(particle.pdgCode()) == 310) { // K0S
+          if (std::abs(particle.pdgCode()) == 310) { // K0S
             registry.fill(HIST("matching/PC/matchedJetPtK0SPtMass"), mcdjet.pt(), v0.pt(), v0.mK0Short(), weight);
             registry.fill(HIST("matching/PC/matchedJetsPtK0SPtMass"), mcpjet.pt(), mcdjet.pt(), v0.pt(), v0.mK0Short(), weight);
           } else if (particle.pdgCode() == 3122) { // Lambda
@@ -2485,14 +2485,14 @@ struct JetFragmentation {
             continue;
           }
           const auto& particle = v0.template mcParticle_as<aod::McParticles>();
-          if (!((TMath::Abs(particle.pdgCode()) == 310) || (TMath::Abs(particle.pdgCode()) == 3122))) {
+          if (!((std::abs(particle.pdgCode()) == 310) || (std::abs(particle.pdgCode()) == 3122))) {
             fillMatchingV0Fake(collision, detJet, v0, weight);
             continue;
           }
           // Found a matched V0 in the jet
           nV0inJet++;
           fillMatchingV0FragHistograms(collision, detJet, partJet, v0, particle, weight);
-          if (TMath::Abs(particle.pdgCode()) == 310) {
+          if (std::abs(particle.pdgCode()) == 310) {
             nK0SinJet++;
           } else if (particle.pdgCode() == 3122) {
             nLambdainJet++;
@@ -2532,7 +2532,7 @@ struct JetFragmentation {
           isParticleUsed[iparticle] = true;
           continue;
         }
-        if (!((TMath::Abs(particle.pdgCode()) == 310) || TMath::Abs((particle.pdgCode()) == 3122))) {
+        if (!((std::abs(particle.pdgCode()) == 310) || std::abs((particle.pdgCode()) == 3122))) {
           isParticleUsed[iparticle] = true;
           continue;
         }
@@ -2738,7 +2738,7 @@ struct JetFragmentation {
       }
       values.push_back(jet.pt());
 
-      int nStates = TMath::Power(nClasses, nParticles);
+      int nStates = std::pow(nClasses, nParticles);
       for (int M = 0; M < nStates; M++) {
         std::vector<int> state = convertState(M, nParticles, nClasses);
         std::vector<double> corrected = correctedValues(state, values);
@@ -2834,7 +2834,7 @@ struct JetFragmentation {
               fillMatchingV0FragHistograms(jcoll, detJet, partJet, detV0, partV0, weight);
               fillMatchingV0DauJetHistograms<aod::JetTracksMCD, aod::JetParticles>(detJet, partJet, detV0, partV0, weight);
 
-              if (TMath::Abs(partV0.pdgCode()) == 310) {
+              if (std::abs(partV0.pdgCode()) == 310) {
                 nK0SinJet++;
               } else if (partV0.pdgCode() == 3122) {
                 nLambdainJet++;
