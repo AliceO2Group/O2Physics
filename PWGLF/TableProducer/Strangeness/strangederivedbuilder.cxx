@@ -547,11 +547,11 @@ struct strangederivedbuilder {
                             collision.multFDDA() * static_cast<float>(fillTruncationOptions.fillRawFDDA),
                             collision.multFDDC() * static_cast<float>(fillTruncationOptions.fillRawFDDC),
                             collision.multNTracksPVeta1() * static_cast<int>(fillTruncationOptions.fillRawNTracksEta1),
-                            -1,
-                            -1,
-                            -1,
-                            -1,
-                            -1,
+                            -1, /* dummy number of PV contribs total while waiting for the multiplicity task to produce it */
+                            -1, /* dummy global track multiplicities while waiting for the multiplicity task to produce it */
+                            -1, /* dummy track multiplicities, PV contribs, no eta cut while waiting for the multiplicity task to produce it */
+                            -1, /* dummy TPConly track multiplicities, all, no eta cut while waiting for the multiplicity task to produce it */
+                            -1, /* dummy ITSTPC track multiplicities, all, no eta cut waiting for the multiplicity task to produce it */
                             collision.multZNA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
                             collision.multZNC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
                             collision.multZEM1() * static_cast<float>(fillTruncationOptions.fillRawZDC),
