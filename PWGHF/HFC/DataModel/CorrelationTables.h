@@ -488,7 +488,7 @@ DECLARE_SOA_TABLE(HfEHadronPair, "AOD", "HFEHADRONPAIR", //! Hfe-Hadrons pairs I
                   hf_correlation_electron_hadron::IsULSEHCorr);
 
 // Note: definition of columns and tables for Electron Hadron correlation pairs for MC Gen
-namespace hf_correlation_McGenelectron_hadron
+namespace hf_correlation_mcgenelectron_hadron
 {
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);         //! DeltaPhi between Electron and Hadrons
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);         //! DeltaEta between Electron and Hadrons
@@ -497,14 +497,14 @@ DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);         //! Transverse momentum o
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);             //! Pool Bin of event defined using zvtx and multiplicity
 DECLARE_SOA_COLUMN(IsNonHfEHCorr, isNonHfEHCorr, int); //! Pool Bin of event defined using zvtx and multiplicity
 
-} // namespace hf_correlation_McGenelectron_hadron
+} // namespace hf_correlation_mcgenelectron_hadron
 DECLARE_SOA_TABLE(HfEHadronMcGenPair, "AOD", "HFEHADRONMCGENPAIR", //! Hfe-Hadrons pairs Informations
-                  hf_correlation_McGenelectron_hadron::DeltaPhi,
-                  hf_correlation_McGenelectron_hadron::DeltaEta,
-                  hf_correlation_McGenelectron_hadron::PtElectron,
-                  hf_correlation_McGenelectron_hadron::PtHadron,
-                  hf_correlation_McGenelectron_hadron::PoolBin,
-                  hf_correlation_McGenelectron_hadron::IsNonHfEHCorr);
+                  hf_correlation_mcgenelectron_hadron::DeltaPhi,
+                  hf_correlation_mcgenelectron_hadron::DeltaEta,
+                  hf_correlation_mcgenelectron_hadron::PtElectron,
+                  hf_correlation_mcgenelectron_hadron::PtHadron,
+                  hf_correlation_mcgenelectron_hadron::PoolBin,
+                  hf_correlation_mcgenelectron_hadron::IsNonHfEHCorr);
 } // namespace o2::aod
 
 #endif // PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_
