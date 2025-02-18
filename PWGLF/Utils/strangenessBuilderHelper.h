@@ -299,6 +299,9 @@ class strangenessBuilderHelper
       }
     }
 
+    // set collision Id correctly
+    v0.collisionId = collision.globalIndex();
+
     // information validated, V0 built successfully. Signal OK
     return true;
   }
@@ -469,6 +472,7 @@ class strangenessBuilderHelper
 
     // Populate information
     // cascadecandidate.v0Id = v0index.globalIndex();
+    cascade.collisionId = collision.globalIndex();
     cascade.positiveTrack = positiveTrack.globalIndex();
     cascade.negativeTrack = negativeTrack.globalIndex();
     cascade.bachelorTrack = bachelorTrack.globalIndex();
