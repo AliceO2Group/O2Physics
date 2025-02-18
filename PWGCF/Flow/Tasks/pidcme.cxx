@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <memory>
 #include <TF1.h>
 #include <TComplex.h>
 #include <TH1F.h>
