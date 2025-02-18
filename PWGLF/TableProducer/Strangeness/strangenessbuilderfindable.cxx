@@ -459,16 +459,16 @@ struct StrangenessBuilder {
     LOGF(info, " Strangeness builder: basic configuration listing");
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
 
-    if(doprocessRealData){ 
+    if (doprocessRealData) {
       LOGF(info, " ===> process function enabled: processRealData");
     }
-    if(doprocessRealDataRun2){ 
+    if (doprocessRealDataRun2) {
       LOGF(info, " ===> process function enabled: processRealDataRun2");
     }
-    if(doprocessMonteCarlo){ 
+    if (doprocessMonteCarlo) {
       LOGF(info, " ===> process function enabled: processMonteCarlo");
     }
-    if(doprocessMonteCarloRun2){ 
+    if (doprocessMonteCarloRun2) {
       LOGF(info, " ===> process function enabled: processMonteCarloRun2");
     }
 
@@ -970,12 +970,12 @@ struct StrangenessBuilder {
             }
           }
         }
-        // we should now be done! 
-      } // end findable mode check 
+        // we should now be done!
+      } // end findable mode check
     } // end soa::is_table<TMCCollisions>
 
     // we need to allow for sorted use of cascadeList
-    sorted_cascade.clear(); 
+    sorted_cascade.clear();
     sorted_cascade = sort_indices(cascadeList);
   }
 

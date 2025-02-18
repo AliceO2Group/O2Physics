@@ -418,16 +418,16 @@ struct StrangenessBuilder {
     LOGF(info, " Strangeness builder: basic configuration listing");
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
 
-    if(doprocessRealData){ 
+    if (doprocessRealData) {
       LOGF(info, " ===> process function enabled: processRealData");
     }
-    if(doprocessRealDataRun2){ 
+    if (doprocessRealDataRun2) {
       LOGF(info, " ===> process function enabled: processRealDataRun2");
     }
-    if(doprocessMonteCarlo){ 
+    if (doprocessMonteCarlo) {
       LOGF(info, " ===> process function enabled: processMonteCarlo");
     }
-    if(doprocessMonteCarloRun2){ 
+    if (doprocessMonteCarloRun2) {
       LOGF(info, " ===> process function enabled: processMonteCarloRun2");
     }
     for (int i = 0; i < nTables; i++) {
