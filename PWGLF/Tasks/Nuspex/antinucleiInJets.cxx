@@ -152,9 +152,9 @@ struct AntinucleiInJets {
       registryQC.add("sumPtJetCone", "sumPtJetCone", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
       registryQC.add("sumPtJet", "sumPtJet", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
       registryQC.add("sumPtUE", "sumPtUE", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
-      registryQC.add("nJetsFound", "nJetsFound", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
-      registryQC.add("nJetsInAcceptance", "nJetsInAcceptance", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
-      registryQC.add("nJetsSelectedHighPt", "nJetsSelectedHighPt", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
+      registryQC.add("nJetsFound", "nJetsFound", HistType::kTH1F, {{50, 0, 50, "#it{n}_{Jet}"}});
+      registryQC.add("nJetsInAcceptance", "nJetsInAcceptance", HistType::kTH1F, {{50, 0, 50, "#it{n}_{Jet}"}});
+      registryQC.add("nJetsSelectedHighPt", "nJetsSelectedHighPt", HistType::kTH1F, {{50, 0, 50, "#it{n}_{Jet}"}});
       registryQC.add("jetEffectiveArea", "jetEffectiveArea", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
     }
 
@@ -451,7 +451,7 @@ struct AntinucleiInJets {
     for (auto& jet : jets) { // o2-linter: disable=[const-ref-in-for-loop]
 
       // jet must be fully contained in the acceptance
-      if ((std::fabs(jet.eta()) + rJet) > (maxEta - 0.5))
+      if ((std::fabs(jet.eta()) + rJet) > (maxEta - 0.05))
         continue;
 
       // jet pt must be larger than threshold
@@ -459,6 +459,14 @@ struct AntinucleiInJets {
       if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
         continue;
       isAtLeastOneJetSelected = true;
+
+      // perpendicular cone
+      double coneRadius = std::sqrt(jet.area() / PI);
+      TVector3 jetAxis(jet.px(), jet.py(), jet.pz()); // before or after subtraction of perpendicular cone?
+      TVector3 ueAxis1(0, 0, 0);
+      TVector3 ueAxis2(0, 0, 0);
+      getPerpendicularAxis(jetAxis, ueAxis1, +1);
+      getPerpendicularAxis(jetAxis, ueAxis2, -1);
 
       // get jet constituents
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
@@ -541,14 +549,7 @@ struct AntinucleiInJets {
         }
       }
 
-      // perpendicular cone
-      double coneRadius = std::sqrt(jet.area() / PI);
-      TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
-      TVector3 ueAxis1(0, 0, 0);
-      TVector3 ueAxis2(0, 0, 0);
-      getPerpendicularAxis(jetAxis, ueAxis1, +1);
-      getPerpendicularAxis(jetAxis, ueAxis2, -1);
-
+      // underlying event
       for (auto track : tracks) { // o2-linter: disable=[const-ref-in-for-loop]
 
         // get corresponding track and apply track selection criteria
@@ -675,15 +676,17 @@ struct AntinucleiInJets {
     for (auto& jet : jets) { // o2-linter: disable=[const-ref-in-for-loop]
 
       // jet must be fully contained in the acceptance
-      if ((std::fabs(jet.eta()) + rJet) > (maxEta - 0.5))
+      if ((std::fabs(jet.eta()) + rJet) > (maxEta - 0.05))
         continue;
       njetsInAcc++;
+      registryQC.fill(HIST("sumPtJetCone"), jet.pt());
 
       // jet pt must be larger than threshold
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
       if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
         continue;
       njetsHighPt++;
+      registryQC.fill(HIST("sumPtJet"), jet.pt());
 
       // jet properties and perpendicular cone
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
@@ -696,7 +699,6 @@ struct AntinucleiInJets {
 
       registryQC.fill(HIST("jetEffectiveArea"), jet.area() / (PI * rJet * rJet));
       registryQC.fill(HIST("NchJetCone"), static_cast<int>(jetConstituents.size()));
-      registryQC.fill(HIST("sumPtJetCone"), jet.pt());
 
       // loop over jet constituents
       for (const auto& particle : jetConstituents) { // o2-linter: disable=[const-ref-in-for-loop]
@@ -731,7 +733,6 @@ struct AntinucleiInJets {
       registryQC.fill(HIST("NchUE"), 0.5 * nParticlesPerp);
       registryQC.fill(HIST("NchJet"), static_cast<double>(jetConstituents.size()) - 0.5 * nParticlesPerp);
       registryQC.fill(HIST("sumPtUE"), 0.5 * ptPerp);
-      registryQC.fill(HIST("sumPtJet"), jet.pt() - 0.5 * ptPerp);
     }
     registryQC.fill(HIST("nJetsFound"), static_cast<int>(jets.size()));
     registryQC.fill(HIST("nJetsInAcceptance"), njetsInAcc);

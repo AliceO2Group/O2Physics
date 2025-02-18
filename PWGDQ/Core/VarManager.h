@@ -604,6 +604,7 @@ class VarManager : public TObject
     kMCPx,
     kMCPy,
     kMCPz,
+    kMCMass,
     kMCE,
     kMCVx,
     kMCVy,
@@ -635,6 +636,7 @@ class VarManager : public TObject
     kVertexingLxyzProjected,
     kVertexingTauzProjected,
     kVertexingTauxyProjected,
+    kVertexingTauxyProjectedPoleJPsiMass,
     kVertexingTauxyProjectedNs,
     kVertexingTauxyzProjected,
     kVertexingTauz,
@@ -1052,8 +1054,8 @@ class VarManager : public TObject
   static void FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
   template <uint32_t fillMap, int pairType, typename T1, typename T2>
   static void FillPairME(T1 const& t1, T2 const& t2, float* values = nullptr);
-  template <typename T1, typename T2>
-  static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr, PairCandidateType pairType = kDecayToEE);
+  template <int pairType, typename T1, typename T2>
+  static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <typename T1, typename T2, typename T3>
   static void FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
   template <int candidateType, typename T1, typename T2>
@@ -2718,6 +2720,9 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     m2 = o2::constants::physics::MassMuon;
   }
 
+  values[kCharge] = t1.sign() + t2.sign();
+  values[kCharge1] = t1.sign();
+  values[kCharge2] = t2.sign();
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -3153,8 +3158,8 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   }
 }
 
-template <typename T1, typename T2>
-void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandidateType pairType)
+template <int pairType, typename T1, typename T2>
+void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
 {
   if (!values) {
     values = fgValues;
@@ -3172,6 +3177,11 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
     m2 = o2::constants::physics::MassPionCharged;
   }
 
+  if (pairType == kDecayToKPi) {
+    m1 = o2::constants::physics::MassKaonCharged;
+    m2 = o2::constants::physics::MassPionCharged;
+  }
+
   if (pairType == kElectronMuon) {
     m2 = o2::constants::physics::MassMuon;
   }
@@ -3180,11 +3190,11 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-  values[kMass] = v12.M();
-  values[kPt] = v12.Pt();
-  values[kEta] = v12.Eta();
-  values[kPhi] = v12.Phi();
-  values[kRap] = -v12.Rapidity();
+  values[kMCMass] = v12.M();
+  values[kMCPt] = v12.Pt();
+  values[kMCEta] = v12.Eta();
+  values[kMCPhi] = v12.Phi();
+  values[kMCY] = -v12.Rapidity();
 }
 
 template <typename T1, typename T2, typename T3>
@@ -3406,6 +3416,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingLxyzProjected] = ((secondaryVertex[0] - collision.posX()) * v12.Px()) + ((secondaryVertex[1] - collision.posY()) * v12.Py()) + ((secondaryVertex[2] - collision.posZ()) * v12.Pz());
       values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()) + (v12.Pz() * v12.Pz()));
       values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v12.M() / (v12.Pt());
+      values[kVertexingTauxyProjectedPoleJPsiMass] = values[kVertexingLxyProjected] * o2::constants::physics::MassJPsi / (v12.Pt());
       values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
       values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v12.M() / TMath::Abs(v12.Pz());
       values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v12.M() / (v12.P());
@@ -3494,6 +3505,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         values[kVertexingLxyzProjected] = (dxPair2PV * KFGeoTwoProng.GetPx()) + (dyPair2PV * KFGeoTwoProng.GetPy()) + (dzPair2PV * KFGeoTwoProng.GetPz());
         values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((KFGeoTwoProng.GetPx() * KFGeoTwoProng.GetPx()) + (KFGeoTwoProng.GetPy() * KFGeoTwoProng.GetPy()) + (KFGeoTwoProng.GetPz() * KFGeoTwoProng.GetPz()));
         values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * KFGeoTwoProng.GetMass() / (KFGeoTwoProng.GetPt());
+        values[kVertexingTauxyProjectedPoleJPsiMass] = values[kVertexingLxyProjected] * o2::constants::physics::MassJPsi / (KFGeoTwoProng.GetPt());
         values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
         values[kVertexingTauzProjected] = values[kVertexingLzProjected] * KFGeoTwoProng.GetMass() / TMath::Abs(KFGeoTwoProng.GetPz());
       }

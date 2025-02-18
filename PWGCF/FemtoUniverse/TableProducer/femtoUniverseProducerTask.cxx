@@ -75,6 +75,8 @@ using FemtoFullCollisionCentRun2 =
 using FemtoFullCollisionCentRun3 =
   soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
+using FemtoFullCollisionCentRun3MCs =
+  soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::McCollisionLabels>;
 using FemtoFullCollisionCentRun3MC =
   soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::McCollisionLabels>::iterator;
 using FemtoFullTracks =
@@ -467,10 +469,10 @@ struct FemtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackD0DataML || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMCV0 || doprocessTruthAndFullMCCasc || doprocessFullMCCent || doprocessTrackCentRun3DataMC) == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackD0DataML || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMCV0 || doprocessTruthAndFullMCCasc || doprocessFullMCCent || doprocessTrackCentRun3DataMC || doprocessTruthAndFullMCCentRun3) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackD0DataML || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMCV0 || doprocessTruthAndFullMCCasc || doprocessFullMCCent || doprocessTrackCentRun3DataMC) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackD0DataML || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMCV0 || doprocessTruthAndFullMCCasc || doprocessFullMCCent || doprocessTrackCentRun3DataMC || doprocessTruthAndFullMCCentRun3) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
@@ -922,6 +924,19 @@ struct FemtoUniverseProducerTask {
       } else {
         return false;
       }
+    }
+  }
+
+  template <typename CollisionType>
+  bool fillMCTruthCollisionsCentRun3(CollisionType const& col)
+  {
+    const auto vtxZ = col.posZ();
+
+    if (std::abs(vtxZ) > confEvtZvtx) {
+      return false;
+    } else {
+      outputCollision(vtxZ, 0, 0, 2, mMagField);
+      return true;
     }
   }
 
@@ -2011,6 +2026,7 @@ struct FemtoUniverseProducerTask {
 
   Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
   PresliceUnsorted<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> recoCollsPerMCColl = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> recoCollsPerMCCollCentPbPb = aod::mcparticle::mcCollisionId;
   Preslice<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> perCollisionTracks = aod::track::collisionId;
   template <class StrangePartType>
   void processTruthAndFullMC(
@@ -2051,6 +2067,47 @@ struct FemtoUniverseProducerTask {
       fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles
     }
   }
+
+  void processTruthAndFullMCCentRun3(aod::McCollisions const& mccols,
+                                     aod::McParticles const& mcParticles,
+                                     aod::FemtoFullCollisionCentRun3MCs const& collisions,
+                                     soa::Filtered<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> const& tracks,
+                                     aod::BCsWithTimestamps const&)
+  {
+    // recos
+    std::set<int> recoMcIds;
+    for (const auto& col : collisions) {
+      auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
+      auto bc = col.bc_as<aod::BCsWithTimestamps>();
+      getMagneticFieldTesla(bc);
+      const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+
+      // fill the tables
+      const auto colcheck = fillCollisionsCentRun3<true>(col);
+      if (colcheck) {
+        fillCollisionsCentRun3ColExtra<true>(col, ir);
+        fillTracks<true>(groupedTracks);
+      }
+      for (const auto& track : groupedTracks) {
+        if (trackCuts.isSelectedMinimal(track))
+          recoMcIds.insert(track.mcParticleId());
+      }
+    }
+
+    // truth
+    for (const auto& mccol : mccols) {
+      auto groupedCollisions = collisions.sliceBy(recoCollsPerMCCollCentPbPb, mccol.globalIndex());
+      for (const auto& col : groupedCollisions) {
+        const auto colcheck = fillMCTruthCollisionsCentRun3(col); // fills the reco collisions for mc collision
+        if (colcheck) {
+          auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
+          outputCollExtra(1.0, 1.0);
+          fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(FemtoUniverseProducerTask, processTruthAndFullMCCentRun3, "Provide both MC truth and reco for tracks in Pb-Pb", false);
 
   Preslice<soa::Join<o2::aod::V0Datas, aod::McV0Labels>> perCollisionV0s = aod::track::collisionId;
   void processTruthAndFullMCV0(
