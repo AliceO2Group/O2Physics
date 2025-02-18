@@ -24,13 +24,11 @@
 #include <THn.h>
 #include <TRandom.h>
 #include <TDirectory.h>
-#include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TFile.h>
 #include <TList.h>
 #include <TF1.h>
-#include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <Math/Vector4D.h>
 
@@ -628,13 +626,11 @@ struct Phik0shortanalysis {
 
   // Reconstruct the Phi
   template <typename T1, typename T2>
-  TLorentzVector recMother(const T1& track1, const T2& track2, float masscand1, float masscand2)
+  ROOT::Math::PxPyPzMVector recMother(const T1& track1, const T2& track2, float masscand1, float masscand2)
   {
-    TLorentzVector daughter1, daughter2, mother;
-
-    daughter1.SetXYZM(track1.px(), track1.py(), track1.pz(), masscand1); // set the daughter1 4-momentum
-    daughter2.SetXYZM(track2.px(), track2.py(), track2.pz(), masscand2); // set the daughter2 4-momentum
-    mother = daughter1 + daughter2;                                      // calculate the mother 4-momentum
+    ROOT::Math::PxPyPzMVector daughter1(track1.px(), track1.py(), track1.pz(), masscand1); // set the daughter1 4-momentum
+    ROOT::Math::PxPyPzMVector daughter2(track2.px(), track2.py(), track2.pz(), masscand2); // set the daughter2 4-momentum
+    ROOT::Math::PxPyPzMVector mother = daughter1 + daughter2;                              // calculate the mother 4-momentum
 
     return mother;
   }
@@ -728,7 +724,7 @@ struct Phik0shortanalysis {
 
   // Fill 2D invariant mass histogram for V0 and Phi
   template <bool isMC, typename T>
-  void fillInvMass2D(const T& V0, const std::vector<TLorentzVector>& listPhi, float multiplicity, const std::array<float, 3> weights)
+  void fillInvMass2D(const T& V0, const std::vector<ROOT::Math::PxPyPzMVector>& listPhi, float multiplicity, const std::array<float, 3>& weights)
   {
     for (const auto& Phi : listPhi) {
       if constexpr (!isMC) { // same event
@@ -753,7 +749,7 @@ struct Phik0shortanalysis {
 
   // Fill Phi invariant mass vs Pion nSigmadE/dx histogram
   template <bool isMC, typename T>
-  void fillInvMassNSigma(const T& Pi, const std::vector<TLorentzVector>& listPhi, float multiplicity, const std::array<float, 3> weights)
+  void fillInvMassNSigma(const T& Pi, const std::vector<ROOT::Math::PxPyPzMVector>& listPhi, float multiplicity, const std::array<float, 3>& weights)
   {
     float nSigmaTOFPi = (Pi.hasTOF() ? Pi.tofNSigmaPi() : -999);
 
@@ -814,7 +810,7 @@ struct Phik0shortanalysis {
         if (track2ID == track1ID)
           continue; // condition to avoid double counting of pair
 
-        TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
+        ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
         if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
           continue;
 
@@ -932,7 +928,7 @@ struct Phik0shortanalysis {
       if (std::abs(v0.yK0Short()) > cfgYAcceptance)
         continue;
 
-      std::vector<TLorentzVector> listrecPhi;
+      std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
       std::array<int, 3> counts{};
 
       // Phi reconstruction
@@ -952,14 +948,14 @@ struct Phik0shortanalysis {
           if (track2ID == track1ID)
             continue; // condition to avoid double counting of pair
 
-          TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
+          ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
 
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
 
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
-          listrecPhi.push_back(recPhi);
+          listrecPhi.push_back(std::move(recPhi));
           counts.at(0)++;
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
@@ -1005,7 +1001,7 @@ struct Phik0shortanalysis {
       if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
         continue;
 
-      std::vector<TLorentzVector> listrecPhi;
+      std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
       std::array<int, 3> counts{};
 
       // Phi reconstruction
@@ -1025,14 +1021,14 @@ struct Phik0shortanalysis {
           if (track2ID == track1ID)
             continue; // condition to avoid double counting of pair
 
-          TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
+          ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
 
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
 
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
-          listrecPhi.push_back(recPhi);
+          listrecPhi.push_back(std::move(recPhi));
           counts.at(0)++;
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
@@ -1118,7 +1114,7 @@ struct Phik0shortanalysis {
         if (!isMCMotherPhi)
           continue;
 
-        TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
+        ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
 
         mcPhiHist.fill(HIST("h3PhiRapiditySmearing"), genmultiplicity, recPhi.Rapidity(), mcMotherPhi.y());
 
@@ -1420,7 +1416,7 @@ struct Phik0shortanalysis {
         if (track2ID == track1ID)
           continue; // condition to avoid double counting of pair
 
-        TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
+        ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
         if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
           continue;
 
@@ -1550,7 +1546,7 @@ struct Phik0shortanalysis {
       if (std::abs(v0.yK0Short()) > cfgYAcceptance)
         continue;
 
-      std::vector<TLorentzVector> listrecPhi;
+      std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
       std::array<int, 3> counts{};
 
       // Phi reconstruction
@@ -1597,14 +1593,14 @@ struct Phik0shortanalysis {
               continue;
           }
 
-          TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
+          ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
 
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
 
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
-          listrecPhi.push_back(recPhi);
+          listrecPhi.push_back(std::move(recPhi));
           counts.at(0)++;
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
@@ -1658,7 +1654,7 @@ struct Phik0shortanalysis {
       if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
         continue;
 
-      std::vector<TLorentzVector> listrecPhi;
+      std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
       std::array<int, 3> counts{};
 
       // Phi reconstruction
@@ -1705,14 +1701,14 @@ struct Phik0shortanalysis {
               continue;
           }
 
-          TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
+          ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
 
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
 
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
-          listrecPhi.push_back(recPhi);
+          listrecPhi.push_back(std::move(recPhi));
           counts.at(0)++;
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
