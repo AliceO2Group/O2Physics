@@ -270,6 +270,7 @@ struct UpcRhoAnalysis {
     rMC.add("MC/system/hPhi", ";#phi;counts", kTH1D, {phiAxis});
     rMC.add("MC/system/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     rMC.add("MC/system/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
+    rMC.addClone("MC/system/", "MC/system/selected/");
   }
 
   static constexpr std::string_view AppliedSelections[2] = {"all/", "selected/"};
@@ -730,6 +731,17 @@ struct UpcRhoAnalysis {
     rMC.fill(HIST("MC/system/hPhi"), systemPhi);
     rMC.fill(HIST("MC/system/hPhiRandom"), phiRandom);
     rMC.fill(HIST("MC/system/hPhiCharge"), phiCharge);
+
+    if (systemPassesCuts(system)) {
+      rMC.fill(HIST("MC/system/selected/hM"), mass);
+      rMC.fill(HIST("MC/system/selected/hPt"), pT);
+      rMC.fill(HIST("MC/system/selected/hPtVsM"), mass, pT);
+      rMC.fill(HIST("MC/system/selected/hPt2"), pT * pT);
+      rMC.fill(HIST("MC/system/selected/hY"), rapidity);
+      rMC.fill(HIST("MC/system/selected/hPhi"), systemPhi);
+      rMC.fill(HIST("MC/system/selected/hPhiRandom"), phiRandom);
+      rMC.fill(HIST("MC/system/selected/hPhiCharge"), phiCharge);
+    }
 
     // fill mcTree
     int localBc = mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches;
