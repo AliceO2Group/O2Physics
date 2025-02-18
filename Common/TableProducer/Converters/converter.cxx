@@ -19,6 +19,7 @@
 #include <vector>
 #include <string>
 #include <unordered_set>
+#include <unordered_map>
 
 // O2 includes
 #include "Framework/runDataProcessing.h"
