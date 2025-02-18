@@ -57,7 +57,7 @@ struct JflucEfficiencyTask {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Vertex cut"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0.0f, "Min centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 100.0f, "Max centrality"};
-  Configurable<uint8_t> cfgTrackBitMask{"cfgTrackBitMask", 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task"};
+  Configurable<int> cfgTrackBitMask{"cfgTrackBitMask", 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task"};
 
   // Configurable axes
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80}, "multiplicity / centrality axis"};
