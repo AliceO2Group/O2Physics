@@ -79,8 +79,8 @@ struct HfTaskOmegac0 {
   void init(InitContext&)
   {
     std::array<bool, 12> doprocess{doprocessDataWithKFParticle, doprocessMcWithKFParticle, doprocessDataWithKFParticleMl, doprocessMcWithKFParticleMl};
-    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) == 0) {
-      LOGP(fatal, "At least one process function should be enabled at a time.");
+    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
+      LOGP(fatal, "One and only one process function should be enabled at a time.");
     }
 
     const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#Omega #pi) (GeV/#it{c}^{2})"};
