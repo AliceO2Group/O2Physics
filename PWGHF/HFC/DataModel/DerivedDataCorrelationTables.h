@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file DerivedDataCorrelations.h
+/// \file DerivedDataCorrelationTables.h
 /// \brief Tables for producing derived data for correlation analysis
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 
