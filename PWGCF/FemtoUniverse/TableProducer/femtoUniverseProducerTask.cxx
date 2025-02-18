@@ -832,7 +832,8 @@ struct FemtoUniverseProducerTask {
       } else {
         if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
           hfCandOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kNonPrompt;
-          pdgCode = static_cast<int>(Pdg::kD0);;
+          pdgCode = static_cast<int>(Pdg::kD0);
+          ;
         } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
           hfCandOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kNonPrompt;
           pdgCode = static_cast<int>(Pdg::kD0Bar);
@@ -2338,9 +2339,9 @@ struct FemtoUniverseProducerTask {
       if (colcheck) {
         fillTracks<true>(tracks);
         fillD0D0barUsingML<true>(col, groupedTracks, groupedD0s);
-      for (const auto& track : groupedTracks) {
-        if (trackCuts.isSelectedMinimal(track))
-          recoMcIds.insert(track.mcParticleId());
+        for (const auto& track : groupedTracks) {
+          if (trackCuts.isSelectedMinimal(track))
+            recoMcIds.insert(track.mcParticleId());
         }
       }
     }
