@@ -92,6 +92,10 @@ struct phianalysisrun3_PbPb {
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
+  Configurable<int> nBkgRotations{"nBkgRotations", 3, "Number of rotated copies (background) per each original candidate"};
+  Configurable<bool> fillRotation{"fillRotation", true, "fill rotation"};
+  Configurable<float> confMinRot{"confMinRot", 5.0 * TMath::Pi() / 6.0, "Minimum of rotation"};
+  Configurable<float> confMaxRot{"confMaxRot", 7.0 * TMath::Pi() / 6.0, "Maximum of rotation"};
 
   Configurable<bool> genacceptancecut{"genacceptancecut", true, "use acceptance cut for generated"};
   // MC
@@ -106,9 +110,12 @@ struct phianalysisrun3_PbPb {
     if (!isMC) {
       histos.add("h3PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
       histos.add("h3PhiInvMassMixed", "Invariant mass of Phi meson Mixed", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
+      histos.add("h3PhiInvMassRot", "Invariant mass of Phi meson Rotation", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
+      histos.add("h3PhiInvMassSame", "Invariant mass of Phi meson same", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
     } else if (isMC) {
       histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
       histos.add("h1PhiGen", "Phi meson Gen", kTH1F, {{200, 0.0f, 20.0f}});
+      histos.add("h1PhiGen1", "Phi meson Gen", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("h1PhiRecsplit", "Phi meson Rec split", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("Centrec", "MC Centrality", kTH1F, {{200, 0.0, 200.0}});
       histos.add("Centgen", "MC Centrality", kTH1F, {{200, 0.0, 200.0}});
@@ -120,6 +127,8 @@ struct phianalysisrun3_PbPb {
       histos.add("h1Phimassrec", "Phi meson Rec", kTH1F, {{200, 0.9, 1.1}});
       histos.add("h1Phipt", "Phi meson Rec", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("hOccupancy1", "Occupancy distribution", kTH1F, {{500, 0, 50000}});
+      histos.add("TOF_Nsigma_MC", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2D, {{200, -12, 12}, {200, 0.0, 200.0}}});
+      histos.add("TPC_Nsigma_MC", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2D, {{200, -12, 12}, {200, 0.0, 200.0}}});
     }
 
     // DCA QA
@@ -129,12 +138,12 @@ struct phianalysisrun3_PbPb {
     histos.add("QAafter/trkDCAz", "DCAz distribution of kaon track candidates", HistType::kTH1F, {{150, 0.0f, 1.0f}});
     // PID QA before cuts
     histos.add("QAbefore/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Kaon;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2D, {{100, -6, 6}, {100, -6, 6}}});
-    histos.add("QAbefore/TOF_Nsigma_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2D, {{200, 0.0, 20.0}, {100, -6, 6}}});
-    histos.add("QAbefore/TPC_Nsigma_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2D, {{200, 0.0, 20.0}, {100, -6, 6}}});
+    histos.add("QAbefore/TOF_Nsigma_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2D, {{100, -6, 6}, {200, 0.0, 200.0}}});
+    histos.add("QAbefore/TPC_Nsigma_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2D, {{100, -6, 6}, {200, 0.0, 200.0}}});
     // PID QA after cuts
     histos.add("QAafter/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Kaon;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2D, {{100, -6, 6}, {100, -6, 6}}});
-    histos.add("QAafter/TOF_Nsigma_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2D, {{200, 0.0, 20.0}, {100, -6, 6}}});
-    histos.add("QAafter/TPC_Nsigma_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2D, {{200, 0.0, 20.0}, {100, -6, 6}}});
+    histos.add("QAafter/TOF_Nsigma_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2D, {{100, -6, 6}, {200, 0.0, 200.0}}});
+    histos.add("QAafter/TPC_Nsigma_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2D, {{100, -6, 6}, {200, 0.0, 200.0}}});
   }
 
   double massKa = o2::constants::physics::MassKPlus;
@@ -275,8 +284,8 @@ struct phianalysisrun3_PbPb {
       if (!selectionTrack(track1)) {
         continue;
       }
-      histos.fill(HIST("QAbefore/TPC_Nsigma_all"), track1.pt(), track1.tpcNSigmaKa());
-      histos.fill(HIST("QAbefore/TOF_Nsigma_all"), track1.pt(), track1.tofNSigmaKa());
+      histos.fill(HIST("QAbefore/TPC_Nsigma_all"), track1.tpcNSigmaKa(), multiplicity);
+      histos.fill(HIST("QAbefore/TOF_Nsigma_all"), track1.tofNSigmaKa(), multiplicity);
       histos.fill(HIST("QAbefore/trkDCAxy"), track1.dcaXY());
       histos.fill(HIST("QAbefore/trkDCAz"), track1.dcaZ());
       histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
@@ -296,16 +305,16 @@ struct phianalysisrun3_PbPb {
         bool unlike = true;
         bool mix = false;
         if (!ispTdepPID && selectionPID(track1) && selectionPID(track2)) {
-          histos.fill(HIST("QAafter/TPC_Nsigma_all"), track1.pt(), track1.tpcNSigmaKa());
-          histos.fill(HIST("QAafter/TOF_Nsigma_all"), track1.pt(), track1.tofNSigmaKa());
+          histos.fill(HIST("QAafter/TPC_Nsigma_all"), track1.tpcNSigmaKa(), multiplicity);
+          histos.fill(HIST("QAafter/TOF_Nsigma_all"), track1.tofNSigmaKa(), multiplicity);
           histos.fill(HIST("QAafter/trkDCAxy"), track1.dcaXY());
           histos.fill(HIST("QAafter/trkDCAz"), track1.dcaZ());
           histos.fill(HIST("QAafter/TOF_TPC_Mapka_all"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
           FillinvMass(track1, track2, multiplicity, unlike, mix, massKa, massKa);
         }
         if (ispTdepPID && selectionPIDpTdependent(track1) && selectionPIDpTdependent(track2)) {
-          histos.fill(HIST("QAafter/TPC_Nsigma_all"), track1.pt(), track1.tpcNSigmaKa());
-          histos.fill(HIST("QAafter/TOF_Nsigma_all"), track1.pt(), track1.tofNSigmaKa());
+          histos.fill(HIST("QAafter/TPC_Nsigma_all"), track1.tpcNSigmaKa(), multiplicity);
+          histos.fill(HIST("QAafter/TOF_Nsigma_all"), track1.tofNSigmaKa(), multiplicity);
           histos.fill(HIST("QAafter/trkDCAxy"), track1.dcaXY());
           histos.fill(HIST("QAafter/trkDCAz"), track1.dcaZ());
           histos.fill(HIST("QAafter/TOF_TPC_Mapka_all"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
@@ -378,7 +387,88 @@ struct phianalysisrun3_PbPb {
   }
 
   PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEvent, "Process Mixed event", false);
+  void processRotEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
+  {
+    if (!collision.sel8()) {
+      return;
+    }
+    if (additionalEvSel2 && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      return;
+    }
+    if (additionalEvSel3 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+      return;
+    }
+    int occupancy = collision.trackOccupancyInTimeRange();
+    if (fillOccupancy && !(occupancy > cfgOccupancyCut1 && occupancy < cfgOccupancyCut2)) {
+      return;
+    }
+    float multiplicity{-1};
+    if (cfgMultFT0)
+      multiplicity = collision.centFT0C();
+    histos.fill(HIST("hCentrality"), multiplicity);
+    histos.fill(HIST("hVtxZ"), collision.posZ());
+    histos.fill(HIST("hOccupancy"), occupancy);
+    for (auto track1 : tracks) {
+      if (!selectionTrack(track1)) {
+        continue;
+      }
+      histos.fill(HIST("QAbefore/TPC_Nsigma_all"), track1.tpcNSigmaKa(), multiplicity);
+      histos.fill(HIST("QAbefore/TOF_Nsigma_all"), track1.tofNSigmaKa(), multiplicity);
+      histos.fill(HIST("QAbefore/trkDCAxy"), track1.dcaXY());
+      histos.fill(HIST("QAbefore/trkDCAz"), track1.dcaZ());
+      histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
 
+      auto track1ID = track1.globalIndex();
+      for (auto track2 : tracks) {
+        if (!selectionTrack(track2)) {
+          continue;
+        }
+        auto track2ID = track2.globalIndex();
+        if (track2ID <= track1ID) {
+          continue;
+        }
+        if (!selectionPair(track1, track2)) {
+          continue;
+        }
+        if (!ispTdepPID && (!selectionPID(track1) || !selectionPID(track2))) {
+          continue;
+        }
+        if (ispTdepPID && (!selectionPIDpTdependent(track1) || !selectionPIDpTdependent(track2))) {
+          continue;
+        }
+        if (track1.sign() * track2.sign() < 0) {
+          KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+          KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+        }
+        PhiMesonMother = KaonPlus + KaonMinus;
+        if (TMath::Abs(PhiMesonMother.Rapidity()) > confRapidity) {
+          continue;
+        }
+        histos.fill(HIST("h3PhiInvMassSame"), multiplicity, PhiMesonMother.pt(), PhiMesonMother.M());
+        if (fillRotation) {
+          for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
+            auto anglestart = confMinRot;
+            auto angleend = confMaxRot;
+            auto anglestep = (angleend - anglestart) / (1.0 * (nBkgRotations - 1));
+            auto rotangle = anglestart + nrotbkg * anglestep;
+            if (track1.sign() * track2.sign() < 0) {
+              auto rotkaonPx = track1.px() * std::cos(rotangle) - track1.py() * std::sin(rotangle);
+              auto rotkaonPy = track1.px() * std::sin(rotangle) + track1.py() * std::cos(rotangle);
+              KaonPlus = ROOT::Math::PxPyPzMVector(rotkaonPx, rotkaonPy, track1.pz(), massKa);
+              KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+            }
+            PhiMesonMother = KaonPlus + KaonMinus;
+            if (TMath::Abs(PhiMesonMother.Rapidity()) > confRapidity) {
+              continue;
+            }
+            histos.fill(HIST("h3PhiInvMassRot"), multiplicity, PhiMesonMother.pt(), PhiMesonMother.M());
+          }
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(phianalysisrun3_PbPb, processRotEvent, "Process Rot event", false);
   void processMC(CollisionMCTrueTable::iterator const& /*TrueCollision*/, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
     histos.fill(HIST("hMC"), 0);
@@ -489,13 +579,9 @@ struct phianalysisrun3_PbPb {
                 continue;
               }
               oldindex = mothertrack1.globalIndex();
-              if (track1.sign() > 0 && track2.sign() < 0) {
+              if (track1.sign() * track2.sign() < 0) {
                 KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
                 KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
-              }
-              if (track1.sign() < 0 && track2.sign() > 0) {
-                KaonMinus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
-                KaonPlus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
               }
               PhiMesonMother = KaonPlus + KaonMinus;
 
@@ -583,7 +669,7 @@ struct phianalysisrun3_PbPb {
       }
       int occupancy = collision.trackOccupancyInTimeRange();
       if (fillOccupancy && !(occupancy > cfgOccupancyCut1 && occupancy < cfgOccupancyCut2)) {
-        return;
+        continue;
       }
       histos.fill(HIST("hOccupancy1"), occupancy);
       multiplicity = collision.centFT0C();
@@ -708,6 +794,8 @@ struct phianalysisrun3_PbPb {
               histos.fill(HIST("h1PhiRecsplit"), mothertrack1.pt());
               continue;
             }
+            histos.fill(HIST("TPC_Nsigma_MC"), track1.tpcNSigmaKa(), multiplicity);
+            histos.fill(HIST("TOF_Nsigma_MC"), track1.tofNSigmaKa(), multiplicity);
             oldindex = mothertrack1.globalIndex();
             pvec0 = array{track1.px(), track1.py(), track1.pz()};
             pvec1 = array{track2.px(), track2.py(), track2.pz()};
