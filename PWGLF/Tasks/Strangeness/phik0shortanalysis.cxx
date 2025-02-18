@@ -706,7 +706,7 @@ struct Phik0shortanalysis {
   }
 
   // Get the phi purity choosing the correct purity function according to the multiplicity and pt of the phi
-  double getPhiPurity(float multiplicity, const TLorentVector& Phi)
+  double getPhiPurity(float multiplicity, const ROOT::Math::PxPyPzMVector& Phi)
   {
     // Find multiplicity bin using lower_bound
     auto multIt = std::lower_bound(binsMult.begin(), binsMult.end(), multiplicity);
@@ -955,7 +955,13 @@ struct Phik0shortanalysis {
 
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
-          listrecPhi.push_back(std::move(recPhi));
+
+          double phiPurity;
+          if (fillMethodSingleWeight)
+            phiPurity = getPhiPurity(multiplicity, recPhi);
+
+          if (fillMethodMultipleWeights)
+            listrecPhi.push_back(std::move(recPhi));
           counts.at(0)++;
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
@@ -966,12 +972,14 @@ struct Phik0shortanalysis {
         }
       }
 
-      std::array<float, 3> weights{};
-      for (unsigned int i = 0; i < counts.size(); i++) {
-        weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
-      }
+      if (fillMethodMultipleWeights){
+        std::array<float, 3> weights{};
+        for (unsigned int i = 0; i < counts.size(); i++) {
+          weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
+        }
 
-      fillInvMass2D<false>(v0, listrecPhi, multiplicity, weights);
+        fillInvMass2D<false>(v0, listrecPhi, multiplicity, weights);
+      }
     }
   }
 
@@ -1028,7 +1036,13 @@ struct Phik0shortanalysis {
 
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
-          listrecPhi.push_back(std::move(recPhi));
+
+          double phiPurity;
+          if (fillMethodSingleWeight)
+            phiPurity = getPhiPurity(multiplicity, recPhi);
+
+          if (fillMethodMultipleWeights)
+            listrecPhi.push_back(std::move(recPhi));
           counts.at(0)++;
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
@@ -1039,12 +1053,14 @@ struct Phik0shortanalysis {
         }
       }
 
-      std::array<float, 3> weights{};
-      for (unsigned int i = 0; i < counts.size(); i++) {
-        weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
-      }
+      if (fillMethodMultipleWeights) {
+        std::array<float, 3> weights{};
+        for (unsigned int i = 0; i < counts.size(); i++) {
+          weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
+        }
 
-      fillInvMassNSigma<false>(track, listrecPhi, multiplicity, weights);
+        fillInvMassNSigma<false>(track, listrecPhi, multiplicity, weights);
+      }
     }
   }
 
@@ -1600,7 +1616,13 @@ struct Phik0shortanalysis {
 
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
-          listrecPhi.push_back(std::move(recPhi));
+
+          double phiPurity;
+          if (fillMethodSingleWeight)
+            phiPurity = getPhiPurity(multiplicity, recPhi);
+
+          if (fillMethodMultipleWeights)
+            listrecPhi.push_back(std::move(recPhi));
           counts.at(0)++;
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
@@ -1611,12 +1633,14 @@ struct Phik0shortanalysis {
         }
       }
 
-      std::array<float, 3> weights{};
-      for (unsigned int i = 0; i < counts.size(); i++) {
-        weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
-      }
+      if (fillMethodMultipleWeights) {
+        std::array<float, 3> weights{};
+        for (unsigned int i = 0; i < counts.size(); i++) {
+          weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
+        }
 
-      fillInvMass2D<true>(v0, listrecPhi, genmultiplicity, weights);
+        fillInvMass2D<true>(v0, listrecPhi, genmultiplicity, weights);
+      }
     }
   }
 
@@ -1708,7 +1732,13 @@ struct Phik0shortanalysis {
 
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
-          listrecPhi.push_back(std::move(recPhi));
+
+          double phiPurity;
+          if (fillMethodSingleWeight)
+            phiPurity = getPhiPurity(multiplicity, recPhi);
+
+          if (fillMethodMultipleWeights)
+            listrecPhi.push_back(std::move(recPhi));
           counts.at(0)++;
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
@@ -1719,12 +1749,14 @@ struct Phik0shortanalysis {
         }
       }
 
-      std::array<float, 3> weights{};
-      for (unsigned int i = 0; i < counts.size(); i++) {
-        weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
-      }
+      if (fillMethodMultipleWeights) {
+        std::array<float, 3> weights{};
+        for (unsigned int i = 0; i < counts.size(); i++) {
+          weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
+        }
 
-      fillInvMassNSigma<true>(track, listrecPhi, genmultiplicity, weights);
+        fillInvMassNSigma<true>(track, listrecPhi, genmultiplicity, weights);
+      }
     }
   }
 
