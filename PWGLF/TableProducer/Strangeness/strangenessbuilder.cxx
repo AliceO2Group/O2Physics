@@ -414,10 +414,22 @@ struct StrangenessBuilder {
       }
     }
 
-    // list enabled tables
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
-    LOGF(info, " Strangeness builder: enabled table listing");
+    LOGF(info, " Strangeness builder: basic configuration listing");
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+
+    if(doprocessRealData){ 
+      LOGF(info, " ===> process function enabled: processRealData");
+    }
+    if(doprocessRealDataRun2){ 
+      LOGF(info, " ===> process function enabled: processRealDataRun2");
+    }
+    if(doprocessMonteCarlo){ 
+      LOGF(info, " ===> process function enabled: processMonteCarlo");
+    }
+    if(doprocessMonteCarloRun2){ 
+      LOGF(info, " ===> process function enabled: processMonteCarloRun2");
+    }
     for (int i = 0; i < nTables; i++) {
       // printout to be improved in the future
       if (mEnabledTables[i]) {
