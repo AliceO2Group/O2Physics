@@ -456,7 +456,7 @@ struct FlowPtEfficiency {
       registry.fill(HIST("numberOfRecoCollisions"), collisions.size()); // number of times coll was reco-ed
 
       std::vector<int> numberOfTracks;
-      for (auto& collision : collisions) {
+      for (auto const& collision : collisions) {
         auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
         numberOfTracks.emplace_back(groupedTracks.size());
       }
