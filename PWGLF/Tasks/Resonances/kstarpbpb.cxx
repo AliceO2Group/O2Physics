@@ -123,7 +123,6 @@ struct kstarpbpb {
   Configurable<bool> fillRotation{"fillRotation", true, "fill rotation"};
   Configurable<bool> same{"same", true, "same event"};
   Configurable<bool> like{"like", false, "like-sign"};
-  Configurable<bool> mix{"mix", false, "mix"};
   Configurable<bool> fillOccupancy{"fillOccupancy", false, "fill Occupancy"};
   Configurable<int> cfgOccupancyCut{"cfgOccupancyCut", 500, "Occupancy cut"};
   Configurable<bool> useWeight{"useWeight", false, "use EP dep effi weight"};
@@ -161,9 +160,9 @@ struct kstarpbpb {
     AxisSpec resAxis = {6000, -30, 30, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     AxisSpec occupancyAxis = {occupancyBinning, "Occupancy"};
-
-    histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-
+    if (same) {
+      histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    }
     if (like) {
       histos.add("hSparseV2SAlikeEventNN_V2", "hSparseV2SAlikeEventNN_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
       histos.add("hSparseV2SAlikeEventPP_V2", "hSparseV2SAlikeEventPP_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
@@ -172,9 +171,8 @@ struct kstarpbpb {
       histos.add("hRotation", "hRotation", kTH1F, {{360, 0.0, 2.0 * TMath::Pi()}});
       histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     }
-    if (mix) {
-      histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    }
+
+    histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
     if (additionalQAplots1) {
       histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
@@ -514,6 +512,7 @@ struct kstarpbpb {
         if (!track1kaon || !track2pion) {
           continue;
         }
+
         if (useWeight) {
           if (track2.pt() < 10.0 && track2.pt() > 0.15) {
             weight2 = hweight->GetBinContent(hweight->FindBin(centrality, GetPhiInRange(track2.phi() - psiFT0C), track2.pt() + 0.000005));
@@ -534,11 +533,12 @@ struct kstarpbpb {
         if (totalweight <= 0.0005) {
           totalweight = 1.0;
         }
-
-        if (useWeight) {
-          histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality, 1 / totalweight);
-        } else {
-          histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
+        if (same) {
+          if (useWeight) {
+            histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality, 1 / totalweight);
+          } else {
+            histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
+          }
         }
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
@@ -889,32 +889,36 @@ struct kstarpbpb {
   }
 
   PROCESS_SWITCH(kstarpbpb, processlikeEvent, "Process like event", false);
-  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& /*tracks*/)
+  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
+
+    auto tracksTuple = std::make_tuple(tracks);
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
-    for (auto const& [collision1, collision2] : o2::soa::selfCombinations(binningOnPositions, cfgNoMixedEvents, -1, collisions, collisions)) {
-      if (!collision1.sel8() || !collision2.sel8()) {
-        // printf("Mix = %d\n", 1);
+    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+      if (!collision1.sel8() || !collision1.triggereventep() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         continue;
       }
-      if (!collision1.triggereventep() || !collision2.triggereventep()) {
-        // printf("Mix = %d\n", 2);
+      if (!collision2.sel8() || !collision2.triggereventep() || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         continue;
       }
-      if (timFrameEvsel && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-        // printf("Mix = %d\n", 3);
+      if (collision1.bcId() == collision2.bcId()) {
         continue;
       }
-      if (additionalEvSel2 && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      int occupancy1 = collision1.trackOccupancyInTimeRange();
+      int occupancy2 = collision2.trackOccupancyInTimeRange();
+      if (fillOccupancy && occupancy1 >= cfgOccupancyCut && occupancy2 >= cfgOccupancyCut) // occupancy info is available for this collision (*)
+      {
         continue;
       }
-      if (additionalEvSel2 && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      auto centrality = collision1.centFT0C();
+      auto centrality2 = collision2.centFT0C();
+      auto psiFT0C = collision1.psiFT0C();
+      auto QFT0C = collision1.qFT0C();
+      if (additionalEvsel && !eventSelected(collision1, centrality)) {
         continue;
       }
-      if (additionalEvSel3 && (!collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
-        continue;
-      }
-      if (additionalEvSel3 && (!collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+      if (additionalEvsel && !eventSelected(collision2, centrality2)) {
         continue;
       }
       if (additionalEvselITS && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
@@ -923,90 +927,27 @@ struct kstarpbpb {
       if (additionalEvselITS && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
-      int occupancy1 = collision1.trackOccupancyInTimeRange();
-      int occupancy2 = collision2.trackOccupancyInTimeRange();
-      auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
-      auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
-      auto centrality = collision1.centFT0C();
-      auto centrality2 = collision2.centFT0C();
-      auto psiFT0C = collision1.psiFT0C();
-      auto QFT0C = collision1.qFT0C();
-      bool track1pion = false;
-      bool track1kaon = false;
-      bool track2pion = false;
-      bool track2kaon = false;
-      if (additionalEvsel && !eventSelected(collision1, centrality)) {
-        // printf("Mix = %d\n", 4);
-        continue;
-      }
-      if (additionalEvsel && !eventSelected(collision2, centrality2)) {
-        // printf("Mix = %d\n", 5);
-        continue;
-      }
-      if (fillOccupancy && occupancy1 >= cfgOccupancyCut && occupancy2 >= cfgOccupancyCut) // occupancy info is available for this collision (*)
-      {
-        continue;
-      }
-      for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
+
+      for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         // track selection
         if (!selectionTrack(track1) || !selectionTrack(track2)) {
           // printf("Mix = %d\n", 6);
           continue;
         }
-        if (ispTdepPID && !(selectionPIDNew(track1, 0) || selectionPIDNew(track1, 1))) {
+        if (ispTdepPID && !(selectionPIDNew(track1, 0))) {
           continue;
         }
-        if (ispTdepPID && !(selectionPIDNew(track2, 1) || selectionPIDNew(track2, 0))) {
+        if (ispTdepPID && !(selectionPIDNew(track2, 1))) {
           continue;
         }
-        if (!ispTdepPID && !(selectionPID(track1, 0) || selectionPID(track1, 1))) {
+        if (!ispTdepPID && !(selectionPID(track1, 0))) {
           continue;
         }
-        if (!ispTdepPID && !(selectionPID(track2, 1) || selectionPID(track2, 0))) {
+        if (!ispTdepPID && !(selectionPID(track2, 1))) {
           continue;
         }
-
-        if (ispTdepPID) {
-          if (selectionPIDNew(track1, 1) && selectionPIDNew(track2, 0)) {
-            track1pion = true;
-            track2kaon = true;
-            if (removefaketrak && isFakeKaon(track2, 0)) {
-              continue;
-            }
-          }
-          if (selectionPIDNew(track2, 1) && selectionPIDNew(track1, 0)) {
-            track2pion = true;
-            track1kaon = true;
-            if (removefaketrak && isFakeKaon(track1, 0)) {
-              continue;
-            }
-          }
-        }
-        if (!ispTdepPID) {
-          if (selectionPID(track1, 1) && selectionPID(track2, 0)) {
-            track1pion = true;
-            track2kaon = true;
-            if (removefaketrak && isFakeKaon(track2, 0)) {
-              continue;
-            }
-          }
-          if (selectionPID(track2, 1) && selectionPID(track1, 0)) {
-            track2pion = true;
-            track1kaon = true;
-            if (removefaketrak && isFakeKaon(track1, 0)) {
-              continue;
-            }
-          }
-        }
-        if (track1kaon && track2pion) {
-          daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
-          daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
-        } else if (track1pion && track2kaon) {
-          daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPi);
-          daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
-        } else {
-          continue;
-        }
+        daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+        daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
         KstarMother = daughter1 + daughter2;
         if (TMath::Abs(KstarMother.Rapidity()) > confRapidity) {
           continue;
@@ -1015,13 +956,11 @@ struct kstarpbpb {
 
         v2 = TMath::Cos(2.0 * phiminuspsi) * QFT0C;
 
-        if (mix) {
-          histos.fill(HIST("hSparseV2SAMixedEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
-        }
+        histos.fill(HIST("hSparseV2SAMixedEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
       }
     }
   }
-  PROCESS_SWITCH(kstarpbpb, processMixedEvent, "Process Mixed event", false);
+  PROCESS_SWITCH(kstarpbpb, processMixedEvent, "Process Mixed event", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
