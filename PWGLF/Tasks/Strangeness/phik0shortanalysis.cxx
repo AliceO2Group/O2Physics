@@ -1389,14 +1389,14 @@ struct Phik0shortanalysis {
         if (!selectionPion<false, true>(track, false))
           continue;
 
-        if (std::abs(mcTrack.y()) > cfgYAcceptance)
-          continue;
-
         if (!track.has_mcParticle())
           continue;
 
         auto mcTrack = track.mcParticle_as<aod::McParticles>();
         if (std::abs(mcTrack.pdgCode()) != 211)
+          continue;
+
+        if (std::abs(mcTrack.y()) > cfgYAcceptance)
           continue;
 
         // Primary pion selection
