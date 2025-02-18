@@ -14,6 +14,7 @@
 /// \author Gijs van Weelden <g.van.weelden@cern.ch>
 //
 
+#include <string>
 #include <vector>
 #include "TH1F.h"
 #include "TTree.h"
@@ -58,7 +59,7 @@ using MCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorL
 using MatchedMCDV0Jets = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 using MatchedMCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetConstituents, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 
-using CandidatesV0MCDWithLabels = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels, aod::V0SignalFlags>;
+using CandidatesV0MCDWithLabels = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels, aod::V0Flags>;
 
 using MCPV0Jets = aod::V0ChargedMCParticleLevelJets;
 using MCPV0JetsWithConstituents = soa::Join<MCPV0Jets, aod::V0ChargedMCParticleLevelJetConstituents>;
