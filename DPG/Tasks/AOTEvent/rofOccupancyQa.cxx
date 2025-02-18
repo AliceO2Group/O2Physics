@@ -108,7 +108,6 @@ struct RofOccupancyQaTask {
     histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterNarrowDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
     histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterStrictDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
     histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterStandardDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterVzDependentDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
 
     histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_kNoCollInRofStrict", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
     histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_kNoCollInRofStandard", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
@@ -346,7 +345,6 @@ struct RofOccupancyQaTask {
     histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeNarrow", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
     histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
     histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
-    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeVzDependent", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
     histos.add("nPV_vs_occupancyByTracks/NoCollInRofStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
     histos.add("nPV_vs_occupancyByTracks/NoCollInRofStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
     histos.add("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
@@ -359,7 +357,6 @@ struct RofOccupancyQaTask {
     histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeNarrow", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
     histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
     histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
-    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeVzDependent", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
     histos.add("nPV_vs_occupancyByFT0C/NoCollInRofStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
     histos.add("nPV_vs_occupancyByFT0C/NoCollInRofStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
     histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
@@ -436,7 +433,7 @@ struct RofOccupancyQaTask {
       vIsSel8[colIndex] = col.sel8();
       vCombCond[colIndex] = vIsSel8[colIndex] && (fabs(vCollVz[colIndex]) < 8) && (vAmpFT0CperColl[colIndex] > 500 /* a.u.*/);
 
-      int bcInTF = col.bcInTF(); //(bc.globalBC() - bcSOR) % nBCsPerTF;
+      int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
       vIsFullInfoForOccupancy[colIndex] = ((bcInTF - 300) * bcNS > -timeWinOccupancyCalcMinNS) && ((nBCsPerTF - 4000 - bcInTF) * bcNS > timeWinOccupancyCalcMaxNS) ? true : false;
 
       // int64_t rofId = (globalBC + 3564 - rofOffset) / rofLength;
@@ -970,8 +967,6 @@ struct RofOccupancyQaTask {
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeRangeStrict"), nPV, occTracks);
           if (col.selection_bit(kNoCollInTimeRangeStandard))
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeRangeStandard"), nPV, occTracks);
-          if (col.selection_bit(kNoCollInTimeRangeVzDependent))
-            histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeRangeVzDependent"), nPV, occTracks);
           if (col.selection_bit(kNoCollInRofStrict))
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInRofStrict"), nPV, occTracks);
           if (col.selection_bit(kNoCollInRofStandard))
@@ -995,8 +990,6 @@ struct RofOccupancyQaTask {
             histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStrict"), nPV, occFT0C);
           if (col.selection_bit(kNoCollInTimeRangeStandard))
             histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStandard"), nPV, occFT0C);
-          if (col.selection_bit(kNoCollInTimeRangeVzDependent))
-            histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeRangeVzDependent"), nPV, occFT0C);
           if (col.selection_bit(kNoCollInRofStrict))
             histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInRofStrict"), nPV, occFT0C);
           if (col.selection_bit(kNoCollInRofStandard))
@@ -1157,8 +1150,6 @@ struct RofOccupancyQaTask {
             histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterStrictDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
           if (col.selection_bit(kNoCollInTimeRangeStandard))
             histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterStandardDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
-          if (col.selection_bit(kNoCollInTimeRangeVzDependent))
-            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterVzDependentDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
 
           if (col.selection_bit(kNoCollInRofStrict))
             histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_kNoCollInRofStrict"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
