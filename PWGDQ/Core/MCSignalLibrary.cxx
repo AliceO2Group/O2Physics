@@ -1204,7 +1204,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
-    if (!nameStr.compare("eeKaonFromLambdaB")) {
+  if (!nameStr.compare("eeKaonFromLambdaB")) {
     MCProng pronge(3, {11, 443, 5122}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     MCProng prongKaon(2, {321, 5122}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Kaon and electron pair from lambda B", {pronge, pronge, prongKaon}, {2, 2, 1});
