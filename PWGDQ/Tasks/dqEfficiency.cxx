@@ -942,7 +942,7 @@ struct AnalysisSameEventPairing {
           checked = sig.CheckSignal(false, t1, t2);
         }
         if (checked) {
-          VarManager::FillPairMC(t1, t2);
+          VarManager::FillPairMC<VarManager::kDecayToEE>(t1, t2);
           fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), VarManager::fgValues);
         }
       }

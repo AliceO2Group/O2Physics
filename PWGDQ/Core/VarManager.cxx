@@ -442,6 +442,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDeltaPtotTracks] = "GeV/c";
   fgVariableNames[kCharge] = "charge";
   fgVariableUnits[kCharge] = "";
+  fgVariableNames[kCharge1] = "charge track 1";
+  fgVariableUnits[kCharge1] = "";
+  fgVariableNames[kCharge2] = "charge track 2";
+  fgVariableUnits[kCharge2] = "";
   fgVariableNames[kPin] = "p_{IN}";
   fgVariableUnits[kPin] = "GeV/c";
   fgVariableNames[kPin_leg1] = "p_{IN}";
@@ -591,7 +595,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCPy] = "GeV/c";
   fgVariableNames[kMCPz] = "MC pz";
   fgVariableUnits[kMCPz] = "GeV/c";
-  fgVariableNames[kMCPt] = "MC pt";
+  fgVariableNames[kMCPt] = "MC p_{T}";
   fgVariableUnits[kMCPt] = "GeV/c";
   fgVariableNames[kMCPhi] = "#varphi";
   fgVariableUnits[kMCPhi] = "rad";
@@ -601,6 +605,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCY] = "";
   fgVariableNames[kMCE] = "MC Energy";
   fgVariableUnits[kMCE] = "GeV";
+  fgVariableNames[kMCMass] = "MC Mass";
+  fgVariableUnits[kMCMass] = "GeV/c2";
   fgVariableNames[kMCVx] = "MC vx";
   fgVariableUnits[kMCVx] = "cm"; // TODO: check the unit
   fgVariableNames[kMCVy] = "MC vy";
