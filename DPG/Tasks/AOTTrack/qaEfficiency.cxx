@@ -71,8 +71,12 @@ static constexpr int trkCutIdxN = 23;
 static constexpr int nSpecies = o2::track::PID::NIDs; // One per PDG
 static constexpr int nCharges = 2;
 static constexpr int nParticles = nSpecies * nCharges;
-static constexpr const char* particleTitle[nParticles] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha",
-                                                          "e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
+static constexpr const char* particleTitle[nParticles] = {"e^{-}", "#mu^{-}", "#pi^{+}",
+                                                          "K^{+}", "p", "d",
+                                                          "t", "^{3}He", "#alpha",
+                                                          "e^{+}", "#mu^{+}", "#pi^{-}",
+                                                          "K^{-}", "#bar{p}", "#bar{d}",
+                                                          "#bar{t}", "^{3}#bar{He}", "#bar{#alpha}"};
 static constexpr int PDGs[nParticles] = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030, 1000020040,
                                          -11, -13, -211, -321, -2212, -1000010020, -1000010030, -1000020030, -1000020040};
 
