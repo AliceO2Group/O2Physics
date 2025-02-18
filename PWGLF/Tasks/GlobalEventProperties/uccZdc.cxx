@@ -15,11 +15,9 @@
 /// \author Omar Vazquez (omar.vazquez.rueda@cern.ch)
 /// \since January 29, 2025
 
-#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <string>
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
@@ -133,12 +131,6 @@ struct UccZdc {
   Configurable<float> minOccCut{"minOccCut", 0, "min Occu cut"};
   Configurable<float> maxOccCut{"maxOccCut", 500, "max Occu cut"};
 
-  constexpr static int nLabels{14};
-  constexpr static std::array<std::string, nLabels> EvCutLabeling{
-    {"All", "SelEigth", "NoSameBunchPileup", "IsGoodZvtxFT0vsPV",
-     "IsVertexITSTPC", "IsVertexTOFmatched", "Occupancy Cut", "Centrality",
-     "VtxZ cut", "Centrality cut", "has ZDC?", "has T0?", "Within TDC cut?",
-     "Within ZEM cut?"}};
   enum EvCutLabel {
     All = 1,
     SelEigth,
@@ -193,9 +185,20 @@ struct UccZdc {
     registry.add("hEventCounter", ";;Events", kTH1F, {axisEvent});
     auto hstat = registry.get<TH1>(HIST("hEventCounter"));
     auto* x = hstat->GetXaxis();
-    for (int i = 0; i < nLabels; i++) {
-      x->SetBinLabel(i, EvCutLabeling.at(i).c_str());
-    }
+    x->SetBinLabel(1, "All");
+    x->SetBinLabel(2, "SelEigth");
+    x->SetBinLabel(3, "NoSameBunchPileup");
+    x->SetBinLabel(4, "IsGoodZvtxFT0vsPV");
+    x->SetBinLabel(5, "IsVertexITSTPC");
+    x->SetBinLabel(6, "IsVertexTOFmatched");
+    x->SetBinLabel(7, "Occupancy Cut");
+    x->SetBinLabel(8, "Centrality");
+    x->SetBinLabel(9, "VtxZ cut");
+    x->SetBinLabel(10, "Centrality cut");
+    x->SetBinLabel(11, "has ZDC?");
+    x->SetBinLabel(12, "has T0?");
+    x->SetBinLabel(13, "Within TDC cut?");
+    x->SetBinLabel(14, "Within ZEM cut?");
 
     //  Histograms: paritcle-level info
     if (doprocessZdcCollAss) {
@@ -362,29 +365,6 @@ struct UccZdc {
     }
     registry.fill(HIST("hEventCounter"), EvCutLabel::CentralityCut);
 
-    // if (isApplyExtraCorrCut && col.multNTracksPV() > npvTracksCut &&
-    //     col.multFT0C() < (10 * col.multNTracksPV() - ft0cCut)) {
-    //   return false;
-    // }
-    // histos.fill(HIST("EventHist"), 9);
-    //
-    // if (isApplyNoCollInTimeRangeStandard &&
-    //     !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-    //   return false;
-    // }
-    // histos.fill(HIST("EventHist"), 10);
-    //
-    // if (isApplyNoCollInRofStandard &&
-    //     !col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
-    //   return false;
-    // }
-    // histos.fill(HIST("EventHist"), 11);
-    //
-    // if (isApplyNoHighMultCollInPrevRof &&
-    //     !col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
-    //   return false;
-    // }
-    // histos.fill(HIST("EventHist"), 12);
     return true;
   }
 
