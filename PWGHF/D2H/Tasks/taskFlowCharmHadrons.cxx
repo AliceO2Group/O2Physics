@@ -650,9 +650,9 @@ struct HfTaskFlowCharmHadrons {
       uint16_t hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
       std::vector<int> evtSelFlags = getEventSelectionFlags(hfevflag);
       registry.fill(HIST("spReso/hSparseReso"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a,
-                                                      xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot, 
-                                                      xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot, 
-                                                      occupancy, evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
+                    xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot,
+                    xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot,
+                    occupancy, evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
     }
 
     if (!isCollSelected<o2::hf_centrality::CentralityEstimator::FT0C>(collision, bcs, centrality)) {
