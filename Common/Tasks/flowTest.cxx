@@ -145,11 +145,8 @@ struct flowTest {
           auto const& tracks = mcParticle.tracks_as<recoTracksWithLabels>();
           for (auto const& track : tracks) {
             bool isITSFake = false;
-
-            for (int bit = 0; bit < 7; bit++) {
-              if (bitcheck(track.mcMask(), bit)) {
-                isITSFake = true;
-              }
+            if (bitcheck(track.mcMask(), 13)) { // should perhaps be done better at some point
+              isITSFake = true;
             }
 
             if (track.tpcNClsFound() >= analysisMinimumTPCClusters && track.itsNCls() >= analysisMinimumITSClusters) {
