@@ -1029,7 +1029,7 @@ struct Phik0shortanalysis {
         }
       }
 
-      if (fillMethodMultipleWeights){
+      if (fillMethodMultipleWeights) {
         for (unsigned int i = 0; i < counts.size(); i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
         }
@@ -1118,7 +1118,7 @@ struct Phik0shortanalysis {
         }
       }
 
-      if (fillMethodMultipleWeights){
+      if (fillMethodMultipleWeights) {
         for (unsigned int i = 0; i < counts.size(); i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
         }
@@ -1718,7 +1718,7 @@ struct Phik0shortanalysis {
         }
       }
 
-      if (fillMethodMultipleWeights){
+      if (fillMethodMultipleWeights) {
         for (unsigned int i = 0; i < counts.size(); i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
         }
@@ -1842,7 +1842,7 @@ struct Phik0shortanalysis {
         }
       }
 
-      if (fillMethodMultipleWeights){
+      if (fillMethodMultipleWeights) {
         for (unsigned int i = 0; i < counts.size(); i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
         }
