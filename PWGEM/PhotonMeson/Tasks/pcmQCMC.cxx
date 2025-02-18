@@ -339,23 +339,6 @@ struct PCMQCMC {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 9.0);
     }
 
-    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounterCummulative"), 1.0, collision.weight());
-    if (!eventcuts.cfgRequireFT0AND || collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounterCummulative"), 2, collision.weight());
-      if (std::abs(collision.posZ()) < eventcuts.cfgZvtxMax) {
-        fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounterCummulative"), 3, collision.weight());
-        if (!eventcuts.cfgRequireSel8 || collision.sel8()) {
-          fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounterCummulative"), 4, collision.weight());
-          if (!eventcuts.cfgRequireGoodZvtxFT0vsPV || collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-            fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounterCummulative"), 5, collision.weight());
-            if (!eventcuts.cfgRequireNoSameBunchPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-              fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounterCummulative"), 6, collision.weight());
-            }
-          }
-        }
-      }
-    }
-
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
 
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultNTracksPV"), collision.multNTracksPV());
@@ -477,11 +460,8 @@ struct PCMQCMC {
 
         if (mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator()) {
           fillV0Info<0>(v0, mcphoton, elemc);
-          fRegistry.fill(HIST("V0/primary/hPt_DeltaColID"), v0.pt(), collision.globalIndex() - mcphoton.emmceventId());
-          if (collision.globalIndex() == mcphoton.emmceventId())
-            fRegistry.fill(HIST("V0/primary/hDCAz_Pt_collType"), v0.dcaZtopv(), v0.pt(), 0.0); /// check whether V0 and MC photon originate from the same collision. 0 for yes, 1 for no.
-          else
-            fRegistry.fill(HIST("V0/primary/hDCAz_Pt_collType"), v0.dcaZtopv(), v0.pt(), 1.0);
+          fRegistry.fill(HIST("V0/primary/hPt_DeltaColID"), v0.pt(), collision.emmceventId() - mcphoton.emmceventId());
+          fRegistry.fill(HIST("V0/primary/hDCAz_Pt_collType"), v0.dcaZtopv(), v0.pt(), collision.emmceventId() == mcphoton.emmceventId());
           for (auto& leg : {pos, ele}) {
             fillV0LegInfo<0>(leg);
           }
