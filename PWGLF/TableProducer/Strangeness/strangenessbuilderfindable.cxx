@@ -1031,7 +1031,7 @@ struct StrangenessBuilder {
     int nV0s = 0;
     // Loops over all V0s in the time frame
     histos.fill(HIST("hInputStatistics"), kV0CoresBase, v0s.size());
-    for (size_t iv0 = 0; iv0<v0List.size(); iv0++) {
+    for (size_t iv0 = 0; iv0 < v0List.size(); iv0++) {
       const auto& v0 = v0List[sorted_v0[iv0]];
 
       if (!mEnabledTables[kV0CoresBase] && v0Map[v0.globalId] == -2) {
@@ -1455,7 +1455,7 @@ struct StrangenessBuilder {
     int nCascades = 0;
     // Loops over all cascades in the time frame
     histos.fill(HIST("hInputStatistics"), kStoredCascCores, cascades.size());
-    for (size_t icascade = 0; icascade<cascades.size(); icascade++) {
+    for (size_t icascade = 0; icascade < cascades.size(); icascade++) {
       // Get tracks and generate candidate
       auto const& cascade = cascades[sorted_cascade[icascade]];
       auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
@@ -1756,7 +1756,7 @@ struct StrangenessBuilder {
     int nCascades = 0;
     // Loops over all cascades in the time frame
     histos.fill(HIST("hInputStatistics"), kStoredKFCascCores, cascades.size());
-    for (size_t icascade = 0; icascade<cascades.size(); icascade++) {
+    for (size_t icascade = 0; icascade < cascades.size(); icascade++) {
       // Get tracks and generate candidate
       auto const& cascade = cascades[sorted_cascade[icascade]];
       auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
