@@ -157,7 +157,7 @@ struct Phik0shortanalysis {
 
   // Configurables to choose the filling method
   Configurable<bool> doLoadPurities{"doLoadPurities", false, "Load purities"};
-  Configurable<bool> fillMethodMultipleWeights{"fillMethodMultipleWeights", false, "Fill method Multiple Weights"};
+  Configurable<bool> fillMethodMultipleWeights{"fillMethodMultipleWeights", true, "Fill method Multiple Weights"};
   Configurable<bool> fillMethodSingleWeight{"fillMethodSingleWeight", false, "Fill method Single Weight"};
 
   // Configurable for CCDB
