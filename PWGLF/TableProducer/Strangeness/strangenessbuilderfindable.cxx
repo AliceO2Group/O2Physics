@@ -816,7 +816,7 @@ struct StrangenessBuilder {
         auto const& v0 = cascade.v0();
         currentCascadeEntry.globalId = cascade.globalIndex();
         currentCascadeEntry.collisionId = cascade.collisionId();
-        currentCascadeEntry.v0Id = -1; // fill this in one go later
+        currentCascadeEntry.v0Id = v0.globalIndex();
         currentCascadeEntry.posTrackId = v0.posTrackId();
         currentCascadeEntry.negTrackId = v0.negTrackId();
         currentCascadeEntry.bachTrackId = cascade.bachelorId();
@@ -948,7 +948,7 @@ struct StrangenessBuilder {
                   // this will override type, but not collision index
                   // N.B.: collision index checks still desirable!
                   currentCascadeEntry.cascadeType = 0;
-                  currentCascadeEntry.globalId = v0fromAOD.globalIndex();
+                  currentCascadeEntry.globalId = cascade.globalIndex();
                 }
               }
               if (cascadeBuilderOpts.mc_findableDetachedCascade.value || currentV0Entry.collisionId >= 0) {
@@ -1031,7 +1031,9 @@ struct StrangenessBuilder {
     int nV0s = 0;
     // Loops over all V0s in the time frame
     histos.fill(HIST("hInputStatistics"), kV0CoresBase, v0s.size());
-    for (const auto& v0 : v0s) {
+    for (size_t iv0 = 0; iv0<v0List.size(); iv0++) {
+      const auto& v0 = v0List[sorted_v0[iv0]];
+
       if (!mEnabledTables[kV0CoresBase] && v0Map[v0.globalId] == -2) {
         // this v0 hasn't been used by cascades and we're not generating V0s, so skip it
         v0dataLink(-1, -1);
@@ -1317,7 +1319,7 @@ struct StrangenessBuilder {
           }
         }
 
-        for (const auto info : mcV0infos) {
+        for (const auto& info : mcV0infos) {
           if (mEnabledTables[kV0MCCores]) {
             v0mccores(
               info.label, info.pdgCode,
@@ -1453,8 +1455,9 @@ struct StrangenessBuilder {
     int nCascades = 0;
     // Loops over all cascades in the time frame
     histos.fill(HIST("hInputStatistics"), kStoredCascCores, cascades.size());
-    for (const auto& cascade : cascades) {
+    for (size_t icascade = 0; icascade<cascades.size(); icascade++) {
       // Get tracks and generate candidate
+      auto const& cascade = cascades[sorted_cascade[icascade]];
       auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(cascade.negTrackId);
@@ -1718,7 +1721,7 @@ struct StrangenessBuilder {
             }
           }
 
-          for (const auto thisInfoToFill : mcCascinfos) {
+          for (const auto& thisInfoToFill : mcCascinfos) {
             if (mEnabledTables[kCascMCCores]) {
               cascmccores( // a lot of the info below will be compressed in case of not-recoed MC (good!)
                 thisInfoToFill.pdgCode, thisInfoToFill.pdgCodeMother, thisInfoToFill.pdgCodeV0, thisInfoToFill.isPhysicalPrimary,
@@ -1753,8 +1756,9 @@ struct StrangenessBuilder {
     int nCascades = 0;
     // Loops over all cascades in the time frame
     histos.fill(HIST("hInputStatistics"), kStoredKFCascCores, cascades.size());
-    for (const auto& cascade : cascades) {
+    for (size_t icascade = 0; icascade<cascades.size(); icascade++) {
       // Get tracks and generate candidate
+      auto const& cascade = cascades[sorted_cascade[icascade]];
       auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(cascade.negTrackId);
