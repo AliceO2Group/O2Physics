@@ -463,7 +463,7 @@ struct PCMQCMC {
         auto ele = v0.negTrack_as<MyMCV0Legs>();
         auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
         auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
-      
+
         // LOGF(info, "posmc.isPhysicalPrimary() = %d, posmc.producedByGenerator() = %d, elemc.isPhysicalPrimary() = %d, elemc.producedByGenerator() = %d", posmc.isPhysicalPrimary(), posmc.producedByGenerator(), elemc.isPhysicalPrimary(), elemc.producedByGenerator());
 
         if (!fV0PhotonCut.IsSelected<MyMCV0Legs>(v0)) {
@@ -478,8 +478,10 @@ struct PCMQCMC {
         if (mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator()) {
           fillV0Info<0>(v0, mcphoton, elemc);
           fRegistry.fill(HIST("V0/primary/hPt_DeltaColID"), v0.pt(), collision.globalIndex() - mcphoton.emmceventId());
-          if(collision.globalIndex() == mcphoton.emmceventId()) fRegistry.fill(HIST("V0/primary/hDCAz_Pt_collType"), v0.dcaZtopv(), v0.pt(), 0.0); /// check whether V0 and MC photon originate from the same collision. 0 for yes, 1 for no.
-          else fRegistry.fill(HIST("V0/primary/hDCAz_Pt_collType"), v0.dcaZtopv(), v0.pt(), 1.0);
+          if (collision.globalIndex() == mcphoton.emmceventId())
+            fRegistry.fill(HIST("V0/primary/hDCAz_Pt_collType"), v0.dcaZtopv(), v0.pt(), 0.0); /// check whether V0 and MC photon originate from the same collision. 0 for yes, 1 for no.
+          else
+            fRegistry.fill(HIST("V0/primary/hDCAz_Pt_collType"), v0.dcaZtopv(), v0.pt(), 1.0);
           for (auto& leg : {pos, ele}) {
             fillV0LegInfo<0>(leg);
           }
