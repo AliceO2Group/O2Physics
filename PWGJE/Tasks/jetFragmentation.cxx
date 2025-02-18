@@ -940,7 +940,7 @@ struct JetFragmentation {
 
   // TODO: This is filled with dummy values for now
   // Should be made to return purity for a V0 based on species and pt
-  template<typename V>
+  template <typename V>
   float getV0Purity(V const& v0)
   {
     if (v0.isK0SCandidate()) {
