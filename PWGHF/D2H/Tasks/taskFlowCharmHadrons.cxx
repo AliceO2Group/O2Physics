@@ -628,9 +628,13 @@ struct HfTaskFlowCharmHadrons {
                          aod::BCsWithTimestamps const& bcs)
   {
     float centrality{-1.f};
-    if (!isCollSelected<o2::hf_centrality::CentralityEstimator::FT0C>(collision, bcs, centrality)) {
-      // no selection on the centrality is applied on purpose to allow for the resolution study in post-processing
-      return;
+    if (storeResoOccu) {
+      centrality = o2::hf_centrality::getCentralityColl(collision, o2::hf_centrality::CentralityEstimator::FT0C);
+    } else {
+      if (!isCollSelected<o2::hf_centrality::CentralityEstimator::FT0C>(collision, bcs, centrality)) {
+        // no selection on the centrality is applied, but on event selection flags
+        return;
+      }
     }
 
     float xQVecFT0a = collision.qvecFT0ARe();
