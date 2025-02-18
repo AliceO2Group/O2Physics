@@ -628,15 +628,6 @@ struct HfTaskFlowCharmHadrons {
                          aod::BCsWithTimestamps const& bcs)
   {
     float centrality{-1.f};
-    if (storeResoOccu) {
-      centrality = o2::hf_centrality::getCentralityColl(collision, o2::hf_centrality::CentralityEstimator::FT0C);
-    } else {
-      if (!isCollSelected<o2::hf_centrality::CentralityEstimator::FT0C>(collision, bcs, centrality)) {
-        // no selection on the centrality is applied, but on event selection flags
-        return;
-      }
-    }
-
     float xQVecFT0a = collision.qvecFT0ARe();
     float yQVecFT0a = collision.qvecFT0AIm();
     float xQVecFT0c = collision.qvecFT0CRe();
@@ -651,6 +642,24 @@ struct HfTaskFlowCharmHadrons {
     float yQVecBNeg = collision.qvecBNegIm();
     float xQVecBTot = collision.qvecBTotRe();
     float yQVecBTot = collision.qvecBTotIm();
+
+    centrality = o2::hf_centrality::getCentralityColl(collision, o2::hf_centrality::CentralityEstimator::FT0C);
+    if (storeResoOccu) {
+      float occupancy{-1.f};
+      occupancy = getOccupancyColl(collision, occEstimator);
+      registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+      uint16_t hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      std::vector<int> evtSelFlags = getEventSelectionFlags(hfevflag);
+      registry.fill(HIST("spReso/hSparseReso"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a,
+                                                      xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot, 
+                                                      xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot, 
+                                                      occupancy, evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
+    }
+
+    if (!isCollSelected<o2::hf_centrality::CentralityEstimator::FT0C>(collision, bcs, centrality)) {
+      // no selection on the centrality is applied, but on event selection flags
+      return;
+    }
 
     registry.fill(HIST("spReso/hSpResoFT0cFT0a"), centrality, xQVecFT0c * xQVecFT0a + yQVecFT0c * yQVecFT0a);
     registry.fill(HIST("spReso/hSpResoFT0cFV0a"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a);
@@ -696,19 +705,6 @@ struct HfTaskFlowCharmHadrons {
       registry.fill(HIST("epReso/hEpResoFV0aTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFV0a, epBNegs)));
       registry.fill(HIST("epReso/hEpResoFV0aTPCtot"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFV0a, epBTots)));
       registry.fill(HIST("epReso/hEpResoTPCposTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epBPoss, epBNegs)));
-    }
-
-    if (storeResoOccu) {
-      float occupancy = 0.;
-      uint16_t hfevflag{};
-      occupancy = getOccupancyColl(collision, occEstimator);
-      registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
-      hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-      std::vector<int> evtSelFlags = getEventSelectionFlags(hfevflag);
-      registry.fill(HIST("spReso/hSparseReso"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a,
-                                                     xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot, 
-                                                     xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot, 
-                                                     occupancy, evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
     }
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processResolution, "Process resolution", false);
