@@ -2532,7 +2532,7 @@ struct JetFragmentation {
           isParticleUsed[iparticle] = true;
           continue;
         }
-        if (!((std::abs(particle.pdgCode()) == 310) || std::abs((particle.pdgCode()) == 3122))) {
+        if (!((std::abs(particle.pdgCode()) == 310) || (std::abs(particle.pdgCode()) == 3122))) {
           isParticleUsed[iparticle] = true;
           continue;
         }
@@ -2732,7 +2732,7 @@ struct JetFragmentation {
         nParticles++;
         fillDataV0FragHistograms(jcoll, jet, v0);
         double z = trackProj(jet, v0);
-        std::vector<double> w = getV0SignalWeight(jcoll, v0);
+        std::vector<double> w = getV0SignalWeight(v0);
         values.push_back(z);
         weights.push_back(w);
       }
