@@ -500,7 +500,7 @@ struct Pi0EtaToGammaGammaMC {
           pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
           etaid = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 221, mcparticles);
 
-          if (pi0id < 0 && etaid < 0) {
+          if (g1mc.globalIndex() != g2mc.globalIndex() && pi0id < 0 && etaid < 0) { // for same gamma no pi0/eta will be found, but we still want to fill the FromSameGamma hist
             continue;
           }
 
@@ -508,6 +508,21 @@ struct Pi0EtaToGammaGammaMC {
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           if (std::abs(v12.Rapidity()) > maxY_rec) {
+            continue;
+          }
+
+          if (pairtype == PairType::kEMCEMC) {
+            float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
+            if (openingAngle < emccuts.minOpenAngle) {
+              continue;
+            }
+          }
+
+          if (g1mc.globalIndex() == g2mc.globalIndex()) {
+            if (getMotherPDGCode(g1mc, mcparticles) == 111)
+              fRegistry.fill(HIST("Pair/Pi0/hs_FromSameGamma"), v12.M(), v12.Pt(), collision.weight());
+            else if (getMotherPDGCode(g1mc, mcparticles) == 221)
+              fRegistry.fill(HIST("Pair/Eta/hs_FromSameGamma"), v12.M(), v12.Pt(), collision.weight());
             continue;
           }
 

@@ -475,6 +475,7 @@ struct HypKfRecoTask {
     const AxisSpec axisdEdx{2000, 0, 2000, "d#it{E}/d#it{x}"};
     const AxisSpec axisInvMass{1000, 1, 6, "inv mass"};
     const AxisSpec axisCent{100, 0, 100, "centrality"};
+    const AxisSpec axisOccupancy{5000, 0, 50000, "occupancy"};
     const AxisSpec axisVtxZ{100, -10, 10, "z"};
     // create histograms
     histos.add("histMagField", "histMagField", kTH1F, {axisMagField});
@@ -483,6 +484,7 @@ struct HypKfRecoTask {
     histos.add("histCentFT0A", "histCentFT0A", kTH1F, {axisCent});
     histos.add("histCentFT0C", "histCentFT0C", kTH1F, {axisCent});
     histos.add("histCentFT0M", "histCentFT0M", kTH1F, {axisCent});
+    histos.add("histEvents", "histEvents", kTH2F, {axisCent, axisOccupancy});
     hDeDx.resize(2 * nDaughterParticles + 2);
     for (int i = 0; i < nDaughterParticles + 1; i++) {
       TString histName = i < nDaughterParticles ? daughterParticles[i].name : "all";
@@ -870,7 +872,7 @@ struct HypKfRecoTask {
         for (auto& hypCand : candidateVector->at(hyperNucIter)) { // o2-linter: disable=[const-ref-in-for-loop]
           if (!hypCand.isPrimaryCandidate && !hypCand.isUsedSecondary && !hypCand.isCascade())
             continue;
-          if (saveOnlyMcTrue && !hypCand.mcTrue)
+          if (saveOnlyMcTrue && !hypCand.mcTrue && !hypCand.isCascade())
             continue;
           hInvMass[vec * nHyperNuclei + hyperNucIter]->Fill(hypCand.mass);
           std::vector<int> vecDaugtherTracks, vecAddons, vecSubDaughters;
@@ -1107,14 +1109,15 @@ struct HypKfRecoTask {
     histos.fill(HIST("histMagField"), dBz);
     histos.fill(HIST("histNev"), 0.5);
     collPassedEvSel = collision.sel8() && std::abs(collision.posZ()) < 10;
+    occupancy = collision.trackOccupancyInTimeRange();
     if (collPassedEvSel) {
       histos.fill(HIST("histNev"), 1.5);
       histos.fill(HIST("histVtxZ"), collision.posZ());
       histos.fill(HIST("histCentFT0A"), collision.centFT0A());
       histos.fill(HIST("histCentFT0C"), collision.centFT0C());
       histos.fill(HIST("histCentFT0M"), collision.centFT0M());
+      histos.fill(HIST("histEvents"), collision.centFT0C(), occupancy);
     }
-    occupancy = collision.trackOccupancyInTimeRange();
     kfPrimVtx = createKFPVertexFromCollision(collision);
     primVtx.assign({collision.posX(), collision.posY(), collision.posZ()});
     cents.assign({collision.centFT0A(), collision.centFT0C(), collision.centFT0M()});
@@ -1139,18 +1142,18 @@ struct HypKfRecoTask {
     if (!track.hasTPC())
       return -999;
 
-    if (particle.name == "pion" && cfgTrackPIDsettings->get("pion", "useBBparams") == 0)
-      return track.tpcNSigmaPi();
-    if (particle.name == "proton" && cfgTrackPIDsettings->get("proton", "useBBparams") == 0)
-      return track.tpcNSigmaPr();
-    if (particle.name == "deuteron" && cfgTrackPIDsettings->get("deuteron", "useBBparams") == 0)
-      return track.tpcNSigmaDe();
-    if (particle.name == "triton" && cfgTrackPIDsettings->get("triton", "useBBparams") == 0)
-      return track.tpcNSigmaTr();
-    if (particle.name == "helion" && cfgTrackPIDsettings->get("helion", "useBBparams") == 0)
-      return track.tpcNSigmaHe();
-    if (particle.name == "alpha" && cfgTrackPIDsettings->get("alpha", "useBBparams") == 0)
-      return track.tpcNSigmaAl();
+    if (particle.name == "pion" && cfgTrackPIDsettings->get("pion", "useBBparams") < 1)
+      return cfgTrackPIDsettings->get("pion", "useBBparams") == 0 ? track.tpcNSigmaPi() : 0;
+    if (particle.name == "proton" && cfgTrackPIDsettings->get("proton", "useBBparams") < 1)
+      return cfgTrackPIDsettings->get("proton", "useBBparams") == 0 ? track.tpcNSigmaPr() : 0;
+    if (particle.name == "deuteron" && cfgTrackPIDsettings->get("deuteron", "useBBparams") < 1)
+      return cfgTrackPIDsettings->get("deuteron", "useBBparams") == 0 ? track.tpcNSigmaDe() : 0;
+    if (particle.name == "triton" && cfgTrackPIDsettings->get("triton", "useBBparams") < 1)
+      return cfgTrackPIDsettings->get("triton", "useBBparams") == 0 ? track.tpcNSigmaTr() : 0;
+    if (particle.name == "helion" && cfgTrackPIDsettings->get("helion", "useBBparams") < 1)
+      return cfgTrackPIDsettings->get("helion", "useBBparams") == 0 ? track.tpcNSigmaHe() : 0;
+    if (particle.name == "alpha" && cfgTrackPIDsettings->get("alpha", "useBBparams") < 1)
+      return cfgTrackPIDsettings->get("alpha", "useBBparams") == 0 ? track.tpcNSigmaAl() : 0;
 
     double expBethe{tpc::BetheBlochAleph(static_cast<double>(particle.charge * rigidity / particle.mass), particle.betheParams[0], particle.betheParams[1], particle.betheParams[2], particle.betheParams[3], particle.betheParams[4])};
     double expSigma{expBethe * particle.resolution};
