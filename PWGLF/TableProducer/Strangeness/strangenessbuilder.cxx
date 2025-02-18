@@ -22,6 +22,9 @@
 //  -- processMonteCarlo[Run2] .......: use this OR processRealData but NOT both
 //
 
+#include <string>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -1576,12 +1579,12 @@ struct StrangenessBuilder {
 
   void processRealData(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    dataProcess(collisions, v0s, cascades, trackedCascades, tracks, bcs, (TObject*)nullptr);
+    dataProcess(collisions, v0s, cascades, trackedCascades, tracks, bcs, static_cast<TObject*>(nullptr));
   }
 
   void processRealDataRun2(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    dataProcess(collisions, v0s, cascades, (TObject*)nullptr, tracks, bcs, (TObject*)nullptr);
+    dataProcess(collisions, v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, static_cast<TObject*>(nullptr));
   }
 
   void processMonteCarlo(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIU const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
@@ -1591,12 +1594,12 @@ struct StrangenessBuilder {
 
   void processMonteCarloRun2(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExtLabeled const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
   {
-    dataProcess(collisions, v0s, cascades, (TObject*)nullptr, tracks, bcs, mcParticles);
+    dataProcess(collisions, v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, mcParticles);
   }
 
   void processSimulationFindable(aod::Collisions const& collisions, aod::FindableV0s const& v0s, aod::Cascades const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    dataProcess(collisions, v0s, cascades, (TObject*)nullptr, tracks, bcs, (TObject*)nullptr);
+    dataProcess(collisions, v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, static_cast<TObject*>(nullptr));
   }
 
   PROCESS_SWITCH(StrangenessBuilder, processRealData, "process real data", true);
