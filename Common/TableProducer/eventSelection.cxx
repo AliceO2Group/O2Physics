@@ -351,6 +351,8 @@ struct BcSelectionTask {
           itrct--;
         rct = itrct->second;
         LOGP(debug, "sor={} eor={} ts={} rct={}", sorTimestamp, eorTimestamp, bc.timestamp(), rct);
+        lastRCT = rct;
+        lastTF = thisTF;
       }
 
       uint32_t alias{0};
