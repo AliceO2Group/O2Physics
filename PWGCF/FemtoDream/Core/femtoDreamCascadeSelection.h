@@ -612,7 +612,7 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
   LOGF(info, "-> PID %i", static_cast<int>(outputPosTrack[1]));
   LOGF(info, "     using track infos");
   //outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, posTrack.pt(), posTrack.eta(), sqrtf(powf(posTrack.dcaXY(), 2.f) + powf(posTrack.dcaZ(), 2.f)));
-  outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, casc.positivept(), casc.positiveeta(), sqrtf(powf(posTrack.dcaXY(), 2.f) + powf(posTrack.dcaZ(), 2.f)));
+  outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, posTrack.pt(), posTrack.eta(), posTrack.dcaXY());
   LOGF(info, "     -> Cut %i", static_cast<int>(outputPosTrack[0]));
   LOGF(info, "     -> PID %i", static_cast<int>(outputPosTrack[1]));
   
@@ -621,7 +621,7 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
   LOGF(info, "-> Cut %i", static_cast<int>(outputNegTrack[0]));
   LOGF(info, "-> PID %i", static_cast<int>(outputNegTrack[1]));
   //outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, negTrack.pt(), negTrack.eta(), sqrtf(powf(negTrack.dcaXY(), 2.f) + powf(negTrack.dcaZ(), 2.f)));
-  outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, casc.negativept(), casc.negativeeta(), sqrtf(powf(negTrack.dcaXY(), 2.f) + powf(negTrack.dcaZ(), 2.f)));
+  outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, negTrack.pt(), negTrack.eta(), negTrack.dcaXY());
   LOGF(info, "     -> Cut %i", static_cast<int>(outputNegTrack[0]));
   LOGF(info, "     -> PID %i", static_cast<int>(outputNegTrack[1]));
   
@@ -630,7 +630,7 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
   LOGF(info, "-> Cut %i", static_cast<int>(outputBachTrack[0]));
   LOGF(info, "-> PID %i", static_cast<int>(outputBachTrack[1]));
   //outputNegTrack = BachDaughTrack.getCutContainer<false, cutContainerType>(bachTrack, bachTrack.pt(), bachTrack.eta(), sqrtf(powf(bachTrack.dcaXY(), 2.f) + powf(bachTrack.dcaZ(), 2.f)));
-  outputNegTrack = BachDaughTrack.getCutContainer<false, cutContainerType>(bachTrack, casc.bachelorpt(), casc.bacheloreta(), sqrtf(powf(bachTrack.dcaXY(), 2.f) + powf(bachTrack.dcaZ(), 2.f)));
+  outputBachTrack = BachDaughTrack.getCutContainer<false, cutContainerType>(bachTrack, bachTrack.pt(), bachTrack.eta(), bachTrack.dcaXY());
   LOGF(info, "     -> Cut %i", static_cast<int>(outputBachTrack[0]));
   LOGF(info, "     -> PID %i", static_cast<int>(outputBachTrack[1]));
   cutContainerType output = 0;
