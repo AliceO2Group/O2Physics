@@ -529,12 +529,15 @@ struct StrangenessBuilder {
 
   // for sorting
   template <typename T>
-  std::vector<std::size_t> sort_indices(const std::vector<T>& v)
+  std::vector<std::size_t> sort_indices(const std::vector<T>& v, bool doSorting = false)
   {
     std::vector<std::size_t> idx(v.size());
     std::iota(idx.begin(), idx.end(), 0);
-    std::stable_sort(idx.begin(), idx.end(),
+    if(doSorting){
+      // do sorting only if requested (not always necessary)
+      std::stable_sort(idx.begin(), idx.end(),
                      [&v](std::size_t i1, std::size_t i2) { return v[i1].collisionId < v[i2].collisionId; });
+    }
     return idx;
   }
 
@@ -807,7 +810,7 @@ struct StrangenessBuilder {
     // determine properly collision-id-sorted index array for later use
     // N.B.: necessary also before cascade part
     sorted_v0.clear();
-    sorted_v0 = sort_indices(v0List);
+    sorted_v0 = sort_indices(v0List, (mc_findableMode.value > 0));
 
     // Cascade part
     if (mc_findableMode.value < 2) {
@@ -979,7 +982,7 @@ struct StrangenessBuilder {
 
     // we need to allow for sorted use of cascadeList
     sorted_cascade.clear();
-    sorted_cascade = sort_indices(cascadeList);
+    sorted_cascade = sort_indices(cascadeList, (mc_findableMode.value > 0));
   }
 
   //__________________________________________________
