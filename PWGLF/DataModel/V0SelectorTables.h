@@ -37,7 +37,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsRejectedCandidate, isRejectedCandidate, //! Flag to
                            [](uint8_t flag) -> bool { return flag & o2::aod::v0flags::FREJECTED; });
 } // namespace v0flags
 
-DECLARE_SOA_TABLE_STAGED(V0SignalFlags, "V0SIGNALFLAGS",
+DECLARE_SOA_TABLE_STAGED(V0SignalFlags, "V0SIGNALFLAG",
                          v0flags::SignalFlag,
                          v0flags::IsK0SCandidate<v0flags::SignalFlag>,
                          v0flags::IsLambdaCandidate<v0flags::SignalFlag>,
