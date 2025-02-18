@@ -22,6 +22,9 @@
 //  -- processMonteCarlo[Run2] .......: use this OR processRealData but NOT both
 //
 
+#include <string>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -414,10 +417,22 @@ struct StrangenessBuilder {
       }
     }
 
-    // list enabled tables
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
-    LOGF(info, " Strangeness builder: enabled table listing");
+    LOGF(info, " Strangeness builder: basic configuration listing");
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
+
+    if (doprocessRealData) {
+      LOGF(info, " ===> process function enabled: processRealData");
+    }
+    if (doprocessRealDataRun2) {
+      LOGF(info, " ===> process function enabled: processRealDataRun2");
+    }
+    if (doprocessMonteCarlo) {
+      LOGF(info, " ===> process function enabled: processMonteCarlo");
+    }
+    if (doprocessMonteCarloRun2) {
+      LOGF(info, " ===> process function enabled: processMonteCarloRun2");
+    }
     for (int i = 0; i < nTables; i++) {
       // printout to be improved in the future
       if (mEnabledTables[i]) {
@@ -531,25 +546,25 @@ struct StrangenessBuilder {
   void populateCascadeInterlinks()
   {
     if (mEnabledTables[kCascToKFRefs]) {
-      for (auto& cascCore : interlinks.cascCoreToCascades) {
+      for (const auto& cascCore : interlinks.cascCoreToCascades) {
         cascToKFRefs(interlinks.cascadeToKFCascCores[cascCore]);
         histos.fill(HIST("hTableBuildingStatistics"), kCascToKFRefs);
       }
     }
     if (mEnabledTables[kCascToTraRefs]) {
-      for (auto& cascCore : interlinks.cascCoreToCascades) {
+      for (const auto& cascCore : interlinks.cascCoreToCascades) {
         cascToTraRefs(interlinks.cascadeToTraCascCores[cascCore]);
         histos.fill(HIST("hTableBuildingStatistics"), kCascToTraRefs);
       }
     }
     if (mEnabledTables[kKFToCascRefs]) {
-      for (auto& kfCascCore : interlinks.kfCascCoreToCascades) {
+      for (const auto& kfCascCore : interlinks.kfCascCoreToCascades) {
         kfToCascRefs(interlinks.cascadeToCascCores[kfCascCore]);
         histos.fill(HIST("hTableBuildingStatistics"), kKFToCascRefs);
       }
     }
     if (mEnabledTables[kTraToCascRefs]) {
-      for (auto& traCascCore : interlinks.traCascCoreToCascades) {
+      for (const auto& traCascCore : interlinks.traCascCoreToCascades) {
         traToCascRefs(interlinks.cascadeToCascCores[traCascCore]);
         histos.fill(HIST("hTableBuildingStatistics"), kTraToCascRefs);
       }
@@ -565,7 +580,7 @@ struct StrangenessBuilder {
     v0Map.clear();
     v0Map.resize(v0s.size(), -2); // marks not used
     if (mEnabledTables[kStoredCascCores]) {
-      for (auto& cascade : cascades) {
+      for (const auto& cascade : cascades) {
         if (v0Map[cascade.v0Id()] == -2) {
           v0sUsedInCascades++;
         }
@@ -576,7 +591,7 @@ struct StrangenessBuilder {
     if constexpr (soa::is_table<TTrackedCascades>) {
       if (mEnabledTables[kStoredTraCascCores]) {
         trackedCascadeCount = trackedCascades.size();
-        for (auto& trackedCascade : trackedCascades) {
+        for (const auto& trackedCascade : trackedCascades) {
           auto const& cascade = trackedCascade.cascade();
           if (v0Map[cascade.v0Id()] == -2) {
             v0sUsedInCascades++;
@@ -604,7 +619,7 @@ struct StrangenessBuilder {
     int nV0s = 0;
     // Loops over all V0s in the time frame
     histos.fill(HIST("hInputStatistics"), kV0CoresBase, v0s.size());
-    for (auto& v0 : v0s) {
+    for (const auto& v0 : v0s) {
       if (!mEnabledTables[kV0CoresBase] && v0Map[v0.globalIndex()] == -2) {
         // this v0 hasn't been used by cascades and we're not generating V0s, so skip it
         v0dataLink(-1, -1);
@@ -736,7 +751,7 @@ struct StrangenessBuilder {
                 thisInfo.momentum[2] = originatingV0.pz();
 
                 if (originatingV0.has_mothers()) {
-                  for (auto& lV0Mother : originatingV0.template mothers_as<aod::McParticles>()) {
+                  for (const auto& lV0Mother : originatingV0.template mothers_as<aod::McParticles>()) {
                     thisInfo.pdgCodeMother = lV0Mother.pdgCode();
                     thisInfo.motherLabel = lV0Mother.globalIndex();
                   }
@@ -816,7 +831,7 @@ struct StrangenessBuilder {
     if constexpr (soa::is_table<TMCParticles>) {
       if (v0BuilderOpts.mc_populateV0MCCoresAsymmetric && (mEnabledTables[kV0MCCores] || mEnabledTables[kV0MCCollRefs])) {
         // first step: add any un-recoed v0mmcores that were requested
-        for (auto& mcParticle : mcParticles) {
+        for (const auto& mcParticle : mcParticles) {
           thisInfo.label = -1;
           thisInfo.motherLabel = -1;
           thisInfo.pdgCode = 0;
@@ -832,7 +847,7 @@ struct StrangenessBuilder {
           if (mcParticleIsReco[mcParticle.globalIndex()] == true)
             continue; // skip if already created in list
 
-          if (TMath::Abs(mcParticle.y()) > v0BuilderOpts.mc_rapidityWindow)
+          if (std::fabs(mcParticle.y()) > v0BuilderOpts.mc_rapidityWindow)
             continue; // skip outside midrapidity
 
           if (
@@ -861,7 +876,7 @@ struct StrangenessBuilder {
             if (mcParticle.has_daughters()) {
               auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
 
-              for (auto& dau : daughters) {
+              for (const auto& dau : daughters) {
                 if (dau.getProcess() != 4)
                   continue;
 
@@ -890,7 +905,7 @@ struct StrangenessBuilder {
           }
         }
 
-        for (auto info : mcV0infos) {
+        for (const auto& info : mcV0infos) {
           if (mEnabledTables[kV0MCCores]) {
             v0mccores(
               info.label, info.pdgCode,
@@ -978,7 +993,7 @@ struct StrangenessBuilder {
         thisCascInfo.pdgCodeV0 = originatingV0.pdgCode();
 
         if (originatingV0.has_mothers()) {
-          for (auto& lV0Mother : originatingV0.template mothers_as<aod::McParticles>()) {
+          for (const auto& lV0Mother : originatingV0.template mothers_as<aod::McParticles>()) {
             if (lV0Mother.globalIndex() == bachOriginating) { // found mother particle
               thisCascInfo.label = lV0Mother.globalIndex();
 
@@ -995,7 +1010,7 @@ struct StrangenessBuilder {
               thisCascInfo.momentum[1] = lV0Mother.py();
               thisCascInfo.momentum[2] = lV0Mother.pz();
               if (lV0Mother.has_mothers()) {
-                for (auto& lV0GrandMother : lV0Mother.template mothers_as<aod::McParticles>()) {
+                for (const auto& lV0GrandMother : lV0Mother.template mothers_as<aod::McParticles>()) {
                   thisCascInfo.pdgCodeMother = lV0GrandMother.pdgCode();
                   thisCascInfo.motherLabel = lV0GrandMother.globalIndex();
                 }
@@ -1026,7 +1041,7 @@ struct StrangenessBuilder {
     int nCascades = 0;
     // Loops over all cascades in the time frame
     histos.fill(HIST("hInputStatistics"), kStoredCascCores, cascades.size());
-    for (auto& cascade : cascades) {
+    for (const auto& cascade : cascades) {
       // Get tracks and generate candidate
       auto const& collision = cascade.collision();
       auto const& v0 = cascade.v0();
@@ -1162,8 +1177,8 @@ struct StrangenessBuilder {
               if (negTrack.has_mcParticle()) {
                 auto baryonParticle = negTrack.template mcParticle_as<aod::McParticles>();
                 if (baryonParticle.has_mothers() && bachelorParticle.has_mothers() && baryonParticle.pdgCode() == -2212) {
-                  for (auto& baryonMother : baryonParticle.template mothers_as<aod::McParticles>()) {
-                    for (auto& pionMother : bachelorParticle.template mothers_as<aod::McParticles>()) {
+                  for (const auto& baryonMother : baryonParticle.template mothers_as<aod::McParticles>()) {
+                    for (const auto& pionMother : bachelorParticle.template mothers_as<aod::McParticles>()) {
                       if (baryonMother.globalIndex() == pionMother.globalIndex() && baryonMother.pdgCode() == -3122) {
                         bbTag = true;
                       }
@@ -1176,8 +1191,8 @@ struct StrangenessBuilder {
               if (posTrack.has_mcParticle()) {
                 auto baryonParticle = posTrack.template mcParticle_as<aod::McParticles>();
                 if (baryonParticle.has_mothers() && bachelorParticle.has_mothers() && baryonParticle.pdgCode() == 2212) {
-                  for (auto& baryonMother : baryonParticle.template mothers_as<aod::McParticles>()) {
-                    for (auto& pionMother : bachelorParticle.template mothers_as<aod::McParticles>()) {
+                  for (const auto& baryonMother : baryonParticle.template mothers_as<aod::McParticles>()) {
+                    for (const auto& pionMother : bachelorParticle.template mothers_as<aod::McParticles>()) {
                       if (baryonMother.globalIndex() == pionMother.globalIndex() && baryonMother.pdgCode() == 3122) {
                         bbTag = true;
                       }
@@ -1202,7 +1217,7 @@ struct StrangenessBuilder {
         // now populate V0MCCores if in asymmetric mode
         if (cascadeBuilderOpts.mc_populateCascMCCoresAsymmetric) {
           // first step: add any un-recoed v0mmcores that were requested
-          for (auto& mcParticle : mcParticles) {
+          for (const auto& mcParticle : mcParticles) {
             thisCascInfo.pdgCode = -1, thisCascInfo.pdgCodeMother = -1;
             thisCascInfo.pdgCodePositive = -1, thisCascInfo.pdgCodeNegative = -1;
             thisCascInfo.pdgCodeBachelor = -1, thisCascInfo.pdgCodeV0 = -1;
@@ -1221,7 +1236,7 @@ struct StrangenessBuilder {
             if (mcParticleIsReco[mcParticle.globalIndex()] == true)
               continue; // skip if already created in list
 
-            if (TMath::Abs(mcParticle.y()) > cascadeBuilderOpts.mc_rapidityWindow)
+            if (std::fabs(mcParticle.y()) > cascadeBuilderOpts.mc_rapidityWindow)
               continue; // skip outside midrapidity
 
             if (
@@ -1242,11 +1257,11 @@ struct StrangenessBuilder {
 
               if (mcParticle.has_daughters()) {
                 auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
-                for (auto& dau : daughters) {
+                for (const auto& dau : daughters) {
                   if (dau.getProcess() != 4) // check whether the daughter comes from a decay
                     continue;
 
-                  if (TMath::Abs(dau.pdgCode()) == 211 || TMath::Abs(dau.pdgCode()) == 321) {
+                  if (std::abs(dau.pdgCode()) == 211 || std::abs(dau.pdgCode()) == 321) {
                     thisCascInfo.pdgCodeBachelor = dau.pdgCode();
                     thisCascInfo.bachP[0] = dau.px();
                     thisCascInfo.bachP[1] = dau.py();
@@ -1256,10 +1271,10 @@ struct StrangenessBuilder {
                     thisCascInfo.xyz[2] = dau.vz();
                     thisCascInfo.mcParticleBachelor = dau.globalIndex();
                   }
-                  if (TMath::Abs(dau.pdgCode()) == 2212) {
+                  if (std::abs(dau.pdgCode()) == 2212) {
                     thisCascInfo.pdgCodeV0 = dau.pdgCode();
 
-                    for (auto& v0Dau : dau.template daughters_as<aod::McParticles>()) {
+                    for (const auto& v0Dau : dau.template daughters_as<aod::McParticles>()) {
                       if (v0Dau.getProcess() != 4)
                         continue;
 
@@ -1292,7 +1307,7 @@ struct StrangenessBuilder {
             }
           }
 
-          for (auto thisInfoToFill : mcCascinfos) {
+          for (const auto& thisInfoToFill : mcCascinfos) {
             if (mEnabledTables[kCascMCCores]) {
               cascmccores( // a lot of the info below will be compressed in case of not-recoed MC (good!)
                 thisInfoToFill.pdgCode, thisInfoToFill.pdgCodeMother, thisInfoToFill.pdgCodeV0, thisInfoToFill.isPhysicalPrimary,
@@ -1327,7 +1342,7 @@ struct StrangenessBuilder {
     int nCascades = 0;
     // Loops over all cascades in the time frame
     histos.fill(HIST("hInputStatistics"), kStoredKFCascCores, cascades.size());
-    for (auto& cascade : cascades) {
+    for (const auto& cascade : cascades) {
       // Get tracks and generate candidate
       auto const& collision = cascade.collision();
       auto const& v0 = cascade.v0();
@@ -1412,7 +1427,7 @@ struct StrangenessBuilder {
     int nCascades = 0;
     // Loops over all V0s in the time frame
     histos.fill(HIST("hInputStatistics"), kStoredTraCascCores, cascadeTracks.size());
-    for (auto& cascadeTrack : cascadeTracks) {
+    for (const auto& cascadeTrack : cascadeTracks) {
       // Get tracks and generate candidate
       if (!cascadeTrack.has_track())
         continue; // safety (should be fine but depends on future stratrack dev)
@@ -1564,12 +1579,12 @@ struct StrangenessBuilder {
 
   void processRealData(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    dataProcess(collisions, v0s, cascades, trackedCascades, tracks, bcs, (TObject*)nullptr);
+    dataProcess(collisions, v0s, cascades, trackedCascades, tracks, bcs, static_cast<TObject*>(nullptr));
   }
 
   void processRealDataRun2(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    dataProcess(collisions, v0s, cascades, (TObject*)nullptr, tracks, bcs, (TObject*)nullptr);
+    dataProcess(collisions, v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, static_cast<TObject*>(nullptr));
   }
 
   void processMonteCarlo(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIU const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
@@ -1579,12 +1594,12 @@ struct StrangenessBuilder {
 
   void processMonteCarloRun2(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExtLabeled const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
   {
-    dataProcess(collisions, v0s, cascades, (TObject*)nullptr, tracks, bcs, mcParticles);
+    dataProcess(collisions, v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, mcParticles);
   }
 
   void processSimulationFindable(aod::Collisions const& collisions, aod::FindableV0s const& v0s, aod::Cascades const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    dataProcess(collisions, v0s, cascades, (TObject*)nullptr, tracks, bcs, (TObject*)nullptr);
+    dataProcess(collisions, v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, static_cast<TObject*>(nullptr));
   }
 
   PROCESS_SWITCH(StrangenessBuilder, processRealData, "process real data", true);
