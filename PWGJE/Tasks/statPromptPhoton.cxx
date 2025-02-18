@@ -966,14 +966,14 @@ struct statPromptPhoton {
         } // photon check
       } // clusterparticle loop
 
-      if(cfgDebug) {
-	if(chPe>0){
-	  if(photontrigger){
-	    if(chPe/mccluster.energy() < 0.50){
-	      goodgentrigger=true;
-	    }
-	  }
-	}
+      if (cfgDebug) {
+        if (chPe > 0) {
+          if (photontrigger) {
+            if (chPe / mccluster.energy() < 0.50) {
+              goodgentrigger = true;
+            }
+          }
+        }
       }
       if (goodgentrigger && photontrigger) {
         histos.fill(HIST("REC_Trigger_Purity"), 0.5);
