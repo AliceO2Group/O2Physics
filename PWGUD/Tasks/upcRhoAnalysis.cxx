@@ -568,6 +568,9 @@ struct UpcRhoAnalysis {
     auto subleadingMomentumTrack = (leadingMomentumTrack == cutTracks[0]) ? cutTracks[1] : cutTracks[0];
     rQC.fill(HIST("QC/tracks/hTofHitCheck"), leadingMomentumTrack.hasTOF(), subleadingMomentumTrack.hasTOF());
 
+    auto positiveTrack = cutTracks[0].sign() > 0 ? cutTracks[0] : cutTracks[1];
+    auto negativeTrack = cutTracks[0].sign() > 0 ? cutTracks[1] : cutTracks[0];
+
     float leadingPt = leadingMomentumTrack.pt();
     float subleadingPt = subleadingMomentumTrack.pt();
     float leadingEta = eta(leadingMomentumTrack.px(), leadingMomentumTrack.py(), leadingMomentumTrack.pz());
@@ -579,16 +582,16 @@ struct UpcRhoAnalysis {
 
     // fill recoTree
     int localBc = collision.globalBC() % o2::constants::lhc::LHCMaxBunches;
-    int trackSigns[2] = {leadingMomentumTrack.sign(), subleadingMomentumTrack.sign()};
-    float trackPts[2] = {leadingPt, subleadingPt};
-    float trackEtas[2] = {leadingEta, subleadingEta};
-    float trackPhis[2] = {leadingPhi, subleadingPhi};
-    float trackPiPIDs[2] = {leadingMomentumTrack.tpcNSigmaPi(), subleadingMomentumTrack.tpcNSigmaPi()};
-    float trackElPIDs[2] = {leadingMomentumTrack.tpcNSigmaEl(), subleadingMomentumTrack.tpcNSigmaEl()};
-    float trackKaPIDs[2] = {leadingMomentumTrack.tpcNSigmaKa(), subleadingMomentumTrack.tpcNSigmaKa()};
-    float trackDcaXYs[2] = {leadingMomentumTrack.dcaXY(), subleadingMomentumTrack.dcaXY()};
-    float trackDcaZs[2] = {leadingMomentumTrack.dcaZ(), subleadingMomentumTrack.dcaZ()};
-    float trackTpcSignals[2] = {leadingMomentumTrack.tpcSignal(), subleadingMomentumTrack.tpcSignal()};
+    int trackSigns[2] = {positiveTrack.sign(), negativeTrack.sign()};
+    float trackPts[2] = {positiveTrack.pt(), negativeTrack.pt()};
+    float trackEtas[2] = {eta(positiveTrack.px(), positiveTrack.py(), positiveTrack.pz()), eta(negativeTrack.px(), negativeTrack.py(), negativeTrack.pz())};
+    float trackPhis[2] = {phi(positiveTrack.px(), positiveTrack.py()), phi(negativeTrack.px(), negativeTrack.py())};
+    float trackPiPIDs[2] = {positiveTrack.tpcNSigmaPi(), negativeTrack.tpcNSigmaPi()};
+    float trackElPIDs[2] = {positiveTrack.tpcNSigmaEl(), negativeTrack.tpcNSigmaEl()};
+    float trackKaPIDs[2] = {positiveTrack.tpcNSigmaKa(), negativeTrack.tpcNSigmaKa()};
+    float trackDcaXYs[2] = {positiveTrack.dcaXY(), negativeTrack.dcaXY()};
+    float trackDcaZs[2] = {positiveTrack.dcaZ(), negativeTrack.dcaZ()};
+    float trackTpcSignals[2] = {positiveTrack.tpcSignal(), negativeTrack.tpcSignal()};
     if ((savePions && tracksPassPiPID(cutTracks)) || (saveElectrons && tracksPassElPID(cutTracks)) || (saveKaons && tracksPassKaPID(cutTracks)))
       recoTree(collision.runNumber(), localBc, collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(),
                collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
@@ -723,6 +726,9 @@ struct UpcRhoAnalysis {
     rMC.fill(HIST("MC/tracks/hEta"), eta(leadingMomentumPion.px(), leadingMomentumPion.py(), leadingMomentumPion.pz()), eta(subleadingMomentumPion.px(), subleadingMomentumPion.py(), subleadingMomentumPion.pz()));
     rMC.fill(HIST("MC/tracks/hPhi"), phi(leadingMomentumPion.px(), leadingMomentumPion.py()), phi(subleadingMomentumPion.px(), subleadingMomentumPion.py()));
 
+    auto positivePion = cutMcParticles[0].pdgCode() > 0 ? cutMcParticles[0] : cutMcParticles[1];
+    auto negativePion = cutMcParticles[0].pdgCode() > 0 ? cutMcParticles[1] : cutMcParticles[0];
+
     rMC.fill(HIST("MC/system/hM"), mass);
     rMC.fill(HIST("MC/system/hPt"), pT);
     rMC.fill(HIST("MC/system/hPtVsM"), mass, pT);
@@ -745,10 +751,10 @@ struct UpcRhoAnalysis {
 
     // fill mcTree
     int localBc = mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches;
-    int trackSigns[2] = {leadingMomentumPion.pdgCode() / std::abs(leadingMomentumPion.pdgCode()), subleadingMomentumPion.pdgCode() / std::abs(subleadingMomentumPion.pdgCode())};
-    float trackPts[2] = {pt(leadingMomentumPion.px(), leadingMomentumPion.py()), pt(subleadingMomentumPion.px(), subleadingMomentumPion.py())};
-    float trackEtas[2] = {eta(leadingMomentumPion.px(), leadingMomentumPion.py(), leadingMomentumPion.pz()), eta(subleadingMomentumPion.px(), subleadingMomentumPion.py(), subleadingMomentumPion.pz())};
-    float trackPhis[2] = {phi(leadingMomentumPion.px(), leadingMomentumPion.py()), phi(subleadingMomentumPion.px(), subleadingMomentumPion.py())};
+    int trackSigns[2] = {positivePion.pdgCode() / std::abs(positivePion.pdgCode()), negativePion.pdgCode() / std::abs(negativePion.pdgCode())};
+    float trackPts[2] = {pt(positivePion.px(), positivePion.py()), pt(negativePion.px(), negativePion.py())};
+    float trackEtas[2] = {eta(positivePion.px(), positivePion.py(), positivePion.pz()), eta(negativePion.px(), negativePion.py(), negativePion.pz())};
+    float trackPhis[2] = {phi(positivePion.px(), positivePion.py()), phi(negativePion.px(), negativePion.py())};
     mcTree(localBc,
            mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
            phiRandom, phiCharge, trackSigns, trackPts, trackEtas, trackPhis);
