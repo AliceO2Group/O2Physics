@@ -19,7 +19,9 @@
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo @altsybee
 /DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio @lbariogl @f3sch
 /DPG/Tasks/TOF @alibuild @noferini @njacazio
-/DPG/Tasks/FT0 @alibuild @afurs
+/DPG/Tasks/FT0 @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
+/DPG/Tasks/FV0 @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
+/DPG/Tasks/FDD @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
 /EventFiltering @alibuild @mpuccio @lietava
 /EventFiltering/PWGHF @alibuild @fgrosa @zhangbiao-phy @mpuccio @lietava
 /EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @lietava
