@@ -260,14 +260,13 @@ struct statPromptPhoton {
     using filteredMCCollisions = soa::Filtered<selectedMCCollisions>;
   */
 
-  
   Filter PosZFilter_JE = nabs(aod::jcollision::posZ) < cfgVtxCut;
   Filter clusterDefinitionSelection_JE = (o2::aod::jcluster::definition == cfgClusterDefinition) && (o2::aod::jcluster::time >= cfgMinTime) && (o2::aod::jcluster::time <= cfgMaxTime) && (o2::aod::jcluster::energy > cfgMinClusterEnergy) && (o2::aod::jcluster::nCells >= cfgMinNCells) && (o2::aod::jcluster::nlm <= cfgMaxNLM) && (o2::aod::jcluster::isExotic == cfgExoticContribution);
 
   using selectedMCCollisions = aod::JMcCollisions;
-  using filteredMCCollisions = soa::Filtered<selectedMCCollisions>;  
+  using filteredMCCollisions = soa::Filtered<selectedMCCollisions>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
-  using BcCandidates = soa::Join<aod::JBCs, aod::JBCPIs>;  
+  using BcCandidates = soa::Join<aod::JBCs, aod::JBCPIs>;
 
   // using jTrackCandidates = soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels>;
   using jTrackCandidates = soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs>;
@@ -433,9 +432,9 @@ struct statPromptPhoton {
   void processMCGen(filteredMCCollisions::iterator const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, jfilteredCollisions>> const& recocolls, aod::JMcParticles const& mcParticles, jfilteredMCClusters const&)
   {
     nEventsGenMC++;
-    if(cfgDebug){
+    if (cfgDebug) {
       if ((nEventsGenMC + 1) % 10000 == 0) {
-	std::cout << "Processed Gen MC Events: " << nEventsGenMC << std::endl;
+        std::cout << "Processed Gen MC Events: " << nEventsGenMC << std::endl;
       }
     }
     histos.fill(HIST("GEN_nEvents"), 0.5);
@@ -568,25 +567,25 @@ struct statPromptPhoton {
             } // 3rd photon loop
           } // 2nd photon check
 
-	  if(cfgDebug){
-	    std::cout << "We have a GEN prompt photon" << std::endl;
-	    std::cout << "Photon gen status code chain: " << std::endl;
-	    std::cout << "Photon stat: " << mcPhoton.getGenStatusCode() << std::endl;
-	    std::cout << "Photon index: " << mcPhoton.globalIndex() << std::endl;
-	    std::cout << "Photon mompdg 1: " << mompdg1 << std::endl;
-	    std::cout << "Photon momstatus 1: " << momstatus1 << std::endl;
-	    std::cout << "Photon momindex 1: " << momindex1 << std::endl;
-	    std::cout << "Photon mompdg 2: " << mompdg2 << std::endl;
-	    std::cout << "Photon momstatus 2: " << momstatus2 << std::endl;
-	    std::cout << "Photon momindex 2: " << momindex2 << std::endl;
-	    std::cout << "Photon mompdg 3: " << mompdg3 << std::endl;
-	    std::cout << "Photon momstatus 3: " << momstatus3 << std::endl;
-	    std::cout << "Photon momindex 3: " << momindex3 << std::endl;
-	  }
+          if (cfgDebug) {
+            std::cout << "We have a GEN prompt photon" << std::endl;
+            std::cout << "Photon gen status code chain: " << std::endl;
+            std::cout << "Photon stat: " << mcPhoton.getGenStatusCode() << std::endl;
+            std::cout << "Photon index: " << mcPhoton.globalIndex() << std::endl;
+            std::cout << "Photon mompdg 1: " << mompdg1 << std::endl;
+            std::cout << "Photon momstatus 1: " << momstatus1 << std::endl;
+            std::cout << "Photon momindex 1: " << momindex1 << std::endl;
+            std::cout << "Photon mompdg 2: " << mompdg2 << std::endl;
+            std::cout << "Photon momstatus 2: " << momstatus2 << std::endl;
+            std::cout << "Photon momindex 2: " << momindex2 << std::endl;
+            std::cout << "Photon mompdg 3: " << mompdg3 << std::endl;
+            std::cout << "Photon momstatus 3: " << momstatus3 << std::endl;
+            std::cout << "Photon momindex 3: " << momindex3 << std::endl;
+          }
         } // check for mother of OG
-	else {
-	  continue;
-	}
+        else {
+          continue;
+        }
 
         if (std::abs(mcPhoton.getGenStatusCode()) > 19 && std::abs(mcPhoton.getGenStatusCode()) < 90) {
           if (mcPhoton.isPhysicalPrimary()) {
@@ -613,9 +612,9 @@ struct statPromptPhoton {
   {
 
     nEventsRecMC_JE++;
-    if(cfgDebug){
+    if (cfgDebug) {
       if ((nEventsRecMC_JE + 1) % 10000 == 0) {
-	std::cout << "Processed JE Rec MC Events: " << nEventsRecMC_JE << std::endl;
+        std::cout << "Processed JE Rec MC Events: " << nEventsRecMC_JE << std::endl;
       }
     }
     histos.fill(HIST("REC_nEvents"), 0.5);
@@ -715,35 +714,34 @@ struct statPromptPhoton {
           continue;
         }
 
-       // bool nodoublecount = false;
+        // bool nodoublecount = false;
         double etaT = ogtrack.trackEtaEmcal();
         double etaC = mccluster.eta();
         double phiT = ogtrack.trackPhiEmcal();
         double phiC = mccluster.phi();
-	double ptT = ctrack.pt();
+        double ptT = ctrack.pt();
         bool etatrigger = false;
-	bool phitrigger = false;
+        bool phitrigger = false;
         double phidiff = TVector2::Phi_mpi_pi(mccluster.phi() - ogtrack.phi());
         double etadiff = mccluster.eta() - ogtrack.eta();
 
-	if(cfgPtClusterCut){
-          if(fabs(etaT - etaC) < (0.010 + pow(ptT+4.07,-2.5)) ) {
+        if (cfgPtClusterCut) {
+          if (fabs(etaT - etaC) < (0.010 + pow(ptT + 4.07, -2.5))) {
             etatrigger = true;
-	  }
+          }
 
-          if(fabs(TVector2::Phi_mpi_pi(phiT - phiC)) < (0.015 + pow(ptT+3.65,-2.0)) ) {
+          if (fabs(TVector2::Phi_mpi_pi(phiT - phiC)) < (0.015 + pow(ptT + 3.65, -2.0))) {
             phitrigger = true;
-	  }
-	}
-	else {
-	  if (fabs(etadiff) < 0.05) {
-	    etatrigger = true;
-	  }
+          }
+        } else {
+          if (fabs(etadiff) < 0.05) {
+            etatrigger = true;
+          }
 
-	  if (fabs(phidiff) < 0.05) {
-	    phitrigger = true;
-	  }
-	}
+          if (fabs(phidiff) < 0.05) {
+            phitrigger = true;
+          }
+        }
 
         if (etatrigger && phitrigger) {
           chargetrigger = true;
@@ -792,29 +790,29 @@ struct statPromptPhoton {
         if (!ogtrack.isGlobalTrack()) {
           continue;
         }
-         bool etatrigger = false;
-         bool phitrigger = false;
+        bool etatrigger = false;
+        bool phitrigger = false;
         // double ptT = ctrack.pt();
-	double phidiff = TVector2::Phi_mpi_pi(mccluster.phi() - ogtrack.phi());
-	double etadiff = mccluster.eta() - ogtrack.eta();
-	if (fabs(etadiff) < 0.05) {
-	  etatrigger = true;
-	}
+        double phidiff = TVector2::Phi_mpi_pi(mccluster.phi() - ogtrack.phi());
+        double etadiff = mccluster.eta() - ogtrack.eta();
+        if (fabs(etadiff) < 0.05) {
+          etatrigger = true;
+        }
 
-	if (fabs(phidiff) < 0.05) {
-	  phitrigger = true;
-	}
+        if (fabs(phidiff) < 0.05) {
+          phitrigger = true;
+        }
 
         if (chargetrigger) {
           histos.fill(HIST("REC_Track_v_Cluster_Phi_C"), phidiff);
           histos.fill(HIST("REC_Track_v_Cluster_Eta_C"), etadiff);
           histos.fill(HIST("REC_Track_v_Cluster_Phi_Eta_C"), phidiff, etadiff);
         } else {
-	  if (etatrigger && chargetrigger) {
-	    if(cfgDebug){
-	      std::cout << "????????????????????" << std::endl;
-	    }
-	  }
+          if (etatrigger && chargetrigger) {
+            if (cfgDebug) {
+              std::cout << "????????????????????" << std::endl;
+            }
+          }
           histos.fill(HIST("REC_Track_v_Cluster_Phi_AC"), phidiff);
           histos.fill(HIST("REC_Track_v_Cluster_Eta_AC"), etadiff);
           histos.fill(HIST("REC_Track_v_Cluster_Phi_Eta_AC"), phidiff, etadiff);
@@ -833,7 +831,7 @@ struct statPromptPhoton {
         histos.fill(HIST("REC_PtHadSum_Photon"), pthadsum);
         histos.fill(HIST("REC_Trigger_Energy"), mccluster.energy());
       }
-      
+
       auto ClusterParticles = mccluster.mcParticles_as<aod::JMcParticles>();
 
       // now we check the realness of our prompt photons
@@ -952,12 +950,12 @@ struct statPromptPhoton {
           if (std::fabs(mom1) > 40 && std::fabs(mom1) > 0)
             continue;
 
-	  if(cfgDebug){
-	    std::cout<<"We have a REC prompt photon"<<std::endl;
-	    std::cout<<"Photon gen status code: "<<clusterparticle.getGenStatusCode()<<std::endl;
-	    std::cout<<"Photon mom 1: "<<mom1<<std::endl;
-	    std::cout<<"Photon mom 2: "<<mom2<<std::endl;
-	  }
+          if (cfgDebug) {
+            std::cout << "We have a REC prompt photon" << std::endl;
+            std::cout << "Photon gen status code: " << clusterparticle.getGenStatusCode() << std::endl;
+            std::cout << "Photon mom 1: " << mom1 << std::endl;
+            std::cout << "Photon mom 2: " << mom2 << std::endl;
+          }
           if (std::abs(clusterparticle.getGenStatusCode()) > 19 && std::abs(clusterparticle.getGenStatusCode()) < 90) {
             histos.fill(HIST("REC_True_Prompt_Trigger_Energy"), clusterparticle.e());
             TLorentzVector lRealPhoton;
@@ -969,12 +967,12 @@ struct statPromptPhoton {
         } // photon check
       } // clusterparticle loop
       /*
-	if(chPe>0){
-	if(photontrigger){
-	if(chPe/mccluster.energy() < 0.50){
-	goodgentrigger=true;
-	}
-	}
+  if(chPe>0){
+  if(photontrigger){
+  if(chPe/mccluster.energy() < 0.50){
+  goodgentrigger=true;
+  }
+  }
       */
       if (goodgentrigger && photontrigger) {
         histos.fill(HIST("REC_Trigger_Purity"), 0.5);
@@ -1094,12 +1092,12 @@ struct statPromptPhoton {
   {
 
     nEventsData++;
-    if(cfgDebug){
-      if (nEventsData==1){
-	std::cout << "Starting Data Processing: " << nEventsData << std::endl;
+    if (cfgDebug) {
+      if (nEventsData == 1) {
+        std::cout << "Starting Data Processing: " << nEventsData << std::endl;
       }
       if ((nEventsData + 1) % 10000 == 0) {
-	std::cout << "Processed Data Events: " << nEventsData << std::endl;
+        std::cout << "Processed Data Events: " << nEventsData << std::endl;
       }
     }
     histos.fill(HIST("DATA_nEvents"), 0.5);
@@ -1208,25 +1206,24 @@ struct statPromptPhoton {
         bool phitrigger = false;
         double phidiff = TVector2::Phi_mpi_pi(cluster.phi() - ogtrack.phi());
         double etadiff = cluster.eta() - ogtrack.eta();
-	if(cfgPtClusterCut){
-	  if (fabs(etaT - etaC) < (0.010 + pow(ptT + 4.07, -2.5))) {
-	    etatrigger = true;
-	  }
+        if (cfgPtClusterCut) {
+          if (fabs(etaT - etaC) < (0.010 + pow(ptT + 4.07, -2.5))) {
+            etatrigger = true;
+          }
 
-	  if (fabs(TVector2::Phi_mpi_pi(phiT - phiC)) < (0.015 + pow(ptT + 3.65, -2.0))) {
-	    phitrigger = true;
-	  }
-	}
-	else {
-	  if (fabs(etadiff) < 0.05) {
-	    etatrigger = true;
-	  }
+          if (fabs(TVector2::Phi_mpi_pi(phiT - phiC)) < (0.015 + pow(ptT + 3.65, -2.0))) {
+            phitrigger = true;
+          }
+        } else {
+          if (fabs(etadiff) < 0.05) {
+            etatrigger = true;
+          }
 
-	  if (fabs(phidiff) < 0.05) {
-	    phitrigger = true;
-	  }
-	}
-	
+          if (fabs(phidiff) < 0.05) {
+            phitrigger = true;
+          }
+        }
+
         if (etatrigger && phitrigger) {
           chargetrigger = true;
           sumptT += ptT;
