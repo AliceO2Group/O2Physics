@@ -88,6 +88,7 @@ struct AntinucleiInJets {
   Configurable<double> minJetPt{"minJetPt", 10.0, "Minimum pt of the jet"};
   Configurable<double> rJet{"rJet", 0.3, "Jet resolution parameter R"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
+  Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.05, "eta gap from the edge"};
 
   // track parameters
   Configurable<bool> requirePvContributor{"requirePvContributor", false, "require that the track is a PV contributor"};
@@ -156,6 +157,7 @@ struct AntinucleiInJets {
       registryQC.add("nJetsInAcceptance", "nJetsInAcceptance", HistType::kTH1F, {{50, 0, 50, "#it{n}_{Jet}"}});
       registryQC.add("nJetsSelectedHighPt", "nJetsSelectedHighPt", HistType::kTH1F, {{50, 0, 50, "#it{n}_{Jet}"}});
       registryQC.add("jetEffectiveArea", "jetEffectiveArea", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
+      registryQC.add("jetPtDifference", "jetPtDifference", HistType::kTH1F, {{200, -1, 1, "#Deltap_{T}^{jet}"}});
     }
 
     // event counter MC
@@ -451,7 +453,7 @@ struct AntinucleiInJets {
     for (auto& jet : jets) { // o2-linter: disable=[const-ref-in-for-loop]
 
       // jet must be fully contained in the acceptance
-      if ((std::fabs(jet.eta()) + rJet) > (maxEta - 0.05))
+      if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
         continue;
 
       // jet pt must be larger than threshold
@@ -676,13 +678,17 @@ struct AntinucleiInJets {
     for (auto& jet : jets) { // o2-linter: disable=[const-ref-in-for-loop]
 
       // jet must be fully contained in the acceptance
-      if ((std::fabs(jet.eta()) + rJet) > (maxEta - 0.05))
+      if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
         continue;
       njetsInAcc++;
       registryQC.fill(HIST("sumPtJetCone"), jet.pt());
+      double ptJetBeforeSub = jet.pt();
 
       // jet pt must be larger than threshold
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
+      double ptJetAfterSub = jet.pt();
+      registryQC.fill(HIST("jetPtDifference"), ptJetAfterSub - ptJetBeforeSub);
+
       if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
         continue;
       njetsHighPt++;
