@@ -17,7 +17,6 @@
 #include <array>
 #include <cstdlib>
 #include <string>
-#include <vector>
 #include <algorithm>
 
 #include "Framework/runDataProcessing.h"
@@ -192,6 +191,29 @@ struct reduced3bodyCreator {
     bachelorTOFPID.SetParams(mRespParamsV2);
   }
 
+  template <typename TTrack>
+  void fillTrackTable(TTrack const& daughter, double tofNSigmaTrack, auto collisionIndex)
+  {
+    reducedFullTracksPIDIU(
+      // TrackIU
+      collisionIndex,
+      daughter.x(), daughter.alpha(),
+      daughter.y(), daughter.z(), daughter.snp(), daughter.tgl(),
+      daughter.signed1Pt(),
+      // TracksCovIU
+      daughter.sigmaY(), daughter.sigmaZ(), daughter.sigmaSnp(), daughter.sigmaTgl(), daughter.sigma1Pt(),
+      daughter.rhoZY(), daughter.rhoSnpY(), daughter.rhoSnpZ(), daughter.rhoTglY(), daughter.rhoTglZ(),
+      daughter.rhoTglSnp(), daughter.rho1PtY(), daughter.rho1PtZ(), daughter.rho1PtSnp(), daughter.rho1PtTgl(),
+      // TracksExtra
+      daughter.tpcInnerParam(), daughter.flags(), daughter.itsClusterSizes(),
+      daughter.tpcNClsFindable(), daughter.tpcNClsFindableMinusFound(), daughter.tpcNClsFindableMinusCrossedRows(),
+      daughter.trdPattern(), daughter.tpcChi2NCl(), daughter.tofChi2(),
+      daughter.tpcSignal(), daughter.tofExpMom(),
+      // PID
+      daughter.tpcNSigmaPr(), daughter.tpcNSigmaPi(), daughter.tpcNSigmaDe(),
+      tofNSigmaTrack);
+  }
+
   void process(ColwithEvTimesMultsCents const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
 
@@ -246,7 +268,6 @@ struct reduced3bodyCreator {
       if (collision.globalIndex() != lastCollisionID) {
         int runNumber = bc.runNumber();
         reducedCollisions(
-          collision.bcId(),
           collision.posX(), collision.posY(), collision.posZ(),
           collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(),
           collision.flags(), collision.chi2(), collision.numContrib(),
@@ -257,6 +278,9 @@ struct reduced3bodyCreator {
 
         lastCollisionID = collision.globalIndex();
       }
+
+      // Precompute collision index
+      const auto collisionIndex = reducedCollisions.lastIndex();
 
       // Save daughter tracks
       const auto daughter0 = d3body.template track0_as<TrackExtPIDIUwithEvTimes>();
@@ -270,34 +294,13 @@ struct reduced3bodyCreator {
       // ----------------------------------------------
 
       // save reduced track table with decay3body daughters
-      daughterTracks.push_back(daughter0);
-      daughterTracks.push_back(daughter1);
-      daughterTracks.push_back(daughter2);
-      for (int i = 0; i < 3; i++) {
-        double tofNSigmaTrack = (i == 2) ? tofNSigmaBach : -999.;
-        reducedFullTracksPIDIU(
-          // TrackIU
-          // reducedTrackID + i,
-          reducedCollisions.lastIndex(),
-          daughterTracks[i].x(), daughterTracks[i].alpha(),
-          daughterTracks[i].y(), daughterTracks[i].z(), daughterTracks[i].snp(), daughterTracks[i].tgl(),
-          daughterTracks[i].signed1Pt(),
-          // TracksCovIU
-          daughterTracks[i].sigmaY(), daughterTracks[i].sigmaZ(), daughterTracks[i].sigmaSnp(), daughterTracks[i].sigmaTgl(), daughterTracks[i].sigma1Pt(),
-          daughterTracks[i].rhoZY(), daughterTracks[i].rhoSnpY(), daughterTracks[i].rhoSnpZ(), daughterTracks[i].rhoTglY(), daughterTracks[i].rhoTglZ(),
-          daughterTracks[i].rhoTglSnp(), daughterTracks[i].rho1PtY(), daughterTracks[i].rho1PtZ(), daughterTracks[i].rho1PtSnp(), daughterTracks[i].rho1PtTgl(),
-          // TracksExtra
-          daughterTracks[i].tpcInnerParam(), daughterTracks[i].flags(), daughterTracks[i].itsClusterSizes(),
-          daughterTracks[i].tpcNClsFindable(), daughterTracks[i].tpcNClsFindableMinusFound(), daughterTracks[i].tpcNClsFindableMinusCrossedRows(),
-          daughterTracks[i].trdPattern(), daughterTracks[i].tpcChi2NCl(), daughterTracks[i].tofChi2(),
-          daughterTracks[i].tpcSignal(), daughterTracks[i].tofExpMom(),
-          // PID
-          daughterTracks[i].tpcNSigmaPr(), daughterTracks[i].tpcNSigmaPi(), daughterTracks[i].tpcNSigmaDe(),
-          tofNSigmaTrack);
-      }
+      fillTrackTable(daughter0, -999, collisionIndex);
+      fillTrackTable(daughter1, -999, collisionIndex);
+      fillTrackTable(daughter2, tofNSigmaBach, collisionIndex);
 
       // save reduced decay3body table
-      reducedDecay3Bodys(reducedCollisions.lastIndex(), reducedFullTracksPIDIU.lastIndex() - 2, reducedFullTracksPIDIU.lastIndex() - 1, reducedFullTracksPIDIU.lastIndex());
+      const auto trackStartIndex = reducedFullTracksPIDIU.lastIndex();
+      reducedDecay3Bodys(collisionIndex, trackStartIndex - 2, trackStartIndex - 1, trackStartIndex);
     }
 
     registry.fill(HIST("hEventCounter"), 3.5, reducedCollisions.lastIndex() + 1);
