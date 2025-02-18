@@ -161,7 +161,8 @@ struct Phik0shortanalysis {
   Configurable<bool> fillMethodSingleWeight{"fillMethodSingleWeight", false, "Fill method Single Weight"};
 
   // Configurable for CCDB
-  Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
+  Configurable<std::string> ccdbPurityPath{"ccdbPurityPath", "", "Correction path to file"};
 
   // Constants
   double massKa = o2::constants::physics::MassKPlus;
@@ -465,7 +466,7 @@ struct Phik0shortanalysis {
 
     // Initialize CCDB only if purity is requested in the task
     if (doLoadPurities) {
-      ccdb->setURL(ccdburl);
+      ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
@@ -713,13 +714,12 @@ struct Phik0shortanalysis {
   // Get phi-meson purity functions from CCDB
   void getPhiPurityFunctionsFromCCDB()
   {
-    TList* listPhiPurityFunctions = ccdb->get<TList>();
+    TList* listPhiPurityFunctions = ccdb->get<TList>(ccdbPurityPath);
     if (!listPhiPurityFunctions)
       LOG(fatal) << "Problem getting TList object with phi purity functions!";
 
-    for (size_t multIdx = 0; multIdx < binsMult.size() - 1; multIdx++) {
-      for (size_t ptIdx = 0; ptIdx < binsPtPhi.size() - 1; ptIdx++) {
-        //phiPurityFunctions[multIdx][ptIdx] = static_cast<TF1*>(ccdb->get<TF1>());
+    for (size_t multIdx = 0; multIdx < binsMult->size() - 1; multIdx++) {
+      for (size_t ptIdx = 0; ptIdx < binspTPhi->size() - 1; ptIdx++) {
         phiPurityFunctions[multIdx][ptIdx] = static_cast<TF1*>(listPhiPurityFunctions->FindObject(Form("funcFitPhiPur_%zu_%zu", multIdx, ptIdx)));
       }
     }
@@ -729,17 +729,17 @@ struct Phik0shortanalysis {
   double getPhiPurity(float multiplicity, const ROOT::Math::PxPyPzMVector& Phi)
   {
     // Find multiplicity bin using lower_bound
-    auto multIt = std::lower_bound(binsMult.begin(), binsMult.end(), multiplicity);
-    size_t multIdx = multIt != binsMult.end() ? std::distance(binsMult.begin(), multIt) - 1 : -1;
+    auto multIt = std::lower_bound(binsMult->begin(), binsMult->end(), multiplicity);
+    auto multIdx = multIt != binsMult->end() ? std::distance(binsMult->begin(), multIt) - 1 : -1;
 
     // Find phi-pT bin using lower_bound
-    auto pTIt = std::lower_bound(binsPtPhi.begin(), binsPtPhi.end(), Phi.Pt());
-    size_t pTIdx = pTIt != binsPtPhi.end() ? std::distance(binsPtPhi.begin(), pTIt) - 1 : -1;
+    auto pTIt = std::lower_bound(binspTPhi->begin(), binspTPhi->end(), Phi.Pt());
+    auto pTIdx = pTIt != binspTPhi->end() ? std::distance(binspTPhi->begin(), pTIt) - 1 : -1;
 
-    if (multIdx == -1 || ptIdx == -1)
+    if (multIdx == -1 || pTIdx == -1)
       LOG(fatal) << "Problem computing phi purity!";
 
-    return phiPurityFunctions[multIdx][ptIdx]->Eval(Phi.M());
+    return phiPurityFunctions[multIdx][pTIdx]->Eval(Phi.M());
   }
 
   // Fill 2D invariant mass histogram for V0 and Phi
@@ -981,7 +981,8 @@ struct Phik0shortanalysis {
         continue;
 
       std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
-      std::array<int, 3> counts{}, weights{1, 1, 1};
+      std::array<int, 3> counts{};
+      std::array<float, 3> weights{1, 1, 1};
 
       // Phi reconstruction
       // Loop over positive tracks
@@ -1008,7 +1009,7 @@ struct Phik0shortanalysis {
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
 
-          double phiPurity;
+          double phiPurity{};
           if (fillMethodSingleWeight)
             phiPurity = getPhiPurity(multiplicity, recPhi);
 
@@ -1069,7 +1070,8 @@ struct Phik0shortanalysis {
         continue;
 
       std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
-      std::array<int, 3> counts{}, weights{1, 1, 1};
+      std::array<int, 3> counts{};
+      std::array<float, 3> weights{1, 1, 1};
 
       // Phi reconstruction
       // Loop over positive tracks
@@ -1096,7 +1098,7 @@ struct Phik0shortanalysis {
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
 
-          double phiPurity;
+          double phiPurity{};
           if (fillMethodSingleWeight)
             phiPurity = getPhiPurity(multiplicity, recPhi);
 
@@ -1629,7 +1631,8 @@ struct Phik0shortanalysis {
         continue;
 
       std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
-      std::array<int, 3> counts{}, weights{1, 1, 1};
+      std::array<int, 3> counts{};
+      std::array<float, 3> weights{1, 1, 1};
 
       // Phi reconstruction
       for (const auto& track1 : posThisColl) { // loop over all selected tracks
@@ -1683,9 +1686,9 @@ struct Phik0shortanalysis {
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
 
-          double phiPurity;
+          double phiPurity{};
           if (fillMethodSingleWeight)
-            phiPurity = getPhiPurity(multiplicity, recPhi);
+            phiPurity = getPhiPurity(genmultiplicity, recPhi);
 
           if (fillMethodMultipleWeights)
             listrecPhi.push_back(std::move(recPhi));
@@ -1752,7 +1755,8 @@ struct Phik0shortanalysis {
         continue;
 
       std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
-      std::array<int, 3> counts{}, weights{1, 1, 1};
+      std::array<int, 3> counts{};
+      std::array<float, 3> weights{1, 1, 1};
 
       // Phi reconstruction
       for (const auto& track1 : posThisColl) { // loop over all selected tracks
@@ -1806,9 +1810,9 @@ struct Phik0shortanalysis {
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
 
-          double phiPurity;
+          double phiPurity{};
           if (fillMethodSingleWeight)
-            phiPurity = getPhiPurity(multiplicity, recPhi);
+            phiPurity = getPhiPurity(genmultiplicity, recPhi);
 
           if (fillMethodMultipleWeights)
             listrecPhi.push_back(std::move(recPhi));
