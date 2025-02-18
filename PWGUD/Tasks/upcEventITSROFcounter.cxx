@@ -14,7 +14,9 @@
 #include "Framework/AnalysisDataModel.h"
 #include "ITSMFTBase/DPLAlpideParam.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "ReconstructionDataFormats/Vertex.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
 
 #include "PWGUD/DataModel/UDTables.h"
@@ -25,6 +27,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::dataformats;
 
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 using CCs = soa::Join<aod::Collisions, aod::EvSels>;
@@ -52,6 +55,9 @@ struct UpcEventITSROFcounter {
     histos.add("Events/hCountUPCcollisionsExactMatching", ";;Number of UPC (mult < 17) collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
     histos.add("Events/hCountCollisionsInROFborderMatching", ";;Number of collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
     histos.add("Events/hCountUPCcollisionsInROFborderMatching", ";;Number of UPC (mult < 17) collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
+
+    histos.add("Events/hPVcontribsVsCollisionsPerITSROFstd", "Collisions reconstructed with standard mode;Number of vertex contributors (-); Number of collisions in one ITSROF (-)", HistType::kTH2D, {{101, -0.5, 100.5},{11, -0.5, 10.5}});
+    histos.add("Events/hPVcontribsVsCollisionsPerITSROFupc", "Collisions reconstructed with upc mode;Number of vertex contributors (-); Number of collisions in one ITSROF (-)", HistType::kTH2D, {{101, -0.5, 100.5},{11, -0.5, 10.5}});
 
     histos.add("Runs/hStdModeCollDG", ";Run number;Number of events (-)", HistType::kTH1D, {axisRunNumbers});
     histos.add("Runs/hUpcModeCollDG", ";Run number;Number of events (-)", HistType::kTH1D, {axisRunNumbers});
@@ -138,6 +144,32 @@ struct UpcEventITSROFcounter {
       histos.get<TH1>(HIST("Events/hCountCollisionsInROFborderMatching"))->Fill(ncol, arrAllColls[ncol]);
       histos.get<TH1>(HIST("Events/hCountUPCcollisionsInROFborderMatching"))->Fill(ncol, arrUPCcolls[ncol]);
     }
+
+    // TEST vertex contributors per reconstruction flag (std vs upc)
+    // matching of collision bc within ITSROF range in bcs
+    for (auto& itsrofBorder : vecITSROFborders) {
+      std::vector<int> vecNumContribsStd;
+      std::vector<int> vecNumContribsUpc;
+      for (auto& collision : collisions) {
+        if ((itsrofBorder.first < collision.bcId()) && (collision.bcId() < itsrofBorder.second)) {
+          if (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) {
+            vecNumContribsUpc.push_back(collision.numContrib());
+          } else {
+            vecNumContribsStd.push_back(collision.numContrib());
+          }
+        }
+      } // end loop over collisions
+
+      for (auto& numContribs : vecNumContribsStd) {
+        histos.get<TH2>(HIST("Events/hPVcontribsVsCollisionsPerITSROFstd"))->Fill(numContribs, vecNumContribsStd.size());
+      }
+      for (auto& numContribs : vecNumContribsUpc) {
+        histos.get<TH2>(HIST("Events/hPVcontribsVsCollisionsPerITSROFupc"))->Fill(numContribs, vecNumContribsUpc.size());
+      }
+
+    } // end loop over ITSROFs
+
+
   }
 
   void processCounterPerRun(FullSGUDCollision const& coll)
