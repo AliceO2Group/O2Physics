@@ -74,9 +74,7 @@ DECLARE_SOA_TABLE_VERSIONED(StraCents_001, "AOD", "STRACENTS", 1, //! centrality
 
 DECLARE_SOA_TABLE(StraCentsRun2, "AOD", "STRACENTSRUN2", //! centrality percentiles in Run 2
                   cent::CentRun2V0M, cent::CentRun2V0A,
-                  cent::CentRun2SPDTracklets, cent::CentRun2SPDClusters,
-                  cent::CentRun2CL0, cent::CentRun2CL1,
-                  cent::CentRun2RefMult5, cent::CentRun2RefMult8);
+                  cent::CentRun2SPDTracklets, cent::CentRun2SPDClusters);
 
 // !!! DEPRECATED TABLE: StraRawCents_000 !!! All info in StraEvSels_001, in order to group all event characteristics in a unique table. Please use StraEvSels_001
 DECLARE_SOA_TABLE(StraRawCents_000, "AOD", "STRARAWCENTS", //! debug information

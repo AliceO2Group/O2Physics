@@ -539,9 +539,7 @@ struct strangederivedbuilder {
                         collision.alias_raw());
         } else { // We are in Run 2
           strangeCentsRun2(collision.centRun2V0M(), collision.centRun2V0A(),
-                           collision.centRun2SPDTracklets(), collision.centRun2SPDClusters(), 
-                           -1, -1,
-                           -1, -1);
+                           collision.centRun2SPDTracklets(), collision.centRun2SPDClusters());
           strangeEvSelsRun2(collision.sel8(), collision.sel7(), collision.selection_raw(),
                             collision.multFT0A() * static_cast<float>(fillTruncationOptions.fillRawFT0A),
                             collision.multFT0C() * static_cast<float>(fillTruncationOptions.fillRawFT0C),
