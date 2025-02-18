@@ -73,11 +73,11 @@ const float dEdxAxisMax = 160.;
 struct HfElectronSelectionWithTpcEmcal {
 
   Produces<aod::HfSelEl> electronSel;
-  Produces<aod::HfCorrSelEl> HfElectronSelection;
-  Produces<aod::HfMcGenSelEl> HfGenElectronSel;
+  Produces<aod::HfCorrSelEl> hfElectronSelection;
+  Produces<aod::HfMcGenSelEl> hfGenElectronSel;
   // Configurables
   // EMCal Cluster information
-  KFParticle KFNonHfe;
+  KFParticle kfNonHfe;
   Configurable<bool> fillEmcClusterInfo{"fillEmcClusterInfo", true, "Fill histograms with EMCal cluster info before and after track match"};
 
   // Event Selection
@@ -138,7 +138,7 @@ struct HfElectronSelectionWithTpcEmcal {
   using McTableTracks = soa::Join<TableTracks, aod::McTrackLabels>;
   using McTableEmcals = soa::Join<o2::aod::EMCALClusters, aod::EMCALMCClusters>;
 
-  Filter CollisionFilter = nabs(aod::collision::posZ) < zPvPosMax && aod::collision::numContrib > static_cast<uint16_t>(1);
+  Filter collisionFilter = nabs(aod::collision::posZ) < zPvPosMax && aod::collision::numContrib > static_cast<uint16_t>(1);
   PresliceUnsorted<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalmatchedtrack::trackId;
 
   HistogramConfigSpec hEmcClusterEnergySpec{HistType::kTH1F, {{300, 0.0, 30.0}}};
@@ -297,14 +297,14 @@ struct HfElectronSelectionWithTpcEmcal {
 
       KFPTrack kfpTrack = createKFPTrackFromTrack(electron);
       KFPTrack kfpAssociatedTrack = createKFPTrackFromTrack(pTrack);
-      KFParticle KFTrack(kfpTrack, pdgE1);
+      KFParticle kfTrack(kfpTrack, pdgE1);
       KFParticle kfAssociatedTrack(kfpAssociatedTrack, pdgE2);
-      const KFParticle* electronPairs[2] = {&KFTrack, &kfAssociatedTrack};
-      KFNonHfe.SetConstructMethod(2);
-      KFNonHfe.Construct(electronPairs, 2);
+      const KFParticle* electronPairs[2] = {&kfTrack, &kfAssociatedTrack};
+      kfNonHfe.SetConstructMethod(2);
+      kfNonHfe.Construct(electronPairs, 2);
 
-      int ndf = KFNonHfe.GetNDF();
-      Double_t chi2recg = KFNonHfe.GetChi2() / ndf;
+      int ndf = kfNonHfe.GetNDF();
+      double chi2recg = kfNonHfe.GetChi2() / ndf;
       if (ndf < 1.0) {
         continue;
       }
@@ -350,7 +350,7 @@ struct HfElectronSelectionWithTpcEmcal {
       }
     }
     // Pass multiplicities and other required parameters for this electron
-    HfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), isLSElectronFound, isULSElectronFound, isEMcal);
+    hfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), isLSElectronFound, isULSElectronFound, isEMcal);
   }
   // Electron Identification
   template <bool isMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
@@ -601,8 +601,7 @@ struct HfElectronSelectionWithTpcEmcal {
             registry.fill(HIST("hEtaeEmbTrkPt"), particleMc.pt());
           }
         }
-        std::cout << " collision id" << mcCollision.globalIndex() << " coll id " << particleMc.mcCollisionId() << std::endl;
-        HfGenElectronSel(mcCollision.globalIndex(), particleMc.globalIndex(), particleMc.eta(), particleMc.phi(), particleMc.pt(), isNonHfe);
+        hfGenElectronSel(mcCollision.globalIndex(), particleMc.globalIndex(), particleMc.eta(), particleMc.phi(), particleMc.pt(), isNonHfe);
       }
     }
   }
