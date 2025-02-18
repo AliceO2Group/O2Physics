@@ -507,7 +507,7 @@ struct TreeCreatorElectronMLDDA {
   Partition<MyTracks> negTracks = o2::aod::track::signed1Pt < 0.f && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
   std::vector<uint64_t> stored_trackIds;
 
-  void processPID(filteredMyCollisions const& collisions, aod::BCsWithTimestamps const&, filteredV0s const& v0s, aod::CascDatas const& cascades, MyTracks const& tracks)
+  void processPID(filteredMyCollisions const& collisions, aod::BCsWithTimestamps const&, filteredV0s const& v0s, filteredCascades const& cascades, MyTracks const& tracks)
   {
     stored_trackIds.reserve(tracks.size());
     for (auto& collision : collisions) {

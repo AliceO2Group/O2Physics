@@ -377,16 +377,20 @@ struct JetSubstructureHFOutputTask {
   void processClearMaps(aod::JetCollisions const&)
   {
     candidateMapping.clear();
-    candidateCollisionMapping.clear();
-    candidateMappingMCP.clear();
     jetMappingData.clear();
     jetMappingDataSub.clear();
     jetMappingMCD.clear();
-    jetMappingMCP.clear();
     candidateCollisionMapping.clear();
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processClearMaps, "process function that clears all the non-mcp maps in each dataframe", true);
+
+  void processClearMapsMCP(aod::JetMcCollisions const&)
+  {
+    candidateMappingMCP.clear();
+    jetMappingMCP.clear();
     candidateMcCollisionMapping.clear();
   }
-  PROCESS_SWITCH(JetSubstructureHFOutputTask, processClearMaps, "process function that clears all the maps in each dataframe", true);
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processClearMapsMCP, "process function that clears all the mcp maps in each dataframe", true);
 
   void processOutputCollisionsData(aod::JetCollisions const& collisions,
                                    JetTableData const& jets,

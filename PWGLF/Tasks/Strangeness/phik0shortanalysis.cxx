@@ -77,6 +77,32 @@ struct Phik0shortanalysis {
   // Configurable on multiplicity bins
   Configurable<std::vector<double>> binsMult{"binsMult", {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "Multiplicity bin limits"};
 
+  // Configurables for track selection (not necessarily common for trigger and the two associated particles)
+  struct : ConfigurableGroup {
+    Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "Cut on charge"};
+    Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};
+    Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
+    Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
+    Configurable<float> cMinKaonPtcut{"cMinKaonPtcut", 0.15f, "Track minimum pt cut"};
+    Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0f, "Track DCAz cut to PV Maximum"};
+    Configurable<float> cMaxDCArToPV1{"cMaxDCArToPV1", 0.004f, "Track DCAr cut to PV config 1"};
+    Configurable<float> cMaxDCArToPV2{"cMaxDCArToPV2", 0.013f, "Track DCAr cut to PV config 2"};
+    Configurable<float> cMaxDCArToPV3{"cMaxDCArToPV3", 1.0f, "Track DCAr cut to PV config 3"};
+    Configurable<float> etaMax{"etaMax", 0.8f, "eta max"};
+
+    Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
+    Configurable<float> nSigmaCutTPCKa{"nSigmaCutTPCKa", 3.0, "Value of the TPC Nsigma cut for Kaons"};
+    Configurable<float> nSigmaCutCombinedKa{"nSigmaCutCombinedKa", 3.0, "Value of the TOF Nsigma cut for Kaons"};
+
+    Configurable<float> nSigmaCutTPCPion{"nSigmaCutTPCPion", 4.0, "Value of the TPC Nsigma cut for Pions"};
+    Configurable<float> cMinPionPtcut{"cMinPionPtcut", 0.3f, "Track minimum pt cut"};
+    Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
+    Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80, "min number of TPC crossed rows"};
+    Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
+    Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
+    Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
+  } trackConfigs;
+
   // Configurables on phi pT bins
   Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi"};
 
@@ -85,40 +111,21 @@ struct Phik0shortanalysis {
   Configurable<float> lowMPhi{"lowMPhi", 1.0095, "Upper limits on Phi mass for signal extraction"};
   Configurable<float> upMPhi{"upMPhi", 1.029, "Upper limits on Phi mass for signal extraction"};
 
-  // Configurables for Phi selection
-  Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "Cut on charge"};
-  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};
-  Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
-  Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
-  Configurable<float> cMinKaonPtcut{"cMinKaonPtcut", 0.15f, "Track minimum pt cut"};
-  Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0f, "Track DCAz cut to PV Maximum"};
-  Configurable<float> cMaxDCArToPV1{"cMaxDCArToPV1", 0.004f, "Track DCAr cut to PV config 1"};
-  Configurable<float> cMaxDCArToPV2{"cMaxDCArToPV2", 0.013f, "Track DCAr cut to PV config 2"};
-  Configurable<float> cMaxDCArToPV3{"cMaxDCArToPV3", 1.0f, "Track DCAr cut to PV config 3"};
-
-  Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
-  Configurable<float> nSigmaCutTPCKa{"nSigmaCutTPCKa", 3.0, "Value of the TPC Nsigma cut for Kaons"};
-  Configurable<float> nSigmaCutCombinedKa{"nSigmaCutCombinedKa", 3.0, "Value of the TOF Nsigma cut for Kaons"};
-
   // Configurables for V0 selection
-  Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
-  Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80, "min number of TPC crossed rows"};
-  Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
-  Configurable<float> etaMax{"etaMax", 0.8f, "eta max"};
+  struct : ConfigurableGroup {
+    Configurable<float> v0SettingCosPA{"v0SettingCosPA", 0.98, "V0 CosPA"};
+    Configurable<float> v0SettingRadius{"v0SettingRadius", 0.5, "v0radius"};
+    Configurable<float> v0SettingDCAV0Dau{"v0SettingDCAV0Dau", 1, "DCA V0 Daughters"};
+    Configurable<float> v0SettingDCAPosToPV{"v0SettingDCAPosToPV", 0.06, "DCA Pos To PV"};
+    Configurable<float> v0SettingDCANegToPV{"v0SettingDCANegToPV", 0.06, "DCA Neg To PV"};
 
-  Configurable<float> v0SettingCosPA{"v0SettingCosPA", 0.98, "V0 CosPA"};
-  Configurable<float> v0SettingRadius{"v0SettingRadius", 0.5, "v0radius"};
-  Configurable<float> v0SettingDCAV0Dau{"v0SettingDCAV0Dau", 1, "DCA V0 Daughters"};
-  Configurable<float> v0SettingDCAPosToPV{"v0SettingDCAPosToPV", 0.06, "DCA Pos To PV"};
-  Configurable<float> v0SettingDCANegToPV{"v0SettingDCANegToPV", 0.06, "DCA Neg To PV"};
+    Configurable<bool> cfgisV0ForData{"cfgisV0ForData", true, "isV0ForData"};
 
-  Configurable<bool> cfgisV0ForData{"cfgisV0ForData", true, "isV0ForData"};
-  Configurable<float> nSigmaCutTPCPion{"nSigmaCutTPCPion", 4.0, "Value of the TPC Nsigma cut for Pions"};
-
-  Configurable<bool> cfgFurtherV0Selection{"cfgFurtherV0Selection", false, "Further V0 selection"};
-  Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0s(cm)"};
-  Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
-  Configurable<float> v0rejK0s{"v0rejK0s", 0.005, "V0 rej K0s"};
+    Configurable<bool> cfgFurtherV0Selection{"cfgFurtherV0Selection", false, "Further V0 selection"};
+    Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0s(cm)"};
+    Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
+    Configurable<float> v0rejK0s{"v0rejK0s", 0.005, "V0 rej K0s"};
+  } v0Configs;
 
   // Configurables on K0S mass
   Configurable<float> lowMK0S{"lowMK0S", 0.48, "Lower limit on K0Short mass"};
@@ -126,12 +133,6 @@ struct Phik0shortanalysis {
 
   // Configurable on K0S pT bins
   Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
-
-  // Configurables for pions selection(extra with respect to a few of those defined for V0)
-  Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
-  Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
-  Configurable<float> dcaxyMax{"dcaxyMax", 0.1f, "Maximum DCAxy to primary vertex"};
-  Configurable<float> dcazMax{"dcazMax", 0.1f, "Maximum DCAz to primary vertex"};
 
   // Configurable on pion pT bins
   Configurable<std::vector<double>> binspTPi{"binspTPi", {0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
@@ -163,7 +164,7 @@ struct Phik0shortanalysis {
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutZVertex);
 
   // Defining filters on V0s (cannot filter on dynamic columns)
-  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0SettingDCAPosToPV && nabs(aod::v0data::dcanegtopv) > v0SettingDCANegToPV && aod::v0data::dcaV0daughters < v0SettingDCAV0Dau);
+  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0Configs.v0SettingDCAPosToPV && nabs(aod::v0data::dcanegtopv) > v0Configs.v0SettingDCANegToPV && aod::v0data::dcaV0daughters < v0Configs.v0SettingDCAV0Dau);
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
@@ -186,11 +187,11 @@ struct Phik0shortanalysis {
 
   SliceCache cache;
 
-  Partition<FullTracks> posTracks = aod::track::signed1Pt > cfgCutCharge;
-  Partition<FullTracks> negTracks = aod::track::signed1Pt < cfgCutCharge;
+  Partition<FullTracks> posTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
+  Partition<FullTracks> negTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
 
-  Partition<FullMCTracks> posMCTracks = aod::track::signed1Pt > cfgCutCharge;
-  Partition<FullMCTracks> negMCTracks = aod::track::signed1Pt < cfgCutCharge;
+  Partition<FullMCTracks> posMCTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
+  Partition<FullMCTracks> negMCTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
 
   // Necessary to flag INEL>0 events in GenMC
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -483,14 +484,14 @@ struct Phik0shortanalysis {
   {
     if (!track.hasTPC())
       return false;
-    if (track.tpcNClsFound() < minTPCnClsFound)
+    if (track.tpcNClsFound() < trackConfigs.minTPCnClsFound)
       return false;
-    if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+    if (track.tpcNClsCrossedRows() < trackConfigs.minNCrossedRowsTPC)
       return false;
-    if (track.tpcChi2NCl() > maxChi2TPC)
+    if (track.tpcChi2NCl() > trackConfigs.maxChi2TPC)
       return false;
 
-    if (std::abs(track.eta()) > etaMax)
+    if (std::abs(track.eta()) > trackConfigs.etaMax)
       return false;
     return true;
   }
@@ -502,15 +503,15 @@ struct Phik0shortanalysis {
     if (!selectionTrackStrangeness(daughter1) || !selectionTrackStrangeness(daughter2))
       return false;
 
-    if (v0.v0cosPA() < v0SettingCosPA)
+    if (v0.v0cosPA() < v0Configs.v0SettingCosPA)
       return false;
-    if (v0.v0radius() < v0SettingRadius)
+    if (v0.v0radius() < v0Configs.v0SettingRadius)
       return false;
 
-    if (cfgisV0ForData) {
-      if (std::abs(daughter1.tpcNSigmaPi()) > nSigmaCutTPCPion)
+    if (v0Configs.cfgisV0ForData) {
+      if (std::abs(daughter1.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCPion)
         return false;
-      if (std::abs(daughter2.tpcNSigmaPi()) > nSigmaCutTPCPion)
+      if (std::abs(daughter2.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCPion)
         return false;
     }
     return true;
@@ -520,11 +521,11 @@ struct Phik0shortanalysis {
   template <typename T1, typename T2>
   bool furtherSelectionV0(const T1& v0, const T2& collision)
   {
-    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massK0S > ctauK0s)
+    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massK0S > v0Configs.ctauK0s)
       return false;
-    if (v0.qtarm() < (paramArmenterosCut * std::abs(v0.alpha())))
+    if (v0.qtarm() < (v0Configs.paramArmenterosCut * std::abs(v0.alpha())))
       return false;
-    if (std::abs(v0.mLambda() - massLambda) < v0rejK0s)
+    if (std::abs(v0.mLambda() - massLambda) < v0Configs.v0rejK0s)
       return false;
     return true;
   }
@@ -533,19 +534,19 @@ struct Phik0shortanalysis {
   template <bool isMC, typename T>
   bool selectionTrackResonance(const T& track, bool isQA)
   {
-    if (cfgPrimaryTrack && !track.isPrimaryTrack())
+    if (trackConfigs.cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
-    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
+    if (trackConfigs.cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
       return false;
-    if (cfgPVContributor && !track.isPVContributor())
-      return false;
-
-    if (track.tpcNClsFound() < minTPCnClsFound)
+    if (trackConfigs.cfgPVContributor && !track.isPVContributor())
       return false;
 
-    if (track.pt() < cMinKaonPtcut)
+    if (track.tpcNClsFound() < trackConfigs.minTPCnClsFound)
       return false;
-    if (std::abs(track.eta()) > etaMax)
+
+    if (track.pt() < trackConfigs.cMinKaonPtcut)
+      return false;
+    if (std::abs(track.eta()) > trackConfigs.etaMax)
       return false;
 
     if (isQA) {
@@ -557,7 +558,7 @@ struct Phik0shortanalysis {
         mcPhiHist.fill(HIST("h2DauTracksPhiDCAzPreCutMCReco"), track.pt(), track.dcaZ());
       }
     }
-    if (std::abs(track.dcaXY()) > cMaxDCArToPV1 + (cMaxDCArToPV2 / std::pow(track.pt(), cMaxDCArToPV3)))
+    if (std::abs(track.dcaXY()) > trackConfigs.cMaxDCArToPV1 + (trackConfigs.cMaxDCArToPV2 / std::pow(track.pt(), trackConfigs.cMaxDCArToPV3)))
       return false;
     if (isQA) {
       if constexpr (!isMC) {
@@ -568,7 +569,7 @@ struct Phik0shortanalysis {
         mcPhiHist.fill(HIST("h2DauTracksPhiDCAzPostCutMCReco"), track.pt(), track.dcaZ());
       }
     }
-    if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
+    if (std::abs(track.dcaZ()) > trackConfigs.cMaxDCAzToPVcut)
       return false;
     return true;
   }
@@ -577,11 +578,11 @@ struct Phik0shortanalysis {
   template <typename T>
   bool selectionPIDKaon(const T& track)
   {
-    if (!isNoTOF && track.hasTOF() && (track.tofNSigmaKa() * track.tofNSigmaKa() + track.tpcNSigmaKa() * track.tpcNSigmaKa()) < (nSigmaCutCombinedKa * nSigmaCutCombinedKa))
+    if (!trackConfigs.isNoTOF && track.hasTOF() && (std::pow(track.tofNSigmaKa(), 2) + std::pow(track.tpcNSigmaKa(), 2)) < std::pow(trackConfigs.nSigmaCutCombinedKa, 2))
       return true;
-    if (!isNoTOF && !track.hasTOF() && std::abs(track.tpcNSigmaKa()) < nSigmaCutTPCKa)
+    if (!trackConfigs.isNoTOF && !track.hasTOF() && std::abs(track.tpcNSigmaKa()) < trackConfigs.nSigmaCutTPCKa)
       return true;
-    if (isNoTOF && std::abs(track.tpcNSigmaKa()) < nSigmaCutTPCKa)
+    if (trackConfigs.isNoTOF && std::abs(track.tpcNSigmaKa()) < trackConfigs.nSigmaCutTPCKa)
       return true;
     return false;
   }
@@ -589,9 +590,9 @@ struct Phik0shortanalysis {
   template <typename T>
   bool selectionPIDKaonpTdependent(const T& track)
   {
-    if (track.pt() < 0.5 && std::abs(track.tpcNSigmaKa()) < nSigmaCutTPCKa)
+    if (track.pt() < 0.5 && std::abs(track.tpcNSigmaKa()) < trackConfigs.nSigmaCutTPCKa)
       return true;
-    if (track.pt() >= 0.5 && track.hasTOF() && ((track.tofNSigmaKa() * track.tofNSigmaKa()) + (track.tpcNSigmaKa() * track.tpcNSigmaKa())) < (nSigmaCutCombinedKa * nSigmaCutCombinedKa))
+    if (track.pt() >= 0.5 && track.hasTOF() && (std::pow(track.tofNSigmaKa(), 2) + std::pow(track.tpcNSigmaKa(), 2)) < std::pow(trackConfigs.nSigmaCutCombinedKa, 2))
       return true;
     return false;
   }
@@ -615,23 +616,23 @@ struct Phik0shortanalysis {
   {
     if (!track.hasITS())
       return false;
-    if (track.itsNCls() < minITSnCls)
+    if (track.itsNCls() < trackConfigs.minITSnCls)
       return false;
-    if (track.itsChi2NCl() > maxChi2ITS)
+    if (track.itsChi2NCl() > trackConfigs.maxChi2ITS)
       return false;
 
     if (!track.hasTPC())
       return false;
-    if (track.tpcNClsFound() < minTPCnClsFound)
+    if (track.tpcNClsFound() < trackConfigs.minTPCnClsFound)
       return false;
-    if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+    if (track.tpcNClsCrossedRows() < trackConfigs.minNCrossedRowsTPC)
       return false;
-    if (track.tpcChi2NCl() > maxChi2TPC)
+    if (track.tpcChi2NCl() > trackConfigs.maxChi2TPC)
       return false;
 
-    if (track.pt() < 0.3)
+    if (track.pt() < trackConfigs.cMinPionPtcut)
       return false;
-    if (std::abs(track.eta()) > etaMax)
+    if (std::abs(track.eta()) > trackConfigs.etaMax)
       return false;
 
     if constexpr (isTOFChecked) {
@@ -648,7 +649,7 @@ struct Phik0shortanalysis {
         mcPionHist.fill(HIST("h2TracksPiDCAzPreCutMCReco"), track.pt(), track.dcaZ());
       }
     }
-    if (std::abs(track.dcaXY()) > cMaxDCArToPV1 + (cMaxDCArToPV2 / std::pow(track.pt(), cMaxDCArToPV3)))
+    if (std::abs(track.dcaXY()) > trackConfigs.cMaxDCArToPV1 + (trackConfigs.cMaxDCArToPV2 / std::pow(track.pt(), trackConfigs.cMaxDCArToPV3)))
       return false;
     if (isQA) {
       if constexpr (!isMC) {
@@ -659,7 +660,7 @@ struct Phik0shortanalysis {
         mcPionHist.fill(HIST("h2TracksPiDCAzPostCutMCReco"), track.pt(), track.dcaZ());
       }
     }
-    if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
+    if (std::abs(track.dcaZ()) > trackConfigs.cMaxDCAzToPVcut)
       return false;
     return true;
   }
@@ -762,7 +763,7 @@ struct Phik0shortanalysis {
           isCountedPhi = true;
         }
 
-        dataPhiHist.fill(HIST("h3PhipurInvMass"), multiplicity, recPhi.M());
+        dataPhiHist.fill(HIST("h3PhipurInvMass"), multiplicity, recPhi.Pt(), recPhi.M());
 
         std::array<bool, 3> isCountedK0S{false, false, false};
 
@@ -774,7 +775,7 @@ struct Phik0shortanalysis {
           // Cut on V0 dynamic columns
           if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
             continue;
-          if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+          if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
             continue;
 
           if (!isFilledhV0) {
@@ -791,19 +792,19 @@ struct Phik0shortanalysis {
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
             continue;
           if (!isCountedK0S.at(0)) {
-            dataPhiHist.fill(HIST("h3PhipurK0SInvMassInc"), multiplicity, v0.pt(), recPhi.M());
+            dataPhiHist.fill(HIST("h3PhipurK0SInvMassInc"), multiplicity, recPhi.Pt(), recPhi.M());
             isCountedK0S.at(0) = true;
           }
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedK0S.at(1)) {
-            dataPhiHist.fill(HIST("h3PhipurK0SInvMassFCut"), multiplicity, v0.pt(), recPhi.M());
+            dataPhiHist.fill(HIST("h3PhipurK0SInvMassFCut"), multiplicity, recPhi.Pt(), recPhi.M());
             isCountedK0S.at(1) = true;
           }
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedK0S.at(2)) {
-            dataPhiHist.fill(HIST("h3PhipurK0SInvMassSCut"), multiplicity, v0.pt(), recPhi.M());
+            dataPhiHist.fill(HIST("h3PhipurK0SInvMassSCut"), multiplicity, recPhi.Pt(), recPhi.M());
             isCountedK0S.at(2) = true;
           }
         }
@@ -820,19 +821,19 @@ struct Phik0shortanalysis {
           if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
             continue;
           if (!isCountedPi.at(0)) {
-            dataPhiHist.fill(HIST("h3PhipurPiInvMassInc"), multiplicity, track.pt(), recPhi.M());
+            dataPhiHist.fill(HIST("h3PhipurPiInvMassInc"), multiplicity, recPhi.Pt(), recPhi.M());
             isCountedPi.at(0) = true;
           }
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedPi.at(1)) {
-            dataPhiHist.fill(HIST("h3PhipurPiInvMassFCut"), multiplicity, track.pt(), recPhi.M());
+            dataPhiHist.fill(HIST("h3PhipurPiInvMassFCut"), multiplicity, recPhi.Pt(), recPhi.M());
             isCountedPi.at(1) = true;
           }
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedPi.at(2)) {
-            dataPhiHist.fill(HIST("h3PhipurPiInvMassSCut"), multiplicity, track.pt(), recPhi.M());
+            dataPhiHist.fill(HIST("h3PhipurPiInvMassSCut"), multiplicity, recPhi.Pt(), recPhi.M());
             isCountedPi.at(2) = true;
           }
         }
@@ -862,7 +863,7 @@ struct Phik0shortanalysis {
       // Cut on V0 dynamic columns
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
         continue;
-      if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+      if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
         continue;
 
       dataK0SHist.fill(HIST("h3K0SRapidityData"), multiplicity, v0.pt(), v0.yK0Short());
@@ -1088,7 +1089,7 @@ struct Phik0shortanalysis {
           // Cut on V0 dynamic columns
           if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
             continue;
-          if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+          if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
             continue;
 
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
@@ -1182,7 +1183,7 @@ struct Phik0shortanalysis {
 
         if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
           continue;
-        if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+        if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
           continue;
 
         mcK0SHist.fill(HIST("h4K0SRapiditySmearing"), genmultiplicity, v0.pt(), v0.yK0Short(), v0mcparticle.y());
@@ -1368,7 +1369,7 @@ struct Phik0shortanalysis {
           isCountedPhi = true;
         }
 
-        closureMCPhiHist.fill(HIST("h3MCPhipurInvMass"), genmultiplicity, recPhi.M());
+        closureMCPhiHist.fill(HIST("h3MCPhipurInvMass"), genmultiplicity, recPhi.Pt(), recPhi.M());
 
         std::array<bool, 3> isCountedK0S{false, false, false};
 
@@ -1387,26 +1388,26 @@ struct Phik0shortanalysis {
 
           if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
             continue;
-          if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+          if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
             continue;
 
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
             continue;
 
           if (!isCountedK0S.at(0)) {
-            closureMCPhiHist.fill(HIST("h3MCPhipurK0SInvMassInc"), genmultiplicity, v0.pt(), recPhi.M());
+            closureMCPhiHist.fill(HIST("h3MCPhipurK0SInvMassInc"), genmultiplicity, recPhi.Pt(), recPhi.M());
             isCountedK0S.at(0) = true;
           }
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedK0S.at(1)) {
-            closureMCPhiHist.fill(HIST("h3MCPhipurK0SInvMassFCut"), genmultiplicity, v0.pt(), recPhi.M());
+            closureMCPhiHist.fill(HIST("h3MCPhipurK0SInvMassFCut"), genmultiplicity, recPhi.Pt(), recPhi.M());
             isCountedK0S.at(1) = true;
           }
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedK0S.at(2)) {
-            closureMCPhiHist.fill(HIST("h3MCPhipurK0SInvMassSCut"), genmultiplicity, v0.pt(), recPhi.M());
+            closureMCPhiHist.fill(HIST("h3MCPhipurK0SInvMassSCut"), genmultiplicity, recPhi.Pt(), recPhi.M());
             isCountedK0S.at(2) = true;
           }
         }
@@ -1430,19 +1431,19 @@ struct Phik0shortanalysis {
             continue;
 
           if (!isCountedPi.at(0)) {
-            closureMCPhiHist.fill(HIST("h3MCPhipurPiInvMassInc"), genmultiplicity, track.pt(), recPhi.M());
+            closureMCPhiHist.fill(HIST("h3MCPhipurPiInvMassInc"), genmultiplicity, recPhi.Pt(), recPhi.M());
             isCountedPi.at(0) = true;
           }
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedPi.at(1)) {
-            closureMCPhiHist.fill(HIST("h3MCPhipurPiInvMassFCut"), genmultiplicity, track.pt(), recPhi.M());
+            closureMCPhiHist.fill(HIST("h3MCPhipurPiInvMassFCut"), genmultiplicity, recPhi.Pt(), recPhi.M());
             isCountedPi.at(1) = true;
           }
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedPi.at(2)) {
-            closureMCPhiHist.fill(HIST("h3MCPhipurPiInvMassSCut"), genmultiplicity, track.pt(), recPhi.M());
+            closureMCPhiHist.fill(HIST("h3MCPhipurPiInvMassSCut"), genmultiplicity, recPhi.Pt(), recPhi.M());
             isCountedPi.at(2) = true;
           }
         }
@@ -1482,7 +1483,7 @@ struct Phik0shortanalysis {
 
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
         continue;
-      if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+      if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
         continue;
 
       if (std::abs(v0.yK0Short()) > cfgYAcceptance)

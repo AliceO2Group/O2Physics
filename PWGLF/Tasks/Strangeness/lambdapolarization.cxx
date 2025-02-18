@@ -42,6 +42,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/PIDResponseITS.h"
 
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
@@ -57,6 +58,7 @@
 #include "CCDB/BasicCCDBManager.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
 
 using namespace o2;
 using namespace o2::framework;
@@ -167,6 +169,18 @@ struct lambdapolarization {
   TProfile2D* EffMap = nullptr;
 
   std::string fullCCDBShiftCorrPath;
+
+  double GetPhiInRange(double phi)
+  {
+    double result = phi;
+    while (result < 0) {
+      result = result + 2. * TMath::Pi() / 2;
+    }
+    while (result > 2. * TMath::Pi() / 2) {
+      result = result - 2. * TMath::Pi() / 2;
+    }
+    return result;
+  }
 
   template <typename T>
   int GetDetId(const T& name)
@@ -299,6 +313,16 @@ struct lambdapolarization {
         histos.add(Form("psi%d/QA/EPRes_FT0C_FV0A_shifted", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
         histos.add(Form("psi%d/QA/EPRes_FT0A_FV0A_shifted", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
       }
+    }
+
+    if (doprocessMC_ITSTPC) {
+      histos.add("hImpactParameter", "Impact parameter", kTH1F, {{200, 0.0f, 20.0f}});
+      histos.add("hEventPlaneAngle", "hEventPlaneAngle", kTH1F, {{200, -2.0f * TMath::Pi(), 2.0f * TMath::Pi()}});
+      histos.add("hEventPlaneAngleRec", "hEventPlaneAngleRec", kTH1F, {{200, -2.0f * TMath::Pi(), 2.0f * TMath::Pi()}});
+      histos.add("hNchVsImpactParameter", "hNchVsImpactParameter", kTH2F, {{200, 0.0f, 20.0f}, {500, -0.5f, 5000.5f}});
+      histos.add("hSparseMCGenWeight", "hSparseMCGenWeight", HistType::kTHnSparseF, {centAxis, {36, 0.0f, TMath::Pi()}, {50, 0.0f, 1}, ptAxis, {8, -0.8, 0.8}});
+      histos.add("hSparseMCRecWeight", "hSparseMCRecWeight", HistType::kTHnSparseF, {centAxis, {36, 0.0f, TMath::Pi()}, {50, 0.0f, 1}, ptAxis, {8, -0.8, 0.8}});
+      histos.add("hSparseMCRecAllTrackWeight", "hSparseMCRecAllTrackWeight", HistType::kTHnSparseF, {centAxis, {36, 0.0, TMath::Pi()}, {50, 0.0f, 1}, ptAxis, {8, -0.8, 0.8}});
     }
 
     if (cfgShiftCorrDef) {
@@ -855,6 +879,89 @@ struct lambdapolarization {
     } // FIXME: need to fill different histograms for different harmonic
   }
   PROCESS_SWITCH(lambdapolarization, processData, "Process Event for data", true);
+
+  using recoTracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
+  void processMC_ITSTPC(aod::McCollision const& mcCollision, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& mcParticles, recoTracks const&)
+  {
+    float imp = mcCollision.impactParameter();
+    float evPhi = mcCollision.eventPlaneAngle() / 2.0;
+    float centclass = -999;
+    if (imp >= 0 && imp < 3.49) {
+      centclass = 2.5;
+    }
+    if (imp >= 3.49 && imp < 4.93) {
+      centclass = 7.5;
+    }
+    if (imp >= 4.93 && imp < 6.98) {
+      centclass = 15.0;
+    }
+    if (imp >= 6.98 && imp < 8.55) {
+      centclass = 25.0;
+    }
+    if (imp >= 8.55 && imp < 9.87) {
+      centclass = 35.0;
+    }
+    if (imp >= 9.87 && imp < 11) {
+      centclass = 45.0;
+    }
+    if (imp >= 11 && imp < 12.1) {
+      centclass = 55.0;
+    }
+    if (imp >= 12.1 && imp < 13.1) {
+      centclass = 65.0;
+    }
+    if (imp >= 13.1 && imp < 14) {
+      centclass = 75.0;
+    }
+    // if (evPhi < 0)
+    //   evPhi += 2. * TMath::Pi();
+
+    int nCh = 0;
+
+    if (centclass > 0 && centclass < 80) {
+      // event within range
+      histos.fill(HIST("hImpactParameter"), imp);
+      histos.fill(HIST("hEventPlaneAngle"), evPhi);
+      for (auto const& mcParticle : mcParticles) {
+
+        float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
+        // focus on bulk: e, mu, pi, k, p
+        int pdgCode = TMath::Abs(mcParticle.pdgCode());
+        if (pdgCode != 3122)
+          continue;
+        if (!mcParticle.isPhysicalPrimary())
+          continue;
+        if (TMath::Abs(mcParticle.eta()) > 0.8) // main acceptance
+          continue;
+        histos.fill(HIST("hSparseMCGenWeight"), centclass, GetPhiInRange(deltaPhi), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), 2.0), mcParticle.pt(), mcParticle.eta());
+        nCh++;
+        bool validGlobal = false;
+        bool validAny = false;
+        if (mcParticle.has_tracks()) {
+          auto const& tracks = mcParticle.tracks_as<recoTracks>();
+          for (auto const& track : tracks) {
+            if (track.hasTPC() && track.hasITS()) {
+              validGlobal = true;
+            }
+            if (track.hasTPC() || track.hasITS()) {
+              validAny = true;
+            }
+          }
+        }
+        // if valid global, fill
+        if (validGlobal) {
+          histos.fill(HIST("hSparseMCRecWeight"), centclass, GetPhiInRange(deltaPhi), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), 2.0), mcParticle.pt(), mcParticle.eta());
+        }
+        if (validAny) {
+          histos.fill(HIST("hSparseMCRecAllTrackWeight"), centclass, GetPhiInRange(deltaPhi), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), 2.0), mcParticle.pt(), mcParticle.eta());
+          histos.fill(HIST("hEventPlaneAngleRec"), GetPhiInRange(deltaPhi));
+        }
+        // if any track present, fill
+      }
+    }
+    histos.fill(HIST("hNchVsImpactParameter"), imp, nCh);
+  }
+  PROCESS_SWITCH(lambdapolarization, processMC_ITSTPC, "Process MC for ITSTPC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -15,6 +15,9 @@
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include <string>
+#include <vector>
+
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -97,7 +100,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   {
     helper.setPtLimitsDstarSoftPion(minPtSoftPion, maxPtSoftPion);
     helper.setPtBinsSingleTracks(pTBinsTrack);
-    helper.setCutsSingleTrackBeauty(cutsTrackBeauty3Prong, cutsTrackBeauty3Prong);
+    helper.setCutsSingleTrackBeauty(cutsTrackBeauty3Prong, cutsTrackBeauty3Prong, cutsTrackBeauty3Prong);
     helper.setMassResolParametrisation(paramCharmMassShape);
     helper.setNumSigmaForDeltaMassCharmHadCut(numSigmaDeltaMassCharmHad);
 
@@ -221,7 +224,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParThird, 2.f, noMatCorr, &dcaThird);
             getPxPyPz(trackParThird, pVecThird);
           }
-          auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(track, trackParThird, dcaThird, kBeauty3P);
+          auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty<kBeauty3P>(track, trackParThird, dcaThird);
           if (TESTBIT(isTrackSelected, kSoftPion)) {
             std::array<float, 2> massDausD0{massPi, massKa};
             auto invMassD0dau = invMassD0;

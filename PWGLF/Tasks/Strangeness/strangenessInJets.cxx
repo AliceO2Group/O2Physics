@@ -51,7 +51,9 @@ using std::array;
 
 using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::McCollisionLabels>;
-using StrHadronDaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+using StrHadronDaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA,
+                                          aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                          aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 using MCTracks = soa::Join<StrHadronDaughterTracks, aod::McTrackLabels>;
 
 struct StrangenessInJets {
@@ -61,7 +63,7 @@ struct StrangenessInJets {
   HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Global Parameters
-  Configurable<int> particleOfInterest{"particleOfInterest", 0, "0=v0, 1=cascade, 2=pions"};
+  Configurable<int> particleOfInterest{"particleOfInterest", 0, "0=v0, 1=cascade, 2=pions, 3=k+-, 4=proton"};
   Configurable<double> minimumJetPt{"minimumJetPt", 10.0, "Minimum pt of the jet"};
   Configurable<double> rJet{"rJet", 0.3, "Jet resolution parameter R"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
@@ -163,7 +165,9 @@ struct StrangenessInJets {
   // List of Particles
   enum Option { KZeroLambda,
                 CascadePart,
-                ChargedPions };
+                ChargedPions,
+                ChargedKaon,
+                ProtonAntiproton };
 
   void init(InitContext const&)
   {
@@ -233,41 +237,75 @@ struct StrangenessInJets {
 
     // Histograms for pions (data)
     if (doprocessData || doprocessK0s) {
-      registryData.add("piplus_tpc_in_jet", "piplus_tpc_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
-      registryData.add("piplus_tof_in_jet", "piplus_tof_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
-      registryData.add("piplus_tpc_in_ue", "piplus_tpc_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
-      registryData.add("piplus_tof_in_ue", "piplus_tof_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
-      registryData.add("piminus_tpc_in_jet", "piminus_tpc_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
-      registryData.add("piminus_tof_in_jet", "piminus_tof_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
-      registryData.add("piminus_tpc_in_ue", "piminus_tpc_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
-      registryData.add("piminus_tof_in_ue", "piminus_tof_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
-
-      registryData.add("piplus_dcaxy_in_jet", "piplus_dcaxy_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
-      registryData.add("piplus_dcaxy_in_ue", "piplus_dcaxy_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
-      registryData.add("piminus_dcaxy_in_jet", "piminus_dcaxy_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
-      registryData.add("piminus_dcaxy_in_ue", "piminus_dcaxy_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
-
-      // Histograms for lambda (data)
-      registryData.add("Lambda_in_jet", "Lambda_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
-      registryData.add("AntiLambda_in_jet", "AntiLambda_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
-      registryData.add("Lambda_in_ue", "Lambda_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
-      registryData.add("AntiLambda_in_ue", "AntiLambda_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
-
-      // Histograms for K0s (data)
-      registryData.add("K0s_in_jet", "K0s_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassK0sAxis});
-      registryData.add("K0s_in_ue", "K0s_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassK0sAxis});
-
-      // Histograms for xi (data)
-      registryData.add("XiPos_in_jet", "XiPos_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
-      registryData.add("XiPos_in_ue", "XiPos_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
-      registryData.add("XiNeg_in_jet", "XiNeg_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
-      registryData.add("XiNeg_in_ue", "XiNeg_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
-
-      // Histograms for omega (data)
-      registryData.add("OmegaPos_in_jet", "OmegaPos_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
-      registryData.add("OmegaPos_in_ue", "OmegaPos_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
-      registryData.add("OmegaNeg_in_jet", "OmegaNeg_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
-      registryData.add("OmegaNeg_in_ue", "OmegaNeg_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
+      switch (particleOfInterest) {
+        case KZeroLambda:
+          // Histograms for lambda (data)
+          registryData.add("Lambda_in_jet", "Lambda_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
+          registryData.add("AntiLambda_in_jet", "AntiLambda_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
+          registryData.add("Lambda_in_ue", "Lambda_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
+          registryData.add("AntiLambda_in_ue", "AntiLambda_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
+          // Histograms for K0s (data)
+          registryData.add("K0s_in_jet", "K0s_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassK0sAxis});
+          registryData.add("K0s_in_ue", "K0s_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassK0sAxis});
+          break;
+        case CascadePart:
+          // Histograms for xi (data)
+          registryData.add("XiPos_in_jet", "XiPos_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
+          registryData.add("XiPos_in_ue", "XiPos_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
+          registryData.add("XiNeg_in_jet", "XiNeg_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
+          registryData.add("XiNeg_in_ue", "XiNeg_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
+          // Histograms for omega (data)
+          registryData.add("OmegaPos_in_jet", "OmegaPos_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
+          registryData.add("OmegaPos_in_ue", "OmegaPos_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
+          registryData.add("OmegaNeg_in_jet", "OmegaNeg_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
+          registryData.add("OmegaNeg_in_ue", "OmegaNeg_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
+          break;
+        case ChargedPions:
+          registryData.add("piplus_tpc_in_jet", "piplus_tpc_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
+          registryData.add("piplus_tof_in_jet", "piplus_tof_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
+          registryData.add("piplus_tpc_in_ue", "piplus_tpc_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
+          registryData.add("piplus_tof_in_ue", "piplus_tof_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
+          registryData.add("piminus_tpc_in_jet", "piminus_tpc_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
+          registryData.add("piminus_tof_in_jet", "piminus_tof_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
+          registryData.add("piminus_tpc_in_ue", "piminus_tpc_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
+          registryData.add("piminus_tof_in_ue", "piminus_tof_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
+          registryData.add("piplus_dcaxy_in_jet", "piplus_dcaxy_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+          registryData.add("piplus_dcaxy_in_ue", "piplus_dcaxy_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+          registryData.add("piminus_dcaxy_in_jet", "piminus_dcaxy_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+          registryData.add("piminus_dcaxy_in_ue", "piminus_dcaxy_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+          break;
+        case ChargedKaon: // Here we keep the name but just change the title to avoid rewriting everything
+          registryData.add("piplus_tpc_in_jet", "kaplus_tpc_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
+          registryData.add("piplus_tof_in_jet", "kaplus_tof_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
+          registryData.add("piplus_tpc_in_ue", "kaplus_tpc_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
+          registryData.add("piplus_tof_in_ue", "kaplus_tof_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
+          registryData.add("piminus_tpc_in_jet", "kaminus_tpc_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
+          registryData.add("piminus_tof_in_jet", "kaminus_tof_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
+          registryData.add("piminus_tpc_in_ue", "kaminus_tpc_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
+          registryData.add("piminus_tof_in_ue", "kaminus_tof_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
+          registryData.add("piplus_dcaxy_in_jet", "kaplus_dcaxy_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+          registryData.add("piplus_dcaxy_in_ue", "kaplus_dcaxy_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+          registryData.add("piminus_dcaxy_in_jet", "kaminus_dcaxy_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+          registryData.add("piminus_dcaxy_in_ue", "kaminus_dcaxy_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+          break;
+        case ProtonAntiproton: // Here we keep the name but just change the title to avoid rewriting everything
+          registryData.add("piplus_tpc_in_jet", "prplus_tpc_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
+          registryData.add("piplus_tof_in_jet", "prplus_tof_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
+          registryData.add("piplus_tpc_in_ue", "prplus_tpc_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
+          registryData.add("piplus_tof_in_ue", "prplus_tof_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
+          registryData.add("piminus_tpc_in_jet", "prminus_tpc_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
+          registryData.add("piminus_tof_in_jet", "prminus_tof_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
+          registryData.add("piminus_tpc_in_ue", "prminus_tpc_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTPCAxis});
+          registryData.add("piminus_tof_in_ue", "prminus_tof_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, nsigmaTOFAxis});
+          registryData.add("piplus_dcaxy_in_jet", "prplus_dcaxy_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+          registryData.add("piplus_dcaxy_in_ue", "prplus_dcaxy_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+          registryData.add("piminus_dcaxy_in_jet", "prminus_dcaxy_in_jet", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+          registryData.add("piminus_dcaxy_in_ue", "prminus_dcaxy_in_ue", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+          break;
+        default:
+          LOG(fatal) << "Cannot interpret particle " << particleOfInterest;
+          break;
+      }
     }
 
     // Histograms for efficiency (generated)
@@ -307,13 +345,17 @@ struct StrangenessInJets {
       registryMC.add("Secondary_AntiLambda_InUe", "Secondary_AntiLambda_InUe", HistType::kTH1F, {ptAxis});
 
       // Histograms for 2d reweighting (pion)
-      registryMC.add("pi_plus_eta_pt_jet", "pi_plus_eta_pt_jet", HistType::kTH2F, {ptAxisPi, etaAxis});
-      registryMC.add("pi_plus_eta_pt_ue", "pi_plus_eta_pt_ue", HistType::kTH2F, {ptAxisPi, etaAxis});
-      registryMC.add("pi_plus_eta_pt_pythia", "pi_plus_eta_pt_pythia", HistType::kTH2F, {ptAxisPi, etaAxis});
+      registryMC.add("mc_pi_plus_eta_pt/jet", "", HistType::kTH2F, {ptAxisPi, etaAxis});
+      registryMC.addClone("mc_pi_plus_eta_pt/jet", "mc_pi_plus_eta_pt/ue");
+      registryMC.addClone("mc_pi_plus_eta_pt/jet", "mc_pi_plus_eta_pt/pythia");
 
-      registryMC.add("pi_minus_eta_pt_jet", "pi_minus_eta_pt_jet", HistType::kTH2F, {ptAxisPi, etaAxis});
-      registryMC.add("pi_minus_eta_pt_ue", "pi_minus_eta_pt_ue", HistType::kTH2F, {ptAxisPi, etaAxis});
-      registryMC.add("pi_minus_eta_pt_pythia", "pi_minus_eta_pt_pythia", HistType::kTH2F, {ptAxisPi, etaAxis});
+      registryMC.addClone("mc_pi_plus_eta_pt/", "mc_pi_minus_eta_pt/");
+
+      registryMC.addClone("mc_pi_plus_eta_pt/", "mc_ka_plus_eta_pt/");
+      registryMC.addClone("mc_pi_minus_eta_pt/", "mc_ka_minus_eta_pt/");
+
+      registryMC.addClone("mc_pi_plus_eta_pt/", "mc_pr_plus_eta_pt/");
+      registryMC.addClone("mc_pi_minus_eta_pt/", "mc_pr_minus_eta_pt/");
 
       // Histograms for 2d reweighting (K0s)
       registryMC.add("K0s_eta_pt_jet", "K0s_eta_pt_jet", HistType::kTH2F, {ptAxis, etaAxis});
@@ -345,25 +387,32 @@ struct StrangenessInJets {
       registryMC.add("AntiOmega_eta_pt_pythia", "AntiOmega_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
 
       // Histograms for efficiency (pions)
-      registryMC.add("pi_plus_gen_in_jet", "pi_plus_gen_in_jet", HistType::kTH2F, {multBinning, ptAxisPi});
-      registryMC.add("pi_plus_rec_in_jet_tpc", "pi_plus_rec_in_jet_tpc", HistType::kTH2F, {multBinning, ptAxisPi});
-      registryMC.add("pi_plus_rec_in_jet_tof", "pi_plus_rec_in_jet_tof", HistType::kTH2F, {multBinning, ptAxisPi});
-      registryMC.add("pi_plus_gen_in_ue", "pi_plus_gen_in_ue", HistType::kTH2F, {multBinning, ptAxisPi});
-      registryMC.add("pi_plus_rec_in_ue_tpc", "pi_plus_rec_in_ue_tpc", HistType::kTH2F, {multBinning, ptAxisPi});
-      registryMC.add("pi_plus_rec_in_ue_tof", "pi_plus_rec_in_ue_tof", HistType::kTH2F, {multBinning, ptAxisPi});
+      registryMC.add("mc_pi_plus/in_jet/gen", "", HistType::kTH2F, {multBinning, ptAxisPi});
+      registryMC.addClone("mc_pi_plus/in_jet/gen", "mc_pi_plus/in_jet/rec_tpc");
+      registryMC.addClone("mc_pi_plus/in_jet/gen", "mc_pi_plus/in_jet/rec_tof");
+      registryMC.addClone("mc_pi_plus/in_jet/", "mc_pi_plus/in_ue/");
 
-      registryMC.add("pi_minus_gen_in_jet", "pi_minus_gen_in_jet", HistType::kTH2F, {multBinning, ptAxisPi});
-      registryMC.add("pi_minus_rec_in_jet_tpc", "pi_minus_rec_in_jet_tpc", HistType::kTH2F, {multBinning, ptAxisPi});
-      registryMC.add("pi_minus_rec_in_jet_tof", "pi_minus_rec_in_jet_tof", HistType::kTH2F, {multBinning, ptAxisPi});
-      registryMC.add("pi_minus_gen_in_ue", "pi_minus_gen_in_ue", HistType::kTH2F, {multBinning, ptAxisPi});
-      registryMC.add("pi_minus_rec_in_ue_tpc", "pi_minus_rec_in_ue_tpc", HistType::kTH2F, {multBinning, ptAxisPi});
-      registryMC.add("pi_minus_rec_in_ue_tof", "pi_minus_rec_in_ue_tof", HistType::kTH2F, {multBinning, ptAxisPi});
+      registryMC.addClone("mc_pi_plus/", "mc_pi_minus/");
+
+      // Histograms for efficiency (kaons)
+      registryMC.addClone("mc_pi_plus/", "mc_ka_plus/");
+      registryMC.addClone("mc_pi_minus/", "mc_ka_minus/");
+
+      // Histograms for efficiency (protons)
+      registryMC.addClone("mc_pi_plus/", "mc_pr_plus/");
+      registryMC.addClone("mc_pi_minus/", "mc_pr_minus/");
 
       // MC Templates
-      registryMC.add("piplus_dcaxy_prim", "piplus_dcaxy_prim", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
-      registryMC.add("piminus_dcaxy_prim", "piminus_dcaxy_prim", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
-      registryMC.add("piplus_dcaxy_sec", "piplus_dcaxy_sec", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
-      registryMC.add("piminus_dcaxy_sec", "piminus_dcaxy_sec", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+      registryMC.add("pi_plus_dcaxy/prm", "", HistType::kTH3F, {multBinning, ptAxisPi, dcaAxis});
+      registryMC.addClone("pi_plus_dcaxy/prm", "pi_plus_dcaxy/sec");
+
+      registryMC.addClone("pi_plus_dcaxy/", "pi_minus_dcaxy/");
+
+      registryMC.addClone("pi_plus_dcaxy/", "kaplus_dcaxy/");
+      registryMC.addClone("pi_minus_dcaxy/", "kaminus_dcaxy/");
+
+      registryMC.addClone("pi_plus_dcaxy/", "prplus_dcaxy/");
+      registryMC.addClone("pi_minus_dcaxy/", "prminus_dcaxy/");
     }
   }
 
@@ -804,11 +853,11 @@ struct StrangenessInJets {
 
   // Pion Selection
   template <typename pionTrack>
-  bool isHighPurityPion(const pionTrack& track)
+  bool isHighPurityPion(const pionTrack& track, const float nsigmaTPC, const float nsigmaTOF)
   {
-    if (track.p() < 0.6 && std::fabs(track.tpcNSigmaPi()) < 3.0)
+    if (track.p() < 0.6 && std::fabs(nsigmaTPC) < 2.0)
       return true;
-    if (track.p() > 0.6 && std::fabs(track.tpcNSigmaPi()) < 3.0 && std::fabs(track.tofNSigmaPi()) < 3.0)
+    if (track.p() > 0.6 && std::fabs(nsigmaTPC) < 2.0 && std::fabs(nsigmaTOF) < 2.0)
       return true;
     return false;
   }
@@ -979,7 +1028,10 @@ struct StrangenessInJets {
     get1DWeightHisto(histoNameWeightsAntiXiInUe, weightsAntiXiInUe);
   }
 
-  void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, StrHadronDaughterTracks const& tracks)
+  void processData(SelCollisions::iterator const& collision,
+                   aod::V0Datas const& fullV0s,
+                   aod::CascDataExt const& Cascades,
+                   StrHadronDaughterTracks const& tracks)
   {
 
     // Event Counter: before event selection
@@ -1160,7 +1212,7 @@ struct StrangenessInJets {
     registryData.fill(HIST("number_of_events_data"), 6.5);
 
     // Event multiplicity
-    float multiplicity = collision.centFT0M();
+    const float multiplicity = collision.centFT0M();
 
     registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
 
@@ -1287,15 +1339,32 @@ struct StrangenessInJets {
             continue;
 
           TVector3 trackDir(track.px(), track.py(), track.pz());
-          float deltaEtaJet = trackDir.Eta() - jet[i].Eta();
-          float deltaPhiJet = getDeltaPhi(trackDir.Phi(), jet[i].Phi());
-          float deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
-          float deltaEtaUe1 = trackDir.Eta() - ue1[i].Eta();
-          float deltaPhiUe1 = getDeltaPhi(trackDir.Phi(), ue1[i].Phi());
-          float deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
-          float deltaEtaUe2 = trackDir.Eta() - ue2[i].Eta();
-          float deltaPhiUe2 = getDeltaPhi(trackDir.Phi(), ue2[i].Phi());
-          float deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+          const float deltaEtaJet = trackDir.Eta() - jet[i].Eta();
+          const float deltaPhiJet = getDeltaPhi(trackDir.Phi(), jet[i].Phi());
+          const float deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+          const float deltaEtaUe1 = trackDir.Eta() - ue1[i].Eta();
+          const float deltaPhiUe1 = getDeltaPhi(trackDir.Phi(), ue1[i].Phi());
+          const float deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+          const float deltaEtaUe2 = trackDir.Eta() - ue2[i].Eta();
+          const float deltaPhiUe2 = getDeltaPhi(trackDir.Phi(), ue2[i].Phi());
+          const float deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+          float nsigmaTPC = 999.f;
+          float nsigmaTOF = 999.f;
+          switch (particleOfInterest) {
+            case Option::ChargedPions:
+              nsigmaTPC = track.tpcNSigmaPi();
+              nsigmaTOF = track.tofNSigmaPi();
+              break;
+            case Option::ChargedKaon:
+              nsigmaTPC = track.tpcNSigmaKa();
+              nsigmaTOF = track.tofNSigmaKa();
+              break;
+            case Option::ProtonAntiproton:
+              nsigmaTPC = track.tpcNSigmaPr();
+              nsigmaTOF = track.tofNSigmaPr();
+              break;
+          }
 
           bool isInJet = false;
           bool isInUe = false;
@@ -1304,17 +1373,18 @@ struct StrangenessInJets {
           if (deltaRue1 < rJet || deltaRue2 < rJet)
             isInUe = true;
 
-          if (isHighPurityPion(track) && track.sign() > 0) {
-            if (isInJet)
-              registryData.fill(HIST("piplus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
-            if (isInUe)
-              registryData.fill(HIST("piplus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
-          }
-          if (isHighPurityPion(track) && track.sign() < 0) {
-            if (isInJet)
-              registryData.fill(HIST("piminus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
-            if (isInUe)
-              registryData.fill(HIST("piminus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
+          if (isHighPurityPion(track, nsigmaTPC, nsigmaTOF)) {
+            if (track.sign() > 0) {
+              if (isInJet)
+                registryData.fill(HIST("piplus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
+              if (isInUe)
+                registryData.fill(HIST("piplus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
+            } else {
+              if (isInJet)
+                registryData.fill(HIST("piminus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
+              if (isInUe)
+                registryData.fill(HIST("piminus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
+            }
           }
 
           // DCAxy Selection
@@ -1322,35 +1392,51 @@ struct StrangenessInJets {
             continue;
 
           // TPC
-          if (isInJet && track.sign() > 0) {
-            registryData.fill(HIST("piplus_tpc_in_jet"), multiplicity, track.pt(), track.tpcNSigmaPi());
+          switch (track.sign()) {
+            case 1:
+              if (isInJet) {
+                registryData.fill(HIST("piplus_tpc_in_jet"), multiplicity, track.pt(), nsigmaTPC);
+              }
+              if (isInUe) {
+                registryData.fill(HIST("piplus_tpc_in_ue"), multiplicity, track.pt(), nsigmaTPC);
+              }
+              break;
+            case -1:
+              if (isInJet) {
+                registryData.fill(HIST("piminus_tpc_in_jet"), multiplicity, track.pt(), nsigmaTPC);
+              }
+              if (isInUe) {
+                registryData.fill(HIST("piminus_tpc_in_ue"), multiplicity, track.pt(), nsigmaTPC);
+              }
+              break;
+            default:
+              LOG(fatal) << "Error in the charge";
           }
-          if (isInUe && track.sign() > 0) {
-            registryData.fill(HIST("piplus_tpc_in_ue"), multiplicity, track.pt(), track.tpcNSigmaPi());
-          }
-          if (isInJet && track.sign() < 0) {
-            registryData.fill(HIST("piminus_tpc_in_jet"), multiplicity, track.pt(), track.tpcNSigmaPi());
-          }
-          if (isInUe && track.sign() < 0) {
-            registryData.fill(HIST("piminus_tpc_in_ue"), multiplicity, track.pt(), track.tpcNSigmaPi());
-          }
-          if (track.tpcNSigmaPi() < nsigmaTPCmin || track.tpcNSigmaPi() > nsigmaTPCmax)
+          if (nsigmaTPC < nsigmaTPCmin || nsigmaTPC > nsigmaTPCmax)
             continue;
           if (!track.hasTOF())
             continue;
 
           // TOF
-          if (isInJet && track.sign() > 0) {
-            registryData.fill(HIST("piplus_tof_in_jet"), multiplicity, track.pt(), track.tofNSigmaPi());
-          }
-          if (isInUe && track.sign() > 0) {
-            registryData.fill(HIST("piplus_tof_in_ue"), multiplicity, track.pt(), track.tofNSigmaPi());
-          }
-          if (isInJet && track.sign() < 0) {
-            registryData.fill(HIST("piminus_tof_in_jet"), multiplicity, track.pt(), track.tofNSigmaPi());
-          }
-          if (isInUe && track.sign() < 0) {
-            registryData.fill(HIST("piminus_tof_in_ue"), multiplicity, track.pt(), track.tofNSigmaPi());
+          switch (track.sign()) {
+            case 1:
+              if (isInJet) {
+                registryData.fill(HIST("piplus_tof_in_jet"), multiplicity, track.pt(), nsigmaTOF);
+              }
+              if (isInUe) {
+                registryData.fill(HIST("piplus_tof_in_ue"), multiplicity, track.pt(), nsigmaTOF);
+              }
+              break;
+            case -1:
+              if (isInJet) {
+                registryData.fill(HIST("piminus_tof_in_jet"), multiplicity, track.pt(), nsigmaTOF);
+              }
+              if (isInUe) {
+                registryData.fill(HIST("piminus_tof_in_ue"), multiplicity, track.pt(), nsigmaTOF);
+              }
+              break;
+            default:
+              LOG(fatal) << "Error in the charge";
           }
         }
       }
@@ -1701,20 +1787,48 @@ struct StrangenessInJets {
           continue;
 
         const auto particle = track.mcParticle();
-        if (std::fabs(particle.pdgCode()) != 211)
-          continue;
-
-        if (particle.isPhysicalPrimary()) {
-          if (track.sign() > 0)
-            registryMC.fill(HIST("piplus_dcaxy_prim"), multiplicity, track.pt(), track.dcaXY());
-          if (track.sign() < 0)
-            registryMC.fill(HIST("piminus_dcaxy_prim"), multiplicity, track.pt(), track.dcaXY());
-        }
-        if (!particle.isPhysicalPrimary()) {
-          if (track.sign() > 0)
-            registryMC.fill(HIST("piplus_dcaxy_sec"), multiplicity, track.pt(), track.dcaXY());
-          if (track.sign() < 0)
-            registryMC.fill(HIST("piminus_dcaxy_sec"), multiplicity, track.pt(), track.dcaXY());
+        switch (std::abs(particle.pdgCode())) {
+          case 211:
+            if (particle.isPhysicalPrimary()) {
+              if (track.sign() > 0)
+                registryMC.fill(HIST("pi_plus_dcaxy/prm"), multiplicity, track.pt(), track.dcaXY());
+              else
+                registryMC.fill(HIST("pi_minus_dcaxy/prm"), multiplicity, track.pt(), track.dcaXY());
+            } else {
+              if (track.sign() > 0)
+                registryMC.fill(HIST("pi_plus_dcaxy/sec"), multiplicity, track.pt(), track.dcaXY());
+              else
+                registryMC.fill(HIST("pi_minus_dcaxy/sec"), multiplicity, track.pt(), track.dcaXY());
+            }
+            break;
+          case 321:
+            if (particle.isPhysicalPrimary()) {
+              if (track.sign() > 0)
+                registryMC.fill(HIST("ka_plus_dcaxy/prm"), multiplicity, track.pt(), track.dcaXY());
+              else
+                registryMC.fill(HIST("ka_minus_dcaxy/prm"), multiplicity, track.pt(), track.dcaXY());
+            } else {
+              if (track.sign() > 0)
+                registryMC.fill(HIST("ka_plus_dcaxy/sec"), multiplicity, track.pt(), track.dcaXY());
+              else
+                registryMC.fill(HIST("ka_minus_dcaxy/sec"), multiplicity, track.pt(), track.dcaXY());
+            }
+            break;
+          case 2212:
+            if (particle.isPhysicalPrimary()) {
+              if (track.sign() > 0)
+                registryMC.fill(HIST("pr_plus_dcaxy/prm"), multiplicity, track.pt(), track.dcaXY());
+              else
+                registryMC.fill(HIST("pr_minus_dcaxy/prm"), multiplicity, track.pt(), track.dcaXY());
+            } else {
+              if (track.sign() > 0)
+                registryMC.fill(HIST("pr_plus_dcaxy/sec"), multiplicity, track.pt(), track.dcaXY());
+              else
+                registryMC.fill(HIST("pr_minus_dcaxy/sec"), multiplicity, track.pt(), track.dcaXY());
+            }
+            break;
+          default:
+            continue;
         }
 
         if (std::fabs(track.dcaXY()) > dcaxyMax)
@@ -1733,10 +1847,10 @@ struct StrangenessInJets {
             if (!histo)
               return 1.0;
             const int bx = histo->GetXaxis()->FindBin(track.pt());
-            const int by = histo->GetYaxis()->FindBin(track.eta());
             if (bx <= 0 || bx > histo->GetNbinsX()) {
               return 1.0;
             }
+            const int by = histo->GetYaxis()->FindBin(track.eta());
             if (by <= 0 || by > histo->GetNbinsX()) {
               return 1.0;
             }
@@ -1749,8 +1863,8 @@ struct StrangenessInJets {
         }
 
         if (track.sign() > 0) {
-          registryMC.fill(HIST("pi_plus_rec_in_jet_tpc"), multiplicity, track.pt(), wPiplusJet);
-          registryMC.fill(HIST("pi_plus_rec_in_ue_tpc"), multiplicity, track.pt(), wPiplusUe);
+          registryMC.fill(HIST("mc_pi_plus/in_jet/rec_tpc"), multiplicity, track.pt(), wPiplusJet);
+          registryMC.fill(HIST("mc_pi_plus/in_ue/rec_tpc"), multiplicity, track.pt(), wPiplusUe);
         } else {
           registryMC.fill(HIST("pi_minus_rec_in_jet_tpc"), multiplicity, track.pt(), wPiminusJet);
           registryMC.fill(HIST("pi_minus_rec_in_ue_tpc"), multiplicity, track.pt(), wPiminusUe);
@@ -1762,8 +1876,8 @@ struct StrangenessInJets {
           continue;
 
         if (track.sign() > 0) {
-          registryMC.fill(HIST("pi_plus_rec_in_jet_tof"), multiplicity, track.pt(), wPiplusJet);
-          registryMC.fill(HIST("pi_plus_rec_in_ue_tof"), multiplicity, track.pt(), wPiplusUe);
+          registryMC.fill(HIST("mc_pi_plus/in_jet/rec_tof"), multiplicity, track.pt(), wPiplusJet);
+          registryMC.fill(HIST("mc_pi_plus/in_ue/rec_tof"), multiplicity, track.pt(), wPiplusUe);
         } else {
           registryMC.fill(HIST("pi_minus_rec_in_jet_tof"), multiplicity, track.pt(), wPiminusJet);
           registryMC.fill(HIST("pi_minus_rec_in_ue_tof"), multiplicity, track.pt(), wPiminusUe);
@@ -1779,6 +1893,10 @@ struct StrangenessInJets {
 
         double wPiplusJet(1.0), wPiplusUe(1.0);
         double wPiminusJet(1.0), wPiminusUe(1.0);
+        double wKaplusJet(1.0), wKaplusUe(1.0);
+        double wKaminusJet(1.0), wKaminusUe(1.0);
+        double wPrplusJet(1.0), wPrplusUe(1.0);
+        double wPrminusJet(1.0), wPrminusUe(1.0);
         double wK0jet(1.0), wK0Ue(1.0), wLambdaJet(1.0), wLambdaUe(1.0), wAntilambdaJet(1.0), wAntilambdaUe(1.0);
         if (applyReweighting) {
           auto getWeight = [&](TH2F* histo) {
@@ -1786,10 +1904,10 @@ struct StrangenessInJets {
               return 1.0;
             }
             const int bx = histo->GetXaxis()->FindBin(mcParticle.pt());
-            const int by = histo->GetYaxis()->FindBin(mcParticle.eta());
             if (bx <= 0 || bx > histo->GetNbinsX()) {
               return 1.0;
             }
+            const int by = histo->GetYaxis()->FindBin(mcParticle.eta());
             if (by <= 0 || by > histo->GetNbinsX()) {
               return 1.0;
             }
@@ -1830,14 +1948,34 @@ struct StrangenessInJets {
 
         switch (mcParticle.pdgCode()) {
           case 211: // Pi+
-            registryMC.fill(HIST("pi_plus_gen_in_jet"), multiplicity, mcParticle.pt(), wPiplusJet);
-            registryMC.fill(HIST("pi_plus_gen_in_ue"), multiplicity, mcParticle.pt(), wPiplusUe);
+            registryMC.fill(HIST("mc_pi_plus/in_jet/gen"), multiplicity, mcParticle.pt(), wPiplusJet);
+            registryMC.fill(HIST("mc_pi_plus/in_ue/gen"), multiplicity, mcParticle.pt(), wPiplusUe);
             registryMC.fill(HIST("pi_plus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
           case -211: // Pi-
-            registryMC.fill(HIST("pi_minus_gen_in_jet"), multiplicity, mcParticle.pt(), wPiminusJet);
-            registryMC.fill(HIST("pi_minus_gen_in_ue"), multiplicity, mcParticle.pt(), wPiminusUe);
+            registryMC.fill(HIST("mc_pi_minus/in_jet/gen"), multiplicity, mcParticle.pt(), wPiminusJet);
+            registryMC.fill(HIST("mc_pi_minus/in_ue/gen"), multiplicity, mcParticle.pt(), wPiminusUe);
             registryMC.fill(HIST("pi_minus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            break;
+          case 321: // Ka+
+            registryMC.fill(HIST("mc_ka_plus/in_jet/gen"), multiplicity, mcParticle.pt(), wKaplusJet);
+            registryMC.fill(HIST("mc_ka_plus/in_ue/gen"), multiplicity, mcParticle.pt(), wKaplusUe);
+            registryMC.fill(HIST("ka_plus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            break;
+          case -321: // Ka-
+            registryMC.fill(HIST("mc_ka_minus/in_jet/gen"), multiplicity, mcParticle.pt(), wKaminusJet);
+            registryMC.fill(HIST("mc_ka_minus/in_ue/gen"), multiplicity, mcParticle.pt(), wKaminusUe);
+            registryMC.fill(HIST("ka_minus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            break;
+          case 2212: // Pr+
+            registryMC.fill(HIST("mc_pr_plus/in_jet/gen"), multiplicity, mcParticle.pt(), wPrplusJet);
+            registryMC.fill(HIST("mc_pr_plus/in_ue/gen"), multiplicity, mcParticle.pt(), wPrplusUe);
+            registryMC.fill(HIST("pr_plus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            break;
+          case -2212: // Pr-
+            registryMC.fill(HIST("mc_pr_minus/in_jet/gen"), multiplicity, mcParticle.pt(), wPrminusJet);
+            registryMC.fill(HIST("mc_pr_minus/in_ue/gen"), multiplicity, mcParticle.pt(), wPrminusUe);
+            registryMC.fill(HIST("pr_minus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
           case 310: // K0s
             registryMC.fill(HIST("K0s_generated_jet"), multiplicity, mcParticle.pt(), wK0jet);
@@ -2055,6 +2193,38 @@ struct StrangenessInJets {
               }
               break;
             case -211:
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("pi_minus_eta_pt_jet"), particle.pt(), particle.eta());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("pi_minus_eta_pt_ue"), particle.pt(), particle.eta());
+              }
+              break;
+            case 321:
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("pi_plus_eta_pt_jet"), particle.pt(), particle.eta());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("pi_plus_eta_pt_ue"), particle.pt(), particle.eta());
+              }
+              break;
+            case -321:
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("pi_minus_eta_pt_jet"), particle.pt(), particle.eta());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("pi_minus_eta_pt_ue"), particle.pt(), particle.eta());
+              }
+              break;
+            case 2212:
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("pi_plus_eta_pt_jet"), particle.pt(), particle.eta());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("pi_plus_eta_pt_ue"), particle.pt(), particle.eta());
+              }
+              break;
+            case -2212:
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("pi_minus_eta_pt_jet"), particle.pt(), particle.eta());
               }
