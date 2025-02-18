@@ -1007,7 +1007,7 @@ struct pidcme { // o2-linter: disable=name/struct
 
   Configurable<std::vector<int>> cfgITSPurityCen{"cfgITSPurityCen", {20,30}, "ITS purity cut centrality"};
   Configurable<std::vector<float>> cfgPtPrCut{"cfgPtPrCut", {0.5, 0.6, 0.7, 0.8, 0.9}, "pt binings for proton ITS purity cut"};
-  Configurable<std::string> cfgCCDBPurityPath {"cfgCCDBPurityString", "Users/z/zhengqiw/PurityCut", "CCDB path for nsigmaITS - nSigmaTPC purity cut"};
+  Configurable<std::string> cfgCCDBPurityPath {"cfgCCDBPurityPath", "Users/z/zhengqiw/PurityCut", "CCDB path for nsigmaITS - nSigmaTPC purity cut"};
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   
@@ -1332,18 +1332,18 @@ struct pidcme { // o2-linter: disable=name/struct
       for(auto j = 0; j < static_cast<int>(cfgPtPrCut->size()) - 1; j++){
         fullPath = cfgCCDBPurityPath;
         fullPath += Form("/ProtonPos/Cen_%d_%d/Pt_%d_%d",cfgITSPurityCen->at(i),cfgITSPurityCen->at(i+1),static_cast<int>(std::round(1e3 * cfgPtPrCut->at(j))),static_cast<int>(std::round(1e3* cfgPtPrCut->at(j+1))));
-        auto PosPrHist = ccdb->getForTimeStamp<TH1F>(fullPath, timestamp);
+        auto posPrHist = ccdb->getForTimeStamp<TH1F>(fullPath, timestamp);
         fullPath = cfgCCDBPurityPath;
         fullPath += Form("/ProtonNeg/Cen_%d_%d/Pt_%d_%d",cfgITSPurityCen->at(i),cfgITSPurityCen->at(i+1),static_cast<int>(std::round(1e3 * cfgPtPrCut->at(j))),static_cast<int>(std::round(1e3* cfgPtPrCut->at(j+1))));
-        auto NegPrHist = ccdb->getForTimeStamp<TH1F>(fullPath, timestamp);
-        if(!PosPrHist){
+        auto negPrHist = ccdb->getForTimeStamp<TH1F>(fullPath, timestamp);
+        if(!posPrHist){
           LOGF(fatal, Form("could not load Pos Proton ITS TPC purity hist for Cent_%d_%d Pt_%d_%d(MeV)",cfgITSPurityCen->at(i),cfgITSPurityCen->at(i+1),static_cast<int>(std::round(1e3 * cfgPtPrCut->at(j))),static_cast<int>(std::round(1e3* cfgPtPrCut->at(j+1)))));
         }
-        if(!NegPrHist){
+        if(!negPrHist){
           LOGF(fatal, Form("could not load Neg Proton ITS TPC purity hist for Cent_%d_%d Pt_%d_%d(MeV)",cfgITSPurityCen->at(i),cfgITSPurityCen->at(i+1),static_cast<int>(std::round(1e3 * cfgPtPrCut->at(j))),static_cast<int>(std::round(1e3* cfgPtPrCut->at(j+1)))));
         }
-        std::shared_ptr<TH1> sharedPosPrHist(PosPrHist);
-        std::shared_ptr<TH1> sharedNegPrHist(NegPrHist);
+        std::shared_ptr<TH1> sharedPosPrHist(posPrHist);
+        std::shared_ptr<TH1> sharedNegPrHist(negPrHist);
         hPosPrCutCen.push_back(std::move(sharedPosPrHist));
         hNegPrCutCen.push_back(std::move(sharedNegPrHist));
       }
