@@ -58,7 +58,7 @@ using MCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorL
 using MatchedMCDV0Jets = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 using MatchedMCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetConstituents, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 
-using CandidatesV0MCDWithLabels = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>;
+using CandidatesV0MCDWithLabels = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels, aod::V0SignalFlags>;
 
 using MCPV0Jets = aod::V0ChargedMCParticleLevelJets;
 using MCPV0JetsWithConstituents = soa::Join<MCPV0Jets, aod::V0ChargedMCParticleLevelJetConstituents>;
@@ -996,7 +996,7 @@ struct JetFragmentation {
       LOGF(warning, "Number of bits required to parse the state (%d * %d = %d) is too large for %d bits per int!", nParticles, nBitsPerParticle, nParticles * nBitsPerParticle, nBitsPerInt);
       return v;
     }
-    if (state >= (uint32_t)nStates) {
+    if (state >= static_cast<uint32_t>(nStates)) {
       LOGF(warning, "Illegal state! State %d >= %d", state, nStates);
       return v;
     }
@@ -1021,7 +1021,7 @@ struct JetFragmentation {
     double r = 0;
     int nParticles = state.size();
 
-    if (values.size() != (uint32_t)(nParticles + 1)) {
+    if (values.size() != static_cast<uint32_t>(nParticles + 1)) {
       LOGF(warning, "Number of values (%d) must be equal to the number of particles (%d) + 1!", values.size(), nParticles);
       return v;
     }
@@ -1041,7 +1041,7 @@ struct JetFragmentation {
   double stateWeight(std::vector<int> state, std::vector<std::vector<double>> weights)
   {
     double w = 1.;
-    for (int ip = 0; (uint32_t)ip < state.size(); ip++) {
+    for (int ip = 0; static_cast<uint32_t>(ip) < state.size(); ip++) {
       w *= weights[ip][state[ip]];
     }
     return w;
