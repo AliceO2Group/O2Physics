@@ -345,7 +345,7 @@ struct BcSelectionTask {
       // store rct flags
       uint32_t rct = lastRCT;
       int64_t thisTF = (bc.globalBC() - bcSOR) / nBCsPerTF;
-      if (mapRCT != nullptr && thisTF != lastTF){ // skip for unanchored runs; do it once per TF
+      if (mapRCT != nullptr && thisTF != lastTF) { // skip for unanchored runs; do it once per TF
         auto itrct = mapRCT->upper_bound(bc.timestamp());
         if (itrct != mapRCT->begin())
           itrct--;
