@@ -131,6 +131,7 @@ DECLARE_SOA_COLUMN(ErrP, errP, float);                                   //! mom
 DECLARE_SOA_COLUMN(ErrPt, errPt, float);                                 //! transverse momentum error
 DECLARE_SOA_COLUMN(IsSelected, isSelected, int);                         //! flag whether candidate was selected in candidateSelectorLc task
 DECLARE_SOA_COLUMN(SigBgStatus, sigBgStatus, int);                       //! 0 bg, 1 prompt, 2 non-prompt, 3 wrong order of prongs, -1 default value (impossible, should not be the case), -999 for data
+DECLARE_SOA_COLUMN(MultNTracksPV, multNTracksPV, int);
 } // namespace kf
 
 namespace mc_match
@@ -161,7 +162,8 @@ DECLARE_SOA_TABLE(HfCandLcKFs, "AOD", "HFCANDLCKF",
                   kf::Chi2GeoProtonKaon, kf::Chi2GeoProtonPion, kf::Chi2GeoPionKaon,
                   kf::Chi2Geo, kf::Chi2Topo, kf::DecayLength, kf::DecayLengthError, kf::DecayLengthNormalised, kf::T, kf::ErrT,
                   kf::MassInv, kf::P, kf::Pt, kf::ErrP, kf::ErrPt,
-                  kf::IsSelected, kf::SigBgStatus);
+                  kf::IsSelected, kf::SigBgStatus,
+                  kf::MultNTracksPV);
 
 DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   collision::PosX,
@@ -478,6 +480,7 @@ struct HfTreeCreatorLcToPKPi {
       auto trackPos1 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
+      auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int CandFlag) {
         double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
         const int FunctionSelection = CandFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
@@ -664,7 +667,8 @@ struct HfTreeCreatorLcToPKPi {
               chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
               chi2Geo, chi2Topo, l, dl, l / dl, t, deltaT,
               mass, p, pt, deltaP, deltaPt,
-              FunctionSelection, sigbgstatus);
+              FunctionSelection, sigbgstatus,
+              collision.multNTracksPV());
           }
           if (fillCandidateMcTable) {
             float p, pt, svX, svY, svZ, pvX, pvY, pvZ, l, t;
@@ -747,7 +751,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param particles Generated particle table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processMcNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs> const& collisions,
+  void processMcNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                            aod::McCollisions const& mcCollisions,
                                            soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
@@ -763,7 +767,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidates Lc->pKpi candidate table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processMcWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents> const& collisions,
+  void processMcWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                              aod::McCollisions const& mcCollisions,
                                              soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
@@ -780,7 +784,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param particles Generated particle table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processMcNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs> const& collisions,
+  void processMcNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                            aod::McCollisions const& mcCollisions,
                                            soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
@@ -796,7 +800,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidates Lc->pKpi candidate table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processMcWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents> const& collisions,
+  void processMcWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                              aod::McCollisions const& mcCollisions,
                                              soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
@@ -867,6 +871,7 @@ struct HfTreeCreatorLcToPKPi {
       auto trackPos1 = candidate.template prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
+      auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int CandFlag) {
         double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
         const int FunctionSelection = CandFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
@@ -1052,7 +1057,8 @@ struct HfTreeCreatorLcToPKPi {
               chi2Geo_proton_kaon, chi2Geo_proton_pion, chi2Geo_pion_kaon,
               chi2Geo, chi2Topo, l, dl, l / dl, T, deltaT,
               mass, p, pt, deltaP, deltaPt,
-              FunctionSelection, UndefValueInt);
+              FunctionSelection, UndefValueInt,
+              collision.multNTracksPV());
           }
         }
       };
@@ -1067,7 +1073,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidates Lc->pKpi candidate table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processDataNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs> const& collisions,
+  void processDataNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                              soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
                                              TracksWPid const& tracks, aod::BCs const& bcs)
   {
@@ -1080,7 +1086,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidates Lc->pKpi candidate table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processDataWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents> const& collisions,
+  void processDataWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                                soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
                                                TracksWPid const& tracks, aod::BCs const& bcs)
   {
@@ -1093,7 +1099,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidates Lc->pKpi candidate table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processDataNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs> const& collisions,
+  void processDataNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                              soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                              TracksWPid const& tracks, aod::BCs const& bcs)
   {
@@ -1106,7 +1112,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidates Lc->pKpi candidate table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processDataWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents> const& collisions,
+  void processDataWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                                soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                                TracksWPid const& tracks, aod::BCs const& bcs)
   {
