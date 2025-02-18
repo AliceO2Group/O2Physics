@@ -79,12 +79,12 @@ DECLARE_SOA_COLUMN(TrackKaPID, trackKaPID, float[2]);
 DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, float[2]);
 DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, float[2]);
 DECLARE_SOA_COLUMN(TrackTpcSignal, trackTpcSignal, float[2]);
-} // namespace recoTree
+} // namespace reco_tree
 DECLARE_SOA_TABLE(RecoTree, "AOD", "RECOTREE",
                   reco_tree::RunNumber, reco_tree::LocalBC, reco_tree::NumContrib, reco_tree::PosX, reco_tree::PosY, reco_tree::PosZ,
                   reco_tree::TotalFT0AmplitudeA, reco_tree::TotalFT0AmplitudeC, reco_tree::TotalFV0AmplitudeA, reco_tree::TotalFDDAmplitudeA, reco_tree::TotalFDDAmplitudeC,
                   reco_tree::TimeFT0A, reco_tree::TimeFT0C, reco_tree::TimeFV0A, reco_tree::TimeFDDA, reco_tree::TimeFDDC,
-                  reco_tree::EnergyCommonZNA, reco_tree::EnergyCommonZNC, reco_tree::TimeZNA, reco_tree::TimeZNC, 
+                  reco_tree::EnergyCommonZNA, reco_tree::EnergyCommonZNC, reco_tree::TimeZNA, reco_tree::TimeZNC,
                   reco_tree::PhiRandom, reco_tree::PhiCharge, reco_tree::TrackSign, reco_tree::TrackPt, reco_tree::TrackEta, reco_tree::TrackPhi, reco_tree::TrackPiPID, reco_tree::TrackElPID, reco_tree::TrackKaPID, reco_tree::TrackDcaXY, reco_tree::TrackDcaZ, reco_tree::TrackTpcSignal);
 
 namespace mc_tree
@@ -102,10 +102,10 @@ DECLARE_SOA_COLUMN(TrackSign, trackSign, int[2]);
 DECLARE_SOA_COLUMN(TrackPt, trackPt, float[2]);
 DECLARE_SOA_COLUMN(TrackEta, trackEta, float[2]);
 DECLARE_SOA_COLUMN(TrackPhi, trackPhi, float[2]);
-} // namespace mcTree
+} // namespace mc_tree
 DECLARE_SOA_TABLE(McTree, "AOD", "MCTREE",
                   mc_tree::LocalBc,
-                  mc_tree::PosX, mc_tree::PosY, mc_tree::PosZ, 
+                  mc_tree::PosX, mc_tree::PosY, mc_tree::PosZ,
                   mc_tree::PhiRandom, mc_tree::PhiCharge, mc_tree::TrackSign, mc_tree::TrackPt, mc_tree::TrackEta, mc_tree::TrackPhi);
 } // namespace o2::aod
 
@@ -157,7 +157,7 @@ struct UpcRhoAnalysis {
   ConfigurableAxis momentumFromPhiAxis{"momentumFromPhiAxis", {400, -0.1, 0.1}, "p (GeV/#it{c})"};
   ConfigurableAxis znCommonEnergyAxis{"znCommonEnergyAxis", {250, -5.0, 20.0}, "ZN common energy (TeV)"};
   ConfigurableAxis znTimeAxis{"znTimeAxis", {200, -10.0, 10.0}, "ZN time (ns)"};
-  
+
   HistogramRegistry rQC{"rQC", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry rTracks{"rTracks", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry rSystem{"rSystem", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -244,7 +244,7 @@ struct UpcRhoAnalysis {
     rSystem.addClone("system/selected/no-selection/", "system/selected/Xn0n/");
     rSystem.addClone("system/selected/no-selection/", "system/selected/0nXn/");
     rSystem.addClone("system/selected/no-selection/", "system/selected/XnXn/");
-    
+
     // MC
     // collisions
     rMC.add("MC/collisions/hPosXY", ";x (cm);y (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
@@ -481,7 +481,7 @@ struct UpcRhoAnalysis {
     return system;
   }
 
-  float getPhiRandom(const std::vector<TLorentzVector>& cutTracksLVs) // decay phi anisotropy
+  float getPhiRandom(const std::vector<TLorentzVector>& cutTracksLVs)    // decay phi anisotropy
   {                                                                      // two possible definitions of phi: randomize the tracks
     int indices[2] = {0, 1};
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();    // get time-based seed
@@ -533,7 +533,7 @@ struct UpcRhoAnalysis {
     if (collision.energyCommonZNA() > znCommonEnergyCut && std::abs(collision.timeZNA()) < znTimeCut &&
         collision.energyCommonZNC() > znCommonEnergyCut && std::abs(collision.timeZNC()) < znTimeCut)
       xnxn = true;
-    
+
     std::vector<decltype(tracks.begin())> cutTracks; // store selected tracks
     for (const auto& track : tracks) {
       rQC.fill(HIST("QC/tracks/hSelectionCounter"), 0);
@@ -546,7 +546,7 @@ struct UpcRhoAnalysis {
       cutTracks.push_back(track);
     }
     rQC.fill(HIST("QC/tracks/selected/hRemainingTracks"), cutTracks.size());
-    
+
     if (cutTracks.size() != 2) // further consider only two pion systems
       return;
     for (int i = 0; i < static_cast<int>(cutTracks.size()); i++)
@@ -562,12 +562,12 @@ struct UpcRhoAnalysis {
       trackLV.SetXYZM(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged); // apriori assume pion mass
       cutTracksLVs.push_back(trackLV);
     }
-    
+
     // differentiate leading- and subleading-momentum tracks
     auto leadingMomentumTrack = momentum(cutTracks[0].px(), cutTracks[0].py(), cutTracks[0].pz()) > momentum(cutTracks[1].px(), cutTracks[1].py(), cutTracks[1].pz()) ? cutTracks[0] : cutTracks[1];
     auto subleadingMomentumTrack = (leadingMomentumTrack == cutTracks[0]) ? cutTracks[1] : cutTracks[0];
     rQC.fill(HIST("QC/tracks/hTofHitCheck"), leadingMomentumTrack.hasTOF(), subleadingMomentumTrack.hasTOF());
-    
+
     float leadingPt = leadingMomentumTrack.pt();
     float subleadingPt = subleadingMomentumTrack.pt();
     float leadingEta = eta(leadingMomentumTrack.px(), leadingMomentumTrack.py(), leadingMomentumTrack.pz());
@@ -576,7 +576,7 @@ struct UpcRhoAnalysis {
     float subleadingPhi = phi(subleadingMomentumTrack.px(), subleadingMomentumTrack.py());
     float phiRandom = getPhiRandom(cutTracksLVs);
     float phiCharge = getPhiCharge(cutTracks, cutTracksLVs);
-    
+
     // fill recoTree
     int localBc = collision.globalBC() % o2::constants::lhc::LHCMaxBunches;
     int trackSigns[2] = {leadingMomentumTrack.sign(), subleadingMomentumTrack.sign()};
@@ -593,9 +593,9 @@ struct UpcRhoAnalysis {
       recoTree(collision.runNumber(), localBc, collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(),
                collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
                collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
-               collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(), 
+               collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(),
                phiRandom, phiCharge, trackSigns, trackPts, trackEtas, trackPhis, trackPiPIDs, trackElPIDs, trackKaPIDs, trackDcaXYs, trackDcaZs, trackTpcSignals);
-    
+
     if (!tracksPassPiPID(cutTracks)) // apply PID cut
       return;
     TLorentzVector system = reconstructSystem(cutTracksLVs);
@@ -604,7 +604,7 @@ struct UpcRhoAnalysis {
     float pT = system.Pt();
     float rapidity = system.Rapidity();
     float systemPhi = system.Phi() + o2::constants::math::PI;
-    
+
     // fill raw histograms according to total charge
     switch (totalCharge) {
       case 0:
@@ -701,7 +701,7 @@ struct UpcRhoAnalysis {
       mcParticlesLVs.push_back(pionLV);
     }
     rMC.fill(HIST("MC/collisions/hNPions"), cutMcParticles.size());
-    
+
     if (cutMcParticles.size() != 2)
       return;
     if (mcParticlesLVs.size() != cutMcParticles.size())
