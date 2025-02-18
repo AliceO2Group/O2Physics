@@ -9,10 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file   FlowZDCtask.cxx
+/// \file   flowZdcTask.cxx
 /// \author Sabrina Hernandez
 /// \since  10/01/2024
 /// \brief  task to evaluate flow and neutron skin with information from ZDC
+
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
@@ -41,15 +42,11 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::mult;
-using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
-using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
-using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
-using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
-using AodZDCs = soa::Join<aod::ZDCMults, aod::Zdcs>;
+using namespace o2::aod::evsel;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct FlowZDCtask {
+struct FlowZdcTask {
   SliceCache cache;
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
@@ -83,6 +80,27 @@ struct FlowZDCtask {
   Configurable<float> acceptanceZnc{"acceptanceZnc", 0.90, "ZNC acceptance factor"};
   Configurable<float> acceptanceZpa{"acceptanceZpa", 0.52, "ZPA acceptance factor"};
   Configurable<float> acceptanceZpc{"acceptanceZpc", 0.50, "ZPC acceptance factor"};
+  Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
+  Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
+  Configurable<float> npvTracksCut{"npvTracksCut", 1.0f, "Apply extra NPVtracks cut"};
+  Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
+  Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
+  Configurable<bool> isApplyVertexITSTPC{"isApplyVertexITSTPC", false, "Enable VertexITSTPC cut"};
+  Configurable<bool> isApplyVertexTOFmatched{"isApplyVertexTOFmatched", false, "Enable VertexTOFmatched cut"};
+  Configurable<bool> isApplyVertexTRDmatched{"isApplyVertexTRDmatched", false, "Enable VertexTRDmatched cut"};
+  Configurable<bool> isApplyExtraCorrCut{"isApplyExtraCorrCut", false, "Enable extra NPVtracks vs FTOC correlation cut"};
+  Configurable<bool> isApplyExtraPhiCut{"isApplyExtraPhiCut", false, "Enable extra phi cut"};
+  Configurable<bool> isApplyNoCollInTimeRangeStandard{"isApplyNoCollInTimeRangeStandard", false, "Enable NoCollInTimeRangeStandard cut"};
+  Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, "Enable NoCollInRofStandard cut"};
+  Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, "Enable NoHighMultCollInPrevRof cut"};
+  Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "Enable FT0CbasedOccupancy cut"};
+  Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", false, "Centrality based on FT0C"};
+  Configurable<bool> isApplyCentFT0CVariant1{"isApplyCentFT0CVariant1", false, "Centrality based on FT0C variant1"};
+  Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
+  Configurable<bool> isApplyCentNGlobal{"isApplyCentNGlobal", false, "Centrality based on global tracks"};
+  Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
+  Configurable<bool> isGoodITSLayersAll{"isGoodITSLayersAll", false, "Centrality based on no other collisions in this Readout Frame with per-collision multiplicity above threshold tracks"};
+  Configurable<float> ft0cCut{"ft0cCut", 1.0f, "Apply extra FT0C cut"};
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -96,11 +114,21 @@ struct FlowZDCtask {
   ConfigurableAxis axisFT0CAmp{"axisFT0CAmp", {5000, 0, 5000}, "axisFT0CAmp"};
   ConfigurableAxis axisFT0AAmp{"axisFT0AAmp", {5000, 0, 5000}, "axisFT0AAmp"};
   ConfigurableAxis axisFT0MAmp{"axisFT0MAmp", {10000, 0, 10000}, "axisFT0MAmp"};
+  ConfigurableAxis ft0cMultHistBin{"ft0cMultHistBin", {501, -0.5, 500.5}, ""};
+  ConfigurableAxis multHistBin{"multHistBin", {501, -0.5, 500.5}, ""};
+  ConfigurableAxis axisCent{"axisCent", {10, 0, 100}, "axisCent"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
+  using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   Partition<AodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
-
+  using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  using AodZDCs = soa::Join<aod::ZDCMults, aod::Zdcs>;
+  using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms>;
+  using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
+  using FilTrackDataTable = soa::Filtered<TrackDataTable>;
   std::complex<double> qTPC;       // init q TPC
   std::complex<double> qZNA{0, 0}; // init qZNA
   std::complex<double> qZNC{0, 0}; // init qZNC
@@ -145,10 +173,13 @@ struct FlowZDCtask {
     const AxisSpec axisIMQ{100, -1, 1, "imag Q"};
 
     AxisSpec axisVtxcounts{2, -0.5f, 1.5f, "Vtx info (0=no, 1=yes)"};
+    AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
     AxisSpec axisZvert{120, -30.f, 30.f, "Vtx z (cm)"};
-    AxisSpec axisCent{8, 0.f, 105.f, "centrality"};
     AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
     AxisSpec axisPtBins{{0., 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10., 13., 16., 20.}, "p_{T} (GeV/c)"};
+    AxisSpec axisEvent{11, 0.5, 11.5, "#Event", "EventAxis"};
+    AxisSpec axisMult = {multHistBin, "Mult", "MultAxis"};
+    AxisSpec axisFT0CMult = {ft0cMultHistBin, "ft0c", "FT0CMultAxis"};
 
     // create histograms
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
@@ -184,6 +215,22 @@ struct FlowZDCtask {
                {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZP Energy"}});
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ}); // for q vector recentering
     histos.add("hYield", "Nch vs pT", kTH2F, {axisMultiplicity, axisPt});
+    histos.add("hGlobalTracks", "hGlobalTracks", kTH1F, {axisMultiplicity});
+    histos.add("eventSelectionSteps", "eventSelectionSteps", kTH1D, {axisEvent});
+    auto hstat = histos.get<TH1>(HIST("eventSelectionSteps"));
+    auto* xAxis = hstat->GetXaxis();
+    xAxis->SetBinLabel(1, "All events");
+    xAxis->SetBinLabel(2, "sel8");
+    xAxis->SetBinLabel(3, "kNoSameBunchPileup");  // reject collisions in case of pileup with another collision in the same foundBC
+    xAxis->SetBinLabel(4, "kIsGoodZvtxFT0vsPV");  // small difference between z-vertex from PV and from FT0
+    xAxis->SetBinLabel(5, "kIsVertexITSTPC");     // at least one ITS-TPC track (reject vertices built from ITS-only tracks)
+    xAxis->SetBinLabel(6, "kIsGoodITSLayersAll"); //"Centrality based on no other collisions in this Readout Frame with per-collision multiplicity above threshold tracks"
+    xAxis->SetBinLabel(7, "kIsApplyVertexTOFmatched");
+    xAxis->SetBinLabel(8, "kIsVertexTRDmatched");
+    xAxis->SetBinLabel(9, "centrality selection");
+    xAxis->SetBinLabel(10, "isApplyExtraCorrCut");
+    histos.add("GlobalMult_vs_FT0C", "GlobalMult_vs_FT0C", kTH2F, {axisMult, axisFT0CMult});
+    histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ});
 
     if (doprocessZdcCollAssoc) { // Check if the process function for ZDCCollAssoc is enabled
       histos.add("ZNAcoll", "ZNAcoll; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZn}}});
@@ -227,30 +274,76 @@ struct FlowZDCtask {
       histos.add("hZPvsMult", "ZP Energy vs Multiplicity", kTH2F, {axisMultiplicity, axisZP});
     }
   }
+  template <typename EventCuts>
+  bool isEventSelected(EventCuts const& col)
+  {
+    histos.fill(HIST("eventSelectionSteps"), 1);
+
+    if (!col.sel8()) {
+      return false;
+    }
+    histos.fill(HIST("eventSelectionSteps"), 2);
+
+    if (isApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+    histos.fill(HIST("eventSelectionSteps"), 3);
+
+    if (isApplyGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    histos.fill(HIST("eventSelectionSteps"), 4);
+
+    if (isApplyVertexITSTPC && !col.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      return false;
+    }
+    histos.fill(HIST("eventSelectionSteps"), 5);
+
+    if (isGoodITSLayersAll && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return false;
+    }
+    histos.fill(HIST("eventSelectionSteps"), 6);
+    if (isApplyVertexTOFmatched && !col.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      return false;
+    }
+    histos.fill(HIST("eventSelectionSteps"), 7);
+
+    if (isApplyVertexTRDmatched && !col.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      return false;
+    }
+    histos.fill(HIST("eventSelectionSteps"), 8);
+    if (col.centFT0C() < 0. || col.centFT0C() > 100.) {
+      return false;
+    }
+    histos.fill(HIST("eventSelectionSteps"), 9);
+
+    if (isApplyExtraCorrCut && col.multNTracksPV() > npvTracksCut && col.multFT0C() < (10 * col.multNTracksPV() - ft0cCut)) {
+      return false;
+    }
+    histos.fill(HIST("eventSelectionSteps"), 10);
+    histos.fill(HIST("eventSelectionSteps"), 11);
+    return true;
+  }
 
   void processQVector(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::ZDCMults const& /*zdcMults*/)
   {
-    histos.fill(HIST("eventCounter"), 0.5);
-    if (!collision.sel8())
+    if (!isEventSelected(collision)) {
       return;
+    }
+    histos.fill(HIST("eventCounter"), 0.5);
     histos.fill(HIST("centHistogram"), collision.centFT0C());
     const auto& tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     const int multTPC = tracksGrouped.size();
     const auto cent = collision.centFT0C();
-
+    int globalTracks = tracks.size();
+    if (globalTracks < 1)
+      return;
     // this is the q vector for the TPC data. it is a complex function
     double qTpcReal = 0.0; // Initialize qTPC_real
     double qTpcIm = 0.0;   // init qTPC_imaginary
-
-    if (cent < 0.0 && cent > 70)
-      return;
     std::complex<double> qTPC(0, 0); // Starting with a q-vector of zero
     int nTot{0};                     // Tracks are already filtered with GlobalTrack || GlobalTrackSDD
     for (const auto& track : tracks) {
-      if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
-        continue;
-      if (fabs(track.dcaXY()) > cfgCutDCAxy)
-        continue;
       double phi = track.phi();
       nTot++;
       histos.fill(HIST("etaHistogram"), track.eta());
@@ -258,11 +351,11 @@ struct FlowZDCtask {
       histos.fill(HIST("ptHistogram"), track.pt());
       qTPC += std::complex<double>(std::cos(2.0 * phi), std::sin(2.0 * phi));
     } // end track loop 1
-    int pT{0};
+    double pT{0};
     for (const auto& track : tracks) {
       if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
         continue;
-      if (fabs(track.dcaXY()) > cfgCutDCAxy)
+      if (std::fabs(track.dcaXY()) > cfgCutDCAxy)
         continue;
       pT = track.pt();
       pT++;
@@ -277,6 +370,7 @@ struct FlowZDCtask {
     histos.fill(HIST("IMqHistogram"), qTpcIm);
 
     histos.fill(HIST("TPCmultiplicity"), multTPC);
+    histos.fill(HIST("hGlobalTracks"), globalTracks);
 
     histos.fill(HIST("revsimag"), qTpcReal, qTpcIm);
   }
@@ -287,15 +381,15 @@ struct FlowZDCtask {
     aod::Zdcs const& /*zdcs*/,
     aod::FT0s const& /*ft0s*/)
   {
+    if (!isEventSelected(collision)) {
+      return;
+    }
     int nTot = tracks.size();
     double sumCosPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
     double sumSinPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
     int countEvents = 0;        // initialize Counter for the number of events processed
     double ft0aAmp = 0;
     double ft0cAmp = 0;
-    // collision-based event selection
-    if (!collision.sel8())
-      return;
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
@@ -417,13 +511,33 @@ struct FlowZDCtask {
     }
   }
 
-  PROCESS_SWITCH(FlowZDCtask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
-  PROCESS_SWITCH(FlowZDCtask, processQVector, "Process before recentering", true);
+  void processCorrelation(CollisionDataTable::iterator const& collision, FilTrackDataTable const& tracks)
+  {
+    if (!isEventSelected(collision)) {
+      return;
+    }
+    if (std::abs(collision.posZ()) >= vtxRange) {
+      return;
+    }
+    histos.fill(HIST("VtxZHist"), collision.posZ());
+    auto nchTracks = 0;
+    for (const auto& track : tracks) {
+      if (std::abs(track.eta()) >= etaRange) {
+        continue;
+      }
+      nchTracks++;
+    }
+    histos.fill(HIST("GlobalMult_vs_FT0C"), nchTracks, collision.multFT0C());
+  }
+
+  PROCESS_SWITCH(FlowZdcTask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
+  PROCESS_SWITCH(FlowZdcTask, processQVector, "Process before recentering", true);
+  PROCESS_SWITCH(FlowZdcTask, processCorrelation, "Process correlations", true);
 
 }; // end of struct function
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<FlowZDCtask>(cfgc)};
+    adaptAnalysisTask<FlowZdcTask>(cfgc)};
 }

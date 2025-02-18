@@ -63,9 +63,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNC, energyCommonZNC, //! get the total s
 // if required (for 2pc, etc)
 DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! basic collision properties: position
                   o2::soa::Index<>, collision::PosX, collision::PosY, collision::PosZ);
-DECLARE_SOA_TABLE(StraCents, "AOD", "STRACENTS", //! centrality percentiles
+DECLARE_SOA_TABLE(StraCents_000, "AOD", "STRACENTS", //! centrality percentiles
                   cent::CentFT0M, cent::CentFT0A,
                   cent::CentFT0C, cent::CentFV0A);
+DECLARE_SOA_TABLE_VERSIONED(StraCents_001, "AOD", "STRACENTS", 1, //! centrality percentiles
+                            cent::CentFT0M, cent::CentFT0A,
+                            cent::CentFT0C, cent::CentFV0A,
+                            cent::CentFT0CVariant1, cent::CentMFT,
+                            cent::CentNGlobal);
 // !!! DEPRECATED TABLE: StraRawCents_000 !!! All info in StraEvSels_001, in order to group all event characteristics in a unique table. Please use StraEvSels_001
 DECLARE_SOA_TABLE(StraRawCents_000, "AOD", "STRARAWCENTS", //! debug information
                   mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultNTracksPVeta1);
@@ -231,17 +236,18 @@ DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to comp
                   epcalibrationtable::TriggerEventEP);
 DECLARE_SOA_TABLE(StraZDCSP, "AOD", "STRAZDCSP", //! ZDC SP information
                   spcalibrationtable::TriggerEventSP,
-                  spcalibrationtable::PsiZDCA, spcalibrationtable::PsiZDCC);
+                  spcalibrationtable::PsiZDCA, spcalibrationtable::PsiZDCC, spcalibrationtable::QXZDCA, spcalibrationtable::QXZDCC, spcalibrationtable::QYZDCA, spcalibrationtable::QYZDCC);
 DECLARE_SOA_TABLE(StraStamps_000, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
                   bc::RunNumber, timestamp::Timestamp);
 DECLARE_SOA_TABLE_VERSIONED(StraStamps_001, "AOD", "STRASTAMPS", 1, //! information for ID-ing mag field if needed
                             bc::RunNumber, timestamp::Timestamp, bc::GlobalBC);
 
 using StraRawCents = StraRawCents_004;
+using StraCents = StraCents_001;
 using StraEvSels = StraEvSels_004;
 using StraStamps = StraStamps_001;
 using StraCollision = StraCollisions::iterator;
-using StraCent = StraCents::iterator;
+using StraCent = StraCents_001::iterator;
 
 namespace stramccollision
 {

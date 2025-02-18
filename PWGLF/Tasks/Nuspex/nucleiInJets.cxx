@@ -97,13 +97,17 @@ struct NucleiInJets {
   Configurable<int> minNparticlesInJet{"minNparticlesInJet", 2, "Minimum number of particles inside jet"};
   Configurable<int> nJetsPerEventMax{"nJetsPerEventMax", 1000, "Maximum number of jets per event"};
   Configurable<bool> requireNoOverlap{"requireNoOverlap", true, "require no overlap between jets and UE cones"};
+  Configurable<int> nGhosts{"nGhosts", 1000, "number of ghost particles"};
+  Configurable<double> alpha{"alpha", 1.0, "Alpha"};
+  Configurable<double> averagePtUE{"averagePtUE", 0.1, "Average pt of UE"};
+  Configurable<double> averagePtUEMC{"averagePtUEMC", 0.1, "Average pt of UE in MC"};
 
   // Track Parameters
   Configurable<double> par0{"par0", 0.00164, "par 0"};
   Configurable<double> par1{"par1", 0.00231, "par 1"};
   Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum number of ITS clusters"};
-  Configurable<int> minTpcNclusters{"minTpcNclusters", 80, "minimum number of TPC clusters"};
   Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 80, "minimum number of TPC crossed pad rows"};
+  Configurable<double> minTpcNcrossedRowsOverFindable{"minTpcNcrossedRowsOverFindable", 0.8, "crossed rows/findable"};
   Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0, "maximum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareIts{"maxChiSquareIts", 36.0, "maximum ITS chi^2/Ncls"};
   Configurable<double> minPt{"minPt", 0.3, "minimum pt of the tracks"};
@@ -159,12 +163,17 @@ struct NucleiInJets {
     registryQC.add("sumPtJetPlusUE", "sumPtJetPlusUE", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
     registryQC.add("sumPtJet", "sumPtJet", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
     registryQC.add("sumPtUE", "sumPtUE", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
+    registryQC.add("sumPtUE_MC", "sumPtUE_MC", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
     registryQC.add("nJets_found", "nJets_found", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
     registryQC.add("nJets_selected", "nJets_selected", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
-    registryQC.add("event_selection_jets", "event_selection_jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
     registryQC.add("dcaxy_vs_pt", "dcaxy_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
     registryQC.add("dcaz_vs_pt", "dcaz_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{z} (cm)"}});
+    registryQC.add("jet_jet_overlaps", "jet_jet_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
     registryQC.add("jet_ue_overlaps", "jet_ue_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
+    registryQC.add("ue_ue_overlaps", "ue_ue_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
+    registryQC.add("tot_overlaps", "tot_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
+    registryQC.add("hJetArea", "hJetArea", HistType::kTH1F, {{2000, 0, 2, "Area"}});
+    registryQC.add("hError", "hError", HistType::kTH1F, {{5, 0, 5, "error"}});
 
     // Event Counters
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
@@ -239,6 +248,19 @@ struct NucleiInJets {
     registryMC.add("antiproton_eta_pt_pythia", "antiproton_eta_pt_pythia", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
     registryMC.add("antiproton_eta_pt_jet", "antiproton_eta_pt_jet", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
     registryMC.add("antiproton_eta_pt_ue", "antiproton_eta_pt_ue", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
+
+    // Detector Response Matrix
+    if (doprocessDetResponseMatrix) {
+      registryMC.add("detectorResponseMatrix", "detectorResponseMatrix", HistType::kTH2F, {{5000, 0.0, 50.0, "#it{p}_{T}^{gen} (GeV/#it{c})"}, {5000, 0.0, 50.0, "#it{p}_{T}^{rec} (GeV/#it{c})"}});
+    }
+  }
+
+  // ITS Hit
+  template <typename T>
+  bool hasITSHit(T const& track, int layer)
+  {
+    int ibit = layer - 1;
+    return (track.itsClusterMap() & (1 << ibit));
   }
 
   // Single-Track Selection for Particles inside Jets
@@ -247,11 +269,13 @@ struct NucleiInJets {
   {
     if (!track.hasITS())
       return false;
-    if (track.itsNCls() < 3)
+    if ((!hasITSHit(track, 1)) && (!hasITSHit(track, 2)) && (!hasITSHit(track, 3)))
       return false;
     if (!track.hasTPC())
       return false;
     if (track.tpcNClsCrossedRows() < 70)
+      return false;
+    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < 0.8)
       return false;
     if (track.tpcChi2NCl() > 4)
       return false;
@@ -261,7 +285,12 @@ struct NucleiInJets {
       return false;
     if (track.pt() < 0.15)
       return false;
+    if (std::fabs(track.dcaXY()) > 0.25)
+      return false;
+    if (std::fabs(track.dcaZ()) > 2.0)
+      return false;
 
+    /*
     // pt-dependent selection
     if (setDCAselectionPtDep) {
       if (std::fabs(track.dcaXY()) > (par0 + par1 / track.pt()))
@@ -277,6 +306,7 @@ struct NucleiInJets {
       if (std::fabs(track.dcaZ()) > maxDcaz)
         return false;
     }
+    */
 
     return true;
   }
@@ -291,9 +321,9 @@ struct NucleiInJets {
       return false;
     if (!track.hasTPC())
       return false;
-    if (track.tpcNClsFound() < minTpcNclusters)
-      return false;
     if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
+      return false;
+    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < minTpcNcrossedRowsOverFindable)
       return false;
     if (track.tpcChi2NCl() > maxChiSquareTpc)
       return false;
@@ -422,6 +452,12 @@ struct NucleiInJets {
     return false;
   }
 
+  double getCorrectedPt(double ptRec)
+  {
+    // to be developed
+    return ptRec;
+  }
+
   void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_antip_jet, TString histname_antip_ue)
   {
     TList* l = ccdbObj->get<TList>(filepath.Data());
@@ -448,7 +484,6 @@ struct NucleiInJets {
   {
     // Event Counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
-    registryQC.fill(HIST("event_selection_jets"), 0.5); // all events before jet selection
 
     // Event Selection
     if (!collision.sel8())
@@ -469,6 +504,7 @@ struct NucleiInJets {
 
     // List of Tracks
     std::vector<TVector3> trk;
+    std::vector<int> ntrk;
 
     for (auto track : tracks) { // o2-linter: disable=[const-ref-in-for-loop]
 
@@ -479,24 +515,31 @@ struct NucleiInJets {
 
       TVector3 momentum(track.px(), track.py(), track.pz());
       trk.push_back(momentum);
+      ntrk.push_back(1);
     }
+
+    // Reject Empty Events
+    if (static_cast<int>(trk.size()) < 1)
+      return;
+    registryData.fill(HIST("number_of_events_data"), 3.5);
 
     // Anti-kt Jet Finder
     int nParticlesRemoved(0);
     std::vector<TVector3> jet;
     std::vector<TVector3> ue1;
     std::vector<TVector3> ue2;
+    std::vector<int> nParticlesInjet;
 
     do {
-      double dijMin(1e+06), diBmin(1e+06);
-      int iMin(0), jMin(0), iB_min(0);
+      double dijMin(1e+300), diBmin(1e+300);
+      int iMin(0), jMin(0), iBmin(0);
       for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
         if (trk[i].Mag() == 0)
           continue;
         double diB = 1.0 / (trk[i].Pt() * trk[i].Pt());
         if (diB < diBmin) {
           diBmin = diB;
-          iB_min = i;
+          iBmin = i;
         }
         for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) { // o2-linter: disable=[const-ref-in-for-loop]
           if (trk[j].Mag() == 0)
@@ -511,12 +554,15 @@ struct NucleiInJets {
       }
       if (dijMin < diBmin) {
         trk[iMin] = trk[iMin] + trk[jMin];
+        ntrk[iMin] = ntrk[iMin] + ntrk[jMin];
         trk[jMin].SetXYZ(0, 0, 0);
+        ntrk[jMin] = 0;
         nParticlesRemoved++;
       }
       if (dijMin > diBmin) {
-        jet.push_back(trk[iB_min]);
-        trk[iB_min].SetXYZ(0, 0, 0);
+        jet.push_back(trk[iBmin]);
+        nParticlesInjet.push_back(ntrk[iBmin]);
+        trk[iBmin].SetXYZ(0, 0, 0);
         nParticlesRemoved++;
       }
     } while (nParticlesRemoved < static_cast<int>(trk.size()));
@@ -525,14 +571,16 @@ struct NucleiInJets {
 
     // Jet Selection
     std::vector<int> isSelected;
-    for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
-      isSelected.push_back(0);
-    }
-
     int nJetsSelected(0);
     for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
 
-      if ((std::fabs(jet[i].Eta()) + rJet) > maxEta)
+      // Initialization
+      isSelected.push_back(0);
+
+      // Jet fully contained inside acceptance
+      if ((std::fabs(jet[i].Eta()) + rJet) > (maxEta - 0.5))
+        continue;
+      if (nParticlesInjet[i] < minNparticlesInJet)
         continue;
 
       // Perpendicular cones
@@ -543,22 +591,13 @@ struct NucleiInJets {
       ue1.push_back(ueAxis1);
       ue2.push_back(ueAxis2);
 
-      double nPartJetPlusUE(0);
-      double nPartJet(0);
-      double nPartUE(0);
-      double ptJetPlusUE(0);
-      double ptJet(0);
       double ptUE(0);
-
       for (auto track : tracks) { // o2-linter: disable=[const-ref-in-for-loop]
 
         if (!passedTrackSelectionForJetReconstruction(track))
           continue;
         TVector3 selectedTrack(track.px(), track.py(), track.pz());
 
-        double deltaEtaJet = selectedTrack.Eta() - jet[i].Eta();
-        double deltaPhiJet = getDeltaPhi(selectedTrack.Phi(), jet[i].Phi());
-        double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
         double deltaEtaUe1 = selectedTrack.Eta() - ueAxis1.Eta();
         double deltaPhiUe1 = getDeltaPhi(selectedTrack.Phi(), ueAxis1.Phi());
         double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
@@ -566,35 +605,24 @@ struct NucleiInJets {
         double deltaPhiUe2 = getDeltaPhi(selectedTrack.Phi(), ueAxis2.Phi());
         double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
-        if (deltaRjet < rJet) {
-          registryQC.fill(HIST("deltaEtadeltaPhiJet"), deltaEtaJet, deltaPhiJet);
-          nPartJetPlusUE++;
-          ptJetPlusUE = ptJetPlusUE + selectedTrack.Pt();
-        }
-        if (deltaRUe1 < rJet) {
+        if (deltaRUe1 < alpha * rJet) {
           registryQC.fill(HIST("deltaEtadeltaPhi_ue"), deltaEtaUe1, deltaPhiUe1);
-          nPartUE++;
           ptUE = ptUE + selectedTrack.Pt();
         }
-        if (deltaRUe2 < rJet) {
+        if (deltaRUe2 < alpha * rJet) {
           registryQC.fill(HIST("deltaEtadeltaPhi_ue"), deltaEtaUe2, deltaPhiUe2);
-          nPartUE++;
           ptUE = ptUE + selectedTrack.Pt();
         }
       }
-      nPartJet = nPartJetPlusUE - 0.5 * nPartUE;
-      ptJet = ptJetPlusUE - 0.5 * ptUE;
-      registryQC.fill(HIST("NchJetPlusUE"), nPartJetPlusUE);
-      registryQC.fill(HIST("NchJet"), nPartJet);
-      registryQC.fill(HIST("NchUE"), nPartUE);
-      registryQC.fill(HIST("sumPtJetPlusUE"), ptJetPlusUE);
-      registryQC.fill(HIST("sumPtJet"), ptJet);
-      registryQC.fill(HIST("sumPtUE"), ptUE);
+      registryQC.fill(HIST("sumPtUE"), 0.5 * ptUE);
+      registryQC.fill(HIST("NchJetPlusUE"), nParticlesInjet[i]);
 
-      if (ptJet < minJetPt)
+      double ptJetRec = jet[i].Pt() - averagePtUE;
+      double ptJetCorr = getCorrectedPt(ptJetRec);
+
+      if (ptJetCorr < minJetPt)
         continue;
-      if (nPartJetPlusUE < minNparticlesInJet)
-        continue;
+
       nJetsSelected++;
       isSelected[i] = 1;
     }
@@ -602,34 +630,43 @@ struct NucleiInJets {
 
     if (nJetsSelected == 0)
       return;
-    registryData.fill(HIST("number_of_events_data"), 3.5);
-    registryQC.fill(HIST("event_selection_jets"), 1.5); // events with pTjet>10 GeV/c selected
-    //************************************************************************************************************************************
+    registryData.fill(HIST("number_of_events_data"), 4.5);
 
     // Overlaps
-    int nOverlaps(0);
-    for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
+    int nOverlapsJetJet(0);
+    int nOverlapsJetUe(0);
+    int nOverlapsUeUe(0);
+    int nOverlapsTot(0);
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) {
       if (isSelected[i] == 0)
         continue;
 
-      for (int j = 0; j < static_cast<int>(jet.size()); j++) { // o2-linter: disable=[const-ref-in-for-loop]
-        if (isSelected[j] == 0 || i == j)
+      for (int j = (i + 1); j < static_cast<int>(jet.size()); j++) {
+        if (isSelected[j] == 0)
           continue;
-        if (overlap(jet[i], ue1[j], rJet) || overlap(jet[i], ue2[j], rJet) || overlap(jet[i], jet[j], rJet))
-          nOverlaps++;
+        if (overlap(jet[i], jet[j], rJet))
+          nOverlapsJetJet++;
+        if (overlap(jet[i], ue1[j], rJet) || overlap(jet[i], ue2[j], rJet))
+          nOverlapsJetUe++;
+        if (overlap(ue1[i], ue1[j], rJet) || overlap(ue1[i], ue2[j], rJet) || overlap(ue2[i], ue2[j], rJet))
+          nOverlapsUeUe++;
       }
     }
-    registryQC.fill(HIST("jet_ue_overlaps"), nJetsSelected, nOverlaps);
+    nOverlapsTot = nOverlapsJetJet + nOverlapsJetUe + nOverlapsUeUe;
+    registryQC.fill(HIST("jet_jet_overlaps"), nJetsSelected, nOverlapsJetJet);
+    registryQC.fill(HIST("jet_ue_overlaps"), nJetsSelected, nOverlapsJetUe);
+    registryQC.fill(HIST("ue_ue_overlaps"), nJetsSelected, nOverlapsUeUe);
+    registryQC.fill(HIST("tot_overlaps"), nJetsSelected, nOverlapsTot);
 
     if (nJetsSelected > nJetsPerEventMax)
       return;
-    registryData.fill(HIST("number_of_events_data"), 4.5);
-
-    if (requireNoOverlap && nOverlaps > 0)
-      return;
     registryData.fill(HIST("number_of_events_data"), 5.5);
 
-    //************************************************************************************************************************************
+    if (requireNoOverlap && nOverlapsTot > 0)
+      return;
+    registryData.fill(HIST("number_of_events_data"), 6.5);
+
+    //**************************************************************************************************************
 
     for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
 
@@ -951,32 +988,46 @@ struct NucleiInJets {
 
       // List of Tracks
       std::vector<TVector3> trk;
+      std::vector<TVector3> part;
+      std::vector<int> ntrk;
 
       for (auto track : tracksPerColl) { // o2-linter: disable=[const-ref-in-for-loop]
 
         if (!passedTrackSelectionForJetReconstruction(track))
           continue;
+        if (!track.has_mcParticle())
+          continue;
 
-        TVector3 momentum(track.px(), track.py(), track.pz());
-        trk.push_back(momentum);
+        const auto particle = track.mcParticle();
+        TVector3 pRec(track.px(), track.py(), track.pz());
+        TVector3 pGen(particle.px(), particle.py(), particle.pz());
+        trk.push_back(pRec);
+        part.push_back(pGen);
+        ntrk.push_back(1);
       }
+
+      // Reject Empty Events
+      if (static_cast<int>(trk.size()) < 1)
+        continue;
 
       // Anti-kt Jet Finder
       int nParticlesRemoved(0);
       std::vector<TVector3> jet;
+      std::vector<TVector3> jetGen;
       std::vector<TVector3> ue1;
       std::vector<TVector3> ue2;
+      std::vector<int> nParticlesInjet;
 
       do {
-        double dijMin(1e+06), diBmin(1e+06);
-        int iMin(0), jMin(0), iB_min(0);
+        double dijMin(1e+300), diBmin(1e+300);
+        int iMin(0), jMin(0), iBmin(0);
         for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
           if (trk[i].Mag() == 0)
             continue;
           double diB = 1.0 / (trk[i].Pt() * trk[i].Pt());
           if (diB < diBmin) {
             diBmin = diB;
-            iB_min = i;
+            iBmin = i;
           }
           for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) { // o2-linter: disable=[const-ref-in-for-loop]
             if (trk[j].Mag() == 0)
@@ -991,26 +1042,35 @@ struct NucleiInJets {
         }
         if (dijMin < diBmin) {
           trk[iMin] = trk[iMin] + trk[jMin];
+          ntrk[iMin] = ntrk[iMin] + ntrk[jMin];
+          part[iMin] = part[iMin] + part[jMin];
           trk[jMin].SetXYZ(0, 0, 0);
+          part[jMin].SetXYZ(0, 0, 0);
+          ntrk[jMin] = 0;
           nParticlesRemoved++;
         }
         if (dijMin > diBmin) {
-          jet.push_back(trk[iB_min]);
-          trk[iB_min].SetXYZ(0, 0, 0);
+          jet.push_back(trk[iBmin]);
+          jetGen.push_back(part[iBmin]);
+          nParticlesInjet.push_back(ntrk[iBmin]);
+          trk[iBmin].SetXYZ(0, 0, 0);
+          part[iBmin].SetXYZ(0, 0, 0);
           nParticlesRemoved++;
         }
       } while (nParticlesRemoved < static_cast<int>(trk.size()));
 
       // Jet Selection
       std::vector<int> isSelected;
-      for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
-        isSelected.push_back(0);
-      }
-
       int nJetsSelected(0);
       for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
 
-        if ((std::fabs(jet[i].Eta()) + rJet) > maxEta)
+        // Initialization
+        isSelected.push_back(0);
+
+        // Jet fully contained inside acceptance
+        if ((std::fabs(jet[i].Eta()) + rJet) > (maxEta - 0.5))
+          continue;
+        if (nParticlesInjet[i] < minNparticlesInJet)
           continue;
 
         // Perpendicular cones
@@ -1021,20 +1081,16 @@ struct NucleiInJets {
         ue1.push_back(ueAxis1);
         ue2.push_back(ueAxis2);
 
-        double nPartJetPlusUE(0);
-        double ptJetPlusUE(0);
-        double ptJet(0);
         double ptUE(0);
-
         for (auto track : tracksPerColl) { // o2-linter: disable=[const-ref-in-for-loop]
 
           if (!passedTrackSelectionForJetReconstruction(track))
             continue;
           TVector3 selectedTrack(track.px(), track.py(), track.pz());
+          if (!track.has_mcParticle())
+            continue;
 
-          double deltaEtaJet = selectedTrack.Eta() - jet[i].Eta();
-          double deltaPhiJet = getDeltaPhi(selectedTrack.Phi(), jet[i].Phi());
-          double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+          const auto particle = track.mcParticle();
           double deltaEtaUe1 = selectedTrack.Eta() - ueAxis1.Eta();
           double deltaPhiUe1 = getDeltaPhi(selectedTrack.Phi(), ueAxis1.Phi());
           double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
@@ -1042,29 +1098,48 @@ struct NucleiInJets {
           double deltaPhiUe2 = getDeltaPhi(selectedTrack.Phi(), ueAxis2.Phi());
           double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
-          if (deltaRjet < rJet) {
-            nPartJetPlusUE++;
-            ptJetPlusUE = ptJetPlusUE + selectedTrack.Pt();
-          }
-          if (deltaRUe1 < rJet) {
-            ptUE = ptUE + selectedTrack.Pt();
-          }
-          if (deltaRUe2 < rJet) {
-            ptUE = ptUE + selectedTrack.Pt();
+          if ((deltaRUe1 < alpha * rJet) || (deltaRUe2 < alpha * rJet)) {
+            ptUE = ptUE + particle.pt();
           }
         }
-        ptJet = ptJetPlusUE - 0.5 * ptUE;
+        registryQC.fill(HIST("sumPtUE_MC"), 0.5 * ptUE);
 
-        if (ptJet < minJetPt)
+        double ptJetCorr = jetGen[i].Pt() - averagePtUEMC;
+
+        if (ptJetCorr < minJetPt)
           continue;
-        if (nPartJetPlusUE < minNparticlesInJet)
-          continue;
+
         nJetsSelected++;
         isSelected[i] = 1;
       }
       if (nJetsSelected == 0)
         continue;
-      registryMC.fill(HIST("number_of_events_mc"), 6.5);
+
+      // Overlaps
+      int nOverlapsJetJet(0);
+      int nOverlapsJetUe(0);
+      int nOverlapsUeUe(0);
+      int nOverlapsTot(0);
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+        if (isSelected[i] == 0)
+          continue;
+
+        for (int j = (i + 1); j < static_cast<int>(jet.size()); j++) {
+          if (isSelected[j] == 0)
+            continue;
+          if (overlap(jet[i], jet[j], rJet))
+            nOverlapsJetJet++;
+          if (overlap(jet[i], ue1[j], rJet) || overlap(jet[i], ue2[j], rJet))
+            nOverlapsJetUe++;
+          if (overlap(ue1[i], ue1[j], rJet) || overlap(ue1[i], ue2[j], rJet) || overlap(ue2[i], ue2[j], rJet))
+            nOverlapsUeUe++;
+        }
+      }
+      nOverlapsTot = nOverlapsJetJet + nOverlapsJetUe + nOverlapsUeUe;
+      if (nJetsSelected > nJetsPerEventMax)
+        continue;
+      if (requireNoOverlap && nOverlapsTot > 0)
+        continue;
 
       for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
 
@@ -1133,6 +1208,7 @@ struct NucleiInJets {
 
       // List of Tracks
       std::vector<TVector3> trk;
+      std::vector<int> ntrk;
 
       for (auto& particle : mcParticlesPerColl) { // o2-linter: disable=[const-ref-in-for-loop]
         if (particle.isPhysicalPrimary() && particle.pdgCode() == -2212) {
@@ -1145,20 +1221,10 @@ struct NucleiInJets {
         double dz = particle.vz() - mccollision.posZ();
         double dcaxy = std::sqrt(dx * dx + dy * dy);
         double dcaz = std::fabs(dz);
-
-        if (setDCAselectionPtDep) {
-          if (dcaxy > (par0 + par1 / particle.pt()))
-            continue;
-          if (dcaz > (par0 + par1 / particle.pt()))
-            continue;
-        }
-        if (!setDCAselectionPtDep) {
-          if (dcaxy > maxDcaxy)
-            continue;
-          if (dcaz > maxDcaz)
-            continue;
-        }
-
+        if (dcaxy > 0.25)
+          continue;
+        if (dcaz > 2.0)
+          continue;
         if (std::fabs(particle.eta()) > 0.8)
           continue;
         if (particle.pt() < 0.15)
@@ -1171,6 +1237,7 @@ struct NucleiInJets {
 
         TVector3 momentum(particle.px(), particle.py(), particle.pz());
         trk.push_back(momentum);
+        ntrk.push_back(1);
       }
 
       // Anti-kt Jet Finder
@@ -1178,17 +1245,18 @@ struct NucleiInJets {
       std::vector<TVector3> jet;
       std::vector<TVector3> ue1;
       std::vector<TVector3> ue2;
+      std::vector<int> nParticlesInjet;
 
       do {
-        double dijMin(1e+06), diBmin(1e+06);
-        int iMin(0), jMin(0), iB_min(0);
+        double dijMin(1e+300), diBmin(1e+300);
+        int iMin(0), jMin(0), iBmin(0);
         for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
           if (trk[i].Mag() == 0)
             continue;
           double diB = 1.0 / (trk[i].Pt() * trk[i].Pt());
           if (diB < diBmin) {
             diBmin = diB;
-            iB_min = i;
+            iBmin = i;
           }
           for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) { // o2-linter: disable=[const-ref-in-for-loop]
             if (trk[j].Mag() == 0)
@@ -1203,26 +1271,31 @@ struct NucleiInJets {
         }
         if (dijMin < diBmin) {
           trk[iMin] = trk[iMin] + trk[jMin];
+          ntrk[iMin] = ntrk[iMin] + ntrk[jMin];
           trk[jMin].SetXYZ(0, 0, 0);
+          ntrk[jMin] = 0;
           nParticlesRemoved++;
         }
         if (dijMin > diBmin) {
-          jet.push_back(trk[iB_min]);
-          trk[iB_min].SetXYZ(0, 0, 0);
+          jet.push_back(trk[iBmin]);
+          nParticlesInjet.push_back(ntrk[iBmin]);
+          trk[iBmin].SetXYZ(0, 0, 0);
           nParticlesRemoved++;
         }
       } while (nParticlesRemoved < static_cast<int>(trk.size()));
 
       // Jet Selection
       std::vector<int> isSelected;
-      for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
-        isSelected.push_back(0);
-      }
-
       int nJetsSelected(0);
       for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
 
-        if ((std::fabs(jet[i].Eta()) + rJet) > maxEta)
+        // Initialization
+        isSelected.push_back(0);
+
+        // Jet fully contained inside acceptance
+        if ((std::fabs(jet[i].Eta()) + rJet) > (maxEta - 0.5))
+          continue;
+        if (nParticlesInjet[i] < minNparticlesInJet)
           continue;
 
         // Perpendicular cones
@@ -1233,76 +1306,40 @@ struct NucleiInJets {
         ue1.push_back(ueAxis1);
         ue2.push_back(ueAxis2);
 
-        double nPartJetPlusUE(0);
-        double ptJetPlusUE(0);
-        double ptJet(0);
-        double ptUE(0);
-
-        for (auto& particle : mcParticlesPerColl) { // o2-linter: disable=[const-ref-in-for-loop]
-
-          // Select Primary Particles
-          double dx = particle.vx() - mccollision.posX();
-          double dy = particle.vy() - mccollision.posY();
-          double dz = particle.vz() - mccollision.posZ();
-          double dcaxy = std::sqrt(dx * dx + dy * dy);
-          double dcaz = std::fabs(dz);
-
-          if (setDCAselectionPtDep) {
-            if (dcaxy > (par0 + par1 / particle.pt()))
-              continue;
-            if (dcaz > (par0 + par1 / particle.pt()))
-              continue;
-          }
-          if (!setDCAselectionPtDep) {
-            if (dcaxy > maxDcaxy)
-              continue;
-            if (dcaz > maxDcaz)
-              continue;
-          }
-
-          if (std::fabs(particle.eta()) > 0.8)
-            continue;
-          if (particle.pt() < 0.15)
-            continue;
-
-          // PDG Selection
-          int pdg = std::fabs(particle.pdgCode());
-          if ((pdg != 11) && (pdg != 211) && (pdg != 321) && (pdg != 2212))
-            continue;
-
-          TVector3 selectedTrack(particle.px(), particle.py(), particle.pz());
-
-          double deltaEtaJet = selectedTrack.Eta() - jet[i].Eta();
-          double deltaPhiJet = getDeltaPhi(selectedTrack.Phi(), jet[i].Phi());
-          double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
-          double deltaEtaUe1 = selectedTrack.Eta() - ueAxis1.Eta();
-          double deltaPhiUe1 = getDeltaPhi(selectedTrack.Phi(), ueAxis1.Phi());
-          double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
-          double deltaEtaUe2 = selectedTrack.Eta() - ueAxis2.Eta();
-          double deltaPhiUe2 = getDeltaPhi(selectedTrack.Phi(), ueAxis2.Phi());
-          double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
-
-          if (deltaRjet < rJet) {
-            nPartJetPlusUE++;
-            ptJetPlusUE = ptJetPlusUE + selectedTrack.Pt();
-          }
-          if (deltaRUe1 < rJet) {
-            ptUE = ptUE + selectedTrack.Pt();
-          }
-          if (deltaRUe2 < rJet) {
-            ptUE = ptUE + selectedTrack.Pt();
-          }
-        }
-        ptJet = ptJetPlusUE - 0.5 * ptUE;
-
-        if (ptJet < minJetPt)
+        double ptJetCorr = jet[i].Pt() - averagePtUEMC;
+        if (ptJetCorr < minJetPt)
           continue;
-        if (nPartJetPlusUE < minNparticlesInJet)
-          continue;
+
         nJetsSelected++;
         isSelected[i] = 1;
       }
       if (nJetsSelected == 0)
+        continue;
+
+      // Overlaps
+      int nOverlapsJetJet(0);
+      int nOverlapsJetUe(0);
+      int nOverlapsUeUe(0);
+      int nOverlapsTot(0);
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+        if (isSelected[i] == 0)
+          continue;
+
+        for (int j = (i + 1); j < static_cast<int>(jet.size()); j++) {
+          if (isSelected[j] == 0)
+            continue;
+          if (overlap(jet[i], jet[j], rJet))
+            nOverlapsJetJet++;
+          if (overlap(jet[i], ue1[j], rJet) || overlap(jet[i], ue2[j], rJet))
+            nOverlapsJetUe++;
+          if (overlap(ue1[i], ue1[j], rJet) || overlap(ue1[i], ue2[j], rJet) || overlap(ue2[i], ue2[j], rJet))
+            nOverlapsUeUe++;
+        }
+      }
+      nOverlapsTot = nOverlapsJetJet + nOverlapsJetUe + nOverlapsUeUe;
+      if (nJetsSelected > nJetsPerEventMax)
+        continue;
+      if (requireNoOverlap && nOverlapsTot > 0)
         continue;
 
       for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
@@ -1340,6 +1377,192 @@ struct NucleiInJets {
     }
   }
   PROCESS_SWITCH(NucleiInJets, processAntiprotonReweighting, "Process antiproton reweighting", false);
+
+  void processGhosts(SelectedCollisions::iterator const& collision, FullNucleiTracks const& tracks)
+  {
+    // Event Selection
+    if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
+      return;
+
+    // Track Selection for Jet Finding
+    std::vector<TVector3> trk;
+    for (auto track : tracks) { // o2-linter: disable=[const-ref-in-for-loop]
+
+      if (!passedTrackSelectionForJetReconstruction(track))
+        continue;
+      TVector3 momentum(track.px(), track.py(), track.pz());
+      trk.push_back(momentum);
+    }
+    // Reject Empty Events
+    if (static_cast<int>(trk.size()) < 1)
+      return;
+
+    // Generate Ghosts
+    for (int i = 0; i < nGhosts; i++) { // o2-linter: disable=[const-ref-in-for-loop]
+
+      double eta = gRandom->Uniform(-0.8, 0.8);
+      double phi = gRandom->Uniform(0.0, TwoPI);
+      double pt = 1e-100;
+      TVector3 ghost;
+      ghost.SetPtEtaPhi(pt, eta, phi);
+      trk.push_back(ghost);
+    }
+
+    // Anti-kt Jet Finder
+    int nParticlesRemoved(0);
+    std::vector<TVector3> jet;
+    std::vector<double> jetArea;
+
+    do {
+      double dijMin(1e+300), diBmin(1e+300);
+      int iMin(0), jMin(0), iBmin(0);
+      int nGhostsInJet(0);
+      for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
+        if (trk[i].Mag() == 0)
+          continue;
+        double diB = 1.0 / (trk[i].Pt() * trk[i].Pt());
+        if (diB < diBmin) {
+          diBmin = diB;
+          iBmin = i;
+        }
+        for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) { // o2-linter: disable=[const-ref-in-for-loop]
+          if (trk[j].Mag() == 0)
+            continue;
+          double dij = calculateDij(trk[i], trk[j], rJet);
+          if (dij < dijMin) {
+            dijMin = dij;
+            iMin = i;
+            jMin = j;
+          }
+        }
+      }
+      if (dijMin < diBmin) {
+        if (trk[iMin].Pt() == 1e-100)
+          nGhostsInJet++;
+        if (trk[jMin].Pt() == 1e-100)
+          nGhostsInJet++;
+        trk[iMin] = trk[iMin] + trk[jMin];
+        trk[jMin].SetXYZ(0, 0, 0);
+        nParticlesRemoved++;
+      }
+      if (dijMin > diBmin) {
+        double area = (static_cast<double>(nGhostsInJet) / static_cast<double>(nGhosts)) * TwoPI * 1.6;
+        double alphaJet = area / (PI * rJet * rJet);
+        jetArea.push_back(alphaJet);
+        jet.push_back(trk[iBmin]);
+        trk[iBmin].SetXYZ(0, 0, 0);
+        nParticlesRemoved++;
+      }
+      if (dijMin == diBmin) {
+        registryQC.fill(HIST("hError"), 0.5);
+        nParticlesRemoved = static_cast<int>(trk.size());
+      }
+    } while (nParticlesRemoved < static_cast<int>(trk.size()));
+
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
+
+      if ((std::fabs(jet[i].Eta()) + rJet) > (maxEta - 0.5))
+        continue;
+
+      double ptJetRec = jet[i].Pt() - averagePtUE;
+      double ptJetCorr = getCorrectedPt(ptJetRec);
+      if (ptJetCorr < minJetPt)
+        continue;
+
+      registryQC.fill(HIST("hJetArea"), jetArea[i]);
+    }
+  }
+  PROCESS_SWITCH(NucleiInJets, processGhosts, "Process Ghosts", false);
+
+  void processDetResponseMatrix(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const&, const aod::McParticles&)
+  {
+    for (const auto& collision : collisions) { // o2-linter: disable=[const-ref-in-for-loop]
+
+      // Event Selection
+      if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
+        continue;
+
+      // List of Tracks and Particles
+      std::vector<TVector3> trk;
+      std::vector<TVector3> part;
+      std::vector<int> ntrk;
+      auto tracksPerColl = mcTracks.sliceBy(perCollision, collision.globalIndex());
+
+      for (auto track : tracksPerColl) { // o2-linter: disable=[const-ref-in-for-loop]
+
+        if (!passedTrackSelectionForJetReconstruction(track))
+          continue;
+        if (!track.has_mcParticle())
+          continue;
+        const auto particle = track.mcParticle();
+
+        TVector3 recMomentum(track.px(), track.py(), track.pz());
+        TVector3 genMomentum(particle.px(), particle.py(), particle.pz());
+        trk.push_back(recMomentum);
+        part.push_back(genMomentum);
+        ntrk.push_back(1);
+      }
+      // Reject Empty Events
+      if (static_cast<int>(trk.size()) < 1)
+        continue;
+
+      // Anti-kt Jet Finder
+      int nParticlesRemoved(0);
+      std::vector<TVector3> jetRecMomentum;
+      std::vector<TVector3> jetGenMomentum;
+      std::vector<int> nParticlesInjet;
+
+      do {
+        double dijMin(1e+300), diBmin(1e+300);
+        int iMin(0), jMin(0), iBmin(0);
+        for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
+          if (trk[i].Mag() == 0)
+            continue;
+          double diB = 1.0 / (trk[i].Pt() * trk[i].Pt());
+          if (diB < diBmin) {
+            diBmin = diB;
+            iBmin = i;
+          }
+          for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) { // o2-linter: disable=[const-ref-in-for-loop]
+            if (trk[j].Mag() == 0)
+              continue;
+            double dij = calculateDij(trk[i], trk[j], rJet);
+            if (dij < dijMin) {
+              dijMin = dij;
+              iMin = i;
+              jMin = j;
+            }
+          }
+        }
+        if (dijMin < diBmin) {
+          trk[iMin] = trk[iMin] + trk[jMin];
+          ntrk[iMin] = ntrk[iMin] + ntrk[jMin];
+          part[iMin] = part[iMin] + part[jMin];
+          trk[jMin].SetXYZ(0, 0, 0);
+          ntrk[jMin] = 0;
+          nParticlesRemoved++;
+        }
+        if (dijMin > diBmin) {
+          jetRecMomentum.push_back(trk[iBmin]);
+          jetGenMomentum.push_back(part[iBmin]);
+          nParticlesInjet.push_back(ntrk[iBmin]);
+          trk[iBmin].SetXYZ(0, 0, 0);
+          nParticlesRemoved++;
+        }
+      } while (nParticlesRemoved < static_cast<int>(trk.size()));
+
+      for (int i = 0; i < static_cast<int>(jetRecMomentum.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
+
+        if ((std::fabs(jetRecMomentum[i].Eta()) + rJet) > (maxEta - 0.5))
+          continue;
+
+        double ptGen = jetGenMomentum[i].Pt();
+        double ptRec = jetRecMomentum[i].Pt();
+        registryMC.fill(HIST("detectorResponseMatrix"), ptGen, ptRec);
+      }
+    }
+  }
+  PROCESS_SWITCH(NucleiInJets, processDetResponseMatrix, "process detector response matrix", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

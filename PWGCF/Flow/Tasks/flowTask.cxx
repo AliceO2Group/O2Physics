@@ -257,8 +257,8 @@ struct FlowTask {
     fPtAxis = new TAxis(nPtBins, ptBins);
 
     if (cfgOutputNUAWeights) {
-      fWeights->SetPtBins(nPtBins, ptBins);
-      fWeights->Init(true, false);
+      fWeights->setPtBins(nPtBins, ptBins);
+      fWeights->init(true, false);
     }
 
     TList* groupNUAWeightlist = new TList();
@@ -274,8 +274,8 @@ struct FlowTask {
         else
           groupweight = new GFWWeights(Form("groupweight_last"));
 
-        groupweight->SetPtBins(nPtBins, ptBins);
-        groupweight->Init(true, false);
+        groupweight->setPtBins(nPtBins, ptBins);
+        groupweight->init(true, false);
         groupNUAWeightlist->Add(groupweight);
         std::shared_ptr<GFWWeights> sharePtrGroupWeight(groupweight);
         groupNUAWeightPtr[i] = sharePtrGroupWeight;
@@ -368,8 +368,8 @@ struct FlowTask {
     fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("poifull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2);
-    fGFW->AddRegion("olN", -0.8, -0.4, 1, 4);
-    fGFW->AddRegion("olN10", -0.8, -0.5, 1, 4);
+    fGFW->AddRegion("olN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 4);
     fGFW->AddRegion("olfull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 4);
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
@@ -534,14 +534,14 @@ struct FlowTask {
     weight_nue = 1. / eff;
     if (cfgAcceptanceGroupUse) {
       if (mGroupAcceptanceList && mGroupAcceptanceList->At(groupNUAIndex)) {
-        weight_nua = reinterpret_cast<GFWWeights*>(mGroupAcceptanceList->At(groupNUAIndex))->GetNUA(phi, eta, vtxz);
+        weight_nua = reinterpret_cast<GFWWeights*>(mGroupAcceptanceList->At(groupNUAIndex))->getNUA(phi, eta, vtxz);
       } else {
         weight_nua = 1;
       }
       return true;
     }
     if (mAcceptance)
-      weight_nua = mAcceptance->GetNUA(phi, eta, vtxz);
+      weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
     else
       weight_nua = 1;
     return true;
@@ -783,18 +783,18 @@ struct FlowTask {
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
           if (withinPtRef)
-            fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+            fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
         } else {
-          fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+          fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
         }
       }
       if (cfgOutputGroupNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
           if (withinPtRef) {
-            groupNUAWeightPtr[groupNUAIndex]->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+            groupNUAWeightPtr[groupNUAIndex]->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
           }
         } else {
-          groupNUAWeightPtr[groupNUAIndex]->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+          groupNUAWeightPtr[groupNUAIndex]->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
         }
       }
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz, groupNUAIndex))

@@ -11,10 +11,12 @@
 
 /// \author Junlee Kim (jikim1290@gmail.com)
 
+#include <Framework/Configurable.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
 #include <chrono>
+#include <iostream>
 #include <string>
 
 #include "TLorentzVector.h"
@@ -103,6 +105,7 @@ struct f0980pbpbanalysis {
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"}; // TPC
   Configurable<double> cMaxTPCnSigmaPionS{"cMaxTPCnSigmaPionS", 3.0, "TPC nSigma cut for Pion as a standalone"};
   Configurable<bool> cfgUSETOF{"cfgUSETOF", false, "TPC usage"};
+  Configurable<int> SelectType{"SelectType", 0, "PID selection type"};
 
   Configurable<int> cfgnMods{"cfgnMods", 1, "The number of modulations of interest starting from 2"};
   Configurable<int> cfgNQvec{"cfgNQvec", 7, "The number of total Qvectors for looping over the task"};
@@ -238,16 +241,38 @@ struct f0980pbpbanalysis {
   template <typename TrackType>
   bool PIDSelected(const TrackType track)
   {
-    if (cfgUSETOF) {
-      if (std::fabs(track.tofNSigmaPi()) > cMaxTOFnSigmaPion) {
-        return 0;
+    if (SelectType == 0) {
+      if (cfgUSETOF) {
+        if (std::fabs(track.tofNSigmaPi()) > cMaxTOFnSigmaPion) {
+          return 0;
+        }
+        if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPion) {
+          return 0;
+        }
       }
-      if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPion) {
+      if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
         return 0;
       }
     }
-    if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
-      return 0;
+    if (SelectType == 1) {
+      if (cfgUSETOF) {
+        if (track.hasTOF()) {
+          if (std::fabs(track.tofNSigmaPi()) > cMaxTOFnSigmaPion) {
+            return 0;
+          }
+          if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPion) {
+            return 0;
+          }
+        } else {
+          if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
+            return 0;
+          }
+        }
+      } else {
+        if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
+          return 0;
+        }
+      }
     }
 
     return 1;
@@ -271,54 +296,46 @@ struct f0980pbpbanalysis {
     histos.fill(HIST("QA/EPResBC"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneRefA - eventPlaneRefB)));
 
     TLorentzVector Pion1, Pion2, Reco;
-    for (auto& [trk1, trk2] :
-         combinations(CombinationsUpperIndexPolicy(dTracks, dTracks))) {
-      if (trk1.index() == trk2.index()) {
-        if (!trackSelected(trk1))
+    for (auto& trk1 : dTracks) {
+      if (!trackSelected(trk1))
+        continue;
+      histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
+      histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), trk1.tofNSigmaPi());
+      histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
+
+      for (auto& trk2 : dTracks) {
+        if (!trackSelected(trk1) || !trackSelected(trk2)) {
           continue;
-        histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
-        histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), trk1.tofNSigmaPi());
-        histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
-        continue;
-      }
+        }
 
-      if (!trackSelected(trk1) || !trackSelected(trk2))
-        continue;
-      if (!PIDSelected(trk1) || !PIDSelected(trk2))
-        continue;
+        // PID
+        if (!PIDSelected(trk1) || !PIDSelected(trk2)) {
+          continue;
+        }
 
-      if (trk1.index() == trk2.index()) {
-        histos.fill(HIST("QA/Nsigma_TPC_selected"), trk1.pt(), trk1.tpcNSigmaPi());
-        histos.fill(HIST("QA/Nsigma_TOF_selected"), trk1.pt(), trk1.tofNSigmaPi());
-        histos.fill(HIST("QA/TPC_TOF_selected"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
-      }
+        if (trk1.index() == trk2.index()) {
+          histos.fill(HIST("QA/Nsigma_TPC_selected"), trk1.pt(), trk1.tpcNSigmaPi());
+          histos.fill(HIST("QA/Nsigma_TOF_selected"), trk1.pt(), trk1.tofNSigmaPi());
+          histos.fill(HIST("QA/TPC_TOF_selected"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
+        }
 
-      Pion1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
-      Pion2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
-      Reco = Pion1 + Pion2;
+        Pion1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
+        Pion2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
+        Reco = Pion1 + Pion2;
 
-      if (Reco.Rapidity() > cfgMaxRap || Reco.Rapidity() < cfgMinRap)
-        continue;
+        if (Reco.Rapidity() > cfgMaxRap || Reco.Rapidity() < cfgMinRap) {
+          continue;
+        }
 
-      relPhi = TVector2::Phi_0_2pi((Reco.Phi() - eventPlaneDet) * static_cast<float>(nmode));
+        relPhi = TVector2::Phi_0_2pi((Reco.Phi() - eventPlaneDet) * static_cast<float>(nmode));
 
-      if (trk1.sign() * trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_US_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
-        /*
-                if constexpr (IsMC) {
-                  if (abs(trk1.pdgCode()) != 211 || abs(trk2.pdgCode()) != 211)
-                    continue;
-                  if (trk1.motherId() != trk2.motherId())
-                    continue;
-                  if (abs(trk1.motherPDG()) != 9010221)
-                    continue;
-                  histos.fill(HIST("MCL/hpT_f0980_REC"), Reco.M(), Reco.Pt(), centrality);
-                }
-        */
-      } else if (trk1.sign() > 0 && trk2.sign() > 0) {
-        histos.fill(HIST("hInvMass_f0980_LSpp_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
-      } else if (trk1.sign() < 0 && trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
+        if (trk1.sign() * trk2.sign() < 0) {
+          histos.fill(HIST("hInvMass_f0980_US_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
+        } else if (trk1.sign() > 0 && trk2.sign() > 0) {
+          histos.fill(HIST("hInvMass_f0980_LSpp_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
+        } else if (trk1.sign() < 0 && trk2.sign() < 0) {
+          histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
+        }
       }
     }
   }

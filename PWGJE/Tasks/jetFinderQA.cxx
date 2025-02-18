@@ -14,6 +14,9 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #include <cmath>
+#include <vector>
+#include <string>
+#include <algorithm>
 #include <TRandom3.h>
 
 #include "Framework/ASoA.h"
@@ -80,7 +83,7 @@ struct JetFinderQATask {
   std::vector<bool> filledJetR_High;
   std::vector<double> jetRadiiValues;
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
   std::vector<double> jetPtBins;
@@ -88,7 +91,7 @@ struct JetFinderQATask {
 
   void init(o2::framework::InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
     jetRadiiValues = (std::vector<double>)jetRadii;
 
@@ -324,6 +327,18 @@ struct JetFinderQATask {
     if (doprocessMCCollisionsWeighted) {
       AxisSpec weightAxis = {{VARIABLE_WIDTH, 1e-13, 1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10.0}, "weights"};
       registry.add("h_collision_eventweight_part", "event weight;event weight;entries", {HistType::kTH1F, {weightAxis}});
+    }
+
+    AxisSpec occupancyAxis = {142, -1.5, 14000.5, "occupancy"};
+    AxisSpec nTracksAxis = {16001, -1., 16000, "n tracks"};
+
+    if (doprocessOccupancyQA) {
+      registry.add("h2_occupancy_ntracksall_presel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntracksall_postsel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntrackssel_presel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntrackssel_postsel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntracksselptetacuts_presel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntracksselptetacuts_postsel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
     }
   }
 
@@ -611,7 +626,7 @@ struct JetFinderQATask {
   template <typename T, typename U, typename V>
   void randomCone(T const& collision, U const& jets, V const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
@@ -854,7 +869,7 @@ struct JetFinderQATask {
     }
     if (checkMcCollisionIsMatched) {
       auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
-      if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelection)) {
+      if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
         fillMCPHistograms(jet);
       }
     } else {
@@ -879,7 +894,7 @@ struct JetFinderQATask {
     }
     if (checkMcCollisionIsMatched) {
       auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
-      if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelection)) {
+      if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
         fillMCPHistograms(jet, jet.eventWeight());
       }
     } else {
@@ -946,7 +961,7 @@ struct JetFinderQATask {
       return;
     }
     registry.fill(HIST("h_collision_trigger_events"), 1.5); // all events with z vertex cut
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collision_trigger_events"), 2.5); // events with sel8()
@@ -1071,7 +1086,7 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -1095,7 +1110,7 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -1115,7 +1130,7 @@ struct JetFinderQATask {
     if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
@@ -1134,7 +1149,7 @@ struct JetFinderQATask {
     if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
@@ -1168,6 +1183,35 @@ struct JetFinderQATask {
     randomCone(collision, jets, tracks);
   }
   PROCESS_SWITCH(JetFinderQATask, processRandomConeMCD, "QA for random cone estimation of background fluctuations in mcd", false);
+
+  void processOccupancyQA(soa::Filtered<aod::JetCollisions>::iterator const& collision, aod::JetTracks const& tracks)
+  {
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
+    int occupancy = collision.trackOccupancyInTimeRange();
+    int nTracksAll = tracks.size();
+    int nTracksAllAcceptanceAndSelected = 0;
+    int nTracksInAcceptanceAndSelected = 0;
+    for (auto const& track : tracks) {
+      if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        nTracksAllAcceptanceAndSelected += 1;
+        if (track.pt() >= trackPtMin && track.pt() < trackPtMax && track.eta() > trackEtaMin && track.eta() < trackEtaMax) {
+          nTracksInAcceptanceAndSelected += 1;
+        }
+      }
+    }
+
+    registry.fill(HIST("h2_occupancy_ntracksall_presel"), occupancy, nTracksAll);
+    registry.fill(HIST("h2_occupancy_ntrackssel_presel"), occupancy, nTracksAllAcceptanceAndSelected);
+    registry.fill(HIST("h2_occupancy_ntracksselptetacuts_presel"), occupancy, nTracksInAcceptanceAndSelected);
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      registry.fill(HIST("h2_occupancy_ntracksall_postsel"), occupancy, nTracksAll);
+      registry.fill(HIST("h2_occupancy_ntrackssel_postsel"), occupancy, nTracksAllAcceptanceAndSelected);
+      registry.fill(HIST("h2_occupancy_ntracksselptetacuts_postsel"), occupancy, nTracksInAcceptanceAndSelected);
+    }
+  }
+  PROCESS_SWITCH(JetFinderQATask, processOccupancyQA, "occupancy QA on jet derived data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetFinderQATask>(cfgc, TaskName{"jet-finder-charged-qa"})}; }

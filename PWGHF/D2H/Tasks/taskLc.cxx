@@ -308,13 +308,19 @@ struct HfTaskLc {
 
       std::vector<AxisSpec> axesStd, axesWithBdt, axesGen;
 
-      if (isDataStd || isMcStd) {
+      if (isDataStd) {
+        axesStd = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets};
+      }
+      if (isMcStd) {
         axesStd = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
       }
       if (isMcStd || isMcWithMl) {
         axesGen = {thnAxisPt, thnAxisCentrality, thnAxisY, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
       }
-      if (isDataWithMl || isMcWithMl) {
+      if (isDataWithMl) {
+        axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets};
+      }
+      if (isMcWithMl) {
         axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
       }
 
@@ -589,7 +595,7 @@ struct HfTaskLc {
         }
         auto ptGen = particle.pt();
         auto originType = particle.originMcGen();
-        auto ptGenB = -1;
+        float ptGenB = -1.;
         unsigned int numPvContributors = 0;
         const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
         for (const auto& recCol : recoCollsPerMcColl) {
