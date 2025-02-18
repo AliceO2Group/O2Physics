@@ -471,7 +471,6 @@ struct FemtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-
     if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackD0DataML || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMCV0 || doprocessTrackD0MC || doprocessTruthAndFullMCCasc || doprocessFullMCCent || doprocessTrackCentRun3DataMC || doprocessTruthAndFullMCCentRun3) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
@@ -833,7 +832,6 @@ struct FemtoUniverseProducerTask {
         if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
           hfCandOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kNonPrompt;
           pdgCode = static_cast<int>(Pdg::kD0);
-          ;
         } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
           hfCandOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kNonPrompt;
           pdgCode = static_cast<int>(Pdg::kD0Bar);
