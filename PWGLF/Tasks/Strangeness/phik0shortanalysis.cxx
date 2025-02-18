@@ -1403,7 +1403,7 @@ struct Phik0shortanalysis {
         if (mcTrack.isPhysicalPrimary()) {
         } else {
           if (mcTrack.getProcess() == 4) { // Selection of secondary pions from weak decay
-          } else { // Selection of secondary pions from material interactions
+          } else {                         // Selection of secondary pions from material interactions
           }
           continue;
         }
