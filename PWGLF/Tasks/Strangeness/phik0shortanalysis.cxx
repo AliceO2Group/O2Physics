@@ -1385,21 +1385,33 @@ struct Phik0shortanalysis {
 
       // Loop over all primary pion candidates
       for (const auto& track : mcTracksThisColl) {
-        if (!track.has_mcParticle())
-          continue;
-
-        auto mcTrack = track.mcParticle_as<aod::McParticles>();
-        if (std::abs(mcTrack.pdgCode()) != 211 || !mcTrack.isPhysicalPrimary())
-          continue;
-
         // Pion selection
         if (!selectionPion<false, true>(track, false))
           continue;
 
-        mcPionHist.fill(HIST("h4PiRapiditySmearing"), genmultiplicity, track.pt(), track.rapidity(massPi), mcTrack.y());
-
         if (std::abs(mcTrack.y()) > cfgYAcceptance)
           continue;
+
+        if (!track.has_mcParticle())
+          continue;
+
+        auto mcTrack = track.mcParticle_as<aod::McParticles>();
+        if (std::abs(mcTrack.pdgCode()) != 211)
+          continue;
+
+        // Primary pion selection
+        if (mcTrack.isPhysicalPrimary()) {
+
+        } else {
+          if (mcTrack.getProcess() == 4) { // Selection of secondary pions from weak decay
+
+          } else { // Selection of secondary pions from material interactions
+
+          }
+          continue;
+        }
+
+        mcPionHist.fill(HIST("h4PiRapiditySmearing"), genmultiplicity, track.pt(), track.rapidity(massPi), mcTrack.y());
 
         mcPionHist.fill(HIST("h3RecMCPiTPC"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
 
