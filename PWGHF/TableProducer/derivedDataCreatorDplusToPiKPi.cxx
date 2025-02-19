@@ -86,7 +86,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
-  Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= 1;
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi & static_cast<int8_t>(BIT(aod::SelectionStep::RecoMl - 1))) != 0; // select candidates which passed all cuts at least up to RecoMl - 1
   Filter filterMcGenMatching = nabs(aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
@@ -241,6 +241,11 @@ struct HfDerivedDataCreatorDplusToPiKPi {
       }
       int8_t flagMcRec = 0, origin = 0, swapping = 0;
       for (const auto& candidate : candidatesThisColl) {
+        if constexpr (isMl) {
+          if (!TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoMl)) {
+            continue;
+          }
+        }
         if constexpr (isMc) {
           flagMcRec = candidate.flagMcMatchRec();
           origin = candidate.originMcRec();
@@ -272,9 +277,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
         if constexpr (isMl) {
           std::copy(candidate.mlProbDplusToPiKPi().begin(), candidate.mlProbDplusToPiKPi().end(), std::back_inserter(mlScoresDplusToPiKPi));
         }
-        if (candidate.isSelDplusToPiKPi()) {
-          fillTablesCandidate(candidate, prong0, prong1, prong2, 0, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, mlScoresDplusToPiKPi);
-        }
+        fillTablesCandidate(candidate, prong0, prong1, prong2, 0, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, mlScoresDplusToPiKPi);
       }
     }
   }
