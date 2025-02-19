@@ -34,6 +34,7 @@
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGLF/DataModel/V0SelectorTables.h"
 
 using namespace o2;
 using namespace o2::framework;
