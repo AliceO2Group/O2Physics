@@ -346,7 +346,7 @@ class FemtoUniverseParticleHisto
             break;
           default:
             LOG(fatal) << "femtouniverseparticleMC: not known value for ParticleOriginMCTruth - please check. Quitting!";
-        }        
+        }
       } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0) {
         /// V0 histograms
       } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascade) {
@@ -390,8 +390,8 @@ class FemtoUniverseParticleHisto
         }
       }
     } else {
-        LOG(fatal) << "FemtoUniverseParticleHisto: Histogramming for requested object not defined - quitting!";
-    }    
+      LOG(fatal) << "FemtoUniverseParticleHisto: Histogramming for requested object not defined - quitting!";
+    }
   }
 
 
@@ -457,7 +457,7 @@ class FemtoUniverseParticleHisto
   static constexpr o2::aod::femtouniverseparticle::ParticleType mParticleType = particleType; ///< Type of the particle under analysis // o2-linter: disable=name/constexpr-constant
   static constexpr int mFolderSuffixType = suffixType;                                        ///< Counter for the folder suffix specified below // o2-linter: disable=name/constexpr-constant
   static constexpr std::string_view mFolderSuffix[5] = {"", "_one", "_two", "_pos", "_neg"};  ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C) // o2-linter: disable=name/constexpr-constant
-  int mConfPDGCodePart[4] = {211, 321, 2212, 9999};     ///< PDG code as per analysis
+  int mConfPDGCodePart[4] = {211, 321, 2212, 9999};                                           ///< PDG code as per analysis
   int mPDG = 0;                                                                               ///< PDG code of the selected particle
   int PDGbin = 0;
 };
