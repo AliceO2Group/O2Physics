@@ -8,6 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file V0SelectorTables.cxx
+/// \brief Table containing flags indicating whether V0s pass certain cuts
+///
+/// \author Gijs van Weelden <g.van.weelden@cern.ch>
+
 #ifndef PWGLF_DATAMODEL_V0SELECTORTABLES_H_
 #define PWGLF_DATAMODEL_V0SELECTORTABLES_H_
 
@@ -37,7 +43,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsRejectedCandidate, isRejectedCandidate, //! Flag to
                            [](uint8_t flag) -> bool { return flag & o2::aod::v0flags::FREJECTED; });
 } // namespace v0flags
 
-DECLARE_SOA_TABLE_STAGED(V0SignalFlags, "V0SIGNALFLAG",
+DECLARE_SOA_TABLE_STAGED(V0SignalFlags, "V0SIGNALFLAGS",
                          v0flags::SignalFlag,
                          v0flags::IsK0SCandidate<v0flags::SignalFlag>,
                          v0flags::IsLambdaCandidate<v0flags::SignalFlag>,
