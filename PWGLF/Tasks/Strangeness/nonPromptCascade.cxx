@@ -26,6 +26,8 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "DetectorsBase/Propagator.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
@@ -191,6 +193,10 @@ struct NonPromptCascadeTask {
 
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
+  Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Skimmed dataset processing"};
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber = 0;
@@ -263,6 +269,7 @@ struct NonPromptCascadeTask {
 
   void init(InitContext const&)
   {
+    zorroSummary.setObject(zorro.getZorroSummary());
     ccdb->setURL(ccdbUrl);
     ccdb->setFatalWhenNull(true);
     ccdb->setCaching(true);
@@ -292,7 +299,7 @@ struct NonPromptCascadeTask {
   }
 
   template <typename T, typename PR, typename PI>
-  void fillCascadeDCA(T const track, PR const& protonTrack, PI const& pionTrack, o2::dataformats::VertexBase primaryVertex, bool isOmega, motherDCA& mDCA)
+  void fillCascadeDCA(T const track, PR const& protonTrack, PI const& pionTrack, o2::dataformats::VertexBase primaryVertex, bool isOmega, motherDCA& motherDCA)
   {
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value);
     auto trackCovTrk = getTrackParCov(track);
@@ -317,8 +324,8 @@ struct NonPromptCascadeTask {
         registry.fill(HIST("h_dcavsr_Xi"), impactParameterTrk.getY(), std::hypot(track.x(), track.y()));
       }
     }
-    mDCA.DCAxy = impactParameterTrk.getY();
-    mDCA.DCAz = impactParameterTrk.getZ();
+    motherDCA.DCAxy = impactParameterTrk.getY();
+    motherDCA.DCAz = impactParameterTrk.getZ();
   }
 
   template <typename TC, typename B, typename PR, typename PI>
@@ -580,8 +587,8 @@ struct NonPromptCascadeTask {
       invMassACV0->Fill(v0mass);
       registry.fill(HIST("h_massvspt_V0"), v0mass, track.pt());
 
-      motherDCA mDCA;
-      fillCascadeDCA(track, protonTrack, pionTrack, primaryVertex, isOmega, mDCA);
+      motherDCA motherDCA;
+      fillCascadeDCA(track, protonTrack, pionTrack, primaryVertex, isOmega, motherDCA);
       daughtersDCA dDCA;
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
 
@@ -589,7 +596,7 @@ struct NonPromptCascadeTask {
                                               collision.numContrib(), collision.collisionTimeRes(), primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
-                                              mDCA.DCAxy, mDCA.DCAz, dDCA.protonDCAxy, dDCA.protonDCAz, dDCA.pionDCAxy, dDCA.pionDCAz, dDCA.bachDCAxy, dDCA.bachDCAz,
+                                              motherDCA.DCAxy, motherDCA.DCAz, dDCA.protonDCAxy, dDCA.protonDCAz, dDCA.pionDCAxy, dDCA.pionDCAz, dDCA.bachDCAxy, dDCA.bachDCAz,
                                               cascCpa, v0Cpa,
                                               massXi, massOmega, v0mass,
                                               std::hypot(trackedCascade.decayX(), trackedCascade.decayY()), std::hypot(v0Pos[0], v0Pos[1]), std::hypot(trackedCascade.decayX(), trackedCascade.decayY(), trackedCascade.decayZ()), std::hypot(v0Pos[0], v0Pos[1], v0Pos[2]),
@@ -652,6 +659,18 @@ struct NonPromptCascadeTask {
                                   aod::V0s const& /*v0s*/, TracksExtData const& /*tracks*/,
                                   aod::BCsWithTimestamps const&)
   {
+    if (cfgSkimmedProcessing) {
+      int runNumber{-1};
+      for (const auto& coll : collisions) {
+        auto bc = coll.bc_as<aod::BCsWithTimestamps>();
+        if (runNumber != bc.runNumber()) {
+          zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fTrackedOmega");
+          zorro.populateHistRegistry(registry, bc.runNumber());
+          runNumber = bc.runNumber();
+        }
+        zorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
+      }
+    }
     fillCandidatesVector<TracksExtData>(collisions, trackedCascades);
     for (const auto& c : candidates) {
       NPCTable(c.matchingChi2, c.deltaPt, c.itsClusSize, c.hasReassociatedCluster,
