@@ -1072,9 +1072,9 @@ struct JetFragmentation {
     double posPsq = v0.pxpos() * v0.pxpos() + v0.pypos() * v0.pypos() + v0.pzpos() * v0.pzpos();
     double negE = std::sqrt(negM * negM + negPsq);
     double posE = std::sqrt(posM * posM + posPsq);
-    double Esquared = (negE + posE) * (negE + posE);
+    double esquared = (negE + posE) * (negE + posE);
     double psquared = v0.p() * v0.p();
-    return std::sqrt(Esquared - psquared);
+    return std::sqrt(esquared - psquared);
   }
 
   template <typename Jet, typename Constituent>
