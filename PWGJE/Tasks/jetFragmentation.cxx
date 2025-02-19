@@ -160,8 +160,8 @@ struct JetFragmentation {
   Partition<MatchedMCDJetsWithConstituents> detJetEtaV0Partition = (aod::jet::eta > v0EtaMin + aod::jet::r * 0.01f) && (aod::jet::eta < v0EtaMax - aod::jet::r * 0.01f);
 
   Preslice<MyTracks> tracksPerCollision = aod::track::collisionId;
-  Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
-  Preslice<soa::Join<aod::V0Datas, aod::McV0Labels>> mcV0sPerCollision = aod::v0data::collisionId;
+  Preslice<soa::Join<aod::V0Datas, aod::V0SignalFlags>> v0sPerCollision = aod::v0data::collisionId;
+  Preslice<soa::Join<aod::V0Datas, aod::McV0Labels, aod::V0SignalFlags>> mcV0sPerCollision = aod::v0data::collisionId;
   Preslice<MCPJetsWithConstituents> partJetsPerCollision = aod::jet::mcCollisionId;
   Preslice<aod::JetParticles> jetParticlesPerCollision = aod::jmcparticle::mcCollisionId;
   Preslice<aod::McParticles> particlesPerCollision = aod::mcparticle::mcCollisionId;
@@ -2430,7 +2430,7 @@ struct JetFragmentation {
   void processMcMatchedV0Frag(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionPIs>>::iterator const& jcoll,
                               MatchedMCDJetsWithConstituents const&,
                               aod::JetTracksMCD const&,
-                              soa::Join<aod::V0Datas, aod::McV0Labels> const& allV0s,
+                              soa::Join<aod::V0Datas, aod::McV0Labels, aod::V0SignalFlags> const& allV0s,
                               aod::JetMcCollisions const&,
                               MatchedMCPJetsWithConstituents const& allMcPartJets,
                               aod::JetParticles const&,
@@ -2578,7 +2578,7 @@ struct JetFragmentation {
   PROCESS_SWITCH(JetFragmentation, processMcMatchedV0Frag, "Monte Carlo V0 fragmentation", false);
 
   void processDataV0(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-                     aod::V0Datas const& V0s)
+                     soa::Join<aod::V0Datas, aod::V0SignalFlags> const& V0s)
   {
     if (!collision.sel8()) {
       return;
