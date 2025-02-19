@@ -943,7 +943,6 @@ struct UpcTauRl {
     return true;
   }
 
-
   template <typename C>
   bool isGoodROFtime(C const& coll)
   {
