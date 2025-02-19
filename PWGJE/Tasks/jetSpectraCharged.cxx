@@ -649,7 +649,7 @@ struct JetSpectraCharged {
     bool hasSel8Coll = false;
     bool centralityIsGood = false;
     bool occupancyIsGood = false;
-    if (acceptSplitCollisions == 2) {                                               
+    if (acceptSplitCollisions == 2) {
       if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits)) {
         hasSel8Coll = true;
       }
@@ -659,8 +659,7 @@ struct JetSpectraCharged {
       if ((trackOccupancyInTimeRangeMin < collisions.begin().trackOccupancyInTimeRange()) && (collisions.begin().trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
         occupancyIsGood = true;
       }
-    } 
-    else {
+    } else {
       for (auto& collision : collisions) {
         if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
           hasSel8Coll = true;
@@ -744,13 +743,13 @@ struct JetSpectraCharged {
     registry.fill(HIST("h_mc_zvertex"), mccollision.posZ());
 
     for (auto const& jet : jets) {
-    if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
-      continue;
-    }
-    if (!isAcceptedJet<aod::JetParticles>(jet)) {
-      continue;
-    }
-    fillMCPHistograms(jet);
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetParticles>(jet)) {
+        continue;
+      }
+      fillMCPHistograms(jet);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processSpectraMCP, "jet spectra for MC particle level", false);
@@ -759,7 +758,7 @@ struct JetSpectraCharged {
                                  soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
                                  soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights> const& jets,
                                  aod::JetParticles const&)
-  { 
+  {
     registry.fill(HIST("h_mcColl_counts"), 0.5);
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
