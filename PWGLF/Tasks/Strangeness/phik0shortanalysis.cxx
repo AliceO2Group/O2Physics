@@ -13,11 +13,13 @@
 /// \brief Analysis task for the Phi and K0S rapidity correlations analysis
 /// \author Stefano Cannito (stefano.cannito@cern.ch)
 
+#include <cmath>
+#include <cstdlib>
 #include <array>
 #include <vector>
 #include <algorithm>
-#include <cmath>
-#include <cstdlib>
+#include <string>
+#include <utility>
 
 #include <TH1F.h>
 #include <TH2F.h>
