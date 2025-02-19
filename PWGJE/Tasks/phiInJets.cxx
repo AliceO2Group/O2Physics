@@ -734,6 +734,7 @@ struct phiInJets {
 	// 1.MB REC Closure
 	//==================
 	if (originalTrack.sign() * originalTrack2.sign() < 0) {
+	  std::cout<<"ANG KIMOCHIIIIII"<<std::endl;
 	  JEhistos.fill(HIST("hMCRec_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
 	}
 	else if (originalTrack.sign() * originalTrack2.sign() > 0) {
@@ -852,6 +853,7 @@ struct phiInJets {
 	  // 4.MB True Closure
 	  //=====================
 	  if (originalTrack.sign() * originalTrack2.sign() < 0) {
+	    std::cout<<"ang kimochi"<<std::endl;
 	    JEhistos.fill(HIST("hMCRecTrue_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
 	  }
 	  else if (originalTrack.sign() * originalTrack2.sign() > 0) {
