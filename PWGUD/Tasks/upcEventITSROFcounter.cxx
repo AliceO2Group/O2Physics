@@ -9,6 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file upcEventITSROFcounter.cxx
+/// \brief Personal task to analyze tau events from UPC collisions
+///
+/// \author Roman Lavicka <roman.lavicka@cern.ch>, Austrian Academy of Sciences & SMI
+/// \since  09.08.2024
+
+#include <utility>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -84,7 +93,7 @@ struct UpcEventITSROFcounter {
     int64_t ts = bcs.iteratorAt(0).timestamp();
     auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
 
-    for (auto bc : bcs) {
+    for (const auto& bc : bcs) {
       uint64_t globalBC = bc.globalBC();
       uint64_t globalIndex = bc.globalIndex();
       if (isFirst) {
@@ -104,7 +113,7 @@ struct UpcEventITSROFcounter {
       previousBCinITSROF = bcInITSROF;
       previousBCglobalIndex = globalIndex;
       // next is based on exact matching of bc and collision
-      for (auto& collision : collisions) {
+      for (const auto& collision : collisions) {
         if (collision.has_foundBC()) {
           if (collision.foundBCId() == bc.globalIndex()) {
             nAllColls++;
@@ -125,10 +134,10 @@ struct UpcEventITSROFcounter {
     int arrUPCcolls[1000] = {0};
 
     // next is based on matching of collision bc within ITSROF range in bcs
-    for (auto& itsrofBorder : vecITSROFborders) {
+    for (const auto& itsrofBorder : vecITSROFborders) {
       int nAllCollsInROF = 0;
       int nUpcCollsInROF = 0;
-      for (auto& collision : collisions) {
+      for (const auto& collision : collisions) {
         if ((itsrofBorder.first < collision.bcId()) && (collision.bcId() < itsrofBorder.second)) {
           nAllCollsInROF++;
           if (collision.numContrib() < nTracksForUPCevent + 1) {
@@ -147,10 +156,10 @@ struct UpcEventITSROFcounter {
 
     // TEST vertex contributors per reconstruction flag (std vs upc)
     // matching of collision bc within ITSROF range in bcs
-    for (auto& itsrofBorder : vecITSROFborders) {
+    for (const auto& itsrofBorder : vecITSROFborders) {
       std::vector<int> vecNumContribsStd;
       std::vector<int> vecNumContribsUpc;
-      for (auto& collision : collisions) {
+      for (const auto& collision : collisions) {
         if ((itsrofBorder.first < collision.bcId()) && (collision.bcId() < itsrofBorder.second)) {
           if (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) {
             vecNumContribsUpc.push_back(collision.numContrib());
@@ -160,10 +169,10 @@ struct UpcEventITSROFcounter {
         }
       } // end loop over collisions
 
-      for (auto& numContribs : vecNumContribsStd) {
+      for (const auto& numContribs : vecNumContribsStd) {
         histos.get<TH2>(HIST("Events/hPVcontribsVsCollisionsPerITSROFstd"))->Fill(numContribs, vecNumContribsStd.size());
       }
-      for (auto& numContribs : vecNumContribsUpc) {
+      for (const auto& numContribs : vecNumContribsUpc) {
         histos.get<TH2>(HIST("Events/hPVcontribsVsCollisionsPerITSROFupc"))->Fill(numContribs, vecNumContribsUpc.size());
       }
 
