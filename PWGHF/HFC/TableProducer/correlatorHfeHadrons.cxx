@@ -44,7 +44,7 @@ using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0
 BinningType corrBinning{{zBins, multBins}, true};
 using BinningTypeMcGen = ColumnBinningPolicy<aod::mccollision::PosZ, o2::aod::mult::MultMCFT0A>;
 struct HfCorrelatorHfeHadrons {
-
+  SliceCache cache;
   Produces<aod::HfEHadronPair> entryElectronHadronPair;
   Produces<aod::HfEHadronMcGenPair> entryElectronHadronPairmcGen;
   // Configurables
@@ -62,7 +62,6 @@ struct HfCorrelatorHfeHadrons {
   // Electron hadron correlation condition
   Configurable<bool> ptCondition{"ptCondition", true, "Electron pT should be greater than associate particle pT"};
 
-  SliceCache cache;
   using TableCollisions = o2::soa::Filtered<o2::soa::Join<aod::Collisions, aod::Mults, aod::EvSels>>;
   using TableCollision = TableCollisions::iterator;
   using TableTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension>;
@@ -72,7 +71,7 @@ struct HfCorrelatorHfeHadrons {
   using McTableCollision = McTableCollisions::iterator;
   using McTableTracks = soa::Join<TableTracks, aod::McTrackLabels>;
 
-  Filter collisionFilter = nabs(aod::collision::posZ) < zPvPosMax && aod::collision::numContrib > static_cast<uint16_t>(1);
+  Filter CollisionFilter = nabs(aod::collision::posZ) < zPvPosMax && aod::collision::numContrib > static_cast<uint16_t>(1);
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Preslice<aod::HfSelEl> perCollision = aod::hf_sel_electron::collisionId;
   HistogramConfigSpec hCorrelSpec{HistType::kTHnSparseD, {{30, 0., 30.}, {20, 0., 20.}, {32, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {50, -1.8, 1.8}}};
@@ -345,7 +344,7 @@ struct HfCorrelatorHfeHadrons {
     Pair<TableCollisions, aod::HfCorrSelEl, TableTracks, BinningType> pair{corrBinning, 5, -1, collision, tracksTuple, &cache};
 
     // loop over the rows of the new table
-    for (const auto& [c1, tracks1, c2, tracks2] : pair) {
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
 
       fillMixCorrelation(c1, c2, tracks1, tracks2);
     }
@@ -360,7 +359,7 @@ struct HfCorrelatorHfeHadrons {
     Pair<McTableCollisions, aod::HfCorrSelEl, McTableTracks, BinningType> pairMcRec{corrBinning, 5, -1, mccollision, tracksTuple, &cache};
 
     // loop over the rows of the new table
-    for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
+    for (auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
 
       fillMixCorrelation(c1, c2, tracks1, tracks2);
     }
@@ -383,9 +382,9 @@ struct HfCorrelatorHfeHadrons {
     double ptHadronMix = -999;
     double etaHadronMix = -999;
     double phiHadronMix = -999;
-    for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
+    for (auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
       int poolBin = corrBinningMcGen.getBin(std::make_tuple(c1.posZ(), c1.multMCFT0A()));
-      for (const auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
         ptHadronMix = t2.pt();
         ptElectronMix = t1.ptTrackMc();
         phiElectronMix = t1.phiTrackMc();
