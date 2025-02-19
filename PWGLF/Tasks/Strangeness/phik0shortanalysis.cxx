@@ -13,11 +13,13 @@
 /// \brief Analysis task for the Phi and K0S rapidity correlations analysis
 /// \author Stefano Cannito (stefano.cannito@cern.ch)
 
+#include <cmath>
+#include <cstdlib>
 #include <array>
 #include <vector>
 #include <algorithm>
-#include <cmath>
-#include <cstdlib>
+#include <string>
+#include <utility>
 
 #include <TH1F.h>
 #include <TH2F.h>
@@ -162,7 +164,7 @@ struct Phik0shortanalysis {
 
   // Configurable for CCDB
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
-  Configurable<std::string> ccdbPurityPath{"ccdbPurityPath", "", "Correction path to file"};
+  Configurable<std::string> ccdbPurityPath{"ccdbPurityPath", "Users/s/scannito/PhiPuritiesData", "Correction path to file"};
 
   // Constants
   double massKa = o2::constants::physics::MassKPlus;
@@ -377,6 +379,11 @@ struct Phik0shortanalysis {
     mcPionHist.add("h2TracksPiDCAzPreCutMCReco", "Dcaz distribution vs pt before DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{z} (cm)"}});
     mcPionHist.add("h2TracksPiDCAxyPostCutMCReco", "Dcaxy distribution vs pt after DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
     mcPionHist.add("h2TracksPiDCAzPostCutMCReco", "Dcaz distribution vs pt after DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{z} (cm)"}});
+
+    // DCA plots for pions in MCReco distinguishing Primaries, Secondaries from Weak Decay and Secondaries from Material
+    mcPionHist.add("h3RecMCDCAxyPrimPi", "Dcaxy distribution vs pt for Primary Pions", kTH2F, {binnedptPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    mcPionHist.add("h3RecMCDCAxySecWeakDecayPi", "Dcaz distribution vs pt for Secondary Pions from Weak Decay", kTH2F, {binnedptPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    mcPionHist.add("h3RecMCDCAxySecMaterialPi", "Dcaxy distribution vs pt for Secondary Pions from Material", kTH2F, {binnedptPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
 
     // RecMC Pion coupled to Phi with TPC
     mcPhiPionHist.add("h3RecMCPhiPiTPCInc", "RecoMC Pion coupled to Phi with TPC Inclusive", kTH3F, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}});
@@ -1401,9 +1408,12 @@ struct Phik0shortanalysis {
 
         // Primary pion selection
         if (mcTrack.isPhysicalPrimary()) {
+          mcPionHist.fill(HIST("h3RecMCDCAxyPrimPi"), track.pt(), track.dcaXY());
         } else {
           if (mcTrack.getProcess() == 4) { // Selection of secondary pions from weak decay
-          } else {                         // Selection of secondary pions from material interactions
+            mcPionHist.fill(HIST("h3RecMCDCAxySecWeakDecayPi"), track.pt(), track.dcaXY());
+          } else { // Selection of secondary pions from material interactions
+            mcPionHist.fill(HIST("h3RecMCDCAxySecMaterialPi"), track.pt(), track.dcaXY());
           }
           continue;
         }
