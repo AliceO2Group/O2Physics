@@ -40,6 +40,6 @@ o2physics_add_dpl_workflow(epdzeroflow-analysis
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jfluc-efficiency
-                    SOURCES jflucEfficiencyTask.cxx
+                    SOURCES jFlucEfficiencyTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
                     COMPONENT_NAME Analysis)
