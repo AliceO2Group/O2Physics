@@ -215,9 +215,8 @@ struct decay3bodyBuilder {
   HistogramRegistry registry{"registry", {}};
 
   // hypothesis
-  Configurable<int> motherhyp{"motherhyp", 0, "hypothesis of the 3body decayed particle"}; // corresponds to hyp3body
-  int bachelorcharge = 1;                                                                  // to be updated in Init base on the hypothesis
-  // o2::aod::pidtofgeneric::TofPidNewCollision<ColwithEvTimes::iterator, TrackExtPIDIUwithEvTimes::iterator> bachelorTOFPID; // to be updated in Init base on the hypothesis
+  Configurable<int> motherhyp{"motherhyp", 0, "hypothesis of the 3body decayed particle"};       // corresponds to hyp3body
+  int bachelorcharge = 1;                                                                        // to be updated in Init base on the hypothesis
   o2::aod::pidtofgeneric::TofPidNewCollision<TrackExtPIDIUwithEvTimes::iterator> bachelorTOFPID; // to be updated in Init base on the hypothesis
 
   // Selection criteria
@@ -316,7 +315,6 @@ struct decay3bodyBuilder {
     Configurable<float> emTpcPidNsigmaCut{"emTpcPidNsigmaCut", 5, "emTpcPidNsigmaCut"};
   } EMTrackSel;
 
-  Preslice<TrackExtPIDIUwithEvTimes> tracksperCol = aod::track::collisionId;
   SliceCache cache;
   ConfigurableAxis axisPosZ{"axisPosZ", {40, -10, 10}, "Mixing bins - posZ"};
   ConfigurableAxis axisCentrality{"axisCentrality", {10, 0, 100}, "Mixing bins - centrality"};
@@ -403,7 +401,7 @@ struct decay3bodyBuilder {
     fitter3body.setMatCorrType(matCorr);
 
     // Add histograms separately for different process functions
-    if (doprocessRun3 == true || doprocessRun3Reduced || doprocessRun3EM == true || doprocessRun3EMLikeSign == true) {
+    if (doprocessRun3 == true || doprocessRun3Reduced || doprocessRun3ReducedEM == true) {
       registry.add("hEventCounter", "hEventCounter", HistType::kTH1F, {{1, 0.0f, 1.0f}});
       auto hVtx3BodyCounter = registry.add<TH1>("hVtx3BodyCounter", "hVtx3BodyCounter", HistType::kTH1F, {{6, 0.0f, 6.0f}});
       hVtx3BodyCounter->GetXaxis()->SetBinLabel(1, "Total");
@@ -1478,30 +1476,28 @@ struct decay3bodyBuilder {
   } // end buildVtx3BodyDataTableKFParticle
 
   //------------------------------------------------------------------
-  void processRun3(ColwithEvTimes const& collisions, TrackExtPIDIUwithEvTimes const& /*tracksIU*/, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void processRun3(ColwithEvTimes const& collisions, aod::Decay3Bodys const& decay3bodys, TrackExtPIDIUwithEvTimes const&, aod::BCsWithTimestamps const&)
   {
     vtxCandidates.clear();
 
-    for (const auto& collision : collisions) {
+    registry.fill(HIST("hEventCounter"), 0.5, collisions.size());
+
+    for (const auto& d3body : decay3bodys) {
+      auto t0 = d3body.track0_as<TrackExtPIDIUwithEvTimes>();
+      auto t1 = d3body.track1_as<TrackExtPIDIUwithEvTimes>();
+      auto t2 = d3body.track2_as<TrackExtPIDIUwithEvTimes>();
+      auto collision = d3body.collision_as<ColwithEvTimes>();
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      registry.fill(HIST("hEventCounter"), 0.5);
 
-      const auto& d3bodys_thisCollision = decay3bodys.sliceBy(perCollision, collision.globalIndex());
-      for (const auto& d3body : d3bodys_thisCollision) {
-        auto t0 = d3body.template track0_as<TrackExtPIDIUwithEvTimes>();
-        auto t1 = d3body.template track1_as<TrackExtPIDIUwithEvTimes>();
-        auto t2 = d3body.template track2_as<TrackExtPIDIUwithEvTimes>();
-
-        // Recalculate the TOF PID
-        double tofNSigmaBach = -999;
-        if (t2.has_collision() && t2.hasTOF()) {
-          auto originalcol = t2.template collision_as<ColwithEvTimes>();
-          tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(t2, originalcol, collision);
-        }
-
-        fillVtxCand<ColwithEvTimes>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, tofNSigmaBach);
+      // Recalculate the TOF PID
+      double tofNSigmaBach = -999;
+      if (t2.has_collision() && t2.hasTOF()) {
+        auto originalcol = t2.template collision_as<ColwithEvTimes>();
+        tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(t2, originalcol, collision);
       }
+
+      fillVtxCand<ColwithEvTimes>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, tofNSigmaBach);
     }
 
     for (const auto& candVtx : vtxCandidates) {
@@ -1511,7 +1507,7 @@ struct decay3bodyBuilder {
   PROCESS_SWITCH(decay3bodyBuilder, processRun3, "Produce DCA fitter decay3body tables", true);
 
   //------------------------------------------------------------------
-  void processRun3Reduced(aod::ReducedCollisions const& collisions, aod::ReducedTracksIU const&, aod::ReducedDecay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void processRun3Reduced(aod::ReducedCollisions const& collisions, aod::ReducedDecay3Bodys const& decay3bodys, aod::ReducedTracksIU const&)
   {
     vtxCandidates.clear();
 
@@ -1520,13 +1516,10 @@ struct decay3bodyBuilder {
     int lastRunNumber = -1;
 
     for (const auto& d3body : decay3bodys) {
-      auto t0 = d3body.template track0_as<aod::ReducedTracksIU>();
-      auto t1 = d3body.template track1_as<aod::ReducedTracksIU>();
-      auto t2 = d3body.template track2_as<aod::ReducedTracksIU>();
-      auto collision = d3body.template collision_as<aod::ReducedCollisions>();
-      // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      // initCCDB(bc);
-      // set magnetic field only when run number changes
+      auto t0 = d3body.track0_as<aod::ReducedTracksIU>();
+      auto t1 = d3body.track1_as<aod::ReducedTracksIU>();
+      auto t2 = d3body.track2_as<aod::ReducedTracksIU>();
+      auto collision = d3body.collision_as<aod::ReducedCollisions>();
       if (collision.runNumber() != lastRunNumber) {
         initCCDBReduced(collision.runNumber());
         lastRunNumber = collision.runNumber(); // Update the last run number
@@ -1543,48 +1536,37 @@ struct decay3bodyBuilder {
 
   //------------------------------------------------------------------
   // Event-mixing background
-  void processRun3EM(FullCols const& collisions, TrackExtPIDIUwithEvTimes const& tracksIU, aod::BCsWithTimestamps const&)
+  void processRun3ReducedEM(ReducedCollisionsMultsCents const&, aod::ReducedDecay3Bodys const&, aod::ReducedTracksIU const&)
   {
-
     vtxCandidates.clear();
 
-    auto tracksTuple = std::make_tuple(tracksIU);
     BinningType binningEvent{{axisPosZ, axisCentrality}, true};
-    SameKindPair<FullCols, TrackExtPIDIUwithEvTimes, BinningType> pair{binningEvent, EMTrackSel.nUseMixedEvent, -1, collisions, tracksTuple, &cache};
+    SameKindPair<ReducedCollisionsMultsCents, aod::ReducedDecay3Bodys, BinningType> pair{binningEvent, EMTrackSel.nUseMixedEvent, -1, &cache};
 
-    Partition<TrackExtPIDIUwithEvTimes> candProtons = aod::track::signed1Pt > 0.f && nabs(aod::track::eta) <= EMTrackSel.etacut && aod::track::pt >= EMTrackSel.minProtonPt && aod::track::pt <= EMTrackSel.maxProtonPt && aod::track::tpcNClsFindable >= (uint8_t)EMTrackSel.mintpcNClsproton && nabs(aod::pidtpc::tpcNSigmaPr) <= EMTrackSel.emTpcPidNsigmaCut;
-    Partition<TrackExtPIDIUwithEvTimes> candAntiProtons = aod::track::signed1Pt < 0.f && nabs(aod::track::eta) <= EMTrackSel.etacut && aod::track::pt >= EMTrackSel.minProtonPt && aod::track::pt <= EMTrackSel.maxProtonPt && aod::track::tpcNClsFindable >= (uint8_t)EMTrackSel.mintpcNClsproton && nabs(aod::pidtpc::tpcNSigmaPr) <= EMTrackSel.emTpcPidNsigmaCut;
-    Partition<TrackExtPIDIUwithEvTimes> candPionPlus = aod::track::signed1Pt > 0.f && nabs(aod::track::eta) <= EMTrackSel.etacut && aod::track::pt >= EMTrackSel.minPionPt && aod::track::pt <= EMTrackSel.maxPionPt && aod::track::tpcNClsFindable >= (uint8_t)EMTrackSel.mintpcNClspion && nabs(aod::pidtpc::tpcNSigmaPi) <= EMTrackSel.emTpcPidNsigmaCut;
-    Partition<TrackExtPIDIUwithEvTimes> candPionMinus = aod::track::signed1Pt < 0.f && nabs(aod::track::eta) <= EMTrackSel.etacut && aod::track::pt >= EMTrackSel.minPionPt && aod::track::pt <= EMTrackSel.maxPionPt && aod::track::tpcNClsFindable >= (uint8_t)EMTrackSel.mintpcNClspion && nabs(aod::pidtpc::tpcNSigmaPi) <= EMTrackSel.emTpcPidNsigmaCut;
-    Partition<TrackExtPIDIUwithEvTimes> candBachelors = aod::track::signed1Pt > 0.f && nabs(aod::track::eta) <= EMTrackSel.etacut && aod::track::pt >= EMTrackSel.minDeuteronPt && aod::track::pt <= EMTrackSel.maxDeuteronPt && aod::track::tpcNClsFindable >= (uint8_t)EMTrackSel.mintpcNClsbachelor && nabs(aod::pidtpc::tpcNSigmaDe) <= EMTrackSel.emTpcPidNsigmaCut;
-    Partition<TrackExtPIDIUwithEvTimes> candAntiBachelors = aod::track::signed1Pt < 0.f && nabs(aod::track::eta) <= EMTrackSel.etacut && aod::track::pt >= EMTrackSel.minDeuteronPt && aod::track::pt <= EMTrackSel.maxDeuteronPt && aod::track::tpcNClsFindable >= (uint8_t)EMTrackSel.mintpcNClsbachelor && nabs(aod::pidtpc::tpcNSigmaDe) <= EMTrackSel.emTpcPidNsigmaCut;
-    candProtons.bindTable(tracksIU);
-    candPionPlus.bindTable(tracksIU);
-    candAntiProtons.bindTable(tracksIU);
-    candPionMinus.bindTable(tracksIU);
-    candBachelors.bindTable(tracksIU);
-    candAntiBachelors.bindTable(tracksIU);
+    int lastRunNumber = -1;
 
-    for (const auto& [c1, tracks1, c2, tracks2] : pair) {
-      if (EMTrackSel.em_event_sel8_selection && (!c1.sel8() || !c2.sel8())) {
-        continue;
-      }
-      auto bc = c1.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-      auto protons = candProtons->sliceByCached(aod::track::collisionId, c1.globalIndex(), cache);
-      auto pionsplus = candPionPlus->sliceByCached(aod::track::collisionId, c1.globalIndex(), cache);
-      auto antiprotons = candAntiProtons->sliceByCached(aod::track::collisionId, c1.globalIndex(), cache);
-      auto pionsminus = candPionMinus->sliceByCached(aod::track::collisionId, c1.globalIndex(), cache);
-      auto bachelors = candBachelors->sliceByCached(aod::track::collisionId, c2.globalIndex(), cache);
-      auto antibachelors = candAntiBachelors->sliceByCached(aod::track::collisionId, c2.globalIndex(), cache);
+    for (const auto& [c0, decay3bodys0, c1, decay3bodys1] : pair) {
+      for (auto& [d3body0, d3body1] : combinations(soa::CombinationsFullIndexPolicy(decay3bodys0, decay3bodys1))) {
+        auto tpos0 = d3body0.track0_as<aod::ReducedTracksIU>();
+        auto tneg0 = d3body0.track1_as<aod::ReducedTracksIU>();
+        auto tbach0 = d3body0.track2_as<aod::ReducedTracksIU>();
+        auto tpos1 = d3body1.track0_as<aod::ReducedTracksIU>();
+        auto tneg1 = d3body1.track1_as<aod::ReducedTracksIU>();
+        auto tbach1 = d3body1.track2_as<aod::ReducedTracksIU>();
 
-      for (auto const& [tpos, tneg, tbach] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(protons, pionsminus, bachelors))) {
-        double tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(tbach); // Recalculate the TOF PID
-        fillVtxCand<FullCols>(c1, tpos, tneg, tbach, -1, bachelorcharge, tofNSigmaBach);
-      }
-      for (auto const& [tpos, tneg, tbach] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(pionsplus, antiprotons, antibachelors))) {
-        double tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(tbach); // Recalculate the TOF PID
-        fillVtxCand<FullCols>(c1, tpos, tneg, tbach, -1, bachelorcharge, tofNSigmaBach);
+        if (c0.runNumber() != lastRunNumber) {
+          initCCDBReduced(c0.runNumber());
+          lastRunNumber = c0.runNumber(); // Update the last run number
+          LOG(debug) << "CCDB initialized for run " << lastRunNumber;
+        }
+        fillVtxCand<FullCols>(c0, tpos0, tneg0, tbach1, -1, bachelorcharge, tbach1.tofNSigmaDe());
+
+        if (c1.runNumber() != lastRunNumber) {
+          initCCDBReduced(c1.runNumber());
+          lastRunNumber = c1.runNumber(); // Update the last run number
+          LOG(debug) << "CCDB initialized for run " << lastRunNumber;
+        }
+        fillVtxCand<FullCols>(c1, tpos1, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
       }
     }
 
@@ -1597,65 +1579,8 @@ struct decay3bodyBuilder {
       fillVtx3BodyTable(candVtx);
     }
   }
-  PROCESS_SWITCH(decay3bodyBuilder, processRun3EM, "Produce event-mix background", false);
+  PROCESS_SWITCH(decay3bodyBuilder, processRun3ReducedEM, "Produce event-mix background", false);
 
-  //------------------------------------------------------------------
-  // Event-mixing background + like-sign (to aviod deuteron with wrong collisionId)
-  void processRun3EMLikeSign(FullCols const& collisions, TrackExtPIDIUwithEvTimes const& tracksIU, aod::BCsWithTimestamps const&)
-  {
-
-    vtxCandidates.clear();
-
-    auto tracksTuple = std::make_tuple(tracksIU);
-    BinningType binningEvent{{axisPosZ, axisCentrality}, true};
-    SameKindPair<FullCols, TrackExtPIDIUwithEvTimes, BinningType> pair{binningEvent, 5, -1, collisions, tracksTuple, &cache};
-
-    Partition<TrackExtPIDIUwithEvTimes> candProtons = aod::track::signed1Pt > 0.f && nabs(aod::track::eta) <= EMTrackSel.etacut && aod::track::pt >= EMTrackSel.minProtonPt && aod::track::pt <= EMTrackSel.maxProtonPt && aod::track::tpcNClsFindable >= (uint8_t)EMTrackSel.mintpcNClsproton && nabs(aod::pidtpc::tpcNSigmaPr) <= EMTrackSel.emTpcPidNsigmaCut;
-    Partition<TrackExtPIDIUwithEvTimes> candPionPlus = aod::track::signed1Pt > 0.f && nabs(aod::track::eta) <= EMTrackSel.etacut && aod::track::pt >= EMTrackSel.minPionPt && aod::track::pt <= EMTrackSel.maxPionPt && aod::track::tpcNClsFindable >= (uint8_t)EMTrackSel.mintpcNClspion && nabs(aod::pidtpc::tpcNSigmaPi) <= EMTrackSel.emTpcPidNsigmaCut;
-    Partition<TrackExtPIDIUwithEvTimes> candAntiProtons = aod::track::signed1Pt < 0.f && nabs(aod::track::eta) <= EMTrackSel.etacut && aod::track::pt >= EMTrackSel.minProtonPt && aod::track::pt <= EMTrackSel.maxProtonPt && aod::track::tpcNClsFindable >= (uint8_t)EMTrackSel.mintpcNClsproton && nabs(aod::pidtpc::tpcNSigmaPr) <= EMTrackSel.emTpcPidNsigmaCut;
-    Partition<TrackExtPIDIUwithEvTimes> candPionMinus = aod::track::signed1Pt < 0.f && nabs(aod::track::eta) <= EMTrackSel.etacut && aod::track::pt >= EMTrackSel.minPionPt && aod::track::pt <= EMTrackSel.maxPionPt && aod::track::tpcNClsFindable >= (uint8_t)EMTrackSel.mintpcNClspion && nabs(aod::pidtpc::tpcNSigmaPi) <= EMTrackSel.emTpcPidNsigmaCut;
-    Partition<TrackExtPIDIUwithEvTimes> candBachelors = aod::track::signed1Pt > 0.f && nabs(aod::track::eta) <= EMTrackSel.etacut && aod::track::pt >= EMTrackSel.minDeuteronPt && aod::track::pt <= EMTrackSel.maxDeuteronPt && aod::track::tpcNClsFindable >= (uint8_t)EMTrackSel.mintpcNClsbachelor && nabs(aod::pidtpc::tpcNSigmaDe) <= EMTrackSel.emTpcPidNsigmaCut;
-    Partition<TrackExtPIDIUwithEvTimes> candAntiBachelors = aod::track::signed1Pt < 0.f && nabs(aod::track::eta) <= EMTrackSel.etacut && aod::track::pt >= EMTrackSel.minDeuteronPt && aod::track::pt <= EMTrackSel.maxDeuteronPt && aod::track::tpcNClsFindable >= (uint8_t)EMTrackSel.mintpcNClsbachelor && nabs(aod::pidtpc::tpcNSigmaDe) <= EMTrackSel.emTpcPidNsigmaCut;
-    candProtons.bindTable(tracksIU);
-    candPionPlus.bindTable(tracksIU);
-    candAntiProtons.bindTable(tracksIU);
-    candPionMinus.bindTable(tracksIU);
-    candBachelors.bindTable(tracksIU);
-    candAntiBachelors.bindTable(tracksIU);
-
-    for (const auto& [c1, tracks1, c2, tracks2] : pair) {
-      if (EMTrackSel.em_event_sel8_selection && (!c1.sel8() || !c2.sel8())) {
-        continue;
-      }
-      auto bc = c1.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-      auto protons = candProtons->sliceByCached(aod::track::collisionId, c1.globalIndex(), cache);
-      auto pionsplus = candPionPlus->sliceByCached(aod::track::collisionId, c1.globalIndex(), cache);
-      auto antiprotons = candAntiProtons->sliceByCached(aod::track::collisionId, c1.globalIndex(), cache);
-      auto pionsminus = candPionMinus->sliceByCached(aod::track::collisionId, c1.globalIndex(), cache);
-      auto bachelors = candBachelors->sliceByCached(aod::track::collisionId, c2.globalIndex(), cache);
-      auto antibachelors = candAntiBachelors->sliceByCached(aod::track::collisionId, c2.globalIndex(), cache);
-
-      for (auto const& [tpos, tneg, tbach] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(protons, pionsminus, antibachelors))) {
-        double tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(tbach); // Recalculate the TOF PID
-        fillVtxCand<FullCols>(c1, tpos, tneg, tbach, -1, bachelorcharge, tofNSigmaBach);
-      }
-      for (auto const& [tpos, tneg, tbach] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(pionsplus, antiprotons, bachelors))) {
-        double tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(tbach); // Recalculate the TOF PID
-        fillVtxCand<FullCols>(c1, tpos, tneg, tbach, -1, bachelorcharge, tofNSigmaBach);
-      }
-    }
-
-    // Aviod break of preslice in following workflow
-    std::sort(vtxCandidates.begin(), vtxCandidates.end(), [](const vtxCandidate a, const vtxCandidate b) {
-      return a.collisionId < b.collisionId;
-    });
-
-    for (const auto& candVtx : vtxCandidates) {
-      fillVtx3BodyTable(candVtx);
-    }
-  }
-  PROCESS_SWITCH(decay3bodyBuilder, processRun3EMLikeSign, "Produce event-mix background with like-sign method", false);
   //------------------------------------------------------------------
 
   void processRun3withKFParticle(ColwithEvTimes const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
@@ -2014,10 +1939,10 @@ struct decay3bodyLabelBuilder {
 
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
 
-  void processDoNotBuildLabels(aod::Collisions::iterator const&)
+  void processDoNotBuildLabels(aod::Decay3BodyDataLink const&) // is it possible to have none parameter?
   {
     // dummy process function - should not be required in the future
-  }
+  };
   PROCESS_SWITCH(decay3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
   void processBuildLabels(aod::Decay3BodysLinked const& decay3bodys, aod::Vtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const&)

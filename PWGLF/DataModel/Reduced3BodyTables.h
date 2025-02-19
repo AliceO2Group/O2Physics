@@ -16,6 +16,8 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 #include "PWGLF/DataModel/Vtx3BodyTables.h"
 
 namespace o2::aod
