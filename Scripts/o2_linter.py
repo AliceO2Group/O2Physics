@@ -428,9 +428,7 @@ class TestPdgMass(TestSpec):
     """Detect unnecessary call of Mass() for a known PDG code."""
 
     name = "pdg/known-mass"
-    message = (
-        "Use o2::constants::physics::Mass... instead of calling a database method for a known PDG code."
-    )
+    message = "Use o2::constants::physics::Mass... instead of calling a database method for a known PDG code."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
