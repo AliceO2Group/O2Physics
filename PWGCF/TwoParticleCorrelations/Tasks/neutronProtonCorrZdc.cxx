@@ -244,8 +244,8 @@ struct NeutronProtonCorrZdc {
       histos.fill(HIST("CentvsZPSignalCommon"), cent, (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
       histos.fill(HIST("CentvsAlphaZN"), cent, alphaZN);
       histos.fill(HIST("CentvsAlphaZP"), cent, alphaZP);
-      histos.fill(HIST("CentvsAlphaZNcommon"), cent, (zdcread.energyCommonZNA() - zdcread.energyCommonZNC())/(zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
-      histos.fill(HIST("CentvsAlphaZPcommon"), cent, (zdcread.energyCommonZPA() - zdcread.energyCommonZPC())/(zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
+      histos.fill(HIST("CentvsAlphaZNcommon"), cent, (zdcread.energyCommonZNA() - zdcread.energyCommonZNC()) / (zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
+      histos.fill(HIST("CentvsAlphaZPcommon"), cent, (zdcread.energyCommonZPA() - zdcread.energyCommonZPC()) / (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
 
       histos.fill(HIST("CentvsZNAvsZNC"), cent, sumZNA, sumZNC);
       histos.fill(HIST("CentvsZNAvsZPA"), cent, sumZNA, sumZPA);
@@ -300,8 +300,8 @@ struct NeutronProtonCorrZdc {
       histos.fill(HIST("CentvsZPSignalCommon"), cent, (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
       histos.fill(HIST("CentvsAlphaZN"), cent, alphaZN);
       histos.fill(HIST("CentvsAlphaZP"), cent, alphaZP);
-      histos.fill(HIST("CentvsAlphaZNcommon"), cent, (zdcread.energyCommonZNA() - zdcread.energyCommonZNC())/(zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
-      histos.fill(HIST("CentvsAlphaZPcommon"), cent, (zdcread.energyCommonZPA() - zdcread.energyCommonZPC())/(zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
+      histos.fill(HIST("CentvsAlphaZNcommon"), cent, (zdcread.energyCommonZNA() - zdcread.energyCommonZNC()) / (zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
+      histos.fill(HIST("CentvsAlphaZPcommon"), cent, (zdcread.energyCommonZPA() - zdcread.energyCommonZPC()) / (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
 
       histos.fill(HIST("CentvsZNAvsZNC"), cent, sumZNA, sumZNC);
       histos.fill(HIST("CentvsZNAvsZPA"), cent, sumZNA, sumZPA);
