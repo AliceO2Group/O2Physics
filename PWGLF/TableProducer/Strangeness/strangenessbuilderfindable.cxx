@@ -927,7 +927,7 @@ struct StrangenessBuilder {
             if (std::abs(v0OriginParticle.pdgCode()) != 3312 && std::abs(v0OriginParticle.pdgCode()) != 3334) {
               continue; // this V0 does not come from any particle of interest, don't try
             }
-            for (auto& bachelorTrackIndex : bachelorTrackArray) {
+            for (const auto& bachelorTrackIndex : bachelorTrackArray) {
               if (bachelorTrackIndex.originId != v0OriginParticle.globalIndex()) {
                 continue;
               }
@@ -1471,7 +1471,7 @@ struct StrangenessBuilder {
               thisCascInfo.momentum[1] = lV0Mother.py();
               thisCascInfo.momentum[2] = lV0Mother.pz();
               if (lV0Mother.has_mothers()) {
-                for (auto& lV0GrandMother : lV0Mother.template mothers_as<aod::McParticles>()) {
+                for (const auto& lV0GrandMother : lV0Mother.template mothers_as<aod::McParticles>()) {
                   thisCascInfo.pdgCodeMother = lV0GrandMother.pdgCode();
                   thisCascInfo.motherLabel = lV0GrandMother.globalIndex();
                 }
@@ -1678,7 +1678,7 @@ struct StrangenessBuilder {
         // now populate V0MCCores if in asymmetric mode
         if (cascadeBuilderOpts.mc_populateCascMCCoresAsymmetric) {
           // first step: add any un-recoed v0mmcores that were requested
-          for (auto& mcParticle : mcParticles) {
+          for (const auto& mcParticle : mcParticles) {
             thisCascInfo.pdgCode = -1, thisCascInfo.pdgCodeMother = -1;
             thisCascInfo.pdgCodePositive = -1, thisCascInfo.pdgCodeNegative = -1;
             thisCascInfo.pdgCodeBachelor = -1, thisCascInfo.pdgCodeV0 = -1;
