@@ -111,7 +111,7 @@ DECLARE_SOA_COLUMN(PhiTrackMc, phiTrackMc, float);  //! azimuth of the electron 
 DECLARE_SOA_COLUMN(PtTrackMc, ptTrackMc, float);    //! transverse momentum of the electron track
 DECLARE_SOA_COLUMN(IsNonHfeMc, isNonHfeMc, bool);   //! Non-Heavy flavour  electron information
 
-} // namespace hf_mcgen_sel_electron
+} // namespace hf_mcGen_sel_electron
 
 DECLARE_SOA_TABLE(HfMcGenSelEl, "AOD", "HFMCGENSELEL", //! Electron Informations
                   o2::soa::Index<>,
