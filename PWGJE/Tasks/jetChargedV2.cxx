@@ -318,7 +318,6 @@ struct JetChargedV2 {
   template <typename T, typename U>
   bool isAcceptedJet(U const& jet)
   {
-
     if (jetAreaFractionMin > -98.0) {
       if (jet.area() < jetAreaFractionMin * M_PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
@@ -330,7 +329,6 @@ struct JetChargedV2 {
     if (!checkConstituentMinPt && !checkConstituentMaxPt) {
       checkConstituentPt = false;
     }
-
     if (checkConstituentPt) {
       bool isMinLeadingConstituent = !checkConstituentMinPt;
       bool isMaxLeadingConstituent = true;
@@ -347,7 +345,6 @@ struct JetChargedV2 {
       }
       return isMinLeadingConstituent && isMaxLeadingConstituent;
     }
-
     return true;
   }
 
