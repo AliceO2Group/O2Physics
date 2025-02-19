@@ -315,7 +315,7 @@ struct LfV0qaanalysis {
           continue;
         }
 
-        if (NotITSAfterburner && (v0.negTrack_as<DauTracks>().isITSAfterburner() || v0.posTrack_as<DauTracks>().isITSAfterburner())) {
+        if (NotITSAfterburner && (v0.negTrack_as<DauTracksMC>().isITSAfterburner() || v0.posTrack_as<DauTracksMC>().isITSAfterburner())) {
           continue;
         }
 
