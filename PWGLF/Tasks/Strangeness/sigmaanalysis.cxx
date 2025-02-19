@@ -224,7 +224,7 @@ struct sigmaanalysis {
 
     // Photon Selection QA histos
     histos.add("GeneralQA/hPhotonV0Type", "hPhotonV0Type", kTH1F, {{8, 0.5f, 8.5f}});
-    histos.add("GeneralQA/hPhotonMass", "hPhotonMass", kTH1F, {axisPhotonMass});
+    histos.add("GeneralQA/h3dPhotonMass", "h3dPhotonMass", kTH1F, {axisCentrality, axisPt, axisPhotonMass});
     histos.add("GeneralQA/hPhotonNegpT", "hPhotonNegpT", kTH1F, {axisPt});
     histos.add("GeneralQA/hPhotonPospT", "hPhotonPospT", kTH1F, {axisPt});
     histos.add("GeneralQA/hPhotonDCANegToPV", "hPhotonDCANegToPV", kTH1F, {axisDCAtoPV});
@@ -269,12 +269,12 @@ struct sigmaanalysis {
     histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPi", "h2dTPCvsTOFNSigma_LambdaPi", {HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
     histos.add("GeneralQA/hLambdaDCANegToPV", "hLambdaDCANegToPV", kTH1F, {axisDCAtoPV});
     histos.add("GeneralQA/hLambdaDCAPosToPV", "hLambdaDCAPosToPV", kTH1F, {axisDCAtoPV});
-    histos.add("GeneralQA/hLambdaMass", "hLambdaMass", kTH1F, {axisLambdaMass});
+    histos.add("GeneralQA/h3dLambdaMass", "h3dLambdaMass", kTH1F, {axisCentrality, axisPt, axisLambdaMass});
     histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPr", "h2dTPCvsTOFNSigma_ALambdaPr", {HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
     histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPi", "h2dTPCvsTOFNSigma_ALambdaPi", {HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
     histos.add("GeneralQA/hALambdaDCANegToPV", "hALambdaDCANegToPV", kTH1F, {axisDCAtoPV});
     histos.add("GeneralQA/hALambdaDCAPosToPV", "hALambdaDCAPosToPV", kTH1F, {axisDCAtoPV});
-    histos.add("GeneralQA/hAntiLambdaMass", "hAntiLambdaMass", kTH1F, {axisLambdaMass});
+    histos.add("GeneralQA/h3dAntiLambdaMass", "h3dAntiLambdaMass", kTH1F, {axisCentrality, axisPt, axisLambdaMass});
 
     histos.add("GeneralQA/hPhotonMassSelected", "hPhotonMassSelected", kTH1F, {axisPhotonMass});
     histos.add("GeneralQA/hLambdaMassSelected", "hLambdaMassSelected", kTH1F, {axisLambdaMass});
@@ -483,7 +483,7 @@ struct sigmaanalysis {
         return false;
       histos.fill(HIST("SigmaSelQA/h2dPhotonV0Type"), cand.sigmapT(), cand.sigmaMass());
       if ((isMCTruePhoton || doPhotonLambdaSelQA) && (TMath::Abs(cand.photonMass()) <= PhotonMaxMass)) histos.fill(HIST("PhotonSelQA/h2dPhotonV0Type"), cand.photonPt(), cand.photonMass());
-      histos.fill(HIST("GeneralQA/hPhotonMass"), cand.photonMass());
+      histos.fill(HIST("GeneralQA/h3dPhotonMass"), sigma.sigmaCentrality(), cand.photonPt(), cand.photonMass());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 2.);
       if (TMath::Abs(cand.photonMass()) > PhotonMaxMass)
         return false;
@@ -684,7 +684,7 @@ struct sigmaanalysis {
 
         // Mass Selection
         histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 29.);
-        histos.fill(HIST("GeneralQA/hLambdaMass"), cand.lambdaMass());
+        histos.fill(HIST("GeneralQA/h3dLambdaMass"), sigma.sigmaCentrality(), cand.lambdaPt(), cand.lambdaMass());
         if (TMath::Abs(cand.lambdaMass() - o2::constants::physics::MassLambda0) > LambdaWindow)
           return false;
         histos.fill(HIST("SigmaSelQA/h2dLambdaMass"), cand.sigmapT(), cand.sigmaMass());
@@ -717,7 +717,7 @@ struct sigmaanalysis {
         histos.fill(HIST("SigmaSelQA/h2dALambdaDCADauToPV"), cand.sigmapT(), cand.sigmaMass());
         // Mass Selection
         histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 29.);
-        histos.fill(HIST("GeneralQA/hAntiLambdaMass"), cand.antilambdaMass());
+        histos.fill(HIST("GeneralQA/h3dAntiLambdaMass"), sigma.sigmaCentrality(), cand.lambdaPt(), cand.antilambdaMass());
         if (TMath::Abs(cand.antilambdaMass() - o2::constants::physics::MassLambda0) > LambdaWindow)
           return false;
         histos.fill(HIST("SigmaSelQA/h2dAntiLambdaMass"), cand.sigmapT(), cand.sigmaMass());
