@@ -99,7 +99,7 @@ struct threebodyKFTask {
   template <typename MCTrack3B>
   int checkH3LTruth(MCTrack3B const& trackPr, MCTrack3B const& trackPi, MCTrack3B const& trackDe, bool& isMuonReco)
   {
-    if (!trackPi.template has_mcParticle() || !trackPr.template has_mcParticle() || !trackDe.template has_mcParticle()) {
+    if (!trackPi.has_mcParticle() || !trackPr.has_mcParticle() || !trackDe.has_mcParticle()) {
       return -1;
     }
     auto mcParticlePr = trackPr.template mcParticle_as<aod::McParticles>();
