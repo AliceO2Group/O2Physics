@@ -68,6 +68,8 @@ struct BcSelectionTask {
   Configurable<std::vector<int>> maxInactiveChipsPerLayer{"maxInactiveChipsPerLayer", {8, 8, 8, 111, 111, 195, 195}, "Maximum allowed number of inactive ITS chips per layer"};
 
   int lastRun = -1;
+  int64_t lastTF = -1;
+  uint32_t lastRCT = 0;
   uint64_t sorTimestamp = 0;             // default SOR timestamp
   uint64_t eorTimestamp = 1;             // default EOR timestamp
   int64_t bcSOR = -1;                    // global bc of the start of run
@@ -341,11 +343,17 @@ struct BcSelectionTask {
     // bc loop
     for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop
       // store rct flags
-      auto itrct = mapRCT->upper_bound(bc.timestamp());
-      if (itrct != mapRCT->begin())
-        itrct--;
-      uint32_t rct = itrct->second;
-      LOGP(debug, "sor={} eor={} ts={} rct={}", sorTimestamp, eorTimestamp, bc.timestamp(), rct);
+      uint32_t rct = lastRCT;
+      int64_t thisTF = (bc.globalBC() - bcSOR) / nBCsPerTF;
+      if (mapRCT != nullptr && thisTF != lastTF) { // skip for unanchored runs; do it once per TF
+        auto itrct = mapRCT->upper_bound(bc.timestamp());
+        if (itrct != mapRCT->begin())
+          itrct--;
+        rct = itrct->second;
+        LOGP(debug, "sor={} eor={} ts={} rct={}", sorTimestamp, eorTimestamp, bc.timestamp(), rct);
+        lastRCT = rct;
+        lastTF = thisTF;
+      }
 
       uint32_t alias{0};
       // workaround for pp2022 (trigger info is shifted by -294 bcs)
