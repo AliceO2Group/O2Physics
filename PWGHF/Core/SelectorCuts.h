@@ -651,6 +651,40 @@ static const std::vector<std::string> labelsPt = {
 static const std::vector<std::string> labelsCutVar = {"deltaM", "pT Pi", "pT K", "decay length", "normalized decay length XY", "cos pointing angle", "cos pointing angle XY", "impact parameter XY", "deltaM Phi", "cos^3 theta_PiK", "chi2PCA"};
 } // namespace hf_cuts_ds_to_k_k_pi
 
+namespace hf_cuts_omegac_to_omega_pi
+{
+static constexpr int nBinsPt = 4;
+static constexpr int nCutVars = 1;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double binsPt[nBinsPt + 1] = {
+
+  1.0,
+  2.0,
+  4.0,
+  6.0,
+  12.0};
+
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+
+// default values for the cuts
+// pi_pT
+constexpr double cuts[nBinsPt][nCutVars] = {{0.2},  /* 1 < pt < 2 */
+                                            {0.2},  /* 2 < pt < 4 */
+                                            {0.6},  /* 4 < pt < 6 */
+                                            {0.8}}; /* 6 < pt < 12 */
+
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"pT pi from Omegac"};
+} // namespace hf_cuts_omegac_to_omega_pi
+
 namespace hf_cuts_xic_to_p_k_pi
 {
 static const int nBinsPt = 10;

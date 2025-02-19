@@ -666,7 +666,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                          dcaxyV0Dau0, dcaxyV0Dau1, dcaxyCascBachelor,
                          dcazV0Dau0, dcazV0Dau1, dcazCascBachelor,
                          dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
-                         decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon);
+                         decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon, cand.hfflag());
 
       } else {
         rowCandToOmegaK(
@@ -1156,7 +1156,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                        dcaxyV0Dau0, dcaxyV0Dau1, dcaxyCascBachelor,
                        dcazV0Dau0, dcazV0Dau1, dcazCascBachelor,
                        kfOmegac0Candidate.kfDcaCascDau, kfOmegac0Candidate.kfDcaV0Dau, kfOmegac0Candidate.kfDcaOmegacDau,
-                       decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon);
+                       decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon, cand.hfflag());
       // fill kf table
       kfCandidateData(kfOmegac0Candidate.kfDcaXYPiFromOmegac, kfOmegac0Candidate.kfDcaXYCascToPv,
                       kfOmegac0Candidate.chi2GeoV0, kfOmegac0Candidate.chi2GeoCasc, kfOmegac0Candidate.chi2GeoOmegac, kfOmegac0Candidate.chi2MassV0, kfOmegac0Candidate.chi2MassCasc,
