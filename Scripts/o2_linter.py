@@ -228,7 +228,7 @@ class TestIOStream(TestSpec):
     """Detect included iostream."""
 
     name = "include-iostream"
-    message = "Including iostream is discouraged. Use O2 logging instead."
+    message = "Do not include iostream. Use O2 logging instead."
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
@@ -241,7 +241,7 @@ class TestUsingStd(TestSpec):
     """Detect importing names from the std namespace."""
 
     name = "import-std-name"
-    message = "Importing names from the std namespace is not allowed in headers."
+    message = "Do not import names from the std namespace in headers."
     suffixes = [".h"]
 
     def test_line(self, line: str) -> bool:
@@ -254,7 +254,7 @@ class TestUsingDirectives(TestSpec):
     """Detect using directives in headers."""
 
     name = "using-directive"
-    message = "Using directives are not allowed in headers."
+    message = "Do not put using directives at global scope in headers."
     suffixes = [".h"]
 
     def test_line(self, line: str) -> bool:
@@ -311,7 +311,7 @@ class TestROOT(TestSpec):
     """Detect unnecessary use of ROOT entities."""
 
     name = "root-entity"
-    message = "Consider replacing ROOT entities with equivalents from standard C++ or from O2."
+    message = "Replace ROOT entities with equivalents from standard C++ or from O2."
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -332,7 +332,7 @@ class TestPi(TestSpec):
     """Detect use of external pi."""
 
     name = "external-pi"
-    message = "Consider using the PI constant (and its multiples and fractions) defined in o2::constants::math."
+    message = "Use the PI constant (and its multiples and fractions) defined in o2::constants::math."
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -350,7 +350,7 @@ class TestTwoPiAddSubtract(TestSpec):
     """Detect adding/subtracting of 2 pi."""
 
     name = "two-pi-add-subtract"
-    message = "Consider using RecoDecay::constrainAngle to restrict angle to a given range."
+    message = "Use RecoDecay::constrainAngle to restrict angle to a given range."
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
@@ -369,7 +369,7 @@ class TestPiMultipleFraction(TestSpec):
     """Detect multiples/fractions of pi for existing equivalent constants."""
 
     name = "pi-multiple-fraction"
-    message = "Consider using multiples/fractions of PI defined in o2::constants::math."
+    message = "Use multiples/fractions of PI defined in o2::constants::math."
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
@@ -388,8 +388,8 @@ class TestPdgDatabase(TestSpec):
 
     name = "pdg/database"
     message = (
-        "Direct use of TDatabasePDG is not allowed. "
-        "Use o2::constants::physics::Mass... or Service<o2::framework::O2DatabasePDG>."
+        "Do not use TDatabasePDG directly. "
+        "Use o2::constants::physics::Mass... or Service<o2::framework::O2DatabasePDG> instead."
     )
     suffixes = [".h", ".cxx"]
 
@@ -429,7 +429,7 @@ class TestPdgMass(TestSpec):
 
     name = "pdg/known-mass"
     message = (
-        "Consider using o2::constants::physics::Mass... instead of calling a database method for a known PDG code."
+        "Use o2::constants::physics::Mass... instead of calling a database method for a known PDG code."
     )
     suffixes = [".h", ".cxx", ".C"]
 
@@ -449,7 +449,7 @@ class TestLogging(TestSpec):
     """Detect non-O2 logging."""
 
     name = "logging"
-    message = "Consider using O2 logging (LOG, LOGF, LOGP)."
+    message = "Use O2 logging (LOG, LOGF, LOGP)."
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -901,7 +901,7 @@ class TestNameType(TestSpec):
     """Test names of defined types."""
 
     name = "name/type"
-    message = "Use UpperCamelCase for names of defined types."
+    message = "Use UpperCamelCase for names of defined types (including concepts)."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
