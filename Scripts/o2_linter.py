@@ -174,7 +174,10 @@ class TestSpec(ABC):
             if prefix not in line:
                 return False
             line = line[(line.index(prefix) + len(prefix)) :]  # Strip away part before prefix.
-        if self.name in line:
+        if self.name not in line:
+            return False
+        # Look for a comment with a reason for disabling.
+        if re.search(r" \([\w\s]{3,}\)", line):
             return True
         return False
 
@@ -1517,7 +1520,7 @@ def main():
         msg_result = "Issues have been found."
         msg_disable = (
             f'Exceptionally, you can disable a test for a line by adding a comment with "{prefix_disable}"'
-            " followed by the name of the test. Please also add a reason for the exception."
+            " followed by the name of the test and parentheses with a reason for the exception."
         )
         if github_mode:
             print(f"::error title={title_result}::{msg_result}")
