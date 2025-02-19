@@ -2655,30 +2655,11 @@ struct UpcTauRl {
 
   } // end processMCgenDG
 
-  void processTestMC(FullMCUDCollision const& /*reconstructedCollision*/,
-                     FullMCUDTracks const& /*reconstructedBarrelTracks*/,
-                     aod::UDMcCollisions const&,
-                     aod::UDMcParticles const&)
-  {
-    // if (reconstructedCollision.has_udMcCollision()) {
-    //   const auto& generatedCollision = reconstructedCollision.udMcCollision();
-    //   printDebugMessage(Form("%lli udMcCollision found", generatedCollision.size())); // FIXME: Type of size() is not invariant.
-    // }
-
-    // const auto& track = reconstructedBarrelTracks.iteratorAt(0);
-    // if (track.size() && track.has_udMcParticle()) {
-    //   const auto& particle = track.udMcParticle();
-    //   printDebugMessage(Form("%lli udMcParticle found", particle.size())); // FIXME: Type of size() is not invariant.
-    // }
-
-  } // end processTestMC
-
   PROCESS_SWITCH(UpcTauRl, processDataDG, "Iterate UD tables with measured data created by DG-Candidate-Producer.", false);
   PROCESS_SWITCH(UpcTauRl, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
   PROCESS_SWITCH(UpcTauRl, processMCrecDG, "Iterate Monte Carlo UD tables with reconstructed data created by DG-Candidate-Producer. Similar to processDataDG but uses association to truth level.", false);
   PROCESS_SWITCH(UpcTauRl, processMCrecSG, "Iterate Monte Carlo UD tables with reconstructed data created by SG-Candidate-Producer. Similar to processDataSG but uses association to truth level and trueGap is not available.", false);
   PROCESS_SWITCH(UpcTauRl, processMCgen, "Iterate Monte Carlo UD tables with truth data.", false);
-  PROCESS_SWITCH(UpcTauRl, processTestMC, "Simple test of indices in MC sample.", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
