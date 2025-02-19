@@ -654,7 +654,7 @@ struct strangederivedbuilder {
     populateCollisionTables(collisions, collisions, V0s, Cascades, KFCascades, TraCascades);
   }
 
-  void processCollisionsRun2WithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentRun2V0Ms, aod::CentRun2V0As, aod::CentRun2SPDTrks, aod::CentRun2SPDClss, aod::CentRun2CL0s, aod::CentRun2CL1s, aod::EvSels, aod::McCollisionLabels> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticles)
+  void processCollisionsRun2WithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentRun2V0Ms, aod::CentRun2V0As, aod::CentRun2SPDTrks, aod::CentRun2SPDClss, aod::EvSels, aod::McCollisionLabels> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticles)
   {
     populateMCCollisionTable(mcCollisions, mcParticles);
     populateCollisionTables(collisions, collisions, V0s, Cascades, KFCascades, TraCascades);
