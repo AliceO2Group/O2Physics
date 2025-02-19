@@ -78,6 +78,10 @@ struct UpcTauRl {
     Configurable<float> cutTrueGapSideFT0C{"cutTrueGapSideFT0C", 50., "FT0C threshold for SG selector"};
     Configurable<float> cutTrueGapSideZDC{"cutTrueGapSideZDC", 0., "ZDC threshold for SG selector. 0 is <1n, 4.2 is <2n, 6.7 is <3n, 9.5 is <4n, 12.5 is <5n"};
     Configurable<float> cutFITtime{"cutFITtime", 40., "Maximum FIT time allowed. Default is 40ns"};
+    Configurable<float> cutEvOccupancy{"cutEvOccupancy", 100000., "Maximum allowed occupancy"};
+    Configurable<bool> cutEvTrs{"cutEvTrs", true, {"Event selection bit kNoCollInTimeRangeStandard"}};
+    Configurable<bool> cutEvTrofs{"cutEvTrofs", true, {"Event selection bit kNoCollInRofStandard"}};
+    Configurable<bool> cutEvHmpr{"cutEvHmpr", true, {"Event selection bit kNoHighMultCollInPrevRof"}};
     Configurable<bool> applyAcceptanceSelection{"applyAcceptanceSelection", false, {"Select events in ALICE CB acceptance set with cutTrackEta"}};
     Configurable<float> cutTrackEta{"cutTrackEta", 0.9, "Cut on central barrel track eta in absolute values."};
   } cutSample;
@@ -182,11 +186,11 @@ struct UpcTauRl {
   } confAxis;
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
-  using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
-  using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
+  using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras>::iterator;
+  using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
   using FullMCUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags, aod::UDMcTrackLabels>;
-  using FullMCUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDMcCollsLabels>::iterator;
-  using FullMCSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDMcCollsLabels>::iterator;
+  using FullMCUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::UDMcCollsLabels>::iterator;
+  using FullMCSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDMcCollsLabels>::iterator;
 
   // init
   void init(InitContext&)
@@ -934,6 +938,30 @@ struct UpcTauRl {
 
     // FTOC
     if ((std::abs(coll.timeFT0C()) > maxFITtime) && coll.timeFT0A() > -998.)
+      return false;
+
+    return true;
+  }
+
+
+  template <typename C>
+  bool isGoodROFtime(C const& coll)
+  {
+
+    // Occupancy
+    if (coll.occupancyInTime() > cutSample.cutEvOccupancy)
+      return false;
+
+    // kNoCollInTimeRangeStandard
+    if (cutSample.cutEvTrs && !coll.trs())
+      return false;
+
+    // kNoCollInRofStandard
+    if (cutSample.cutEvTrofs && !coll.trofs())
+      return false;
+
+    // kNoHighMultCollInPrevRof
+    if (cutSample.cutEvHmpr && !coll.hmpr())
       return false;
 
     return true;
@@ -2490,6 +2518,9 @@ struct UpcTauRl {
                      FullUDTracks const& reconstructedBarrelTracks)
   {
 
+    if (!isGoodROFtime(reconstructedCollision))
+      return;
+
     if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
       return;
 
@@ -2513,6 +2544,9 @@ struct UpcTauRl {
     if (cutSample.useTrueGap)
       gapSide = trueGapSide;
 
+    if (!isGoodROFtime(reconstructedCollision))
+      return;
+
     if (gapSide != cutSample.whichGapSide)
       return;
 
@@ -2533,6 +2567,9 @@ struct UpcTauRl {
                       aod::UDMcParticles const&)
   {
     isMC = true;
+
+    if (!isGoodROFtime(reconstructedCollision))
+      return;
 
     if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
       return;
@@ -2568,6 +2605,9 @@ struct UpcTauRl {
     histos.fill(HIST("Events/UDtableGapSide"), gapSide);
 
     if (gapSide != cutSample.whichGapSide)
+      return;
+
+    if (!isGoodROFtime(reconstructedCollision))
       return;
 
     if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
