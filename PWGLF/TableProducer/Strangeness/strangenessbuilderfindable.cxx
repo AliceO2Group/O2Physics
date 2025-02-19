@@ -481,10 +481,10 @@ struct StrangenessBuilder {
     if (doprocessMonteCarloRun2) {
       LOGF(info, " ===> process function enabled: processMonteCarloRun2");
     }
-    if (mc_findableMode.value==1){ 
+    if (mc_findableMode.value == 1) {
       LOGF(info, " ===> findable mode 1 is enabled: complement reco-ed with non-found findable");
     }
-    if (mc_findableMode.value==2){ 
+    if (mc_findableMode.value == 2) {
       LOGF(info, " ===> findable mode 2 is enabled: re-generate all findable from scratch");
     }
 
@@ -546,10 +546,10 @@ struct StrangenessBuilder {
   {
     std::vector<std::size_t> idx(v.size());
     std::iota(idx.begin(), idx.end(), 0);
-    if(doSorting){
+    if (doSorting) {
       // do sorting only if requested (not always necessary)
       std::stable_sort(idx.begin(), idx.end(),
-                     [&v](std::size_t i1, std::size_t i2) { return v[i1].collisionId < v[i2].collisionId; });
+                       [&v](std::size_t i1, std::size_t i2) { return v[i1].collisionId < v[i2].collisionId; });
     }
     return idx;
   }
@@ -789,7 +789,7 @@ struct StrangenessBuilder {
                 currentV0Entry.pdgCode = positiveTrackIndex.pdgCode;
                 currentV0Entry.particleId = positiveTrackIndex.originId;
                 currentV0Entry.isCollinearV0 = false;
-                if(bestCollisionArray[positiveTrackIndex.mcCollisionId]<0){
+                if (bestCollisionArray[positiveTrackIndex.mcCollisionId] < 0) {
                   collisionLessV0s++;
                 }
                 if (v0BuilderOpts.mc_findableDetachedV0.value || currentV0Entry.collisionId >= 0) {
@@ -840,7 +840,7 @@ struct StrangenessBuilder {
     sorted_v0 = sort_indices(v0List, (mc_findableMode.value > 0));
 
     // Cascade part if cores are requested, skip otherwise
-    if(mEnabledTables[kStoredCascCores] || mEnabledTables[kStoredKFCascCores]){
+    if (mEnabledTables[kStoredCascCores] || mEnabledTables[kStoredKFCascCores]) {
       if (mc_findableMode.value < 2) {
         // simple passthrough: copy existing cascades to build list
         for (const auto& cascade : cascades) {
@@ -956,7 +956,7 @@ struct StrangenessBuilder {
                   currentCascadeEntry.bachTrackId = bachelorTrackIndex.globalId;
                   currentCascadeEntry.cascadeType = 1; // findable (but not found)
                   cascadeList.push_back(currentCascadeEntry);
-                  if(bestCollisionArray[bachelorTrackIndex.mcCollisionId]<0){
+                  if (bestCollisionArray[bachelorTrackIndex.mcCollisionId] < 0) {
                     collisionLessCascades++;
                   }
                   if (cascadeBuilderOpts.mc_findableDetachedCascade.value || currentCascadeEntry.collisionId >= 0) {
@@ -975,7 +975,7 @@ struct StrangenessBuilder {
                 currentCascadeEntry.negTrackId = v0.negTrackId;
                 currentCascadeEntry.bachTrackId = bachelorTrackIndex.globalId;
                 currentCascadeEntry.cascadeType = 1; // findable (but not found)
-                if(bestCollisionArray[bachelorTrackIndex.mcCollisionId]<0){
+                if (bestCollisionArray[bachelorTrackIndex.mcCollisionId] < 0) {
                   collisionLessCascades++;
                 }
                 for (const auto& cascade : cascades) {
