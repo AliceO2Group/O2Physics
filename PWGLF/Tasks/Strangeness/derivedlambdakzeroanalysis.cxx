@@ -128,7 +128,7 @@ struct derivedlambdakzeroanalysis {
     Configurable<bool> requireNoV0MOnVsOffPileup{"requireNoV0MOnVsOffPileup", false, "reject events tagged as OOB pileup according to online-vs-offline VOM correlation (Run 2 only)"};
     Configurable<bool> requireNoSPDOnVsOffPileup{"requireNoSPDOnVsOffPileup", false, "reject events tagged as pileup according to online-vs-offline SPD correlation (Run 2 only)"};
     Configurable<bool> requireNoSPDClsVsTklBG{"requireNoSPDClsVsTklBG", true, "reject events tagged as beam-gas and pileup according to cluster-vs-tracklet correlation (Run 2 only)"};
-    
+
     Configurable<bool> useSPDTrackletsCent{"useSPDTrackletsCent", false, "Use SPD tracklets for estimating centrality? If not, use V0M-based centrality (Run 2 only)"};
   } eventSelections;
 
@@ -293,7 +293,8 @@ struct derivedlambdakzeroanalysis {
 
   // For manual sliceBy
   // Preslice<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
-  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraCollLabels>> perMcCollisionRun2 = aod::v0data::straMCCollisionId;
+  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
+  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraCollLabels>> perMcCollisionRun2 = aod::v0data::straMCCollisionId;
 
   enum selection : uint64_t { selCosPA = 0,
                               selRadius,
@@ -360,7 +361,7 @@ struct derivedlambdakzeroanalysis {
   void init(InitContext const&)
   {
     // Determine if we are dealing with Run3 or Run2 processing
-    if ( (doprocessRealDataRun3 || doprocessMonteCarloRun3 || doprocessGeneratedRun3) && (doprocessRealDataRun2 || doprocessMonteCarloRun2 || doprocessGeneratedRun2) ) {
+    if ((doprocessRealDataRun3 || doprocessMonteCarloRun3 || doprocessGeneratedRun3) && (doprocessRealDataRun2 || doprocessMonteCarloRun2 || doprocessGeneratedRun2)) {
       LOGF(fatal, "Cannot enable Run2 and Run3 processes at the same time. Please choose one.");
     }
     if (doprocessRealDataRun3 || doprocessMonteCarloRun3 || doprocessGeneratedRun3) {
@@ -825,7 +826,7 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Return slicing output
-  template<bool run3, typename TCollisions>
+  template <bool run3, typename TCollisions>
   auto getGroupedCollisions(TCollisions const& collisions, int globalIndex)
   {
     if constexpr (run3) { // check if we are in Run 3
@@ -1781,7 +1782,7 @@ struct derivedlambdakzeroanalysis {
   // ______________________________________________________
   // Simulated processing
   // Return the list of indices to the recoed collision associated to a given MC collision.
-  template<bool run3, typename TMCollisions, typename TCollisions>
+  template <bool run3, typename TMCollisions, typename TCollisions>
   std::vector<int> getListOfRecoCollIndices(TMCollisions const& mcCollisions, TCollisions const& collisions)
   {
     std::vector<int> listBestCollisionIdx(mcCollisions.size());
@@ -1813,8 +1814,8 @@ struct derivedlambdakzeroanalysis {
   // Reconstructed data processing
   // Fill reconstructed event information
   // Return centrality, occupancy, interaction rate, gap side and selGapside via reference-passing in arguments
-  template<typename TCollision>
-  void fillReconstructedEventProperties(TCollision const& collision, float &centrality, float &collisionOccupancy, double &interactionRate, int &gapSide, int &selGapSide)
+  template <typename TCollision>
+  void fillReconstructedEventProperties(TCollision const& collision, float& centrality, float& collisionOccupancy, double& interactionRate, int& gapSide, int& selGapSide)
   {
     if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
       centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
@@ -1862,7 +1863,7 @@ struct derivedlambdakzeroanalysis {
   // ______________________________________________________
   // Simulated processing
   // Fill generated event information (for event loss/splitting estimation)
-  template<bool run3, typename TMCCollisions, typename TCollisions>
+  template <bool run3, typename TMCCollisions, typename TCollisions>
   void fillGeneratedEventProperties(TMCCollisions const& mcCollisions, TCollisions const& collisions)
   {
     std::vector<int> listBestCollisionIdx(mcCollisions.size());
@@ -2081,7 +2082,7 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  template<bool run3, typename TMCCollisions, typename TV0MCs, typename TCascMCs, typename TCollisions>
+  template <bool run3, typename TMCCollisions, typename TV0MCs, typename TCascMCs, typename TCollisions>
   void analyzeGeneratedV0s(TMCCollisions const& mcCollisions, TV0MCs const& V0MCCores, TCascMCs const& CascMCCores, TCollisions const& collisions)
   {
     fillGeneratedEventProperties<run3>(mcCollisions, collisions);
@@ -2190,7 +2191,6 @@ struct derivedlambdakzeroanalysis {
         } else { // no, we are in Run 2
           centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
         }
-        
 
         if (cascMC.pdgCode() == 3312) {
           histos.fill(HIST("h2dGenXiMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);

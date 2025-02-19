@@ -238,8 +238,7 @@ DECLARE_SOA_TABLE(StraEvSelsRun2, "AOD", "STRAEVSELSRUN2",        //! debug info
                   mult::MultAllTracksITSTPC,                    // ITSTPC track multiplicities, all, no eta cut
                   mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
                   mult::MultZEM2, mult::MultZPA, mult::MultZPC,
-                  evsel::Alias     // trigger aliases (e.g. kTVXinTRD for v2)
-                  );
+                  evsel::Alias); // trigger aliases (e.g. kTVXinTRD for v2)
 
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);
