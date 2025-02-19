@@ -1072,7 +1072,7 @@ struct Phik0shortanalysis {
       if (!selectionPion<true, false>(track, true))
         continue;
 
-      dataPhiPionHist.fill(HIST("h3PiRapidityData"), multiplicity, track.pt(), track.rapidity(massPi));
+      dataPionHist.fill(HIST("h3PiRapidityData"), multiplicity, track.pt(), track.rapidity(massPi));
 
       if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
         continue;
