@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file detectorOccupancyQa.cxx
+/// \file rofOccupancyQa.cxx
 /// \brief ROF occupancy QA task
 ///
 /// \author Igor Altsybeev <Igor.Altsybeev@cern.ch>
@@ -48,8 +48,7 @@ struct RofOccupancyQaTask {
   Configurable<float> confFT0CamplCutVetoOnCollInROF{"FT0CamplPerCollCutVetoOnCollInROF", 5000, "Max allowed FT0C amplitude for each nearby collision inside this ITS ROF"};                    // o2-linter: disable=name/configurable
   Configurable<float> confEpsilonVzDiffVetoInROF{"EpsilonVzDiffVetoInROF", 0.3, "Minumum distance to nearby collisions along z inside this ITS ROF, cm"};                                       // o2-linter: disable=name/configurable
   Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};                                 // o2-linter: disable=name/configurable
-
-  Configurable<float> confFactorForHistRange{"kFactorForHistRange", 1.0, "To change axes b/n pp and Pb-Pb"};
+  Configurable<float> confFactorForHistRange{"kFactorForHistRange", 1.0, "To change axes b/n pp and Pb-Pb"};                                                                                    // o2-linter: disable=name/configurable
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
