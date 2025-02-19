@@ -128,7 +128,7 @@ struct UpcEventITSROFcounter {
           }
         }
       } // end loop over collisions
-    }   // end loop over bcs
+    } // end loop over bcs
 
     int arrAllColls[1000] = {0};
     int arrUPCcolls[1000] = {0};
