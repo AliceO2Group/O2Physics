@@ -698,7 +698,8 @@ struct strangederivedbuilder {
                        tr.itsClusterSizes(),
                        tr.tpcNClsFindable(),
                        tr.tpcNClsFindableMinusFound(),
-                       tr.tpcNClsFindableMinusCrossedRows());
+                       tr.tpcNClsFindableMinusCrossedRows(),
+                       tr.tpcNClsShared());
       }
     }
     // done!
@@ -792,7 +793,8 @@ struct strangederivedbuilder {
                        tr.itsClusterSizes(),
                        tr.tpcNClsFindable(),
                        tr.tpcNClsFindableMinusFound(),
-                       tr.tpcNClsFindableMinusCrossedRows());
+                       tr.tpcNClsFindableMinusCrossedRows(),
+                       tr.tpcNClsShared());
 
         // _________________________________________
         // if the table has MC info
