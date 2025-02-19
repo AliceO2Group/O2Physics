@@ -164,7 +164,7 @@ struct Phik0shortanalysis {
 
   // Configurable for CCDB
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
-  Configurable<std::string> ccdbPurityPath{"ccdbPurityPath", "", "Correction path to file"};
+  Configurable<std::string> ccdbPurityPath{"ccdbPurityPath", "Users/s/scannito/PhiPuritiesData", "Correction path to file"};
 
   // Constants
   double massKa = o2::constants::physics::MassKPlus;
