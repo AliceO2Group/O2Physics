@@ -159,6 +159,8 @@ struct derivedlambdakzeroanalysis {
     Configurable<bool> requireNegITSonly{"requireNegITSonly", false, "require that negative track is ITSonly (overrides TPC quality)"};
     Configurable<bool> rejectPosITSafterburner{"rejectPosITSafterburner", false, "reject positive track formed out of afterburner ITS tracks"};
     Configurable<bool> rejectNegITSafterburner{"rejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
+    Configurable<bool> requirePosITSafterburnerOnly{"requirePosITSafterburnerOnly", false, "require positive track formed out of afterburner ITS tracks"};
+    Configurable<bool> requireNegITSafterburnerOnly{"requireNegITSafterburnerOnly", false, "require negative track formed out of afterburner ITS tracks"};
 
     // PID (TPC/TOF)
     Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
@@ -890,10 +892,10 @@ struct derivedlambdakzeroanalysis {
     bool posIsFromAfterburner = posTrackExtra.itsChi2PerNcl() < 0;
     bool negIsFromAfterburner = negTrackExtra.itsChi2PerNcl() < 0;
 
-    // check minimum number of ITS clusters + reject ITS afterburner tracks if requested
-    if (posTrackExtra.itsNCls() >= v0Selections.minITSclusters && (!v0Selections.rejectPosITSafterburner || !posIsFromAfterburner))
+    // check minimum number of ITS clusters + reject or select ITS afterburner tracks if requested
+    if (posTrackExtra.itsNCls() >= v0Selections.minITSclusters && (!v0Selections.rejectPosITSafterburner || !posIsFromAfterburner) && (!v0Selections.requirePosITSafterburnerOnly || posIsFromAfterburner))
       bitset(bitMap, selPosGoodITSTrack);
-    if (negTrackExtra.itsNCls() >= v0Selections.minITSclusters && (!v0Selections.rejectNegITSafterburner || !negIsFromAfterburner))
+    if (negTrackExtra.itsNCls() >= v0Selections.minITSclusters && (!v0Selections.rejectNegITSafterburner || !negIsFromAfterburner) && (!v0Selections.requireNegITSafterburnerOnly || negIsFromAfterburner))
       bitset(bitMap, selNegGoodITSTrack);
 
     // TPC quality flags
