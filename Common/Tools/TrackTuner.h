@@ -344,7 +344,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     outputString += ", qOverPtData=" + std::to_string(qOverPtData);
     LOG(info) << "[TrackTuner]     qOverPtData = " << qOverPtData;
     // Configure nPhiBins
-    nPhiBins = std::stof(getValueString(NPhiBins));
+    nPhiBins = std::stoi(getValueString(NPhiBins));
     outputString += ", nPhiBins=" + std::to_string(nPhiBins);
     if (nPhiBins < 0)
       LOG(fatal) << "[TrackTuner]   negative nPhiBins!" << nPhiBins;
@@ -525,39 +525,39 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
         td->ls();
         return nullptr;
       }
-      return std::unique_ptr<TGraphErrors>(dynamic_cast<TGraphErrors*>(obj));
+      return dynamic_cast<TGraphErrors*>(obj);
     };
 
     if (inputNphiBins != 0) {
       LOG(info) << "[TrackTuner]    Loading phi-dependent XY TGraphErrors";
     }
-    for (int iphibin = 0; iphibin < nPhiBins; ++iphibin) {
+    for (int iPhiBin = 0; iPhiBin < nPhiBins; ++iPhiBin) {
 
-      grDcaXYResVsPtPionMC[iphibin].reset(loadGraph(iphibin, "resCurrentDcaXY").release());
-      grDcaXYResVsPtPionData[iphibin].reset(loadGraph(iphibin, "resUpgrDcaXY").release());
-      grDcaXYMeanVsPtPionMC[iphibin].reset(loadGraph(iphibin, "meanCurrentDcaXY").release());
-      grDcaXYMeanVsPtPionData[iphibin].reset(loadGraph(iphibin, "meanUpgrDcaXY").release());
-      grDcaXYPullVsPtPionMC[iphibin].reset(loadGraph(iphibin, "pullsCurrentDcaXY").release());
-      grDcaXYPullVsPtPionData[iphibin].reset(loadGraph(iphibin, "pullsUpgrDcaXY").release());
+      grDcaXYResVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "resCurrentDcaXY"));
+      grDcaXYResVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "resUpgrDcaXY")());
+      grDcaXYMeanVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "meanCurrentDcaXY")());
+      grDcaXYMeanVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "meanUpgrDcaXY")());
+      grDcaXYPullVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "pullsCurrentDcaXY")());
+      grDcaXYPullVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "pullsUpgrDcaXY")());
 
-      if (!grDcaXYResVsPtPionMC[iphibin].get() || !grDcaXYResVsPtPionData[iphibin].get() || !grDcaXYMeanVsPtPionMC[iphibin].get() || !grDcaXYMeanVsPtPionData[iphibin].get() || !grDcaXYPullVsPtPionMC[iphibin].get() || !grDcaXYPullVsPtPionData[iphibin].get()) {
-        LOG(fatal) << "[TrackTuner]     Something wrong with the names of the correction graphs for dcaXY. Fix it!";
+      if (!grDcaXYResVsPtPionMC[iPhiBin].get() || !grDcaXYResVsPtPionData[iPhiBin].get() || !grDcaXYMeanVsPtPionMC[iPhiBin].get() || !grDcaXYMeanVsPtPionData[iPhiBin].get() || !grDcaXYPullVsPtPionMC[iPhiBin].get() || !grDcaXYPullVsPtPionData[iPhiBin].get()) {
+        LOG(fatal) << "[TrackTuner]     Something wrong with the names of the correction graphs for dcaXY. Fix it! Problematic phi bin is"<<iPhiBin;
       }
     }
 
     if (inputNphiBins != 0) {
       LOG(info) << "[TrackTuner]    Loading phi-dependent Z TGraphErrors";
     }
-    for (int iphibin = 0; iphibin < nPhiBins; ++iphibin) {
-      grDcaZResVsPtPionMC[iphibin].reset(loadGraph(iphibin, "resCurrentDcaZ").release());
-      grDcaZMeanVsPtPionMC[iphibin].reset(loadGraph(iphibin, "meanCurrentDcaZ").release());
-      grDcaZPullVsPtPionMC[iphibin].reset(loadGraph(iphibin, "pullsCurrentDcaZ").release());
-      grDcaZResVsPtPionData[iphibin].reset(loadGraph(iphibin, "resUpgrDcaZ").release());
-      grDcaZMeanVsPtPionData[iphibin].reset(loadGraph(iphibin, "meanUpgrDcaZ").release());
-      grDcaZPullVsPtPionData[iphibin].reset(loadGraph(iphibin, "pullsUpgrDcaZ").release());
+    for (int iPhiBin = 0; iPhiBin < nPhiBins; ++iPhiBin) {
+      grDcaZResVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "resCurrentDcaZ")());
+      grDcaZMeanVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "meanCurrentDcaZ")());
+      grDcaZPullVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "pullsCurrentDcaZ")());
+      grDcaZResVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "resUpgrDcaZ")());
+      grDcaZMeanVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "meanUpgrDcaZ")());
+      grDcaZPullVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "pullsUpgrDcaZ")());
 
-      if (!grDcaZResVsPtPionMC[iphibin].get() || !grDcaZResVsPtPionData[iphibin].get() || !grDcaZMeanVsPtPionMC[iphibin].get() || !grDcaZMeanVsPtPionData[iphibin].get() || !grDcaZPullVsPtPionMC[iphibin].get() || !grDcaZPullVsPtPionData[iphibin].get()) {
-        LOG(fatal) << "Something wrong with the names of the correction graphs for dcaZ. Fix it!";
+      if (!grDcaZResVsPtPionMC[iPhiBin].get() || !grDcaZResVsPtPionData[iPhiBin].get() || !grDcaZMeanVsPtPionMC[iPhiBin].get() || !grDcaZMeanVsPtPionData[iPhiBin].get() || !grDcaZPullVsPtPionMC[iPhiBin].get() || !grDcaZPullVsPtPionData[iPhiBin].get()) {
+        LOG(fatal) << "[TrackTuner] Something wrong with the names of the correction graphs for dcaZ. Fix it! Problematic phi bin is"<<iPhiBin;
       }
     }
 
@@ -593,13 +593,13 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     double phiMC = mcparticle.phi();
     if (phiMC < 0.)
       phiMC += o2::constants::math::TwoPI;                                    // 2 * std::numbers::pi;//
-    int phibin = phiMC / (o2::constants::math::TwoPI + 0.0000001) * nPhiBins; // 0.0000001 just a numerical protection
+    int phiBin = phiMC / (o2::constants::math::TwoPI + 0.0000001) * nPhiBins; // 0.0000001 just a numerical protection
 
-    dcaXYResMC = evalGraph(ptMC, grDcaXYResVsPtPionMC[phibin].get());
-    dcaXYResData = evalGraph(ptMC, grDcaXYResVsPtPionData[phibin].get());
+    dcaXYResMC = evalGraph(ptMC, grDcaXYResVsPtPionMC[phiBin].get());
+    dcaXYResData = evalGraph(ptMC, grDcaXYResVsPtPionData[phiBin].get());
 
-    dcaZResMC = evalGraph(ptMC, grDcaZResVsPtPionMC[phibin].get());
-    dcaZResData = evalGraph(ptMC, grDcaZResVsPtPionData[phibin].get());
+    dcaZResMC = evalGraph(ptMC, grDcaZResVsPtPionMC[phiBin].get());
+    dcaZResData = evalGraph(ptMC, grDcaZResVsPtPionData[phiBin].get());
 
     // For Q/Pt corrections, files on CCDB will be used if both qOverPtMC and qOverPtData are null
     if (updateCurvature || updateCurvatureIU) {
@@ -618,14 +618,14 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
 
     if (updateTrackDCAs) {
 
-      dcaXYMeanMC = evalGraph(ptMC, grDcaXYMeanVsPtPionMC[phibin].get());
-      dcaXYMeanData = evalGraph(ptMC, grDcaXYMeanVsPtPionData[phibin].get());
+      dcaXYMeanMC = evalGraph(ptMC, grDcaXYMeanVsPtPionMC[phiBin].get());
+      dcaXYMeanData = evalGraph(ptMC, grDcaXYMeanVsPtPionData[phiBin].get());
 
-      dcaXYPullMC = evalGraph(ptMC, grDcaXYPullVsPtPionMC[phibin].get());
-      dcaXYPullData = evalGraph(ptMC, grDcaXYPullVsPtPionData[phibin].get());
+      dcaXYPullMC = evalGraph(ptMC, grDcaXYPullVsPtPionMC[phiBin].get());
+      dcaXYPullData = evalGraph(ptMC, grDcaXYPullVsPtPionData[phiBin].get());
 
-      dcaZPullMC = evalGraph(ptMC, grDcaZPullVsPtPionMC[phibin].get());
-      dcaZPullData = evalGraph(ptMC, grDcaZPullVsPtPionData[phibin].get());
+      dcaZPullMC = evalGraph(ptMC, grDcaZPullVsPtPionMC[phiBin].get());
+      dcaZPullData = evalGraph(ptMC, grDcaZPullVsPtPionData[phiBin].get());
     }
     //  Unit conversion, is it required ??
     dcaXYResMC *= 1.e-4;
