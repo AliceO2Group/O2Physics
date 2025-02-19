@@ -1516,8 +1516,8 @@ def main():
     else:
         msg_result = "Issues have been found."
         msg_disable = (
-            f'You can disable a test for a line by adding a comment with "{prefix_disable}"'
-            " followed by the name of the test."
+            f'Exceptionally, you can disable a test for a line by adding a comment with "{prefix_disable}"'
+            " followed by the name of the test. Please also add a reason for the exception."
         )
         if github_mode:
             print(f"::error title={title_result}::{msg_result}")
