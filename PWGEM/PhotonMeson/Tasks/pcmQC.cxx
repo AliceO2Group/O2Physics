@@ -156,6 +156,7 @@ struct PCMQC {
     fRegistry.add("V0/hThetaResolution", "#theta resolution;p_{#gamma} (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
     fRegistry.add("V0/hPhiResolution", "#varphi resolution;p_{#gamma} (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
     fRegistry.add("V0/hNgamma", "Number of #gamma candidates per collision", kTH1F, {{101, -0.5f, 100.5f}});
+    fRegistry.add("V0/hDCAz_Pt", "DCA to PV vs. p_{T} (GeV/c);DCA_{z} (cm);p_{T} (GeV/c)", kTH2F, {{200, -5.f, +5.f}, {1000, 0.0f, 10}}, false);
 
     // v0leg info
     fRegistry.add("V0Leg/hPt", "pT;p_{T,e} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
@@ -316,6 +317,7 @@ struct PCMQC {
     fRegistry.fill(HIST("V0/hEtaResolution"), v0.p(), getEtaResolution(v0));
     fRegistry.fill(HIST("V0/hThetaResolution"), v0.p(), getThetaResolution(v0));
     fRegistry.fill(HIST("V0/hPhiResolution"), v0.p(), getPhiResolution(v0));
+    fRegistry.fill(HIST("V0/hDCAz_Pt"), v0.dcaZtopv(), v0.pt());
   }
 
   template <typename TLeg>

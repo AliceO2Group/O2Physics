@@ -11,7 +11,7 @@
 
 /// \file corrSparse.cxx
 /// \brief Provides a sparse with usefull two particle correlation info
-/// \author Thor Jensen (djt288@alumni.ku.dk)
+/// \author Thor Jensen (thor.kjaersgaard.jensen@cern.ch) and Debojit Sarkar (debojit.sarkar@cern.ch)
 
 #include <vector>
 #include "Framework/runDataProcessing.h"
@@ -42,7 +42,7 @@ struct CorrSparse {
   O2_DEFINE_CONFIGURABLE(cfgEtaCut, float, 0.8f, "Eta cut")
   O2_DEFINE_CONFIGURABLE(cfgMinMixEventNum, int, 5, "Minimum number of events to mix")
 
-  ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
+  ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {72, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt axis for histograms"};
@@ -81,7 +81,7 @@ struct CorrSparse {
 
     registry.add("Sparse_mixed", "", {HistType::kTHnSparseF, {{axisMultiplicity, axisVertex, axisPtTrigger, axisPtAssoc, axisDeltaPhi, axisDeltaEta}}}); // Make the output sparse
     registry.add("Sparse_same", "", {HistType::kTHnSparseF, {{axisMultiplicity, axisVertex, axisPtTrigger, axisPtAssoc, axisDeltaPhi, axisDeltaEta}}});
-    registry.add("Trig_Hist", "", {HistType::kTH3F, {{axisMultiplicity, axisVertex, axisPtTrigger}}});
+    registry.add("Trig_Hist", "", {HistType::kTHnSparseF, {{axisMultiplicity, axisVertex, axisPtTrigger}}});
 
     registry.add("eventcount", "bin", {HistType::kTH1F, {{3, 0, 3, "bin"}}}); // histogram to see how many events are in the same and mixed event
   }

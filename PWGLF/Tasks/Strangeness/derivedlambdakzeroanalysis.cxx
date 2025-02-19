@@ -511,6 +511,8 @@ struct derivedlambdakzeroanalysis {
     histos.add("hInteractionRate", "hInteractionRate", kTH1F, {axisIRBinning});
     histos.add("hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2F, {{101, 0.0f, 101.0f}, axisIRBinning});
 
+    histos.add("hInteractionRateVsOccupancy", "hInteractionRateVsOccupancy", kTH2F, {axisIRBinning, axisOccupancy});
+
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
 
@@ -1951,6 +1953,8 @@ struct derivedlambdakzeroanalysis {
     // Fill recoed event properties
     fillReconstructedEventProperties(collision, centrality, collisionOccupancy, interactionRate, gapSide, selGapSide);
 
+    histos.fill(HIST("hInteractionRateVsOccupancy"), interactionRate, collisionOccupancy);
+
     // __________________________________________
     // perform main analysis
     int nK0Shorts = 0;
@@ -2011,6 +2015,8 @@ struct derivedlambdakzeroanalysis {
     int selGapSide = -1; // -1 --> Hadronic ; 0 --> Single Gap - A side ; 1 --> Single Gap - C side ; 2 --> Double Gap - both A & C sides
     // Fill recoed event properties
     fillReconstructedEventProperties(collision, centrality, collisionOccupancy, interactionRate, gapSide, selGapSide);
+
+    histos.fill(HIST("hInteractionRateVsOccupancy"), interactionRate, collisionOccupancy);
 
     // __________________________________________
     // perform main analysis
