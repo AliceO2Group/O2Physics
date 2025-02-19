@@ -810,7 +810,7 @@ struct FemtoUniverseProducerTask {
   }
 
   template <typename ParticleType>
-  void fillMCParticleD0(ParticleType const& hfCand, o2::aod::femtouniverseparticle::ParticleType fdparttype)
+  void fillMCParticleD0(ParticleType const& hfCand)
   {
     if (std::abs(hfCand.flagMcMatchRec()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
       // get corresponding MC particle and its info
@@ -1557,7 +1557,7 @@ struct FemtoUniverseProducerTask {
           }
         }
         if constexpr (isMC) {
-          fillMCParticleD0(hfCand, o2::aod::femtouniverseparticle::ParticleType::kD0);
+          fillMCParticleD0(hfCand);
         }
       }
     }
