@@ -66,11 +66,16 @@ DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! basic collision pr
 DECLARE_SOA_TABLE(StraCents_000, "AOD", "STRACENTS", //! centrality percentiles
                   cent::CentFT0M, cent::CentFT0A,
                   cent::CentFT0C, cent::CentFV0A);
-DECLARE_SOA_TABLE_VERSIONED(StraCents_001, "AOD", "STRACENTS", 1, //! centrality percentiles
+DECLARE_SOA_TABLE_VERSIONED(StraCents_001, "AOD", "STRACENTS", 1, //! centrality percentiles in Run 3
                             cent::CentFT0M, cent::CentFT0A,
                             cent::CentFT0C, cent::CentFV0A,
                             cent::CentFT0CVariant1, cent::CentMFT,
                             cent::CentNGlobal);
+
+DECLARE_SOA_TABLE(StraCentsRun2, "AOD", "STRACENTSRUN2", //! centrality percentiles in Run 2
+                  cent::CentRun2V0M, cent::CentRun2V0A,
+                  cent::CentRun2SPDTracklets, cent::CentRun2SPDClusters);
+
 // !!! DEPRECATED TABLE: StraRawCents_000 !!! All info in StraEvSels_001, in order to group all event characteristics in a unique table. Please use StraEvSels_001
 DECLARE_SOA_TABLE(StraRawCents_000, "AOD", "STRARAWCENTS", //! debug information
                   mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultNTracksPVeta1);
@@ -220,6 +225,20 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_004, "AOD", "STRAEVSELS", 4,         //! 
                             // stracollision::EnergyCommonZNA<mult::MultZNA>,
                             // stracollision::EnergyCommonZNC<mult::MultZNC>,
                             stracollision::IsUPC<udcollision::GapSide>);
+
+DECLARE_SOA_TABLE(StraEvSelsRun2, "AOD", "STRAEVSELSRUN2",        //! debug information
+                  evsel::Sel8, evsel::Sel7, evsel::Selection,     //! event selection: sel8
+                  mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+                  mult::MultFDDA, mult::MultFDDC,
+                  mult::MultNTracksPVeta1,                      // track multiplicities with eta cut for INEL>0
+                  mult::MultPVTotalContributors,                // number of PV contribs total
+                  mult::MultNTracksGlobal,                      // global track multiplicities
+                  mult::MultNTracksITSTPC,                      // track multiplicities, PV contribs, no eta cut
+                  mult::MultAllTracksTPCOnly,                   // TPConly track multiplicities, all, no eta cut
+                  mult::MultAllTracksITSTPC,                    // ITSTPC track multiplicities, all, no eta cut
+                  mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
+                  mult::MultZEM2, mult::MultZPA, mult::MultZPC,
+                  evsel::Alias); // trigger aliases (e.g. kTVXinTRD for v2)
 
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);

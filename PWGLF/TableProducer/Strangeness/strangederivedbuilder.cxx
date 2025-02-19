@@ -76,8 +76,10 @@ struct strangederivedbuilder {
   Produces<aod::StraCollLabels> strangeCollLabels; // characterises collisions
   Produces<aod::StraMCCollisions> strangeMCColl;   // characterises collisions / MC
   Produces<aod::StraMCCollMults> strangeMCMults;   // characterises collisions / MC mults
-  Produces<aod::StraCents> strangeCents;           // characterises collisions / centrality
-  Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / centrality / sel8 selection
+  Produces<aod::StraCents> strangeCents;           // characterises collisions / centrality in Run 3
+  Produces<aod::StraCentsRun2> strangeCentsRun2;   // characterises collisions / centrality in Run 2
+  Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / centrality / sel8 selection in Run 3
+  Produces<aod::StraEvSelsRun2> strangeEvSelsRun2; // characterises collisions / centrality / sel8 selection in Run 2
   Produces<aod::StraStamps> strangeStamps;         // provides timestamps, run numbers
   Produces<aod::V0CollRefs> v0collref;             // references collisions from V0s
   Produces<aod::CascCollRefs> casccollref;         // references collisions from cascades
@@ -225,10 +227,12 @@ struct strangederivedbuilder {
   void init(InitContext&)
   {
     LOGF(info, "Initializing now: cross-checking correctness...");
-    if (doprocessCollisions +
-          doprocessCollisionsWithUD +
-          doprocessCollisionsWithMC +
-          doprocessCollisionsWithUDWithMC >
+    if (doprocessCollisionsRun3 +
+          doprocessCollisionsRun3WithUD +
+          doprocessCollisionsRun3WithMC +
+          doprocessCollisionsRun3WithUDWithMC +
+          doprocessCollisionsRun2 +
+          doprocessCollisionsRun2WithMC >
         1) {
       LOGF(fatal, "You have enabled more than one process function associated to collisions. Please check your configuration! Aborting now.");
     }
@@ -248,17 +252,23 @@ struct strangederivedbuilder {
     }
 
     // collision processing printout
-    if (doprocessCollisions) {
-      LOGF(info, "Collision processing type.........: no UD, no MC");
+    if (doprocessCollisionsRun3) {
+      LOGF(info, "Collision processing type.........: Run 3, no UD, no MC");
     }
-    if (doprocessCollisionsWithUD) {
-      LOGF(info, "Collision processing type.........: with UD, no MC");
+    if (doprocessCollisionsRun3WithUD) {
+      LOGF(info, "Collision processing type.........: Run 3, with UD, no MC");
     }
-    if (doprocessCollisionsWithMC) {
-      LOGF(info, "Collision processing type.........: with MC, no UD");
+    if (doprocessCollisionsRun3WithMC) {
+      LOGF(info, "Collision processing type.........: Run 3, with MC, no UD");
     }
-    if (doprocessCollisionsWithUDWithMC) {
-      LOGF(info, "Collision processing type.........: with MC, with UD");
+    if (doprocessCollisionsRun3WithUDWithMC) {
+      LOGF(info, "Collision processing type.........: Run 3, with MC, with UD");
+    }
+    if (doprocessCollisionsRun2) {
+      LOGF(info, "Collision processing type.........: Run 2, no UD, no MC");
+    }
+    if (doprocessCollisionsRun2WithMC) {
+      LOGF(info, "Collision processing type.........: Run 2, with MC, no UD");
     }
 
     LOGF(info, "====] event characterization processing [=========================");
@@ -433,12 +443,6 @@ struct strangederivedbuilder {
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
 
-      float centrality = collision.centFT0C();
-      if (qaCentrality) {
-        auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
-        centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(collision.multFT0C()));
-      }
-
       auto V0Table_thisColl = V0s.sliceBy(V0perCollision, collIdx);
       auto CascTable_thisColl = Cascades.sliceBy(CascperCollision, collIdx);
       auto KFCascTable_thisColl = KFCascades.sliceBy(KFCascperCollision, collIdx);
@@ -489,42 +493,73 @@ struct strangederivedbuilder {
       // +-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
       // fill collision tables
       if (strange || fillEmptyCollisions) {
+        strangeStamps(bc.runNumber(), bc.timestamp(), bc.globalBC());
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         if constexpr (requires { collision.mcCollisionId(); }) { // check if MC information is available and if so fill labels
           strangeCollLabels(collision.mcCollisionId());
         }
-        strangeCents(collision.centFT0M(), collision.centFT0A(),
-                     centrality, collision.centFV0A(), collision.centFT0CVariant1(),
-                     collision.centMFT(), collision.centNGlobal());
-        strangeEvSels(collision.sel8(), collision.selection_raw(),
-                      collision.multFT0A() * static_cast<float>(fillTruncationOptions.fillRawFT0A),
-                      collision.multFT0C() * static_cast<float>(fillTruncationOptions.fillRawFT0C),
-                      collision.multFV0A() * static_cast<float>(fillTruncationOptions.fillRawFV0A),
-                      collision.multFDDA() * static_cast<float>(fillTruncationOptions.fillRawFDDA),
-                      collision.multFDDC() * static_cast<float>(fillTruncationOptions.fillRawFDDC),
-                      collision.multNTracksPVeta1() * static_cast<int>(fillTruncationOptions.fillRawNTracksEta1),
-                      collision.multPVTotalContributors() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                      collision.multNTracksGlobal() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                      collision.multNTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                      collision.multAllTracksTPCOnly() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                      collision.multAllTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                      collision.multZNA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                      collision.multZNC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                      collision.multZEM1() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                      collision.multZEM2() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                      collision.multZPA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                      collision.multZPC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                      collision.trackOccupancyInTimeRange(),
-                      collision.ft0cOccupancyInTimeRange(),
-                      // UPC info
-                      gapSide,
-                      totalFT0AmplitudeA, totalFT0AmplitudeC, totalFV0AmplitudeA,
-                      totalFDDAmplitudeA, totalFDDAmplitudeC,
-                      energyCommonZNA, energyCommonZNC,
-                      // Collision flags
-                      collision.flags(),
-                      collision.alias_raw());
-        strangeStamps(bc.runNumber(), bc.timestamp(), bc.globalBC());
+
+        if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
+          float centrality = collision.centFT0C();
+          if (qaCentrality) {
+            auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
+            centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(collision.multFT0C()));
+          }
+
+          strangeCents(collision.centFT0M(), collision.centFT0A(),
+                       centrality, collision.centFV0A(), collision.centFT0CVariant1(),
+                       collision.centMFT(), collision.centNGlobal());
+          strangeEvSels(collision.sel8(), collision.selection_raw(),
+                        collision.multFT0A() * static_cast<float>(fillTruncationOptions.fillRawFT0A),
+                        collision.multFT0C() * static_cast<float>(fillTruncationOptions.fillRawFT0C),
+                        collision.multFV0A() * static_cast<float>(fillTruncationOptions.fillRawFV0A),
+                        collision.multFDDA() * static_cast<float>(fillTruncationOptions.fillRawFDDA),
+                        collision.multFDDC() * static_cast<float>(fillTruncationOptions.fillRawFDDC),
+                        collision.multNTracksPVeta1() * static_cast<int>(fillTruncationOptions.fillRawNTracksEta1),
+                        collision.multPVTotalContributors() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                        collision.multNTracksGlobal() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                        collision.multNTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                        collision.multAllTracksTPCOnly() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                        collision.multAllTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                        collision.multZNA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                        collision.multZNC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                        collision.multZEM1() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                        collision.multZEM2() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                        collision.multZPA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                        collision.multZPC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                        collision.trackOccupancyInTimeRange(),
+                        collision.ft0cOccupancyInTimeRange(),
+                        // UPC info
+                        gapSide,
+                        totalFT0AmplitudeA, totalFT0AmplitudeC, totalFV0AmplitudeA,
+                        totalFDDAmplitudeA, totalFDDAmplitudeC,
+                        energyCommonZNA, energyCommonZNC,
+                        // Collision flags
+                        collision.flags(),
+                        collision.alias_raw());
+        } else { // We are in Run 2
+          strangeCentsRun2(collision.centRun2V0M(), collision.centRun2V0A(),
+                           collision.centRun2SPDTracklets(), collision.centRun2SPDClusters());
+          strangeEvSelsRun2(collision.sel8(), collision.sel7(), collision.selection_raw(),
+                            collision.multFT0A() * static_cast<float>(fillTruncationOptions.fillRawFT0A),
+                            collision.multFT0C() * static_cast<float>(fillTruncationOptions.fillRawFT0C),
+                            collision.multFV0A() * static_cast<float>(fillTruncationOptions.fillRawFV0A),
+                            collision.multFDDA() * static_cast<float>(fillTruncationOptions.fillRawFDDA),
+                            collision.multFDDC() * static_cast<float>(fillTruncationOptions.fillRawFDDC),
+                            collision.multNTracksPVeta1() * static_cast<int>(fillTruncationOptions.fillRawNTracksEta1),
+                            -1, /* dummy number of PV contribs total while waiting for the multiplicity task to produce it */
+                            -1, /* dummy global track multiplicities while waiting for the multiplicity task to produce it */
+                            -1, /* dummy track multiplicities, PV contribs, no eta cut while waiting for the multiplicity task to produce it */
+                            -1, /* dummy TPConly track multiplicities, all, no eta cut while waiting for the multiplicity task to produce it */
+                            -1, /* dummy ITSTPC track multiplicities, all, no eta cut waiting for the multiplicity task to produce it */
+                            collision.multZNA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                            collision.multZNC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                            collision.multZEM1() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                            collision.multZEM2() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                            collision.multZPA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                            collision.multZPC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                            collision.alias_raw());
+        }
       }
       for (const auto& v0 : V0Table_thisColl)
         V0CollIndices[v0.globalIndex()] = strangeColl.lastIndex();
@@ -592,26 +627,37 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentNGlobals, aod::CentMFTs, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/)
+  void processCollisionsRun3(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentNGlobals, aod::CentMFTs, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/)
   {
     populateCollisionTables(collisions, collisions, V0s, Cascades, KFCascades, TraCascades);
   }
 
-  void processCollisionsWithUD(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentNGlobals, aod::CentMFTs, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, UDCollisionsFull const& udCollisions)
+  void processCollisionsRun3WithUD(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentNGlobals, aod::CentMFTs, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, UDCollisionsFull const& udCollisions)
   {
     populateCollisionTables(collisions, udCollisions, V0s, Cascades, KFCascades, TraCascades);
   }
 
-  void processCollisionsWithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentNGlobals, aod::CentMFTs, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticles)
+  void processCollisionsRun3WithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentNGlobals, aod::CentMFTs, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticles)
   {
     populateMCCollisionTable(mcCollisions, mcParticles);
     populateCollisionTables(collisions, collisions, V0s, Cascades, KFCascades, TraCascades);
   }
 
-  void processCollisionsWithUDWithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentNGlobals, aod::CentMFTs, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, UDCollisionsFull const& udCollisions, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticles)
+  void processCollisionsRun3WithUDWithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentNGlobals, aod::CentMFTs, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, UDCollisionsFull const& udCollisions, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticles)
   {
     populateMCCollisionTable(mcCollisions, mcParticles);
     populateCollisionTables(collisions, udCollisions, V0s, Cascades, KFCascades, TraCascades);
+  }
+
+  void processCollisionsRun2(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentRun2V0Ms, aod::CentRun2V0As, aod::CentRun2SPDTrks, aod::CentRun2SPDClss, aod::EvSels> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/)
+  {
+    populateCollisionTables(collisions, collisions, V0s, Cascades, KFCascades, TraCascades);
+  }
+
+  void processCollisionsRun2WithMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentRun2V0Ms, aod::CentRun2V0As, aod::CentRun2SPDTrks, aod::CentRun2SPDClss, aod::EvSels, aod::McCollisionLabels> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& /*V0MCCores*/, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    populateMCCollisionTable(mcCollisions, mcParticles);
+    populateCollisionTables(collisions, collisions, V0s, Cascades, KFCascades, TraCascades);
   }
 
   void processTrackExtrasV0sOnly(aod::V0Datas const& V0s, TracksWithExtra const& tracksExtra)
@@ -1070,11 +1116,14 @@ struct strangederivedbuilder {
   // debug processing
   PROCESS_SWITCH(strangederivedbuilder, processDataframeIDs, "Produce data frame ID tags", false);
 
-  // collision processing
-  PROCESS_SWITCH(strangederivedbuilder, processCollisions, "Produce collisions", true);
-  PROCESS_SWITCH(strangederivedbuilder, processCollisionsWithUD, "Produce collisions with UD info", true);
-  PROCESS_SWITCH(strangederivedbuilder, processCollisionsWithMC, "Produce collisions with MC info", true);
-  PROCESS_SWITCH(strangederivedbuilder, processCollisionsWithUDWithMC, "Produce collisions with UD + MC info", true);
+  // Run 3: collision processing
+  PROCESS_SWITCH(strangederivedbuilder, processCollisionsRun3, "Produce collisions (Run 3)", true);
+  PROCESS_SWITCH(strangederivedbuilder, processCollisionsRun3WithUD, "Produce collisions (Run 3) with UD info", true);
+  PROCESS_SWITCH(strangederivedbuilder, processCollisionsRun3WithMC, "Produce collisions (Run 3) with MC info", true);
+  PROCESS_SWITCH(strangederivedbuilder, processCollisionsRun3WithUDWithMC, "Produce collisions (Run 3) with UD + MC info", true);
+  // Run 2: collision processing
+  PROCESS_SWITCH(strangederivedbuilder, processCollisionsRun2, "Produce collisions (Run2)", false);
+  PROCESS_SWITCH(strangederivedbuilder, processCollisionsRun2WithMC, "Produce collisions (Run 2) with MC info", false);
 
   // detailed information processing
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasV0sOnly, "Produce track extra information (V0s only)", true);
