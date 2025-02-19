@@ -12,6 +12,11 @@
 /// \file centrality.cxx
 /// \brief Task to produce the centrality tables associated to each of the required centrality estimators
 
+#include <vector>
+#include <algorithm>
+#include <map>
+#include <string>
+
 #include <CCDB/BasicCCDBManager.h>
 #include <TH1F.h>
 #include <TFormula.h>
