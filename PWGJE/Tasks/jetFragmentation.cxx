@@ -60,6 +60,7 @@ using MCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorL
 using MatchedMCDV0Jets = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 using MatchedMCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetConstituents, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 
+using CandidatesV0DataWithFlags = soa::Join<aod::CandidatesV0Data, aod::V0SignalFlags>;
 using CandidatesV0MCDWithLabels = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels, aod::V0SignalFlags>;
 
 using MCPV0Jets = aod::V0ChargedMCParticleLevelJets;
@@ -2591,7 +2592,7 @@ struct JetFragmentation {
                          ChargedJetsWithConstituents const& jets,
                          aod::JetTracks const&,
                          aod::Collisions const&,
-                         aod::V0Datas const& allV0s)
+                         soa::Join<aod::V0Datas, aod::V0SignalFlags> const& allV0s)
   {
     if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
@@ -2670,7 +2671,7 @@ struct JetFragmentation {
   //
   //
   // ---------------- V0 jets ----------------
-  void processDataV0JetsFrag(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, soa::Join<aod::V0ChargedJets, aod::V0ChargedJetConstituents> const& v0jets, aod::CandidatesV0Data const& v0s)
+  void processDataV0JetsFrag(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, soa::Join<aod::V0ChargedJets, aod::V0ChargedJetConstituents> const& v0jets, CandidatesV0DataWithFlags const& v0s)
   {
     if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
@@ -2689,7 +2690,7 @@ struct JetFragmentation {
       fillDataJetHistograms(jet);
 
       int nV0inJet = 0, nLambdainJet = 0, nAntiLambdainJet = 0, nK0SinJet = 0;
-      for (const auto& v0 : jet.candidates_as<aod::CandidatesV0Data>()) {
+      for (const auto& v0 : jet.candidates_as<CandidatesV0DataWithFlags>()) {
         nV0inJet++;
         fillDataV0FragHistograms(jcoll, jet, v0);
         if (v0.isK0SCandidate()) {
@@ -2707,7 +2708,7 @@ struct JetFragmentation {
   }
   PROCESS_SWITCH(JetFragmentation, processDataV0JetsFrag, "Data V0 jets fragmentation", false);
 
-  void processDataV0JetsFragWithWeights(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, soa::Join<aod::V0ChargedJets, aod::V0ChargedJetConstituents> const& v0jets, aod::CandidatesV0Data const& v0s)
+  void processDataV0JetsFragWithWeights(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, soa::Join<aod::V0ChargedJets, aod::V0ChargedJetConstituents> const& v0jets, CandidatesV0DataWithFlags const& v0s)
   {
     if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
@@ -2729,7 +2730,7 @@ struct JetFragmentation {
       std::vector<std::vector<double>> weights;
       int nParticles = 0;
       int nClasses = 4; // Should be set globally? Maybe just a global constant?
-      for (const auto& v0 : jet.candidates_as<aod::CandidatesV0Data>()) {
+      for (const auto& v0 : jet.candidates_as<CandidatesV0DataWithFlags>()) {
         nParticles++;
         fillDataV0FragHistograms(jcoll, jet, v0);
         double z = getMomProj(jet, v0);
@@ -2754,7 +2755,7 @@ struct JetFragmentation {
   }
   PROCESS_SWITCH(JetFragmentation, processDataV0JetsFragWithWeights, "Data V0 jets fragmentation with weights", false);
 
-  void processDataV0PerpCone(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, aod::V0ChargedJets const& v0jets, aod::CandidatesV0Data const& v0s)
+  void processDataV0PerpCone(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, aod::V0ChargedJets const& v0jets, CandidatesV0DataWithFlags const& v0s)
   {
     if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
