@@ -180,7 +180,7 @@ struct highmasslambda {
     std::vector<double> cpaV0Binning = {0.995, 0.996, 0.997, 0.998, 0.999, 0.9995, 0.9997, 0.9999, 1.005};
     std::vector<double> ptV0Binning = {0.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 100.0};
     std::vector<double> dcaBetweenV0 = {0.0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0};
-    std::vector<double> dcaBetweenProtonV0 = {-0.05, -0.04, -0.03, -0.025, -0.02, -0.01, -0.005, -0.004, -0.003, -0.003, -0.002, -0.001, 0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.01, 0.012, 0.014, 0.016, 0.018, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.3, 0.4, 0.5, 1.0};
+    std::vector<double> dcaBetweenProtonV0 = {-2.0, -1.0, -0.5, -0.4, -0.3, -0.2, -0.18, -0.16, -0.14, -0.12, -0.1, -0.08, -0.06, -0.05, -0.04, -0.03, -0.025, -0.02, -0.01, -0.005, -0.004, -0.003, -0.003, -0.002, -0.001, 0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.01, 0.012, 0.014, 0.016, 0.018, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.3, 0.4, 0.5, 1.0, 2.0};
 
     AxisSpec resAxis = {1600, -30, 30, "Res"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
@@ -237,8 +237,8 @@ struct highmasslambda {
       histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, dcaV0toPVBinning, cpaV0Binning, ptV0Binning, dcaBetweenV0, dcaBetweenProtonV0});
     }
     if (useKshortOpti == 2) {
-      histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2});
-      histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2});
+      histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaBetweenProtonV0});
+      histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaBetweenProtonV0});
     }
     // histogram for resolution
     histos.add("ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
@@ -717,7 +717,7 @@ struct highmasslambda {
             histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), dcaV0toPV, cpaV0, ptV0, dcaV0Daughters, dcaProtonV0);
           }
           if (useKshortOpti == 2) {
-            histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2);
+            histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, dcaProtonV0);
           }
         }
         if (fillRotation) {
@@ -850,7 +850,7 @@ struct highmasslambda {
             histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), dcaV0toPV, cpaV0, ptV0, dcaV0Daughters, dcaProtonV0);
           }
           if (useKshortOpti == 2) {
-            histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2);
+            histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, dcaProtonV0);
           }
         }
       }
