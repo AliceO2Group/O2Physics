@@ -344,7 +344,7 @@ struct HfCorrelatorHfeHadrons {
     Pair<TableCollisions, aod::HfCorrSelEl, TableTracks, BinningType> pair{corrBinning, 5, -1, collision, tracksTuple, &cache};
 
     // loop over the rows of the new table
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+    for (const auto& [c1, tracks1, c2, tracks2] : pair) {
 
       fillMixCorrelation(c1, c2, tracks1, tracks2);
     }
@@ -359,7 +359,7 @@ struct HfCorrelatorHfeHadrons {
     Pair<McTableCollisions, aod::HfCorrSelEl, McTableTracks, BinningType> pairMcRec{corrBinning, 5, -1, mccollision, tracksTuple, &cache};
 
     // loop over the rows of the new table
-    for (auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
+    for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
 
       fillMixCorrelation(c1, c2, tracks1, tracks2);
     }
@@ -382,9 +382,9 @@ struct HfCorrelatorHfeHadrons {
     double ptHadronMix = -999;
     double etaHadronMix = -999;
     double phiHadronMix = -999;
-    for (auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
+    for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
       int poolBin = corrBinningMcGen.getBin(std::make_tuple(c1.posZ(), c1.multMCFT0A()));
-      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+      for (const auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
         ptHadronMix = t2.pt();
         ptElectronMix = t1.ptTrackMc();
         phiElectronMix = t1.phiTrackMc();
