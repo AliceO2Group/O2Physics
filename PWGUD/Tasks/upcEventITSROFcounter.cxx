@@ -52,7 +52,7 @@ struct UpcEventITSROFcounter {
 
   Configurable<bool> useTrueGap{"useTrueGap", true, {"Calculate gapSide for a given FV0/FT0/ZDC thresholds"}};
   Configurable<float> cutMyGapSideFV0{"cutMyGapSideFV0", -1, "FV0A threshold for SG selector"};
-  Configurable<float> cutMyGapSideFT0A{"FcutMyGapSideFT0AT0A", 150., "FT0A threshold for SG selector"};
+  Configurable<float> cutMyGapSideFT0A{"cutMyGapSideFT0AT0A", 150., "FT0A threshold for SG selector"};
   Configurable<float> cutMyGapSideFT0C{"cutMyGapSideFT0C", 50., "FT0C threshold for SG selector"};
   Configurable<float> cutMyGapSideZDC{"cutMyGapSideZDC", 10., "ZDC threshold for SG selector"};
   ConfigurableAxis axisRunNumbers{"axisRunNumbers", {1400, 544000.5, 545400.5}, "Range of run numbers"};
