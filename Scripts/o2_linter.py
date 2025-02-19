@@ -1207,9 +1207,9 @@ class TestNameFileWorkflow(TestSpec):
             name_pwg = match.group(1)
             prefix_pwg = name_pwg.capitalize()
             if name_pwg in ("HF"):
-                base_struct_name = fr"{prefix_pwg}{base_struct_name}"  # mandatory PWG prefix
+                base_struct_name = rf"{prefix_pwg}{base_struct_name}"  # mandatory PWG prefix
             else:
-                base_struct_name = fr"({prefix_pwg})?{base_struct_name}"  # optional PWG prefix
+                base_struct_name = rf"({prefix_pwg})?{base_struct_name}"  # optional PWG prefix
         # print(f"For file {file_name} expecting to find {base_struct_name}.")
         struct_names = []  # actual struct names in the file
         for line in content:
