@@ -66,7 +66,7 @@ o2physics_add_dpl_workflow(vzero-cascade-absorption
 
 o2physics_add_dpl_workflow(derivedcascadeanalysis
     SOURCES derivedcascadeanalysis.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cascpostprocessing
