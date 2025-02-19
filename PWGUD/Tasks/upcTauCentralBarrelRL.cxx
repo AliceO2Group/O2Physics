@@ -108,8 +108,9 @@ struct UpcTauRl {
     Configurable<bool> useThresholdsPID{"useThresholdsPID", false, {"Switch off smaller-sigma-wins pidZ."}};
     Configurable<bool> applyTauEventSelection{"applyTauEventSelection", true, {"Select tau event."}};
     Configurable<bool> cutOppositeCharge{"cutOppositeCharge", true, {"Tracks have opposite charge."}};
+    Configurable<bool> cutSameCharge{"cutSameCharge", false, {"Tracks have same charge."}};
     Configurable<float> cutMaxAcoplanarity{"cutMaxAcoplanarity", 4 * o2::constants::math::PI / 5, {"Opening angle of the tracks. What is more goes away."}};
-    Configurable<float> cutMinAcoplanarity{"cutMinAcoplanarity", 2 * o2::constants::math::PI / 5, {"Opening angle of the tracks. What is less goes away."}};
+    Configurable<float> cutMinAcoplanarity{"cutMinAcoplanarity", 0 * o2::constants::math::PI / 5, {"Opening angle of the tracks. What is less goes away."}};
     Configurable<bool> cutElectronHasTOF{"cutElectronHasTOF", true, {"Electron is required to hit TOF."}};
     Configurable<bool> cutGoodElectron{"cutGoodElectron", true, {"Select good electron."}};
     Configurable<bool> cutOutRho{"cutOutRho", false, {"Cut out rho mass under two tracks are pions hypothesis"}};
@@ -1029,6 +1030,8 @@ struct UpcTauRl {
 
     int enumTrk1 = (cutTauEvent.useThresholdsPID ? (isElectronCandidate(trkDaug1) ? P_ELECTRON : P_PION) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)));
     if (cutTauEvent.cutOppositeCharge && (trkDaug1.sign() * trkDaug2.sign() > 0))
+      return false;
+    if (cutTauEvent.cutSameCharge && (trkDaug1.sign() * trkDaug2.sign() < 0))
       return false;
     if (calculateAcoplanarity(daug[0].Phi(), daug[1].Phi()) > cutTauEvent.cutMaxAcoplanarity)
       return false;
