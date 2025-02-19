@@ -456,10 +456,10 @@ struct Chk892Flow {
       lRefAId = 4;
       lRefBId = 5;
     }
-
     if (EventPlaneConfig.cfgNQvec < 2) {
       LOG(fatal) << "nMode must be larger than 1, current input (cfgNQvec): " << EventPlaneConfig.cfgNQvec;
     }
+    LOGF(info, "lDetId: %d, lRefAId: %d, lRefBId: %d", lDetId, lRefAId, lRefBId);
 
     // MC
     if (doprocessMC) {
@@ -514,18 +514,17 @@ struct Chk892Flow {
       } else {
         histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis});
       }
-
-      ccdb->setURL(CCDBConfig.cfgURL);
-      ccdbApi.init("http://alice-ccdb.cern.ch");
-      ccdb->setCaching(true);
-      ccdb->setLocalObjectValidityChecking();
-      ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     }
+
+    ccdb->setURL(CCDBConfig.cfgURL);
+    ccdbApi.init("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
     // Print output histograms statistics
     LOG(info) << "Size of the histograms in chK(892) Analysis Task";
     histos.print();
-    LOGF(info, "lDetId: %d, lRefAId: %d, lRefBId: %d", lDetId, lRefAId, lRefBId);
   }
 
   template <typename CollisionType>
@@ -1001,9 +1000,11 @@ struct Chk892Flow {
         if constexpr (!IsMix) {
           unsigned int typeKstar = bTrack.sign() > 0 ? BinType::kKstarP : BinType::kKstarN;
 
-          histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
-          histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
-          histos.fill(HIST("QA/after/kstarv2vsinvmass"), lResoKstar.M(), resoFlowValue);
+          if (AnalysisConfig.cfgFillQAPlots) {
+            histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
+            histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
+            histos.fill(HIST("QA/after/kstarv2vsinvmass"), lResoKstar.M(), resoFlowValue);
+          }
           if (AnalysisConfig.cfgFillAdditionalAxis) {
             histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), resoFlowValue, static_cast<float>(nmode) * lPhiMinusPsiKstar);
           } else {
@@ -1013,7 +1014,9 @@ struct Chk892Flow {
           if (BkgEstimationConfig.cfgFillRotBkg) {
             for (int i = 0; i < BkgEstimationConfig.cfgNrotBkg; i++) {
               auto lRotAngle = BkgEstimationConfig.cfgMinRot + i * ((BkgEstimationConfig.cfgMaxRot - BkgEstimationConfig.cfgMinRot) / (BkgEstimationConfig.cfgNrotBkg - 1));
-              histos.fill(HIST("QA/RotBkg/hRotBkg"), lRotAngle);
+              if (AnalysisConfig.cfgFillQAPlots) {
+                histos.fill(HIST("QA/RotBkg/hRotBkg"), lRotAngle);
+              }
               if (BkgEstimationConfig.cfgRotPion) {
                 lDaughterRot = lDecayDaughter_bach;
                 lDaughterRot.RotateZ(lRotAngle);
