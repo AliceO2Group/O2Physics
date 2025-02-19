@@ -375,13 +375,13 @@ class FemtoUniverseParticleHisto
         } else {
           PDGbin = 3;
         }
-        if (std::abs(pdgcode == 211)) {
+        if (std::abs(pdgcode) == 211) {
           mHistogramRegistry->fill(histFolder + HIST("_MC/hMisidentification"),
                                    PDGbin, 0, part.pt());
-        } else if (std::abs(pdgcode == 321)) {
+        } else if (std::abs(pdgcode) == 321) {
           mHistogramRegistry->fill(histFolder + HIST("_MC/hMisidentification"),
                                    PDGbin, 1, part.pt());
-        } else if (std::abs(pdgcode == 2212)) {
+        } else if (std::abs(pdgcode) == 2212) {
           mHistogramRegistry->fill(histFolder + HIST("_MC/hMisidentification"),
                                    PDGbin, 2, part.pt());
         } else {
