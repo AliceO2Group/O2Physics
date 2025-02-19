@@ -154,6 +154,8 @@ struct derivedlambdakzeroanalysis {
     // Track quality
     Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
     Configurable<int> minITSclusters{"minITSclusters", -1, "minimum ITS clusters"};
+    Configurable<float> minTPCrowsOverFindableClusters{"minTPCrowsOverFindableClusters", -1, "minimum nbr of TPC crossed rows over findable"};
+    Configurable<float> maxFractionTPCSharedClusters{"maxFractionTPCSharedClusters", 1e+09, "maximum fraction of TPC shared clusters"};
     Configurable<bool> skipTPConly{"skipTPConly", false, "skip V0s comprised of at least one TPC only prong"};
     Configurable<bool> requirePosITSonly{"requirePosITSonly", false, "require that positive track is ITSonly (overrides TPC quality)"};
     Configurable<bool> requireNegITSonly{"requireNegITSonly", false, "require that negative track is ITSonly (overrides TPC quality)"};
@@ -899,9 +901,9 @@ struct derivedlambdakzeroanalysis {
       bitset(bitMap, selNegGoodITSTrack);
 
     // TPC quality flags
-    if (posTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows)
+    if (posTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows && posTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters && posTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters)
       bitset(bitMap, selPosGoodTPCTrack);
-    if (negTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows)
+    if (negTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows && negTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters && negTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters)
       bitset(bitMap, selNegGoodTPCTrack);
 
     // TPC PID
