@@ -517,7 +517,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     grDcaZPullVsPtPionData.reserve(nPhiBins);
 
     /// Lambda expression to get the TGraphErrors from file
-    auto loadGraph = [&](int phiBin, const std::string& strBaseName) -> std::unique_ptr<TGraphErrors> {
+    auto loadGraph = [&](int phiBin, const std::string& strBaseName) -> TGraphErrors* {
       std::string strGraphName = inputNphiBins != 0 ? fmt::format("{}_{}", strBaseName, phiBin) : strBaseName;
       TObject* obj = td->Get(strGraphName.c_str());
       if (!obj) {
@@ -534,14 +534,14 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     for (int iPhiBin = 0; iPhiBin < nPhiBins; ++iPhiBin) {
 
       grDcaXYResVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "resCurrentDcaXY"));
-      grDcaXYResVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "resUpgrDcaXY")());
-      grDcaXYMeanVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "meanCurrentDcaXY")());
-      grDcaXYMeanVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "meanUpgrDcaXY")());
-      grDcaXYPullVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "pullsCurrentDcaXY")());
-      grDcaXYPullVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "pullsUpgrDcaXY")());
+      grDcaXYResVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "resUpgrDcaXY"));
+      grDcaXYMeanVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "meanCurrentDcaXY"));
+      grDcaXYMeanVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "meanUpgrDcaXY"));
+      grDcaXYPullVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "pullsCurrentDcaXY"));
+      grDcaXYPullVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "pullsUpgrDcaXY"));
 
       if (!grDcaXYResVsPtPionMC[iPhiBin].get() || !grDcaXYResVsPtPionData[iPhiBin].get() || !grDcaXYMeanVsPtPionMC[iPhiBin].get() || !grDcaXYMeanVsPtPionData[iPhiBin].get() || !grDcaXYPullVsPtPionMC[iPhiBin].get() || !grDcaXYPullVsPtPionData[iPhiBin].get()) {
-        LOG(fatal) << "[TrackTuner]     Something wrong with the names of the correction graphs for dcaXY. Fix it! Problematic phi bin is"<<iPhiBin;
+        LOG(fatal) << "[TrackTuner]     Something wrong with the names of the correction graphs for dcaXY. Fix it! Problematic phi bin is" << iPhiBin;
       }
     }
 
@@ -549,15 +549,15 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       LOG(info) << "[TrackTuner]    Loading phi-dependent Z TGraphErrors";
     }
     for (int iPhiBin = 0; iPhiBin < nPhiBins; ++iPhiBin) {
-      grDcaZResVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "resCurrentDcaZ")());
-      grDcaZMeanVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "meanCurrentDcaZ")());
-      grDcaZPullVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "pullsCurrentDcaZ")());
-      grDcaZResVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "resUpgrDcaZ")());
-      grDcaZMeanVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "meanUpgrDcaZ")());
-      grDcaZPullVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "pullsUpgrDcaZ")());
+      grDcaZResVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "resCurrentDcaZ"));
+      grDcaZMeanVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "meanCurrentDcaZ"));
+      grDcaZPullVsPtPionMC[iPhiBin].reset(loadGraph(iPhiBin, "pullsCurrentDcaZ"));
+      grDcaZResVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "resUpgrDcaZ"));
+      grDcaZMeanVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "meanUpgrDcaZ"));
+      grDcaZPullVsPtPionData[iPhiBin].reset(loadGraph(iPhiBin, "pullsUpgrDcaZ"));
 
       if (!grDcaZResVsPtPionMC[iPhiBin].get() || !grDcaZResVsPtPionData[iPhiBin].get() || !grDcaZMeanVsPtPionMC[iPhiBin].get() || !grDcaZMeanVsPtPionData[iPhiBin].get() || !grDcaZPullVsPtPionMC[iPhiBin].get() || !grDcaZPullVsPtPionData[iPhiBin].get()) {
-        LOG(fatal) << "[TrackTuner] Something wrong with the names of the correction graphs for dcaZ. Fix it! Problematic phi bin is"<<iPhiBin;
+        LOG(fatal) << "[TrackTuner] Something wrong with the names of the correction graphs for dcaZ. Fix it! Problematic phi bin is" << iPhiBin;
       }
     }
 
