@@ -56,8 +56,8 @@ struct UpcEventITSROFcounter {
     histos.add("Events/hCountCollisionsInROFborderMatching", ";;Number of collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
     histos.add("Events/hCountUPCcollisionsInROFborderMatching", ";;Number of UPC (mult < 17) collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
 
-    histos.add("Events/hPVcontribsVsCollisionsPerITSROFstd", "Collisions reconstructed with standard mode;Number of vertex contributors (-); Number of collisions in one ITSROF (-)", HistType::kTH2D, {{101, -0.5, 100.5},{11, -0.5, 10.5}});
-    histos.add("Events/hPVcontribsVsCollisionsPerITSROFupc", "Collisions reconstructed with upc mode;Number of vertex contributors (-); Number of collisions in one ITSROF (-)", HistType::kTH2D, {{101, -0.5, 100.5},{11, -0.5, 10.5}});
+    histos.add("Events/hPVcontribsVsCollisionsPerITSROFstd", "Collisions reconstructed with standard mode;Number of vertex contributors (-); Number of collisions in one ITSROF (-)", HistType::kTH2D, {{101, -0.5, 100.5}, {11, -0.5, 10.5}});
+    histos.add("Events/hPVcontribsVsCollisionsPerITSROFupc", "Collisions reconstructed with upc mode;Number of vertex contributors (-); Number of collisions in one ITSROF (-)", HistType::kTH2D, {{101, -0.5, 100.5}, {11, -0.5, 10.5}});
 
     histos.add("Runs/hStdModeCollDG", ";Run number;Number of events (-)", HistType::kTH1D, {axisRunNumbers});
     histos.add("Runs/hUpcModeCollDG", ";Run number;Number of events (-)", HistType::kTH1D, {axisRunNumbers});
@@ -168,8 +168,6 @@ struct UpcEventITSROFcounter {
       }
 
     } // end loop over ITSROFs
-
-
   }
 
   void processCounterPerRun(FullSGUDCollision const& coll)
