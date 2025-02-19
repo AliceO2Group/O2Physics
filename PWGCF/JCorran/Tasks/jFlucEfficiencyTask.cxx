@@ -206,7 +206,7 @@ struct JFlucEfficiencyTask {
   }
 
   template <typename TCollision, typename TTracks>
-  void fillQA(const TCollision& collision, float multiplicity, const TTracks& tracks)
+  void fillQA(const TCollision& /*collision*/, float multiplicity, const TTracks& tracks)
   {
     registry.fill(HIST("multiplicity"), multiplicity);
     for (const auto& track : tracks) {
