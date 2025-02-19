@@ -1983,7 +1983,7 @@ struct kfdecay3bodyDataLinkBuilder {
   {
     buildDataLink(decay3bodytable, vtxdatatable); // build ReducedDecay3Body -> KFDecay3BodyData link table
   }
-  PROCESS_SWITCH(kfdecay3bodyDataLinkBuilder, processReduced, "Build data link table for reduced data.", true);
+  PROCESS_SWITCH(kfdecay3bodyDataLinkBuilder, processReduced, "Build data link table for reduced data.", false);
 };
 
 struct decay3bodyLabelBuilder {
@@ -2106,60 +2106,6 @@ struct decay3bodyLabelBuilder {
     }
   }
   PROCESS_SWITCH(decay3bodyLabelBuilder, processBuildLabels, "Produce MC label tables", false);
-
-  void processBuildKFLabels(aod::KFDecay3BodysLinked const& decay3bodys, aod::KFVtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const&)
-  {
-    std::vector<int> lIndices;
-    lIndices.reserve(vtx3bodydatas.size());
-    for (int ii = 0; ii < vtx3bodydatas.size(); ii++) {
-      lIndices[ii] = -1;
-    }
-
-    for (auto& decay3body : decay3bodys) {
-
-      int lLabel = -1;
-
-      auto lTrack0 = decay3body.track0_as<MCLabeledTracksIU>();
-      auto lTrack1 = decay3body.track1_as<MCLabeledTracksIU>();
-      auto lTrack2 = decay3body.track2_as<MCLabeledTracksIU>();
-
-      // counter total
-      registry.fill(HIST("hLabelCounter"), 0.5);
-
-      // Association check
-      if (lTrack0.has_mcParticle() && lTrack1.has_mcParticle() && lTrack2.has_mcParticle()) {
-        auto lMCTrack0 = lTrack0.mcParticle_as<aod::McParticles>();
-        auto lMCTrack1 = lTrack1.mcParticle_as<aod::McParticles>();
-        auto lMCTrack2 = lTrack2.mcParticle_as<aod::McParticles>();
-        // check if mother is the same
-        if (lMCTrack0.has_mothers() && lMCTrack1.has_mothers() && lMCTrack2.has_mothers()) {
-          for (auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
-            for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
-              for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
-                if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) {
-                  lLabel = lMother1.globalIndex();
-                  // fill counter same mother
-                  registry.fill(HIST("hLabelCounter"), 1.5);
-                } // end same mother conditional
-              }
-            }
-          } // end loop over daughters
-        } // end conditional of mothers existing
-      } // end association check
-
-      // Construct label table, only vtx which corresponds to true mother and true daughters with a specified order is labeled
-      // for matter: track0->p, track1->pi, track2->bachelor
-      // for antimatter: track0->pi, track1->p, track2->bachelor
-      kfvtxfulllabels(lLabel);
-      if (decay3body.kfvtx3BodyDataId() != -1) {
-        lIndices[decay3body.kfvtx3BodyDataId()] = lLabel;
-      }
-    }
-    for (int ii = 0; ii < vtx3bodydatas.size(); ii++) {
-      kfvtxlabels(lIndices[ii]);
-    }
-  }
-  PROCESS_SWITCH(decay3bodyLabelBuilder, processBuildKFLabels, "Produce MC KF label tables", false);
 };
 
 struct decay3bodyInitializer {
@@ -2173,7 +2119,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<decay3bodyBuilder>(cfgc),
     adaptAnalysisTask<decay3bodyDataLinkBuilder>(cfgc),
     adaptAnalysisTask<kfdecay3bodyDataLinkBuilder>(cfgc),
-    adaptAnalysisTask<decay3bodyLabelBuilder>(cfgc),
     adaptAnalysisTask<decay3bodyInitializer>(cfgc),
   };
 }
