@@ -243,6 +243,7 @@ struct sigma0builder {
     histos.add("GeneralQA/h2dMassGammaVsLambdaAfterMassSel", "h2dMassGammaVsLambdaAfterMassSel", kTH2D, {axisPhotonMass, axisLambdaMass});
     histos.add("GeneralQA/h2dPtVsMassPi0BeforeSel_Candidates", "h2dPtVsMassPi0BeforeSel_Candidates", kTH2D, {axisPt, {500, 0.08f, 0.18f}});
     histos.add("GeneralQA/h2dPtVsMassPi0AfterSel_Candidates", "h2dPtVsMassPi0AfterSel_Candidates", kTH2D, {axisPt, {500, 0.08f, 0.18f}});
+    histos.add("GeneralQA/h3dV0XYZ", "h3dV0XYZ", kTH3F, {{400, -200, 200}, {400, -200, 200}, {240, -120.0f, 120.0f}});
 
     // MC
     histos.add("MC/h2dPtVsCentrality_GammaBeforeSel", "h2dPtVsCentrality_GammaBeforeSel", kTH2D, {axisCentrality, axisPt});
@@ -256,6 +257,7 @@ struct sigma0builder {
     histos.add("MC/h2dPtVsCentrality_GammaAntiSigma0", "h2dPtVsCentrality_GammaAntiSigma0", kTH2D, {axisCentrality, axisPt});
     histos.add("MC/h2dPtVsCentrality_LambdaAntiSigma0", "h2dPtVsCentrality_LambdaAntiSigma0", kTH2D, {axisCentrality, axisPt});
     histos.add("MC/h2dPtVsCentrality_AntiSigma0AfterSel", "h2dPtVsCentrality_AntiSigma0AfterSel", kTH2D, {axisCentrality, axisPt});
+    histos.add("MC/h3dGammasXYZ", "h3dGammasXYZ", kTH3F, {{400, -200, 200}, {400, -200, 200}, {240, -120.0f, 120.0f}});
 
     // Sigma vs Daughters pT
     histos.add("MC/h2dSigmaPtVsLambdaPt", "h2dSigmaPtVsLambdaPt", kTH2D, {axisPt, axisPt});
@@ -625,6 +627,7 @@ struct sigma0builder {
       return false;
 
     histos.fill(HIST("hCandidateBuilderSelection"), 13.);
+    histos.fill(HIST("GeneralQA/h3dV0XYZ"), gamma.x(), gamma.y(), gamma.z());
     return true;
   }
 
@@ -778,6 +781,7 @@ struct sigma0builder {
 
         // Auxiliary histograms:
         if (gammaMC.pdgCode() == 22) {
+          histos.fill(HIST("MC/h3dGammasXYZ"), gamma.x(), gamma.y(), gamma.z());
           float GammaY = TMath::Abs(RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassGamma));
 
           if (GammaY < 0.5) {                                                                                                                // rapidity selection
