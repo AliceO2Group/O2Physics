@@ -111,7 +111,7 @@
       inputFeatures.emplace_back(OBJECT.GETTER2()[INDEX]);                    \
     }                                                                         \
     break;                                                                    \
-}
+  }
 
 namespace o2::analysis
 {
