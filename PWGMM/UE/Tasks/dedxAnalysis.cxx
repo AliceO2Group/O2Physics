@@ -87,7 +87,7 @@ struct DedxAnalysis {
   static constexpr std::string_view kDedxvsMomentumPos[4] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
   static constexpr std::string_view kDedxvsMomentumNeg[4] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
   static constexpr double EtaCut[9] = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
-  static constexpr double Correction[8] = {54.5281, 54.6548, 54.6513, 54.6781, 54.6167, 54.7384, 55.0047, 54.9592};
+  Configurable<std::vector<float>> calibrationFactor{"calibrationFactor", {50.8263, 51.0122, 50.7456, 50.0372, 49.699, 50.2222, 50.7263, 50.8073}, "calibration factors"};
   ConfigurableAxis binP{"binP", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, ""};
 
   void init(InitContext const&)
@@ -96,27 +96,27 @@ struct DedxAnalysis {
       // MIP for pions
       registryDeDx.add(
         "hdEdxMIP_vs_eta", "dE/dx", HistType::kTH2F,
-        {{8, -0.8, 0.8, "#eta"}, {100, 0.0, 600.0, "dE/dx MIP (a. u.)"}});
+        {{8, -0.8, 0.8, "#eta"}, {100, 0.0, 100.0, "dE/dx MIP (a. u.)"}});
       registryDeDx.add(
         "hdEdxMIP_vs_phi", "dE/dx", HistType::kTH2F,
-        {{100, 0.0, 6.4, "#phi"}, {100, 0.0, 600.0, "dE/dx MIP (a. u.)"}});
+        {{100, 0.0, 6.4, "#phi"}, {100, 0.0, 100.0, "dE/dx MIP (a. u.)"}});
 
     } else {
       AxisSpec pAxis = {binP, "#it{p}/Z (GeV/c)"};
 
       registryDeDx.add(
         "hdEdxMIP_vs_eta_calibrated", "dE/dx", HistType::kTH2F,
-        {{8, -0.8, 0.8, "#eta"}, {10, 30.0, 70.0, "dE/dx MIP (a. u.)"}});
+        {{8, -0.8, 0.8, "#eta"}, {100, 0.0, 100.0, "dE/dx MIP (a. u.)"}});
       registryDeDx.add(
         "hdEdxMIP_vs_phi", "dE/dx", HistType::kTH2F,
-        {{100, 0.0, 6.4, "#phi"}, {10, 30.0, 70.0, "dE/dx MIP (a. u.)"}});
+        {{100, 0.0, 6.4, "#phi"}, {100, 0.0, 100.0, "dE/dx MIP (a. u.)"}});
 
       // De/Dx for ch and v0 particles
       for (int i = 0; i < 4; ++i) {
         registryDeDx.add(kDedxvsMomentumPos[i].data(), "dE/dx", HistType::kTH3F,
-                         {{pAxis}, {100, 0.0, 600.0, "dE/dx (a. u.)"}, {8, -0.8, 0.8, "#eta"}});
+                         {{pAxis}, {100, 0.0, 100.0, "dE/dx (a. u.)"}, {8, -0.8, 0.8, "#eta"}});
         registryDeDx.add(kDedxvsMomentumNeg[i].data(), "dE/dx", HistType::kTH3F,
-                         {{pAxis}, {100, 0.0, 600.0, "dE/dx (a. u.)"}, {8, -0.8, 0.8, "#eta"}});
+                         {{pAxis}, {100, 0.0, 100.0, "dE/dx (a. u.)"}, {8, -0.8, 0.8, "#eta"}});
       }
     }
     // Event Counter
@@ -317,7 +317,7 @@ struct DedxAnalysis {
           registryDeDx.fill(HIST("hdEdxMIP_vs_phi"), trk.phi(), trk.tpcSignal());
           for (int i = 0; i < 8; ++i) {
             if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
-              registryDeDx.fill(HIST("hdEdxMIP_vs_eta_calibrated"), trk.eta(), trk.tpcSignal() * 50 / Correction[i]);
+              registryDeDx.fill(HIST("hdEdxMIP_vs_eta_calibrated"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactor->at(i));
             }
           }
         }
@@ -327,9 +327,9 @@ struct DedxAnalysis {
         for (int i = 0; i < 8; ++i) {
           if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
             if (signedP > 0) {
-              registryDeDx.fill(HIST(kDedxvsMomentumPos[0]), signedP, trk.tpcSignal() * 50 / Correction[i], trk.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumPos[0]), signedP, trk.tpcSignal() * 50 / calibrationFactor->at(i), trk.eta());
             } else {
-              registryDeDx.fill(HIST(kDedxvsMomentumNeg[0]), std::abs(signedP), trk.tpcSignal() * 50 / Correction[i], trk.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumNeg[0]), std::abs(signedP), trk.tpcSignal() * 50 / calibrationFactor->at(i), trk.eta());
             }
           }
         }
@@ -385,11 +385,11 @@ struct DedxAnalysis {
           for (int i = 0; i < 8; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
 
-              registryDeDx.fill(HIST(kDedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactor->at(i), negTrack.eta());
             }
             if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
 
-              registryDeDx.fill(HIST(kDedxvsMomentumPos[1]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumPos[1]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactor->at(i), posTrack.eta());
             }
           }
         }
@@ -409,11 +409,11 @@ struct DedxAnalysis {
           for (int i = 0; i < 8; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
 
-              registryDeDx.fill(HIST(kDedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactor->at(i), negTrack.eta());
             }
             if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
 
-              registryDeDx.fill(HIST(kDedxvsMomentumPos[2]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumPos[2]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactor->at(i), posTrack.eta());
             }
           }
         }
@@ -433,11 +433,11 @@ struct DedxAnalysis {
           for (int i = 0; i < 8; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
 
-              registryDeDx.fill(HIST(kDedxvsMomentumNeg[2]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumNeg[2]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactor->at(i), negTrack.eta());
             }
             if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
 
-              registryDeDx.fill(HIST(kDedxvsMomentumPos[1]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumPos[1]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactor->at(i), posTrack.eta());
             }
           }
         }
@@ -457,11 +457,11 @@ struct DedxAnalysis {
           for (int i = 0; i < 8; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
 
-              registryDeDx.fill(HIST(kDedxvsMomentumNeg[3]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumNeg[3]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactor->at(i), negTrack.eta());
             }
             if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
 
-              registryDeDx.fill(HIST(kDedxvsMomentumPos[3]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumPos[3]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactor->at(i), posTrack.eta());
             }
           }
         }
