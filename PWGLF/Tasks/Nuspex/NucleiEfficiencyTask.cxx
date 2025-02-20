@@ -79,7 +79,7 @@ struct NucleiEfficiencyTask {
     MC_gen_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
     MC_gen_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
     MC_gen_reg.add("histRapid", "#gamma", HistType::kTH2F, {{1000, -5.0, 5.0}, PDGBINNING});
-    
+
     // *********************** Generated reco **********************
 
     MC_gen_reg.add("histGenVtxMC_reco", "MC generated (reco) vertex z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
@@ -149,11 +149,15 @@ struct NucleiEfficiencyTask {
   template <typename particleType>
   bool isInAcceptance(const particleType& particle)
   {
-    if (particle.pt() < p_min || particle.pt() > p_max) return false;
-    if (particle.eta() < -cfgCutEta || particle.eta() > cfgCutEta) return false;
-    //if (particle.phi() < phiMin || particle.phi() > phiMax) return false;
-    if (particle.y() < yMin || particle.y() > yMax) return false;
-    if (!particle.isPhysicalPrimary())  return false;
+    if (particle.pt() < p_min || particle.pt() > p_max)
+      return false;
+    if (particle.eta() < -cfgCutEta || particle.eta() > cfgCutEta)
+      return false;
+    // if (particle.phi() < phiMin || particle.phi() > phiMax) return false;
+    if (particle.y() < yMin || particle.y() > yMax)
+      return false;
+    if (!particle.isPhysicalPrimary())
+      return false;
 
     return true;
   }
@@ -163,27 +167,39 @@ struct NucleiEfficiencyTask {
   template <typename CollisionType>
   bool isEventSelected(CollisionType const& collision)
   {
-    if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) return false;
-    if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) return false;
-    if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) return false;
-    if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) return false;
-    if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) return false;
+    if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+      return false;
+    if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+      return false;
+    if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      return false;
+    if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
+      return false;
+    if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      return false;
 
     return true;
   }
 
   //***********************************************************************************
 
-  template < typename CollType>
+  template <typename CollType>
   bool isCollisionSelected(const CollType& collision)
   {
-    if (event_selection_MC_sel8 && !collision.sel8()) return false;
-    if (collision.posZ() < -cfgCutVertex || collision.posZ() > cfgCutVertex) return false;
-    if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) return false;
-    if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) return false;
-    if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) return false;
-    if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) return false;
-    if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) return false;
+    if (event_selection_MC_sel8 && !collision.sel8())
+      return false;
+    if (collision.posZ() < -cfgCutVertex || collision.posZ() > cfgCutVertex)
+      return false;
+    if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+      return false;
+    if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+      return false;
+    if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      return false;
+    if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
+      return false;
+    if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      return false;
 
     return true;
   }
@@ -193,12 +209,15 @@ struct NucleiEfficiencyTask {
   template <typename trackType>
   bool isTrackSelected(trackType& track)
   {
-    if (!track.has_mcParticle()) return false;
+    if (!track.has_mcParticle())
+      return false;
 
     const auto mcParticle = track.mcParticle();
-    if (!isInAcceptance(mcParticle)) return false;  // pt eta phi y
-    if (!track.has_collision()) return false;
-    
+    if (!isInAcceptance(mcParticle))
+      return false; // pt eta phi y
+    if (!track.has_collision())
+      return false;
+
     float TPCnumberClsFound = track.tpcNClsFound();
     float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
     float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
@@ -214,11 +233,8 @@ struct NucleiEfficiencyTask {
     if (requireGoldenChi2 && !(track.passedGoldenChi2()))
       return false;
 
-
     return true;
   }
-
-
 
   //***********************************************************************************
   using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, aod::CentFT0Cs>;
@@ -230,7 +246,7 @@ struct NucleiEfficiencyTask {
   Preslice<o2::aod::Tracks> perCollision = o2::aod::track::collisionId;
   Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
   PresliceUnsorted<CollisionCandidatesMC> collPerCollMc = o2::aod::mccollisionlabel::mcCollisionId;
-  
+
   void processMC(o2::aod::McCollisions const& mcCollisions,
                  // o2::soa::SmallGroups<CollisionCandidatesMC> const& collisions,
                  CollisionCandidatesMC const& collisions,
@@ -243,15 +259,18 @@ struct NucleiEfficiencyTask {
       const auto groupedCollisions = collisions.sliceBy(collPerCollMc, mcCollision.globalIndex());
       const auto groupedMcParticles = mcParticles.sliceBy(perCollisionMc, mcCollision.globalIndex());
 
-      if (groupedCollisions.size() < 1) continue;
+      if (groupedCollisions.size() < 1)
+        continue;
       float centrality = -1.;
 
       /// loop over reconstructed collisions
       for (const auto& collision : groupedCollisions) {
-        if (!isCollisionSelected(collision)) continue;
+        if (!isCollisionSelected(collision))
+          continue;
 
         centrality = collision.centFT0C();
-        if (centrality < minCentrality || centrality > maxCentrality) continue;
+        if (centrality < minCentrality || centrality > maxCentrality)
+          continue;
 
         MC_recon_reg.fill(HIST("histCentrality"), centrality);
         MC_recon_reg.fill(HIST("histRecVtxMC"), collision.posZ());
@@ -260,10 +279,11 @@ struct NucleiEfficiencyTask {
 
         // Track loop
         for (const auto& track : groupedTracks) {
-          if (!isTrackSelected(track)) continue;
+          if (!isTrackSelected(track))
+            continue;
 
           const auto& particle = track.mcParticle();
-          //TLorentzVector lorentzVector_particle_MC{};
+          // TLorentzVector lorentzVector_particle_MC{};
 
           int pdgbin = -10;
           switch (particle.pdgCode()) {
@@ -328,8 +348,7 @@ struct NucleiEfficiencyTask {
               continue;
               break;
           }
-          
-          
+
           MC_recon_reg.fill(HIST("histPhi"), track.phi(), pdgbin);
           MC_recon_reg.fill(HIST("histEta"), track.eta(), pdgbin);
 
@@ -371,10 +390,11 @@ struct NucleiEfficiencyTask {
           // putting this condition here avoids the particle loop a few lines below
           if (applyPvZCutGenColl) {
             const float genPvZ = mcCollision.posZ();
-            if (genPvZ < -cfgCutVertex || genPvZ > cfgCutVertex) continue;
+            if (genPvZ < -cfgCutVertex || genPvZ > cfgCutVertex)
+              continue;
           }
         }
-        
+
         MC_gen_reg.fill(HIST("histGenVtxMC_reco"), mcCollision.posZ());
         MC_gen_reg.fill(HIST("histCentrality_reco"), centrality);
 
@@ -382,77 +402,75 @@ struct NucleiEfficiencyTask {
         for (const auto& particle : groupedMcParticles) { // Particle loop
 
           /// require generated particle in acceptance
-          if (!isInAcceptance(particle)) continue;
+          if (!isInAcceptance(particle))
+            continue;
 
-            int pdgbin = -10;
-            switch (particle.pdgCode()) {
-              case +211:
-                histPDG_gen_reco->AddBinContent(1);
-                pdgbin = 0;
-                break;
-              case -211:
-                histPDG_gen_reco->AddBinContent(2);
-                pdgbin = 1;
-                break;
-              case +321:
-                histPDG_gen_reco->AddBinContent(3);
-                pdgbin = 2;
-                break;
-              case -321:
-                histPDG_gen_reco->AddBinContent(4);
-                pdgbin = 3;
-                break;
-              case +2212:
-                histPDG_gen_reco->AddBinContent(5);
-                pdgbin = 4;
-                break;
-              case -2212:
-                histPDG_gen_reco->AddBinContent(6);
-                pdgbin = 5;
-                break;
-              case +1000010020:
-                histPDG_gen_reco->AddBinContent(7);
-                pdgbin = 6;
-                break;
-              case -1000010020:
-                histPDG_gen_reco->AddBinContent(8);
-                pdgbin = 7;
-                break;
-              case +1000010030:
-                histPDG_gen_reco->AddBinContent(9);
-                pdgbin = 8;
-                break;
-              case -1000010030:
-                histPDG_gen_reco->AddBinContent(10);
-                pdgbin = 9;
-                break;
-              case +1000020030:
-                histPDG_gen_reco->AddBinContent(11);
-                pdgbin = 10;
-                break;
-              case -1000020030:
-                histPDG_gen_reco->AddBinContent(12);
-                pdgbin = 11;
-                break;
-              case +1000020040:
-                histPDG_gen_reco->AddBinContent(13);
-                pdgbin = 12;
-                break;
-              case -1000020040:
-                histPDG_gen_reco->AddBinContent(14);
-                pdgbin = 13;
-                break;
-              default:
-                pdgbin = -10;
-                continue;
-                break;
-            }
-            MC_gen_reg.fill(HIST("histEta_reco"), particle.eta(), pdgbin);
-            MC_gen_reg.fill(HIST("hist_gen_reco_p"), particle.p(), pdgbin);
-            MC_gen_reg.fill(HIST("hist_gen_reco_pT"), particle.pt(), pdgbin);
-
-
-
+          int pdgbin = -10;
+          switch (particle.pdgCode()) {
+            case +211:
+              histPDG_gen_reco->AddBinContent(1);
+              pdgbin = 0;
+              break;
+            case -211:
+              histPDG_gen_reco->AddBinContent(2);
+              pdgbin = 1;
+              break;
+            case +321:
+              histPDG_gen_reco->AddBinContent(3);
+              pdgbin = 2;
+              break;
+            case -321:
+              histPDG_gen_reco->AddBinContent(4);
+              pdgbin = 3;
+              break;
+            case +2212:
+              histPDG_gen_reco->AddBinContent(5);
+              pdgbin = 4;
+              break;
+            case -2212:
+              histPDG_gen_reco->AddBinContent(6);
+              pdgbin = 5;
+              break;
+            case +1000010020:
+              histPDG_gen_reco->AddBinContent(7);
+              pdgbin = 6;
+              break;
+            case -1000010020:
+              histPDG_gen_reco->AddBinContent(8);
+              pdgbin = 7;
+              break;
+            case +1000010030:
+              histPDG_gen_reco->AddBinContent(9);
+              pdgbin = 8;
+              break;
+            case -1000010030:
+              histPDG_gen_reco->AddBinContent(10);
+              pdgbin = 9;
+              break;
+            case +1000020030:
+              histPDG_gen_reco->AddBinContent(11);
+              pdgbin = 10;
+              break;
+            case -1000020030:
+              histPDG_gen_reco->AddBinContent(12);
+              pdgbin = 11;
+              break;
+            case +1000020040:
+              histPDG_gen_reco->AddBinContent(13);
+              pdgbin = 12;
+              break;
+            case -1000020040:
+              histPDG_gen_reco->AddBinContent(14);
+              pdgbin = 13;
+              break;
+            default:
+              pdgbin = -10;
+              continue;
+              break;
+          }
+          MC_gen_reg.fill(HIST("histEta_reco"), particle.eta(), pdgbin);
+          MC_gen_reg.fill(HIST("hist_gen_reco_p"), particle.p(), pdgbin);
+          MC_gen_reg.fill(HIST("hist_gen_reco_pT"), particle.pt(), pdgbin);
         }
       } /// end loop over reconstructed collisions
 
@@ -467,10 +485,11 @@ struct NucleiEfficiencyTask {
 
       // Loop on particles to fill the denominator
       for (const auto& mcParticle : groupedMcParticles) {
-        if (!isInAcceptance(mcParticle)) continue;
+        if (!isInAcceptance(mcParticle))
+          continue;
 
         MC_gen_reg.fill(HIST("histGenVtxMC"), mcCollision.posZ());
-        //MC_gen_reg.fill(HIST("histCentrality"), mcParticle.impactParameter());
+        // MC_gen_reg.fill(HIST("histCentrality"), mcParticle.impactParameter());
 
         int pdgbin = -10;
         switch (mcParticle.pdgCode()) {
@@ -541,12 +560,10 @@ struct NucleiEfficiencyTask {
         MC_gen_reg.fill(HIST("histRapid"), mcParticle.y(), pdgbin);
         MC_gen_reg.fill(HIST("hist_gen_p"), mcParticle.p(), pdgbin);
         MC_gen_reg.fill(HIST("hist_gen_pT"), mcParticle.pt(), pdgbin);
-
       }
     } /// end loop over generated collisions
   }
   PROCESS_SWITCH(NucleiEfficiencyTask, processMC, "process generated MC", true);
-
 };
 
 //***********************************************************************************
