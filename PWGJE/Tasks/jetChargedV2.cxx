@@ -761,9 +761,9 @@ struct JetChargedV2 {
       double randomConePtWithoutTwoLeadJet = 0;
       for (auto const& track : tracks) {
         if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
-          float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, 2 * o2::constants::math::PI) - randomConePhi, static_cast<float>(-o2::constants::math::PI)); // ignores actual phi of track
-          float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;                                            // ignores actual eta of track
-          if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
+          float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, o2::constants::math::TwoPI) - randomConePhi, static_cast<float>(-o2::constants::math::PI));
+          float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;
+          if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
             if (!trackIsInJet(track, jets.iteratorAt(0))) {
               randomConePtWithoutOneLeadJet += track.pt();
               if (!trackIsInJet(track, jets.iteratorAt(1))) {
