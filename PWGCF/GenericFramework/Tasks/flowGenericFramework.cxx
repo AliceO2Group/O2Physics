@@ -385,29 +385,19 @@ struct FlowGenericFramework {
     uint64_t timestamp = bc.timestamp();
     if (cfg.correctionsLoaded)
       return;
-      //old
-/*     if (!cfgAcceptance.value.empty()) {
-      cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance, timestamp);
-      if (cfg.mAcceptance)
-        LOGF(info, "Loaded acceptance weights from %s", cfgAcceptance.value.c_str());
-      else
-        LOGF(warning, "Could not load acceptance weights from %s", cfgAcceptance.value.c_str());
-    } */
-    //new
-    /*if(!cfgAcceptance.value.empty()) {
-    std::string runstr = (cfgRunByRun)?"RBR/":"";
+    if(!cfgAcceptance.value.empty()) {
+      std::string runstr = (cfgRunByRun)?"RBR/":"";
       if(cfgUsePID){
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance+runstr+"ref/", timestamp));
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance+runstr+"ch/", timestamp));
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance+runstr+"pi/", timestamp));
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance+runstr+"ka/", timestamp));
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance+runstr+"pr/", timestamp));
+        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value+runstr+"ref/", timestamp));
+        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value+runstr+"ch/", timestamp));
+        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value+runstr+"pi/", timestamp));
+        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value+runstr+"ka/", timestamp));
+        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value+runstr+"pr/", timestamp));
       }
       else {
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance + runstr, timestamp));
+        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr, timestamp));
       }
     }
-    */
     if (!cfgEfficiency.value.empty()) {
       cfg.mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
       if (cfg.mEfficiency == nullptr) {
@@ -422,9 +412,9 @@ struct FlowGenericFramework {
   double getAcceptance(TTrack track, const double& vtxz, int index)
   { // 0 ref, 1 ch, 2 pi, 3 ka, 4 pr
     double wacc = 1;
-/*  if (!cfg.mAcceptance.empty())
+  if (!cfg.mAcceptance.empty())
       wacc = cfg.mAcceptance[index]->getNUA(track.phi(), track.eta(), vtxz);
-    return wacc;*/
+    return wacc;
   }
 
   template <typename TTrack>
