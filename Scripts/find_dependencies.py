@@ -179,13 +179,7 @@ def get_workflow_inputs(wf: str, dic_wf_all: dict):
 
 
 def get_tree_for_workflow(
-    wf: str,
-    dic_wf_all: dict,
-    dic_wf_tree=None,
-    case_sensitive=False,
-    level=0,
-    levels_max=0,
-    reverse=False
+    wf: str, dic_wf_all: dict, dic_wf_tree=None, case_sensitive=False, level=0, levels_max=0, reverse=False
 ):
     """Get the dependency tree of tables and workflows needed to run this workflow."""
     # print(level, levels_max)
@@ -210,13 +204,7 @@ def get_tree_for_workflow(
                     for p in producers:
                         if p not in dic_wf_tree:  # avoid infinite recursion
                             get_tree_for_workflow(
-                                p,
-                                dic_wf_all,
-                                dic_wf_tree,
-                                case_sensitive,
-                                level + 1,
-                                levels_max,
-                                reverse
+                                p, dic_wf_all, dic_wf_tree, case_sensitive, level + 1, levels_max, reverse
                             )
     return dic_wf_tree
 
@@ -245,10 +233,18 @@ def main():
     parser = argparse.ArgumentParser(
         description="Find dependencies required to produce a given table or to run a given workflow."
     )
-    parser.add_argument("-t", dest="table", type=str, nargs="+", help="table(s) for normal (backward) search (i.e. producers)")
-    parser.add_argument("-w", dest="workflow", type=str, nargs="+", help="workflow(s) for normal (backward) search (i.e. inputs)")
-    parser.add_argument("-T", dest="table_rev", type=str, nargs="+", help="table(s) for reverse (forward) search (i.e. consumers)")
-    parser.add_argument("-W", dest="workflow_rev", type=str, nargs="+", help="workflow(s) for reverse (forward) search (i.e. outputs)")
+    parser.add_argument(
+        "-t", dest="table", type=str, nargs="+", help="table(s) for normal (backward) search (i.e. producers)"
+    )
+    parser.add_argument(
+        "-w", dest="workflow", type=str, nargs="+", help="workflow(s) for normal (backward) search (i.e. inputs)"
+    )
+    parser.add_argument(
+        "-T", dest="table_rev", type=str, nargs="+", help="table(s) for reverse (forward) search (i.e. consumers)"
+    )
+    parser.add_argument(
+        "-W", dest="workflow_rev", type=str, nargs="+", help="workflow(s) for reverse (forward) search (i.e. outputs)"
+    )
     parser.add_argument(
         "-c",
         dest="case",
