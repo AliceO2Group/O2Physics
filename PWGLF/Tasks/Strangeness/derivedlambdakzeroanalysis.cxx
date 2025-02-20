@@ -913,8 +913,8 @@ struct derivedlambdakzeroanalysis {
     auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
 
     // ITS quality flags
-    bool posIsFromAfterburner = posTrackExtra.itsChi2PerNcl() < 0;
-    bool negIsFromAfterburner = negTrackExtra.itsChi2PerNcl() < 0;
+    bool posIsFromAfterburner = posTrackExtra.hasITSAfterburner();
+    bool negIsFromAfterburner = negTrackExtra.hasITSAfterburner();
 
     // check minimum number of ITS clusters + maximum ITS chi2 per clusters + reject or select ITS afterburner tracks if requested
     if (posTrackExtra.itsNCls() >= v0Selections.minITSclusters && // check minium ITS clusters
