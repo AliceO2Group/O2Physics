@@ -759,7 +759,6 @@ struct AntinucleiInJets {
   }
   PROCESS_SWITCH(AntinucleiInJets, processQC, "Process QC", false);
 
-
   void processEfficiency(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
@@ -909,7 +908,6 @@ struct AntinucleiInJets {
   }
   PROCESS_SWITCH(AntinucleiInJets, processEfficiency, "process efficiency", false);
 
-
   void processJetsMCgen(SimCollisions const& collisions, aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
@@ -1000,7 +998,6 @@ struct AntinucleiInJets {
   }
   PROCESS_SWITCH(AntinucleiInJets, processJetsMCgen, "process jets mc gen", false);
 
-
   void processJetsMCrec(SimCollisions const& collisions, MCTracks const& mcTracks)
   {
     for (const auto& collision : collisions) {
@@ -1056,7 +1053,7 @@ struct AntinucleiInJets {
           continue;
 
         // fill detector response matrix
-        registryMC.fill(HIST("detectorResponseMatrix"), jetPtGen, jetPtGen - jet.pt());// maybe it should be filled after bkg sub
+        registryMC.fill(HIST("detectorResponseMatrix"), jetPtGen, jetPtGen - jet.pt()); // maybe it should be filled after bkg sub
 
         // jet pt must be larger than threshold
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
@@ -1071,7 +1068,7 @@ struct AntinucleiInJets {
         getPerpendicularAxis(jetAxis, ueAxis1, +1);
         getPerpendicularAxis(jetAxis, ueAxis2, -1);
 
-        o2::aod::ITSResponse itsResponse;// to be implemented
+        o2::aod::ITSResponse itsResponse; // to be implemented
 
         // loop over jet constituents
         for (const auto& particle : jetConstituents) {
