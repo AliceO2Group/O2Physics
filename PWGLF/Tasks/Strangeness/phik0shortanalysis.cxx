@@ -160,7 +160,6 @@ struct Phik0shortanalysis {
   Configurable<bool> cfgisGenMCForClosure{"cfgisGenMCForClosure", false, "GenMC for Closure"};
 
   // Configurables to choose the filling method
-  Configurable<bool> doLoadPurities{"doLoadPurities", false, "Load purities"};
   Configurable<bool> fillMethodMultipleWeights{"fillMethodMultipleWeights", true, "Fill method Multiple Weights"};
   Configurable<bool> fillMethodSingleWeight{"fillMethodSingleWeight", false, "Fill method Single Weight"};
 
@@ -476,7 +475,7 @@ struct Phik0shortanalysis {
     mcPionHist.add("h3PiRapidityGenMC", "Rapidity for Pion for GenMC", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
 
     // Initialize CCDB only if purity is requested in the task
-    if (doLoadPurities) {
+    if (fillMethodSingleWeight) {
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
