@@ -15,6 +15,8 @@
 ///
 /// \author Adrian Fereydon Nassirpour <adrian.fereydon.nassirpour@cern.ch>
 
+#include <string>
+#include <vector>
 #include <TLorentzVector.h>
 #include <TVector2.h>
 
@@ -83,7 +85,7 @@ struct phiInJets {
   // CONFIG DONE
   /////////////////////////////////////////  //INIT
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   void init(o2::framework::InitContext&)
   {
@@ -187,7 +189,7 @@ struct phiInJets {
       JEhistos.add("hMCRecTrue_hLSS_INSIDE", "hMCRecTrue_hLSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
       JEhistos.add("hMCRecTrue_hLSS_INSIDE_1D", "hMCRecTrue_hLSS_INSIDE_1D", kTH1F, {MinvAxis});
       JEhistos.add("hMCRecTrue_hLSS_INSIDE_1D_2_3", "hMCRecTrue_hLSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
-      
+
       JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE", "hMCRec_nonmatch_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
       JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_1D", "hMCRec_nonmatch_hUSS_INSIDE_1D", kTH1F, {MinvAxis});
       JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3", "hMCRec_nonmatch_hUSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
@@ -254,8 +256,51 @@ struct phiInJets {
       JEhistos.add("hMCRec_hUSS_INSIDE_1D", "hMCRec_hUSS_INSIDE_1D", kTH1F, {MinvAxis});
       JEhistos.add("hMCRec_hUSS_INSIDE_1D_2_3", "hMCRec_hUSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
     }
+    // JEhistos.add("FJetaHistogram_MCRec", "FJetaHistogram_MCRec", kTH1F, {axisEta});
+    // JEhistos.add("FJphiHistogram_MCRec", "FJphiHistogram_MCRec", kTH1F, {axisPhi});
+    // JEhistos.add("FJptHistogram_MCRec", "FJptHistogram_MCRec", kTH1F, {axisPt});
+    // JEhistos.add("FJetaHistogram_MCTrue", "FJetaHistogram_MCTrue", kTH1F, {axisEta});
+    // JEhistos.add("FJphiHistogram_MCTrue", "FJphiHistogram_MCTrue", kTH1F, {axisPhi});
+    // JEhistos.add("FJptHistogram_MCTrue", "FJptHistogram_MCTrue", kTH1F, {axisPt});
+    // JEhistos.add("hUSS_OUTSIDE", "hUSS_OUTSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
+    // JEhistos.add("hUSS_OUTSIDE_1D", "hUSS_OUTSIDE_1D", kTH1F, {MinvAxis});
+    // JEhistos.add("hUSS_OUTSIDE_1D_2_3", "hUSS_OUTSIDE_1D_2_3", kTH1F, {MinvAxis});
+    // JEhistos.add("hLSS_OUTSIDE", "hLSS_OUTSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
+    // JEhistos.add("hLSS_OUTSIDE_1D", "hLSS_OUTSIDE_1D", kTH1F, {MinvAxis});
+    // JEhistos.add("hLSS_OUTSIDE_1D_2_3", "hLSS_OUTSIDE_1D_2_3", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCTrue_hUSS_OUTSIDE", "hMCTrue_hUSS_OUTSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
+    // JEhistos.add("hMCTrue_hUSS_OUTSIDE_1D", "hMCTrue_hUSS_OUTSIDE_1D", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCTrue_hUSS_OUTSIDE_1D_2_3", "hMCTrue_hUSS_OUTSIDE_1D_2_3", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCTrue_hUSS_OUTSIDE_TRIG", "hMCTrue_hUSS_OUTSIDE_TRIG", kTH3F, {dRAxis, PtAxis, MinvAxis});
+    // JEhistos.add("hMCTrue_hUSS_OUTSIDE_TRIG_1D", "hMCTrue_hUSS_OUTSIDE_TRIG_1D", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCTrue_hUSS_OUTSIDE_TRIG_1D_2_3", "hMCTrue_hUSS_OUTSIDE_TRIG_1D_2_3", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCTrue_nonmatch_hUSS_OUTSIDE", "hMCTrue_nonmatch_hUSS_OUTSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
+    // JEhistos.add("hMCTrue_nonmatch_hUSS_OUTSIDE_1D", "hMCTrue_nonmatch_hUSS_OUTSIDE_1D", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCTrue_nonmatch_hUSS_OUTSIDE_1D_2_3", "hMCTrue_nonmatch_hUSS_OUTSIDE_1D_2_3", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCTrue_nonmatch_hUSS_OUTSIDE_TRIG", "hMCTrue_nonmatch_hUSS_OUTSIDE_TRIG", kTH3F, {dRAxis, PtAxis, MinvAxis});
+    // JEhistos.add("hMCTrue_nonmatch_hUSS_OUTSIDE_TRIG_1D", "hMCTrue_nonmatch_hUSS_OUTSIDE_TRIG_1D", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCTrue_nonmatch_hUSS_OUTSIDE_TRIG_1D_2_3", "hMCTrue_nonmatch_hUSS_OUTSIDE_TRIG_1D_2_3", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCRec_hUSS", "hMCRec_hUSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
+    // JEhistos.add("hMCRec_hUSS_1D", "hMCRec_hUSS_1D", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCRec_hUSS_1D_2_3", "hMCRec_hUSS_1D_2_3", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCRec_hUSS_OUTSIDE", "hMCRec_hUSS_OUTSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
+    // JEhistos.add("hMCRec_hUSS_OUTSIDE_1D", "hMCRec_hUSS_OUTSIDE_1D", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCRec_hUSS_OUTSIDE_1D_2_3", "hMCRec_hUSS_OUTSIDE_1D_2_3", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCRec_hUSS_OUTSIDE_TRIG", "hMCRec_hUSS_OUTSIDE_TRIG", kTH3F, {dRAxis, PtAxis, MinvAxis});
+    // JEhistos.add("hMCRec_hUSS_OUTSIDE_TRIG_1D", "hMCRec_hUSS_OUTSIDE_TRIG_1D", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCRec_hUSS_OUTSIDE_TRIG_1D_2_3", "hMCRec_hUSS_OUTSIDE_TRIG_1D_2_3", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCRec_nonmatch_hUSS", "hMCRec_nonmatch_hUSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
+    // JEhistos.add("hMCRec_nonmatch_hUSS_1D", "hMCRec_nonmatch_hUSS_1D", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCRec_nonmatch_hUSS_1D_2_3", "hMCRec_nonmatch_hUSS_1D_2_3", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCRec_nonmatch_hUSS_OUTSIDE", "hMCRec_nonmatch_hUSS_OUTSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
+    // JEhistos.add("hMCRec_nonmatch_hUSS_OUTSIDE_1D", "hMCRec_nonmatch_hUSS_OUTSIDE_1D", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCRec_nonmatch_hUSS_OUTSIDE_1D_2_3", "hMCRec_nonmatch_hUSS_OUTSIDE_1D_2_3", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCRec_nonmatch_hUSS_OUTSIDE_TRIG", "hMCRec_nonmatch_hUSS_OUTSIDE_TRIG", kTH3F, {dRAxis, PtAxis, MinvAxis});
+    // JEhistos.add("hMCRec_nonmatch_hUSS_OUTSIDE_TRIG_1D", "hMCRec_nonmatch_hUSS_OUTSIDE_TRIG_1D", kTH1F, {MinvAxis});
+    // JEhistos.add("hMCRec_nonmatch_hUSS_OUTSIDE_TRIG_1D_2_3", "hMCRec_nonmatch_hUSS_OUTSIDE_TRIG_1D_2_3", kTH1F, {MinvAxis});
+
     // EVENT SELECTION
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(cfgeventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(cfgeventSelections));
 
   } // end of init
 
@@ -504,6 +549,33 @@ struct phiInJets {
     } // jetflag
     /////////////////////////////////////////////////////////////////////////////
 
+    /////////////////////////////////////////////////////////////////////////////
+    // Fill outside Jet
+    // if (!jetFlag) {
+    //   if (trk1.sign() * trk2.sign() < 0) {
+    //     if (!IsMC) {
+    //       JEhistos.fill(HIST("hUSS_OUTSIDE_1D"), lResonance.M());
+    //       if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+    //         JEhistos.fill(HIST("hUSS_OUTSIDE_1D_2_3"), lResonance.M());
+    //       JEhistos.fill(HIST("hUSS_OUTSIDE"), jetpt, lResonance.Pt(), lResonance.M());
+    //     }
+
+    //     if (IsMC) {
+    //       JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_1D"), lResonance.M());
+    //       if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+    //         JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE_1D_2_3"), lResonance.M());
+    //       JEhistos.fill(HIST("hMCRec_hUSS_OUTSIDE"), jetpt, lResonance.Pt(), lResonance.M());
+    //     }
+
+    //   } else if (trk1.sign() * trk2.sign() > 0) {
+
+    //     JEhistos.fill(HIST("hLSS_OUTSIDE_1D"), lResonance.M());
+    //     if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+    //       JEhistos.fill(HIST("hLSS_OUTSIDE_1D_2_3"), lResonance.M());
+    //     JEhistos.fill(HIST("hLSS_OUTSIDE"), jetpt, lResonance.Pt(), lResonance.M());
+    //   }
+    //   } //! jetflag
+    /////////////////////////////////////////////////////////////////////////////
     if (!cfgIsKstar) {
       if (lResonance.M() > 1.005 && lResonance.M() < 1.035) {
         if (jetFlag)
@@ -530,7 +602,7 @@ struct phiInJets {
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
   int nEvents = 0;
-  void processJetTracks(aod::JCollision const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedjets, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
+  void processJetTracks(aod::JetCollision const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedjets, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
   {
     if (cDebugLevel > 0) {
       nEvents++;
@@ -545,7 +617,7 @@ struct phiInJets {
 
     if (fabs(collision.posZ()) > cfgVtxCut)
       return;
-    if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
 
     int nReso = 0;
@@ -605,18 +677,17 @@ struct phiInJets {
   }; // Process Switch
   PROCESS_SWITCH(phiInJets, processJetTracks, "process JE Framework", true);
 
-  //================================================================================================================================================
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////MC STUFF/////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //================================================================================================================================================
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////MC STUFF////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPi, aod::pidTOFPi>;
-  using myCompleteJetTracks = soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels>;
+  using myCompleteJetTracks = soa::Join<aod::JetTracks, aod::JTrackPIs, aod::McTrackLabels>;
   int nJEEvents = 0;
   int nprocessRecEvents = 0;
-  
-  void processRec(o2::aod::JCollision const& collision, myCompleteJetTracks const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, myCompleteTracks const& /*originalTracks*/)
+  void processRec(o2::aod::JetCollision const& collision, myCompleteJetTracks const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, myCompleteTracks const& /*originalTracks*/)
   {
     if (cDebugLevel > 0) {
       nprocessRecEvents++;
@@ -630,10 +701,9 @@ struct phiInJets {
     // # of Events
     //=================
     JEhistos.fill(HIST("nEvents_MCRec"), 0.5);
-
     if (fabs(collision.posZ()) > cfgVtxCut)
       return;
-    if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
 
     bool INELgt0 = false;
@@ -664,19 +734,13 @@ struct phiInJets {
     }
     if (hasJets)
       JEhistos.fill(HIST("nEvents_MCRec"), 2.5);
-    //=================
-    // # of Events
-    //=================
 
-    // Phi Candidate 
     double PhiCand = 0;
     double RealPhiCand = 0;
     double RealPhiCandWithJet = 0;
     double RealPhiCandInJet = 0;
-
     //============
     // Track Eff
-    //============
     for (const auto& track : tracks) {
       auto originalTrack = track.track_as<myCompleteTracks>();
       if (!trackSelection(originalTrack))
@@ -687,6 +751,7 @@ struct phiInJets {
 
       if (track.has_mcParticle()) {
         auto mcParticle = track.mcParticle();
+
         if (mcParticle.isPhysicalPrimary() && fabs(mcParticle.eta()) <= cfgtrkMaxEta) {
           if (abs(mcParticle.pdgCode()) == 211)
             JEhistos.fill(HIST("ptJEHistogramPion"), mcParticle.pt());
@@ -703,12 +768,10 @@ struct phiInJets {
         if (cfgSimPID)
           if (!trackPID(originalTrack2, false))
             continue;
-
         if (!cfgIsKstar) {
           if (originalTrack.globalIndex() >= originalTrack2.globalIndex())
             continue;
-        }
-	else {
+        } else {
           if (originalTrack.globalIndex() == originalTrack2.globalIndex())
             continue;
         }
@@ -728,7 +791,7 @@ struct phiInJets {
 
         if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
           PhiCand++;
-	
+
 	//==================
 	// 1.MB REC Closure
 	//==================
@@ -739,10 +802,6 @@ struct phiInJets {
 	else if (originalTrack.sign() * originalTrack2.sign() > 0) {
 	  JEhistos.fill(HIST("hMCRec_hLSS"), 1.0, lResonance.Pt(), lResonance.M());
 	}
-	//==================
-	// 1.MB REC Closure
-	//==================
-
 	//============================================
 	// 2.Check if particle is inside a jet or not
 	//============================================
@@ -777,7 +836,6 @@ struct phiInJets {
 	    goodjets++;
 	  }
 	} // R check for jets
-	//======================
 	
 	//======================
 	// 3.INSIDE REC Closure
@@ -790,10 +848,7 @@ struct phiInJets {
 	    JEhistos.fill(HIST("hMCRec_hLSS_INSIDE"), 1.0, lResonance.Pt(), lResonance.M());
 	  }
 	}
-	//======================
-	// 3.INSIDE REC Closure
-	//======================
-	
+
         // check PID
         if (track.has_mcParticle() && track2.has_mcParticle()) {
           auto part1 = track.mcParticle();
@@ -805,15 +860,14 @@ struct phiInJets {
               continue; // Not Kaon
           } else {
             if (fabs(part2.pdgCode()) != 211)
-              continue; // Not Pion 
+              continue; // Not Kaon
           }
-	  // checking whether same mother or not
+
           if (!part1.has_mothers())
             continue; // Not decaying Kaon
           if (!part2.has_mothers())
             continue; // Not decaying Kaon
 
-	  
           std::vector<int> mothers1{};
           std::vector<int> mothers1PDG{};
           for (auto& part1_mom : part1.mothers_as<aod::McParticles>()) {
@@ -835,9 +889,9 @@ struct phiInJets {
               continue; // mother not phi
           } else {
             if (mothers1PDG[0] != 313)
-              continue; // mother not K*
+              continue; // mother not phi
             if (mothers2PDG[0] != 313)
-              continue; // mother not K*
+              continue; // mother not phi
           }
           if (mothers1[0] != mothers2[0])
             continue; // Kaons not from the same phi
@@ -847,7 +901,7 @@ struct phiInJets {
           double R_Kaons = TMath::Sqrt((etadiff_Kaons * etadiff_Kaons) + (phidiff_Kaons * phidiff_Kaons));
           JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_KtoKangle_v_pt"), R_Kaons, lResonance.Pt());
           JEhistos.fill(HIST("ptJEHistogramPhi"), lResonance.Pt());
-
+	  
 	  //=====================
 	  // 4.MB True Closure
 	  //=====================
@@ -858,9 +912,6 @@ struct phiInJets {
 	  else if (originalTrack.sign() * originalTrack2.sign() > 0) {
 	    JEhistos.fill(HIST("hMCRecTrue_hLSS"), 1.0, lResonance.Pt(), lResonance.M());
 	  }
-	  //=====================
-	  // 4.MB True Closure
-	  //=====================
 
 	  //===========================
 	  // 5.INSIDE REC True Closure
@@ -873,14 +924,11 @@ struct phiInJets {
 	      JEhistos.fill(HIST("hMCRecTrue_hLSS_INSIDE"), 1.0, lResonance.Pt(), lResonance.M());
 	    }
 	  }
-	  //===========================
-	  // 5.INSIDE REC True Closure
-	  //===========================
+	  
           if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
             RealPhiCand++;
-	  
-	  //====================
-          // Now we do jets
+
+	  // Now we do jets
           if (cfgSingleJet)
             if (goodjets > 1)
               jetpt = DistinguishJetsMC(mcd_pt, mcd_phi, mcd_eta, lResonance);
@@ -903,26 +951,21 @@ struct phiInJets {
           }
           JEhistos.fill(HIST("minvJEHistogramPhi"), lResonance.M());
         } // mcpart check
-      } // tracks2
-    } // tracks1
+      }   // tracks2
+    }     // tracks1
     JEhistos.fill(HIST("hNRealPhiVPhiCand"), PhiCand, RealPhiCand);
     JEhistos.fill(HIST("hNRealPhiWithJetVPhiCand"), PhiCand, RealPhiCandWithJet);
     JEhistos.fill(HIST("hNRealPhiInJetVPhiCand"), PhiCand, RealPhiCandInJet);
 
-    //==========
     // Jet Eff
-    //==========
   }
   PROCESS_SWITCH(phiInJets, processRec, "pikp detector level MC JE", true);
 
-  //================================================================================================================
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //================================================================================================================
-  
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   int nprocessSimEvents = 0;
   //  Preslice<aod::JCollisions> slice = o2::aod::JCollision::collisionId;
-  void processSim(o2::aod::JMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JCollisions>> const& recocolls, aod::JMcParticles const& mcParticles, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
+  void processSim(o2::aod::JetMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls, aod::JetParticles const& mcParticles, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
   {
     if (cDebugLevel > 0) {
       nprocessSimEvents++;
@@ -939,7 +982,7 @@ struct phiInJets {
       return;
 
     for (auto& recocoll : recocolls) { // poorly reconstructed
-      if (!jetderiveddatautilities::selectCollision(recocoll, jetderiveddatautilities::JCollisionSel::sel8))
+      if (!jetderiveddatautilities::selectCollision(recocoll, eventSelectionBits))
         return;
     }
 
@@ -1004,12 +1047,12 @@ struct phiInJets {
           // if we check for Phi
           if (!cfgIsKstar) {
             if (mcParticle.has_daughters())
-              for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
+              for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>())
                 if (fabs(dgth.pdgCode()) != 321)
                   skip = true;
           } else {
             if (mcParticle.has_daughters())
-              for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
+              for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>())
                 if (fabs(dgth.pdgCode()) != 321 || fabs(dgth.pdgCode()) != 211)
                   skip = true;
           }
@@ -1031,7 +1074,7 @@ struct phiInJets {
             double etadiff = mcp_eta[i] - lResonance.Eta();
             double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
             if (mcParticle.has_daughters()) {
-              for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>()) {
+              for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>()) {
                 double phidiff_K = TVector2::Phi_mpi_pi(mcp_phi[i] - dgth.phi());
                 double etadiff_K = mcp_eta[i] - dgth.eta();
                 double R_K = TMath::Sqrt((etadiff_K * etadiff_K) + (phidiff_K * phidiff_K));
@@ -1095,13 +1138,13 @@ struct phiInJets {
   using JetMCDTable = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
 
   int nprocessSimJEEvents = 0;
-  void processMatchedGen(aod::JMcCollision const& collision,
-                         soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JCollisions>> const& recocolls,
+  void processMatchedGen(aod::JetMcCollision const& collision,
+                         soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls,
                          JetMCDTable const& /*mcdjets*/,
                          JetMCPTable const& mcpjets,
                          myCompleteJetTracks const& tracks,
                          myCompleteTracks const&,
-                         aod::JMcParticles const& mcParticles,
+                         aod::JetParticles const& mcParticles,
                          aod::McParticles const&)
 
   {
@@ -1122,7 +1165,7 @@ struct phiInJets {
     if (recocolls.size() <= 0) // not reconstructed
       return;
     for (auto& recocoll : recocolls) { // poorly reconstructed
-      if (!jetderiveddatautilities::selectCollision(recocoll, jetderiveddatautilities::JCollisionSel::sel8))
+      if (!jetderiveddatautilities::selectCollision(recocoll, eventSelectionBits))
         return;
     }
 
@@ -1198,7 +1241,7 @@ struct phiInJets {
         // if we check for Phi
         if (!cfgIsKstar) {
           if (mcParticle.has_daughters()) {
-            for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>()) {
+            for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>()) {
               if (fabs(dgth.pdgCode()) != 321) {
                 skip = true;
                 break;
@@ -1233,11 +1276,11 @@ struct phiInJets {
                   }
                 } // index check
               }   // track loop
-            }     // mc daughter loop
+            } // mc daughter loop
           }       // check if particle has daughters
         } else {  // check for kstar
           if (mcParticle.has_daughters())
-            for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
+            for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>())
               if (fabs(dgth.pdgCode()) != 321 || fabs(dgth.pdgCode()) != 211)
                 skip = true;
         }
@@ -1336,7 +1379,7 @@ struct phiInJets {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   int nprocessRecJEEvents = 0;
   //  void processMatchedRec(o2::aod::JCollision const& collision, myCompleteJetTracks const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, myCompleteTracks const& originalTracks)
-  void processMatchedRec(aod::JCollision const& collision,
+  void processMatchedRec(aod::JetCollision const& collision,
                          JetMCDTable const& mcdjets,
                          JetMCPTable const&,
                          myCompleteJetTracks const& tracks,
@@ -1356,7 +1399,7 @@ struct phiInJets {
 
     if (fabs(collision.posZ()) > cfgVtxCut)
       return;
-    if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
 
     bool INELgt0 = false;
