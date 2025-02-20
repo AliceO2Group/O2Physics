@@ -545,7 +545,7 @@ struct HigherMassResonances {
     pz2 = candidate2.pz();
     p1 = candidate1.p();
     p2 = candidate2.p();
-    angle = TMath::ACos((px1 * px2 + py1 * py2 + pz1 * pz2) / (p1 * p2));
+    angle = acos((px1 * px2 + py1 * py2 + pz1 * pz2) / (p1 * p2));
     rKzeroShort.fill(HIST("angularSeparation"), angle);
     if (config.applyAngSepCut && angle < config.angSepCut) {
       return false;
