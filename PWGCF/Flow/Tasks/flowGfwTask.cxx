@@ -259,11 +259,11 @@ struct FlowGfwTask {
     registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0M + 1, "FT0M");
     registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFV0A + 1, "FV0A");
     registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0CVariant1 + 1, "FT0CVar1");
-    registry.add("hCentFT0C", "FT0C Unfiltered;Centrality FT0C ;Events", kTH1F, {axisCentrality});
-    registry.add("hCentFT0A", "FT0A Unfiltered;Centrality FT0A ;Events", kTH1F, {axisCentrality});
-    registry.add("hCentFT0M", "FT0M Unfiltered;Centrality FT0M ;Events", kTH1F, {axisCentrality});
-    registry.add("hCentFV0A", "FV0A Unfiltered;Centrality FV0A ;Events", kTH1F, {axisCentrality});
-    registry.add("hCentFT0CVariant1", "FT0CVariant1 Unfiltered;Centrality FT0CVariant1 ;Events", kTH1F, {axisCentrality});
+    registry.add("hCentFT0C", "Uncorrected FT0C;Centrality FT0C ;Events", kTH1F, {axisCentrality});
+    registry.add("hCentFT0A", "Uncorrected FT0A;Centrality FT0A ;Events", kTH1F, {axisCentrality});
+    registry.add("hCentFT0M", "Uncorrected FT0M;Centrality FT0M ;Events", kTH1F, {axisCentrality});
+    registry.add("hCentFV0A", "Uncorrected FV0A;Centrality FV0A ;Events", kTH1F, {axisCentrality});
+    registry.add("hCentFT0CVariant1", "Uncorrected FT0CVariant1;Centrality FT0CVariant1 ;Events", kTH1F, {axisCentrality});
 
     // Before cuts
     registry.add("BeforeCut_globalTracks_centT0C", "before cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
@@ -721,29 +721,31 @@ struct FlowGfwTask {
       return;
 
     // Choose centrality estimator -- Only one can be true
-    float centrality = 0;
+    auto centrality = -1;
     if (cfgcentEstFt0c) {
-      const auto centrality = collision.centFT0C();
+      centrality = collision.centFT0C();
       registry.fill(HIST("hCentEstimators"), kCentFT0C);
       registry.fill(HIST("hCentFT0C"), centrality);
-    } else if (cfgcentEstFt0a) {
-      const auto centrality = collision.centFT0A();
+    }
+    if (cfgcentEstFt0a) {
+      centrality = collision.centFT0A();
       registry.fill(HIST("hCentEstimators"), kCentFT0A);
       registry.fill(HIST("hCentFT0A"), centrality);
-    } else if (cfgcentEstFt0m) {
-      const auto centrality = collision.centFT0M();
+    }
+    if (cfgcentEstFt0m) {
+      centrality = collision.centFT0M();
       registry.fill(HIST("hCentEstimators"), kCentFT0M);
       registry.fill(HIST("hCentFT0M"), centrality);
-    } else if (cfgcentEstFv0a) {
-      const auto centrality = collision.centFV0A();
+    }
+    if (cfgcentEstFv0a) {
+      centrality = collision.centFV0A();
       registry.fill(HIST("hCentEstimators"), kCentFV0A);
       registry.fill(HIST("hCentFV0A"), centrality);
-    } else if (cfgcentEstFt0cVariant1) {
-      const auto centrality = collision.centFT0CVariant1();
+    }
+    if (cfgcentEstFt0cVariant1) {
+      centrality = collision.centFT0CVariant1();
       registry.fill(HIST("hCentEstimators"), kCentFT0CVariant1);
       registry.fill(HIST("hCentFT0CVariant1"), centrality);
-    } else {
-      return;
     }
 
     // fill event QA before cuts
