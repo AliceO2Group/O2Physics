@@ -239,16 +239,20 @@ def main():
         description="Find dependencies required to produce a given table or to run a given workflow."
     )
     parser.add_argument(
-        "-t", dest="table", type=str, nargs="+", help="table(s) for normal (backward) search (i.e. producers)"
+        "-t", dest="table", type=str, nargs="+", help="table(s) for normal (backward) search (i.e. find producers)"
     )
     parser.add_argument(
-        "-w", dest="workflow", type=str, nargs="+", help="workflow(s) for normal (backward) search (i.e. inputs)"
+        "-w", dest="workflow", type=str, nargs="+", help="workflow(s) for normal (backward) search (i.e. find inputs)"
     )
     parser.add_argument(
-        "-T", dest="table_rev", type=str, nargs="+", help="table(s) for reverse (forward) search (i.e. consumers)"
+        "-T", dest="table_rev", type=str, nargs="+", help="table(s) for reverse (forward) search (i.e. find consumers)"
     )
     parser.add_argument(
-        "-W", dest="workflow_rev", type=str, nargs="+", help="workflow(s) for reverse (forward) search (i.e. outputs)"
+        "-W",
+        dest="workflow_rev",
+        type=str,
+        nargs="+",
+        help="workflow(s) for reverse (forward) search (i.e. find outputs)",
     )
     parser.add_argument(
         "-c",
