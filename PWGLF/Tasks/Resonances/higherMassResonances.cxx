@@ -914,7 +914,7 @@ struct HigherMassResonances {
   PROCESS_SWITCH(HigherMassResonances, processME, "mixed event process", true);
 
   int counter = 0;
-  float multiplicity_gen = 0.0;
+  float multiplicityGen = 0.0;
   void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     TLorentzVector genvec;
@@ -936,7 +936,7 @@ struct HigherMassResonances {
 
     std::vector<int64_t> selectedEvents(collisions.size());
     int nevts = 0;
-    multiplicity_gen = 0.0;
+    multiplicityGen = 0.0;
     for (const auto& collision : collisions) {
       if (std::abs(collision.mcCollision().posZ()) > config.cutzvertex) {
         continue;
@@ -949,7 +949,7 @@ struct HigherMassResonances {
         continue;
       }
 
-      multiplicity_gen = collision.centFT0M();
+      multiplicityGen = collision.centFT0M();
 
       selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
     }
@@ -1008,7 +1008,7 @@ struct HigherMassResonances {
       if (passKs) {
         genvec.SetPtEtaPhiE(mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcParticle.e());
         hMChists.fill(HIST("Genf1710_mass"), genvec.M());
-        hMChists.fill(HIST("Genf1710"), multiplicity_gen, mcParticle.pt());
+        hMChists.fill(HIST("Genf1710"), multiplicityGen, mcParticle.pt());
       }
     }
   }
