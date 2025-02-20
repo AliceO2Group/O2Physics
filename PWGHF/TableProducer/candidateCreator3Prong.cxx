@@ -85,6 +85,7 @@ struct HfCandidateCreator3Prong {
   Configurable<bool> createDs{"createDs", false, "enable Ds+/- candidate creation"};
   Configurable<bool> createLc{"createLc", false, "enable Lc+/- candidate creation"};
   Configurable<bool> createXic{"createXic", false, "enable Xic+/- candidate creation"};
+  Configurable<bool> createDstarDplusBkg{"createDstarDplusBkg", false, "enable D* candidate creation"};
 
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<3> df; // 3-prong vertex fitter
@@ -144,7 +145,7 @@ struct HfCandidateCreator3Prong {
       }
     }
 
-    std::array<bool, 4> creationFlags = {createDplus, createDs, createLc, createXic};
+    std::array<bool, 5> creationFlags = {createDplus, createDs, createLc, createXic, createDstarDplusBkg};
     if (std::accumulate(creationFlags.begin(), creationFlags.end(), 0) == 0) {
       LOGP(fatal, "At least one particle specie should be enabled for the creation.");
     }
@@ -791,6 +792,7 @@ struct HfCandidateCreator3ProngExpressions {
   bool createDs{false};
   bool createLc{false};
   bool createXic{false};
+  bool createDstarDplusBkg{false};
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
@@ -826,7 +828,9 @@ struct HfCandidateCreator3ProngExpressions {
             createLc = option.defaultValue.get<bool>();
           } else if (option.name.compare("createXic") == 0) {
             createXic = option.defaultValue.get<bool>();
-          }
+          } else if (option.name.compare("createDstarDplusBkg") == 0) {
+            createDstarDplusBkg = option.defaultValue.get<bool>();
+          } 
         }
         break;
       }
@@ -839,6 +843,7 @@ struct HfCandidateCreator3ProngExpressions {
     LOGP(info, "    --> createDs = {}", createDs);
     LOGP(info, "    --> createLc = {}", createLc);
     LOGP(info, "    --> createXic = {}", createXic);
+    LOGP(info, "    --> createDstarDplusBkg = {}", createDstarDplusBkg);
   }
 
   /// Performs MC matching.
@@ -955,6 +960,18 @@ struct HfCandidateCreator3ProngExpressions {
               channel = isDplus ? DecayChannelDToKKPi::DplusToK0starK : DecayChannelDToKKPi::DsToK0starK;
             }
           }
+        }
+      }
+
+      // D* → D0π → Kππ
+      if (flag == 0 && createDstarDplusBkg) {
+        if (matchKinkedDecayTopology) {
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2, &nKinkedTracks);
+        } else {
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2);
+        }
+        if (indexRec > -1) {
+          flag = sign * (1 << DstarToPiKPiBkg);
         }
       }
 

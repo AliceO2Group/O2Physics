@@ -169,6 +169,13 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       }
     }
 
+    if (flag == 0 && createDstarDplusBkg) {
+      // D*± → D0(bar) π±
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2)) {
+        flag = sign * (1 << DstarToPiKPiBkg);
+      }
+    }
+
     // Check whether the particle is non-prompt (from a b quark).
     if (flag != 0) {
       origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
