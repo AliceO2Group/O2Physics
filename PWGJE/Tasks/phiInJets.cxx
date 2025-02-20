@@ -696,7 +696,6 @@ struct phiInJets {
             JEhistos.fill(HIST("ptJEHistogramProton"), mcParticle.pt());
         }
       }
-
       for (const auto& track2 : tracks) {
         auto originalTrack2 = track2.track_as<myCompleteTracks>();
         if (!trackSelection(originalTrack2))
