@@ -161,7 +161,6 @@ struct correlateStrangeness {
   TH2F* hEfficiencyXiPlus;
   TH2F* hEfficiencyOmegaMinus;
   TH2F* hEfficiencyOmegaPlus;
-
   TH2F* hEfficiencyHadron;
 
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
@@ -240,6 +239,8 @@ struct correlateStrangeness {
     hEfficiencyXiPlus = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyXiPlus"));
     hEfficiencyOmegaMinus = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyOmegaMinus"));
     hEfficiencyOmegaPlus = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyOmegaPlus"));
+    hEfficiencyHadron = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyHadron"));
+    hEfficiencyPion = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyPion"));
     LOG(info) << "Efficiencies now loaded for " << mRunNumber;
   }
   template <class TTrack>
@@ -488,10 +489,15 @@ struct correlateStrangeness {
         continue;
 
       if (!mixing) {
+        float efficiency = 1.0f;
+        if (applyEfficiencyForTrigger) {
+          efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+        }
+        float weight = (applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
         if constexpr (requires { triggerTrack.extra(); })
-          histos.fill(HIST("sameEvent/TriggerParticlesPion"), trigg.pt(), mult);
+          histos.fill(HIST("sameEvent/TriggerParticlesPion"), trigg.pt(), mult, weight);
         else
-          histos.fill(HIST("sameEvent/TriggerParticlesHadron"), trigg.pt(), mult);
+          histos.fill(HIST("sameEvent/TriggerParticlesHadron"), trigg.pt(), mult, weight);
       }
       for (auto& assocTrack : assocs) {
         auto assoc = assocTrack.template track_as<TracksComplete>();
@@ -524,17 +530,30 @@ struct correlateStrangeness {
         if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
           continue;
 
+        float efficiency = 1;
+        if (applyEfficiencyCorrection) {
+          if constexpr (requires { assocTrack.nSigmaTPCPi(); }) {
+            efficiency = hEfficiencyPion->Interpolate(ptassoc, assoc.eta());
+          } else {
+            efficiency = hEfficiencyHadron->Interpolate(ptassoc, assoc.eta());
+          }
+        }
+        if (applyEfficiencyForTrigger) {
+          efficiency = efficiency * hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
+        }
+        float weight = (applyEfficiencyCorrection || applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
+
         if (!mixing) {
           if constexpr (requires { assocTrack.nSigmaTPCPi(); }) {
-            histos.fill(HIST("sameEvent/Signal/Pion"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
+            histos.fill(HIST("sameEvent/Signal/Pion"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult, weight);
           } else {
-            histos.fill(HIST("sameEvent/Signal/Hadron"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
+            histos.fill(HIST("sameEvent/Signal/Hadron"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult, weight);
           }
         } else {
           if constexpr (requires { assocTrack.nSigmaTPCPi(); }) {
-            histos.fill(HIST("mixedEvent/Signal/Pion"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
+            histos.fill(HIST("mixedEvent/Signal/Pion"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult, weight);
           } else {
-            histos.fill(HIST("mixedEvent/Signal/Hadron"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
+            histos.fill(HIST("mixedEvent/Signal/Hadron"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult, weight);
           }
         }
       }
