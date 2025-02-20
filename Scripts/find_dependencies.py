@@ -245,10 +245,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="Find dependencies required to produce a given table or to run a given workflow."
     )
-    parser.add_argument("-t", dest="table", type=str, nargs="+", help="table(s) for normal search (producers)")
-    parser.add_argument("-w", dest="workflow", type=str, nargs="+", help="workflow(s) for normal search (inputs)")
-    parser.add_argument("-T", dest="table_rev", type=str, nargs="+", help="table(s) for reverse search (consumers)")
-    parser.add_argument("-W", dest="workflow_rev", type=str, nargs="+", help="workflow(s) for reverse search (outputs)")
+    parser.add_argument("-t", dest="table", type=str, nargs="+", help="table(s) for normal (backward) search (i.e. producers)")
+    parser.add_argument("-w", dest="workflow", type=str, nargs="+", help="workflow(s) for normal (backward) search (i.e. inputs)")
+    parser.add_argument("-T", dest="table_rev", type=str, nargs="+", help="table(s) for reverse (forward) search (i.e. consumers)")
+    parser.add_argument("-W", dest="workflow_rev", type=str, nargs="+", help="workflow(s) for reverse (forward) search (i.e. outputs)")
     parser.add_argument(
         "-c",
         dest="case",
