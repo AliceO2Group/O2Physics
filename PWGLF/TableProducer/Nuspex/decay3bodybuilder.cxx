@@ -71,7 +71,6 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using FullTracksExtPIDIU = soa::Join<FullTracksExtIU, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
 
 using ColwithEvTimes = o2::soa::Join<aod::Collisions, aod::EvSels, aod::EvTimeTOFFT0>;
-using FullCols = o2::soa::Join<ColwithEvTimes, aod::CentFT0Cs>;
 using ColwithEvTimesMults = o2::soa::Join<ColwithEvTimes, aod::Mults>;
 using TrackExtIUwithEvTimes = soa::Join<FullTracksExtIU, aod::EvTimeTOFFT0ForTrack>;
 using TrackExtPIDIUwithEvTimes = soa::Join<FullTracksExtPIDIU, aod::EvTimeTOFFT0ForTrack>;
@@ -676,7 +675,7 @@ struct decay3bodyBuilder {
 
   //------------------------------------------------------------------
   // 3body candidate builder
-  template <class TCollisionClass, typename TCollisionTable, typename TTrackTable>
+  template <typename TCollisionTable, typename TTrackTable>
   void fillVtxCand(TCollisionTable const& collision, TTrackTable const& t0, TTrackTable const& t1, TTrackTable const& t2, int64_t decay3bodyId, int bachelorcharge = 1, double tofNSigmaBach = -999)
   {
 
@@ -1497,7 +1496,7 @@ struct decay3bodyBuilder {
         tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(t2, originalcol, collision);
       }
 
-      fillVtxCand<ColwithEvTimes>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, tofNSigmaBach);
+      fillVtxCand(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, tofNSigmaBach);
     }
 
     for (const auto& candVtx : vtxCandidates) {
@@ -1516,17 +1515,17 @@ struct decay3bodyBuilder {
     int lastRunNumber = -1;
 
     for (const auto& d3body : decay3bodys) {
-      auto t0 = d3body.template track0_as<aod::RedIUTracks>();
-      auto t1 = d3body.template track1_as<aod::RedIUTracks>();
-      auto t2 = d3body.template track2_as<aod::RedIUTracks>();
-      auto collision = d3body.template collision_as<aod::RedCollisions>();
-      
+      auto t0 = d3body.track0_as<aod::RedIUTracks>();
+      auto t1 = d3body.track1_as<aod::RedIUTracks>();
+      auto t2 = d3body.track2_as<aod::RedIUTracks>();
+      auto collision = d3body.collision_as<aod::RedCollisions>();
+
       if (collision.runNumber() != lastRunNumber) {
         initCCDBReduced(collision.runNumber());
         lastRunNumber = collision.runNumber(); // Update the last run number
         LOG(debug) << "CCDB initialized for run " << lastRunNumber;
       }
-      fillVtxCand<aod::RedCollisions>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, t2.tofNSigmaDe());
+      fillVtxCand(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, t2.tofNSigmaDe());
     }
 
     for (const auto& candVtx : vtxCandidates) {
@@ -1537,37 +1536,37 @@ struct decay3bodyBuilder {
 
   //------------------------------------------------------------------
   // Event-mixing background
-  void processRun3ReducedEM(ReducedCollisionsMultsCents const&, aod::ReducedDecay3Bodys const&, aod::ReducedTracksIU const&)
+  void processRun3ReducedEM(ReducedCollisionsMultsCents const&, aod::RedDecay3Bodys const&, aod::RedIUTracks const&)
   {
     vtxCandidates.clear();
 
     BinningType binningEvent{{axisPosZ, axisCentrality}, true};
-    SameKindPair<ReducedCollisionsMultsCents, aod::ReducedDecay3Bodys, BinningType> pair{binningEvent, EMTrackSel.nUseMixedEvent, -1, &cache};
+    SameKindPair<ReducedCollisionsMultsCents, aod::RedDecay3Bodys, BinningType> pair{binningEvent, EMTrackSel.nUseMixedEvent, -1, &cache};
 
     int lastRunNumber = -1;
 
     for (const auto& [c0, decay3bodys0, c1, decay3bodys1] : pair) {
       for (auto& [d3body0, d3body1] : combinations(soa::CombinationsFullIndexPolicy(decay3bodys0, decay3bodys1))) {
-        auto tpos0 = d3body0.track0_as<aod::ReducedTracksIU>();
-        auto tneg0 = d3body0.track1_as<aod::ReducedTracksIU>();
-        auto tbach0 = d3body0.track2_as<aod::ReducedTracksIU>();
-        auto tpos1 = d3body1.track0_as<aod::ReducedTracksIU>();
-        auto tneg1 = d3body1.track1_as<aod::ReducedTracksIU>();
-        auto tbach1 = d3body1.track2_as<aod::ReducedTracksIU>();
+        auto tpos0 = d3body0.track0_as<aod::RedIUTracks>();
+        auto tneg0 = d3body0.track1_as<aod::RedIUTracks>();
+        auto tbach0 = d3body0.track2_as<aod::RedIUTracks>();
+        auto tpos1 = d3body1.track0_as<aod::RedIUTracks>();
+        auto tneg1 = d3body1.track1_as<aod::RedIUTracks>();
+        auto tbach1 = d3body1.track2_as<aod::RedIUTracks>();
 
         if (c0.runNumber() != lastRunNumber) {
           initCCDBReduced(c0.runNumber());
           lastRunNumber = c0.runNumber(); // Update the last run number
           LOG(debug) << "CCDB initialized for run " << lastRunNumber;
         }
-        fillVtxCand<FullCols>(c0, tpos0, tneg0, tbach1, -1, bachelorcharge, tbach1.tofNSigmaDe());
+        fillVtxCand(c0, tpos0, tneg0, tbach1, -1, bachelorcharge, tbach1.tofNSigmaDe());
 
         if (c1.runNumber() != lastRunNumber) {
           initCCDBReduced(c1.runNumber());
           lastRunNumber = c1.runNumber(); // Update the last run number
           LOG(debug) << "CCDB initialized for run " << lastRunNumber;
         }
-        fillVtxCand<FullCols>(c1, tpos1, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
+        fillVtxCand(c1, tpos1, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
       }
     }
 
