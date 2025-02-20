@@ -376,7 +376,7 @@ struct JetChargedV2 {
   }
 
   void processInOutJetV2(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors>>::iterator const& collision,
-                         soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, 
+                         soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
                          aod::JetTracks const&)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
@@ -761,7 +761,7 @@ struct JetChargedV2 {
       double randomConePtWithoutTwoLeadJet = 0;
       for (auto const& track : tracks) {
         if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
-          float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, 2 * M_PI) - randomConePhi, static_cast<float>(-M_PI)); // ignores actual phi of track
+          float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, 2 * o2::constants::math::PI) - randomConePhi, static_cast<float>(-o2::constants::math::PI)); // ignores actual phi of track
           float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;                                            // ignores actual eta of track
           if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
             if (!trackIsInJet(track, jets.iteratorAt(0))) {
