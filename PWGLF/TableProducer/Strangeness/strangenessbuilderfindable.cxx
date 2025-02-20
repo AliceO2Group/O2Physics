@@ -803,7 +803,7 @@ struct StrangenessBuilder {
                 currentV0Entry.pdgCode = positiveTrackIndex.pdgCode;
                 currentV0Entry.particleId = positiveTrackIndex.originId;
                 currentV0Entry.isCollinearV0 = false;
-                if(v0BuilderOpts.mc_addGeneratedGammaMakeCollinear.value && currentV0Entry.pdgCode == 22){
+                if (v0BuilderOpts.mc_addGeneratedGammaMakeCollinear.value && currentV0Entry.pdgCode == 22) {
                   currentV0Entry.isCollinearV0 = true;
                 }
                 currentV0Entry.found = false;
@@ -826,8 +826,8 @@ struct StrangenessBuilder {
               currentV0Entry.pdgCode = positiveTrackIndex.pdgCode;
               currentV0Entry.particleId = positiveTrackIndex.originId;
               currentV0Entry.isCollinearV0 = false;
-              if(v0BuilderOpts.mc_addGeneratedGammaMakeCollinear.value && currentV0Entry.pdgCode == 22){
-                  currentV0Entry.isCollinearV0 = true;
+              if (v0BuilderOpts.mc_addGeneratedGammaMakeCollinear.value && currentV0Entry.pdgCode == 22) {
+                currentV0Entry.isCollinearV0 = true;
               }
               currentV0Entry.found = false;
               for (const auto& v0 : v0s) {
