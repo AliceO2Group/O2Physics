@@ -71,15 +71,14 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using FullTracksExtPIDIU = soa::Join<FullTracksExtIU, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
 
 using ColwithEvTimes = o2::soa::Join<aod::Collisions, aod::EvSels, aod::EvTimeTOFFT0>;
-using FullCols = o2::soa::Join<ColwithEvTimes, aod::CentFT0Cs>;
 using ColwithEvTimesMults = o2::soa::Join<ColwithEvTimes, aod::Mults>;
 using TrackExtIUwithEvTimes = soa::Join<FullTracksExtIU, aod::EvTimeTOFFT0ForTrack>;
 using TrackExtPIDIUwithEvTimes = soa::Join<FullTracksExtPIDIU, aod::EvTimeTOFFT0ForTrack>;
 
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
-using ReducedCollisionsMults = soa::Join<aod::ReducedCollisions, aod::ReducedPVMults>;
-using ReducedCollisionsMultsCents = soa::Join<ReducedCollisionsMults, aod::ReducedCentFT0Cs>;
+using ReducedCollisionsMults = soa::Join<aod::RedCollisions, aod::RedPVMults>;
+using ReducedCollisionsMultsCents = soa::Join<ReducedCollisionsMults, aod::RedCentFT0Cs>;
 
 struct vtxCandidate {
   int track0Id;
@@ -325,7 +324,7 @@ struct decay3bodyBuilder {
 
   // Filters and slices
   Preslice<aod::Decay3Bodys> perCollision = o2::aod::decay3body::collisionId;
-  Preslice<aod::ReducedDecay3Bodys> perReducedCollision = o2::aod::reduceddecay3body::collisionId;
+  Preslice<aod::RedDecay3Bodys> perReducedCollision = o2::aod::reduceddecay3body::collisionId;
 
   int mRunNumber;
   float d_bz;
@@ -413,7 +412,7 @@ struct decay3bodyBuilder {
       registry.add("hBachelorTOFNSigmaDe", "", HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}});
     }
 
-    if (doprocessRun3withKFParticle == true || doprocessRun3withKFParticleEM == true || doprocessRun3withKFParticleStrangenessTracking == true || doprocessRun3withKFParticleTrackRotation == true || doprocessRun3withKFParticleReduced == true || doprocessRun3withKFParticleReducedEM == true) {
+    if (doprocessRun3withKFParticle == true || doprocessRun3withKFParticleStrangenessTracking == true || doprocessRun3withKFParticleTrackRotation == true || doprocessRun3withKFParticleReduced == true || doprocessRun3withKFParticleReducedEM == true) {
       auto hEventCounterZorro = registry.add<TH1>("Counters/hEventCounterZorro", "hEventCounterZorro", HistType::kTH1D, {{2, -0.5, 1.5}});
       hEventCounterZorro->GetXaxis()->SetBinLabel(1, "Zorro before evsel");
       hEventCounterZorro->GetXaxis()->SetBinLabel(2, "Zorro after evsel");
@@ -481,7 +480,7 @@ struct decay3bodyBuilder {
       registry.add("QA/Event/hVtxCovYZ", "hVtxCovYZ", HistType::kTH1F, {{200, -0.0001f, 0.0001f, "PV cov(YZ) (cm^{2})"}});
     }
 
-    if (doprocessRun3withKFParticleEM == true || doprocessRun3withKFParticleReducedEM == true) {
+    if (doprocessRun3withKFParticleReducedEM == true) {
       auto hPairCounterMixing = registry.add<TH1>("QA/EM/hPairCounterMixing", "hPairCounterMixing", HistType::kTH1F, {{3, 0.0f, 3.0f}});
       hPairCounterMixing->GetXaxis()->SetBinLabel(1, "total");
       hPairCounterMixing->GetXaxis()->SetBinLabel(2, "sel8");
@@ -676,7 +675,7 @@ struct decay3bodyBuilder {
 
   //------------------------------------------------------------------
   // 3body candidate builder
-  template <class TCollisionClass, typename TCollisionTable, typename TTrackTable>
+  template <typename TCollisionTable, typename TTrackTable>
   void fillVtxCand(TCollisionTable const& collision, TTrackTable const& t0, TTrackTable const& t1, TTrackTable const& t2, int64_t decay3bodyId, int bachelorcharge = 1, double tofNSigmaBach = -999)
   {
 
@@ -1497,7 +1496,7 @@ struct decay3bodyBuilder {
         tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(t2, originalcol, collision);
       }
 
-      fillVtxCand<ColwithEvTimes>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, tofNSigmaBach);
+      fillVtxCand(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, tofNSigmaBach);
     }
 
     for (const auto& candVtx : vtxCandidates) {
@@ -1507,7 +1506,7 @@ struct decay3bodyBuilder {
   PROCESS_SWITCH(decay3bodyBuilder, processRun3, "Produce DCA fitter decay3body tables", true);
 
   //------------------------------------------------------------------
-  void processRun3Reduced(aod::ReducedCollisions const& collisions, aod::ReducedDecay3Bodys const& decay3bodys, aod::ReducedTracksIU const&)
+  void processRun3Reduced(aod::RedCollisions const& collisions, aod::RedDecay3Bodys const& decay3bodys, aod::RedIUTracks const&)
   {
     vtxCandidates.clear();
 
@@ -1516,16 +1515,17 @@ struct decay3bodyBuilder {
     int lastRunNumber = -1;
 
     for (const auto& d3body : decay3bodys) {
-      auto t0 = d3body.track0_as<aod::ReducedTracksIU>();
-      auto t1 = d3body.track1_as<aod::ReducedTracksIU>();
-      auto t2 = d3body.track2_as<aod::ReducedTracksIU>();
-      auto collision = d3body.collision_as<aod::ReducedCollisions>();
+      auto t0 = d3body.track0_as<aod::RedIUTracks>();
+      auto t1 = d3body.track1_as<aod::RedIUTracks>();
+      auto t2 = d3body.track2_as<aod::RedIUTracks>();
+      auto collision = d3body.collision_as<aod::RedCollisions>();
+
       if (collision.runNumber() != lastRunNumber) {
         initCCDBReduced(collision.runNumber());
         lastRunNumber = collision.runNumber(); // Update the last run number
         LOG(debug) << "CCDB initialized for run " << lastRunNumber;
       }
-      fillVtxCand<aod::ReducedCollisions>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, t2.tofNSigmaDe());
+      fillVtxCand(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, t2.tofNSigmaDe());
     }
 
     for (const auto& candVtx : vtxCandidates) {
@@ -1536,37 +1536,37 @@ struct decay3bodyBuilder {
 
   //------------------------------------------------------------------
   // Event-mixing background
-  void processRun3ReducedEM(ReducedCollisionsMultsCents const&, aod::ReducedDecay3Bodys const&, aod::ReducedTracksIU const&)
+  void processRun3ReducedEM(ReducedCollisionsMultsCents const&, aod::RedDecay3Bodys const&, aod::RedIUTracks const&)
   {
     vtxCandidates.clear();
 
     BinningType binningEvent{{axisPosZ, axisCentrality}, true};
-    SameKindPair<ReducedCollisionsMultsCents, aod::ReducedDecay3Bodys, BinningType> pair{binningEvent, EMTrackSel.nUseMixedEvent, -1, &cache};
+    SameKindPair<ReducedCollisionsMultsCents, aod::RedDecay3Bodys, BinningType> pair{binningEvent, EMTrackSel.nUseMixedEvent, -1, &cache};
 
     int lastRunNumber = -1;
 
     for (const auto& [c0, decay3bodys0, c1, decay3bodys1] : pair) {
       for (auto& [d3body0, d3body1] : combinations(soa::CombinationsFullIndexPolicy(decay3bodys0, decay3bodys1))) {
-        auto tpos0 = d3body0.track0_as<aod::ReducedTracksIU>();
-        auto tneg0 = d3body0.track1_as<aod::ReducedTracksIU>();
-        auto tbach0 = d3body0.track2_as<aod::ReducedTracksIU>();
-        auto tpos1 = d3body1.track0_as<aod::ReducedTracksIU>();
-        auto tneg1 = d3body1.track1_as<aod::ReducedTracksIU>();
-        auto tbach1 = d3body1.track2_as<aod::ReducedTracksIU>();
+        auto tpos0 = d3body0.track0_as<aod::RedIUTracks>();
+        auto tneg0 = d3body0.track1_as<aod::RedIUTracks>();
+        auto tbach0 = d3body0.track2_as<aod::RedIUTracks>();
+        auto tpos1 = d3body1.track0_as<aod::RedIUTracks>();
+        auto tneg1 = d3body1.track1_as<aod::RedIUTracks>();
+        auto tbach1 = d3body1.track2_as<aod::RedIUTracks>();
 
         if (c0.runNumber() != lastRunNumber) {
           initCCDBReduced(c0.runNumber());
           lastRunNumber = c0.runNumber(); // Update the last run number
           LOG(debug) << "CCDB initialized for run " << lastRunNumber;
         }
-        fillVtxCand<FullCols>(c0, tpos0, tneg0, tbach1, -1, bachelorcharge, tbach1.tofNSigmaDe());
+        fillVtxCand(c0, tpos0, tneg0, tbach1, -1, bachelorcharge, tbach1.tofNSigmaDe());
 
         if (c1.runNumber() != lastRunNumber) {
           initCCDBReduced(c1.runNumber());
           lastRunNumber = c1.runNumber(); // Update the last run number
           LOG(debug) << "CCDB initialized for run " << lastRunNumber;
         }
-        fillVtxCand<FullCols>(c1, tpos1, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
+        fillVtxCand(c1, tpos1, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
       }
     }
 
@@ -1641,51 +1641,6 @@ struct decay3bodyBuilder {
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3withKFParticleStrangenessTracking, "Produce KFParticle strangeness tracked decay3body tables", false);
 
-  void processRun3withKFParticleEM(ColwithEvTimesMults const& collisions, TrackExtPIDIUwithEvTimes const& tracksIU, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
-  {
-    auto tuple = std::make_tuple(decay3bodys, tracksIU);
-    BinningTypeKF binningOnPosAndMult{{kfparticleConfigurations.binsVtxZ, kfparticleConfigurations.binsMultiplicity}, true};
-    Pair<ColwithEvTimesMults, aod::Decay3Bodys, TrackExtPIDIUwithEvTimes, BinningTypeKF> pair{binningOnPosAndMult, kfparticleConfigurations.nEvtMixing, -1, collisions, tuple, &cache}; // indicates that under/overflow (-1) to be ignored
-
-    for (auto& [c1, decays3body, c2, tracks] : pair) {
-      registry.fill(HIST("QA/EM/hPairCounterMixing"), 0.5);
-
-      // event selection
-      if (kfparticleConfigurations.doSel8selection && (!c1.sel8() || !c2.sel8())) {
-        continue;
-      }
-      registry.fill(HIST("QA/EM/hPairCounterMixing"), 1.5);
-      if (kfparticleConfigurations.doPosZselection && (abs(c1.posZ()) > 10.f || abs(c2.posZ()) > 10.f)) {
-        continue;
-      }
-      registry.fill(HIST("QA/EM/hPairCounterMixing"), 2.5);
-      auto bc = c1.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-      LOG(debug) << "CCDB initialised.";
-
-      for (auto& [decay3body, track] : soa::combinations(soa::CombinationsFullIndexPolicy(decays3body, tracks))) {
-        auto trackPos = decay3body.template track0_as<TrackExtPIDIUwithEvTimes>();
-        auto trackNeg = decay3body.template track1_as<TrackExtPIDIUwithEvTimes>();
-        auto trackBach = decay3body.template track2_as<TrackExtPIDIUwithEvTimes>();
-
-        registry.fill(HIST("QA/EM/hCombinationCounterMixing"), 0.5);
-
-        // selections bachelor track
-        if ((trackBach.sign() > 0 && !(track.sign() > 0)) || (trackBach.sign() < 0 && !(track.sign() < 0)) || trackBach.globalIndex() == track.globalIndex()) { // only combine if track has correct sign and is not same as trackBach
-          continue;
-        }
-        registry.fill(HIST("QA/EM/hCombinationCounterMixing"), 1.5);
-        if (track.pt() < 0.6) { // SVertexer selection
-          continue;
-        }
-        registry.fill(HIST("QA/EM/hCombinationCounterMixing"), 2.5);
-        buildVtx3BodyDataTableKFParticle<ColwithEvTimesMults>(c1, trackPos, trackNeg, track, -1 /*vtx3bodyID*/, bachelorcharge, 1 /*nRotations*/, getTOFnSigma<ColwithEvTimesMults>(c1, trackBach, true /*isEventMixing*/));
-        LOG(debug) << "buildVtx3BodyDataTableKFParticle called.";
-      }
-    }
-  }
-  PROCESS_SWITCH(decay3bodyBuilder, processRun3withKFParticleEM, "Produce KFParticle decay3body mixed event tables", false);
-
   void processRun3withKFParticleTrackRotation(ColwithEvTimes const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
     // same process as processRun3withKFParticle but with nRotations set according to configurable
@@ -1720,7 +1675,7 @@ struct decay3bodyBuilder {
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3withKFParticleTrackRotation, "Produce KFParticle decay3body tables with rotated tracks", false);
 
-  void processRun3withKFParticleReduced(aod::ReducedCollisions const& collisions, aod::ReducedTracksIU const&, aod::ReducedDecay3Bodys const& decay3bodys)
+  void processRun3withKFParticleReduced(aod::RedCollisions const& collisions, aod::RedIUTracks const&, aod::RedDecay3Bodys const& decay3bodys)
   {
     int lastRunNumber = -1;
 
@@ -1740,21 +1695,21 @@ struct decay3bodyBuilder {
       const uint64_t collIdx = collision.globalIndex();
       auto Decay3BodyTable_thisCollision = decay3bodys.sliceBy(perReducedCollision, collIdx);
       for (auto& vtx3body : Decay3BodyTable_thisCollision) {
-        auto trackPos = vtx3body.template track0_as<aod::ReducedTracksIU>();
-        auto trackNeg = vtx3body.template track1_as<aod::ReducedTracksIU>();
-        auto trackBach = vtx3body.template track2_as<aod::ReducedTracksIU>();
-        buildVtx3BodyDataTableKFParticle<aod::ReducedCollisions>(collision, trackPos, trackNeg, trackBach, vtx3body.globalIndex(), bachelorcharge, 1 /*nRotations*/, trackBach.tofNSigmaDe());
+        auto trackPos = vtx3body.template track0_as<aod::RedIUTracks>();
+        auto trackNeg = vtx3body.template track1_as<aod::RedIUTracks>();
+        auto trackBach = vtx3body.template track2_as<aod::RedIUTracks>();
+        buildVtx3BodyDataTableKFParticle<aod::RedCollisions>(collision, trackPos, trackNeg, trackBach, vtx3body.globalIndex(), bachelorcharge, 1 /*nRotations*/, trackBach.tofNSigmaDe());
       }
       LOG(debug) << "End of processKFParticleDerived.";
     }
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3withKFParticleReduced, "Produce KFParticle decay3body tables from derived decay3body data", false);
 
-  void processRun3withKFParticleReducedEM(ReducedCollisionsMults const& collisions, aod::ReducedTracksIU const&, aod::ReducedDecay3Bodys const& decay3bodys)
+  void processRun3withKFParticleReducedEM(ReducedCollisionsMults const& collisions, aod::RedIUTracks const&, aod::RedDecay3Bodys const& decay3bodys)
   {
     auto tuple = std::make_tuple(decay3bodys);
     BinningTypeKF binningOnPosAndMult{{kfparticleConfigurations.binsVtxZ, kfparticleConfigurations.binsMultiplicity}, true};
-    SameKindPair<ReducedCollisionsMults, aod::ReducedDecay3Bodys, BinningTypeKF> pair{binningOnPosAndMult, kfparticleConfigurations.nEvtMixing, -1, collisions, tuple, &cache}; // indicates that under/overflow (-1) to be ignored
+    SameKindPair<ReducedCollisionsMults, aod::RedDecay3Bodys, BinningTypeKF> pair{binningOnPosAndMult, kfparticleConfigurations.nEvtMixing, -1, collisions, tuple, &cache}; // indicates that under/overflow (-1) to be ignored
 
     int lastRunNumber = -1;
 
@@ -1771,12 +1726,12 @@ struct decay3bodyBuilder {
       }
 
       for (auto& [decay3body1, decay3body2] : soa::combinations(soa::CombinationsFullIndexPolicy(decays3body1, decays3body2))) {
-        auto trackPos1 = decay3body1.template track0_as<aod::ReducedTracksIU>();
-        auto trackNeg1 = decay3body1.template track1_as<aod::ReducedTracksIU>();
-        auto trackBach1 = decay3body1.template track2_as<aod::ReducedTracksIU>();
-        auto trackPos2 = decay3body2.template track0_as<aod::ReducedTracksIU>();
-        auto trackNeg2 = decay3body2.template track1_as<aod::ReducedTracksIU>();
-        auto trackBach2 = decay3body2.template track2_as<aod::ReducedTracksIU>();
+        auto trackPos1 = decay3body1.template track0_as<aod::RedIUTracks>();
+        auto trackNeg1 = decay3body1.template track1_as<aod::RedIUTracks>();
+        auto trackBach1 = decay3body1.template track2_as<aod::RedIUTracks>();
+        auto trackPos2 = decay3body2.template track0_as<aod::RedIUTracks>();
+        auto trackNeg2 = decay3body2.template track1_as<aod::RedIUTracks>();
+        auto trackBach2 = decay3body2.template track2_as<aod::RedIUTracks>();
 
         registry.fill(HIST("QA/EM/hCombinationCounterMixing"), 0.5);
 
@@ -1869,7 +1824,7 @@ struct decay3bodyDataLinkBuilder {
   }
   PROCESS_SWITCH(decay3bodyDataLinkBuilder, processStandard, "Produce label from decay3body to vtx3body", true);
 
-  void processReduced(aod::ReducedDecay3Bodys const& decay3bodytable, aod::Vtx3BodyDatas const& vtxdatatable)
+  void processReduced(aod::RedDecay3Bodys const& decay3bodytable, aod::Vtx3BodyDatas const& vtxdatatable)
   {
     buildDecay3BodyLabel(decay3bodytable, vtxdatatable);
   }
@@ -1904,7 +1859,7 @@ struct kfdecay3bodyDataLinkBuilder {
   }
   PROCESS_SWITCH(kfdecay3bodyDataLinkBuilder, processStandard, "Build data link table.", true);
 
-  void processReduced(aod::ReducedDecay3Bodys const& decay3bodytable, aod::KFVtx3BodyDatas const& vtxdatatable)
+  void processReduced(aod::RedDecay3Bodys const& decay3bodytable, aod::KFVtx3BodyDatas const& vtxdatatable)
   {
     buildDataLink(decay3bodytable, vtxdatatable); // build ReducedDecay3Body -> KFDecay3BodyData link table
   }
@@ -1915,8 +1870,6 @@ struct decay3bodyLabelBuilder {
 
   Produces<aod::McVtx3BodyLabels> vtxlabels;
   Produces<aod::McFullVtx3BodyLabels> vtxfulllabels;
-  Produces<aod::McKFVtx3BodyLabels> kfvtxlabels;
-  Produces<aod::McFullKFVtx3BodyLabels> kfvtxfulllabels;
 
   HistogramRegistry registry{"registry", {}};
 
