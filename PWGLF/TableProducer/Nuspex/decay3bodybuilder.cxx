@@ -1519,7 +1519,7 @@ struct decay3bodyBuilder {
       auto t1 = d3body.track1_as<aod::RedIUTracks>();
       auto t2 = d3body.track2_as<aod::RedIUTracks>();
       auto collision = d3body.collision_as<aod::RedCollisions>();
-      
+
       if (collision.runNumber() != lastRunNumber) {
         initCCDBReduced(collision.runNumber());
         lastRunNumber = collision.runNumber(); // Update the last run number
