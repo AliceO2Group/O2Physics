@@ -60,6 +60,7 @@ class GFWWeights : public TNamed
   TH1D* getdNdPhi();
   TH1D* getEfficiency(double etamin, double etamax, double vzmin, double vzmax);
   void mergeWeights(GFWWeights* other);
+  void setTH3D(TH3D* th3d);
 
  private:
   bool fDataFilled;

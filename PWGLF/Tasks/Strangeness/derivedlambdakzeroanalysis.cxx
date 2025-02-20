@@ -74,6 +74,8 @@ using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, a
 struct derivedlambdakzeroanalysis {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  bool isRun3;
+
   // master analysis switches
   Configurable<bool> analyseK0Short{"analyseK0Short", true, "process K0Short-like candidates"};
   Configurable<bool> analyseLambda{"analyseLambda", true, "process Lambda-like candidates"};
@@ -86,19 +88,18 @@ struct derivedlambdakzeroanalysis {
   struct : ConfigurableGroup {
     Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
     Configurable<bool> requireTriggerTVX{"requireTriggerTVX", true, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level"};
-    Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
-    Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
-    Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track"};
-    Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference"};
-    Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
-    Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
-    Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
-    Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds"};
-    Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
-    Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds"};
-    Configurable<bool> requireNoCollInTimeRangeVzDep{"requireNoCollInTimeRangeVzDep", false, "reject collisions corrupted by the cannibalism, with other collisions with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ"};
-    Configurable<bool> requireNoCollInROFStd{"requireNoCollInROFStd", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF with mult. above a certain threshold"};
-    Configurable<bool> requireNoCollInROFStrict{"requireNoCollInROFStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF"};
+    Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border (Run 3 only)"};
+    Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border (Run 3 only)"};
+    Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track (Run 3 only)"};
+    Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference (Run 3 only)"};
+    Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF (Run 3 only)"};
+    Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD (Run 3 only)"};
+    Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC (Run 3 only)"};
+    Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds (Run 3 only)"};
+    Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds (Run 3 only)"};
+    Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds (Run 3 only)"};
+    Configurable<bool> requireNoCollInROFStd{"requireNoCollInROFStd", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF with mult. above a certain threshold (Run 3 only)"};
+    Configurable<bool> requireNoCollInROFStrict{"requireNoCollInROFStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF (Run 3 only)"};
     Configurable<bool> requireINEL0{"requireINEL0", true, "require INEL>0 event selection"};
     Configurable<bool> requireINEL1{"requireINEL1", false, "require INEL>1 event selection"};
 
@@ -113,6 +114,22 @@ struct derivedlambdakzeroanalysis {
     // fast check on interaction rate
     Configurable<float> minIR{"minIR", -1, "minimum IR collisions"};
     Configurable<float> maxIR{"maxIR", -1, "maximum IR collisions"};
+
+    // Run 2 specific event selections
+    Configurable<bool> requireSel7{"requireSel7", true, "require sel7 event selection (Run 2 only: event selection decision based on V0A & V0C)"};
+    Configurable<bool> requireINT7{"requireINT7", true, "require INT7 trigger selection (Run 2 only)"};
+    Configurable<bool> rejectIncompleteDAQ{"rejectIncompleteDAQ", true, "reject events with incomplete DAQ (Run 2 only)"};
+    Configurable<bool> requireConsistentSPDAndTrackVtx{"requireConsistentSPDAndTrackVtx", true, "reject events with inconsistent in SPD and Track vertices (Run 2 only)"};
+    Configurable<bool> rejectPileupFromSPD{"rejectPileupFromSPD", true, "reject events with pileup according to SPD vertexer (Run 2 only)"};
+    Configurable<bool> rejectV0PFPileup{"rejectV0PFPileup", false, "reject events tagged as OOB pileup according to V0 past-future info (Run 2 only)"};
+    Configurable<bool> rejectPileupInMultBins{"rejectPileupInMultBins", true, "reject events tagged as pileup according to multiplicity-differential pileup checks (Run 2 only)"};
+    Configurable<bool> rejectPileupMV{"rejectPileupMV", true, "reject events tagged as pileup according to according to multi-vertexer (Run 2 only)"};
+    Configurable<bool> rejectTPCPileup{"rejectTPCPileup", false, "reject events tagged as pileup according to pileup in TPC (Run 2 only)"};
+    Configurable<bool> requireNoV0MOnVsOffPileup{"requireNoV0MOnVsOffPileup", false, "reject events tagged as OOB pileup according to online-vs-offline VOM correlation (Run 2 only)"};
+    Configurable<bool> requireNoSPDOnVsOffPileup{"requireNoSPDOnVsOffPileup", false, "reject events tagged as pileup according to online-vs-offline SPD correlation (Run 2 only)"};
+    Configurable<bool> requireNoSPDClsVsTklBG{"requireNoSPDClsVsTklBG", true, "reject events tagged as beam-gas and pileup according to cluster-vs-tracklet correlation (Run 2 only)"};
+
+    Configurable<bool> useSPDTrackletsCent{"useSPDTrackletsCent", false, "Use SPD tracklets for estimating centrality? If not, use V0M-based centrality (Run 2 only)"};
   } eventSelections;
 
   struct : ConfigurableGroup {
@@ -277,6 +294,7 @@ struct derivedlambdakzeroanalysis {
   // For manual sliceBy
   // Preslice<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
   PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
+  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraCollLabels>> perMcCollisionRun2 = aod::v0data::straMCCollisionId;
 
   enum selection : uint64_t { selCosPA = 0,
                               selRadius,
@@ -342,6 +360,15 @@ struct derivedlambdakzeroanalysis {
 
   void init(InitContext const&)
   {
+    // Determine if we are dealing with Run3 or Run2 processing
+    if ((doprocessRealDataRun3 || doprocessMonteCarloRun3 || doprocessGeneratedRun3) && (doprocessRealDataRun2 || doprocessMonteCarloRun2 || doprocessGeneratedRun2)) {
+      LOGF(fatal, "Cannot enable Run2 and Run3 processes at the same time. Please choose one.");
+    }
+    if (doprocessRealDataRun3 || doprocessMonteCarloRun3 || doprocessGeneratedRun3) {
+      isRun3 = true;
+    } else {
+      isRun3 = false;
+    }
     // setting CCDB service
     ccdb->setURL(ccdbConfigurations.ccdburl);
     ccdb->setCaching(true);
@@ -415,38 +442,61 @@ struct derivedlambdakzeroanalysis {
 
     // Event Counters
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{20, -0.5f, +19.5f}});
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "posZ cut");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(7, "kIsVertexITSTPC");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsGoodZvtxFT0vsPV");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTOFmatched");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kIsVertexTRDmatched");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoSameBunchPileup");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStd");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeStrict");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeNarrow");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStd");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStrict");
-    if (doPPAnalysis) {
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "INEL>0");
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>1");
+    if (isRun3) {
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "posZ cut");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(7, "kIsVertexITSTPC");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsGoodZvtxFT0vsPV");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTOFmatched");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kIsVertexTRDmatched");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoSameBunchPileup");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStd");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeStrict");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeNarrow");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStd");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStrict");
+      if (doPPAnalysis) {
+        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "INEL>0");
+        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>1");
+      } else {
+        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "Below min occup.");
+        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "Above max occup.");
+      }
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "Below min IR");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(20, "Above max IR");
     } else {
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "Below min occup.");
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "Above max occup.");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "sel7 cut");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "kINT7");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "kIsTriggerTVX");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "kNoIncompleteDAQ");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(7, "posZ cut");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kNoInconsistentVtx");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kNoPileupFromSPD");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kNoV0PFPileup");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoPileupInMultBins");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoPileupMV");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoPileupTPC");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoV0MOnVsOfPileup");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoSPDOnVsOfPileup");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoSPDClsVsTklBG");
+      if (doPPAnalysis) {
+        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "INEL>0");
+        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>1");
+      }
     }
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "Below min IR");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(20, "Above max IR");
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0.0f, 101.0f}});
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2F, {{101, 0.0f, 101.0f}, axisNch});
 
     histos.add("hEventPVz", "hEventPVz", kTH1F, {{100, -20.0f, +20.0f}});
     histos.add("hCentralityVsPVz", "hCentralityVsPVz", kTH2F, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
-    if (doprocessGenerated) {
+    if (doprocessGeneratedRun3 || doprocessGeneratedRun2) {
       histos.add("hEventPVzMC", "hEventPVzMC", kTH1F, {{100, -20.0f, +20.0f}});
       histos.add("hCentralityVsPVzMC", "hCentralityVsPVzMC", kTH2F, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
     }
@@ -647,9 +697,9 @@ struct derivedlambdakzeroanalysis {
       }
     }
 
-    if (analyseLambda && calculateFeeddownMatrix && doprocessMonteCarlo)
+    if (analyseLambda && calculateFeeddownMatrix && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2))
       histos.add("h3dLambdaFeeddown", "h3dLambdaFeeddown", kTH3F, {axisCentrality, axisPt, axisPtXi});
-    if (analyseAntiLambda && calculateFeeddownMatrix && doprocessMonteCarlo)
+    if (analyseAntiLambda && calculateFeeddownMatrix && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2))
       histos.add("h3dAntiLambdaFeeddown", "h3dAntiLambdaFeeddown", kTH3F, {axisCentrality, axisPt, axisPtXi});
 
     // demo // fast
@@ -727,7 +777,7 @@ struct derivedlambdakzeroanalysis {
     histos.add("GeneralQA/h2dArmenterosSelected", "h2dArmenterosSelected", kTH2F, {axisAPAlpha, axisAPQt});
 
     // Creation of histograms: MC generated
-    if (doprocessGenerated) {
+    if ((doprocessGeneratedRun3 || doprocessGeneratedRun2)) {
       histos.add("hGenEvents", "hGenEvents", kTH2F, {{axisNch}, {2, -0.5f, +1.5f}});
       histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(1, "All gen. events");
       histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
@@ -774,6 +824,18 @@ struct derivedlambdakzeroanalysis {
 
     // inspect histogram sizes, please
     histos.print();
+  }
+
+  // ______________________________________________________
+  // Return slicing output
+  template <bool run3, typename TCollisions>
+  auto getGroupedCollisions(TCollisions const& collisions, int globalIndex)
+  {
+    if constexpr (run3) { // check if we are in Run 3
+      return collisions.sliceBy(perMcCollision, globalIndex);
+    } else { // we are in Run2
+      return collisions.sliceBy(perMcCollisionRun2, globalIndex);
+    }
   }
 
   template <typename TCollision>
@@ -1477,137 +1539,244 @@ struct derivedlambdakzeroanalysis {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
 
-    if (eventSelections.requireSel8 && !collision.sel8()) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
-
-    if (eventSelections.requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 2 /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */);
-
-    if (eventSelections.rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 3 /* Not at ITS ROF border */);
-
-    if (eventSelections.rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
-
-    if (std::abs(collision.posZ()) > eventSelections.maxZVtxPosition) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 5 /* vertex-Z selected */);
-
-    if (eventSelections.requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 6 /* Contains at least one ITS-TPC track */);
-
-    if (eventSelections.requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 7 /* PV position consistency check */);
-
-    if (eventSelections.requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 8 /* PV with at least one contributor matched with TOF */);
-
-    if (eventSelections.requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 9 /* PV with at least one contributor matched with TRD */);
-
-    if (eventSelections.rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 10 /* Not at same bunch pile-up */);
-
-    if (eventSelections.requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds*/);
-
-    if (eventSelections.requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 12 /* No other collision within +/- 10 microseconds */);
-
-    if (eventSelections.requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 13 /* No other collision within +/- 2 microseconds */);
-
-    if (eventSelections.requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 14 /* No other collision within the same ITS ROF with mult. above a certain threshold */);
-
-    if (eventSelections.requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 15 /* No other collision within the same ITS ROF */);
-
-    if (doPPAnalysis) { // we are in pp
-      if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
+    if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
+      if (eventSelections.requireSel8 && !collision.sel8()) {
         return false;
       }
       if (fillHists)
-        histos.fill(HIST("hEventSelection"), 16 /* INEL > 0 */);
+        histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
 
-      if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
+      if (eventSelections.requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
         return false;
       }
       if (fillHists)
-        histos.fill(HIST("hEventSelection"), 17 /* INEL > 1 */);
+        histos.fill(HIST("hEventSelection"), 2 /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */);
 
-    } else { // we are in Pb-Pb
-      float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-      if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
+      if (eventSelections.rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
         return false;
       }
       if (fillHists)
-        histos.fill(HIST("hEventSelection"), 16 /* Below min occupancy */);
+        histos.fill(HIST("hEventSelection"), 3 /* Not at ITS ROF border */);
 
-      if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
+      if (eventSelections.rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
         return false;
       }
       if (fillHists)
-        histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
-    }
+        histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
 
-    // Fetch interaction rate only if required (in order to limit ccdb calls)
-    double interactionRate = (eventSelections.minIR >= 0 || eventSelections.maxIR >= 0) ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
-    if (eventSelections.minIR >= 0 && interactionRate < eventSelections.minIR) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 18 /* Below min IR */);
+      if (std::abs(collision.posZ()) > eventSelections.maxZVtxPosition) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 5 /* vertex-Z selected */);
 
-    if (eventSelections.maxIR >= 0 && interactionRate > eventSelections.maxIR) {
-      return false;
+      if (eventSelections.requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 6 /* Contains at least one ITS-TPC track */);
+
+      if (eventSelections.requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 7 /* PV position consistency check */);
+
+      if (eventSelections.requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 8 /* PV with at least one contributor matched with TOF */);
+
+      if (eventSelections.requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 9 /* PV with at least one contributor matched with TRD */);
+
+      if (eventSelections.rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 10 /* Not at same bunch pile-up */);
+
+      if (eventSelections.requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds*/);
+
+      if (eventSelections.requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 12 /* No other collision within +/- 10 microseconds */);
+
+      if (eventSelections.requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 13 /* No other collision within +/- 2 microseconds */);
+
+      if (eventSelections.requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 14 /* No other collision within the same ITS ROF with mult. above a certain threshold */);
+
+      if (eventSelections.requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 15 /* No other collision within the same ITS ROF */);
+
+      if (doPPAnalysis) { // we are in pp
+        if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
+          return false;
+        }
+        if (fillHists)
+          histos.fill(HIST("hEventSelection"), 16 /* INEL > 0 */);
+
+        if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
+          return false;
+        }
+        if (fillHists)
+          histos.fill(HIST("hEventSelection"), 17 /* INEL > 1 */);
+
+      } else { // we are in Pb-Pb
+        float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+        if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
+          return false;
+        }
+        if (fillHists)
+          histos.fill(HIST("hEventSelection"), 16 /* Below min occupancy */);
+
+        if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
+          return false;
+        }
+        if (fillHists)
+          histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
+      }
+
+      // Fetch interaction rate only if required (in order to limit ccdb calls)
+      double interactionRate = (eventSelections.minIR >= 0 || eventSelections.maxIR >= 0) ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
+      if (eventSelections.minIR >= 0 && interactionRate < eventSelections.minIR) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 18 /* Below min IR */);
+
+      if (eventSelections.maxIR >= 0 && interactionRate > eventSelections.maxIR) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 19 /* Above max IR */);
+
+    } else { // we are in Run 2
+      if (eventSelections.requireSel8 && !collision.sel8()) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
+
+      if (eventSelections.requireSel7 && !collision.sel7()) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 2 /* sel7 collisions */);
+
+      if (eventSelections.requireINT7 && !collision.alias_bit(kINT7)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 3 /* INT7-triggered collisions */);
+
+      if (eventSelections.requireTriggerTVX && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 4 /* FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level */);
+
+      if (eventSelections.rejectIncompleteDAQ && !collision.selection_bit(o2::aod::evsel::kNoIncompleteDAQ)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 5 /* Complete events according to DAQ flags */);
+
+      if (std::abs(collision.posZ()) > eventSelections.maxZVtxPosition) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 6 /* vertex-Z selected */);
+
+      if (eventSelections.requireConsistentSPDAndTrackVtx && !collision.selection_bit(o2::aod::evsel::kNoInconsistentVtx)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 7 /* No inconsistency in SPD and Track vertices */);
+
+      if (eventSelections.rejectPileupFromSPD && !collision.selection_bit(o2::aod::evsel::kNoPileupFromSPD)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 8 /* No pileup according to SPD vertexer */);
+
+      if (eventSelections.rejectV0PFPileup && !collision.selection_bit(o2::aod::evsel::kNoV0PFPileup)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 9 /* No out-of-bunch pileup according to V0 past-future info */);
+
+      if (eventSelections.rejectPileupInMultBins && !collision.selection_bit(o2::aod::evsel::kNoPileupInMultBins)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 10 /* No pileup according to multiplicity-differential pileup checks */);
+
+      if (eventSelections.rejectPileupMV && !collision.selection_bit(o2::aod::evsel::kNoPileupMV)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 11 /* No pileup according to multi-vertexer */);
+
+      if (eventSelections.rejectTPCPileup && !collision.selection_bit(o2::aod::evsel::kNoPileupTPC)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 12 /* No pileup in TPC */);
+
+      if (eventSelections.requireNoV0MOnVsOffPileup && !collision.selection_bit(o2::aod::evsel::kNoV0MOnVsOfPileup)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 13 /* No out-of-bunch pileup according to online-vs-offline VOM correlation */);
+
+      if (eventSelections.requireNoSPDOnVsOffPileup && !collision.selection_bit(o2::aod::evsel::kNoSPDOnVsOfPileup)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 14 /* No out-of-bunch pileup according to online-vs-offline SPD correlation */);
+
+      if (eventSelections.requireNoSPDClsVsTklBG && !collision.selection_bit(o2::aod::evsel::kNoSPDClsVsTklBG)) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 15 /* No beam-gas according to cluster-vs-tracklet correlation */);
+
+      if (doPPAnalysis) { // we are in pp
+        if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
+          return false;
+        }
+        if (fillHists)
+          histos.fill(HIST("hEventSelection"), 16 /* INEL > 0 */);
+
+        if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
+          return false;
+        }
+        if (fillHists)
+          histos.fill(HIST("hEventSelection"), 17 /* INEL > 1 */);
+      }
     }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 19 /* Above max IR */);
 
     return true;
   }
@@ -1615,11 +1784,12 @@ struct derivedlambdakzeroanalysis {
   // ______________________________________________________
   // Simulated processing
   // Return the list of indices to the recoed collision associated to a given MC collision.
-  std::vector<int> getListOfRecoCollIndices(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions)
+  template <bool run3, typename TMCollisions, typename TCollisions>
+  std::vector<int> getListOfRecoCollIndices(TMCollisions const& mcCollisions, TCollisions const& collisions)
   {
     std::vector<int> listBestCollisionIdx(mcCollisions.size());
     for (auto const& mcCollision : mcCollisions) {
-      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
+      auto groupedCollisions = getGroupedCollisions<run3>(collisions, mcCollision.globalIndex());
       // Find the collision with the biggest nbr of PV contributors
       // Follows what was done here: https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/mcCollsExtra.cxx#L93
       int biggestNContribs = -1;
@@ -1643,9 +1813,60 @@ struct derivedlambdakzeroanalysis {
   }
 
   // ______________________________________________________
+  // Reconstructed data processing
+  // Fill reconstructed event information
+  // Return centrality, occupancy, interaction rate, gap side and selGapside via reference-passing in arguments
+  template <typename TCollision>
+  void fillReconstructedEventProperties(TCollision const& collision, float& centrality, float& collisionOccupancy, double& interactionRate, int& gapSide, int& selGapSide)
+  {
+    if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
+      centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+      collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+      // Fetch interaction rate only if required (in order to limit ccdb calls)
+      interactionRate = !irSource.value.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
+
+      if (qaCentrality) {
+        auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
+        centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(doPPAnalysis ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
+      }
+
+      // gap side
+      gapSide = collision.gapSide();
+      // -1 --> Hadronic
+      // 0 --> Single Gap - A side
+      // 1 --> Single Gap - C side
+      // 2 --> Double Gap - both A & C sides
+      selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
+    } else { // no, we are in Run 2
+      centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
+    }
+
+    histos.fill(HIST("hGapSide"), gapSide);
+    histos.fill(HIST("hSelGapSide"), selGapSide);
+    histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1);
+
+    histos.fill(HIST("hEventCentrality"), centrality);
+
+    histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
+
+    histos.fill(HIST("hCentralityVsPVz"), centrality, collision.posZ());
+    histos.fill(HIST("hEventPVz"), collision.posZ());
+
+    histos.fill(HIST("hEventOccupancy"), collisionOccupancy);
+    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collisionOccupancy);
+
+    histos.fill(HIST("hInteractionRate"), interactionRate);
+    histos.fill(HIST("hCentralityVsInteractionRate"), centrality, interactionRate);
+
+    histos.fill(HIST("hInteractionRateVsOccupancy"), interactionRate, collisionOccupancy);
+    return;
+  }
+
+  // ______________________________________________________
   // Simulated processing
   // Fill generated event information (for event loss/splitting estimation)
-  void fillGeneratedEventProperties(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions)
+  template <bool run3, typename TMCCollisions, typename TCollisions>
+  void fillGeneratedEventProperties(TMCCollisions const& mcCollisions, TCollisions const& collisions)
   {
     std::vector<int> listBestCollisionIdx(mcCollisions.size());
     for (auto const& mcCollision : mcCollisions) {
@@ -1665,7 +1886,7 @@ struct derivedlambdakzeroanalysis {
 
       histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
 
-      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
+      auto groupedCollisions = getGroupedCollisions<run3>(collisions, mcCollision.globalIndex());
       // Check if there is at least one of the reconstructed collisions associated to this MC collision
       // If so, we consider it
       bool atLeastOne = false;
@@ -1680,7 +1901,11 @@ struct derivedlambdakzeroanalysis {
 
         if (biggestNContribs < collision.multPVTotalContributors()) {
           biggestNContribs = collision.multPVTotalContributors();
-          centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+          if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
+            centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+          } else { // we are in Run 2
+            centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
+          }
         }
         nCollisions++;
 
@@ -1705,7 +1930,8 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Real data processing - no MC subscription
-  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, v0Candidates const& fullV0s, dauTracks const&)
+  template <typename TCollision, typename TV0s>
+  void analyzeRecoedV0sInRealData(TCollision const& collision, TV0s const& fullV0s)
   {
     // Fire up CCDB
     if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
@@ -1718,39 +1944,14 @@ struct derivedlambdakzeroanalysis {
       return;
     }
 
-    float centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
-    if (qaCentrality) {
-      auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
-      centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(doPPAnalysis ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
-    }
-    float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-    // Fetch interaction rate only if required (in order to limit ccdb calls)
-    double interactionRate = !irSource.value.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
-
+    float centrality = -1;
+    float collisionOccupancy = -2; // -1 already taken for the case where occupancy cannot be evaluated
+    double interactionRate = -1;
     // gap side
-    int gapSide = collision.gapSide();
-    int selGapSide = -1;
-    // -1 --> Hadronic
-    // 0 --> Single Gap - A side
-    // 1 --> Single Gap - C side
-    // 2 --> Double Gap - both A & C sides
-    selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
-    histos.fill(HIST("hGapSide"), gapSide);
-    histos.fill(HIST("hSelGapSide"), selGapSide);
-    histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1);
-
-    histos.fill(HIST("hEventCentrality"), centrality);
-
-    histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
-
-    histos.fill(HIST("hCentralityVsPVz"), centrality, collision.posZ());
-    histos.fill(HIST("hEventPVz"), collision.posZ());
-
-    histos.fill(HIST("hEventOccupancy"), collisionOccupancy);
-    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collisionOccupancy);
-
-    histos.fill(HIST("hInteractionRate"), interactionRate);
-    histos.fill(HIST("hCentralityVsInteractionRate"), centrality, interactionRate);
+    int gapSide = -1;
+    int selGapSide = -1; // -1 --> Hadronic ; 0 --> Single Gap - A side ; 1 --> Single Gap - C side ; 2 --> Double Gap - both A & C sides
+    // Fill recoed event properties
+    fillReconstructedEventProperties(collision, centrality, collisionOccupancy, interactionRate, gapSide, selGapSide);
 
     histos.fill(HIST("hInteractionRateVsOccupancy"), interactionRate, collisionOccupancy);
 
@@ -1792,7 +1993,8 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  template <typename TCollision, typename TV0s>
+  void analyzeRecoedV0sInMonteCarlo(TCollision const& collision, TV0s const& fullV0s)
   {
     // Fire up CCDB
     if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
@@ -1805,39 +2007,14 @@ struct derivedlambdakzeroanalysis {
       return;
     }
 
-    float centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
-    if (qaCentrality) {
-      auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
-      centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(doPPAnalysis ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
-    }
-    float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-    // Fetch interaction rate only if required (in order to limit ccdb calls)
-    double interactionRate = !irSource.value.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
-
+    float centrality = -1;
+    float collisionOccupancy = -2; // -1 already taken for the case where occupancy cannot be evaluated
+    double interactionRate = -1;
     // gap side
-    int gapSide = collision.gapSide();
-    int selGapSide = -1;
-    // -1 --> Hadronic
-    // 0 --> Single Gap - A side
-    // 1 --> Single Gap - C side
-    // 2 --> Double Gap - both A & C sides
-    selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
-    histos.fill(HIST("hGapSide"), gapSide);
-    histos.fill(HIST("hSelGapSide"), selGapSide);
-    histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1);
-
-    histos.fill(HIST("hEventCentrality"), centrality);
-
-    histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
-
-    histos.fill(HIST("hCentralityVsPVz"), centrality, collision.posZ());
-    histos.fill(HIST("hEventPVz"), collision.posZ());
-
-    histos.fill(HIST("hEventOccupancy"), collisionOccupancy);
-    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collisionOccupancy);
-
-    histos.fill(HIST("hInteractionRate"), interactionRate);
-    histos.fill(HIST("hCentralityVsInteractionRate"), centrality, interactionRate);
+    int gapSide = -1;
+    int selGapSide = -1; // -1 --> Hadronic ; 0 --> Single Gap - A side ; 1 --> Single Gap - C side ; 2 --> Double Gap - both A & C sides
+    // Fill recoed event properties
+    fillReconstructedEventProperties(collision, centrality, collisionOccupancy, interactionRate, gapSide, selGapSide);
 
     histos.fill(HIST("hInteractionRateVsOccupancy"), interactionRate, collisionOccupancy);
 
@@ -1856,7 +2033,7 @@ struct derivedlambdakzeroanalysis {
       if (!v0.has_v0MCCore())
         continue;
 
-      auto v0MC = v0.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+      auto v0MC = v0.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
@@ -1888,7 +2065,7 @@ struct derivedlambdakzeroanalysis {
         bool correctCollision = false;
         int mcNch = -1;
         if (collision.has_straMCCollision()) {
-          auto mcCollision = collision.straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+          auto mcCollision = collision.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
           mcNch = mcCollision.multMCNParticlesEta05();
           correctCollision = (v0MC.straMCCollisionId() == mcCollision.globalIndex());
         }
@@ -1911,10 +2088,11 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processGenerated(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& V0MCCores, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& CascMCCores, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions)
+  template <bool run3, typename TMCCollisions, typename TV0MCs, typename TCascMCs, typename TCollisions>
+  void analyzeGeneratedV0s(TMCCollisions const& mcCollisions, TV0MCs const& V0MCCores, TCascMCs const& CascMCCores, TCollisions const& collisions)
   {
-    fillGeneratedEventProperties(mcCollisions, collisions);
-    std::vector<int> listBestCollisionIdx = getListOfRecoCollIndices(mcCollisions, collisions);
+    fillGeneratedEventProperties<run3>(mcCollisions, collisions);
+    std::vector<int> listBestCollisionIdx = getListOfRecoCollIndices<run3>(mcCollisions, collisions);
     for (auto const& v0MC : V0MCCores) {
       if (!v0MC.has_straMCCollision())
         continue;
@@ -1932,7 +2110,7 @@ struct derivedlambdakzeroanalysis {
       if (TMath::Abs(ymc) > v0Selections.rapidityCut)
         continue;
 
-      auto mcCollision = v0MC.straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+      auto mcCollision = v0MC.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
       if (eventSelections.applyZVtxSelOnMCPV && std::abs(mcCollision.posZ()) > eventSelections.maxZVtxPosition) {
         continue;
       }
@@ -1949,14 +2127,10 @@ struct derivedlambdakzeroanalysis {
       float centrality = 100.5f;
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
         auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
-        centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
-        float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-
-        if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
-          continue;
-        }
-        if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
-          continue;
+        if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
+          centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+        } else { // no, we are in Run 2
+          centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
         }
 
         if (v0MC.pdgCode() == 310) {
@@ -2001,7 +2175,7 @@ struct derivedlambdakzeroanalysis {
       if (TMath::Abs(ymc) > v0Selections.rapidityCut)
         continue;
 
-      auto mcCollision = cascMC.straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+      auto mcCollision = cascMC.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
       if (eventSelections.applyZVtxSelOnMCPV && std::abs(mcCollision.posZ()) > eventSelections.maxZVtxPosition) {
         continue;
       }
@@ -2018,14 +2192,10 @@ struct derivedlambdakzeroanalysis {
       float centrality = 100.5f;
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
         auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
-        centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
-        float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-
-        if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
-          continue;
-        }
-        if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
-          continue;
+        if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
+          centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+        } else { // no, we are in Run 2
+          centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
         }
 
         if (cascMC.pdgCode() == 3312) {
@@ -2059,6 +2229,48 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
     }
+  }
+
+  // ______________________________________________________
+  // Real data processing in Run 3 - no MC subscription
+  void processRealDataRun3(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, v0Candidates const& fullV0s, dauTracks const&)
+  {
+    analyzeRecoedV0sInRealData(collision, fullV0s);
+  }
+
+  // ______________________________________________________
+  // Real data processing in Run 2 - no MC subscription
+  void processRealDataRun2(soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraStamps>::iterator const& collision, v0Candidates const& fullV0s, dauTracks const&)
+  {
+    analyzeRecoedV0sInRealData(collision, fullV0s);
+  }
+
+  // ______________________________________________________
+  // Simulated processing in Run 3 (subscribes to MC information too)
+  void processMonteCarloRun3(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  {
+    analyzeRecoedV0sInMonteCarlo(collision, fullV0s);
+  }
+
+  // ______________________________________________________
+  // Simulated processing in Run 2 (subscribes to MC information too)
+  void processMonteCarloRun2(soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraStamps, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  {
+    analyzeRecoedV0sInMonteCarlo(collision, fullV0s);
+  }
+
+  // ______________________________________________________
+  // Simulated processing in Run 3 (subscribes to MC information too)
+  void processGeneratedRun3(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& V0MCCores, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& CascMCCores, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions)
+  {
+    analyzeGeneratedV0s<true>(mcCollisions, V0MCCores, CascMCCores, collisions);
+  }
+
+  // ______________________________________________________
+  // Simulated processing in Run 2 (subscribes to MC information too)
+  void processGeneratedRun2(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& V0MCCores, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& CascMCCores, soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraStamps, aod::StraCollLabels> const& collisions)
+  {
+    analyzeGeneratedV0s<false>(mcCollisions, V0MCCores, CascMCCores, collisions);
   }
 
   // ______________________________________________________
@@ -2126,10 +2338,13 @@ struct derivedlambdakzeroanalysis {
     }
   }
 
-  PROCESS_SWITCH(derivedlambdakzeroanalysis, processRealData, "process as if real data", true);
-  PROCESS_SWITCH(derivedlambdakzeroanalysis, processMonteCarlo, "process as if MC", false);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processRealDataRun3, "process as if real data in Run 3", true);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processRealDataRun2, "process as if real data in Run 2", true);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processMonteCarloRun3, "process as if MC in Run 3", false);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processMonteCarloRun2, "process as if MC in Run 2", false);
   PROCESS_SWITCH(derivedlambdakzeroanalysis, processBinnedGenerated, "process MC generated", false);
-  PROCESS_SWITCH(derivedlambdakzeroanalysis, processGenerated, "process MC generated", false);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processGeneratedRun3, "process MC generated Run 3", false);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processGeneratedRun2, "process MC generated Run 2", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

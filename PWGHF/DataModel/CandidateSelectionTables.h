@@ -398,7 +398,7 @@ DECLARE_SOA_TABLE(HfSelToOmegaPi, "AOD", "HFSELTOOMEPI",
                   hf_sel_toomegapi::TofNSigmaPiFromCharmBaryon, hf_sel_toomegapi::TofNSigmaKaFromCasc, hf_sel_toomegapi::TofNSigmaPiFromLambda, hf_sel_toomegapi::TofNSigmaPrFromLambda);
 
 DECLARE_SOA_TABLE(HfMlSelOmegacToOmegaPi, "AOD", "HFMLOMEGAC", //!
-                  hf_sel_toomegapi::MlProbOmegac, hf_sel_toomegapi::MlProbOmegacBar);
+                  hf_sel_toomegapi::MlProbOmegac);
 namespace hf_sel_toomegaka
 {
 DECLARE_SOA_COLUMN(StatusPidLambda, statusPidLambda, bool);
