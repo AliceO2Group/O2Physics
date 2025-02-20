@@ -923,27 +923,27 @@ struct derivedlambdakzeroanalysis {
     bool negIsFromAfterburner = negTrackExtra.hasITSAfterburner();
 
     // check minimum number of ITS clusters + maximum ITS chi2 per clusters + reject or select ITS afterburner tracks if requested
-    if (posTrackExtra.itsNCls() >= v0Selections.minITSclusters && // check minium ITS clusters
-        posTrackExtra.itsChi2NCl() < v0Selections.maxITSchi2PerNcls && // check maximum ITS chi2 per clusters
-        (!v0Selections.rejectPosITSafterburner || !posIsFromAfterburner) && // reject afterburner track or not
+    if (posTrackExtra.itsNCls() >= v0Selections.minITSclusters &&             // check minium ITS clusters
+        posTrackExtra.itsChi2NCl() < v0Selections.maxITSchi2PerNcls &&        // check maximum ITS chi2 per clusters
+        (!v0Selections.rejectPosITSafterburner || !posIsFromAfterburner) &&   // reject afterburner track or not
         (!v0Selections.requirePosITSafterburnerOnly || posIsFromAfterburner)) // keep afterburner track or not
       bitset(bitMap, selPosGoodITSTrack);
-    if (negTrackExtra.itsNCls() >= v0Selections.minITSclusters && // check minium ITS clusters
-        negTrackExtra.itsChi2NCl() < v0Selections.maxITSchi2PerNcls && // check maximum ITS chi2 per clusters
-        (!v0Selections.rejectNegITSafterburner || !negIsFromAfterburner) && // reject afterburner track or not
+    if (negTrackExtra.itsNCls() >= v0Selections.minITSclusters &&             // check minium ITS clusters
+        negTrackExtra.itsChi2NCl() < v0Selections.maxITSchi2PerNcls &&        // check maximum ITS chi2 per clusters
+        (!v0Selections.rejectNegITSafterburner || !negIsFromAfterburner) &&   // reject afterburner track or not
         (!v0Selections.requireNegITSafterburnerOnly || negIsFromAfterburner)) // select only afterburner track or not
       bitset(bitMap, selNegGoodITSTrack);
 
     // TPC quality flags
-    if (posTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows && // check minimum TPC crossed rows
-        posTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls && // check maximum TPC chi2 per clusters
+    if (posTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                    // check minimum TPC crossed rows
+        posTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls &&                                  // check maximum TPC chi2 per clusters
         posTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters && // check minimum fraction of TPC rows over findable
-        posTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters) // check the maximum fraction of allowed shared TPC clusters
+        posTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters)               // check the maximum fraction of allowed shared TPC clusters
       bitset(bitMap, selPosGoodTPCTrack);
-    if (negTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows && // check minimum TPC crossed rows
-        negTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls && // check maximum TPC chi2 per clusters
+    if (negTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                    // check minimum TPC crossed rows
+        negTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls &&                                  // check maximum TPC chi2 per clusters
         negTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters && // check minimum fraction of TPC rows over findable
-        negTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters) // check the maximum fraction of allowed shared TPC clusters
+        negTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters)               // check the maximum fraction of allowed shared TPC clusters
       bitset(bitMap, selNegGoodTPCTrack);
 
     // TPC PID
