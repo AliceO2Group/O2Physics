@@ -266,6 +266,8 @@ struct derivedlambdakzeroanalysis {
   ConfigurableAxis axisTOFdeltaT{"axisTOFdeltaT", {200, -5000.0f, 5000.0f}, "TOF Delta T (ps)"};
   ConfigurableAxis axisPhi{"axisPhi", {18, 0.0f, constants::math::TwoPI}, "Azimuth angle (rad)"};
   ConfigurableAxis axisEta{"axisEta", {10, -1.0f, 1.0f}, "#eta"};
+  ConfigurableAxis axisITSchi2{"axisITSchi2", {100, 0.0f, 100.0f}, "#chi^{2} per ITS clusters"};
+  ConfigurableAxis axisTPCchi2{"axisTPCchi2", {100, 0.0f, 100.0f}, "#chi^{2} per TPC clusters"};
 
   // UPC axes
   ConfigurableAxis axisSelGap{"axisSelGap", {4, -1.5, 2.5}, "Gap side"};
@@ -578,6 +580,12 @@ struct derivedlambdakzeroanalysis {
         histos.add("K0Short/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisK0Mass});
       }
       if (doDetectPropQA == 3) {
+        histos.add("K0Short/h3dITSchi2", "h3dMaxITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("K0Short/h3dTPCchi2", "h3dMaxTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("K0Short/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("K0Short/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("K0Short/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("K0Short/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
         histos.add("K0Short/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
         histos.add("K0Short/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
         histos.add("K0Short/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrows});
@@ -636,6 +644,12 @@ struct derivedlambdakzeroanalysis {
         histos.add("Lambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
       }
       if (doDetectPropQA == 3) {
+        histos.add("Lambda/h3dITSchi2", "h3dMaxITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("Lambda/h3dTPCchi2", "h3dMaxTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("Lambda/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("Lambda/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("Lambda/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("Lambda/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
         histos.add("Lambda/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
         histos.add("Lambda/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
         histos.add("Lambda/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrows});
@@ -694,6 +708,12 @@ struct derivedlambdakzeroanalysis {
         histos.add("AntiLambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
       }
       if (doDetectPropQA == 3) {
+        histos.add("AntiLambda/h3dITSchi2", "h3dMaxITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("AntiLambda/h3dTPCchi2", "h3dMaxTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("AntiLambda/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("AntiLambda/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("AntiLambda/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("AntiLambda/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
         histos.add("AntiLambda/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
         histos.add("AntiLambda/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
         histos.add("AntiLambda/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrows});
@@ -1271,6 +1291,12 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("K0Short/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt, v0.mK0Short());
       }
       if (doDetectPropQA == 3) {
+        histos.fill(HIST("K0Short/h3dITSchi2"), centrality, pt, std::max(posTrackExtra.itsChi2NCl(), negTrackExtra.itsChi2NCl()));
+        histos.fill(HIST("K0Short/h3dTPCchi2"), centrality, pt, std::max(posTrackExtra.tpcChi2NCl(), negTrackExtra.tpcChi2NCl()));
+        histos.fill(HIST("K0Short/h3dPositiveITSchi2"), centrality, pt, posTrackExtra.itsChi2NCl());
+        histos.fill(HIST("K0Short/h3dNegativeITSchi2"), centrality, pt, negTrackExtra.itsChi2NCl());
+        histos.fill(HIST("K0Short/h3dPositiveTPCchi2"), centrality, pt, posTrackExtra.tpcChi2NCl());
+        histos.fill(HIST("K0Short/h3dNegativeTPCchi2"), centrality, pt, negTrackExtra.tpcChi2NCl());
         histos.fill(HIST("K0Short/h3dPositiveITSclusters"), centrality, pt, posTrackExtra.itsNCls());
         histos.fill(HIST("K0Short/h3dNegativeITSclusters"), centrality, pt, negTrackExtra.itsNCls());
         histos.fill(HIST("K0Short/h3dPositiveTPCcrossedRows"), centrality, pt, posTrackExtra.tpcCrossedRows());
@@ -1336,6 +1362,12 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("Lambda/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt, v0.mLambda());
       }
       if (doDetectPropQA == 3) {
+        histos.fill(HIST("Lambda/h3dITSchi2"), centrality, pt, std::max(posTrackExtra.itsChi2NCl(), negTrackExtra.itsChi2NCl()));
+        histos.fill(HIST("Lambda/h3dTPCchi2"), centrality, pt, std::max(posTrackExtra.tpcChi2NCl(), negTrackExtra.tpcChi2NCl()));
+        histos.fill(HIST("Lambda/h3dPositiveITSchi2"), centrality, pt, posTrackExtra.itsChi2NCl());
+        histos.fill(HIST("Lambda/h3dNegativeITSchi2"), centrality, pt, negTrackExtra.itsChi2NCl());
+        histos.fill(HIST("Lambda/h3dPositiveTPCchi2"), centrality, pt, posTrackExtra.tpcChi2NCl());
+        histos.fill(HIST("Lambda/h3dNegativeTPCchi2"), centrality, pt, negTrackExtra.tpcChi2NCl());
         histos.fill(HIST("Lambda/h3dPositiveITSclusters"), centrality, pt, posTrackExtra.itsNCls());
         histos.fill(HIST("Lambda/h3dNegativeITSclusters"), centrality, pt, negTrackExtra.itsNCls());
         histos.fill(HIST("Lambda/h3dPositiveTPCcrossedRows"), centrality, pt, posTrackExtra.tpcCrossedRows());
@@ -1401,6 +1433,12 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("AntiLambda/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt, v0.mAntiLambda());
       }
       if (doDetectPropQA == 3) {
+        histos.fill(HIST("AntiLambda/h3dITSchi2"), centrality, pt, std::max(posTrackExtra.itsChi2NCl(), negTrackExtra.itsChi2NCl()));
+        histos.fill(HIST("AntiLambda/h3dTPCchi2"), centrality, pt, std::max(posTrackExtra.tpcChi2NCl(), negTrackExtra.tpcChi2NCl()));
+        histos.fill(HIST("AntiLambda/h3dPositiveITSchi2"), centrality, pt, posTrackExtra.itsChi2NCl());
+        histos.fill(HIST("AntiLambda/h3dNegativeITSchi2"), centrality, pt, negTrackExtra.itsChi2NCl());
+        histos.fill(HIST("AntiLambda/h3dPositiveTPCchi2"), centrality, pt, posTrackExtra.tpcChi2NCl());
+        histos.fill(HIST("AntiLambda/h3dNegativeTPCchi2"), centrality, pt, negTrackExtra.tpcChi2NCl());
         histos.fill(HIST("AntiLambda/h3dPositiveITSclusters"), centrality, pt, posTrackExtra.itsNCls());
         histos.fill(HIST("AntiLambda/h3dNegativeITSclusters"), centrality, pt, negTrackExtra.itsNCls());
         histos.fill(HIST("AntiLambda/h3dPositiveTPCcrossedRows"), centrality, pt, posTrackExtra.tpcCrossedRows());
