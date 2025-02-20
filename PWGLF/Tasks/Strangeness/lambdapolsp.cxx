@@ -189,6 +189,10 @@ struct lambdapolsp {
         histos.add("hpy2Ty1Ax1Cvscentpteta", "hpy2Ty1Ax1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
         histos.add("hpx1Ax1Cvscentpteta", "hpx1Ax1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
         histos.add("hpy1Ay1Cvscentpteta", "hpy1Ay1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpx1Avscentpteta", "hpx1Avscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpx1Cvscentpteta", "hpx1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpy1Avscentpteta", "hpy1Avscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpy1Cvscentpteta", "hpy1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
 
         histos.add("hpx2Tx1Avscentpteta", "hpx2Tx1Avscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
         histos.add("hpx2Tx1Cvscentpteta", "hpx2Tx1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
@@ -727,6 +731,10 @@ struct lambdapolsp {
         auto x1Cy1A = modqxZDCC * modqyZDCA;
 
         // detector acceptance corrections to match v2{ZDC}
+        auto x1A = modqxZDCA;
+        auto x1C = modqxZDCC;
+        auto y1A = modqyZDCA;
+        auto y1C = modqyZDCC;
         auto x2T = TMath::Cos(2 * GetPhiInRange(track.phi()));
         auto y2T = TMath::Sin(2 * GetPhiInRange(track.phi()));
         auto x2Tx1A = TMath::Cos(2 * GetPhiInRange(track.phi())) * modqxZDCA;
@@ -775,6 +783,10 @@ struct lambdapolsp {
           histos.fill(HIST("hpy1Ay1Cvscentpteta"), centrality, track.pt(), track.eta(), y1Ay1C);
           histos.fill(HIST("hpx1Ay1Cvscentpteta"), centrality, track.pt(), track.eta(), x1Ay1C);
           histos.fill(HIST("hpy1Ax1Cvscentpteta"), centrality, track.pt(), track.eta(), x1Cy1A);
+          histos.fill(HIST("hpx1Avscentpteta"), centrality, track.pt(), track.eta(), x1A);
+          histos.fill(HIST("hpx1Cvscentpteta"), centrality, track.pt(), track.eta(), x1C);
+          histos.fill(HIST("hpy1Avscentpteta"), centrality, track.pt(), track.eta(), y1A);
+          histos.fill(HIST("hpy1Cvscentpteta"), centrality, track.pt(), track.eta(), y1C);
 
           /*} else {
             histos.fill(HIST("hpuxQxpvscentptetaneg"), centrality, track.pt(), track.eta(), uxQxp);

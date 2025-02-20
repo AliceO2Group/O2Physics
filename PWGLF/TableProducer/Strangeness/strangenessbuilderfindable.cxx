@@ -76,10 +76,12 @@ static const std::vector<std::string> tableNames{
   "CascToTraRefs",      //.31 (interlink CascCores -> TraCascCores)
   "CascToKFRefs",       //.32 (interlink CascCores -> KFCascCores)
   "TraToCascRefs",      //.33 (interlink TraCascCores -> CascCores)
-  "KFToCascRefs"        //.34 (interlink KFCascCores -> CascCores)
+  "KFToCascRefs",       //.34 (interlink KFCascCores -> CascCores)
+  "V0FoundTags",        //.35 (tags found vs findable V0s in findable mode)
+  "CascFoundTags"       //.36 (tags found vs findable Cascades in findable mode)
 };
 
-static constexpr int nTablesConst = 35;
+static constexpr int nTablesConst = 37;
 
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
@@ -113,6 +115,8 @@ static const int defaultParameters[nTablesConst][nParameters]{
   {-1},
   {-1},
   {-1}, // index 29
+  {-1},
+  {-1},
   {-1},
   {-1},
   {-1},
@@ -169,6 +173,8 @@ struct StrangenessBuilder {
                     kCascToKFRefs,
                     kTraToCascRefs,
                     kKFToCascRefs,
+                    kV0FoundTags,
+                    kCascFoundTags,
                     nTables };
 
   //__________________________________________________
@@ -234,6 +240,11 @@ struct StrangenessBuilder {
   // Produces<aod::TraToCascRefs> traToCascRefs; // tracked -> cascades
   // Produces<aod::KFToCascRefs> kfToCascRefs;   // KF -> cascades
 
+  //__________________________________________________
+  // Findable tags
+  Produces<aod::V0FoundTags> v0FoundTag;
+  Produces<aod::CascFoundTags> cascFoundTag;
+
   Configurable<LabeledArray<int>> enabledTables{"enabledTables",
                                                 {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
                                                 "Produce this table: -1 for autodetect; otherwise, 0/1 is false/true"};
@@ -274,6 +285,7 @@ struct StrangenessBuilder {
     Configurable<bool> mc_addGeneratedLambda{"mc_addGeneratedLambda", true, "add V0MCCore entry for generated, not-recoed Lambda"};
     Configurable<bool> mc_addGeneratedAntiLambda{"mc_addGeneratedAntiLambda", true, "add V0MCCore entry for generated, not-recoed AntiLambda"};
     Configurable<bool> mc_addGeneratedGamma{"mc_addGeneratedGamma", false, "add V0MCCore entry for generated, not-recoed Gamma"};
+    Configurable<bool> mc_addGeneratedGammaMakeCollinear{"mc_addGeneratedGammaMakeCollinear", true, "when adding findable gammas, mark them as collinear"};
     Configurable<bool> mc_findableDetachedV0{"mc_findableDetachedV0", false, "if true, generate findable V0s that have collisionId -1. Caution advised."};
   } v0BuilderOpts;
 
@@ -349,6 +361,7 @@ struct StrangenessBuilder {
     int pdgCode = 0;     // undefined if not MC - useful for faster finding
     int particleId = -1; // de-reference the V0 particle if necessary
     bool isCollinearV0 = false;
+    bool found = false;
   };
   struct cascadeEntry {
     int globalId = -1;
@@ -357,7 +370,7 @@ struct StrangenessBuilder {
     int posTrackId = -1;
     int negTrackId = -1;
     int bachTrackId = -1;
-    int cascadeType = 0; // extra addition (0: standard, 1: findable but not found)
+    bool found = false;
   };
   std::vector<v0Entry> v0List;
   std::vector<cascadeEntry> cascadeList;
@@ -709,6 +722,7 @@ struct StrangenessBuilder {
         currentV0Entry.pdgCode = 0;
         currentV0Entry.particleId = -1;
         currentV0Entry.isCollinearV0 = v0.isCollinearV0();
+        currentV0Entry.found = true;
         v0List.push_back(currentV0Entry);
       }
     }
@@ -789,6 +803,10 @@ struct StrangenessBuilder {
                 currentV0Entry.pdgCode = positiveTrackIndex.pdgCode;
                 currentV0Entry.particleId = positiveTrackIndex.originId;
                 currentV0Entry.isCollinearV0 = false;
+                if (v0BuilderOpts.mc_addGeneratedGammaMakeCollinear.value && currentV0Entry.pdgCode == 22) {
+                  currentV0Entry.isCollinearV0 = true;
+                }
+                currentV0Entry.found = false;
                 if (bestCollisionArray[positiveTrackIndex.mcCollisionId] < 0) {
                   collisionLessV0s++;
                 }
@@ -808,6 +826,10 @@ struct StrangenessBuilder {
               currentV0Entry.pdgCode = positiveTrackIndex.pdgCode;
               currentV0Entry.particleId = positiveTrackIndex.originId;
               currentV0Entry.isCollinearV0 = false;
+              if (v0BuilderOpts.mc_addGeneratedGammaMakeCollinear.value && currentV0Entry.pdgCode == 22) {
+                currentV0Entry.isCollinearV0 = true;
+              }
+              currentV0Entry.found = false;
               for (const auto& v0 : v0s) {
                 if (v0.posTrackId() == positiveTrackIndex.globalId &&
                     v0.negTrackId() == negativeTrackIndex.globalId) {
@@ -816,6 +838,7 @@ struct StrangenessBuilder {
                   currentV0Entry.globalId = v0.globalIndex();
                   currentV0Entry.v0Type = v0.v0Type();
                   currentV0Entry.isCollinearV0 = v0.isCollinearV0();
+                  currentV0Entry.found = true;
                   break;
                 }
               }
@@ -851,7 +874,7 @@ struct StrangenessBuilder {
           currentCascadeEntry.posTrackId = v0.posTrackId();
           currentCascadeEntry.negTrackId = v0.negTrackId();
           currentCascadeEntry.bachTrackId = cascade.bachelorId();
-          currentCascadeEntry.cascadeType = 0; // found
+          currentCascadeEntry.found = true;
           cascadeList.push_back(currentCascadeEntry);
         }
       }
@@ -954,7 +977,7 @@ struct StrangenessBuilder {
                   currentCascadeEntry.posTrackId = v0.posTrackId;
                   currentCascadeEntry.negTrackId = v0.negTrackId;
                   currentCascadeEntry.bachTrackId = bachelorTrackIndex.globalId;
-                  currentCascadeEntry.cascadeType = 1; // findable (but not found)
+                  currentCascadeEntry.found = false;
                   cascadeList.push_back(currentCascadeEntry);
                   if (bestCollisionArray[bachelorTrackIndex.mcCollisionId] < 0) {
                     collisionLessCascades++;
@@ -974,7 +997,7 @@ struct StrangenessBuilder {
                 currentCascadeEntry.posTrackId = v0.posTrackId;
                 currentCascadeEntry.negTrackId = v0.negTrackId;
                 currentCascadeEntry.bachTrackId = bachelorTrackIndex.globalId;
-                currentCascadeEntry.cascadeType = 1; // findable (but not found)
+                currentCascadeEntry.found = false;
                 if (bestCollisionArray[bachelorTrackIndex.mcCollisionId] < 0) {
                   collisionLessCascades++;
                 }
@@ -985,7 +1008,7 @@ struct StrangenessBuilder {
                       cascade.bachelorId() == bachelorTrackIndex.globalId) {
                     // this will override type, but not collision index
                     // N.B.: collision index checks still desirable!
-                    currentCascadeEntry.cascadeType = 0;
+                    currentCascadeEntry.found = true;
                     currentCascadeEntry.globalId = cascade.globalIndex();
                     break;
                   }
@@ -1224,6 +1247,12 @@ struct StrangenessBuilder {
             if (mEnabledTables[kMcV0Labels]) {
               v0labels(thisInfo.label, thisInfo.motherLabel);
               histos.fill(HIST("hTableBuildingStatistics"), kMcV0Labels);
+            }
+
+            // Construct found tag
+            if (mEnabledTables[kV0FoundTags]) {
+              v0FoundTag(v0.found);
+              histos.fill(HIST("hTableBuildingStatistics"), kV0FoundTags);
             }
 
             // Mark mcParticle as recoed (no searching necessary afterwards)
@@ -1580,6 +1609,12 @@ struct StrangenessBuilder {
             casclabels(
               thisCascInfo.label, thisCascInfo.motherLabel);
             histos.fill(HIST("hTableBuildingStatistics"), kMcCascLabels);
+          }
+
+          // Construct found tag
+          if (mEnabledTables[kCascFoundTags]) {
+            cascFoundTag(cascade.found);
+            histos.fill(HIST("hTableBuildingStatistics"), kCascFoundTags);
           }
 
           // Mark mcParticle as recoed (no searching necessary afterwards)
