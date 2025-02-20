@@ -64,10 +64,37 @@ struct sigmaanalysis {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Interaction rate selection:
+  // Event selection
+  Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
   Configurable<bool> fGetIR{"fGetIR", false, "Flag to retrieve the IR info."};
   Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   Configurable<float> minIR{"minIR", -1, "Min Interaction Rate (kHz). Leave -1 if no selection desired."};
   Configurable<float> maxIR{"maxIR", -1, "Max Interaction Rate (kHz). Leave -1 if no selection desired."};
+
+  struct : ConfigurableGroup {
+    Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
+    Configurable<bool> requireTriggerTVX{"requireTriggerTVX", true, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level"};
+    Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
+    Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
+    Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", true, "require events with at least one ITS-TPC track"};
+    Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference"};
+    Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
+    Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
+    Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", false, "reject collisions in case of pileup with another collision in the same foundBC"};
+    Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds"};
+    Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
+    Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds"};
+    Configurable<bool> requireNoCollInTimeRangeVzDep{"requireNoCollInTimeRangeVzDep", false, "reject collisions corrupted by the cannibalism, with other collisions with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ"};
+    Configurable<bool> requireNoCollInROFStd{"requireNoCollInROFStd", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF with mult. above a certain threshold"};
+    Configurable<bool> requireNoCollInROFStrict{"requireNoCollInROFStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF"};
+    Configurable<bool> requireINEL0{"requireINEL0", false, "require INEL>0 event selection"};
+    Configurable<bool> requireINEL1{"requireINEL1", false, "require INEL>1 event selection"};
+    Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position"};
+    Configurable<bool> useFT0CbasedOccupancy{"useFT0CbasedOccupancy", false, "Use sum of FT0-C amplitudes for estimating occupancy? (if not, use track-based definition)"};
+    // fast check on occupancy
+    Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
+    Configurable<float> maxOccupancy{"maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
+  } eventSelections;
 
   // Analysis strategy:
   Configurable<bool> fUseMLSel{"fUseMLSel", false, "Flag to use ML selection. If False, the standard selection is applied."};
@@ -181,9 +208,37 @@ struct sigmaanalysis {
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
 
+    // Event Counters
+    histos.add("hEventSelection", "hEventSelection", kTH1F, {{20, -0.5f, +18.5f}});
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "posZ cut");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(7, "kIsVertexITSTPC");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsGoodZvtxFT0vsPV");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTOFmatched");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kIsVertexTRDmatched");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoSameBunchPileup");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStd");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeStrict");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeNarrow");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStd");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStrict");
+    if (doPPAnalysis) {
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "INEL>0");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>1");
+    } else {
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "Below min occup.");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "Above max occup.");
+    }
+
     // All candidates received
     histos.add("GeneralQA/hInteractionRate", "hInteractionRate", kTH1F, {axisIRBinning});
+    histos.add("GeneralQA/hInteractionRatePerColl", "hInteractionRatePerColl", kTH1F, {axisIRBinning});
     histos.add("GeneralQA/hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2F, {axisCentrality, axisIRBinning});
+    histos.add("GeneralQA/hCentralityVsInteractionRatePerColl", "hCentralityVsInteractionRatePerColl", kTH2F, {axisCentrality, axisIRBinning});
     histos.add("GeneralQA/h2dArmenterosBeforeSel", "h2dArmenterosBeforeSel", {HistType::kTH2F, {axisAPAlpha, axisAPQt}});
     histos.add("GeneralQA/h2dArmenterosAfterSel", "h2dArmenterosAfterSel", {HistType::kTH2F, {axisAPAlpha, axisAPQt}});
     histos.add("GeneralQA/hMassSigma0BeforeSel", "hMassSigma0BeforeSel", kTH1F, {axisSigmaMass});
@@ -447,6 +502,94 @@ struct sigmaanalysis {
     }
   }
 
+  template <typename TCollision>
+  bool IsEventAccepted(TCollision collision)
+  // check whether the collision passes our collision selections
+  {
+    histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
+    if (eventSelections.requireSel8 && !collision.sel8()) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
+    if (eventSelections.requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 2 /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */);
+    if (eventSelections.rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 3 /* Not at ITS ROF border */);
+    if (eventSelections.rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
+    if (std::abs(collision.posZ()) > eventSelections.maxZVtxPosition) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 5 /* vertex-Z selected */);
+    if (eventSelections.requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 6 /* Contains at least one ITS-TPC track */);
+    if (eventSelections.requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 7 /* PV position consistency check */);
+    if (eventSelections.requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 8 /* PV with at least one contributor matched with TOF */);
+    if (eventSelections.requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 9 /* PV with at least one contributor matched with TRD */);
+    if (eventSelections.rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 10 /* Not at same bunch pile-up */);
+    if (eventSelections.requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds*/);
+    if (eventSelections.requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 12 /* No other collision within +/- 10 microseconds */);
+    if (eventSelections.requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 13 /* No other collision within +/- 2 microseconds */);
+    if (eventSelections.requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 14 /* No other collision within the same ITS ROF with mult. above a certain threshold */);
+    if (eventSelections.requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return false;
+    }
+    histos.fill(HIST("hEventSelection"), 15 /* No other collision within the same ITS ROF */);
+    if (doPPAnalysis) { // we are in pp
+      if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 16 /* INEL > 0 */);
+      if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 17 /* INEL > 1 */);
+    } else { // we are in Pb-Pb
+      float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+      if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 16 /* Below min occupancy */);
+      if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
+    }
+    return true;
+  }
+
   // Apply selections in sigma candidates
   template <typename TV0Object>
   bool processSigmaCandidate(TV0Object const& cand, bool isLambdalike)
@@ -485,7 +628,7 @@ struct sigmaanalysis {
         return false;
       histos.fill(HIST("SigmaSelQA/h2dPhotonV0Type"), cand.sigmapT(), cand.sigmaMass());
       if ((isMCTruePhoton || doPhotonLambdaSelQA) && (TMath::Abs(cand.photonMass()) <= PhotonMaxMass)) histos.fill(HIST("PhotonSelQA/h2dPhotonV0Type"), cand.photonPt(), cand.photonMass());
-      histos.fill(HIST("GeneralQA/h3dPhotonMass"), sigma.sigmaCentrality(), cand.photonPt(), cand.photonMass());
+      histos.fill(HIST("GeneralQA/h3dPhotonMass"), cand.sigmaCentrality(), cand.photonPt(), cand.photonMass());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 2.);
       if (TMath::Abs(cand.photonMass()) > PhotonMaxMass)
         return false;
@@ -587,7 +730,7 @@ struct sigmaanalysis {
 
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 17.);
       histos.fill(HIST("GeneralQA/hPhotonPhi"), cand.photonPhi());
-      if (((cand.photonPhi() > PhotonPhiMax1) && (cand.photonPhi() < PhotonPhiMin2)) || (cand.photonPhi() > PhotonPhiMax2) && (cand.photonPhi() < PhotonPhiMin1))
+      if (((cand.photonPhi() > PhotonPhiMax1) && (cand.photonPhi() < PhotonPhiMin2)) || ((cand.photonPhi() > PhotonPhiMax2) && (cand.photonPhi() < PhotonPhiMin1)))
         return false;
       if (isMCTruePhoton || doPhotonLambdaSelQA) histos.fill(HIST("PhotonSelQA/h2dPhotonPhi"), cand.photonPt(), cand.photonMass());
 
@@ -686,7 +829,7 @@ struct sigmaanalysis {
 
         // Mass Selection
         histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 29.);
-        histos.fill(HIST("GeneralQA/h3dLambdaMass"), sigma.sigmaCentrality(), cand.lambdaPt(), cand.lambdaMass());
+        histos.fill(HIST("GeneralQA/h3dLambdaMass"), cand.sigmaCentrality(), cand.lambdaPt(), cand.lambdaMass());
         if (TMath::Abs(cand.lambdaMass() - o2::constants::physics::MassLambda0) > LambdaWindow)
           return false;
         histos.fill(HIST("SigmaSelQA/h2dLambdaMass"), cand.sigmapT(), cand.sigmaMass());
@@ -719,7 +862,7 @@ struct sigmaanalysis {
         histos.fill(HIST("SigmaSelQA/h2dALambdaDCADauToPV"), cand.sigmapT(), cand.sigmaMass());
         // Mass Selection
         histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 29.);
-        histos.fill(HIST("GeneralQA/h3dAntiLambdaMass"), sigma.sigmaCentrality(), cand.lambdaPt(), cand.antilambdaMass());
+        histos.fill(HIST("GeneralQA/h3dAntiLambdaMass"), cand.sigmaCentrality(), cand.lambdaPt(), cand.antilambdaMass());
         if (TMath::Abs(cand.antilambdaMass() - o2::constants::physics::MassLambda0) > LambdaWindow)
           return false;
         histos.fill(HIST("SigmaSelQA/h2dAntiLambdaMass"), cand.sigmapT(), cand.sigmaMass());
@@ -756,7 +899,6 @@ struct sigmaanalysis {
       histos.fill(HIST("MC/h2dSigmaMCPtVsLambdaMCPt"), sigma.sigmaMCPt(), sigma.lambdaMCPt());
       histos.fill(HIST("MC/h2dSigmaMCPtVsGammaMCPt"), sigma.sigmaMCPt(), sigma.photonMCPt());
       histos.fill(HIST("MC/h3dMassAllSigma0sBeforesel"), sigma.sigmaCentrality(), sigma.sigmapT(), sigma.sigmaMass());
-
       histos.fill(HIST("MC/h2dArmenterosBeforeSel"), sigma.photonAlpha(), sigma.photonQt());
       histos.fill(HIST("MC/h2dArmenterosBeforeSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
       histos.fill(HIST("MC/hMassSigma0BeforeSel"), sigma.sigmaMass());
@@ -921,9 +1063,23 @@ struct sigmaanalysis {
     }
   }
 
+
+  void processCollisions(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions)
+  {
+    for (const auto& coll : collisions) {
+      if (!IsEventAccepted(coll)) {
+        continue;
+      }
+      double interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource) * 1.e-3;
+      histos.fill(HIST("GeneralQA/hInteractionRatePerColl"), interactionRate);
+      histos.fill(HIST("GeneralQA/hCentralityVsInteractionRatePerColl"), coll.centFT0C(), interactionRate);
+    }
+  }
+
   // PROCESS_SWITCH(sigmaanalysis, processCounterQA, "Check standard counter correctness", true);
   PROCESS_SWITCH(sigmaanalysis, processMonteCarlo, "Do Monte-Carlo-based analysis", false);
   PROCESS_SWITCH(sigmaanalysis, processRealData, "Do real data analysis", true);
+  PROCESS_SWITCH(sigmaanalysis, processCollisions, "Process collisions to retrieve IR info", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
