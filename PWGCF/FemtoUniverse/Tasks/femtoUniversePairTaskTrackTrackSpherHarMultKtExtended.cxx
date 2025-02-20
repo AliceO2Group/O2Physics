@@ -140,7 +140,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
 
   Filter collfilterFDtable = (o2::aod::femtouniversecollision::multV0M > ConfV0MLow) && (o2::aod::femtouniversecollision::multV0M < ConfV0MHigh);
   Filter collfilterFDExttable = (o2::aod::femtouniversecollision::interactionRate > ConfIntRateLow) && (o2::aod::femtouniversecollision::interactionRate < ConfIntRateHigh) &&
-                                (o2::aod::femtouniversecollision::occupancy > ConfTPCOccupancyLow) && (o2::aod::femtouniversecollision::occupancy < ConfTPCOccupancyHigh);
+                                (o2::aod::femtouniversecollision::occupancy >= ConfTPCOccupancyLow) && (o2::aod::femtouniversecollision::occupancy < ConfTPCOccupancyHigh);
   using FilteredFDCollisions = soa::Filtered<soa::Join<aod::FdCollisions, aod::FDExtCollisions>>;
   using FilteredFDCollision = FilteredFDCollisions::iterator;
   // Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.ConfEtaMax); // example filtering on configurable

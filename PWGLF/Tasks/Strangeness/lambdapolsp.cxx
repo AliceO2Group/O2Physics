@@ -190,6 +190,19 @@ struct lambdapolsp {
         histos.add("hpx1Ax1Cvscentpteta", "hpx1Ax1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
         histos.add("hpy1Ay1Cvscentpteta", "hpy1Ay1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
 
+        histos.add("hpx2Tx1Avscentpteta", "hpx2Tx1Avscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpx2Tx1Cvscentpteta", "hpx2Tx1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpx2Ty1Avscentpteta", "hpx2Ty1Avscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpx2Ty1Cvscentpteta", "hpx2Ty1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpy2Tx1Avscentpteta", "hpy2Tx1Avscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpy2Ty1Cvscentpteta", "hpy2Ty1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpy2Ty1Avscentpteta", "hpy2Ty1Avscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpy2Tx1Cvscentpteta", "hpy2Tx1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpx1Ay1Cvscentpteta", "hpx1Ay1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpy1Ax1Cvscentpteta", "hpy1Ax1Cvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpx2Tvscentpteta", "hpx2Tvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpy2Tvscentpteta", "hpy2Tvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
+
         histos.add("hpuxvscentpteta", "hpuxvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
         histos.add("hpuyvscentpteta", "hpuyvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, configetaAxis, spAxis}, true);
         /*
@@ -622,14 +635,24 @@ struct lambdapolsp {
     auto psiZDCC = collision.psiZDCC();
     auto psiZDCA = collision.psiZDCA();
 
+    double modqxZDCA;
+    double modqyZDCA;
+    double modqxZDCC;
+    double modqyZDCC;
+
     if (cqvas) {
-      qxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
-      qyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
-      qxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
-      qyZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Sin(psiZDCC);
+      modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
+      modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
+      modqxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
+      modqyZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Sin(psiZDCC);
+    } else {
+      modqxZDCA = qxZDCA;
+      modqyZDCA = qyZDCA;
+      modqxZDCC = qxZDCC;
+      modqyZDCC = qyZDCC;
     }
 
-    auto psiZDC = TMath::ATan2((qyZDCC - qyZDCA), (qxZDCC - qxZDCA)); // full event plane
+    auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane
     if (useonlypsis) {
       psiZDC = psiZDCC - psiZDCA;
     }
@@ -652,11 +675,11 @@ struct lambdapolsp {
     ///////////checking v1////////////////////////////////
     if (checkwithpub) {
 
-      auto QxtQxp = qxZDCA * qxZDCC;
-      auto QytQyp = qyZDCA * qyZDCC;
+      auto QxtQxp = modqxZDCA * modqxZDCC;
+      auto QytQyp = modqyZDCA * modqyZDCC;
       auto Qxytp = QxtQxp + QytQyp;
-      auto QxpQyt = qxZDCA * qyZDCC;
-      auto QxtQyp = qxZDCC * qyZDCA;
+      auto QxpQyt = modqxZDCA * modqyZDCC;
+      auto QxtQyp = modqxZDCC * modqyZDCA;
 
       histos.fill(HIST("hpQxtQxpvscent"), centrality, QxtQxp);
       histos.fill(HIST("hpQytQypvscent"), centrality, QytQyp);
@@ -664,10 +687,10 @@ struct lambdapolsp {
       histos.fill(HIST("hpQxpQytvscent"), centrality, QxpQyt);
       histos.fill(HIST("hpQxtQypvscent"), centrality, QxtQyp);
 
-      histos.fill(HIST("hpQxpvscent"), centrality, qxZDCA);
-      histos.fill(HIST("hpQxtvscent"), centrality, qxZDCC);
-      histos.fill(HIST("hpQypvscent"), centrality, qyZDCA);
-      histos.fill(HIST("hpQytvscent"), centrality, qyZDCC);
+      histos.fill(HIST("hpQxpvscent"), centrality, modqxZDCA);
+      histos.fill(HIST("hpQxtvscent"), centrality, modqxZDCC);
+      histos.fill(HIST("hpQypvscent"), centrality, modqyZDCA);
+      histos.fill(HIST("hpQytvscent"), centrality, modqyZDCC);
 
       for (auto track : tracks) {
         if (!selectionTrack(track)) {
@@ -682,24 +705,38 @@ struct lambdapolsp {
         auto uy = TMath::Sin(GetPhiInRange(track.phi()));
         // auto py=track.py();
 
-        auto uxQxp = ux * qxZDCA;
-        auto uyQyp = uy * qyZDCA;
+        auto uxQxp = ux * modqxZDCA;
+        auto uyQyp = uy * modqyZDCA;
         auto uxyQxyp = uxQxp + uyQyp;
-        auto uxQxt = ux * qxZDCC;
-        auto uyQyt = uy * qyZDCC;
+        auto uxQxt = ux * modqxZDCC;
+        auto uyQyt = uy * modqyZDCC;
         auto uxyQxyt = uxQxt + uyQyt;
-        auto oddv1 = ux * (qxZDCA - qxZDCC) + uy * (qyZDCA - qyZDCC);
-        auto evenv1 = ux * (qxZDCA + qxZDCC) + uy * (qyZDCA + qyZDCC);
+        auto oddv1 = ux * (modqxZDCA - modqxZDCC) + uy * (modqyZDCA - modqyZDCC);
+        auto evenv1 = ux * (modqxZDCA + modqxZDCC) + uy * (modqyZDCA + modqyZDCC);
         auto v21 = TMath::Cos(2 * (GetPhiInRange(track.phi()) - psiZDCA - psiZDCC));
         auto v22 = TMath::Cos(2 * (GetPhiInRange(track.phi()) + psiZDCA - psiZDCC));
         auto v23 = TMath::Cos(2 * (GetPhiInRange(track.phi()) - psiZDC));
 
-        auto x2Tx1Ax1C = TMath::Cos(2 * GetPhiInRange(track.phi())) * qxZDCA * qxZDCC;
-        auto x2Ty1Ay1C = TMath::Cos(2 * GetPhiInRange(track.phi())) * qyZDCA * qyZDCC;
-        auto y2Tx1Ay1C = TMath::Sin(2 * GetPhiInRange(track.phi())) * qxZDCA * qyZDCC;
-        auto y2Ty1Ax1C = TMath::Sin(2 * GetPhiInRange(track.phi())) * qyZDCA * qxZDCC;
-        auto x1Ax1C = qxZDCA * qxZDCC;
-        auto y1Ay1C = qyZDCA * qyZDCC;
+        auto x2Tx1Ax1C = TMath::Cos(2 * GetPhiInRange(track.phi())) * modqxZDCA * modqxZDCC;
+        auto x2Ty1Ay1C = TMath::Cos(2 * GetPhiInRange(track.phi())) * modqyZDCA * modqyZDCC;
+        auto y2Tx1Ay1C = TMath::Sin(2 * GetPhiInRange(track.phi())) * modqxZDCA * modqyZDCC;
+        auto y2Ty1Ax1C = TMath::Sin(2 * GetPhiInRange(track.phi())) * modqyZDCA * modqxZDCC;
+        auto x1Ax1C = modqxZDCA * modqxZDCC;
+        auto y1Ay1C = modqyZDCA * modqyZDCC;
+        auto x1Ay1C = modqxZDCA * modqyZDCC;
+        auto x1Cy1A = modqxZDCC * modqyZDCA;
+
+        // detector acceptance corrections to match v2{ZDC}
+        auto x2T = TMath::Cos(2 * GetPhiInRange(track.phi()));
+        auto y2T = TMath::Sin(2 * GetPhiInRange(track.phi()));
+        auto x2Tx1A = TMath::Cos(2 * GetPhiInRange(track.phi())) * modqxZDCA;
+        auto x2Tx1C = TMath::Cos(2 * GetPhiInRange(track.phi())) * modqxZDCC;
+        auto x2Ty1A = TMath::Cos(2 * GetPhiInRange(track.phi())) * modqyZDCA;
+        auto x2Ty1C = TMath::Cos(2 * GetPhiInRange(track.phi())) * modqyZDCC;
+        auto y2Tx1A = TMath::Sin(2 * GetPhiInRange(track.phi())) * modqxZDCA;
+        auto y2Tx1C = TMath::Sin(2 * GetPhiInRange(track.phi())) * modqxZDCC;
+        auto y2Ty1A = TMath::Sin(2 * GetPhiInRange(track.phi())) * modqyZDCA;
+        auto y2Ty1C = TMath::Sin(2 * GetPhiInRange(track.phi())) * modqyZDCC;
 
         if (globalpt) {
           // if (sign > 0) {
@@ -724,8 +761,20 @@ struct lambdapolsp {
           histos.fill(HIST("hpx2Ty1Ay1Cvscentpteta"), centrality, track.pt(), track.eta(), x2Ty1Ay1C);
           histos.fill(HIST("hpy2Tx1Ay1Cvscentpteta"), centrality, track.pt(), track.eta(), y2Tx1Ay1C);
           histos.fill(HIST("hpy2Ty1Ax1Cvscentpteta"), centrality, track.pt(), track.eta(), y2Ty1Ax1C);
+          histos.fill(HIST("hpx2Tvscentpteta"), centrality, track.pt(), track.eta(), x2T);
+          histos.fill(HIST("hpy2Tvscentpteta"), centrality, track.pt(), track.eta(), y2T);
+          histos.fill(HIST("hpx2Tx1Avscentpteta"), centrality, track.pt(), track.eta(), x2Tx1A);
+          histos.fill(HIST("hpx2Tx1Cvscentpteta"), centrality, track.pt(), track.eta(), x2Tx1C);
+          histos.fill(HIST("hpx2Ty1Avscentpteta"), centrality, track.pt(), track.eta(), x2Ty1A);
+          histos.fill(HIST("hpx2Ty1Cvscentpteta"), centrality, track.pt(), track.eta(), x2Ty1C);
+          histos.fill(HIST("hpy2Tx1Avscentpteta"), centrality, track.pt(), track.eta(), y2Tx1A);
+          histos.fill(HIST("hpy2Ty1Cvscentpteta"), centrality, track.pt(), track.eta(), y2Ty1C);
+          histos.fill(HIST("hpy2Ty1Avscentpteta"), centrality, track.pt(), track.eta(), y2Ty1A);
+          histos.fill(HIST("hpy2Tx1Cvscentpteta"), centrality, track.pt(), track.eta(), y2Tx1C);
           histos.fill(HIST("hpx1Ax1Cvscentpteta"), centrality, track.pt(), track.eta(), x1Ax1C);
           histos.fill(HIST("hpy1Ay1Cvscentpteta"), centrality, track.pt(), track.eta(), y1Ay1C);
+          histos.fill(HIST("hpx1Ay1Cvscentpteta"), centrality, track.pt(), track.eta(), x1Ay1C);
+          histos.fill(HIST("hpy1Ax1Cvscentpteta"), centrality, track.pt(), track.eta(), x1Cy1A);
 
           /*} else {
             histos.fill(HIST("hpuxQxpvscentptetaneg"), centrality, track.pt(), track.eta(), uxQxp);

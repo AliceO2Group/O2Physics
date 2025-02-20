@@ -304,7 +304,10 @@ struct SGResonanceAnalyzer {
     if (use_tof && pt >= pt2 && pt < pt3 && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut3) {
       return true;
     }
-    if (pt > pt3 && use_tof && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < nsigmatof_cut) {
+    if (use_tof && pt >= pt3 && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
+      return true;
+    }
+    if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < nsigmatof_cut) {
       return true;
     }
     if (!use_tof && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
@@ -327,7 +330,10 @@ struct SGResonanceAnalyzer {
     if (use_tof && pt >= pt2 && pt < pt3 && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut3) {
       return true;
     }
-    if (pt > pt3 && use_tof && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < nsigmatof_cut) {
+    if (use_tof && pt >= pt3 && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
+      return true;
+    }
+    if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < nsigmatof_cut) {
       return true;
     }
     if (!use_tof && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {

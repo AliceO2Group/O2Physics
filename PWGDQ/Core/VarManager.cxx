@@ -364,8 +364,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMultNTracksTPCOnly] = "";
   fgVariableNames[kMultNTracksITSTPC] = "# ITS-TPC tracks in PV";
   fgVariableUnits[kMultNTracksITSTPC] = "";
+  fgVariableNames[kMultNTracksPVeta1] = "# Mult Tracks PV |#eta| < 1";
+  fgVariableUnits[kMultNTracksPVeta1] = "";
+  fgVariableNames[kMultNTracksPVetaHalf] = "# Mult Tracks PV |#eta| < 0.5";
+  fgVariableUnits[kMultNTracksPVetaHalf] = "";
   fgVariableNames[kTrackOccupancyInTimeRange] = "track occupancy in TPC drift time (PV tracks)";
   fgVariableUnits[kTrackOccupancyInTimeRange] = "";
+  fgVariableNames[kFT0COccupancyInTimeRange] = "FT0C occupancy";
+  fgVariableUnits[kFT0COccupancyInTimeRange] = "";
   fgVariableNames[kNoCollInTimeRangeStandard] = "track occupancy in TPC drift standart time";
   fgVariableUnits[kNoCollInTimeRangeStandard] = "";
   fgVariableNames[kMultAllTracksITSTPC] = "# ITS-TPC tracks";
@@ -410,6 +416,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kNTPCmedianTimeShortC] = "#mu s";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
+  fgVariableNames[kPt1] = "p_{T1}";
+  fgVariableUnits[kPt1] = "GeV/c";
+  fgVariableNames[kPt2] = "p_{T2}";
+  fgVariableUnits[kPt2] = "GeV/c";
   fgVariableNames[kInvPt] = "1/p_{T}";
   fgVariableUnits[kInvPt] = "1/(GeV/c)";
   fgVariableNames[kP] = "p";
@@ -432,6 +442,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDeltaPtotTracks] = "GeV/c";
   fgVariableNames[kCharge] = "charge";
   fgVariableUnits[kCharge] = "";
+  fgVariableNames[kCharge1] = "charge track 1";
+  fgVariableUnits[kCharge1] = "";
+  fgVariableNames[kCharge2] = "charge track 2";
+  fgVariableUnits[kCharge2] = "";
   fgVariableNames[kPin] = "p_{IN}";
   fgVariableUnits[kPin] = "GeV/c";
   fgVariableNames[kPin_leg1] = "p_{IN}";
@@ -581,7 +595,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCPy] = "GeV/c";
   fgVariableNames[kMCPz] = "MC pz";
   fgVariableUnits[kMCPz] = "GeV/c";
-  fgVariableNames[kMCPt] = "MC pt";
+  fgVariableNames[kMCPt] = "MC p_{T}";
   fgVariableUnits[kMCPt] = "GeV/c";
   fgVariableNames[kMCPhi] = "#varphi";
   fgVariableUnits[kMCPhi] = "rad";
@@ -591,6 +605,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCY] = "";
   fgVariableNames[kMCE] = "MC Energy";
   fgVariableUnits[kMCE] = "GeV";
+  fgVariableNames[kMCMass] = "MC Mass";
+  fgVariableUnits[kMCMass] = "GeV/c2";
   fgVariableNames[kMCVx] = "MC vx";
   fgVariableUnits[kMCVx] = "cm"; // TODO: check the unit
   fgVariableNames[kMCVy] = "MC vy";
@@ -629,6 +645,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingTauzProjected] = "ns";
   fgVariableNames[kVertexingTauxyProjected] = "Pair pseudo-proper Tauxy";
   fgVariableUnits[kVertexingTauxyProjected] = "ns";
+  fgVariableNames[kVertexingTauxyProjectedPoleJPsiMass] = "Pair pseudo-proper Tauxy (with pole JPsi mass)";
+  fgVariableUnits[kVertexingTauxyProjectedPoleJPsiMass] = "ns";
   fgVariableNames[kVertexingTauxyzProjected] = "Pair pseudo-proper Tauxyz";
   fgVariableUnits[kVertexingTauxyzProjected] = "ns";
   fgVariableNames[kCosPointingAngle] = "cos(#theta_{pointing})";
@@ -1142,7 +1160,10 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMultNTracksITSOnly"] = kMultNTracksITSOnly;
   fgVarNamesMap["kMultNTracksTPCOnly"] = kMultNTracksTPCOnly;
   fgVarNamesMap["kMultNTracksITSTPC"] = kMultNTracksITSTPC;
+  fgVarNamesMap["kMultNTracksPVeta1"] = kMultNTracksPVeta1;
+  fgVarNamesMap["kMultNTracksPVetaHalf"] = kMultNTracksPVetaHalf;
   fgVarNamesMap["kTrackOccupancyInTimeRange"] = kTrackOccupancyInTimeRange;
+  fgVarNamesMap["kFT0COccupancyInTimeRange"] = kFT0COccupancyInTimeRange;
   fgVarNamesMap["kNoCollInTimeRangeStandard"] = kNoCollInTimeRangeStandard;
   fgVarNamesMap["kMultAllTracksTPCOnly"] = kMultAllTracksTPCOnly;
   fgVarNamesMap["kMultAllTracksITSTPC"] = kMultAllTracksITSTPC;
@@ -1508,6 +1529,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kVertexingLxyzProjected"] = kVertexingLxyzProjected;
   fgVarNamesMap["kVertexingTauzProjected"] = kVertexingTauzProjected;
   fgVarNamesMap["kVertexingTauxyProjected"] = kVertexingTauxyProjected;
+  fgVarNamesMap["kVertexingTauxyProjectedPoleJPsiMass"] = kVertexingTauxyProjectedPoleJPsiMass;
   fgVarNamesMap["kVertexingTauxyProjectedNs"] = kVertexingTauxyProjectedNs;
   fgVarNamesMap["kVertexingTauxyzProjected"] = kVertexingTauxyzProjected;
   fgVarNamesMap["kVertexingTauz"] = kVertexingTauz;

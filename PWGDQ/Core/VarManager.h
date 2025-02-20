@@ -17,6 +17,7 @@
 #ifndef PWGDQ_CORE_VARMANAGER_H_
 #define PWGDQ_CORE_VARMANAGER_H_
 
+#include <Framework/AnalysisDataModel.h>
 #include <Math/Vector4Dfwd.h>
 #include <cstdint>
 #ifndef HomogeneousField
@@ -104,6 +105,7 @@ class VarManager : public TObject
     CollisionMultExtra = BIT(18),
     ReducedEventMultExtra = BIT(19),
     CollisionQvectCentr = BIT(20),
+    RapidityGapFilter = BIT(21),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -129,7 +131,9 @@ class VarManager : public TObject
     TrackTPCPID = BIT(22),
     TrackMFT = BIT(23),
     ReducedTrackCollInfo = BIT(24), // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
-    ReducedMuonCollInfo = BIT(25)   // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
+    ReducedMuonCollInfo = BIT(25),  // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
+    MuonRealign = BIT(26),
+    MuonCovRealign = BIT(27)
   };
 
   enum PairCandidateType {
@@ -239,7 +243,10 @@ class VarManager : public TObject
     kMultNTracksITSOnly,
     kMultNTracksTPCOnly,
     kMultNTracksITSTPC,
+    kMultNTracksPVeta1,
+    kMultNTracksPVetaHalf,
     kTrackOccupancyInTimeRange,
+    kFT0COccupancyInTimeRange,
     kNoCollInTimeRangeStandard,
     kMultAllTracksTPCOnly,
     kMultAllTracksITSTPC,
@@ -597,6 +604,7 @@ class VarManager : public TObject
     kMCPx,
     kMCPy,
     kMCPz,
+    kMCMass,
     kMCE,
     kMCVx,
     kMCVy,
@@ -628,6 +636,7 @@ class VarManager : public TObject
     kVertexingLxyzProjected,
     kVertexingTauzProjected,
     kVertexingTauxyProjected,
+    kVertexingTauxyProjectedPoleJPsiMass,
     kVertexingTauxyProjectedNs,
     kVertexingTauxyzProjected,
     kVertexingTauz,
@@ -1045,8 +1054,8 @@ class VarManager : public TObject
   static void FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
   template <uint32_t fillMap, int pairType, typename T1, typename T2>
   static void FillPairME(T1 const& t1, T2 const& t2, float* values = nullptr);
-  template <typename T1, typename T2>
-  static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr, PairCandidateType pairType = kDecayToEE);
+  template <int pairType, typename T1, typename T2>
+  static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <typename T1, typename T2, typename T3>
   static void FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
   template <int candidateType, typename T1, typename T2>
@@ -1345,7 +1354,7 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     }
   }
 
-  if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
+  if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0 || (fillMap & MuonCovRealign) > 0) {
     o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
     values[kPt] = propmuon.getPt();
     values[kX] = propmuon.getX();
@@ -1446,6 +1455,9 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kTrackOccupancyInTimeRange]) {
       values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
     }
+    if (fgUsedVars[kFT0COccupancyInTimeRange]) {
+      values[kFT0COccupancyInTimeRange] = event.ft0cOccupancyInTimeRange();
+    }
     if (fgUsedVars[kNoCollInTimeRangeStandard]) {
       values[kNoCollInTimeRangeStandard] = event.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
     }
@@ -1533,13 +1545,22 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & CollisionMult) > 0 || (fillMap & ReducedEventExtended) > 0) {
+    if constexpr ((fillMap & RapidityGapFilter) > 0) {
+      // UPC: Use the FIT signals from the nearest BC with FIT amplitude above threshold
+      values[kMultFV0A] = event.newBcMultFV0A();
+      values[kMultFT0A] = event.newBcMultFT0A();
+      values[kMultFT0C] = event.newBcMultFT0C();
+      values[kMultFDDA] = event.newBcMultFDDA();
+      values[kMultFDDC] = event.newBcMultFDDC();
+    } else {
+      values[kMultFV0A] = event.multFV0A();
+      values[kMultFT0A] = event.multFT0A();
+      values[kMultFT0C] = event.multFT0C();
+      values[kMultFDDA] = event.multFDDA();
+      values[kMultFDDC] = event.multFDDC();
+    }
     values[kMultTPC] = event.multTPC();
-    values[kMultFV0A] = event.multFV0A();
     values[kMultFV0C] = event.multFV0C();
-    values[kMultFT0A] = event.multFT0A();
-    values[kMultFT0C] = event.multFT0C();
-    values[kMultFDDA] = event.multFDDA();
-    values[kMultFDDC] = event.multFDDC();
     values[kMultZNA] = event.multZNA();
     values[kMultZNC] = event.multZNC();
     values[kMultTracklets] = event.multTracklets();
@@ -1554,9 +1575,12 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultNTracksITSOnly] = event.multNTracksITSOnly();
     values[kMultNTracksTPCOnly] = event.multNTracksTPCOnly();
     values[kMultNTracksITSTPC] = event.multNTracksITSTPC();
+    values[kMultNTracksPVeta1] = event.multNTracksPVeta1();
+    values[kMultNTracksPVetaHalf] = event.multNTracksPVetaHalf();
     values[kMultAllTracksTPCOnly] = event.multAllTracksTPCOnly();
     values[kMultAllTracksITSTPC] = event.multAllTracksITSTPC();
     values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
+    values[kFT0COccupancyInTimeRange] = event.ft0cOccupancyInTimeRange();
     if constexpr ((fillMap & ReducedEventMultExtra) > 0) {
       values[kNTPCcontribLongA] = event.nTPCoccupContribLongA();
       values[kNTPCcontribLongC] = event.nTPCoccupContribLongC();
@@ -1856,7 +1880,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMCEventImpParam] = event.impactParameter();
   }
 
-  if constexpr ((fillMap & EventFilter) > 0) {
+  if constexpr ((fillMap & EventFilter) > 0 || (fillMap & RapidityGapFilter) > 0) {
     values[kIsDoubleGap] = (event.eventFilter() & (static_cast<uint64_t>(1) << kDoubleGap)) > 0;
     values[kIsSingleGapA] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapA)) > 0;
     values[kIsSingleGapC] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapC)) > 0;
@@ -2090,7 +2114,7 @@ void VarManager::FillTrack(T const& track, float* values)
   }
 
   // Quantities based on the basic table (contains just kine information and filter bits)
-  if constexpr ((fillMap & Track) > 0 || (fillMap & Muon) > 0 || (fillMap & ReducedTrack) > 0 || (fillMap & ReducedMuon) > 0) {
+  if constexpr ((fillMap & Track) > 0 || (fillMap & Muon) > 0 || (fillMap & MuonRealign) > 0 || (fillMap & ReducedTrack) > 0 || (fillMap & ReducedMuon) > 0) {
     values[kPt] = track.pt();
     values[kSignedPt] = track.pt() * track.sign();
     if (fgUsedVars[kP]) {
@@ -2148,6 +2172,10 @@ void VarManager::FillTrack(T const& track, float* values)
       for (int i = 0; i < 8; i++) {
         values[kIsDalitzLeg + i] = track.filteringFlags_bit(VarManager::kDalitzBits + i);
       }
+    }
+
+    if constexpr ((fillMap & MuonRealign) > 0) {
+      values[kMuonChi2] = track.chi2();
     }
   }
 
@@ -2475,7 +2503,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMuonTimeRes] = track.trackTimeRes();
   }
   // Quantities based on the muon covariance table
-  if constexpr ((fillMap & ReducedMuonCov) > 0 || (fillMap & MuonCov) > 0) {
+  if constexpr ((fillMap & ReducedMuonCov) > 0 || (fillMap & MuonCov) > 0 || (fillMap & MuonCovRealign) > 0) {
     values[kX] = track.x();
     values[kY] = track.y();
     values[kZ] = track.z();
@@ -2532,7 +2560,7 @@ void VarManager::FillTrackCollision(T const& track, C const& collision, float* v
       }
     }
   }
-  if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
+  if constexpr ((fillMap & MuonCov) > 0 || (fillMap & MuonCovRealign) > 0 || (fillMap & ReducedMuonCov) > 0) {
 
     o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(track, collision, kToDCA);
 
@@ -2692,6 +2720,9 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     m2 = o2::constants::physics::MassMuon;
   }
 
+  values[kCharge] = t1.sign() + t2.sign();
+  values[kCharge1] = t1.sign();
+  values[kCharge2] = t2.sign();
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -2988,6 +3019,7 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
     values[kEta] = v123.Eta();
     values[kPhi] = v123.Phi();
     values[kRap] = -v123.Rapidity();
+    values[kCharge] = t1.sign() + t2.sign() + t3.sign();
   }
 
   if (pairType == kTripleCandidateToPKPi) {
@@ -3126,8 +3158,8 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   }
 }
 
-template <typename T1, typename T2>
-void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandidateType pairType)
+template <int pairType, typename T1, typename T2>
+void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
 {
   if (!values) {
     values = fgValues;
@@ -3145,6 +3177,11 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
     m2 = o2::constants::physics::MassPionCharged;
   }
 
+  if (pairType == kDecayToKPi) {
+    m1 = o2::constants::physics::MassKaonCharged;
+    m2 = o2::constants::physics::MassPionCharged;
+  }
+
   if (pairType == kElectronMuon) {
     m2 = o2::constants::physics::MassMuon;
   }
@@ -3153,11 +3190,11 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-  values[kMass] = v12.M();
-  values[kPt] = v12.Pt();
-  values[kEta] = v12.Eta();
-  values[kPhi] = v12.Phi();
-  values[kRap] = -v12.Rapidity();
+  values[kMCMass] = v12.M();
+  values[kMCPt] = v12.Pt();
+  values[kMCEta] = v12.Eta();
+  values[kMCPhi] = v12.Phi();
+  values[kMCY] = -v12.Rapidity();
 }
 
 template <typename T1, typename T2, typename T3>
@@ -3379,6 +3416,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingLxyzProjected] = ((secondaryVertex[0] - collision.posX()) * v12.Px()) + ((secondaryVertex[1] - collision.posY()) * v12.Py()) + ((secondaryVertex[2] - collision.posZ()) * v12.Pz());
       values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()) + (v12.Pz() * v12.Pz()));
       values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v12.M() / (v12.Pt());
+      values[kVertexingTauxyProjectedPoleJPsiMass] = values[kVertexingLxyProjected] * o2::constants::physics::MassJPsi / (v12.Pt());
       values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
       values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v12.M() / TMath::Abs(v12.Pz());
       values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v12.M() / (v12.P());
@@ -3467,6 +3505,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         values[kVertexingLxyzProjected] = (dxPair2PV * KFGeoTwoProng.GetPx()) + (dyPair2PV * KFGeoTwoProng.GetPy()) + (dzPair2PV * KFGeoTwoProng.GetPz());
         values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((KFGeoTwoProng.GetPx() * KFGeoTwoProng.GetPx()) + (KFGeoTwoProng.GetPy() * KFGeoTwoProng.GetPy()) + (KFGeoTwoProng.GetPz() * KFGeoTwoProng.GetPz()));
         values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * KFGeoTwoProng.GetMass() / (KFGeoTwoProng.GetPt());
+        values[kVertexingTauxyProjectedPoleJPsiMass] = values[kVertexingLxyProjected] * o2::constants::physics::MassJPsi / (KFGeoTwoProng.GetPt());
         values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
         values[kVertexingTauzProjected] = values[kVertexingLzProjected] * KFGeoTwoProng.GetMass() / TMath::Abs(KFGeoTwoProng.GetPz());
       }

@@ -34,10 +34,31 @@ namespace o2::aod
 namespace dqppfilter
 {
 DECLARE_SOA_COLUMN(EventFilter, eventFilter, uint64_t); //! Bit-field used for the high level event triggering
+DECLARE_SOA_COLUMN(NewBcMultFT0A, newBcMultFT0A, float); //! sum of amplitudes on A side of FT0
+DECLARE_SOA_COLUMN(NewBcMultFT0C, newBcMultFT0C, float); //! sum of amplitudes on C side of FT0
+DECLARE_SOA_COLUMN(NewBcMultFDDA, newBcMultFDDA, float); //! sum of amplitudes on A side of FDD
+DECLARE_SOA_COLUMN(NewBcMultFDDC, newBcMultFDDC, float); //! sum of amplitudes on C side of FDD
+DECLARE_SOA_COLUMN(NewBcMultFV0A, newBcMultFV0A, float); //! sum of amplitudes on A side of FDD
 }
 
 DECLARE_SOA_TABLE(DQEventFilter, "AOD", "EVENTFILTER", //! Store event-level decisions (DQ high level triggers)
                   dqppfilter::EventFilter);
+
+DECLARE_SOA_TABLE(DQRapidityGapFilter, "AOD", "RAPIDITYGAPFILTER",
+                  dqppfilter::EventFilter,
+                  dqppfilter::NewBcMultFT0A,
+                  dqppfilter::NewBcMultFT0C,
+                  dqppfilter::NewBcMultFDDA,
+                  dqppfilter::NewBcMultFDDC,
+                  dqppfilter::NewBcMultFV0A,
+                  zdc::EnergyCommonZNA,
+                  zdc::EnergyCommonZNC,
+                  zdc::EnergyCommonZPA,
+                  zdc::EnergyCommonZPC,
+                  zdc::TimeZNA,
+                  zdc::TimeZNC,
+                  zdc::TimeZPA,
+                  zdc::TimeZPC);
 
 namespace reducedevent
 {
@@ -131,10 +152,17 @@ DECLARE_SOA_TABLE(ReducedEventsExtended, "AOD", "REEXTENDED", //!  Extended even
                   mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV,
                   cent::CentFT0C);
 
-DECLARE_SOA_TABLE(ReducedEventsMultPV, "AOD", "REMULTPV", //!  Multiplicity information for primary vertex
+DECLARE_SOA_TABLE(ReducedEventsMultPV_000, "AOD", "REMULTPV", //!  Multiplicity information for primary vertex
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
                   mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
                   evsel::NumTracksInTimeRange);
+
+DECLARE_SOA_TABLE_VERSIONED(ReducedEventsMultPV_001, "AOD", "REMULTPV", 1, //!  Multiplicity information for primary vertex
+                            mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
+                            mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
+                            mult::MultNTracksPVeta1, mult::MultNTracksPVetaHalf, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange);
+
+using ReducedEventsMultPV = ReducedEventsMultPV_001;
 
 DECLARE_SOA_TABLE(ReducedEventsMultAll, "AOD", "REMULTALL", //!  Multiplicity information for all tracks in the event
                   mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC,

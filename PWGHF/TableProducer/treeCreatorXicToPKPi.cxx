@@ -60,11 +60,11 @@ DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);
 DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float);
 DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);
 DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);
-DECLARE_SOA_COLUMN(NSigTpcTofPr0, nSigTpcTofPi0, float);
-DECLARE_SOA_COLUMN(NSigTpcTofPi0, nSigTpcTofPr0, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPr0, nSigTpcTofPr0, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPi0, nSigTpcTofPi0, float);
 DECLARE_SOA_COLUMN(NSigTpcTofKa1, nSigTpcTofKa1, float);
-DECLARE_SOA_COLUMN(NSigTpcTofPr2, nSigTpcTofPi2, float);
-DECLARE_SOA_COLUMN(NSigTpcTofPi2, nSigTpcTofPr2, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPr2, nSigTpcTofPr2, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPi2, nSigTpcTofPi2, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
@@ -75,6 +75,8 @@ DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
+DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
+
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -116,7 +118,8 @@ DECLARE_SOA_TABLE(HfCandXicLites, "AOD", "HFCANDXICLITE",
                   full::Eta,
                   full::Phi,
                   full::FlagMc,
-                  full::OriginMcRec)
+                  full::OriginMcRec,
+                  full::IsCandidateSwapped)
 
 DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   collision::PosX,
@@ -185,7 +188,8 @@ DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::Y,
                   full::E,
                   full::FlagMc,
-                  full::OriginMcRec);
+                  full::OriginMcRec,
+                  full::IsCandidateSwapped);
 
 DECLARE_SOA_TABLE(HfCandXicFullEvs, "AOD", "HFCANDXICFULLEV",
                   collision::NumContrib,
@@ -261,9 +265,11 @@ struct HfTreeCreatorXicToPKPi {
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
+    int8_t candSwapped = -1;
     if constexpr (doMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
+      candSwapped = candidate.isCandidateSwapped();
     }
 
     float invMassXic = 0;
@@ -314,7 +320,8 @@ struct HfTreeCreatorXicToPKPi {
         candidate.eta(),
         candidate.phi(),
         flagMc,
-        originMc);
+        originMc,
+        candSwapped);
 
     } else {
       rowCandidateFull(
@@ -384,7 +391,8 @@ struct HfTreeCreatorXicToPKPi {
         hfHelper.yXic(candidate),
         hfHelper.eXic(candidate),
         flagMc,
-        originMc);
+        originMc,
+        candSwapped);
     }
   }
 

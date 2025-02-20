@@ -110,7 +110,7 @@ struct HfCorrelatorDMesonPairs {
 
   HistogramConfigSpec hTH1Pt{HistType::kTH1F, {{180, 0., 36.}}};
   HistogramConfigSpec hTH1Y{HistType::kTH1F, {{100, -5., 5.}}};
-  HistogramConfigSpec hTH1NContrib{HistType::kTH1F, {{120, -0.5, 119.5}}};
+  HistogramConfigSpec hTH1NContrib{HistType::kTH1F, {{200, -0.5, 199.5}}};
   HistogramConfigSpec hTH1Phi{HistType::kTH1F, {{32, 0., o2::constants::math::TwoPI}}};
   HistogramConfigSpec hTH2Pid{HistType::kTH2F, {{500, 0., 10.}, {400, -20., 20.}}};
   HistogramConfigSpec hTH3PtVsYVsNContrib{HistType::kTH3F, {{360, 0., 36.}, {20, -1., 1.}, {120, -0.5, 119.5}}};
