@@ -99,16 +99,16 @@ struct NucleiHistTask {
     histTrackcuts_data_particle->GetXaxis()->SetBinLabel(1, "Events read");
     histTrackcuts_data_particle->GetXaxis()->SetBinLabel(2, "Ev. sel. passed");
     histTrackcuts_data_particle->GetXaxis()->SetBinLabel(3, "Rap. cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(4, "DCA cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(5, "TPCnCls cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(6, "TPCCrossedRowsOverFindable cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(7, "Chi2 cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(8, "Passed TPC refit cut");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(9, "Passed ITS refit cut");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(10, "ITSnCls cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(11, "track.pt() cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(12, "hasITS & hasTPC cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(13, "GoldenChi2 cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(4, "TPCnCls cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(5, "TPCCrossedRowsOverFindable cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(6, "Chi2 cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(7, "Passed TPC refit cut");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(8, "Passed ITS refit cut");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(9, "ITSnCls cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(10, "track.pt() cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(11, "hasITS & hasTPC cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(12, "GoldenChi2 cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(13, "DCA cut passed");
 
     // +++++++++++++++++++ reconstructed MC ++++++++++++++++++++++
     histTrackcuts_MC->GetXaxis()->SetBinLabel(1, "Events read");
@@ -161,6 +161,8 @@ struct NucleiHistTask {
     pion_reg.add("histTofSignalData", "TOF signal (#pi^{+})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     pion_reg.add("histDcaVsPtData", "dcaXY vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     pion_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    pion_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (#pi^{+}) after cut", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    pion_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (#pi^{+}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     pion_reg.add("histTOFm2", "TOF m^2 vs Pt (#pi^{+})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     pion_reg.add("histTpcNsigmaData", "n-sigma TPC (#pi^{+})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
     pion_reg.add("histTofNsigmaData", "n-sigma TOF (#pi^{+})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
@@ -181,6 +183,8 @@ struct NucleiHistTask {
     apion_reg.add("histTofSignalData", "TOF signal (#pi^{-})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     apion_reg.add("histDcaVsPtData", "dcaXY vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     apion_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    apion_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (#pi^{-}) after cut", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    apion_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (#pi^{-}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     apion_reg.add("histTOFm2", "TOF m^2 vs Pt (#pi^{-})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     apion_reg.add("histTpcNsigmaData", "n-sigma TPC (#pi^{-})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
     apion_reg.add("histTofNsigmaData", "n-sigma TOF (#pi^{-})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
@@ -201,6 +205,8 @@ struct NucleiHistTask {
     proton_reg.add("histTofSignalData", "TOF signal (p)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     proton_reg.add("histDcaVsPtData", "dcaXY vs Pt (p)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     proton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (p)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    proton_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (p) after cut", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    proton_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (p) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     proton_reg.add("histTOFm2", "TOF m^2 vs Pt (p)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     proton_reg.add("histTpcNsigmaData", "n-sigma TPC (p)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{p}"}});
     proton_reg.add("histTofNsigmaData", "n-sigma TOF (p)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{p}"}});
@@ -221,6 +227,8 @@ struct NucleiHistTask {
     aproton_reg.add("histTofSignalData", "TOF signal (#bar{p})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     aproton_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     aproton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    aproton_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (#bar{p}) after cut", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    aproton_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (#bar{p}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     aproton_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{p})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     aproton_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{p})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{p}}"}});
     aproton_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{p})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{p}}"}});
@@ -241,6 +249,8 @@ struct NucleiHistTask {
     deuteron_reg.add("histTofSignalData", "TOF signal (d)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     deuteron_reg.add("histDcaVsPtData", "dcaXY vs Pt (d)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     deuteron_reg.add("histDcaZVsPtData", "dcaZ vs Pt (d)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    deuteron_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (d) after cut", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    deuteron_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (d) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     deuteron_reg.add("histTOFm2", "TOF m^2 vs Pt (d)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     deuteron_reg.add("histTpcNsigmaData", "n-sigma TPC (d)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{d}"}});
     deuteron_reg.add("histTofNsigmaData", "n-sigma TOF (d)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{d}"}});
@@ -261,6 +271,8 @@ struct NucleiHistTask {
     adeuteron_reg.add("histTofSignalData", "TOF signal (#bar{d})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     adeuteron_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     adeuteron_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    adeuteron_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (#bar{d}) after cut", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    adeuteron_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (#bar{d}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     adeuteron_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{d})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     adeuteron_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{d})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}});
     adeuteron_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{d})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}});
@@ -281,6 +293,8 @@ struct NucleiHistTask {
     triton_reg.add("histTofSignalData", "TOF signal (t)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     triton_reg.add("histDcaVsPtData", "dcaXY vs Pt (t)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     triton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (t)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    triton_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (t) after cut", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    triton_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (t) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     triton_reg.add("histTOFm2", "TOF m^2 vs Pt (t)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     triton_reg.add("histTpcNsigmaData", "n-sigma TPC (t)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{t}"}});
     triton_reg.add("histTofNsigmaData", "n-sigma TOF (t)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{t}"}});
@@ -301,6 +315,8 @@ struct NucleiHistTask {
     atriton_reg.add("histTofSignalData", "TOF signal (#bar{t})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     atriton_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     atriton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    atriton_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (#bar{t}) after cut", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    atriton_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (#bar{t}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     atriton_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{t})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     atriton_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{t})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{t}}"}});
     atriton_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{t})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{t}}"}});
@@ -321,6 +337,8 @@ struct NucleiHistTask {
     Helium3_reg.add("histTofSignalData", "TOF signal (^{3}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     Helium3_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     Helium3_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    Helium3_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (^{3}He) after cut", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    Helium3_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (^{3}He) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     Helium3_reg.add("histTOFm2", "TOF m^2 vs Pt (^{3}He)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     Helium3_reg.add("histTpcNsigmaData", "n-sigma TPC (^{3}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
     Helium3_reg.add("histTofNsigmaData", "n-sigma TOF (^{3}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
@@ -341,6 +359,8 @@ struct NucleiHistTask {
     aHelium3_reg.add("histTofSignalData", "TOF signal (^{3}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     aHelium3_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     aHelium3_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    aHelium3_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (^{3}#bar{He}) after cut", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    aHelium3_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (^{3}#bar{He}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     aHelium3_reg.add("histTOFm2", "TOF m^2 vs Pt (^{3}#bar{He})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     aHelium3_reg.add("histTpcNsigmaData", "n-sigma TPC (^{3}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
     aHelium3_reg.add("histTofNsigmaData", "n-sigma TOF (^{3}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
@@ -361,6 +381,8 @@ struct NucleiHistTask {
     Helium4_reg.add("histTofSignalData", "TOF signal (^{4}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     Helium4_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     Helium4_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    Helium4_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (^{4}He) after cut", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    Helium4_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (^{4}He) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     Helium4_reg.add("histTOFm2", "TOF m^2 vs Pt (^{4}He)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     Helium4_reg.add("histTpcNsigmaData", "n-sigma TPC (^{4}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
     Helium4_reg.add("histTofNsigmaData", "n-sigma TOF (^{4}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
@@ -381,6 +403,8 @@ struct NucleiHistTask {
     aHelium4_reg.add("histTofSignalData", "TOF signal (^{4}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     aHelium4_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     aHelium4_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    aHelium4_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (^{4}#bar{He}) after cut", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    aHelium4_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (^{4}#bar{He}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     aHelium4_reg.add("histTOFm2", "TOF m^2 vs Pt (^{4}#bar{He})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     aHelium4_reg.add("histTpcNsigmaData", "n-sigma TPC (^{4}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}});
     aHelium4_reg.add("histTofNsigmaData", "n-sigma TOF (^{4}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}});
@@ -726,37 +750,49 @@ struct NucleiHistTask {
       if (lorentzVector_particle.Rapidity() < yMin || lorentzVector_particle.Rapidity() > yMax)
         continue;
       histTrackcuts_data_particle->AddBinContent(3);
+      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC)
+        continue;
+      histTrackcuts_data_particle->AddBinContent(4);
+      if (RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC)
+        continue;
+      histTrackcuts_data_particle->AddBinContent(5);
+      if (Chi2perClusterTPC > maxChi2PerClusterTPC || Chi2perClusterTPC < minChi2PerClusterTPC || Chi2perClusterITS > maxChi2PerClusterITS)
+        continue;
+      histTrackcuts_data_particle->AddBinContent(6);
+      if (!(track.passedTPCRefit()))
+        continue;
+      histTrackcuts_data_particle->AddBinContent(7);
+      if (!(track.passedITSRefit()))
+        continue;
+      histTrackcuts_data_particle->AddBinContent(8);
+      if ((track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS)
+        continue;
+      histTrackcuts_data_particle->AddBinContent(9);
+      if (momentum < p_min || momentum > p_max)
+        continue;
+      histTrackcuts_data_particle->AddBinContent(10);
+      if ((requireITS && !(track.hasITS())) || (requireTPC && !(track.hasTPC())))
+        continue;
+      histTrackcuts_data_particle->AddBinContent(11);
+      if (requireGoldenChi2 && !(track.passedGoldenChi2()))
+        continue;
+
+      histTrackcuts_data_particle->AddBinContent(12);
+
+      if (TPCnSigma_particle > nsigmacutLow && TPCnSigma_particle < nsigmacutHigh && TMath::Abs(track.dcaZ()) < 2.0 && TMath::Abs(track.dcaXY()) < 0.5) {
+        if (track.sign() > 0) {
+          particle_reg.fill(HIST("histDcaVsPtData"), momentum, track.dcaXY());
+          particle_reg.fill(HIST("histDcaZVsPtData"), momentum, track.dcaZ());
+        }
+        if (track.sign() < 0) {
+          aparticle_reg.fill(HIST("histDcaVsPtData"), momentum, track.dcaXY());
+          aparticle_reg.fill(HIST("histDcaZVsPtData"), momentum, track.dcaZ());
+        }
+      }
 
       bool insideDCAxy = (std::abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / pow(momentum, 1.1f))));
 
       if (!(insideDCAxy) || TMath::Abs(track.dcaZ()) > maxDCA_Z)
-        continue;
-      histTrackcuts_data_particle->AddBinContent(4);
-      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC)
-        continue;
-      histTrackcuts_data_particle->AddBinContent(5);
-      if (RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC)
-        continue;
-      histTrackcuts_data_particle->AddBinContent(6);
-      if (Chi2perClusterTPC > maxChi2PerClusterTPC || Chi2perClusterTPC < minChi2PerClusterTPC || Chi2perClusterITS > maxChi2PerClusterITS)
-        continue;
-      histTrackcuts_data_particle->AddBinContent(7);
-      if (!(track.passedTPCRefit()))
-        continue;
-      histTrackcuts_data_particle->AddBinContent(8);
-      if (!(track.passedITSRefit()))
-        continue;
-      histTrackcuts_data_particle->AddBinContent(9);
-      if ((track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS)
-        continue;
-      histTrackcuts_data_particle->AddBinContent(10);
-      if (momentum < p_min || momentum > p_max)
-        continue;
-      histTrackcuts_data_particle->AddBinContent(11);
-      if ((requireITS && !(track.hasITS())) || (requireTPC && !(track.hasTPC())))
-        continue;
-      histTrackcuts_data_particle->AddBinContent(12);
-      if (requireGoldenChi2 && !(track.passedGoldenChi2()))
         continue;
       histTrackcuts_data_particle->AddBinContent(13);
 
@@ -772,8 +808,8 @@ struct NucleiHistTask {
       if (TPCnSigma_particle > nsigmacutLow && TPCnSigma_particle < nsigmacutHigh) {
 
         if (track.sign() > 0) {
-          particle_reg.fill(HIST("histDcaVsPtData"), momentum, track.dcaXY());
-          particle_reg.fill(HIST("histDcaZVsPtData"), momentum, track.dcaZ());
+          particle_reg.fill(HIST("histDcaVsPtData_after_cut"), momentum, track.dcaXY());
+          particle_reg.fill(HIST("histDcaZVsPtData_after_cut"), momentum, track.dcaZ());
           particle_reg.fill(HIST("histTpcSignalData"), momentum, track.tpcSignal());
           particle_reg.fill(HIST("histNClusterTPC"), momentum, track.tpcNClsFound());
           particle_reg.fill(HIST("histNClusterITS"), momentum, track.itsNCls());
@@ -802,8 +838,8 @@ struct NucleiHistTask {
         }
 
         if (track.sign() < 0) {
-          aparticle_reg.fill(HIST("histDcaVsPtData"), momentum, track.dcaXY());
-          aparticle_reg.fill(HIST("histDcaZVsPtData"), momentum, track.dcaZ());
+          aparticle_reg.fill(HIST("histDcaVsPtData_after_cut"), momentum, track.dcaXY());
+          aparticle_reg.fill(HIST("histDcaZVsPtData_after_cut"), momentum, track.dcaZ());
           aparticle_reg.fill(HIST("histTpcSignalData"), momentum, track.tpcSignal());
           aparticle_reg.fill(HIST("histNClusterTPC"), momentum, track.tpcNClsFound());
           aparticle_reg.fill(HIST("histNClusterITS"), momentum, track.itsNCls());
@@ -1532,6 +1568,30 @@ struct NucleiHistTask {
       }
 
       if (lorentzVector_particle_MC.Rapidity() < yMin || lorentzVector_particle_MC.Rapidity() > yMax)
+        continue;
+      float TPCnumberClsFound = track.tpcNClsFound();
+      float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
+      float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
+      float Chi2perClusterTPC = track.tpcChi2NCl();
+      float Chi2perClusterITS = track.itsChi2NCl();
+
+      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC)
+        continue;
+      if (RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC)
+        continue;
+      if (Chi2perClusterTPC > maxChi2PerClusterTPC || Chi2perClusterTPC < minChi2PerClusterTPC || Chi2perClusterITS > maxChi2PerClusterITS)
+        continue;
+      if (!(track.passedTPCRefit()))
+        continue;
+      if (!(track.passedITSRefit()))
+        continue;
+      if ((track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS)
+        continue;
+      if (track.pt() < p_min || track.pt() > p_max)
+        continue;
+      if ((requireITS && !(track.hasITS())) || (requireTPC && !(track.hasTPC())))
+        continue;
+      if (requireGoldenChi2 && !(track.passedGoldenChi2()))
         continue;
 
       MC_DCA.fill(HIST("histEta"), track.eta(), pdgbin);
