@@ -189,11 +189,12 @@ def get_tree_for_workflow(
         msg_fatal(f"Workflow {wf} not found")
     if wf not in dic_wf_tree:
         dic_wf_tree[wf] = dic_wf_all[wf]
-    inputs = get_workflow_inputs(wf, dic_wf_all)
-    symbol_direction = "<-"
     if reverse:
         inputs = get_workflow_outputs(wf, dic_wf_all)
         symbol_direction = "->"
+    else:
+        inputs = get_workflow_inputs(wf, dic_wf_all)
+        symbol_direction = "<-"
     if inputs:
         print(f"{level * '    '}{wf} {symbol_direction} {inputs}")
         if levels_max < 0 or level < levels_max:
