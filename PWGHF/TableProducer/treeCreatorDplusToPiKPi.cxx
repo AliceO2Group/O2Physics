@@ -23,12 +23,10 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Core/CentralityEstimation.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::hf_centrality;
 
 namespace o2::aod
 {
@@ -295,6 +293,7 @@ struct HfTreeCreatorDplusToPiKPi {
   template <bool doMc = false, bool doMl = false, typename T>
   void fillCandidateTable(const T& candidate)
   {
+    LOG(info) << "fillCandidateTable";
     int8_t flagMc = 0;
     int8_t originMc = 0;
     int8_t channelMc = 0;
@@ -316,6 +315,7 @@ struct HfTreeCreatorDplusToPiKPi {
     auto prong2 = candidate.template prong2_as<TracksWPid>();
     
     if (fillCandidateLiteTable) {
+      LOG(info) << "fillCandidateLiteTable: " << fillCandidateLiteTable;
       rowCandidateLite(
         candidate.chi2PCA(),
         candidate.decayLength(),
@@ -362,6 +362,7 @@ struct HfTreeCreatorDplusToPiKPi {
         originMc,
         channelMc);
       } else if (fillOnlySignalMl) {
+        LOG(info) << "in filler fillOnlySignalMl: " << fillOnlySignalMl;
         auto collision = candidate.template collision_as<McRecoCollisionsCent>();
         double cent = getCentralityColl(collision, CentralityEstimator::FT0C);
         rowCandidateMl(
@@ -456,18 +457,19 @@ struct HfTreeCreatorDplusToPiKPi {
         originMc,
         channelMc);
       }
+      LOG(info) << "End fillCandidateTable";
     }
-
-  void processData(aod::Collisions const& collisions,
-                   soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
-                   TracksWPid const&)
+    
+    void processData(aod::Collisions const& collisions,
+      soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
+      TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
-
+    
     // Filling candidate properties
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
@@ -484,9 +486,9 @@ struct HfTreeCreatorDplusToPiKPi {
       fillCandidateTable(candidate);
     }
   }
-
+  
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processData, "Process data", true);
-
+  
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
@@ -494,25 +496,30 @@ struct HfTreeCreatorDplusToPiKPi {
                  SelectedCandidatesMcWithMl const& candidateswithml,
                  McRecoCollisionsCent const&,
                  TracksWPid const&)
-  {
-    // Filling event properties
-    rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision, 0, 1);
-    }
-
-    // Filling candidate properties
-    if (fillOnlySignal) {
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(reconstructedCandSig.size());
-      } else {
-        rowCandidateFull.reserve(reconstructedCandSig.size());
-      }
-      for (const auto& candidate : reconstructedCandSig) {
-        fillCandidateTable<true>(candidate);
-      }
-    } else if (fillOnlyBackground) {
-      if (fillCandidateLiteTable) {
+                 {
+                  LOG(info) << "Process MC";
+                  // Filling event properties
+                  rowCandidateFullEvents.reserve(collisions.size());
+                  for (const auto& collision : collisions) {
+                    fillEvent(collision, 0, 1);
+                  }
+                  
+                  LOG(info) << "fillOnlySignal: " << fillOnlySignal;
+                  LOG(info) << "fillCandidateLiteTable: " << fillCandidateLiteTable;
+                  // Filling candidate properties
+                  if (fillOnlySignal) {
+                    if (fillCandidateLiteTable) {
+                      rowCandidateLite.reserve(reconstructedCandSig.size());
+                    } else {
+                      rowCandidateFull.reserve(reconstructedCandSig.size());
+                    }
+                    LOG(info) << "reconstructedCandSig.size(): " << reconstructedCandSig.size();
+                    for (const auto& candidate : reconstructedCandSig) {
+                      LOG(info) << "fillCandidateTable<true>(candidate)";
+                      fillCandidateTable<true>(candidate);
+                    }
+                  } else if (fillOnlyBackground) {
+                    if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(reconstructedCandBkg.size());
       } else {
         rowCandidateFull.reserve(reconstructedCandBkg.size());
@@ -527,6 +534,7 @@ struct HfTreeCreatorDplusToPiKPi {
         fillCandidateTable<true>(candidate);
       }
     } else if (fillOnlySignalMl) {
+      LOG(info) << "fillOnlySignalMl: " << fillOnlySignalMl;
       rowCandidateMl.reserve(candidateswithml.size());
       for (const auto& candidate : candidateswithml) {
         if (downSampleBkgFactor < 1.) {

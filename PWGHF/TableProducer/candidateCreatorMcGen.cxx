@@ -50,6 +50,7 @@ struct HfCandidateCreatorMcGen {
   Configurable<bool> createDs{"createDs", false, "Create Ds in 3 prong"};
   Configurable<bool> createLc{"createLc", false, "Create Lc in 3 prong"};
   Configurable<bool> createXic{"createXic", false, "Create Xic in 3 prong"};
+  Configurable<bool> createDstarToPiKPiBkg{"createDstarToPiKPiBkg", false, "Create DstarBkg in 3 prong"};
 
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
@@ -63,7 +64,7 @@ struct HfCandidateCreatorMcGen {
         hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen2Prong, rejectBackground2Prong);
       }
       if (fill3Prong) {
-        hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen3Prong, rejectBackground3Prong, createDplus, createDs, createLc, createXic);
+        hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen3Prong, rejectBackground3Prong, createDplus, createDs, createLc, createXic, createDstarToPiKPiBkg);
       }
     }
     if (fillBplus) {
