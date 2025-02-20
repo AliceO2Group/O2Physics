@@ -207,12 +207,12 @@ struct FlowZdcTask {
     histos.add("hZNvsFT0Ccent",
                "ZN Energy vs FT0C Centrality",
                kTH2F,
-               {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZN Energy"}});
+               {axisCent, axisZN});
 
     histos.add("hZPvsFT0Ccent",
                "ZP Energy vs FT0C Centrality;Centrality [%];ZP Energy",
                kTH2F,
-               {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZP Energy"}});
+               {axisCent, axisZP});
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ}); // for q vector recentering
     histos.add("hYield", "Nch vs pT", kTH2F, {axisMultiplicity, axisPt});
     histos.add("hGlobalTracks", "hGlobalTracks", kTH1F, {axisMultiplicity});
