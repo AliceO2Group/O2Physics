@@ -419,6 +419,7 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_002, "AOD", "DAUTRACKEXTRA", 2, //! d
 
 DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_003, "AOD", "DAUTRACKEXTRA", 3, //! detector properties of decay daughters
                             track::ITSChi2NCl,
+                            track::TPCChi2NCl,
                             dautrack::DetectorMap, // here we don´t save everything so we simplify this
                             track::ITSClusterSizes,
                             track::TPCNClsFindable,
@@ -454,7 +455,7 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_003, "AOD", "DAUTRACKEXTRA", 3, //! d
 DECLARE_SOA_TABLE(DauTrackMCIds, "AOD", "DAUTRACKMCID", // index table when using AO2Ds
                   dautrack::ParticleMCId);
 
-using DauTrackExtras = DauTrackExtras_002;
+using DauTrackExtras = DauTrackExtras_003;
 using DauTrackExtra = DauTrackExtras::iterator;
 
 namespace motherParticle
