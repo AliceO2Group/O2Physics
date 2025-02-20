@@ -43,7 +43,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using ReducedCols = soa::Join<aod::ReducedCollisions, aod::ReducedCentFT0Cs>;
+using ReducedCols = soa::Join<aod::RedCollisions, aod::RedCentFT0Cs>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
@@ -701,16 +701,16 @@ struct ThreebodyRecoTask {
 
   //------------------------------------------------------------------
   // process reduced data analysis
-  void processReducedData(ReducedCols const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::ReducedTracksIU const& tracks)
+  void processReducedData(ReducedCols const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::RedIUTracks const& tracks)
   {
     candidates3body.clear();
 
     for (const auto& vtx : vtx3bodydatas) {
       const auto& collision = collisions.iteratorAt(vtx.collisionId());
       if (cfgLikeSignAnalysis) {
-        reducedLikeSignAnalysis<aod::ReducedTracksIU>(collision, vtx, tracks);
+        reducedLikeSignAnalysis<aod::RedIUTracks>(collision, vtx, tracks);
       } else {
-        reducedAnalysis<aod::ReducedTracksIU>(collision, vtx, tracks);
+        reducedAnalysis<aod::RedIUTracks>(collision, vtx, tracks);
       }
       for (const auto& cand3body : candidates3body) {
         fillOutputDataTable(cand3body);
