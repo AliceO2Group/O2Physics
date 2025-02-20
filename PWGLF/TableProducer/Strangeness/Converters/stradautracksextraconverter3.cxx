@@ -25,7 +25,7 @@ struct stradautracksextraconverter3 {
   {
     for (auto& values : dauTrackExtras_002) {
       dauTrackExtras_002(values.itsChi2PerNcl(),
-                         -1 /* dummy tpcChi2PerNcl value */, 
+                         -1 /* dummy tpcChi2PerNcl value */,
                          values.detectorMap(),
                          values.itsClusterSizes(),
                          values.tpcNClsFindable(),
