@@ -13,8 +13,9 @@
 /// \brief Analysis task for the Phi and K0S rapidity correlations analysis
 /// \author Stefano Cannito (stefano.cannito@cern.ch)
 
-#include <cmath>
 #include <cstdlib>
+
+#include <cmath>
 #include <array>
 #include <vector>
 #include <algorithm>
@@ -1071,7 +1072,7 @@ struct Phik0shortanalysis {
       if (!selectionPion<true, false>(track, true))
         continue;
 
-      dataPhiPionHist.fill(HIST("h3PiRapidityData"), multiplicity, track.pt(), track.rapidity(massPi));
+      dataPionHist.fill(HIST("h3PiRapidityData"), multiplicity, track.pt(), track.rapidity(massPi));
 
       if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
         continue;
@@ -1339,7 +1340,7 @@ struct Phik0shortanalysis {
         if (std::abs(v0mcparticle.y()) > cfgYAcceptance)
           continue;
 
-        mcK0SHist.fill(HIST("h3RecMCK0S"), genmultiplicity, v0.pt(), v0.mK0Short());
+        mcK0SHist.fill(HIST("h3RecMCK0S"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
 
         std::array<bool, 3> isCountedMCPhi{false, false, false};
 
@@ -1350,19 +1351,19 @@ struct Phik0shortanalysis {
             continue;
 
           if (!isCountedMCPhi.at(0)) {
-            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SInc"), genmultiplicity, v0.pt(), v0.mK0Short());
+            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SInc"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
             isCountedMCPhi.at(0) = true;
           }
           if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(1)) {
-            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SFCut"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
             isCountedMCPhi.at(1) = true;
           }
           if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(2)) {
-            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SSCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SSCut"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
             isCountedMCPhi.at(2) = true;
           }
         }
@@ -1420,7 +1421,7 @@ struct Phik0shortanalysis {
 
         mcPionHist.fill(HIST("h4PiRapiditySmearing"), genmultiplicity, track.pt(), track.rapidity(massPi), mcTrack.y());
 
-        mcPionHist.fill(HIST("h3RecMCPiTPC"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
+        mcPionHist.fill(HIST("h3RecMCPiTPC"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
 
         std::array<bool, 3> isCountedMCPhi{false, false, false};
 
@@ -1431,19 +1432,19 @@ struct Phik0shortanalysis {
             continue;
 
           if (!isCountedMCPhi.at(0)) {
-            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCInc"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
+            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCInc"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
             isCountedMCPhi.at(0) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(1)) {
-            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCFCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
+            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCFCut"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
             isCountedMCPhi.at(1) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(2)) {
-            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCSCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
+            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCSCut"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
             isCountedMCPhi.at(2) = true;
           }
         }
@@ -1451,7 +1452,7 @@ struct Phik0shortanalysis {
         if (track.pt() >= 0.5 && !track.hasTOF())
           continue;
 
-        mcPionHist.fill(HIST("h4RecMCPiTPCTOF"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+        mcPionHist.fill(HIST("h4RecMCPiTPCTOF"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
 
         isCountedMCPhi = {false, false, false};
 
@@ -1462,19 +1463,19 @@ struct Phik0shortanalysis {
             continue;
 
           if (!isCountedMCPhi.at(0)) {
-            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFInc"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFInc"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
             isCountedMCPhi.at(0) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(1)) {
-            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFFCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFFCut"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
             isCountedMCPhi.at(1) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(2)) {
-            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFSCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFSCut"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
             isCountedMCPhi.at(2) = true;
           }
         }
