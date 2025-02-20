@@ -25,6 +25,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 
 using namespace o2;
@@ -74,29 +75,39 @@ struct studyMCTruth {
   }
 
   static constexpr std::string_view dileptonSigns[3] = {"uls/", "lspp/", "lsmm/"};
-  static constexpr std::string_view evNames[4] = {"before/", "after/"};
+  static constexpr std::string_view evNames[4] = {"allMC/", "selectedMC/", "selectedMC_and_Rec/", "selectedMC_and_selectedRec/"};
 
   void addHistograms()
   {
     const AxisSpec axis_mll{ConfMllBins, "m_{ll} (GeV/c^{2})"};
     const AxisSpec axis_ptll{ConfPtllBins, "p_{T,ll} (GeV/c)"};
 
-    fRegistry.add("Event/before/hZvtx", "MC Zvtx;Z_{vtx} (cm)", kTH1D, {{100, -50, +50}}, false);
-    fRegistry.add("Event/before/hImpactParameter", "impact parameter;impact parameter b (fm)", kTH1D, {{200, 0, 20}}, false);
-    fRegistry.addClone("Event/before/", "Event/after/");
+    fRegistry.add("Event/hDiffBC", "diffrence in BC;BC_{rec. coll.} - BC_{mc coll.}", kTH1D, {{101, -50.5, +50.5}}, false);
+    fRegistry.add("Event/allMC/hZvtx", "MC Zvtx;Z_{vtx} (cm)", kTH1D, {{100, -50, +50}}, false);
+    fRegistry.add("Event/allMC/hImpactParameter", "impact parameter;impact parameter b (fm)", kTH1D, {{200, 0, 20}}, false);
+    fRegistry.addClone("Event/allMC/", "Event/selectedMC/");
+    fRegistry.addClone("Event/allMC/", "Event/selectedMC_and_Rec/");
+    fRegistry.addClone("Event/allMC/", "Event/selectedMC_and_selectedRec/");
 
-    fRegistry.add("Pair/before/Pi0/uls/hMvsPt", "m_{ll} vs. p_{T,ll}", kTH2D, {axis_mll, axis_ptll}, true);
-    fRegistry.addClone("Pair/before/Pi0/uls/", "Pair/before/Pi0/lspp/");
-    fRegistry.addClone("Pair/before/Pi0/uls/", "Pair/before/Pi0/lsmm/");
-    fRegistry.addClone("Pair/before/Pi0/", "Pair/before/Eta/");
-    fRegistry.addClone("Pair/before/Pi0/", "Pair/before/EtaPrime/");
-    fRegistry.addClone("Pair/before/Pi0/", "Pair/before/Rho/");
-    fRegistry.addClone("Pair/before/Pi0/", "Pair/before/Omega/");
-    fRegistry.addClone("Pair/before/Pi0/", "Pair/before/Phi/");
-    fRegistry.addClone("Pair/before/Pi0/", "Pair/before/JPsi/");
-    fRegistry.addClone("Pair/before/Pi0/", "Pair/before/ccbar/");
-    fRegistry.addClone("Pair/before/Pi0/", "Pair/before/bbbar/");
-    fRegistry.addClone("Pair/before/", "Pair/after/");
+    fRegistry.add("Pair/allMC/Pi0/uls/hMvsPt", "m_{ll} vs. p_{T,ll}", kTH2D, {axis_mll, axis_ptll}, true);
+    fRegistry.addClone("Pair/allMC/Pi0/uls/", "Pair/allMC/Pi0/lspp/");
+    fRegistry.addClone("Pair/allMC/Pi0/uls/", "Pair/allMC/Pi0/lsmm/");
+    fRegistry.addClone("Pair/allMC/Pi0/", "Pair/allMC/Eta/");
+    fRegistry.addClone("Pair/allMC/Pi0/", "Pair/allMC/EtaPrime/");
+    fRegistry.addClone("Pair/allMC/Pi0/", "Pair/allMC/Rho/");
+    fRegistry.addClone("Pair/allMC/Pi0/", "Pair/allMC/Omega/");
+    fRegistry.addClone("Pair/allMC/Pi0/", "Pair/allMC/Phi/");
+    fRegistry.addClone("Pair/allMC/Pi0/", "Pair/allMC/JPsi/");
+    fRegistry.addClone("Pair/allMC/Pi0/", "Pair/allMC/ccbar/");
+    fRegistry.addClone("Pair/allMC/Pi0/", "Pair/allMC/bbbar/");
+    fRegistry.addClone("Pair/allMC/", "Pair/selectedMC/");
+    fRegistry.addClone("Pair/allMC/", "Pair/selectedMC_and_Rec/");
+    fRegistry.addClone("Pair/allMC/", "Pair/selectedMC_and_selectedRec/");
+
+    // allMC = all mc collisions
+    // selectedMC = mc collisions selected by your event cuts
+    // selectedMC_and_Rec = mc collisions selected by your event cuts and at least 1 reconstructed collision is associated.
+    // selectedMC_and_selectedRec = mc collisions selected by your event cuts and at least 1 reconstructed collision is associated, and the associated rec. collision is selected by your cuts.
   }
 
   template <typename TTrack, typename TMCParticles>
@@ -131,27 +142,22 @@ struct studyMCTruth {
     }
   }
 
-  template <typename TBCs, typename TMCCollision>
-  bool isSelectedCollision(TMCCollision const& mcCollision)
+  template <typename TCollision, typename TBC>
+  bool isSelectedCollision(TCollision const& collision, TBC const& bc)
   {
-    const auto& bc = mcCollision.template bc_as<TBCs>();
-
-    if (mcCollision.posZ() < eventcuts.cfgZvtxMin || eventcuts.cfgZvtxMax < mcCollision.posZ()) {
+    if (collision.posZ() < eventcuts.cfgZvtxMin || eventcuts.cfgZvtxMax < collision.posZ()) {
       return false;
     }
 
     if (eventcuts.cfgRequireFT0AND && !bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       return false;
     }
-
     if (eventcuts.cfgRequireNoTFB && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
-
     if (eventcuts.cfgRequireNoITSROFB && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
-
     return true;
   }
 
@@ -225,41 +231,78 @@ struct studyMCTruth {
     }
   }
 
-  template <typename TMCCollisions, typename TMCParticles, typename TBCs>
-  void runMC(TMCCollisions const& mcCollisions, TMCParticles const& mcParticles, TBCs const&)
+  template <typename TMCCollisions, typename TMCParticles, typename TBCs, typename TCollisions>
+  void runMC(TMCCollisions const& mcCollisions, TMCParticles const& mcParticles, TBCs const&, TCollisions const& collisions)
   {
     for (const auto& mcCollision : mcCollisions) {
-      fRegistry.fill(HIST("Event/before/hZvtx"), mcCollision.posZ());
-      fRegistry.fill(HIST("Event/before/hImpactParameter"), mcCollision.impactParameter());
+      const auto& bc_from_mcCollision = mcCollision.template bc_as<TBCs>();
+      bool isSelectedMC = isSelectedCollision(mcCollision, bc_from_mcCollision);
+
+      bool isSelectedRec = false;
+      bool hasRecCollision = false;
+      if (mcCollision.mpemeventId() >= 0) {
+        hasRecCollision = true;
+        const auto& collision = collisions.rawIteratorAt(mcCollision.mpemeventId()); // most probable reconstructed collision
+        const auto& bc_from_collision = collision.template foundBC_as<TBCs>();
+        isSelectedRec = isSelectedCollision(collision, bc_from_collision);
+        fRegistry.fill(HIST("Event/hDiffBC"), bc_from_collision.globalBC() - bc_from_mcCollision.globalBC());
+      }
+
+      fRegistry.fill(HIST("Event/allMC/hZvtx"), mcCollision.posZ());
+      fRegistry.fill(HIST("Event/allMC/hImpactParameter"), mcCollision.impactParameter());
+      if (isSelectedMC) {
+        fRegistry.fill(HIST("Event/selectedMC/hZvtx"), mcCollision.posZ());
+        fRegistry.fill(HIST("Event/selectedMC/hImpactParameter"), mcCollision.impactParameter());
+        if (hasRecCollision) {
+          fRegistry.fill(HIST("Event/selectedMC_and_Rec/hZvtx"), mcCollision.posZ());
+          fRegistry.fill(HIST("Event/selectedMC_and_Rec/hImpactParameter"), mcCollision.impactParameter());
+          if (isSelectedRec) {
+            fRegistry.fill(HIST("Event/selectedMC_and_selectedRec/hZvtx"), mcCollision.posZ());
+            fRegistry.fill(HIST("Event/selectedMC_and_selectedRec/hImpactParameter"), mcCollision.impactParameter());
+          }
+        }
+      }
 
       // store MC true information
       auto posLeptons_per_mccollision = mcPosLeptons.sliceBy(perMcCollision, mcCollision.globalIndex());
       auto negLeptons_per_mccollision = mcNegLeptons.sliceBy(perMcCollision, mcCollision.globalIndex());
 
-      bool isSelected = isSelectedCollision<TBCs>(mcCollision);
-      if (isSelected) {
-        fRegistry.fill(HIST("Event/after/hZvtx"), mcCollision.posZ());
-        fRegistry.fill(HIST("Event/after/hImpactParameter"), mcCollision.impactParameter());
-      }
-
       for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posLeptons_per_mccollision, negLeptons_per_mccollision))) { // ULS
         fillTrueInfo<0, 0>(pos, neg, mcParticles);
-        if (isSelected) {
+        if (isSelectedMC) {
           fillTrueInfo<1, 0>(pos, neg, mcParticles);
+          if (hasRecCollision) {
+            fillTrueInfo<2, 0>(pos, neg, mcParticles);
+            if (isSelectedRec) {
+              fillTrueInfo<3, 0>(pos, neg, mcParticles);
+            }
+          }
         }
       } // end of ULS pair loop
 
       for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posLeptons_per_mccollision, posLeptons_per_mccollision))) { // LS++
         fillTrueInfo<0, 1>(pos1, pos2, mcParticles);
-        if (isSelected) {
+        if (isSelectedMC) {
           fillTrueInfo<1, 1>(pos1, pos2, mcParticles);
+          if (hasRecCollision) {
+            fillTrueInfo<2, 1>(pos1, pos2, mcParticles);
+            if (isSelectedRec) {
+              fillTrueInfo<3, 1>(pos1, pos2, mcParticles);
+            }
+          }
         }
       } // end of LS++ pair loop
 
       for (auto& [neg1, neg2] : combinations(CombinationsStrictlyUpperIndexPolicy(negLeptons_per_mccollision, negLeptons_per_mccollision))) { // LS--
         fillTrueInfo<0, 2>(neg1, neg2, mcParticles);
-        if (isSelected) {
+        if (isSelectedMC) {
           fillTrueInfo<1, 2>(neg1, neg2, mcParticles);
+          if (hasRecCollision) {
+            fillTrueInfo<2, 2>(neg1, neg2, mcParticles);
+            if (isSelectedRec) {
+              fillTrueInfo<3, 2>(neg1, neg2, mcParticles);
+            }
+          }
         }
       } // end of LS-- pair loop
 
@@ -270,19 +313,21 @@ struct studyMCTruth {
   SliceCache cache;
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
+  using MyMcCollisions = soa::Join<aod::McCollisions, aod::MostProbableEMEventIdsInMC>;
+
   Filter collisionFilter = eventcuts.cfgMinImpPar < o2::aod::mccollision::impactParameter && o2::aod::mccollision::impactParameter < eventcuts.cfgMaxImpPar;
-  using FilteredMcCollisions = soa::Filtered<aod::McCollisions>;
+  using FilteredMyMcCollisions = soa::Filtered<MyMcCollisions>;
 
   Partition<aod::McParticles> mcPosLeptons = o2::aod::mcparticle::pdgCode == -mccuts.cfgPdgCodeLepton && (mccuts.cfgMinPtGen < o2::aod::mcparticle::pt && o2::aod::mcparticle::pt < mccuts.cfgMaxPtGen) && (mccuts.cfgMinEtaGen < o2::aod::mcparticle::eta && o2::aod::mcparticle::eta < mccuts.cfgMaxEtaGen);
   Partition<aod::McParticles> mcNegLeptons = o2::aod::mcparticle::pdgCode == mccuts.cfgPdgCodeLepton && (mccuts.cfgMinPtGen < o2::aod::mcparticle::pt && o2::aod::mcparticle::pt < mccuts.cfgMaxPtGen) && (mccuts.cfgMinEtaGen < o2::aod::mcparticle::eta && o2::aod::mcparticle::eta < mccuts.cfgMaxEtaGen);
 
-  void processMC(FilteredMcCollisions const& mcCollisions, aod::McParticles const& mcParticles, soa::Join<aod::BCsWithTimestamps, aod::BcSels> const& bcs)
+  void processMC(FilteredMyMcCollisions const& mcCollisions, aod::McParticles const& mcParticles, soa::Join<aod::BCsWithTimestamps, aod::BcSels> const& bcs, soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions)
   {
-    runMC(mcCollisions, mcParticles, bcs);
+    runMC(mcCollisions, mcParticles, bcs, collisions);
   }
   PROCESS_SWITCH(studyMCTruth, processMC, "process", true);
 
-  void processDummy(FilteredMcCollisions const&) {}
+  void processDummy(FilteredMyMcCollisions const&) {}
   PROCESS_SWITCH(studyMCTruth, processDummy, "process Dummy", false);
 };
 
