@@ -44,11 +44,14 @@ using namespace o2::framework::expressions;
 // This workflow creates a table of weights that can be joined with track tables.
 struct JflucWeightsLoader {
   O2_DEFINE_CONFIGURABLE(cfgPathPhiWeights, std::string, "http://alice-ccdb.cern.ch", "Local (local://) or CCDB path for the phi acceptance correction histogram");
+  O2_DEFINE_CONFIGURABLE(cfgPathEffWeights, std::string, "", "Local (local://) or CCDB path for the efficiency correction histogram");
   O2_DEFINE_CONFIGURABLE(cfgForRunNumber, bool, false, "Get CCDB object by run");
   O2_DEFINE_CONFIGURABLE(cfgCCDBPath, std::string, "Users/m/mavirta/corrections/NUA/LHC23zzh", "Internal path in CCDB");
 
   THnF* ph = 0;
   TFile* pf = 0;
+  THnF* pheff = 0;
+  TFile* pfeff = 0;
   int runNumber = 0;
   int timestamp = 0;
   bool useCCDB = false;
@@ -61,6 +64,12 @@ struct JflucWeightsLoader {
     if (pf) {
       pf->Close();
       delete pf;
+    }
+    if (pheff)
+      delete pheff;
+    if (pfeff) {
+      pfeff->Close();
+      delete pfeff;
     }
   }
 
@@ -89,7 +98,7 @@ struct JflucWeightsLoader {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
     } else if (cfgPathPhiWeights.value.substr(0, 8) == "local://") {
-      LOGF(info, "Using corrections from: %s", cfgPathPhiWeights.value.substr(8).c_str());
+      LOGF(info, "Using non-uniform acceptance corrections from: %s", cfgPathPhiWeights.value.substr(8).c_str());
       pf = new TFile(cfgPathPhiWeights.value.substr(8).c_str(), "read");
       if (!pf->IsOpen()) {
         delete pf;
@@ -98,7 +107,26 @@ struct JflucWeightsLoader {
       }
       useCCDB = false;
     } else {
-      LOGF(info, "Didn't find \"local://\" or \"ccdb\"");
+      LOGF(info, "Didn't find \"local://\" or \"ccdb\" for non-uniform acceptance corrections.");
+      return;
+    }
+
+    if (cfgPathEffWeights.value.substr(0, 8) == "local://") {
+      LOGF(info, "Using efficiency corrections from: %s", cfgPathEffWeights.value.substr(8).c_str());
+      pfeff = new TFile(cfgPathEffWeights.value.substr(8).c_str(), "read");
+      if (!pfeff->IsOpen()) {
+        delete pfeff;
+        pfeff = 0;
+        LOGF(fatal, "Efficiency correction weights file not found: %s", cfgPathEffWeights.value.substr(8).c_str());
+      }
+      //
+      if (!(pheff = pfeff->Get<THnF>("ccdb_object"))) {
+        LOGF(warning, "Efficiency correction histogram not found.");
+      } else {
+        LOGF(info, "Loaded efficiency correction histogram locally.");
+      }
+    } else {
+      LOGF(info, "Didn't find \"local://\" or \"ccdb\" for efficiency corrections.");
       return;
     }
   }
@@ -109,23 +137,21 @@ struct JflucWeightsLoader {
   template <class ProducesT, class CollisionT, class TrackT>
   void loadWeights(Produces<ProducesT>& outputT, CollisionT const& collision, TrackT const& tracks)
   {
-
-    if (!pf && !useCCDB)
-      LOGF(fatal, "NUA correction weights file has not been opened.");
-    if (collision.runNumber() != runNumber) {
-      if (ph)
-        delete ph;
-      // Check if NUA correction can be found from a local file and load it
-      if (!useCCDB && !(ph = static_cast<THnF*>(pf->Get(Form("NUAWeights_%d", collision.runNumber()))))) {
-        LOGF(warning, "NUA correction histogram not found for run %d.", collision.runNumber());
-      } else if (useCCDB) { // Check if ccdb file is used and load it
-        LOGF(info, "Loaded NUA correction histogram from CCDB for run %d.", collision.runNumber());
-      } else {
-        LOGF(info, "Loaded NUA correction histogram locally for run %d.", collision.runNumber());
-      }
-      runNumber = collision.runNumber();
-      if (useCCDB) {
-        initCCDB(runNumber, timestamp);
+    if (pf || useCCDB) {
+      if (collision.runNumber() != runNumber) {
+        if (ph)
+          delete ph;
+        if (!useCCDB) {
+          // Check if NUA correction can be found from a local file and load it
+          if (!(ph = pf->Get<THnF>(Form("NUAWeights_%d", collision.runNumber()))))
+            LOGF(warning, "NUA correction histogram not found for run %d.", collision.runNumber());
+          else
+            LOGF(info, "Loaded NUA correction histogram locally for run %d.", collision.runNumber());
+        } else {
+          initCCDB(collision.runNumber(), timestamp);
+          LOGF(info, "Loaded NUA correction histogram from CCDB for run %d.", collision.runNumber());
+        }
+        runNumber = collision.runNumber();
       }
     }
     for (const auto& track : tracks) {
@@ -149,7 +175,16 @@ struct JflucWeightsLoader {
         phiWeight = 1.0f;
       }
 
-      effWeight = 1.0f; //<--- todo
+      if (pheff) {
+        const int effVars[] = {
+          pheff->GetAxis(0)->FindBin(track.eta()),
+          pheff->GetAxis(1)->FindBin(track.pt()),
+          pheff->GetAxis(2)->FindBin(collision.multiplicity()),
+          pheff->GetAxis(3)->FindBin(collision.posZ())};
+        effWeight = pheff->GetBinContent(effVars);
+      } else {
+        effWeight = 1.0f;
+      }
 
       outputT(phiWeight, effWeight);
     }
