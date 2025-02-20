@@ -562,9 +562,9 @@ struct ThreebodyRecoTask {
   template <class TTrackClass, typename TCollisionTable, typename TCandTable, typename TTracks>
   void reducedAnalysis(TCollisionTable const& collision, TCandTable const& candData, TTracks tracks, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double MClifetime = -1)
   {
-    auto track0 = tracks.iteratorAt(candData.track0Id());
-    auto track1 = tracks.iteratorAt(candData.track1Id());
-    auto track2 = tracks.iteratorAt(candData.track2Id());
+    auto track0 = tracks.rawIteratorAt(candData.track0Id());
+    auto track1 = tracks.rawIteratorAt(candData.track1Id());
+    auto track2 = tracks.rawIteratorAt(candData.track2Id());
 
     bool isMatter = track2.sign() > 0; // true if the candidate is hypertriton (p pi- d)
 
@@ -582,9 +582,9 @@ struct ThreebodyRecoTask {
   template <class TTrackClass, typename TCollisionTable, typename TCandTable, typename TTracks>
   void reducedLikeSignAnalysis(TCollisionTable const& collision, TCandTable const& candData, TTracks tracks, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double MClifetime = -1)
   {
-    auto track0 = tracks.iteratorAt(candData.track0Id());
-    auto track1 = tracks.iteratorAt(candData.track1Id());
-    auto track2 = tracks.iteratorAt(candData.track2Id());
+    auto track0 = tracks.rawIteratorAt(candData.track0Id());
+    auto track1 = tracks.rawIteratorAt(candData.track1Id());
+    auto track2 = tracks.rawIteratorAt(candData.track2Id());
 
     bool isMatter = track2.sign() < 0; // true if seach for background consists of (p pi- anti-d)
 
