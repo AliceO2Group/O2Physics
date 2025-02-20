@@ -215,7 +215,7 @@ struct Phik0shortanalysis {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Set of functions for phi purity
-  std::vector<std::vector<TF1*>> phiPurityFunctions;
+  std::vector<std::vector<TF1*>> phiPurityFunctions = std::vector<std::vector<TF1*>>(10, std::vector<TF1*>(7, nullptr));
 
   void init(InitContext&)
   {
