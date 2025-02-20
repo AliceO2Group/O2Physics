@@ -89,6 +89,7 @@ struct JetChargedV2 {
 
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
+  Configurable<float> leadingConstituentPtMax{"leadingConstituentPtMax", 9999.0, "maximum pT selection on jet constituent"};
   Configurable<float> jetPtMin{"jetPtMin", 0.15, "minimum pT acceptance for jets"};
   Configurable<float> jetPtMax{"jetPtMax", 200.0, "maximum pT acceptance for jets"};
   Configurable<float> jetEtaMin{"jetEtaMin", -0.9, "minimum eta acceptance for jets"};
@@ -221,6 +222,7 @@ struct JetChargedV2 {
     registry.add("h2_Chi2Cent_CombinFit", "Chi2 vs centrality; centrality; #tilde{#chi^{2}}", {HistType::kTH2F, {{100, 0, 100}, {100, 0, 5}}});
     registry.add("h2_PChi2_CombinFit", "p-value vs #tilde{#chi^{2}}; p-value; #tilde{#chi^{2}}", {HistType::kTH2F, {{100, 0, 1}, {100, 0, 5}}});
 
+    registry.add("Thn_PChi2_CombinFitCent", "p-value vs #tilde{#chi^{2}}; p-value; #tilde{#chi^{2}}", {HistType::kTHnSparseF, {{100, 0.0, 100.0}, {100, 0, 1}, {100, 0, 5}}});
     registry.add("h2_PChi2_CombinFitA", "p-value vs #tilde{#chi^{2}}; p-value; #tilde{#chi^{2}}", {HistType::kTH2F, {{100, 0, 1}, {100, 0, 5}}});
     registry.add("h2_PChi2_CombinFitB", "p-value vs #tilde{#chi^{2}}; p-value; #tilde{#chi^{2}}", {HistType::kTH2F, {{100, 0, 1}, {100, 0, 5}}});
 
@@ -321,17 +323,27 @@ struct JetChargedV2 {
         return false;
       }
     }
-    if (leadingConstituentPtMin > -98.0) {
-      bool isMinleadingConstituent = false;
+    bool checkConstituentPt = true;
+    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0);
+    if (!checkConstituentMinPt && !checkConstituentMaxPt) {
+      checkConstituentPt = false;
+    }
+    if (checkConstituentPt) {
+      bool isMinLeadingConstituent = !checkConstituentMinPt;
+      bool isMaxLeadingConstituent = true;
+
       for (const auto& constituent : jet.template tracks_as<T>()) {
-        if (constituent.pt() >= leadingConstituentPtMin) {
-          isMinleadingConstituent = true;
-          break;
+        double pt = constituent.pt();
+
+        if (checkConstituentMinPt && pt >= leadingConstituentPtMin) {
+          isMinLeadingConstituent = true;
+        }
+        if (checkConstituentMaxPt && pt > leadingConstituentPtMax) {
+          isMaxLeadingConstituent = false;
         }
       }
-      if (!isMinleadingConstituent) {
-        return false;
-      }
+      return isMinLeadingConstituent && isMaxLeadingConstituent;
     }
     return true;
   }
@@ -472,6 +484,10 @@ struct JetChargedV2 {
       registry.fill(HIST("h_evtnum_NTrk"), evtnum, nTrk);
     }
 
+    if (nTrk <= 0) {
+      return;
+    }
+
     hPtsumSumptFit = new TH1F("h_ptsum_sumpt_fit", "h_ptsum_sumpt fit use", TMath::CeilNint(std::sqrt(nTrk)), 0., o2::constants::math::TwoPI);
 
     if (jets.size() > 0) {
@@ -592,6 +608,7 @@ struct JetChargedV2 {
     registry.fill(HIST("h2_PvalueCDFCent_CombinFit"), collision.centrality(), cDF);
     registry.fill(HIST("h2_Chi2Cent_CombinFit"), collision.centrality(), chiSqr / (static_cast<float>(nDF)));
     registry.fill(HIST("h2_PChi2_CombinFit"), cDF, chiSqr / (static_cast<float>(nDF)));
+    registry.fill(HIST("Thn_PChi2_CombinFitCent"), collision.centrality(), cDF, chiSqr / (static_cast<float>(nDF)));
     double evtcent = collision.centrality();
     if (evtcent >= 0 && evtcent <= 5) {
       registry.fill(HIST("h2_PChi2_CombinFitA"), cDF, chiSqr / (static_cast<float>(nDF)));
@@ -723,7 +740,7 @@ struct JetChargedV2 {
       }
       registry.fill(HIST("h3_centrality_deltapT_RandomCornPhi_localrhovsphiwithoutleadingjet"), collision.centrality(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * rholocal, rcPhiPsi2, 1.0);
     }
-    hPtsumSumptFit->Reset();
+    delete hPtsumSumptFit;
     evtnum += 1;
   }
   PROCESS_SWITCH(JetChargedV2, processSigmaPt, "Sigma pT and bkg as fcn of phi", true);
