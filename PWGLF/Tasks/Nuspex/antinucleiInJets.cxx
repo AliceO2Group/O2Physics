@@ -247,7 +247,7 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_ue_rec_tpc", "antiproton_ue_rec_tpc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_jet_rec_tof", "antiproton_jet_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_ue_rec_tof", "antiproton_ue_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
-            
+
       // detector response matrix
       registryMC.add("detectorResponseMatrix", "detectorResponseMatrix", HistType::kTH2F, {{1000, 0.0, 100.0, "#it{p}_{T}^{gen} (GeV/#it{c})"}, {2000, -20.0, 20.0, "#it{p}_{T}^{gen} - #it{p}_{T}^{rec} (GeV/#it{c})"}});
     }
@@ -934,7 +934,7 @@ struct AntinucleiInJets {
       // reject empty events
       if (fjParticles.size() < 1)
         continue;
-        
+
       // cluster particles using the anti-kt algorithm
       fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
       fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0)); // active_area_explicit_ghosts
@@ -1089,7 +1089,7 @@ struct AntinucleiInJets {
           const auto mcparticle = track.mcParticle();
           if (mcparticle.pdgCode() != -2212)
             continue;
-                
+
           // variables
           double nsigmaTPCPr = track.tpcNSigmaPr();
           double nsigmaTOFPr = track.tofNSigmaPr();
@@ -1098,9 +1098,9 @@ struct AntinucleiInJets {
 
           if (!mcparticle.isPhysicalPrimary())
             continue;
-                
+
           registryMC.fill(HIST("antiproton_jet_prim"), track.pt());
-                
+
           // particle identification using the ITS cluster size
           bool passedItsPidProt(false);
           if (itsResponse.nSigmaITS<o2::track::PID::Proton>(track) > nSigmaItsMin && itsResponse.nSigmaITS<o2::track::PID::Proton>(track) < nSigmaItsMax) {
@@ -1147,7 +1147,7 @@ struct AntinucleiInJets {
           // variables
           double nsigmaTPCPr = track.tpcNSigmaPr();
           double nsigmaTOFPr = track.tofNSigmaPr();
-                
+
           registryMC.fill(HIST("antiproton_ue_all"), track.pt());
           if (!mcparticle.isPhysicalPrimary())
             continue;
