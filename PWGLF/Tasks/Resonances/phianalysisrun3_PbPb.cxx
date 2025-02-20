@@ -121,10 +121,14 @@ struct phianalysisrun3_PbPb {
       histos.add("Centgen", "MC Centrality", kTH1F, {{200, 0.0, 200.0}});
       histos.add("h2PhiRec2", "Phi meson Rec", kTH2F, {{200, 0.0f, 20.0f}, {200, 0.0, 200.0}});
       histos.add("h3PhiRec3", "Phi meson Rec", kTH3F, {{200, 0.0f, 20.0f}, {200, 0.0, 200.0}, {200, 0.9, 1.1}});
+      histos.add("h3Phi1Rec3", "Phi meson Rec", kTH3F, {{200, 0.0f, 20.0f}, {200, 0.0, 200.0}, {200, 0.9, 1.1}});
+      histos.add("h3PhiGen3", "Phi meson Gen", kTH3F, {{200, 0.0f, 20.0f}, {200, 0.0, 200.0}, {200, 0.9, 1.1}});
+      histos.add("h3PhiInvMassMixedMC", "Invariant mass of Phi meson Mixed", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
       histos.add("h2PhiGen2", "Phi meson gen", kTH2F, {{200, 0.0f, 20.0f}, {200, 0.0, 200.0}});
       histos.add("h1PhiRec1", "Phi meson Rec", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("h1Phimassgen", "Phi meson gen", kTH1F, {{200, 0.9, 1.1}});
       histos.add("h1Phimassrec", "Phi meson Rec", kTH1F, {{200, 0.9, 1.1}});
+      histos.add("h1Phi1massrec", "Phi meson Rec", kTH1F, {{200, 0.9, 1.1}});
       histos.add("h1Phipt", "Phi meson Rec", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("hOccupancy1", "Occupancy distribution", kTH1F, {{500, 0, 50000}});
       histos.add("TOF_Nsigma_MC", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2D, {{200, -12, 12}, {200, 0.0, 200.0}}});
@@ -149,6 +153,7 @@ struct phianalysisrun3_PbPb {
   double massKa = o2::constants::physics::MassKPlus;
   double rapidity;
   double genMass, recMass, resolution;
+  ROOT::Math::PxPyPzMVector phiMother, daughter1, daughter2;
   double mass{0.};
   double massrotation{0.};
   double pT{0.};
@@ -353,10 +358,10 @@ struct phianalysisrun3_PbPb {
       int occupancy1 = c1.trackOccupancyInTimeRange();
       int occupancy2 = c2.trackOccupancyInTimeRange();
       if (fillOccupancy && !(occupancy1 > cfgOccupancyCut1 && occupancy1 < cfgOccupancyCut2)) {
-        return;
+        continue;
       }
       if (fillOccupancy && !(occupancy2 > cfgOccupancyCut1 && occupancy2 < cfgOccupancyCut2)) {
-        return;
+        continue;
       }
       float multiplicity;
       if (cfgMultFT0)
@@ -649,17 +654,6 @@ struct phianalysisrun3_PbPb {
     if (std::abs(mcCollision.posZ()) < cfgCutVertex) {
       histos.fill(HIST("hMC"), 1.5);
     }
-    int Nchinel = 0;
-    for (auto& mcParticle : mcParticles) {
-      auto pdgcode = std::abs(mcParticle.pdgCode());
-      if (mcParticle.isPhysicalPrimary() && (pdgcode == 211 || pdgcode == 321 || pdgcode == 2212 || pdgcode == 11 || pdgcode == 13)) {
-        if (std::abs(mcParticle.eta()) < 1.0) {
-          Nchinel = Nchinel + 1;
-        }
-      }
-    }
-    if (Nchinel > 0 && std::abs(mcCollision.posZ()) < cfgCutVertex)
-      histos.fill(HIST("hMC"), 2.5);
     std::vector<int64_t> SelectedEvents(collisions.size());
     int nevts = 0;
     auto multiplicity = 0;
@@ -702,13 +696,18 @@ struct phianalysisrun3_PbPb {
         }
         if (kCurrentDaughter.pdgCode() == +321) {
           daughtp = true;
+          KaonPlus = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKa);
         } else if (kCurrentDaughter.pdgCode() == -321) {
           daughtm = true;
+          KaonMinus = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKa);
         }
       }
       if (daughtp && daughtm) {
-        histos.fill(HIST("h1PhiGen"), mcParticle.pt());
-        histos.fill(HIST("h2PhiGen2"), mcParticle.pt(), multiplicity);
+        PhiMesonMother = KaonPlus + KaonMinus;
+        histos.fill(HIST("h1PhiGen"), PhiMesonMother.pt());
+        histos.fill(HIST("h2PhiGen2"), PhiMesonMother.pt(), multiplicity);
+        histos.fill(HIST("h1Phimassgen"), PhiMesonMother.M());
+        histos.fill(HIST("h3PhiGen3"), PhiMesonMother.pt(), multiplicity, PhiMesonMother.M());
       }
     }
   }
@@ -767,6 +766,12 @@ struct phianalysisrun3_PbPb {
         if (!(track1PDG == 321 && track2PDG == 321)) {
           continue;
         }
+        daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+        daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+
+        phiMother = daughter1 + daughter2;
+        histos.fill(HIST("h1Phi1massrec"), phiMother.M());
+        histos.fill(HIST("h3Phi1Rec3"), phiMother.pt(), multiplicity, phiMother.M());
         for (auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
           for (auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
             if (mothertrack1.pdgCode() != mothertrack2.pdgCode()) {
@@ -790,26 +795,27 @@ struct phianalysisrun3_PbPb {
             if (ispTdepPID && (!selectionPIDpTdependent(track1) || !selectionPIDpTdependent(track2))) {
               continue;
             }
+
+            histos.fill(HIST("TPC_Nsigma_MC"), track1.tpcNSigmaKa(), multiplicity);
+            histos.fill(HIST("TOF_Nsigma_MC"), track1.tofNSigmaKa(), multiplicity);
             if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
               histos.fill(HIST("h1PhiRecsplit"), mothertrack1.pt());
               continue;
             }
-            histos.fill(HIST("TPC_Nsigma_MC"), track1.tpcNSigmaKa(), multiplicity);
-            histos.fill(HIST("TOF_Nsigma_MC"), track1.tofNSigmaKa(), multiplicity);
             oldindex = mothertrack1.globalIndex();
-            pvec0 = array{track1.px(), track1.py(), track1.pz()};
-            pvec1 = array{track2.px(), track2.py(), track2.pz()};
-            auto arrMomrec = array{pvec0, pvec1};
-            auto motherP = mothertrack1.p();
-            auto motherE = mothertrack1.e();
-            genMass = std::sqrt(motherE * motherE - motherP * motherP);
-            recMass = RecoDecay::m(arrMomrec, array{massKa, massKa});
-            auto recpt = TMath::Sqrt((track1.px() + track2.px()) * (track1.px() + track2.px()) + (track1.py() + track2.py()) * (track1.py() + track2.py()));
-            histos.fill(HIST("h1PhiRec1"), mothertrack1.pt());
-            histos.fill(HIST("h2PhiRec2"), mothertrack1.pt(), multiplicity);
-            histos.fill(HIST("h1Phimassgen"), genMass);
-            histos.fill(HIST("h1Phimassrec"), recMass);
-            histos.fill(HIST("h1Phipt"), recpt);
+            if (track1.sign() * track2.sign() < 0) {
+              KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+              KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+            }
+            PhiMesonMother = KaonPlus + KaonMinus;
+
+            if (TMath::Abs(PhiMesonMother.Rapidity()) > confRapidity) {
+              continue;
+            }
+            histos.fill(HIST("h1PhiRec1"), PhiMesonMother.pt());
+            histos.fill(HIST("h2PhiRec2"), PhiMesonMother.pt(), multiplicity);
+            histos.fill(HIST("h1Phimassrec"), PhiMesonMother.M());
+            histos.fill(HIST("h3PhiRec3"), PhiMesonMother.pt(), multiplicity, PhiMesonMother.M());
           }
         }
       }
@@ -817,6 +823,73 @@ struct phianalysisrun3_PbPb {
   }
 
   PROCESS_SWITCH(phianalysisrun3_PbPb, processRec, "Process Reconstructed", false);
+  void processMixedEventMC(EventCandidatesMC const& recCollisions, TrackCandidatesMC const& RecTracks, aod::McParticles const&)
+  {
+
+    auto tracksTuple = std::make_tuple(RecTracks);
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
+    SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeVertexContributor> pairs{binningOnPositions, cfgNoMixedEvents, -1, recCollisions, tracksTuple, &cache};
+
+    for (auto& [c1, tracks1, c2, tracks2] : pairs) {
+      if (!c1.sel8()) {
+        continue;
+      }
+      if (!c2.sel8()) {
+        continue;
+      }
+      if (additionalEvSel2 && (!c1.selection_bit(aod::evsel::kNoSameBunchPileup) || !c1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel2 && (!c2.selection_bit(aod::evsel::kNoSameBunchPileup) || !c2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel3 && (!c1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+        continue;
+      }
+      if (additionalEvSel3 && (!c2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+        continue;
+      }
+      int occupancy1 = c1.trackOccupancyInTimeRange();
+      int occupancy2 = c2.trackOccupancyInTimeRange();
+      if (fillOccupancy && !(occupancy1 > cfgOccupancyCut1 && occupancy1 < cfgOccupancyCut2)) {
+        continue;
+      }
+      if (fillOccupancy && !(occupancy2 > cfgOccupancyCut1 && occupancy2 < cfgOccupancyCut2)) {
+        continue;
+      }
+      auto multiplicity = c1.centFT0C();
+      for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        histos.fill(HIST("hMC"), 6.5);
+        if (!selectionTrack(t1)) {
+          continue;
+        }
+        if (!selectionTrack(t2)) {
+          continue;
+        }
+        if (!selectionPair(t1, t2)) {
+          continue;
+        }
+        if (!ispTdepPID && (!selectionPID(t1) || !selectionPID(t2))) {
+          continue;
+        }
+        if (ispTdepPID && (!selectionPIDpTdependent(t1) || !selectionPIDpTdependent(t2))) {
+          continue;
+        }
+        histos.fill(HIST("hMC"), 7.5);
+        if (t1.sign() * t2.sign() < 0) {
+          KaonPlus = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa);
+          KaonMinus = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massKa);
+        }
+        PhiMesonMother = KaonPlus + KaonMinus;
+        if (TMath::Abs(PhiMesonMother.Rapidity()) > confRapidity) {
+          continue;
+        }
+        histos.fill(HIST("hMC"), 8.5);
+        histos.fill(HIST("h3PhiInvMassMixedMC"), multiplicity, PhiMesonMother.pt(), PhiMesonMother.M());
+      }
+    }
+  }
+  PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEventMC, "Process Mixed event MC", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
