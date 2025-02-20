@@ -155,6 +155,7 @@ DECLARE_SOA_TABLE(HfCandLcMCs, "AOD", "HFCANDLCMC",
                   mc_match::XEvent, mc_match::YEvent, mc_match::ZEvent)
 
 DECLARE_SOA_TABLE(HfCandLcKFs, "AOD", "HFCANDLCKF",
+                  full::CollisionId,
                   kf::X, kf::Y, kf::Z, kf::ErrX, kf::ErrY, kf::ErrZ,
                   kf::ErrPVX, kf::ErrPVY, kf::ErrPVZ,
                   kf::Chi2PrimProton, kf::Chi2PrimKaon, kf::Chi2PrimPion,
@@ -302,7 +303,8 @@ DECLARE_SOA_TABLE(HfCandLcFullEvs, "AOD", "HFCANDLCFULLEV",
                   full::CentFT0M,
                   full::CentFV0A,
                   full::CentFDDM,
-                  full::MultZeqNTracksPV);
+                  full::MultZeqNTracksPV,
+                  kf::MultNTracksPV);
 
 DECLARE_SOA_TABLE(HfCandLcFullPs, "AOD", "HFCANDLCFULLP",
                   full::Pt,
@@ -456,7 +458,8 @@ struct HfTreeCreatorLcToPKPi {
         centFT0M,
         centFV0A,
         centFDDM,
-        collision.multZeqNTracksPV());
+        collision.multZeqNTracksPV(),
+        collision.multNTracksPV());
     }
 
     // Filling candidate properties
@@ -660,6 +663,7 @@ struct HfTreeCreatorLcToPKPi {
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float mass = CandFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
             rowCandidateKF(
+              candidate.collisionId(),
               svX, svY, svZ, svErrX, svErrY, svErrZ,
               pvErrX, pvErrY, pvErrZ,
               chi2primProton, chi2primKaon, chi2primPion,
@@ -850,7 +854,8 @@ struct HfTreeCreatorLcToPKPi {
         centFT0M,
         centFV0A,
         centFDDM,
-        collision.multZeqNTracksPV());
+        collision.multZeqNTracksPV(),
+        collision.multNTracksPV());
     }
 
     // Filling candidate properties
@@ -1050,6 +1055,7 @@ struct HfTreeCreatorLcToPKPi {
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float mass = CandFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
             rowCandidateKF(
+              candidate.collisionId(),
               X, Y, Z, ErrX, ErrY, ErrZ,
               ErrPVX, ErrPVY, ErrPVZ,
               chi2prim_proton, chi2prim_kaon, chi2prim_pion,
