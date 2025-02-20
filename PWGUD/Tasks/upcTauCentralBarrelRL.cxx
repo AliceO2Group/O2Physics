@@ -78,6 +78,10 @@ struct UpcTauRl {
     Configurable<float> cutTrueGapSideFT0C{"cutTrueGapSideFT0C", 50., "FT0C threshold for SG selector"};
     Configurable<float> cutTrueGapSideZDC{"cutTrueGapSideZDC", 0., "ZDC threshold for SG selector. 0 is <1n, 4.2 is <2n, 6.7 is <3n, 9.5 is <4n, 12.5 is <5n"};
     Configurable<float> cutFITtime{"cutFITtime", 40., "Maximum FIT time allowed. Default is 40ns"};
+    Configurable<float> cutEvOccupancy{"cutEvOccupancy", 100000., "Maximum allowed occupancy"};
+    Configurable<bool> cutEvTrs{"cutEvTrs", true, {"Event selection bit kNoCollInTimeRangeStandard"}};
+    Configurable<bool> cutEvTrofs{"cutEvTrofs", true, {"Event selection bit kNoCollInRofStandard"}};
+    Configurable<bool> cutEvHmpr{"cutEvHmpr", true, {"Event selection bit kNoHighMultCollInPrevRof"}};
     Configurable<bool> applyAcceptanceSelection{"applyAcceptanceSelection", false, {"Select events in ALICE CB acceptance set with cutTrackEta"}};
     Configurable<float> cutTrackEta{"cutTrackEta", 0.9, "Cut on central barrel track eta in absolute values."};
   } cutSample;
@@ -108,8 +112,9 @@ struct UpcTauRl {
     Configurable<bool> useThresholdsPID{"useThresholdsPID", false, {"Switch off smaller-sigma-wins pidZ."}};
     Configurable<bool> applyTauEventSelection{"applyTauEventSelection", true, {"Select tau event."}};
     Configurable<bool> cutOppositeCharge{"cutOppositeCharge", true, {"Tracks have opposite charge."}};
+    Configurable<bool> cutSameCharge{"cutSameCharge", false, {"Tracks have same charge."}};
     Configurable<float> cutMaxAcoplanarity{"cutMaxAcoplanarity", 4 * o2::constants::math::PI / 5, {"Opening angle of the tracks. What is more goes away."}};
-    Configurable<float> cutMinAcoplanarity{"cutMinAcoplanarity", 2 * o2::constants::math::PI / 5, {"Opening angle of the tracks. What is less goes away."}};
+    Configurable<float> cutMinAcoplanarity{"cutMinAcoplanarity", 0 * o2::constants::math::PI / 5, {"Opening angle of the tracks. What is less goes away."}};
     Configurable<bool> cutElectronHasTOF{"cutElectronHasTOF", true, {"Electron is required to hit TOF."}};
     Configurable<bool> cutGoodElectron{"cutGoodElectron", true, {"Select good electron."}};
     Configurable<bool> cutOutRho{"cutOutRho", false, {"Cut out rho mass under two tracks are pions hypothesis"}};
@@ -181,11 +186,11 @@ struct UpcTauRl {
   } confAxis;
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
-  using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
-  using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
+  using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras>::iterator;
+  using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
   using FullMCUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags, aod::UDMcTrackLabels>;
-  using FullMCUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDMcCollsLabels>::iterator;
-  using FullMCSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDMcCollsLabels>::iterator;
+  using FullMCUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::UDMcCollsLabels>::iterator;
+  using FullMCSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDMcCollsLabels>::iterator;
 
   // init
   void init(InitContext&)
@@ -938,6 +943,29 @@ struct UpcTauRl {
     return true;
   }
 
+  template <typename C>
+  bool isGoodROFtime(C const& coll)
+  {
+
+    // Occupancy
+    if (coll.occupancyInTime() > cutSample.cutEvOccupancy)
+      return false;
+
+    // kNoCollInTimeRangeStandard
+    if (cutSample.cutEvTrs && !coll.trs())
+      return false;
+
+    // kNoCollInRofStandard
+    if (cutSample.cutEvTrofs && !coll.trofs())
+      return false;
+
+    // kNoHighMultCollInPrevRof
+    if (cutSample.cutEvHmpr && !coll.hmpr())
+      return false;
+
+    return true;
+  }
+
   template <typename T>
   bool isElectronCandidate(T const& electronCandidate)
   // Loose criterium to find electron-like particle
@@ -1029,6 +1057,8 @@ struct UpcTauRl {
 
     int enumTrk1 = (cutTauEvent.useThresholdsPID ? (isElectronCandidate(trkDaug1) ? P_ELECTRON : P_PION) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)));
     if (cutTauEvent.cutOppositeCharge && (trkDaug1.sign() * trkDaug2.sign() > 0))
+      return false;
+    if (cutTauEvent.cutSameCharge && (trkDaug1.sign() * trkDaug2.sign() < 0))
       return false;
     if (calculateAcoplanarity(daug[0].Phi(), daug[1].Phi()) > cutTauEvent.cutMaxAcoplanarity)
       return false;
@@ -2487,6 +2517,9 @@ struct UpcTauRl {
                      FullUDTracks const& reconstructedBarrelTracks)
   {
 
+    if (!isGoodROFtime(reconstructedCollision))
+      return;
+
     if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
       return;
 
@@ -2510,6 +2543,9 @@ struct UpcTauRl {
     if (cutSample.useTrueGap)
       gapSide = trueGapSide;
 
+    if (!isGoodROFtime(reconstructedCollision))
+      return;
+
     if (gapSide != cutSample.whichGapSide)
       return;
 
@@ -2530,6 +2566,9 @@ struct UpcTauRl {
                       aod::UDMcParticles const&)
   {
     isMC = true;
+
+    if (!isGoodROFtime(reconstructedCollision))
+      return;
 
     if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
       return;
@@ -2565,6 +2604,9 @@ struct UpcTauRl {
     histos.fill(HIST("Events/UDtableGapSide"), gapSide);
 
     if (gapSide != cutSample.whichGapSide)
+      return;
+
+    if (!isGoodROFtime(reconstructedCollision))
       return;
 
     if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
@@ -2612,30 +2654,11 @@ struct UpcTauRl {
 
   } // end processMCgenDG
 
-  void processTestMC(FullMCUDCollision const& /*reconstructedCollision*/,
-                     FullMCUDTracks const& /*reconstructedBarrelTracks*/,
-                     aod::UDMcCollisions const&,
-                     aod::UDMcParticles const&)
-  {
-    // if (reconstructedCollision.has_udMcCollision()) {
-    //   const auto& generatedCollision = reconstructedCollision.udMcCollision();
-    //   printDebugMessage(Form("%lli udMcCollision found", generatedCollision.size())); // FIXME: Type of size() is not invariant.
-    // }
-
-    // const auto& track = reconstructedBarrelTracks.iteratorAt(0);
-    // if (track.size() && track.has_udMcParticle()) {
-    //   const auto& particle = track.udMcParticle();
-    //   printDebugMessage(Form("%lli udMcParticle found", particle.size())); // FIXME: Type of size() is not invariant.
-    // }
-
-  } // end processTestMC
-
   PROCESS_SWITCH(UpcTauRl, processDataDG, "Iterate UD tables with measured data created by DG-Candidate-Producer.", false);
   PROCESS_SWITCH(UpcTauRl, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
   PROCESS_SWITCH(UpcTauRl, processMCrecDG, "Iterate Monte Carlo UD tables with reconstructed data created by DG-Candidate-Producer. Similar to processDataDG but uses association to truth level.", false);
   PROCESS_SWITCH(UpcTauRl, processMCrecSG, "Iterate Monte Carlo UD tables with reconstructed data created by SG-Candidate-Producer. Similar to processDataSG but uses association to truth level and trueGap is not available.", false);
   PROCESS_SWITCH(UpcTauRl, processMCgen, "Iterate Monte Carlo UD tables with truth data.", false);
-  PROCESS_SWITCH(UpcTauRl, processTestMC, "Simple test of indices in MC sample.", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

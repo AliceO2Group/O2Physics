@@ -13,11 +13,14 @@
 /// \brief Analysis task for the Phi and K0S rapidity correlations analysis
 /// \author Stefano Cannito (stefano.cannito@cern.ch)
 
+#include <cstdlib>
+
+#include <cmath>
 #include <array>
 #include <vector>
 #include <algorithm>
-#include <cmath>
-#include <cstdlib>
+#include <string>
+#include <utility>
 
 #include <TH1F.h>
 #include <TH2F.h>
@@ -162,7 +165,7 @@ struct Phik0shortanalysis {
 
   // Configurable for CCDB
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
-  Configurable<std::string> ccdbPurityPath{"ccdbPurityPath", "", "Correction path to file"};
+  Configurable<std::string> ccdbPurityPath{"ccdbPurityPath", "Users/s/scannito/PhiPuritiesData", "Correction path to file"};
 
   // Constants
   double massKa = o2::constants::physics::MassKPlus;
@@ -377,6 +380,11 @@ struct Phik0shortanalysis {
     mcPionHist.add("h2TracksPiDCAzPreCutMCReco", "Dcaz distribution vs pt before DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{z} (cm)"}});
     mcPionHist.add("h2TracksPiDCAxyPostCutMCReco", "Dcaxy distribution vs pt after DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
     mcPionHist.add("h2TracksPiDCAzPostCutMCReco", "Dcaz distribution vs pt after DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{z} (cm)"}});
+
+    // DCA plots for pions in MCReco distinguishing Primaries, Secondaries from Weak Decay and Secondaries from Material
+    mcPionHist.add("h3RecMCDCAxyPrimPi", "Dcaxy distribution vs pt for Primary Pions", kTH2F, {binnedptPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    mcPionHist.add("h3RecMCDCAxySecWeakDecayPi", "Dcaz distribution vs pt for Secondary Pions from Weak Decay", kTH2F, {binnedptPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    mcPionHist.add("h3RecMCDCAxySecMaterialPi", "Dcaxy distribution vs pt for Secondary Pions from Material", kTH2F, {binnedptPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
 
     // RecMC Pion coupled to Phi with TPC
     mcPhiPionHist.add("h3RecMCPhiPiTPCInc", "RecoMC Pion coupled to Phi with TPC Inclusive", kTH3F, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}});
@@ -1064,7 +1072,7 @@ struct Phik0shortanalysis {
       if (!selectionPion<true, false>(track, true))
         continue;
 
-      dataPhiPionHist.fill(HIST("h3PiRapidityData"), multiplicity, track.pt(), track.rapidity(massPi));
+      dataPionHist.fill(HIST("h3PiRapidityData"), multiplicity, track.pt(), track.rapidity(massPi));
 
       if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
         continue;
@@ -1332,7 +1340,7 @@ struct Phik0shortanalysis {
         if (std::abs(v0mcparticle.y()) > cfgYAcceptance)
           continue;
 
-        mcK0SHist.fill(HIST("h3RecMCK0S"), genmultiplicity, v0.pt(), v0.mK0Short());
+        mcK0SHist.fill(HIST("h3RecMCK0S"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
 
         std::array<bool, 3> isCountedMCPhi{false, false, false};
 
@@ -1343,19 +1351,19 @@ struct Phik0shortanalysis {
             continue;
 
           if (!isCountedMCPhi.at(0)) {
-            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SInc"), genmultiplicity, v0.pt(), v0.mK0Short());
+            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SInc"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
             isCountedMCPhi.at(0) = true;
           }
           if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(1)) {
-            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SFCut"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
             isCountedMCPhi.at(1) = true;
           }
           if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(2)) {
-            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SSCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SSCut"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
             isCountedMCPhi.at(2) = true;
           }
         }
@@ -1401,16 +1409,19 @@ struct Phik0shortanalysis {
 
         // Primary pion selection
         if (mcTrack.isPhysicalPrimary()) {
+          mcPionHist.fill(HIST("h3RecMCDCAxyPrimPi"), track.pt(), track.dcaXY());
         } else {
           if (mcTrack.getProcess() == 4) { // Selection of secondary pions from weak decay
-          } else {                         // Selection of secondary pions from material interactions
+            mcPionHist.fill(HIST("h3RecMCDCAxySecWeakDecayPi"), track.pt(), track.dcaXY());
+          } else { // Selection of secondary pions from material interactions
+            mcPionHist.fill(HIST("h3RecMCDCAxySecMaterialPi"), track.pt(), track.dcaXY());
           }
           continue;
         }
 
         mcPionHist.fill(HIST("h4PiRapiditySmearing"), genmultiplicity, track.pt(), track.rapidity(massPi), mcTrack.y());
 
-        mcPionHist.fill(HIST("h3RecMCPiTPC"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
+        mcPionHist.fill(HIST("h3RecMCPiTPC"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
 
         std::array<bool, 3> isCountedMCPhi{false, false, false};
 
@@ -1421,19 +1432,19 @@ struct Phik0shortanalysis {
             continue;
 
           if (!isCountedMCPhi.at(0)) {
-            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCInc"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
+            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCInc"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
             isCountedMCPhi.at(0) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(1)) {
-            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCFCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
+            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCFCut"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
             isCountedMCPhi.at(1) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(2)) {
-            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCSCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
+            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCSCut"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
             isCountedMCPhi.at(2) = true;
           }
         }
@@ -1441,7 +1452,7 @@ struct Phik0shortanalysis {
         if (track.pt() >= 0.5 && !track.hasTOF())
           continue;
 
-        mcPionHist.fill(HIST("h4RecMCPiTPCTOF"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+        mcPionHist.fill(HIST("h4RecMCPiTPCTOF"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
 
         isCountedMCPhi = {false, false, false};
 
@@ -1452,19 +1463,19 @@ struct Phik0shortanalysis {
             continue;
 
           if (!isCountedMCPhi.at(0)) {
-            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFInc"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFInc"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
             isCountedMCPhi.at(0) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(1)) {
-            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFFCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFFCut"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
             isCountedMCPhi.at(1) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(2)) {
-            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFSCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFSCut"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
             isCountedMCPhi.at(2) = true;
           }
         }
