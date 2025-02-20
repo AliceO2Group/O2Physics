@@ -13,15 +13,6 @@
 /// \brief Analysis task for the Phi and K0S rapidity correlations analysis
 /// \author Stefano Cannito (stefano.cannito@cern.ch)
 
-#include <cstdlib>
-
-#include <cmath>
-#include <array>
-#include <vector>
-#include <algorithm>
-#include <string>
-#include <utility>
-
 #include <TH1F.h>
 #include <TH2F.h>
 #include <THn.h>
@@ -34,6 +25,14 @@
 #include <TF1.h>
 #include <TPDGCode.h>
 #include <Math/Vector4D.h>
+
+#include <cstdlib>
+#include <cmath>
+#include <array>
+#include <vector>
+#include <algorithm>
+#include <string>
+#include <utility>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -85,7 +84,7 @@ struct Phik0shortanalysis {
 
   // Configurables for track selection (not necessarily common for trigger and the two associated particles)
   struct : ConfigurableGroup {
-    Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "Cut on charge"};
+    Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0f, "Cut on charge"};
     Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};
     Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
     Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
@@ -97,10 +96,10 @@ struct Phik0shortanalysis {
     Configurable<float> etaMax{"etaMax", 0.8f, "eta max"};
 
     Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
-    Configurable<float> nSigmaCutTPCKa{"nSigmaCutTPCKa", 3.0, "Value of the TPC Nsigma cut for Kaons"};
-    Configurable<float> nSigmaCutCombinedKa{"nSigmaCutCombinedKa", 3.0, "Value of the TOF Nsigma cut for Kaons"};
+    Configurable<float> nSigmaCutTPCKa{"nSigmaCutTPCKa", 3.0f, "Value of the TPC Nsigma cut for Kaons"};
+    Configurable<float> nSigmaCutCombinedKa{"nSigmaCutCombinedKa", 3.0f, "Value of the TOF Nsigma cut for Kaons"};
 
-    Configurable<float> nSigmaCutTPCPion{"nSigmaCutTPCPion", 4.0, "Value of the TPC Nsigma cut for Pions"};
+    Configurable<float> nSigmaCutTPCPion{"nSigmaCutTPCPion", 4.0f, "Value of the TPC Nsigma cut for Pions"};
     Configurable<float> cMinPionPtcut{"cMinPionPtcut", 0.3f, "Track minimum pt cut"};
     Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
     Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80, "min number of TPC crossed rows"};
@@ -111,31 +110,33 @@ struct Phik0shortanalysis {
 
   // Configurables on phi pT bins
   Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi"};
+  Configurable<float> minPhiPt{"minPhiPt", 0.4f, "Minimum pT for Phi"};
 
   // Configurables on phi mass
   Configurable<int> nBinsMPhi{"nBinsMPhi", 13, "N bins in cfgmassPhiaxis"};
-  Configurable<float> lowMPhi{"lowMPhi", 1.0095, "Upper limits on Phi mass for signal extraction"};
-  Configurable<float> upMPhi{"upMPhi", 1.029, "Upper limits on Phi mass for signal extraction"};
+  Configurable<float> lowMPhi{"lowMPhi", 1.0095f, "Upper limits on Phi mass for signal extraction"};
+  Configurable<float> upMPhi{"upMPhi", 1.029f, "Upper limits on Phi mass for signal extraction"};
 
   // Configurables for V0 selection
   struct : ConfigurableGroup {
-    Configurable<float> v0SettingCosPA{"v0SettingCosPA", 0.98, "V0 CosPA"};
-    Configurable<float> v0SettingRadius{"v0SettingRadius", 0.5, "v0radius"};
-    Configurable<float> v0SettingDCAV0Dau{"v0SettingDCAV0Dau", 1, "DCA V0 Daughters"};
-    Configurable<float> v0SettingDCAPosToPV{"v0SettingDCAPosToPV", 0.06, "DCA Pos To PV"};
-    Configurable<float> v0SettingDCANegToPV{"v0SettingDCANegToPV", 0.06, "DCA Neg To PV"};
+    Configurable<float> v0SettingCosPA{"v0SettingCosPA", 0.98f, "V0 CosPA"};
+    Configurable<float> v0SettingRadius{"v0SettingRadius", 0.5f, "v0radius"};
+    Configurable<float> v0SettingDCAV0Dau{"v0SettingDCAV0Dau", 1.0f, "DCA V0 Daughters"};
+    Configurable<float> v0SettingDCAPosToPV{"v0SettingDCAPosToPV", 0.06f, "DCA Pos To PV"};
+    Configurable<float> v0SettingDCANegToPV{"v0SettingDCANegToPV", 0.06f, "DCA Neg To PV"};
+    Configurable<float> v0SettingMinPt{"v0SettingMinPt", 0.1f, "V0 min pt"};
 
     Configurable<bool> cfgisV0ForData{"cfgisV0ForData", true, "isV0ForData"};
 
     Configurable<bool> cfgFurtherV0Selection{"cfgFurtherV0Selection", false, "Further V0 selection"};
     Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0s(cm)"};
-    Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
-    Configurable<float> v0rejK0s{"v0rejK0s", 0.005, "V0 rej K0s"};
+    Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2f, "parameter Armenteros Cut"};
+    Configurable<float> v0rejK0s{"v0rejK0s", 0.005f, "V0 rej K0s"};
   } v0Configs;
 
   // Configurables on K0S mass
-  Configurable<float> lowMK0S{"lowMK0S", 0.48, "Lower limit on K0Short mass"};
-  Configurable<float> upMK0S{"upMK0S", 0.52, "Upper limit on K0Short mass"};
+  Configurable<float> lowMK0S{"lowMK0S", 0.48f, "Lower limit on K0Short mass"};
+  Configurable<float> upMK0S{"upMK0S", 0.52f, "Upper limit on K0Short mass"};
 
   // Configurable on K0S pT bins
   Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
@@ -563,6 +564,8 @@ struct Phik0shortanalysis {
       return false;
     if (v0.v0radius() < v0Configs.v0SettingRadius)
       return false;
+    if (v0.pt() < v0Configs.v0SettingMinPt)
+      return false;
 
     if (v0Configs.cfgisV0ForData) {
       if (std::abs(daughter1.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCPion)
@@ -871,6 +874,8 @@ struct Phik0shortanalysis {
           continue; // condition to avoid double counting of pair
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
+        if (recPhi.Pt() < minPhiPt)
+          continue;
         if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
           continue;
 
@@ -1010,10 +1015,10 @@ struct Phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-
+          if (recPhi.Pt() < minPhiPt)
+            continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
-
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
 
@@ -1099,10 +1104,10 @@ struct Phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-
+          if (recPhi.Pt() < minPhiPt)
+            continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
-
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
 
@@ -1207,6 +1212,8 @@ struct Phik0shortanalysis {
           continue;
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
+        if (recPhi.Pt() < minPhiPt)
+          continue;
 
         mcPhiHist.fill(HIST("h3PhiRapiditySmearing"), genmultiplicity, recPhi.Rapidity(), mcMotherPhi.y());
 
@@ -1521,6 +1528,8 @@ struct Phik0shortanalysis {
           continue; // condition to avoid double counting of pair
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
+        if (recPhi.Pt() < minPhiPt)
+          continue;
         if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
           continue;
 
@@ -1699,10 +1708,10 @@ struct Phik0shortanalysis {
           }
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-
+          if (recPhi.Pt() < minPhiPt)
+            continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
-
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
 
@@ -1823,10 +1832,10 @@ struct Phik0shortanalysis {
           }
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-
+          if (recPhi.Pt() < minPhiPt)
+            continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
-
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
 
