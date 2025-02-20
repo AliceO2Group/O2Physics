@@ -796,7 +796,6 @@ struct phiInJets {
 	// 1.MB REC Closure
 	//==================
 	if (originalTrack.sign() * originalTrack2.sign() < 0) {
-	  std::cout<<"ANG KIMOCHIIIIII"<<std::endl;
 	  JEhistos.fill(HIST("hMCRec_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
 	}
 	else if (originalTrack.sign() * originalTrack2.sign() > 0) {
