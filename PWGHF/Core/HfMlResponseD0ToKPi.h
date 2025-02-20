@@ -103,17 +103,17 @@
 // where GETTER1 and GETTER2 are methods of the OBJECT, the variable
 // is filled depending on whether it is a D0 or a D0bar
 // and INDEX is the index of the vector
-#define CHECK_AND_FILL_VEC_D0_ML(OBJECT, FEATURE, GETTER1, GETTER2, INDEX)  \
-case static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE): {                 \
-  if constexpr (usingMl) {                                                  \
-     if (pdgCode == o2::constants::physics::kD0) {                          \
-      inputFeatures.emplace_back(OBJECT.GETTER1()[INDEX]);                  \
-    } else {                                                                \
-      inputFeatures.emplace_back(OBJECT.GETTER2()[INDEX]);                  \
-    }                                                                       \
-  }                                                                         \
-  break;                                                                    \
-}
+#define CHECK_AND_FILL_VEC_D0_ML(OBJECT, FEATURE, GETTER1, GETTER2, INDEX) \
+  case static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE): {              \
+    if constexpr (usingMl) {                                               \
+      if (pdgCode == o2::constants::physics::kD0) {                        \
+        inputFeatures.emplace_back(OBJECT.GETTER1()[INDEX]);               \
+      } else {                                                             \
+        inputFeatures.emplace_back(OBJECT.GETTER2()[INDEX]);               \
+      }                                                                    \
+    }                                                                      \
+    break;                                                                 \
+  }
 
 namespace o2::analysis
 {
