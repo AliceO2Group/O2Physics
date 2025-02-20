@@ -220,7 +220,11 @@ def get_tree_for_table(tab: str, dic_wf_all: dict, dic_wf_tree=None, case_sensit
         symbol_direction = "->"
     if producers:
         print(f"{tab} {symbol_direction} {producers}")
-        if levels_max != 0:  # Search for more dependencies only if needed.
+        if levels_max == 0:  # Add producers in the dependency dictionary.
+            for p in producers:
+                if p not in dic_wf_tree:
+                    dic_wf_tree[p] = dic_wf_all[p]
+        else:  # Search for more dependencies if needed.
             print("\nWorkflow dependency tree:\n")
             for p in producers:
                 get_tree_for_workflow(p, dic_wf_all, dic_wf_tree, case_sensitive, 0, levels_max, reverse)
