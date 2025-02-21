@@ -830,7 +830,7 @@ struct HfCandidateCreator3ProngExpressions {
             createXic = option.defaultValue.get<bool>();
           } else if (option.name.compare("createDstarToPiKPiBkg") == 0) {
             createDstarToPiKPiBkg = option.defaultValue.get<bool>();
-          } 
+          }
         }
         break;
       }
