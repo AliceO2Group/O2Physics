@@ -154,11 +154,17 @@ struct derivedlambdakzeroanalysis {
     // Track quality
     Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
     Configurable<int> minITSclusters{"minITSclusters", -1, "minimum ITS clusters"};
+    Configurable<float> minTPCrowsOverFindableClusters{"minTPCrowsOverFindableClusters", -1, "minimum nbr of TPC crossed rows over findable"};
+    Configurable<float> maxFractionTPCSharedClusters{"maxFractionTPCSharedClusters", 1e+09, "maximum fraction of TPC shared clusters"};
+    Configurable<float> maxITSchi2PerNcls{"maxITSchi2PerNcls", 1e+09, "maximum ITS chi2 per clusters"};
+    Configurable<float> maxTPCchi2PerNcls{"maxTPCchi2PerNcls", 1e+09, "maximum TPC chi2 per clusters"};
     Configurable<bool> skipTPConly{"skipTPConly", false, "skip V0s comprised of at least one TPC only prong"};
     Configurable<bool> requirePosITSonly{"requirePosITSonly", false, "require that positive track is ITSonly (overrides TPC quality)"};
     Configurable<bool> requireNegITSonly{"requireNegITSonly", false, "require that negative track is ITSonly (overrides TPC quality)"};
     Configurable<bool> rejectPosITSafterburner{"rejectPosITSafterburner", false, "reject positive track formed out of afterburner ITS tracks"};
     Configurable<bool> rejectNegITSafterburner{"rejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
+    Configurable<bool> requirePosITSafterburnerOnly{"requirePosITSafterburnerOnly", false, "require positive track formed out of afterburner ITS tracks"};
+    Configurable<bool> requireNegITSafterburnerOnly{"requireNegITSafterburnerOnly", false, "require negative track formed out of afterburner ITS tracks"};
 
     // PID (TPC/TOF)
     Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
@@ -262,6 +268,8 @@ struct derivedlambdakzeroanalysis {
   ConfigurableAxis axisTOFdeltaT{"axisTOFdeltaT", {200, -5000.0f, 5000.0f}, "TOF Delta T (ps)"};
   ConfigurableAxis axisPhi{"axisPhi", {18, 0.0f, constants::math::TwoPI}, "Azimuth angle (rad)"};
   ConfigurableAxis axisEta{"axisEta", {10, -1.0f, 1.0f}, "#eta"};
+  ConfigurableAxis axisITSchi2{"axisITSchi2", {100, 0.0f, 100.0f}, "#chi^{2} per ITS clusters"};
+  ConfigurableAxis axisTPCchi2{"axisTPCchi2", {100, 0.0f, 100.0f}, "#chi^{2} per TPC clusters"};
 
   // UPC axes
   ConfigurableAxis axisSelGap{"axisSelGap", {4, -1.5, 2.5}, "Gap side"};
@@ -574,6 +582,14 @@ struct derivedlambdakzeroanalysis {
         histos.add("K0Short/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisK0Mass});
       }
       if (doDetectPropQA == 3) {
+        histos.add("K0Short/h3dITSchi2", "h3dMaxITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("K0Short/h3dTPCchi2", "h3dMaxTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("K0Short/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3F, {axisCentrality, axisPtCoarse, {100, 0.0f, 1.0f}});
+        histos.add("K0Short/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3F, {axisCentrality, axisPtCoarse, {100, 0.0f, 1.0f}});
+        histos.add("K0Short/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("K0Short/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("K0Short/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("K0Short/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
         histos.add("K0Short/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
         histos.add("K0Short/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
         histos.add("K0Short/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrows});
@@ -632,6 +648,14 @@ struct derivedlambdakzeroanalysis {
         histos.add("Lambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
       }
       if (doDetectPropQA == 3) {
+        histos.add("Lambda/h3dITSchi2", "h3dMaxITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("Lambda/h3dTPCchi2", "h3dMaxTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("Lambda/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3F, {axisCentrality, axisPtCoarse, {100, 0.0f, 1.0f}});
+        histos.add("Lambda/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3F, {axisCentrality, axisPtCoarse, {100, 0.0f, 1.0f}});
+        histos.add("Lambda/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("Lambda/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("Lambda/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("Lambda/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
         histos.add("Lambda/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
         histos.add("Lambda/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
         histos.add("Lambda/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrows});
@@ -690,6 +714,14 @@ struct derivedlambdakzeroanalysis {
         histos.add("AntiLambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
       }
       if (doDetectPropQA == 3) {
+        histos.add("AntiLambda/h3dITSchi2", "h3dMaxITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("AntiLambda/h3dTPCchi2", "h3dMaxTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("AntiLambda/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3F, {axisCentrality, axisPtCoarse, {100, 0.0f, 1.0f}});
+        histos.add("AntiLambda/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3F, {axisCentrality, axisPtCoarse, {100, 0.0f, 1.0f}});
+        histos.add("AntiLambda/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("AntiLambda/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("AntiLambda/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("AntiLambda/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
         histos.add("AntiLambda/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
         histos.add("AntiLambda/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
         histos.add("AntiLambda/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrows});
@@ -887,19 +919,31 @@ struct derivedlambdakzeroanalysis {
     auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
 
     // ITS quality flags
-    bool posIsFromAfterburner = posTrackExtra.itsChi2PerNcl() < 0;
-    bool negIsFromAfterburner = negTrackExtra.itsChi2PerNcl() < 0;
+    bool posIsFromAfterburner = posTrackExtra.hasITSAfterburner();
+    bool negIsFromAfterburner = negTrackExtra.hasITSAfterburner();
 
-    // check minimum number of ITS clusters + reject ITS afterburner tracks if requested
-    if (posTrackExtra.itsNCls() >= v0Selections.minITSclusters && (!v0Selections.rejectPosITSafterburner || !posIsFromAfterburner))
+    // check minimum number of ITS clusters + maximum ITS chi2 per clusters + reject or select ITS afterburner tracks if requested
+    if (posTrackExtra.itsNCls() >= v0Selections.minITSclusters &&             // check minium ITS clusters
+        posTrackExtra.itsChi2NCl() < v0Selections.maxITSchi2PerNcls &&        // check maximum ITS chi2 per clusters
+        (!v0Selections.rejectPosITSafterburner || !posIsFromAfterburner) &&   // reject afterburner track or not
+        (!v0Selections.requirePosITSafterburnerOnly || posIsFromAfterburner)) // keep afterburner track or not
       bitset(bitMap, selPosGoodITSTrack);
-    if (negTrackExtra.itsNCls() >= v0Selections.minITSclusters && (!v0Selections.rejectNegITSafterburner || !negIsFromAfterburner))
+    if (negTrackExtra.itsNCls() >= v0Selections.minITSclusters &&             // check minium ITS clusters
+        negTrackExtra.itsChi2NCl() < v0Selections.maxITSchi2PerNcls &&        // check maximum ITS chi2 per clusters
+        (!v0Selections.rejectNegITSafterburner || !negIsFromAfterburner) &&   // reject afterburner track or not
+        (!v0Selections.requireNegITSafterburnerOnly || negIsFromAfterburner)) // select only afterburner track or not
       bitset(bitMap, selNegGoodITSTrack);
 
     // TPC quality flags
-    if (posTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows)
+    if (posTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                    // check minimum TPC crossed rows
+        posTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls &&                                  // check maximum TPC chi2 per clusters
+        posTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters && // check minimum fraction of TPC rows over findable
+        posTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters)               // check the maximum fraction of allowed shared TPC clusters
       bitset(bitMap, selPosGoodTPCTrack);
-    if (negTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows)
+    if (negTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                    // check minimum TPC crossed rows
+        negTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls &&                                  // check maximum TPC chi2 per clusters
+        negTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters && // check minimum fraction of TPC rows over findable
+        negTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters)               // check the maximum fraction of allowed shared TPC clusters
       bitset(bitMap, selNegGoodTPCTrack);
 
     // TPC PID
@@ -1267,6 +1311,14 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("K0Short/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt, v0.mK0Short());
       }
       if (doDetectPropQA == 3) {
+        histos.fill(HIST("K0Short/h3dITSchi2"), centrality, pt, std::max(posTrackExtra.itsChi2NCl(), negTrackExtra.itsChi2NCl()));
+        histos.fill(HIST("K0Short/h3dTPCchi2"), centrality, pt, std::max(posTrackExtra.tpcChi2NCl(), negTrackExtra.tpcChi2NCl()));
+        histos.fill(HIST("K0Short/h3dTPCrowsOverFindable"), centrality, pt, std::min(posTrackExtra.tpcCrossedRowsOverFindableCls(), negTrackExtra.tpcCrossedRowsOverFindableCls()));
+        histos.fill(HIST("K0Short/h3dTPCsharedCls"), centrality, pt, std::max(posTrackExtra.tpcFractionSharedCls(), negTrackExtra.tpcFractionSharedCls()));
+        histos.fill(HIST("K0Short/h3dPositiveITSchi2"), centrality, pt, posTrackExtra.itsChi2NCl());
+        histos.fill(HIST("K0Short/h3dNegativeITSchi2"), centrality, pt, negTrackExtra.itsChi2NCl());
+        histos.fill(HIST("K0Short/h3dPositiveTPCchi2"), centrality, pt, posTrackExtra.tpcChi2NCl());
+        histos.fill(HIST("K0Short/h3dNegativeTPCchi2"), centrality, pt, negTrackExtra.tpcChi2NCl());
         histos.fill(HIST("K0Short/h3dPositiveITSclusters"), centrality, pt, posTrackExtra.itsNCls());
         histos.fill(HIST("K0Short/h3dNegativeITSclusters"), centrality, pt, negTrackExtra.itsNCls());
         histos.fill(HIST("K0Short/h3dPositiveTPCcrossedRows"), centrality, pt, posTrackExtra.tpcCrossedRows());
@@ -1332,6 +1384,14 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("Lambda/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt, v0.mLambda());
       }
       if (doDetectPropQA == 3) {
+        histos.fill(HIST("Lambda/h3dITSchi2"), centrality, pt, std::max(posTrackExtra.itsChi2NCl(), negTrackExtra.itsChi2NCl()));
+        histos.fill(HIST("Lambda/h3dTPCchi2"), centrality, pt, std::max(posTrackExtra.tpcChi2NCl(), negTrackExtra.tpcChi2NCl()));
+        histos.fill(HIST("Lambda/h3dTPCrowsOverFindable"), centrality, pt, std::min(posTrackExtra.tpcCrossedRowsOverFindableCls(), negTrackExtra.tpcCrossedRowsOverFindableCls()));
+        histos.fill(HIST("Lambda/h3dTPCsharedCls"), centrality, pt, std::max(posTrackExtra.tpcFractionSharedCls(), negTrackExtra.tpcFractionSharedCls()));
+        histos.fill(HIST("Lambda/h3dPositiveITSchi2"), centrality, pt, posTrackExtra.itsChi2NCl());
+        histos.fill(HIST("Lambda/h3dNegativeITSchi2"), centrality, pt, negTrackExtra.itsChi2NCl());
+        histos.fill(HIST("Lambda/h3dPositiveTPCchi2"), centrality, pt, posTrackExtra.tpcChi2NCl());
+        histos.fill(HIST("Lambda/h3dNegativeTPCchi2"), centrality, pt, negTrackExtra.tpcChi2NCl());
         histos.fill(HIST("Lambda/h3dPositiveITSclusters"), centrality, pt, posTrackExtra.itsNCls());
         histos.fill(HIST("Lambda/h3dNegativeITSclusters"), centrality, pt, negTrackExtra.itsNCls());
         histos.fill(HIST("Lambda/h3dPositiveTPCcrossedRows"), centrality, pt, posTrackExtra.tpcCrossedRows());
@@ -1397,6 +1457,14 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("AntiLambda/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt, v0.mAntiLambda());
       }
       if (doDetectPropQA == 3) {
+        histos.fill(HIST("AntiLambda/h3dITSchi2"), centrality, pt, std::max(posTrackExtra.itsChi2NCl(), negTrackExtra.itsChi2NCl()));
+        histos.fill(HIST("AntiLambda/h3dTPCchi2"), centrality, pt, std::max(posTrackExtra.tpcChi2NCl(), negTrackExtra.tpcChi2NCl()));
+        histos.fill(HIST("AntiLambda/h3dTPCrowsOverFindable"), centrality, pt, std::min(posTrackExtra.tpcCrossedRowsOverFindableCls(), negTrackExtra.tpcCrossedRowsOverFindableCls()));
+        histos.fill(HIST("AntiLambda/h3dTPCsharedCls"), centrality, pt, std::max(posTrackExtra.tpcFractionSharedCls(), negTrackExtra.tpcFractionSharedCls()));
+        histos.fill(HIST("AntiLambda/h3dPositiveITSchi2"), centrality, pt, posTrackExtra.itsChi2NCl());
+        histos.fill(HIST("AntiLambda/h3dNegativeITSchi2"), centrality, pt, negTrackExtra.itsChi2NCl());
+        histos.fill(HIST("AntiLambda/h3dPositiveTPCchi2"), centrality, pt, posTrackExtra.tpcChi2NCl());
+        histos.fill(HIST("AntiLambda/h3dNegativeTPCchi2"), centrality, pt, negTrackExtra.tpcChi2NCl());
         histos.fill(HIST("AntiLambda/h3dPositiveITSclusters"), centrality, pt, posTrackExtra.itsNCls());
         histos.fill(HIST("AntiLambda/h3dNegativeITSclusters"), centrality, pt, negTrackExtra.itsNCls());
         histos.fill(HIST("AntiLambda/h3dPositiveTPCcrossedRows"), centrality, pt, posTrackExtra.tpcCrossedRows());
@@ -1645,7 +1713,7 @@ struct derivedlambdakzeroanalysis {
 
       } else { // we are in Pb-Pb
         float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-        if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
+        if (eventSelections.minOccupancy >= 0 && collisionOccupancy <= eventSelections.minOccupancy) {
           return false;
         }
         if (fillHists)
