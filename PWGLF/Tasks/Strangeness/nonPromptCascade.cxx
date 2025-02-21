@@ -403,7 +403,6 @@ struct NonPromptCascadeTask {
       }
       mRegistry.fill(HIST("h_PIDcutsXi"), 6, massXi);
 
-
       const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value);
       o2::dataformats::DCA motherDCA{-999.f, -999.f}, protonDCA{-999.f, -999.f}, pionDCA{-999.f, -999.f}, bachDCA{-999.f, -999.f};
       o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, protonTrkParCov, mBz, 2.f, matCorr, &protonDCA);
