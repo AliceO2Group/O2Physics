@@ -734,9 +734,9 @@ struct MultiplicityTable {
   {
     // counter from Igor
     int nGlobalTracks = 0;
-    int multNContribsEta05_kGlobalTrackWoDCA = 0;
-    int multNContribsEta08_kGlobalTrackWoDCA = 0;
-    int multNContribsEta10_kGlobalTrackWoDCA = 0;
+    int multNbrContribsEta05_GlobalTrackWoDCA = 0;
+    int multNbrContribsEta08_GlobalTrackWoDCA = 0;
+    int multNbrContribsEta10_GlobalTrackWoDCA = 0;
 
     auto pvContribGlobalTracksEta1_per_collision = pvContribGlobalTracksEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
@@ -744,13 +744,13 @@ struct MultiplicityTable {
       if (track.itsNCls() < minNclsITSGlobalTrack || track.itsNClsInnerBarrel() < minNclsITSibGlobalTrack) {
         continue;
       }
-      multNContribsEta10_kGlobalTrackWoDCA++;
+      multNbrContribsEta10_GlobalTrackWoDCA++;
 
       if (std::abs(track.eta()) < 0.8) {
-        multNContribsEta08_kGlobalTrackWoDCA++;
+        multNbrContribsEta08_GlobalTrackWoDCA++;
       }
       if (std::abs(track.eta()) < 0.5) {
-        multNContribsEta05_kGlobalTrackWoDCA++;
+        multNbrContribsEta05_GlobalTrackWoDCA++;
       }
     }
 
@@ -762,9 +762,9 @@ struct MultiplicityTable {
       }
     }
 
-    LOGF(debug, "nGlobalTracks = %d, multNContribsEta08_kGlobalTrackWoDCA = %d, multNContribsEta10_kGlobalTrackWoDCA = %d, multNContribsEta05_kGlobalTrackWoDCA = %d", nGlobalTracks, multNContribsEta08_kGlobalTrackWoDCA, multNContribsEta10_kGlobalTrackWoDCA, multNContribsEta05_kGlobalTrackWoDCA);
+    LOGF(debug, "nGlobalTracks = %d, multNbrContribsEta08_GlobalTrackWoDCA = %d, multNbrContribsEta10_GlobalTrackWoDCA = %d, multNbrContribsEta05_GlobalTrackWoDCA = %d", nGlobalTracks, multNbrContribsEta08_GlobalTrackWoDCA, multNbrContribsEta10_GlobalTrackWoDCA, multNbrContribsEta05_GlobalTrackWoDCA);
 
-    multsGlobal(nGlobalTracks, multNContribsEta08_kGlobalTrackWoDCA, multNContribsEta10_kGlobalTrackWoDCA, multNContribsEta05_kGlobalTrackWoDCA);
+    multsGlobal(nGlobalTracks, multNbrContribsEta08_GlobalTrackWoDCA, multNbrContribsEta10_GlobalTrackWoDCA, multNbrContribsEta05_GlobalTrackWoDCA);
   }
 
   void processRun3MFT(soa::Join<aod::Collisions, aod::EvSels>::iterator const&,
