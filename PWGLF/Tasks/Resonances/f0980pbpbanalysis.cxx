@@ -358,8 +358,6 @@ struct f0980pbpbanalysis {
             RecoRot = Pion1 + Pion2Rot;
             relPhiRot = TVector2::Phi_0_2pi((RecoRot.Phi() - eventPlaneDet) * static_cast<float>(nmode));
             histos.fill(HIST("hInvMass_f0980_USRot_EPA"), RecoRot.M(), RecoRot.Pt(), centrality, relPhiRot);
-
-            // histos.fill(HIST("hInvMass_f0980_USRot_sel_EPA"), RecoRot.M(), RecoRot.Pt(), centrality, relPhiRot);
           }
         }
       }
@@ -400,8 +398,6 @@ struct f0980pbpbanalysis {
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
     histos.add("hInvMass_f0980_USRot_EPA", "unlike invariant mass Rotation",
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
-    // histos.add("hInvMass_f0980_USRot_sel_EPA", "unlike invariant mass Rotation",
-    //            {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
     //    if (doprocessMCLight) {
     //      histos.add("MCL/hpT_f0980_GEN", "generated f0 signals", HistType::kTH1F, {pTqaAxis});
     //      histos.add("MCL/hpT_f0980_REC", "reconstructed f0 signals", HistType::kTH3F, {massAxis, pTqaAxis, centAxis});
