@@ -80,8 +80,7 @@ class FlowJSPCAnalysis
     "Centrality_5/",
     "Centrality_6/",
     "Centrality_7/",
-    "Centrality_8/",
-    "Centrality_9/"};
+    "Centrality_8/"};
 
  private:
   const int mNqHarmos = 113; ///< Highest harmo for Q(n,p): (v8*14part)+1.
