@@ -302,7 +302,7 @@ struct f0980pbpbanalysis {
     histos.fill(HIST("QA/EPResAC"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefB)));
     histos.fill(HIST("QA/EPResBC"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneRefA - eventPlaneRefB)));
 
-    TLorentzVector Pion1, Pion2, Pion3, Reco, RecoRot;
+    TLorentzVector Pion1, Pion2, Pion2Rot, Reco, RecoRot;
     for (auto& trk1 : dTracks) {
       if (!trackSelected(trk1)) {
         continue;
@@ -317,12 +317,12 @@ struct f0980pbpbanalysis {
       histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
 
       for (auto& trk2 : dTracks) {
-        if (!trackSelected(trk1) || !trackSelected(trk2)) {
+        if (!trackSelected(trk2)) {
           continue;
         }
 
         // PID
-        if (!PIDSelected(trk1) || !PIDSelected(trk2)) {
+        if (!PIDSelected(trk2)) {
           continue;
         }
 
@@ -350,21 +350,16 @@ struct f0980pbpbanalysis {
           histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
         }
 
-        if (cfgRotBkg) {
-          if (trk1.sign() * trk2.sign() > 0) {
-            // float RanPhi;
-            for (int nr = 0; nr < cfgNRotBkg; nr++) {
-              auto RanPhi = rn->Uniform(o2::constants::math::PI * 5.0 / 6.0, o2::constants::math::PI * 7.0 / 6.0);
-              RanPhi += RanPhi;
-              Pion3.SetXYZM(trk2.px()*std::cos(RanPhi), trk2.py()*std::sin(RanPhi), trk2.pz(), massPi);
-              RecoRot = Pion1 + Pion3;
-              relPhiRot = TVector2::Phi_0_2pi((RecoRot.Phi() - eventPlaneDet) * static_cast<float>(nmode));
-              histos.fill(HIST("hInvMass_f0980_USRot_EPA"), RecoRot.M(), RecoRot.Pt(), centrality, relPhiRot);
-              if (RecoRot.Rapidity() > cfgMaxRap || RecoRot.Rapidity() < cfgMinRap) {
-                continue;
-              }
-              histos.fill(HIST("hInvMass_f0980_USRot_sel_EPA"), RecoRot.M(), RecoRot.Pt(), centrality, relPhiRot);
-            }
+        if (cfgRotBkg && trk1.sign() * trk2.sign() < 0) {
+          for (int nr = 0; nr < cfgNRotBkg; nr++) {
+            auto RanPhi = rn->Uniform(o2::constants::math::PI * 5.0 / 6.0, o2::constants::math::PI * 7.0 / 6.0);
+            RanPhi += Pion2.Phi();
+            Pion2Rot.SetXYZM(Pion2.Pt() * cos(RanPhi), Pion2.Pt() * sin(RanPhi), trk2.pz(), massPi);
+            RecoRot = Pion1 + Pion2Rot;
+            relPhiRot = TVector2::Phi_0_2pi((RecoRot.Phi() - eventPlaneDet) * static_cast<float>(nmode));
+            histos.fill(HIST("hInvMass_f0980_USRot_EPA"), RecoRot.M(), RecoRot.Pt(), centrality, relPhiRot);
+
+            // histos.fill(HIST("hInvMass_f0980_USRot_sel_EPA"), RecoRot.M(), RecoRot.Pt(), centrality, relPhiRot);
           }
         }
       }
@@ -405,8 +400,8 @@ struct f0980pbpbanalysis {
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
     histos.add("hInvMass_f0980_USRot_EPA", "unlike invariant mass Rotation",
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
-    histos.add("hInvMass_f0980_USRot_sel_EPA", "unlike invariant mass Rotation",
-               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
+    // histos.add("hInvMass_f0980_USRot_sel_EPA", "unlike invariant mass Rotation",
+    //            {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
     //    if (doprocessMCLight) {
     //      histos.add("MCL/hpT_f0980_GEN", "generated f0 signals", HistType::kTH1F, {pTqaAxis});
     //      histos.add("MCL/hpT_f0980_REC", "reconstructed f0 signals", HistType::kTH3F, {massAxis, pTqaAxis, centAxis});
