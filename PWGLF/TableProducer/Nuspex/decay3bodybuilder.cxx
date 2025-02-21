@@ -315,7 +315,7 @@ struct decay3bodyBuilder {
   } EMTrackSel;
 
   SliceCache cache;
-  ConfigurableAxis axisPosZ{"axisPosZ", {40, -10, 10}, "Mixing bins - posZ"};
+  ConfigurableAxis axisPosZ{"axisPosZ", {10, -10, 10}, "Mixing bins - posZ"};
   ConfigurableAxis axisCentrality{"axisCentrality", {10, 0, 100}, "Mixing bins - centrality"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
 
@@ -1536,12 +1536,13 @@ struct decay3bodyBuilder {
 
   //------------------------------------------------------------------
   // Event-mixing background
-  void processRun3ReducedEM(ReducedCollisionsMultsCents const&, aod::RedDecay3Bodys const&, aod::RedIUTracks const&)
+  void processRun3ReducedEM(ReducedCollisionsMultsCents const& collisions, aod::RedDecay3Bodys const& decay3bodys, aod::RedIUTracks const&)
   {
     vtxCandidates.clear();
 
+    auto tuple = std::make_tuple(decay3bodys);
     BinningType binningEvent{{axisPosZ, axisCentrality}, true};
-    SameKindPair<ReducedCollisionsMultsCents, aod::RedDecay3Bodys, BinningType> pair{binningEvent, EMTrackSel.nUseMixedEvent, -1, &cache};
+    SameKindPair<ReducedCollisionsMultsCents, aod::RedDecay3Bodys, BinningType> pair{binningEvent, EMTrackSel.nUseMixedEvent, -1, collisions, tuple, &cache};
 
     int lastRunNumber = -1;
 
