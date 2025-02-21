@@ -497,24 +497,24 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     if (inputNphiBins == 0)
       nPhiBins = 1; // old phi_independent settings
 
-    // reserve memory for needed number of graphs
-    grDcaXYResVsPtPionMC.reserve(nPhiBins);
-    grDcaXYResVsPtPionData.reserve(nPhiBins);
+    // reserve  memory and initialize vector for needed number of graphs
+    grDcaXYResVsPtPionMC.resize(nPhiBins);
+    grDcaXYResVsPtPionData.resize(nPhiBins);
 
-    grDcaZResVsPtPionMC.reserve(nPhiBins);
-    grDcaZResVsPtPionData.reserve(nPhiBins);
+    grDcaZResVsPtPionMC.resize(nPhiBins);
+    grDcaZResVsPtPionData.resize(nPhiBins);
 
-    grDcaXYMeanVsPtPionMC.reserve(nPhiBins);
-    grDcaXYMeanVsPtPionData.reserve(nPhiBins);
+    grDcaXYMeanVsPtPionMC.resize(nPhiBins);
+    grDcaXYMeanVsPtPionData.resize(nPhiBins);
 
-    grDcaZMeanVsPtPionMC.reserve(nPhiBins);
-    grDcaZMeanVsPtPionData.reserve(nPhiBins);
+    grDcaZMeanVsPtPionMC.resize(nPhiBins);
+    grDcaZMeanVsPtPionData.resize(nPhiBins);
 
-    grDcaXYPullVsPtPionMC.reserve(nPhiBins);
-    grDcaXYPullVsPtPionData.reserve(nPhiBins);
+    grDcaXYPullVsPtPionMC.resize(nPhiBins);
+    grDcaXYPullVsPtPionData.resize(nPhiBins);
 
-    grDcaZPullVsPtPionMC.reserve(nPhiBins);
-    grDcaZPullVsPtPionData.reserve(nPhiBins);
+    grDcaZPullVsPtPionMC.resize(nPhiBins);
+    grDcaZPullVsPtPionData.resize(nPhiBins);
 
     /// Lambda expression to get the TGraphErrors from file
     auto loadGraph = [&](int phiBin, const std::string& strBaseName) -> TGraphErrors* {
