@@ -17,6 +17,7 @@
 /// \author Ravindra Singh <ravindra.singh@cern.ch>
 
 #include <vector>
+#include "TRandom3.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -201,12 +202,14 @@ struct HfCorrelatorLcHadrons {
   Configurable<bool> calTrkEff{"calTrkEff", false, "fill histograms to calculate efficiency"};
   Configurable<bool> isRecTrkPhyPrimary{"isRecTrkPhyPrimary", true, "Calculate the efficiency of reconstructed primary physical tracks"};
   Configurable<bool> calEffLcEvent{"calEffLcEvent", true, "Calculate the efficiency of Lc candidate"};
+  Configurable<float> eventFractionToAnalyze{"eventFractionToAnalyze", -1, "Fraction of events to analyze (use only for ME offline on very large samples)"};
 
   HfHelper hfHelper;
   SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
   int leadingIndex = 0;
   bool correlationStatus = false;
+  TRandom3* rnd = new TRandom3(0);
 
   // Event Mixing for the Data Mode
   using SelCollisionsWithLc = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::LcSelection>>;
@@ -330,6 +333,13 @@ struct HfCorrelatorLcHadrons {
       return;
     }
 
+    bool skipMixedEventTableFilling = false;
+    if (eventFractionToAnalyze > 0) {
+      if (rnd->Uniform(0, 1) > eventFractionToAnalyze) {
+        skipMixedEventTableFilling = true;
+      }
+    }
+
     // find leading particle
     if (correlateLcWithLeadingParticle) {
       leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value, etaTrackMax.value);
@@ -394,7 +404,9 @@ struct HfCorrelatorLcHadrons {
           outputMl[iclass] = candidate.mlProbLcToPiKP()[classMl->at(iclass)];
         }
         entryLcCandRecoInfo(hfHelper.invMassLcToPiKP(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
-        entryLc(candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassLcToPiKP(candidate), poolBin, gCollisionId, timeStamp);
+        if (!skipMixedEventTableFilling) {
+          entryLc(candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassLcToPiKP(candidate), poolBin, gCollisionId, timeStamp);
+        }
       }
 
       // Lc-Hadron correlation dedicated section
@@ -450,11 +462,13 @@ struct HfCorrelatorLcHadrons {
           }
         }
         if (countLc == 0) {
-          entryHadron(track.phi(), track.eta(), track.pt() * track.sign(), poolBin, gCollisionId, timeStamp);
-          if (fillTrkPID) {
-            entryTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
+          if (!skipMixedEventTableFilling) {
+            entryHadron(track.phi(), track.eta(), track.pt() * track.sign(), poolBin, gCollisionId, timeStamp);
+            if (fillTrkPID) {
+              entryTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
+            }
+            registry.fill(HIST("hTracksBin"), poolBin);
           }
-          registry.fill(HIST("hTracksBin"), poolBin);
         }
       } // Hadron Tracks loop
       countLc++;

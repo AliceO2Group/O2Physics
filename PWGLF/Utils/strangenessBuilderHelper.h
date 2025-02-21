@@ -161,8 +161,8 @@ class strangenessBuilderHelper
     fitter.setBz(-999.9f); // will NOT make sense if not changed
   };
 
-  template <typename TTrack>
-  bool buildV0Candidate(o2::aod::Collision const& collision,
+  template <typename TCollision, typename TTrack>
+  bool buildV0Candidate(TCollision const& collision,
                         TTrack const& positiveTrack,
                         TTrack const& negativeTrack,
                         bool useCollinearFit = false,
@@ -299,13 +299,16 @@ class strangenessBuilderHelper
       }
     }
 
+    // set collision Id correctly
+    v0.collisionId = collision.globalIndex();
+
     // information validated, V0 built successfully. Signal OK
     return true;
   }
 
   // cascade builder creating a cascade from plain tracks
-  template <typename TTrack>
-  bool buildCascadeCandidate(o2::aod::Collision const& collision,
+  template <typename TCollision, typename TTrack>
+  bool buildCascadeCandidate(TCollision const& collision,
                              TTrack const& positiveTrack,
                              TTrack const& negativeTrack,
                              TTrack const& bachelorTrack,
@@ -325,8 +328,8 @@ class strangenessBuilderHelper
   // cascade builder using pre-fabricated information, thus not calling
   // the DCAfitter again for the V0 contained in the cascade
   // if generating from scratch, prefer the other variant
-  template <typename TTrack>
-  bool buildCascadeCandidate(o2::aod::Collision const& collision,
+  template <typename TCollision, typename TTrack>
+  bool buildCascadeCandidate(TCollision const& collision,
                              v0candidate const& v0input,
                              TTrack const& positiveTrack,
                              TTrack const& negativeTrack,
@@ -469,6 +472,7 @@ class strangenessBuilderHelper
 
     // Populate information
     // cascadecandidate.v0Id = v0index.globalIndex();
+    cascade.collisionId = collision.globalIndex();
     cascade.positiveTrack = positiveTrack.globalIndex();
     cascade.negativeTrack = negativeTrack.globalIndex();
     cascade.bachelorTrack = bachelorTrack.globalIndex();
@@ -530,8 +534,8 @@ class strangenessBuilderHelper
     return true;
   }
 
-  template <typename TTrack>
-  bool buildCascadeCandidateWithKF(o2::aod::Collision const& collision,
+  template <typename TCollision, typename TTrack>
+  bool buildCascadeCandidateWithKF(TCollision const& collision,
                                    TTrack const& positiveTrack,
                                    TTrack const& negativeTrack,
                                    TTrack const& bachelorTrack,
