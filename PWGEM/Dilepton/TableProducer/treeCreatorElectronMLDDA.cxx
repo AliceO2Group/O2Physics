@@ -778,7 +778,7 @@ struct MLTrackQC {
     },
   };
 
-  void process(aod::EMPrimaryTracks const& tracks)
+  void processQC(aod::EMPrimaryTracks const& tracks)
   {
     for (auto& track : tracks) {
       registry.fill(HIST("hTPCdEdx_P_All"), track.p(), track.tpcSignal());
@@ -811,6 +811,10 @@ struct MLTrackQC {
       }
     } // end of track loop
   }
+  PROCESS_SWITCH(MLTrackQC, processQC, "process QC for single track level", false);
+
+  void processDummy(aod::EMPrimaryTracks const&) {}
+  PROCESS_SWITCH(MLTrackQC, processDummy, "process dummy", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
