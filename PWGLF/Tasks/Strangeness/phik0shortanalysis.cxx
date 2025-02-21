@@ -1355,7 +1355,7 @@ struct Phik0shortanalysis {
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance)
+          if (std::abs(mcParticle.y()) > cfgYAcceptance || mcParticle.pt() < minPhiPt)
             continue;
 
           if (!isCountedMCPhi.at(0)) {
@@ -1436,7 +1436,7 @@ struct Phik0shortanalysis {
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance)
+          if (std::abs(mcParticle.y()) > cfgYAcceptance || mcParticle.pt() < minPhiPt)
             continue;
 
           if (!isCountedMCPhi.at(0)) {
@@ -1467,7 +1467,7 @@ struct Phik0shortanalysis {
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance)
+          if (std::abs(mcParticle.y()) > cfgYAcceptance || mcParticle.pt() < minPhiPt)
             continue;
 
           if (!isCountedMCPhi.at(0)) {
@@ -2022,7 +2022,7 @@ struct Phik0shortanalysis {
     for (const auto& mcParticle1 : mcParticles) {
       if (mcParticle1.pdgCode() != 310)
         continue;
-      if (!mcParticle1.isPhysicalPrimary())
+      if (!mcParticle1.isPhysicalPrimary() || mcParticle1.pt() < v0Configs.v0SettingMinPt)
         continue;
 
       mcK0SHist.fill(HIST("h3K0SRapidityGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
@@ -2053,6 +2053,8 @@ struct Phik0shortanalysis {
           if (!isPosKaon || !isNegKaon)
             continue;
         }
+        if (mcParticle2.pt() < minPhiPt)
+          continue;
 
         if (std::abs(mcParticle2.y()) > cfgYAcceptance)
           continue;
@@ -2105,7 +2107,7 @@ struct Phik0shortanalysis {
     for (const auto& mcParticle1 : mcParticles) {
       if (std::abs(mcParticle1.pdgCode()) != 211)
         continue;
-      if (!mcParticle1.isPhysicalPrimary())
+      if (!mcParticle1.isPhysicalPrimary() || mcParticle1.pt() < trackConfigs.cMinPionPtcut)
         continue;
 
       mcPionHist.fill(HIST("h3PiRapidityGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
@@ -2136,6 +2138,8 @@ struct Phik0shortanalysis {
           if (!isPosKaon || !isNegKaon)
             continue;
         }
+        if (mcParticle2.pt() < minPhiPt)
+          continue;
 
         if (std::abs(mcParticle2.y()) > cfgYAcceptance)
           continue;
