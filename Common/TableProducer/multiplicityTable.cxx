@@ -738,9 +738,9 @@ struct MultiplicityTable {
     int multNbrContribsEta08GlobalTrackWoDCA = 0;
     int multNbrContribsEta10GlobalTrackWoDCA = 0;
 
-    auto pvContribGlobalTracksEta1_per_collision = pvContribGlobalTracksEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto pvContribGlobalTracksEta1PerCollision = pvContribGlobalTracksEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    for (const auto& track : pvContribGlobalTracksEta1_per_collision) {
+    for (const auto& track : pvContribGlobalTracksEta1PerCollision) {
       if (track.itsNCls() < minNclsITSGlobalTrack || track.itsNClsInnerBarrel() < minNclsITSibGlobalTrack) {
         continue;
       }
