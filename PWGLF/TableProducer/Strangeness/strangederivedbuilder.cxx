@@ -694,11 +694,13 @@ struct strangederivedbuilder {
     for (auto const& tr : tracksExtra) {
       if (trackMap[tr.globalIndex()] >= 0) {
         dauTrackExtras(tr.itsChi2NCl(),
+                       tr.tpcChi2NCl(),
                        tr.detectorMap(),
                        tr.itsClusterSizes(),
                        tr.tpcNClsFindable(),
                        tr.tpcNClsFindableMinusFound(),
-                       tr.tpcNClsFindableMinusCrossedRows());
+                       tr.tpcNClsFindableMinusCrossedRows(),
+                       tr.tpcNClsShared());
       }
     }
     // done!
@@ -788,11 +790,13 @@ struct strangederivedbuilder {
     for (auto const& tr : tracksExtra) {
       if (trackMap[tr.globalIndex()] >= 0) {
         dauTrackExtras(tr.itsChi2NCl(),
+                       tr.tpcChi2NCl(),
                        tr.detectorMap(),
                        tr.itsClusterSizes(),
                        tr.tpcNClsFindable(),
                        tr.tpcNClsFindableMinusFound(),
-                       tr.tpcNClsFindableMinusCrossedRows());
+                       tr.tpcNClsFindableMinusCrossedRows(),
+                       tr.tpcNClsShared());
 
         // _________________________________________
         // if the table has MC info
