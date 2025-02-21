@@ -148,7 +148,8 @@ struct sigma0builder {
   // base properties
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Centrality"};
-  ConfigurableAxis axisDeltaPt{"axisDeltaPt", {100, -1.0, +1.0}, "#Delta(p_{T})"};
+  ConfigurableAxis axisInvPt{"axisInvPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
+  ConfigurableAxis axisDeltaPt{"axisDeltaPt", {200, -500.0, 500.0}, ""};
 
   // Invariant Mass
   ConfigurableAxis axisSigmaMass{"axisSigmaMass", {1000, 1.10f, 1.30f}, "M_{#Sigma^{0}} (GeV/c^{2})"};
@@ -243,6 +244,7 @@ struct sigma0builder {
     histos.add("GeneralQA/h2dMassGammaVsLambdaAfterMassSel", "h2dMassGammaVsLambdaAfterMassSel", kTH2D, {axisPhotonMass, axisLambdaMass});
     histos.add("GeneralQA/h2dPtVsMassPi0BeforeSel_Candidates", "h2dPtVsMassPi0BeforeSel_Candidates", kTH2D, {axisPt, {500, 0.08f, 0.18f}});
     histos.add("GeneralQA/h2dPtVsMassPi0AfterSel_Candidates", "h2dPtVsMassPi0AfterSel_Candidates", kTH2D, {axisPt, {500, 0.08f, 0.18f}});
+    histos.add("GeneralQA/h3dV0XYZ", "h3dV0XYZ", kTH3F, {{400, -200, 200}, {400, -200, 200}, {240, -120.0f, 120.0f}});
 
     // MC
     histos.add("MC/h2dPtVsCentrality_GammaBeforeSel", "h2dPtVsCentrality_GammaBeforeSel", kTH2D, {axisCentrality, axisPt});
@@ -256,14 +258,15 @@ struct sigma0builder {
     histos.add("MC/h2dPtVsCentrality_GammaAntiSigma0", "h2dPtVsCentrality_GammaAntiSigma0", kTH2D, {axisCentrality, axisPt});
     histos.add("MC/h2dPtVsCentrality_LambdaAntiSigma0", "h2dPtVsCentrality_LambdaAntiSigma0", kTH2D, {axisCentrality, axisPt});
     histos.add("MC/h2dPtVsCentrality_AntiSigma0AfterSel", "h2dPtVsCentrality_AntiSigma0AfterSel", kTH2D, {axisCentrality, axisPt});
+    histos.add("MC/h3dGammasXYZ", "h3dGammasXYZ", kTH3F, {{400, -200, 200}, {400, -200, 200}, {240, -120.0f, 120.0f}});
 
     // Sigma vs Daughters pT
     histos.add("MC/h2dSigmaPtVsLambdaPt", "h2dSigmaPtVsLambdaPt", kTH2D, {axisPt, axisPt});
     histos.add("MC/h2dSigmaPtVsGammaPt", "h2dSigmaPtVsGammaPt", kTH2D, {axisPt, axisPt});
 
     // pT Resolution:
-    histos.add("MC/h2dLambdaPtResolution", "h2dLambdaPtResolution", kTH2D, {axisPt, axisDeltaPt});
-    histos.add("MC/h2dGammaPtResolution", "h2dGammaPtResolution", kTH2D, {axisPt, axisDeltaPt});
+    histos.add("MC/h2dLambdaPtResolution", "h2dLambdaPtResolution", kTH2D, {axisInvPt, axisDeltaPt});
+    histos.add("MC/h2dGammaPtResolution", "h2dGammaPtResolution", kTH2D, {axisInvPt, axisDeltaPt});
 
     // For background decomposition
     histos.add("MC/h2dPtVsMassSigma_All", "h2dPtVsMassSigma_All", kTH2D, {axisPt, axisSigmaMass});
@@ -546,7 +549,7 @@ struct sigma0builder {
       histos.fill(HIST("hCandidateBuilderSelection"), 6.);
       histos.fill(HIST("Selection/hLambdaMass"), lambda.mLambda());
       histos.fill(HIST("Selection/hAntiLambdaMass"), lambda.mAntiLambda());
-      if ((TMath::Abs(lambda.mLambda() - 1.115683) > LambdaWindow) && (TMath::Abs(lambda.mAntiLambda() - 1.115683) > LambdaWindow))
+      if ((TMath::Abs(lambda.mLambda() - o2::constants::physics::MassLambda0) > LambdaWindow) && (TMath::Abs(lambda.mAntiLambda() - o2::constants::physics::MassLambda0) > LambdaWindow))
         return false;
       histos.fill(HIST("Selection/hLambdaNegEta"), lambda.negativeeta());
       histos.fill(HIST("Selection/hLambdaPosEta"), lambda.positiveeta());
@@ -625,6 +628,7 @@ struct sigma0builder {
       return false;
 
     histos.fill(HIST("hCandidateBuilderSelection"), 13.);
+    histos.fill(HIST("GeneralQA/h3dV0XYZ"), gamma.x(), gamma.y(), gamma.z());
     return true;
   }
 
@@ -778,11 +782,13 @@ struct sigma0builder {
 
         // Auxiliary histograms:
         if (gammaMC.pdgCode() == 22) {
+          histos.fill(HIST("MC/h3dGammasXYZ"), gamma.x(), gamma.y(), gamma.z());
           float GammaY = TMath::Abs(RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassGamma));
-
+          float gammaMCpT = RecoDecay::pt(array{gammaMC.pxMC(), gammaMC.pyMC()});
           if (GammaY < 0.5) {                                                                                                                // rapidity selection
             histos.fill(HIST("MC/h2dPtVsCentrality_GammaBeforeSel"), centrality, gamma.pt());                                                // isgamma
-            histos.fill(HIST("MC/h2dGammaPtResolution"), gamma.pt(), gamma.pt() - RecoDecay::pt(array{gammaMC.pxMC(), gammaMC.pyMC()}));     // pT resolution
+            if (gammaMCpT > 0)
+              histos.fill(HIST("MC/h2dGammaPtResolution"), 1.f / gammaMCpT, gamma.pt() - gammaMCpT); // pT resolution
 
             if (gammaMC.pdgCodeMother() == 3212) {
               histos.fill(HIST("MC/h2dPtVsCentrality_GammaSigma0"), centrality, gamma.pt()); // isgamma from sigma
@@ -794,9 +800,11 @@ struct sigma0builder {
         }
         if (gammaMC.pdgCode() == 3122) { // Is Lambda
           float LambdaY = TMath::Abs(RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassLambda));
+          float lambdaMCpT = RecoDecay::pt(array{gammaMC.pxMC(), gammaMC.pyMC()});
           if (LambdaY < 0.5) { // rapidity selection
             histos.fill(HIST("MC/h2dPtVsCentrality_LambdaBeforeSel"), centrality, gamma.pt());
-            histos.fill(HIST("MC/h2dLambdaPtResolution"), gamma.pt(), gamma.pt() - RecoDecay::pt(array{gammaMC.pxMC(), gammaMC.pyMC()})); // pT resolution
+            if (lambdaMCpT > 0)
+              histos.fill(HIST("MC/h2dLambdaPtResolution"), 1.f / lambdaMCpT, gamma.pt() - lambdaMCpT); // pT resolution
             if (gammaMC.pdgCodeMother() == 3212) {
               histos.fill(HIST("MC/h2dPtVsCentrality_LambdaSigma0"), centrality, gamma.pt());
             }
