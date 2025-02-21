@@ -548,7 +548,7 @@ struct RecoDecay {
     while (!motherFound && arrayIds[-stage].size() > 0 && (depthMax < 0 || -stage < depthMax)) {
       // vector of mother indices for the current stage
       std::vector<int64_t> arrayIdsStage{};
-      for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
+      for (auto iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage, o2-linter: disable=const-ref-in-for-loop (int elements)
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
           for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
@@ -639,7 +639,7 @@ struct RecoDecay {
     // If this is not the original particle, check its PDG code.
     if (!isFinal && stage > 0) {
       // If the particle has daughters but is considered to be final, we label it as final.
-      for (auto PDGi : arrPDGFinal) {
+      for (auto PDGi : arrPDGFinal) {        // o2-linter: disable=const-ref-in-for-loop (int elements)
         if (PDGParticle == std::abs(PDGi)) { // Accept antiparticles.
           isFinal = true;
           break;
@@ -662,7 +662,7 @@ struct RecoDecay {
     // printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, PDGParticle, indexDaughterFirst, indexDaughterLast);
     // Call itself to get daughters of daughters recursively.
     stage++;
-    for (auto& dau : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
+    for (const auto& dau : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
       getDaughters<checkProcess>(dau, list, arrPDGFinal, depthMax, stage);
     }
   }
@@ -939,7 +939,7 @@ struct RecoDecay {
       }
       if constexpr (acceptFlavourOscillation) {
         // Loop over decay candidate prongs to spot possible oscillation decay product
-        for (auto indexDaughterI : arrAllDaughtersIndex) {
+        for (auto indexDaughterI : arrAllDaughtersIndex) {                                            // o2-linter: disable=const-ref-in-for-loop (int elements)
           auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
           if (std::abs(candidateDaughterI.getGenStatusCode()) == StatusCodeAfterFlavourOscillation) { // oscillation decay product spotted
             coefFlavourOscillation = -1;                                                              // select the sign of the mother after oscillation (and not before)
@@ -948,7 +948,7 @@ struct RecoDecay {
         }
       }
       // Check daughters' PDG codes.
-      for (auto indexDaughterI : arrAllDaughtersIndex) {
+      for (auto indexDaughterI : arrAllDaughtersIndex) {                                            // o2-linter: disable=const-ref-in-for-loop (int elements)
         auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
         auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter
         // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
@@ -1002,7 +1002,7 @@ struct RecoDecay {
     while (arrayIds[-stage].size() > 0) {
       // vector of mother indices for the current stage
       std::vector<int64_t> arrayIdsStage{};
-      for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
+      for (auto iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage, o2-linter: disable=const-ref-in-for-loop (int elements)
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
 
@@ -1100,7 +1100,7 @@ struct RecoDecay {
     while (arrayIds[-stage].size() > 0) {
       // vector of mother indices for the current stage
       std::vector<int64_t> arrayIdsStage{};
-      for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
+      for (auto iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage, o2-linter: disable=const-ref-in-for-loop (int elements)
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
 
