@@ -110,8 +110,8 @@ struct MultiplicityTable {
   using Run2Tracks = soa::Join<aod::Tracks, aod::TracksExtra>;
   Partition<Run2Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
   Partition<Run2Tracks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
-  Partition<Run2Tracks> pvContribTracks = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
-  Partition<Run2Tracks> pvContribTracksEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<Run2Tracks> pvContribTracks = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  Partition<Run2Tracks> pvContribTracksEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Preslice<aod::TracksIU> perColIU = aod::track::collisionId;
   Preslice<aod::MFTTracks> perCollisionMFT = o2::aod::fwdtrack::collisionId;
@@ -311,10 +311,10 @@ struct MultiplicityTable {
 
   using Run3TracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
   Partition<Run3TracksIU> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
-  Partition<Run3TracksIU> pvAllContribTracksIU = ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
-  Partition<Run3TracksIU> pvContribTracksIU = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
-  Partition<Run3TracksIU> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
-  Partition<Run3TracksIU> pvContribTracksIUEtaHalf = (nabs(aod::track::eta) < 0.5f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<Run3TracksIU> pvAllContribTracksIU = ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  Partition<Run3TracksIU> pvContribTracksIU = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  Partition<Run3TracksIU> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  Partition<Run3TracksIU> pvContribTracksIUEtaHalf = (nabs(aod::track::eta) < 0.5f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
 
   void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                    Run3TracksIU const&,
@@ -728,15 +728,15 @@ struct MultiplicityTable {
   Configurable<int> minNclsITSibGlobalTrack{"minNclsITSibGlobalTrack", 1, "min. number of ITSib clusters for global tracks"};
 
   using Run3Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
-  Partition<Run3Tracks> pvContribGlobalTracksEta1 = (minPtGlobalTrack < aod::track::pt && aod::track::pt < maxPtGlobalTrack) && (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor) && requireQualityTracksInFilter();
+  Partition<Run3Tracks> pvContribGlobalTracksEta1 = (minPtGlobalTrack < aod::track::pt && aod::track::pt < maxPtGlobalTrack) && (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor)) && requireQualityTracksInFilter();
 
   void processGlobalTrackingCounters(aod::Collision const& collision, soa::Join<Run3TracksIU, aod::TrackSelection, aod::TrackSelectionExtension> const& tracksIU, Run3Tracks const&)
   {
     // counter from Igor
     int nGlobalTracks = 0;
-    int multNbrContribsEta05_GlobalTrackWoDCA = 0;
-    int multNbrContribsEta08_GlobalTrackWoDCA = 0;
-    int multNbrContribsEta10_GlobalTrackWoDCA = 0;
+    int multNbrContribsEta05GlobalTrackWoDCA = 0;
+    int multNbrContribsEta08GlobalTrackWoDCA = 0;
+    int multNbrContribsEta10GlobalTrackWoDCA = 0;
 
     auto pvContribGlobalTracksEta1_per_collision = pvContribGlobalTracksEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
@@ -744,13 +744,13 @@ struct MultiplicityTable {
       if (track.itsNCls() < minNclsITSGlobalTrack || track.itsNClsInnerBarrel() < minNclsITSibGlobalTrack) {
         continue;
       }
-      multNbrContribsEta10_GlobalTrackWoDCA++;
+      multNbrContribsEta10GlobalTrackWoDCA++;
 
       if (std::abs(track.eta()) < 0.8) {
-        multNbrContribsEta08_GlobalTrackWoDCA++;
+        multNbrContribsEta08GlobalTrackWoDCA++;
       }
       if (std::abs(track.eta()) < 0.5) {
-        multNbrContribsEta05_GlobalTrackWoDCA++;
+        multNbrContribsEta05GlobalTrackWoDCA++;
       }
     }
 
@@ -762,9 +762,9 @@ struct MultiplicityTable {
       }
     }
 
-    LOGF(debug, "nGlobalTracks = %d, multNbrContribsEta08_GlobalTrackWoDCA = %d, multNbrContribsEta10_GlobalTrackWoDCA = %d, multNbrContribsEta05_GlobalTrackWoDCA = %d", nGlobalTracks, multNbrContribsEta08_GlobalTrackWoDCA, multNbrContribsEta10_GlobalTrackWoDCA, multNbrContribsEta05_GlobalTrackWoDCA);
+    LOGF(debug, "nGlobalTracks = %d, multNbrContribsEta08GlobalTrackWoDCA = %d, multNbrContribsEta10GlobalTrackWoDCA = %d, multNbrContribsEta05GlobalTrackWoDCA = %d", nGlobalTracks, multNbrContribsEta08GlobalTrackWoDCA, multNbrContribsEta10GlobalTrackWoDCA, multNbrContribsEta05GlobalTrackWoDCA);
 
-    multsGlobal(nGlobalTracks, multNbrContribsEta08_GlobalTrackWoDCA, multNbrContribsEta10_GlobalTrackWoDCA, multNbrContribsEta05_GlobalTrackWoDCA);
+    multsGlobal(nGlobalTracks, multNbrContribsEta08GlobalTrackWoDCA, multNbrContribsEta10GlobalTrackWoDCA, multNbrContribsEta05GlobalTrackWoDCA);
   }
 
   void processRun3MFT(soa::Join<aod::Collisions, aod::EvSels>::iterator const&,
