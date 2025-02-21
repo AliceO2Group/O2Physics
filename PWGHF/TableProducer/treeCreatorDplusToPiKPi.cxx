@@ -80,12 +80,12 @@ DECLARE_SOA_COLUMN(Ct, ct, float);                                              
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int); //! Event rejection flag
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);         //! Run number
 // ML scores
-DECLARE_SOA_COLUMN(MlScore0, mlScore0, float);       //! ML score of the first configured index
-DECLARE_SOA_COLUMN(MlScore1, mlScore1, float);       //! ML score of the second configured index
+DECLARE_SOA_COLUMN(MlScore0, mlScore0, float); //! ML score of the first configured index
+DECLARE_SOA_COLUMN(MlScore1, mlScore1, float); //! ML score of the second configured index
 } // namespace full
 DECLARE_SOA_TABLE(HfCandDpMls, "AOD", "HFCANDDPML",
-  full::MlScore0,
-  full::MlScore1)
+                  full::MlScore0,
+                  full::MlScore1)
 
 DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE",
                   hf_cand::Chi2PCA,
@@ -293,7 +293,7 @@ struct HfTreeCreatorDplusToPiKPi {
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
     }
-    
+
     std::vector<float> outputMl = {-999., -999.};
     if constexpr (doMl) {
       for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -301,10 +301,9 @@ struct HfTreeCreatorDplusToPiKPi {
       }
       rowCandidateMl(
         outputMl[0],
-        outputMl[1]
-      );
+        outputMl[1]);
     }
-    
+
     auto prong0 = candidate.template prong0_as<TracksWPid>();
     auto prong1 = candidate.template prong1_as<TracksWPid>();
     auto prong2 = candidate.template prong2_as<TracksWPid>();
@@ -355,7 +354,7 @@ struct HfTreeCreatorDplusToPiKPi {
         flagMc,
         originMc,
         channelMc);
-      } else {
+    } else {
       rowCandidateFull(
         candidate.collision().bcId(),
         candidate.collision().numContrib(),
@@ -436,8 +435,8 @@ struct HfTreeCreatorDplusToPiKPi {
         flagMc,
         originMc,
         channelMc);
-      }
     }
+  }
 
   void processData(aod::Collisions const& collisions,
                    soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
@@ -467,7 +466,7 @@ struct HfTreeCreatorDplusToPiKPi {
   }
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processData, "Process data", true);
-  
+
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
@@ -480,7 +479,7 @@ struct HfTreeCreatorDplusToPiKPi {
     for (const auto& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
-                  
+
     // Filling candidate properties
     if (fillOnlySignal) {
       if (fillCandidateLiteTable) {
