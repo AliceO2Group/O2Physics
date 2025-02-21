@@ -807,7 +807,7 @@ struct nucleiSpectra {
             std::hypot(collision.qvecBPosIm(), collision.qvecBPosRe())});
         }
         if (fillTree) {
-          if (flag & BIT(2)) {
+          if (flag & kTriton) {
             if (track.pt() < cfgCutPtMinTree || track.pt() > cfgCutPtMaxTree || track.sign() > 0)
               continue;
           }
