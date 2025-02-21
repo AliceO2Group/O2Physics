@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file reduced3bodyCreator.cxx
 /// \brief Task to produce reduced AO2Ds for use in the hypertriton 3body reconstruction with the decay3bodybuilder.cxx
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 /// \author Carolina Reetz <c.reetz@cern.ch>
@@ -86,6 +87,8 @@ struct reduced3bodyCreator {
   Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
   // Zorro counting
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
+  // Flag for trigger
+  Configurable<bool> cfgOnlyKeepH3L3Body{"cfgOnlyKeepH3L3Body", false, "Flag to keep only H3L3Body trigger"};
 
   int mRunNumber;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
@@ -117,18 +120,21 @@ struct reduced3bodyCreator {
     hEventCounterZorro->GetXaxis()->SetBinLabel(2, "Zorro after evsel");
   }
 
+  void initZorroBC(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (cfgSkimmedProcessing) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fH3L3Body");
+      zorro.populateHistRegistry(registry, bc.runNumber());
+    }
+  }
+
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     // In case override, don't proceed, please - no CCDB access required
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-
     mRunNumber = bc.runNumber();
-    if (cfgSkimmedProcessing) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fH3L3Body");
-      zorro.populateHistRegistry(registry, bc.runNumber());
-    }
 
     // Initial TOF PID Paras, copied from PIDTOF.h
     timestamp.value = bc.timestamp();
@@ -217,14 +223,20 @@ struct reduced3bodyCreator {
   void process(ColwithEvTimesMultsCents const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
 
-    int lastCollisionID = -1; // collisionId of last analysed decay3body. Table is sorted.
-
+    int lastRunNumber = -1; // RunNumber of last collision, used for zorro counting
     // Event counting
     for (const auto& collision : collisions) {
+
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      if (bc.runNumber() != lastRunNumber) {
+        initZorroBC(bc);
+        lastRunNumber = bc.runNumber(); // Update the last run number
+      }
+
       // Zorro event counting
       bool isZorroSelected = false;
       if (cfgSkimmedProcessing) {
-        isZorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC());
+        isZorroSelected = zorro.isSelected(bc.globalBC());
         if (isZorroSelected) {
           registry.fill(HIST("hEventCounterZorro"), 0.5);
         }
@@ -247,6 +259,8 @@ struct reduced3bodyCreator {
       }
     }
 
+    int lastCollisionID = -1; // collisionId of last analysed decay3body. Table is sorted.
+
     // Creat reduced table
     for (const auto& d3body : decay3bodys) {
 
@@ -263,6 +277,13 @@ struct reduced3bodyCreator {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
+      bool isZorroSelected = false;
+      if (cfgSkimmedProcessing && cfgOnlyKeepH3L3Body) {
+        isZorroSelected = zorro.isSelected(bc.globalBC());
+        if (!isZorroSelected) {
+          continue;
+        }
+      }
 
       // Save the collision
       if (collision.globalIndex() != lastCollisionID) {
