@@ -169,7 +169,8 @@ struct sigmaanalysis {
   // base properties
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Centrality"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
-  ConfigurableAxis axisDeltaPt{"axisDeltaPt", {100, 0.0, +1.0}, "#Delta(p_{T})"};
+  ConfigurableAxis axisInvPt{"axisInvPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
+  ConfigurableAxis axisDeltaPt{"axisDeltaPt", {200, -500.0, 500.0}, ""};
   ConfigurableAxis axisRapidity{"axisRapidity", {100, -2.0f, 2.0f}, "Rapidity"};
   ConfigurableAxis axisIRBinning{"axisIRBinning", {5000, 0, 1500}, "Binning for the interaction rate (kHz)"};
 
@@ -490,11 +491,15 @@ struct sigmaanalysis {
       histos.add("MC/hPtTrueLambda_passedTPCTOFPID", "hPtTrueLambda_passedTPCTOFPID", kTH1F, {axisPt});
       histos.add("MC/hPtLambdaCandidates_passedTPCTOFPID", "hPtLambdaCandidates_passedTPCTOFPID", kTH1F, {axisPt});
 
-      // pT Resolution:
-      histos.add("MC/h3dLambdaPtResolution", "h3dLambdaPtResolution", kTH3F, {axisPt, axisDeltaPt, axisLambdaMass});
-      histos.add("MC/h3dAntiLambdaPtResolution", "h3dAntiLambdaPtResolution", kTH3F, {axisPt, axisDeltaPt, axisLambdaMass});
-      histos.add("MC/h3dGammaPtResolution", "h3dGammaPtResolution", kTH3F, {axisPt, axisDeltaPt, axisPhotonMass});
-      histos.add("MC/h3dSigma0PtResolution", "h3dSigma0PtResolution", kTH3F, {axisPt, axisDeltaPt, axisSigmaMass});
+      // 1/pT Resolution:
+      histos.add("MC/h2dLambdaPtResolution", "h2dLambdaPtResolution", kTH2D, {axisInvPt, axisDeltaPt});
+      histos.add("MC/h2dAntiLambdaPtResolution", "h2dAntiLambdaPtResolution", kTH2D, {axisInvPt, axisDeltaPt});
+      histos.add("MC/h2dGammaPtResolution", "h2dGammaPtResolution", kTH2D, {axisInvPt, axisDeltaPt});
+      histos.add("MC/h2dSigma0PtResolution", "h2dSigma0PtResolution", kTH2D, {axisInvPt, axisDeltaPt});
+      histos.add("MC/h2dAntiSigma0PtResolution", "h2dAntiSigma0PtResolution", kTH2D, {axisInvPt, axisDeltaPt});
+      histos.add("MC/h3dLambdaPtResoVsTPCCR", "h3dLambdaPtResoVsTPCCR", kTH3F, {axisInvPt, axisDeltaPt, {320, -160.0f, 160.0f}});
+      histos.add("MC/h3dAntiLambdaPtResoVsTPCCR", "h3dAntiLambdaPtResoVsTPCCR", kTH3F, {axisInvPt, axisDeltaPt, {320, -160.0f, 160.0f}});
+      histos.add("MC/h3dGammaPtResoVsTPCCR", "h3dGammaPtResoVsTPCCR", kTH3F, {axisInvPt, axisDeltaPt, {320, -160.0f, 160.0f}});
 
       // pTMC info:
       histos.add("MC/h2dSigmaMCPtVsLambdaMCPt", "h2dSigmaMCPtVsLambdaMCPt", kTH2D, {axisPt, axisPt});
@@ -907,17 +912,39 @@ struct sigmaanalysis {
       histos.fill(HIST("MC/hPtLambdaCand_BeforeSel"), sigma.lambdaPt());
       histos.fill(HIST("MC/hPtSigmaCand_BeforeSel"), sigma.sigmapT());
 
-      if (sigma.photonCandPDGCode() == 22)
+      if (sigma.photonCandPDGCode() == 22){
         histos.fill(HIST("MC/hPtTrueGamma_BeforeSel"), sigma.photonPt());
-      if (sigma.lambdaCandPDGCode() == 3122)
+        if (sigma.photonMCPt()>0) {
+          histos.fill(HIST("MC/h3dGammaPtResoVsTPCCR"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt(), -1*sigma.photonNegTPCCrossedRows()); // 1/pT resolution
+          histos.fill(HIST("MC/h3dGammaPtResoVsTPCCR"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt(), sigma.photonPosTPCCrossedRows()); // 1/pT resolution
+          histos.fill(HIST("MC/h2dGammaPtResolution"), 1.f / sigma.photonMCPt(), 1.f / sigma.photonPt() - 1.f / sigma.photonMCPt()); // pT resolution
+        }
+      }
+      if (sigma.lambdaCandPDGCode() == 3122){
         histos.fill(HIST("MC/hPtTrueLambda_BeforeSel"), sigma.lambdaPt());
-      if (sigma.lambdaCandPDGCode() == -3122)
+        if (sigma.lambdaMCPt()>0) { 
+          histos.fill(HIST("MC/h2dLambdaPtResolution"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt()); // 1/pT resolution
+          histos.fill(HIST("MC/h3dLambdaPtResoVsTPCCR"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt(), -1*sigma.lambdaNegTPCCrossedRows()); // 1/pT resolution
+          histos.fill(HIST("MC/h3dLambdaPtResoVsTPCCR"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt(), sigma.lambdaPosTPCCrossedRows()); // 1/pT resolution
+        }
+      }
+      if (sigma.lambdaCandPDGCode() == -3122){
+        if (sigma.lambdaMCPt()>0) {
+          histos.fill(HIST("MC/h2dAntiLambdaPtResolution"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt()); // pT resolution
+          histos.fill(HIST("MC/h3dAntiLambdaPtResoVsTPCCR"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt(), -1*sigma.lambdaNegTPCCrossedRows()); // 1/pT resolution
+          histos.fill(HIST("MC/h3dAntiLambdaPtResoVsTPCCR"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt(), sigma.lambdaPosTPCCrossedRows()); // 1/pT resolution
+        }
         histos.fill(HIST("MC/hPtTrueAntiLambda_BeforeSel"), sigma.lambdaPt());
-      if (sigma.isSigma())
+      }
+      if (sigma.isSigma()){
         histos.fill(HIST("MC/hPtTrueSigma_BeforeSel"), sigma.sigmapT());
-      if (sigma.isAntiSigma())
+        if (sigma.sigmaMCPt()>0) histos.fill(HIST("MC/h2dSigma0PtResolution"), 1.f / sigma.sigmaMCPt(), 1.f / sigma.sigmapT()- 1.f /sigma.sigmaMCPt()); // pT resolution
+      }
+      if (sigma.isAntiSigma()){
         histos.fill(HIST("MC/hPtTrueAntiSigma_BeforeSel"), sigma.sigmapT());
-
+        if (sigma.sigmaMCPt()>0) histos.fill(HIST("MC/h2dAntiSigma0PtResolution"), 1.f / sigma.sigmaMCPt(), 1.f / sigma.sigmapT()- 1.f /sigma.sigmaMCPt()); // pT resolution
+      }
+        
       if (sigma.lambdaAlpha() > 0) { // Lambda Analysis
         if (!processSigmaCandidate(sigma, true))
           continue;
@@ -929,7 +956,6 @@ struct sigmaanalysis {
 
         if (sigma.lambdaCandPDGCode() == 3122) {
           histos.fill(HIST("MC/hPtTrueLambda_AfterSel"), sigma.lambdaPt());
-          histos.fill(HIST("MC/h3dLambdaPtResolution"), sigma.lambdaPt(), TMath::Abs((sigma.lambdaMCPt() - sigma.lambdaPt()) / sigma.lambdaMCPt()), sigma.lambdaMass()); // pT resolution
           histos.fill(HIST("MC/h3dTPCvsTOFNSigma_TrueLambdaPr"), sigma.lambdaPosPrTPCNSigma(), sigma.lambdaPrTOFNSigma(), sigma.lambdaPt());
           histos.fill(HIST("MC/h3dTPCvsTOFNSigma_TrueLambdaPi"), sigma.lambdaNegPiTPCNSigma(), sigma.lambdaPiTOFNSigma(), sigma.lambdaPt());
         }
@@ -946,7 +972,6 @@ struct sigmaanalysis {
           histos.fill(HIST("MC/hMassSigma0"), sigma.sigmaMass());
           histos.fill(HIST("MC/hPtSigma0"), sigma.sigmapT());
           histos.fill(HIST("MC/h3dMassSigma0"), sigma.sigmaCentrality(), sigma.sigmapT(), sigma.sigmaMass());
-          histos.fill(HIST("MC/h3dSigma0PtResolution"), sigma.sigmapT(), TMath::Abs((sigma.sigmaMCPt() - sigma.sigmapT()) / sigma.sigmaMCPt()), sigma.sigmaMass()); // pT resolution
           histos.fill(HIST("MC/h2dPtVsMassSigma_SignalOnly"), sigma.sigmapT(), sigma.sigmaMass());
           histos.fill(HIST("MC/hPtTrueSigma_AfterSel"), sigma.sigmapT());
         }
@@ -956,11 +981,9 @@ struct sigmaanalysis {
 
         if (sigma.lambdaCandPDGCode() == -3122) {
           histos.fill(HIST("MC/hPtTrueAntiLambda_AfterSel"), sigma.lambdaPt());
-          histos.fill(HIST("MC/h3dAntiLambdaPtResolution"), sigma.lambdaPt(), TMath::Abs((sigma.lambdaMCPt() - sigma.lambdaPt()) / sigma.lambdaMCPt()), sigma.antilambdaMass()); // pT resolution
           histos.fill(HIST("MC/h3dTPCvsTOFNSigma_TrueALambdaPr"), sigma.lambdaNegPrTPCNSigma(), sigma.aLambdaPrTOFNSigma(), sigma.lambdaPt());
           histos.fill(HIST("MC/h3dTPCvsTOFNSigma_TrueALambdaPi"), sigma.lambdaPosPiTPCNSigma(), sigma.aLambdaPiTOFNSigma(), sigma.lambdaPt());
         }
-
         histos.fill(HIST("GeneralQA/hAntiLambdaMassSelected"), sigma.antilambdaMass());
         histos.fill(HIST("AntiSigma0/hMassAntiSigma0"), sigma.sigmaMass());
         histos.fill(HIST("AntiSigma0/hPtAntiSigma0"), sigma.sigmapT());
@@ -985,7 +1008,6 @@ struct sigmaanalysis {
 
       if (sigma.photonCandPDGCode() == 22) {
         histos.fill(HIST("MC/hPtTrueGamma_AfterSel"), sigma.photonPt());
-        histos.fill(HIST("MC/h3dGammaPtResolution"), sigma.photonPt(), TMath::Abs((sigma.photonMCPt() - sigma.photonPt()) / sigma.photonMCPt()), sigma.photonMass()); // pT resolution
       }
 
       // For background studies:
