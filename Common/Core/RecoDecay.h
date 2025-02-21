@@ -557,17 +557,17 @@ struct RecoDecay {
             }
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
             // Check mother's PDG code.
-            auto PDGParticleIMother = mother.pdgCode(); // PDG code of the mother
+            auto pdgParticleIMother = mother.pdgCode(); // PDG code of the mother
             // printf("getMother: ");
             // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
             //   printf(" ");
-            // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, iMother);
-            if (PDGParticleIMother == PDGMother) { // exact PDG match
+            // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, pdgParticleIMother, iMother);
+            if (pdgParticleIMother == PDGMother) { // exact PDG match
               sgn = 1;
               indexMother = iMother;
               motherFound = true;
               break;
-            } else if (acceptAntiParticles && PDGParticleIMother == -PDGMother) { // antiparticle PDG match
+            } else if (acceptAntiParticles && pdgParticleIMother == -PDGMother) { // antiparticle PDG match
               sgn = -1;
               indexMother = iMother;
               motherFound = true;
@@ -635,12 +635,12 @@ struct RecoDecay {
       // If this is not the original particle, we are at the end of this branch and this particle is final.
       isFinal = true;
     }
-    auto PDGParticle = std::abs(particle.pdgCode());
+    auto pdgParticle = std::abs(particle.pdgCode());
     // If this is not the original particle, check its PDG code.
     if (!isFinal && stage > 0) {
       // If the particle has daughters but is considered to be final, we label it as final.
       for (auto PDGi : arrPDGFinal) {        // o2-linter: disable=const-ref-in-for-loop (int elements)
-        if (PDGParticle == std::abs(PDGi)) { // Accept antiparticles.
+        if (pdgParticle == std::abs(PDGi)) { // Accept antiparticles.
           isFinal = true;
           break;
         }
@@ -651,7 +651,7 @@ struct RecoDecay {
       // printf("getDaughters: ");
       // for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
       //   printf(" ");
-      // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle);
+      // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, pdgParticle);
       list->push_back(particle.globalIndex());
       return;
     }
@@ -659,7 +659,7 @@ struct RecoDecay {
     // printf("getDaughters: ");
     // for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
     //  printf(" ");
-    // printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, PDGParticle, indexDaughterFirst, indexDaughterLast);
+    // printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, pdgParticle, indexDaughterFirst, indexDaughterLast);
     // Call itself to get daughters of daughters recursively.
     stage++;
     for (const auto& dau : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
@@ -817,18 +817,18 @@ struct RecoDecay {
         return -1;
       }
       // Check daughter's PDG code.
-      auto PDGParticleI = particleI.pdgCode(); // PDG code of the ith daughter
-      // Printf("MC Rec: Daughter %d PDG: %d", iProng, PDGParticleI);
-      bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
+      auto pdgParticleI = particleI.pdgCode(); // PDG code of the ith daughter
+      // Printf("MC Rec: Daughter %d PDG: %d", iProng, pdgParticleI);
+      bool isPdgFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
       for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
-        if (PDGParticleI == coefFlavourOscillation * sgn * arrPDGDaughters[iProngCp]) {
+        if (pdgParticleI == coefFlavourOscillation * sgn * arrPDGDaughters[iProngCp]) {
           arrPDGDaughters[iProngCp] = 0; // Remove this PDG code from the array of expected ones.
-          isPDGFound = true;
+          isPdgFound = true;
           break;
         }
       }
-      if (!isPDGFound) {
-        // Printf("MC Rec: Rejected: bad daughter PDG: %d", PDGParticleI);
+      if (!isPdgFound) {
+        // Printf("MC Rec: Rejected: bad daughter PDG: %d", pdgParticleI);
         return -1;
       }
     }
@@ -856,57 +856,57 @@ struct RecoDecay {
   /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particlesMC  table with MC particles
   /// \param candidate  candidate MC particle
-  /// \param PDGParticle  expected particle PDG code
+  /// \param pdgParticle  expected particle PDG code
   /// \param acceptAntiParticles  switch to accept the antiparticle
-  /// \param sign  antiparticle indicator of the candidate w.r.t. PDGParticle; 1 if particle, -1 if antiparticle, 0 if not matched
+  /// \param sign  antiparticle indicator of the candidate w.r.t. pdgParticle; 1 if particle, -1 if antiparticle, 0 if not matched
   /// \return true if PDG code of the particle is correct, false otherwise
   template <bool acceptFlavourOscillation = false, bool checkProcess = false, typename T, typename U>
   static int isMatchedMCGen(const T& particlesMC,
                             const U& candidate,
-                            int PDGParticle,
+                            int pdgParticle,
                             bool acceptAntiParticles = false,
                             int8_t* sign = nullptr)
   {
     std::array<int, 0> arrPDGDaughters;
-    return isMatchedMCGen<acceptFlavourOscillation, checkProcess>(particlesMC, candidate, PDGParticle, std::move(arrPDGDaughters), acceptAntiParticles, sign);
+    return isMatchedMCGen<acceptFlavourOscillation, checkProcess>(particlesMC, candidate, pdgParticle, std::move(arrPDGDaughters), acceptAntiParticles, sign);
   }
 
   /// Check whether the MC particle is the expected one and whether it decayed via the expected decay channel.
   /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particlesMC  table with MC particles
   /// \param candidate  candidate MC particle
-  /// \param PDGParticle  expected particle PDG code
+  /// \param pdgParticle  expected particle PDG code
   /// \param arrPDGDaughters  array of expected PDG codes of daughters
   /// \param acceptAntiParticles  switch to accept the antiparticle
-  /// \param sign  antiparticle indicator of the candidate w.r.t. PDGParticle; 1 if particle, -1 if antiparticle, 0 if not matched
+  /// \param sign  antiparticle indicator of the candidate w.r.t. pdgParticle; 1 if particle, -1 if antiparticle, 0 if not matched
   /// \param depthMax  maximum decay tree level to check; Daughters up to this level will be considered. If -1, all levels are considered.
   /// \param listIndexDaughters  vector of indices of found daughter
   /// \return true if PDG codes of the particle and its daughters are correct, false otherwise
   template <bool acceptFlavourOscillation = false, bool checkProcess = false, std::size_t N, typename T, typename U>
   static bool isMatchedMCGen(const T& particlesMC,
                              const U& candidate,
-                             int PDGParticle,
+                             int pdgParticle,
                              std::array<int, N> arrPDGDaughters,
                              bool acceptAntiParticles = false,
                              int8_t* sign = nullptr,
                              int depthMax = 1,
                              std::vector<int>* listIndexDaughters = nullptr)
   {
-    // Printf("MC Gen: Expected particle PDG: %d", PDGParticle);
+    // Printf("MC Gen: Expected particle PDG: %d", pdgParticle);
     int8_t coefFlavourOscillation = 1; // 1 if no B0(s) flavour oscillation occured, -1 else
-    int8_t sgn = 0;                    // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGParticle)
+    int8_t sgn = 0;                    // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. pdgParticle)
     if (sign) {
       *sign = sgn;
     }
     // Check the PDG code of the particle.
-    auto PDGCandidate = candidate.pdgCode();
-    // Printf("MC Gen: Candidate PDG: %d", PDGCandidate);
-    if (PDGCandidate == PDGParticle) { // exact PDG match
+    auto pdgCandidate = candidate.pdgCode();
+    // Printf("MC Gen: Candidate PDG: %d", pdgCandidate);
+    if (pdgCandidate == pdgParticle) { // exact PDG match
       sgn = 1;
-    } else if (acceptAntiParticles && PDGCandidate == -PDGParticle) { // antiparticle PDG match
+    } else if (acceptAntiParticles && pdgCandidate == -pdgParticle) { // antiparticle PDG match
       sgn = -1;
     } else {
-      // Printf("MC Gen: Rejected: bad particle PDG: %s%d != %d", acceptAntiParticles ? "abs " : "", PDGCandidate, std::abs(PDGParticle));
+      // Printf("MC Gen: Rejected: bad particle PDG: %s%d != %d", acceptAntiParticles ? "abs " : "", pdgCandidate, std::abs(pdgParticle));
       return false;
     }
     // Check the PDG codes of the decay products.
@@ -950,18 +950,18 @@ struct RecoDecay {
       // Check daughters' PDG codes.
       for (auto indexDaughterI : arrAllDaughtersIndex) {                                            // o2-linter: disable=const-ref-in-for-loop (int elements)
         auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
-        auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter
-        // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
-        bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
+        auto pdgCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter
+        // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, pdgCandidateDaughterI);
+        bool isPdgFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
         for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
-          if (PDGCandidateDaughterI == coefFlavourOscillation * sgn * arrPDGDaughters[iProngCp]) {
+          if (pdgCandidateDaughterI == coefFlavourOscillation * sgn * arrPDGDaughters[iProngCp]) {
             arrPDGDaughters[iProngCp] = 0; // Remove this PDG code from the array of expected ones.
-            isPDGFound = true;
+            isPdgFound = true;
             break;
           }
         }
-        if (!isPDGFound) {
-          // Printf("MC Gen: Rejected: bad daughter PDG: %d", PDGCandidateDaughterI);
+        if (!isPdgFound) {
+          // Printf("MC Gen: Rejected: bad daughter PDG: %d", pdgCandidateDaughterI);
           return false;
         }
       }
@@ -994,9 +994,9 @@ struct RecoDecay {
     std::vector<std::vector<int64_t>> arrayIds{};
     std::vector<int64_t> initVec{particle.globalIndex()};
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
-    auto PDGParticle = std::abs(particle.pdgCode());
+    auto pdgParticle = std::abs(particle.pdgCode());
     bool couldBePrompt = false;
-    if (PDGParticle / 100 == 4 || PDGParticle / 1000 == 4) {
+    if (pdgParticle / 100 == 4 || pdgParticle / 1000 == 4) {
       couldBePrompt = true;
     }
     while (arrayIds[-stage].size() > 0) {
@@ -1009,8 +1009,8 @@ struct RecoDecay {
           // we exit immediately if searchUpToQuark is false and the first mother is a parton (an hadron should never be the mother of a parton)
           if (!searchUpToQuark) {
             auto mother = particlesMC.rawIteratorAt(particleMother.mothersIds().front() - particlesMC.offset());
-            auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
-            if (PDGParticleIMother < 9 || (PDGParticleIMother > 20 && PDGParticleIMother < 38)) {
+            auto pdgParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
+            if (pdgParticleIMother < 9 || (pdgParticleIMother > 20 && pdgParticleIMother < 38)) {
               return OriginType::Prompt;
             }
           }
@@ -1021,30 +1021,30 @@ struct RecoDecay {
             }
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
             // Check mother's PDG code.
-            auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
+            auto pdgParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
             // printf("getMother: ");
             // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
             //   printf(" ");
-            // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, iMother);
+            // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, pdgParticleIMother, iMother);
 
             if (searchUpToQuark) {
               if (idxBhadMothers) {
-                if (PDGParticleIMother / 100 == 5 || // b mesons
-                    PDGParticleIMother / 1000 == 5)  // b baryons
+                if (pdgParticleIMother / 100 == 5 || // b mesons
+                    pdgParticleIMother / 1000 == 5)  // b baryons
                 {
                   idxBhadMothers->push_back(iMother);
                 }
               }
-              if (PDGParticleIMother == 5) { // b quark
+              if (pdgParticleIMother == 5) { // b quark
                 return OriginType::NonPrompt;
               }
-              if (PDGParticleIMother == 4) { // c quark
+              if (pdgParticleIMother == 4) { // c quark
                 return OriginType::Prompt;
               }
             } else {
               if (
-                (PDGParticleIMother / 100 == 5 || // b mesons
-                 PDGParticleIMother / 1000 == 5)  // b baryons
+                (pdgParticleIMother / 100 == 5 || // b mesons
+                 pdgParticleIMother / 1000 == 5)  // b baryons
               ) {
                 if (idxBhadMothers) {
                   idxBhadMothers->push_back(iMother);
@@ -1052,8 +1052,8 @@ struct RecoDecay {
                 return OriginType::NonPrompt;
               }
               if (
-                (PDGParticleIMother / 100 == 4 || // c mesons
-                 PDGParticleIMother / 1000 == 4)  // c baryons
+                (pdgParticleIMother / 100 == 4 || // c mesons
+                 pdgParticleIMother / 1000 == 4)  // c baryons
               ) {
                 couldBePrompt = true;
               }
@@ -1092,9 +1092,9 @@ struct RecoDecay {
     std::vector<std::vector<int64_t>> arrayIds{};
     std::vector<int64_t> initVec{particle.globalIndex()};
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
-    auto PDGParticle = std::abs(particle.pdgCode());
+    auto pdgParticle = std::abs(particle.pdgCode());
     bool couldBeCharm = false;
-    if (PDGParticle / 100 == 4 || PDGParticle / 1000 == 4) {
+    if (pdgParticle / 100 == 4 || pdgParticle / 1000 == 4) {
       couldBeCharm = true;
     }
     while (arrayIds[-stage].size() > 0) {
@@ -1107,18 +1107,18 @@ struct RecoDecay {
           // we break immediately if searchUpToQuark is false and the first mother is a parton (an hadron should never be the mother of a parton)
           if (!searchUpToQuark) {
             auto mother = particlesMC.rawIteratorAt(particleMother.mothersIds().front() - particlesMC.offset());
-            auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
-            if (PDGParticleIMother < 9 || (PDGParticleIMother > 20 && PDGParticleIMother < 38)) {
+            auto pdgParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
+            if (pdgParticleIMother < 9 || (pdgParticleIMother > 20 && pdgParticleIMother < 38)) {
               // auto PDGPaticle = std::abs(particleMother.pdgCode());
               if (
-                (PDGParticle / 100 == 5 || // b mesons
-                 PDGParticle / 1000 == 5)  // b baryons
+                (pdgParticle / 100 == 5 || // b mesons
+                 pdgParticle / 1000 == 5)  // b baryons
               ) {
                 return OriginType::NonPrompt; // beauty
               }
               if (
-                (PDGParticle / 100 == 4 || // c mesons
-                 PDGParticle / 1000 == 4)  // c baryons
+                (pdgParticle / 100 == 4 || // c mesons
+                 pdgParticle / 1000 == 4)  // c baryons
               ) {
                 return OriginType::Prompt; // charm
               }
@@ -1133,31 +1133,31 @@ struct RecoDecay {
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
             // Check status code
             // auto motherStatusCode = std::abs(mother.getGenStatusCode());
-            auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
+            auto pdgParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
             // Check mother's PDG code.
             // printf("getMother: ");
             // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
             // printf(" ");
-            // printf("Stage %d: Mother PDG: %d, status: %d, Index: %d\n", stage, PDGParticleIMother, motherStatusCode, iMother);
+            // printf("Stage %d: Mother PDG: %d, status: %d, Index: %d\n", stage, pdgParticleIMother, motherStatusCode, iMother);
 
             if (searchUpToQuark) {
               if (idxBhadMothers) {
-                if (PDGParticleIMother / 100 == 5 || // b mesons
-                    PDGParticleIMother / 1000 == 5)  // b baryons
+                if (pdgParticleIMother / 100 == 5 || // b mesons
+                    pdgParticleIMother / 1000 == 5)  // b baryons
                 {
                   idxBhadMothers->push_back(iMother);
                 }
               }
-              if (PDGParticleIMother == 5) {  // b quark
+              if (pdgParticleIMother == 5) {  // b quark
                 return OriginType::NonPrompt; // beauty
               }
-              if (PDGParticleIMother == 4) { // c quark
+              if (pdgParticleIMother == 4) { // c quark
                 return OriginType::Prompt;   // charm
               }
             } else {
               if (
-                (PDGParticleIMother / 100 == 5 || // b mesons
-                 PDGParticleIMother / 1000 == 5)  // b baryons
+                (pdgParticleIMother / 100 == 5 || // b mesons
+                 pdgParticleIMother / 1000 == 5)  // b baryons
               ) {
                 if (idxBhadMothers) {
                   idxBhadMothers->push_back(iMother);
@@ -1165,8 +1165,8 @@ struct RecoDecay {
                 return OriginType::NonPrompt; // beauty
               }
               if (
-                (PDGParticleIMother / 100 == 4 || // c mesons
-                 PDGParticleIMother / 1000 == 4)  // c baryons
+                (pdgParticleIMother / 100 == 4 || // c mesons
+                 pdgParticleIMother / 1000 == 4)  // c baryons
               ) {
                 couldBeCharm = true;
               }
