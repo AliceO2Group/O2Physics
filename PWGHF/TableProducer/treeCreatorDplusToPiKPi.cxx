@@ -471,7 +471,7 @@ struct HfTreeCreatorDplusToPiKPi {
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
                  MatchedGenCandidatesMc const& particles,
-                 SelectedCandidatesMcWithMl const& candidateswithml,
+                 SelectedCandidatesMcWithMl const&,
                  TracksWPid const&)
   {
     // Filling event properties
