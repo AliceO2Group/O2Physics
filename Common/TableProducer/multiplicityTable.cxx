@@ -280,7 +280,20 @@ struct MultiplicityTable {
       multZNC = zdc.energyCommonZNC();
     }
 
-    LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
+    // Try to do something Similar to https://github.com/alisw/AliPhysics/blob/22862a945004f719f8e9664c0264db46e7186a48/OADB/AliPPVsMultUtils.cxx#L541C26-L541C37
+    for (auto tracklet : trackletsGrouped) {
+      if (std::abs(tracklet.eta()) < 1.0) {
+        multNContribsEta1++;
+      }
+      if (std::abs(tracklet.eta()) < 0.8) {
+        multNContribs++;
+      }
+      if (std::abs(tracklet.eta()) < 0.5) {
+        multNContribsEtaHalf++;
+      }
+    }
+
+    LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i multNContribsEta1=%i multNContribs=%i multNContribsEtaHalf=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs, multNContribsEta1, multNContribsEtaHalf);
     tableFV0(multFV0A, multFV0C);
     tableFT0(multFT0A, multFT0C);
     tableFDD(multFDDA, multFDDC);
