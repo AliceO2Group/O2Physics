@@ -85,6 +85,7 @@ DECLARE_SOA_COLUMN(BkgScore, bkgScore, float);       //! Bkg score (for reco MC 
 DECLARE_SOA_COLUMN(PromptScore, promptScore, float); //! Prompt score (for reco MC candidates)
 DECLARE_SOA_COLUMN(FdScore, fdScore, float);         //! FD score (for reco MC candidates)
 } // namespace full
+
 DECLARE_SOA_TABLE(HfCandDpMlScores, "AOD", "HFCANDDPMLSCORES",
   full::BkgScore,
   full::FdScore)
@@ -299,6 +300,7 @@ struct HfTreeCreatorDplusToPiKPi {
     }
     
     if constexpr (doMl) {
+      LOG(info) << "fillMl";
       std::vector<float> outputMl = {-999., -999.};
       for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
         outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
@@ -314,6 +316,7 @@ struct HfTreeCreatorDplusToPiKPi {
     auto prong2 = candidate.template prong2_as<TracksWPid>();
     
     if (fillCandidateLiteTable) {
+      LOG(info) << "fillLite";
       rowCandidateLite(
         candidate.chi2PCA(),
         candidate.decayLength(),
@@ -481,7 +484,6 @@ struct HfTreeCreatorDplusToPiKPi {
                  McRecoCollisionsCent const&,
                  TracksWPid const&)
                  {
-    LOG(info) << "Process MC";
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
@@ -497,6 +499,7 @@ struct HfTreeCreatorDplusToPiKPi {
       } else {
         rowCandidateFull.reserve(reconstructedCandSigMl.size());
       }
+      LOG(info) << "Fill candidate with ml";
       for (const auto& candidate : candidateswithml) {
         if (downSampleBkgFactor < 1.) {
           float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
@@ -506,7 +509,7 @@ struct HfTreeCreatorDplusToPiKPi {
         }
         fillCandidateTable<true, true>(candidate);
       }
-    } else
+    } else {
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(reconstructedCandSig.size());
       } else {
@@ -515,6 +518,7 @@ struct HfTreeCreatorDplusToPiKPi {
       for (const auto& candidate : reconstructedCandSig) {
         fillCandidateTable<true>(candidate);
       }
+    }
   } else if (fillOnlyBackground) {
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(reconstructedCandBkg.size());

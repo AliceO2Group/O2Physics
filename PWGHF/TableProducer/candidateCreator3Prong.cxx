@@ -971,6 +971,7 @@ struct HfCandidateCreator3ProngExpressions {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2);
         }
         if (indexRec > -1) {
+          LOG(info) << "MATCHED DSTAR";
           flag = sign * (1 << DstarToPiKPiBkg);
           channel = 1;
         }
