@@ -226,29 +226,29 @@ DECLARE_SOA_TABLE_FULL(StoredRedIUTracks, "RedIUTracks", "AOD", "REDIUTRACK", //
                        reducedtracks3body::ITSClsSizeInLayer<reducedtracks3body::ITSClusterSizes>,
                        reducedtracks3body::TPCCrossedRowsOverFindableCls<reducedtracks3body::TPCNClsFindable, reducedtracks3body::TPCNClsFindableMinusCrossedRows>);
 
-DECLARE_SOA_EXTENDED_TABLE(RedIUTracks, StoredRedIUTracks, "EXREDIUTRACK", 0, //! Track parameters at inner most update (e.g. ITS) as it comes from the tracking
-                           reducedtracks3body::Pt,
-                           reducedtracks3body::P,
-                           reducedtracks3body::Eta,
-                           reducedtracks3body::Phi,
-                           // cov matrix
-                           reducedtracks3body::CYY,
-                           reducedtracks3body::CZY,
-                           reducedtracks3body::CZZ,
-                           reducedtracks3body::CSnpY,
-                           reducedtracks3body::CSnpZ,
-                           reducedtracks3body::CSnpSnp,
-                           reducedtracks3body::CTglY,
-                           reducedtracks3body::CTglZ,
-                           reducedtracks3body::CTglSnp,
-                           reducedtracks3body::CTglTgl,
-                           reducedtracks3body::C1PtY,
-                           reducedtracks3body::C1PtZ,
-                           reducedtracks3body::C1PtSnp,
-                           reducedtracks3body::C1PtTgl,
-                           reducedtracks3body::C1Pt21Pt2,
-                           // tracks extra
-                           reducedtracks3body::DetectorMap);
+DECLARE_SOA_EXTENDED_TABLE_USER(RedIUTracks, StoredRedIUTracks, "REDIUTRACKEXT", //! Track parameters at inner most update (e.g. ITS) as it comes from the tracking
+                                reducedtracks3body::Pt,
+                                reducedtracks3body::P,
+                                reducedtracks3body::Eta,
+                                reducedtracks3body::Phi,
+                                // cov matrix
+                                reducedtracks3body::CYY,
+                                reducedtracks3body::CZY,
+                                reducedtracks3body::CZZ,
+                                reducedtracks3body::CSnpY,
+                                reducedtracks3body::CSnpZ,
+                                reducedtracks3body::CSnpSnp,
+                                reducedtracks3body::CTglY,
+                                reducedtracks3body::CTglZ,
+                                reducedtracks3body::CTglSnp,
+                                reducedtracks3body::CTglTgl,
+                                reducedtracks3body::C1PtY,
+                                reducedtracks3body::C1PtZ,
+                                reducedtracks3body::C1PtSnp,
+                                reducedtracks3body::C1PtTgl,
+                                reducedtracks3body::C1Pt21Pt2,
+                                // tracks extra
+                                reducedtracks3body::DetectorMap);
 
 namespace reduceddecay3body
 {
