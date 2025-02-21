@@ -308,7 +308,7 @@ struct HfTreeCreatorDplusToPiKPi {
     auto prong0 = candidate.template prong0_as<TracksWPid>();
     auto prong1 = candidate.template prong1_as<TracksWPid>();
     auto prong2 = candidate.template prong2_as<TracksWPid>();
-    
+
     if (fillCandidateLiteTable) {
       rowCandidateLite(
         candidate.chi2PCA(),
@@ -438,17 +438,17 @@ struct HfTreeCreatorDplusToPiKPi {
         channelMc);
       }
     }
-    
-    void processData(aod::Collisions const& collisions,
-      soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
-      TracksWPid const&)
+
+  void processData(aod::Collisions const& collisions,
+                   soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
+                   TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
       fillEvent(collision, 0, 1);
     }
-    
+
     // Filling candidate properties
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
@@ -465,73 +465,73 @@ struct HfTreeCreatorDplusToPiKPi {
       fillCandidateTable(candidate);
     }
   }
-  
+
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processData, "Process data", true);
   
   void processMc(aod::Collisions const& collisions,
-                 aod::McCollisions const& mccollisions,
+                 aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
                  MatchedGenCandidatesMc const& particles,
                  SelectedCandidatesMcWithMl const& candidateswithml,
                  TracksWPid const&)
-                 {
-                  // Filling event properties
-                  rowCandidateFullEvents.reserve(collisions.size());
-                  for (const auto& collision : collisions) {
-                    fillEvent(collision, 0, 1);
-                  }
+  {
+    // Filling event properties
+    rowCandidateFullEvents.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, 0, 1);
+    }
                   
-      // Filling candidate properties
-      if (fillOnlySignal) {
-        if (fillCandidateLiteTable) {
-          rowCandidateLite.reserve(reconstructedCandSig.size());
-        } else {
-          rowCandidateFull.reserve(reconstructedCandSig.size());
-        }
-        for (const auto& candidate : reconstructedCandSig) {
-          fillCandidateTable<true>(candidate);
-        }
-      } else if (fillOnlySignalMl) {
-        rowCandidateMl.reserve(reconstructedCandSigMl.size());
-        if (fillCandidateLiteTable) {
-          rowCandidateLite.reserve(reconstructedCandSigMl.size());
-        } else {
-          rowCandidateFull.reserve(reconstructedCandSigMl.size());
-        }
-        for (const auto& candidate : reconstructedCandSigMl) {
-          if (downSampleBkgFactor < 1.) {
-            float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
-            if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
-              continue;
-            }
-          }
-          fillCandidateTable<true, true>(candidate);
-        }
-      } else if (fillOnlyBackground) {
-        if (fillCandidateLiteTable) {
-          rowCandidateLite.reserve(reconstructedCandBkg.size());
-        } else {
-          rowCandidateFull.reserve(reconstructedCandBkg.size());
-        }
-        for (const auto& candidate : reconstructedCandBkg) {
-          if (downSampleBkgFactor < 1.) {
-            float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
-            if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
-              continue;
-            }
-          }
-          fillCandidateTable<true>(candidate);
-        }
+    // Filling candidate properties
+    if (fillOnlySignal) {
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(reconstructedCandSig.size());
       } else {
-        if (fillCandidateLiteTable) {
-          rowCandidateLite.reserve(candidates.size());
-        } else {
-          rowCandidateFull.reserve(candidates.size());
-        }
-        for (const auto& candidate : candidates) {
-          fillCandidateTable<true>(candidate);
-        }
+        rowCandidateFull.reserve(reconstructedCandSig.size());
       }
+      for (const auto& candidate : reconstructedCandSig) {
+        fillCandidateTable<true>(candidate);
+      }
+    } else if (fillOnlySignalMl) {
+      rowCandidateMl.reserve(reconstructedCandSigMl.size());
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(reconstructedCandSigMl.size());
+      } else {
+        rowCandidateFull.reserve(reconstructedCandSigMl.size());
+      }
+      for (const auto& candidate : reconstructedCandSigMl) {
+        if (downSampleBkgFactor < 1.) {
+          float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
+          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+            continue;
+          }
+        }
+        fillCandidateTable<true, true>(candidate);
+      }
+    } else if (fillOnlyBackground) {
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(reconstructedCandBkg.size());
+      } else {
+        rowCandidateFull.reserve(reconstructedCandBkg.size());
+      }
+      for (const auto& candidate : reconstructedCandBkg) {
+        if (downSampleBkgFactor < 1.) {
+          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+            continue;
+          }
+        }
+        fillCandidateTable<true>(candidate);
+      }
+    } else {
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(candidates.size());
+      } else {
+        rowCandidateFull.reserve(candidates.size());
+      }
+      for (const auto& candidate : candidates) {
+        fillCandidateTable<true>(candidate);
+      }
+    }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
