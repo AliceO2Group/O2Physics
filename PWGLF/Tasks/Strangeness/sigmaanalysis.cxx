@@ -170,7 +170,7 @@ struct sigmaanalysis {
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Centrality"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
   ConfigurableAxis axisInvPt{"axisInvPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
-  ConfigurableAxis axisDeltaPt{"axisDeltaPt", {200, -500.0, 500.0}, ""};
+  ConfigurableAxis axisDeltaPt{"axisDeltaPt", {400, -50.0, 50.0}, ""};
   ConfigurableAxis axisRapidity{"axisRapidity", {100, -2.0f, 2.0f}, "Rapidity"};
   ConfigurableAxis axisIRBinning{"axisIRBinning", {5000, 0, 1500}, "Binning for the interaction rate (kHz)"};
 
@@ -280,7 +280,7 @@ struct sigmaanalysis {
 
     // Photon Selection QA histos
     histos.add("GeneralQA/hPhotonV0Type", "hPhotonV0Type", kTH1F, {{8, 0.5f, 8.5f}});
-    histos.add("GeneralQA/h3dPhotonMass", "h3dPhotonMass", kTH1F, {axisCentrality, axisPt, axisPhotonMass});
+    histos.add("GeneralQA/h3dPhotonMass", "h3dPhotonMass", kTH3F, {axisCentrality, axisPt, axisPhotonMass});
     histos.add("GeneralQA/hPhotonNegpT", "hPhotonNegpT", kTH1F, {axisPt});
     histos.add("GeneralQA/hPhotonPospT", "hPhotonPospT", kTH1F, {axisPt});
     histos.add("GeneralQA/hPhotonDCANegToPV", "hPhotonDCANegToPV", kTH1F, {axisDCAtoPV});
@@ -325,12 +325,12 @@ struct sigmaanalysis {
     histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPi", "h2dTPCvsTOFNSigma_LambdaPi", {HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
     histos.add("GeneralQA/hLambdaDCANegToPV", "hLambdaDCANegToPV", kTH1F, {axisDCAtoPV});
     histos.add("GeneralQA/hLambdaDCAPosToPV", "hLambdaDCAPosToPV", kTH1F, {axisDCAtoPV});
-    histos.add("GeneralQA/h3dLambdaMass", "h3dLambdaMass", kTH1F, {axisCentrality, axisPt, axisLambdaMass});
+    histos.add("GeneralQA/h3dLambdaMass", "h3dLambdaMass", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
     histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPr", "h2dTPCvsTOFNSigma_ALambdaPr", {HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
     histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPi", "h2dTPCvsTOFNSigma_ALambdaPi", {HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
     histos.add("GeneralQA/hALambdaDCANegToPV", "hALambdaDCANegToPV", kTH1F, {axisDCAtoPV});
     histos.add("GeneralQA/hALambdaDCAPosToPV", "hALambdaDCAPosToPV", kTH1F, {axisDCAtoPV});
-    histos.add("GeneralQA/h3dAntiLambdaMass", "h3dAntiLambdaMass", kTH1F, {axisCentrality, axisPt, axisLambdaMass});
+    histos.add("GeneralQA/h3dAntiLambdaMass", "h3dAntiLambdaMass", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
 
     histos.add("GeneralQA/hPhotonMassSelected", "hPhotonMassSelected", kTH1F, {axisPhotonMass});
     histos.add("GeneralQA/hLambdaMassSelected", "hLambdaMassSelected", kTH1F, {axisLambdaMass});
@@ -386,6 +386,7 @@ struct sigmaanalysis {
     histos.add("PhotonSelQA/h2dPhotonArmenteros", "h2dPhotonArmenteros", {HistType::kTH2F, {axisPt, axisPhotonMass}});
     histos.add("PhotonSelQA/h2dPhotonCosPA", "h2dPhotonCosPA", {HistType::kTH2F, {axisPt, axisPhotonMass}});
     histos.add("PhotonSelQA/h2dPhotonPsiPair", "h2dPhotonPsiPair", {HistType::kTH2F, {axisPt, axisPhotonMass}});
+    histos.add("PhotonSelQA/h2dPhotonPhi", "h2dPhotonPhi", {HistType::kTH2F, {axisPt, axisPhotonMass}});
 
     // Specific Lambda/ALambda QA
     histos.add("LambdaSelQA/h2dLambdaBaseline", "h2dLambdaBaseline", {HistType::kTH2F, {axisPt, axisLambdaMass}});
@@ -620,9 +621,9 @@ struct sigmaanalysis {
       bool isMCTruePhoton = false;
       if constexpr (requires { cand.lambdaCandPDGCode(); cand.photonCandPDGCode(); }) {
         if (cand.photonCandPDGCode() == 22)
-        isMCTruePhoton=true;
+          isMCTruePhoton=true;
         if (cand.lambdaCandPDGCode() == 3122)
-        isMCTrueLambda=true; 
+          isMCTrueLambda=true; 
       }
 
       // Photon Selections
@@ -735,7 +736,7 @@ struct sigmaanalysis {
 
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 17.);
       histos.fill(HIST("GeneralQA/hPhotonPhi"), cand.photonPhi());
-      if (((cand.photonPhi() > PhotonPhiMax1) && (cand.photonPhi() < PhotonPhiMin2)) || ((cand.photonPhi() > PhotonPhiMax2) && (cand.photonPhi() < PhotonPhiMin1)))
+      if (((cand.photonPhi() < PhotonPhiMin1) || ((cand.photonPhi() > PhotonPhiMax1)) && (cand.photonPhi() < PhotonPhiMin2)) || (cand.photonPhi() > PhotonPhiMax2))
         return false;
       if (isMCTruePhoton || doPhotonLambdaSelQA) histos.fill(HIST("PhotonSelQA/h2dPhotonPhi"), cand.photonPt(), cand.photonMass());
 
