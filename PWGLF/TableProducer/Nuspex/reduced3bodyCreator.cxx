@@ -57,11 +57,11 @@ using TrackExtPIDIUwithEvTimes = soa::Join<FullTracksExtPIDIU, aod::EvTimeTOFFT0
 
 struct reduced3bodyCreator {
 
-  Produces<aod::ReducedCollisions> reducedCollisions;
-  Produces<aod::ReducedPVMults> reducedPVMults;
-  Produces<aod::ReducedCentFT0Cs> reducedCentFTOCs;
-  Produces<aod::ReducedDecay3Bodys> reducedDecay3Bodys;
-  Produces<aod::StoredReducedTracksIU> reducedFullTracksPIDIU;
+  Produces<aod::RedCollisions> reducedCollisions;
+  Produces<aod::RedPVMults> reducedPVMults;
+  Produces<aod::RedCentFT0Cs> reducedCentFT0Cs;
+  Produces<aod::RedDecay3Bodys> reducedDecay3Bodys;
+  Produces<aod::StoredRedIUTracks> reducedFullTracksPIDIU;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
@@ -274,7 +274,7 @@ struct reduced3bodyCreator {
           collision.collisionTime(), collision.collisionTimeRes(),
           runNumber);
         reducedPVMults(collision.multNTracksPV());
-        reducedCentFTOCs(collision.centFT0C());
+        reducedCentFT0Cs(collision.centFT0C());
 
         lastCollisionID = collision.globalIndex();
       }
@@ -308,7 +308,7 @@ struct reduced3bodyCreator {
 };
 
 struct reduced3bodyInitializer {
-  Spawns<aod::ReducedTracksIU> reducedTracksIU;
+  Spawns<aod::RedIUTracks> reducedTracksIU;
   void init(InitContext const&) {}
 };
 
