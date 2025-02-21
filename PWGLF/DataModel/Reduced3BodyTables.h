@@ -226,7 +226,7 @@ DECLARE_SOA_TABLE_FULL(StoredRedIUTracks, "RedIUTracks", "AOD", "REDIUTRACK", //
                        reducedtracks3body::ITSClsSizeInLayer<reducedtracks3body::ITSClusterSizes>,
                        reducedtracks3body::TPCCrossedRowsOverFindableCls<reducedtracks3body::TPCNClsFindable, reducedtracks3body::TPCNClsFindableMinusCrossedRows>);
 
-DECLARE_SOA_EXTENDED_TABLE(RedIUTracks, StoredRedIUTracks, "EXREDIUTRACK", 0, //! Track parameters at inner most update (e.g. ITS) as it comes from the tracking
+DECLARE_SOA_EXTENDED_TABLE_USER(RedIUTracks, StoredRedIUTracks, "REDIUTRACKEXT", //! Track parameters at inner most update (e.g. ITS) as it comes from the tracking
                            reducedtracks3body::Pt,
                            reducedtracks3body::P,
                            reducedtracks3body::Eta,
