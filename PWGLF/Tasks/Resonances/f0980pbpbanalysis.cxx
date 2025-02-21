@@ -114,6 +114,9 @@ struct f0980pbpbanalysis {
   Configurable<std::string> cfgQvecRefAName{"cfgQvecRefAName", "TPCpos", "The name of detector for reference A"};
   Configurable<std::string> cfgQvecRefBName{"cfgQvecRefBName", "TPCneg", "The name of detector for reference B"};
 
+  Configurable<bool> cfgRotBkg{"cfgRotBkg", true, "flag to construct rotational backgrounds"};
+  Configurable<int> cfgNRotBkg{"cfgNRotBkg", 10, "the number of rotational backgrounds"};
+
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "Centrality interval"};
@@ -133,8 +136,12 @@ struct f0980pbpbanalysis {
 
   double angle;
   double relPhi;
+  double relPhiRot;
 
   double massPi = o2::constants::physics::MassPionCharged;
+
+  TRandom* rn = new TRandom();
+  // float theta2;
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgMaxEta && nabs(aod::track::pt) > cfgMinPt);
@@ -295,10 +302,16 @@ struct f0980pbpbanalysis {
     histos.fill(HIST("QA/EPResAC"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefB)));
     histos.fill(HIST("QA/EPResBC"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneRefA - eventPlaneRefB)));
 
-    TLorentzVector Pion1, Pion2, Reco;
+    TLorentzVector Pion1, Pion2, Pion3, Reco, RecoRot;
     for (auto& trk1 : dTracks) {
-      if (!trackSelected(trk1))
+      if (!trackSelected(trk1)) {
         continue;
+      }
+
+      if (!PIDSelected(trk1)) {
+        continue;
+      }
+
       histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
       histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), trk1.tofNSigmaPi());
       histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
@@ -336,6 +349,24 @@ struct f0980pbpbanalysis {
         } else if (trk1.sign() < 0 && trk2.sign() < 0) {
           histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
         }
+
+        if (cfgRotBkg) {
+          if (trk1.sign() * trk2.sign() > 0) {
+            // float RanPhi;
+            for (int nr = 0; nr < cfgNRotBkg; nr++) {
+              auto RanPhi = rn->Uniform(o2::constants::math::PI * 5.0 / 6.0, o2::constants::math::PI * 7.0 / 6.0);
+              RanPhi += RanPhi;
+              Pion3.SetXYZM(trk2.px()*std::cos(RanPhi), trk2.py()*std::sin(RanPhi), trk2.pz(), massPi);
+              RecoRot = Pion1 + Pion3;
+              relPhiRot = TVector2::Phi_0_2pi((RecoRot.Phi() - eventPlaneDet) * static_cast<float>(nmode));
+              histos.fill(HIST("hInvMass_f0980_USRot_EPA"), RecoRot.M(), RecoRot.Pt(), centrality, relPhiRot);
+              if (RecoRot.Rapidity() > cfgMaxRap || RecoRot.Rapidity() < cfgMinRap) {
+                continue;
+              }
+              histos.fill(HIST("hInvMass_f0980_USRot_sel_EPA"), RecoRot.M(), RecoRot.Pt(), centrality, relPhiRot);
+            }
+          }
+        }
       }
     }
   }
@@ -372,7 +403,10 @@ struct f0980pbpbanalysis {
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
     histos.add("hInvMass_f0980_LSmm_EPA", "-- invariant mass",
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
-
+    histos.add("hInvMass_f0980_USRot_EPA", "unlike invariant mass Rotation",
+               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
+    histos.add("hInvMass_f0980_USRot_sel_EPA", "unlike invariant mass Rotation",
+               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
     //    if (doprocessMCLight) {
     //      histos.add("MCL/hpT_f0980_GEN", "generated f0 signals", HistType::kTH1F, {pTqaAxis});
     //      histos.add("MCL/hpT_f0980_REC", "reconstructed f0 signals", HistType::kTH3F, {massAxis, pTqaAxis, centAxis});
