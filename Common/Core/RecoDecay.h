@@ -1394,41 +1394,41 @@ struct RecoDecayPtEtaPhiBase {
     return y(vec, vec[indexM]);
   }
 
-  /// Test consistency of calculations of kinematic quantities
-  /// \param pxIn  px
-  /// \param pyIn  py
-  /// \param pzIn  pz
-  /// \param mIn  mass
-  template <typename T, typename TM>
-  static void test(T pxIn, T pyIn, T pzIn, TM mIn)
-  {
-    std::array<T, 3> vecXYZ{pxIn, pyIn, pzIn};
-    std::array<T, 3> vecXYZ0{0, 0, 0};
-    std::array<T, 3> vecPtEtaPhi;
-    std::array<T, 4> vecPtEtaPhiM;
-    setVectorFromVariables(vecPtEtaPhi, RecoDecay::pt(vecXYZ), RecoDecay::eta(vecXYZ), RecoDecay::phi(vecXYZ));
-    setVectorFromVariables(vecPtEtaPhiM, RecoDecay::pt(vecXYZ), RecoDecay::eta(vecXYZ), RecoDecay::phi(vecXYZ));
-    vecPtEtaPhiM[3] = mIn;
-    auto vecXYZFromVec = pVector(vecPtEtaPhi);
-    auto vecXYZFromVars = pVector(pt(vecPtEtaPhi), eta(vecPtEtaPhi), phi(vecPtEtaPhi));
-    // Test px, py, pz, pt, p, eta, phi, e, y, m
-    printf("RecoDecay test\n");
-    printf("px: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pxIn, vecXYZ[0], vecXYZFromVec[0], vecXYZFromVars[0], px(vecPtEtaPhi), px(vecPtEtaPhiM));
-    printf("py: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pyIn, vecXYZ[1], vecXYZFromVec[1], vecXYZFromVars[1], py(vecPtEtaPhi), py(vecPtEtaPhiM));
-    printf("pz: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pzIn, vecXYZ[2], vecXYZFromVec[2], vecXYZFromVars[2], pz(vecPtEtaPhi), pz(vecPtEtaPhiM));
-    printf("pt: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::pt(vecXYZ), pt(vecPtEtaPhi), pt(vecPtEtaPhiM));
-    printf("p: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::p(vecXYZ), p(vecPtEtaPhi), p(vecPtEtaPhiM));
-    printf("eta: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::eta(vecXYZ), eta(vecPtEtaPhi), eta(vecPtEtaPhiM));
-    printf("phi: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::phi(vecXYZ), phi(vecPtEtaPhi), phi(vecPtEtaPhiM));
-    printf("e: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::e(vecXYZ, mIn), e(vecPtEtaPhi, mIn), e(vecPtEtaPhiM));
-    printf("y: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::y(vecXYZ, mIn), y(vecPtEtaPhi, mIn), y(vecPtEtaPhiM));
-    printf("m: In: %g, XYZ(p, E): %g, XYZ(pVec, E): %g, XYZ(arr): %g, PtEtaPhiM: %g\n",
-           mIn,
-           RecoDecay::m(RecoDecay::p(vecXYZ), RecoDecay::e(vecXYZ, mIn)),
-           RecoDecay::m(vecXYZ, RecoDecay::e(vecXYZ, mIn)),
-           RecoDecay::m(std::array{vecXYZ, vecXYZ0}, std::array{mIn, 0.}),
-           vecPtEtaPhiM[indexM]);
-  }
+  // /// Test consistency of calculations of kinematic quantities
+  // /// \param pxIn  px
+  // /// \param pyIn  py
+  // /// \param pzIn  pz
+  // /// \param mIn  mass
+  // template <typename T, typename TM>
+  // static void test(T pxIn, T pyIn, T pzIn, TM mIn)
+  // {
+  //   std::array<T, 3> vecXYZ{pxIn, pyIn, pzIn};
+  //   std::array<T, 3> vecXYZ0{0, 0, 0};
+  //   std::array<T, 3> vecPtEtaPhi;
+  //   std::array<T, 4> vecPtEtaPhiM;
+  //   setVectorFromVariables(vecPtEtaPhi, RecoDecay::pt(vecXYZ), RecoDecay::eta(vecXYZ), RecoDecay::phi(vecXYZ));
+  //   setVectorFromVariables(vecPtEtaPhiM, RecoDecay::pt(vecXYZ), RecoDecay::eta(vecXYZ), RecoDecay::phi(vecXYZ));
+  //   vecPtEtaPhiM[3] = mIn;
+  //   auto vecXYZFromVec = pVector(vecPtEtaPhi);
+  //   auto vecXYZFromVars = pVector(pt(vecPtEtaPhi), eta(vecPtEtaPhi), phi(vecPtEtaPhi));
+  //   // Test px, py, pz, pt, p, eta, phi, e, y, m
+  //   printf("RecoDecay test\n");
+  //   printf("px: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pxIn, vecXYZ[0], vecXYZFromVec[0], vecXYZFromVars[0], px(vecPtEtaPhi), px(vecPtEtaPhiM));
+  //   printf("py: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pyIn, vecXYZ[1], vecXYZFromVec[1], vecXYZFromVars[1], py(vecPtEtaPhi), py(vecPtEtaPhiM));
+  //   printf("pz: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pzIn, vecXYZ[2], vecXYZFromVec[2], vecXYZFromVars[2], pz(vecPtEtaPhi), pz(vecPtEtaPhiM));
+  //   printf("pt: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::pt(vecXYZ), pt(vecPtEtaPhi), pt(vecPtEtaPhiM));
+  //   printf("p: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::p(vecXYZ), p(vecPtEtaPhi), p(vecPtEtaPhiM));
+  //   printf("eta: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::eta(vecXYZ), eta(vecPtEtaPhi), eta(vecPtEtaPhiM));
+  //   printf("phi: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::phi(vecXYZ), phi(vecPtEtaPhi), phi(vecPtEtaPhiM));
+  //   printf("e: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::e(vecXYZ, mIn), e(vecPtEtaPhi, mIn), e(vecPtEtaPhiM));
+  //   printf("y: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::y(vecXYZ, mIn), y(vecPtEtaPhi, mIn), y(vecPtEtaPhiM));
+  //   printf("m: In: %g, XYZ(p, E): %g, XYZ(pVec, E): %g, XYZ(arr): %g, PtEtaPhiM: %g\n",
+  //          mIn,
+  //          RecoDecay::m(RecoDecay::p(vecXYZ), RecoDecay::e(vecXYZ, mIn)),
+  //          RecoDecay::m(vecXYZ, RecoDecay::e(vecXYZ, mIn)),
+  //          RecoDecay::m(std::array{vecXYZ, vecXYZ0}, std::array{mIn, 0.}),
+  //          vecPtEtaPhiM[indexM]);
+  // }
 };
 
 using RecoDecayPtEtaPhi = RecoDecayPtEtaPhiBase<>; // alias for instance with default parameters
