@@ -787,7 +787,8 @@ struct sigma0builder {
           float gammaMCpT = RecoDecay::pt(array{gammaMC.pxMC(), gammaMC.pyMC()});
           if (GammaY < 0.5) {                                                                                                                // rapidity selection
             histos.fill(HIST("MC/h2dPtVsCentrality_GammaBeforeSel"), centrality, gamma.pt());                                                // isgamma
-            if (gammaMCpT>0) histos.fill(HIST("MC/h2dGammaPtResolution"), 1.f / gammaMCpT, gamma.pt() - gammaMCpT);     // pT resolution
+            if (gammaMCpT > 0)
+              histos.fill(HIST("MC/h2dGammaPtResolution"), 1.f / gammaMCpT, gamma.pt() - gammaMCpT); // pT resolution
 
             if (gammaMC.pdgCodeMother() == 3212) {
               histos.fill(HIST("MC/h2dPtVsCentrality_GammaSigma0"), centrality, gamma.pt()); // isgamma from sigma
@@ -802,7 +803,8 @@ struct sigma0builder {
           float lambdaMCpT = RecoDecay::pt(array{gammaMC.pxMC(), gammaMC.pyMC()});
           if (LambdaY < 0.5) { // rapidity selection
             histos.fill(HIST("MC/h2dPtVsCentrality_LambdaBeforeSel"), centrality, gamma.pt());
-            if (lambdaMCpT>0) histos.fill(HIST("MC/h2dLambdaPtResolution"), 1.f / lambdaMCpT, gamma.pt() - lambdaMCpT); // pT resolution
+            if (lambdaMCpT > 0)
+              histos.fill(HIST("MC/h2dLambdaPtResolution"), 1.f / lambdaMCpT, gamma.pt() - lambdaMCpT); // pT resolution
             if (gammaMC.pdgCodeMother() == 3212) {
               histos.fill(HIST("MC/h2dPtVsCentrality_LambdaSigma0"), centrality, gamma.pt());
             }
