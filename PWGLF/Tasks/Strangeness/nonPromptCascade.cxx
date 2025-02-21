@@ -281,6 +281,50 @@ struct NonPromptCascadeTask {
       const auto& protonTrack = bachelor.sign() > 0 ? ntrack : ptrack;
       const auto& pionTrack = bachelor.sign() > 0 ? ptrack : ntrack;
 
+      mRegistry.fill(HIST("h_PIDcutsXi"), 0, 1.322);
+      mRegistry.fill(HIST("h_PIDcutsOmega"), 0, 1.675);
+
+      mRegistry.fill(HIST("h_PIDcutsXi"), 1, 1.322);
+      mRegistry.fill(HIST("h_PIDcutsOmega"), 1, 1.675);
+
+      if (protonTrack.tpcNClsFound() < cfgCutNclusTPC || pionTrack.tpcNClsFound() < cfgCutNclusTPC || bachelor.tpcNClsFound() < cfgCutNclusTPC) {
+        continue;
+      }
+      mRegistry.fill(HIST("h_PIDcutsXi"), 2, 1.322);
+      mRegistry.fill(HIST("h_PIDcutsOmega"), 2, 1.675);
+
+      // QA PID
+      float nSigmaTPC[nParticles]{bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(), protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi()};
+
+      bool isBachelorSurvived = false;
+      if (nSigmaTPC[0] > cfgCutsPID->get(0u, 0u) && nSigmaTPC[0] < cfgCutsPID->get(0u, 1u)) {
+        mRegistry.fill(HIST("h_PIDcutsOmega"), 3, 1.675);
+        isBachelorSurvived = true;
+      }
+
+      if (nSigmaTPC[1] > cfgCutsPID->get(1u, 0u) && nSigmaTPC[1] < cfgCutsPID->get(1u, 1u)) {
+        mRegistry.fill(HIST("h_PIDcutsXi"), 3, 1.322);
+        isBachelorSurvived = true;
+      }
+
+      if (!isBachelorSurvived) {
+        continue;
+      }
+
+      if (nSigmaTPC[2] < cfgCutsPID->get(2u, 0u) || nSigmaTPC[2] > cfgCutsPID->get(2u, 1u)) {
+        continue;
+      }
+
+      mRegistry.fill(HIST("h_PIDcutsOmega"), 4, 1.675);
+      mRegistry.fill(HIST("h_PIDcutsXi"), 4, 1.322);
+
+      if (nSigmaTPC[3] < cfgCutsPID->get(3u, 0u) || nSigmaTPC[3] > cfgCutsPID->get(3u, 1u)) {
+        continue;
+      }
+
+      mRegistry.fill(HIST("h_PIDcutsOmega"), 5, 1.675);
+      mRegistry.fill(HIST("h_PIDcutsXi"), 5, 1.322);
+
       auto protonTrkParCov = getTrackParCov(protonTrack);
       auto pionTrkParCov = getTrackParCov(pionTrack);
       auto bachTrkParCov = getTrackParCov(bachelor);
@@ -350,54 +394,6 @@ struct NonPromptCascadeTask {
           }
         }
       }
-
-      mRegistry.fill(HIST("h_PIDcutsXi"), 0, massXi);
-      mRegistry.fill(HIST("h_PIDcutsOmega"), 0, massOmega);
-
-      mRegistry.fill(HIST("h_PIDcutsXi"), 1, massXi);
-      mRegistry.fill(HIST("h_PIDcutsOmega"), 1, massOmega);
-
-      if (protonTrack.tpcNClsFound() < cfgCutNclusTPC || pionTrack.tpcNClsFound() < cfgCutNclusTPC || bachelor.tpcNClsFound() < cfgCutNclusTPC) {
-        continue;
-      }
-      mRegistry.fill(HIST("h_PIDcutsXi"), 2, massXi);
-      mRegistry.fill(HIST("h_PIDcutsOmega"), 2, massOmega);
-
-      // QA PID
-      float nSigmaTPC[nParticles]{bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(), protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi()};
-
-      bool isBachelorSurvived = false;
-      if (nSigmaTPC[0] > cfgCutsPID->get(0u, 0u) && nSigmaTPC[0] < cfgCutsPID->get(0u, 1u)) {
-        mRegistry.fill(HIST("h_PIDcutsOmega"), 3, massOmega);
-        isBachelorSurvived = true;
-      }
-
-      if (nSigmaTPC[1] > cfgCutsPID->get(1u, 0u) && nSigmaTPC[1] < cfgCutsPID->get(1u, 1u)) {
-        mRegistry.fill(HIST("h_PIDcutsXi"), 3, massXi);
-        isBachelorSurvived = true;
-      }
-
-      if (!isBachelorSurvived) {
-        continue;
-      }
-
-      if (nSigmaTPC[2] < cfgCutsPID->get(2u, 0u) || nSigmaTPC[2] > cfgCutsPID->get(2u, 1u)) {
-        continue;
-      }
-
-      if (isOmega) {
-        mRegistry.fill(HIST("h_PIDcutsOmega"), 4, massOmega);
-      }
-      mRegistry.fill(HIST("h_PIDcutsXi"), 4, massXi);
-
-      if (nSigmaTPC[3] < cfgCutsPID->get(3u, 0u) || nSigmaTPC[3] > cfgCutsPID->get(3u, 1u)) {
-        continue;
-      }
-
-      if (isOmega) {
-        mRegistry.fill(HIST("h_PIDcutsOmega"), 5, massOmega);
-      }
-      mRegistry.fill(HIST("h_PIDcutsXi"), 5, massXi);
 
       if (cascCpa < cfgMinCosPA) {
         continue;
