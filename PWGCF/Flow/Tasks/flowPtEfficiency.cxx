@@ -159,6 +159,7 @@ struct FlowPtEfficiency {
       registry.add("hImpactParameterReco", "hImpactParameterReco", {HistType::kTH1D, {axisB}});
       registry.add("hImpactParameterTruth", "hImpactParameterTruth", {HistType::kTH1D, {axisB}});
       registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
+      registry.add("hPhiMCTruth", "#phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
 
       o2::framework::AxisSpec axis = axisPt;
@@ -189,7 +190,7 @@ struct FlowPtEfficiency {
       fGFWTrue->AddRegion("refP10", 0.5, 0.8, 1, 1);
       fGFWTrue->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
       fGFWTrue->AddRegion("poifull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2);
-      fGFWTrue->AddRegion("olN10", -0.8, -0.5, 1, 4);
+      fGFWTrue->AddRegion("olN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 4);
       fGFWTrue->AddRegion("olfull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 4);
       corrconfigsTruth.push_back(fGFWTrue->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
       corrconfigsTruth.push_back(fGFWTrue->GetCorrelatorConfig("poifull full | olfull {2 -2}", "ChFull22", kTRUE));
@@ -202,7 +203,7 @@ struct FlowPtEfficiency {
       fGFWReco->AddRegion("refP10", 0.5, 0.8, 1, 1);
       fGFWReco->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
       fGFWReco->AddRegion("poifull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2);
-      fGFWReco->AddRegion("olN10", -0.8, -0.5, 1, 4);
+      fGFWReco->AddRegion("olN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 4);
       fGFWReco->AddRegion("olfull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 4);
       corrconfigsReco.push_back(fGFWReco->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
       corrconfigsReco.push_back(fGFWReco->GetCorrelatorConfig("poifull full | olfull {2 -2}", "ChFull22", kTRUE));
@@ -470,6 +471,9 @@ struct FlowPtEfficiency {
           if (cfgFlowEnabled) {
             bool withinPtPOI = (cfgFlowCutPtPOIMin < mcParticle.pt()) && (mcParticle.pt() < cfgFlowCutPtPOIMax); // within POI pT range
             bool withinPtRef = (cfgFlowCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgFlowCutPtRefMax); // within RF pT range
+            if (withinPtRef) {
+              registry.fill(HIST("hPhiMCTruth"), mcParticle.phi());
+            }
             if (withinPtRef)
               fGFWTrue->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 1);
             if (withinPtPOI)
