@@ -21,8 +21,8 @@
 #include <array>     // std::array
 #include <cmath>     // std::abs, std::sqrt
 #include <cstdio>
-#include <utility>   // std::move
-#include <vector>    // std::vector
+#include <utility> // std::move
+#include <vector>  // std::vector
 
 #include "TMCProcess.h" // for VMC Particle Production Process
 #include "TPDGCode.h"   // for PDG codes
@@ -42,7 +42,7 @@ struct RecoDecay {
                     Prompt,
                     NonPrompt };
 
-  static constexpr int8_t PdgStatusCodeAfterFlavourOscillation = 92; // decay products after B0(s) flavour oscillation
+  static constexpr int8_t StatusCodeAfterFlavourOscillation = 92; // decay products after B0(s) flavour oscillation
 
   // Auxiliary functions
 
@@ -425,7 +425,7 @@ struct RecoDecay {
   static double m2(const std::array<std::array<T, 3>, N>& arrMom, const std::array<U, N>& arrMass)
   {
     std::array<double, 3> momTotal{0., 0., 0.}; // candidate momentum vector
-    double energyTot{0.};                  // candidate energy
+    double energyTot{0.};                       // candidate energy
     for (std::size_t iProng = 0; iProng < N; ++iProng) {
       for (std::size_t iMom = 0; iMom < 3; ++iMom) {
         momTotal[iMom] += arrMom[iProng][iMom];
@@ -584,8 +584,8 @@ struct RecoDecay {
     }
     if (sign) {
       if constexpr (acceptFlavourOscillation) {
-        if (std::abs(particle.getGenStatusCode()) == PdgStatusCodeAfterFlavourOscillation) { // take possible flavour oscillation of B0(s) mother into account
-          sgn *= -1;                                                                         // select the sign of the mother after oscillation (and not before)
+        if (std::abs(particle.getGenStatusCode()) == StatusCodeAfterFlavourOscillation) { // take possible flavour oscillation of B0(s) mother into account
+          sgn *= -1;                                                                      // select the sign of the mother after oscillation (and not before)
         }
       }
       *sign = sgn;
@@ -714,9 +714,9 @@ struct RecoDecay {
         if (!arrDaughters[iProng].has_mcParticle()) {
           return -1;
         }
-        auto particleI = arrDaughters[iProng].mcParticle();                                   // ith daughter particle
-        if (std::abs(particleI.getGenStatusCode()) == PdgStatusCodeAfterFlavourOscillation) { // oscillation decay product spotted
-          coefFlavourOscillation = -1;                                                        // select the sign of the mother after oscillation (and not before)
+        auto particleI = arrDaughters[iProng].mcParticle();                                // ith daughter particle
+        if (std::abs(particleI.getGenStatusCode()) == StatusCodeAfterFlavourOscillation) { // oscillation decay product spotted
+          coefFlavourOscillation = -1;                                                     // select the sign of the mother after oscillation (and not before)
           break;
         }
       }
@@ -894,7 +894,7 @@ struct RecoDecay {
   {
     // Printf("MC Gen: Expected particle PDG: %d", PDGParticle);
     int8_t coefFlavourOscillation = 1; // 1 if no B0(s) flavour oscillation occured, -1 else
-    int8_t sgn = 0; // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGParticle)
+    int8_t sgn = 0;                    // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGParticle)
     if (sign) {
       *sign = sgn;
     }
@@ -940,9 +940,9 @@ struct RecoDecay {
       if constexpr (acceptFlavourOscillation) {
         // Loop over decay candidate prongs to spot possible oscillation decay product
         for (auto indexDaughterI : arrAllDaughtersIndex) {
-          auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset());    // ith daughter particle
-          if (std::abs(candidateDaughterI.getGenStatusCode()) == PdgStatusCodeAfterFlavourOscillation) { // oscillation decay product spotted
-            coefFlavourOscillation = -1;                                                                 // select the sign of the mother after oscillation (and not before)
+          auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
+          if (std::abs(candidateDaughterI.getGenStatusCode()) == StatusCodeAfterFlavourOscillation) { // oscillation decay product spotted
+            coefFlavourOscillation = -1;                                                              // select the sign of the mother after oscillation (and not before)
             break;
           }
         }
