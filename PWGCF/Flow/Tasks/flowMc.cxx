@@ -223,7 +223,7 @@ struct FlowMc {
           fWeights->fill(mcParticle.phi(), mcParticle.eta(), vtxz, mcParticle.pt(), 0, 0);
         if (!setCurrentParticleWeights(weff, wacc, mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), vtxz))
           continue;
-        if (withinPtRef) {
+        if (validGlobal && withinPtRef) {
           histos.fill(HIST("hPhi"), mcParticle.phi());
           histos.fill(HIST("hPhiWeighted"), mcParticle.phi(), wacc);
           histos.fill(HIST("hEPVsPhi"), evPhi, mcParticle.phi());
