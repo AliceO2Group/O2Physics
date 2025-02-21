@@ -173,6 +173,7 @@ struct NonPromptCascadeTask {
   Configurable<double> cfgMinRelChi2Change{"cfgMinRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> cfgGRPmagPath{"cfgGRPmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> cfgSelectOnlyOmegas{"cfgSelectOnlyOmegas", false, "Toggle to select only Omegas"};
 
   Configurable<int> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
   Configurable<float> cfgMinCosPA{"cfgMinCosPA", -1.f, "Minimum cosine of pointing angle"};
@@ -302,7 +303,7 @@ struct NonPromptCascadeTask {
         isBachelorSurvived = true;
       }
 
-      if (nSigmaTPC[1] > cfgCutsPID->get(1u, 0u) && nSigmaTPC[1] < cfgCutsPID->get(1u, 1u)) {
+      if (!cfgSelectOnlyOmegas && nSigmaTPC[1] > cfgCutsPID->get(1u, 0u) && nSigmaTPC[1] < cfgCutsPID->get(1u, 1u)) {
         mRegistry.fill(HIST("h_PIDcutsXi"), 3, 1.322);
         isBachelorSurvived = true;
       }
@@ -370,6 +371,9 @@ struct NonPromptCascadeTask {
 
       //// Omega hypohesis -> rejecting Xi, we don't do it in the MC as we can identify the particle with the MC truth
       bool isOmega{std::abs(massXi - constants::physics::MassXiMinus) > 0.005};
+      if (cfgSelectOnlyOmegas && !isOmega) {
+        continue;
+      }
 
       std::array<bool, 2> fromHF{false, false};
       bool isGoodMatch{false}, isGoodCascade{false};
