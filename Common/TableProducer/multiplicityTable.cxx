@@ -56,7 +56,7 @@ static constexpr int kFT0MultZeqs = 10;
 static constexpr int kFDDMultZeqs = 11;
 static constexpr int kPVMultZeqs = 12;
 static constexpr int kMultMCExtras = 13;
-static constexpr int nTables = 14;
+static constexpr int Ntables = 14;
 
 // Checking that the Zeq tables are after the normal ones
 static_assert(kFV0Mults < kFV0MultZeqs);
@@ -64,7 +64,7 @@ static_assert(kFT0Mults < kFT0MultZeqs);
 static_assert(kFDDMults < kFDDMultZeqs);
 static_assert(kPVMults < kPVMultZeqs);
 
-static constexpr int nParameters = 1;
+static constexpr int Nparameters = 1;
 static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "FT0Mults",       // 1
                                                  "FDDMults",       // 2
@@ -80,7 +80,7 @@ static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "PVMultZeqs",     // 12
                                                  "MultMCExtras"};  // 13
 static const std::vector<std::string> parameterNames{"Enable"};
-static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+static const int defaultParameters[Ntables][Nparameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
 struct MultiplicityTable {
   SliceCache cache;
@@ -122,12 +122,12 @@ struct MultiplicityTable {
   Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
   Configurable<float> fractionOfEvents{"fractionOfEvents", 2.0, "Fractions of events to keep in case the QA is used"};
   Configurable<LabeledArray<int>> enabledTables{"enabledTables",
-                                                {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
+                                                {defaultParameters[0], Ntables, Nparameters, tableNames, parameterNames},
                                                 "Produce tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
 
   struct : ConfigurableGroup {
     Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
-    Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
+    Configurable<std::string> ccdbPath{"ccdbPath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
     Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
   } ccdbConfig;
 
@@ -168,8 +168,8 @@ struct MultiplicityTable {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
 
-    bool tEnabled[nTables] = {false};
-    for (int i = 0; i < nTables; i++) {
+    bool tEnabled[Ntables] = {false};
+    for (int i = 0; i < Ntables; i++) {
       int f = enabledTables->get(tableNames[i].c_str(), "Enable");
       enableFlagIfTableRequired(context, tableNames[i], f);
       if (f == 1) {
@@ -668,9 +668,9 @@ struct MultiplicityTable {
   // FIT FT0C: -3.3 < η < -2.1
   // FOT FT0A:  3.5 < η <  4.9
   Filter mcParticleFilter = (aod::mcparticle::eta < 7.0f) && (aod::mcparticle::eta > -7.0f);
-  using mcParticlesFiltered = soa::Filtered<aod::McParticles>;
+  using McParticlesFiltered = soa::Filtered<aod::McParticles>;
 
-  void processMC(aod::McCollision const& mcCollision, mcParticlesFiltered const& mcParticles)
+  void processMC(aod::McCollision const& mcCollision, McParticlesFiltered const& mcParticles)
   {
     int multFT0A = 0;
     int multFV0A = 0;
@@ -722,13 +722,13 @@ struct MultiplicityTable {
     tableExtraMult2MCExtras(collision.mcCollisionId()); // interlink
   }
 
-  Configurable<float> min_pt_globaltrack{"min_pt_globaltrack", 0.15, "min. pT for global tracks"};
-  Configurable<float> max_pt_globaltrack{"max_pt_globaltrack", 1e+10, "max. pT for global tracks"};
-  Configurable<int> min_ncluster_its_globaltrack{"min_ncluster_its_globaltrack", 5, "min. number of ITS clusters for global tracks"};
-  Configurable<int> min_ncluster_itsib_globaltrack{"min_ncluster_itsib_globaltrack", 1, "min. number of ITSib clusters for global tracks"};
+  Configurable<float> minPtGlobalTrack{"minPtGlobalTrack", 0.15, "min. pT for global tracks"};
+  Configurable<float> maxPtGlobalTrack{"maxPtGlobalTrack", 1e+10, "max. pT for global tracks"};
+  Configurable<int> minNclsITSGlobalTrack{"minNclsITSGlobalTrack", 5, "min. number of ITS clusters for global tracks"};
+  Configurable<int> minNclsITSibGlobalTrack{"minNclsITSibGlobalTrack", 1, "min. number of ITSib clusters for global tracks"};
 
   using Run3Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
-  Partition<Run3Tracks> pvContribGlobalTracksEta1 = (min_pt_globaltrack < aod::track::pt && aod::track::pt < max_pt_globaltrack) && (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor) && requireQualityTracksInFilter();
+  Partition<Run3Tracks> pvContribGlobalTracksEta1 = (minPtGlobalTrack < aod::track::pt && aod::track::pt < maxPtGlobalTrack) && (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor) && requireQualityTracksInFilter();
 
   void processGlobalTrackingCounters(aod::Collision const& collision, soa::Join<Run3TracksIU, aod::TrackSelection, aod::TrackSelectionExtension> const& tracksIU, Run3Tracks const&)
   {
@@ -741,7 +741,7 @@ struct MultiplicityTable {
     auto pvContribGlobalTracksEta1_per_collision = pvContribGlobalTracksEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     for (const auto& track : pvContribGlobalTracksEta1_per_collision) {
-      if (track.itsNCls() < min_ncluster_its_globaltrack || track.itsNClsInnerBarrel() < min_ncluster_itsib_globaltrack) {
+      if (track.itsNCls() < minNclsITSGlobalTrack || track.itsNClsInnerBarrel() < minNclsITSibGlobalTrack) {
         continue;
       }
       multNContribsEta10_kGlobalTrackWoDCA++;
