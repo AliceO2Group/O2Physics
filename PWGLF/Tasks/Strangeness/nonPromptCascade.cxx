@@ -147,7 +147,7 @@ static constexpr float cutsPID[nParticles][nCutsPID]{
 };
 
 std::vector<NPCascCandidate> gCandidates;
-std::vector<NPCascCandidate> gCandidatesNotTracked;
+std::vector<NPCascCandidate> gCandidatesNT;
 
 } // namespace
 
@@ -155,8 +155,8 @@ struct NonPromptCascadeTask {
 
   Produces<o2::aod::NPCascTable> NPCTable;
   Produces<o2::aod::NPCascTableMC> NPCTableMC;
-  Produces<o2::aod::NPCascTableNotTracked> NPCTableNotTracked;
-  Produces<o2::aod::NPCascTableMCNotTracked> NPCTableMCNotTracked;
+  Produces<o2::aod::NPCascTableNT> NPCTableNT;
+  Produces<o2::aod::NPCascTableMCNT> NPCTableMCNT;
   Produces<o2::aod::NPCascTableGen> NPCTableGen;
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
@@ -174,7 +174,8 @@ struct NonPromptCascadeTask {
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> cfgGRPmagPath{"cfgGRPmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
-  Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
+  Configurable<int> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
+  Configurable<float> cfgMinCosPA{"cfgMinCosPA", -1.f, "Minimum cosine of pointing angle"};
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Skimmed dataset processing"};
 
@@ -225,8 +226,8 @@ struct NonPromptCascadeTask {
     std::vector<double> ptBinning = {0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 4.4, 4.8, 5.2, 5.6, 6.0};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
 
-    std::array<std::string, 6> cutsNames{"# candidates", "hasTOF", "nClusTPC", "nSigmaTPCbach", "nSigmaTPCprotontrack", "nSigmaTPCpiontrack"};
-    auto cutsOmega{std::get<std::shared_ptr<TH2>>(mRegistry.add("h_PIDcutsOmega", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{6, -0.5, 5.5}, {125, 1.650, 1.700}}))};
+    std::array<std::string, 7> cutsNames{"# candidates", "hasTOF", "nClusTPC", "nSigmaTPCbach", "nSigmaTPCprotontrack", "nSigmaTPCpiontrack", "cosPA"};
+    auto cutsOmega{std::get<std::shared_ptr<TH2>>(mRegistry.add("h_PIDcutsOmega", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{cutsNames.size(), -0.5, -0.5 + cutsNames.size()}, {125, 1.650, 1.700}}))};
     auto cutsXi{std::get<std::shared_ptr<TH2>>(mRegistry.add("h_PIDcutsXi", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{6, -0.5, 5.5}, {125, 1.296, 1.346}}))};
 
     for (size_t iBin{0}; iBin < cutsNames.size(); ++iBin) {
@@ -356,7 +357,7 @@ struct NonPromptCascadeTask {
       mRegistry.fill(HIST("h_PIDcutsXi"), 1, massXi);
       mRegistry.fill(HIST("h_PIDcutsOmega"), 1, massOmega);
 
-      if (protonTrack.tpcNClsFound() < cfgCutNclusTPC || pionTrack.tpcNClsFound() < cfgCutNclusTPC) {
+      if (protonTrack.tpcNClsFound() < cfgCutNclusTPC || pionTrack.tpcNClsFound() < cfgCutNclusTPC || bachelor.tpcNClsFound() < cfgCutNclusTPC) {
         continue;
       }
       mRegistry.fill(HIST("h_PIDcutsXi"), 2, massXi);
@@ -366,20 +367,14 @@ struct NonPromptCascadeTask {
       float nSigmaTPC[nParticles]{bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(), protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi()};
 
       bool isBachelorSurvived = false;
-      if (isOmega) {
-        if (bachelor.hasTPC()) {
-          if (nSigmaTPC[0] > cfgCutsPID->get(0u, 0u) && nSigmaTPC[0] < cfgCutsPID->get(0u, 1u)) {
-            mRegistry.fill(HIST("h_PIDcutsOmega"), 3, massOmega);
-            isBachelorSurvived = true;
-          }
-        }
+      if (nSigmaTPC[0] > cfgCutsPID->get(0u, 0u) && nSigmaTPC[0] < cfgCutsPID->get(0u, 1u)) {
+        mRegistry.fill(HIST("h_PIDcutsOmega"), 3, massOmega);
+        isBachelorSurvived = true;
       }
 
-      if (bachelor.hasTPC()) {
-        if (nSigmaTPC[1] > cfgCutsPID->get(1u, 0u) && nSigmaTPC[1] < cfgCutsPID->get(1u, 1u)) {
-          mRegistry.fill(HIST("h_PIDcutsXi"), 3, massXi);
-          isBachelorSurvived = true;
-        }
+      if (nSigmaTPC[1] > cfgCutsPID->get(1u, 0u) && nSigmaTPC[1] < cfgCutsPID->get(1u, 1u)) {
+        mRegistry.fill(HIST("h_PIDcutsXi"), 3, massXi);
+        isBachelorSurvived = true;
       }
 
       if (!isBachelorSurvived) {
@@ -403,6 +398,15 @@ struct NonPromptCascadeTask {
         mRegistry.fill(HIST("h_PIDcutsOmega"), 5, massOmega);
       }
       mRegistry.fill(HIST("h_PIDcutsXi"), 5, massXi);
+
+      if (cascCpa < cfgMinCosPA) {
+        continue;
+      }
+      if (isOmega) {
+        mRegistry.fill(HIST("h_PIDcutsOmega"), 6, massOmega);
+      }
+      mRegistry.fill(HIST("h_PIDcutsXi"), 6, massXi);
+
 
       const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value);
       o2::dataformats::DCA motherDCA{-999.f, -999.f}, protonDCA{-999.f, -999.f}, pionDCA{-999.f, -999.f}, bachDCA{-999.f, -999.f};
@@ -498,7 +502,7 @@ struct NonPromptCascadeTask {
   auto& getMCtable()
   {
     if constexpr (std::is_same_v<CascadeType, aod::Cascades>) {
-      return NPCTableMCNotTracked;
+      return NPCTableMCNT;
     } else {
       return NPCTableMC;
     }
@@ -508,7 +512,7 @@ struct NonPromptCascadeTask {
   auto& getDataTable()
   {
     if constexpr (std::is_same_v<CascadeType, aod::Cascades>) {
-      return NPCTableNotTracked;
+      return NPCTableNT;
     } else {
       return NPCTable;
     }
@@ -528,8 +532,8 @@ struct NonPromptCascadeTask {
                          aod::V0s const& /*v0s*/, TracksExtMC const& /*tracks*/,
                          aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
   {
-    fillCandidatesVector<TracksExtMC>(collisions, cascades, gCandidatesNotTracked);
-    fillMCtable<aod::Cascades>(mcParticles, collisions, gCandidatesNotTracked);
+    fillCandidatesVector<TracksExtMC>(collisions, cascades, gCandidatesNT);
+    fillMCtable<aod::Cascades>(mcParticles, collisions, gCandidatesNT);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesMC, "process cascades: MC analysis", false);
 
@@ -565,8 +569,8 @@ struct NonPromptCascadeTask {
                            aod::BCsWithTimestamps const&)
   {
     zorroAccounting(collisions);
-    fillCandidatesVector<TracksExtData>(collisions, cascades, gCandidatesNotTracked);
-    fillDataTable<aod::Cascades>(gCandidatesNotTracked);
+    fillCandidatesVector<TracksExtData>(collisions, cascades, gCandidatesNT);
+    fillDataTable<aod::Cascades>(gCandidatesNT);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesData, "process cascades: Data analysis", false);
 };

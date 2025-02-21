@@ -160,7 +160,7 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::BachKaonTOFNSigma,
                   NPCascadeTable::BachPionTOFNSigma)
 
-DECLARE_SOA_TABLE(NPCascTableNotTracked, "AOD", "NPCASCTABLENOTTRACKED",
+DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::MatchingChi2,
                   NPCascadeTable::DeltaPtITSCascade,
                   NPCascadeTable::ITSClusSize,
@@ -284,7 +284,7 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::DCAzMC,
                   NPCascadeTable::MCcollisionMatch)
 
-DECLARE_SOA_TABLE(NPCascTableMCNotTracked, "AOD", "NPCASCTABLEMCNOTTRACKED",
+DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::MatchingChi2,
                   NPCascadeTable::DeltaPtITSCascade,
                   NPCascadeTable::ITSClusSize,
