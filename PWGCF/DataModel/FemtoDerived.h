@@ -194,11 +194,11 @@ DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay
 DECLARE_SOA_COLUMN(MKaon, mKaon, float);             //! The invariant mass of V0 candidate, assuming kaon
 //Here the cascade specific collums
 DECLARE_SOA_COLUMN(CascV0DCAtoPV, cascV0DCAtoPV, float);     //! DCA of the daughter V0 to the primar vertex
-DECLARE_SOA_COLUMN(CascDaughDCA, cascdaughDCA, float);       //! DCA between daughters
-DECLARE_SOA_COLUMN(CascTransRadius, casctransRadius, float); //! Transverse radius of the decay vertex of the cascade
-DECLARE_SOA_COLUMN(CascDecayVtxX, cascdecayVtxX, float);     //! X position of the decay vertex of the cascade
-DECLARE_SOA_COLUMN(CascDecayVtxY, cascdecayVtxY, float);     //! Y position of the decay vertex of the cascade
-DECLARE_SOA_COLUMN(CascDecayVtxZ, cascdecayVtxZ, float);     //! Z position of the decay vertex of the cascade
+DECLARE_SOA_COLUMN(CascDaughDCA, cascDaughDCA, float);       //! DCA between daughters
+DECLARE_SOA_COLUMN(CascTransRadius, cascTransRadius, float); //! Transverse radius of the decay vertex of the cascade
+DECLARE_SOA_COLUMN(CascDecayVtxX, cascDecayVtxX, float);     //! X position of the decay vertex of the cascade
+DECLARE_SOA_COLUMN(CascDecayVtxY, cascDecayVtxY, float);     //! Y position of the decay vertex of the cascade
+DECLARE_SOA_COLUMN(CascDecayVtxZ, cascDecayVtxZ, float);     //! Z position of the decay vertex of the cascade
 DECLARE_SOA_COLUMN(MOmega, mOmega, float);             //! The invariant mass of Cascade candidate, assuming Omega 
 } // namespace femtodreamparticle
 

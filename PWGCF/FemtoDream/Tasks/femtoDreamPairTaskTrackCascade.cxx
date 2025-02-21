@@ -121,6 +121,7 @@ struct femtoDreamPairTaskTrackCascade {
     Configurable<float> EtaMin{"EtaMin", -10., "Minimum eta of Partricle 2 (V0)"};
     Configurable<float> EtaMax{"EtaMax", 10., "Maximum eta of Partricle 2 (V0)"};
     Configurable<bool> UseChildCuts{"UseChildCuts", true, "Use cuts on the children of the Cascades additional to those of the selection of the cascade builder"};
+    Configurable<bool> UseChildPIDCuts{"UseChildPIDCuts", true, "Use PID cuts on the children of the Cascades additional to those of the selection of the cascade builder"};
   } Cascade2;
   /// Partition for particle 2
   Partition<FDParticles> PartitionCascade2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade)) &&
@@ -190,11 +191,11 @@ struct femtoDreamPairTaskTrackCascade {
     colBinningMultPercentile = {{Mixing.BinVztx, Mixing.BinMultPercentile}, true};
     colBinningMultMultPercentile = {{Mixing.BinVztx, Mixing.BinMult, Mixing.BinMultPercentile}, true};
     eventHisto.init(&Registry, Option.IsMC);
-    trackHistoPartOne.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTTrack, Option.Dummy, Option.Dummy, Binning.TempFitVarTrack, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track1.PDGCode);
-    trackHistoPartTwo.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTCascade, Option.Dummy, Option.Dummy, Binning.TempFitVarCascade, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Binning.InvMass, Option.IsMC, Cascade2.PDGCode);
-    posChildHistos.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTCascadeChild, Option.Dummy, Option.Dummy, Binning.TempFitVarCascadeChild, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, false, 0);
-    negChildHistos.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTCascadeChild, Option.Dummy, Option.Dummy, Binning.TempFitVarCascadeChild, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, false, 0);
-    bachChildHistos.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTCascadeChild, Option.Dummy, Option.Dummy, Binning.TempFitVarCascadeChild, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, false, 0);
+    trackHistoPartOne.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTTrack, Option.Dummy, Option.Dummy, Binning.TempFitVarTrack, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track1.PDGCode);
+    trackHistoPartTwo.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTCascade, Option.Dummy, Option.Dummy, Binning.TempFitVarCascade, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Binning.InvMass, Option.Dummy, Option.IsMC, Cascade2.PDGCode);
+    posChildHistos.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTCascadeChild, Option.Dummy, Option.Dummy, Binning.TempFitVarCascadeChild, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, false, 0);
+    negChildHistos.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTCascadeChild, Option.Dummy, Option.Dummy, Binning.TempFitVarCascadeChild, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, false, 0);
+    bachChildHistos.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTCascadeChild, Option.Dummy, Option.Dummy, Binning.TempFitVarCascadeChild, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, false, 0);
     sameEventCont.init(&Registry,
                        Binning.kstar, Binning.pT, Binning.kT, Binning.mT, Mixing.BinMult, Mixing.BinMultPercentile,
                        Binning4D.kstar, Binning4D.mT, Binning4D.Mult, Binning4D.multPercentile,
@@ -262,29 +263,29 @@ struct femtoDreamPairTaskTrackCascade {
       // cuts on Cascade children still need to be applied
 
       if (Cascade2.UseChildCuts &&
-          !(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
-            ((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
-            ((negChild.cut() & Cascade2.ChildNeg_CutBit) == Cascade2.ChildNeg_CutBit) &&
-            ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
-            ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit) &&
-            ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit))) {
-        continue;
-      }
-      if (Option.CPROn.value) {
-        if ((p1.cut() & kSignPlusMask) == kSignPlusMask) {
-          if (pairCloseRejectionSE.isClosePair(p1, posChild, parts, col.magField())) {
+          ((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
+          ((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
+          ((negChild.cut() & Cascade2.ChildNeg_CutBit) == Cascade2.ChildNeg_CutBit) &&
+          ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
+          ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit) &&
+          ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit)) {
+      
+          if (Option.CPROn.value) {
+            if ((p1.cut() & kSignPlusMask) == kSignPlusMask) {
+              if (pairCloseRejectionSE.isClosePair(p1, posChild, parts, col.magField())) {
+                continue;
+              }
+            } else {
+              if (pairCloseRejectionSE.isClosePair(p1, posChild, parts, col.magField())) {
+                continue;
+              }
+            }
+          }
+          if (!pairCleaner.isCleanPair(p1, p2, parts)) {
             continue;
           }
-        } else {
-          if (pairCloseRejectionSE.isClosePair(p1, posChild, parts, col.magField())) {
-            continue;
-          }
-        }
+          sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.smearingByOrigin);
       }
-      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-        continue;
-      }
-      sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.smearingByOrigin);
     }
   }
   void processSameEvent(FilteredCollision const& col, FDParticles const& parts)
@@ -320,15 +321,21 @@ struct femtoDreamPairTaskTrackCascade {
         const auto& negChild = parts.iteratorAt(p2.index() - 2);
         const auto& bachChild = parts.iteratorAt(p2.index() - 1);
         // check cuts on Cascade children
-        if (Cascade2.UseChildCuts &&
-            !(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
-              ((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
+        if (Cascade2.UseChildCuts){
+          if(!(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
               ((negChild.cut() & Cascade2.ChildNeg_CutBit) == Cascade2.ChildNeg_CutBit) &&
-              ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
-              ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit) &&
-              ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit))) {
-          continue;
+              ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit))){
+            continue;
+          }
         }
+        if (Cascade2.UseChildPIDCuts){
+          if(!(((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
+               ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
+               ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit))){
+            continue;
+          }
+        }
+        
         if (Option.CPROn.value) {
           if ((p1.cut() & kSignPlusMask) == kSignPlusMask) {
             if (pairCloseRejectionME.isClosePair(p1, posChild, parts, collision1.magField())) {

@@ -624,9 +624,9 @@ struct femtoDreamProducerTask {
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
                   track.dcaXY(), childIDs, 0, 0);
       tmpIDtrack.push_back(track.globalIndex());
-      //if (ConfIsDebug.value) {
-      //  fillDebugParticle<true, hasItsPid>(track);
-      //}
+      if (ConfIsDebug.value) {
+        fillDebugParticle<true, hasItsPid>(track);
+      }
 
       if constexpr (isMC) {
         fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
@@ -736,11 +736,11 @@ struct femtoDreamProducerTask {
                     indexChildID,
                     v0.mLambda(),
                     v0.mAntiLambda());
-        //if (ConfIsDebug.value) {
-        //  fillDebugParticle<true, false>(postrack); // QA for positive daughter
-        //  fillDebugParticle<true, false>(negtrack); // QA for negative daughter
-        //  fillDebugParticle<false, false>(v0);      // QA for v0
-        //}
+        if (ConfIsDebug.value) {
+          fillDebugParticle<true, false>(postrack); // QA for positive daughter
+          fillDebugParticle<true, false>(negtrack); // QA for negative daughter
+          fillDebugParticle<false, false>(v0);      // QA for v0
+        }
         if constexpr (isMC) {
           fillMCParticle(col, v0, o2::aod::femtodreamparticle::ParticleType::kV0);
         }
@@ -798,16 +798,17 @@ struct femtoDreamProducerTask {
                         indexChildID,
                         tempPhi.M(),
                         tempPhi.M());
-            //if (ConfIsDebug.value) {
-            //  fillDebugParticle<true, false>(Daughter1.at(iDaug1)); // QA for positive daughter
-            //  fillDebugParticle<true, false>(Daughter2.at(iDaug2)); // QA for negative daughter
-            //  outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
-            //                   -999., -999., -999., -999., -999., -999., -999., -999.,
-            //                   -999., -999., -999., -999., -999., -999., -999., -999.,
-            //                   -999., -999., -999., -999., -999., -999., -999., -999.,
-            //                   -999., -999. - 999., -999., -999., -999., -999., -999.,
-            //                   -999., -999., -999., -999., -999., -999., -999.); // QA for Reso
-            //}
+            if (ConfIsDebug.value) {
+              fillDebugParticle<true, false>(Daughter1.at(iDaug1)); // QA for positive daughter
+              fillDebugParticle<true, false>(Daughter2.at(iDaug2)); // QA for negative daughter
+              outputDebugParts(-999.,                                                             // sign
+                               -999., -999., -999., -999., -999., -999., -999., -999., -999.,     // track properties (DCA, NCls, crossed rows, etc.)
+                               -999., -999., -999., -999., -999., -999., -999., -999.,            // TPC PID (TPC signal + particle hypothesis)
+                               -999., -999., -999., -999., -999., -999., -999.,                   // TOF PID
+                               -999., -999., -999., -999., -999., -999., -999., -999.,            // ITS PID
+                               -999., -999., -999., -999., -999., -999.,                          // V0 properties
+                               -999., -999., -999., -999., -999., -999., -999.);                  // Cascade properties
+            }
           }
         }
       }

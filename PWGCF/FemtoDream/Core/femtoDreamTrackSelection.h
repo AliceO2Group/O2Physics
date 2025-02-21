@@ -587,8 +587,6 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
       sel.checkSelectionSetBit(observable, output, counter, mHistogramRegistry);
     }
   }
-  //LOGF(info, "--> Cut: %i", static_cast<int>(output));
-  //LOGF(info, "--> PID: %i", static_cast<int>(outputPID));
   return {output, outputPID};
 }
 

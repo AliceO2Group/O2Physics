@@ -55,6 +55,7 @@ struct femtoDreamDebugCascade {
   Configurable<int> ConfCascadeTempFitVarMomentum{"ConfCascadeTempFitVarMomentum", 0, "Momentum used for binning: 0 -> pt; 1 -> preco; 2 -> ptpc"};
 
   ConfigurableAxis ConfCascadeInvMassBins{"ConfCascadeInvMassBins", {200, 1.25, 1.45}, "Cascade: InvMass binning"};
+  ConfigurableAxis ConfCascadeInvMassCompetingBins{"ConfCascadeInvMassCompetingBins", {200, 1.57, 1.77}, "Cascade: InvMass binning of the competing candidate"};
 
   ConfigurableAxis ConfCascadeChildTempFitVarMomentumBins{"ConfCascadeChildTempFitVarMomentumBins", {600, 0, 6}, "p binning for the p vs Nsigma TPC/TOF plot"};
   ConfigurableAxis ConfCascadeChildNsigmaTPCBins{"ConfCascadeChildNsigmaTPCBins", {1600, -8, 8}, "binning of Nsigma TPC plot"};
@@ -68,6 +69,7 @@ struct femtoDreamDebugCascade {
   Configurable<aod::femtodreamparticle::cutContainerType> ConfCascade_ChildBach_CutBit{"ConfCascade_ChildBach_CutBit", 149, "Bachelor Child of Cascade - PID bit from cutCulator"};
   Configurable<aod::femtodreamparticle::cutContainerType> ConfCascade_ChildBach_TPCBit{"ConfCascade_ChildBach_TPCBit", 8, "Bachelor Child of Cascade - PID bit from cutCulator"};
   Configurable<bool> ConfUseChildCuts{"ConfUseChildCuts", true, "Use cuts on the children of the Cascades additional to those of the selection of the cascade builder"};
+  Configurable<bool> ConfUseChildPIDCuts{"ConfUseChildPIDCuts", true, "Use cuts on the children of the Cascades additional to those of the selection of the cascade builder"};
   
   Configurable<bool> ConfIsOmega{"ConfIsOmega", false, "Switch between Xi and Omaga Cascades: If true: Omega; else: Xi"};
   Configurable<bool> ConfRejectCompetingMass{"ConfRejectCompetingMass", false, "Reject the competing Cascade Mass (use only for debugging. More efficient to exclude it already at the producer level)"};
@@ -102,10 +104,10 @@ struct femtoDreamDebugCascade {
   void init(InitContext&)
   {
     eventHisto.init(&EventRegistry, false);
-    posChildHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_ChildPos_PDGCode.value, true);
-    negChildHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_ChildNeg_PDGCode.value, true);
-    bachelorHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_Bach_PDGCode.value, true);
-    CascadeHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_PDGCode.value, false);
+    posChildHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, ConfCascadeInvMassCompetingBins, false, ConfCascade_ChildPos_PDGCode.value, true);
+    negChildHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, ConfCascadeInvMassCompetingBins, false, ConfCascade_ChildNeg_PDGCode.value, true);
+    bachelorHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, ConfCascadeInvMassCompetingBins, false, ConfCascade_Bach_PDGCode.value, true);
+    CascadeHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, ConfCascadeInvMassCompetingBins, false, ConfCascade_PDGCode.value, true);
     
     massProton = o2::analysis::femtoDream::getMass(2212);
     massPion = o2::analysis::femtoDream::getMass(211);
@@ -143,42 +145,22 @@ struct femtoDreamDebugCascade {
 
 
 
-        if (ConfUseChildCuts &&
-            !((posChild.cut() & ConfCascade_ChildPos_CutBit) == ConfCascade_ChildPos_CutBit &&
-              (posChild.pidcut() & ConfCascade_ChildPos_TPCBit) == ConfCascade_ChildPos_TPCBit &&
-              (negChild.cut() & ConfCascade_ChildNeg_CutBit) == ConfCascade_ChildNeg_CutBit &&
-              (negChild.pidcut() & ConfCascade_ChildNeg_TPCBit) == ConfCascade_ChildNeg_TPCBit &&
-              (bachChild.cut() & ConfCascade_ChildBach_CutBit) == ConfCascade_ChildBach_CutBit &&
-              (bachChild.pidcut() & ConfCascade_ChildBach_TPCBit) == ConfCascade_ChildBach_TPCBit)) {
-
-          /*
-          LOGF(info, "       -------       GG DEBUG: NEW CASCADE       -------        ");
-          LOGF(info, " Pos");
-          std::cout <<"PosChild Cut:"<< static_cast<int>(posChild.cut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildPos_CutBit) << std::endl;
-          std::cout <<"PosChild PID:"<< static_cast<int>(posChild.pidcut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildPos_TPCBit) << std::endl;
-          LOGF(info, " Neg");
-          std::cout <<"NegChildCut:"<< static_cast<int>(negChild.cut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildNeg_CutBit) << std::endl;
-          std::cout <<"NegChildCut:"<< static_cast<int>(negChild.pidcut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildNeg_TPCBit) << std::endl;
-          LOGF(info, " Bach");
-          std::cout <<"BachChildCut:"<< static_cast<int>(bachChild.cut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildBach_CutBit) << std::endl;
-          std::cout <<"BachChildCut:"<< static_cast<int>(bachChild.pidcut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildBach_TPCBit) << std::endl;
-          */ 
-          continue;
+        if (ConfUseChildCuts){
+            if(!(
+                //(posChild.cut() & ConfCascade_ChildPos_CutBit) == ConfCascade_ChildPos_CutBit &&
+                //(negChild.cut() & ConfCascade_ChildNeg_CutBit) == ConfCascade_ChildNeg_CutBit //&&
+                (bachChild.cut() & ConfCascade_ChildBach_CutBit) == ConfCascade_ChildBach_CutBit
+                )){
+                  continue;
+                  }
         }
-
-          /*
-          LOGF(info, "       -------       GG DEBUG: PASSED CASCADE       -------        ");
-          LOGF(info, " Pos");
-          std::cout <<"PosChild Cut:"<< static_cast<int>(posChild.cut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildPos_CutBit) << std::endl;
-          std::cout <<"PosChild PID:"<< static_cast<int>(posChild.pidcut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildPos_TPCBit) << std::endl;
-          LOGF(info, " Neg");
-          std::cout <<"NegChildCut:"<< static_cast<int>(negChild.cut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildNeg_CutBit) << std::endl;
-          std::cout <<"NegChildCut:"<< static_cast<int>(negChild.pidcut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildNeg_TPCBit) << std::endl;
-          LOGF(info, " Bach");
-          std::cout <<"BachChildCut:"<< static_cast<int>(bachChild.cut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildBach_CutBit) << std::endl;
-          std::cout <<"BachChildCut:"<< static_cast<int>(bachChild.pidcut())<< " --> Config: "<<static_cast<int>(ConfCascade_ChildBach_TPCBit) << std::endl;
-          */ 
-    
+        if (ConfUseChildPIDCuts){
+            if(!((posChild.pidcut() & ConfCascade_ChildPos_TPCBit) == ConfCascade_ChildPos_TPCBit &&
+                (negChild.pidcut() & ConfCascade_ChildNeg_TPCBit) == ConfCascade_ChildNeg_TPCBit &&
+                (bachChild.pidcut() & ConfCascade_ChildBach_TPCBit) == ConfCascade_ChildBach_TPCBit)){
+                  continue; 
+                  }
+        }
 
         //Competing mass rejection
         if(ConfRejectCompetingMass){
@@ -193,7 +175,7 @@ struct femtoDreamDebugCascade {
             continue;
           }
         } 
-        CascadeHistos.fillQA<false, false>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M()); // set isDebug to true
+        CascadeHistos.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
         posChildHistos.fillQA<false, true>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
         negChildHistos.fillQA<false, true>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
         bachelorHistos.fillQA<false, true>(bachChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
