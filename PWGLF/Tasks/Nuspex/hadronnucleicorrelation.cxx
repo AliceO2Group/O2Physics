@@ -1306,11 +1306,35 @@ struct hadronnucleicorrelation {
       if (particle.pdgCode() == pdgProton) {
         if (!particle.has_daughters()) {
           selectedparticlesMC_p[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
+        } else {
+          bool isp = false;
+
+          for (auto& dau : particle.daughters_as<aod::McParticles>()) {
+            if (dau.pdgCode() == pdgProton) {
+              isp = true;
+            }
+          }
+
+          if (isp) {
+            selectedparticlesMC_p[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
+          }
         }
       }
       if (particle.pdgCode() == -pdgProton) {
         if (!particle.has_daughters()) {
           selectedparticlesMC_antip[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
+        } else {
+          bool isantip = false;
+
+          for (auto& dau : particle.daughters_as<aod::McParticles>()) {
+            if (dau.pdgCode() == -pdgProton) {
+              isantip = true;
+            }
+          }
+
+          if (isantip) {
+            selectedparticlesMC_antip[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
+          }
         }
       }
     }
