@@ -240,17 +240,17 @@ struct femtoDreamPairTaskTrackCascade {
       // auto posChild = v0.template children_as<S>().front();
       // auto negChild = v0.template children_as<S>().back();
       // check cuts on V0 children
-      if (Cascade2.UseChildCuts){
-        if(!(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
-            ((negChild.cut() & Cascade2.ChildNeg_CutBit) == Cascade2.ChildNeg_CutBit) &&
-            ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit))){
+      if (Cascade2.UseChildCuts) {
+        if (!(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
+              ((negChild.cut() & Cascade2.ChildNeg_CutBit) == Cascade2.ChildNeg_CutBit) &&
+              ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit))) {
           continue;
         }
       }
-      if (Cascade2.UseChildPIDCuts){
-        if(!(((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
-             ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
-             ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit))){
+      if (Cascade2.UseChildPIDCuts) {
+        if (!(((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
+              ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
+              ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit))) {
           continue;
         }
       }
@@ -264,19 +264,19 @@ struct femtoDreamPairTaskTrackCascade {
       const auto& posChild = parts.iteratorAt(p2.index() - 3);
       const auto& negChild = parts.iteratorAt(p2.index() - 2);
       const auto& bachChild = parts.iteratorAt(p2.index() - 1);
-      
+
       // cuts on Cascade children still need to be applied
-      if (Cascade2.UseChildCuts){
-        if(!(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
-            ((negChild.cut() & Cascade2.ChildNeg_CutBit) == Cascade2.ChildNeg_CutBit) &&
-            ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit))){
+      if (Cascade2.UseChildCuts) {
+        if (!(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
+              ((negChild.cut() & Cascade2.ChildNeg_CutBit) == Cascade2.ChildNeg_CutBit) &&
+              ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit))) {
           continue;
         }
       }
-      if (Cascade2.UseChildPIDCuts){
-        if(!(((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
-             ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
-             ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit))){
+      if (Cascade2.UseChildPIDCuts) {
+        if (!(((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
+              ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
+              ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit))) {
           continue;
         }
       }
@@ -291,7 +291,7 @@ struct femtoDreamPairTaskTrackCascade {
           }
         }
       }
-      
+
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
@@ -331,21 +331,21 @@ struct femtoDreamPairTaskTrackCascade {
         const auto& negChild = parts.iteratorAt(p2.index() - 2);
         const auto& bachChild = parts.iteratorAt(p2.index() - 1);
         // check cuts on Cascade children
-        if (Cascade2.UseChildCuts){
-          if(!(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
-              ((negChild.cut() & Cascade2.ChildNeg_CutBit) == Cascade2.ChildNeg_CutBit) &&
-              ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit))){
+        if (Cascade2.UseChildCuts) {
+          if (!(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
+                ((negChild.cut() & Cascade2.ChildNeg_CutBit) == Cascade2.ChildNeg_CutBit) &&
+                ((bachChild.cut() & Cascade2.ChildBach_CutBit) == Cascade2.ChildBach_CutBit))) {
             continue;
           }
         }
-        if (Cascade2.UseChildPIDCuts){
-          if(!(((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
-               ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
-               ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit))){
+        if (Cascade2.UseChildPIDCuts) {
+          if (!(((posChild.pidcut() & Cascade2.ChildPos_TPCBit) == Cascade2.ChildPos_TPCBit) &&
+                ((negChild.pidcut() & Cascade2.ChildNeg_TPCBit) == Cascade2.ChildNeg_TPCBit) &&
+                ((bachChild.pidcut() & Cascade2.ChildBach_TPCBit) == Cascade2.ChildBach_TPCBit))) {
             continue;
           }
         }
-        
+
         if (Option.CPROn.value) {
           if ((p1.cut() & kSignPlusMask) == kSignPlusMask) {
             if (pairCloseRejectionME.isClosePair(p1, posChild, parts, collision1.magField())) {

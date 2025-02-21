@@ -135,11 +135,11 @@ class FemtoDreamCollisionSelection
     }
     return true;
   }
-  
+
   template <typename C, typename Casc, typename CascC, typename T>
   bool isCollisionWithoutTrkCasc(C const& col, Casc const& Cascades, CascC& CascadeCuts, T const& /*Tracks*/)
   {
-    // check if there is no selected Cascade 
+    // check if there is no selected Cascade
     for (auto const& Cascade : Cascades) {
       auto postrack = Cascade.template posTrack_as<T>();
       auto negtrack = Cascade.template negTrack_as<T>();

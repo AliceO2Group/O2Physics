@@ -486,9 +486,6 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   const float invMass = isCascOmega ? cascade.mOmega() : cascade.mXi();
   // const float invMass = cascade.mXi();
 
-
-  
-  
   if (invMassLambda < fV0InvMassLowLimit || invMassLambda > fV0InvMassUpLimit) {
     return false;
   }
@@ -562,7 +559,7 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   if (!BachDaughTrack.isSelectedMinimal(bachTrack)) {
     return false;
   }
-  
+
   return true;
 }
 

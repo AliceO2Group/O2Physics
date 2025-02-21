@@ -442,18 +442,18 @@ struct femtoDreamProducerTask {
                          -999., -999., -999., -999., -999., -999., -999.);
       }
     } else {
-      outputDebugParts(-999.,                                                             // sign
-                       -999., -999., -999., -999., -999., -999., -999., -999., -999.,     // track properties (DCA, NCls, crossed rows, etc.)
-                       -999., -999., -999., -999., -999., -999., -999., -999.,            // TPC PID (TPC signal + particle hypothesis)
-                       -999., -999., -999., -999., -999., -999., -999.,                   // TOF PID
-                       -999., -999., -999., -999., -999., -999., -999., -999.,            // ITS PID
-                       particle.dcaV0daughters(), 
+      outputDebugParts(-999.,                                                         // sign
+                       -999., -999., -999., -999., -999., -999., -999., -999., -999., // track properties (DCA, NCls, crossed rows, etc.)
+                       -999., -999., -999., -999., -999., -999., -999., -999.,        // TPC PID (TPC signal + particle hypothesis)
+                       -999., -999., -999., -999., -999., -999., -999.,               // TOF PID
+                       -999., -999., -999., -999., -999., -999., -999., -999.,        // ITS PID
+                       particle.dcaV0daughters(),
                        particle.v0radius(),
                        particle.x(),
                        particle.y(),
                        particle.z(),
                        particle.mK0Short(),
-                       -999., -999., -999., -999., -999., -999., -999.);                  // Cascade properties
+                       -999., -999., -999., -999., -999., -999., -999.); // Cascade properties
     }
   }
 
@@ -583,8 +583,8 @@ struct femtoDreamProducerTask {
       fillMCCollision(col);
     }
 
-    std::vector<int> childIDs = {0, 0};           // these IDs are necessary to keep track of the children
-    std::vector<int> tmpIDtrack;                  // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
+    std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
+    std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     std::vector<typename TrackTypeWithItsPid::iterator> Daughter1, Daughter2;
 
     for (auto& track : tracksWithItsPid) {
@@ -799,15 +799,15 @@ struct femtoDreamProducerTask {
                         tempPhi.M(),
                         tempPhi.M());
             if (ConfIsDebug.value) {
-              fillDebugParticle<true, false>(Daughter1.at(iDaug1)); // QA for positive daughter
-              fillDebugParticle<true, false>(Daughter2.at(iDaug2)); // QA for negative daughter
-              outputDebugParts(-999.,                                                             // sign
-                               -999., -999., -999., -999., -999., -999., -999., -999., -999.,     // track properties (DCA, NCls, crossed rows, etc.)
-                               -999., -999., -999., -999., -999., -999., -999., -999.,            // TPC PID (TPC signal + particle hypothesis)
-                               -999., -999., -999., -999., -999., -999., -999.,                   // TOF PID
-                               -999., -999., -999., -999., -999., -999., -999., -999.,            // ITS PID
-                               -999., -999., -999., -999., -999., -999.,                          // V0 properties
-                               -999., -999., -999., -999., -999., -999., -999.);                  // Cascade properties
+              fillDebugParticle<true, false>(Daughter1.at(iDaug1));                           // QA for positive daughter
+              fillDebugParticle<true, false>(Daughter2.at(iDaug2));                           // QA for negative daughter
+              outputDebugParts(-999.,                                                         // sign
+                               -999., -999., -999., -999., -999., -999., -999., -999., -999., // track properties (DCA, NCls, crossed rows, etc.)
+                               -999., -999., -999., -999., -999., -999., -999., -999.,        // TPC PID (TPC signal + particle hypothesis)
+                               -999., -999., -999., -999., -999., -999., -999.,               // TOF PID
+                               -999., -999., -999., -999., -999., -999., -999., -999.,        // ITS PID
+                               -999., -999., -999., -999., -999., -999.,                      // V0 properties
+                               -999., -999., -999., -999., -999., -999., -999.);              // Cascade properties
             }
           }
         }

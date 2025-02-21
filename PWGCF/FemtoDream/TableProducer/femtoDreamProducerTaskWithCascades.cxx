@@ -213,7 +213,7 @@ struct femtoDreamProducerTaskWithCascades {
     Configurable<std::vector<float>> ConfCascBachelorDCAMin{"ConfCascBachelorDCAMin", std::vector<float>{0.05f, 0.06f}, "Cascade Bachelor sel:  Max. DCA Daugh to PV (cm)"};
     Configurable<std::vector<float>> ConfCascBachelorPIDnSigmaMax{"ConfCascBachelorPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "Cascade Bachelor sel: Max. PID nSigma TPC"};
     Configurable<std::vector<int>> ConfCascBachelorPIDspecies{"ConfCascBachelorPIDspecies", std::vector<int>{o2::track::PID::Pion}, "Cascade Bachelor sel: Particles species for PID"};
-    
+
     Configurable<bool> ConfCascRejectCompetingMass{"ConfCascRejectCompetingMass", false, "Switch on to reject Omegas (for Xi) or Xis (for Omegas)"};
     Configurable<float> ConfCascInvCompetingMassLowLimit{"ConfCascInvCompetingMassLowLimit", 1.66, "Lower limit of the cascade invariant mass for competing mass rejection"};
     Configurable<float> ConfCascInvCompetingMassUpLimit{"ConfCascInvCompetingMassUpLimit", 1.68, "Upper limit of the cascade invariant mass for competing mass rejection"};
@@ -415,7 +415,7 @@ struct femtoDreamProducerTaskWithCascades {
       cascadeCuts.init<aod::femtodreamparticle::ParticleType::kCascade, aod::femtodreamparticle::ParticleType::kCascadeV0Child, aod::femtodreamparticle::ParticleType::kCascadeBachelor, aod::femtodreamparticle::cutContainerType>(&qaRegistry, &CascadeRegistry, ConfCascSel.ConfCascIsSelectedOmega);
       cascadeCuts.setInvMassLimits(ConfCascSel.ConfCascInvMassLowLimit, ConfCascSel.ConfCascInvMassUpLimit);
       cascadeCuts.setV0InvMassLimits(ConfCascSel.ConfCascV0InvMassLowLimit, ConfCascSel.ConfCascV0InvMassUpLimit);
-      if(ConfCascSel.ConfCascRejectCompetingMass){
+      if (ConfCascSel.ConfCascRejectCompetingMass) {
         cascadeCuts.setCompetingInvMassLimits(ConfCascSel.ConfCascInvCompetingMassLowLimit, ConfCascSel.ConfCascInvCompetingMassUpLimit);
       }
     }
@@ -545,35 +545,35 @@ struct femtoDreamProducerTaskWithCascades {
                          -999., -999., -999., -999., -999., -999., -999.);
       }
     } else {
-      outputDebugParts(-999.,                                                             // sign
-                       -999., -999., -999., -999., -999., -999., -999., -999., -999.,     // track properties (DCA, NCls, crossed rows, etc.)
-                       -999., -999., -999., -999., -999., -999., -999., -999.,            // TPC PID (TPC signal + particle hypothesis)
-                       -999., -999., -999., -999., -999., -999., -999.,                   // TOF PID
-                       -999., -999., -999., -999., -999., -999., -999., -999.,            // ITS PID
-                       particle.dcaV0daughters(), 
+      outputDebugParts(-999.,                                                         // sign
+                       -999., -999., -999., -999., -999., -999., -999., -999., -999., // track properties (DCA, NCls, crossed rows, etc.)
+                       -999., -999., -999., -999., -999., -999., -999., -999.,        // TPC PID (TPC signal + particle hypothesis)
+                       -999., -999., -999., -999., -999., -999., -999.,               // TOF PID
+                       -999., -999., -999., -999., -999., -999., -999., -999.,        // ITS PID
+                       particle.dcaV0daughters(),
                        particle.v0radius(),
                        particle.x(),
                        particle.y(),
                        particle.z(),
                        particle.mK0Short(),
-                       -999., -999., -999., -999., -999., -999., -999.);                  // Cascade properties
+                       -999., -999., -999., -999., -999., -999., -999.); // Cascade properties
     }
   }
 
   template <typename ParticleType, typename CollisionType>
-  void fillDebugCascade(ParticleType const& cascade, CollisionType const &col)
+  void fillDebugCascade(ParticleType const& cascade, CollisionType const& col)
   {
-    outputDebugParts(cascade.sign(),                                                             // sign
-                     -999., -999., -999., -999., -999., -999., -999., -999., -999.,              // track properties (DCA, NCls, crossed rows, etc.)
-                     -999., -999., -999., -999., -999., -999., -999., -999.,                     // TPC PID (TPC signal + particle hypothesis)
-                     -999., -999., -999., -999., -999., -999., -999.,                            // TOF PID
-                     -999., -999., -999., -999., -999., -999., -999., -999.,                     // ITS PID
+    outputDebugParts(cascade.sign(),                                                // sign
+                     -999., -999., -999., -999., -999., -999., -999., -999., -999., // track properties (DCA, NCls, crossed rows, etc.)
+                     -999., -999., -999., -999., -999., -999., -999., -999.,        // TPC PID (TPC signal + particle hypothesis)
+                     -999., -999., -999., -999., -999., -999., -999.,               // TOF PID
+                     -999., -999., -999., -999., -999., -999., -999., -999.,        // ITS PID
                      cascade.dcaV0daughters(),
                      cascade.v0radius(),
                      -999., // DecVtxV0 x
                      -999., // DecVtxV0 y
                      -999., // DecVtxV0 z
-                     -999., //mKaon
+                     -999., // mKaon
                      cascade.dcav0topv(col.posX(), col.posY(), col.posZ()),
                      cascade.dcacascdaughters(),
                      cascade.cascradius(),
@@ -694,7 +694,7 @@ struct femtoDreamProducerTaskWithCascades {
     if (!colCuts.isSelectedCollision(col)) {
       return;
     }
-    bool emptyCollision = false; 
+    bool emptyCollision = false;
     if (ConfIsActivateCascade.value) {
       if (colCuts.isEmptyCollision(col, tracks, trackCuts) && colCuts.isCollisionWithoutTrkCasc(col, fullCascades, cascadeCuts, tracks)) {
         emptyCollision = true;
@@ -709,7 +709,7 @@ struct femtoDreamProducerTaskWithCascades {
         emptyCollision = true;
       }
     }
-    if (emptyCollision){
+    if (emptyCollision) {
       return;
     }
 
@@ -1041,15 +1041,15 @@ struct femtoDreamProducerTaskWithCascades {
                         tempPhi.M(),
                         tempPhi.M());
             if (ConfIsDebug.value) {
-              fillDebugParticle<true, false>(Daughter1.at(iDaug1)); // QA for positive daughter
-              fillDebugParticle<true, false>(Daughter2.at(iDaug2)); // QA for negative daughter
-              outputDebugParts(-999.,                                                             // sign
-                               -999., -999., -999., -999., -999., -999., -999., -999., -999.,     // track properties (DCA, NCls, crossed rows, etc.)
-                               -999., -999., -999., -999., -999., -999., -999., -999.,            // TPC PID (TPC signal + particle hypothesis)
-                               -999., -999., -999., -999., -999., -999., -999.,                   // TOF PID
-                               -999., -999., -999., -999., -999., -999., -999., -999.,            // ITS PID
-                               -999., -999., -999., -999., -999., -999.,                          // V0 properties
-                               -999., -999., -999., -999., -999., -999., -999.);                  // Cascade properties
+              fillDebugParticle<true, false>(Daughter1.at(iDaug1));                           // QA for positive daughter
+              fillDebugParticle<true, false>(Daughter2.at(iDaug2));                           // QA for negative daughter
+              outputDebugParts(-999.,                                                         // sign
+                               -999., -999., -999., -999., -999., -999., -999., -999., -999., // track properties (DCA, NCls, crossed rows, etc.)
+                               -999., -999., -999., -999., -999., -999., -999., -999.,        // TPC PID (TPC signal + particle hypothesis)
+                               -999., -999., -999., -999., -999., -999., -999.,               // TOF PID
+                               -999., -999., -999., -999., -999., -999., -999., -999.,        // ITS PID
+                               -999., -999., -999., -999., -999., -999.,                      // V0 properties
+                               -999., -999., -999., -999., -999., -999., -999.);              // Cascade properties
             }
           }
         }
