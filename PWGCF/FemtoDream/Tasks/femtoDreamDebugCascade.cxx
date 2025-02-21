@@ -146,11 +146,9 @@ struct femtoDreamDebugCascade {
 
 
         if (ConfUseChildCuts){
-            if(!(
-                //(posChild.cut() & ConfCascade_ChildPos_CutBit) == ConfCascade_ChildPos_CutBit &&
-                //(negChild.cut() & ConfCascade_ChildNeg_CutBit) == ConfCascade_ChildNeg_CutBit //&&
-                (bachChild.cut() & ConfCascade_ChildBach_CutBit) == ConfCascade_ChildBach_CutBit
-                )){
+            if(!((posChild.cut() & ConfCascade_ChildPos_CutBit) == ConfCascade_ChildPos_CutBit &&
+                 (negChild.cut() & ConfCascade_ChildNeg_CutBit) == ConfCascade_ChildNeg_CutBit &&
+                 (bachChild.cut() & ConfCascade_ChildBach_CutBit) == ConfCascade_ChildBach_CutBit)){
                   continue;
                   }
         }

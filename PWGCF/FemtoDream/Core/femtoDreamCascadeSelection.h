@@ -59,16 +59,7 @@ enum CascadeSel {
   kCascadeV0TranRadMax,
   kCascadeV0DCAtoPVMin,
   kCascadeV0DCAtoPVMax
-
-  // kNcascadeSelection
-  // kCascadeV0MassMin,
-  // kCascadeV0MassMax
 };
-/*
-kCascadeDCAPosToPV,
-kCascadeDCANegToPV,
-kCascadeDCABachToPV,
-*/
 
 enum ChildTrackType { kPosTrack,
                       kNegTrack,
@@ -101,11 +92,6 @@ class FemtoDreamCascadeSelection
       nCascadeTranRadMin(0),
       nCascadeTranRadMax(0),
       nCascadeDecVtxMax(0),
-      /*
-      nCascadeDCAPosToPV(0),
-      nCascadeDCANegToPV(0),
-      nCascadeDCABachToPV(0),
-      */
       nCascadeV0DCADaughMax(0),
       nCascadeV0CPAMin(0),
       nCascadeV0TranRadMin(0),
@@ -121,11 +107,6 @@ class FemtoDreamCascadeSelection
       fCascadeTranRadMin(9999999),
       fCascadeTranRadMax(-9999999),
       fCascadeDecVtxMax(-9999999),
-      /*
-      fCascadeDCAPosToPV(9999999),
-      fCascadeDCANegToPV(9999999),
-      fCascadeDCABachToPV(9999999),
-      */
       fCascadeV0DCADaughMax(-9999999),
       fCascadeV0CPAMin(9999999),
       fCascadeV0TranRadMin(9999999),
@@ -141,7 +122,6 @@ class FemtoDreamCascadeSelection
       fInvMassCompetingLowLimit(1.5),
       fInvMassCompetingUpLimit(2.0),
       isCascOmega(false)
-  /*,nSigmaPIDOffsetTPC(0.)*/
   {
   }
 

@@ -199,6 +199,7 @@ struct femtoDreamProducerTaskWithCascades {
     Configurable<float> ConfCascV0InvMassUpLimit{"ConfCascV0InvMassUpLimit", 1.027461, "Upper limit of the Cascade invariant mass"};
     // Cascade Daughter Tracks
     Configurable<std::vector<float>> ConfCascV0ChildCharge{"ConfCascV0ChildSign", std::vector<float>{-1, 1}, "CascV0 Child sel: Charge"};
+    Configurable<std::vector<float>> ConfCascV0ChildPtMin{"ConfCascV0ChildPtMin", std::vector<float>{0.8f}, "CascV0 Child sel: min pt"};
     Configurable<std::vector<float>> ConfCascV0ChildEtaMax{"ConfCascV0ChildEtaMax", std::vector<float>{0.8f}, "CascV0 Child sel: max eta"};
     Configurable<std::vector<float>> ConfCascV0ChildTPCnClsMin{"ConfCascV0ChildTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "CascV0 Child sel: Min. nCls TPC"};
     Configurable<std::vector<float>> ConfCascV0ChildDCAMin{"ConfCascV0ChildDCAMin", std::vector<float>{0.05f, 0.06f}, "CascV0 Child sel:  Max. DCA Daugh to PV (cm)"};
@@ -206,6 +207,7 @@ struct femtoDreamProducerTaskWithCascades {
     Configurable<std::vector<int>> ConfCascV0ChildPIDspecies{"ConfCascV0ChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "CascV0 Child sel: Particles species for PID"};
     // Cascade Bachelor Track
     Configurable<std::vector<float>> ConfCascBachelorCharge{"ConfCascBachelorSign", std::vector<float>{-1, 1}, "Cascade Bachelor sel: Charge"};
+    Configurable<std::vector<float>> ConfCascBachelorPtMin{"ConfCascBachelorPtMin", std::vector<float>{0.8f}, "Cascade Bachelor sel: min pt"};
     Configurable<std::vector<float>> ConfCascBachelorEtaMax{"ConfCascBachelorEtaMax", std::vector<float>{0.8f}, "Cascade Bachelor sel: max eta"};
     Configurable<std::vector<float>> ConfCascBachelorTPCnClsMin{"ConfCascBachelorTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "Cascade Bachelor sel: Min. nCls TPC"};
     Configurable<std::vector<float>> ConfCascBachelorDCAMin{"ConfCascBachelorDCAMin", std::vector<float>{0.05f, 0.06f}, "Cascade Bachelor sel:  Max. DCA Daugh to PV (cm)"};
@@ -386,6 +388,7 @@ struct femtoDreamProducerTaskWithCascades {
 
       // Cascade Daughter Tracks
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
@@ -393,6 +396,7 @@ struct femtoDreamProducerTaskWithCascades {
       cascadeCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildPIDspecies);
 
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, ConfCascSel.ConfCascV0ChildCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, ConfCascSel.ConfCascV0ChildPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, ConfCascSel.ConfCascV0ChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, ConfCascSel.ConfCascV0ChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, ConfCascSel.ConfCascV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
@@ -401,6 +405,7 @@ struct femtoDreamProducerTaskWithCascades {
 
       // Cascade Bachelor Track
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, ConfCascSel.ConfCascBachelorCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, ConfCascSel.ConfCascBachelorPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, ConfCascSel.ConfCascBachelorEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, ConfCascSel.ConfCascBachelorTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, ConfCascSel.ConfCascBachelorDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
@@ -689,22 +694,24 @@ struct femtoDreamProducerTaskWithCascades {
     if (!colCuts.isSelectedCollision(col)) {
       return;
     }
+    bool emptyCollision = false; 
     if (ConfIsActivateCascade.value) {
       if (colCuts.isEmptyCollision(col, tracks, trackCuts) && colCuts.isCollisionWithoutTrkCasc(col, fullCascades, cascadeCuts, tracks)) {
-        return;
+        emptyCollision = true;
       }
     }
-    /*
     if (ConfIsActivateV0.value) {
       if (colCuts.isEmptyCollision(col, tracks, trackCuts) && colCuts.isEmptyCollision(col, fullV0s, v0Cuts, tracks)) {
-        return;
+        emptyCollision = true;
       }
     } else {
       if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
-        return;
+        emptyCollision = true;
       }
     }
-    */ 
+    if (emptyCollision){
+      return;
+    }
 
     outputCollision(vtxZ, mult, multNtr, spher, mMagField);
     if constexpr (isMC) {
@@ -881,13 +888,6 @@ struct femtoDreamProducerTaskWithCascades {
         const auto& posTrackCasc = casc.template posTrack_as<TrackType>();
         const auto& negTrackCasc = casc.template negTrack_as<TrackType>();
         const auto& bachTrackCasc = casc.template bachelor_as<TrackType>();
-
-        // const auto& v0daughLink = casc.template v0_as<aod::V0sLinked>();
-        // get the daughter v0
-
-        // QA before the cuts
-        // cascadeCuts.fillCascadeQA(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
-        // cascadeCuts.fillQA<aod::femtodreamparticle::ParticleType::kCascade>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
 
         cascadeCuts.fillQA<0, aod::femtodreamparticle::ParticleType::kCascade>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
         if (!cascadeCuts.isSelectedMinimal(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc)) {
