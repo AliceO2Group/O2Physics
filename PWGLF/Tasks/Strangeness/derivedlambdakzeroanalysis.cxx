@@ -395,66 +395,140 @@ struct DerivedLambdaKzeroAnalysis {
     ccdb->setFatalWhenNull(false);
 
     // initialise bit masks
-    maskTopological = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoV0Radius = (uint64_t(1) << selCosPA) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoDCANegToPV = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoDCAPosToPV = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoCosPA = (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoDCAV0Dau = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selRadiusMax);
+    // Mask with all topologic selections
+    maskTopological = 0;
+    BITSET(maskTopological, selCosPA);
+    BITSET(maskTopological, selRadius);
+    BITSET(maskTopological, selDCANegToPV);
+    BITSET(maskTopological, selDCAPosToPV);
+    BITSET(maskTopological, selDCAV0Dau);
+    BITSET(maskTopological, selRadiusMax);
+    // Mask with all topologic selections, except for V0 radius
+    maskTopoNoV0Radius = 0;
+    BITSET(maskTopoNoV0Radius, selCosPA);
+    BITSET(maskTopoNoV0Radius, selDCANegToPV);
+    BITSET(maskTopoNoV0Radius, selDCAPosToPV);
+    BITSET(maskTopoNoV0Radius, selDCAV0Dau);
+    BITSET(maskTopoNoV0Radius, selRadiusMax);
+    // Mask with all topologic selections, except for DCA neg. to PV
+    maskTopoNoDCANegToPV = 0;
+    BITSET(maskTopoNoDCANegToPV, selCosPA);
+    BITSET(maskTopoNoDCANegToPV, selRadius);
+    BITSET(maskTopoNoDCANegToPV, selDCAPosToPV);
+    BITSET(maskTopoNoDCANegToPV, selDCAV0Dau);
+    BITSET(maskTopoNoDCANegToPV, selRadiusMax);
+    // Mask with all topologic selections, except for DCA pos. to PV
+    maskTopoNoDCAPosToPV = 0;
+    BITSET(maskTopoNoDCAPosToPV, selCosPA);
+    BITSET(maskTopoNoDCAPosToPV, selRadius);
+    BITSET(maskTopoNoDCAPosToPV, selDCANegToPV);
+    BITSET(maskTopoNoDCAPosToPV, selDCAV0Dau);
+    BITSET(maskTopoNoDCAPosToPV, selRadiusMax);
+    // Mask with all topologic selections, except for cosPA
+    maskTopoNoCosPA = 0;
+    BITSET(maskTopoNoCosPA, selRadius);
+    BITSET(maskTopoNoCosPA, selDCANegToPV);
+    BITSET(maskTopoNoCosPA, selDCAPosToPV);
+    BITSET(maskTopoNoCosPA, selDCAV0Dau);
+    BITSET(maskTopoNoCosPA, selRadiusMax);
+    // Mask with all topologic selections, except for DCA between V0 dau
+    maskTopoNoDCAV0Dau = 0;
+    BITSET(maskTopoNoDCAV0Dau, selCosPA);
+    BITSET(maskTopoNoDCAV0Dau, selRadius);
+    BITSET(maskTopoNoDCAV0Dau, selDCANegToPV);
+    BITSET(maskTopoNoDCAV0Dau, selDCAPosToPV);
+    BITSET(maskTopoNoDCAV0Dau, selRadiusMax);
 
-    maskK0ShortSpecific = (uint64_t(1) << selK0ShortRapidity) | (uint64_t(1) << selK0ShortCTau) | (uint64_t(1) << selK0ShortArmenteros) | (uint64_t(1) << selConsiderK0Short);
-    maskLambdaSpecific = (uint64_t(1) << selLambdaRapidity) | (uint64_t(1) << selLambdaCTau) | (uint64_t(1) << selConsiderLambda);
-    maskAntiLambdaSpecific = (uint64_t(1) << selLambdaRapidity) | (uint64_t(1) << selLambdaCTau) | (uint64_t(1) << selConsiderAntiLambda);
+    // Mask for specifically selecting K0Short
+    maskK0ShortSpecific = 0;
+    BITSET(maskK0ShortSpecific, selK0ShortRapidity);
+    BITSET(maskK0ShortSpecific, selK0ShortCTau);
+    BITSET(maskK0ShortSpecific, selK0ShortArmenteros);
+    BITSET(maskK0ShortSpecific, selConsiderK0Short);
+    // Mask for specifically selecting Lambda
+    maskLambdaSpecific = 0;
+    BITSET(maskLambdaSpecific, selLambdaRapidity);
+    BITSET(maskLambdaSpecific, selLambdaCTau);
+    BITSET(maskLambdaSpecific, selConsiderLambda);
+    // Mask for specifically selecting AntiLambda
+    maskAntiLambdaSpecific = 0;
+    BITSET(maskAntiLambdaSpecific, selLambdaRapidity);
+    BITSET(maskAntiLambdaSpecific, selLambdaCTau);
+    BITSET(maskAntiLambdaSpecific, selConsiderAntiLambda);
 
     // ask for specific TPC/TOF PID selections
     maskTrackProperties = 0;
     if (v0Selections.requirePosITSonly) {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosItsOnly) | (uint64_t(1) << selPosGoodITSTrack);
+      BITSET(maskTrackProperties, selPosItsOnly);
+      BITSET(maskTrackProperties, selPosGoodITSTrack);
     } else {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosGoodTPCTrack) | (uint64_t(1) << selPosGoodITSTrack);
+      BITSET(maskTrackProperties, selPosGoodTPCTrack);
+      BITSET(maskTrackProperties, selPosGoodITSTrack);
       // TPC signal is available: ask for positive track PID
       if (v0Selections.tpcPidNsigmaCut < 1e+5) { // safeguard for no cut
-        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDPositivePion);
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDPositiveProton);
-        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDPositivePion);
+        BITSET(maskK0ShortSpecific, selTPCPIDPositivePion);
+        BITSET(maskLambdaSpecific, selTPCPIDPositiveProton);
+        BITSET(maskAntiLambdaSpecific, selTPCPIDPositivePion);
       }
       // TOF PID
-      if (v0Selections.tofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
-        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaPositivePionK0Short) | (uint64_t(1) << selTOFDeltaTPositivePionK0Short);
-      if (v0Selections.tofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaPositiveProtonLambda) | (uint64_t(1) << selTOFDeltaTPositiveProtonLambda);
-      if (v0Selections.tofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
-        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaPositivePionLambda) | (uint64_t(1) << selTOFDeltaTPositivePionLambda);
+      if (v0Selections.tofPidNsigmaCutK0Pi < 1e+5) {// safeguard for no cut
+        BITSET(maskK0ShortSpecific, selTOFNSigmaPositivePionK0Short);
+        BITSET(maskK0ShortSpecific, selTOFDeltaTPositivePionK0Short);
+      }
+      if (v0Selections.tofPidNsigmaCutLaPr < 1e+5) { // safeguard for no cut
+        BITSET(maskLambdaSpecific, selTOFNSigmaPositiveProtonLambda);
+        BITSET(maskLambdaSpecific, selTOFDeltaTPositiveProtonLambda);
+      }
+      if (v0Selections.tofPidNsigmaCutLaPi < 1e+5) { // safeguard for no cut
+        BITSET(maskAntiLambdaSpecific, selTOFNSigmaPositivePionLambda);
+        BITSET(maskAntiLambdaSpecific, selTOFDeltaTPositivePionLambda);
+      }
     }
     if (v0Selections.requireNegITSonly) {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegItsOnly) | (uint64_t(1) << selNegGoodITSTrack);
+      BITSET(maskTrackProperties, selNegItsOnly);
+      BITSET(maskTrackProperties, selNegGoodITSTrack);
     } else {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegGoodTPCTrack) | (uint64_t(1) << selNegGoodITSTrack);
+      BITSET(maskTrackProperties, selNegGoodTPCTrack);
+      BITSET(maskTrackProperties, selNegGoodITSTrack);
       // TPC signal is available: ask for negative track PID
       if (v0Selections.tpcPidNsigmaCut < 1e+5) { // safeguard for no cut
-        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDNegativePion);
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDNegativePion);
-        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDNegativeProton);
+        BITSET(maskK0ShortSpecific, selTPCPIDNegativePion);
+        BITSET(maskLambdaSpecific, selTPCPIDNegativePion);
+        BITSET(maskAntiLambdaSpecific, selTPCPIDNegativeProton);
       }
       // TOF PID
-      if (v0Selections.tofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
-        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaNegativePionK0Short) | (uint64_t(1) << selTOFDeltaTNegativePionK0Short);
-      if (v0Selections.tofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativePionLambda) | (uint64_t(1) << selTOFDeltaTNegativePionLambda);
-      if (v0Selections.tofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
-        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativeProtonLambda) | (uint64_t(1) << selTOFDeltaTNegativeProtonLambda);
+      if (v0Selections.tofPidNsigmaCutK0Pi < 1e+5) { // safeguard for no cut
+        BITSET(maskK0ShortSpecific, selTOFNSigmaNegativePionK0Short);
+        BITSET(maskK0ShortSpecific, selTOFDeltaTNegativePionK0Short);
+      }
+      if (v0Selections.tofPidNsigmaCutLaPi < 1e+5) { // safeguard for no cut
+        BITSET(maskLambdaSpecific, selTOFNSigmaNegativePionLambda);
+        BITSET(maskLambdaSpecific, selTOFDeltaTNegativePionLambda);
+      }
+      if (v0Selections.tofPidNsigmaCutLaPr < 1e+5) { // safeguard for no cut
+        BITSET(maskAntiLambdaSpecific, selTOFNSigmaNegativeProtonLambda);
+        BITSET(maskAntiLambdaSpecific, selTOFDeltaTNegativeProtonLambda);
+      }
     }
 
     if (v0Selections.skipTPConly) {
-      maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
-      maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
+      BITSET(maskK0ShortSpecific, selPosNotTPCOnly);
+      BITSET(maskLambdaSpecific, selPosNotTPCOnly);
+      BITSET(maskAntiLambdaSpecific, selPosNotTPCOnly);
+
+      BITSET(maskK0ShortSpecific, selNegNotTPCOnly);
+      BITSET(maskLambdaSpecific, selNegNotTPCOnly);
+      BITSET(maskAntiLambdaSpecific, selNegNotTPCOnly);
     }
 
     // Primary particle selection, central to analysis
-    maskSelectionK0Short = maskTopological | maskTrackProperties | maskK0ShortSpecific | (uint64_t(1) << selPhysPrimK0Short);
-    maskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific | (uint64_t(1) << selPhysPrimLambda);
-    maskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific | (uint64_t(1) << selPhysPrimAntiLambda);
+    maskSelectionK0Short = maskTopological | maskTrackProperties | maskK0ShortSpecific | (static_cast<uint64_t>(1) << selPhysPrimK0Short);
+    maskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific | (static_cast<uint64_t>(1) << selPhysPrimLambda);
+    maskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
+
+    BITSET(maskSelectionK0Short, selPhysPrimK0Short);
+    BITSET(maskSelectionLambda, selPhysPrimLambda);
+    BITSET(maskSelectionAntiLambda, selPhysPrimAntiLambda);
 
     // No primary requirement for feeddown matrix
     secondaryMaskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific;
@@ -1892,7 +1966,7 @@ struct DerivedLambdaKzeroAnalysis {
           // Find the collision with the biggest nbr of PV contributors
           // Follows what was done here: https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/mcCollsExtra.cxx#L93
           if (biggestNContribs < collision.multPVTotalContributors()) {
-            biggestNContribs = collision.multPVTotalContributors();  
+            biggestNContribs = collision.multPVTotalContributors();
             bestCollisionIndex = collision.globalIndex();
           }
         } else { // we are in Run 2: there should be only one collision in groupedCollisions
@@ -1993,7 +2067,7 @@ struct DerivedLambdaKzeroAnalysis {
 
         if constexpr (run3) { // check if we are in Run 3
           if (biggestNContribs < collision.multPVTotalContributors()) {
-            biggestNContribs = collision.multPVTotalContributors();  
+            biggestNContribs = collision.multPVTotalContributors();
             centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
           }
         } else { // we are in Run 2: there should be only one collision in groupedCollisions
