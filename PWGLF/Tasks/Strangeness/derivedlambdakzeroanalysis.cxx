@@ -283,8 +283,8 @@ struct derivedlambdakzeroanalysis {
   ConfigurableAxis axisITSchi2{"axisITSchi2", {100, 0.0f, 100.0f}, "#chi^{2} per ITS clusters"};
   ConfigurableAxis axisTPCchi2{"axisTPCchi2", {100, 0.0f, 100.0f}, "#chi^{2} per TPC clusters"};
   ConfigurableAxis axisTPCrowsOverFindable{"axisTPCrowsOverFindable", {120, 0.0f, 1.2f}, "Fraction of TPC crossed rows over findable clusters"};
-  ConfigurableAxis axisTPCfoundOverFindable{"axisTPCfoundOverFindable", {100, 0.0f, 1.0f}, "Fraction of TPC found over findable clusters"};
-  ConfigurableAxis axisTPCsharedClusters{"axisTPCsharedClusters", {100, 0.0f, 1.0f}, "Fraction of TPC shared clusters"};
+  ConfigurableAxis axisTPCfoundOverFindable{"axisTPCfoundOverFindable", {120, 0.0f, 1.2f}, "Fraction of TPC found over findable clusters"};
+  ConfigurableAxis axisTPCsharedClusters{"axisTPCsharedClusters", {101, -0.005f, 1.005f}, "Fraction of TPC shared clusters"};
 
   // UPC axes
   ConfigurableAxis axisSelGap{"axisSelGap", {4, -1.5, 2.5}, "Gap side"};
