@@ -67,17 +67,17 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using dauMCTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackMCIds, aod::DauTrackTPCPIDs>;
-using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0K0ShortMLScores>;
-// using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0MCCollRefs>;
-using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0CoreMCLabels, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0K0ShortMLScores>;
+using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+using DauMCTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackMCIds, aod::DauTrackTPCPIDs>;
+using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0K0ShortMLScores>;
+// using V0McCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0MCCollRefs>;
+using V0McCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0CoreMCLabels, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0K0ShortMLScores>;
 
 // simple checkers, but ensure 64 bit integers
 #define bitset(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 #define bitcheck(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 
-struct derivedlambdakzeroanalysis {
+struct DerivedLambdaKzeroAnalysis {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   bool isRun3;
@@ -174,10 +174,10 @@ struct derivedlambdakzeroanalysis {
     Configurable<bool> requireNegITSafterburnerOnly{"requireNegITSafterburnerOnly", false, "require negative track formed out of afterburner ITS tracks"};
 
     // PID (TPC/TOF)
-    Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
-    Configurable<float> TofPidNsigmaCutLaPr{"TofPidNsigmaCutLaPr", 1e+6, "TofPidNsigmaCutLaPr"};
-    Configurable<float> TofPidNsigmaCutLaPi{"TofPidNsigmaCutLaPi", 1e+6, "TofPidNsigmaCutLaPi"};
-    Configurable<float> TofPidNsigmaCutK0Pi{"TofPidNsigmaCutK0Pi", 1e+6, "TofPidNsigmaCutK0Pi"};
+    Configurable<float> tpcPidNsigmaCut{"tpcPidNsigmaCut", 5, "tpcPidNsigmaCut"};
+    Configurable<float> tofPidNsigmaCutLaPr{"tofPidNsigmaCutLaPr", 1e+6, "tofPidNsigmaCutLaPr"};
+    Configurable<float> tofPidNsigmaCutLaPi{"tofPidNsigmaCutLaPi", 1e+6, "tofPidNsigmaCutLaPi"};
+    Configurable<float> tofPidNsigmaCutK0Pi{"tofPidNsigmaCutK0Pi", 1e+6, "tofPidNsigmaCutK0Pi"};
 
     // PID (TOF)
     Configurable<float> maxDeltaTimeProton{"maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
@@ -206,40 +206,42 @@ struct derivedlambdakzeroanalysis {
   o2::ml::OnnxModel mlCustomModelGamma;
 
   struct : ConfigurableGroup {
+    std::string prefix = "mlConfigurations"; // JSON group name
     // ML classifiers: master flags to control whether we should use custom ML classifiers or the scores in the derived data
-    Configurable<bool> useK0ShortScores{"mlConfigurations.useK0ShortScores", false, "use ML scores to select K0Short"};
-    Configurable<bool> useLambdaScores{"mlConfigurations.useLambdaScores", false, "use ML scores to select Lambda"};
-    Configurable<bool> useAntiLambdaScores{"mlConfigurations.useAntiLambdaScores", false, "use ML scores to select AntiLambda"};
+    Configurable<bool> useK0ShortScores{"useK0ShortScores", false, "use ML scores to select K0Short"};
+    Configurable<bool> useLambdaScores{"useLambdaScores", false, "use ML scores to select Lambda"};
+    Configurable<bool> useAntiLambdaScores{"useAntiLambdaScores", false, "use ML scores to select AntiLambda"};
 
-    Configurable<bool> calculateK0ShortScores{"mlConfigurations.calculateK0ShortScores", false, "calculate K0Short ML scores"};
-    Configurable<bool> calculateLambdaScores{"mlConfigurations.calculateLambdaScores", false, "calculate Lambda ML scores"};
-    Configurable<bool> calculateAntiLambdaScores{"mlConfigurations.calculateAntiLambdaScores", false, "calculate AntiLambda ML scores"};
+    Configurable<bool> calculateK0ShortScores{"calculateK0ShortScores", false, "calculate K0Short ML scores"};
+    Configurable<bool> calculateLambdaScores{"calculateLambdaScores", false, "calculate Lambda ML scores"};
+    Configurable<bool> calculateAntiLambdaScores{"calculateAntiLambdaScores", false, "calculate AntiLambda ML scores"};
 
     // ML input for ML calculation
-    Configurable<std::string> customModelPathCCDB{"mlConfigurations.customModelPathCCDB", "", "Custom ML Model path in CCDB"};
-    Configurable<int64_t> timestampCCDB{"mlConfigurations.timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
-    Configurable<bool> loadCustomModelsFromCCDB{"mlConfigurations.loadCustomModelsFromCCDB", false, "Flag to enable or disable the loading of custom models from CCDB"};
-    Configurable<bool> enableOptimizations{"mlConfigurations.enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
+    Configurable<std::string> customModelPathCCDB{"customModelPathCCDB", "", "Custom ML Model path in CCDB"};
+    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+    Configurable<bool> loadCustomModelsFromCCDB{"loadCustomModelsFromCCDB", false, "Flag to enable or disable the loading of custom models from CCDB"};
+    Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
 
     // Local paths for test purposes
-    Configurable<std::string> localModelPathLambda{"mlConfigurations.localModelPathLambda", "Lambda_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
-    Configurable<std::string> localModelPathAntiLambda{"mlConfigurations.localModelPathAntiLambda", "AntiLambda_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
-    Configurable<std::string> localModelPathK0Short{"mlConfigurations.localModelPathK0Short", "KZeroShort_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
+    Configurable<std::string> localModelPathLambda{"localModelPathLambda", "Lambda_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
+    Configurable<std::string> localModelPathAntiLambda{"localModelPathAntiLambda", "AntiLambda_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
+    Configurable<std::string> localModelPathK0Short{"localModelPathK0Short", "KZeroShort_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
 
     // Thresholds for choosing to populate V0Cores tables with pre-selections
-    Configurable<float> thresholdLambda{"mlConfigurations.thresholdLambda", -1.0f, "Threshold to keep Lambda candidates"};
-    Configurable<float> thresholdAntiLambda{"mlConfigurations.thresholdAntiLambda", -1.0f, "Threshold to keep AntiLambda candidates"};
-    Configurable<float> thresholdK0Short{"mlConfigurations.thresholdK0Short", -1.0f, "Threshold to keep K0Short candidates"};
+    Configurable<float> thresholdLambda{"thresholdLambda", -1.0f, "Threshold to keep Lambda candidates"};
+    Configurable<float> thresholdAntiLambda{"thresholdAntiLambda", -1.0f, "Threshold to keep AntiLambda candidates"};
+    Configurable<float> thresholdK0Short{"thresholdK0Short", -1.0f, "Threshold to keep K0Short candidates"};
   } mlConfigurations;
 
   // CCDB options
   struct : ConfigurableGroup {
-    Configurable<std::string> ccdburl{"ccdbConfigurations.ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-    Configurable<std::string> grpPath{"ccdbConfigurations.grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-    Configurable<std::string> grpmagPath{"ccdbConfigurations.grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-    Configurable<std::string> lutPath{"ccdbConfigurations.lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-    Configurable<std::string> geoPath{"ccdbConfigurations.geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-    Configurable<std::string> mVtxPath{"ccdbConfigurations.mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+    std::string prefix = "ccdbConfigurations"; // JSON group name
+    Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+    Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+    Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+    Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   } ccdbConfigurations;
 
   o2::ccdb::CcdbApi ccdbApi;
@@ -248,8 +250,8 @@ struct derivedlambdakzeroanalysis {
   int mRunNumber;
   std::map<std::string, std::string> metadata;
 
-  static constexpr float defaultLifetimeCuts[1][2] = {{30., 20.}};
-  Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
+  static constexpr float DefaultLifetimeCuts[1][2] = {{30., 20.}};
+  Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {DefaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
 
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
   ConfigurableAxis axisPtXi{"axisPtXi", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for feeddown from Xi"};
@@ -287,11 +289,12 @@ struct derivedlambdakzeroanalysis {
   // UPC selections
   SGSelector sgSelector;
   struct : ConfigurableGroup {
-    Configurable<float> FV0cut{"upcCuts.FV0cut", 100., "FV0A threshold"};
-    Configurable<float> FT0Acut{"upcCuts.FT0Acut", 200., "FT0A threshold"};
-    Configurable<float> FT0Ccut{"upcCuts.FT0Ccut", 100., "FT0C threshold"};
-    Configurable<float> ZDCcut{"upcCuts.ZDCcut", 10., "ZDC threshold"};
-    // Configurable<float> gapSel{"upcCuts.gapSel", 2, "Gap selection"};
+    std::string prefix = "upcCuts"; // JSON group name
+    Configurable<float> fv0Cut{"fv0Cut", 100., "FV0A threshold"};
+    Configurable<float> ft0Acut{"ft0Acut", 200., "FT0A threshold"};
+    Configurable<float> ft0Ccut{"ft0Ccut", 100., "FT0C threshold"};
+    Configurable<float> zdcCut{"zdcCut", 10., "ZDC threshold"};
+    // Configurable<float> gapSel{"gapSel", 2, "Gap selection"};
   } upcCuts;
 
   // AP plot axes
@@ -301,7 +304,7 @@ struct derivedlambdakzeroanalysis {
   // Track quality axes
   ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
   ConfigurableAxis axisITSclus{"axisITSclus", {7, 0.0f, 7.0f}, "N ITS Clusters"};
-  ConfigurableAxis axisITScluMap{"axisITSMap", {128, -0.5f, 127.5f}, "ITS Cluster map"};
+  ConfigurableAxis axisITScluMap{"axisITScluMap", {128, -0.5f, 127.5f}, "ITS Cluster map"};
   ConfigurableAxis axisDetMap{"axisDetMap", {16, -0.5f, 15.5f}, "Detector use map"};
   ConfigurableAxis axisITScluMapCoarse{"axisITScluMapCoarse", {16, -3.5f, 12.5f}, "ITS Coarse cluster map"};
   ConfigurableAxis axisDetMapCoarse{"axisDetMapCoarse", {5, -0.5f, 4.5f}, "Detector Coarse user map"};
@@ -314,7 +317,7 @@ struct derivedlambdakzeroanalysis {
   PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
   PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraCollLabels>> perMcCollisionRun2 = aod::v0data::straMCCollisionId;
 
-  enum selection : uint64_t { selCosPA = 0,
+  enum Selection : uint64_t { selCosPA = 0,
                               selRadius,
                               selRadiusMax,
                               selDCANegToPV,
@@ -411,17 +414,17 @@ struct derivedlambdakzeroanalysis {
     } else {
       maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosGoodTPCTrack) | (uint64_t(1) << selPosGoodITSTrack);
       // TPC signal is available: ask for positive track PID
-      if (v0Selections.TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
+      if (v0Selections.tpcPidNsigmaCut < 1e+5) { // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDPositivePion);
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDPositiveProton);
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDPositivePion);
       }
       // TOF PID
-      if (v0Selections.TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
+      if (v0Selections.tofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaPositivePionK0Short) | (uint64_t(1) << selTOFDeltaTPositivePionK0Short);
-      if (v0Selections.TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
+      if (v0Selections.tofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaPositiveProtonLambda) | (uint64_t(1) << selTOFDeltaTPositiveProtonLambda);
-      if (v0Selections.TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
+      if (v0Selections.tofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaPositivePionLambda) | (uint64_t(1) << selTOFDeltaTPositivePionLambda);
     }
     if (v0Selections.requireNegITSonly) {
@@ -429,17 +432,17 @@ struct derivedlambdakzeroanalysis {
     } else {
       maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegGoodTPCTrack) | (uint64_t(1) << selNegGoodITSTrack);
       // TPC signal is available: ask for negative track PID
-      if (v0Selections.TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
+      if (v0Selections.tpcPidNsigmaCut < 1e+5) { // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDNegativePion);
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDNegativePion);
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDNegativeProton);
       }
       // TOF PID
-      if (v0Selections.TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
+      if (v0Selections.tofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaNegativePionK0Short) | (uint64_t(1) << selTOFDeltaTNegativePionK0Short);
-      if (v0Selections.TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
+      if (v0Selections.tofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativePionLambda) | (uint64_t(1) << selTOFDeltaTNegativePionLambda);
-      if (v0Selections.TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
+      if (v0Selections.tofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativeProtonLambda) | (uint64_t(1) << selTOFDeltaTNegativeProtonLambda);
     }
 
@@ -899,7 +902,7 @@ struct derivedlambdakzeroanalysis {
       int64_t timeStampML = collision.timestamp();
       if (mlConfigurations.timestampCCDB.value != -1)
         timeStampML = mlConfigurations.timestampCCDB.value;
-      LoadMachines(timeStampML);
+      loadMachines(timeStampML);
     }
   }
 
@@ -928,8 +931,8 @@ struct derivedlambdakzeroanalysis {
     if (std::abs(rapidityK0Short) < v0Selections.rapidityCut)
       bitset(bitMap, selK0ShortRapidity);
 
-    auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
-    auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
+    auto posTrackExtra = v0.template posTrackExtra_as<DauTracks>();
+    auto negTrackExtra = v0.template negTrackExtra_as<DauTracks>();
 
     // ITS quality flags
     bool posIsFromAfterburner = posTrackExtra.hasITSAfterburner();
@@ -962,13 +965,13 @@ struct derivedlambdakzeroanalysis {
       bitset(bitMap, selNegGoodTPCTrack);
 
     // TPC PID
-    if (std::fabs(posTrackExtra.tpcNSigmaPi()) < v0Selections.TpcPidNsigmaCut)
+    if (std::fabs(posTrackExtra.tpcNSigmaPi()) < v0Selections.tpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDPositivePion);
-    if (std::fabs(posTrackExtra.tpcNSigmaPr()) < v0Selections.TpcPidNsigmaCut)
+    if (std::fabs(posTrackExtra.tpcNSigmaPr()) < v0Selections.tpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDPositiveProton);
-    if (std::fabs(negTrackExtra.tpcNSigmaPi()) < v0Selections.TpcPidNsigmaCut)
+    if (std::fabs(negTrackExtra.tpcNSigmaPi()) < v0Selections.tpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDNegativePion);
-    if (std::fabs(negTrackExtra.tpcNSigmaPr()) < v0Selections.TpcPidNsigmaCut)
+    if (std::fabs(negTrackExtra.tpcNSigmaPr()) < v0Selections.tpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDNegativeProton);
 
     // TOF PID in DeltaT
@@ -989,18 +992,18 @@ struct derivedlambdakzeroanalysis {
 
     // TOF PID in NSigma
     // Positive track
-    if (std::fabs(v0.tofNSigmaLaPr()) < v0Selections.TofPidNsigmaCutLaPr)
+    if (std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr)
       bitset(bitMap, selTOFNSigmaPositiveProtonLambda);
-    if (std::fabs(v0.tofNSigmaALaPi()) < v0Selections.TofPidNsigmaCutLaPi)
+    if (std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi)
       bitset(bitMap, selTOFNSigmaPositivePionLambda);
-    if (std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.TofPidNsigmaCutK0Pi)
+    if (std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi)
       bitset(bitMap, selTOFNSigmaPositivePionK0Short);
     // Negative track
-    if (std::fabs(v0.tofNSigmaALaPr()) < v0Selections.TofPidNsigmaCutLaPr)
+    if (std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
       bitset(bitMap, selTOFNSigmaNegativeProtonLambda);
-    if (std::fabs(v0.tofNSigmaLaPi()) < v0Selections.TofPidNsigmaCutLaPi)
+    if (std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
       bitset(bitMap, selTOFNSigmaNegativePionLambda);
-    if (std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.TofPidNsigmaCutK0Pi)
+    if (std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
       bitset(bitMap, selTOFNSigmaNegativePionK0Short);
 
     // ITS only tag
@@ -1168,7 +1171,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   // function to load models for ML-based classifiers
-  void LoadMachines(int64_t timeStampML)
+  void loadMachines(int64_t timeStampML)
   {
     if (mlConfigurations.loadCustomModelsFromCCDB) {
       ccdbApi.init(ccdbConfigurations.ccdburl);
@@ -1269,8 +1272,8 @@ struct derivedlambdakzeroanalysis {
       passAntiLambdaSelections = verifyMask(selMap, maskSelectionAntiLambda);
     }
 
-    auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
-    auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
+    auto posTrackExtra = v0.template posTrackExtra_as<DauTracks>();
+    auto negTrackExtra = v0.template negTrackExtra_as<DauTracks>();
 
     bool posIsFromAfterburner = posTrackExtra.itsChi2PerNcl() < 0;
     bool negIsFromAfterburner = negTrackExtra.itsChi2PerNcl() < 0;
@@ -1384,7 +1387,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("Lambda/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("Lambda/hNegDCAToPV"), v0.dcanegtopv());
         histos.fill(HIST("Lambda/hDCADaughters"), v0.dcaV0daughters());
-        histos.fill(HIST("Lambda/hPointingAngle"), TMath::ACos(v0.v0cosPA()));
+        histos.fill(HIST("Lambda/hPointingAngle"), std::acos(v0.v0cosPA()));
         histos.fill(HIST("Lambda/hV0Radius"), v0.v0radius());
         histos.fill(HIST("Lambda/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
         histos.fill(HIST("Lambda/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
@@ -1458,7 +1461,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("AntiLambda/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("AntiLambda/hNegDCAToPV"), v0.dcanegtopv());
         histos.fill(HIST("AntiLambda/hDCADaughters"), v0.dcaV0daughters());
-        histos.fill(HIST("AntiLambda/hPointingAngle"), TMath::ACos(v0.v0cosPA()));
+        histos.fill(HIST("AntiLambda/hPointingAngle"), std::acos(v0.v0cosPA()));
         histos.fill(HIST("AntiLambda/hV0Radius"), v0.v0radius());
         histos.fill(HIST("AntiLambda/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
         histos.fill(HIST("AntiLambda/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
@@ -1619,7 +1622,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TCollision>
-  bool IsEventAccepted(TCollision collision, bool fillHists)
+  bool isEventAccepted(TCollision collision, bool fillHists)
   // check whether the collision passes our collision selections
   {
     if (fillHists)
@@ -1881,7 +1884,7 @@ struct derivedlambdakzeroanalysis {
       for (auto const& collision : groupedCollisions) {
         // consider event selections in the recoed <-> gen collision association, for the denominator (or numerator) of the efficiency (or signal loss)?
         if (eventSelections.useEvtSelInDenomEff) {
-          if (!IsEventAccepted(collision, false)) {
+          if (!isEventAccepted(collision, false)) {
             continue;
           }
         }
@@ -1926,7 +1929,7 @@ struct derivedlambdakzeroanalysis {
       // 0 --> Single Gap - A side
       // 1 --> Single Gap - C side
       // 2 --> Double Gap - both A & C sides
-      selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
+      selGapSide = sgSelector.trueGap(collision, upcCuts.fv0Cut, upcCuts.ft0Acut, upcCuts.ft0Ccut, upcCuts.zdcCut);
     } else { // no, we are in Run 2
       centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
     }
@@ -1985,7 +1988,7 @@ struct derivedlambdakzeroanalysis {
       int nCollisions = 0;
       for (auto const& collision : groupedCollisions) {
 
-        if (!IsEventAccepted(collision, false)) {
+        if (!isEventAccepted(collision, false)) {
           continue;
         }
 
@@ -2030,7 +2033,7 @@ struct derivedlambdakzeroanalysis {
       initCCDB(collision);
     }
 
-    if (!IsEventAccepted(collision, true)) {
+    if (!isEventAccepted(collision, true)) {
       return;
     }
 
@@ -2093,7 +2096,7 @@ struct derivedlambdakzeroanalysis {
       initCCDB(collision);
     }
 
-    if (!IsEventAccepted(collision, true)) {
+    if (!isEventAccepted(collision, true)) {
       return;
     }
 
@@ -2323,28 +2326,28 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Real data processing in Run 3 - no MC subscription
-  void processRealDataRun3(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, v0Candidates const& fullV0s, dauTracks const&)
+  void processRealDataRun3(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, V0Candidates const& fullV0s, DauTracks const&)
   {
     analyzeRecoedV0sInRealData(collision, fullV0s);
   }
 
   // ______________________________________________________
   // Real data processing in Run 2 - no MC subscription
-  void processRealDataRun2(soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraStamps>::iterator const& collision, v0Candidates const& fullV0s, dauTracks const&)
+  void processRealDataRun2(soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraStamps>::iterator const& collision, V0Candidates const& fullV0s, DauTracks const&)
   {
     analyzeRecoedV0sInRealData(collision, fullV0s);
   }
 
   // ______________________________________________________
   // Simulated processing in Run 3 (subscribes to MC information too)
-  void processMonteCarloRun3(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  void processMonteCarloRun3(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>::iterator const& collision, V0McCandidates const& fullV0s, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
     analyzeRecoedV0sInMonteCarlo(collision, fullV0s);
   }
 
   // ______________________________________________________
   // Simulated processing in Run 2 (subscribes to MC information too)
-  void processMonteCarloRun2(soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraStamps, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  void processMonteCarloRun2(soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraStamps, aod::StraCollLabels>::iterator const& collision, V0McCandidates const& fullV0s, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
     analyzeRecoedV0sInMonteCarlo(collision, fullV0s);
   }
@@ -2428,17 +2431,17 @@ struct derivedlambdakzeroanalysis {
     }
   }
 
-  PROCESS_SWITCH(derivedlambdakzeroanalysis, processRealDataRun3, "process as if real data in Run 3", true);
-  PROCESS_SWITCH(derivedlambdakzeroanalysis, processRealDataRun2, "process as if real data in Run 2", false);
-  PROCESS_SWITCH(derivedlambdakzeroanalysis, processMonteCarloRun3, "process as if MC in Run 3", false);
-  PROCESS_SWITCH(derivedlambdakzeroanalysis, processMonteCarloRun2, "process as if MC in Run 2", false);
-  PROCESS_SWITCH(derivedlambdakzeroanalysis, processBinnedGenerated, "process MC generated", false);
-  PROCESS_SWITCH(derivedlambdakzeroanalysis, processGeneratedRun3, "process MC generated Run 3", false);
-  PROCESS_SWITCH(derivedlambdakzeroanalysis, processGeneratedRun2, "process MC generated Run 2", false);
+  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processRealDataRun3, "process as if real data in Run 3", true);
+  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processRealDataRun2, "process as if real data in Run 2", false);
+  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processMonteCarloRun3, "process as if MC in Run 3", false);
+  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processMonteCarloRun2, "process as if MC in Run 2", false);
+  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processBinnedGenerated, "process MC generated", false);
+  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processGeneratedRun3, "process MC generated Run 3", false);
+  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processGeneratedRun2, "process MC generated Run 2", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<derivedlambdakzeroanalysis>(cfgc)};
+    adaptAnalysisTask<DerivedLambdaKzeroAnalysis>(cfgc)};
 }
