@@ -59,16 +59,7 @@ enum CascadeSel {
   kCascadeV0TranRadMax,
   kCascadeV0DCAtoPVMin,
   kCascadeV0DCAtoPVMax
-
-  // kNcascadeSelection
-  // kCascadeV0MassMin,
-  // kCascadeV0MassMax
 };
-/*
-kCascadeDCAPosToPV,
-kCascadeDCANegToPV,
-kCascadeDCABachToPV,
-*/
 
 enum ChildTrackType { kPosTrack,
                       kNegTrack,
@@ -101,11 +92,6 @@ class FemtoDreamCascadeSelection
       nCascadeTranRadMin(0),
       nCascadeTranRadMax(0),
       nCascadeDecVtxMax(0),
-      /*
-      nCascadeDCAPosToPV(0),
-      nCascadeDCANegToPV(0),
-      nCascadeDCABachToPV(0),
-      */
       nCascadeV0DCADaughMax(0),
       nCascadeV0CPAMin(0),
       nCascadeV0TranRadMin(0),
@@ -121,11 +107,6 @@ class FemtoDreamCascadeSelection
       fCascadeTranRadMin(9999999),
       fCascadeTranRadMax(-9999999),
       fCascadeDecVtxMax(-9999999),
-      /*
-      fCascadeDCAPosToPV(9999999),
-      fCascadeDCANegToPV(9999999),
-      fCascadeDCABachToPV(9999999),
-      */
       fCascadeV0DCADaughMax(-9999999),
       fCascadeV0CPAMin(9999999),
       fCascadeV0TranRadMin(9999999),
@@ -141,7 +122,6 @@ class FemtoDreamCascadeSelection
       fInvMassCompetingLowLimit(1.5),
       fInvMassCompetingUpLimit(2.0),
       isCascOmega(false)
-  /*,nSigmaPIDOffsetTPC(0.)*/
   {
   }
 
@@ -174,7 +154,7 @@ class FemtoDreamCascadeSelection
     } else if (child == femtoDreamCascadeSelection::kNegTrack) {
       NegDaughTrack.setSelection(selVal, selVar, selType);
     } else if (child == femtoDreamCascadeSelection::kBachTrack) {
-      BachDaugTrack.setSelection(selVal, selVar, selType);
+      BachDaughTrack.setSelection(selVal, selVar, selType);
     }
   }
 
@@ -187,7 +167,7 @@ class FemtoDreamCascadeSelection
     } else if (child == femtoDreamCascadeSelection::kNegTrack) {
       NegDaughTrack.setPIDSpecies(pids);
     } else if (child == femtoDreamCascadeSelection::kBachTrack) {
-      BachDaugTrack.setPIDSpecies(pids);
+      BachDaughTrack.setPIDSpecies(pids);
     }
   }
 
@@ -315,7 +295,7 @@ class FemtoDreamCascadeSelection
 
   FemtoDreamTrackSelection PosDaughTrack;
   FemtoDreamTrackSelection NegDaughTrack;
-  FemtoDreamTrackSelection BachDaugTrack;
+  FemtoDreamTrackSelection BachDaughTrack;
 
   static constexpr int kNcascadeSelection = 16;
 
@@ -431,9 +411,9 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
                        aod::femtodreamparticle::TrackType::kNegChild,
                        aod::femtodreamparticle::cutContainerType>(mQAHistogramRegistry, mHistogramRegistry);
 
-    BachDaugTrack.init<aod::femtodreamparticle::ParticleType::kCascadeBachelor,
-                       aod::femtodreamparticle::TrackType::kBachelor,
-                       aod::femtodreamparticle::cutContainerType>(mQAHistogramRegistry, mHistogramRegistry);
+    BachDaughTrack.init<aod::femtodreamparticle::ParticleType::kCascadeBachelor,
+                        aod::femtodreamparticle::TrackType::kBachelor,
+                        aod::femtodreamparticle::cutContainerType>(mQAHistogramRegistry, mHistogramRegistry);
   }
 
   /// check whether the most open cuts are fulfilled - most of this should have
@@ -506,7 +486,6 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   const float invMass = isCascOmega ? cascade.mOmega() : cascade.mXi();
   // const float invMass = cascade.mXi();
 
-  // LOGF(info, "GG producer: Charge %i", cascade.sign());
   if (invMassLambda < fV0InvMassLowLimit || invMassLambda > fV0InvMassUpLimit) {
     return false;
   }
@@ -515,7 +494,6 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
     return false;
   }
 
-  /*
   if (fRejectCompetingMass) {
     const float invMassCompeting = isCascOmega ? cascade.mXi() : cascade.mOmega();
     if (invMassCompeting > fInvMassCompetingLowLimit &&
@@ -523,7 +501,6 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
       return false;
     }
   }
-  */
 
   if (nCascadePtMin > 0 && cascade.pt() < fCascadePtMin) {
     return false;
@@ -579,7 +556,7 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   if (!NegDaughTrack.isSelectedMinimal(negTrack)) {
     return false;
   }
-  if (!BachDaugTrack.isSelectedMinimal(bachTrack)) {
+  if (!BachDaughTrack.isSelectedMinimal(bachTrack)) {
     return false;
   }
 
@@ -589,10 +566,10 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
 template <typename cutContainerType, typename Col, typename Casc, typename Track>
 std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col const& col, Casc const& casc, Track const& posTrack, Track const& negTrack, Track const& bachTrack)
 {
-  // Cut bit
-  auto outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, casc.positivept(), casc.positiveeta(), casc.dcapostopv());
-  auto outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, casc.negativept(), casc.negativeeta(), casc.dcanegtopv());
-  auto outputBachTrack = BachDaugTrack.getCutContainer<false, cutContainerType>(bachTrack, casc.bachelorpt(), casc.bacheloreta(), casc.dcabachtopv());
+  auto outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, posTrack.pt(), posTrack.eta(), posTrack.dcaXY());
+  auto outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, negTrack.pt(), negTrack.eta(), negTrack.dcaXY());
+  auto outputBachTrack = BachDaughTrack.getCutContainer<false, cutContainerType>(bachTrack, bachTrack.pt(), bachTrack.eta(), bachTrack.dcaXY());
+
   cutContainerType output = 0;
   size_t counter = 0;
 
@@ -608,7 +585,6 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
   const auto cpav0 = casc.v0cosPA(col.posX(), col.posY(), col.posZ());
   const auto v0dcatopv = casc.dcav0topv(col.posX(), col.posY(), col.posZ());
 
-  // LOGF(info, "GG producer: New dcatoPV: %f", dcav0topv);
   float observable = 0.;
   for (auto& sel : mSelections) {
 
@@ -661,14 +637,12 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
         break;
       case (femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin):
         observable = v0dcatopv;
-        // LOGF(info, "==> Now it is: %f", dcav0topv);
         break;
       case (femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax):
         observable = v0dcatopv;
         break;
     } // switch
     sel.checkSelectionSetBit(observable, output, counter, nullptr);
-    //}
   } // for loop
 
   return {
@@ -711,8 +685,8 @@ void FemtoDreamCascadeSelection::fillQA(Col const& col, Casc const& casc, Track 
                          aod::femtodreamparticle::TrackType::kPosChild, false, cutstage>(posTrack);
     NegDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kCascadeV0Child,
                          aod::femtodreamparticle::TrackType::kNegChild, false, cutstage>(negTrack);
-    BachDaugTrack.fillQA<aod::femtodreamparticle::ParticleType::kCascadeBachelor,
-                         aod::femtodreamparticle::TrackType::kBachelor, false, cutstage>(bachTrack);
+    BachDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kCascadeBachelor,
+                          aod::femtodreamparticle::TrackType::kBachelor, false, cutstage>(bachTrack);
   }
 }
 
