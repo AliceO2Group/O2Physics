@@ -83,6 +83,8 @@ struct FlowRunbyRun {
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 30, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "NUA weights are filled in ref pt bins")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
+  O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgAcceptanceList, std::string, "", "CCDB path to acceptance lsit object")
   O2_DEFINE_CONFIGURABLE(cfgDynamicRunNumber, bool, false, "Add runNumber during runtime")
   O2_DEFINE_CONFIGURABLE(cfgGetInteractionRate, bool, false, "Get interaction rate from CCDB")
   O2_DEFINE_CONFIGURABLE(cfgUseInteractionRateCut, bool, false, "Use events with low interaction rate")
@@ -100,6 +102,12 @@ struct FlowRunbyRun {
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+
+  // Corrections
+  TH1D* mEfficiency = nullptr;
+  GFWWeights* mAcceptance = nullptr;
+  TObjArray* mAcceptanceList = nullptr;
+  bool correctionsLoaded = false;
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -124,10 +132,12 @@ struct FlowRunbyRun {
   enum OutputTH1Names {
     // here are TProfiles for vn-pt correlations that are not implemented in GFW
     hPhi = 0,
+    hPhiWeighted,
     hEta,
     hVtxZ,
     hMult,
     hCent,
+    hEventCountSpecific,
     kCount_TH1Names
   };
   enum OutputTH3Names {
@@ -272,14 +282,77 @@ struct FlowRunbyRun {
     return;
   }
 
+  void loadCorrections(uint64_t timestamp, int runNumber)
+  {
+    if (correctionsLoaded)
+      return;
+
+    if (cfgAcceptanceList.value.empty() == false) {
+      mAcceptanceList = ccdb->getForTimeStamp<TObjArray>(cfgAcceptanceList, timestamp);
+      if (mAcceptanceList == nullptr) {
+        LOGF(fatal, "Could not load acceptance weights list from %s", cfgAcceptanceList.value.c_str());
+      }
+      LOGF(info, "Loaded acceptance weights list from %s (%p)", cfgAcceptanceList.value.c_str(), (void*)mAcceptanceList);
+
+      mAcceptance = static_cast<GFWWeights*>(mAcceptanceList->FindObject(Form("%d", runNumber)));
+      if (mAcceptance == nullptr) {
+        LOGF(fatal, "Could not find acceptance weights for run %d in acceptance list", runNumber);
+      }
+      LOGF(info, "Loaded acceptance weights (%p) for run %d from list (%p)", (void*)mAcceptance, runNumber, (void*)mAcceptanceList);
+    }
+    if (cfgEfficiency.value.empty() == false) {
+      mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
+      if (mEfficiency == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+    }
+    correctionsLoaded = true;
+  }
+
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float phi, float eta, float pt, float vtxz)
+  {
+    float eff = 1.;
+    if (mEfficiency)
+      eff = mEfficiency->GetBinContent(mEfficiency->FindBin(pt));
+    else
+      eff = 1.0;
+    if (eff == 0)
+      return false;
+    weight_nue = 1. / eff;
+
+    if (mAcceptance)
+      weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
+    else
+      weight_nua = 1;
+    return true;
+  }
+
+  void initEventCount(std::shared_ptr<TH1> hEventCountSpecific)
+  {
+    hEventCountSpecific->GetXaxis()->SetBinLabel(1, "after sel8");
+    hEventCountSpecific->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
+    hEventCountSpecific->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
+    hEventCountSpecific->GetXaxis()->SetBinLabel(4, "kNoCollInTimeRangeStandard");
+    hEventCountSpecific->GetXaxis()->SetBinLabel(5, "kIsGoodITSLayersAll");
+    hEventCountSpecific->GetXaxis()->SetBinLabel(6, "kNoCollInRofStandard");
+    hEventCountSpecific->GetXaxis()->SetBinLabel(7, "kNoHighMultCollInPrevRof");
+    hEventCountSpecific->GetXaxis()->SetBinLabel(8, "occupancy");
+    hEventCountSpecific->GetXaxis()->SetBinLabel(9, "MultCorrelation");
+    hEventCountSpecific->GetXaxis()->SetBinLabel(10, "cfgEvSelV0AT0ACut");
+  }
+
   void createOutputObjectsForRun(int runNumber)
   {
     std::vector<std::shared_ptr<TH1>> histos(kCount_TH1Names);
     histos[hPhi] = registry.add<TH1>(Form("%d/hPhi", runNumber), "", {HistType::kTH1D, {axisPhi}});
+    histos[hPhiWeighted] = registry.add<TH1>(Form("%d/hPhiWeighted", runNumber), "", {HistType::kTH1D, {axisPhi}});
     histos[hEta] = registry.add<TH1>(Form("%d/hEta", runNumber), "", {HistType::kTH1D, {axisEta}});
     histos[hVtxZ] = registry.add<TH1>(Form("%d/hVtxZ", runNumber), "", {HistType::kTH1D, {axisVertex}});
     histos[hMult] = registry.add<TH1>(Form("%d/hMult", runNumber), "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     histos[hCent] = registry.add<TH1>(Form("%d/hCent", runNumber), "", {HistType::kTH1D, {{90, 0, 90}}});
+    histos[hEventCountSpecific] = registry.add<TH1>(Form("%d/hEventCountSpecific", runNumber), "", {HistType::kTH1D, {{10, 0, 10}}});
+    initEventCount(histos[hEventCountSpecific]);
     th1sList.insert(std::make_pair(runNumber, histos));
 
     std::vector<std::shared_ptr<TProfile>> profiles(kCount_TProfileNames);
@@ -316,45 +389,54 @@ struct FlowRunbyRun {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int multTrk, const float centrality)
+  bool eventSelected(TCollision collision, const int multTrk, const float centrality, const int runNumber)
   {
+    th1sList[runNumber][hEventCountSpecific]->Fill(0.5);
     if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return 0;
     }
-
+    if (cfgEvSelkNoSameBunchPileup)
+      th1sList[runNumber][hEventCountSpecific]->Fill(1.5);
     if (cfgEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       // use this cut at low multiplicities with caution
       return 0;
     }
-
+    if (cfgEvSelkIsGoodZvtxFT0vsPV)
+      th1sList[runNumber][hEventCountSpecific]->Fill(2.5);
     if (cfgEvSelkNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       // no collisions in specified time range
       return 0;
     }
-
+    if (cfgEvSelkNoCollInTimeRangeStandard)
+      th1sList[runNumber][hEventCountSpecific]->Fill(3.5);
     if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       // from Jan 9 2025 AOT meeting
       // cut time intervals with dead ITS staves
       return 0;
     }
-
+    if (cfgEvSelkIsGoodITSLayersAll)
+      th1sList[runNumber][hEventCountSpecific]->Fill(4.5);
     if (cfgEvSelkNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       // no other collisions in this Readout Frame with per-collision multiplicity above threshold
       return 0;
     }
-
+    if (cfgEvSelkNoCollInRofStandard)
+      th1sList[runNumber][hEventCountSpecific]->Fill(5.5);
     if (cfgEvSelkNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       // veto an event if FT0C amplitude in previous ITS ROF is above threshold
       return 0;
     }
-
+    if (cfgEvSelkNoHighMultCollInPrevRof)
+      th1sList[runNumber][hEventCountSpecific]->Fill(6.5);
     auto multNTracksPV = collision.multNTracksPV();
     auto occupancy = collision.trackOccupancyInTimeRange();
     if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh))
       return 0;
+    if (cfgEvSelOccupancy)
+      th1sList[runNumber][hEventCountSpecific]->Fill(7.5);
 
     if (cfgEvSelMultCorrelation) {
       if (multNTracksPV < fMultPVCutLow->Eval(centrality))
@@ -366,10 +448,14 @@ struct FlowRunbyRun {
       if (multTrk > fMultCutHigh->Eval(centrality))
         return 0;
     }
+    if (cfgEvSelMultCorrelation)
+      th1sList[runNumber][hEventCountSpecific]->Fill(8.5);
 
     // V0A T0A 5 sigma cut
     if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A())))
       return 0;
+    if (cfgEvSelV0AT0ACut)
+      th1sList[runNumber][hEventCountSpecific]->Fill(9.5);
 
     return 1;
   }
@@ -392,7 +478,8 @@ struct FlowRunbyRun {
     // detect run number
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     const auto cent = collision.centFT0C();
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent))
+    int runNumber = bc.runNumber();
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, runNumber))
       return;
     if (cfgGetInteractionRate) {
       initHadronicRate(bc);
@@ -402,7 +489,6 @@ struct FlowRunbyRun {
         return;
       gCurrentHadronicRate->Fill(seconds, hadronicRate);
     }
-    int runNumber = bc.runNumber();
     float lRandom = fRndm->Rndm();
     if (runNumber != lastRunNumer) {
       lastRunNumer = runNumber;
@@ -422,18 +508,15 @@ struct FlowRunbyRun {
     th1sList[runNumber][hMult]->Fill(tracks.size());
     th1sList[runNumber][hCent]->Fill(collision.centFT0C());
 
+    loadCorrections(bc.timestamp(), runNumber);
+
     fGFW->Clear();
     float weff = 1, wacc = 1;
     for (const auto& track : tracks) {
       if (!trackSelected(track))
         continue;
-      th1sList[runNumber][hPhi]->Fill(track.phi());
-      th1sList[runNumber][hEta]->Fill(track.eta());
       // bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
-      if (withinPtRef) {
-        fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 1);
-      }
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
           if (withinPtRef) {
@@ -442,6 +525,16 @@ struct FlowRunbyRun {
         } else {
           th3sList[runNumber][hPhiEtaVtxz]->Fill(track.phi(), track.eta(), collision.posZ());
         }
+      }
+      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), collision.posZ()))
+        continue;
+      if (withinPtRef) {
+        th1sList[runNumber][hPhi]->Fill(track.phi());
+        th1sList[runNumber][hPhiWeighted]->Fill(track.phi(), wacc);
+        th1sList[runNumber][hEta]->Fill(track.eta());
+      }
+      if (withinPtRef) {
+        fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 1);
       }
     }
 
