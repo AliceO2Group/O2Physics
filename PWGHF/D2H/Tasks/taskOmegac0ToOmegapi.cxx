@@ -58,7 +58,7 @@ struct HfTaskOmegac0ToOmegapi {
 
   Partition<Omegac0CandidatesKF> selectedOmegac0CandidatesKF = aod::hf_sel_toomegapi::resultSelections && !selectionFlagOmegac0;
   Partition<Omegac0CandidatesMlKF> selectedOmegac0CandidatesMlKF = aod::hf_sel_toomegapi::resultSelections && !selectionFlagOmegac0;
-                                   
+
   // ThnSparse for ML outputScores and Vars
   ConfigurableAxis thnConfigAxisPromptScore{"thnConfigAxisPromptScore", {50, 0, 1}, "Prompt score bins"};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 2.4, 3.1}, "Cand. inv-mass bins"};
