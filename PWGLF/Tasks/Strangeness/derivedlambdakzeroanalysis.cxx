@@ -475,7 +475,7 @@ struct DerivedLambdaKzeroAnalysis {
         BITSET(maskAntiLambdaSpecific, selTPCPIDPositivePion);
       }
       // TOF PID
-      if (v0Selections.tofPidNsigmaCutK0Pi < 1e+5) {// safeguard for no cut
+      if (v0Selections.tofPidNsigmaCutK0Pi < 1e+5) { // safeguard for no cut
         BITSET(maskK0ShortSpecific, selTOFNSigmaPositivePionK0Short);
         BITSET(maskK0ShortSpecific, selTOFDeltaTPositivePionK0Short);
       }
