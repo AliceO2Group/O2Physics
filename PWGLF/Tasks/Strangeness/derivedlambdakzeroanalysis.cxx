@@ -2423,7 +2423,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   PROCESS_SWITCH(derivedlambdakzeroanalysis, processRealDataRun3, "process as if real data in Run 3", true);
-  PROCESS_SWITCH(derivedlambdakzeroanalysis, processRealDataRun2, "process as if real data in Run 2", true);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processRealDataRun2, "process as if real data in Run 2", false);
   PROCESS_SWITCH(derivedlambdakzeroanalysis, processMonteCarloRun3, "process as if MC in Run 3", false);
   PROCESS_SWITCH(derivedlambdakzeroanalysis, processMonteCarloRun2, "process as if MC in Run 2", false);
   PROCESS_SWITCH(derivedlambdakzeroanalysis, processBinnedGenerated, "process MC generated", false);
