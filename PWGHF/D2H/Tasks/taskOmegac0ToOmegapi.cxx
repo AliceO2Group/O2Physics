@@ -34,25 +34,14 @@ using namespace o2::framework::expressions;
 /// Omegac0 analysis task
 
 struct HfTaskOmegac0ToOmegapi {
-  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
-  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
-  Configurable<bool> selectionFlagOmegac0{"selectionFlagOmegac0", false, "Selection Flag for Omegac0 candidates"};
-
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
-
-  // ThnSparse for ML outputScores and Vars
-  ConfigurableAxis thnConfigAxisPromptScore{"thnConfigAxisPromptScore", {50, 0, 1}, "Prompt score bins"};
-  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 2.4, 3.1}, "Cand. inv-mass bins"};
-  ConfigurableAxis thnConfigAxisPtB{"thnConfigAxisPtB", {1000, 0, 100}, "Cand. beauty mother pTB bins"};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0, 20}, "Cand. pT bins"};
-  ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity bins"};
-  ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin type"};
-  ConfigurableAxis thnConfigAxisGenPtD{"thnConfigAxisGenPtD", {500, 0, 50}, "Gen Pt D"};
-  ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
-  ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
+  Configurable<bool> selectionFlagOmegac0{"selectionFlagOmegac0", false, "Selection Flag for Omegac0 candidates"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
 
   HfHelper hfHelper;
+  SliceCache cache;
   using MyTracksWMc = soa::Join<aod::Tracks, aod::TracksIU, aod::McTrackLabels>;
 
   using Omegac0Candidates = soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi>;
@@ -66,11 +55,20 @@ struct HfTaskOmegac0ToOmegapi {
   using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
   using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
   PresliceUnsorted<CollisionsWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
-  SliceCache cache;
 
   Partition<Omegac0CandidatesKF> selectedOmegac0CandidatesKF = aod::hf_sel_toomegapi::resultSelections && !selectionFlagOmegac0;
   Partition<Omegac0CandidatesMlKF> selectedOmegac0CandidatesMlKF = aod::hf_sel_toomegapi::resultSelections && !selectionFlagOmegac0;
-
+                                   
+  // ThnSparse for ML outputScores and Vars
+  ConfigurableAxis thnConfigAxisPromptScore{"thnConfigAxisPromptScore", {50, 0, 1}, "Prompt score bins"};
+  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 2.4, 3.1}, "Cand. inv-mass bins"};
+  ConfigurableAxis thnConfigAxisPtB{"thnConfigAxisPtB", {1000, 0, 100}, "Cand. beauty mother pTB bins"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0, 20}, "Cand. pT bins"};
+  ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity bins"};
+  ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin type"};
+  ConfigurableAxis thnConfigAxisGenPtD{"thnConfigAxisGenPtD", {500, 0, 50}, "Gen Pt D"};
+  ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
+  ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
   HistogramRegistry registry{
     "registry",
     {}};
