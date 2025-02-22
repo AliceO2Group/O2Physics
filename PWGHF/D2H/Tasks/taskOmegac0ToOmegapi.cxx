@@ -146,14 +146,14 @@ struct HfTaskOmegac0ToOmegapi {
   {
     processData<false>(selectedOmegac0CandidatesKF, collisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0, processDataWithKFParticle, "process taskOmegac0 with KFParticle", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticle, "process HfTaskOmegac0ToOmegapi with KFParticle", false);
   // TODO: add processKFParticleCent
 
   void processDataWithKFParticleMl(Omegac0CandidatesMlKF const&, Collisions const& collisions)
   {
     processData<true>(selectedOmegac0CandidatesMlKF, collisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0, processDataWithKFParticleMl, "process taskOmegac0 with KFParticle and ML selections", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticleMl, "process HfTaskOmegac0ToOmegapi with KFParticle and ML selections", false);
   // TODO: add processKFParticleMlCent
 
   template <bool applyMl, typename CandType, typename CollType>
@@ -222,7 +222,7 @@ struct HfTaskOmegac0ToOmegapi {
   {
     processMc<false>(omegaC0CandidatesMcKF, mcParticles, tracks, collisions, mcCollisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0, processMcWithKFParticle, "Process MC with KFParticle", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcWithKFParticle, "Process MC with KFParticle", false);
   // TODO: add the processMcWithKFParticleCent
 
   void processMcWithKFParticleMl(Omegac0CandidatesMlMcKF const& omegac0CandidatesMlMcKF,
@@ -233,7 +233,7 @@ struct HfTaskOmegac0ToOmegapi {
   {
     processMc<true>(omegac0CandidatesMlMcKF, mcParticles, tracks, collisions, mcCollisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
   // TODO: add the processMcWithKFParticleMlCent
 };
 
