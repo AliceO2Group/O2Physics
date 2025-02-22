@@ -32,6 +32,10 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <string>
+#include <map>
+#include <algorithm>
+#include <vector>
 
 #include <TFile.h>
 #include <TH2F.h>
@@ -2220,8 +2224,13 @@ struct DerivedLambdaKzeroAnalysis {
 
       // consider only associated candidates if asked to do so, disregard association
       if (!doMCAssociation) {
-        selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
-        selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
+        BITSET(selMap, selConsiderK0Short);
+        BITSET(selMap, selConsiderLambda);
+        BITSET(selMap, selConsiderAntiLambda);
+
+        BITSET(selMap, selPhysPrimK0Short);
+        BITSET(selMap, selPhysPrimLambda);
+        BITSET(selMap, selPhysPrimAntiLambda);
       }
 
       analyseCandidate(v0, ptmc, centrality, selMap, selGapSide, nK0Shorts, nLambdas, nAntiLambdas);
