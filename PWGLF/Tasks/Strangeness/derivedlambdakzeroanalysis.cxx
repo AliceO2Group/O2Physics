@@ -2143,8 +2143,13 @@ struct derivedlambdakzeroanalysis {
       uint64_t selMap = computeReconstructionBitmap(v0, collision, v0.yLambda(), v0.yK0Short(), v0.pt());
 
       // consider for histograms for all species
-      selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
-      selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
+      BITSET(selMap, selConsiderK0Short);
+      BITSET(selMap, selConsiderLambda);
+      BITSET(selMap, selConsiderAntiLambda);
+
+      BITSET(selMap, selPhysPrimK0Short);
+      BITSET(selMap, selPhysPrimLambda);
+      BITSET(selMap, selPhysPrimAntiLambda);
 
       analyseCandidate(v0, v0.pt(), centrality, selMap, selGapSide, nK0Shorts, nLambdas, nAntiLambdas);
     } // end v0 loop
