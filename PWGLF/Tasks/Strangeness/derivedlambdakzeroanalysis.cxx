@@ -38,7 +38,6 @@
 #include <TProfile.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -74,8 +73,8 @@ using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod
 using V0McCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0CoreMCLabels, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0K0ShortMLScores>;
 
 // simple checkers, but ensure 64 bit integers
-#define bitset(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
-#define bitcheck(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
+#define BITSET(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
+#define BITCHECK(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 
 struct DerivedLambdaKzeroAnalysis {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -236,7 +235,7 @@ struct DerivedLambdaKzeroAnalysis {
   // CCDB options
   struct : ConfigurableGroup {
     std::string prefix = "ccdbConfigurations"; // JSON group name
-    Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
     Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
@@ -391,7 +390,7 @@ struct DerivedLambdaKzeroAnalysis {
       isRun3 = false;
     }
     // setting CCDB service
-    ccdb->setURL(ccdbConfigurations.ccdburl);
+    ccdb->setURL(ccdbConfigurations.ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
 
@@ -913,23 +912,23 @@ struct DerivedLambdaKzeroAnalysis {
     uint64_t bitMap = 0;
     // Base topological variables
     if (v0.v0radius() > v0Selections.v0radius)
-      bitset(bitMap, selRadius);
+      BITSET(bitMap, selRadius);
     if (v0.v0radius() < v0Selections.v0radiusMax)
-      bitset(bitMap, selRadiusMax);
+      BITSET(bitMap, selRadiusMax);
     if (std::abs(v0.dcapostopv()) > v0Selections.dcapostopv)
-      bitset(bitMap, selDCAPosToPV);
+      BITSET(bitMap, selDCAPosToPV);
     if (std::abs(v0.dcanegtopv()) > v0Selections.dcanegtopv)
-      bitset(bitMap, selDCANegToPV);
+      BITSET(bitMap, selDCANegToPV);
     if (v0.v0cosPA() > v0Selections.v0cospa)
-      bitset(bitMap, selCosPA);
+      BITSET(bitMap, selCosPA);
     if (v0.dcaV0daughters() < v0Selections.dcav0dau)
-      bitset(bitMap, selDCAV0Dau);
+      BITSET(bitMap, selDCAV0Dau);
 
     // rapidity
     if (std::abs(rapidityLambda) < v0Selections.rapidityCut)
-      bitset(bitMap, selLambdaRapidity);
+      BITSET(bitMap, selLambdaRapidity);
     if (std::abs(rapidityK0Short) < v0Selections.rapidityCut)
-      bitset(bitMap, selK0ShortRapidity);
+      BITSET(bitMap, selK0ShortRapidity);
 
     auto posTrackExtra = v0.template posTrackExtra_as<DauTracks>();
     auto negTrackExtra = v0.template negTrackExtra_as<DauTracks>();
@@ -943,12 +942,12 @@ struct DerivedLambdaKzeroAnalysis {
         posTrackExtra.itsChi2NCl() < v0Selections.maxITSchi2PerNcls &&        // check maximum ITS chi2 per clusters
         (!v0Selections.rejectPosITSafterburner || !posIsFromAfterburner) &&   // reject afterburner track or not
         (!v0Selections.requirePosITSafterburnerOnly || posIsFromAfterburner)) // keep afterburner track or not
-      bitset(bitMap, selPosGoodITSTrack);
+      BITSET(bitMap, selPosGoodITSTrack);
     if (negTrackExtra.itsNCls() >= v0Selections.minITSclusters &&             // check minium ITS clusters
         negTrackExtra.itsChi2NCl() < v0Selections.maxITSchi2PerNcls &&        // check maximum ITS chi2 per clusters
         (!v0Selections.rejectNegITSafterburner || !negIsFromAfterburner) &&   // reject afterburner track or not
         (!v0Selections.requireNegITSafterburnerOnly || negIsFromAfterburner)) // select only afterburner track or not
-      bitset(bitMap, selNegGoodITSTrack);
+      BITSET(bitMap, selNegGoodITSTrack);
 
     // TPC quality flags
     if (posTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                    // check minimum TPC crossed rows
@@ -956,77 +955,77 @@ struct DerivedLambdaKzeroAnalysis {
         posTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters && // check minimum fraction of TPC rows over findable
         posTrackExtra.tpcFoundOverFindableCls() >= v0Selections.minTPCfoundOverFindableClusters &&      // check minimum fraction of found over findable TPC clusters
         posTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters)               // check the maximum fraction of allowed shared TPC clusters
-      bitset(bitMap, selPosGoodTPCTrack);
+      BITSET(bitMap, selPosGoodTPCTrack);
     if (negTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                    // check minimum TPC crossed rows
         negTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls &&                                  // check maximum TPC chi2 per clusters
         negTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters && // check minimum fraction of TPC rows over findable
         negTrackExtra.tpcFoundOverFindableCls() >= v0Selections.minTPCfoundOverFindableClusters &&      // check minimum fraction of found over findable TPC clusters
         negTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters)               // check the maximum fraction of allowed shared TPC clusters
-      bitset(bitMap, selNegGoodTPCTrack);
+      BITSET(bitMap, selNegGoodTPCTrack);
 
     // TPC PID
     if (std::fabs(posTrackExtra.tpcNSigmaPi()) < v0Selections.tpcPidNsigmaCut)
-      bitset(bitMap, selTPCPIDPositivePion);
+      BITSET(bitMap, selTPCPIDPositivePion);
     if (std::fabs(posTrackExtra.tpcNSigmaPr()) < v0Selections.tpcPidNsigmaCut)
-      bitset(bitMap, selTPCPIDPositiveProton);
+      BITSET(bitMap, selTPCPIDPositiveProton);
     if (std::fabs(negTrackExtra.tpcNSigmaPi()) < v0Selections.tpcPidNsigmaCut)
-      bitset(bitMap, selTPCPIDNegativePion);
+      BITSET(bitMap, selTPCPIDNegativePion);
     if (std::fabs(negTrackExtra.tpcNSigmaPr()) < v0Selections.tpcPidNsigmaCut)
-      bitset(bitMap, selTPCPIDNegativeProton);
+      BITSET(bitMap, selTPCPIDNegativeProton);
 
     // TOF PID in DeltaT
     // Positive track
     if (std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
-      bitset(bitMap, selTOFDeltaTPositiveProtonLambda);
+      BITSET(bitMap, selTOFDeltaTPositiveProtonLambda);
     if (std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
-      bitset(bitMap, selTOFDeltaTPositivePionLambda);
+      BITSET(bitMap, selTOFDeltaTPositivePionLambda);
     if (std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
-      bitset(bitMap, selTOFDeltaTPositivePionK0Short);
+      BITSET(bitMap, selTOFDeltaTPositivePionK0Short);
     // Negative track
     if (std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
-      bitset(bitMap, selTOFDeltaTNegativeProtonLambda);
+      BITSET(bitMap, selTOFDeltaTNegativeProtonLambda);
     if (std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
-      bitset(bitMap, selTOFDeltaTNegativePionLambda);
+      BITSET(bitMap, selTOFDeltaTNegativePionLambda);
     if (std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
-      bitset(bitMap, selTOFDeltaTNegativePionK0Short);
+      BITSET(bitMap, selTOFDeltaTNegativePionK0Short);
 
     // TOF PID in NSigma
     // Positive track
     if (std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr)
-      bitset(bitMap, selTOFNSigmaPositiveProtonLambda);
+      BITSET(bitMap, selTOFNSigmaPositiveProtonLambda);
     if (std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi)
-      bitset(bitMap, selTOFNSigmaPositivePionLambda);
+      BITSET(bitMap, selTOFNSigmaPositivePionLambda);
     if (std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi)
-      bitset(bitMap, selTOFNSigmaPositivePionK0Short);
+      BITSET(bitMap, selTOFNSigmaPositivePionK0Short);
     // Negative track
     if (std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
-      bitset(bitMap, selTOFNSigmaNegativeProtonLambda);
+      BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
     if (std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
-      bitset(bitMap, selTOFNSigmaNegativePionLambda);
+      BITSET(bitMap, selTOFNSigmaNegativePionLambda);
     if (std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
-      bitset(bitMap, selTOFNSigmaNegativePionK0Short);
+      BITSET(bitMap, selTOFNSigmaNegativePionK0Short);
 
     // ITS only tag
     if (posTrackExtra.tpcCrossedRows() < 1)
-      bitset(bitMap, selPosItsOnly);
+      BITSET(bitMap, selPosItsOnly);
     if (negTrackExtra.tpcCrossedRows() < 1)
-      bitset(bitMap, selNegItsOnly);
+      BITSET(bitMap, selNegItsOnly);
 
     // TPC only tag
     if (posTrackExtra.detectorMap() != o2::aod::track::TPC)
-      bitset(bitMap, selPosNotTPCOnly);
+      BITSET(bitMap, selPosNotTPCOnly);
     if (negTrackExtra.detectorMap() != o2::aod::track::TPC)
-      bitset(bitMap, selNegNotTPCOnly);
+      BITSET(bitMap, selNegNotTPCOnly);
 
     // proper lifetime
     if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < lifetimecut->get("lifetimecutLambda"))
-      bitset(bitMap, selLambdaCTau);
+      BITSET(bitMap, selLambdaCTau);
     if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < lifetimecut->get("lifetimecutK0S"))
-      bitset(bitMap, selK0ShortCTau);
+      BITSET(bitMap, selK0ShortCTau);
 
     // armenteros
     if (v0.qtarm() * v0Selections.armPodCut > std::abs(v0.alpha()) || v0Selections.armPodCut < 1e-4)
-      bitset(bitMap, selK0ShortArmenteros);
+      BITSET(bitMap, selK0ShortArmenteros);
 
     return bitMap;
   }
@@ -1042,19 +1041,19 @@ struct DerivedLambdaKzeroAnalysis {
     bool isNegativePion = v0.pdgCodeNegative() == -211 || (doTreatPiToMuon && v0.pdgCodeNegative() == 13);
 
     if (v0.pdgCode() == 310 && isPositivePion && isNegativePion) {
-      bitset(bitMap, selConsiderK0Short);
+      BITSET(bitMap, selConsiderK0Short);
       if (v0.isPhysicalPrimary())
-        bitset(bitMap, selPhysPrimK0Short);
+        BITSET(bitMap, selPhysPrimK0Short);
     }
     if (v0.pdgCode() == 3122 && isPositiveProton && isNegativePion) {
-      bitset(bitMap, selConsiderLambda);
+      BITSET(bitMap, selConsiderLambda);
       if (v0.isPhysicalPrimary())
-        bitset(bitMap, selPhysPrimLambda);
+        BITSET(bitMap, selPhysPrimLambda);
     }
     if (v0.pdgCode() == -3122 && isPositivePion && isNegativeProton) {
-      bitset(bitMap, selConsiderAntiLambda);
+      BITSET(bitMap, selConsiderAntiLambda);
       if (v0.isPhysicalPrimary())
-        bitset(bitMap, selPhysPrimAntiLambda);
+        BITSET(bitMap, selPhysPrimAntiLambda);
     }
     return bitMap;
   }
@@ -1174,7 +1173,7 @@ struct DerivedLambdaKzeroAnalysis {
   void loadMachines(int64_t timeStampML)
   {
     if (mlConfigurations.loadCustomModelsFromCCDB) {
-      ccdbApi.init(ccdbConfigurations.ccdburl);
+      ccdbApi.init(ccdbConfigurations.ccdbUrl);
       LOG(info) << "Fetching models for timestamp: " << timeStampML;
 
       if (mlConfigurations.calculateLambdaScores) {
