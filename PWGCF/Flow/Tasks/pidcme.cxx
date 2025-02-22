@@ -98,10 +98,13 @@ struct FillPIDcolums {
 
   Configurable<bool> cfgOpenITSCut{"cfgOpenITSCut", true, "open ITSnsigma cut"};
   Configurable<bool> cfgOpenDetailPlots{"cfgOpenDetailPlots", true, "open detail TH3D plots for nSigmaTPC-ITS Pt-eta-Phi nSigmaITS-clustersize"};
-  Configurable<bool> cfgOpenAllowCrossTrack{"cfgOpenAllowCrossTrack", true, "Allow one track to be identified as different kind of PID particles"};
+  Configurable<bool> cfgOpenAllowCrossTrack{"cfgOpenAllowCrossTrack", false, "Allow one track to be identified as different kind of PID particles"};
   Configurable<bool> cfgOpenCrossTrackQAPlots{"cfgOpenCrossTrackQAPlots", true, "open cross pid track QA plots"};
+  Configurable<bool> cfgOpenTOFOnlyPID{"cfgOpenTOFOnlyPID", true, "only accept tracks who has TOF infomation and use TOFnsigma for PID(priority greater than TPConly and combined)"};
+  Configurable<bool> cfgOpenTPCOnlyPID{"cfgOpenTPCOnlyPID", false, "only use TPCnsigma for PID(priority grater than combined less than TOFOnly)"};
 
-  Configurable<std::vector<float>> cfgnSigmaCutTPC{"cfgnSigmaCutTPC", {3, 3, 3}, "TPC cut for pi k p respectively at low pt"};
+  Configurable<std::vector<float>> cfgnSigmaCutTPC{"cfgnSigmaCutTPC", {3, 3, 3}, "TPC nsigma cut for pi k p respectively at low pt and for the TPCOnly case"};
+  Configurable<std::vector<float>> cfgnSigmaCutTOF{"cfgnSigmaCutTOF", {1.5, 1.5, 1.5}, "TOF nsigma cut for pi k p respectively for the TOFonly case"};
   Configurable<std::vector<float>> cfgnSigmaCutRMS{"cfgnSigmaCutRMS", {3, 3, 3}, "TPC_TOF combined cut for pi k p respectively at high pt"};
   Configurable<std::vector<float>> cfgnSigmaCutITS{"cfgnSigmaCutITS", {3, 2.5, 2}, "TPC_TOF combined cut for pi k p respectively at high pt"};
 
@@ -150,15 +153,36 @@ struct FillPIDcolums {
   template <typename T>
   int selectionPidtpctof(const T& candidate)
   {
+    // initialization for basic parameter
     float averClusSizeCosl = averageClusterSizeCosl(candidate.itsClusterSizes(), candidate.eta());
     std::array<float, 3> nSigmaTPC = {candidate.tpcNSigmaPi(), candidate.tpcNSigmaKa(), candidate.tpcNSigmaPr()};
+    std::array<float, 3> nSigmaTOF = {candidate.tofNSigmaPi(), candidate.tofNSigmaKa(), candidate.tofNSigmaPr()};
     std::array<float, 3> nSigmaCombined = {std::hypot(candidate.tpcNSigmaPi(), candidate.tofNSigmaPi()), std::hypot(candidate.tpcNSigmaKa(), candidate.tofNSigmaKa()), std::hypot(candidate.tpcNSigmaPr(), candidate.tofNSigmaPr())};
-    // Choose which nSigma to use
+    std::array<float, 3> nSigmaToUse;
+    std::vector<float> pidVector;
     int pid = -1;
     bool kIsPi = false, kIsKa = false, kIsPr = false;
-    std::vector<float> pidVector = (candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()) ? cfgnSigmaCutRMS.value : cfgnSigmaCutTPC.value;
+    /*int currentPtBin = 0;
+      for (int i = 0; i < static_cast<int>(cfgPtPIDCut.value.size()) - 1; ++i) {
+        if (candidate.pt() >= cfgPtPIDCut.value[i] && candidate.pt() < cfgPtPIDCut.value[i + 1]) {
+          currentPtBin = i;
+          break;
+        }
+      }*/
+    // Choose which nSigma array and PIDcut array to use
+    if (cfgOpenTOFOnlyPID) {
+      if (!candidate.hasTOF())
+        return -1;
+      nSigmaToUse = nSigmaTOF;
+      pidVector = cfgnSigmaCutTOF.value;
+    } else if (cfgOpenTPCOnlyPID) {
+      nSigmaToUse = nSigmaTPC;
+      pidVector = cfgnSigmaCutTPC.value;
+    } else {
+      nSigmaToUse = (candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()) ? nSigmaCombined : nSigmaTPC;
+      pidVector = (candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()) ? cfgnSigmaCutRMS.value : cfgnSigmaCutTPC.value;
+    }
     float nsigma = pidVector[0];
-    std::array<float, 3> nSigmaToUse = (candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()) ? nSigmaCombined : nSigmaTPC;
     // Fill cross pid QA
     for (int i = 0; i < 3; ++i) {
       if (std::abs(nSigmaToUse[i]) < pidVector[i]) {
@@ -175,6 +199,8 @@ struct FillPIDcolums {
             histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_cross_Pi"), candidate.tpcNSigmaPi(), averClusSizeCosl);
             histosQA.fill(HIST("QA/PID/histPhi_Dis_cross_Pi"), candidate.phi());
             histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_cross_Pi"), candidate.tpcNSigmaPi(), candidate.itsNSigmaPi());
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_cross_Pi"), candidate.tofNSigmaPi());
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_cross_Pi"), candidate.pt(), candidate.tofNSigmaPi());
           }
         }
         if (i == 1) {
@@ -190,6 +216,8 @@ struct FillPIDcolums {
             histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_cross_Ka"), candidate.tpcNSigmaKa(), averClusSizeCosl);
             histosQA.fill(HIST("QA/PID/histPhi_Dis_cross_Ka"), candidate.phi());
             histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_cross_Ka"), candidate.tpcNSigmaKa(), candidate.itsNSigmaKa());
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_cross_Ka"), candidate.tofNSigmaKa());
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_cross_Ka"), candidate.pt(), candidate.tofNSigmaKa());
           }
         }
         if (i == 2) {
@@ -205,6 +233,8 @@ struct FillPIDcolums {
             histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_cross_Pr"), candidate.tpcNSigmaKa(), averClusSizeCosl);
             histosQA.fill(HIST("QA/PID/histPhi_Dis_cross_Pr"), candidate.phi());
             histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_cross_Pr"), candidate.tpcNSigmaPr(), candidate.itsNSigmaPr());
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_cross_Pr"), candidate.tofNSigmaPr());
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_cross_Pr"), candidate.pt(), candidate.tofNSigmaPr());
           }
         }
       }
@@ -229,6 +259,13 @@ struct FillPIDcolums {
   template <typename T>
   bool selectionITS(const T& candidate, int mode, float avgclssize)
   {
+    /*int currentPtBin = 0;
+      for (int i = 0; i < static_cast<int>(cfgPtPIDCut.value.size()) - 1; ++i) {
+        if (candidate.pt() >= cfgPtPIDCut.value[i] && candidate.pt() < cfgPtPIDCut.value[i + 1]) {
+          currentPtBin = i;
+          break;
+        }
+      }*/
     switch (mode) {
       case 1: // For Pion
         if (!(std::abs(candidate.itsNSigmaPi()) < cfgnSigmaCutITS.value[0] && avgclssize > cfgAveClusSizeCoslMinPi && avgclssize < cfgAveClusSizeCoslMaxPi)) {
@@ -280,9 +317,11 @@ struct FillPIDcolums {
     histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_cross_Pi"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
     histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_cross_Ka"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
     histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_cross_Pr"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
-    histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_AfterITS_Pi"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
-    histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_AfterITS_Ka"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
-    histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_AfterITS_Pr"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
+    if (cfgOpenITSCut) {
+      histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_AfterITS_Pi"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
+      histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_AfterITS_Ka"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
+      histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_AfterITS_Pr"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
+    }
     // Hist for PID Averge Cluster Size ITS related
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_Pi"), "", {HistType::kTH1F, {axisClusterSize}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_Ka"), "", {HistType::kTH1F, {axisClusterSize}});
@@ -290,53 +329,64 @@ struct FillPIDcolums {
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_cross_Pi"), "", {HistType::kTH1F, {axisClusterSize}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_cross_Ka"), "", {HistType::kTH1F, {axisClusterSize}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_cross_Pr"), "", {HistType::kTH1F, {axisClusterSize}});
-    histosQA.add(Form("QA/PID/histAverClusterSizeCosl_AfterITS_Pi"), "", {HistType::kTH1F, {axisClusterSize}});
-    histosQA.add(Form("QA/PID/histAverClusterSizeCosl_AfterITS_Ka"), "", {HistType::kTH1F, {axisClusterSize}});
-    histosQA.add(Form("QA/PID/histAverClusterSizeCosl_AfterITS_Pr"), "", {HistType::kTH1F, {axisClusterSize}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_P_Pi"), "", {HistType::kTH2F, {axisPPID, axisClusterSize}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_P_Ka"), "", {HistType::kTH2F, {axisPPID, axisClusterSize}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_P_Pr"), "", {HistType::kTH2F, {axisPPID, axisClusterSize}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_P_cross_Pi"), "", {HistType::kTH2F, {axisPPID, axisClusterSize}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_P_cross_Ka"), "", {HistType::kTH2F, {axisPPID, axisClusterSize}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_P_cross_Pr"), "", {HistType::kTH2F, {axisPPID, axisClusterSize}});
-    histosQA.add(Form("QA/PID/histAverClusterSizeCosl_P_AfterITS_Pi"), "", {HistType::kTH2F, {axisPPID, axisClusterSize}});
-    histosQA.add(Form("QA/PID/histAverClusterSizeCosl_P_AfterITS_Ka"), "", {HistType::kTH2F, {axisPPID, axisClusterSize}});
-    histosQA.add(Form("QA/PID/histAverClusterSizeCosl_P_AfterITS_Pr"), "", {HistType::kTH2F, {axisPPID, axisClusterSize}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pi"), "", {HistType::kTH2F, {axisnSigmaTPC, axisClusterSizenSigma}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Ka"), "", {HistType::kTH2F, {axisnSigmaTPC, axisClusterSizenSigma}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pr"), "", {HistType::kTH2F, {axisnSigmaTPC, axisClusterSizenSigma}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_cross_Pi"), "", {HistType::kTH2F, {axisnSigmaTPC, axisClusterSizenSigma}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_cross_Ka"), "", {HistType::kTH2F, {axisnSigmaTPC, axisClusterSizenSigma}});
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_cross_Pr"), "", {HistType::kTH2F, {axisnSigmaTPC, axisClusterSizenSigma}});
-    histosQA.add(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Pi"), "", {HistType::kTH2F, {axisnSigmaTPC, axisClusterSizenSigma}});
-    histosQA.add(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Ka"), "", {HistType::kTH2F, {axisnSigmaTPC, axisClusterSizenSigma}});
-    histosQA.add(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Pr"), "", {HistType::kTH2F, {axisnSigmaTPC, axisClusterSizenSigma}});
     histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_Pi"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
     histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_Ka"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
     histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_Pr"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
     histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_cross_Pi"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
     histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_cross_Ka"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
     histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_cross_Pr"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
-    histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Pi"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
-    histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Ka"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
-    histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Pr"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
+    if (cfgOpenITSCut) {
+      histosQA.add(Form("QA/PID/histAverClusterSizeCosl_AfterITS_Pi"), "", {HistType::kTH1F, {axisClusterSize}});
+      histosQA.add(Form("QA/PID/histAverClusterSizeCosl_AfterITS_Ka"), "", {HistType::kTH1F, {axisClusterSize}});
+      histosQA.add(Form("QA/PID/histAverClusterSizeCosl_AfterITS_Pr"), "", {HistType::kTH1F, {axisClusterSize}});
+      histosQA.add(Form("QA/PID/histAverClusterSizeCosl_P_AfterITS_Pi"), "", {HistType::kTH2F, {axisPPID, axisClusterSize}});
+      histosQA.add(Form("QA/PID/histAverClusterSizeCosl_P_AfterITS_Ka"), "", {HistType::kTH2F, {axisPPID, axisClusterSize}});
+      histosQA.add(Form("QA/PID/histAverClusterSizeCosl_P_AfterITS_Pr"), "", {HistType::kTH2F, {axisPPID, axisClusterSize}});
+      histosQA.add(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Pi"), "", {HistType::kTH2F, {axisnSigmaTPC, axisClusterSizenSigma}});
+      histosQA.add(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Ka"), "", {HistType::kTH2F, {axisnSigmaTPC, axisClusterSizenSigma}});
+      histosQA.add(Form("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Pr"), "", {HistType::kTH2F, {axisnSigmaTPC, axisClusterSizenSigma}});
+      histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Pi"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
+      histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Ka"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
+      histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Pr"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
+    }
     // Hist for Nsigma TPC TOF
     histosQA.add(Form("QA/PID/histdEdxTPC_All"), "", {HistType::kTH2F, {axisRigidity, axisdEdx}});
     histosQA.add(Form("QA/PID/histdEdxTPC_Pi"), "", {HistType::kTH2F, {axisRigidity, axisdEdx}});
-    histosQA.add(Form("QA/PID/histnSigma_Pi"), "", {HistType::kTH1F, {axisnSigmaTPC}});
-    histosQA.add(Form("QA/PID/histnSigma_Pt_Pi"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
+    histosQA.add(Form("QA/PID/histnSigma_TPC_Pi"), "", {HistType::kTH1F, {axisnSigmaTPC}});
+    histosQA.add(Form("QA/PID/histnSigma_TPC_Pt_Pi"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
     histosQA.add(Form("QA/PID/histdEdxTPC_Ka"), "", {HistType::kTH2F, {axisRigidity, axisdEdx}});
-    histosQA.add(Form("QA/PID/histnSigma_Ka"), "", {HistType::kTH1F, {axisnSigmaTPC}});
-    histosQA.add(Form("QA/PID/histnSigma_Pt_Ka"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
+    histosQA.add(Form("QA/PID/histnSigma_TPC_Ka"), "", {HistType::kTH1F, {axisnSigmaTPC}});
+    histosQA.add(Form("QA/PID/histnSigma_TPC_Pt_Ka"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
     histosQA.add(Form("QA/PID/histdEdxTPC_Pr"), "", {HistType::kTH2F, {axisRigidity, axisdEdx}});
-    histosQA.add(Form("QA/PID/histnSigma_Pr"), "", {HistType::kTH1F, {axisnSigmaTPC}});
-    histosQA.add(Form("QA/PID/histnSigma_Pt_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
+    histosQA.add(Form("QA/PID/histnSigma_TPC_Pr"), "", {HistType::kTH1F, {axisnSigmaTPC}});
+    histosQA.add(Form("QA/PID/histnSigma_TPC_Pt_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
     histosQA.add(Form("QA/PID/histnSigma_com_Pi"), "", {HistType::kTH1F, {axisnSigmaCom}});
     histosQA.add(Form("QA/PID/histnSigma_com_Ka"), "", {HistType::kTH1F, {axisnSigmaCom}});
     histosQA.add(Form("QA/PID/histnSigma_com_Pr"), "", {HistType::kTH1F, {axisnSigmaCom}});
     histosQA.add(Form("QA/PID/histnSigma_TOF_Pi"), "", {HistType::kTH1F, {axisnSigmaTOF}});
     histosQA.add(Form("QA/PID/histnSigma_TOF_Ka"), "", {HistType::kTH1F, {axisnSigmaTOF}});
     histosQA.add(Form("QA/PID/histnSigma_TOF_Pr"), "", {HistType::kTH1F, {axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_cross_Pi"), "", {HistType::kTH1F, {axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_cross_Ka"), "", {HistType::kTH1F, {axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_cross_Pr"), "", {HistType::kTH1F, {axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_Pi"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_Ka"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_cross_Pi"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_cross_Ka"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_cross_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
     histosQA.add(Form("QA/PID/histdEdxTPC_cross_Pi"), "", {HistType::kTH2F, {axisRigidity, axisdEdx}});
     histosQA.add(Form("QA/PID/histnSigma_cross_Pi"), "", {HistType::kTH1F, {axisnSigmaTPC}});
     histosQA.add(Form("QA/PID/histnSigma_Pt_cross_Pi"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
@@ -346,6 +396,14 @@ struct FillPIDcolums {
     histosQA.add(Form("QA/PID/histdEdxTPC_cross_Pr"), "", {HistType::kTH2F, {axisRigidity, axisdEdx}});
     histosQA.add(Form("QA/PID/histnSigma_cross_Pr"), "", {HistType::kTH1F, {axisnSigmaTPC}});
     histosQA.add(Form("QA/PID/histnSigma_Pt_cross_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
+    if (cfgOpenITSCut) {
+      histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_AfterITS_Pi"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+      histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_AfterITS_Ka"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+      histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_AfterITS_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+      histosQA.add(Form("QA/PID/histnSigma_TPC_Pt_AfterITS_Pi"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
+      histosQA.add(Form("QA/PID/histnSigma_TPC_Pt_AfterITS_Ka"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
+      histosQA.add(Form("QA/PID/histnSigma_TPC_Pt_AfterITS_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
+    }
     // Hist for nSigma ITS
     histosQA.add(Form("QA/PID/histnSigma_ITS_Pi"), "", {HistType::kTH1F, {axisnSigmaITS}});
     histosQA.add(Form("QA/PID/histnSigma_ITS_Ka"), "", {HistType::kTH1F, {axisnSigmaITS}});
@@ -353,9 +411,11 @@ struct FillPIDcolums {
     histosQA.add(Form("QA/PID/histnSigma_ITS_cross_Pi"), "", {HistType::kTH1F, {axisnSigmaITS}});
     histosQA.add(Form("QA/PID/histnSigma_ITS_cross_Ka"), "", {HistType::kTH1F, {axisnSigmaITS}});
     histosQA.add(Form("QA/PID/histnSigma_ITS_cross_Pr"), "", {HistType::kTH1F, {axisnSigmaITS}});
-    histosQA.add(Form("QA/PID/histnSigma_ITS_AfterITS_Pi"), "", {HistType::kTH1F, {axisnSigmaITS}});
-    histosQA.add(Form("QA/PID/histnSigma_ITS_AfterITS_Ka"), "", {HistType::kTH1F, {axisnSigmaITS}});
-    histosQA.add(Form("QA/PID/histnSigma_ITS_AfterITS_Pr"), "", {HistType::kTH1F, {axisnSigmaITS}});
+    if (cfgOpenITSCut) {
+      histosQA.add(Form("QA/PID/histnSigma_ITS_AfterITS_Pi"), "", {HistType::kTH1F, {axisnSigmaITS}});
+      histosQA.add(Form("QA/PID/histnSigma_ITS_AfterITS_Ka"), "", {HistType::kTH1F, {axisnSigmaITS}});
+      histosQA.add(Form("QA/PID/histnSigma_ITS_AfterITS_Pr"), "", {HistType::kTH1F, {axisnSigmaITS}});
+    }
     // Hist for checking the PID phi distribution
     histosQA.add(Form("QA/PID/histPhi_Dis_Pi"), "", {HistType::kTH1F, {axisPhi}});
     histosQA.add(Form("QA/PID/histPhi_Dis_Ka"), "", {HistType::kTH1F, {axisPhi}});
@@ -363,41 +423,45 @@ struct FillPIDcolums {
     histosQA.add(Form("QA/PID/histPhi_Dis_cross_Pi"), "", {HistType::kTH1F, {axisPhi}});
     histosQA.add(Form("QA/PID/histPhi_Dis_cross_Ka"), "", {HistType::kTH1F, {axisPhi}});
     histosQA.add(Form("QA/PID/histPhi_Dis_cross_Pr"), "", {HistType::kTH1F, {axisPhi}});
-    histosQA.add(Form("QA/PID/histPhi_Dis_AfterITS_Pi"), "", {HistType::kTH1F, {axisPhi}});
-    histosQA.add(Form("QA/PID/histPhi_Dis_AfterITS_Ka"), "", {HistType::kTH1F, {axisPhi}});
-    histosQA.add(Form("QA/PID/histPhi_Dis_AfterITS_Pr"), "", {HistType::kTH1F, {axisPhi}});
+    if (cfgOpenITSCut) {
+      histosQA.add(Form("QA/PID/histPhi_Dis_AfterITS_Pi"), "", {HistType::kTH1F, {axisPhi}});
+      histosQA.add(Form("QA/PID/histPhi_Dis_AfterITS_Ka"), "", {HistType::kTH1F, {axisPhi}});
+      histosQA.add(Form("QA/PID/histPhi_Dis_AfterITS_Pr"), "", {HistType::kTH1F, {axisPhi}});
+    }
     // Hist 3D for PID check
     if (cfgOpenDetailPlots) {
-      histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_PosPi"), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhi, axisPtPID, cfgaxisetaPID}});
-      histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_NegPi"), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhi, axisPtPID, cfgaxisetaPID}});
-      histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_PosKa"), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhi, axisPtPID, cfgaxisetaPID}});
-      histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_NegKa"), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhi, axisPtPID, cfgaxisetaPID}});
-      histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_PosPr"), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhi, axisPtPID, cfgaxisetaPID}});
-      histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_NegPr"), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhi, axisPtPID, cfgaxisetaPID}});
       histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPi_Before"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
       histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosKa_Before"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
       histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPr_Before"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
-      histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPi_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
-      histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosKa_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
-      histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPr_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
       histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPi_Before"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
       histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegKa_Before"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
       histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPr_Before"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
-      histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPi_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
-      histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegKa_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
-      histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPr_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
       histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPi_Before"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
       histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosKa_Before"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
       histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPr_Before"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
-      histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPi_After"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
-      histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosKa_After"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
-      histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPr_After"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
       histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPi_Before"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
       histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegKa_Before"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
       histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPr_Before"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
-      histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPi_After"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
-      histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegKa_After"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
-      histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPr_After"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
+      if (cfgOpenITSCut) {
+        histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPi_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
+        histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosKa_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
+        histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPr_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
+        histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPi_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
+        histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegKa_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
+        histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_NegPr_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
+        histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPi_After"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
+        histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosKa_After"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
+        histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPr_After"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
+        histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPi_After"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
+        histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegKa_After"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
+        histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPr_After"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
+        histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_PosPi"), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhi, axisPtPID, cfgaxisetaPID}});
+        histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_NegPi"), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhi, axisPtPID, cfgaxisetaPID}});
+        histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_PosKa"), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhi, axisPtPID, cfgaxisetaPID}});
+        histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_NegKa"), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhi, axisPtPID, cfgaxisetaPID}});
+        histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_PosPr"), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhi, axisPtPID, cfgaxisetaPID}});
+        histosQA.add<TH3>(Form("QA/PID/histPhi_Pt_Eta_NegPr"), ";#phi;#p_{t};#eta", {HistType::kTH3F, {axisPhi, axisPtPID, cfgaxisetaPID}});
+      }
     }
   }
   Produces<aod::Flags> pidCmeTable;
@@ -416,234 +480,247 @@ struct FillPIDcolums {
         histosQA.fill(HIST("QA/PID/histdEdxTPC_All"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
         pidFlag = selectionPidtpctof(track);
         // First fill ITS uncut plots
-        if ((pidFlag == 1) || (pidFlag == 7) || (pidFlag == 8) || (pidFlag == 10)) {
-          histosQA.fill(HIST("QA/PID/histnSigma_TPC_TOF_Pi"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_Pi"), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_P_Pi"), track.p(), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pi"), track.tpcNSigmaPi(), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_Pi"), track.tpcNSigmaPi(), track.itsNSigmaPi());
-          histosQA.fill(HIST("QA/PID/histdEdxTPC_Pi"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
-          histosQA.fill(HIST("QA/PID/histnSigma_Pi"), track.tpcNSigmaPi());
-          histosQA.fill(HIST("QA/PID/histnSigma_Pt_Pi"), track.pt(), track.tpcNSigmaPi());
-          histosQA.fill(HIST("QA/PID/histnSigma_com_Pi"), std::hypot(track.tpcNSigmaPi(), track.tofNSigmaPi()));
-          histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pi"), track.tofNSigmaPi());
-          histosQA.fill(HIST("QA/PID/histnSigma_ITS_Pi"), track.itsNSigmaPi());
-          histosQA.fill(HIST("QA/PID/histPhi_Dis_Pi"), track.phi());
-          if (cfgOpenDetailPlots) {
-            if (track.sign() > 0) {
-              histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_PosPi_Before"), track.tpcNSigmaPi(), track.itsNSigmaPi(), track.pt());
-              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPi_Before"), track.tpcNSigmaPi(), averClusSizeCosl, track.pt());
-            } else if (track.sign() < 0) {
-              histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_NegPi_Before"), track.tpcNSigmaPi(), track.itsNSigmaPi(), track.pt());
-              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPi_Before"), track.tpcNSigmaPi(), averClusSizeCosl, track.pt());
+        if (!(pidFlag == 0 || pidFlag == -1)) {
+          if ((pidFlag == 1) || (pidFlag == 7) || (pidFlag == 8) || (pidFlag == 10)) {
+            histosQA.fill(HIST("QA/PID/histnSigma_TPC_TOF_Pi"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
+            histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_Pi"), averClusSizeCosl);
+            histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_P_Pi"), track.p(), averClusSizeCosl);
+            histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pi"), track.tpcNSigmaPi(), averClusSizeCosl);
+            histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_Pi"), track.tpcNSigmaPi(), track.itsNSigmaPi());
+            histosQA.fill(HIST("QA/PID/histdEdxTPC_Pi"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
+            histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pi"), track.tpcNSigmaPi());
+            histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_Pi"), track.pt(), track.tpcNSigmaPi());
+            histosQA.fill(HIST("QA/PID/histnSigma_com_Pi"), std::hypot(track.tpcNSigmaPi(), track.tofNSigmaPi()));
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pi"), track.tofNSigmaPi());
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_Pi"), track.pt(), track.tofNSigmaPi());
+            histosQA.fill(HIST("QA/PID/histnSigma_ITS_Pi"), track.itsNSigmaPi());
+            histosQA.fill(HIST("QA/PID/histPhi_Dis_Pi"), track.phi());
+            if (cfgOpenDetailPlots) {
+              if (track.sign() > 0) {
+                histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_PosPi_Before"), track.tpcNSigmaPi(), track.itsNSigmaPi(), track.pt());
+                histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPi_Before"), track.tpcNSigmaPi(), averClusSizeCosl, track.pt());
+              } else if (track.sign() < 0) {
+                histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_NegPi_Before"), track.tpcNSigmaPi(), track.itsNSigmaPi(), track.pt());
+                histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPi_Before"), track.tpcNSigmaPi(), averClusSizeCosl, track.pt());
+              }
             }
           }
-        }
-        if ((pidFlag == 2) || (pidFlag == 7) || (pidFlag == 9) || (pidFlag == 10)) {
-          histosQA.fill(HIST("QA/PID/histnSigma_TPC_TOF_Ka"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_Ka"), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_P_Ka"), track.p(), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Ka"), track.tpcNSigmaKa(), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_Ka"), track.tpcNSigmaKa(), track.itsNSigmaKa());
-          histosQA.fill(HIST("QA/PID/histdEdxTPC_Ka"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
-          histosQA.fill(HIST("QA/PID/histnSigma_Ka"), track.tpcNSigmaKa());
-          histosQA.fill(HIST("QA/PID/histnSigma_Pt_Ka"), track.pt(), track.tpcNSigmaKa());
-          histosQA.fill(HIST("QA/PID/histnSigma_com_Ka"), std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa()));
-          histosQA.fill(HIST("QA/PID/histnSigma_TOF_Ka"), track.tofNSigmaKa());
-          histosQA.fill(HIST("QA/PID/histnSigma_ITS_Ka"), track.itsNSigmaKa());
-          histosQA.fill(HIST("QA/PID/histPhi_Dis_Ka"), track.phi());
-          if (cfgOpenDetailPlots) {
-            if (track.sign() > 0) {
-              histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_PosKa_Before"), track.tpcNSigmaKa(), track.itsNSigmaKa(), track.pt());
-              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosKa_Before"), track.tpcNSigmaKa(), averClusSizeCosl, track.pt());
-            } else if (track.sign() < 0) {
-              histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_NegKa_Before"), track.tpcNSigmaKa(), track.itsNSigmaKa(), track.pt());
-              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegKa_Before"), track.tpcNSigmaKa(), averClusSizeCosl, track.pt());
+          if ((pidFlag == 2) || (pidFlag == 7) || (pidFlag == 9) || (pidFlag == 10)) {
+            histosQA.fill(HIST("QA/PID/histnSigma_TPC_TOF_Ka"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
+            histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_Ka"), averClusSizeCosl);
+            histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_P_Ka"), track.p(), averClusSizeCosl);
+            histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Ka"), track.tpcNSigmaKa(), averClusSizeCosl);
+            histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_Ka"), track.tpcNSigmaKa(), track.itsNSigmaKa());
+            histosQA.fill(HIST("QA/PID/histdEdxTPC_Ka"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
+            histosQA.fill(HIST("QA/PID/histnSigma_TPC_Ka"), track.tpcNSigmaKa());
+            histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_Ka"), track.pt(), track.tpcNSigmaKa());
+            histosQA.fill(HIST("QA/PID/histnSigma_com_Ka"), std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa()));
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Ka"), track.tofNSigmaKa());
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_Ka"), track.pt(), track.tofNSigmaKa());
+            histosQA.fill(HIST("QA/PID/histnSigma_ITS_Ka"), track.itsNSigmaKa());
+            histosQA.fill(HIST("QA/PID/histPhi_Dis_Ka"), track.phi());
+            if (cfgOpenDetailPlots) {
+              if (track.sign() > 0) {
+                histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_PosKa_Before"), track.tpcNSigmaKa(), track.itsNSigmaKa(), track.pt());
+                histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosKa_Before"), track.tpcNSigmaKa(), averClusSizeCosl, track.pt());
+              } else if (track.sign() < 0) {
+                histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_NegKa_Before"), track.tpcNSigmaKa(), track.itsNSigmaKa(), track.pt());
+                histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegKa_Before"), track.tpcNSigmaKa(), averClusSizeCosl, track.pt());
+              }
             }
           }
-        }
-        if ((pidFlag == 3) || (pidFlag == 8) || (pidFlag == 9) || (pidFlag == 10)) {
-          histosQA.fill(HIST("QA/PID/histnSigma_TPC_TOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_Pr"), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_P_Pr"), track.p(), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pr"), track.tpcNSigmaPr(), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_Pr"), track.tpcNSigmaPr(), track.itsNSigmaPr());
-          histosQA.fill(HIST("QA/PID/histdEdxTPC_Pr"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
-          histosQA.fill(HIST("QA/PID/histnSigma_Pr"), track.tpcNSigmaPr());
-          histosQA.fill(HIST("QA/PID/histnSigma_Pt_Pr"), track.pt(), track.tpcNSigmaPr());
-          histosQA.fill(HIST("QA/PID/histnSigma_com_Pr"), std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr()));
-          histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pr"), track.tofNSigmaPr());
-          histosQA.fill(HIST("QA/PID/histnSigma_ITS_Pr"), track.itsNSigmaPr());
-          histosQA.fill(HIST("QA/PID/histPhi_Dis_Pr"), track.phi());
-          if (cfgOpenDetailPlots) {
-            if (track.sign() > 0) {
-              histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_PosPr_Before"), track.tpcNSigmaPr(), track.itsNSigmaPr(), track.pt());
-              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPr_Before"), track.tpcNSigmaPr(), averClusSizeCosl, track.pt());
-            } else if (track.sign() < 0) {
-              histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_NegPr_Before"), track.tpcNSigmaPr(), track.itsNSigmaPr(), track.pt());
-              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPr_Before"), track.tpcNSigmaPr(), averClusSizeCosl, track.pt());
+          if ((pidFlag == 3) || (pidFlag == 8) || (pidFlag == 9) || (pidFlag == 10)) {
+            histosQA.fill(HIST("QA/PID/histnSigma_TPC_TOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+            histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_Pr"), averClusSizeCosl);
+            histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_P_Pr"), track.p(), averClusSizeCosl);
+            histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_Pr"), track.tpcNSigmaPr(), averClusSizeCosl);
+            histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_Pr"), track.tpcNSigmaPr(), track.itsNSigmaPr());
+            histosQA.fill(HIST("QA/PID/histdEdxTPC_Pr"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
+            histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pr"), track.tpcNSigmaPr());
+            histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_Pr"), track.pt(), track.tpcNSigmaPr());
+            histosQA.fill(HIST("QA/PID/histnSigma_com_Pr"), std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr()));
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pr"), track.tofNSigmaPr());
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_Pr"), track.pt(), track.tofNSigmaPr());
+            histosQA.fill(HIST("QA/PID/histnSigma_ITS_Pr"), track.itsNSigmaPr());
+            histosQA.fill(HIST("QA/PID/histPhi_Dis_Pr"), track.phi());
+            if (cfgOpenDetailPlots) {
+              if (track.sign() > 0) {
+                histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_PosPr_Before"), track.tpcNSigmaPr(), track.itsNSigmaPr(), track.pt());
+                histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPr_Before"), track.tpcNSigmaPr(), averClusSizeCosl, track.pt());
+              } else if (track.sign() < 0) {
+                histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_NegPr_Before"), track.tpcNSigmaPr(), track.itsNSigmaPr(), track.pt());
+                histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPr_Before"), track.tpcNSigmaPr(), averClusSizeCosl, track.pt());
+              }
             }
           }
-        }
-        // Second proform ITS cut
-        if (cfgOpenITSCut) {
-          int idx = -1;
-          switch (pidFlag) {
-            case 1:
-              if (!selectionITS(track, 1, averClusSizeCosl)) {
-                pidFlag = 4;
-              }
-              break;
-            case 2:
-              if (!selectionITS(track, 2, averClusSizeCosl)) {
-                pidFlag = 5;
-              }
-              break;
-            case 3:
-              if (!selectionITS(track, 3, averClusSizeCosl)) {
-                pidFlag = 6;
-              }
-              break;
-            case 7:
-              idx = (selectionITS(track, 1, averClusSizeCosl) << 1) | selectionITS(track, 2, averClusSizeCosl);
-              switch (idx) {
-                case 0:
-                  pidFlag = 11;
-                  break;
+          // Second proform ITS cut
+          if (cfgOpenITSCut) {
+            int idx = -1;
+            switch (pidFlag) {
+              case 1:
+                if (!selectionITS(track, 1, averClusSizeCosl)) {
+                  pidFlag = 4;
+                }
+                break;
+              case 2:
+                if (!selectionITS(track, 2, averClusSizeCosl)) {
+                  pidFlag = 5;
+                }
+                break;
+              case 3:
+                if (!selectionITS(track, 3, averClusSizeCosl)) {
+                  pidFlag = 6;
+                }
+                break;
+              case 7:
+                idx = (selectionITS(track, 1, averClusSizeCosl) << 1) | selectionITS(track, 2, averClusSizeCosl);
+                switch (idx) {
+                  case 0:
+                    pidFlag = 11;
+                    break;
 
-                case 1:
-                  pidFlag = 2;
-                  break;
+                  case 1:
+                    pidFlag = 2;
+                    break;
 
-                case 2:
-                  pidFlag = 1;
-                  break;
-              }
-              break;
-            case 8:
-              idx = (selectionITS(track, 1, averClusSizeCosl) << 1) | selectionITS(track, 3, averClusSizeCosl);
-              switch (idx) {
-                case 0:
-                  pidFlag = 12;
-                  break;
+                  case 2:
+                    pidFlag = 1;
+                    break;
+                }
+                break;
+              case 8:
+                idx = (selectionITS(track, 1, averClusSizeCosl) << 1) | selectionITS(track, 3, averClusSizeCosl);
+                switch (idx) {
+                  case 0:
+                    pidFlag = 12;
+                    break;
 
-                case 1:
-                  pidFlag = 3;
-                  break;
+                  case 1:
+                    pidFlag = 3;
+                    break;
 
-                case 2:
-                  pidFlag = 1;
-                  break;
-              }
-              break;
-            case 9:
-              idx = (selectionITS(track, 2, averClusSizeCosl) << 1) | selectionITS(track, 3, averClusSizeCosl);
-              switch (idx) {
-                case 0:
-                  pidFlag = 13;
-                  break;
+                  case 2:
+                    pidFlag = 1;
+                    break;
+                }
+                break;
+              case 9:
+                idx = (selectionITS(track, 2, averClusSizeCosl) << 1) | selectionITS(track, 3, averClusSizeCosl);
+                switch (idx) {
+                  case 0:
+                    pidFlag = 13;
+                    break;
 
-                case 1:
-                  pidFlag = 3;
-                  break;
+                  case 1:
+                    pidFlag = 3;
+                    break;
 
-                case 2:
-                  pidFlag = 2;
-                  break;
-              }
-              break;
-            case 10:
-              idx = (selectionITS(track, 1, averClusSizeCosl) << 2) | (selectionITS(track, 2, averClusSizeCosl) << 1) | selectionITS(track, 3, averClusSizeCosl);
-              switch (idx) {
-                case 0:
-                  pidFlag = 14;
-                  break;
+                  case 2:
+                    pidFlag = 2;
+                    break;
+                }
+                break;
+              case 10:
+                idx = (selectionITS(track, 1, averClusSizeCosl) << 2) | (selectionITS(track, 2, averClusSizeCosl) << 1) | selectionITS(track, 3, averClusSizeCosl);
+                switch (idx) {
+                  case 0:
+                    pidFlag = 14;
+                    break;
 
-                case 1:
-                  pidFlag = 3;
-                  break;
+                  case 1:
+                    pidFlag = 3;
+                    break;
 
-                case 2:
-                  pidFlag = 2;
-                  break;
+                  case 2:
+                    pidFlag = 2;
+                    break;
 
-                case 3:
-                  pidFlag = 9;
-                  break;
+                  case 3:
+                    pidFlag = 9;
+                    break;
 
-                case 4:
-                  pidFlag = 1;
-                  break;
+                  case 4:
+                    pidFlag = 1;
+                    break;
 
-                case 5:
-                  pidFlag = 8;
-                  break;
+                  case 5:
+                    pidFlag = 8;
+                    break;
 
-                case 6:
-                  pidFlag = 7;
-                  break;
-              }
-              break;
-          }
-        }
-        // Third Fill ITS cut plots
-        if ((pidFlag == 1) || (pidFlag == 7) || (pidFlag == 8) || (pidFlag == 10)) {
-          histosQA.fill(HIST("QA/PID/histnSigma_TPC_TOF_AfterITS_Pi"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_AfterITS_Pi"), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_P_AfterITS_Pi"), track.p(), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Pi"), track.tpcNSigmaPi(), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Pi"), track.tpcNSigmaPi(), track.itsNSigmaPi());
-          histosQA.fill(HIST("QA/PID/histnSigma_ITS_AfterITS_Pi"), track.itsNSigmaPi());
-          histosQA.fill(HIST("QA/PID/histPhi_Dis_AfterITS_Pi"), track.phi());
-          if (cfgOpenDetailPlots) {
-            if (track.sign() > 0) {
-              histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_PosPi"), track.phi(), track.pt(), track.eta());
-              histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_PosPi_After"), track.tpcNSigmaPi(), track.itsNSigmaPi(), track.pt());
-              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPi_After"), track.tpcNSigmaPi(), averClusSizeCosl, track.pt());
-            } else if (track.sign() < 0) {
-              histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_NegPi"), track.phi(), track.pt(), track.eta());
-              histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_NegPi_After"), track.tpcNSigmaPi(), track.itsNSigmaPi(), track.pt());
-              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPi_After"), track.tpcNSigmaPi(), averClusSizeCosl, track.pt());
+                  case 6:
+                    pidFlag = 7;
+                    break;
+                }
+                break;
             }
           }
-        }
-        if ((pidFlag == 2) || (pidFlag == 7) || (pidFlag == 9) || (pidFlag == 10)) {
-          histosQA.fill(HIST("QA/PID/histnSigma_TPC_TOF_AfterITS_Ka"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
-          histosQA.fill(HIST("QA/PID/histnSigma_ITS_AfterITS_Ka"), track.itsNSigmaKa());
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_AfterITS_Ka"), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_P_AfterITS_Ka"), track.p(), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Ka"), track.tpcNSigmaKa(), track.itsNSigmaKa());
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Ka"), track.tpcNSigmaKa(), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histPhi_Dis_AfterITS_Ka"), track.phi());
-          if (cfgOpenDetailPlots) {
-            if (track.sign() > 0) {
-              histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_PosKa"), track.phi(), track.pt(), track.eta());
-              histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_PosKa_After"), track.tpcNSigmaKa(), track.itsNSigmaKa(), track.pt());
-              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosKa_After"), track.tpcNSigmaKa(), averClusSizeCosl, track.pt());
-            } else if (track.sign() < 0) {
-              histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_NegKa"), track.phi(), track.pt(), track.eta());
-              histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_NegKa_After"), track.tpcNSigmaKa(), track.itsNSigmaKa(), track.pt());
-              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegKa_After"), track.tpcNSigmaKa(), averClusSizeCosl, track.pt());
+          // Third Fill ITS cut plots
+          if (cfgOpenITSCut) {
+            if ((pidFlag == 1) || (pidFlag == 7) || (pidFlag == 8) || (pidFlag == 10)) {
+              histosQA.fill(HIST("QA/PID/histnSigma_TPC_TOF_AfterITS_Pi"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
+              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_AfterITS_Pi"), averClusSizeCosl);
+              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_P_AfterITS_Pi"), track.p(), averClusSizeCosl);
+              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Pi"), track.tpcNSigmaPi(), averClusSizeCosl);
+              histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Pi"), track.tpcNSigmaPi(), track.itsNSigmaPi());
+              histosQA.fill(HIST("QA/PID/histnSigma_ITS_AfterITS_Pi"), track.itsNSigmaPi());
+              histosQA.fill(HIST("QA/PID/histPhi_Dis_AfterITS_Pi"), track.phi());
+              histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_AfterITS_Pi"), track.pt(), track.tofNSigmaPi());
+              histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_AfterITS_Pi"), track.pt(), track.tpcNSigmaPi());
+              if (cfgOpenDetailPlots) {
+                if (track.sign() > 0) {
+                  histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_PosPi"), track.phi(), track.pt(), track.eta());
+                  histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_PosPi_After"), track.tpcNSigmaPi(), track.itsNSigmaPi(), track.pt());
+                  histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPi_After"), track.tpcNSigmaPi(), averClusSizeCosl, track.pt());
+                } else if (track.sign() < 0) {
+                  histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_NegPi"), track.phi(), track.pt(), track.eta());
+                  histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_NegPi_After"), track.tpcNSigmaPi(), track.itsNSigmaPi(), track.pt());
+                  histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPi_After"), track.tpcNSigmaPi(), averClusSizeCosl, track.pt());
+                }
+              }
             }
-          }
-        }
-        if ((pidFlag == 3) || (pidFlag == 8) || (pidFlag == 9) || (pidFlag == 10)) {
-          histosQA.fill(HIST("QA/PID/histnSigma_TPC_TOF_AfterITS_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
-          histosQA.fill(HIST("QA/PID/histnSigma_ITS_AfterITS_Pr"), track.itsNSigmaPr());
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_AfterITS_Pr"), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_P_AfterITS_Pr"), track.p(), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Pr"), track.tpcNSigmaPr(), track.itsNSigmaPr());
-          histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Pr"), track.tpcNSigmaPr(), averClusSizeCosl);
-          histosQA.fill(HIST("QA/PID/histPhi_Dis_AfterITS_Pr"), track.phi());
-          if (cfgOpenDetailPlots) {
-            if (track.sign() > 0) {
-              histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_PosPr"), track.phi(), track.pt(), track.eta());
-              histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_PosPr_After"), track.tpcNSigmaPr(), track.itsNSigmaPr(), track.pt());
-              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPr_After"), track.tpcNSigmaPr(), averClusSizeCosl, track.pt());
-            } else if (track.sign() < 0) {
-              histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_NegPr"), track.phi(), track.pt(), track.eta());
-              histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_NegPr_After"), track.tpcNSigmaPr(), track.itsNSigmaPr(), track.pt());
-              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPr_After"), track.tpcNSigmaPr(), averClusSizeCosl, track.pt());
+            if ((pidFlag == 2) || (pidFlag == 7) || (pidFlag == 9) || (pidFlag == 10)) {
+              histosQA.fill(HIST("QA/PID/histnSigma_TPC_TOF_AfterITS_Ka"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
+              histosQA.fill(HIST("QA/PID/histnSigma_ITS_AfterITS_Ka"), track.itsNSigmaKa());
+              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_AfterITS_Ka"), averClusSizeCosl);
+              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_P_AfterITS_Ka"), track.p(), averClusSizeCosl);
+              histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Ka"), track.tpcNSigmaKa(), track.itsNSigmaKa());
+              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Ka"), track.tpcNSigmaKa(), averClusSizeCosl);
+              histosQA.fill(HIST("QA/PID/histPhi_Dis_AfterITS_Ka"), track.phi());
+              histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_AfterITS_Ka"), track.pt(), track.tofNSigmaKa());
+              histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_AfterITS_Ka"), track.pt(), track.tpcNSigmaKa());
+              if (cfgOpenDetailPlots) {
+                if (track.sign() > 0) {
+                  histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_PosKa"), track.phi(), track.pt(), track.eta());
+                  histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_PosKa_After"), track.tpcNSigmaKa(), track.itsNSigmaKa(), track.pt());
+                  histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosKa_After"), track.tpcNSigmaKa(), averClusSizeCosl, track.pt());
+                } else if (track.sign() < 0) {
+                  histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_NegKa"), track.phi(), track.pt(), track.eta());
+                  histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_NegKa_After"), track.tpcNSigmaKa(), track.itsNSigmaKa(), track.pt());
+                  histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegKa_After"), track.tpcNSigmaKa(), averClusSizeCosl, track.pt());
+                }
+              }
+            }
+            if ((pidFlag == 3) || (pidFlag == 8) || (pidFlag == 9) || (pidFlag == 10)) {
+              histosQA.fill(HIST("QA/PID/histnSigma_TPC_TOF_AfterITS_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+              histosQA.fill(HIST("QA/PID/histnSigma_ITS_AfterITS_Pr"), track.itsNSigmaPr());
+              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_AfterITS_Pr"), averClusSizeCosl);
+              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_P_AfterITS_Pr"), track.p(), averClusSizeCosl);
+              histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Pr"), track.tpcNSigmaPr(), track.itsNSigmaPr());
+              histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Pr"), track.tpcNSigmaPr(), averClusSizeCosl);
+              histosQA.fill(HIST("QA/PID/histPhi_Dis_AfterITS_Pr"), track.phi());
+              histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_AfterITS_Pr"), track.pt(), track.tofNSigmaPr());
+              histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_AfterITS_Pr"), track.pt(), track.tpcNSigmaPr());
+              if (cfgOpenDetailPlots) {
+                if (track.sign() > 0) {
+                  histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_PosPr"), track.phi(), track.pt(), track.eta());
+                  histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_PosPr_After"), track.tpcNSigmaPr(), track.itsNSigmaPr(), track.pt());
+                  histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_PosPr_After"), track.tpcNSigmaPr(), averClusSizeCosl, track.pt());
+                } else if (track.sign() < 0) {
+                  histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_NegPr"), track.phi(), track.pt(), track.eta());
+                  histosQA.fill(HIST("QA/PID/histnSigmaITS_TPC_Pt_NegPr_After"), track.tpcNSigmaPr(), track.itsNSigmaPr(), track.pt());
+                  histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPr_After"), track.tpcNSigmaPr(), averClusSizeCosl, track.pt());
+                }
+              }
             }
           }
         }
@@ -986,10 +1063,10 @@ struct pidcme { // o2-linter: disable=name/struct
   Configurable<bool> cfgOpenEvSelMultCorrelation{"cfgOpenEvSelMultCorrelation", true, "Multiplicity correlation cut"};
   Configurable<bool> cfgOpenEvSelV0AT0ACut{"cfgOpenEvSelV0AT0ACut", true, "V0A T0A 5 sigma cut"};
   Configurable<bool> cfgOpenFullEventQA{"cfgOpenFullEventQA", true, "Open full QA plots for event QA"};
-  Configurable<bool> cfgkOpenCME{"cfgkOpenCME", true, "open PID CME"};
+  Configurable<bool> cfgkOpenCME{"cfgkOpenCME", false, "open PID CME"};
   Configurable<bool> cfgkOpenPiPi{"cfgkOpenPiPi", true, "open Pi-Pi"};
-  Configurable<bool> cfgkOpenKaKa{"cfgkOpenKaKa", false, "open Ka-Ka"};
-  Configurable<bool> cfgkOpenPrPr{"cfgkOpenPrPr", false, "open Pr-Pr"};
+  Configurable<bool> cfgkOpenKaKa{"cfgkOpenKaKa", true, "open Ka-Ka"};
+  Configurable<bool> cfgkOpenPrPr{"cfgkOpenPrPr", true, "open Pr-Pr"};
   Configurable<bool> cfgkOpenPiKa{"cfgkOpenPiKa", true, "open Pi-Ka"};
   Configurable<bool> cfgkOpenPiPr{"cfgkOpenPiPr", true, "open Pi-Pr"};
   Configurable<bool> cfgkOpenKaPr{"cfgkOpenKaPr", true, "open Ka-Pr"};
