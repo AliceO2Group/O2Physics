@@ -8,6 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \file multiplicityTable.cxx
+/// \brief Produces multiplicity tables
+///
+/// \author ALICE
+///
 
 #include <vector>
 #include <algorithm>
@@ -50,7 +56,7 @@ static constexpr int kFT0MultZeqs = 10;
 static constexpr int kFDDMultZeqs = 11;
 static constexpr int kPVMultZeqs = 12;
 static constexpr int kMultMCExtras = 13;
-static constexpr int nTables = 14;
+static constexpr int Ntables = 14;
 
 // Checking that the Zeq tables are after the normal ones
 static_assert(kFV0Mults < kFV0MultZeqs);
@@ -58,7 +64,7 @@ static_assert(kFT0Mults < kFT0MultZeqs);
 static_assert(kFDDMults < kFDDMultZeqs);
 static_assert(kPVMults < kPVMultZeqs);
 
-static constexpr int nParameters = 1;
+static constexpr int Nparameters = 1;
 static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "FT0Mults",       // 1
                                                  "FDDMults",       // 2
@@ -74,7 +80,7 @@ static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "PVMultZeqs",     // 12
                                                  "MultMCExtras"};  // 13
 static const std::vector<std::string> parameterNames{"Enable"};
-static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+static const int defaultParameters[Ntables][Nparameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
 struct MultiplicityTable {
   SliceCache cache;
@@ -104,8 +110,8 @@ struct MultiplicityTable {
   using Run2Tracks = soa::Join<aod::Tracks, aod::TracksExtra>;
   Partition<Run2Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
   Partition<Run2Tracks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
-  Partition<Run2Tracks> pvContribTracks = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
-  Partition<Run2Tracks> pvContribTracksEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<Run2Tracks> pvContribTracks = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  Partition<Run2Tracks> pvContribTracksEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Preslice<aod::TracksIU> perColIU = aod::track::collisionId;
   Preslice<aod::MFTTracks> perCollisionMFT = o2::aod::fwdtrack::collisionId;
@@ -116,12 +122,12 @@ struct MultiplicityTable {
   Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
   Configurable<float> fractionOfEvents{"fractionOfEvents", 2.0, "Fractions of events to keep in case the QA is used"};
   Configurable<LabeledArray<int>> enabledTables{"enabledTables",
-                                                {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
+                                                {defaultParameters[0], Ntables, Nparameters, tableNames, parameterNames},
                                                 "Produce tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
 
   struct : ConfigurableGroup {
     Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
-    Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
+    Configurable<std::string> ccdbPath{"ccdbPath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
     Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
   } ccdbConfig;
 
@@ -162,8 +168,8 @@ struct MultiplicityTable {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
 
-    bool tEnabled[nTables] = {false};
-    for (int i = 0; i < nTables; i++) {
+    bool tEnabled[Ntables] = {false};
+    for (int i = 0; i < Ntables; i++) {
       int f = enabledTables->get(tableNames[i].c_str(), "Enable");
       enableFlagIfTableRequired(context, tableNames[i], f);
       if (f == 1) {
@@ -256,21 +262,21 @@ struct MultiplicityTable {
     int multNContribsEtaHalf = 0;
 
     if (collision.has_fv0a()) {
-      for (auto amplitude : collision.fv0a().amplitude()) {
+      for (const auto& amplitude : collision.fv0a().amplitude()) {
         multFV0A += amplitude;
       }
     }
     if (collision.has_fv0c()) {
-      for (auto amplitude : collision.fv0c().amplitude()) {
+      for (const auto& amplitude : collision.fv0c().amplitude()) {
         multFV0C += amplitude;
       }
     }
     if (collision.has_ft0()) {
       auto ft0 = collision.ft0();
-      for (auto amplitude : ft0.amplitudeA()) {
+      for (const auto& amplitude : ft0.amplitudeA()) {
         multFT0A += amplitude;
       }
-      for (auto amplitude : ft0.amplitudeC()) {
+      for (const auto& amplitude : ft0.amplitudeC()) {
         multFT0C += amplitude;
       }
     }
@@ -280,7 +286,20 @@ struct MultiplicityTable {
       multZNC = zdc.energyCommonZNC();
     }
 
-    LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC);
+    // Try to do something Similar to https://github.com/alisw/AliPhysics/blob/22862a945004f719f8e9664c0264db46e7186a48/OADB/AliPPVsMultUtils.cxx#L541C26-L541C37
+    for (const auto& tracklet : trackletsGrouped) {
+      if (std::abs(tracklet.eta()) < 1.0) {
+        multNContribsEta1++;
+      }
+      if (std::abs(tracklet.eta()) < 0.8) {
+        multNContribs++;
+      }
+      if (std::abs(tracklet.eta()) < 0.5) {
+        multNContribsEtaHalf++;
+      }
+    }
+
+    LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i multNContribsEta1=%i multNContribs=%i multNContribsEtaHalf=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs, multNContribsEta1, multNContribsEtaHalf);
     tableFV0(multFV0A, multFV0C);
     tableFT0(multFT0A, multFT0C);
     tableFDD(multFDDA, multFDDC);
@@ -292,10 +311,10 @@ struct MultiplicityTable {
 
   using Run3TracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
   Partition<Run3TracksIU> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
-  Partition<Run3TracksIU> pvAllContribTracksIU = ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
-  Partition<Run3TracksIU> pvContribTracksIU = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
-  Partition<Run3TracksIU> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
-  Partition<Run3TracksIU> pvContribTracksIUEtaHalf = (nabs(aod::track::eta) < 0.5f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<Run3TracksIU> pvAllContribTracksIU = ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  Partition<Run3TracksIU> pvContribTracksIU = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  Partition<Run3TracksIU> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  Partition<Run3TracksIU> pvContribTracksIUEtaHalf = (nabs(aod::track::eta) < 0.5f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
 
   void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                    Run3TracksIU const&,
@@ -306,7 +325,7 @@ struct MultiplicityTable {
                    aod::FDDs const&)
   {
     // reserve memory
-    for (auto i : mEnabledTables) {
+    for (const auto& i : mEnabledTables) {
       switch (i) {
         case kFV0Mults: // FV0
           tableFV0.reserve(collisions.size());
@@ -429,7 +448,7 @@ struct MultiplicityTable {
         }
       }
 
-      for (auto i : mEnabledTables) {
+      for (const auto& i : mEnabledTables) {
         switch (i) {
           case kFV0Mults: // FV0
           {
@@ -462,10 +481,10 @@ struct MultiplicityTable {
             // using FT0 row index from event selection task
             if (collision.has_foundFT0()) {
               const auto& ft0 = collision.foundFT0();
-              for (auto amplitude : ft0.amplitudeA()) {
+              for (const auto& amplitude : ft0.amplitudeA()) {
                 multFT0A += amplitude;
               }
-              for (auto amplitude : ft0.amplitudeC()) {
+              for (const auto& amplitude : ft0.amplitudeC()) {
                 multFT0C += amplitude;
               }
             } else {
@@ -482,10 +501,10 @@ struct MultiplicityTable {
             // using FDD row index from event selection task
             if (collision.has_foundFDD()) {
               const auto& fdd = collision.foundFDD();
-              for (auto amplitude : fdd.chargeA()) {
+              for (const auto& amplitude : fdd.chargeA()) {
                 multFDDA += amplitude;
               }
-              for (auto amplitude : fdd.chargeC()) {
+              for (const auto& amplitude : fdd.chargeC()) {
                 multFDDC += amplitude;
               }
             } else {
@@ -537,7 +556,7 @@ struct MultiplicityTable {
             // use only one single grouping operation, then do loop
             const auto& tracksThisCollision = pvContribTracksIUEta1.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
             multNContribsEta1 = tracksThisCollision.size();
-            for (auto track : tracksThisCollision) {
+            for (const auto& track : tracksThisCollision) {
               if (std::abs(track.eta()) < 0.8) {
                 multNContribs++;
               }
@@ -556,7 +575,7 @@ struct MultiplicityTable {
             const auto& pvAllContribsGrouped = pvAllContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
             const auto& tpcTracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-            for (auto track : pvAllContribsGrouped) {
+            for (const auto& track : pvAllContribsGrouped) {
               if (track.hasITS()) {
                 nHasITS++;
                 if (track.hasTPC())
@@ -577,7 +596,7 @@ struct MultiplicityTable {
 
             int nAllTracksTPCOnly = 0;
             int nAllTracksITSTPC = 0;
-            for (auto track : tpcTracksGrouped) {
+            for (const auto& track : tpcTracksGrouped) {
               if (track.hasITS()) {
                 nAllTracksITSTPC++;
               } else {
@@ -599,14 +618,14 @@ struct MultiplicityTable {
           } break;
           case kFV0MultZeqs: // Z equalized FV0
           {
-            if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
+            if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
               multZeqFV0A = hVtxZFV0A->Interpolate(0.0) * multFV0A / hVtxZFV0A->Interpolate(collision.posZ());
             }
             tableFV0Zeqs(multZeqFV0A);
           } break;
           case kFT0MultZeqs: // Z equalized FT0
           {
-            if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
+            if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
               multZeqFT0A = hVtxZFT0A->Interpolate(0.0) * multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
               multZeqFT0C = hVtxZFT0C->Interpolate(0.0) * multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
             }
@@ -620,7 +639,7 @@ struct MultiplicityTable {
           } break;
           case kFDDMultZeqs: // Z equalized FDD
           {
-            if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
+            if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
               multZeqFDDA = hVtxZFDDA->Interpolate(0.0) * multFDDA / hVtxZFDDA->Interpolate(collision.posZ());
               multZeqFDDC = hVtxZFDDC->Interpolate(0.0) * multFDDC / hVtxZFDDC->Interpolate(collision.posZ());
             }
@@ -628,7 +647,7 @@ struct MultiplicityTable {
           } break;
           case kPVMultZeqs: // Z equalized PV
           {
-            if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
+            if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
               multZeqNContribs = hVtxZNTracks->Interpolate(0.0) * multNContribs / hVtxZNTracks->Interpolate(collision.posZ());
             }
             tablePVZeqs(multZeqNContribs);
@@ -649,9 +668,9 @@ struct MultiplicityTable {
   // FIT FT0C: -3.3 < η < -2.1
   // FOT FT0A:  3.5 < η <  4.9
   Filter mcParticleFilter = (aod::mcparticle::eta < 7.0f) && (aod::mcparticle::eta > -7.0f);
-  using mcParticlesFiltered = soa::Filtered<aod::McParticles>;
+  using McParticlesFiltered = soa::Filtered<aod::McParticles>;
 
-  void processMC(aod::McCollision const& mcCollision, mcParticlesFiltered const& mcParticles)
+  void processMC(aod::McCollision const& mcCollision, McParticlesFiltered const& mcParticles)
   {
     int multFT0A = 0;
     int multFV0A = 0;
@@ -703,49 +722,49 @@ struct MultiplicityTable {
     tableExtraMult2MCExtras(collision.mcCollisionId()); // interlink
   }
 
-  Configurable<float> min_pt_globaltrack{"min_pt_globaltrack", 0.15, "min. pT for global tracks"};
-  Configurable<float> max_pt_globaltrack{"max_pt_globaltrack", 1e+10, "max. pT for global tracks"};
-  Configurable<int> min_ncluster_its_globaltrack{"min_ncluster_its_globaltrack", 5, "min. number of ITS clusters for global tracks"};
-  Configurable<int> min_ncluster_itsib_globaltrack{"min_ncluster_itsib_globaltrack", 1, "min. number of ITSib clusters for global tracks"};
+  Configurable<float> minPtGlobalTrack{"minPtGlobalTrack", 0.15, "min. pT for global tracks"};
+  Configurable<float> maxPtGlobalTrack{"maxPtGlobalTrack", 1e+10, "max. pT for global tracks"};
+  Configurable<int> minNclsITSGlobalTrack{"minNclsITSGlobalTrack", 5, "min. number of ITS clusters for global tracks"};
+  Configurable<int> minNclsITSibGlobalTrack{"minNclsITSibGlobalTrack", 1, "min. number of ITSib clusters for global tracks"};
 
   using Run3Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
-  Partition<Run3Tracks> pvContribGlobalTracksEta1 = (min_pt_globaltrack < aod::track::pt && aod::track::pt < max_pt_globaltrack) && (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor) && requireQualityTracksInFilter();
+  Partition<Run3Tracks> pvContribGlobalTracksEta1 = (minPtGlobalTrack < aod::track::pt && aod::track::pt < maxPtGlobalTrack) && (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor)) && requireQualityTracksInFilter();
 
   void processGlobalTrackingCounters(aod::Collision const& collision, soa::Join<Run3TracksIU, aod::TrackSelection, aod::TrackSelectionExtension> const& tracksIU, Run3Tracks const&)
   {
     // counter from Igor
     int nGlobalTracks = 0;
-    int multNContribsEta05_kGlobalTrackWoDCA = 0;
-    int multNContribsEta08_kGlobalTrackWoDCA = 0;
-    int multNContribsEta10_kGlobalTrackWoDCA = 0;
+    int multNbrContribsEta05GlobalTrackWoDCA = 0;
+    int multNbrContribsEta08GlobalTrackWoDCA = 0;
+    int multNbrContribsEta10GlobalTrackWoDCA = 0;
 
-    auto pvContribGlobalTracksEta1_per_collision = pvContribGlobalTracksEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto pvContribGlobalTracksEta1PerCollision = pvContribGlobalTracksEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    for (auto& track : pvContribGlobalTracksEta1_per_collision) {
-      if (track.itsNCls() < min_ncluster_its_globaltrack || track.itsNClsInnerBarrel() < min_ncluster_itsib_globaltrack) {
+    for (const auto& track : pvContribGlobalTracksEta1PerCollision) {
+      if (track.itsNCls() < minNclsITSGlobalTrack || track.itsNClsInnerBarrel() < minNclsITSibGlobalTrack) {
         continue;
       }
-      multNContribsEta10_kGlobalTrackWoDCA++;
+      multNbrContribsEta10GlobalTrackWoDCA++;
 
       if (std::abs(track.eta()) < 0.8) {
-        multNContribsEta08_kGlobalTrackWoDCA++;
+        multNbrContribsEta08GlobalTrackWoDCA++;
       }
       if (std::abs(track.eta()) < 0.5) {
-        multNContribsEta05_kGlobalTrackWoDCA++;
+        multNbrContribsEta05GlobalTrackWoDCA++;
       }
     }
 
-    for (auto& track : tracksIU) {
-      if (fabs(track.eta()) < 0.8 && track.tpcNClsFound() >= 80 && track.tpcNClsCrossedRows() >= 100) {
+    for (const auto& track : tracksIU) {
+      if (std::fabs(track.eta()) < 0.8 && track.tpcNClsFound() >= 80 && track.tpcNClsCrossedRows() >= 100) {
         if (track.isGlobalTrack()) {
           nGlobalTracks++;
         }
       }
     }
 
-    LOGF(debug, "nGlobalTracks = %d, multNContribsEta08_kGlobalTrackWoDCA = %d, multNContribsEta10_kGlobalTrackWoDCA = %d, multNContribsEta05_kGlobalTrackWoDCA = %d", nGlobalTracks, multNContribsEta08_kGlobalTrackWoDCA, multNContribsEta10_kGlobalTrackWoDCA, multNContribsEta05_kGlobalTrackWoDCA);
+    LOGF(debug, "nGlobalTracks = %d, multNbrContribsEta08GlobalTrackWoDCA = %d, multNbrContribsEta10GlobalTrackWoDCA = %d, multNbrContribsEta05GlobalTrackWoDCA = %d", nGlobalTracks, multNbrContribsEta08GlobalTrackWoDCA, multNbrContribsEta10GlobalTrackWoDCA, multNbrContribsEta05GlobalTrackWoDCA);
 
-    multsGlobal(nGlobalTracks, multNContribsEta08_kGlobalTrackWoDCA, multNContribsEta10_kGlobalTrackWoDCA, multNContribsEta05_kGlobalTrackWoDCA);
+    multsGlobal(nGlobalTracks, multNbrContribsEta08GlobalTrackWoDCA, multNbrContribsEta10GlobalTrackWoDCA, multNbrContribsEta05GlobalTrackWoDCA);
   }
 
   void processRun3MFT(soa::Join<aod::Collisions, aod::EvSels>::iterator const&,
@@ -755,14 +774,14 @@ struct MultiplicityTable {
     int nAllTracks = 0;
     int nTracks = 0;
 
-    for (auto& track : mftTracks) {
+    for (const auto& track : mftTracks) {
       if (track.nClusters() >= 5) { // hardcoded for now
         nAllTracks++;
       }
     }
 
     if (retracks.size() > 0) {
-      for (auto& retrack : retracks) {
+      for (const auto& retrack : retracks) {
         auto track = retrack.mfttrack();
         if (track.nClusters() < 5) {
           continue; // min cluster requirement
