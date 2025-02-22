@@ -1076,10 +1076,6 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processTPCQVectors, "Produce TPC Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processTPCQVectorsLF, "Produce TPC Q-vectors table using LF temporary calibration", false);
   PROCESS_SWITCH(strangederivedbuilder, processZDCSP, "Produce ZDC SP table", false);
-
-  // dedicated findable functionality
-  PROCESS_SWITCH(strangederivedbuilder, processV0FoundTags, "Produce FoundV0Tags for findable exercise", false);
-  PROCESS_SWITCH(strangederivedbuilder, processCascFoundTags, "Produce FoundCascTags for findable exercise", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
