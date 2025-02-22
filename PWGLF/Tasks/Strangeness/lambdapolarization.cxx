@@ -705,7 +705,7 @@ struct lambdapolarization {
       }
       double weight = 1.0;
       weight *= cfgEffCor ? 1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
-      weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v0.pt()), AccMap->GetYaxis()->FindBin(v0.yLamabda())) : 1.;
+      weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v0.pt()), AccMap->GetYaxis()->FindBin(v0.yLambda())) : 1.;
 
       double qvecMag = 1.0;
       if (cfgUSESP)
