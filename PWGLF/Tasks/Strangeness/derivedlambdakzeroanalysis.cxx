@@ -154,7 +154,8 @@ struct derivedlambdakzeroanalysis {
     // Track quality
     Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
     Configurable<int> minITSclusters{"minITSclusters", -1, "minimum ITS clusters"};
-    Configurable<float> minTPCrowsOverFindableClusters{"minTPCrowsOverFindableClusters", -1, "minimum nbr of TPC crossed rows over findable"};
+    Configurable<float> minTPCrowsOverFindableClusters{"minTPCrowsOverFindableClusters", -1, "minimum nbr of TPC crossed rows over findable clusters"};
+    Configurable<float> minTPCfoundOverFindableClusters{"minTPCfoundOverFindableClusters", -1, "minimum nbr of found over findable TPC clusters"};
     Configurable<float> maxFractionTPCSharedClusters{"maxFractionTPCSharedClusters", 1e+09, "maximum fraction of TPC shared clusters"};
     Configurable<float> maxITSchi2PerNcls{"maxITSchi2PerNcls", 1e+09, "maximum ITS chi2 per clusters"};
     Configurable<float> maxTPCchi2PerNcls{"maxTPCchi2PerNcls", 1e+09, "maximum TPC chi2 per clusters"};
@@ -944,11 +945,13 @@ struct derivedlambdakzeroanalysis {
     if (posTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                    // check minimum TPC crossed rows
         posTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls &&                                  // check maximum TPC chi2 per clusters
         posTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters && // check minimum fraction of TPC rows over findable
+        posTrackExtra.tpcFoundOverFindableCls() >= v0Selections.minTPCfoundOverFindableClusters &&      // check minimum fraction of found over findable TPC clusters
         posTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters)               // check the maximum fraction of allowed shared TPC clusters
       bitset(bitMap, selPosGoodTPCTrack);
     if (negTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                    // check minimum TPC crossed rows
         negTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls &&                                  // check maximum TPC chi2 per clusters
         negTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters && // check minimum fraction of TPC rows over findable
+        negTrackExtra.tpcFoundOverFindableCls() >= v0Selections.minTPCfoundOverFindableClusters &&      // check minimum fraction of found over findable TPC clusters
         negTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters)               // check the maximum fraction of allowed shared TPC clusters
       bitset(bitMap, selNegGoodTPCTrack);
 
