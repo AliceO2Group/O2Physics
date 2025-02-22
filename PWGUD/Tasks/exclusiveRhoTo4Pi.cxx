@@ -168,6 +168,8 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosData.add("CS_phi_pair_2", "#phi Distribution; #phi; Events", kTH1F, {{nBinsPhi, -3.2, 3.2}});
     histosData.add("CS_costheta_pair_1", "#theta Distribution;cos(#theta); Counts", kTH1F, {{nBinsCosTheta, -1, 1}});
     histosData.add("CS_costheta_pair_2", "#theta Distribution;cos(#theta); Counts", kTH1F, {{nBinsCosTheta, -1, 1}});
+    histosData.add("phi_cosTheta_pair_1", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {{nBinsPhi, -3.2, 3.2}, {nBinsCosTheta, -1, 1}});
+    histosData.add("phi_cosTheta_pair_2", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {{nBinsPhi, -3.2, 3.2}, {nBinsCosTheta, -1, 1}});
 
     // MC Gen Stuff
 
@@ -181,6 +183,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosMCgen.add("MCgen_particle_rapidity_contributed", "Generated Rapidity; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
 
     // Generated Transverse Momentum, Rapidty and Invariant Mass
+    histosMCgen.add("MCgen_rhoPrime_pT", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
     histosMCgen.add("MCgen_4pion_pT", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
     histosMCgen.add("MCgen_4pion_rapidity", "Generated Rapidity; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosMCgen.add("MCgen_4pion_invmass", "Invariant Mass of 4-Pions; m(4-pion); Events", kTH1F, {{nBinsInvariantMass, invariantMassMin, invariantMassMax}});
@@ -190,6 +193,8 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosMCgen.add("MCgen_CS_phi_pair_2", "#phi Distribution; #phi; Events", kTH1F, {{nBinsPhi, -3.2, 3.2}});
     histosMCgen.add("MCgen_CS_costheta_pair_1", "#theta Distribution;cos(#theta); Events", kTH1F, {{nBinsCosTheta, -1, 1}});
     histosMCgen.add("MCgen_CS_costheta_pair_2", "#theta Distribution;cos(#theta); Events", kTH1F, {{nBinsCosTheta, -1, 1}});
+    histosMCgen.add("MCgen_phi_cosTheta_pair_1", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {{nBinsPhi, -3.2, 3.2}, {nBinsCosTheta, -1, 1}});
+    histosMCgen.add("MCgen_phi_cosTheta_pair_2", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {{nBinsPhi, -3.2, 3.2}, {nBinsCosTheta, -1, 1}});
 
     // MC Reco Stuff
 
@@ -277,6 +282,8 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosMCreco.add("CS_phi_pair_2", "#phi Distribution; #phi; Events", kTH1F, {{nBinsPhi, -3.2, 3.2}});
     histosMCreco.add("CS_costheta_pair_1", "#theta Distribution;cos(#theta); Counts", kTH1F, {{nBinsCosTheta, -1, 1}});
     histosMCreco.add("CS_costheta_pair_2", "#theta Distribution;cos(#theta); Counts", kTH1F, {{nBinsCosTheta, -1, 1}});
+    histosMCreco.add("phi_cosTheta_pair_1", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {{nBinsPhi, -3.2, 3.2}, {nBinsCosTheta, -1, 1}});
+    histosMCreco.add("phi_cosTheta_pair_2", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {{nBinsPhi, -3.2, 3.2}, {nBinsCosTheta, -1, 1}});
 
   } // End of init function
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -511,6 +518,9 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
           histosData.fill(HIST("CS_phi_pair_2"), phiPair2);
           histosData.fill(HIST("CS_costheta_pair_1"), cosThetaPair1);
           histosData.fill(HIST("CS_costheta_pair_2"), cosThetaPair2);
+
+          histosData.fill(HIST("phi_cosTheta_pair_1"), phiPair1, cosThetaPair1);
+          histosData.fill(HIST("phi_cosTheta_pair_2"), phiPair2, cosThetaPair2);
         }
         if (p1234.Pt() > 0.15 && p1234.Pt() < 0.80) {
           histosData.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainB"), p1234.Rapidity());
@@ -563,7 +573,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   {
     std::vector<TLorentzVector> piPlusvectors;
     std::vector<TLorentzVector> piMinusvectors;
-    TLorentzVector tempVector, p1, p2, p3, p4;
+    TLorentzVector motherVector, tempVector, p1, p2, p3, p4;
     TLorentzVector p1234;
 
     bool flag = false;
@@ -577,6 +587,8 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
 
       for (const auto& mother : particle.mothers_as<aod::UDMcParticles>()) {
         if (mother.pdgCode() == 30113) {
+          motherVector.SetXYZM(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassPionCharged);
+          histosMCgen.fill(HIST("MCgen_rhoPrime_pT"), motherVector.Pt());
           if (flag == false) {
             histosMCgen.fill(HIST("rhoPrimeCounts"), 5);
           }
@@ -585,16 +597,16 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
           if (particle.pdgCode() == 211) {
             histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
             histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
-            if (std::abs(tempVector.Rapidity()) < 0.9) {
-              piPlusvectors.push_back(tempVector);
-            }
+            // if(std::abs(tempVector.Rapidity()) < 0.9){
+            piPlusvectors.push_back(tempVector);
+            // }
           }
           if (particle.pdgCode() == -211) {
             histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
             histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
-            if (std::abs(tempVector.Rapidity()) < 0.9) {
-              piMinusvectors.push_back(tempVector);
-            }
+            // if(std::abs(tempVector.Rapidity()) < 0.9){
+            piMinusvectors.push_back(tempVector);
+            // }
           }
         } // End of Mother ID 30113 rho prime
       } // End of loop over mothers
@@ -643,6 +655,8 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosMCgen.fill(HIST("MCgen_CS_phi_pair_2"), phiPair2);
     histosMCgen.fill(HIST("MCgen_CS_costheta_pair_1"), cosThetaPair1);
     histosMCgen.fill(HIST("MCgen_CS_costheta_pair_2"), cosThetaPair2);
+    histosMCgen.fill(HIST("MCgen_phi_cosTheta_pair_1"), phiPair1, cosThetaPair1);
+    histosMCgen.fill(HIST("MCgen_phi_cosTheta_pair_2"), phiPair2, cosThetaPair2);
 
   } // End of 4 Pion MC Generation Process function
   PROCESS_SWITCH(exclusiveRhoTo4Pi, processMCgen, "The Process for 4 Pion Analysis from MC Generation", false);
@@ -821,6 +835,8 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
           histosMCreco.fill(HIST("CS_phi_pair_2"), phiPair2);
           histosMCreco.fill(HIST("CS_costheta_pair_1"), cosThetaPair1);
           histosMCreco.fill(HIST("CS_costheta_pair_2"), cosThetaPair2);
+          histosMCreco.fill(HIST("phi_cosTheta_pair_1"), phiPair1, cosThetaPair1);
+          histosMCreco.fill(HIST("phi_cosTheta_pair_2"), phiPair2, cosThetaPair2);
         }
         if (p1234.Pt() > 0.15 && p1234.Pt() < 0.80) {
           histosMCreco.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainB"), p1234.Rapidity());
