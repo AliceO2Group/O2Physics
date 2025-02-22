@@ -175,7 +175,7 @@ struct HfTaskOmegac0ToOmegapi {
       massOmegac0 = candidate.invMassCharmBaryon();
       auto ptCandidate = candidate.ptCharmBaryon();
       auto rapidityCandidate = candidate.kfRapOmegac();
-      if (candidate.resultSelections() >= selectionFlagOmegac0)
+      if (candidate.resultSelections() && !)
         if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi)) {
           if constexpr (applyMl) {
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.mlProbOmegac()[0], massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), numPvContributors);
