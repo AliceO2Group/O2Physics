@@ -131,11 +131,6 @@ struct strangederivedbuilder {
   Produces<aod::GeOmegaPlus> geOmegaPlus;
 
   //__________________________________________________
-  // Found tags for findable exercise
-  Produces<aod::V0FoundTags> v0FoundTags;
-  Produces<aod::CascFoundTags> cascFoundTags;
-
-  //__________________________________________________
   // Debug
   Produces<aod::StraOrigins> straOrigin;
 
@@ -358,17 +353,6 @@ struct strangederivedbuilder {
     } else {
       LOGF(info, "Process strange mothers...........: no");
     }
-    LOGF(info, "====] findable exercise extras [==================================");
-    if (doprocessV0FoundTags) {
-      LOGF(info, "Process found V0 tags.............: yes");
-    } else {
-      LOGF(info, "Process found V0 tags.............: no");
-    }
-    if (doprocessCascFoundTags) {
-      LOGF(info, "Process found cascade tags........: yes");
-    } else {
-      LOGF(info, "Process found cascade tags........: no");
-    }
     LOGF(info, "==================================================================");
 
     // setup map for fast checking if enabled
@@ -387,16 +371,6 @@ struct strangederivedbuilder {
     }
 
     histos.add("h2dNVerticesVsCentrality", "h2dNVerticesVsCentrality", kTH2D, {axisCentrality, axisNVertices});
-
-    if (doprocessV0FoundTags || doprocessCascFoundTags) {
-      auto h = histos.add<TH1>("hFoundTagsCounters", "hFoundTagsCounters", kTH1D, {{6, -0.5f, 5.5f}});
-      h->GetXaxis()->SetBinLabel(1, "Found V0s");
-      h->GetXaxis()->SetBinLabel(2, "Findable V0s");
-      h->GetXaxis()->SetBinLabel(3, "Findable & found V0s");
-      h->GetXaxis()->SetBinLabel(4, "Found Cascades");
-      h->GetXaxis()->SetBinLabel(5, "Findable Cascades");
-      h->GetXaxis()->SetBinLabel(6, "Findable & found Cascades");
-    }
 
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
@@ -1057,58 +1031,10 @@ struct strangederivedbuilder {
     StraTPCQVs(collision.qTPCL() * std::cos(2 * collision.psiTPCL()), collision.qTPCL() * std::sin(2 * collision.psiTPCL()), collision.qTPCL(), collision.qTPCR() * std::cos(2 * collision.psiTPCR()), collision.qTPCR() * std::sin(2 * collision.psiTPCR()), collision.qTPCR());
   }
 
-  uint64_t combineProngIndices(uint32_t low, uint32_t high)
-  {
-    return ((static_cast<uint64_t>(high)) << 32) | (static_cast<uint64_t>(low));
-  }
-
-  void processV0FoundTags(aod::V0s const& foundV0s, aod::V0Datas const& findableV0s, aod::FindableV0s const& /* added to avoid troubles */)
-  {
-    histos.fill(HIST("hFoundTagsCounters"), 0.0f, foundV0s.size());
-    histos.fill(HIST("hFoundTagsCounters"), 1.0f, findableV0s.size());
-
-    for (auto const& findableV0 : findableV0s) {
-      bool hasBeenFound = false;
-      for (auto const& foundV0 : foundV0s) {
-        if (foundV0.posTrackId() == findableV0.posTrackId() && foundV0.negTrackId() == findableV0.negTrackId()) {
-          hasBeenFound = true;
-        }
-      }
-      v0FoundTags(hasBeenFound);
-    }
-  }
-
   using uint128_t = __uint128_t;
   uint128_t combineProngIndices128(uint32_t pos, uint32_t neg, uint32_t bach)
   {
     return ((static_cast<uint128_t>(pos)) << 64) | ((static_cast<uint128_t>(neg)) << 32) | (static_cast<uint128_t>(bach));
-  }
-
-  void processCascFoundTags(aod::Cascades const& foundCascades, aod::CascDatas const& findableCascades, aod::V0s const&, aod::FindableCascades const& /* added to avoid troubles */)
-  {
-    histos.fill(HIST("hFoundTagsCounters"), 3.0f, foundCascades.size());
-    histos.fill(HIST("hFoundTagsCounters"), 4.0f, findableCascades.size());
-
-    // pack the found V0s in a long long
-    std::vector<uint128_t> foundCascadesPacked;
-    foundCascadesPacked.reserve(foundCascades.size());
-    for (auto const& foundCascade : foundCascades) {
-      auto v0 = foundCascade.v0();
-      foundCascadesPacked[foundCascade.globalIndex()] = combineProngIndices128(v0.posTrackId(), v0.negTrackId(), foundCascade.bachelorId());
-    }
-
-    bool hasBeenFound = false;
-    for (auto const& findableCascade : findableCascades) {
-      uint128_t indexPack = combineProngIndices128(findableCascade.posTrackId(), findableCascade.negTrackId(), findableCascade.bachelorId());
-      for (uint32_t ic = 0; ic < foundCascades.size(); ic++) {
-        if (indexPack == foundCascadesPacked[ic]) {
-          hasBeenFound = true;
-          histos.fill(HIST("hFoundTagsCounters"), 5.0f);
-          break;
-        }
-      }
-      cascFoundTags(hasBeenFound);
-    }
   }
 
   void processDataframeIDs(aod::Origins const& origins)
@@ -1150,10 +1076,6 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processTPCQVectors, "Produce TPC Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processTPCQVectorsLF, "Produce TPC Q-vectors table using LF temporary calibration", false);
   PROCESS_SWITCH(strangederivedbuilder, processZDCSP, "Produce ZDC SP table", false);
-
-  // dedicated findable functionality
-  PROCESS_SWITCH(strangederivedbuilder, processV0FoundTags, "Produce FoundV0Tags for findable exercise", false);
-  PROCESS_SWITCH(strangederivedbuilder, processCascFoundTags, "Produce FoundCascTags for findable exercise", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
