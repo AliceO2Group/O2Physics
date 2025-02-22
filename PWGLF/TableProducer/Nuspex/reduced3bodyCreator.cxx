@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file reduced3bodyCreator.cxx
 /// \brief Task to produce reduced AO2Ds for use in the hypertriton 3body reconstruction with the decay3bodybuilder.cxx
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 /// \author Carolina Reetz <c.reetz@cern.ch>
@@ -17,7 +18,6 @@
 #include <array>
 #include <cstdlib>
 #include <string>
-#include <vector>
 #include <algorithm>
 
 #include "Framework/runDataProcessing.h"
@@ -58,11 +58,11 @@ using TrackExtPIDIUwithEvTimes = soa::Join<FullTracksExtPIDIU, aod::EvTimeTOFFT0
 
 struct reduced3bodyCreator {
 
-  Produces<aod::ReducedCollisions> reducedCollisions;
-  Produces<aod::ReducedPVMults> reducedPVMults;
-  Produces<aod::ReducedCentFT0Cs> reducedCentFTOCs;
-  Produces<aod::ReducedDecay3Bodys> reducedDecay3Bodys;
-  Produces<aod::StoredReducedTracksIU> reducedFullTracksPIDIU;
+  Produces<aod::RedCollisions> reducedCollisions;
+  Produces<aod::RedPVMults> reducedPVMults;
+  Produces<aod::RedCentFT0Cs> reducedCentFT0Cs;
+  Produces<aod::RedDecay3Bodys> reducedDecay3Bodys;
+  Produces<aod::StoredRedIUTracks> reducedFullTracksPIDIU;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
@@ -87,6 +87,8 @@ struct reduced3bodyCreator {
   Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
   // Zorro counting
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
+  // Flag for trigger
+  Configurable<bool> cfgOnlyKeepH3L3Body{"cfgOnlyKeepH3L3Body", false, "Flag to keep only H3L3Body trigger"};
 
   int mRunNumber;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
@@ -118,18 +120,21 @@ struct reduced3bodyCreator {
     hEventCounterZorro->GetXaxis()->SetBinLabel(2, "Zorro after evsel");
   }
 
+  void initZorroBC(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (cfgSkimmedProcessing) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fH3L3Body");
+      zorro.populateHistRegistry(registry, bc.runNumber());
+    }
+  }
+
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     // In case override, don't proceed, please - no CCDB access required
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-
     mRunNumber = bc.runNumber();
-    if (cfgSkimmedProcessing) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fH3L3Body");
-      zorro.populateHistRegistry(registry, bc.runNumber());
-    }
 
     // Initial TOF PID Paras, copied from PIDTOF.h
     timestamp.value = bc.timestamp();
@@ -192,17 +197,46 @@ struct reduced3bodyCreator {
     bachelorTOFPID.SetParams(mRespParamsV2);
   }
 
+  template <typename TTrack>
+  void fillTrackTable(TTrack const& daughter, double tofNSigmaTrack, auto collisionIndex)
+  {
+    reducedFullTracksPIDIU(
+      // TrackIU
+      collisionIndex,
+      daughter.x(), daughter.alpha(),
+      daughter.y(), daughter.z(), daughter.snp(), daughter.tgl(),
+      daughter.signed1Pt(),
+      // TracksCovIU
+      daughter.sigmaY(), daughter.sigmaZ(), daughter.sigmaSnp(), daughter.sigmaTgl(), daughter.sigma1Pt(),
+      daughter.rhoZY(), daughter.rhoSnpY(), daughter.rhoSnpZ(), daughter.rhoTglY(), daughter.rhoTglZ(),
+      daughter.rhoTglSnp(), daughter.rho1PtY(), daughter.rho1PtZ(), daughter.rho1PtSnp(), daughter.rho1PtTgl(),
+      // TracksExtra
+      daughter.tpcInnerParam(), daughter.flags(), daughter.itsClusterSizes(),
+      daughter.tpcNClsFindable(), daughter.tpcNClsFindableMinusFound(), daughter.tpcNClsFindableMinusCrossedRows(),
+      daughter.trdPattern(), daughter.tpcChi2NCl(), daughter.tofChi2(),
+      daughter.tpcSignal(), daughter.tofExpMom(),
+      // PID
+      daughter.tpcNSigmaPr(), daughter.tpcNSigmaPi(), daughter.tpcNSigmaDe(),
+      tofNSigmaTrack);
+  }
+
   void process(ColwithEvTimesMultsCents const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
 
-    int lastCollisionID = -1; // collisionId of last analysed decay3body. Table is sorted.
-
+    int lastRunNumber = -1; // RunNumber of last collision, used for zorro counting
     // Event counting
     for (const auto& collision : collisions) {
+
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      if (bc.runNumber() != lastRunNumber) {
+        initZorroBC(bc);
+        lastRunNumber = bc.runNumber(); // Update the last run number
+      }
+
       // Zorro event counting
       bool isZorroSelected = false;
       if (cfgSkimmedProcessing) {
-        isZorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC());
+        isZorroSelected = zorro.isSelected(bc.globalBC());
         if (isZorroSelected) {
           registry.fill(HIST("hEventCounterZorro"), 0.5);
         }
@@ -225,6 +259,8 @@ struct reduced3bodyCreator {
       }
     }
 
+    int lastCollisionID = -1; // collisionId of last analysed decay3body. Table is sorted.
+
     // Creat reduced table
     for (const auto& d3body : decay3bodys) {
 
@@ -241,22 +277,31 @@ struct reduced3bodyCreator {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
+      bool isZorroSelected = false;
+      if (cfgSkimmedProcessing && cfgOnlyKeepH3L3Body) {
+        isZorroSelected = zorro.isSelected(bc.globalBC());
+        if (!isZorroSelected) {
+          continue;
+        }
+      }
 
       // Save the collision
       if (collision.globalIndex() != lastCollisionID) {
         int runNumber = bc.runNumber();
         reducedCollisions(
-          collision.bcId(),
           collision.posX(), collision.posY(), collision.posZ(),
           collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(),
           collision.flags(), collision.chi2(), collision.numContrib(),
           collision.collisionTime(), collision.collisionTimeRes(),
           runNumber);
         reducedPVMults(collision.multNTracksPV());
-        reducedCentFTOCs(collision.centFT0C());
+        reducedCentFT0Cs(collision.centFT0C());
 
         lastCollisionID = collision.globalIndex();
       }
+
+      // Precompute collision index
+      const auto collisionIndex = reducedCollisions.lastIndex();
 
       // Save daughter tracks
       const auto daughter0 = d3body.template track0_as<TrackExtPIDIUwithEvTimes>();
@@ -270,34 +315,13 @@ struct reduced3bodyCreator {
       // ----------------------------------------------
 
       // save reduced track table with decay3body daughters
-      daughterTracks.push_back(daughter0);
-      daughterTracks.push_back(daughter1);
-      daughterTracks.push_back(daughter2);
-      for (int i = 0; i < 3; i++) {
-        double tofNSigmaTrack = (i == 2) ? tofNSigmaBach : -999.;
-        reducedFullTracksPIDIU(
-          // TrackIU
-          // reducedTrackID + i,
-          reducedCollisions.lastIndex(),
-          daughterTracks[i].x(), daughterTracks[i].alpha(),
-          daughterTracks[i].y(), daughterTracks[i].z(), daughterTracks[i].snp(), daughterTracks[i].tgl(),
-          daughterTracks[i].signed1Pt(),
-          // TracksCovIU
-          daughterTracks[i].sigmaY(), daughterTracks[i].sigmaZ(), daughterTracks[i].sigmaSnp(), daughterTracks[i].sigmaTgl(), daughterTracks[i].sigma1Pt(),
-          daughterTracks[i].rhoZY(), daughterTracks[i].rhoSnpY(), daughterTracks[i].rhoSnpZ(), daughterTracks[i].rhoTglY(), daughterTracks[i].rhoTglZ(),
-          daughterTracks[i].rhoTglSnp(), daughterTracks[i].rho1PtY(), daughterTracks[i].rho1PtZ(), daughterTracks[i].rho1PtSnp(), daughterTracks[i].rho1PtTgl(),
-          // TracksExtra
-          daughterTracks[i].tpcInnerParam(), daughterTracks[i].flags(), daughterTracks[i].itsClusterSizes(),
-          daughterTracks[i].tpcNClsFindable(), daughterTracks[i].tpcNClsFindableMinusFound(), daughterTracks[i].tpcNClsFindableMinusCrossedRows(),
-          daughterTracks[i].trdPattern(), daughterTracks[i].tpcChi2NCl(), daughterTracks[i].tofChi2(),
-          daughterTracks[i].tpcSignal(), daughterTracks[i].tofExpMom(),
-          // PID
-          daughterTracks[i].tpcNSigmaPr(), daughterTracks[i].tpcNSigmaPi(), daughterTracks[i].tpcNSigmaDe(),
-          tofNSigmaTrack);
-      }
+      fillTrackTable(daughter0, -999, collisionIndex);
+      fillTrackTable(daughter1, -999, collisionIndex);
+      fillTrackTable(daughter2, tofNSigmaBach, collisionIndex);
 
       // save reduced decay3body table
-      reducedDecay3Bodys(reducedCollisions.lastIndex(), reducedFullTracksPIDIU.lastIndex() - 2, reducedFullTracksPIDIU.lastIndex() - 1, reducedFullTracksPIDIU.lastIndex());
+      const auto trackStartIndex = reducedFullTracksPIDIU.lastIndex();
+      reducedDecay3Bodys(collisionIndex, trackStartIndex - 2, trackStartIndex - 1, trackStartIndex);
     }
 
     registry.fill(HIST("hEventCounter"), 3.5, reducedCollisions.lastIndex() + 1);
@@ -305,7 +329,7 @@ struct reduced3bodyCreator {
 };
 
 struct reduced3bodyInitializer {
-  Spawns<aod::ReducedTracksIU> reducedTracksIU;
+  Spawns<aod::RedIUTracks> reducedTracksIU;
   void init(InitContext const&) {}
 };
 
