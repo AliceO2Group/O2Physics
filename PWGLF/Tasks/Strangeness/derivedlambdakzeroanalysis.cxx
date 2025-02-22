@@ -80,7 +80,7 @@ using V0McCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, a
 #define BITSET(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 #define BITCHECK(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 
-struct DerivedLambdaKzeroAnalysis {
+struct derivedlambdakzeroanalysis {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   bool isRun3;
@@ -2513,17 +2513,17 @@ struct DerivedLambdaKzeroAnalysis {
     }
   }
 
-  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processRealDataRun3, "process as if real data in Run 3", true);
-  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processRealDataRun2, "process as if real data in Run 2", false);
-  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processMonteCarloRun3, "process as if MC in Run 3", false);
-  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processMonteCarloRun2, "process as if MC in Run 2", false);
-  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processBinnedGenerated, "process MC generated", false);
-  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processGeneratedRun3, "process MC generated Run 3", false);
-  PROCESS_SWITCH(DerivedLambdaKzeroAnalysis, processGeneratedRun2, "process MC generated Run 2", false);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processRealDataRun3, "process as if real data in Run 3", true);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processRealDataRun2, "process as if real data in Run 2", false);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processMonteCarloRun3, "process as if MC in Run 3", false);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processMonteCarloRun2, "process as if MC in Run 2", false);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processBinnedGenerated, "process MC generated", false);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processGeneratedRun3, "process MC generated Run 3", false);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processGeneratedRun2, "process MC generated Run 2", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DerivedLambdaKzeroAnalysis>(cfgc)};
+    adaptAnalysisTask<derivedlambdakzeroanalysis>(cfgc)};
 }
