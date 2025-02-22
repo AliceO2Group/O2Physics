@@ -24,8 +24,8 @@
 //  -- processRealData[Run2] .........: use this OR processMonteCarlo but NOT both
 //  -- processMonteCarlo[Run2] .......: use this OR processRealData but NOT both
 //
-//  Most important configurables: 
-//  -- enabledTables ......: key control bools to decide which tables to generate 
+//  Most important configurables:
+//  -- enabledTables ......: key control bools to decide which tables to generate
 //                           task will adapt algorithm to spare / spend CPU accordingly
 //  -- mc_findableMode ....: 0: only found (default), 1: add findable to found, 2: all findable
 //                           When using findables, refer to FoundTag bools for checking if found
