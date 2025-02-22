@@ -9,6 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+/// \file derivedlambdakzeroanalysis.cxx
+/// \brief V0s (K0s, Lambda and antiLambda) analysis task using derived data
+///
+/// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences & SMI
+/// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & SMI
+//
 // V0 analysis task
 // ================
 //
@@ -907,9 +913,9 @@ struct derivedlambdakzeroanalysis {
       bitset(bitMap, selRadius);
     if (v0.v0radius() < v0Selections.v0radiusMax)
       bitset(bitMap, selRadiusMax);
-    if (TMath::Abs(v0.dcapostopv()) > v0Selections.dcapostopv)
+    if (std::abs(v0.dcapostopv()) > v0Selections.dcapostopv)
       bitset(bitMap, selDCAPosToPV);
-    if (TMath::Abs(v0.dcanegtopv()) > v0Selections.dcanegtopv)
+    if (std::abs(v0.dcanegtopv()) > v0Selections.dcanegtopv)
       bitset(bitMap, selDCANegToPV);
     if (v0.v0cosPA() > v0Selections.v0cospa)
       bitset(bitMap, selCosPA);
@@ -917,9 +923,9 @@ struct derivedlambdakzeroanalysis {
       bitset(bitMap, selDCAV0Dau);
 
     // rapidity
-    if (TMath::Abs(rapidityLambda) < v0Selections.rapidityCut)
+    if (std::abs(rapidityLambda) < v0Selections.rapidityCut)
       bitset(bitMap, selLambdaRapidity);
-    if (TMath::Abs(rapidityK0Short) < v0Selections.rapidityCut)
+    if (std::abs(rapidityK0Short) < v0Selections.rapidityCut)
       bitset(bitMap, selK0ShortRapidity);
 
     auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
@@ -956,45 +962,45 @@ struct derivedlambdakzeroanalysis {
       bitset(bitMap, selNegGoodTPCTrack);
 
     // TPC PID
-    if (fabs(posTrackExtra.tpcNSigmaPi()) < v0Selections.TpcPidNsigmaCut)
+    if (std::fabs(posTrackExtra.tpcNSigmaPi()) < v0Selections.TpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDPositivePion);
-    if (fabs(posTrackExtra.tpcNSigmaPr()) < v0Selections.TpcPidNsigmaCut)
+    if (std::fabs(posTrackExtra.tpcNSigmaPr()) < v0Selections.TpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDPositiveProton);
-    if (fabs(negTrackExtra.tpcNSigmaPi()) < v0Selections.TpcPidNsigmaCut)
+    if (std::fabs(negTrackExtra.tpcNSigmaPi()) < v0Selections.TpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDNegativePion);
-    if (fabs(negTrackExtra.tpcNSigmaPr()) < v0Selections.TpcPidNsigmaCut)
+    if (std::fabs(negTrackExtra.tpcNSigmaPr()) < v0Selections.TpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDNegativeProton);
 
     // TOF PID in DeltaT
     // Positive track
-    if (fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+    if (std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
       bitset(bitMap, selTOFDeltaTPositiveProtonLambda);
-    if (fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+    if (std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
       bitset(bitMap, selTOFDeltaTPositivePionLambda);
-    if (fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+    if (std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
       bitset(bitMap, selTOFDeltaTPositivePionK0Short);
     // Negative track
-    if (fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+    if (std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
       bitset(bitMap, selTOFDeltaTNegativeProtonLambda);
-    if (fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+    if (std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
       bitset(bitMap, selTOFDeltaTNegativePionLambda);
-    if (fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+    if (std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
       bitset(bitMap, selTOFDeltaTNegativePionK0Short);
 
     // TOF PID in NSigma
     // Positive track
-    if (fabs(v0.tofNSigmaLaPr()) < v0Selections.TofPidNsigmaCutLaPr)
+    if (std::fabs(v0.tofNSigmaLaPr()) < v0Selections.TofPidNsigmaCutLaPr)
       bitset(bitMap, selTOFNSigmaPositiveProtonLambda);
-    if (fabs(v0.tofNSigmaALaPi()) < v0Selections.TofPidNsigmaCutLaPi)
+    if (std::fabs(v0.tofNSigmaALaPi()) < v0Selections.TofPidNsigmaCutLaPi)
       bitset(bitMap, selTOFNSigmaPositivePionLambda);
-    if (fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.TofPidNsigmaCutK0Pi)
+    if (std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.TofPidNsigmaCutK0Pi)
       bitset(bitMap, selTOFNSigmaPositivePionK0Short);
     // Negative track
-    if (fabs(v0.tofNSigmaALaPr()) < v0Selections.TofPidNsigmaCutLaPr)
+    if (std::fabs(v0.tofNSigmaALaPr()) < v0Selections.TofPidNsigmaCutLaPr)
       bitset(bitMap, selTOFNSigmaNegativeProtonLambda);
-    if (fabs(v0.tofNSigmaLaPi()) < v0Selections.TofPidNsigmaCutLaPi)
+    if (std::fabs(v0.tofNSigmaLaPi()) < v0Selections.TofPidNsigmaCutLaPi)
       bitset(bitMap, selTOFNSigmaNegativePionLambda);
-    if (fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.TofPidNsigmaCutK0Pi)
+    if (std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.TofPidNsigmaCutK0Pi)
       bitset(bitMap, selTOFNSigmaNegativePionK0Short);
 
     // ITS only tag
@@ -1016,7 +1022,7 @@ struct derivedlambdakzeroanalysis {
       bitset(bitMap, selK0ShortCTau);
 
     // armenteros
-    if (v0.qtarm() * v0Selections.armPodCut > TMath::Abs(v0.alpha()) || v0Selections.armPodCut < 1e-4)
+    if (v0.qtarm() * v0Selections.armPodCut > std::abs(v0.alpha()) || v0Selections.armPodCut < 1e-4)
       bitset(bitMap, selK0ShortArmenteros);
 
     return bitMap;
@@ -1280,7 +1286,7 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("hPosDCAToPV"), v0.dcapostopv());
       histos.fill(HIST("hNegDCAToPV"), v0.dcanegtopv());
       histos.fill(HIST("hDCADaughters"), v0.dcaV0daughters());
-      histos.fill(HIST("hPointingAngle"), TMath::ACos(v0.v0cosPA()));
+      histos.fill(HIST("hPointingAngle"), std::acos(v0.v0cosPA()));
       histos.fill(HIST("hV0Radius"), v0.v0radius());
       histos.fill(HIST("h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
       histos.fill(HIST("h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
@@ -1304,7 +1310,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("K0Short/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("K0Short/hNegDCAToPV"), v0.dcanegtopv());
         histos.fill(HIST("K0Short/hDCADaughters"), v0.dcaV0daughters());
-        histos.fill(HIST("K0Short/hPointingAngle"), TMath::ACos(v0.v0cosPA()));
+        histos.fill(HIST("K0Short/hPointingAngle"), std::acos(v0.v0cosPA()));
         histos.fill(HIST("K0Short/hV0Radius"), v0.v0radius());
         histos.fill(HIST("K0Short/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
         histos.fill(HIST("K0Short/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
@@ -1339,10 +1345,10 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("K0Short/h3dNegNsigmaTPC"), centrality, pt, negTrackExtra.tpcNSigmaPi());
         histos.fill(HIST("K0Short/h3dPosTPCsignal"), centrality, pt, posTrackExtra.tpcSignal());
         histos.fill(HIST("K0Short/h3dNegTPCsignal"), centrality, pt, negTrackExtra.tpcSignal());
-        histos.fill(HIST("K0Short/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcNSigmaPi());
-        histos.fill(HIST("K0Short/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcNSigmaPi());
-        histos.fill(HIST("K0Short/h3dPosTPCsignalVsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcSignal());
-        histos.fill(HIST("K0Short/h3dNegTPCsignalVsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcSignal());
+        histos.fill(HIST("K0Short/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), posTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("K0Short/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), negTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("K0Short/h3dPosTPCsignalVsTrackPtot"), centrality, v0.pfracpos() * v0.p(), posTrackExtra.tpcSignal());
+        histos.fill(HIST("K0Short/h3dNegTPCsignalVsTrackPtot"), centrality, v0.pfracneg() * v0.p(), negTrackExtra.tpcSignal());
         histos.fill(HIST("K0Short/h3dPosNsigmaTPCvsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcNSigmaPi());
         histos.fill(HIST("K0Short/h3dNegNsigmaTPCvsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcNSigmaPi());
         histos.fill(HIST("K0Short/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
@@ -1353,10 +1359,10 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("K0Short/h3dNegNsigmaTOF"), centrality, pt, v0.tofNSigmaK0PiMinus());
         histos.fill(HIST("K0Short/h3dPosTOFdeltaT"), centrality, pt, v0.posTOFDeltaTK0Pi());
         histos.fill(HIST("K0Short/h3dNegTOFdeltaT"), centrality, pt, v0.negTOFDeltaTK0Pi());
-        histos.fill(HIST("K0Short/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.tofNSigmaK0PiPlus());
-        histos.fill(HIST("K0Short/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.tofNSigmaK0PiMinus());
-        histos.fill(HIST("K0Short/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.posTOFDeltaTK0Pi());
-        histos.fill(HIST("K0Short/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.negTOFDeltaTK0Pi());
+        histos.fill(HIST("K0Short/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaK0PiPlus());
+        histos.fill(HIST("K0Short/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaK0PiMinus());
+        histos.fill(HIST("K0Short/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTK0Pi());
+        histos.fill(HIST("K0Short/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTK0Pi());
         histos.fill(HIST("K0Short/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaK0PiPlus());
         histos.fill(HIST("K0Short/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaK0PiMinus());
         histos.fill(HIST("K0Short/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTK0Pi());
@@ -1413,10 +1419,10 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("Lambda/h3dNegNsigmaTPC"), centrality, pt, negTrackExtra.tpcNSigmaPi());
         histos.fill(HIST("Lambda/h3dPosTPCsignal"), centrality, pt, posTrackExtra.tpcSignal());
         histos.fill(HIST("Lambda/h3dNegTPCsignal"), centrality, pt, negTrackExtra.tpcSignal());
-        histos.fill(HIST("Lambda/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcNSigmaPr());
-        histos.fill(HIST("Lambda/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcNSigmaPi());
-        histos.fill(HIST("Lambda/h3dPosTPCsignalVsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcSignal());
-        histos.fill(HIST("Lambda/h3dNegTPCsignalVsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcSignal());
+        histos.fill(HIST("Lambda/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), posTrackExtra.tpcNSigmaPr());
+        histos.fill(HIST("Lambda/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), negTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("Lambda/h3dPosTPCsignalVsTrackPtot"), centrality, v0.pfracpos() * v0.p(), posTrackExtra.tpcSignal());
+        histos.fill(HIST("Lambda/h3dNegTPCsignalVsTrackPtot"), centrality, v0.pfracneg() * v0.p(), negTrackExtra.tpcSignal());
         histos.fill(HIST("Lambda/h3dPosNsigmaTPCvsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcNSigmaPr());
         histos.fill(HIST("Lambda/h3dNegNsigmaTPCvsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcNSigmaPi());
         histos.fill(HIST("Lambda/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
@@ -1427,10 +1433,10 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("Lambda/h3dNegNsigmaTOF"), centrality, pt, v0.tofNSigmaLaPi());
         histos.fill(HIST("Lambda/h3dPosTOFdeltaT"), centrality, pt, v0.posTOFDeltaTLaPr());
         histos.fill(HIST("Lambda/h3dNegTOFdeltaT"), centrality, pt, v0.negTOFDeltaTLaPi());
-        histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.tofNSigmaLaPr());
-        histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.tofNSigmaLaPi());
-        histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.posTOFDeltaTLaPr());
-        histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.negTOFDeltaTLaPi());
+        histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaLaPr());
+        histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaLaPi());
+        histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPr());
+        histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPi());
         histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaLaPr());
         histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaLaPi());
         histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPr());
@@ -1487,10 +1493,10 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("AntiLambda/h3dNegNsigmaTPC"), centrality, pt, negTrackExtra.tpcNSigmaPr());
         histos.fill(HIST("AntiLambda/h3dPosTPCsignal"), centrality, pt, posTrackExtra.tpcSignal());
         histos.fill(HIST("AntiLambda/h3dNegTPCsignal"), centrality, pt, negTrackExtra.tpcSignal());
-        histos.fill(HIST("AntiLambda/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcNSigmaPi());
-        histos.fill(HIST("AntiLambda/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcNSigmaPr());
-        histos.fill(HIST("AntiLambda/h3dPosTPCsignalVsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcSignal());
-        histos.fill(HIST("AntiLambda/h3dNegTPCsignalVsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcSignal());
+        histos.fill(HIST("AntiLambda/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), posTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("AntiLambda/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), negTrackExtra.tpcNSigmaPr());
+        histos.fill(HIST("AntiLambda/h3dPosTPCsignalVsTrackPtot"), centrality, v0.pfracpos() * v0.p(), posTrackExtra.tpcSignal());
+        histos.fill(HIST("AntiLambda/h3dNegTPCsignalVsTrackPtot"), centrality, v0.pfracneg() * v0.p(), negTrackExtra.tpcSignal());
         histos.fill(HIST("AntiLambda/h3dPosNsigmaTPCvsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcNSigmaPi());
         histos.fill(HIST("AntiLambda/h3dNegNsigmaTPCvsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcNSigmaPr());
         histos.fill(HIST("AntiLambda/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
@@ -1501,10 +1507,10 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("AntiLambda/h3dNegNsigmaTOF"), centrality, pt, v0.tofNSigmaALaPr());
         histos.fill(HIST("AntiLambda/h3dPosTOFdeltaT"), centrality, pt, v0.posTOFDeltaTLaPi());
         histos.fill(HIST("AntiLambda/h3dNegTOFdeltaT"), centrality, pt, v0.negTOFDeltaTLaPr());
-        histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.tofNSigmaALaPi());
-        histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.tofNSigmaALaPr());
-        histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.posTOFDeltaTLaPi());
-        histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.negTOFDeltaTLaPr());
+        histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaALaPi());
+        histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaALaPr());
+        histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPi());
+        histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPr());
         histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaALaPi());
         histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaALaPr());
         histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPi());
@@ -1520,11 +1526,11 @@ struct derivedlambdakzeroanalysis {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskK0ShortSpecific))
           histos.fill(HIST("K0Short/h4dV0Radius"), centrality, pt, v0.mK0Short(), v0.v0radius());
         if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dPosDCAToPV"), centrality, pt, v0.mK0Short(), TMath::Abs(v0.dcapostopv()));
+          histos.fill(HIST("K0Short/h4dPosDCAToPV"), centrality, pt, v0.mK0Short(), std::abs(v0.dcapostopv()));
         if (verifyMask(selMap, maskTopoNoDCANegToPV | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dNegDCAToPV"), centrality, pt, v0.mK0Short(), TMath::Abs(v0.dcanegtopv()));
+          histos.fill(HIST("K0Short/h4dNegDCAToPV"), centrality, pt, v0.mK0Short(), std::abs(v0.dcanegtopv()));
         if (verifyMask(selMap, maskTopoNoCosPA | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dPointingAngle"), centrality, pt, v0.mK0Short(), TMath::ACos(v0.v0cosPA()));
+          histos.fill(HIST("K0Short/h4dPointingAngle"), centrality, pt, v0.mK0Short(), std::acos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskK0ShortSpecific))
           histos.fill(HIST("K0Short/h4dDCADaughters"), centrality, pt, v0.mK0Short(), v0.dcaV0daughters());
 
@@ -1536,11 +1542,11 @@ struct derivedlambdakzeroanalysis {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskLambdaSpecific))
           histos.fill(HIST("Lambda/h4dV0Radius"), centrality, pt, v0.mLambda(), v0.v0radius());
         if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dPosDCAToPV"), centrality, pt, v0.mLambda(), TMath::Abs(v0.dcapostopv()));
+          histos.fill(HIST("Lambda/h4dPosDCAToPV"), centrality, pt, v0.mLambda(), std::abs(v0.dcapostopv()));
         if (verifyMask(selMap, maskTopoNoDCANegToPV | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dNegDCAToPV"), centrality, pt, v0.mLambda(), TMath::Abs(v0.dcanegtopv()));
+          histos.fill(HIST("Lambda/h4dNegDCAToPV"), centrality, pt, v0.mLambda(), std::abs(v0.dcanegtopv()));
         if (verifyMask(selMap, maskTopoNoCosPA | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dPointingAngle"), centrality, pt, v0.mLambda(), TMath::ACos(v0.v0cosPA()));
+          histos.fill(HIST("Lambda/h4dPointingAngle"), centrality, pt, v0.mLambda(), std::acos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskLambdaSpecific))
           histos.fill(HIST("Lambda/h4dDCADaughters"), centrality, pt, v0.mLambda(), v0.dcaV0daughters());
 
@@ -1551,11 +1557,11 @@ struct derivedlambdakzeroanalysis {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskAntiLambdaSpecific))
           histos.fill(HIST("AntiLambda/h4dV0Radius"), centrality, pt, v0.mAntiLambda(), v0.v0radius());
         if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dPosDCAToPV"), centrality, pt, v0.mAntiLambda(), TMath::Abs(v0.dcapostopv()));
+          histos.fill(HIST("AntiLambda/h4dPosDCAToPV"), centrality, pt, v0.mAntiLambda(), std::abs(v0.dcapostopv()));
         if (verifyMask(selMap, maskTopoNoDCANegToPV | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dNegDCAToPV"), centrality, pt, v0.mAntiLambda(), TMath::Abs(v0.dcanegtopv()));
+          histos.fill(HIST("AntiLambda/h4dNegDCAToPV"), centrality, pt, v0.mAntiLambda(), std::abs(v0.dcanegtopv()));
         if (verifyMask(selMap, maskTopoNoCosPA | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dPointingAngle"), centrality, pt, v0.mAntiLambda(), TMath::ACos(v0.v0cosPA()));
+          histos.fill(HIST("AntiLambda/h4dPointingAngle"), centrality, pt, v0.mAntiLambda(), std::acos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskAntiLambdaSpecific))
           histos.fill(HIST("AntiLambda/h4dDCADaughters"), centrality, pt, v0.mAntiLambda(), v0.dcaV0daughters());
 
@@ -1598,7 +1604,7 @@ struct derivedlambdakzeroanalysis {
 
     auto v0mother = v0.motherMCPart();
     float rapidityXi = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXiMinus);
-    if (fabs(rapidityXi) > 0.5f)
+    if (std::fabs(rapidityXi) > 0.5f)
       return; // not a valid mother rapidity (PDG selection is later)
 
     // __________________________________________
@@ -2044,7 +2050,7 @@ struct derivedlambdakzeroanalysis {
     int nK0Shorts = 0;
     int nLambdas = 0;
     int nAntiLambdas = 0;
-    for (auto& v0 : fullV0s) {
+    for (auto const& v0 : fullV0s) {
       if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
@@ -2107,7 +2113,7 @@ struct derivedlambdakzeroanalysis {
     int nK0Shorts = 0;
     int nLambdas = 0;
     int nAntiLambdas = 0;
-    for (auto& v0 : fullV0s) {
+    for (auto const& v0 : fullV0s) {
       if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
@@ -2126,7 +2132,7 @@ struct derivedlambdakzeroanalysis {
       float ymc = 1e-3;
       if (v0MC.pdgCode() == 310)
         ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
-      else if (TMath::Abs(v0MC.pdgCode()) == 3122)
+      else if (std::abs(v0MC.pdgCode()) == 3122)
         ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassLambda);
 
       uint64_t selMap = computeReconstructionBitmap(v0, collision, ymc, ymc, ptmc);
@@ -2188,10 +2194,10 @@ struct derivedlambdakzeroanalysis {
       float ymc = 1e3;
       if (v0MC.pdgCode() == 310)
         ymc = v0MC.rapidityMC(0);
-      else if (TMath::Abs(v0MC.pdgCode()) == 3122)
+      else if (std::abs(v0MC.pdgCode()) == 3122)
         ymc = v0MC.rapidityMC(1);
 
-      if (TMath::Abs(ymc) > v0Selections.rapidityCut)
+      if (std::abs(ymc) > v0Selections.rapidityCut)
         continue;
 
       auto mcCollision = v0MC.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
@@ -2251,12 +2257,12 @@ struct derivedlambdakzeroanalysis {
 
       float ptmc = cascMC.ptMC();
       float ymc = 1e3;
-      if (TMath::Abs(cascMC.pdgCode()) == 3312)
+      if (std::abs(cascMC.pdgCode()) == 3312)
         ymc = cascMC.rapidityMC(0);
-      else if (TMath::Abs(cascMC.pdgCode()) == 3334)
+      else if (std::abs(cascMC.pdgCode()) == 3334)
         ymc = cascMC.rapidityMC(2);
 
-      if (TMath::Abs(ymc) > v0Selections.rapidityCut)
+      if (std::abs(ymc) > v0Selections.rapidityCut)
         continue;
 
       auto mcCollision = cascMC.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
@@ -2371,49 +2377,49 @@ struct derivedlambdakzeroanalysis {
     auto hXiPlus = histos.get<TH2>(HIST("h2dGeneratedXiPlus"));
     auto hOmegaMinus = histos.get<TH2>(HIST("h2dGeneratedOmegaMinus"));
     auto hOmegaPlus = histos.get<TH2>(HIST("h2dGeneratedOmegaPlus"));
-    for (auto& gVec : geK0Short) {
+    for (auto const& gVec : geK0Short) {
       if (static_cast<int>(gVec.generatedK0Short().size()) != hK0Short->GetNcells())
         LOGF(fatal, "K0Short: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedK0Short().size(), hK0Short->GetNcells());
       for (int iv = 0; iv < hK0Short->GetNcells(); iv++) {
         hK0Short->SetBinContent(iv, hK0Short->GetBinContent(iv) + gVec.generatedK0Short()[iv]);
       }
     }
-    for (auto& gVec : geLambda) {
+    for (auto const& gVec : geLambda) {
       if (static_cast<int>(gVec.generatedLambda().size()) != hLambda->GetNcells())
         LOGF(fatal, "Lambda: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedLambda().size(), hLambda->GetNcells());
       for (int iv = 0; iv < hLambda->GetNcells(); iv++) {
         hLambda->SetBinContent(iv, hLambda->GetBinContent(iv) + gVec.generatedLambda()[iv]);
       }
     }
-    for (auto& gVec : geAntiLambda) {
+    for (auto const& gVec : geAntiLambda) {
       if (static_cast<int>(gVec.generatedAntiLambda().size()) != hAntiLambda->GetNcells())
         LOGF(fatal, "AntiLambda: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedAntiLambda().size(), hAntiLambda->GetNcells());
       for (int iv = 0; iv < hAntiLambda->GetNcells(); iv++) {
         hAntiLambda->SetBinContent(iv, hAntiLambda->GetBinContent(iv) + gVec.generatedAntiLambda()[iv]);
       }
     }
-    for (auto& gVec : geXiMinus) {
+    for (auto const& gVec : geXiMinus) {
       if (static_cast<int>(gVec.generatedXiMinus().size()) != hXiMinus->GetNcells())
         LOGF(fatal, "XiMinus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedXiMinus().size(), hXiMinus->GetNcells());
       for (int iv = 0; iv < hXiMinus->GetNcells(); iv++) {
         hXiMinus->SetBinContent(iv, hXiMinus->GetBinContent(iv) + gVec.generatedXiMinus()[iv]);
       }
     }
-    for (auto& gVec : geXiPlus) {
+    for (auto const& gVec : geXiPlus) {
       if (static_cast<int>(gVec.generatedXiPlus().size()) != hXiPlus->GetNcells())
         LOGF(fatal, "XiPlus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedXiPlus().size(), hXiPlus->GetNcells());
       for (int iv = 0; iv < hXiPlus->GetNcells(); iv++) {
         hXiPlus->SetBinContent(iv, hXiPlus->GetBinContent(iv) + gVec.generatedXiPlus()[iv]);
       }
     }
-    for (auto& gVec : geOmegaMinus) {
+    for (auto const& gVec : geOmegaMinus) {
       if (static_cast<int>(gVec.generatedOmegaMinus().size()) != hOmegaMinus->GetNcells())
         LOGF(fatal, "OmegaMinus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedOmegaMinus().size(), hOmegaMinus->GetNcells());
       for (int iv = 0; iv < hOmegaMinus->GetNcells(); iv++) {
         hOmegaMinus->SetBinContent(iv, hOmegaMinus->GetBinContent(iv) + gVec.generatedOmegaMinus()[iv]);
       }
     }
-    for (auto& gVec : geOmegaPlus) {
+    for (auto const& gVec : geOmegaPlus) {
       if (static_cast<int>(gVec.generatedOmegaPlus().size()) != hOmegaPlus->GetNcells())
         LOGF(fatal, "OmegaPlus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedOmegaPlus().size(), hOmegaPlus->GetNcells());
       for (int iv = 0; iv < hOmegaPlus->GetNcells(); iv++) {
