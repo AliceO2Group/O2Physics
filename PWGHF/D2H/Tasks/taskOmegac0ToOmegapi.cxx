@@ -33,10 +33,10 @@ using namespace o2::framework::expressions;
 
 /// Omegac0 analysis task
 
-struct HfTaskOmegac0 {
+struct HfTaskOmegac0ToOmegapi {
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
-  Configurable<int> selectionFlagOmegac0{"selectionFlagOmegac0", 1, "Selection Flag for Omegac0 candidates"};
+  Configurable<bool> selectionFlagOmegac0{"selectionFlagOmegac0", false, "Selection Flag for Omegac0 candidates"};
 
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
@@ -48,7 +48,6 @@ struct HfTaskOmegac0 {
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0, 20}, "Cand. pT bins"};
   ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity bins"};
   ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin type"};
-  ConfigurableAxis thnConfigAxisCandType{"thnConfigAxisCandType", {6, -0.5, 5.5}, "Omegac0 type"};
   ConfigurableAxis thnConfigAxisGenPtD{"thnConfigAxisGenPtD", {500, 0, 50}, "Gen Pt D"};
   ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
   ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
@@ -69,8 +68,8 @@ struct HfTaskOmegac0 {
   PresliceUnsorted<CollisionsWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   SliceCache cache;
 
-  Partition<Omegac0CandidatesKF> selectedOmegac0CandidatesKF = aod::hf_sel_toomegapi::resultSelections >= selectionFlagOmegac0;
-  Partition<Omegac0CandidatesMlKF> selectedOmegac0CandidatesMlKF = aod::hf_sel_toomegapi::resultSelections >= selectionFlagOmegac0;
+  Partition<Omegac0CandidatesKF> selectedOmegac0CandidatesKF = aod::hf_sel_toomegapi::resultSelections && !selectionFlagOmegac0;
+  Partition<Omegac0CandidatesMlKF> selectedOmegac0CandidatesMlKF = aod::hf_sel_toomegapi::resultSelections && !selectionFlagOmegac0;
 
   HistogramRegistry registry{
     "registry",
@@ -240,5 +239,5 @@ struct HfTaskOmegac0 {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskOmegac0>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskOmegac0ToOmegapi>(cfgc)};
 }
