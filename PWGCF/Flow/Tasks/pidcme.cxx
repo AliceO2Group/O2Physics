@@ -170,16 +170,17 @@ struct FillPIDcolums {
         }
       }*/
     // Choose which nSigma array and PIDcut array to use
-    if(cfgOpenTOFOnlyPID){
-      if (!candidate.hasTOF()) return -1;
+    if (cfgOpenTOFOnlyPID) {
+      if (!candidate.hasTOF())
+        return -1;
       nSigmaToUse = nSigmaTOF;
       pidVector = cfgnSigmaCutTOF.value;
-    } else if(cfgOpenTPCOnlyPID) {
+    } else if (cfgOpenTPCOnlyPID) {
       nSigmaToUse = nSigmaTPC;
       pidVector = cfgnSigmaCutTPC.value;
     } else {
       nSigmaToUse = (candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()) ? nSigmaCombined : nSigmaTPC;
-      pidVector = (candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()) ? cfgnSigmaCutRMS.value : cfgnSigmaCutTPC.value;  
+      pidVector = (candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()) ? cfgnSigmaCutRMS.value : cfgnSigmaCutTPC.value;
     }
     float nsigma = pidVector[0];
     // Fill cross pid QA
@@ -199,7 +200,7 @@ struct FillPIDcolums {
             histosQA.fill(HIST("QA/PID/histPhi_Dis_cross_Pi"), candidate.phi());
             histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_cross_Pi"), candidate.tpcNSigmaPi(), candidate.itsNSigmaPi());
             histosQA.fill(HIST("QA/PID/histnSigma_TOF_cross_Pi"), candidate.tofNSigmaPi());
-            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_cross_Pi"), candidate.pt(),candidate.tofNSigmaPi());
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_cross_Pi"), candidate.pt(), candidate.tofNSigmaPi());
           }
         }
         if (i == 1) {
@@ -216,7 +217,7 @@ struct FillPIDcolums {
             histosQA.fill(HIST("QA/PID/histPhi_Dis_cross_Ka"), candidate.phi());
             histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_cross_Ka"), candidate.tpcNSigmaKa(), candidate.itsNSigmaKa());
             histosQA.fill(HIST("QA/PID/histnSigma_TOF_cross_Ka"), candidate.tofNSigmaKa());
-            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_cross_Ka"), candidate.pt(),candidate.tofNSigmaKa()); 
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_cross_Ka"), candidate.pt(), candidate.tofNSigmaKa());
           }
         }
         if (i == 2) {
@@ -233,7 +234,7 @@ struct FillPIDcolums {
             histosQA.fill(HIST("QA/PID/histPhi_Dis_cross_Pr"), candidate.phi());
             histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_cross_Pr"), candidate.tpcNSigmaPr(), candidate.itsNSigmaPr());
             histosQA.fill(HIST("QA/PID/histnSigma_TOF_cross_Pr"), candidate.tofNSigmaPr());
-            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_cross_Pr"), candidate.pt(),candidate.tofNSigmaPr()); 
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_cross_Pr"), candidate.pt(), candidate.tofNSigmaPr());
           }
         }
       }
@@ -316,10 +317,10 @@ struct FillPIDcolums {
     histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_cross_Pi"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
     histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_cross_Ka"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
     histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_cross_Pr"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
-    if(cfgOpenITSCut){
+    if (cfgOpenITSCut) {
       histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_AfterITS_Pi"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
       histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_AfterITS_Ka"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
-      histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_AfterITS_Pr"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});  
+      histosQA.add(Form("QA/PID/histnSigma_TPC_TOF_AfterITS_Pr"), "", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaTOF, axisPtPID}});
     }
     // Hist for PID Averge Cluster Size ITS related
     histosQA.add(Form("QA/PID/histAverClusterSizeCosl_Pi"), "", {HistType::kTH1F, {axisClusterSize}});
@@ -346,7 +347,7 @@ struct FillPIDcolums {
     histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_cross_Pi"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
     histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_cross_Ka"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
     histosQA.add(Form("QA/PID/histnSigmaITS_nSigmaTPC_cross_Pr"), "", {HistType::kTH2F, {axisnSigmaTPC, axisnSigmaITS}});
-    if(cfgOpenITSCut) {
+    if (cfgOpenITSCut) {
       histosQA.add(Form("QA/PID/histAverClusterSizeCosl_AfterITS_Pi"), "", {HistType::kTH1F, {axisClusterSize}});
       histosQA.add(Form("QA/PID/histAverClusterSizeCosl_AfterITS_Ka"), "", {HistType::kTH1F, {axisClusterSize}});
       histosQA.add(Form("QA/PID/histAverClusterSizeCosl_AfterITS_Pr"), "", {HistType::kTH1F, {axisClusterSize}});
@@ -380,12 +381,12 @@ struct FillPIDcolums {
     histosQA.add(Form("QA/PID/histnSigma_TOF_cross_Pi"), "", {HistType::kTH1F, {axisnSigmaTOF}});
     histosQA.add(Form("QA/PID/histnSigma_TOF_cross_Ka"), "", {HistType::kTH1F, {axisnSigmaTOF}});
     histosQA.add(Form("QA/PID/histnSigma_TOF_cross_Pr"), "", {HistType::kTH1F, {axisnSigmaTOF}});
-    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_Pi"), "", {HistType::kTH2F, {axisPtPID,axisnSigmaTOF}});
-    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_Ka"), "", {HistType::kTH2F, {axisPtPID,axisnSigmaTOF}});
-    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_Pr"), "", {HistType::kTH2F, {axisPtPID,axisnSigmaTOF}});
-    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_cross_Pi"), "", {HistType::kTH2F, {axisPtPID,axisnSigmaTOF}});
-    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_cross_Ka"), "", {HistType::kTH2F, {axisPtPID,axisnSigmaTOF}});
-    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_cross_Pr"), "", {HistType::kTH2F, {axisPtPID,axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_Pi"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_Ka"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_cross_Pi"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_cross_Ka"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+    histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_cross_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
     histosQA.add(Form("QA/PID/histdEdxTPC_cross_Pi"), "", {HistType::kTH2F, {axisRigidity, axisdEdx}});
     histosQA.add(Form("QA/PID/histnSigma_cross_Pi"), "", {HistType::kTH1F, {axisnSigmaTPC}});
     histosQA.add(Form("QA/PID/histnSigma_Pt_cross_Pi"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
@@ -395,13 +396,13 @@ struct FillPIDcolums {
     histosQA.add(Form("QA/PID/histdEdxTPC_cross_Pr"), "", {HistType::kTH2F, {axisRigidity, axisdEdx}});
     histosQA.add(Form("QA/PID/histnSigma_cross_Pr"), "", {HistType::kTH1F, {axisnSigmaTPC}});
     histosQA.add(Form("QA/PID/histnSigma_Pt_cross_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
-    if(cfgOpenITSCut) {
-      histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_AfterITS_Pi"), "", {HistType::kTH2F, {axisPtPID,axisnSigmaTOF}});
-      histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_AfterITS_Ka"), "", {HistType::kTH2F, {axisPtPID,axisnSigmaTOF}});
-      histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_AfterITS_Pr"), "", {HistType::kTH2F, {axisPtPID,axisnSigmaTOF}});
-      histosQA.add(Form("QA/PID/histnSigma_TPC_Pt_AfterITS_Pi"), "", {HistType::kTH2F, {axisPtPID,axisnSigmaTPC}});
-      histosQA.add(Form("QA/PID/histnSigma_TPC_Pt_AfterITS_Ka"), "", {HistType::kTH2F, {axisPtPID,axisnSigmaTPC}});
-      histosQA.add(Form("QA/PID/histnSigma_TPC_Pt_AfterITS_Pr"), "", {HistType::kTH2F, {axisPtPID,axisnSigmaTPC}});
+    if (cfgOpenITSCut) {
+      histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_AfterITS_Pi"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+      histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_AfterITS_Ka"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+      histosQA.add(Form("QA/PID/histnSigma_TOF_Pt_AfterITS_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTOF}});
+      histosQA.add(Form("QA/PID/histnSigma_TPC_Pt_AfterITS_Pi"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
+      histosQA.add(Form("QA/PID/histnSigma_TPC_Pt_AfterITS_Ka"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
+      histosQA.add(Form("QA/PID/histnSigma_TPC_Pt_AfterITS_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaTPC}});
     }
     // Hist for nSigma ITS
     histosQA.add(Form("QA/PID/histnSigma_ITS_Pi"), "", {HistType::kTH1F, {axisnSigmaITS}});
@@ -410,10 +411,10 @@ struct FillPIDcolums {
     histosQA.add(Form("QA/PID/histnSigma_ITS_cross_Pi"), "", {HistType::kTH1F, {axisnSigmaITS}});
     histosQA.add(Form("QA/PID/histnSigma_ITS_cross_Ka"), "", {HistType::kTH1F, {axisnSigmaITS}});
     histosQA.add(Form("QA/PID/histnSigma_ITS_cross_Pr"), "", {HistType::kTH1F, {axisnSigmaITS}});
-    if(cfgOpenITSCut) {
+    if (cfgOpenITSCut) {
       histosQA.add(Form("QA/PID/histnSigma_ITS_AfterITS_Pi"), "", {HistType::kTH1F, {axisnSigmaITS}});
       histosQA.add(Form("QA/PID/histnSigma_ITS_AfterITS_Ka"), "", {HistType::kTH1F, {axisnSigmaITS}});
-      histosQA.add(Form("QA/PID/histnSigma_ITS_AfterITS_Pr"), "", {HistType::kTH1F, {axisnSigmaITS}});  
+      histosQA.add(Form("QA/PID/histnSigma_ITS_AfterITS_Pr"), "", {HistType::kTH1F, {axisnSigmaITS}});
     }
     // Hist for checking the PID phi distribution
     histosQA.add(Form("QA/PID/histPhi_Dis_Pi"), "", {HistType::kTH1F, {axisPhi}});
@@ -422,10 +423,10 @@ struct FillPIDcolums {
     histosQA.add(Form("QA/PID/histPhi_Dis_cross_Pi"), "", {HistType::kTH1F, {axisPhi}});
     histosQA.add(Form("QA/PID/histPhi_Dis_cross_Ka"), "", {HistType::kTH1F, {axisPhi}});
     histosQA.add(Form("QA/PID/histPhi_Dis_cross_Pr"), "", {HistType::kTH1F, {axisPhi}});
-    if(cfgOpenITSCut) {
+    if (cfgOpenITSCut) {
       histosQA.add(Form("QA/PID/histPhi_Dis_AfterITS_Pi"), "", {HistType::kTH1F, {axisPhi}});
       histosQA.add(Form("QA/PID/histPhi_Dis_AfterITS_Ka"), "", {HistType::kTH1F, {axisPhi}});
-      histosQA.add(Form("QA/PID/histPhi_Dis_AfterITS_Pr"), "", {HistType::kTH1F, {axisPhi}});  
+      histosQA.add(Form("QA/PID/histPhi_Dis_AfterITS_Pr"), "", {HistType::kTH1F, {axisPhi}});
     }
     // Hist 3D for PID check
     if (cfgOpenDetailPlots) {
@@ -441,7 +442,7 @@ struct FillPIDcolums {
       histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPi_Before"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
       histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegKa_Before"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
       histosQA.add<TH3>(Form("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPr_Before"), ";n#sigma_{TPC};<ITS Cluster Size> x <cos(#lambda)>;#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisClusterSizenSigma, axisPtPID}});
-      if(cfgOpenITSCut) {
+      if (cfgOpenITSCut) {
         histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPi_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
         histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosKa_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
         histosQA.add<TH3>(Form("QA/PID/histnSigmaITS_TPC_Pt_PosPr_After"), ";n#sigma_{TPC};n#sigma_{ITS};#p_{t}", {HistType::kTH3F, {axisnSigmaTPC, axisnSigmaITS, axisPtPID}});
@@ -491,7 +492,7 @@ struct FillPIDcolums {
             histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_Pi"), track.pt(), track.tpcNSigmaPi());
             histosQA.fill(HIST("QA/PID/histnSigma_com_Pi"), std::hypot(track.tpcNSigmaPi(), track.tofNSigmaPi()));
             histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pi"), track.tofNSigmaPi());
-            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_Pi"), track.pt(),track.tofNSigmaPi()); 
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_Pi"), track.pt(), track.tofNSigmaPi());
             histosQA.fill(HIST("QA/PID/histnSigma_ITS_Pi"), track.itsNSigmaPi());
             histosQA.fill(HIST("QA/PID/histPhi_Dis_Pi"), track.phi());
             if (cfgOpenDetailPlots) {
@@ -515,7 +516,7 @@ struct FillPIDcolums {
             histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_Ka"), track.pt(), track.tpcNSigmaKa());
             histosQA.fill(HIST("QA/PID/histnSigma_com_Ka"), std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa()));
             histosQA.fill(HIST("QA/PID/histnSigma_TOF_Ka"), track.tofNSigmaKa());
-            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_Ka"), track.pt(),track.tofNSigmaKa()); 
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_Ka"), track.pt(), track.tofNSigmaKa());
             histosQA.fill(HIST("QA/PID/histnSigma_ITS_Ka"), track.itsNSigmaKa());
             histosQA.fill(HIST("QA/PID/histPhi_Dis_Ka"), track.phi());
             if (cfgOpenDetailPlots) {
@@ -539,7 +540,7 @@ struct FillPIDcolums {
             histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_Pr"), track.pt(), track.tpcNSigmaPr());
             histosQA.fill(HIST("QA/PID/histnSigma_com_Pr"), std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr()));
             histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pr"), track.tofNSigmaPr());
-            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_Pr"), track.pt(),track.tofNSigmaPr()); 
+            histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_Pr"), track.pt(), track.tofNSigmaPr());
             histosQA.fill(HIST("QA/PID/histnSigma_ITS_Pr"), track.itsNSigmaPr());
             histosQA.fill(HIST("QA/PID/histPhi_Dis_Pr"), track.phi());
             if (cfgOpenDetailPlots) {
@@ -577,11 +578,11 @@ struct FillPIDcolums {
                   case 0:
                     pidFlag = 11;
                     break;
-  
+
                   case 1:
                     pidFlag = 2;
                     break;
-  
+
                   case 2:
                     pidFlag = 1;
                     break;
@@ -593,11 +594,11 @@ struct FillPIDcolums {
                   case 0:
                     pidFlag = 12;
                     break;
-  
+
                   case 1:
                     pidFlag = 3;
                     break;
-  
+
                   case 2:
                     pidFlag = 1;
                     break;
@@ -609,11 +610,11 @@ struct FillPIDcolums {
                   case 0:
                     pidFlag = 13;
                     break;
-  
+
                   case 1:
                     pidFlag = 3;
                     break;
-  
+
                   case 2:
                     pidFlag = 2;
                     break;
@@ -625,27 +626,27 @@ struct FillPIDcolums {
                   case 0:
                     pidFlag = 14;
                     break;
-  
+
                   case 1:
                     pidFlag = 3;
                     break;
-  
+
                   case 2:
                     pidFlag = 2;
                     break;
-  
+
                   case 3:
                     pidFlag = 9;
                     break;
-  
+
                   case 4:
                     pidFlag = 1;
                     break;
-  
+
                   case 5:
                     pidFlag = 8;
                     break;
-  
+
                   case 6:
                     pidFlag = 7;
                     break;
@@ -663,8 +664,8 @@ struct FillPIDcolums {
               histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Pi"), track.tpcNSigmaPi(), track.itsNSigmaPi());
               histosQA.fill(HIST("QA/PID/histnSigma_ITS_AfterITS_Pi"), track.itsNSigmaPi());
               histosQA.fill(HIST("QA/PID/histPhi_Dis_AfterITS_Pi"), track.phi());
-              histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_AfterITS_Pi"), track.pt(),track.tofNSigmaPi());
-              histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_AfterITS_Pi"), track.pt(),track.tpcNSigmaPi());   
+              histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_AfterITS_Pi"), track.pt(), track.tofNSigmaPi());
+              histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_AfterITS_Pi"), track.pt(), track.tpcNSigmaPi());
               if (cfgOpenDetailPlots) {
                 if (track.sign() > 0) {
                   histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_PosPi"), track.phi(), track.pt(), track.eta());
@@ -685,8 +686,8 @@ struct FillPIDcolums {
               histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Ka"), track.tpcNSigmaKa(), track.itsNSigmaKa());
               histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Ka"), track.tpcNSigmaKa(), averClusSizeCosl);
               histosQA.fill(HIST("QA/PID/histPhi_Dis_AfterITS_Ka"), track.phi());
-              histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_AfterITS_Ka"), track.pt(),track.tofNSigmaKa());
-              histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_AfterITS_Ka"), track.pt(),track.tpcNSigmaKa());
+              histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_AfterITS_Ka"), track.pt(), track.tofNSigmaKa());
+              histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_AfterITS_Ka"), track.pt(), track.tpcNSigmaKa());
               if (cfgOpenDetailPlots) {
                 if (track.sign() > 0) {
                   histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_PosKa"), track.phi(), track.pt(), track.eta());
@@ -707,8 +708,8 @@ struct FillPIDcolums {
               histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Pr"), track.tpcNSigmaPr(), track.itsNSigmaPr());
               histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSigmaTPC_AfterITS_Pr"), track.tpcNSigmaPr(), averClusSizeCosl);
               histosQA.fill(HIST("QA/PID/histPhi_Dis_AfterITS_Pr"), track.phi());
-              histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_AfterITS_Pr"), track.pt(),track.tofNSigmaPr());
-              histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_AfterITS_Pr"), track.pt(),track.tpcNSigmaPr());
+              histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_AfterITS_Pr"), track.pt(), track.tofNSigmaPr());
+              histosQA.fill(HIST("QA/PID/histnSigma_TPC_Pt_AfterITS_Pr"), track.pt(), track.tpcNSigmaPr());
               if (cfgOpenDetailPlots) {
                 if (track.sign() > 0) {
                   histosQA.fill(HIST("QA/PID/histPhi_Pt_Eta_PosPr"), track.phi(), track.pt(), track.eta());
@@ -720,7 +721,7 @@ struct FillPIDcolums {
                   histosQA.fill(HIST("QA/PID/histAverClusterSizeCosl_nSIgmaTPC_Pt_NegPr_After"), track.tpcNSigmaPr(), averClusSizeCosl, track.pt());
                 }
               }
-            }  
+            }
           }
         }
       }
@@ -2052,3 +2053,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<pidcme>(cfgc),
   };
 }
+ 
