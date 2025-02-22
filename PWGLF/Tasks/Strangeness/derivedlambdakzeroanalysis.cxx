@@ -1858,8 +1858,6 @@ struct derivedlambdakzeroanalysis {
     std::vector<int> listBestCollisionIdx(mcCollisions.size());
     for (auto const& mcCollision : mcCollisions) {
       auto groupedCollisions = getGroupedCollisions<run3>(collisions, mcCollision.globalIndex());
-      // Find the collision with the biggest nbr of PV contributors
-      // Follows what was done here: https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/mcCollsExtra.cxx#L93
       int biggestNContribs = -1;
       int bestCollisionIndex = -1;
       for (auto const& collision : groupedCollisions) {
@@ -1870,8 +1868,14 @@ struct derivedlambdakzeroanalysis {
           }
         }
 
-        if (biggestNContribs < collision.multPVTotalContributors()) {
-          biggestNContribs = collision.multPVTotalContributors();
+        if constexpr (run3) { // check if we are in Run 3
+          // Find the collision with the biggest nbr of PV contributors
+          // Follows what was done here: https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/mcCollsExtra.cxx#L93
+          if (biggestNContribs < collision.multPVTotalContributors()) {
+            biggestNContribs = collision.multPVTotalContributors();  
+            bestCollisionIndex = collision.globalIndex();
+          }
+        } else { // we are in Run 2: there should be only one collision in groupedCollisions
           bestCollisionIndex = collision.globalIndex();
         }
       }
@@ -1967,13 +1971,13 @@ struct derivedlambdakzeroanalysis {
           continue;
         }
 
-        if (biggestNContribs < collision.multPVTotalContributors()) {
-          biggestNContribs = collision.multPVTotalContributors();
-          if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
+        if constexpr (run3) { // check if we are in Run 3
+          if (biggestNContribs < collision.multPVTotalContributors()) {
+            biggestNContribs = collision.multPVTotalContributors();  
             centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
-          } else { // we are in Run 2
-            centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
           }
+        } else { // we are in Run 2: there should be only one collision in groupedCollisions
+          centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
         }
         nCollisions++;
 
