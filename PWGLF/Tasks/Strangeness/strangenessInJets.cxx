@@ -209,7 +209,7 @@ struct StrangenessInJets {
       registryData.add("number_of_events_vsmultiplicity", "number of events in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
     }
 
-    if (doprocessGen || doprocessMCefficiency) {
+    if (doprocessMCefficiency) {
       registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
     }
 
@@ -320,7 +320,7 @@ struct StrangenessInJets {
     }
 
     // Histograms for efficiency (generated)
-    if (doprocessGen || doprocessMCefficiency) {
+    if (doprocessMCefficiency) {
       registryMC.add("K0s_generated_jet", "K0s_generated_jet", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("K0s_generated_ue", "K0s_generated_ue", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("Lambda_generated_jet", "Lambda_generated_jet", HistType::kTH2F, {multBinning, ptAxis});
@@ -1056,7 +1056,7 @@ struct StrangenessInJets {
     for (auto& jet : jets) { // o2-linter: disable=[const-ref-in-for-loop]
 
       // jet must be fully contained in the acceptance
-      if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
+      if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
         continue;
 
       // jet pt must be larger than threshold
