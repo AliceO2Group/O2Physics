@@ -145,14 +145,14 @@ struct HfTaskOmegac0ToOmegapi {
     processData<false>(selectedOmegac0CandidatesKF, collisions);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticle, "process HfTaskOmegac0ToOmegapi with KFParticle", false);
-  // TODO: add processKFParticleCent
+  // TODO: add processKFParticle
 
   void processDataWithKFParticleMl(Omegac0CandidatesMlKF const&, Collisions const& collisions)
   {
     processData<true>(selectedOmegac0CandidatesMlKF, collisions);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticleMl, "process HfTaskOmegac0ToOmegapi with KFParticle and ML selections", false);
-  // TODO: add processKFParticleMlCent
+  // TODO: add processKFParticleMl
 
   template <bool applyMl, typename CandType, typename CollType>
   void processMc(const CandType& candidates,
@@ -221,7 +221,7 @@ struct HfTaskOmegac0ToOmegapi {
     processMc<false>(omegaC0CandidatesMcKF, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcWithKFParticle, "Process MC with KFParticle", false);
-  // TODO: add the processMcWithKFParticleCent
+  // TODO: add the processMcWithKFParticle
 
   void processMcWithKFParticleMl(Omegac0CandidatesMlMcKF const& omegac0CandidatesMlMcKF,
                                  soa::Join<aod::McParticles, aod::HfToOmegaPiMCGen> const& mcParticles,
@@ -232,7 +232,7 @@ struct HfTaskOmegac0ToOmegapi {
     processMc<true>(omegac0CandidatesMlMcKF, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
-  // TODO: add the processMcWithKFParticleMlCent
+  // TODO: add the processMcWithKFParticleMl
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
