@@ -1837,8 +1837,6 @@ struct AnalysisSameEventPairing {
                             t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(),
                             t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(),
                             t1.chi2(), t2.chi2(),
-                            t1.matchMCHTrackId(), t2.matchMCHTrackId(),
-                            t1.matchMFTTrackId(), t2.matchMFTTrackId(),
                             -999., -999., -999., -999.,
                             -999., -999., -999., -999.,
                             -999., -999., -999., -999.,
