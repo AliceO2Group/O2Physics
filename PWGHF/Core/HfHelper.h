@@ -17,10 +17,8 @@
 #ifndef PWGHF_CORE_HFHELPER_H_
 #define PWGHF_CORE_HFHELPER_H_
 
-#include <vector>
-
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector4D.h"
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h>
 #include <TPDGCode.h>
 
 #include "CommonConstants/PhysicsConstants.h"
@@ -40,6 +38,7 @@ class HfHelper
   ~HfHelper() = default;
 
   // 2-prong
+
 
   // D0(bar) → π± K∓
 
@@ -175,6 +174,16 @@ class HfHelper
   auto cosThetaStarBplus(const T& candidate)
   {
     return candidate.cosThetaStar(std::array{o2::constants::physics::MassD0, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassBPlus, 1);
+  }
+
+  // Z → e+ e- decay
+
+  template <typename T>
+  auto invMassZtoEE(const T& e1, const T& e2)
+  {
+    auto arr1 = std::array{e1.px(), e1.py(), e1.pz()};
+    auto arr2 = std::array{e2.px(), e2.py(), e2.pz()};
+    return RecoDecay::m(std::array{arr1, arr2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
   }
 
   // 3-prong
