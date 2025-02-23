@@ -138,6 +138,12 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosData.add("rapidity_event_non0charge_WTS_PID_Pi_domainB", "Rapidity of Events With Track Selection and PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c$; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosData.add("rapidity_event_non0charge_WTS_PID_Pi_domainC", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} > 0.80 GeV/c; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
 
+    // Pair Invariant Mass
+    histosData.add("invMass_pair_1", "Invariant Mass Distribution of 2 pions 1 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+    histosData.add("invMass_pair_2", "Invariant Mass Distribution of 2 pions 2 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+    histosData.add("invMass_pair_3", "Invariant Mass Distribution of 2 pions 3 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+    histosData.add("invMass_pair_4", "Invariant Mass Distribution of 2 pions 4 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+
     // Invariant Mass of 0 charge events
     histosData.add("invMass_event_0charge_WTS_PID_Pi_domainA", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for p_{T} < 0.15 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBinsInvariantMass, invariantMassMin, invariantMassMax}});       // pT < 0.15GeV
     histosData.add("invMass_event_0charge_WTS_PID_Pi_domainB", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBinsInvariantMass, invariantMassMin, invariantMassMax}}); // 0.15GeV < pT < 0.8GeV
@@ -181,6 +187,12 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosMCgen.add("MCgen_particle_pT_contributed", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 10}});
     histosMCgen.add("MCgen_particle_rapidity", "Generated Rapidity; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosMCgen.add("MCgen_particle_rapidity_contributed", "Generated Rapidity; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
+
+    // Pair Invariant Mass
+    histosMCgen.add("MCgen_invMass_pair_1", "Invariant Mass Distribution of 2 pions 1 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+    histosMCgen.add("MCgen_invMass_pair_2", "Invariant Mass Distribution of 2 pions 2 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+    histosMCgen.add("MCgen_invMass_pair_3", "Invariant Mass Distribution of 2 pions 3 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+    histosMCgen.add("MCgen_invMass_pair_4", "Invariant Mass Distribution of 2 pions 4 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
 
     // Generated Transverse Momentum, Rapidty and Invariant Mass
     histosMCgen.add("MCgen_rhoPrime_pT", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
@@ -251,6 +263,12 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosMCreco.add("rapidity_event_non0charge_WTS_PID_Pi_domainA", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} < 0.15 GeV/c; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosMCreco.add("rapidity_event_non0charge_WTS_PID_Pi_domainB", "Rapidity of Events With Track Selection and PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c$; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosMCreco.add("rapidity_event_non0charge_WTS_PID_Pi_domainC", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} > 0.80 GeV/c; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
+
+    // Pair Invariant Mass
+    histosMCreco.add("invMass_pair_1", "Invariant Mass Distribution of 2 pions 1 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+    histosMCreco.add("invMass_pair_2", "Invariant Mass Distribution of 2 pions 2 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+    histosMCreco.add("invMass_pair_3", "Invariant Mass Distribution of 2 pions 3 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+    histosMCreco.add("invMass_pair_4", "Invariant Mass Distribution of 2 pions 4 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
 
     // Invariant Mass of 0 charge events
     histosMCreco.add("invMass_event_0charge_WTS_PID_Pi_domainA", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for p_{T} < 0.15 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBinsInvariantMass, invariantMassMin, invariantMassMax}});       // pT < 0.15GeV
@@ -509,6 +527,11 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
           histosData.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainA"), p1234.Rapidity());
           histosData.fill(HIST("invMass_event_0charge_WTS_PID_Pi_domainA"), p1234.M());
 
+          histosData.fill(HIST("invMass_pair_1"), (p1 + p3).M());
+          histosData.fill(HIST("invMass_pair_2"), (p1 + p4).M());
+          histosData.fill(HIST("invMass_pair_3"), (p2 + p3).M());
+          histosData.fill(HIST("invMass_pair_4"), (p2 + p4).M());
+
           auto phiPair1 = phiCollinsSoperFrame(k13, k24, k1234);
           auto phiPair2 = phiCollinsSoperFrame(k14, k23, k1234);
           auto cosThetaPair1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
@@ -631,6 +654,11 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosMCgen.fill(HIST("MCgen_4pion_pT"), p1234.Pt());
     histosMCgen.fill(HIST("MCgen_4pion_rapidity"), p1234.Rapidity());
     histosMCgen.fill(HIST("MCgen_4pion_invmass"), p1234.M());
+
+    histosMCgen.fill(HIST("MCgen_invMass_pair_1"), (piPlusvectors[0] + piMinusvectors[0]).M());
+    histosMCgen.fill(HIST("MCgen_invMass_pair_2"), (piPlusvectors[0] + piMinusvectors[1]).M());
+    histosMCgen.fill(HIST("MCgen_invMass_pair_3"), (piPlusvectors[1] + piMinusvectors[0]).M());
+    histosMCgen.fill(HIST("MCgen_invMass_pair_4"), (piPlusvectors[1] + piMinusvectors[1]).M());
 
     ROOT::Math::PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
 
@@ -825,6 +853,11 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
         if (p1234.Pt() < 0.15) {
           histosMCreco.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainA"), p1234.Rapidity());
           histosMCreco.fill(HIST("invMass_event_0charge_WTS_PID_Pi_domainA"), p1234.M());
+
+          histosMCreco.fill(HIST("invMass_pair_1"), (p1 + p3).M());
+          histosMCreco.fill(HIST("invMass_pair_2"), (p1 + p4).M());
+          histosMCreco.fill(HIST("invMass_pair_3"), (p2 + p3).M());
+          histosMCreco.fill(HIST("invMass_pair_4"), (p2 + p4).M());
 
           auto phiPair1 = phiCollinsSoperFrame(k13, k24, k1234);
           auto phiPair2 = phiCollinsSoperFrame(k14, k23, k1234);
