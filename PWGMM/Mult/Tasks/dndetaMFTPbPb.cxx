@@ -1233,8 +1233,8 @@ struct DndetaMFTPbPb {
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentFT0C,
-    "Count tracks in FT0C centrality bins based on BestCollisionsFwd table",
-    false);
+                 "Count tracks in FT0C centrality bins based on BestCollisionsFwd table",
+                 false);
 
   void processDatawBestTracksCentFT0CVariant1(
     CollsCentFT0CVariant1::iterator const& collision,
@@ -1260,8 +1260,8 @@ struct DndetaMFTPbPb {
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentFT0M,
-    "Count tracks in FT0M centrality bins based on BestCollisionsFwd table",
-    false);
+                 "Count tracks in FT0M centrality bins based on BestCollisionsFwd table",
+                 false);
 
   void processDatawBestTracksCentNGlobal(
     CollsCentNGlobal::iterator const& collision, FiltMftTracks const& tracks,
@@ -1286,8 +1286,8 @@ struct DndetaMFTPbPb {
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentMFT,
-    "Count tracks in MFT centrality bins based on BestCollisionsFwd table",
-    false);
+                 "Count tracks in MFT centrality bins based on BestCollisionsFwd table",
+                 false);
 
   Preslice<FiltMcMftTracks> perCol = o2::aod::fwdtrack::collisionId;
   PresliceUnsorted<CollsGenCentFT0C> recColPerMcCol =
@@ -1621,8 +1621,8 @@ struct DndetaMFTPbPb {
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processMCwBestTracksCentFT0C,
-    "Count MC particles in FT0C centrality bins using aod::BestCollisionsFwd",
-    false);
+                 "Count MC particles in FT0C centrality bins using aod::BestCollisionsFwd",
+                 false);
 
   void processMCwBestTracksCentFT0CVariant1(
     aod::McCollisions::iterator const& mccollision,
@@ -1651,8 +1651,8 @@ struct DndetaMFTPbPb {
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processMCwBestTracksCentFT0M,
-    "Count MC particles in FT0M centrality bins using aod::BestCollisionsFwd",
-    false);
+                 "Count MC particles in FT0M centrality bins using aod::BestCollisionsFwd",
+                 false);
 
   void processMCwBestTracksCentNGlobal(
     aod::McCollisions::iterator const& mccollision,
@@ -1681,8 +1681,8 @@ struct DndetaMFTPbPb {
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processMCwBestTracksCentMFT,
-    "Count MC particles in MFT centrality bins using aod::BestCollisionsFwd",
-    false);
+                 "Count MC particles in MFT centrality bins using aod::BestCollisionsFwd",
+                 false);
 
   using ParticlesI = soa::Join<aod::McParticles, aod::ParticlesToMftTracks>;
   Partition<ParticlesI> primariesI =
@@ -1841,7 +1841,7 @@ struct DndetaMFTPbPb {
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processTrkEffIdxCentFT0C,
-    "Process tracking efficiency (in FT0C centrality bins, indexed)", false);
+                 "Process tracking efficiency (in FT0C centrality bins, indexed)", false);
 
   /// @brief process function to calculate tracking efficiency (indexed) based
   /// on BestCollisionsFwd in FT0C bins
@@ -1919,8 +1919,8 @@ struct DndetaMFTPbPb {
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processTrkEffBestInclusive,
-    "Process tracking efficiency (inclusive, based on BestCollisionsFwd)",
-    false);
+                 "Process tracking efficiency (inclusive, based on BestCollisionsFwd)",
+                 false);
 
   void processTrkEffBestCentFT0C(
     soa::Join<CollsCentFT0C, aod::McCollisionLabels>::iterator const& collision,
@@ -2087,8 +2087,8 @@ struct DndetaMFTPbPb {
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processCheckAmbiguousMftTracksCentFT0C,
-    "Process checks for Ambiguous MFT tracks (in FT0C centrality bins)",
-    false);
+                 "Process checks for Ambiguous MFT tracks (in FT0C centrality bins)",
+                 false);
 
   Preslice<FiltMftTracks> filtTrkperCol = o2::aod::fwdtrack::collisionId;
 
