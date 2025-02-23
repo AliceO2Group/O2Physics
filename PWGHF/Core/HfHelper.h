@@ -17,6 +17,8 @@
 #ifndef PWGHF_CORE_HFHELPER_H_
 #define PWGHF_CORE_HFHELPER_H_
 
+#include <vector>
+
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
 #include <TPDGCode.h>
