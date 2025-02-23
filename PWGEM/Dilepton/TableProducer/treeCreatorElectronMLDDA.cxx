@@ -640,17 +640,19 @@ struct TreeCreatorElectronMLDDA {
           continue;
         }
 
-        if (v0cuts.cfg_min_mass_lambda < cascade.mLambda() && cascade.mLambda() < v0cuts.cfg_max_mass_lambda) {
-          continue;
+        if (bachelor.sign() < 0) { // Omega- -> L + K- -> p + pi- + K-
+          if (!IsProtonTight(pos) || !IsPionTight(neg)) {
+            continue;
+          }
+        } else { // Omegabar+ -> Lbar + K+ -> pbar + pi+ + K+
+          if (!IsProtonTight(neg) || !IsPionTight(pos)) {
+            continue;
+          }
         }
-        if (bachelor.sign() < 0) { // omega -> L + K- -> p + pi- + K-
-          if (IsProtonTight(pos) || IsPionTight(neg)) {
-            continue;
-          }
-        } else { // omegabar -> Lbar + K+ -> pbar + pi+ + K+
-          if (IsProtonTight(neg) || IsPionTight(pos)) {
-            continue;
-          }
+
+        registry.fill(HIST("Cascade/hMassLambda"), cascade.mLambda());
+        if (!(v0cuts.cfg_min_mass_lambda < cascade.mLambda() && cascade.mLambda() < v0cuts.cfg_max_mass_lambda)) {
+          continue;
         }
 
         if (cascade.cascradius() > cascade.v0radius()) {
@@ -659,7 +661,6 @@ struct TreeCreatorElectronMLDDA {
 
         registry.fill(HIST("Cascade/hV0PCA"), cascade.dcaV0daughters());
         registry.fill(HIST("Cascade/hV0CosPA"), cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
-        registry.fill(HIST("Cascade/hMassLambda"), cascade.mLambda());
         registry.fill(HIST("Cascade/hPCA"), cascade.dcacascdaughters()); // distance between bachelor and V0.
         registry.fill(HIST("Cascade/hCosPA"), cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
 
@@ -777,7 +778,7 @@ struct MLTrackQC {
     },
   };
 
-  void process(aod::EMPrimaryTracks const& tracks)
+  void processQC(aod::EMPrimaryTracks const& tracks)
   {
     for (auto& track : tracks) {
       registry.fill(HIST("hTPCdEdx_P_All"), track.p(), track.tpcSignal());
@@ -810,6 +811,10 @@ struct MLTrackQC {
       }
     } // end of track loop
   }
+  PROCESS_SWITCH(MLTrackQC, processQC, "process QC for single track level", false);
+
+  void processDummy(aod::EMPrimaryTracks const&) {}
+  PROCESS_SWITCH(MLTrackQC, processDummy, "process dummy", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

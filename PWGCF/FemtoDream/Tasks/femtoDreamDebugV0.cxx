@@ -84,9 +84,9 @@ struct femtoDreamDebugV0 {
   void init(InitContext&)
   {
     eventHisto.init(&EventRegistry, false);
-    posChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, false, ConfV01_ChildPos_PDGCode.value, true);
-    negChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, false, ConfV01_ChildNeg_PDGCode, true);
-    V0Histos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0TempFitVarMomentumBins, ConfDummy, ConfDummy, ConfV0TempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, false, ConfV01_PDGCode.value, true);
+    posChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, false, ConfV01_ChildPos_PDGCode.value, true);
+    negChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, false, ConfV01_ChildNeg_PDGCode, true);
+    V0Histos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0TempFitVarMomentumBins, ConfDummy, ConfDummy, ConfV0TempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, false, ConfV01_PDGCode.value, true);
     V0Registry.add("hArmenterosPodolanski/hArmenterosPodolanskiPlot", "; #alpha; p_{T} (MeV/#it{c})", kTH2F, {{100, -1, 1}, {500, -0.3, 2}});
   }
 

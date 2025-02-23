@@ -810,8 +810,9 @@ struct HfDataCreatorCharmResoReduced {
         charmHadDauTracks.push_back(candD.template prong1_as<Tr>());
         charmHadDauTracks.push_back(candD.template prong2_as<Tr>());
         if constexpr (withMl) {
-          registry.fill(HIST("hMassVsPtDplusAll"), candD.pt(), varUtils.invMassD);
+          std::copy(candD.mlProbDplusToPiKPi().begin(), candD.mlProbDplusToPiKPi().end(), bdtScores.begin());
         }
+        registry.fill(HIST("hMassVsPtDplusAll"), candD.pt(), varUtils.invMassD);
       } // else if
 
       // Get single track variables
