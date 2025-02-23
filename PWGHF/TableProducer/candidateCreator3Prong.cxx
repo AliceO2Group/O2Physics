@@ -817,7 +817,6 @@ struct HfCandidateCreator3ProngExpressions {
     }
 
     hfEvSelMc.addHistograms(registry); // particles monitoring
-
   }
 
   /// Performs MC matching.
