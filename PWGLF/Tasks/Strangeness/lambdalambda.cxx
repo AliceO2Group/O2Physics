@@ -147,11 +147,16 @@ struct lambdalambda {
 
   TRandom* rn = new TRandom();
 
+  bool IsTriggered;
+  bool IsSelected;
+
   void init(o2::framework::InitContext&)
   {
     AxisSpec centQaAxis = {80, 0.0, 80.0};
     AxisSpec PVzQaAxis = {300, -15.0, 15.0};
     AxisSpec combAxis = {3, -0.5, 2.5};
+
+    histos.add("hEventstat", "", {HistType::kTH1F, {{4, 0, 4}}});
 
     histos.add("Radius_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, RadiusAxis, combAxis}});
     histos.add("CPA_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, CPAAxis, combAxis}});
@@ -349,6 +354,9 @@ struct lambdalambda {
   template <typename C1, typename C2, typename V01, typename V02>
   void FillHistograms(C1 const& c1, C2 const& c2, V01 const& V01s, V02 const& V02s)
   {
+    IsTriggered = false;
+    IsSelected = false;
+
     for (auto& v01 : V01s) {
       auto postrack_v01 = v01.template posTrack_as<TrackCandidates>();
       auto negtrack_v01 = v01.template negTrack_as<TrackCandidates>();
@@ -426,6 +434,7 @@ struct lambdalambda {
 
         if (std::abs(RecoV0V0.Rapidity()) > cfgV0V0RapMax)
           continue;
+        IsTriggered = true;
 
         histos.fill(HIST("Radius_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02), V01Tag + V02Tag);
         histos.fill(HIST("CPA_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02), V01Tag + V02Tag);
@@ -437,6 +446,7 @@ struct lambdalambda {
           histos.fill(HIST("CPA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02), V01Tag + V02Tag);
           histos.fill(HIST("Distance_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDistance(v01, v02), V01Tag + V02Tag);
           histos.fill(HIST("DCA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02), V01Tag + V02Tag);
+          IsSelected = true;
         }
 
         if (doprocessDataSame) {
@@ -476,9 +486,11 @@ struct lambdalambda {
     } else if (cfgCentEst == 2) {
       centrality = collision.centFT0M();
     }
+    histos.fill(HIST("hEventstat"), 0.5);
     if (!eventSelected(collision)) {
       return;
     }
+    histos.fill(HIST("hEventstat"), 1.5);
 
     histos.fill(HIST("QA/CentDist"), centrality, 1.0);
     histos.fill(HIST("QA/PVzDist"), collision.posZ(), 1.0);
@@ -488,6 +500,11 @@ struct lambdalambda {
       EffMap = ccdb->getForTimeStamp<TProfile2D>(cfgEffCorPath.value, bc.timestamp());
     }
     FillHistograms(collision, collision, V0s, V0s);
+
+    if (IsTriggered)
+      histos.fill(HIST("hEventstat"), 2.5);
+    if (IsSelected)
+      histos.fill(HIST("hEventstat"), 3.5);
   }
   PROCESS_SWITCH(lambdalambda, processDataSame, "Process Event for same data", true);
 

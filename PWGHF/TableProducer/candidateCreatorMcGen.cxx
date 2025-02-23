@@ -51,14 +51,20 @@ struct HfCandidateCreatorMcGen {
   Configurable<bool> createLc{"createLc", false, "Create Lc in 3 prong"};
   Configurable<bool> createXic{"createXic", false, "Create Xic in 3 prong"};
 
-  void process(aod::McCollision const&,
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
+
+  void process(aod::McCollisions const& mcCollisions,
                aod::McParticles const& mcParticles)
   {
-    if (fill2Prong) {
-      hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticles, rowMcMatchGen2Prong, rejectBackground2Prong);
-    }
-    if (fill3Prong) {
-      hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticles, rowMcMatchGen3Prong, rejectBackground3Prong, createDplus, createDs, createLc, createXic);
+
+    for (const auto& mcCollision : mcCollisions) {
+      const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
+      if (fill2Prong) {
+        hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen2Prong, rejectBackground2Prong);
+      }
+      if (fill3Prong) {
+        hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen3Prong, rejectBackground3Prong, createDplus, createDs, createLc, createXic);
+      }
     }
     if (fillBplus) {
       hf_mc_gen::fillMcMatchGenBplus(mcParticles, rowMcMatchGenBplus);
