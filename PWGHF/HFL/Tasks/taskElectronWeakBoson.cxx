@@ -74,7 +74,7 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> energyIsolationMax{"energyIsolationMax", 0.1, "isolation cut on energy"};
   Configurable<int> trackIsolationMax{"trackIsolationMax", 3, "Maximum number of tracks in isolation cone"};
 
-  struct ElectronCandidate {
+  struct HfElectronCandidate {
     float pt, eta, phi, energy;
     ElectronCandidate(float p, float e, float ph, float en)
       : pt(p), eta(e), phi(ph), energy(en) {}
@@ -84,8 +84,8 @@ struct HfTaskElectronWeakBoson {
     float py() const { return pt * std::sin(phi); }
     float pz() const { return pt * std::sinh(eta); }
   };
-  std::vector<ElectronCandidate> selectedElectrons_Iso;
-  std::vector<ElectronCandidate> selectedElectrons_Ass;
+  std::vector<HfElectronCandidate> selectedElectrons_Iso;
+  std::vector<HfElectronCandidate> selectedElectrons_Ass;
 
   using SelectedClusters = o2::aod::EMCALClusters;
   // PbPb
@@ -385,8 +385,8 @@ struct HfTaskElectronWeakBoson {
           if (e1.px() == e2.px())
             continue;
           auto mass = hfHelper.invMassZtoEE(e1, e2);
-          double ptIso = sqrt(pow(e1.px(), 2) + pow(e1.py(), 2));
-          double ptAss = sqrt(pow(e2.px(), 2) + pow(e2.py(), 2));
+          float ptIso = std::sqrt(e1.px() * e1.px() + e1.py() * e1.py());
+          float ptAss = std::sqrt(e2.px() * e2.px() + e2.py() * e2.py());
           registry.fill(HIST("hInvMassDy"), ptIso, mass);
           if (ptAss < 20.0 && ptIso < 20.0)
             continue;
