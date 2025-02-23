@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 //
 ///
+/// \file dndetaMFTPbPb.cxx
 /// \brief  Task for calculating dNdeta in Pb-Pb collisions using MFT detector
 /// \author Gyula Bencedi, gyula.bencedi@cern.ch
 /// \since  Nov 2024
@@ -134,7 +135,7 @@ struct DndetaMFTPbPb {
     "centralityBins",
     {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
     "Centrality"};
-  ConfigurableAxis IrBins{"IrBins", {500, 0, 50}, "Interaction rate (kHz)"};
+  ConfigurableAxis irBins{"irBins", {500, 0, 50}, "Interaction rate (kHz)"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
@@ -247,7 +248,7 @@ struct DndetaMFTPbPb {
       x->SetBinLabel(2, "Selected");
 
       qaregistry.add("hOccIRate", "hOccIRate", HistType::kTH2F,
-                     {occupancyAxis, IrBins});
+                     {occupancyAxis, irBins});
 
       registry.add({"Events/NtrkZvtx",
                     "; N_{trk}; Z_{vtx} (cm); occupancy",
@@ -333,7 +334,7 @@ struct DndetaMFTPbPb {
       hstat->GetAxis(0)->SetBinLabel(2, "Selected");
 
       qaregistry.add("hCentOccIRate", "hCentOccIRate", HistType::kTHnSparseF,
-                     {centralityAxis, occupancyAxis, IrBins});
+                     {centralityAxis, occupancyAxis, irBins});
 
       qaregistry.add({"Events/Centrality/hCent",
                       "; centrality; occupancy",
@@ -1231,8 +1232,7 @@ struct DndetaMFTPbPb {
     processDatawBestTracks<CollsCentFT0C>(collision, tracks, besttracks, bcs);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processDatawBestTracksCentFT0C,
+  PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentFT0C,
     "Count tracks in FT0C centrality bins based on BestCollisionsFwd table",
     false);
 
@@ -1259,8 +1259,7 @@ struct DndetaMFTPbPb {
     processDatawBestTracks<CollsCentFT0M>(collision, tracks, besttracks, bcs);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processDatawBestTracksCentFT0M,
+  PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentFT0M,
     "Count tracks in FT0M centrality bins based on BestCollisionsFwd table",
     false);
 
@@ -1286,8 +1285,7 @@ struct DndetaMFTPbPb {
     processDatawBestTracks<CollsCentMFT>(collision, tracks, besttracks, bcs);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processDatawBestTracksCentMFT,
+  PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentMFT,
     "Count tracks in MFT centrality bins based on BestCollisionsFwd table",
     false);
 
@@ -1622,8 +1620,7 @@ struct DndetaMFTPbPb {
       mccollision, collisions, particles, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processMCwBestTracksCentFT0C,
+  PROCESS_SWITCH(DndetaMFTPbPb, processMCwBestTracksCentFT0C,
     "Count MC particles in FT0C centrality bins using aod::BestCollisionsFwd",
     false);
 
@@ -1653,8 +1650,7 @@ struct DndetaMFTPbPb {
       mccollision, collisions, particles, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processMCwBestTracksCentFT0M,
+  PROCESS_SWITCH(DndetaMFTPbPb, processMCwBestTracksCentFT0M,
     "Count MC particles in FT0M centrality bins using aod::BestCollisionsFwd",
     false);
 
@@ -1684,8 +1680,7 @@ struct DndetaMFTPbPb {
       mccollision, collisions, particles, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processMCwBestTracksCentMFT,
+  PROCESS_SWITCH(DndetaMFTPbPb, processMCwBestTracksCentMFT,
     "Count MC particles in MFT centrality bins using aod::BestCollisionsFwd",
     false);
 
@@ -1845,8 +1840,7 @@ struct DndetaMFTPbPb {
                                                        particles, tracks);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processTrkEffIdxCentFT0C,
+  PROCESS_SWITCH(DndetaMFTPbPb, processTrkEffIdxCentFT0C,
     "Process tracking efficiency (in FT0C centrality bins, indexed)", false);
 
   /// @brief process function to calculate tracking efficiency (indexed) based
@@ -1924,8 +1918,7 @@ struct DndetaMFTPbPb {
                                                 particles, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processTrkEffBestInclusive,
+  PROCESS_SWITCH(DndetaMFTPbPb, processTrkEffBestInclusive,
     "Process tracking efficiency (inclusive, based on BestCollisionsFwd)",
     false);
 
@@ -2093,8 +2086,7 @@ struct DndetaMFTPbPb {
       collision, allcollisions, track);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processCheckAmbiguousMftTracksCentFT0C,
+  PROCESS_SWITCH(DndetaMFTPbPb, processCheckAmbiguousMftTracksCentFT0C,
     "Process checks for Ambiguous MFT tracks (in FT0C centrality bins)",
     false);
 
