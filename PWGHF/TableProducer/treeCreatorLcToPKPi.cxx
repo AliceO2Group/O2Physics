@@ -134,6 +134,16 @@ DECLARE_SOA_COLUMN(SigBgStatus, sigBgStatus, int);                       //! 0 b
 DECLARE_SOA_COLUMN(MultNTracksPV, multNTracksPV, int);
 } // namespace kf
 
+namespace kf_collision
+{
+DECLARE_SOA_COLUMN(PosXErr, posXErr, float); //! PV X coordinate uncertainty
+DECLARE_SOA_COLUMN(PosYErr, posYErr, float); //! PV Y coordinate uncertainty
+DECLARE_SOA_COLUMN(PosZErr, posZErr, float); //! PV Z coordinate uncertainty
+DECLARE_SOA_COLUMN(McPosX, mcPosX, float);   //! PV X coordinate uncertainty
+DECLARE_SOA_COLUMN(McPosY, mcPosY, float);   //! PV Y coordinate uncertainty
+DECLARE_SOA_COLUMN(McPosZ, mcPosZ, float);   //! PV Z coordinate uncertainty
+} // namespace kf_collision
+
 namespace mc_match
 {
 DECLARE_SOA_COLUMN(P, p, float);           //! Momentum, GeV/c
@@ -296,6 +306,12 @@ DECLARE_SOA_TABLE(HfCandLcFullEvs, "AOD", "HFCANDLCFULLEV",
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
+                  kf_collision::PosXErr,
+                  kf_collision::PosYErr,
+                  kf_collision::PosZErr,
+                  kf_collision::McPosX,
+                  kf_collision::McPosY,
+                  kf_collision::McPosZ,
                   full::IsEventReject,
                   full::RunNumber,
                   full::CentFT0A,
@@ -444,6 +460,8 @@ struct HfTreeCreatorLcToPKPi {
         centFDDM = collision.centFDDM();
       }
 
+      auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
+
       rowCandidateFullEvents(
         collision.globalIndex(),
         collision.mcCollisionId(),
@@ -451,6 +469,12 @@ struct HfTreeCreatorLcToPKPi {
         collision.posX(),
         collision.posY(),
         collision.posZ(),
+        std::sqrt(collision.covXX()),
+        std::sqrt(collision.covYY()),
+        std::sqrt(collision.covZZ()),
+        mcCollision.posX(),
+        mcCollision.posY(),
+        mcCollision.posZ(),
         0,
         collision.bc().runNumber(),
         centFT0A,
@@ -850,6 +874,12 @@ struct HfTreeCreatorLcToPKPi {
         collision.posX(),
         collision.posY(),
         collision.posZ(),
+        std::sqrt(collision.covXX()),
+        std::sqrt(collision.covYY()),
+        std::sqrt(collision.covZZ()),
+        UndefValueFloat,
+        UndefValueFloat,
+        UndefValueFloat,
         0,
         collision.bc().runNumber(),
         centFT0A,
