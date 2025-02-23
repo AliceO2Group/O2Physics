@@ -84,8 +84,8 @@ struct HfTaskElectronWeakBoson {
     float py() const { return pt * std::sin(phi); }
     float pz() const { return pt * std::sinh(eta); }
   };
-  std::vector<HfElectronCandidate> selectedElectrons_Iso;
-  std::vector<HfElectronCandidate> selectedElectrons_Ass;
+  std::vector<HfElectronCandidate> selectedElectronsIso;
+  std::vector<HfElectronCandidate> selectedElectronsAss;
 
   using SelectedClusters = o2::aod::EMCALClusters;
   // PbPb
@@ -271,7 +271,7 @@ struct HfTaskElectronWeakBoson {
       float energyTrk = 0.0;
 
       if (track.tpcNSigmaEl() > nsigTpcMinLose && track.tpcNSigmaEl() < nsigTpcMax) {
-        selectedElectrons_Ass.emplace_back(
+        selectedElectronsAss.emplace_back(
           track.pt(),
           track.eta(),
           track.phi(),
@@ -351,7 +351,7 @@ struct HfTaskElectronWeakBoson {
               if (isIsolated) {
                 registry.fill(HIST("hEopIsolation"), match.track_as<TrackEle>().pt(), eop);
 
-                selectedElectrons_Iso.emplace_back(
+                selectedElectronsIso.emplace_back(
                   match.track_as<TrackEle>().pt(),
                   match.track_as<TrackEle>().eta(),
                   match.track_as<TrackEle>().phi(),
@@ -376,11 +376,11 @@ struct HfTaskElectronWeakBoson {
     } // end of track loop
 
     // calculate inv. mass
-    if (selectedElectrons_Iso.size() > 1) {
-      for (size_t i = 0; i < selectedElectrons_Iso.size() - 1; ++i) {
-        const auto& e1 = selectedElectrons_Iso[i];
-        for (size_t j = 0; j < selectedElectrons_Ass.size() - 1; ++j) {
-          const auto& e2 = selectedElectrons_Ass[j];
+    if (selectedElectronsIso.size() > 1) {
+      for (size_t i = 0; i < selectedElectronsIso.size() - 1; ++i) {
+        const auto& e1 = selectedElectronsIso[i];
+        for (size_t j = 0; j < selectedElectronsAss.size() - 1; ++j) {
+          const auto& e2 = selectedElectronsAss[j];
 
           if (e1.px() == e2.px())
             continue;
