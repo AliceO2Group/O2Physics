@@ -39,7 +39,6 @@ class HfHelper
 
   // 2-prong
 
-
   // D0(bar) → π± K∓
 
   template <typename T>
