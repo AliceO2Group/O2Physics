@@ -8,6 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file identifiedBfFilter.cxx
+/// \brief Filters collisions and tracks according to selection criteria
+/// \author bghanley1995@gmail.com
 #include "PWGCF/TwoParticleCorrelations/TableProducer/identifiedBfFilter.h"
 
 #include <cmath>
