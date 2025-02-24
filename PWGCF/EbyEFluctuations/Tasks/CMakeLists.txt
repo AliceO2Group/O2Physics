@@ -54,7 +54,7 @@ o2physics_add_dpl_workflow(netcharge-fluctuations
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
-2physics_add_dpl_workflow(nch-cumulants-id
+o2physics_add_dpl_workflow(nch-cumulants-id
                     SOURCES NchCumulantsIdentified.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
