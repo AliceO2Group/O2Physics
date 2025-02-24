@@ -355,7 +355,6 @@ struct FlowQa {
       }
     }
     fGFW->CreateRegions();
-
   }
 
   template <char... chars>

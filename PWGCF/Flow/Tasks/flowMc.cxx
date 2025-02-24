@@ -248,7 +248,7 @@ struct FlowMc {
         if (withinPtRef) {
           histos.fill(HIST("hEPVsPhiMC"), evPhi, mcParticle.phi());
         }
-        
+
         if (validGlobal && withinPtRef) {
           histos.fill(HIST("hPhi"), mcParticle.phi());
           histos.fill(HIST("hPhiWeighted"), mcParticle.phi(), wacc);
