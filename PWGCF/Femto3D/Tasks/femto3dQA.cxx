@@ -68,6 +68,7 @@ struct QAHistograms {
   Configurable<float> _itsChi2NCl{"itsChi2NCl", 100.0, "upper limit for chi2 value of a fit over ITS clasters for a track"};
   Configurable<int> _particlePDG{"particlePDG", 2212, "PDG code of a particle to perform PID for (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> _tpcNSigma{"tpcNSigma", std::vector<float>{-4.0f, 4.0f}, "Nsigma range in TPC before the TOF is used"};
+  Configurable<std::vector<float>> _itsNSigma{"itsNSigma", std::vector<float>{-10.0f, 10.0f}, "Nsigma range in ITS to use along with TPC"};
   Configurable<float> _PIDtrshld{"PIDtrshld", 10.0, "value of momentum from which the PID is done with TOF (before that only TPC is used)"};
   Configurable<std::vector<float>> _tofNSigma{"tofNSigma", std::vector<float>{-4.0f, 4.0f}, "Nsigma range in TOF"};
   Configurable<std::vector<float>> _tpcNSigmaResidual{"tpcNSigmaResidual", std::vector<float>{-5.0f, 5.0f}, "residual TPC Nsigma cut to use with the TOF"};
@@ -165,16 +166,6 @@ struct QAHistograms {
         registry.add("nsigmaTPCDe", "nsigmaTPCDe", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
         registry.add("nsigmaITSDe", "nsigmaITSDe", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
         break;
-      case 1000010030:
-        registry.add("nsigmaTOFTr", "nsigmaTOFTr", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaTPCTr", "nsigmaTPCTr", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaITSTr", "nsigmaITSTr", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        break;
-      case 1000020030:
-        registry.add("nsigmaTOFHe", "nsigmaTOFHe", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaTPCHe", "nsigmaTPCHe", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaITSHe", "nsigmaITSHe", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        break;
       default:
         break;
     }
@@ -245,7 +236,7 @@ struct QAHistograms {
         registry.fill(HIST("TOFSignal_nocuts"), track.p(), track.beta());
       }
 
-      if (!TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld ? o2::aod::singletrackselector::TPCselection(track, TPCcuts) : o2::aod::singletrackselector::TOFselection(track, TOFcuts, _tpcNSigmaResidual.value))) {
+      if (!TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld ? o2::aod::singletrackselector::TPCselection<true>(track, TPCcuts, _itsNSigma.value) : o2::aod::singletrackselector::TOFselection(track, TOFcuts, _tpcNSigmaResidual.value))) {
         registry.fill(HIST("eta"), track.eta());
         registry.fill(HIST("phi"), track.phi());
         registry.fill(HIST("px"), track.px());
@@ -286,16 +277,6 @@ struct QAHistograms {
             registry.fill(HIST("nsigmaTPCDe"), track.p(), track.tpcNSigmaDe());
             registry.fill(HIST("nsigmaITSDe"), track.p(), track.itsNSigmaDe());
             break;
-          case 1000010030:
-            registry.fill(HIST("nsigmaTOFTr"), track.p(), track.tofNSigmaTr());
-            registry.fill(HIST("nsigmaTPCTr"), track.p(), track.tpcNSigmaTr());
-            registry.fill(HIST("nsigmaITSTr"), track.p(), track.itsNSigmaTr());
-            break;
-          case 1000020030:
-            registry.fill(HIST("nsigmaTOFHe"), track.p(), track.tofNSigmaHe());
-            registry.fill(HIST("nsigmaTPCHe"), track.p(), track.tpcNSigmaHe());
-            registry.fill(HIST("nsigmaITSHe"), track.p(), track.itsNSigmaHe());
-            break;
           default:
             break;
         }
@@ -308,13 +289,13 @@ struct QAHistograms {
     }
   }
 
-  void processDefault(soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>> const& collisions, soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>> const& tracks)
+  void processDefault(soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>> const& collisions, soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDHes>> const& tracks)
   {
     fillHistograms<false>(collisions, tracks);
   }
   PROCESS_SWITCH(QAHistograms, processDefault, "process default", true);
 
-  void processExtra(soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>> const& collisions, soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkExtras, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>> const& tracks)
+  void processExtra(soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>> const& collisions, soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkExtras, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDHes>> const& tracks)
   {
     fillHistograms<true>(collisions, tracks);
   }

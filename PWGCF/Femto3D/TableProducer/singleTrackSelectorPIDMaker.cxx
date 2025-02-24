@@ -88,17 +88,6 @@ struct StPidDe {
     }
   }
 };
-struct StPidTr {
-  Produces<o2::aod::SinglePIDTrs> table;
-  void process(o2::aod::SingleTrackSels const& tracks)
-  {
-    table.reserve(tracks.size());
-    for (int i = 0; i < tracks.size(); i++) {
-      table(singletrackselector::binning::nsigma::underflowBin,
-            singletrackselector::binning::nsigma::underflowBin);
-    }
-  }
-};
 struct StPidHe {
   Produces<o2::aod::SinglePIDHes> table;
   void process(o2::aod::SingleTrackSels const& tracks)
@@ -126,7 +115,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       {"O2singlepidka", {[&]() { workflow.push_back(adaptAnalysisTask<StPidKa>(cfgc)); }}},
       {"O2singlepidpr", {[&]() { workflow.push_back(adaptAnalysisTask<StPidPr>(cfgc)); }}},
       {"O2singlepidde", {[&]() { workflow.push_back(adaptAnalysisTask<StPidDe>(cfgc)); }}},
-      {"O2singlepidtr", {[&]() { workflow.push_back(adaptAnalysisTask<StPidTr>(cfgc)); }}},
       {"O2singlepidhe", {[&]() { workflow.push_back(adaptAnalysisTask<StPidHe>(cfgc)); }}}
 
     };
