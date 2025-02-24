@@ -142,10 +142,10 @@ struct phipbpb {
 
   using CollisionMCTrueTable = aod::McCollisions;
   using TrackMCTrueTable = aod::McParticles;
+
   using CollisionMCRecTableCentFT0C = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::EvSels>>;
   using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
-
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
 
   SliceCache cache;
@@ -253,6 +253,9 @@ struct phipbpb {
       histos.add("hSparseV2MCRecCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
 
       // weight
+      histos.add("hSparsePhiMCGenWeight", "hSparsePhiMCGenWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, thnAxisPt, {8, -0.8, 0.8}});
+      histos.add("hSparsePhiMCRecWeight", "hSparsePhiMCRecWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, thnAxisPt, {8, -0.8, 0.8}});
+
       histos.add("hImpactParameter", "Impact parameter", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("hEventPlaneAngle", "hEventPlaneAngle", kTH1F, {{200, -2.0f * TMath::Pi(), 2.0f * TMath::Pi()}});
       histos.add("hEventPlaneAngleRec", "hEventPlaneAngleRec", kTH1F, {{200, -2.0f * TMath::Pi(), 2.0f * TMath::Pi()}});
@@ -410,7 +413,8 @@ struct phipbpb {
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
   int currentRunNumber = -999;
   int lastRunNumber = -999;
-  TH3D* hweight;
+  // TH3D* hweight;
+  TH2D* hweight;
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks, aod::BCs const&*/, aod::BCsWithTimestamps const&)
   {
     if (!collision.sel8() || !collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
@@ -470,7 +474,8 @@ struct phipbpb {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
     if (useWeight && (currentRunNumber != lastRunNumber)) {
-      hweight = ccdb->getForTimeStamp<TH3D>(ConfWeightPath.value, bc.timestamp());
+      // hweight = ccdb->getForTimeStamp<TH3D>(ConfWeightPath.value, bc.timestamp());
+      hweight = ccdb->getForTimeStamp<TH2D>(ConfWeightPath.value, bc.timestamp());
     }
     lastRunNumber = currentRunNumber;
     int Npostrack = 0;
@@ -500,7 +505,8 @@ struct phipbpb {
       auto track1ID = track1.globalIndex();
       if (useWeight) {
         if (track1.pt() < 10.0 && track1.pt() > 0.15) {
-          weight1 = hweight->GetBinContent(hweight->FindBin(centrality, GetPhiInRange(track1.phi() - psiFT0C), track1.pt() + 0.000005));
+          // weight1 = hweight->GetBinContent(hweight->FindBin(centrality, GetPhiInRange(track1.phi() - psiFT0C), track1.pt() + 0.000005));
+          weight1 = 1 + hweight->GetBinContent(hweight->FindBin(centrality, track1.pt() + 0.000005)) * TMath::Cos(2.0 * GetPhiInRange(track1.phi() - psiFT0C));
         } else {
           weight1 = 1;
         }
@@ -538,7 +544,8 @@ struct phipbpb {
         }
         if (useWeight) {
           if (track2.pt() < 10.0 && track2.pt() > 0.15) {
-            weight2 = hweight->GetBinContent(hweight->FindBin(centrality, GetPhiInRange(track2.phi() - psiFT0C), track2.pt() + 0.000005));
+            // weight2 = hweight->GetBinContent(hweight->FindBin(centrality, GetPhiInRange(track2.phi() - psiFT0C), track2.pt() + 0.000005));
+            weight2 = 1 + hweight->GetBinContent(hweight->FindBin(centrality, track2.pt() + 0.000005)) * TMath::Cos(2.0 * GetPhiInRange(track2.phi() - psiFT0C));
           } else {
             weight2 = 1;
           }
@@ -552,7 +559,7 @@ struct phipbpb {
         auto phimother = PhiMesonMother.Phi();
         histos.fill(HIST("hpTvsRapidity"), PhiMesonMother.Pt(), PhiMesonMother.Rapidity());
         auto totalweight = weight1 * weight2;
-        if (totalweight <= 0.0005) {
+        if (totalweight <= 0.0000005) {
           totalweight = 1.0;
         }
         // LOGF(info, Form("weight %f    %f",weight1, weight2));
@@ -992,6 +999,153 @@ struct phipbpb {
     histos.fill(HIST("hNchVsImpactParameter"), imp, nCh);
   }
   PROCESS_SWITCH(phipbpb, processMCweight, "Process MC Weight", false);
+
+  void processMCPhiWeight(CollisionMCTrueTable::iterator const& TrueCollision, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  {
+    float imp = TrueCollision.impactParameter();
+    float evPhi = TrueCollision.eventPlaneAngle() / 2.0;
+    float centclass = -999;
+    if (imp >= 0 && imp < 3.49) {
+      centclass = 2.5;
+    }
+    if (imp >= 3.49 && imp < 4.93) {
+      centclass = 7.5;
+    }
+    if (imp >= 4.93 && imp < 6.98) {
+      centclass = 15.0;
+    }
+    if (imp >= 6.98 && imp < 8.55) {
+      centclass = 25.0;
+    }
+    if (imp >= 8.55 && imp < 9.87) {
+      centclass = 35.0;
+    }
+    if (imp >= 9.87 && imp < 11) {
+      centclass = 45.0;
+    }
+    if (imp >= 11 && imp < 12.1) {
+      centclass = 55.0;
+    }
+    if (imp >= 12.1 && imp < 13.1) {
+      centclass = 65.0;
+    }
+    if (imp >= 13.1 && imp < 14) {
+      centclass = 75.0;
+    }
+    histos.fill(HIST("hImpactParameter"), imp);
+    histos.fill(HIST("hEventPlaneAngle"), evPhi);
+    if (centclass < 0.0 || centclass > 80.0) {
+      return;
+    }
+    for (auto& RecCollision : RecCollisions) {
+      auto psiFT0C = evPhi;
+      if (!RecCollision.sel8()) {
+        continue;
+      }
+      if (!RecCollision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        continue;
+      }
+      if (TMath::Abs(RecCollision.posZ()) > cfgCutVertex) {
+        continue;
+      }
+      auto oldindex = -999;
+      auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
+      // loop over reconstructed particle
+      for (auto track1 : Rectrackspart) {
+        if (!track1.has_mcParticle()) {
+          continue;
+        }
+        auto track1ID = track1.index();
+        for (auto track2 : Rectrackspart) {
+          if (!track2.has_mcParticle()) {
+            continue;
+          }
+          auto track2ID = track2.index();
+          if (track2ID <= track1ID) {
+            continue;
+          }
+          const auto mctrack1 = track1.mcParticle();
+          const auto mctrack2 = track2.mcParticle();
+          int track1PDG = TMath::Abs(mctrack1.pdgCode());
+          int track2PDG = TMath::Abs(mctrack2.pdgCode());
+          if (!mctrack1.isPhysicalPrimary()) {
+            continue;
+          }
+          if (!mctrack2.isPhysicalPrimary()) {
+            continue;
+          }
+          if (!(track1PDG == 321 && track2PDG == 321)) {
+            continue;
+          }
+          if (!selectionTrack(track1) || !selectionTrack(track2) || !selectionPIDpTdependent(track1) || !selectionPIDpTdependent(track2) || track1.sign() * track2.sign() > 0) {
+            continue;
+          }
+          for (auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
+            for (auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
+              if (mothertrack1.pdgCode() != mothertrack2.pdgCode()) {
+                continue;
+              }
+              if (mothertrack1 != mothertrack2) {
+                continue;
+              }
+              if (TMath::Abs(mothertrack1.y()) > confRapidity) {
+                continue;
+              }
+              if (TMath::Abs(mothertrack1.pdgCode()) != 333) {
+                continue;
+              }
+              // if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
+              if (avoidsplitrackMC && oldindex == mothertrack1.index()) {
+                histos.fill(HIST("h1PhiRecsplit"), mothertrack1.pt());
+                continue;
+              }
+              // oldindex = mothertrack1.globalIndex();
+              oldindex = mothertrack1.index();
+              auto PhiMinusPsi = GetPhiInRange(mothertrack1.phi() - psiFT0C);
+              histos.fill(HIST("hSparsePhiMCRecWeight"), centclass, PhiMinusPsi, TMath::Power(TMath::Cos(2.0 * PhiMinusPsi), 2.0), mothertrack1.pt(), mothertrack1.eta());
+            }
+          }
+        }
+      }
+      // loop over generated particle
+      for (auto& mcParticle : GenParticles) {
+        if (TMath::Abs(mcParticle.y()) > confRapidity) {
+          continue;
+        }
+        if (mcParticle.pdgCode() != 333) {
+          continue;
+        }
+        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+        if (kDaughters.size() != 2) {
+          continue;
+        }
+        auto daughtp = false;
+        auto daughtm = false;
+        for (auto kCurrentDaughter : kDaughters) {
+          if (!kCurrentDaughter.isPhysicalPrimary()) {
+            continue;
+          }
+          if (kCurrentDaughter.pdgCode() == +321) {
+            if (kCurrentDaughter.pt() > cfgCutPT && TMath::Abs(kCurrentDaughter.eta()) < cfgCutEta) {
+              daughtp = true;
+            }
+            KaonPlus = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKa);
+          } else if (kCurrentDaughter.pdgCode() == -321) {
+            if (kCurrentDaughter.pt() > cfgCutPT && TMath::Abs(kCurrentDaughter.eta()) < cfgCutEta) {
+              daughtm = true;
+            }
+            KaonMinus = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKa);
+          }
+        }
+        if (daughtp && daughtm) {
+          auto PhiMinusPsiGen = GetPhiInRange(mcParticle.phi() - psiFT0C);
+          histos.fill(HIST("hSparsePhiMCGenWeight"), centclass, PhiMinusPsiGen, TMath::Power(TMath::Cos(2.0 * PhiMinusPsiGen), 2.0), mcParticle.pt(), mcParticle.eta());
+        }
+      }
+    } // rec collision loop
+
+  } // process MC
+  PROCESS_SWITCH(phipbpb, processMCPhiWeight, "Process MC Phi Weight", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
