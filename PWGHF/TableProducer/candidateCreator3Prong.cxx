@@ -787,11 +787,6 @@ struct HfCandidateCreator3ProngExpressions {
   o2::framework::Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
   o2::framework::Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
 
-  bool createDplus{false};
-  bool createDs{false};
-  bool createLc{false};
-  bool createXic{false};
-
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   HistogramRegistry registry{"registry"};
@@ -817,28 +812,11 @@ struct HfCandidateCreator3ProngExpressions {
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-3prong") == 0) {
         hfEvSelMc.configureFromDevice(device);
-        for (const auto& option : device.options) {
-          if (option.name.compare("createDplus") == 0) {
-            createDplus = option.defaultValue.get<bool>();
-          } else if (option.name.compare("createDs") == 0) {
-            createDs = option.defaultValue.get<bool>();
-          } else if (option.name.compare("createLc") == 0) {
-            createLc = option.defaultValue.get<bool>();
-          } else if (option.name.compare("createXic") == 0) {
-            createXic = option.defaultValue.get<bool>();
-          }
-        }
         break;
       }
     }
 
     hfEvSelMc.addHistograms(registry); // particles monitoring
-
-    LOGP(info, "Flags for candidate creation from the reco workflow:");
-    LOGP(info, "    --> createDplus = {}", createDplus);
-    LOGP(info, "    --> createDs = {}", createDs);
-    LOGP(info, "    --> createLc = {}", createLc);
-    LOGP(info, "    --> createXic = {}", createXic);
   }
 
   /// Performs MC matching.
@@ -897,7 +875,7 @@ struct HfCandidateCreator3ProngExpressions {
       }
 
       // D± → π± K∓ π±
-      if (createDplus) {
+      if (flag == 0) {
         if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks, &nInteractionsWithMaterial);
         } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
@@ -913,7 +891,7 @@ struct HfCandidateCreator3ProngExpressions {
       }
 
       // Ds± → K± K∓ π± and D± → K± K∓ π±
-      if (flag == 0 && createDs) {
+      if (flag == 0) {
         bool isDplus = false;
         if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks, &nInteractionsWithMaterial);
@@ -958,8 +936,21 @@ struct HfCandidateCreator3ProngExpressions {
         }
       }
 
+      // D* → D0π → Kππ
+      if (flag == 0) {
+        if (matchKinkedDecayTopology) {
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2, &nKinkedTracks);
+        } else {
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2);
+        }
+        if (indexRec > -1) {
+          flag = sign * (1 << DstarToPiKPiBkg);
+          channel = 1;
+        }
+      }
+
       // Λc± → p± K∓ π±
-      if (flag == 0 && createLc) {
+      if (flag == 0) {
         if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks, &nInteractionsWithMaterial);
         } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
@@ -994,7 +985,7 @@ struct HfCandidateCreator3ProngExpressions {
       }
 
       // Ξc± → p± K∓ π±
-      if (flag == 0 && createXic) {
+      if (flag == 0) {
         if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks, &nInteractionsWithMaterial);
         } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
@@ -1049,7 +1040,7 @@ struct HfCandidateCreator3ProngExpressions {
         }
         continue;
       }
-      hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground, createDplus, createDs, createLc, createXic);
+      hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
     }
   }
 

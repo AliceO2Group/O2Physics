@@ -79,7 +79,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
 }
 
 template <typename T, typename U, typename V>
-void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground, bool createDplus, bool createDs, bool createLc, bool createXic)
+void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground)
 {
   using namespace o2::constants::physics;
 
@@ -104,14 +104,14 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     }
 
     // D± → π± K∓ π±
-    if (createDplus) {
+    if (flag == 0) {
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi);
       }
     }
 
     // Ds± → K± K∓ π± and D± → K± K∓ π±
-    if (flag == 0 && createDs) {
+    if (flag == 0) {
       bool isDplus = false;
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
@@ -139,8 +139,15 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       }
     }
 
+    // D*± → D0(bar) π±
+    if (flag == 0) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2)) {
+        flag = sign * (1 << o2::aod::hf_cand_3prong::DstarToPiKPiBkg);
+      }
+    }
+
     // Λc± → p± K∓ π±
-    if (flag == 0 && createLc) {
+    if (flag == 0) {
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi);
 
@@ -163,7 +170,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     }
 
     // Ξc± → p± K∓ π±
-    if (flag == 0 && createXic) {
+    if (flag == 0) {
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::XicToPKPi);
       }

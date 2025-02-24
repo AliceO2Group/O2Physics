@@ -949,6 +949,8 @@ enum DecayType { DplusToPiKPi = 0,
                  XicToPKPi,
                  N3ProngDecays }; // always keep N3ProngDecays at the end
 
+static const int DstarToPiKPiBkg = DecayType::N3ProngDecays;
+
 // Ds± → K± K∓ π± or D± → K± K∓ π±
 
 enum DecayChannelDToKKPi {
