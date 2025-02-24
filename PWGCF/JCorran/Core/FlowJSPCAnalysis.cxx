@@ -113,7 +113,7 @@ void FlowJSPCAnalysis::calculateCorrelators(const int fCentBin)
     weightCorrelationDenom = dataCorrelation[1];
 
     // Check if the values are real numbers before filling.
-    if (std::isnan(correlationNum) | std::isnan(correlationDenom) | std::isnan(weightCorrelationNum) | std::isnan(weightCorrelationDenom))
+    if (std::isnan(correlationNum) || std::isnan(correlationDenom) || std::isnan(weightCorrelationNum) || std::isnan(weightCorrelationDenom))
       continue;
 
     // Histogram filling
