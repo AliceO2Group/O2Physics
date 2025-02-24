@@ -63,7 +63,7 @@ auto vecSidebandRightInnerDefault = std::vector<double>{sidebandRightInnerDefaul
 const double sidebandRightOuterDefault[nBinsPtCorrelation] = {0.154, 0.154, 0.154, 0.154, 0.154, 0.154, 0.154, 0.154};
 auto vecSidebandRightOuterDefault = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + nBinsPtCorrelation};
 
-const int npTBinsEfficiency = o2::analysis::hf_cuts_dstar_to_d0_pi::nBinsPt;
+const int npTBinsEfficiency = o2::analysis::hf_cuts_dstar_to_d0_pi::NBinsPt;
 std::vector<double> vecEfficiencyDstarDefault(npTBinsEfficiency); // line # 76 in taskCorrelationDstarHadron.cxx; why (npTBinsEfficiency+1) ?
 
 // Dstar-Hadron correlation pair
