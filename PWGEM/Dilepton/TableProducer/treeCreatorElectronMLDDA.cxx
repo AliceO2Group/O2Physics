@@ -49,7 +49,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
@@ -285,7 +285,7 @@ struct TreeCreatorElectronMLDDA {
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
@@ -340,7 +340,7 @@ struct TreeCreatorElectronMLDDA {
   }
 
   template <typename TTrack>
-  bool IsSelectedTrack(TTrack const& track)
+  bool isSelectedTrack(TTrack const& track)
   {
     if (std::fabs(track.eta()) > trackcuts.cfg_max_eta || track.pt() < trackcuts.cfg_min_pt) {
       return false;
@@ -383,7 +383,7 @@ struct TreeCreatorElectronMLDDA {
   }
 
   template <typename TTrack>
-  bool IsSelectedV0Leg(TTrack const& track)
+  bool isSelectedV0Leg(TTrack const& track)
   {
     if (std::fabs(track.eta()) > v0cuts.cfg_max_eta || track.pt() < v0cuts.cfg_min_pt) {
       return false;
@@ -426,7 +426,7 @@ struct TreeCreatorElectronMLDDA {
   }
 
   template <typename TTrack>
-  bool IsElectron(TTrack const& track)
+  bool isElectron(TTrack const& track)
   {
     bool is_El_TPC = v0cuts.cfg_min_TPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < v0cuts.cfg_max_TPCNsigmaEl;
     bool is_El_TOF = track.hasTOF() ? v0cuts.cfg_min_TOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < v0cuts.cfg_max_TOFNsigmaEl : true; // TOFif
@@ -434,7 +434,7 @@ struct TreeCreatorElectronMLDDA {
   }
 
   template <typename TTrack>
-  bool IsPion(TTrack const& track)
+  bool isPion(TTrack const& track)
   {
     bool is_Pi_TPC = v0cuts.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < v0cuts.cfg_max_TPCNsigmaPi;
     bool is_Pi_TOF = track.hasTOF() ? v0cuts.cfg_min_TOFNsigmaPi < track.tofNSigmaPi() && track.tofNSigmaPi() < v0cuts.cfg_max_TOFNsigmaPi : true; // TOFif
@@ -442,7 +442,7 @@ struct TreeCreatorElectronMLDDA {
   }
 
   template <typename TTrack>
-  bool IsKaon(TTrack const& track)
+  bool isKaon(TTrack const& track)
   {
     bool is_Ka_TPC = v0cuts.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < v0cuts.cfg_max_TPCNsigmaKa;
     bool is_Ka_TOF = track.hasTOF() ? v0cuts.cfg_min_TOFNsigmaKa < track.tofNSigmaKa() && track.tofNSigmaKa() < v0cuts.cfg_max_TOFNsigmaKa : true; // TOFif
@@ -450,7 +450,7 @@ struct TreeCreatorElectronMLDDA {
   }
 
   template <typename TTrack>
-  bool IsProton(TTrack const& track)
+  bool isProton(TTrack const& track)
   {
     bool is_Pr_TPC = v0cuts.cfg_min_TPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < v0cuts.cfg_max_TPCNsigmaPr;
     bool is_Pr_TOF = track.hasTOF() ? v0cuts.cfg_min_TOFNsigmaPr < track.tofNSigmaPr() && track.tofNSigmaPr() < v0cuts.cfg_max_TOFNsigmaPr : true; // TOFif
@@ -458,7 +458,7 @@ struct TreeCreatorElectronMLDDA {
   }
 
   template <typename TTrack>
-  bool IsPionTight(TTrack const& track)
+  bool isPionTight(TTrack const& track)
   {
     bool is_Pi_TPC = v0cuts.cfg_min_TPCNsigmaPi_tight < track.tpcNSigmaPi() && track.tpcNSigmaPi() < v0cuts.cfg_max_TPCNsigmaPi_tight;
     bool is_Pi_TOF = track.hasTOF() ? v0cuts.cfg_min_TOFNsigmaPi_tight < track.tofNSigmaPi() && track.tofNSigmaPi() < v0cuts.cfg_max_TOFNsigmaPi_tight : true; // TOFif
@@ -466,7 +466,7 @@ struct TreeCreatorElectronMLDDA {
   }
 
   template <typename TTrack>
-  bool IsProtonTight(TTrack const& track)
+  bool isProtonTight(TTrack const& track)
   {
     bool is_Pr_TPC = v0cuts.cfg_min_TPCNsigmaPr_tight < track.tpcNSigmaPr() && track.tpcNSigmaPr() < v0cuts.cfg_max_TPCNsigmaPr_tight;
     bool is_Pr_TOF = track.hasTOF() ? v0cuts.cfg_min_TOFNsigmaPr_tight < track.tofNSigmaPr() && track.tofNSigmaPr() < v0cuts.cfg_max_TOFNsigmaPr_tight : true; // TOFif
@@ -510,17 +510,17 @@ struct TreeCreatorElectronMLDDA {
   void processPID(filteredMyCollisions const& collisions, aod::BCsWithTimestamps const&, filteredV0s const& v0s, filteredCascades const& cascades, MyTracks const& tracks)
   {
     stored_trackIds.reserve(tracks.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1.0); // all
 
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
-      for (auto& v0 : v0s_coll) {
+      for (const auto& v0 : v0s_coll) {
         auto pos = v0.template posTrack_as<MyTracks>();
         auto neg = v0.template negTrack_as<MyTracks>();
-        if (!IsSelectedV0Leg(pos) || !IsSelectedV0Leg(neg)) {
+        if (!isSelectedV0Leg(pos) || !isSelectedV0Leg(neg)) {
           continue;
         }
         if (pos.sign() * neg.sign() > 0) {
@@ -538,7 +538,7 @@ struct TreeCreatorElectronMLDDA {
           continue;
         }
 
-        if (IsPion(pos) && IsPion(neg)) {
+        if (isPion(pos) && isPion(neg)) {
           registry.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
           if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
             registry.fill(HIST("V0/hTPCdEdx_P_Pi"), neg.p(), neg.tpcSignal());
@@ -553,7 +553,7 @@ struct TreeCreatorElectronMLDDA {
             }
           }
         }
-        if (IsProton(pos) && IsPionTight(neg)) {
+        if (isProton(pos) && isPionTight(neg)) {
           registry.fill(HIST("V0/hMassLambda"), v0.mLambda());
           if (v0cuts.cfg_min_mass_lambda < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda) {
             if (dist01(engine) < downscaling_proton) {
@@ -563,7 +563,7 @@ struct TreeCreatorElectronMLDDA {
             registry.fill(HIST("V0/hTOFbeta_P_Pr"), pos.p(), pos.beta());
           }
         }
-        if (IsPionTight(pos) && IsProton(neg)) {
+        if (isPionTight(pos) && isProton(neg)) {
           registry.fill(HIST("V0/hMassAntiLambda"), v0.mAntiLambda());
           if (v0cuts.cfg_min_mass_lambda < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda) {
             if (dist01(engine) < downscaling_proton) {
@@ -573,7 +573,7 @@ struct TreeCreatorElectronMLDDA {
             registry.fill(HIST("V0/hTOFbeta_P_Pr"), neg.p(), neg.beta());
           }
         }
-        if (IsElectron(pos) && IsElectron(neg) && store_v0photons) {
+        if (isElectron(pos) && isElectron(neg) && store_v0photons) {
           registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
           registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
           registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
@@ -595,12 +595,12 @@ struct TreeCreatorElectronMLDDA {
       if (!store_v0photons) {
         auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
         auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
-        for (auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) {
-          if (!IsSelectedTrack(pos) || !IsSelectedTrack(neg)) {
+        for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) {
+          if (!isSelectedTrack(pos) || !isSelectedTrack(neg)) {
             continue;
           }
 
-          if (!IsElectron(pos) || !IsElectron(neg)) {
+          if (!isElectron(pos) || !isElectron(neg)) {
             continue;
           }
 
@@ -627,12 +627,12 @@ struct TreeCreatorElectronMLDDA {
       }
 
       auto cascades_coll = cascades.sliceBy(perCollision_cascade, collision.globalIndex());
-      for (auto& cascade : cascades_coll) {
+      for (const auto& cascade : cascades_coll) {
         // Track casting
         auto bachelor = cascade.template bachelor_as<MyTracks>();
         auto pos = cascade.template posTrack_as<MyTracks>();
         auto neg = cascade.template negTrack_as<MyTracks>();
-        if (!IsSelectedV0Leg(pos) || !IsSelectedV0Leg(neg) || !IsSelectedV0Leg(bachelor)) {
+        if (!isSelectedV0Leg(pos) || !isSelectedV0Leg(neg) || !isSelectedV0Leg(bachelor)) {
           continue;
         }
 
@@ -641,11 +641,11 @@ struct TreeCreatorElectronMLDDA {
         }
 
         if (bachelor.sign() < 0) { // Omega- -> L + K- -> p + pi- + K-
-          if (!IsProtonTight(pos) || !IsPionTight(neg)) {
+          if (!isProtonTight(pos) || !isPionTight(neg)) {
             continue;
           }
         } else { // Omegabar+ -> Lbar + K+ -> pbar + pi+ + K+
-          if (!IsProtonTight(neg) || !IsPionTight(pos)) {
+          if (!isProtonTight(neg) || !isPionTight(pos)) {
             continue;
           }
         }
@@ -690,14 +690,14 @@ struct TreeCreatorElectronMLDDA {
         float ctauXi = length / mom * o2::constants::physics::MassXiMinus;       // 4.91 cm in PDG
         float ctauOmega = length / mom * o2::constants::physics::MassOmegaMinus; // 2.46 cm in PDG
 
-        if (IsPion(bachelor)) {
+        if (isPion(bachelor)) {
           registry.fill(HIST("Cascade/hMassXi"), cascade.mXi());
           registry.fill(HIST("Cascade/hMassPt_Xi"), cascade.mXi(), cascade.pt());
           registry.fill(HIST("Cascade/hMassPt_Xi_bachelor"), cascade.mXi(), bachelor.p());
           registry.fill(HIST("Cascade/hRxy_Xi"), cascade.mXi(), cascade.cascradius());
           registry.fill(HIST("Cascade/hCTau_Xi"), cascade.mXi(), ctauXi);
         }
-        if (!(cascadecuts.cfg_min_mass_Xi < cascade.mXi() && cascade.mXi() < cascadecuts.cfg_max_mass_Xi) && IsKaon(bachelor)) { // reject Xi candidates
+        if (!(cascadecuts.cfg_min_mass_Xi < cascade.mXi() && cascade.mXi() < cascadecuts.cfg_max_mass_Xi) && isKaon(bachelor)) { // reject Xi candidates
           registry.fill(HIST("Cascade/hMassOmega"), cascade.mOmega());
           registry.fill(HIST("Cascade/hMassPt_Omega"), cascade.mOmega(), cascade.pt());
           registry.fill(HIST("Cascade/hMassPt_Omega_bachelor"), cascade.mOmega(), bachelor.p());
@@ -714,8 +714,8 @@ struct TreeCreatorElectronMLDDA {
       } // end of cascade loop
 
       auto tracks_coll = tracks.sliceBy(perCollision_track, collision.globalIndex());
-      for (auto& track : tracks_coll) {
-        if (!IsSelectedTrack(track)) {
+      for (const auto& track : tracks_coll) {
+        if (!isSelectedTrack(track)) {
           continue;
         }
 
@@ -780,7 +780,7 @@ struct MLTrackQC {
 
   void processQC(aod::EMPrimaryTracks const& tracks)
   {
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       registry.fill(HIST("hTPCdEdx_P_All"), track.p(), track.tpcSignal());
       registry.fill(HIST("hTOFbeta_P_All"), track.p(), track.beta());
       registry.fill(HIST("hITSClusterSize_P_All"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
