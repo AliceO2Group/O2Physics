@@ -308,7 +308,7 @@ struct lambdapolarization {
       histos.add("psi2/QA/cosPhi_cosPsi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
       histos.add("psi2/QA/cosTheta_cosPhi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
       histos.add("psi2/QA/cosTheta_cosPsi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
-      
+
       histos.add("psi2/QA/sinPhi_sinPsi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
       histos.add("psi2/QA/cosTheta_sinPhi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
       histos.add("psi2/QA/cosTheta_sinPsi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
