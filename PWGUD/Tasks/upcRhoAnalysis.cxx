@@ -66,6 +66,7 @@ DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
 DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
 DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
 DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
+DECLARE_SOA_COLUMN(NeutronClass, neutronClass, int);
 // pion tracks
 DECLARE_SOA_COLUMN(PhiRandom, phiRandom, float);
 DECLARE_SOA_COLUMN(PhiCharge, phiCharge, float);
@@ -84,7 +85,7 @@ DECLARE_SOA_TABLE(RecoTree, "AOD", "RECOTREE",
                   reco_tree::RunNumber, reco_tree::LocalBC, reco_tree::NumContrib, reco_tree::PosX, reco_tree::PosY, reco_tree::PosZ,
                   reco_tree::TotalFT0AmplitudeA, reco_tree::TotalFT0AmplitudeC, reco_tree::TotalFV0AmplitudeA, reco_tree::TotalFDDAmplitudeA, reco_tree::TotalFDDAmplitudeC,
                   reco_tree::TimeFT0A, reco_tree::TimeFT0C, reco_tree::TimeFV0A, reco_tree::TimeFDDA, reco_tree::TimeFDDC,
-                  reco_tree::EnergyCommonZNA, reco_tree::EnergyCommonZNC, reco_tree::TimeZNA, reco_tree::TimeZNC,
+                  reco_tree::EnergyCommonZNA, reco_tree::EnergyCommonZNC, reco_tree::TimeZNA, reco_tree::TimeZNC, reco_tree::NeutronClass,
                   reco_tree::PhiRandom, reco_tree::PhiCharge, reco_tree::TrackSign, reco_tree::TrackPt, reco_tree::TrackEta, reco_tree::TrackPhi, reco_tree::TrackPiPID, reco_tree::TrackElPID, reco_tree::TrackKaPID, reco_tree::TrackDcaXY, reco_tree::TrackDcaZ, reco_tree::TrackTpcSignal);
 
 namespace mc_tree
@@ -119,6 +120,7 @@ struct UpcRhoAnalysis {
 
   float pcEtaCut = 0.9; // physics coordination recommendation
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
+  // Configurable<int> selectedMcGeneratorId{"selectedMcGeneratorId", 0, "flag for selected MC process ID"};
 
   Configurable<float> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
   Configurable<int> collisionsNumContribsMaxCut{"collisionsNumContribsMaxCut", 4, "max number of contributors cut on collisions"};
@@ -523,16 +525,25 @@ struct UpcRhoAnalysis {
     if (!collisionPassesCuts(collision))
       return;
 
+    int neutronClass = -1;
     bool xnxn = false, onon = false, xnon = false, onxn = false; // note: On == 0n...
-    if (collision.energyCommonZNA() < znCommonEnergyCut && collision.energyCommonZNC() < znCommonEnergyCut)
+    if (collision.energyCommonZNA() < znCommonEnergyCut && collision.energyCommonZNC() < znCommonEnergyCut){
       onon = true;
-    if (collision.energyCommonZNA() > znCommonEnergyCut && std::abs(collision.timeZNA()) < znTimeCut && collision.energyCommonZNC() < znCommonEnergyCut)
+      neutronClass = 0;
+    }
+    if (collision.energyCommonZNA() > znCommonEnergyCut && std::abs(collision.timeZNA()) < znTimeCut && collision.energyCommonZNC() < znCommonEnergyCut){
       xnon = true;
-    if (collision.energyCommonZNA() < znCommonEnergyCut && collision.energyCommonZNC() > znCommonEnergyCut && std::abs(collision.timeZNC()) < znTimeCut)
+      neutronClass = 1;
+    }
+    if (collision.energyCommonZNA() < znCommonEnergyCut && collision.energyCommonZNC() > znCommonEnergyCut && std::abs(collision.timeZNC()) < znTimeCut){
       onxn = true;
+      neutronClass = 2;
+    }
     if (collision.energyCommonZNA() > znCommonEnergyCut && std::abs(collision.timeZNA()) < znTimeCut &&
-        collision.energyCommonZNC() > znCommonEnergyCut && std::abs(collision.timeZNC()) < znTimeCut)
+        collision.energyCommonZNC() > znCommonEnergyCut && std::abs(collision.timeZNC()) < znTimeCut){
       xnxn = true;
+      neutronClass = 3;
+    }
 
     std::vector<decltype(tracks.begin())> cutTracks; // store selected tracks
     for (const auto& track : tracks) {
@@ -596,7 +607,7 @@ struct UpcRhoAnalysis {
       recoTree(collision.runNumber(), localBc, collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(),
                collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
                collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
-               collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(),
+               collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(), neutronClass,
                phiRandom, phiCharge, trackSigns, trackPts, trackEtas, trackPhis, trackPiPIDs, trackElPIDs, trackKaPIDs, trackDcaXYs, trackDcaZs, trackTpcSignals);
 
     if (!tracksPassPiPID(cutTracks)) // apply PID cut
@@ -683,6 +694,8 @@ struct UpcRhoAnalysis {
   template <typename C, typename T>
   void processMC(C const& mcCollision, T const& mcParticles)
   {
+    // if (mcCollision.getGeneratorId() != selectedMcGeneratorId)
+    //   return;
     rMC.fill(HIST("MC/collisions/hPosXY"), mcCollision.posX(), mcCollision.posY());
     rMC.fill(HIST("MC/collisions/hPosZ"), mcCollision.posZ());
 
