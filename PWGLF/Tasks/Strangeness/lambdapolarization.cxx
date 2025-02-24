@@ -125,6 +125,7 @@ struct lambdapolarization {
   Configurable<std::string> cfgQvecRefBName{"cfgQvecRefBName", "TPCneg", "The name of detector for reference B"};
 
   Configurable<bool> cfgPhiDepStudy{"cfgPhiDepStudy", false, "cfg for phi dependent study"};
+  Configurable<bool> cfgUSESP{"cfgUSESP", false, "cfg for sp"};
   Configurable<float> cfgPhiDepSig{"cfgPhiDepSig", 0.2, "cfg for significance on phi dependent study"};
 
   Configurable<bool> cfgShiftCorr{"cfgShiftCorr", false, "additional shift correction"};
@@ -133,6 +134,9 @@ struct lambdapolarization {
 
   Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag to apply efficiency correction"};
   Configurable<std::string> cfgEffCorPath{"cfgEffCorPath", "", "path for pseudo efficiency correction"};
+
+  Configurable<bool> cfgAccCor{"cfgAccCor", false, "flag to apply acceptance correction"};
+  Configurable<std::string> cfgAccCorPath{"cfgAccCorPath", "", "path for pseudo acceptance correction"};
 
   Configurable<bool> cfgCalcCum{"cfgCalcCum", false, "flag to calculate cumulants"};
 
@@ -167,6 +171,7 @@ struct lambdapolarization {
   int lastRunNumber = -999;
   std::vector<TProfile3D*> shiftprofile{};
   TProfile2D* EffMap = nullptr;
+  TProfile2D* AccMap = nullptr;
 
   std::string fullCCDBShiftCorrPath;
 
@@ -697,9 +702,13 @@ struct lambdapolarization {
                       1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)));
         }
       }
+      double weight = 1.0;
+      weight *= cfgEffCor ? 1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
+      weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v0.pt()), AccMap->GetYaxis()->FindBin(v0.yLambda())) : 1.;
 
-      double weight = cfgEffCor ? 1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
-      double qvecMag = TMath::Sqrt(TMath::Power(collision.qvecIm()[3 + (nmode - 2) * 28], 2) + TMath::Power(collision.qvecRe()[3 + (nmode - 2) * 28], 2));
+      double qvecMag = 1.0;
+      if (cfgUSESP)
+        qvecMag *= TMath::Sqrt(TMath::Power(collision.qvecIm()[3 + (nmode - 2) * 28], 2) + TMath::Power(collision.qvecRe()[3 + (nmode - 2) * 28], 2));
 
       if (nmode == 2) { ////////////
         if (LambdaTag) {
@@ -864,9 +873,12 @@ struct lambdapolarization {
         lastRunNumber = currentRunNumber;
       }
     }
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (cfgEffCor) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       EffMap = ccdb->getForTimeStamp<TProfile2D>(cfgEffCorPath.value, bc.timestamp());
+    }
+    if (cfgAccCor) {
+      AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
     }
     for (int i = 2; i < cfgnMods + 2; i++) {
       if (cfgShiftCorrDef) {
