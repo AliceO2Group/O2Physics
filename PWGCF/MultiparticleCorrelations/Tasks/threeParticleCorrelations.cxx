@@ -56,7 +56,6 @@ struct ThreeParticleCorrelations {
   Filter globalTracks = requireGlobalTrackInFilter();
 
   // Particle filters
-  Filter particlePt = aod::mcparticle::pt > 0.2f && aod::mcparticle::pt < 3.0f;
   Filter particleEta = nabs(aod::mcparticle::eta) < 0.8f;
 
   // Table aliases - Data
@@ -68,7 +67,8 @@ struct ThreeParticleCorrelations {
                                                    aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>>;
 
   // Table aliases - MC
-  using MyFilteredMCGenCollision = soa::Filtered<aod::McCollisions>::iterator;
+  using MyFilteredMCGenCollisions = soa::Filtered<soa::Join<aod::McCollisions, aod::CentFT0Ms>>;
+  using MyFilteredMCGenCollision = MyFilteredMCGenCollisions::iterator;
   using MyFilteredMCParticles = soa::Filtered<aod::McParticles>;
   using MyFilteredMCRecCollision = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>>::iterator;
   using MyFilteredMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::McTrackLabels,
@@ -82,7 +82,8 @@ struct ThreeParticleCorrelations {
   using BinningType = ColumnBinningPolicy<aod::cent::CentFT0M, aod::collision::PosZ>;
 
   BinningType collBinning{{confCentBins, confZvtxBins}, true};
-  Pair<MyFilteredCollisions, MyFilteredV0s, MyFilteredTracks, BinningType> pair{collBinning, 5, -1, &cache};
+  Pair<MyFilteredCollisions, MyFilteredV0s, MyFilteredTracks, BinningType> pairData{collBinning, 5, -1, &cache};
+  SameKindPair<MyFilteredMCGenCollisions, MyFilteredMCParticles, BinningType> pairMC{collBinning, 5, -1, &cache};
 
   // Process configurables
   Configurable<bool> confFilterSwitch{"confFilterSwitch", false, "Switch for the fakeV0Filter function"};
@@ -97,7 +98,7 @@ struct ThreeParticleCorrelations {
   TH1D** hEffProtons = new TH1D*[2];
 
   // Correlation variables
-  int triggSign;
+  int triggSign, assocSign;
   double candMass;
   double* assocPID;
 
@@ -145,6 +146,7 @@ struct ThreeParticleCorrelations {
 
     rQARegistry.add("hInvMassLambda", "hInvMassLambda", {HistType::kTH3D, {{lambdaInvMassAxis}, {v0PtAxis}, {centralityAxis}}});
     rQARegistry.add("hInvMassAntiLambda", "hInvMassAntiLambda", {HistType::kTH3D, {{lambdaInvMassAxis}, {v0PtAxis}, {centralityAxis}}});
+    rQARegistry.add("hNLambdas_MC", "hNLambdas_MC", {HistType::kTH3D, {{2, -2, 2}, {v0PtAxis}, {centralityAxis}}});
 
     // PhiStar
     rPhiStarRegistry.add("hSEProtonPreCut", "hSEProtonPreCut", {HistType::kTH2D, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
@@ -189,6 +191,9 @@ struct ThreeParticleCorrelations {
     rSECorrRegistry.add("hSameLambdaKaon_SB", "Same-event #Lambda - K correlator (SB region)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
     rSECorrRegistry.add("hSameLambdaProton_SGNL", "Same-event #Lambda - p correlator (SGNL region)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
     rSECorrRegistry.add("hSameLambdaProton_SB", "Same-event #Lambda - p correlator (SB region)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
+    rSECorrRegistry.add("hSameLambdaPion_MC", "Same-event #Lambda - #pi correlator (MC)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
+    rSECorrRegistry.add("hSameLambdaKaon_MC", "Same-event #Lambda - K correlator (MC)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
+    rSECorrRegistry.add("hSameLambdaProton_MC", "Same-event #Lambda - p correlator (MC)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
 
     rMECorrRegistry.add("hMixLambdaPion_SGNL", "Mixed-event #Lambda - #pi correlator (SGNL region)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
     rMECorrRegistry.add("hMixLambdaPion_SB", "Mixed-event #Lambda - #pi correlator (SB region)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
@@ -196,6 +201,9 @@ struct ThreeParticleCorrelations {
     rMECorrRegistry.add("hMixLambdaKaon_SB", "Mixed-event #Lambda - K correlator (SB region)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
     rMECorrRegistry.add("hMixLambdaProton_SGNL", "Mixed-event #Lambda - p correlator (SGNL region)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
     rMECorrRegistry.add("hMixLambdaProton_SB", "Mixed-event #Lambda - p correlator (SB region)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
+    rMECorrRegistry.add("hMixLambdaPion_MC", "Mixed-event #Lambda - #pi correlator (MC)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
+    rMECorrRegistry.add("hMixLambdaKaon_MC", "Mixed-event #Lambda - K correlator (MC)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
+    rMECorrRegistry.add("hMixLambdaProton_MC", "Mixed-event #Lambda - p correlator (MC)", {HistType::kTHnSparseD, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -253,7 +261,7 @@ struct ThreeParticleCorrelations {
     }
     // End of the Track QA
 
-    // Start of the V0-Track Correlations
+    // Start of the Same-Event Correlations
     for (const auto& trigger : v0s) {
       if (v0Filters(trigger)) {
 
@@ -296,14 +304,14 @@ struct ThreeParticleCorrelations {
         }
       }
     }
-    // End of the V0-Track Correlations
+    // End of the Same-Event Correlations
   }
 
   void processMixed(MyFilteredCollisions const&, MyFilteredV0s const&, MyFilteredTracks const&, aod::BCsWithTimestamps const&)
   {
 
     // Start of the Mixed-events Correlations
-    for (const auto& [coll_1, v0_1, coll_2, track_2] : pair) {
+    for (const auto& [coll_1, v0_1, coll_2, track_2] : pairData) {
 
       auto bc = coll_1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
@@ -346,11 +354,104 @@ struct ThreeParticleCorrelations {
     // End of the Mixed-events Correlations
   }
 
+  void processMCSame(MyFilteredMCGenCollision const& collision, MyFilteredMCParticles const& particles)
+  {
+
+    Partition<MyFilteredMCParticles> mcTriggers = (aod::mcparticle::pdgCode == static_cast<int>(kLambda0) || aod::mcparticle::pdgCode == static_cast<int>(kLambda0Bar)) && aod::mcparticle::pt > 0.6f && aod::mcparticle::pt < 12.0f && nabs(aod::mcparticle::eta) < 0.72f;
+    Partition<MyFilteredMCParticles> mcAssociates = (((aod::mcparticle::pdgCode == static_cast<int>(kPiPlus) || aod::mcparticle::pdgCode == static_cast<int>(kPiMinus)) && aod::mcparticle::pt > 0.3f && aod::mcparticle::pt < 2.3f) ||
+                                                     ((aod::mcparticle::pdgCode == static_cast<int>(kKPlus) || aod::mcparticle::pdgCode == static_cast<int>(kKMinus)) && aod::mcparticle::pt > 0.5f && aod::mcparticle::pt < 2.5f) ||
+                                                     ((aod::mcparticle::pdgCode == static_cast<int>(kProton) || aod::mcparticle::pdgCode == static_cast<int>(kProtonBar)) && aod::mcparticle::pt > 0.5f));
+    mcTriggers.bindTable(particles);
+    mcAssociates.bindTable(particles);
+
+    // Start of the MC Same-Event Correlations
+    for (const auto& trigger : mcTriggers) {
+      if (trigger.isPhysicalPrimary()) {
+
+        if (trigger.pdgCode() > 0) {
+          triggSign = 1;
+          rQARegistry.fill(HIST("hNLambdas_MC"), 1, trigger.pt(), collision.centFT0M());
+        } else if (trigger.pdgCode() < 0) {
+          triggSign = -1;
+          rQARegistry.fill(HIST("hNLambdas_MC"), -1, trigger.pt(), collision.centFT0M());
+        }
+
+        for (const auto& associate : mcAssociates) {
+          if (associate.isPhysicalPrimary()) {
+
+            if (associate.pdgCode() > 0) {
+              assocSign = 1;
+            } else if (associate.pdgCode() < 0) {
+              assocSign = -1;
+            }
+
+            deltaPhi = RecoDecay::constrainAngle(trigger.phi() - associate.phi(), -constants::math::PIHalf);
+            deltaEta = trigger.eta() - associate.eta();
+
+            if (std::abs(associate.pdgCode()) == kPiPlus) {
+              rSECorrRegistry.fill(HIST("hSameLambdaPion_MC"), deltaPhi, deltaEta, collision.centFT0M(), collision.posZ(), triggSign, assocSign);
+            } else if (std::abs(associate.pdgCode()) == kKPlus) {
+              rSECorrRegistry.fill(HIST("hSameLambdaKaon_MC"), deltaPhi, deltaEta, collision.centFT0M(), collision.posZ(), triggSign, assocSign);
+            } else if (std::abs(associate.pdgCode()) == kProton) {
+              rSECorrRegistry.fill(HIST("hSameLambdaProton_MC"), deltaPhi, deltaEta, collision.centFT0M(), collision.posZ(), triggSign, assocSign);
+            }
+          }
+        }
+      }
+    }
+    // End of the MC Same-Event Correlations
+  }
+
+  void processMCMixed(MyFilteredMCGenCollisions const&, MyFilteredMCParticles const&)
+  {
+
+    // Start of the MC Mixed-events Correlations
+    for (const auto& [coll_1, v0_1, coll_2, track_2] : pairMC) {
+      Partition<MyFilteredMCParticles> mcTriggers = (aod::mcparticle::pdgCode == static_cast<int>(kLambda0) || aod::mcparticle::pdgCode == static_cast<int>(kLambda0Bar)) && aod::mcparticle::pt > 0.6f && aod::mcparticle::pt < 12.0f && nabs(aod::mcparticle::eta) < 0.72f;
+      Partition<MyFilteredMCParticles> mcAssociates = (((aod::mcparticle::pdgCode == static_cast<int>(kPiPlus) || aod::mcparticle::pdgCode == static_cast<int>(kPiMinus)) && aod::mcparticle::pt > 0.3f && aod::mcparticle::pt < 2.3f) ||
+                                                       ((aod::mcparticle::pdgCode == static_cast<int>(kKPlus) || aod::mcparticle::pdgCode == static_cast<int>(kKMinus)) && aod::mcparticle::pt > 0.5f && aod::mcparticle::pt < 2.5f) ||
+                                                       ((aod::mcparticle::pdgCode == static_cast<int>(kProton) || aod::mcparticle::pdgCode == static_cast<int>(kProtonBar)) && aod::mcparticle::pt > 0.5f));
+      mcTriggers.bindTable(v0_1);
+      mcAssociates.bindTable(track_2);
+
+      for (const auto& [trigger, associate] : soa::combinations(soa::CombinationsFullIndexPolicy(mcTriggers, mcAssociates))) {
+        if (trigger.isPhysicalPrimary() && associate.isPhysicalPrimary()) {
+
+          if (trigger.pdgCode() > 0) {
+            triggSign = 1;
+          } else if (trigger.pdgCode() < 0) {
+            triggSign = -1;
+          }
+          if (associate.pdgCode() > 0) {
+            assocSign = 1;
+          } else if (associate.pdgCode() < 0) {
+            assocSign = -1;
+          }
+
+          deltaPhi = RecoDecay::constrainAngle(trigger.phi() - associate.phi(), -constants::math::PIHalf);
+          deltaEta = trigger.eta() - associate.eta();
+
+          if (std::abs(associate.pdgCode()) == kPiPlus) {
+            rMECorrRegistry.fill(HIST("hMixLambdaPion_MC"), deltaPhi, deltaEta, coll_1.centFT0M(), coll_1.posZ(), triggSign, assocSign);
+          } else if (std::abs(associate.pdgCode()) == kKPlus) {
+            rMECorrRegistry.fill(HIST("hMixLambdaKaon_MC"), deltaPhi, deltaEta, coll_1.centFT0M(), coll_1.posZ(), triggSign, assocSign);
+          } else if (std::abs(associate.pdgCode()) == kProton) {
+            rMECorrRegistry.fill(HIST("hMixLambdaProton_MC"), deltaPhi, deltaEta, coll_1.centFT0M(), coll_1.posZ(), triggSign, assocSign);
+          }
+        }
+      }
+    }
+    // End of the MC Mixed-events Correlations
+  }
+
   void processMCGen(MyFilteredMCGenCollision const&, MyFilteredMCParticles const& particles)
   {
 
+    Partition<MyFilteredMCParticles> mcParticles = aod::mcparticle::pt > 0.2f && aod::mcparticle::pt < 3.0f;
+    mcParticles.bindTable(particles);
+
     // Start of the Monte-Carlo generated QA
-    for (const auto& particle : particles) {
+    for (const auto& particle : mcParticles) {
       if (particle.isPhysicalPrimary()) {
 
         // Efficiency - Generated
@@ -452,6 +553,8 @@ struct ThreeParticleCorrelations {
 
   PROCESS_SWITCH(ThreeParticleCorrelations, processSame, "Process same-event correlations", true);
   PROCESS_SWITCH(ThreeParticleCorrelations, processMixed, "Process mixed-event correlations", true);
+  PROCESS_SWITCH(ThreeParticleCorrelations, processMCSame, "Process MC same-event correlations", true);
+  PROCESS_SWITCH(ThreeParticleCorrelations, processMCMixed, "Process MC mixed-event correlations", true);
   PROCESS_SWITCH(ThreeParticleCorrelations, processMCGen, "Process Monte-Carlo, generator level", false);
   PROCESS_SWITCH(ThreeParticleCorrelations, processMCRec, "Process Monte-Carlo, reconstructed level", false);
 
