@@ -254,6 +254,15 @@ DECLARE_SOA_COLUMN(StoredTPCNSigmaDe, storedTpcNSigmaDe, binning::nsigma::binned
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaDe, tpcNSigmaDe,
                            [](binning::nsigma::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma>(nsigma_binned); });
 
+//------------------------------------ Triton ------------------------------------
+DECLARE_SOA_COLUMN(StoredTOFNSigmaTr, storedTofNSigmaTr, binning::nsigma::binned_t); // (v1) TOF
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaTr, tofNSigmaTr,
+                           [](binning::nsigma::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma>(nsigma_binned); });
+
+DECLARE_SOA_COLUMN(StoredTPCNSigmaTr, storedTpcNSigmaTr, binning::nsigma::binned_t); // (v1) TPC
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaTr, tpcNSigmaTr,
+                           [](binning::nsigma::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma>(nsigma_binned); });
+
 //------------------------------------ Helium3 ------------------------------------
 DECLARE_SOA_COLUMN(StoredTOFNSigmaHe, storedTofNSigmaHe, binning::nsigma::binned_t); // (v1) TOF
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaHe, tofNSigmaHe,
@@ -348,6 +357,7 @@ DECLARE_SOA_TABLE(SingleTrackSels_v3, "AOD", "SINGLETRACKSEL", // Table of the v
                   o2::aod::pidits::ITSNSigmaKaImp<singletrackselector::ITSclusterSizes, singletrackselector::P, singletrackselector::Eta>,
                   o2::aod::pidits::ITSNSigmaPrImp<singletrackselector::ITSclusterSizes, singletrackselector::P, singletrackselector::Eta>,
                   o2::aod::pidits::ITSNSigmaDeImp<singletrackselector::ITSclusterSizes, singletrackselector::P, singletrackselector::Eta>,
+                  o2::aod::pidits::ITSNSigmaTrImp<singletrackselector::ITSclusterSizes, singletrackselector::P, singletrackselector::Eta>,
                   o2::aod::pidits::ITSNSigmaHeImp<singletrackselector::ITSclusterSizes, singletrackselector::P, singletrackselector::Eta>);
 
 DECLARE_SOA_TABLE_VERSIONED(SingleTrackSels_v2, "AOD", "SINGLETRACKSEL2", 2, // Table of the variables for single track selection.
@@ -447,6 +457,13 @@ DECLARE_SOA_TABLE(SinglePIDDes, "AOD", "SINGLEPIDDE",
                   singletrackselector::TOFNSigmaDe<singletrackselector::StoredTOFNSigmaDe>,
                   singletrackselector::TPCNSigmaDe<singletrackselector::StoredTPCNSigmaDe>);
 
+DECLARE_SOA_TABLE(SinglePIDTrs, "AOD", "SINGLEPIDTR",
+                  singletrackselector::StoredTOFNSigmaTr,
+                  singletrackselector::StoredTPCNSigmaTr,
+
+                  singletrackselector::TOFNSigmaTr<singletrackselector::StoredTOFNSigmaTr>,
+                  singletrackselector::TPCNSigmaTr<singletrackselector::StoredTPCNSigmaTr>);
+
 DECLARE_SOA_TABLE(SinglePIDHes, "AOD", "SINGLEPIDHE",
                   singletrackselector::StoredTOFNSigmaHe,
                   singletrackselector::StoredTPCNSigmaHe,
@@ -500,7 +517,7 @@ DECLARE_SOA_TABLE(SingleTrkMCs, "AOD", "SINGLETRKMC", // Table with generatad in
 
 namespace o2::aod::singletrackselector
 {
-  template <typename TrackType>
+template <typename TrackType>
 inline bool ITSselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts)
 {
   int PDG = PIDcuts.first;
@@ -515,6 +532,9 @@ inline bool ITSselection(TrackType const& track, std::pair<int, std::vector<floa
       break;
     case 1000020030:
       Nsigma = track.itsNSigmaHe();
+      break;
+    case 1000010030:
+      Nsigma = track.itsNSigmaTr();
       break;
     case 211:
       Nsigma = track.itsNSigmaPi();
@@ -534,15 +554,15 @@ inline bool ITSselection(TrackType const& track, std::pair<int, std::vector<floa
   return false;
 }
 
-
 template <bool useITS, typename TrackType>
 inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts, std::vector<float> const& ITSCut = std::vector<float>{})
 {
   int PDG = PIDcuts.first;
 
-  if constexpr (useITS){
-  if (ITSCut.size()!=0 && !ITSselection(track, std::make_pair(PDG, ITSCut)))
-    return false;}
+  if constexpr (useITS) {
+    if (ITSCut.size() != 0 && !ITSselection(track, std::make_pair(PDG, ITSCut)))
+      return false;
+  }
 
   float Nsigma = -1000;
   switch (PDG) {
@@ -554,6 +574,9 @@ inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<floa
       break;
     case 1000020030:
       Nsigma = track.tpcNSigmaHe();
+      break;
+    case 1000010030:
+      Nsigma = track.tpcNSigmaTr();
       break;
     case 211:
       Nsigma = track.tpcNSigmaPi();
@@ -590,6 +613,9 @@ inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<floa
       break;
     case 1000020030:
       Nsigma = track.tofNSigmaHe();
+      break;
+    case 1000010030:
+      Nsigma = track.tofNSigmaTr();
       break;
     case 211:
       Nsigma = track.tofNSigmaPi();

@@ -87,9 +87,9 @@ struct singleTrackSelector {
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidEvTimeFlags, aod::TracksDCA,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
-                         aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe,
+                         aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe,
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa,
-                         aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe,
+                         aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe,
                          aod::TrackSelection, aod::pidTOFbeta>;
 
   using CollRun2 = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>;
@@ -106,6 +106,7 @@ struct singleTrackSelector {
   Produces<o2::aod::SinglePIDKas> tableRowPIDKa;
   Produces<o2::aod::SinglePIDPrs> tableRowPIDPr;
   Produces<o2::aod::SinglePIDDes> tableRowPIDDe;
+  Produces<o2::aod::SinglePIDTrs> tableRowPIDTr;
   Produces<o2::aod::SinglePIDHes> tableRowPIDHe;
 
   Produces<o2::aod::SingleTrkMCs> tableRowMC;
@@ -266,6 +267,9 @@ struct singleTrackSelector {
 
           tableRowPIDDe(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaDe()),
                         singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()));
+
+          tableRowPIDTr(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaTr()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaTr()));
 
           tableRowPIDHe(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaHe()),
                         singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaHe()));
