@@ -99,7 +99,10 @@ struct FlowMc {
 
     histos.add<TH1>("hPhi", "#phi distribution", HistType::kTH1D, {axisPhi});
     histos.add<TH1>("hPhiWeighted", "corrected #phi distribution", HistType::kTH1D, {axisPhi});
+    histos.add<TH2>("hEPVsPhiMC", "hEPVsPhiMC;Event Plane Angle; #varphi", HistType::kTH2D, {axisPhi, axisPhi});
     histos.add<TH2>("hEPVsPhi", "hEPVsPhi;Event Plane Angle; #varphi", HistType::kTH2D, {axisPhi, axisPhi});
+    histos.add<TH2>("hPtNchGenerated", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGlobal", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
 
     if (cfgOutputNUAWeights) {
       o2::framework::AxisSpec axis = axisPt;
@@ -161,6 +164,7 @@ struct FlowMc {
       evPhi += constants::math::TwoPI;
 
     int64_t nCh = 0;
+    int64_t nChGlobal = 0;
     float weff = 1.;
     float wacc = 1.;
     auto bc = mcCollision.bc_as<aod::BCsWithTimestamps>();
@@ -170,6 +174,23 @@ struct FlowMc {
       // event within range
       histos.fill(HIST("hImpactParameter"), imp);
       histos.fill(HIST("hEventPlaneAngle"), evPhi);
+
+      for (auto const& mcParticle : mcParticles) {
+        int pdgCode = std::abs(mcParticle.pdgCode());
+        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
+          continue;
+        if (!mcParticle.isPhysicalPrimary())
+          continue;
+        if (std::fabs(mcParticle.eta()) > 0.8) // main acceptance
+          continue;
+        if (mcParticle.has_tracks()) {
+          auto const& tracks = mcParticle.tracks_as<RecoTracks>();
+          for (auto const& track : tracks) {
+            if (track.hasTPC() && track.hasITS())
+              nChGlobal++;
+          }
+        }
+      }
 
       for (auto const& mcParticle : mcParticles) {
         // focus on bulk: e, mu, pi, k, p
@@ -189,6 +210,7 @@ struct FlowMc {
           deltaPhi -= constants::math::TwoPI;
         histos.fill(HIST("hPtVsPhiGenerated"), deltaPhi, mcParticle.pt());
         histos.fill(HIST("hBVsPtVsPhiGenerated"), imp, deltaPhi, mcParticle.pt());
+        histos.fill(HIST("hPtNchGenerated"), mcParticle.pt(), nChGlobal);
 
         nCh++;
 
@@ -223,6 +245,10 @@ struct FlowMc {
           fWeights->fill(mcParticle.phi(), mcParticle.eta(), vtxz, mcParticle.pt(), 0, 0);
         if (!setCurrentParticleWeights(weff, wacc, mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), vtxz))
           continue;
+        if (withinPtRef) {
+          histos.fill(HIST("hEPVsPhiMC"), evPhi, mcParticle.phi());
+        }
+
         if (validGlobal && withinPtRef) {
           histos.fill(HIST("hPhi"), mcParticle.phi());
           histos.fill(HIST("hPhiWeighted"), mcParticle.phi(), wacc);
@@ -233,6 +259,7 @@ struct FlowMc {
         if (validGlobal) {
           histos.fill(HIST("hPtVsPhiGlobal"), deltaPhi, mcParticle.pt(), wacc * weff);
           histos.fill(HIST("hBVsPtVsPhiGlobal"), imp, deltaPhi, mcParticle.pt(), wacc * weff);
+          histos.fill(HIST("hPtNchGlobal"), mcParticle.pt(), nChGlobal);
         }
         // if any track present, fill
         if (validTrack)
