@@ -251,7 +251,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
 
     /// check if the number of input parameters is correct
     if (static_cast<uint8_t>(slices.size()) != NPars) {
-      LOG(fatal) << "[TrackTuner] " << slices.size() << " parameters provided, while " << NPars << " are expected. Fix it!";
+      LOG(fatal) << "[TrackTuner] " << slices.size() << " parameters provided, while " << static_cast<int>(NPars) << " are expected. Fix it!";
     }
 
     // ###################################################################################################################
