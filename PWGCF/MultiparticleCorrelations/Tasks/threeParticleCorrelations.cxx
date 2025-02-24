@@ -68,7 +68,7 @@ struct ThreeParticleCorrelations {
 
   // Table aliases - MC
   using MyFilteredMCGenCollisions = soa::Filtered<soa::Join<aod::McCollisions, aod::CentFT0Ms>>;
-  using MyFilteredMCGenCollision = MyFilteredMCGenCollisions::iterator; 
+  using MyFilteredMCGenCollision = MyFilteredMCGenCollisions::iterator;
   using MyFilteredMCParticles = soa::Filtered<aod::McParticles>;
   using MyFilteredMCRecCollision = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>>::iterator;
   using MyFilteredMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::McTrackLabels,
@@ -357,46 +357,46 @@ struct ThreeParticleCorrelations {
   void processMCSame(MyFilteredMCGenCollision const& collision, MyFilteredMCParticles const& particles)
   {
 
-    Partition<MyFilteredMCParticles> mcTriggers = (aod::mcparticle::pdgCode == static_cast<int>(kLambda0) || aod::mcparticle::pdgCode == static_cast<int>(kLambda0Bar)) && aod::mcparticle::pt > 0.6f && aod::mcparticle::pt < 12.0f && nabs(aod::mcparticle::eta) < 0.72f; 
+    Partition<MyFilteredMCParticles> mcTriggers = (aod::mcparticle::pdgCode == static_cast<int>(kLambda0) || aod::mcparticle::pdgCode == static_cast<int>(kLambda0Bar)) && aod::mcparticle::pt > 0.6f && aod::mcparticle::pt < 12.0f && nabs(aod::mcparticle::eta) < 0.72f;
     Partition<MyFilteredMCParticles> mcAssociates = (((aod::mcparticle::pdgCode == static_cast<int>(kPiPlus) || aod::mcparticle::pdgCode == static_cast<int>(kPiMinus)) && aod::mcparticle::pt > 0.3f && aod::mcparticle::pt < 2.3f) ||
-						     ((aod::mcparticle::pdgCode == static_cast<int>(kKPlus) || aod::mcparticle::pdgCode == static_cast<int>(kKMinus)) && aod::mcparticle::pt > 0.5f && aod::mcparticle::pt < 2.5f) ||
-						     ((aod::mcparticle::pdgCode == static_cast<int>(kProton) || aod::mcparticle::pdgCode == static_cast<int>(kProtonBar)) && aod::mcparticle::pt > 0.5f));
+                                                     ((aod::mcparticle::pdgCode == static_cast<int>(kKPlus) || aod::mcparticle::pdgCode == static_cast<int>(kKMinus)) && aod::mcparticle::pt > 0.5f && aod::mcparticle::pt < 2.5f) ||
+                                                     ((aod::mcparticle::pdgCode == static_cast<int>(kProton) || aod::mcparticle::pdgCode == static_cast<int>(kProtonBar)) && aod::mcparticle::pt > 0.5f));
     mcTriggers.bindTable(particles);
     mcAssociates.bindTable(particles);
-    
+
     // Start of the MC Same-Event Correlations
     for (const auto& trigger : mcTriggers) {
       if (trigger.isPhysicalPrimary()) {
-	
-	if (trigger.pdgCode() > 0) {
-	  triggSign = 1;
-	  rQARegistry.fill(HIST("hNLambdas_MC"), 1, trigger.pt(), collision.centFT0M());
-	} else if (trigger.pdgCode() < 0) {
-	  triggSign = -1;
-	  rQARegistry.fill(HIST("hNLambdas_MC"), -1, trigger.pt(), collision.centFT0M());
-	}
-	
-	for (const auto& associate : mcAssociates) {
-	  if (associate.isPhysicalPrimary()) {
 
-	    if (associate.pdgCode() > 0) {
-	      assocSign = 1;
-	    } else if (associate.pdgCode() < 0) {
-	      assocSign = -1;
-	    }
+        if (trigger.pdgCode() > 0) {
+          triggSign = 1;
+          rQARegistry.fill(HIST("hNLambdas_MC"), 1, trigger.pt(), collision.centFT0M());
+        } else if (trigger.pdgCode() < 0) {
+          triggSign = -1;
+          rQARegistry.fill(HIST("hNLambdas_MC"), -1, trigger.pt(), collision.centFT0M());
+        }
 
-	    deltaPhi = RecoDecay::constrainAngle(trigger.phi() - associate.phi(), -constants::math::PIHalf);
-	    deltaEta = trigger.eta() - associate.eta();
+        for (const auto& associate : mcAssociates) {
+          if (associate.isPhysicalPrimary()) {
 
-	    if (std::abs(associate.pdgCode()) == kPiPlus) {
-	      rSECorrRegistry.fill(HIST("hSameLambdaPion_MC"), deltaPhi, deltaEta, collision.centFT0M(), collision.posZ(), triggSign, assocSign);
-	    } else if (std::abs(associate.pdgCode()) == kKPlus) {
-	      rSECorrRegistry.fill(HIST("hSameLambdaKaon_MC"), deltaPhi, deltaEta, collision.centFT0M(), collision.posZ(), triggSign, assocSign);
-	    } else if (std::abs(associate.pdgCode()) == kProton) {
-	      rSECorrRegistry.fill(HIST("hSameLambdaProton_MC"), deltaPhi, deltaEta, collision.centFT0M(), collision.posZ(), triggSign, assocSign);
-	    }
-	  }
-	}
+            if (associate.pdgCode() > 0) {
+              assocSign = 1;
+            } else if (associate.pdgCode() < 0) {
+              assocSign = -1;
+            }
+
+            deltaPhi = RecoDecay::constrainAngle(trigger.phi() - associate.phi(), -constants::math::PIHalf);
+            deltaEta = trigger.eta() - associate.eta();
+
+            if (std::abs(associate.pdgCode()) == kPiPlus) {
+              rSECorrRegistry.fill(HIST("hSameLambdaPion_MC"), deltaPhi, deltaEta, collision.centFT0M(), collision.posZ(), triggSign, assocSign);
+            } else if (std::abs(associate.pdgCode()) == kKPlus) {
+              rSECorrRegistry.fill(HIST("hSameLambdaKaon_MC"), deltaPhi, deltaEta, collision.centFT0M(), collision.posZ(), triggSign, assocSign);
+            } else if (std::abs(associate.pdgCode()) == kProton) {
+              rSECorrRegistry.fill(HIST("hSameLambdaProton_MC"), deltaPhi, deltaEta, collision.centFT0M(), collision.posZ(), triggSign, assocSign);
+            }
+          }
+        }
       }
     }
     // End of the MC Same-Event Correlations
@@ -407,49 +407,49 @@ struct ThreeParticleCorrelations {
 
     // Start of the MC Mixed-events Correlations
     for (const auto& [coll_1, v0_1, coll_2, track_2] : pairMC) {
-      Partition<MyFilteredMCParticles> mcTriggers = (aod::mcparticle::pdgCode == static_cast<int>(kLambda0) || aod::mcparticle::pdgCode == static_cast<int>(kLambda0Bar)) && aod::mcparticle::pt > 0.6f && aod::mcparticle::pt < 12.0f && nabs(aod::mcparticle::eta) < 0.72f; 
+      Partition<MyFilteredMCParticles> mcTriggers = (aod::mcparticle::pdgCode == static_cast<int>(kLambda0) || aod::mcparticle::pdgCode == static_cast<int>(kLambda0Bar)) && aod::mcparticle::pt > 0.6f && aod::mcparticle::pt < 12.0f && nabs(aod::mcparticle::eta) < 0.72f;
       Partition<MyFilteredMCParticles> mcAssociates = (((aod::mcparticle::pdgCode == static_cast<int>(kPiPlus) || aod::mcparticle::pdgCode == static_cast<int>(kPiMinus)) && aod::mcparticle::pt > 0.3f && aod::mcparticle::pt < 2.3f) ||
-						       ((aod::mcparticle::pdgCode == static_cast<int>(kKPlus) || aod::mcparticle::pdgCode == static_cast<int>(kKMinus)) && aod::mcparticle::pt > 0.5f && aod::mcparticle::pt < 2.5f) ||
-						       ((aod::mcparticle::pdgCode == static_cast<int>(kProton) || aod::mcparticle::pdgCode == static_cast<int>(kProtonBar)) && aod::mcparticle::pt > 0.5f));
+                                                       ((aod::mcparticle::pdgCode == static_cast<int>(kKPlus) || aod::mcparticle::pdgCode == static_cast<int>(kKMinus)) && aod::mcparticle::pt > 0.5f && aod::mcparticle::pt < 2.5f) ||
+                                                       ((aod::mcparticle::pdgCode == static_cast<int>(kProton) || aod::mcparticle::pdgCode == static_cast<int>(kProtonBar)) && aod::mcparticle::pt > 0.5f));
       mcTriggers.bindTable(v0_1);
       mcAssociates.bindTable(track_2);
-      
+
       for (const auto& [trigger, associate] : soa::combinations(soa::CombinationsFullIndexPolicy(mcTriggers, mcAssociates))) {
-	if (trigger.isPhysicalPrimary() && associate.isPhysicalPrimary()) {
+        if (trigger.isPhysicalPrimary() && associate.isPhysicalPrimary()) {
 
-	  if (trigger.pdgCode() > 0) {
-	    triggSign = 1;
-	  } else if (trigger.pdgCode() < 0) {
-	    triggSign = -1;
-	  }
-	  if (associate.pdgCode() > 0) {
-	    assocSign = 1;
-	  } else if (associate.pdgCode() < 0) {
-	    assocSign = -1;
-	  }
+          if (trigger.pdgCode() > 0) {
+            triggSign = 1;
+          } else if (trigger.pdgCode() < 0) {
+            triggSign = -1;
+          }
+          if (associate.pdgCode() > 0) {
+            assocSign = 1;
+          } else if (associate.pdgCode() < 0) {
+            assocSign = -1;
+          }
 
-	  deltaPhi = RecoDecay::constrainAngle(trigger.phi() - associate.phi(), -constants::math::PIHalf);
-	  deltaEta = trigger.eta() - associate.eta();
+          deltaPhi = RecoDecay::constrainAngle(trigger.phi() - associate.phi(), -constants::math::PIHalf);
+          deltaEta = trigger.eta() - associate.eta();
 
-	  if (std::abs(associate.pdgCode()) == kPiPlus) {
-	    rMECorrRegistry.fill(HIST("hMixLambdaPion_MC"), deltaPhi, deltaEta, coll_1.centFT0M(), coll_1.posZ(), triggSign, assocSign);
-	  } else if (std::abs(associate.pdgCode()) == kKPlus) {
-	    rMECorrRegistry.fill(HIST("hMixLambdaKaon_MC"), deltaPhi, deltaEta, coll_1.centFT0M(), coll_1.posZ(), triggSign, assocSign);
-	  } else if (std::abs(associate.pdgCode()) == kProton) {
-	    rMECorrRegistry.fill(HIST("hMixLambdaProton_MC"), deltaPhi, deltaEta, coll_1.centFT0M(), coll_1.posZ(), triggSign, assocSign);
-	  }
-	}
+          if (std::abs(associate.pdgCode()) == kPiPlus) {
+            rMECorrRegistry.fill(HIST("hMixLambdaPion_MC"), deltaPhi, deltaEta, coll_1.centFT0M(), coll_1.posZ(), triggSign, assocSign);
+          } else if (std::abs(associate.pdgCode()) == kKPlus) {
+            rMECorrRegistry.fill(HIST("hMixLambdaKaon_MC"), deltaPhi, deltaEta, coll_1.centFT0M(), coll_1.posZ(), triggSign, assocSign);
+          } else if (std::abs(associate.pdgCode()) == kProton) {
+            rMECorrRegistry.fill(HIST("hMixLambdaProton_MC"), deltaPhi, deltaEta, coll_1.centFT0M(), coll_1.posZ(), triggSign, assocSign);
+          }
+        }
       }
     }
     // End of the MC Mixed-events Correlations
-  }   
+  }
 
   void processMCGen(MyFilteredMCGenCollision const&, MyFilteredMCParticles const& particles)
   {
 
     Partition<MyFilteredMCParticles> mcParticles = aod::mcparticle::pt > 0.2f && aod::mcparticle::pt < 3.0f;
     mcParticles.bindTable(particles);
-    
+
     // Start of the Monte-Carlo generated QA
     for (const auto& particle : mcParticles) {
       if (particle.isPhysicalPrimary()) {
