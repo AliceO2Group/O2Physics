@@ -716,10 +716,9 @@ struct UpcCandProducer {
         const auto& col = trk.collision();
         nContrib = col.numContrib();
         trackBC = col.bc_as<TBCs>().globalBC();
-        // **Check for both kNoTimeFrameBorder and kNoITSROFrameBorder**
         if (!(col.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoTimeFrameBorder) &&
               col.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-          continue; // Skip this track if both selection bits are not set
+          continue; // skip this track if both selection bits are not set
         }
       } else {
         trackBC = ambIter->second;
