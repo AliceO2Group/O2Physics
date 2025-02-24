@@ -139,7 +139,7 @@ struct Phik0shortanalysis {
   Configurable<float> upMK0S{"upMK0S", 0.52f, "Upper limit on K0Short mass"};
 
   // Configurable on K0S pT bins
-  Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
+  Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
 
   // Configurable on pion pT bins
   Configurable<std::vector<double>> binspTPi{"binspTPi", {0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
@@ -740,16 +740,27 @@ struct Phik0shortanalysis {
   // Get the phi purity choosing the correct purity function according to the multiplicity and pt of the phi
   double getPhiPurity(float multiplicity, const ROOT::Math::PxPyPzMVector& Phi)
   {
-    // Find multiplicity bin using lower_bound
-    auto multIt = std::lower_bound(binsMult->begin(), binsMult->end(), multiplicity);
-    auto multIdx = multIt != binsMult->end() ? std::distance(binsMult->begin(), multIt) - 1 : -1;
+    // Check if multiplicity is out of range
+    if (multiplicity < binsMult->front() || multiplicity >= binsMult->back()) {
+      std::cout << "Multiplicity out of range: " << multiplicity << std::endl;
+      return 0;
+    }
 
-    // Find phi-pT bin using lower_bound
-    auto pTIt = std::lower_bound(binspTPhi->begin(), binspTPhi->end(), Phi.Pt());
-    auto pTIdx = pTIt != binspTPhi->end() ? std::distance(binspTPhi->begin(), pTIt) - 1 : -1;
+    // Find the multiplicity bin using upper_bound which finds the first element strictly greater than 'multiplicity'
+    // Subtract 1 to get the correct bin index
+    auto multIt = std::upper_bound(binsMult->begin(), binsMult->end(), multiplicity);
+    int multIdx = std::distance(binsMult->begin(), multIt) - 1;
 
-    if (multIdx == -1 || pTIdx == -1)
-      LOG(fatal) << "Problem computing phi purity!";
+    // Check if pT is out of range
+    if (Phi.Pt() < binspTPhi->front() || Phi.Pt() >= binspTPhi->back()) {
+      std::cout << "pT out of range: " << Phi.Pt() << std::endl;
+      return 0;
+    }
+
+    // Find the pT bin using upper_bound
+    // The logic is the same as for multiplicity
+    auto pTIt = std::upper_bound(binspTPhi->begin(), binspTPhi->end(), Phi.Pt());
+    int pTIdx = std::distance(binspTPhi->begin(), pTIt) - 1;
 
     return phiPurityFunctions[multIdx][pTIdx]->Eval(Phi.M());
   }
