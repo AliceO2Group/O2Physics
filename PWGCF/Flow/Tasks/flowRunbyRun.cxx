@@ -328,20 +328,6 @@ struct FlowRunbyRun {
     return true;
   }
 
-  void initEventCount(std::shared_ptr<TH1> hEventCountSpecific)
-  {
-    hEventCountSpecific->GetXaxis()->SetBinLabel(1, "after sel8");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(4, "kNoCollInTimeRangeStandard");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(5, "kIsGoodITSLayersAll");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(6, "kNoCollInRofStandard");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(7, "kNoHighMultCollInPrevRof");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(8, "occupancy");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(9, "MultCorrelation");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(10, "cfgEvSelV0AT0ACut");
-  }
-
   void createOutputObjectsForRun(int runNumber)
   {
     std::vector<std::shared_ptr<TH1>> histos(kCount_TH1Names);
@@ -352,7 +338,16 @@ struct FlowRunbyRun {
     histos[hMult] = registry.add<TH1>(Form("%d/hMult", runNumber), "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     histos[hCent] = registry.add<TH1>(Form("%d/hCent", runNumber), "", {HistType::kTH1D, {{90, 0, 90}}});
     histos[hEventCountSpecific] = registry.add<TH1>(Form("%d/hEventCountSpecific", runNumber), "", {HistType::kTH1D, {{10, 0, 10}}});
-    initEventCount(histos[hEventCountSpecific]);
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(1, "after sel8");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(4, "kNoCollInTimeRangeStandard");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(5, "kIsGoodITSLayersAll");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(6, "kNoCollInRofStandard");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(7, "kNoHighMultCollInPrevRof");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(8, "occupancy");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(9, "MultCorrelation");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(10, "cfgEvSelV0AT0ACut");
     th1sList.insert(std::make_pair(runNumber, histos));
 
     std::vector<std::shared_ptr<TProfile>> profiles(kCount_TProfileNames);

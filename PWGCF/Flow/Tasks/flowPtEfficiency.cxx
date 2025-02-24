@@ -382,6 +382,8 @@ struct FlowPtEfficiency {
     if (cfgFlowEnabled) {
       loadCentVsIPReco(bc.timestamp());
       loadCorrections(bc.timestamp());
+
+      fGFWReco->Clear();
     }
 
     for (const auto& track : tracks) {
@@ -446,6 +448,8 @@ struct FlowPtEfficiency {
       auto bc = mcCollision.bc_as<aod::BCsWithTimestamps>();
       loadCentVsIPTruth(bc.timestamp());
       centrality = mCentVsIPTruth->GetBinContent(mCentVsIPTruth->GetXaxis()->FindBin(imp));
+
+      fGFWTrue->Clear();
     }
     float lRandom = fRndm->Rndm();
     float wacc = 1.0f;
