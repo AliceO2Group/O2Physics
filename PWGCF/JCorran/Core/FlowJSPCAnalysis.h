@@ -55,7 +55,7 @@ class FlowJSPCAnalysis
     mHistRegistry->add("Centrality_0/phiBefore", "Phi before", {o2::framework::HistType::kTH1D, {{100, 0., o2::constants::math::TwoPI}}}, true);
     mHistRegistry->add("Centrality_0/phiAfter", "Phi after", {o2::framework::HistType::kTH1D, {{100, 0., o2::constants::math::TwoPI}}}, true);
 
-    for (uint i = 1; i < 8; i++) {
+    for (uint i = 1; i < 9; i++) {
       mHistRegistry->addClone("Centrality_0/", Form("Centrality_%u/", i));
     }
   }
@@ -80,8 +80,7 @@ class FlowJSPCAnalysis
     "Centrality_5/",
     "Centrality_6/",
     "Centrality_7/",
-    "Centrality_8/",
-    "Centrality_9/"};
+    "Centrality_8/"};
 
  private:
   const int mNqHarmos = 113; ///< Highest harmo for Q(n,p): (v8*14part)+1.
