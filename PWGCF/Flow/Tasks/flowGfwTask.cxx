@@ -902,11 +902,10 @@ struct FlowGfwTask {
 
       globalPlusitsNch++;
 
-      registry.fill(HIST("GlobalplusITS"), centrality);
-
       if (cfgGlobalplusITS) {
         if (withinPtRef) {
           fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+          registry.fill(HIST("GlobalplusITS"), centrality);
         }
       }
 
@@ -916,7 +915,7 @@ struct FlowGfwTask {
             fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
             gloabalOnlyNch++;
             registry.fill(HIST("Globalonly"), centrality);
-            registry.fill(HIST("pt_Cen_ITSOnly"), centrality, track.pt());
+            registry.fill(HIST("pt_Cen_GlobalOnly"), centrality, track.pt());
             registry.fill(HIST("phi_Cen_GlobalOnly"), centrality, track.pt());
           }
         }
