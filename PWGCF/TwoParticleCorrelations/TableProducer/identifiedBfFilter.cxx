@@ -831,9 +831,9 @@ struct IdentifiedBfFilterTracks {
                                      48, -6, 6,
                                      ptbins, ptlow, ptup);
         fhNSigmaTPCIdTrks[sp] = new TH2F(TString::Format("fhNSigmaTPC_IdTrks_%s", speciesName[sp]).Data(),
-                                          TString::Format("N Sigma from TPC vs P for Identified %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                                          48, -6, 6,
-                                          ptbins, ptlow, ptup);
+                                         TString::Format("N Sigma from TPC vs P for Identified %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                         48, -6, 6,
+                                         ptbins, ptlow, ptup);
       }
       LOGF(info, "Making histos");
 
@@ -1379,15 +1379,15 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
   MatchRecoGenSpecies spMinNSigma = kWrongSpecies;
   for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
     if (std::fabs(nsigmas[sp]) < std::fabs(minNSigma)) { // Check if species nsigma is less than current nsigma
-      minNSigma = nsigmas[sp];                // If yes, set species nsigma to current nsigma
-      spMinNSigma = MatchRecoGenSpecies(sp); // set current species sp number to current sp
+      minNSigma = nsigmas[sp];                           // If yes, set species nsigma to current nsigma
+      spMinNSigma = MatchRecoGenSpecies(sp);             // set current species sp number to current sp
     }
   }
   bool doublematch = false;
   MatchRecoGenSpecies spDouble = kWrongSpecies;
-  if (minNSigma < maxPIDSigma && minNSigma > minPIDSigma) {         // Check that current nsigma is in accpetance range
+  if (minNSigma < maxPIDSigma && minNSigma > minPIDSigma) {           // Check that current nsigma is in accpetance range
     for (int sp = 0; (sp < kIdBfNoOfSpecies) && !doublematch; ++sp) { // iterate over all species while there's no double match and we're in the list
-      if (sp != spMinNSigma) {                                      // for species not current minimum nsigma species
+      if (sp != spMinNSigma) {                                        // for species not current minimum nsigma species
         if (nsigmas[sp] < maxRejectSigma && nsigmas[sp] > minRejectSigma) { // If secondary species is in rejection range
           doublematch = true;                                         // Set double match true
           spDouble = MatchRecoGenSpecies(sp);
@@ -1494,7 +1494,7 @@ inline int8_t IdentifiedBfFilterTracks::acceptParticle(ParticleObject& particle,
   if (pdgpart != nullptr) {
     charge = getCharge(pdgpart->Charge());
   }
-  if ((particle.flags()&0x8)!=0x8){
+  if ((particle.flags() & 0x8) != 0x8) {
     if (particle.isPhysicalPrimary() && std::fabs(charge) > 0.0) {
       if ((particle.mcCollisionId() == 0) && traceCollId0) {
         LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
@@ -1534,10 +1534,10 @@ inline int8_t IdentifiedBfFilterTracks::acceptParticle(ParticleObject& particle,
         LOGF(info, "Particle %d NOT passed isPhysicalPrimary", particle.globalIndex());
       }
     }
-  }else{
-      if ((particle.mcCollisionId() == 0) && traceCollId0) {
-        LOGF(info, "Particle %d Out of Bunch Pileup", particle.globalIndex());
-      }
+  } else {
+    if ((particle.mcCollisionId() == 0) && traceCollId0) {
+      LOGF(info, "Particle %d Out of Bunch Pileup", particle.globalIndex());
+    }
   }
   return kWrongSpecies;
 }
@@ -1675,15 +1675,15 @@ void IdentifiedBfFilterTracks::fillParticleHistosBeforeSelection(ParticleObject 
   }
 
   float dcaxy = std::sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                            (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
+                          (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
   if (traceDCAOutliers.mDoIt && (traceDCAOutliers.mLowValue < dcaxy) && (dcaxy < traceDCAOutliers.mUpValue)) {
     fhTrueDCAxyBid->Fill(TString::Format("%d", particle.pdgCode()).Data(), 1.0);
   }
 
   fhTrueDCAxyB->Fill(std::sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
+                               (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
   fhTrueDCAxyzB->Fill(std::sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                  (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())),
+                                (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())),
                       (particle.vz() - collision.posZ()));
   fhTrueDCAzB->Fill((particle.vz() - collision.posZ()));
 }
@@ -1698,7 +1698,7 @@ void IdentifiedBfFilterTracks::fillParticleHistosAfterSelection(ParticleObject c
     fhTrueEtaA->Fill(particle.eta());
     fhTruePhiA->Fill(particle.phi());
     float dcaxy = std::sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                              (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
+                            (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
     if (traceDCAOutliers.mDoIt && (traceDCAOutliers.mLowValue < dcaxy) && (dcaxy < traceDCAOutliers.mUpValue)) {
       LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
            particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
@@ -1706,10 +1706,10 @@ void IdentifiedBfFilterTracks::fillParticleHistosAfterSelection(ParticleObject c
     }
 
     fhTrueDCAxyA->Fill(std::sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                   (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
+                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
     fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
     fhTrueDCAxyzA->Fill(std::sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                    (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())),
+                                  (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())),
                         (particle.vz() - collision.posZ()));
   }
   fhTruePA[sp]->Fill(particle.p());
