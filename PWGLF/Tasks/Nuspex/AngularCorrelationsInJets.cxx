@@ -1500,26 +1500,6 @@ struct AngularCorrelationsInJets {
       if (minJetPt < (jet.pt() - collision.rho() * jet.area()))
         continue;
       jetCounter++;
-      std::vector<McTracksRun3::iterator> jetProtons;
-      std::vector<McTracksRun3::iterator> jetAntiprotons;
-      std::vector<McTracksRun3::iterator> jetPiPlus;
-      std::vector<McTracksRun3::iterator> jetPiMinus;
-      std::vector<McTracksRun3::iterator> jetAll;
-      std::vector<std::pair<double, double>> fTempBufferProton;
-      std::vector<std::pair<double, double>> fTempBufferAntiproton;
-      std::vector<std::pair<double, double>> fTempBufferPiPlus;
-      std::vector<std::pair<double, double>> fTempBufferPiMinus;
-      std::vector<std::pair<double, double>> fTempBufferJet;
-      jetProtons.clear();
-      jetAntiprotons.clear();
-      jetPiPlus.clear();
-      jetPiMinus.clear();
-      jetAll.clear();
-      fTempBufferProton.clear();
-      fTempBufferAntiproton.clear();
-      fTempBufferPiPlus.clear();
-      fTempBufferPiMinus.clear();
-      fTempBufferJet.clear();
       TVector3 pJet(0., 0., 0.);
       pJet.SetXYZ(jet.px(), jet.py(), jet.pz());
 
@@ -1569,51 +1549,7 @@ struct AngularCorrelationsInJets {
         if (track.hasTOF()) {
           registryData.fill(HIST("tofSignal"), track.pt() * track.sign(), track.beta());
         }
-        // double ptDiff = pseudoParticle.pt() - track.pt();
-        // registryQA.fill(HIST("ptDiff"), ptDiff);
-
-        if (isProton(track, false)) { // collect protons in jet
-          registryData.fill(HIST("ptJetProton"), track.pt());
-          registryQA.fill(HIST("ptJetProtonVsTotalJet"), track.pt(), jet.pt());
-          registryData.fill(HIST("trackProtocol"), 4); // # protons
-          if (isProton(track, true)) {
-            registryData.fill(HIST("trackProtocol"), 5); // # high purity protons
-            jetProtons.emplace_back(track);
-            registryData.fill(HIST("dcaZJetProton"), track.pt(), track.dcaZ());
-          }
-        } else if (isAntiproton(track, false)) { // collect antiprotons in jet
-          registryData.fill(HIST("ptJetAntiproton"), track.pt());
-          registryQA.fill(HIST("ptJetAntiprotonVsTotalJet"), track.pt(), jet.pt());
-          registryData.fill(HIST("trackProtocol"), 6); // # antiprotons
-          if (isAntiproton(track, true)) {
-            registryData.fill(HIST("trackProtocol"), 7); // # high purity antiprotons
-            jetAntiprotons.emplace_back(track);
-            registryData.fill(HIST("dcaZJetAntiproton"), track.pt(), track.dcaZ());
-          }
-        } else if (isNucleus(track)) { // collect nuclei in jet
-          registryData.fill(HIST("ptJetNuclei"), track.pt());
-          registryQA.fill(HIST("ptJetNucleiVsTotalJet"), track.pt(), jet.pt());
-          registryData.fill(HIST("trackProtocol"), 8); // # nuclei
-          registryData.fill(HIST("dcaZJetNuclei"), track.pt(), track.dcaZ());
-        } else if (isAntinucleus(track)) {
-          registryData.fill(HIST("ptJetAntinuclei"), track.pt());
-          registryQA.fill(HIST("ptJetAntinucleiVsTotalJet"), track.pt(), jet.pt());
-          registryData.fill(HIST("trackProtocol"), 10); // # antinuclei
-          registryData.fill(HIST("dcaZJetAntinuclei"), track.pt(), track.dcaZ());
-        } else if (isPion(track)) {
-          registryQA.fill(HIST("ptJetPionVsTotalJet"), track.pt(), jet.pt());
-          registryData.fill(HIST("trackProtocol"), 11); // # antinuclei
-          registryData.fill(HIST("dcaZJetPion"), track.pt(), track.dcaZ());
-          if (track.sign() > 0) {
-            jetPiPlus.emplace_back(track);
-          } else if (track.sign() < 0) {
-            jetPiMinus.emplace_back(track);
-          }
-        } else if (isKaon(track)) {
-          registryQA.fill(HIST("ptJetKaonVsTotalJet"), track.pt(), jet.pt());
-          registryData.fill(HIST("trackProtocol"), 12); // # antinuclei
-          registryData.fill(HIST("dcaZJetKaon"), track.pt(), track.dcaZ());
-        }
+        
         // MC Truth Particles
         if (!track.has_mcParticle())
           continue;
@@ -1628,54 +1564,28 @@ struct AngularCorrelationsInJets {
             break;
           case 1000010020:
             registryMC.fill(HIST("numberOfTruthParticles"), 2);
-            registryMC.fill(HIST("ptJetNucleiMC"), track.pt());
+            if (deuteronAnalysis)
+              registryMC.fill(HIST("ptJetNucleiMC"), track.pt());
             break;
           case -1000010020:
             registryMC.fill(HIST("numberOfTruthParticles"), 3);
-            registryMC.fill(HIST("ptJetAntinucleiMC"), track.pt());
+            if (deuteronAnalysis)
+              registryMC.fill(HIST("ptJetAntinucleiMC"), track.pt());
             break;
           case 1000020030:
             registryMC.fill(HIST("numberOfTruthParticles"), 4);
-            registryMC.fill(HIST("ptJetNucleiMC"), track.pt());
+            if (!deuteronAnalysis)
+              registryMC.fill(HIST("ptJetNucleiMC"), track.pt());
             break;
           case -1000020030:
             registryMC.fill(HIST("numberOfTruthParticles"), 5);
-            registryMC.fill(HIST("ptJetAntinucleiMC"), track.pt());
+            if (!deuteronAnalysis)
+              registryMC.fill(HIST("ptJetAntinucleiMC"), track.pt());
             break;
           default:
             continue;
         }
-      } // for (const auto& track : jet.template tracks_as<FullTracksRun3>())
-
-      if (jetAll.size() > 1) { // general correlation function
-        doCorrelations(jetAll, fBufferJet, fTempBufferJet, 0, pJet);
-        setTrackBuffer(fTempBufferJet, fBufferJet);
-      }
-
-      if ((jetProtons.size() > 0) && (jetAntiprotons.size() > 0)) {
-        doCorrelationsAnti(jetProtons, jetAntiprotons, fBufferAntiproton, fTempBufferProton, pJet);
-        doCorrelationsAnti(jetAntiprotons, jetProtons, fBufferProton, fTempBufferAntiproton, pJet); // divide SE distributions by 2 in post
-      }
-      if ((jetProtons.size() < 2) && (jetAntiprotons.size() < 2) && jetPiPlus.size() < 2 && jetPiMinus.size() < 2)
-        continue;
-      registryData.fill(HIST("eventProtocol"), 6);
-
-      if (jetProtons.size() > 1) {
-        doCorrelations(jetProtons, fBufferProton, fTempBufferProton, 1, pJet);
-        setTrackBuffer(fTempBufferProton, fBufferProton);
-      }
-      if (jetAntiprotons.size() > 1) {
-        doCorrelations(jetAntiprotons, fBufferAntiproton, fTempBufferAntiproton, 2, pJet);
-        setTrackBuffer(fTempBufferAntiproton, fBufferAntiproton);
-      }
-      if (jetPiPlus.size() > 1) {
-        doCorrelations(jetPiPlus, fBufferPiPlus, fTempBufferPiPlus, 1, pJet);
-        setTrackBuffer(fTempBufferPiPlus, fBufferPiPlus);
-      }
-      if (jetPiMinus.size() > 1) {
-        doCorrelations(jetPiMinus, fBufferPiMinus, fTempBufferPiMinus, 1, pJet);
-        setTrackBuffer(fTempBufferPiMinus, fBufferPiMinus);
-      }
+      } // for (const auto& track : jet.template tracks_as<FullTracksRun3>())      
     } // for (const auto& jet : allJets)
 
     registryData.fill(HIST("numJetsInEvent"), jetCounter);
