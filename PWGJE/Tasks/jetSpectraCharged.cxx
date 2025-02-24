@@ -100,12 +100,15 @@ struct JetSpectraCharged {
     AxisSpec jetEtaAxis = {nBinsEta, -1.0, 1.0, "#eta"};
 
     if (doprocessQC || doprocessQCWeighted) {
+      registry.add("h_track_pt", "track #it{p}_{T} ; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH1F, {trackPtAxis}});
+      registry.add("h2_track_eta_track_phi", "track eta vs. track phi; #eta; #phi; counts", {HistType::kTH2F, {trackEtaAxis, phiAxis}});
+    }
+
+    if (doprocessCollisions || doprocessCollisionsWeighted) {
       registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h2_centrality_occupancy", "centrality vs occupancy; centrality; occupancy", {HistType::kTH2F, {centralityAxis, {60, 0, 30000}}});
       registry.add("h_collisions_Zvertex", "position of collision ;#it{Z} (cm)", {HistType::kTH1F, {{300, -15.0, 15.0}}});
-      registry.add("h_track_pt", "track #it{p}_{T} ; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH1F, {trackPtAxis}});
-      registry.add("h2_track_eta_track_phi", "track eta vs. track phi; #eta; #phi; counts", {HistType::kTH2F, {trackEtaAxis, phiAxis}});
-      if (doprocessQCWeighted) {
+      if (doprocessCollisionsWeighted) {
         registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       }
     }
@@ -461,6 +464,43 @@ struct JetSpectraCharged {
   void processQC(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                  soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      return;
+    }
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    for (auto const& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        continue;
+      }
+      fillTrackHistograms(track, collision.centrality());
+    }
+  }
+  PROCESS_SWITCH(JetSpectraCharged, processQC, "collisions and track QC for Data and MCD", false);
+
+  void processQCWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
+                         aod::JetMcCollisions const&,
+                         soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
+  {
+    float eventWeight = collision.mcCollision().weight();
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      return;
+    }
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    for (auto const& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        continue;
+      }
+      fillTrackHistograms(track, eventWeight);
+    }
+  }
+  PROCESS_SWITCH(JetSpectraCharged, processQCWeighted, "weighted collsions and tracks QC for MC", false);
+
+  void processCollisions(soa::Filtered<aod::JetCollisions>::iterator const& collision)
+  {
     registry.fill(HIST("h_collisions"), 0.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
@@ -472,19 +512,11 @@ struct JetSpectraCharged {
     registry.fill(HIST("h_collisions"), 2.5);
     registry.fill(HIST("h2_centrality_occupancy"), collision.centrality(), collision.trackOccupancyInTimeRange());
     registry.fill(HIST("h_collisions_Zvertex"), collision.posZ());
-
-    for (auto const& track : tracks) {
-      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
-        continue;
-      }
-      fillTrackHistograms(track, collision.centrality());
-    }
   }
-  PROCESS_SWITCH(JetSpectraCharged, processQC, "collisions and track QC for Data and MCD", true);
+  PROCESS_SWITCH(JetSpectraCharged, processCollisions, "collisions Data and MCD", true);
 
-  void processQCWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
-                         aod::JetMcCollisions const&,
-                         soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
+  void processCollisionsWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
+                                 aod::JetMcCollisions const&)
   {
     float eventWeight = collision.mcCollision().weight();
     registry.fill(HIST("h_collisions"), 0.5);
@@ -499,16 +531,10 @@ struct JetSpectraCharged {
     }
     registry.fill(HIST("h_collisions"), 2.5);
     registry.fill(HIST("h_collisions_weighted"), 2.5, eventWeight);
+    registry.fill(HIST("h2_centrality_occupancy"), collision.centrality(), collision.trackOccupancyInTimeRange());
     registry.fill(HIST("h_collisions_Zvertex"), collision.posZ(), eventWeight);
-
-    for (auto const& track : tracks) {
-      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
-        continue;
-      }
-      fillTrackHistograms(track, eventWeight);
-    }
   }
-  PROCESS_SWITCH(JetSpectraCharged, processQCWeighted, "weighted collsions and tracks QC for MC", false);
+  PROCESS_SWITCH(JetSpectraCharged, processCollisionsWeighted, "weighted collsions for MCD", false);
 
   void processSpectraData(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                           soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
@@ -660,7 +686,7 @@ struct JetSpectraCharged {
         occupancyIsGood = true;
       }
     } else {
-      for (auto& collision : collisions) {
+      for (auto const& collision : collisions) {
         if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
           hasSel8Coll = true;
         }
@@ -717,7 +743,7 @@ struct JetSpectraCharged {
     bool hasSel8Coll = false;
     bool centralityIsGood = false;
     bool occupancyIsGood = false;
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
         hasSel8Coll = true;
       }
@@ -770,7 +796,7 @@ struct JetSpectraCharged {
     registry.fill(HIST("h_mcColl_counts"), 2.5);
 
     bool hasSel8Coll = false;
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
       if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
         hasSel8Coll = true;
       }
