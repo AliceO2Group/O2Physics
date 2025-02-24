@@ -17,6 +17,7 @@
 #ifndef COMMON_CORE_RECODECAY_H_
 #define COMMON_CORE_RECODECAY_H_
 
+// C++ includes
 #include <algorithm> // std::find
 #include <array>     // std::array
 #include <cmath>     // std::abs, std::sqrt
@@ -24,8 +25,11 @@
 #include <utility> // std::move
 #include <vector>  // std::vector
 
-#include "TMCProcess.h" // for VMC Particle Production Process
-#include "TPDGCode.h"   // for PDG codes
+// ROOT includes
+#include <TMCProcess.h> // for VMC Particle Production Process
+#include <TPDGCode.h>   // for PDG codes
+
+// O2 includes
 #include "CommonConstants/MathConstants.h"
 
 /// Base class for calculating properties of reconstructed decays
