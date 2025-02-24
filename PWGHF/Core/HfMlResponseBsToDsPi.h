@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HfMlResponsBsToDsPi.h
+/// \file HfMlResponseBsToDsPi.h
 /// \brief Class to compute the ML response for Bs → Ds∓ π± analysis selections
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
