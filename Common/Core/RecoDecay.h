@@ -996,7 +996,7 @@ struct RecoDecay {
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
     auto pdgParticle = std::abs(particle.pdgCode());
     bool couldBePrompt = false;
-    if (pdgParticle / 100 == 4 || pdgParticle / 1000 == 4) {
+    if (pdgParticle / 100 == kCharm || pdgParticle / 1000 == kCharm) {
       couldBePrompt = true;
     }
     while (arrayIds[-stage].size() > 0) {
@@ -1029,22 +1029,22 @@ struct RecoDecay {
 
             if (searchUpToQuark) {
               if (idxBhadMothers) {
-                if (pdgParticleIMother / 100 == 5 || // b mesons
-                    pdgParticleIMother / 1000 == 5)  // b baryons
+                if (pdgParticleIMother / 100 == kBottom || // b mesons
+                    pdgParticleIMother / 1000 == kBottom)  // b baryons
                 {
                   idxBhadMothers->push_back(iMother);
                 }
               }
-              if (pdgParticleIMother == 5) { // b quark
+              if (pdgParticleIMother == kBottom) { // b quark
                 return OriginType::NonPrompt;
               }
-              if (pdgParticleIMother == 4) { // c quark
+              if (pdgParticleIMother == kCharm) { // c quark
                 return OriginType::Prompt;
               }
             } else {
               if (
-                (pdgParticleIMother / 100 == 5 || // b mesons
-                 pdgParticleIMother / 1000 == 5)  // b baryons
+                (pdgParticleIMother / 100 == kBottom || // b mesons
+                 pdgParticleIMother / 1000 == kBottom)  // b baryons
               ) {
                 if (idxBhadMothers) {
                   idxBhadMothers->push_back(iMother);
@@ -1052,8 +1052,8 @@ struct RecoDecay {
                 return OriginType::NonPrompt;
               }
               if (
-                (pdgParticleIMother / 100 == 4 || // c mesons
-                 pdgParticleIMother / 1000 == 4)  // c baryons
+                (pdgParticleIMother / 100 == kCharm || // c mesons
+                 pdgParticleIMother / 1000 == kCharm)  // c baryons
               ) {
                 couldBePrompt = true;
               }
@@ -1094,7 +1094,7 @@ struct RecoDecay {
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
     auto pdgParticle = std::abs(particle.pdgCode());
     bool couldBeCharm = false;
-    if (pdgParticle / 100 == 4 || pdgParticle / 1000 == 4) {
+    if (pdgParticle / 100 == kCharm || pdgParticle / 1000 == kCharm) {
       couldBeCharm = true;
     }
     while (arrayIds[-stage].size() > 0) {
@@ -1111,14 +1111,14 @@ struct RecoDecay {
             if (pdgParticleIMother < 9 || (pdgParticleIMother > 20 && pdgParticleIMother < 38)) {
               // auto PDGPaticle = std::abs(particleMother.pdgCode());
               if (
-                (pdgParticle / 100 == 5 || // b mesons
-                 pdgParticle / 1000 == 5)  // b baryons
+                (pdgParticle / 100 == kBottom || // b mesons
+                 pdgParticle / 1000 == kBottom)  // b baryons
               ) {
                 return OriginType::NonPrompt; // beauty
               }
               if (
-                (pdgParticle / 100 == 4 || // c mesons
-                 pdgParticle / 1000 == 4)  // c baryons
+                (pdgParticle / 100 == kCharm || // c mesons
+                 pdgParticle / 1000 == kCharm)  // c baryons
               ) {
                 return OriginType::Prompt; // charm
               }
@@ -1142,22 +1142,22 @@ struct RecoDecay {
 
             if (searchUpToQuark) {
               if (idxBhadMothers) {
-                if (pdgParticleIMother / 100 == 5 || // b mesons
-                    pdgParticleIMother / 1000 == 5)  // b baryons
+                if (pdgParticleIMother / 100 == kBottom || // b mesons
+                    pdgParticleIMother / 1000 == kBottom)  // b baryons
                 {
                   idxBhadMothers->push_back(iMother);
                 }
               }
-              if (pdgParticleIMother == 5) {  // b quark
-                return OriginType::NonPrompt; // beauty
+              if (pdgParticleIMother == kBottom) { // b quark
+                return OriginType::NonPrompt;      // beauty
               }
-              if (pdgParticleIMother == 4) { // c quark
-                return OriginType::Prompt;   // charm
+              if (pdgParticleIMother == kCharm) { // c quark
+                return OriginType::Prompt;        // charm
               }
             } else {
               if (
-                (pdgParticleIMother / 100 == 5 || // b mesons
-                 pdgParticleIMother / 1000 == 5)  // b baryons
+                (pdgParticleIMother / 100 == kBottom || // b mesons
+                 pdgParticleIMother / 1000 == kBottom)  // b baryons
               ) {
                 if (idxBhadMothers) {
                   idxBhadMothers->push_back(iMother);
@@ -1165,8 +1165,8 @@ struct RecoDecay {
                 return OriginType::NonPrompt; // beauty
               }
               if (
-                (pdgParticleIMother / 100 == 4 || // c mesons
-                 pdgParticleIMother / 1000 == 4)  // c baryons
+                (pdgParticleIMother / 100 == kCharm || // c mesons
+                 pdgParticleIMother / 1000 == kCharm)  // c baryons
               ) {
                 couldBeCharm = true;
               }
