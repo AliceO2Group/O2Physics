@@ -219,22 +219,22 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for 2-prong DCA XY pT-dependent cut"};
     // 2-prong cuts
     Configurable<double> ptMinTrack2Prong{"ptMinTrack2Prong", -1., "min. track pT for 2 prong candidate"};
-    Configurable<LabeledArray<double>> cutsTrack2Prong{"cutsTrack2Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 2-prong candidates"};
+    Configurable<LabeledArray<double>> cutsTrack2Prong{"cutsTrack2Prong", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 2-prong candidates"};
     Configurable<double> etaMinTrack2Prong{"etaMinTrack2Prong", -99999., "min. pseudorapidity for 2 prong candidate"};
     Configurable<double> etaMaxTrack2Prong{"etaMaxTrack2Prong", 4., "max. pseudorapidity for 2 prong candidate"};
     // 3-prong cuts
     Configurable<double> ptMinTrack3Prong{"ptMinTrack3Prong", -1., "min. track pT for 3 prong candidate"};
-    Configurable<LabeledArray<double>> cutsTrack3Prong{"cutsTrack3Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong candidates"};
+    Configurable<LabeledArray<double>> cutsTrack3Prong{"cutsTrack3Prong", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong candidates"};
     Configurable<double> etaMinTrack3Prong{"etaMinTrack3Prong", -99999., "min. pseudorapidity for 3 prong candidate"};
     Configurable<double> etaMaxTrack3Prong{"etaMaxTrack3Prong", 4., "max. pseudorapidity for 3 prong candidate"};
     // bachelor cuts (V0 + bachelor decays)
     Configurable<double> ptMinTrackBach{"ptMinTrackBach", 0.3, "min. track pT for bachelor in cascade candidate"}; // 0.5 for PbPb 2015?
-    Configurable<LabeledArray<double>> cutsTrackBach{"cutsTrackBach", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for the bachelor of V0-bachelor candidates"};
+    Configurable<LabeledArray<double>> cutsTrackBach{"cutsTrackBach", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for the bachelor of V0-bachelor candidates"};
     Configurable<double> etaMinTrackBach{"etaMinTrackBach", -99999., "min. pseudorapidity for bachelor in cascade candidate"};
     Configurable<double> etaMaxTrackBach{"etaMaxTrackBach", 0.8, "max. pseudorapidity for bachelor in cascade candidate"};
     // bachelor cuts (cascade + bachelor decays)
     Configurable<double> ptMinTrackBachLfCasc{"ptMinTrackBachLfCasc", 0.1, "min. track pT for bachelor in cascade + bachelor decays"}; // 0.5 for PbPb 2015?
-    Configurable<LabeledArray<double>> cutsTrackBachLfCasc{"cutsTrackBachLfCasc", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for the bachelor in cascade + bachelor decays"};
+    Configurable<LabeledArray<double>> cutsTrackBachLfCasc{"cutsTrackBachLfCasc", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for the bachelor in cascade + bachelor decays"};
     Configurable<double> etaMinTrackBachLfCasc{"etaMinTrackBachLfCasc", -99999., "min. pseudorapidity for bachelor in cascade + bachelor decays"};
     Configurable<double> etaMaxTrackBachLfCasc{"etaMaxTrackBachLfCasc", 1.1, "max. pseudorapidity for bachelor in cascade + bachelor decays"};
     Configurable<bool> useIsGlobalTrackForBachLfCasc{"useIsGlobalTrackForBachLfCasc", false, "check isGlobalTrack status for bachelor in cascade + bachelor decays"};
@@ -244,12 +244,12 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     Configurable<double> ptMinSoftPionForDstar{"ptMinSoftPionForDstar", 0.05, "min. track pT for soft pion in D* candidate"};
     Configurable<double> etaMinSoftPionForDstar{"etaMinSoftPionForDstar", -99999., "min. pseudorapidity for soft pion in D* candidate"};
     Configurable<double> etaMaxSoftPionForDstar{"etaMaxSoftPionForDstar", 0.8, "max. pseudorapidity for soft pion in D* candidate"};
-    Configurable<LabeledArray<double>> cutsTrackDstar{"cutsTrackDstar", {hf_cuts_single_track::cutsTrackPrimary[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for the soft pion of D* candidates"};
+    Configurable<LabeledArray<double>> cutsTrackDstar{"cutsTrackDstar", {hf_cuts_single_track::CutsTrackPrimary[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for the soft pion of D* candidates"};
     Configurable<bool> useIsGlobalTrackForSoftPion{"useIsGlobalTrackForSoftPion", false, "check isGlobalTrack status for soft pion tracks"};
     Configurable<bool> useIsGlobalTrackWoDCAForSoftPion{"useIsGlobalTrackWoDCAForSoftPion", false, "check isGlobalTrackWoDCA status for soft pion tracks"};
     Configurable<bool> useIsQualityTrackITSForSoftPion{"useIsQualityTrackITSForSoftPion", true, "check qualityTracksITS status for soft pion tracks"};
     // proton PID, applied only if corresponding process function enabled
-    Configurable<LabeledArray<float>> selectionsPid{"selectionsPid", {hf_presel_pid::cutsPid[0], 4, 6, hf_presel_pid::labelsRowsPid, hf_presel_pid::labelsCutsPid}, "PID selections for proton / kaon applied if proper process function enabled"};
+    Configurable<LabeledArray<float>> selectionsPid{"selectionsPid", {hf_presel_pid::CutsPid[0], 4, 6, hf_presel_pid::labelsRowsPid, hf_presel_pid::labelsCutsPid}, "PID selections for proton / kaon applied if proper process function enabled"};
     // CCDB
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
@@ -1159,28 +1159,28 @@ struct HfTrackIndexSkimCreator {
 
     // D0 cuts
     Configurable<std::vector<double>> binsPtD0ToPiK{"binsPtD0ToPiK", std::vector<double>{hf_cuts_presel_2prong::vecBinsPt}, "pT bin limits for D0->piK pT-dependent cuts"};
-    Configurable<LabeledArray<double>> cutsD0ToPiK{"cutsD0ToPiK", {hf_cuts_presel_2prong::cuts[0], hf_cuts_presel_2prong::nBinsPt, hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::labelsPt, hf_cuts_presel_2prong::labelsCutVar}, "D0->piK selections per pT bin"};
+    Configurable<LabeledArray<double>> cutsD0ToPiK{"cutsD0ToPiK", {hf_cuts_presel_2prong::Cuts[0], hf_cuts_presel_2prong::NBinsPt, hf_cuts_presel_2prong::NCutVars, hf_cuts_presel_2prong::labelsPt, hf_cuts_presel_2prong::labelsCutVar}, "D0->piK selections per pT bin"};
     // Jpsi -> ee cuts
     Configurable<std::vector<double>> binsPtJpsiToEE{"binsPtJpsiToEE", std::vector<double>{hf_cuts_presel_2prong::vecBinsPt}, "pT bin limits for Jpsi->ee pT-dependent cuts"};
-    Configurable<LabeledArray<double>> cutsJpsiToEE{"cutsJpsiToEE", {hf_cuts_presel_2prong::cuts[0], hf_cuts_presel_2prong::nBinsPt, hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::labelsPt, hf_cuts_presel_2prong::labelsCutVar}, "Jpsi->ee selections per pT bin"};
+    Configurable<LabeledArray<double>> cutsJpsiToEE{"cutsJpsiToEE", {hf_cuts_presel_2prong::Cuts[0], hf_cuts_presel_2prong::NBinsPt, hf_cuts_presel_2prong::NCutVars, hf_cuts_presel_2prong::labelsPt, hf_cuts_presel_2prong::labelsCutVar}, "Jpsi->ee selections per pT bin"};
     // Jpsi -> mumu cuts
     Configurable<std::vector<double>> binsPtJpsiToMuMu{"binsPtJpsiToMuMu", std::vector<double>{hf_cuts_presel_2prong::vecBinsPt}, "pT bin limits for Jpsi->mumu pT-dependent cuts"};
-    Configurable<LabeledArray<double>> cutsJpsiToMuMu{"cutsJpsiToMuMu", {hf_cuts_presel_2prong::cuts[0], hf_cuts_presel_2prong::nBinsPt, hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::labelsPt, hf_cuts_presel_2prong::labelsCutVar}, "Jpsi->mumu selections per pT bin"};
+    Configurable<LabeledArray<double>> cutsJpsiToMuMu{"cutsJpsiToMuMu", {hf_cuts_presel_2prong::Cuts[0], hf_cuts_presel_2prong::NBinsPt, hf_cuts_presel_2prong::NCutVars, hf_cuts_presel_2prong::labelsPt, hf_cuts_presel_2prong::labelsCutVar}, "Jpsi->mumu selections per pT bin"};
     // D+ cuts
     Configurable<std::vector<double>> binsPtDplusToPiKPi{"binsPtDplusToPiKPi", std::vector<double>{hf_cuts_presel_3prong::vecBinsPt}, "pT bin limits for D+->piKpi pT-dependent cuts"};
-    Configurable<LabeledArray<double>> cutsDplusToPiKPi{"cutsDplusToPiKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::nBinsPt, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "D+->piKpi selections per pT bin"};
+    Configurable<LabeledArray<double>> cutsDplusToPiKPi{"cutsDplusToPiKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "D+->piKpi selections per pT bin"};
     // Ds+ cuts
     Configurable<std::vector<double>> binsPtDsToKKPi{"binsPtDsToKKPi", std::vector<double>{hf_cuts_presel_ds::vecBinsPt}, "pT bin limits for Ds+->KKPi pT-dependent cuts"};
-    Configurable<LabeledArray<double>> cutsDsToKKPi{"cutsDsToKKPi", {hf_cuts_presel_ds::cuts[0], hf_cuts_presel_ds::nBinsPt, hf_cuts_presel_ds::nCutVars, hf_cuts_presel_ds::labelsPt, hf_cuts_presel_ds::labelsCutVar}, "Ds+->KKPi selections per pT bin"};
+    Configurable<LabeledArray<double>> cutsDsToKKPi{"cutsDsToKKPi", {hf_cuts_presel_ds::Cuts[0], hf_cuts_presel_ds::NBinsPt, hf_cuts_presel_ds::NCutVars, hf_cuts_presel_ds::labelsPt, hf_cuts_presel_ds::labelsCutVar}, "Ds+->KKPi selections per pT bin"};
     // Lc+ cuts
     Configurable<std::vector<double>> binsPtLcToPKPi{"binsPtLcToPKPi", std::vector<double>{hf_cuts_presel_3prong::vecBinsPt}, "pT bin limits for Lc->pKpi pT-dependent cuts"};
-    Configurable<LabeledArray<double>> cutsLcToPKPi{"cutsLcToPKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::nBinsPt, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Lc->pKpi selections per pT bin"};
+    Configurable<LabeledArray<double>> cutsLcToPKPi{"cutsLcToPKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Lc->pKpi selections per pT bin"};
     // Xic+ cuts
     Configurable<std::vector<double>> binsPtXicToPKPi{"binsPtXicToPKPi", std::vector<double>{hf_cuts_presel_3prong::vecBinsPt}, "pT bin limits for Xic->pKpi pT-dependent cuts"};
-    Configurable<LabeledArray<double>> cutsXicToPKPi{"cutsXicToPKPi", {hf_cuts_presel_3prong::cuts[0], hf_cuts_presel_3prong::nBinsPt, hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Xic->pKpi selections per pT bin"};
+    Configurable<LabeledArray<double>> cutsXicToPKPi{"cutsXicToPKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Xic->pKpi selections per pT bin"};
     // D*+ cuts
     Configurable<std::vector<double>> binsPtDstarToD0Pi{"binsPtDstarToD0Pi", std::vector<double>{hf_cuts_presel_dstar::vecBinsPt}, "pT bin limits for D*+->D0pi pT-dependent cuts"};
-    Configurable<LabeledArray<double>> cutsDstarToD0Pi{"cutsDstarToD0Pi", {hf_cuts_presel_dstar::cuts[0], hf_cuts_presel_dstar::nBinsPt, hf_cuts_presel_dstar::nCutVars, hf_cuts_presel_dstar::labelsPt, hf_cuts_presel_dstar::labelsCutVar}, "D*+->D0pi selections per pT bin"};
+    Configurable<LabeledArray<double>> cutsDstarToD0Pi{"cutsDstarToD0Pi", {hf_cuts_presel_dstar::Cuts[0], hf_cuts_presel_dstar::NBinsPt, hf_cuts_presel_dstar::NCutVars, hf_cuts_presel_dstar::labelsPt, hf_cuts_presel_dstar::labelsCutVar}, "D*+->D0pi selections per pT bin"};
 
     // proton PID selections for Lc and Xic
     Configurable<bool> applyProtonPidForLcToPKPi{"applyProtonPidForLcToPKPi", false, "Apply proton PID for Lc->pKpi"};
@@ -1195,11 +1195,11 @@ struct HfTrackIndexSkimCreator {
 
     Configurable<LabeledArray<std::string>> onnxFileNames{"onnxFileNames", {hf_cuts_bdt_multiclass::onnxFileNameSpecies[0], 5, 1, hf_cuts_bdt_multiclass::labelsSpecies, hf_cuts_bdt_multiclass::labelsModels}, "ONNX file names for ML models"};
 
-    Configurable<LabeledArray<double>> thresholdMlScoreD0ToKPi{"thresholdMlScoreD0ToKPi", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of D0 candidates"};
-    Configurable<LabeledArray<double>> thresholdMlScoreDplusToPiKPi{"thresholdMlScoreDplusToPiKPi", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of D+ candidates"};
-    Configurable<LabeledArray<double>> thresholdMlScoreDsToPiKK{"thresholdMlScoreDsToPiKK", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of Ds+ candidates"};
-    Configurable<LabeledArray<double>> thresholdMlScoreLcToPiKP{"thresholdMlScoreLcToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of Lc+ candidates"};
-    Configurable<LabeledArray<double>> thresholdMlScoreXicToPiKP{"thresholdMlScoreXicToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of Xic+ candidates"};
+    Configurable<LabeledArray<double>> thresholdMlScoreD0ToKPi{"thresholdMlScoreD0ToKPi", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of D0 candidates"};
+    Configurable<LabeledArray<double>> thresholdMlScoreDplusToPiKPi{"thresholdMlScoreDplusToPiKPi", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of D+ candidates"};
+    Configurable<LabeledArray<double>> thresholdMlScoreDsToPiKK{"thresholdMlScoreDsToPiKK", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of Ds+ candidates"};
+    Configurable<LabeledArray<double>> thresholdMlScoreLcToPiKP{"thresholdMlScoreLcToPiKP", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of Lc+ candidates"};
+    Configurable<LabeledArray<double>> thresholdMlScoreXicToPiKP{"thresholdMlScoreXicToPiKP", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of Xic+ candidates"};
   } config;
 
   SliceCache cache;
@@ -1223,8 +1223,8 @@ struct HfTrackIndexSkimCreator {
 
   static constexpr int kN2ProngDecays = hf_cand_2prong::DecayType::N2ProngDecays;                                                                                                               // number of 2-prong hadron types
   static constexpr int kN3ProngDecays = hf_cand_3prong::DecayType::N3ProngDecays;                                                                                                               // number of 3-prong hadron types
-  static constexpr int kNCuts2Prong[kN2ProngDecays] = {hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::nCutVars, hf_cuts_presel_2prong::nCutVars};                                      // how many different selections are made on 2-prongs
-  static constexpr int kNCuts3Prong[kN3ProngDecays] = {hf_cuts_presel_3prong::nCutVars, hf_cuts_presel_3prong::nCutVars + 1, hf_cuts_presel_ds::nCutVars, hf_cuts_presel_3prong::nCutVars + 1}; // how many different selections are made on 3-prongs (Lc and Xic have also PID potentially)
+  static constexpr int kNCuts2Prong[kN2ProngDecays] = {hf_cuts_presel_2prong::NCutVars, hf_cuts_presel_2prong::NCutVars, hf_cuts_presel_2prong::NCutVars};                                      // how many different selections are made on 2-prongs
+  static constexpr int kNCuts3Prong[kN3ProngDecays] = {hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::NCutVars + 1, hf_cuts_presel_ds::NCutVars, hf_cuts_presel_3prong::NCutVars + 1}; // how many different selections are made on 3-prongs (Lc and Xic have also PID potentially)
   static constexpr int kNCutsDstar = 3;                                                                                                                                                         // how many different selections are made on Dstars
   std::array<std::array<std::array<double, 2>, 2>, kN2ProngDecays> arrMass2Prong;
   std::array<std::array<std::array<double, 3>, 2>, kN3ProngDecays> arrMass3Prong;
@@ -1591,7 +1591,7 @@ struct HfTrackIndexSkimCreator {
         if (whichHypo[iDecay3P] == 0) {
           CLRBIT(isSelected, iDecay3P);
           if (config.debug) {
-            cutStatus[iDecay3P][hf_cuts_presel_3prong::nCutVars] = false; // PID
+            cutStatus[iDecay3P][hf_cuts_presel_3prong::NCutVars] = false; // PID
           }
           continue; // no need to check further for this particle hypothesis
         }

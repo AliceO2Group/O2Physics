@@ -11,6 +11,8 @@
 
 /// \file CandidateSelectionTables.h
 /// \brief Definitions of tables produced by candidate selectors
+///
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 
 #ifndef PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
 #define PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_

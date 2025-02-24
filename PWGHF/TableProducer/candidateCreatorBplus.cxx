@@ -65,7 +65,7 @@ struct HfCandidateCreatorBplus {
   Configurable<bool> usePionIsGlobalTrackWoDCA{"usePionIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for pions, for Run3 studies"};
   Configurable<double> ptPionMin{"ptPionMin", 0.2, "minimum pion pT threshold (GeV/c)"};
   Configurable<std::vector<double>> binsPtPion{"binsPtPion", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for pion DCA XY pT-dependent cut"};
-  Configurable<LabeledArray<double>> cutsTrackPionDCA{"cutsTrackPionDCA", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for pions"};
+  Configurable<LabeledArray<double>> cutsTrackPionDCA{"cutsTrackPionDCA", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for pions"};
   Configurable<double> invMassWindowBplus{"invMassWindowBplus", 0.3, "invariant-mass window for B^{+} candidates"};
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
@@ -342,11 +342,11 @@ struct HfCandidateCreatorBplus {
                            std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()));
 
           rowCandidateProngs(candD0.globalIndex(), trackPion.globalIndex()); // index D0 and bachelor
-        }                                                                    // track loop
-      }                                                                      // D0 cand loop
-    }                                                                        // collision
-  }                                                                          // process
-};                                                                           // struct
+        } // track loop
+      } // D0 cand loop
+    } // collision
+  } // process
+}; // struct
 
 /// Extends the base table with expression columns and performs MC matching
 struct HfCandidateCreatorBplusExpressions {
@@ -387,7 +387,7 @@ struct HfCandidateCreatorBplusExpressions {
       rowMcMatchRec(flag, origin);
     }
     hf_mc_gen::fillMcMatchGenBplus(mcParticles, rowMcMatchGen); // gen
-  }   // process
+  } // process
   PROCESS_SWITCH(HfCandidateCreatorBplusExpressions, processMc, "Process MC", false);
 }; // struct
 

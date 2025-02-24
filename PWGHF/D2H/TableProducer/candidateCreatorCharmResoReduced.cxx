@@ -96,9 +96,9 @@ struct HfCandidateCreatorCharmResoReduced {
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{vecBinsPt}, "Histogram pT bin limits"};
   // Daughters selection cuts
-  Configurable<LabeledArray<double>> cutsD{"cutsDdaughter", {hf_cuts_d_daughter::cuts[0], hf_cuts_d_daughter::nBinsPt, hf_cuts_d_daughter::nCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
+  Configurable<LabeledArray<double>> cutsD{"cutsDdaughter", {hf_cuts_d_daughter::Cuts[0], hf_cuts_d_daughter::NBinsPt, hf_cuts_d_daughter::NCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{hf_cuts_d_daughter::vecBinsPt}, "pT bin limits for D daughter cuts"};
-  Configurable<LabeledArray<double>> cutsV0{"cutsV0daughter", {hf_cuts_v0_daughter::cuts[0], hf_cuts_v0_daughter::nBinsPt, hf_cuts_v0_daughter::nCutVars, hf_cuts_v0_daughter::labelsPt, hf_cuts_v0_daughter::labelsCutVar}, "V0 daughter selections"};
+  Configurable<LabeledArray<double>> cutsV0{"cutsV0daughter", {hf_cuts_v0_daughter::Cuts[0], hf_cuts_v0_daughter::NBinsPt, hf_cuts_v0_daughter::NCutVars, hf_cuts_v0_daughter::labelsPt, hf_cuts_v0_daughter::labelsCutVar}, "V0 daughter selections"};
   Configurable<std::vector<double>> binsPtV0{"binsPtV0", std::vector<double>{hf_cuts_v0_daughter::vecBinsPt}, "pT bin limits for V0 daughter cuts"};
 
   // Configurables for ME
