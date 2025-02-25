@@ -53,7 +53,7 @@ struct : ConfigurableGroup {
   Configurable<vector<string>> cfBookQAParticleEventHistograms2D{"cfBookQAParticleEventHistograms2D", {"1-CurrentRunDuration_vs_itsNCls", "1-CurrentRunDuration_vs_itsNClsNegEtaEbyE", "1-CurrentRunDuration_vs_itsNClsPosEtaEbyE", "1-CurrentRunDuration_vs_Eta0804EbyE", "1-CurrentRunDuration_vs_Eta0400EbyE", "1-CurrentRunDuration_vs_Eta0004EbyE", "1-CurrentRunDuration_vs_Eta0408EbyE", "1-CurrentRunDuration_vs_Pt0005EbyE", "1-CurrentRunDuration_vs_Pt0510EbyE", "1-CurrentRunDuration_vs_Pt1050EbyE"}, "book (1) or do not book (0) this QA 2D particle event histogram"};
 
   Configurable<bool> cfFillQACorrelationsVsHistograms2D{"cfFillQACorrelationsVsHistograms2D", true, "if false, all QA 2D histograms of this category are not filled. if true, only the ones for which fBookQACorrelationsVsHistograms2D[...] is true, are filled"};
-  Configurable<vector<string>> cfBookQACorrelationsVsHistograms2D{"cfBookQACorrelationsVsHistograms2D", {"1-Correlations_vs_Multiplicity", "1-Correlations_vs_ReferenceMultiplicity", "1-Correlations_vs_Centrality", "1-Correlations_vs_Phi", "1-Correlations_vs_Pt", "1-Correlations_vs_Eta"}, "book (1) or do not book (0) this QA 2D histogram"};
+  Configurable<std::vector<std::string>> cfBookQACorrelationsVsHistograms2D{"cfBookQACorrelationsVsHistograms2D", {"1-Correlations_vs_Multiplicity", "1-Correlations_vs_ReferenceMultiplicity", "1-Correlations_vs_Centrality", "1-Correlations_vs_Phi", "1-Correlations_vs_Pt", "1-Correlations_vs_Eta"}, "book (1) or do not book (0) this QA 2D histogram"};
   Configurable<vector<int>> cfQACorrelationsVsHistogramsMinMaxHarmonic{"cfQACorrelationsVsHistogramsMinMaxHarmonic", {1, 5}, "harmonics are filled for min <= harmonic < max"};
 } cf_qa;
 

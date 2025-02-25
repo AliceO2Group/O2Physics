@@ -120,7 +120,7 @@ struct QualityAssurance {
                                                                                            // [reco, sim][before, after]. Type dimension is bin.
 
   TList* fQACorrelationsVsList = NULL;                                                                  //!<! base list to hold all QA particle event output object
-  TH2F* fQACorrelationsVsHistograms2D[eQACorrelationsVsHistograms2D_N][gMaxHarmonic][2] = {{{{NULL}}}}; //! [ type - see enum eQACorrelationsVsHistograms2D ][reco,sim]. I do not have here support for [before, after], because I do not fill Q-vectors before cuts
+  TH2F* fQACorrelationsVsHistograms2D[eQACorrelationsVsHistograms2D_N][gMaxHarmonic][2] = {{{NULL}}}; //! [ type - see enum eQACorrelationsVsHistograms2D ][reco,sim]. I do not have here support for [before, after], because I do not fill Q-vectors before cuts
   bool fFillQACorrelationsVsHistograms2D = true;                                                        // if false, all 2D histograms in this category are not filled. If true, the ones for which fBookQACorrelationsVsHistograms2D[...] is true, are filled
   bool fBookQACorrelationsVsHistograms2D[eQACorrelationsVsHistograms2D_N] = {true};                     // book or not this 2D histogram, see configurable cfBookQACorrelationsVsHistograms2D
   float fQACorrelationsVsHistogramsBins2D[eQACorrelationsVsHistograms2D_N][2][3] = {{{0.}}};            // [type - see enum][x,y][nBins,min,max]
