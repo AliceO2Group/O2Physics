@@ -230,7 +230,7 @@ struct singleTrackSelector {
       registry.fill(HIST("hNTracks"), 1.5);
 
       for (auto ii : particlesToKeep)
-        if (o2::aod::singletrackselector::TPCselection(track, std::make_pair(ii, keepWithinNsigmaTPC))) {
+        if (o2::aod::singletrackselector::TPCselection<false>(track, std::make_pair(ii, keepWithinNsigmaTPC))) {
           if (track.p() > _pRemoveTofOutOfRange && !o2::aod::singletrackselector::TOFselection(track, std::make_pair(ii, std::vector<float>{-10.0, 10.0}), std::vector<float>{-10.0, 10.0}))
             continue;
 

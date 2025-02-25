@@ -517,11 +517,53 @@ DECLARE_SOA_TABLE(SingleTrkMCs, "AOD", "SINGLETRKMC", // Table with generatad in
 
 namespace o2::aod::singletrackselector
 {
-
 template <typename TrackType>
-inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts)
+inline bool ITSselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts)
 {
   int PDG = PIDcuts.first;
+
+  float Nsigma = -1000;
+  switch (PDG) {
+    case 2212:
+      Nsigma = track.itsNSigmaPr();
+      break;
+    case 1000010020:
+      Nsigma = track.itsNSigmaDe();
+      break;
+    case 1000020030:
+      Nsigma = track.itsNSigmaHe();
+      break;
+    case 1000010030:
+      Nsigma = track.itsNSigmaTr();
+      break;
+    case 211:
+      Nsigma = track.itsNSigmaPi();
+      break;
+    case 321:
+      Nsigma = track.itsNSigmaKa();
+      break;
+    case 0:
+      return false;
+    default:
+      LOG(fatal) << "Cannot interpret PDG for ITS selection: " << PIDcuts.first;
+  }
+
+  if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1]) {
+    return true;
+  }
+  return false;
+}
+
+template <bool useITS, typename TrackType>
+inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts, std::vector<float> const& ITSCut = std::vector<float>{})
+{
+  int PDG = PIDcuts.first;
+
+  if constexpr (useITS) {
+    if (ITSCut.size() != 0 && !ITSselection(track, std::make_pair(PDG, ITSCut)))
+      return false;
+  }
+
   float Nsigma = -1000;
   switch (PDG) {
     case 2212:
@@ -558,7 +600,7 @@ template <typename TrackType>
 inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts, std::vector<float> const& TPCresidualCut = std::vector<float>{-5.0f, 5.0f})
 {
   int PDG = PIDcuts.first;
-  if (!TPCselection(track, std::make_pair(PDG, TPCresidualCut)))
+  if (!TPCselection<false>(track, std::make_pair(PDG, TPCresidualCut)))
     return false;
 
   float Nsigma = -1000;
