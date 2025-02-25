@@ -567,7 +567,7 @@ struct ResonancesGfwFlow {
     for (auto const& track : tracks) {
       double pt = track.pt();
       bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);
-
+      
       if (withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1);
     }
@@ -576,7 +576,7 @@ struct ResonancesGfwFlow {
     auto negSlicedTracks = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     resurrectPhi(posSlicedTracks, negSlicedTracks, kaonPlus, kaonMinus, phiMom, massKaPlus, HIST("hPhiMass_sparse"), cent, weff, wacc);
-
+    
     for (auto const& v0s : V0s) {
       if (selectionLambda(collision, v0s) == true)
         histos.fill(HIST("hLambdaCount"), 1);
