@@ -9,32 +9,27 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file JetUtilities.h
-/// \brief Jet related utilities
+/// \file EmcalMatchingUtilities.h
+/// \brief EMCal track matching utilities
 ///
-/// \author Raymond Ehlers <raymond.ehlers@cern.ch>, ORNL
-/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+/// \author Marvin Hemmer <marvin.hemmer@cern.ch>, Goethe-University Frankfurt
 
-#ifndef PWGJE_CORE_JETUTILITIES_H_
-#define PWGJE_CORE_JETUTILITIES_H_
+#ifndef PWGJE_CORE_EMCALMATCHINGUTILITIES_H_
+#define PWGJE_CORE_EMCALMATCHINGUTILITIES_H_
 
-#include "Common/Core/RecoDecay.h"
-
-#include <TKDTree.h>
-
-#include <algorithm>
 #include <cmath>
-#include <cstddef>
 #include <limits>
-#include <stdexcept>
+#include <numeric>
 #include <tuple>
 #include <vector>
+
+#include <TKDTree.h>
 
 #include "Framework/Logger.h"
 #include "CommonConstants/MathConstants.h"
 #include "Common/Core/RecoDecay.h"
 
-namespace jetutilities
+namespace emcmatchingutilities
 {
 
 /**
@@ -143,6 +138,75 @@ std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> MatchCl
   return std::make_tuple(matchIndexTrack, matchIndexCluster);
 }
 
+/**
+ * Match cells to tracks.
+ *
+ * Match cells to tracks, where maxNumberMatches are considered in dR=maxMatchingDistance.
+ * If no unique cell match was found for a track, an index of -1 is stored..
+ *
+ * @param cellPhi cell collection phi.
+ * @param cellEta cell collection eta.
+ * @param trackPhi track collection phi.
+ * @param trackEta track collection eta.
+ * @param maxMatchingDistance Maximum matching distance.
+ *
+ * @returns (track to cell index map)
+ */
+template <typename T>
+void matchCellsAndTracks(
+  std::vector<T>& cellPhi,
+  std::vector<T>& cellEta,
+  std::vector<T>& trackPhi,
+  std::vector<T>& trackEta,
+  double maxMatchingDistance,
+  std::vector<int>& matchIndexCell)
+{
+  // Validation
+  const std::size_t nClusters = cellEta.size();
+  const std::size_t nTracks = trackEta.size();
+
+  if (!(nClusters && nTracks)) {
+    // There are no jets, so nothing to be done.
+    return;
+  }
+  // Input sizes must match
+  if (cellPhi.size() != cellEta.size()) {
+    throw std::invalid_argument("Cells collection eta and phi sizes don't match! Check the inputs!");
+    return;
+  }
+  if (trackPhi.size() != trackEta.size()) {
+    throw std::invalid_argument("Track collection eta and phi sizes don't match! Check the inputs!");
+    return;
+  }
+
+  matchIndexCell.resize(nTracks, -1);
+
+  // Build the KD-trees using vectors
+  // We build two trees:
+  // treeBase, which contains the base collection.
+  // treeTag, which contains the tag collection.
+  // The trees are built to match in two dimensions (eta, phi)
+  TKDTree<int, T> treeCell(cellEta.size(), 2, 1);
+  // By utilizing SetData, we can avoid having to copy the data again.
+  treeCell.SetData(0, cellEta.data());
+  treeCell.SetData(1, cellPhi.data());
+  treeCell.Build();
+
+  // Find the cell closest to each track
+  for (std::size_t iTrack = 0; iTrack < nTracks; iTrack++) {
+    T point[2] = {trackEta[iTrack], trackPhi[iTrack]};
+    int index[1];  // size 50 for safety
+    T distance[1]; // size 50 for safery
+    std::fill_n(index, 1, -1);
+    std::fill_n(distance, 1, std::numeric_limits<T>::max());
+    treeCell.FindNearestNeighbors(point, 1, index, distance);
+    if (index[0] >= 0 && distance[0] < maxMatchingDistance) {
+      matchIndexCell[iTrack] = index[0];
+    }
+  }
+  return;
+}
+
 template <typename T, typename U>
 float deltaR(T const& A, U const& B)
 {
@@ -160,6 +224,6 @@ float deltaR(T const& eta1, U const& phi1, V const& eta2, W const& phi2)
 
   return std::sqrt(dEta * dEta + dPhi * dPhi);
 }
-}; // namespace jetutilities
+}; // namespace emcmatchingutilities
 
-#endif // PWGJE_CORE_JETUTILITIES_H_
+#endif // PWGJE_CORE_EMCALMATCHINGUTILITIES_H_

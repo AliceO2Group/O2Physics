@@ -12,6 +12,7 @@
 #include <climits>
 #include <cstdlib>
 #include <map>
+#include <unordered_map>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -359,7 +360,7 @@ struct Pi0QCTask {
       FillClusterQAHistos<decltype(cluster), 1>(cluster);
 
       // put clusters in photon vector
-      mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id()));
+      mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.globalIndex()));
     }
   }
 
@@ -382,7 +383,7 @@ struct Pi0QCTask {
       FillClusterQAHistos<decltype(cluster), 1>(cluster);
 
       // put clusters in photon vector
-      mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id()));
+      mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.globalIndex()));
     }
   }
 

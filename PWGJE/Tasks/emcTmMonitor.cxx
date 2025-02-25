@@ -285,7 +285,6 @@ struct TrackMatchingMonitor {
       LOG(debug) << "Cluster energy: " << cluster.energy();
       LOG(debug) << "Cluster index: " << cluster.index();
       LOG(debug) << "ncells in cluster: " << cluster.nCells();
-      LOG(debug) << "real cluster id" << cluster.id();
 
       // Example of loop over tracks matched to cluster within dR=0.4, where only the
       // 20 most closest tracks are stored. If needed the number of tracks can be later

@@ -352,7 +352,7 @@ struct Pi0EnergyScaleCalibTask {
       FillClusterQAHistos(cluster, cellid);
 
       // put clusters in photon vector
-      mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id(), cellid));
+      mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.globalIndex(), cellid));
     }
   }
 

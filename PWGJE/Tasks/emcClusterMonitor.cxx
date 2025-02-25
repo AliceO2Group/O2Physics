@@ -230,7 +230,6 @@ struct ClusterMonitor {
       LOG(debug) << "Cluster energy: " << cluster.energy();
       LOG(debug) << "Cluster index: " << cluster.index();
       LOG(debug) << "ncells in cluster: " << cluster.nCells();
-      LOG(debug) << "real cluster id" << cluster.id();
 
       // monitor observables per supermodule
       try {

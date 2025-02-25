@@ -24,6 +24,9 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "MathUtils/Utils.h"
+#include "MathUtils/Cartesian.h"
+#include "Common/Core/RecoDecay.h"
 
 namespace o2::aod
 {
@@ -110,20 +113,55 @@ DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                          //! flag 
 DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float); //! distance to bad channel
 DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! number of local maxima
 DECLARE_SOA_COLUMN(Definition, definition, int);                       //! cluster definition, see EMCALClusterDefinition.h
-
 } // namespace emcalcluster
+
+namespace emccluster
+{
+DECLARE_SOA_COLUMN(X, x, float);     //! cluster global x position
+DECLARE_SOA_COLUMN(Y, y, float);     //! cluster global y position
+DECLARE_SOA_COLUMN(Z, z, float);     //! cluster global z position
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //! cluster pseudorapidity
+                           [](float x, float y, float z) -> float {
+                             o2::math_utils::Point3D<float> pos(x, y, z);
+                             return pos.Eta();
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! cluster azimuthal angle
+                           [](float x, float y, float z) -> float {
+                             o2::math_utils::Point3D<float> pos(x, y, z);
+                             return RecoDecay::constrainAngle(pos.Phi());
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(EtaCorr, etaCorr, //! cluster pseudorapidity (calculated using vertex)
+                           [](float x, float y, float z, float vX = 0, float vY = 0, float vZ = 0) -> float {
+                             o2::math_utils::Point3D<float> pos(x - vX, y - vY, z - vZ);
+                             return pos.Eta();
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(PhiCorr, phiCorr, //! cluster azimuthal angle (calculated using vertex)
+                           [](float x, float y, float z, float vX = 0, float vY = 0, float vZ = 0) -> float {
+                             o2::math_utils::Point3D<float> pos(x - vX, y - vY, z - vZ);
+                             return RecoDecay::constrainAngle(pos.Phi());
+                           });
+} // namespace emccluster
 // table of clusters that could be matched to a collision
-DECLARE_SOA_TABLE(EMCALClusters, "AOD", "EMCALCLUSTERS", //!
-                  o2::soa::Index<>, emcalcluster::CollisionId, emcalcluster::ID, emcalcluster::Energy,
-                  emcalcluster::CoreEnergy, emcalcluster::RawEnergy, emcalcluster::Eta, emcalcluster::Phi,
+DECLARE_SOA_TABLE(EMCALClusters, "AOD", "EMCALCLUSTER", //!
+                  o2::soa::Index<>, emcalcluster::CollisionId,
+                  emcalcluster::Energy, emcalcluster::CoreEnergy, emcalcluster::RawEnergy,
+                  emccluster::X, emccluster::Y, emccluster::Z,
                   emcalcluster::M02, emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
-                  emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM, emcalcluster::Definition);
+                  emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM, emcalcluster::Definition,
+                  emccluster::Eta<emccluster::X, emccluster::Y, emccluster::Z>,
+                  emccluster::Phi<emccluster::X, emccluster::Y, emccluster::Z>,
+                  emccluster::EtaCorr<emccluster::X, emccluster::Y, emccluster::Z>,
+                  emccluster::PhiCorr<emccluster::X, emccluster::Y, emccluster::Z>);
 // table of ambiguous clusters that could not be matched to a collision
-DECLARE_SOA_TABLE(EMCALAmbiguousClusters, "AOD", "EMCALAMBCLUS", //!
-                  o2::soa::Index<>, emcalcluster::BCId, emcalcluster::ID, emcalcluster::Energy,
-                  emcalcluster::CoreEnergy, emcalcluster::RawEnergy, emcalcluster::Eta, emcalcluster::Phi,
+DECLARE_SOA_TABLE(EMCALAmbiguousClusters, "AOD", "EMCALAMBCLU", //!
+                  o2::soa::Index<>, emcalcluster::BCId,
+                  emcalcluster::Energy, emcalcluster::CoreEnergy, emcalcluster::RawEnergy,
+                  emccluster::X, emccluster::Y, emccluster::Z,
                   emcalcluster::M02, emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
-                  emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM, emcalcluster::Definition);
+                  emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM, emcalcluster::Definition,
+                  emccluster::Eta<emccluster::X, emccluster::Y, emccluster::Z>,
+                  emccluster::Phi<emccluster::X, emccluster::Y, emccluster::Z>);
 
 using EMCALCluster = EMCALClusters::iterator;
 using EMCALAmbiguousCluster = EMCALAmbiguousClusters::iterator;
@@ -154,9 +192,9 @@ DECLARE_SOA_INDEX_COLUMN(Calo, calo);                 //! linked to calo cells
 // declare index column pointing to ambiguous cluster table
 DECLARE_SOA_INDEX_COLUMN(EMCALAmbiguousCluster, emcalambiguouscluster); //! linked to EMCalAmbiguousClusters table
 } // namespace emcalclustercell
-DECLARE_SOA_TABLE(EMCALClusterCells, "AOD", "EMCCLUSCELLS",                                               //!
+DECLARE_SOA_TABLE(EMCALClusterCells, "AOD", "EMCCLUSCELL",                                                //!
                   o2::soa::Index<>, emcalclustercell::EMCALClusterId, emcalclustercell::CaloId);          //!
-DECLARE_SOA_TABLE(EMCALAmbiguousClusterCells, "AOD", "EMCAMBBCLUSCLS",                                    //!
+DECLARE_SOA_TABLE(EMCALAmbiguousClusterCells, "AOD", "EMCAMBBCLUSCL",                                     //!
                   o2::soa::Index<>, emcalclustercell::EMCALAmbiguousClusterId, emcalclustercell::CaloId); //!
 using EMCALClusterCell = EMCALClusterCells::iterator;
 using EMCALAmbiguousClusterCell = EMCALAmbiguousClusterCells::iterator;
@@ -164,8 +202,25 @@ namespace emcalmatchedtrack
 {
 DECLARE_SOA_INDEX_COLUMN(Track, track); //! linked to Track table only for tracks that were matched
 } // namespace emcalmatchedtrack
+namespace emcalcellmatchedtrack
+{
+DECLARE_SOA_ARRAY_INDEX_COLUMN(Track, track); //! Array of MC particles that deposited energy in this calo cell
+} // namespace emcalcellmatchedtrack
 DECLARE_SOA_TABLE(EMCALMatchedTracks, "AOD", "EMCMATCHTRACKS",                                     //!
                   o2::soa::Index<>, emcalclustercell::EMCALClusterId, emcalmatchedtrack::TrackId); //!
+DECLARE_SOA_TABLE(EMCALCellTracks, "AOD", "EMCALCELLTRACK",                                        //!
+                  o2::soa::Index<>, emcalcellmatchedtrack::TrackIds);                              //!
 using EMCALMatchedTrack = EMCALMatchedTracks::iterator;
+using EMCALCellTrack = EMCALCellTracks::iterator;
+
+namespace sortedtrack
+{
+DECLARE_SOA_COLUMN(Eta, eta, float); //! track pseudorapidity (calculated at EMCal surface)
+DECLARE_SOA_COLUMN(Phi, phi, float); //! track azimuthal angle (calculated at EMCal surface)
+} // namespace sortedtrack
+DECLARE_SOA_TABLE(SortedTracks, "AOD", "SORTEDTRACK", //!
+                  o2::soa::Index<>, emcalcluster::BCId, emcalmatchedtrack::TrackId,
+                  sortedtrack::Eta, sortedtrack::Phi); //!
+using SortedTrack = SortedTracks::iterator;
 } // namespace o2::aod
 #endif // PWGJE_DATAMODEL_EMCALCLUSTERS_H_
