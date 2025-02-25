@@ -313,15 +313,16 @@ struct FlowGfwTask {
     // Track plots
     registry.add("Nch", "N_{ch 0-5%} vs #Events;N_{ch 0-5%};No. of Events", {HistType::kTH1D, {axisNch}});
     registry.add("Events_per_Centrality_Bin", "Events_per_Centrality_Bin;Centrality FT0C;No. of Events", kTH1F, {axisCentrality});
+    registry.add("Tracks_per_Centrality_Bin", "Tracks_per_Centrality_Bin;Centrality FT0C;No. of Tracks", kTH1F, {axisCentrality});
     registry.add("pt_Cen_GlobalOnly", "pt_Cen_Global;Centrality (%); p_{T} (GeV/c);", {HistType::kTH2D, {axisCentrality, axisPt}});
     registry.add("phi_Cen_GlobalOnly", "phi_Cen_Global;Centrality (%); #phi;", {HistType::kTH2D, {axisCentrality, axisPhi}});
     registry.add("pt_Cen_ITSOnly", "pt_Cen_ITS;Centrality (%); p_{T} (GeV/c);", {HistType::kTH2D, {axisCentrality, axisPt}});
     registry.add("phi_Cen_ITSOnly", "phi_Cen_ITS;Centrality (%); #phi;", {HistType::kTH2D, {axisCentrality, axisPhi}});
 
     // Track types
-    registry.add("GlobalplusITS", "Global plus ITS;Centrality FT0C;Nch", kTH1F, {axisCentrality});
-    registry.add("Globalonly", "Global only;Centrality FT0C;Nch", kTH1F, {axisCentrality});
-    registry.add("ITSonly", "ITS only;Centrality FT0C;Nch", kTH1F, {axisCentrality});
+    registry.add("GlobalplusITS", "Global plus ITS;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
+    registry.add("Globalonly", "Global only;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
+    registry.add("ITSonly", "ITS only;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
 
     // Track QA
     registry.add("hPt", "p_{T} distribution before cut", {HistType::kTH1D, {axisPtHist}});
@@ -868,9 +869,6 @@ struct FlowGfwTask {
 
     // track loop
     int globalTracksNch = 0;
-    int globalPlusitsNch = 0;
-    int gloabalOnlyNch = 0;
-    int itsOnlyNch = 0;
 
     for (const auto& track : tracks) {
       if (!trackSelected(track))
@@ -900,12 +898,11 @@ struct FlowGfwTask {
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
       }
 
-      globalPlusitsNch++;
-
       if (cfgGlobalplusITS) {
         if (withinPtRef) {
           fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-          registry.fill(HIST("GlobalplusITS"), centrality);
+          globalTracksNch++;
+          registry.fill(HIST("GlobalplusITS"), centrality, globalTracksNch);
         }
       }
 
@@ -913,20 +910,20 @@ struct FlowGfwTask {
         if (cfgGlobalonly) {
           if (withinPtRef) {
             fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-            gloabalOnlyNch++;
-            registry.fill(HIST("Globalonly"), centrality);
+            globalTracksNch++;
+            registry.fill(HIST("Globalonly"), centrality, globalTracksNch);
             registry.fill(HIST("pt_Cen_GlobalOnly"), centrality, track.pt());
-            registry.fill(HIST("phi_Cen_GlobalOnly"), centrality, track.pt());
+            registry.fill(HIST("phi_Cen_GlobalOnly"), centrality, track.phi());
           }
         }
       } else {
         if (cfgITSonly) {
           if (withinPtRef) {
             fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-            itsOnlyNch++;
-            registry.fill(HIST("ITSonly"), centrality);
+            globalTracksNch++;
+            registry.fill(HIST("ITSonly"), centrality, globalTracksNch);
             registry.fill(HIST("pt_Cen_ITSOnly"), centrality, track.pt());
-            registry.fill(HIST("phi_Cen_ITSOnly"), centrality, track.pt());
+            registry.fill(HIST("phi_Cen_ITSOnly"), centrality, track.phi());
           }
         }
       }
@@ -936,14 +933,9 @@ struct FlowGfwTask {
 
     } // End of track loop
 
-    globalTracksNch = globalPlusitsNch;
-    globalTracksNch = gloabalOnlyNch;
-    globalTracksNch = itsOnlyNch;
-
+    // Only one type of track will be plotted
     registry.fill(HIST("Events_per_Centrality_Bin"), centrality);
-    registry.fill(HIST("GlobalplusITS"), centrality, globalPlusitsNch);
-    registry.fill(HIST("Globalonly"), centrality, gloabalOnlyNch);
-    registry.fill(HIST("ITSonly"), centrality, itsOnlyNch);
+    registry.fill(HIST("Tracks_per_Centrality_Bin"), centrality, globalTracksNch);
 
     // Filling c22 with ROOT TProfile
     fillProfile(corrconfigs.at(0), HIST("c22"), centrality);
