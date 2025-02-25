@@ -59,8 +59,8 @@ struct heptaquark {
   ConfigurableAxis massAxis{"massAxis", {600, 2.8, 3.4}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "Transverse momentum bins"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 20, 50, 100}, "Centrality interval"};
-  ConfigurableAxis massPPAxis{"massPPAxis", {100, 3.0,8.0}, "Mass square of phi phi"};
-  ConfigurableAxis massPLAxis{"massPLAxis", {100, 3.0,8.0}, "Mass square of phi lambda"};
+  ConfigurableAxis massPPAxis{"massPPAxis", {100, 3.0, 8.0}, "Mass square of phi phi"};
+  ConfigurableAxis massPLAxis{"massPLAxis", {100, 3.0, 8.0}, "Mass square of phi lambda"};
 
   void init(o2::framework::InitContext&)
   {
@@ -227,10 +227,10 @@ struct heptaquark {
 
         DauVec1 = ROOT::Math::PxPyPzMVector(hqtrackd2.hqd1Px(), hqtrackd2.hqd1Py(), hqtrackd2.hqd1Pz(), massKa);
         DauVec2 = ROOT::Math::PxPyPzMVector(hqtrackd2.hqd2Px(), hqtrackd2.hqd2Py(), hqtrackd2.hqd2Pz(), massKa);
-      
+
         if (!selectionPIDKaon(hqtrackd2.hqd1TPC(), hqtrackd2.hqd1TOF(), hqtrackd2.hqd1TOFHit(), cfgPIDStrategy, DauVec1.Pt()))
           continue;
-  
+
         if (!selectionPIDKaon(hqtrackd2.hqd2TPC(), hqtrackd2.hqd2TOF(), hqtrackd2.hqd2TOFHit(), cfgPIDStrategy, DauVec2.Pt()))
           continue;
 
@@ -246,7 +246,7 @@ struct heptaquark {
         histos.fill(HIST("hnsigmaTPCKa"), hqtrackd2.hqd2TPC(), DauVec2.Pt());
         if (hqtrackd2.hqd1TOFHit())
           histos.fill(HIST("hnsigmaTOFKa"), hqtrackd2.hqd1TOF(), DauVec1.Pt());
-        if (hqtrackd2.hqd2TOFHit()) 
+        if (hqtrackd2.hqd2TOFHit())
           histos.fill(HIST("hnsigmaTOFKa"), hqtrackd2.hqd2TOF(), DauVec2.Pt());
         histos.fill(HIST("hPhid2Mass"), HQ2.M(), HQ2.Pt());
 
@@ -295,7 +295,7 @@ struct heptaquark {
           HQ12 = HQ1 + HQ2;
           HQ13 = HQ1 + HQ3;
 
-          histos.fill(HIST("h_InvMass_same"), exotic.M(), exotic.Pt(), collision.centrality()); 
+          histos.fill(HIST("h_InvMass_same"), exotic.M(), exotic.Pt(), collision.centrality());
           histos.fill(HIST("hDalitz"), HQ12.M2(), HQ13.M2(), exotic.M(), exotic.Pt(), collision.centrality());
 
           if (cfgRotBkg) {
