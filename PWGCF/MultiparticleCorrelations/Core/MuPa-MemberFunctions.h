@@ -443,9 +443,7 @@ void DefaultConfiguration()
   for (int dpw = 0; dpw < eDiffPtWeights_N; dpw++) { // "differential pt weight"
     if (TString(lWhichDiffPtWeights[dpw]).Contains("wPt")) {
       pw.fUseDiffPtWeights[wPtPtAxis] = Alright(lWhichDiffPtWeights[dpw]); // if I pass "1-Pt" => true, "0-Pt" => false
-    }
-    // ... TBI 20250222 add support for other dimensions of differential pt weights, in the same spirit i did it for differential phi weights
-    else {
+    } else {                                                               // ... TBI 20250222 add support for other dimensions of differential pt weights, in the same spirit i did it for differential phi weights
       LOGF(fatal, "\033[1;31m%s at line %d : The setting %s in configurable cfWhichDiffPtWeights is not supported yet. See enum eDiffPtWeights . \n \033[0m", __FUNCTION__, __LINE__, TString(lWhichDiffPtWeights[dpw]).Data());
     }
   }
@@ -460,9 +458,7 @@ void DefaultConfiguration()
   for (int dpw = 0; dpw < eDiffEtaWeights_N; dpw++) { // "differential eta weight"
     if (TString(lWhichDiffEtaWeights[dpw]).Contains("wEta")) {
       pw.fUseDiffEtaWeights[wEtaEtaAxis] = Alright(lWhichDiffEtaWeights[dpw]); // if I pass "1-Eta" => true, "0-Eta" => false
-    }
-    // ... TBI 20250222 add support for other dimensions of differential eta weights, in the same spirit i did it for differential phi weights
-    else {
+    } else {                                                                   // ... TBI 20250222 add support for other dimensions of differential eta weights, in the same spirit i did it for differential phi weights
       LOGF(fatal, "\033[1;31m%s at line %d : The setting %s in configurable cfWhichDiffEtaWeights is not supported yet. See enum eDiffEtaWeights . \n \033[0m", __FUNCTION__, __LINE__, TString(lWhichDiffEtaWeights[dpw]).Data());
     }
   }
