@@ -383,10 +383,11 @@ struct FlowGenericFramework {
   void loadCorrections(aod::BCsWithTimestamps::iterator const& bc)
   {
     uint64_t timestamp = bc.timestamp();
-    if (cfg.correctionsLoaded)
+    if (!cfgRunByRun && cfg.correctionsLoaded)
       return;
     if(!cfgAcceptance.value.empty()) {
       std::string runstr = (cfgRunByRun)?"RBR/":"";
+      cfg.mAcceptance.clear();
       if(cfgUsePID){
         cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value+runstr+"ref/", timestamp));
         cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value+runstr+"ch/", timestamp));
@@ -911,7 +912,6 @@ struct FlowGenericFramework {
       lastRun = run;
       LOGF(info,"run = %d",run);
       if(cfgRunByRun){
-        LOGF(info,"cfgRunByRun = true");
         if(std::find(runNumbers.begin(), runNumbers.end(), run) == runNumbers.end()){
           LOGF(info,"Creating histograms for run %d",run);
           createRunByRunHistograms(run);
@@ -920,9 +920,12 @@ struct FlowGenericFramework {
         else {
           LOGF(info,"run %d already in runNumbers",run);
         }
+        if (!cfgFillWeights)
+          loadCorrections(bc);
       }
-      else LOGF(info,"cfgRunByRun = false");
     }
+    if (!cfgFillWeights && !cfgRunByRun)
+      loadCorrections(bc);
     registry.fill(HIST("eventQA/eventSel"), 0.5);
     if(cfgRunByRun) th1sList[run][hEventSel]->Fill(0.5);
     if (!collision.sel8())
@@ -943,8 +946,6 @@ struct FlowGenericFramework {
       return;
     if (cfgFillQA)
       fillEventQA<kAfter>(collision, tracks);
-    if (!cfgFillWeights)
-      loadCorrections(bc);
     auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
     processCollision<kReco>(collision, tracks, centrality, field, run);
   }
