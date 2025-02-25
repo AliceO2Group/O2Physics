@@ -743,7 +743,7 @@ struct Phik0shortanalysis {
   {
     // Check if multiplicity is out of range
     if (multiplicity < binsMult->front() || multiplicity >= binsMult->back()) {
-      std::cout << "Multiplicity out of range: " << multiplicity << std::endl;
+      LOG(info) << "Multiplicity out of range: " << multiplicity;
       return 0;
     }
 
@@ -754,7 +754,7 @@ struct Phik0shortanalysis {
 
     // Check if pT is out of range
     if (Phi.Pt() < binspTPhi->front() || Phi.Pt() >= binspTPhi->back()) {
-      std::cout << "pT out of range: " << Phi.Pt() << std::endl;
+      LOG(info) << "pT out of range: " << Phi.Pt();
       return 0;
     }
 
