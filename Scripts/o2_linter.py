@@ -1506,7 +1506,7 @@ def main():
     print(f"test{' ' * (len_max - len('test'))}\tissues\tdisabled\tbad files")
     for test in tests:
         print(
-            f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}\t{n_files_bad[test.name]}"
+            f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}\t\t{n_files_bad[test.name]}"
         )
 
     # Report global result.
