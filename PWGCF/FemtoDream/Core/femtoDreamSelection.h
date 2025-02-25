@@ -84,16 +84,16 @@ class FemtoDreamSelection
       case (femtoDreamSelection::SelectionType::kUpperLimit):
         return (observable <= mSelVal);
       case (femtoDreamSelection::SelectionType::kAbsUpperLimit):
-        return (std::abs(observable) <= mSelVal);
+        return (std::fabs(observable) <= mSelVal);
         break;
       case (femtoDreamSelection::SelectionType::kLowerLimit):
         return (observable >= mSelVal);
       case (femtoDreamSelection::SelectionType::kAbsLowerLimit):
-        return (std::abs(observable) >= mSelVal);
+        return (std::fabs(observable) >= mSelVal);
         break;
       case (femtoDreamSelection::SelectionType::kEqual):
         /// \todo can the comparison be done a bit nicer?
-        return (std::abs(observable - mSelVal) < std::abs(mSelVal * 1e-6));
+        return (std::fabs(observable - mSelVal) < std::abs(mSelVal * 1e-6));
         break;
     }
     return false;
