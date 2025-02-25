@@ -136,6 +136,21 @@ class FemtoDreamCollisionSelection
     return true;
   }
 
+  template <typename C, typename Casc, typename CascC, typename T>
+  bool isCollisionWithoutTrkCasc(C const& col, Casc const& Cascades, CascC& CascadeCuts, T const& /*Tracks*/)
+  {
+    // check if there is no selected Cascade
+    for (auto const& Cascade : Cascades) {
+      auto postrack = Cascade.template posTrack_as<T>();
+      auto negtrack = Cascade.template negTrack_as<T>();
+      auto bachtrack = Cascade.template bachelor_as<T>();
+      if (CascadeCuts.isSelectedMinimal(col, Cascade, postrack, negtrack, bachtrack)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /// Some basic QA of the event
   /// \tparam T type of the collision
   /// \param col Collision

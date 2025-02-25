@@ -417,10 +417,45 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_002, "AOD", "DAUTRACKEXTRA", 2, //! d
                             dautrack::HasTRD<dautrack::DetectorMap>,
                             dautrack::HasTOF<dautrack::DetectorMap>);
 
+DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_003, "AOD", "DAUTRACKEXTRA", 3, //! detector properties of decay daughters
+                            track::ITSChi2NCl,
+                            track::TPCChi2NCl,
+                            dautrack::DetectorMap, // here we don´t save everything so we simplify this
+                            track::ITSClusterSizes,
+                            track::TPCNClsFindable,
+                            track::TPCNClsFindableMinusFound,
+                            track::TPCNClsFindableMinusCrossedRows,
+                            track::TPCNClsShared,
+
+                            // Dynamics for ITS matching TracksExtra
+                            track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                            track::v001::ITSClsSizeInLayer<track::ITSClusterSizes>,
+                            track::v001::ITSClusterMap<track::ITSClusterSizes>,
+                            track::v001::ITSNCls<track::ITSClusterSizes>,
+                            track::v001::IsITSAfterburner<track::v001::DetectorMap, track::ITSChi2NCl>,
+                            /*compatibility*/ dautrack::HasITSTracker<dautrack::DetectorMap, track::ITSChi2NCl>,
+                            /*compatibility*/ dautrack::HasITSAfterburner<dautrack::DetectorMap, track::ITSChi2NCl>,
+
+                            // dynamics for TPC tracking properties matching main data model
+                            track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            /*compatibility*/ dautrack::compatibility::TPCClusters<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            /*compatibility*/ dautrack::compatibility::TPCCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            /*compatibility*/ dautrack::compatibility::ITSChi2PerNcl<track::ITSChi2NCl>,
+
+                            // dynamics to identify detectors
+                            dautrack::HasITS<dautrack::DetectorMap>,
+                            dautrack::HasTPC<dautrack::DetectorMap>,
+                            dautrack::HasTRD<dautrack::DetectorMap>,
+                            dautrack::HasTOF<dautrack::DetectorMap>);
+
 DECLARE_SOA_TABLE(DauTrackMCIds, "AOD", "DAUTRACKMCID", // index table when using AO2Ds
                   dautrack::ParticleMCId);
 
-using DauTrackExtras = DauTrackExtras_002;
+using DauTrackExtras = DauTrackExtras_003;
 using DauTrackExtra = DauTrackExtras::iterator;
 
 namespace motherParticle

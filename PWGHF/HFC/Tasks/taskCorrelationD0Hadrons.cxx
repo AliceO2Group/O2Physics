@@ -53,7 +53,7 @@ auto vecSidebandLeftInner = std::vector<double>{sidebandLeftInnerDefault, sideba
 auto vecSidebandLeftOuter = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + nPtBinsCorrelations};
 auto vecSidebandRightInner = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + nPtBinsCorrelations};
 auto vecSidebandRightOuter = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + nPtBinsCorrelations};
-const int nPtbinsPtEfficiencyD = o2::analysis::hf_cuts_d0_to_pi_k::nBinsPt;
+const int nPtbinsPtEfficiencyD = o2::analysis::hf_cuts_d0_to_pi_k::NBinsPt;
 const double efficiencyDmesonDefault[nPtbinsPtEfficiencyD] = {};
 auto vecEfficiencyDmeson = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + nPtbinsPtEfficiencyD};
 

@@ -46,19 +46,21 @@ struct HfCandidateCreatorMcGen {
   Configurable<bool> fillB0{"fillB0", false, "fill table for B0 candidates"};
   Configurable<bool> rejectBackground2Prong{"rejectBackground2Prong", false, "Reject particles from PbPb background for 2 prong candidates"};
   Configurable<bool> rejectBackground3Prong{"rejectBackground3Prong", false, "Reject particles from PbPb background for 3 prong candidates"};
-  Configurable<bool> createDplus{"createDplus", false, "Create D+ in 3 prong"};
-  Configurable<bool> createDs{"createDs", false, "Create Ds in 3 prong"};
-  Configurable<bool> createLc{"createLc", false, "Create Lc in 3 prong"};
-  Configurable<bool> createXic{"createXic", false, "Create Xic in 3 prong"};
 
-  void process(aod::McCollision const&,
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
+
+  void process(aod::McCollisions const& mcCollisions,
                aod::McParticles const& mcParticles)
   {
-    if (fill2Prong) {
-      hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticles, rowMcMatchGen2Prong, rejectBackground2Prong);
-    }
-    if (fill3Prong) {
-      hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticles, rowMcMatchGen3Prong, rejectBackground3Prong, createDplus, createDs, createLc, createXic);
+
+    for (const auto& mcCollision : mcCollisions) {
+      const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
+      if (fill2Prong) {
+        hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen2Prong, rejectBackground2Prong);
+      }
+      if (fill3Prong) {
+        hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen3Prong, rejectBackground3Prong);
+      }
     }
     if (fillBplus) {
       hf_mc_gen::fillMcMatchGenBplus(mcParticles, rowMcMatchGenBplus);

@@ -49,6 +49,9 @@ DECLARE_SOA_COLUMN(TimeEmcCluster, timeEmcCluster, float);       //! time of the
 DECLARE_SOA_COLUMN(DeltaEtaMatch, deltaEtaMatch, float); //! dEta matched track to EMCal cluster
 DECLARE_SOA_COLUMN(DeltaPhiMatch, deltaPhiMatch, float); //! dPhi matched track to EMCal cluster
 DECLARE_SOA_COLUMN(IsEmcal, isEmcal, bool);              //! electron information with Emcal
+=======
+
+
 } // namespace hf_sel_electron
 DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
                   o2::soa::Index<>,
@@ -73,6 +76,7 @@ DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
                   hf_sel_electron::DeltaEtaMatch,
                   hf_sel_electron::DeltaPhiMatch,
                   hf_sel_electron::IsEmcal);
+
 // definition of columns and tables for HfcorrElectron Selection
 namespace hf_corr_sel_electron
 {
@@ -87,6 +91,8 @@ DECLARE_SOA_COLUMN(IsLSElectron, isLSElectron, int);           //! Like sign ele
 DECLARE_SOA_COLUMN(IsULSElectron, isULSElectron, int);         //! Unlike sign electron information
 DECLARE_SOA_COLUMN(IsEmcal, isEmcal, bool);                    //! electron information
 } // namespace hf_corr_sel_electron
+
+
 
 DECLARE_SOA_TABLE(HfCorrSelEl, "AOD", "HfCORRSELEL", //! Electron Informations
                   o2::soa::Index<>,

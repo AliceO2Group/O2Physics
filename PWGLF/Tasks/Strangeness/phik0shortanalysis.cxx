@@ -13,14 +13,6 @@
 /// \brief Analysis task for the Phi and K0S rapidity correlations analysis
 /// \author Stefano Cannito (stefano.cannito@cern.ch)
 
-#include <cmath>
-#include <cstdlib>
-#include <array>
-#include <vector>
-#include <algorithm>
-#include <string>
-#include <utility>
-
 #include <TH1F.h>
 #include <TH2F.h>
 #include <THn.h>
@@ -33,6 +25,14 @@
 #include <TF1.h>
 #include <TPDGCode.h>
 #include <Math/Vector4D.h>
+
+#include <cstdlib>
+#include <cmath>
+#include <array>
+#include <vector>
+#include <algorithm>
+#include <string>
+#include <utility>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -84,7 +84,7 @@ struct Phik0shortanalysis {
 
   // Configurables for track selection (not necessarily common for trigger and the two associated particles)
   struct : ConfigurableGroup {
-    Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "Cut on charge"};
+    Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0f, "Cut on charge"};
     Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};
     Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
     Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
@@ -96,10 +96,10 @@ struct Phik0shortanalysis {
     Configurable<float> etaMax{"etaMax", 0.8f, "eta max"};
 
     Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
-    Configurable<float> nSigmaCutTPCKa{"nSigmaCutTPCKa", 3.0, "Value of the TPC Nsigma cut for Kaons"};
-    Configurable<float> nSigmaCutCombinedKa{"nSigmaCutCombinedKa", 3.0, "Value of the TOF Nsigma cut for Kaons"};
+    Configurable<float> nSigmaCutTPCKa{"nSigmaCutTPCKa", 3.0f, "Value of the TPC Nsigma cut for Kaons"};
+    Configurable<float> nSigmaCutCombinedKa{"nSigmaCutCombinedKa", 3.0f, "Value of the TOF Nsigma cut for Kaons"};
 
-    Configurable<float> nSigmaCutTPCPion{"nSigmaCutTPCPion", 4.0, "Value of the TPC Nsigma cut for Pions"};
+    Configurable<float> nSigmaCutTPCPion{"nSigmaCutTPCPion", 4.0f, "Value of the TPC Nsigma cut for Pions"};
     Configurable<float> cMinPionPtcut{"cMinPionPtcut", 0.3f, "Track minimum pt cut"};
     Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
     Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80, "min number of TPC crossed rows"};
@@ -110,31 +110,33 @@ struct Phik0shortanalysis {
 
   // Configurables on phi pT bins
   Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi"};
+  Configurable<float> minPhiPt{"minPhiPt", 0.4f, "Minimum pT for Phi"};
 
   // Configurables on phi mass
   Configurable<int> nBinsMPhi{"nBinsMPhi", 13, "N bins in cfgmassPhiaxis"};
-  Configurable<float> lowMPhi{"lowMPhi", 1.0095, "Upper limits on Phi mass for signal extraction"};
-  Configurable<float> upMPhi{"upMPhi", 1.029, "Upper limits on Phi mass for signal extraction"};
+  Configurable<float> lowMPhi{"lowMPhi", 1.0095f, "Upper limits on Phi mass for signal extraction"};
+  Configurable<float> upMPhi{"upMPhi", 1.029f, "Upper limits on Phi mass for signal extraction"};
 
   // Configurables for V0 selection
   struct : ConfigurableGroup {
-    Configurable<float> v0SettingCosPA{"v0SettingCosPA", 0.98, "V0 CosPA"};
-    Configurable<float> v0SettingRadius{"v0SettingRadius", 0.5, "v0radius"};
-    Configurable<float> v0SettingDCAV0Dau{"v0SettingDCAV0Dau", 1, "DCA V0 Daughters"};
-    Configurable<float> v0SettingDCAPosToPV{"v0SettingDCAPosToPV", 0.06, "DCA Pos To PV"};
-    Configurable<float> v0SettingDCANegToPV{"v0SettingDCANegToPV", 0.06, "DCA Neg To PV"};
+    Configurable<float> v0SettingCosPA{"v0SettingCosPA", 0.98f, "V0 CosPA"};
+    Configurable<float> v0SettingRadius{"v0SettingRadius", 0.5f, "v0radius"};
+    Configurable<float> v0SettingDCAV0Dau{"v0SettingDCAV0Dau", 1.0f, "DCA V0 Daughters"};
+    Configurable<float> v0SettingDCAPosToPV{"v0SettingDCAPosToPV", 0.06f, "DCA Pos To PV"};
+    Configurable<float> v0SettingDCANegToPV{"v0SettingDCANegToPV", 0.06f, "DCA Neg To PV"};
+    Configurable<float> v0SettingMinPt{"v0SettingMinPt", 0.1f, "V0 min pt"};
 
     Configurable<bool> cfgisV0ForData{"cfgisV0ForData", true, "isV0ForData"};
 
     Configurable<bool> cfgFurtherV0Selection{"cfgFurtherV0Selection", false, "Further V0 selection"};
     Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0s(cm)"};
-    Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
-    Configurable<float> v0rejK0s{"v0rejK0s", 0.005, "V0 rej K0s"};
+    Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2f, "parameter Armenteros Cut"};
+    Configurable<float> v0rejK0s{"v0rejK0s", 0.005f, "V0 rej K0s"};
   } v0Configs;
 
   // Configurables on K0S mass
-  Configurable<float> lowMK0S{"lowMK0S", 0.48, "Lower limit on K0Short mass"};
-  Configurable<float> upMK0S{"upMK0S", 0.52, "Upper limit on K0Short mass"};
+  Configurable<float> lowMK0S{"lowMK0S", 0.48f, "Lower limit on K0Short mass"};
+  Configurable<float> upMK0S{"upMK0S", 0.52f, "Upper limit on K0Short mass"};
 
   // Configurable on K0S pT bins
   Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
@@ -158,7 +160,6 @@ struct Phik0shortanalysis {
   Configurable<bool> cfgisGenMCForClosure{"cfgisGenMCForClosure", false, "GenMC for Closure"};
 
   // Configurables to choose the filling method
-  Configurable<bool> doLoadPurities{"doLoadPurities", false, "Load purities"};
   Configurable<bool> fillMethodMultipleWeights{"fillMethodMultipleWeights", true, "Fill method Multiple Weights"};
   Configurable<bool> fillMethodSingleWeight{"fillMethodSingleWeight", false, "Fill method Single Weight"};
 
@@ -214,7 +215,7 @@ struct Phik0shortanalysis {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Set of functions for phi purity
-  std::vector<std::vector<TF1*>> phiPurityFunctions;
+  std::vector<std::vector<TF1*>> phiPurityFunctions = std::vector<std::vector<TF1*>>(10, std::vector<TF1*>(7, nullptr));
 
   void init(InitContext&)
   {
@@ -235,12 +236,13 @@ struct Phik0shortanalysis {
 
     // Histograms
     // Number of events per selection
-    dataEventHist.add("hEventSelection", "hEventSelection", kTH1F, {{5, -0.5f, 4.5f}});
+    dataEventHist.add("hEventSelection", "hEventSelection", kTH1F, {{6, -0.5f, 5.5f}});
     dataEventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     dataEventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     dataEventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
     dataEventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "INEL>0 cut");
     dataEventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a #phi cand");
+    dataEventHist.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "With at least a #phi");
 
     // Event information
     dataEventHist.add("hVertexZ", "hVertexZ", kTH1F, {vertexZAxis});
@@ -248,7 +250,7 @@ struct Phik0shortanalysis {
     dataEventHist.add("hMultiplicityPercentWithPhi", "Multiplicity Percentile in Events with a Phi Candidate", kTH1F, {multAxis});
 
     // Number of MC events per selection for Rec and Gen
-    mcEventHist.add("hRecMCEventSelection", "hRecMCEventSelection", kTH1F, {{8, -0.5f, 7.5f}});
+    mcEventHist.add("hRecMCEventSelection", "hRecMCEventSelection", kTH1F, {{9, -0.5f, 8.5f}});
     mcEventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     mcEventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(2, "kIsTriggerTVX");
     mcEventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(3, "kNoTimeFrameBorder");
@@ -256,7 +258,8 @@ struct Phik0shortanalysis {
     mcEventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(5, "posZ cut");
     mcEventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(6, "INEL>0 cut");
     mcEventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(7, "With at least a gen coll");
-    mcEventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(8, "With at least a #phi");
+    mcEventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(8, "With at least a #phi cand");
+    mcEventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(9, "With at least a #phi");
 
     mcEventHist.add("hGenMCEventSelection", "hGenMCEventSelection", kTH1F, {{5, -0.5f, 4.5f}});
     mcEventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
@@ -472,7 +475,7 @@ struct Phik0shortanalysis {
     mcPionHist.add("h3PiRapidityGenMC", "Rapidity for Pion for GenMC", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
 
     // Initialize CCDB only if purity is requested in the task
-    if (doLoadPurities) {
+    if (fillMethodSingleWeight) {
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
@@ -561,6 +564,8 @@ struct Phik0shortanalysis {
     if (v0.v0cosPA() < v0Configs.v0SettingCosPA)
       return false;
     if (v0.v0radius() < v0Configs.v0SettingRadius)
+      return false;
+    if (v0.pt() < v0Configs.v0SettingMinPt)
       return false;
 
     if (v0Configs.cfgisV0ForData) {
@@ -870,6 +875,8 @@ struct Phik0shortanalysis {
           continue; // condition to avoid double counting of pair
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
+        if (recPhi.Pt() < minPhiPt)
+          continue;
         if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
           continue;
 
@@ -1009,10 +1016,10 @@ struct Phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-
+          if (recPhi.Pt() < minPhiPt)
+            continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
-
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
 
@@ -1071,7 +1078,7 @@ struct Phik0shortanalysis {
       if (!selectionPion<true, false>(track, true))
         continue;
 
-      dataPhiPionHist.fill(HIST("h3PiRapidityData"), multiplicity, track.pt(), track.rapidity(massPi));
+      dataPionHist.fill(HIST("h3PiRapidityData"), multiplicity, track.pt(), track.rapidity(massPi));
 
       if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
         continue;
@@ -1098,10 +1105,10 @@ struct Phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-
+          if (recPhi.Pt() < minPhiPt)
+            continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
-
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
 
@@ -1206,6 +1213,8 @@ struct Phik0shortanalysis {
           continue;
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
+        if (recPhi.Pt() < minPhiPt)
+          continue;
 
         mcPhiHist.fill(HIST("h3PhiRapiditySmearing"), genmultiplicity, recPhi.Rapidity(), mcMotherPhi.y());
 
@@ -1339,30 +1348,30 @@ struct Phik0shortanalysis {
         if (std::abs(v0mcparticle.y()) > cfgYAcceptance)
           continue;
 
-        mcK0SHist.fill(HIST("h3RecMCK0S"), genmultiplicity, v0.pt(), v0.mK0Short());
+        mcK0SHist.fill(HIST("h3RecMCK0S"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
 
         std::array<bool, 3> isCountedMCPhi{false, false, false};
 
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance)
+          if (std::abs(mcParticle.y()) > cfgYAcceptance || mcParticle.pt() < minPhiPt)
             continue;
 
           if (!isCountedMCPhi.at(0)) {
-            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SInc"), genmultiplicity, v0.pt(), v0.mK0Short());
+            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SInc"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
             isCountedMCPhi.at(0) = true;
           }
           if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(1)) {
-            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SFCut"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
             isCountedMCPhi.at(1) = true;
           }
           if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(2)) {
-            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SSCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SSCut"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
             isCountedMCPhi.at(2) = true;
           }
         }
@@ -1420,30 +1429,30 @@ struct Phik0shortanalysis {
 
         mcPionHist.fill(HIST("h4PiRapiditySmearing"), genmultiplicity, track.pt(), track.rapidity(massPi), mcTrack.y());
 
-        mcPionHist.fill(HIST("h3RecMCPiTPC"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
+        mcPionHist.fill(HIST("h3RecMCPiTPC"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
 
         std::array<bool, 3> isCountedMCPhi{false, false, false};
 
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance)
+          if (std::abs(mcParticle.y()) > cfgYAcceptance || mcParticle.pt() < minPhiPt)
             continue;
 
           if (!isCountedMCPhi.at(0)) {
-            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCInc"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
+            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCInc"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
             isCountedMCPhi.at(0) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(1)) {
-            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCFCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
+            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCFCut"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
             isCountedMCPhi.at(1) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(2)) {
-            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCSCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
+            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCSCut"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
             isCountedMCPhi.at(2) = true;
           }
         }
@@ -1451,30 +1460,30 @@ struct Phik0shortanalysis {
         if (track.pt() >= 0.5 && !track.hasTOF())
           continue;
 
-        mcPionHist.fill(HIST("h4RecMCPiTPCTOF"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+        mcPionHist.fill(HIST("h4RecMCPiTPCTOF"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
 
         isCountedMCPhi = {false, false, false};
 
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance)
+          if (std::abs(mcParticle.y()) > cfgYAcceptance || mcParticle.pt() < minPhiPt)
             continue;
 
           if (!isCountedMCPhi.at(0)) {
-            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFInc"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFInc"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
             isCountedMCPhi.at(0) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(1)) {
-            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFFCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFFCut"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
             isCountedMCPhi.at(1) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(2)) {
-            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFSCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFSCut"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
             isCountedMCPhi.at(2) = true;
           }
         }
@@ -1520,6 +1529,8 @@ struct Phik0shortanalysis {
           continue; // condition to avoid double counting of pair
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
+        if (recPhi.Pt() < minPhiPt)
+          continue;
         if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
           continue;
 
@@ -1698,10 +1709,10 @@ struct Phik0shortanalysis {
           }
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-
+          if (recPhi.Pt() < minPhiPt)
+            continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
-
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
 
@@ -1822,10 +1833,10 @@ struct Phik0shortanalysis {
           }
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-
+          if (recPhi.Pt() < minPhiPt)
+            continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
-
           if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
             continue;
 
@@ -2011,7 +2022,7 @@ struct Phik0shortanalysis {
     for (const auto& mcParticle1 : mcParticles) {
       if (mcParticle1.pdgCode() != 310)
         continue;
-      if (!mcParticle1.isPhysicalPrimary())
+      if (!mcParticle1.isPhysicalPrimary() || mcParticle1.pt() < v0Configs.v0SettingMinPt)
         continue;
 
       mcK0SHist.fill(HIST("h3K0SRapidityGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
@@ -2042,6 +2053,8 @@ struct Phik0shortanalysis {
           if (!isPosKaon || !isNegKaon)
             continue;
         }
+        if (mcParticle2.pt() < minPhiPt)
+          continue;
 
         if (std::abs(mcParticle2.y()) > cfgYAcceptance)
           continue;
@@ -2094,7 +2107,7 @@ struct Phik0shortanalysis {
     for (const auto& mcParticle1 : mcParticles) {
       if (std::abs(mcParticle1.pdgCode()) != 211)
         continue;
-      if (!mcParticle1.isPhysicalPrimary())
+      if (!mcParticle1.isPhysicalPrimary() || mcParticle1.pt() < trackConfigs.cMinPionPtcut)
         continue;
 
       mcPionHist.fill(HIST("h3PiRapidityGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
@@ -2125,6 +2138,8 @@ struct Phik0shortanalysis {
           if (!isPosKaon || !isNegKaon)
             continue;
         }
+        if (mcParticle2.pt() < minPhiPt)
+          continue;
 
         if (std::abs(mcParticle2.y()) > cfgYAcceptance)
           continue;
