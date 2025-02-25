@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file NchCumulantsIdentified.cxx
+/// \file NchCumulantsId.cxx
 /// \brief Event by Event conserved charges fluctuations
 ///        it is meant to be a blank page for further developments.
 /// \author Pravata Panigrahi <pravata.panigrahi@cern.ch>:: Sadhana Dash (sadhana@phy.iitb.ac.in) and Rahul Verma (rahul.verma@iitb.ac.in)
@@ -37,7 +37,7 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics; // for constants
 using namespace std;
 
-struct NchCumulantsIdentified {
+struct NchCumulantsId {
 
   HistogramRegistry hist{"hist", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -667,5 +667,5 @@ struct NchCumulantsIdentified {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<NchCumulantsIdentified>(cfgc)};
+    adaptAnalysisTask<NchCumulantsId>(cfgc)};
 }
