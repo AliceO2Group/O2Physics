@@ -1991,19 +1991,18 @@ void VarManager::FillTwoMixEventsCumulants(T const& h_v22ev1, T const& h_v24ev1,
   if (!values) {
     values = fgValues;
   }
-if (values[kTwoEvCentFT0C1] >= 0.) {
+  if (values[kTwoEvCentFT0C1] >= 0.) {
     int idx_v22ev1 = h_v22ev1->FindBin(values[kTwoEvCentFT0C1], t1.pt());
     int idx_v24ev1 = h_v24ev1->FindBin(values[kTwoEvCentFT0C1], t1.pt());
     values[kV22m] = h_v22ev1->GetBinContent(idx_v22ev1);
     values[kV24m] = h_v24ev1->GetBinContent(idx_v24ev1);
   }
-if (values[kTwoEvCentFT0C2] >= 0.) {
+  if (values[kTwoEvCentFT0C2] >= 0.) {
     int idx_v22ev2 = h_v22ev2->FindBin(values[kTwoEvCentFT0C2], t2.pt());
     int idx_v24ev2 = h_v24ev2->FindBin(values[kTwoEvCentFT0C2], t2.pt());
     values[kV22p] = h_v22ev2->GetBinContent(idx_v22ev2);
     values[kV24p] = h_v24ev2->GetBinContent(idx_v24ev2);
   }
-
 }
 
 template <typename T>
