@@ -295,9 +295,9 @@ float FemtoPair<TrackType>::GetAvgSep() const
   float res = 0.0;
 
   for (const auto& radius : TPCradii) {
-    const float phi = 2.0 * radius * sin(0.5 * GetPhiStarDiff(radius));
-    const float theta = 2.0 * radius * sin(0.5 * dtheta);
-    res += sqrt(phi * phi + theta * theta);
+    const float dRtrans = 2.0 * radius * sin(0.5 * GetPhiStarDiff(radius));
+    const float dRlong = 2.0 * radius * sin(0.5 * dtheta);
+    res += sqrt(dRtrans * dRtrans + dRlong * dRlong);
   }
 
   return 100.0 * res / TPCradii.size();
@@ -314,7 +314,7 @@ float FemtoPair<TrackType>::GetAvgPhiStarDiff() const
   float res = 0.0;
 
   for (const auto& radius : TPCradii) {
-    const auto dphi = GetPhiStarDiff(radius);
+    const float dphi = GetPhiStarDiff(radius);
     res += fabs(dphi) > o2::constants::math::PI ? (1.0 - 2.0 * o2::constants::math::PI / fabs(dphi)) * dphi : dphi;
   }
 
