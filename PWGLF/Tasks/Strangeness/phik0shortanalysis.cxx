@@ -866,6 +866,8 @@ struct Phik0shortanalysis {
     bool isCountedPhi = false;
     bool isFilledhV0 = false;
 
+    double weight{1.0};
+
     // Loop over all positive tracks
     for (const auto& track1 : posThisColl) {
       if (!selectionTrackResonance<false>(track1, true) || !selectionPIDKaonpTdependent(track1))
@@ -897,6 +899,9 @@ struct Phik0shortanalysis {
           dataEventHist.fill(HIST("hMultiplicityPercentWithPhi"), multiplicity);
           isCountedPhi = true;
         }
+
+        if (fillMethodSingleWeight)
+          weight *= (1 - getPhiPurity(multiplicity, recPhi));
 
         dataPhiHist.fill(HIST("h3PhipurInvMass"), multiplicity, recPhi.Pt(), recPhi.M());
 
@@ -974,6 +979,9 @@ struct Phik0shortanalysis {
         }
       }
     }
+
+    weight = 1 - weight;
+    dataEventHist.fill(HIST("hEventSelection"), 5, weight); // at least a Phi in the event
   }
 
   PROCESS_SWITCH(Phik0shortanalysis, processQAPurity, "Process for QA and Phi Purities", true);
@@ -1530,6 +1538,8 @@ struct Phik0shortanalysis {
 
     bool isCountedPhi = false;
 
+    double weight{1.0};
+
     // Loop over all positive tracks
     for (const auto& track1 : posThisColl) {
       if (!selectionTrackResonance<true>(track1, true) || !selectionPIDKaonpTdependent(track1))
@@ -1553,10 +1563,13 @@ struct Phik0shortanalysis {
           continue;
 
         if (!isCountedPhi) {
-          mcEventHist.fill(HIST("hRecMCEventSelection"), 7); // at least a Phi in the event
+          mcEventHist.fill(HIST("hRecMCEventSelection"), 7); // at least a Phi candidate in the event
           mcEventHist.fill(HIST("hRecMCGenMultiplicityPercentWithPhi"), genmultiplicity);
           isCountedPhi = true;
         }
+
+        if (fillMethodSingleWeight)
+          weight *= (1 - getPhiPurity(genmultiplicity, recPhi));
 
         closureMCPhiHist.fill(HIST("h3MCPhipurInvMass"), genmultiplicity, recPhi.Pt(), recPhi.M());
 
@@ -1638,6 +1651,9 @@ struct Phik0shortanalysis {
         }
       }
     }
+
+    weight = 1 - weight;
+    mcEventHist.fill(HIST("hRecMCEventSelection"), 8, weight); // at least a Phi in the event
   }
 
   PROCESS_SWITCH(Phik0shortanalysis, processRecMCClosurePhiQA, "Process for ReCMCQA and Phi in RecMCClosure", false);
