@@ -115,7 +115,6 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried");
   O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 1.0, "pt cut on TOF for PID");
 
-
   Configurable<GFWBinningCuts> cfgGFWBinning{"cfgGFWBinning", {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0, {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}}, "Configuration for binning"};
   Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
 
@@ -267,16 +266,15 @@ struct FlowGenericFramework {
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(10, "after Mult cuts");
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(11, "has track + within cent");
 
-      if(!cfgRunByRun){
-        if(cfgUsePID){
-          registry.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis,etaAxis,vtxAxis}});
-          registry.add<TH3>("phi_eta_vtxz_ch", "", {HistType::kTH3D, {phiAxis,etaAxis,vtxAxis}});
-          registry.add<TH3>("phi_eta_vtxz_pi", "", {HistType::kTH3D, {phiAxis,etaAxis,vtxAxis}});
-          registry.add<TH3>("phi_eta_vtxz_ka", "", {HistType::kTH3D, {phiAxis,etaAxis,vtxAxis}});
-          registry.add<TH3>("phi_eta_vtxz_pr", "", {HistType::kTH3D, {phiAxis,etaAxis,vtxAxis}});
-        }
-        else {
-          registry.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis,etaAxis,vtxAxis}});
+      if (!cfgRunByRun) {
+        if (cfgUsePID) {
+          registry.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+          registry.add<TH3>("phi_eta_vtxz_ch", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+          registry.add<TH3>("phi_eta_vtxz_pi", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+          registry.add<TH3>("phi_eta_vtxz_ka", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+          registry.add<TH3>("phi_eta_vtxz_pr", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+        } else {
+          registry.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
         }
       }
     }
@@ -385,17 +383,16 @@ struct FlowGenericFramework {
     uint64_t timestamp = bc.timestamp();
     if (!cfgRunByRun && cfg.correctionsLoaded)
       return;
-    if(!cfgAcceptance.value.empty()) {
-      std::string runstr = (cfgRunByRun)?"RBR/":"";
+    if (!cfgAcceptance.value.empty()) {
+      std::string runstr = (cfgRunByRun) ? "RBR/" : "";
       cfg.mAcceptance.clear();
-      if(cfgUsePID){
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value+runstr+"ref/", timestamp));
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value+runstr+"ch/", timestamp));
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value+runstr+"pi/", timestamp));
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value+runstr+"ka/", timestamp));
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value+runstr+"pr/", timestamp));
-      }
-      else {
+      if (cfgUsePID) {
+        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr + "ref/", timestamp));
+        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr + "ch/", timestamp));
+        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr + "pi/", timestamp));
+        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr + "ka/", timestamp));
+        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr + "pr/", timestamp));
+      } else {
         cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr, timestamp));
       }
     }
@@ -413,7 +410,7 @@ struct FlowGenericFramework {
   double getAcceptance(TTrack track, const double& vtxz, int index)
   { // 0 ref, 1 ch, 2 pi, 3 ka, 4 pr
     double wacc = 1;
-  if (!cfg.mAcceptance.empty())
+    if (!cfg.mAcceptance.empty())
       wacc = cfg.mAcceptance[index]->getNUA(track.phi(), track.eta(), vtxz);
     return wacc;
   }
@@ -455,7 +452,7 @@ struct FlowGenericFramework {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality, const int &run)
+  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality, const int& run)
   {
     if (cfgTVXinTRD) {
       if (collision.alias_bit(kTVXinTRD)) {
@@ -464,7 +461,8 @@ struct FlowGenericFramework {
         return 0;
       }
       registry.fill(HIST("eventQA/eventSel"), 3.5);
-      if(cfgRunByRun) th1sList[run][hEventSel]->Fill(3.5);
+      if (cfgRunByRun)
+        th1sList[run][hEventSel]->Fill(3.5);
     }
 
     if (cfgNoSameBunchPileupCut) {
@@ -474,7 +472,8 @@ struct FlowGenericFramework {
         return 0;
       }
       registry.fill(HIST("eventQA/eventSel"), 4.5);
-      if(cfgRunByRun) th1sList[run][hEventSel]->Fill(4.5);
+      if (cfgRunByRun)
+        th1sList[run][hEventSel]->Fill(4.5);
     }
     if (cfgIsGoodZvtxFT0vsPV) {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
@@ -483,7 +482,8 @@ struct FlowGenericFramework {
         return 0;
       }
       registry.fill(HIST("eventQA/eventSel"), 5.5);
-      if(cfgRunByRun) th1sList[run][hEventSel]->Fill(5.5);
+      if (cfgRunByRun)
+        th1sList[run][hEventSel]->Fill(5.5);
     }
     if (cfgNoCollInTimeRangeStandard) {
       if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
@@ -491,7 +491,8 @@ struct FlowGenericFramework {
         return 0;
       }
       registry.fill(HIST("eventQA/eventSel"), 6.5);
-      if(cfgRunByRun) th1sList[run][hEventSel]->Fill(6.5);
+      if (cfgRunByRun)
+        th1sList[run][hEventSel]->Fill(6.5);
     }
 
     if (cfgIsVertexITSTPC) {
@@ -500,7 +501,8 @@ struct FlowGenericFramework {
         return 0;
       }
       registry.fill(HIST("eventQA/eventSel"), 7.5);
-      if(cfgRunByRun) th1sList[run][hEventSel]->Fill(7.5);
+      if (cfgRunByRun)
+        th1sList[run][hEventSel]->Fill(7.5);
     }
 
     if (cfgIsGoodITSLayersAll) {
@@ -508,7 +510,8 @@ struct FlowGenericFramework {
         return 0;
       }
       registry.fill(HIST("eventQA/eventSel"), 8.5);
-      if(cfgRunByRun) th1sList[run][hEventSel]->Fill(8.5);
+      if (cfgRunByRun)
+        th1sList[run][hEventSel]->Fill(8.5);
     }
     float vtxz = -999;
     if (collision.numContrib() > 1) {
@@ -535,7 +538,8 @@ struct FlowGenericFramework {
       if (multTrk > fMultCutHigh->Eval(centrality))
         return 0;
       registry.fill(HIST("eventQA/eventSel"), 9.5);
-      if(cfgRunByRun) th1sList[run][hEventSel]->Fill(9.5);
+      if (cfgRunByRun)
+        th1sList[run][hEventSel]->Fill(9.5);
     }
 
     /* 22s
@@ -592,12 +596,12 @@ struct FlowGenericFramework {
         if (withinPtRef && !pid_index)
           th3sList[run][hNUAref]->Fill(track.phi(), track.eta(), vtxz); // pt-subset of charged particles for ref flow
         if (withinPtPOI)
-          th3sList[run][hNUAch+pid_index]->Fill(track.phi(), track.eta(), vtxz); // charged and id'ed particle weights
+          th3sList[run][hNUAch + pid_index]->Fill(track.phi(), track.eta(), vtxz); // charged and id'ed particle weights
       } else {
         if (withinPtRef && !pid_index)
           registry.fill(HIST("hPhiEtaVtxz_ref"), track.phi(), track.eta(), vtxz); // pt-subset of charged particles for ref flow
-        if (withinPtPOI){
-          switch(pid_index){
+        if (withinPtPOI) {
+          switch (pid_index) {
             case 0:
               registry.fill(HIST("hPhiEtaVtxz_ch"), track.phi(), track.eta(), vtxz); // charged particle weights
               break;
@@ -622,7 +626,7 @@ struct FlowGenericFramework {
     return;
   }
 
-  void createRunByRunHistograms(const int &run)
+  void createRunByRunHistograms(const int& run)
   {
     AxisSpec phiAxis = {phibins, philow, phiup, "#phi"};
     AxisSpec etaAxis = {etabins, -cfgEta, cfgEta, "#eta"};
@@ -648,13 +652,13 @@ struct FlowGenericFramework {
     th1sList.insert(std::make_pair(run, histos));
     std::vector<std::shared_ptr<TH3>> histos3d(kCount_TH3Names);
     if (cfgUsePID) {
-      histos3d[hNUAref] = registry.add<TH3>(Form("%d/phi_eta_vtxz_ref", run), "", {HistType::kTH3D, {phiAxis,etaAxis,vtxAxis}});
-      histos3d[hNUAch] = registry.add<TH3>(Form("%d/phi_eta_vtxz_ch", run), "", {HistType::kTH3D, {phiAxis,etaAxis,vtxAxis}});
-      histos3d[hNUApi] = registry.add<TH3>(Form("%d/phi_eta_vtxz_pi", run), "", {HistType::kTH3D, {phiAxis,etaAxis,vtxAxis}});
-      histos3d[hNUAka] = registry.add<TH3>(Form("%d/phi_eta_vtxz_ka", run), "", {HistType::kTH3D, {phiAxis,etaAxis,vtxAxis}});
-      histos3d[hNUApr] = registry.add<TH3>(Form("%d/phi_eta_vtxz_pr", run), "", {HistType::kTH3D, {phiAxis,etaAxis,vtxAxis}});
+      histos3d[hNUAref] = registry.add<TH3>(Form("%d/phi_eta_vtxz_ref", run), "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+      histos3d[hNUAch] = registry.add<TH3>(Form("%d/phi_eta_vtxz_ch", run), "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+      histos3d[hNUApi] = registry.add<TH3>(Form("%d/phi_eta_vtxz_pi", run), "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+      histos3d[hNUAka] = registry.add<TH3>(Form("%d/phi_eta_vtxz_ka", run), "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+      histos3d[hNUApr] = registry.add<TH3>(Form("%d/phi_eta_vtxz_pr", run), "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
     } else {
-      histos3d[hNUAref] = registry.add<TH3>(Form("%d/phi_eta_vtxz_ref", run), "", {HistType::kTH3D, {phiAxis,etaAxis,vtxAxis}});
+      histos3d[hNUAref] = registry.add<TH3>(Form("%d/phi_eta_vtxz_ref", run), "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
     }
     th3sList.insert(std::make_pair(run, histos3d));
     return;
@@ -701,9 +705,10 @@ struct FlowGenericFramework {
     if (centrality < centbinning.front() || centrality > centbinning.back())
       return;
     registry.fill(HIST("eventQA/eventSel"), 10.5);
-    if(cfgRunByRun) th1sList[run][hEventSel]->Fill(10.5);
+    if (cfgRunByRun)
+      th1sList[run][hEventSel]->Fill(10.5);
     float vtxz = collision.posZ();
-    if(dt!=kGen && cfgRunByRun){
+    if (dt != kGen && cfgRunByRun) {
       th1sList[run][hVtxZ]->Fill(vtxz);
       th1sList[run][hMult]->Fill(tracks.size());
       th1sList[run][hCent]->Fill(centrality);
@@ -754,9 +759,9 @@ struct FlowGenericFramework {
         fillGFW<kReco>(mcParticle, vtxz, pidIndex);
       }
 
-      if (cfgFillQA){
+      if (cfgFillQA) {
         fillTrackQA<kReco, kAfter>(track, vtxz);
-        if(cfgRunByRun){
+        if (cfgRunByRun) {
           th1sList[run][hPhi]->Fill(track.phi());
           th1sList[run][hEta]->Fill(track.eta());
         }
@@ -806,9 +811,9 @@ struct FlowGenericFramework {
         fillPtSums<kReco>(track, vtxz);
         fillGFW<kReco>(track, vtxz, pidIndex);
       }
-      if (cfgFillQA){
+      if (cfgFillQA) {
         fillTrackQA<kReco, kAfter>(track, vtxz);
-        if(cfgRunByRun){
+        if (cfgRunByRun) {
           th1sList[run][hPhi]->Fill(track.phi());
           th1sList[run][hEta]->Fill(track.eta());
         }
@@ -901,7 +906,7 @@ struct FlowGenericFramework {
   }
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
-  Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
+  Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFKa, aod::pidTPCKa, aod::pidTOFPr, aod::pidTPCPr>>;
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
@@ -910,15 +915,14 @@ struct FlowGenericFramework {
     int run = bc.runNumber();
     if (run != lastRun) {
       lastRun = run;
-      LOGF(info,"run = %d",run);
-      if(cfgRunByRun){
-        if(std::find(runNumbers.begin(), runNumbers.end(), run) == runNumbers.end()){
-          LOGF(info,"Creating histograms for run %d",run);
+      LOGF(info, "run = %d", run);
+      if (cfgRunByRun) {
+        if (std::find(runNumbers.begin(), runNumbers.end(), run) == runNumbers.end()) {
+          LOGF(info, "Creating histograms for run %d", run);
           createRunByRunHistograms(run);
           runNumbers.push_back(run);
-        }
-        else {
-          LOGF(info,"run %d already in runNumbers",run);
+        } else {
+          LOGF(info, "run %d already in runNumbers", run);
         }
         if (!cfgFillWeights)
           loadCorrections(bc);
@@ -927,18 +931,21 @@ struct FlowGenericFramework {
     if (!cfgFillWeights && !cfgRunByRun)
       loadCorrections(bc);
     registry.fill(HIST("eventQA/eventSel"), 0.5);
-    if(cfgRunByRun) th1sList[run][hEventSel]->Fill(0.5);
+    if (cfgRunByRun)
+      th1sList[run][hEventSel]->Fill(0.5);
     if (!collision.sel8())
       return;
     registry.fill(HIST("eventQA/eventSel"), 1.5);
-    if(cfgRunByRun) th1sList[run][hEventSel]->Fill(1.5);
+    if (cfgRunByRun)
+      th1sList[run][hEventSel]->Fill(1.5);
     if (cfgOccupancySelection != -999) {
       int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy < 0 || occupancy > cfgOccupancySelection)
         return;
     }
     registry.fill(HIST("eventQA/eventSel"), 2.5);
-    if(cfgRunByRun) th1sList[run][hEventSel]->Fill(2.5);
+    if (cfgRunByRun)
+      th1sList[run][hEventSel]->Fill(2.5);
     const auto centrality = collision.centFT0C();
     if (cfgFillQA)
       fillEventQA<kBefore>(collision, tracks);
