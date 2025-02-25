@@ -218,8 +218,8 @@ struct ResonancesGfwFlow {
 
     o2::framework::AxisSpec axisLambdasMass = axisLambdaMass;
     int nLambdaMassBins = axisLambdasMass.binEdges.size() - 1;
-    double* LambdaMassBins = &(axisLambdasMass.binEdges)[0];
-    fLambdaMassAxis = new TAxis(nLambdaMassBins, LambdaMassBins);
+    double* lambdaMassBins = &(axisLambdasMass.binEdges)[0];
+    fLambdaMassAxis = new TAxis(nLambdaMassBins, lambdaMassBins);
 
     //********** Defining the regions  **********
     // reference particles
