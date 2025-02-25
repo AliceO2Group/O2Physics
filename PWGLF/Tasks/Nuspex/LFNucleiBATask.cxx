@@ -20,6 +20,7 @@
 #include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
+#include <string>
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
 #include <TLorentzVector.h>
