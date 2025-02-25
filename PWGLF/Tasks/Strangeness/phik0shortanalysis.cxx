@@ -111,6 +111,7 @@ struct Phik0shortanalysis {
   // Configurables on phi pT bins
   Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi"};
   Configurable<float> minPhiPt{"minPhiPt", 0.4f, "Minimum pT for Phi"};
+  Configurable<float> maxPhiPt{"maxPhiPt", 10.0f, "Maximum pT for Phi"};
 
   // Configurables on phi mass
   Configurable<int> nBinsMPhi{"nBinsMPhi", 13, "N bins in cfgmassPhiaxis"};
@@ -886,7 +887,7 @@ struct Phik0shortanalysis {
           continue; // condition to avoid double counting of pair
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-        if (recPhi.Pt() < minPhiPt)
+        if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
           continue;
         if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
           continue;
@@ -1027,7 +1028,7 @@ struct Phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Pt() < minPhiPt)
+          if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
             continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
@@ -1116,7 +1117,7 @@ struct Phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Pt() < minPhiPt)
+          if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
             continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
@@ -1224,7 +1225,7 @@ struct Phik0shortanalysis {
           continue;
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-        if (recPhi.Pt() < minPhiPt)
+        if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
           continue;
 
         mcPhiHist.fill(HIST("h3PhiRapiditySmearing"), genmultiplicity, recPhi.Rapidity(), mcMotherPhi.y());
@@ -1366,7 +1367,9 @@ struct Phik0shortanalysis {
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance || mcParticle.pt() < minPhiPt)
+          if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
+            continue;
+          if (std::abs(mcParticle.y()) > cfgYAcceptance) 
             continue;
 
           if (!isCountedMCPhi.at(0)) {
@@ -1447,7 +1450,9 @@ struct Phik0shortanalysis {
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance || mcParticle.pt() < minPhiPt)
+          if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
+            continue;
+          if (std::abs(mcParticle.y()) > cfgYAcceptance) 
             continue;
 
           if (!isCountedMCPhi.at(0)) {
@@ -1478,7 +1483,9 @@ struct Phik0shortanalysis {
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance || mcParticle.pt() < minPhiPt)
+          if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
+            continue;
+          if (std::abs(mcParticle.y()) > cfgYAcceptance) 
             continue;
 
           if (!isCountedMCPhi.at(0)) {
@@ -1540,7 +1547,7 @@ struct Phik0shortanalysis {
           continue; // condition to avoid double counting of pair
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-        if (recPhi.Pt() < minPhiPt)
+        if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
           continue;
         if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
           continue;
@@ -1720,7 +1727,7 @@ struct Phik0shortanalysis {
           }
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Pt() < minPhiPt)
+          if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
             continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
@@ -1844,7 +1851,7 @@ struct Phik0shortanalysis {
           }
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Pt() < minPhiPt)
+          if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
             continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
@@ -2064,7 +2071,7 @@ struct Phik0shortanalysis {
           if (!isPosKaon || !isNegKaon)
             continue;
         }
-        if (mcParticle2.pt() < minPhiPt)
+        if (mcParticle2.pt() < minPhiPt || mcParticle2.pt() > maxPhiPt)
           continue;
 
         if (std::abs(mcParticle2.y()) > cfgYAcceptance)
@@ -2149,7 +2156,7 @@ struct Phik0shortanalysis {
           if (!isPosKaon || !isNegKaon)
             continue;
         }
-        if (mcParticle2.pt() < minPhiPt)
+        if (mcParticle2.pt() < minPhiPt || mcParticle2.pt() > maxPhiPt)
           continue;
 
         if (std::abs(mcParticle2.y()) > cfgYAcceptance)
