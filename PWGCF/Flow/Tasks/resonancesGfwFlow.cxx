@@ -220,7 +220,7 @@ struct ResonancesGfwFlow {
     int nLambdaMassBins = axisLambdasMass.binEdges.size() - 1;
     double* LambdaMassBins = &(axisLambdasMass.binEdges)[0];
     fLambdaMassAxis = new TAxis(nLambdaMassBins, LambdaMassBins);
-    
+
     //********** Defining the regions  **********
     // reference particles
     fGFW->AddRegion("refN08", -0.8, -0.4, 1, 1);
@@ -242,6 +242,7 @@ struct ResonancesGfwFlow {
     fGFW->CreateRegions();
   }
 
+  // This function is specific for Phi flow: will be made more generic in further iterations
   template <char... chars>
   void fillResoProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
   {
@@ -256,7 +257,7 @@ struct ResonancesGfwFlow {
       return;
     }
     for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
-      for(int j = 1; j<= fPhiMassAxis->GetNbins(); j++) {
+      for (int j = 1; j <= fPhiMassAxis->GetNbins(); j++) {
         dnx = fGFW->Calculate(corrconf, ((i - 1) * fPhiMassAxis->GetNbins()) + (j - 1), kTRUE).real();
         if (dnx == 0)
           continue;
@@ -566,7 +567,7 @@ struct ResonancesGfwFlow {
     for (auto const& track : tracks) {
       double pt = track.pt();
       bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);
-      
+
       if (withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1);
     }
@@ -575,7 +576,7 @@ struct ResonancesGfwFlow {
     auto negSlicedTracks = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     resurrectPhi(posSlicedTracks, negSlicedTracks, kaonPlus, kaonMinus, phiMom, massKaPlus, HIST("hPhiMass_sparse"), cent, weff, wacc);
-    
+
     for (auto const& v0s : V0s) {
       if (selectionLambda(collision, v0s) == true)
         histos.fill(HIST("hLambdaCount"), 1);
