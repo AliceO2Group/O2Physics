@@ -246,8 +246,8 @@ struct chargedkstaranalysis {
         // TPC PID (before cuts)
         histos1.fill(HIST("QAbefore/tpcNsigmaPionQA"), trackptPi, trkNSigmaPiTPC);
         if (istrkhasTOF) {
-          histos1.fill(HIST("QA/before/trkpionTOFPID"), trackptPi, trkNSigmaPiTOF);
-          histos1.fill(HIST("QA/before/trkpionTPCTOFPID"), trkNSigmaPiTPC, trkNSigmaPiTOF);
+          histos1.fill(HIST("QAbefore/trkpionTOFPID"), trackptPi, trkNSigmaPiTOF);
+          histos1.fill(HIST("QAbefore/trkpionTPCTOFPID"), trkNSigmaPiTPC, trkNSigmaPiTOF);
         }
         // DCA QA (before cuts)
         histos1.fill(HIST("QAbefore/DCAxy_pi"), track.dcaXY());
