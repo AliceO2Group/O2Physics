@@ -306,12 +306,20 @@ struct CentralityTable {
                   Run2V0MInfo.mMCScalePars[ixpar] = Run2V0MInfo.mMCScale->GetParameter(ixpar);
                 }
               } else {
-                LOGF(fatal, "MC Scale information from V0M for run %d not available", bc.runNumber());
+                if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
+                  LOGF(fatal, "MC Scale information from V0M for run %d not available", bc.runNumber());
+                } else { // only if asked: continue filling with non-valid values (105)
+                  LOGF(info, "MC Scale information from V0M for run %d not available", bc.runNumber());
+                }
               }
             }
             Run2V0MInfo.mCalibrationStored = true;
           } else {
-            LOGF(fatal, "Calibration information from V0M for run %d corrupted", bc.runNumber());
+            if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
+              LOGF(fatal, "Calibration information from V0M for run %d corrupted", bc.runNumber());
+            } else { // only if asked: continue filling with non-valid values (105)
+              LOGF(info, "Calibration information from V0M for run %d corrupted, will fill V0M tables with dummy values", bc.runNumber());
+            }
           }
         }
         if (isTableEnabled[kCentRun2V0As]) {
@@ -321,7 +329,11 @@ struct CentralityTable {
           if ((Run2V0AInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0AInfo.mhMultSelCalib != nullptr)) {
             Run2V0AInfo.mCalibrationStored = true;
           } else {
-            LOGF(fatal, "Calibration information from V0A for run %d corrupted", bc.runNumber());
+            if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
+              LOGF(fatal, "Calibration information from V0A for run %d corrupted", bc.runNumber());
+            } else { // only if asked: continue filling with non-valid values (105)
+              LOGF(info, "Calibration information from V0A for run %d corrupted, will fill V0A tables with dummy values", bc.runNumber());
+            }
           }
         }
         if (isTableEnabled[kCentRun2SPDTrks]) {
@@ -331,7 +343,11 @@ struct CentralityTable {
           if ((Run2SPDTksInfo.mhVtxAmpCorr != nullptr) && (Run2SPDTksInfo.mhMultSelCalib != nullptr)) {
             Run2SPDTksInfo.mCalibrationStored = true;
           } else {
-            LOGF(fatal, "Calibration information from SPD tracklets for run %d corrupted", bc.runNumber());
+            if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
+              LOGF(fatal, "Calibration information from SPD tracklets for run %d corrupted", bc.runNumber());
+            } else { // only if asked: continue filling with non-valid values (105)
+              LOGF(info, "Calibration information from SPD tracklets for run %d corrupted, will fill SPD tracklets tables with dummy values", bc.runNumber());
+            }
           }
         }
         if (isTableEnabled[kCentRun2SPDClss]) {
@@ -342,7 +358,11 @@ struct CentralityTable {
           if ((Run2SPDClsInfo.mhVtxAmpCorrCL0 != nullptr) && (Run2SPDClsInfo.mhVtxAmpCorrCL1 != nullptr) && (Run2SPDClsInfo.mhMultSelCalib != nullptr)) {
             Run2SPDClsInfo.mCalibrationStored = true;
           } else {
-            LOGF(fatal, "Calibration information from SPD clusters for run %d corrupted", bc.runNumber());
+            if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
+              LOGF(fatal, "Calibration information from SPD clusters for run %d corrupted", bc.runNumber());
+            } else { // only if asked: continue filling with non-valid values (105)
+              LOGF(info, "Calibration information from SPD clusters for run %d corrupted, will fill SPD clusters tables with dummy values", bc.runNumber());
+            }
           }
         }
         if (isTableEnabled[kCentRun2CL0s]) {
@@ -352,7 +372,11 @@ struct CentralityTable {
           if ((Run2CL0Info.mhVtxAmpCorr != nullptr) && (Run2CL0Info.mhMultSelCalib != nullptr)) {
             Run2CL0Info.mCalibrationStored = true;
           } else {
-            LOGF(fatal, "Calibration information from CL0 multiplicity for run %d corrupted", bc.runNumber());
+            if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
+              LOGF(fatal, "Calibration information from CL0 multiplicity for run %d corrupted", bc.runNumber());
+            } else { // only if asked: continue filling with non-valid values (105)
+              LOGF(info, "Calibration information from CL0 multiplicity for run %d corrupted, will fill CL0 multiplicity tables with dummy values", bc.runNumber());
+            }
           }
         }
         if (isTableEnabled[kCentRun2CL1s]) {
@@ -362,7 +386,11 @@ struct CentralityTable {
           if ((Run2CL1Info.mhVtxAmpCorr != nullptr) && (Run2CL1Info.mhMultSelCalib != nullptr)) {
             Run2CL1Info.mCalibrationStored = true;
           } else {
-            LOGF(fatal, "Calibration information from CL1 multiplicity for run %d corrupted", bc.runNumber());
+            if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
+              LOGF(fatal, "Calibration information from CL1 multiplicity for run %d corrupted", bc.runNumber());
+            } else { // only if asked: continue filling with non-valid values (105)
+              LOGF(info, "Calibration information from CL1 multiplicity for run %d corrupted, will fill CL1 multiplicity tables with dummy values", bc.runNumber());
+            }
           }
         }
       } else {
