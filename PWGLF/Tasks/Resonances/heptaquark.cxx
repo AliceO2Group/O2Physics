@@ -251,7 +251,7 @@ struct heptaquark {
         histos.fill(HIST("hPhid2Mass"), HQ2.M(), HQ2.Pt());
 
         for (auto hqtrackd3 : hqtracks) {
-          if (std::abs(hqtrackd3.hqId() != 3122))
+          if (std::abs(hqtrackd3.hqId()) != 3122)
             continue;
 
           if (hqtrackd3.hqMass() < minLambdaMass || hqtrackd3.hqMass() > maxLambdaMass)
