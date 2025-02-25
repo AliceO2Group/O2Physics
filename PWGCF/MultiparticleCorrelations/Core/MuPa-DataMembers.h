@@ -119,13 +119,13 @@ struct QualityAssurance {
   TProfile* fQAParticleEventProEbyE[2][2] = {{NULL}};                                      // helper profile to calculate <some-particle-property> event-by-event
                                                                                            // [reco, sim][before, after]. Type dimension is bin.
 
-  TList* fQACorrelationsVsList = NULL;                                                                  //!<! base list to hold all QA particle event output object
+  TList* fQACorrelationsVsList = NULL;                                                                //!<! base list to hold all QA particle event output object
   TH2F* fQACorrelationsVsHistograms2D[eQACorrelationsVsHistograms2D_N][gMaxHarmonic][2] = {{{NULL}}}; //! [ type - see enum eQACorrelationsVsHistograms2D ][reco,sim]. I do not have here support for [before, after], because I do not fill Q-vectors before cuts
-  bool fFillQACorrelationsVsHistograms2D = true;                                                        // if false, all 2D histograms in this category are not filled. If true, the ones for which fBookQACorrelationsVsHistograms2D[...] is true, are filled
-  bool fBookQACorrelationsVsHistograms2D[eQACorrelationsVsHistograms2D_N] = {true};                     // book or not this 2D histogram, see configurable cfBookQACorrelationsVsHistograms2D
-  float fQACorrelationsVsHistogramsBins2D[eQACorrelationsVsHistograms2D_N][2][3] = {{{0.}}};            // [type - see enum][x,y][nBins,min,max]
-  TString fQACorrelationsVsHistogramsName2D[eQACorrelationsVsHistograms2D_N] = {""};                    // name of fQACorrelationsVsHistograms2D, determined programatically from other 1D names, to ease bookkeeping
-  int fQACorrelationsVsHistogramsMinMaxHarmonic[2];                                                     // book only for MinMaxHarmonic[0] <= harmonics < MinMaxHarmonic[1]
+  bool fFillQACorrelationsVsHistograms2D = true;                                                      // if false, all 2D histograms in this category are not filled. If true, the ones for which fBookQACorrelationsVsHistograms2D[...] is true, are filled
+  bool fBookQACorrelationsVsHistograms2D[eQACorrelationsVsHistograms2D_N] = {true};                   // book or not this 2D histogram, see configurable cfBookQACorrelationsVsHistograms2D
+  float fQACorrelationsVsHistogramsBins2D[eQACorrelationsVsHistograms2D_N][2][3] = {{{0.}}};          // [type - see enum][x,y][nBins,min,max]
+  TString fQACorrelationsVsHistogramsName2D[eQACorrelationsVsHistograms2D_N] = {""};                  // name of fQACorrelationsVsHistograms2D, determined programatically from other 1D names, to ease bookkeeping
+  int fQACorrelationsVsHistogramsMinMaxHarmonic[2];                                                   // book only for MinMaxHarmonic[0] <= harmonics < MinMaxHarmonic[1]
 
   float fReferenceMultiplicity[eReferenceMultiplicityEstimators_N] = {0.};                // used mostly in QA correlation plots
   TString fReferenceMultiplicityEstimatorName[eReferenceMultiplicityEstimators_N] = {""}; // TBI 20241123 add comment
