@@ -1986,42 +1986,6 @@ void VarManager::FillTwoMixEventsFlowResoFactor(T const& hs_sp, T const& hs_ep, 
 }
 
 template <typename T, typename T1, typename T2>
-void VarManager::FillTwoMixEventsCumulants(T const& h_v22m, T const& h_v24m, T const& h_v22p, T const& h_v24p, T1 const& t1, T2 const& t2, float* values)
-{
-  if (!values) {
-    values = fgValues;
-  }
-  float ptp, ptm, centp, centm;
-  if (t1.sign() < 0) {
-    ptm = t1.sign();
-    ptp = t2.sign();
-    centm = values[kTwoEvCentFT0C1];
-    centp = values[kTwoEvCentFT0C2];
-  } else {
-    ptm = t2.sign();
-    ptp = t1.sign();
-    centm = values[kTwoEvCentFT0C2];
-    centp = values[kTwoEvCentFT0C1];
-  }
-
-  if (centm >= 0.) {
-    int idx_v22m = h_v22m->FindBin(centm, ptm);
-    int idx_v24m = h_v24m->FindBin(centm, ptm);
-
-    values[kV22m] = h_v22m->GetBinContent(idx_v22m);
-    values[kV24m] = h_v24m->GetBinContent(idx_v24m);
-  }
-
-  if (centp >= 0.) {
-    int idx_v22p = h_v22p->FindBin(centp, ptp);
-    int idx_v24p = h_v24p->FindBin(centp, ptp);
-
-    values[kV22p] = h_v22p->GetBinContent(idx_v22p);
-    values[kV24p] = h_v24p->GetBinContent(idx_v24p);
-  }
-}
-
-template <typename T, typename T1, typename T2>
 void VarManager::FillTwoMixEventsCumulants(T const& h_v22ev1, T const& h_v24ev1, T const& h_v22ev2, T const& h_v24ev2, T1 const& t1, T2 const& t2, float* values)
 {
   if (!values) {
