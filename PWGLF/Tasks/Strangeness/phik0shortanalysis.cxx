@@ -1377,7 +1377,7 @@ struct Phik0shortanalysis {
             continue;
           if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance) 
+          if (std::abs(mcParticle.y()) > cfgYAcceptance)
             continue;
 
           if (!isCountedMCPhi.at(0)) {
@@ -1460,7 +1460,7 @@ struct Phik0shortanalysis {
             continue;
           if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance) 
+          if (std::abs(mcParticle.y()) > cfgYAcceptance)
             continue;
 
           if (!isCountedMCPhi.at(0)) {
@@ -1493,7 +1493,7 @@ struct Phik0shortanalysis {
             continue;
           if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance) 
+          if (std::abs(mcParticle.y()) > cfgYAcceptance)
             continue;
 
           if (!isCountedMCPhi.at(0)) {
