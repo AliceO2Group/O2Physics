@@ -1138,9 +1138,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("dimuon-rap")) {
         int vars[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kRap};
-        int binspT[4] = {150, 200, 10, 6};
+        int binspT[4] = {300, 200, 10, 6};
         double xminpT[4] = {2., 0., 0, 2.5};
-        double xmaxpT[4] = {5., 20., 100, 4.0};
+        double xmaxpT[4] = {8., 20., 100, 4.0};
         hm->AddHistogram(histClass, "Mass_Pt_Cent_Rap", "", 4, vars, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-he-pbpb")) {
