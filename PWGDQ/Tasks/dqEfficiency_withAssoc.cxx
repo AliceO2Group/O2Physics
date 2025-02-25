@@ -1199,6 +1199,8 @@ struct AnalysisSameEventPairing {
   Produces<aod::DielectronsInfo> dielectronInfoList;
   Produces<aod::DimuonsExtra> dimuonsExtraList;
   Produces<aod::DimuonsAll> dimuonAllList;
+  Produces<aod::DileptonsMiniTreeGen> dileptonMiniTreeGen;
+  Produces<aod::DileptonsMiniTreeRec> dileptonMiniTreeRec;
   Produces<aod::DileptonsInfo> dileptonInfoList;
   Produces<aod::JPsieeCandidates> PromptNonPromptSepTable;
 
@@ -1246,6 +1248,12 @@ struct AnalysisSameEventPairing {
     Configurable<bool> skimSignalOnly{"cfgSkimSignalOnly", false, "Configurable to select only matched candidates"};
     Configurable<bool> runMCGenPair{"cfgRunMCGenPair", false, "Do pairing of true MC particles"};
   } fConfigMC;
+
+  struct : ConfigurableGroup {
+    Configurable<bool> fConfigMiniTree{"useMiniTree.cfgMiniTree", false, "Produce a single flat table with minimal information for analysis"};
+    Configurable<float> fConfigMiniTreeMinMass{"useMiniTree.cfgMiniTreeMinMass", 2, "Min. mass cut for minitree"};
+    Configurable<float> fConfigMiniTreeMaxMass{"useMiniTree.cfgMiniTreeMaxMass", 5, "Max. mass cut for minitree"};
+  } useMiniTree;
 
   // Track related options
   Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
@@ -1648,6 +1656,10 @@ struct AnalysisSameEventPairing {
     if (fConfigOptions.flatTables.value) {
       dimuonAllList.reserve(1);
     }
+    if (useMiniTree.fConfigMiniTree) {
+      dileptonMiniTreeGen.reserve(1);
+      dileptonMiniTreeRec.reserve(1);
+    }
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
 
@@ -1847,6 +1859,27 @@ struct AnalysisSameEventPairing {
                 if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                   PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], isAmbiInBunch, isAmbiOutOfBunch, isCorrect_pair);
                   fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][0].Data(), VarManager::fgValues); // matched signal
+                  if (useMiniTree.fConfigMiniTree) {
+                    if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                      twoTrackFilter = a1.isMuonSelected_raw() & a2.isMuonSelected_raw() & fMuonFilterMask;
+                      if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
+                        continue;
+                      }
+                      auto t1 = a1.template reducedmuon_as<TTracks>();
+                      auto t2 = a2.template reducedmuon_as<TTracks>();
+
+                      float dileptonMass = VarManager::fgValues[VarManager::kMass];
+                      if (dileptonMass > useMiniTree.fConfigMiniTreeMinMass && dileptonMass < useMiniTree.fConfigMiniTreeMaxMass) {
+                        dileptonMiniTreeRec(mcDecision,
+                                            VarManager::fgValues[VarManager::kMass],
+                                            VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kCentFT0C],
+                                            t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(),
+                                            t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(),
+                                            VarManager::fgValues[VarManager::kPt1], VarManager::fgValues[VarManager::kEta1], VarManager::fgValues[VarManager::kPhi1],
+                                            VarManager::fgValues[VarManager::kPt2], VarManager::fgValues[VarManager::kEta2], VarManager::fgValues[VarManager::kPhi2]);
+                      }
+                    }
+                  }
                   if (fConfigQA) {
                     if (isCorrectAssoc_leg1 && isCorrectAssoc_leg2) { // correct track-collision association
                       fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][3].Data(), VarManager::fgValues);
@@ -1941,6 +1974,8 @@ struct AnalysisSameEventPairing {
     // loop over mc stack and fill histograms for pure MC truth signals
     // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
     // auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
+    uint32_t mcDecision = 0;
+    int isig = 0;
     for (auto& mctrack : mcTracks) {
       VarManager::FillTrackMC(mcTracks, mctrack);
       // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
@@ -1958,9 +1993,15 @@ struct AnalysisSameEventPairing {
         checked = sig->CheckSignal(true, mctrack);
         //}
         if (checked) {
+          mcDecision |= (static_cast<uint32_t>(1) << isig);
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
+          if (useMiniTree.fConfigMiniTree) {
+            auto mcEvent = mcEvents.rawIteratorAt(mctrack.reducedMCeventId());
+            dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), mctrack.pt(), mctrack.eta(), mctrack.phi(), -999, -999, -999);
+          }
         }
       }
+      isig++;
     }
 
     if (fHasTwoProngGenMCsignals) {
@@ -1975,9 +2016,15 @@ struct AnalysisSameEventPairing {
               continue;
             }
             if (sig->CheckSignal(true, t1_raw, t2_raw)) {
+              mcDecision |= (static_cast<uint32_t>(1) << isig);
               VarManager::FillPairMC<VarManager::kDecayToEE>(t1, t2);
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
+              if (useMiniTree.fConfigMiniTree) {
+                // WARNING! To be checked
+                dileptonMiniTreeGen(mcDecision, event.impactParameter(), t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
+              }
             }
+            isig++;
           } // end loop over MC signals
         } // end loop over pairs
       } // end loop over events
