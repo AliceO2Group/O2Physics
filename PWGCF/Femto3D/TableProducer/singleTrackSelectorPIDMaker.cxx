@@ -88,6 +88,7 @@ struct StPidDe {
     }
   }
 };
+
 struct StPidTr {
   Produces<o2::aod::SinglePIDTrs> table;
   void process(o2::aod::SingleTrackSels const& tracks)
@@ -99,6 +100,7 @@ struct StPidTr {
     }
   }
 };
+
 struct StPidHe {
   Produces<o2::aod::SinglePIDHes> table;
   void process(o2::aod::SingleTrackSels const& tracks)
