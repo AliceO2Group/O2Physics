@@ -124,6 +124,9 @@ struct UpcCandProducer {
     histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(1, "TCE");
     histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(2, "ZNA");
     histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(3, "ZNC");
+    histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(4, "TCE_ROF");
+    histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(5, "TCE_TF");
+    histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(6, "TCE_ROF_TF");
 
     const AxisSpec axisBcDist{201, 0.5, 200.5, ""};
     histRegistry.add("hDistToITSTPC", "", kTH1F, {axisBcDist});
@@ -680,6 +683,43 @@ struct UpcCandProducer {
         const auto& col = trk.collision();
         nContrib = col.numContrib();
         trackBC = col.bc_as<TBCs>().globalBC();
+      } else {
+        trackBC = ambIter->second;
+      }
+      int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fMuonTrackTShift));
+      uint64_t bc = trackBC + tint;
+      if (nContrib > upcCuts.getMaxNContrib())
+        continue;
+      addTrack(bcsMatchedTrIds, bc, trkId);
+    }
+  }
+
+  template <typename TBCs>
+  void collectForwardGlobalTracks(std::vector<BCTracksPair>& bcsMatchedTrIds,
+                                  int typeFilter,
+                                  TBCs const& /*bcs*/,
+                                  o2::aod::Collisions const& /*collisions*/,
+                                  ForwardTracks const& fwdTracks,
+                                  o2::aod::AmbiguousFwdTracks const& /*ambFwdTracks*/,
+                                  std::unordered_map<int64_t, uint64_t>& ambFwdTrBCs)
+  {
+    for (const auto& trk : fwdTracks) {
+      if (trk.trackType() != typeFilter)
+        continue;
+      if (!applyFwdCuts(trk))
+        continue;
+      int64_t trkId = trk.globalIndex();
+      int32_t nContrib = -1;
+      uint64_t trackBC = 0;
+      auto ambIter = ambFwdTrBCs.find(trkId);
+      if (ambIter == ambFwdTrBCs.end()) {
+        const auto& col = trk.collision();
+        nContrib = col.numContrib();
+        trackBC = col.bc_as<TBCs>().globalBC();
+        if (!(col.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoTimeFrameBorder) &&
+              col.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+          continue; // skip this track if both selection bits are not set
+        }
       } else {
         trackBC = ambIter->second;
       }
@@ -1519,10 +1559,10 @@ struct UpcCandProducer {
                          bcs, collisions,
                          fwdTracks, ambFwdTracks, ambFwdTrBCs);
 
-    collectForwardTracks(bcsMatchedTrIdsGlobal,
-                         o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack,
-                         bcs, collisions,
-                         fwdTracks, ambFwdTracks, ambFwdTrBCs);
+    collectForwardGlobalTracks(bcsMatchedTrIdsGlobal,
+                               o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack,
+                               bcs, collisions,
+                               fwdTracks, ambFwdTracks, ambFwdTrBCs);
 
     std::sort(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
@@ -1539,6 +1579,16 @@ struct UpcCandProducer {
         continue;
       if (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen)) { // TVX & TCE
         histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("TCE", 1);
+        if (ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) { // TVX & TCE without ROF borders
+          histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("TCE_ROF", 1);
+        }
+        if (ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) { // TVX & TCE without TF borders
+          histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("TCE_TF", 1);
+        }
+        if (ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoITSROFrameBorder) &&
+            ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) { // TVX & TCE without ROF and TF borders
+          histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("TCE_ROF_TF", 1);
+        }
       }
       if (std::abs(ft0.timeA()) > 2.f)
         continue;
