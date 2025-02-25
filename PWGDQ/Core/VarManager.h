@@ -1997,7 +1997,6 @@ void VarManager::FillTwoMixEventsCumulants(T const& h_v22ev1, T const& h_v24ev1,
   int idx_v22ev2;
   int idx_v24ev2;
 
-
   if (values[kTwoEvCentFT0C1] >= 0.) {
     if (t1.sign() > 0) {
 
