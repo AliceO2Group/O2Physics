@@ -21,6 +21,8 @@
 #include <vector>
 #include <complex>
 #include <string>
+#include <map>
+#include <utility>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
