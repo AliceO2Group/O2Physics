@@ -566,25 +566,25 @@ struct HfElectronSelectionWithTpcEmcal {
                 //=================  eta->pi0->e ======================================
 
                 if (std::abs(mother.pdgCode()) == kPi0) {
-                  isEmbPi0 = kTRUE; // pi0 -> e
+                  isEmbPi0 = true; // pi0 -> e
 
                   if (std::abs(gmother.pdgCode()) == kEta) {
-                    isEmbEta = kTRUE; // eta->pi0-> e
+                    isEmbEta = true; // eta->pi0-> e
                   }
                 }
 
                 /// ====================================  eta->gamma->e  and eta->pi0->gamma->e============
                 if (std::abs(mother.pdgCode()) == kGamma) {
                   if (std::abs(gmother.pdgCode()) == kEta) {
-                    isEmbEta = kTRUE; // eta->gamma-> e
+                    isEmbEta = true; // eta->gamma-> e
                   }
 
                   if (std::abs(gmother.pdgCode()) == kPi0) {
-                    isEmbPi0 = kTRUE; // pi0-> gamma-> e
+                    isEmbPi0 = true; // pi0-> gamma-> e
 
                     if (std::abs(ggmother.pdgCode()) == kEta) {
 
-                      isEmbEta = kTRUE; // eta->pi0->gamma-> e
+                      isEmbEta = true; // eta->pi0->gamma-> e
                     }
                   }
                 }
