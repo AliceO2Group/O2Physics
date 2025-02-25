@@ -163,6 +163,7 @@ class TestSpec(ABC):
     suffixes: "list[str]" = []  # suffixes of files to test
     per_line = True  # Test lines separately one by one.
     n_issues = 0  # issue counter
+    n_disabled = 0  # counter of disabled issues
 
     def file_matches(self, path: str) -> bool:
         """Test whether the path matches the pattern for files to test."""
@@ -174,11 +175,11 @@ class TestSpec(ABC):
             if prefix not in line:
                 return False
             line = line[(line.index(prefix) + len(prefix)) :]  # Strip away part before prefix.
-        if self.name not in line:
-            return False
-        # Look for a comment with a reason for disabling.
-        if re.search(r" \([\w\s]{3,}\)", line):
-            return True
+        if self.name in line:
+            self.n_disabled += 1
+            # Look for a comment with a reason for disabling.
+            if re.search(r" \([\w\s]{3,}\)", line):
+                return True
         return False
 
     def test_line(self, line: str) -> bool:
@@ -1502,9 +1503,11 @@ def main():
     # Report results per test.
     print("\nResults per test")
     len_max = max(len(name) for name in test_names)
-    print(f"test{' ' * (len_max - len('test'))}\tissues\tbad files")
+    print(f"test{' ' * (len_max - len('test'))}\tissues\tdisabled\tbad files")
     for test in tests:
-        print(f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{n_files_bad[test.name]}")
+        print(
+            f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}\t{n_files_bad[test.name]}"
+        )
 
     # Report global result.
     title_result = "O2 linter result"
