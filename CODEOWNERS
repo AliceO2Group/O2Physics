@@ -29,11 +29,11 @@
 /EventFiltering/PWGCF @alibuild @lauraser @mpuccio @lietava
 /EventFiltering/PWGMM @alibuild @aortizve @mpuccio @lietava
 /EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @mpuccio @lietava
-/PWGCF               @alibuild @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
-/PWGCF/Core          @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
-/PWGCF/DataModel     @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
-/PWGCF/TableProducer @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
-/PWGCF/Tasks         @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
+/PWGCF               @alibuild @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGCF/Core          @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGCF/DataModel     @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGCF/TableProducer @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGCF/Tasks         @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
 /PWGDQ @alibuild @iarsene @dsekihat @feisenhu @lucamicheletti93
 /PWGEM @alibuild @feisenhu @dsekihat @ivorobye
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
