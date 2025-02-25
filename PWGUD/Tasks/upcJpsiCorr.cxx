@@ -94,7 +94,7 @@ DECLARE_SOA_COLUMN(TrackPt2, trackPt2, double);
 DECLARE_SOA_COLUMN(TrackEta2, trackEta2, double);
 DECLARE_SOA_COLUMN(TrackPhi2, trackPhi2, double);
 } // namespace tree
-DECLARE_SOA_TABLE(tree, "AOD", "TREE",
+DECLARE_SOA_TABLE(Tree, "AOD", "TREE",
                   tree::RunNumber, tree::GlobalBC,
                   tree::PosX, tree::PosY, tree::PosZ, tree::TotalFT0AmplitudeA, tree::TotalFT0AmplitudeC, tree::TotalFV0AmplitudeA, tree::TotalFDDAmplitudeA, tree::TotalFDDAmplitudeC,
                   tree::TimeFT0A, tree::TimeFT0C, tree::TimeFV0A, tree::TimeFDDA, tree::TimeFDDC,
@@ -134,7 +134,7 @@ DECLARE_SOA_COLUMN(TrackPt2, trackPt2, double);
 DECLARE_SOA_COLUMN(TrackEta2, trackEta2, double);
 DECLARE_SOA_COLUMN(TrackPhi2, trackPhi2, double);
 } // namespace tree_mc
-DECLARE_SOA_TABLE(treeMC, "AOD", "TREEMC",
+DECLARE_SOA_TABLE(TreeMC, "AOD", "TREEMC",
                   tree_mc::GlobalBC,
                   tree_mc::JpsiPt, tree_mc::JpsiEta, tree_mc::JpsiPhi, tree_mc::JpsiRap, tree_mc::JpsiM, tree_mc::JpsiPhiRandom, tree_mc::JpsiPhiCharge, tree_mc::JpsiPhiCS, tree_mc::JpsiCosThetaCS,
                   tree_mc::TrackSign1, tree_mc::TrackPt1, tree_mc::TrackEta1, tree_mc::TrackPhi1,
@@ -177,7 +177,7 @@ struct UpcJpsiCorr {
   Configurable<bool> tofAtLeastOneProton{"tofAtLeastOneProton", false, "at least one candidate track has TOF hits"};
   Configurable<bool> tofBothProtons{"tofBothProtons", false, "both candidate protons have TOF hits"};
   Configurable<bool> tofOneProton{"tofOneProton", false, "one candidate proton has TOF hits"};
-  Configurable<bool> dcaCut{"dcacut", false, "DCA cut from run2."};
+  Configurable<bool> dcaCut{"dcaCut", false, "DCA cut from run2."};
   Configurable<bool> newCutTPC{"newCutTPC", false, "New cuts for TPC quality tracks."};
   Configurable<float> etaCut{"etaCut", 0.9f, "acceptance cut per track"};
   Configurable<float> cutPtTrack{"cutPtTrack", 0.1f, "pT cut per track"};
@@ -203,10 +203,10 @@ struct UpcJpsiCorr {
   // SG cuts
   Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
   Configurable<bool> useTrueGap{"useTrueGap", true, {"Calculate gapSide for a given FV0/FT0/ZDC thresholds"}};
-  Configurable<float> cutMyGapSideFV0{"FV0", 100, "FV0A threshold for SG selector"};
-  Configurable<float> cutMyGapSideFT0A{"FT0A", 200., "FT0A threshold for SG selector"};
-  Configurable<float> cutMyGapSideFT0C{"FT0C", 100., "FT0C threshold for SG selector"};
-  Configurable<float> cutMyGapSideZDC{"ZDC", 1000., "ZDC threshold for SG selector"};
+  Configurable<float> cutMyGapSideFV0{"cutMyGapSideFV0", 100, "FV0A threshold for SG selector"};
+  Configurable<float> cutMyGapSideFT0A{"cutMyGapSideFT0A", 200., "FT0A threshold for SG selector"};
+  Configurable<float> cutMyGapSideFT0C{"cutMyGapSideFT0C", 100., "FT0C threshold for SG selector"};
+  Configurable<float> cutMyGapSideZDC{"cutMyGapSideZDC", 1000., "ZDC threshold for SG selector"};
 
   // process cuts
   Configurable<bool> doMuons{"doMuons", true, "Provide muon plots."};
@@ -245,8 +245,8 @@ struct UpcJpsiCorr {
     "rTGdaugCand",
     {}};
 
-  HistogramRegistry rJPsiToDaug{
-    "rJPsiToDaug",
+  HistogramRegistry rJpsiToDaug{
+    "rJpsiToDaug",
     {}};
 
   HistogramRegistry rCorrelation{
@@ -556,7 +556,7 @@ struct UpcJpsiCorr {
       rStatistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(11);
       return false;
     }
-    if (track.tpcChi2NCl() > TPCChi2NCls) {
+    if (track.tpcChi2NCl() > tpcChi2NCls) {
       rStatistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(12);
       return false; // TPC chi2
     }
@@ -813,7 +813,7 @@ struct UpcJpsiCorr {
       onon = true;
       neutronClass = 0;
     }
-    if (collision.energyCommonZNA() > znEnergyCut && std::abs(collision.timeZNA()) < ZNtimeCut && collision.energyCommonZNC() > znEnergyCut && std::abs(collision.timeZNC()) < znTimeCut) {
+    if (collision.energyCommonZNA() > znEnergyCut && std::abs(collision.timeZNA()) < znTimeCut && collision.energyCommonZNC() > znEnergyCut && std::abs(collision.timeZNC()) < znTimeCut) {
       xnxn = true;
       neutronClass = 1;
     }
@@ -1168,15 +1168,15 @@ struct UpcJpsiCorr {
 
           std::array<double, 3> mother = {trkDaughter1.px() + trkDaughter2.px(), trkDaughter1.py() + trkDaughter2.py(), trkDaughter1.pz() + trkDaughter2.pz()};
 
-          if (TOFBothProtons) {
+          if (tofBothProtons) {
             if (!trkDaughter1.hasTOF() || !trkDaughter2.hasTOF())
               return;
           }
-          if (TOFOneProton) {
+          if (tofOneProton) {
             if ((trkDaughter1.hasTOF() && trkDaughter2.hasTOF()) || (!trkDaughter1.hasTOF() && !trkDaughter2.hasTOF()))
               return;
           }
-          if (TOFAtLeastOneProton) {
+          if (tofAtLeastOneProton) {
             if (!trkDaughter1.hasTOF() && !trkDaughter2.hasTOF())
               return;
           }
@@ -1368,6 +1368,6 @@ struct UpcJpsiCorr {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<UpcJpsiCorr>(cfgc, TaskName{"upc-jpsi-corr"}),
+    adaptAnalysisTask<UpcJpsiCorr>(cfgc),
   };
 }
