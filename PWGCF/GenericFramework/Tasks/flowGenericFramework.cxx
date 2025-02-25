@@ -719,14 +719,14 @@ struct FlowGenericFramework {
     fFCpt->clearVector();
     float lRandom = fRndm->Rndm();
     for (const auto& track : tracks) {
-      processTrack(track, centrality, vtxz, field, run);
+      processTrack(track, vtxz, field, run);
     }
     if (!cfgFillWeights)
       fillOutputContainers<dt>((cfgUseNch) ? tracks.size() : centrality, lRandom);
   }
 
   template <typename TTrack>
-  inline void processTrack(TTrack const& track, const float& centrality, const float& vtxz, const int& field, const int& run)
+  inline void processTrack(TTrack const& track, const float& vtxz, const int& field, const int& run)
   {
     if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TTrack::all_columns>) {
       if (track.mcParticleId() < 0 || !(track.has_mcParticle()))
