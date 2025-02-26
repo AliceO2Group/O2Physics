@@ -92,15 +92,14 @@ struct HeavyFlavourDefinitionTask {
   }
   PROCESS_SWITCH(HeavyFlavourDefinitionTask, processMCPByConstituents, "Fill definition of flavour for mcp jets using constituents", false);
 
-  void processMCPByDistance(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& /*mcCollisions*/, JetTableMCP const& mcpjets, aod::JetParticles const& particles)
+  void processMCPByDistance(aod::JetMcCollision const& /*mcCollision*/, JetTableMCP const& mcpjets, aod::JetParticles const& particles)
   {
     for (auto const& mcpjet : mcpjets) {
-      auto const particlesPerMcColl = particles.sliceBy(particlesPerMcCollision, mcpjet.globalIndex());
       int8_t origin = -1;
       if (searchUpToQuark) {
-        origin = jettaggingutilities::getJetFlavor(mcpjet, particlesPerMcColl);
+        origin = jettaggingutilities::getJetFlavor(mcpjet, particles);
       } else {
-        origin = jettaggingutilities::getJetFlavorHadron(mcpjet, particlesPerMcColl);
+        origin = jettaggingutilities::getJetFlavorHadron(mcpjet, particles);
       }
       flavourTableMCP(origin);
     }
