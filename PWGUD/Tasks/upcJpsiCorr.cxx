@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file upcJpsiCentralBarrelCorr.cxx
+/// \file upcJpsiCorr.cxx
 /// \brief Personal task for analysis of azimuthal asymmetry and quantum tomography in J/Psi system.
 ///
 /// \author Sara Haidlova, sara.haidlova@cern.ch
@@ -1311,8 +1311,10 @@ struct UpcJpsiCorr {
     if (collision.has_udMcCollision()) {
       std::array<float, 3> recoTrack;
       std::array<float, 3> truePart;
+      bool mesonFound = false;
       for (const auto& track : tracks) {
         rMC.get<TH1>(HIST("MC/hNumberOfMatchedMCTracks"))->Fill(1.);
+        mesonFound = false;
         if (track.has_udMcParticle()) {
           rMC.get<TH1>(HIST("MC/hNumberOfMatchedMCTracks"))->Fill(2.);
           auto mcParticle = track.udMcParticle();
@@ -1326,10 +1328,13 @@ struct UpcJpsiCorr {
                 rMC.get<TH1>(HIST("MC/hNumberOfMatchedMCTracks"))->Fill(5.);
                 recoTrack = {track.px(), track.py(), track.pz()};
                 truePart = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+                mesonFound = true;
               }
             }
           }
-          rMC.fill(HIST("MC/hResolutionPhi"), RecoDecay::phi(recoTrack) - RecoDecay::phi(truePart));
+          if (mesonFound) {
+            rMC.fill(HIST("MC/hResolutionPhi"), RecoDecay::phi(recoTrack) - RecoDecay::phi(truePart));
+          }
         }
       }
     }
