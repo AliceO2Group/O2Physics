@@ -88,7 +88,6 @@ struct FemtoUniversePairTaskTrackPhi {
     Configurable<float> confPIDPionNsigmaCombined{"confPIDPionNsigmaCombined", 3.0, "TPC and TOF Pion Sigma (combined) for momentum > 0.5"};
     Configurable<float> confPIDPionNsigmaTPC{"confPIDPionNsigmaTPC", 3.0, "TPC Pion Sigma for momentum < 0.5"};
     Configurable<bool> confIsMC{"confIsMC", false, "Enable additional Histograms in the case of a MonteCarlo Run"};
-    Configurable<std::vector<float>> confTrkPIDnSigmaMax{"confTrkPIDnSigmaMax", std::vector<float>{4.f, 3.f, 2.f}, "This configurable needs to be the same as the one used in the producer task"};
     Configurable<bool> confUse3D{"confUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
     Configurable<int> confBinsPhi{"confBinsPhi", 29, "Number of phi bins in deta dphi"};
     Configurable<int> confBinsEta{"confBinsEta", 29, "Number of eta bins in deta dphi"};
@@ -97,7 +96,6 @@ struct FemtoUniversePairTaskTrackPhi {
   /// Particle 1 --- IDENTIFIED TRACK
   struct : o2::framework::ConfigurableGroup {
     Configurable<int> confTrackPDGCode{"confTrackPDGCode", 2212, "Particle 2 - PDG code"};
-    Configurable<int> confTrackPID{"confTrackPID", 2, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
     Configurable<int> confTrackSign{"confTrackSign", 1, "Track sign"};
     Configurable<bool> confTrackIsIdentified{"confTrackIsIdentified", true, "Enable PID for the track"};
     Configurable<bool> confTrackIsRejected{"confTrackIsRejected", true, "Enable PID rejection for the track other species than the identified one."};
@@ -108,9 +106,9 @@ struct FemtoUniversePairTaskTrackPhi {
 
   /// Partitions for the track (particle 1)
   Partition<FilteredFemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) &&
-                                                     (aod::femtouniverseparticle::sign == ConfTrack.confTrackSign.value) &&
-                                                     (aod::femtouniverseparticle::pt > ConfTrack.confTrackPtLowLimit.value) &&
-                                                     (aod::femtouniverseparticle::pt < ConfTrack.confTrackPtHighLimit.value);
+                                                     (aod::femtouniverseparticle::sign == ConfTrack.confTrackSign) &&
+                                                     (aod::femtouniverseparticle::pt > ConfTrack.confTrackPtLowLimit) &&
+                                                     (aod::femtouniverseparticle::pt < ConfTrack.confTrackPtHighLimit);
 
   /// Particle 2 --- PHI MESON
   struct : o2::framework::ConfigurableGroup {
@@ -120,8 +118,8 @@ struct FemtoUniversePairTaskTrackPhi {
 
   /// Partitions for the Phi meson (particle 2)
   Partition<FilteredFemtoFullParticles> partsPhi = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhi)) &&
-                                                   (aod::femtouniverseparticle::pt > ConfPhi.confPhiPtLowLimit.value) &&
-                                                   (aod::femtouniverseparticle::pt < ConfPhi.confPhiPtHighLimit.value);
+                                                   (aod::femtouniverseparticle::pt > ConfPhi.confPhiPtLowLimit) &&
+                                                   (aod::femtouniverseparticle::pt < ConfPhi.confPhiPtHighLimit);
 
   /// Partitions  for Phi daughters kPhiChild
   Partition<FilteredFemtoFullParticles> partsPhiDaugh = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhiChild));
@@ -177,7 +175,6 @@ struct FemtoUniversePairTaskTrackPhi {
   HistogramRegistry registryPhiMinvBackground{"registryPhiMinvBackground", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryDCA{"registryDCA", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
-  Configurable<bool> confDoEfficiency{"confDoEfficiency", true, "Do efficiency corrections."};
   EfficiencyConfigurableGroup effConfGroup;
   EfficiencyCalculator efficiencyCalculator{&effConfGroup};
 
@@ -373,7 +370,7 @@ struct FemtoUniversePairTaskTrackPhi {
       hMCTruth2.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, 333, false);
     }
     if (ConfBothTracks.confIsMC) {
-      hTrackDCA.init(&registryDCA, confBinsTempFitVarpT, confBinsTempFitVar, true, ConfTrack.confTrackPDGCode, true);
+      hTrackDCA.init(&registryDCA, confBinsTempFitVarpT, confBinsTempFitVarDCA, true, ConfTrack.confTrackPDGCode, true);
     }
     efficiencyCalculator.init();
 
@@ -753,6 +750,8 @@ struct FemtoUniversePairTaskTrackPhi {
       if (mcPartId == -1)
         continue; // no MC particle
       const auto& mcpart = mcparts.iteratorAt(mcPartId);
+      if (isParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon)))
+        hTrackDCA.fillQA<true, true>(part);
       if ((part.partType() == aod::femtouniverseparticle::ParticleType::kPhi) && (mcpart.pdgMCTruth() == 333) && (mcpart.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
         registryMCreco.fill(HIST("MCrecoPhi"), mcpart.pt(), mcpart.eta()); // phi
         registryMCreco.fill(HIST("MCrecoPhiPt"), mcpart.pt());
@@ -772,8 +771,7 @@ struct FemtoUniversePairTaskTrackPhi {
             registryMCreco.fill(HIST("MCrecoPnegPt"), mcpart.pt());
           }
         }
-        if (isParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon)))
-          hTrackDCA.fillQA<true, true>(part);
+
       } // partType kTrack
     }
   }
