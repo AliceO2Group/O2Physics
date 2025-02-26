@@ -495,7 +495,7 @@ struct FlowRunbyRun {
         return;
       }
     }
-    
+
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, runNumber))
       return;
     if (cfgGetInteractionRate) {
