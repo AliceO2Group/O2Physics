@@ -29,11 +29,6 @@ o2physics_add_dpl_workflow(flow-mc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(flow-qa
-                    SOURCES flowQa.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(flow-gfw-task
                     SOURCES flowGfwTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
@@ -71,5 +66,10 @@ o2physics_add_dpl_workflow(flow-sp
 
 o2physics_add_dpl_workflow(resonances-gfw-flow
                     SOURCES resonancesGfwFlow.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flow-efficiency-casc
+                    SOURCES flowEfficiencyCasc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
