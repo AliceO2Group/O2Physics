@@ -327,6 +327,14 @@ struct JetFinderQATask {
     if (doprocessMCCollisionsWeighted) {
       AxisSpec weightAxis = {{VARIABLE_WIDTH, 1e-13, 1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10.0}, "weights"};
       registry.add("h_collision_eventweight_part", "event weight;event weight;entries", {HistType::kTH1F, {weightAxis}});
+      registry.add("h_accepted", "No. of Generated Events;No. of Generated Events;entries", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("h_attempted", "No. of Attempted Events;No. of Attempted Events;entries", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("h_xsecGen", "Cross section in pb; Cross section in pb; entries", {HistType::kTH1F, {{200000, 0., 2e11}}});
+      registry.add("h_xsecErr", "Error associated with the cross section", {HistType::kTH1F, {{200000, 0., 2e11}}});
+      registry.add("h_xsecGenSum", "Summed Cross section per collision in pb; Summed Cross section per collision in pb; entries", {HistType::kTH1F, {{1, 0., 1.}}});
+      registry.add("h_xsecGenSumWeighted", "Summed Cross section per collision in pb with weights; Summed Cross section per collision in pb with weights; entries", {HistType::kTH1F, {{1, 0., 1.}}});
+      registry.add("h_xsecErrSum", "Summed Cross section error per collision in pb; Summed Cross section error per collision in pb; entries", {HistType::kTH1F, {{1, 0., 1.}}});
+      registry.add("h_xsecErrSumWeighted", "Summed Cross section error per collision in pb with weights; Summed Cross section error per collision in pb with weights; entries", {HistType::kTH1F, {{1, 0., 1.}}});
     }
 
     AxisSpec occupancyAxis = {142, -1.5, 14000.5, "occupancy"};
@@ -949,6 +957,14 @@ struct JetFinderQATask {
       return;
     }
     registry.fill(HIST("h_collision_eventweight_part"), collision.weight());
+    registry.fill(HIST("h_accepted"), collision.accepted());
+    registry.fill(HIST("h_attempted"), collision.attempted());
+    registry.fill(HIST("h_xsecGen"), collision.xsectGen());
+    registry.fill(HIST("h_xsecErr"), collision.xsectErr());
+    registry.fill(HIST("h_xsecGenSum"), 0.5, collision.xsectGen());
+    registry.fill(HIST("h_xsecGenSumWeighted"), 0.5, collision.xsectGen() * collision.weight());
+    registry.fill(HIST("h_xsecErrSum"), 0.5, collision.xsectErr());
+    registry.fill(HIST("h_xsecErrSumWeighted"), 0.5, collision.xsectErr() * collision.weight());
   }
   PROCESS_SWITCH(JetFinderQATask, processMCCollisionsWeighted, "collision QA for weighted events", false);
 
