@@ -15,6 +15,11 @@
 /// \author ALICE
 //
 
+#include <vector>
+#include <algorithm>
+#include <map>
+#include <string>
+
 #include <CCDB/BasicCCDBManager.h>
 #include <TH1F.h>
 #include <TFormula.h>
