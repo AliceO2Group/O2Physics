@@ -79,9 +79,9 @@ struct flowEfficiencyCasc {
 
   using myCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels>;
   using myMcCollisions = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
-  using CascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascCoreMCLabels>;
-  using V0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels>;
-  using DaughterTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+  using cascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascCoreMCLabels>;
+  using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels>;
+  using daughterTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
   // Define the output
   HistogramRegistry registry{"registry"};
@@ -105,22 +105,7 @@ struct flowEfficiencyCasc {
     registry.add("h2DRecOmega", "", {HistType::kTH2D, {cfgaxisPtOmega, cfgaxisMultiplicity}});
   }
 
-  bool isStable(int pdg)
-  {
-    if (abs(pdg) == 211)
-      return true;
-    if (abs(pdg) == 321)
-      return true;
-    if (abs(pdg) == 2212)
-      return true;
-    if (abs(pdg) == 11)
-      return true;
-    if (abs(pdg) == 13)
-      return true;
-    return false;
-  }
-
-  void processRec(myCollisions::iterator const& collision, V0MCCandidates const& V0s, CascMCCandidates const& Cascades, DaughterTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  void processRec(myCollisions::iterator const& collision, v0MCCandidates const& V0s, cascMCCandidates const& Cascades, daughterTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
     registry.fill(HIST("eventCounter"), 0.5);
     if (!collision.sel8())
@@ -129,9 +114,9 @@ struct flowEfficiencyCasc {
     for (auto& casc : Cascades) {
       if (!casc.has_cascMCCore())
         continue;
-      auto negdau = casc.negTrackExtra_as<DaughterTracks>();
-      auto posdau = casc.posTrackExtra_as<DaughterTracks>();
-      auto bachelor = casc.bachTrackExtra_as<DaughterTracks>();
+      auto negdau = casc.negTrackExtra_as<daughterTracks>();
+      auto posdau = casc.posTrackExtra_as<daughterTracks>();
+      auto bachelor = casc.bachTrackExtra_as<daughterTracks>();
       // track quality check
       if (bachelor.tpcNClsFound() < cfgtpcclusters)
         continue;
@@ -183,8 +168,8 @@ struct flowEfficiencyCasc {
     for (auto& v0 : V0s) {
       if (!v0.has_v0MCCore())
         continue;
-      auto v0negdau = v0.negTrackExtra_as<DaughterTracks>();
-      auto v0posdau = v0.posTrackExtra_as<DaughterTracks>();
+      auto v0negdau = v0.negTrackExtra_as<daughterTracks>();
+      auto v0posdau = v0.posTrackExtra_as<daughterTracks>();
 
       // track quality check
       if (v0posdau.tpcNClsFound() < cfgtpcclusters)
@@ -238,21 +223,21 @@ struct flowEfficiencyCasc {
       rectracknum = col.multNTracksGlobal();
     }
     for (auto const& cascmc : cascMCs) {
-      if (TMath::Abs(cascmc.pdgCode()) == 3312) {
+      if (std::abs(cascmc.pdgCode()) == 3312) {
         if (std::fabs(cascmc.yMC()) < cfgCasc_rapidity)
           registry.fill(HIST("h2DGenXi"), cascmc.ptMC(), rectracknum);
       }
-      if (TMath::Abs(cascmc.pdgCode()) == 3334) {
+      if (std::abs(cascmc.pdgCode()) == 3334) {
         if (std::fabs(cascmc.yMC()) < cfgCasc_rapidity)
           registry.fill(HIST("h2DGenOmega"), cascmc.ptMC(), rectracknum);
       }
     }
     for (auto const& v0mc : v0MCs) {
-      if (TMath::Abs(v0mc.pdgCode()) == 310) {
+      if (std::abs(v0mc.pdgCode()) == 310) {
         if (std::fabs(v0mc.yMC()) < cfgCasc_rapidity)
           registry.fill(HIST("h2DGenK0s"), v0mc.ptMC(), rectracknum);
       }
-      if (TMath::Abs(v0mc.pdgCode()) == 3122) {
+      if (std::abs(v0mc.pdgCode()) == 3122) {
         if (std::fabs(v0mc.yMC()) < cfgCasc_rapidity)
           registry.fill(HIST("h2DGenLambda"), v0mc.ptMC(), rectracknum);
       }
