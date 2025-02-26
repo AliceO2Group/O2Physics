@@ -233,7 +233,7 @@ struct CentralityTable {
       doprocessRun3.value = false;
     }
 
-    ccdb->setURL(ccdbConfig.ccdburl);
+    ccdb->setURL(ccdbConfig.ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
