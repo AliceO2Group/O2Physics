@@ -83,7 +83,7 @@ struct HfTaskCorrelationHfeHadrons {
 
   PROCESS_SWITCH(HfTaskCorrelationHfeHadrons, process, "Process ", false);
 
-  void processMcGen(aod::HfEHadronMcGenPair const& McGenpairEntries)
+  void processMcGen(aod::HfEHadronMcPair const& McGenpairEntries)
   {
     double deltaPhi = -999;
     double deltaEta = -999;
