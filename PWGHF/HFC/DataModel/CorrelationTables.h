@@ -498,7 +498,7 @@ DECLARE_SOA_COLUMN(PoolBin, poolBin, int);             //! Pool Bin of event def
 DECLARE_SOA_COLUMN(IsNonHfEHCorr, isNonHfEHCorr, int); //! nonHeavy Flavour Electron hadron coorelation
 
 } // namespace hf_correlation_mcgenelectron_hadron
-DECLARE_SOA_TABLE(HfEHadronMcGenPair, "AOD", "HFEHADRONMCGENPAIR", //! Hfe-Hadrons pairs Informations
+DECLARE_SOA_TABLE(HfEHadronMcPair, "AOD", "HFEHADRONMCPAIR", //! Hfe-Hadrons pairs Informations
                   hf_correlation_mcgenelectron_hadron::DeltaPhi,
                   hf_correlation_mcgenelectron_hadron::DeltaEta,
                   hf_correlation_mcgenelectron_hadron::PtElectron,
