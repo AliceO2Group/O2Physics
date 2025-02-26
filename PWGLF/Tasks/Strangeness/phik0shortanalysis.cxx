@@ -146,7 +146,8 @@ struct Phik0shortanalysis {
   Configurable<std::vector<double>> binspTPi{"binspTPi", {0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
 
   // Configurables for delta y selection
-  Configurable<int> nBinsy{"nBinsy", 80, "Number of bins in y and deltay axis"};
+  Configurable<int> nBinsY{"nBinsY", 80, "Number of bins in y axis"};
+  Configurable<int> nBinsDeltaY{"nBinsDeltaY", 24, "Number of bins in deltay axis"};
   Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
   Configurable<float> cfgFCutOnDeltaY{"cfgFCutOnDeltaY", 0.5f, "First upper bound on Deltay selection"};
   Configurable<float> cfgSCutOnDeltaY{"cfgSCutOnDeltaY", 0.1f, "Second upper bound on Deltay selection"};
@@ -225,8 +226,8 @@ struct Phik0shortanalysis {
     AxisSpec massPhiAxis = {200, 0.9f, 1.2f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec sigmassPhiAxis = {nBinsMPhi, lowMPhi, upMPhi, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {100, -15.f, 15.f, "vrtx_{Z} [cm]"};
-    AxisSpec yAxis = {nBinsy, -cfgYAcceptanceSmear, cfgYAcceptanceSmear, "#it{y}"};
-    AxisSpec deltayAxis = {nBinsy, 0.0f, 1.6f, "|#it{#Deltay}|"};
+    AxisSpec yAxis = {nBinsY, -cfgYAcceptanceSmear, cfgYAcceptanceSmear, "#it{y}"};
+    AxisSpec deltayAxis = {nBinsDeltaY, -1.2f, 1.2f, "#Delta#it{y}"};
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
     AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
     AxisSpec binnedpTPhiAxis{(std::vector<double>)binspTPhi, "#it{p}_{T} (GeV/#it{c})"};
