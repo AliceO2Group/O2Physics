@@ -246,7 +246,7 @@ struct HigherMassResonances {
       rKzeroShort.add("hDCAV0Daughters", "DCA between v0 daughters", {HistType::kTH1F, {{60, -3.0f, 3.0f}}});
       rKzeroShort.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.96f, 1.1f}}});
       rKzeroShort.add("hLT", "hLT", {HistType::kTH1F, {{100, 0.0f, 50.0f}}});
-      rKzeroShort.add("angularSeparation", "Angular separation between two K0s", {HistType::kTH1F, {{200, 0.0f, 4.0f}}});
+      rKzeroShort.add("angularSeparation", "Angular distribution between two K0s vs pT", {HistType::kTH1F, {{200, 0.0f, 4.0f}}});
       // rKzeroShort.add("Mass_lambda", "Mass under lambda hypothesis", kTH1F, {glueballMassAxis});
       // rKzeroShort.add("mass_AntiLambda", "Mass under anti-lambda hypothesis", kTH1F, {glueballMassAxis});
       // rKzeroShort.add("mass_Gamma", "Mass under Gamma hypothesis", kTH1F, {glueballMassAxis});
@@ -536,16 +536,13 @@ struct HigherMassResonances {
   template <typename T1, typename T2>
   bool applyAngSep(const T1& candidate1, const T2& candidate2)
   {
-    double p1, p2, px1, px2, py1, py2, pz1, pz2, angle;
-    px1 = candidate1.px();
-    px2 = candidate2.px();
-    py1 = candidate1.py();
-    py2 = candidate2.py();
-    pz1 = candidate1.pz();
-    pz2 = candidate2.pz();
-    p1 = candidate1.p();
-    p2 = candidate2.p();
-    angle = std::acos((px1 * px2 + py1 * py2 + pz1 * pz2) / (p1 * p2));
+    double eta1, eta2, phi1, phi2;
+    eta1 = candidate1.eta();
+    eta2 = candidate2.eta();
+    phi1 = candidate1.phi();
+    phi2 = candidate2.phi();
+
+    double angle = std::sqrt(std::pow(eta1 - eta2, 2) + std::pow(phi1 - phi2, 2));
     rKzeroShort.fill(HIST("angularSeparation"), angle);
     if (config.applyAngSepCut && angle < config.angSepCut) {
       return false;

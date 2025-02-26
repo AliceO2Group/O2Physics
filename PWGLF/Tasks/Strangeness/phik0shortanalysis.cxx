@@ -111,6 +111,7 @@ struct Phik0shortanalysis {
   // Configurables on phi pT bins
   Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi"};
   Configurable<float> minPhiPt{"minPhiPt", 0.4f, "Minimum pT for Phi"};
+  Configurable<float> maxPhiPt{"maxPhiPt", 10.0f, "Maximum pT for Phi"};
 
   // Configurables on phi mass
   Configurable<int> nBinsMPhi{"nBinsMPhi", 13, "N bins in cfgmassPhiaxis"};
@@ -139,7 +140,7 @@ struct Phik0shortanalysis {
   Configurable<float> upMK0S{"upMK0S", 0.52f, "Upper limit on K0Short mass"};
 
   // Configurable on K0S pT bins
-  Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
+  Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
 
   // Configurable on pion pT bins
   Configurable<std::vector<double>> binspTPi{"binspTPi", {0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
@@ -740,16 +741,27 @@ struct Phik0shortanalysis {
   // Get the phi purity choosing the correct purity function according to the multiplicity and pt of the phi
   double getPhiPurity(float multiplicity, const ROOT::Math::PxPyPzMVector& Phi)
   {
-    // Find multiplicity bin using lower_bound
-    auto multIt = std::lower_bound(binsMult->begin(), binsMult->end(), multiplicity);
-    auto multIdx = multIt != binsMult->end() ? std::distance(binsMult->begin(), multIt) - 1 : -1;
+    // Check if multiplicity is out of range
+    if (multiplicity < binsMult->front() || multiplicity >= binsMult->back()) {
+      LOG(info) << "Multiplicity out of range: " << multiplicity;
+      return 0;
+    }
 
-    // Find phi-pT bin using lower_bound
-    auto pTIt = std::lower_bound(binspTPhi->begin(), binspTPhi->end(), Phi.Pt());
-    auto pTIdx = pTIt != binspTPhi->end() ? std::distance(binspTPhi->begin(), pTIt) - 1 : -1;
+    // Find the multiplicity bin using upper_bound which finds the first element strictly greater than 'multiplicity'
+    // Subtract 1 to get the correct bin index
+    auto multIt = std::upper_bound(binsMult->begin(), binsMult->end(), multiplicity);
+    int multIdx = std::distance(binsMult->begin(), multIt) - 1;
 
-    if (multIdx == -1 || pTIdx == -1)
-      LOG(fatal) << "Problem computing phi purity!";
+    // Check if pT is out of range
+    if (Phi.Pt() < binspTPhi->front() || Phi.Pt() >= binspTPhi->back()) {
+      LOG(info) << "pT out of range: " << Phi.Pt();
+      return 0;
+    }
+
+    // Find the pT bin using upper_bound
+    // The logic is the same as for multiplicity
+    auto pTIt = std::upper_bound(binspTPhi->begin(), binspTPhi->end(), Phi.Pt());
+    int pTIdx = std::distance(binspTPhi->begin(), pTIt) - 1;
 
     return phiPurityFunctions[multIdx][pTIdx]->Eval(Phi.M());
   }
@@ -854,6 +866,8 @@ struct Phik0shortanalysis {
     bool isCountedPhi = false;
     bool isFilledhV0 = false;
 
+    double weight{1.0};
+
     // Loop over all positive tracks
     for (const auto& track1 : posThisColl) {
       if (!selectionTrackResonance<false>(track1, true) || !selectionPIDKaonpTdependent(track1))
@@ -875,7 +889,7 @@ struct Phik0shortanalysis {
           continue; // condition to avoid double counting of pair
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-        if (recPhi.Pt() < minPhiPt)
+        if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
           continue;
         if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
           continue;
@@ -885,6 +899,9 @@ struct Phik0shortanalysis {
           dataEventHist.fill(HIST("hMultiplicityPercentWithPhi"), multiplicity);
           isCountedPhi = true;
         }
+
+        if (fillMethodSingleWeight)
+          weight *= (1 - getPhiPurity(multiplicity, recPhi));
 
         dataPhiHist.fill(HIST("h3PhipurInvMass"), multiplicity, recPhi.Pt(), recPhi.M());
 
@@ -962,6 +979,9 @@ struct Phik0shortanalysis {
         }
       }
     }
+
+    weight = 1 - weight;
+    dataEventHist.fill(HIST("hEventSelection"), 5, weight); // at least a Phi in the event
   }
 
   PROCESS_SWITCH(Phik0shortanalysis, processQAPurity, "Process for QA and Phi Purities", true);
@@ -1016,7 +1036,7 @@ struct Phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Pt() < minPhiPt)
+          if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
             continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
@@ -1105,7 +1125,7 @@ struct Phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Pt() < minPhiPt)
+          if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
             continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
@@ -1213,7 +1233,7 @@ struct Phik0shortanalysis {
           continue;
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-        if (recPhi.Pt() < minPhiPt)
+        if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
           continue;
 
         mcPhiHist.fill(HIST("h3PhiRapiditySmearing"), genmultiplicity, recPhi.Rapidity(), mcMotherPhi.y());
@@ -1355,7 +1375,9 @@ struct Phik0shortanalysis {
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance || mcParticle.pt() < minPhiPt)
+          if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
+            continue;
+          if (std::abs(mcParticle.y()) > cfgYAcceptance)
             continue;
 
           if (!isCountedMCPhi.at(0)) {
@@ -1436,7 +1458,9 @@ struct Phik0shortanalysis {
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance || mcParticle.pt() < minPhiPt)
+          if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
+            continue;
+          if (std::abs(mcParticle.y()) > cfgYAcceptance)
             continue;
 
           if (!isCountedMCPhi.at(0)) {
@@ -1467,7 +1491,9 @@ struct Phik0shortanalysis {
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance || mcParticle.pt() < minPhiPt)
+          if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
+            continue;
+          if (std::abs(mcParticle.y()) > cfgYAcceptance)
             continue;
 
           if (!isCountedMCPhi.at(0)) {
@@ -1512,6 +1538,8 @@ struct Phik0shortanalysis {
 
     bool isCountedPhi = false;
 
+    double weight{1.0};
+
     // Loop over all positive tracks
     for (const auto& track1 : posThisColl) {
       if (!selectionTrackResonance<true>(track1, true) || !selectionPIDKaonpTdependent(track1))
@@ -1529,16 +1557,19 @@ struct Phik0shortanalysis {
           continue; // condition to avoid double counting of pair
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-        if (recPhi.Pt() < minPhiPt)
+        if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
           continue;
         if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
           continue;
 
         if (!isCountedPhi) {
-          mcEventHist.fill(HIST("hRecMCEventSelection"), 7); // at least a Phi in the event
+          mcEventHist.fill(HIST("hRecMCEventSelection"), 7); // at least a Phi candidate in the event
           mcEventHist.fill(HIST("hRecMCGenMultiplicityPercentWithPhi"), genmultiplicity);
           isCountedPhi = true;
         }
+
+        if (fillMethodSingleWeight)
+          weight *= (1 - getPhiPurity(genmultiplicity, recPhi));
 
         closureMCPhiHist.fill(HIST("h3MCPhipurInvMass"), genmultiplicity, recPhi.Pt(), recPhi.M());
 
@@ -1620,6 +1651,9 @@ struct Phik0shortanalysis {
         }
       }
     }
+
+    weight = 1 - weight;
+    mcEventHist.fill(HIST("hRecMCEventSelection"), 8, weight); // at least a Phi in the event
   }
 
   PROCESS_SWITCH(Phik0shortanalysis, processRecMCClosurePhiQA, "Process for ReCMCQA and Phi in RecMCClosure", false);
@@ -1709,7 +1743,7 @@ struct Phik0shortanalysis {
           }
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Pt() < minPhiPt)
+          if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
             continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
@@ -1833,7 +1867,7 @@ struct Phik0shortanalysis {
           }
 
           ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-          if (recPhi.Pt() < minPhiPt)
+          if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
             continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
@@ -2053,7 +2087,7 @@ struct Phik0shortanalysis {
           if (!isPosKaon || !isNegKaon)
             continue;
         }
-        if (mcParticle2.pt() < minPhiPt)
+        if (mcParticle2.pt() < minPhiPt || mcParticle2.pt() > maxPhiPt)
           continue;
 
         if (std::abs(mcParticle2.y()) > cfgYAcceptance)
@@ -2138,7 +2172,7 @@ struct Phik0shortanalysis {
           if (!isPosKaon || !isNegKaon)
             continue;
         }
-        if (mcParticle2.pt() < minPhiPt)
+        if (mcParticle2.pt() < minPhiPt || mcParticle2.pt() > maxPhiPt)
           continue;
 
         if (std::abs(mcParticle2.y()) > cfgYAcceptance)
