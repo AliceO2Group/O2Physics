@@ -46,7 +46,7 @@ using BinningTypeMcGen = ColumnBinningPolicy<aod::mccollision::PosZ, o2::aod::mu
 struct HfCorrelatorHfeHadrons {
 
   Produces<aod::HfEHadronPair> entryElectronHadronPair;
-  Produces<aod::HfEHadronMcGenPair> entryElectronHadronPairmcGen;
+  Produces<aod::HfEHadronMcPair> entryElectronHadronPairmcGen;
   // Configurables
   // Event Selection
   Configurable<float> zPvPosMax{"zPvPosMax", 10., "Maximum z of the primary vertex (cm)"};
