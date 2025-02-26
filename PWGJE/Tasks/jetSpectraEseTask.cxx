@@ -123,6 +123,15 @@ struct JetSpectraEseTask {
     float psi3;
   };
 
+  struct EventPlaneFiller {
+    bool psi;
+    bool hist;
+  };
+
+  static constexpr EventPlaneFiller PsiFillerEse = {true, true};
+  static constexpr EventPlaneFiller PsiFillerBkg = {true, false};
+  static constexpr EventPlaneFiller PsiFillerOcc = {false, false};
+
   void init(o2::framework::InitContext&)
   {
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
@@ -267,7 +276,7 @@ struct JetSpectraEseTask {
     registry.fill(HIST("hEventCounter"), counter++);
     registry.fill(HIST("hCentralitySel"), collision.centrality());
 
-    const auto psi{procEP<true>(collision)};
+    const auto psi{procEP<PsiFillerEse>(collision)};
     const auto qPerc{collision.qPERCFT0C()};
     if (qPerc[0] < 0)
       return;
@@ -279,7 +288,7 @@ struct JetSpectraEseTask {
     auto rho = collision.rho();
     std::unique_ptr<TF1> rhoFit{nullptr};
     if (cfgrhoPhi)
-      rhoFit = fitRho(collision, psi, tracks);
+      rhoFit = fitRho<true>(collision, psi, tracks);
 
     registry.fill(HIST("hEventCounter"), counter++);
     registry.fill(HIST("hRho"), rho);
@@ -319,7 +328,7 @@ struct JetSpectraEseTask {
   {
     float count{0.5};
     registry.fill(HIST("hEventCounterOcc"), count++);
-    const auto psi{procEP<false>(collision)};
+    const auto psi{procEP<PsiFillerOcc>(collision)};
     const auto qPerc{collision.qPERCFT0C()};
 
     auto occupancy{collision.trackOccupancyInTimeRange()};
@@ -483,30 +492,33 @@ struct JetSpectraEseTask {
     else
       return true;
   }
-  template <bool Fill, typename EPCol>
+  // template <bool FillAllPsi, bool FillHist, typename EPCol>
+  template <EventPlaneFiller P, typename EPCol>
   EventPlane procEP(EPCol const& vec)
   {
     constexpr std::array<float, 2> AmpCut{1e-8, 0.0};
     auto computeEP = [&AmpCut](std::vector<float> vec, auto det, float n) { return vec[2] > AmpCut[det] ? (1.0 / n) * std::atan2(vec[1], vec[0]) : 999.; };
     std::map<std::string, float> epMap;
     std::map<std::string, float> ep3Map;
-    auto vec1{qVecNoESE<DetID::FT0A, Fill>(vec)};
+    auto vec1{qVecNoESE<DetID::FT0A, P.hist>(vec)};
     epMap["FT0A"] = computeEP(vec1, 0, 2.0);
     ep3Map["FT0A"] = computeEP(vec1, 0, 3.0);
-    if constexpr (Fill) {
+    if constexpr (P.psi) {
       auto vec2{qVecNoESE<DetID::FT0C, false>(vec)};
       epMap["FT0C"] = computeEP(vec2, 0, 2.0);
       ep3Map["FT0C"] = computeEP(vec2, 0, 3.0);
       epMap["FV0A"] = computeEP(qVecNoESE<DetID::FV0A, false>(vec), 0, 2.0);
       epMap["TPCpos"] = computeEP(qVecNoESE<DetID::TPCpos, false>(vec), 1, 2.0);
       epMap["TPCneg"] = computeEP(qVecNoESE<DetID::TPCneg, false>(vec), 1, 2.0);
-      fillEP(/*std::make_index_sequence<5>{},*/ vec, epMap);
+      if constexpr (P.hist)
+        fillEP(/*std::make_index_sequence<5>{},*/ vec, epMap);
       auto cosPsi = [](float psiX, float psiY) { return (static_cast<double>(psiX) == 999. || static_cast<double>(psiY) == 999.) ? 999. : std::cos(2.0 * (psiX - psiY)); };
       std::array<float, 3> epCorrContainer{};
       epCorrContainer[0] = cosPsi(epMap.at(cfgEPRefA), epMap.at(cfgEPRefC));
       epCorrContainer[1] = cosPsi(epMap.at(cfgEPRefA), epMap.at(cfgEPRefB));
       epCorrContainer[2] = cosPsi(epMap.at(cfgEPRefB), epMap.at(cfgEPRefC));
-      fillEPCos(/*std::make_index_sequence<3>{},*/ vec, epCorrContainer);
+      if constexpr (P.hist)
+        fillEPCos(/*std::make_index_sequence<3>{},*/ vec, epCorrContainer);
     }
     EventPlane localPlane;
     localPlane.psi2 = epMap.at(cfgEPRefA);
@@ -596,7 +608,7 @@ struct JetSpectraEseTask {
       return true;
   }
 
-  template <typename C, typename T>
+  template <bool fillHist, typename C, typename T>
   std::unique_ptr<TF1> fitRho(const C& col, const EventPlane& ep, T const& tracks)
   {
     auto hPhiPt = std::unique_ptr<TH1F>(new TH1F("h_ptsum_sumpt_fit", "h_ptsum_sumpt fit use", TMath::CeilNint(std::sqrt(tracks.size())), 0., o2::constants::math::TwoPI));
@@ -604,7 +616,8 @@ struct JetSpectraEseTask {
     for (const auto& track : tracks) {
       if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
         hPhiPt->Fill(track.phi(), track.pt());
-        registry.fill(HIST("hPhiPtsum"), track.phi(), track.pt());
+        if constexpr (fillHist)
+          registry.fill(HIST("hPhiPtsum"), track.phi(), track.pt());
       }
     }
     auto modulationFit = std::unique_ptr<TF1>(new TF1("fit_rholoc", "[0] * (1. + 2. * ([1] * cos(2. * (x - [2])) + [3] * cos(3. * (x - [4]))))", 0, o2::constants::math::TwoPI));
@@ -623,11 +636,13 @@ struct JetSpectraEseTask {
       fitParams[i] = modulationFit->GetParameter(i);
     }
 
-    registry.fill(HIST("hfitPar0"), col.centrality(), fitParams[0]);
-    registry.fill(HIST("hfitPar1"), col.centrality(), fitParams[1]);
-    registry.fill(HIST("hfitPar2"), col.centrality(), fitParams[2]);
-    registry.fill(HIST("hfitPar3"), col.centrality(), fitParams[3]);
-    registry.fill(HIST("hfitPar4"), col.centrality(), fitParams[4]);
+    if constexpr (fillHist) {
+      registry.fill(HIST("hfitPar0"), col.centrality(), fitParams[0]);
+      registry.fill(HIST("hfitPar1"), col.centrality(), fitParams[1]);
+      registry.fill(HIST("hfitPar2"), col.centrality(), fitParams[2]);
+      registry.fill(HIST("hfitPar3"), col.centrality(), fitParams[3]);
+      registry.fill(HIST("hfitPar4"), col.centrality(), fitParams[4]);
+    }
 
     double chi2{0.};
     for (int i{0}; i < hPhiPt->GetXaxis()->GetNbins(); i++) {
@@ -644,8 +659,10 @@ struct JetSpectraEseTask {
 
     auto cDF = 1. - TMath::Gamma(nDF, chi2);
 
-    registry.fill(HIST("hPValueCentCDF"), col.centrality(), cDF);
-    registry.fill(HIST("hCentChi2Ndf"), col.centrality(), chi2 / (static_cast<float>(nDF)));
+    if constexpr (fillHist) {
+      registry.fill(HIST("hPValueCentCDF"), col.centrality(), cDF);
+      registry.fill(HIST("hCentChi2Ndf"), col.centrality(), chi2 / (static_cast<float>(nDF)));
+    }
 
     return modulationFit;
   }
@@ -669,7 +686,7 @@ struct JetSpectraEseTask {
     if (cfgEvSelOccupancy && !isOccupancyWithin(collision))
       return;
 
-    const auto psi{procEP<true>(collision)};
+    const auto psi{procEP<PsiFillerBkg>(collision)};
     auto qPerc{collision.qPERCFT0C()};
     if (qPerc[0] < 0)
       return;
@@ -729,7 +746,7 @@ struct JetSpectraEseTask {
     auto rho = collision.rho();
     std::unique_ptr<TF1> rhoFit{nullptr};
     if (cfgrhoPhi) {
-      rhoFit = fitRho(collision, psi, tracks);
+      rhoFit = fitRho<false>(collision, psi, tracks);
       rho = evalRho(rhoFit.get(), randomConePhi, rho);
     }
     float dPhi{RecoDecay::constrainAngle(randomConePhi - psi.psi2, -o2::constants::math::PI)};
