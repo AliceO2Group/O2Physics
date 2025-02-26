@@ -16,12 +16,12 @@
 ///
 /// \author Giovanni Malfattore <giovanni.malfattore@cern.ch> and Rutuparna Rath <rutuparna.rath@cern.ch>
 ///
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
-
-#include "CCDB/BasicCCDBManager.h"
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
+
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+#include "CCDB/BasicCCDBManager.h"
 #include <string>
 #include <TLorentzVector.h>
 #include <TF1.h>
