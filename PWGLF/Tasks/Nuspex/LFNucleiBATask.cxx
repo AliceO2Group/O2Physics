@@ -381,6 +381,8 @@ struct LFNucleiBATask {
       debugHistos.add<TH1>("debug/tracks/h1Eta", "pseudoRapidity; #eta; counts", HistType::kTH1F, {{200, -1.0, 1.0}});
       debugHistos.add<TH1>("debug/tracks/h1VarPhi", "#phi; #phi; counts", HistType::kTH1F, {{63, 0.0, 6.3}});
       debugHistos.add<TH2>("debug/tracks/h2EtaVsPhi", "#eta vs #phi; #eta; #phi", HistType::kTH2F, {{200, -1.0, 1.0}, {63, 0.0, 6.3}});
+      debugHistos.add<TH2>("debug/tracks/h2PionYvsPt", "#it{y} vs #it{p}_{T} (#pi)", HistType::kTH2F, {{200, -2., 2.}, {ptAxis}});
+
     }
 
     if (enablePtSpectra) {
@@ -2399,7 +2401,7 @@ struct LFNucleiBATask {
       if (std::abs(track.tpcInnerParam()) < kinemOptions.pCut)
         continue;
       // eta cut
-      if (std::abs(track.eta()) < kinemOptions.etaCut)
+      if (std::abs(track.eta()) > kinemOptions.etaCut)
         continue;
 
       // Rapidity cuts
@@ -3678,6 +3680,7 @@ struct LFNucleiBATask {
           debugHistos.fill(HIST("debug/tracks/h1Eta"), track.eta());
           debugHistos.fill(HIST("debug/tracks/h1VarPhi"), track.phi());
           debugHistos.fill(HIST("debug/tracks/h2EtaVsPhi"), track.eta(), track.phi());
+          debugHistos.fill(HIST("debug/tracks/h2PionYvsPt"), track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Pion)), track.pt());
 
           if (track.sign() > 0) {
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsPtPos"), track.tpcInnerParam(), track.tpcNClsCrossedRows());
