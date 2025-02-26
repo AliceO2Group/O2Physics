@@ -76,7 +76,6 @@ struct FemtoUniversePairTaskTrackPhi {
   Configurable<float> ConfCPRInvMassCutMax{"ConfCPRInvMassCutMax", 1.026, "Invariant mass (high) cut for Close Pair Rejection"};
   Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
 
-
   /// Table for both particles
   Configurable<float> ConfPIDProtonNsigmaCombined{"ConfPIDProtonNsigmaCombined", 3.0, "TPC and TOF Proton Sigma (combined) for momentum > 0.5"};
   Configurable<float> ConfPIDProtonNsigmaTPC{"ConfPIDProtonNsigmaTPC", 3.0, "TPC Proton Sigma for momentum < 0.5"};
@@ -89,7 +88,6 @@ struct FemtoUniversePairTaskTrackPhi {
   Configurable<bool> ConfUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
   Configurable<int> ConfBinsPhi{"ConfBinsPhi", 29, "Number of phi bins in deta dphi"};
   Configurable<int> ConfBinsEta{"ConfBinsEta", 29, "Number of eta bins in deta dphi"};
-  
 
   /// Particle 1 --- IDENTIFIED TRACK
   Configurable<int> ConfTrackPDGCode{"ConfTrackPDGCode", 2212, "Particle 2 - PDG code"};
@@ -100,7 +98,6 @@ struct FemtoUniversePairTaskTrackPhi {
   Configurable<float> ConfTrackPtLow{"ConfTrackPtLow", 0.5, "Lower limit of the hadron pT."};
   Configurable<float> ConfTrackPtHigh{"ConfTrackPtHigh", 2.5, "Higher limit of the hadron pT."};
 
-
   /// Partitions for the track (particle 1)
   Partition<FilteredFemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) &&
                                                      (aod::femtouniverseparticle::sign == ConfTrackSign) &&
@@ -110,7 +107,6 @@ struct FemtoUniversePairTaskTrackPhi {
   /// Particle 2 --- PHI MESON
   Configurable<float> ConfPhiPtLow{"ConfPhiPtLow", 0.8, "Lower limit of the Phi pT."};
   Configurable<float> ConfPhiPtHigh{"ConfPhiPtHigh", 4.0, "Higher limit of the Phi pT."};
-
 
   /// Partitions for the Phi meson (particle 2)
   Partition<FilteredFemtoFullParticles> partsPhi = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhi)) &&

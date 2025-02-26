@@ -139,7 +139,6 @@ with (
     ROOT.TFile.Open(res_dest.as_uri()) as res_file,
     ROOT.TFile.Open(eff_dest.as_uri(), "recreate") as eff_file,
 ):
-   
 
     for idx, (mc_reco, mc_truth) in enumerate(zip(args.mc_reco, args.mc_truth)):
         hist_reco = res_file.Get(mc_reco)
