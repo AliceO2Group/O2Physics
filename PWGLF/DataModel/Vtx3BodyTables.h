@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file Vtx3BodyTables.h
+/// \brief Definitions of reduced tables for 3body decayed hypertriton
+/// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
+/// \author Carolina Reetz <c.reetz@cern.ch>
+
 #ifndef PWGLF_DATAMODEL_VTX3BODYTABLES_H_
 #define PWGLF_DATAMODEL_VTX3BODYTABLES_H_
 
@@ -251,6 +256,7 @@ DECLARE_SOA_COLUMN(DCAXYBachelorToPV, dcaxyBachelortoPV, float); //! DCAXY of th
 DECLARE_SOA_COLUMN(DCAProtonToPV, dcaProtontoPV, float);         //! DCA of the proton daughter to pv
 DECLARE_SOA_COLUMN(DCAPionToPV, dcaPiontoPV, float);             //! DCA of the pion daughter to pv
 DECLARE_SOA_COLUMN(DCABachelorToPV, dcaBachelortoPV, float);     //! DCA of the bachelor daughter to pv
+DECLARE_SOA_COLUMN(IsBachPrimary, isbachprimary, bool);          //! flag for bachelor daughter primary
 // for MC
 DECLARE_SOA_COLUMN(GenP, genP, float);                                    // P of the hypertriton
 DECLARE_SOA_COLUMN(GenPt, genPt, float);                                  // pT of the hypertriton
@@ -313,6 +319,7 @@ DECLARE_SOA_TABLE(MCHyp3BodyCands, "AOD", "MCHYP3BODYCANDS",
                   hyp3body::TOFNSigmaBachelor,
                   hyp3body::DCAXYProtonToPV, hyp3body::DCAXYPionToPV, hyp3body::DCAXYBachelorToPV,
                   hyp3body::DCAProtonToPV, hyp3body::DCAPionToPV, hyp3body::DCABachelorToPV,
+                  hyp3body::IsBachPrimary,
                   // MC information
                   hyp3body::GenP,
                   hyp3body::GenPt,
