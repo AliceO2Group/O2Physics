@@ -2156,11 +2156,6 @@ struct LFNucleiBATask {
     tracks.copyIndexBindings(tracksWithITS);
 
     for (auto& track : tracksWithITS) {
-      if (enablePIDplot) {
-        histos.fill(HIST("tracks/h1pT"), track.pt());
-        histos.fill(HIST("tracks/h1p"), track.p());
-      }
-
       if constexpr (!IsFilteredData) {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
@@ -2173,6 +2168,11 @@ struct LFNucleiBATask {
         continue;
       if (track.tpcNClsFound() < cfgCutTPCClusters)
         continue;
+
+      if (enablePIDplot) {
+        histos.fill(HIST("tracks/h1pT"), track.pt());
+        histos.fill(HIST("tracks/h1p"), track.p());
+      }
 
       isTritonTPCpid = std::abs(track.tpcNSigmaTr()) < nsigmaTPCvar.nsigmaTPCTr;
 
@@ -2397,6 +2397,9 @@ struct LFNucleiBATask {
 
       // p cut
       if (std::abs(track.tpcInnerParam()) < kinemOptions.pCut)
+        continue;
+      // eta cut
+      if (std::abs(track.eta()) < kinemOptions.etaCut)
         continue;
 
       // Rapidity cuts
