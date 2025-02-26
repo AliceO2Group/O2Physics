@@ -20,9 +20,9 @@
 #include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include <string>
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
+#include <string>
 #include <TLorentzVector.h>
 #include <TF1.h>
 #include "ReconstructionDataFormats/Track.h"
@@ -304,7 +304,10 @@ struct LFNucleiBATask {
 
     histos.add<TH1>("event/eventSelection", "eventSelection", HistType::kTH1D, {{7, -0.5, 6.5}});
     auto h = histos.get<TH1>(HIST("event/eventSelection"));
-    h->GetXaxis()->SetBinLabel(1, "Total");
+    if (skimmingOptions.applySkimming)
+      h->GetXaxis()->SetBinLabel(1, "Skimmed events");
+    else
+      h->GetXaxis()->SetBinLabel(1, "Total");
     h->GetXaxis()->SetBinLabel(2, "TVX trigger cut");
     h->GetXaxis()->SetBinLabel(3, "TF border cut");
     h->GetXaxis()->SetBinLabel(4, "ITS ROF cut");
@@ -1921,8 +1924,8 @@ struct LFNucleiBATask {
         }
       }
     }
-
-    if (!doprocessMCGen) {
+    // To be optimised
+    if (!doprocessMCGen && !doprocessMCReco && !doprocessMCRecoLfPid && !doprocessMCRecoFiltered && !doprocessMCRecoFilteredLight) {
       LOG(info) << "Histograms of LFNucleiBATask:";
       histos.print();
       return;
@@ -2149,6 +2152,8 @@ struct LFNucleiBATask {
     if (tracksWithITS.size() != tracks.size()) {
       LOG(fatal) << "Problem with track size";
     }
+
+    tracks.copyIndexBindings(tracksWithITS);
 
     for (auto& track : tracksWithITS) {
       if (enablePIDplot) {
