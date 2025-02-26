@@ -97,15 +97,8 @@ struct threebodyKFTask {
 
   // helper function to check if a mother track is a true H3L/Anti-H3L
   template <typename MCTrack3B>
-  int checkH3LTruth(MCTrack3B const& trackPr, MCTrack3B const& trackPi, MCTrack3B const& trackDe, bool& isMuonReco)
+  int checkH3LTruth(MCTrack3B const& mcParticlePr, MCTrack3B const& mcParticlePi, MCTrack3B const& mcParticleDe, bool& isMuonReco)
   {
-    if (!trackPi.has_mcParticle() || !trackPr.has_mcParticle() || !trackDe.has_mcParticle()) {
-      return -1;
-    }
-    auto mcParticlePr = trackPr.template mcParticle_as<aod::McParticles>();
-    auto mcParticlePi = trackPi.template mcParticle_as<aod::McParticles>();
-    auto mcParticleDe = trackDe.template mcParticle_as<aod::McParticles>();
-
     if (abs(mcParticlePr.pdgCode()) != 2212 || abs(mcParticleDe.pdgCode()) != 1000010020) {
       return -1;
     }
@@ -126,17 +119,18 @@ struct threebodyKFTask {
       return -1;
     }
     // check if the pion track is a muon coming from a pi -> mu + vu decay, if yes, take the mother pi
-    if (std::abs(mcParticlePi.pdgCode()) == 13) {
-      for (const auto& motherPi : mcParticlePi.template mothers_as<aod::McParticles>()) {
+    auto mcParticlePiTmp = mcParticlePi;
+    if (std::abs(mcParticlePiTmp.pdgCode()) == 13) {
+      for (const auto& motherPi : mcParticlePiTmp.template mothers_as<aod::McParticles>()) {
         if (std::abs(motherPi.pdgCode()) == 211) {
-          mcParticlePi = motherPi;
+          mcParticlePiTmp = motherPi;
           isMuonReco = true;
           break;
         }
       }
     }
     // now loop over the pion mother
-    for (const auto& motherPi : mcParticlePi.template mothers_as<aod::McParticles>()) {
+    for (const auto& motherPi : mcParticlePiTmp.template mothers_as<aod::McParticles>()) {
       if (motherPi.globalIndex() == prDeMomID) {
         return motherPi.globalIndex();
       }
@@ -215,6 +209,29 @@ struct threebodyKFTask {
         // fill QA histograms for all reco candidates
         fillQAPlots(vtx3bodydata);
 
+        auto track0 = vtx3bodydata.track0_as<MCLabeledTracksIU>();
+        auto track1 = vtx3bodydata.track1_as<MCLabeledTracksIU>();
+        auto track2 = vtx3bodydata.track2_as<MCLabeledTracksIU>();
+
+        if (!track0.has_mcParticle() || !track1.has_mcParticle() || !track2.has_mcParticle()) {
+          continue;
+        }
+
+        auto mcTrack0 = track0.mcParticle_as<aod::McParticles>();
+        auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
+        auto mcTrack2 = track2.mcParticle_as<aod::McParticles>();
+
+        float genPosPt = mcTrack0.pt();
+        float genPosP = mcTrack0.p();
+        int daughter0PDGcode = mcTrack0.pdgCode();
+        float genNegPt = mcTrack1.pt();
+        float genNegP = mcTrack1.p();
+        int daughter1PDGcode = mcTrack1.pdgCode();
+        float genBachPt = mcTrack2.pt();
+        float genBachP = mcTrack2.p();
+        int daughter2PDGcode = mcTrack2.pdgCode();
+        bool isBachPrimary = mcTrack2.isPhysicalPrimary();
+
         double MClifetime = -1.;
         bool isTrueH3L = false;
         bool isTrueAntiH3L = false;
@@ -224,48 +241,22 @@ struct threebodyKFTask {
         float genP = -1.;
         float genPt = -1.;
         std::array<float, 3> genDecVtx{-1.f};
-        int vtx3bodyPDGcode = -1;
-        int daughter0PDGcode = -1;
-        int daughter1PDGcode = -1;
-        int daughter2PDGcode = -1;
-        double MCmassPrPi = -1.;
-        float genPosP = -1.;
-        float genPosPt = -1.;
-        float genNegP = -1.;
-        float genNegPt = -1.;
-        float genBachP = -1.;
-        float genBachPt = -1.;
-
-        auto track0 = vtx3bodydata.track0_as<MCLabeledTracksIU>();
-        auto track1 = vtx3bodydata.track1_as<MCLabeledTracksIU>();
-        auto track2 = vtx3bodydata.track2_as<MCLabeledTracksIU>();
-        auto& trackPr = vtx3bodydata.track2sign() > 0 ? track0 : track1;
-        auto& trackPi = vtx3bodydata.track2sign() > 0 ? track1 : track0;
-        auto& trackDe = track2;
-
         bool isMuonReco = false;
-        int motherID = checkH3LTruth(trackPr, trackPi, trackDe, isMuonReco);
+        auto& mcTrackPr = vtx3bodydata.sign() > 0 ? mcTrack0 : mcTrack1;
+        auto& mcTrackPi = vtx3bodydata.sign() > 0 ? mcTrack1 : mcTrack0;
+        auto& mcTrackDe = mcTrack2;
+        int motherID = checkH3LTruth(mcTrackPr, mcTrackPi, mcTrackDe, isMuonReco);
         if (motherID > 0) {
-          int chargeFactor = vtx3bodydata.track2sign() > 0 ? 1 : -1;
           auto mcTrackHyp = particlesMC.rawIteratorAt(motherID);
-          auto mcTrackPr = trackPr.mcParticle_as<aod::McParticles>();
-          auto mcTrackPi = trackPi.mcParticle_as<aod::McParticles>();
-          auto mcTrackDe = trackDe.mcParticle_as<aod::McParticles>();
-          genPosPt = chargeFactor > 0 ? mcTrackPr.pt() : mcTrackPi.pt();
-          genPosP = chargeFactor > 0 ? mcTrackPr.p() : mcTrackPi.p();
-          genNegPt = chargeFactor < 0 ? mcTrackPr.pt() : mcTrackPi.pt();
-          genNegP = chargeFactor < 0 ? mcTrackPr.p() : mcTrackPi.p();
-          genBachPt = mcTrackDe.pt();
-          genBachP = mcTrackDe.p();
-
           genPhi = mcTrackHyp.phi();
           genEta = mcTrackHyp.eta();
           genPt = mcTrackHyp.pt();
+          int chargeFactor = mcTrackHyp.pdgCode() > 0 ? 1 : -1;
           isTrueH3L = chargeFactor > 0;
           isTrueAntiH3L = chargeFactor < 0;
           MClifetime = RecoDecay::sqrtSumOfSquares(mcTrackPr.vx() - mcTrackHyp.vx(), mcTrackPr.vy() - mcTrackHyp.vy(), mcTrackPr.vz() - mcTrackHyp.vz()) * o2::constants::physics::MassHyperTriton / mcTrackHyp.p();
           double MCMass = RecoDecay::m(array{array{mcTrackPr.px(), mcTrackPr.py(), mcTrackPr.pz()}, array{mcTrackPi.px(), mcTrackPi.py(), mcTrackPi.pz()}, array{mcTrackDe.px(), mcTrackDe.py(), mcTrackDe.pz()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
-          MCmassPrPi = RecoDecay::m(array{array{mcTrackPr.px(), mcTrackPr.py(), mcTrackPr.pz()}, array{mcTrackPi.px(), mcTrackPi.py(), mcTrackPi.pz()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+          float MCmassPrPi = RecoDecay::m(array{array{mcTrackPr.px(), mcTrackPr.py(), mcTrackPr.pz()}, array{mcTrackPi.px(), mcTrackPi.py(), mcTrackPi.pz()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
           registry.fill(HIST("hLabelCounter"), 2.5);
           registry.fill(HIST("hTrueHypertritonMCPt"), mcTrackHyp.pt() * chargeFactor);
           registry.fill(HIST("hTrueHypertritonMCCTau"), MClifetime);
@@ -322,7 +313,7 @@ struct threebodyKFTask {
           genRap,
           genPosP, genPosPt, genNegP, genNegPt, genBachP, genBachPt,
           isTrueH3L, isTrueAntiH3L,
-          vtx3bodyPDGcode, daughter0PDGcode, daughter1PDGcode, daughter2PDGcode,
+          daughter0PDGcode, daughter1PDGcode, daughter2PDGcode, isBachPrimary,
           true,  // is reconstructed
           true); // reco event passed event selection
       } // end vtx3bodydatas loop
@@ -480,7 +471,8 @@ struct threebodyKFTask {
         mcparticle.y(),
         genPPos, genPtPos, genPNeg, genPtNeg, genPBach, genPtBach,
         isTrueGenH3L, isTrueGenAntiH3L,
-        mcparticle.pdgCode(), posDauPdgCode, negDauPdgCode, bachDauPdgCode,
+        posDauPdgCode, negDauPdgCode, bachDauPdgCode,
+        false, // isBachPrimary
         false, // is reconstructed
         survEvSel);
     } // end mcparticles loop
