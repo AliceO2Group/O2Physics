@@ -1226,12 +1226,12 @@ struct UpcJpsiCorr {
     rMC.get<TH1>(HIST("MC/hNumberOfMCCollisions"))->Fill(1.);
     rMC.get<TH1>(HIST("MC/hPosZ"))->Fill(mcCollision.posZ());
 
-    std::array<float, 3> daughPart1Mu;
-    std::array<float, 3> daughPart2Mu;
-    std::array<float, 3> motherPart;
-    float energyMother;
-    float daughPart1pdg;
-    float daughPart2pdg;
+    std::array<float, 3> daughPart1Mu = {-999, -999, -999};
+    std::array<float, 3> daughPart2Mu = {-999, -999, -999};
+    std::array<float, 3> motherPart = {-999, -999, -999};
+    float energyMother = -999;
+    float daughPart1pdg = -999;
+    float daughPart2pdg = -999;
 
     // fill number of particles
     for (auto const& mcParticle : mcParticles) {
