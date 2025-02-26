@@ -14,7 +14,6 @@
 /// \since  Feb/21/2025
 /// \brief  This task is to calculate V0s and cascades local density efficiency
 
-#include <iostream>
 #include <vector>
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -37,7 +36,7 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct flowEfficiencyCasc {
+struct FlowEfficiencyCasc {
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for tracks")
@@ -77,11 +76,11 @@ struct flowEfficiencyCasc {
   ConfigurableAxis cfgaxisPtV0{"cfgaxisPtV0", {VARIABLE_WIDTH, 0, 0.1, 0.5, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9}, "pt (GeV)"};
   ConfigurableAxis cfgaxisMultiplicity{"cfgaxisMultiplicity", {1000, 0, 5000}, "Nch"};
 
-  using myCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels>;
-  using myMcCollisions = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
-  using cascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascCoreMCLabels>;
-  using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels>;
-  using daughterTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+  using MyCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels>;
+  using MyMcCollisions = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
+  using CascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascCoreMCLabels>;
+  using V0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels>;
+  using DaughterTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
   // Define the output
   HistogramRegistry registry{"registry"};
@@ -105,7 +104,7 @@ struct flowEfficiencyCasc {
     registry.add("h2DRecOmega", "", {HistType::kTH2D, {cfgaxisPtOmega, cfgaxisMultiplicity}});
   }
 
-  void processRec(myCollisions::iterator const& collision, v0MCCandidates const& V0s, cascMCCandidates const& Cascades, daughterTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  void processRec(MyCollisions::iterator const& collision, V0MCCandidates const& V0s, CascMCCandidates const& Cascades, DaughterTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
     registry.fill(HIST("eventCounter"), 0.5);
     if (!collision.sel8())
@@ -114,9 +113,9 @@ struct flowEfficiencyCasc {
     for (auto& casc : Cascades) {
       if (!casc.has_cascMCCore())
         continue;
-      auto negdau = casc.negTrackExtra_as<daughterTracks>();
-      auto posdau = casc.posTrackExtra_as<daughterTracks>();
-      auto bachelor = casc.bachTrackExtra_as<daughterTracks>();
+      auto negdau = casc.negTrackExtra_as<DaughterTracks>();
+      auto posdau = casc.posTrackExtra_as<DaughterTracks>();
+      auto bachelor = casc.bachTrackExtra_as<DaughterTracks>();
       // track quality check
       if (bachelor.tpcNClsFound() < cfgtpcclusters)
         continue;
@@ -168,8 +167,8 @@ struct flowEfficiencyCasc {
     for (auto& v0 : V0s) {
       if (!v0.has_v0MCCore())
         continue;
-      auto v0negdau = v0.negTrackExtra_as<daughterTracks>();
-      auto v0posdau = v0.posTrackExtra_as<daughterTracks>();
+      auto v0negdau = v0.negTrackExtra_as<DaughterTracks>();
+      auto v0posdau = v0.posTrackExtra_as<DaughterTracks>();
 
       // track quality check
       if (v0posdau.tpcNClsFound() < cfgtpcclusters)
@@ -213,9 +212,9 @@ struct flowEfficiencyCasc {
       }
     }
   }
-  PROCESS_SWITCH(flowEfficiencyCasc, processRec, "process reconstructed information", true);
+  PROCESS_SWITCH(FlowEfficiencyCasc, processRec, "process reconstructed information", true);
 
-  void processGen(myMcCollisions::iterator const&, soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCollLabels>> const& coll, const soa::SmallGroups<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>& cascMCs, const soa::SmallGroups<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>& v0MCs)
+  void processGen(MyMcCollisions::iterator const&, soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCollLabels>> const& coll, const soa::SmallGroups<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>& cascMCs, const soa::SmallGroups<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>& v0MCs)
   {
     registry.fill(HIST("mcEventCounter"), 0.5);
     int rectracknum = 0;
@@ -243,11 +242,11 @@ struct flowEfficiencyCasc {
       }
     }
   }
-  PROCESS_SWITCH(flowEfficiencyCasc, processGen, "process gen information", true);
+  PROCESS_SWITCH(FlowEfficiencyCasc, processGen, "process gen information", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<flowEfficiencyCasc>(cfgc)};
+    adaptAnalysisTask<FlowEfficiencyCasc>(cfgc)};
 }
