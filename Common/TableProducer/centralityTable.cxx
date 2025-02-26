@@ -406,7 +406,7 @@ struct CentralityTable {
     }
 
     auto scaleMC = [](float x, float pars[6]) {
-      return std::pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
+      return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
     };
 
     if (isTableEnabled[kCentRun2V0Ms]) {
@@ -643,7 +643,7 @@ struct CentralityTable {
       auto populateTable = [&](auto& table, struct CalibrationInfo& estimator, float multiplicity) {
         const bool assignOutOfRange = embedINELgtZEROselection && !collision.isInelGt0();
         auto scaleMC = [](float x, float pars[6]) {
-          return std::pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
+          return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
         };
 
         float percentile = 105.0f;
