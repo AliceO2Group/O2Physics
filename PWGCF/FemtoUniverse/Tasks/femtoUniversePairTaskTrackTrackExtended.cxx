@@ -466,9 +466,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           continue;
         }
 
-        float weight = efficiencyCalculator.getWeight<PartNo::ONE>(p1.pt());
+        float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1.pt());
         if (!confIsSame) {
-          weight *= efficiencyCalculator.getWeight<PartNo::TWO>(p2.pt());
+          weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2.pt());
         }
 
         if (swpart)
@@ -527,9 +527,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           continue;
         }
 
-        float weight = efficiencyCalculator.getWeight<PartNo::ONE>(p1.pt());
+        float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1.pt());
         if (!confIsSame) {
-          weight *= efficiencyCalculator.getWeight<PartNo::TWO>(p2.pt());
+          weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2.pt());
         }
 
         sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
@@ -563,11 +563,15 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     fillCollision(col);
 
     auto groupMCTruth1 = partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    efficiencyCalculator.doMCTruth<PartNo::ONE>(hMCTruth1, groupMCTruth1);
+    for (const auto& particle : groupMCTruth1) {
+      hMCTruth1.fillQA<true, false>(particle);
+    }
 
     if (!confIsSame) {
       auto groupMCTruth2 = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      efficiencyCalculator.doMCTruth<PartNo::TWO>(hMCTruth2, groupMCTruth2);
+      for (const auto& particle : groupMCTruth1) {
+        hMCTruth2.fillQA<true, false>(particle);
+      }
     }
 
     auto groupMCReco1 = partsOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -635,9 +639,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         }
       }
 
-      float weight = efficiencyCalculator.getWeight<PartNo::ONE>(p1.pt());
+      float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1.pt());
       if (!confIsSame) {
-        weight *= efficiencyCalculator.getWeight<PartNo::TWO>(p2.pt());
+        weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2.pt());
       }
 
       if (swpart)

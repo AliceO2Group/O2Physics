@@ -27,13 +27,13 @@
 
 namespace o2::analysis::femto_universe::efficiency
 {
-enum PartNo : size_t {
+enum ParticleNo : size_t {
   ONE = 1,
   TWO
 };
 
 template <size_t T>
-concept isOneOrTwo = T == PartNo::ONE || T == PartNo::TWO;
+concept isOneOrTwo = T == ParticleNo::ONE || T == ParticleNo::TWO;
 
 template <typename T>
 consteval auto getHistDim() -> int
@@ -42,6 +42,8 @@ consteval auto getHistDim() -> int
     return 1;
   else if (std::is_same_v<T, TH2>)
     return 2;
+  else if (std::is_same_v<T, TH3>)
+    return 3;
   else
     return -1;
 }
@@ -81,31 +83,18 @@ class EfficiencyCalculator
 
     if (config->confEfficiencyApplyCorrections) {
       hLoaded = {
-        loadEfficiencyFromCCDB(PartNo::ONE),
-        loadEfficiencyFromCCDB(PartNo::TWO), //
+        loadEfficiencyFromCCDB(ParticleNo::ONE),
+        loadEfficiencyFromCCDB(ParticleNo::TWO), // TODO: do not query for second part if isSame is true
       };
     }
   }
 
-  template <size_t N>
-    requires isOneOrTwo<N>
-  auto doMCTruth(
-    FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, N>& hMCTruth,
-    const auto& particles) const -> void
-  {
-    if (shouldDoTruth) {
-      for (const auto& particle : particles) {
-        hMCTruth.template fillQA<false, false>(particle);
-      }
-    }
-  }
-
-  template <size_t N, typename... BinVars>
-    requires(sizeof...(BinVars) == getHistDim<HistType>()) && isOneOrTwo<N>
-  auto getWeight(const BinVars&... binVars) const -> float
+  template <typename... BinVars>
+    requires(sizeof...(BinVars) == getHistDim<HistType>())
+  auto getWeight(const size_t partNo, const BinVars&... binVars) const -> float
   {
     auto weight = 1.0f;
-    auto hEff = hLoaded[N - 1];
+    auto hEff = hLoaded[partNo - 1];
 
     if (shouldApplyCorrections && hEff) {
       auto bin = hEff->FindBin(binVars...);

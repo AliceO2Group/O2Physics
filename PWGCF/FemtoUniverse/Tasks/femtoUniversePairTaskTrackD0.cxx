@@ -239,7 +239,7 @@ struct FemtoUniversePairTaskTrackD0 {
 
   // Efficiency
   EfficiencyConfigurableGroup effConfGroup;
-  EfficiencyCalculator efficiencyCalculator{&effConfGroup};
+  EfficiencyCalculator<TH1> efficiencyCalculator{&effConfGroup};
   float weight = 1.0;
 
   HistogramRegistry registry{"registry",
@@ -763,7 +763,7 @@ struct FemtoUniversePairTaskTrackD0 {
       // Efficiency
       weight = 1.0f;
       if (ConfEff.doEfficiencyCorr) {
-        weight = efficiencyCalculator.getWeight(ParticleNo::ONE, track) * efficiencyCalculator.getWeight(ParticleNo::TWO, d0candidate);
+        weight = efficiencyCalculator.getWeight(ParticleNo::ONE, track.pt()) * efficiencyCalculator.getWeight(ParticleNo::TWO, d0candidate.pt());
       }
       sameEventAngularCont.setPair<isMC>(track, d0candidate, multCol, ConfBothTracks.confUse3D);
     }
@@ -861,7 +861,7 @@ struct FemtoUniversePairTaskTrackD0 {
       // Efficiency
       weight = 1.0f;
       if (ConfEff.doEfficiencyCorr) {
-        weight = efficiencyCalculator.getWeight(ParticleNo::ONE, track) * efficiencyCalculator.getWeight(ParticleNo::TWO, d0candidate);
+        weight = efficiencyCalculator.getWeight(ParticleNo::ONE, track.pt()) * efficiencyCalculator.getWeight(ParticleNo::TWO, d0candidate.pt());
       }
 
       mixedEventAngularCont.setPair<isMC>(track, d0candidate, multCol, ConfBothTracks.confUse3D);

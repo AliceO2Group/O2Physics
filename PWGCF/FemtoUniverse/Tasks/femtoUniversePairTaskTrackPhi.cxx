@@ -553,7 +553,8 @@ struct FemtoUniversePairTaskTrackPhi {
         continue;
       }
 
-      weight = efficiencyCalculator.getWeight<PartNo::ONE>(phicandidate) * efficiencyCalculator.getWeight<PartNo::TWO>(track);
+      weight = efficiencyCalculator.getWeight(ParticleNo::ONE, phicandidate.pt()) * efficiencyCalculator.getWeight(ParticleNo::TWO, track.pt());
+
       if (swpart)
         sameEventCont.setPair<isMC>(track, phicandidate, multCol, ConfUse3D, weight);
       else
@@ -642,7 +643,7 @@ struct FemtoUniversePairTaskTrackPhi {
         }
       }
 
-      weight = efficiencyCalculator.getWeight<PartNo::ONE>(phicandidate) * efficiencyCalculator.getWeight<PartNo::TWO>(track);
+      weight = efficiencyCalculator.getWeight(ParticleNo::ONE, phicandidate.pt()) * efficiencyCalculator.getWeight(ParticleNo::TWO, track.pt());
 
       if (swpart)
         mixedEventCont.setPair<isMC>(track, phicandidate, multCol, ConfUse3D, weight);
