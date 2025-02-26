@@ -16,13 +16,13 @@
 ///
 /// \author Giovanni Malfattore <giovanni.malfattore@cern.ch> and Rutuparna Rath <rutuparna.rath@cern.ch>
 ///
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include <string>
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
+
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+#include "CCDB/BasicCCDBManager.h"
+#include <string>
 #include <TLorentzVector.h>
 #include <TF1.h>
 #include "ReconstructionDataFormats/Track.h"
@@ -145,8 +145,11 @@ struct LFNucleiBATask {
   ConfigurableAxis avClsBins{"avClsBins", {200, 0, 20}, "Binning in average cluster size"};
 
   // Enable custom cuts/debug functions
-  Configurable<bool> enableFiltering{"enableFiltering", false, "Flag to enable filtering for p,d,t,He only -- disable if launch on skimmed dataset!"};
-  Configurable<bool> enableEvTimeSplitting{"enableEvTimeSplitting", false, "Flag to enable histograms splitting depending on the Event Time used"};
+  struct : ConfigurableGroup {
+    Configurable<bool> enableFiltering{"enableFiltering", false, "Flag to enable filtering for p,d,t,He only -- disable if launch on skimmed dataset!"};
+    Configurable<bool> enableIsGlobalTrack{"enableIsGlobalTrack", true, "Flag to enable IsGlobalTrackWoDCA"};
+    Configurable<bool> enableEvTimeSplitting{"enableEvTimeSplitting", false, "Flag to enable histograms splitting depending on the Event Time used"};
+  } filterOptions;
 
   Configurable<bool> enableDCACustomCut{"enableDCACustomCut", false, "Flag to enable DCA custom cuts - unflag to use standard isGlobalCut DCA cut"};
   struct : ConfigurableGroup {
@@ -304,7 +307,10 @@ struct LFNucleiBATask {
 
     histos.add<TH1>("event/eventSelection", "eventSelection", HistType::kTH1D, {{7, -0.5, 6.5}});
     auto h = histos.get<TH1>(HIST("event/eventSelection"));
-    h->GetXaxis()->SetBinLabel(1, "Total");
+    if (skimmingOptions.applySkimming)
+      h->GetXaxis()->SetBinLabel(1, "Skimmed events");
+    else
+      h->GetXaxis()->SetBinLabel(1, "Total");
     h->GetXaxis()->SetBinLabel(2, "TVX trigger cut");
     h->GetXaxis()->SetBinLabel(3, "TF border cut");
     h->GetXaxis()->SetBinLabel(4, "ITS ROF cut");
@@ -375,9 +381,10 @@ struct LFNucleiBATask {
     if (enableDebug) {
       debugHistos.add<TH1>("debug/event/h1CentV0M", "V0M; Multiplicity; counts", HistType::kTH1F, {{27000, 0, 27000}});
       // trackQA
-      debugHistos.add<TH1>("debug/tracks/h1Eta", "pseudoRapidity; #eta; counts", HistType::kTH1F, {{200, -1.0, 1.0}});
+      debugHistos.add<TH1>("debug/tracks/h1Eta", "pseudoRapidity; #eta; counts", HistType::kTH1F, {{200, -2.0, 2.0}});
       debugHistos.add<TH1>("debug/tracks/h1VarPhi", "#phi; #phi; counts", HistType::kTH1F, {{63, 0.0, 6.3}});
-      debugHistos.add<TH2>("debug/tracks/h2EtaVsPhi", "#eta vs #phi; #eta; #phi", HistType::kTH2F, {{200, -1.0, 1.0}, {63, 0.0, 6.3}});
+      debugHistos.add<TH2>("debug/tracks/h2EtaVsPhi", "#eta vs #phi; #eta; #phi", HistType::kTH2F, {{200, -2.0, 2.0}, {63, 0.0, 6.3}});
+      debugHistos.add<TH2>("debug/tracks/h2PionYvsPt", "#it{y} vs #it{p}_{T} (#pi)", HistType::kTH2F, {{200, -2.0, 2.0}, {ptAxis}});
     }
 
     if (enablePtSpectra) {
@@ -1724,7 +1731,7 @@ struct LFNucleiBATask {
         }
       }
       // TOF EvTime Splitting plots
-      if (enableEvTimeSplitting) {
+      if (filterOptions.enableEvTimeSplitting) {
         //  Bethe-Bloch TPC distribution - TOF EvTime Splitted
         evtimeHistos.add<TH2>("tracks/evtime/fill/h2TPCsignVsTPCmomentum", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{500, -5.f, 5.f}, {dedxAxis}});
         evtimeHistos.add<TH2>("tracks/evtime/tof/h2TPCsignVsTPCmomentum", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{500, -5.f, 5.f}, {dedxAxis}});
@@ -1921,8 +1928,8 @@ struct LFNucleiBATask {
         }
       }
     }
-
-    if (!doprocessMCGen) {
+    // To be optimised
+    if (!doprocessMCGen && !doprocessMCReco && !doprocessMCRecoLfPid && !doprocessMCRecoFiltered && !doprocessMCRecoFilteredLight) {
       LOG(info) << "Histograms of LFNucleiBATask:";
       histos.print();
       return;
@@ -2150,14 +2157,11 @@ struct LFNucleiBATask {
       LOG(fatal) << "Problem with track size";
     }
 
-    for (auto& track : tracksWithITS) {
-      if (enablePIDplot) {
-        histos.fill(HIST("tracks/h1pT"), track.pt());
-        histos.fill(HIST("tracks/h1p"), track.p());
-      }
+    tracks.copyIndexBindings(tracksWithITS);
 
+    for (auto& track : tracksWithITS) {
       if constexpr (!IsFilteredData) {
-        if (!track.isGlobalTrackWoDCA()) {
+        if (!track.isGlobalTrackWoDCA() && filterOptions.enableIsGlobalTrack) {
           continue;
         }
       }
@@ -2168,6 +2172,11 @@ struct LFNucleiBATask {
         continue;
       if (track.tpcNClsFound() < cfgCutTPCClusters)
         continue;
+
+      if (enablePIDplot) {
+        histos.fill(HIST("tracks/h1pT"), track.pt());
+        histos.fill(HIST("tracks/h1p"), track.p());
+      }
 
       isTritonTPCpid = std::abs(track.tpcNSigmaTr()) < nsigmaTPCvar.nsigmaTPCTr;
 
@@ -2392,6 +2401,9 @@ struct LFNucleiBATask {
 
       // p cut
       if (std::abs(track.tpcInnerParam()) < kinemOptions.pCut)
+        continue;
+      // eta cut
+      if (std::abs(track.eta()) > kinemOptions.etaCut)
         continue;
 
       // Rapidity cuts
@@ -3553,12 +3565,14 @@ struct LFNucleiBATask {
 
       // DCA Cut
       if constexpr (!IsFilteredData) {
-        if (!enableDCACustomCut) {
-          if (!track.isGlobalTrack())
-            continue;
-        } else {
-          if (!track.isGlobalTrackWoDCA())
-            continue;
+        if (filterOptions.enableIsGlobalTrack) {
+          if (!enableDCACustomCut) {
+            if (!track.isGlobalTrack())
+              continue;
+          } else {
+            if (!track.isGlobalTrackWoDCA())
+              continue;
+          }
         }
       }
 
@@ -3670,6 +3684,7 @@ struct LFNucleiBATask {
           debugHistos.fill(HIST("debug/tracks/h1Eta"), track.eta());
           debugHistos.fill(HIST("debug/tracks/h1VarPhi"), track.phi());
           debugHistos.fill(HIST("debug/tracks/h2EtaVsPhi"), track.eta(), track.phi());
+          debugHistos.fill(HIST("debug/tracks/h2PionYvsPt"), track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Pion)), track.pt());
 
           if (track.sign() > 0) {
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsPtPos"), track.tpcInnerParam(), track.tpcNClsCrossedRows());
@@ -3706,7 +3721,7 @@ struct LFNucleiBATask {
         if (enablePtSpectra)
           histos.fill(HIST("tracks/eff/h2pVsTPCmomentum"), track.tpcInnerParam(), track.p());
 
-        if (enableFiltering) {
+        if (filterOptions.enableFiltering) {
           if (track.tpcNSigmaKa() < 5)
             continue;
         }
@@ -3804,7 +3819,7 @@ struct LFNucleiBATask {
                 histos.fill(HIST("tracks/proton/h2ProtonTOFExpSignalDiffVsPt"), track.pt(), track.tofExpSignalDiffPr());
             }
 
-            if (enableEvTimeSplitting && track.hasTOF()) {
+            if (filterOptions.enableEvTimeSplitting && track.hasTOF()) {
               if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
                 if (enablePr)
                   evtimeHistos.fill(HIST("tracks/evtime/ft0tof/proton/h2ProtonVspTNSigmaTOF"), track.pt(), track.tofNSigmaPr());
@@ -3958,7 +3973,7 @@ struct LFNucleiBATask {
               if (outFlagOptions.enableExpSignalTOF)
                 histos.fill(HIST("tracks/proton/h2antiProtonTOFExpSignalDiffVsPt"), track.pt(), track.tofExpSignalDiffPr());
             }
-            if (enableEvTimeSplitting && track.hasTOF()) {
+            if (filterOptions.enableEvTimeSplitting && track.hasTOF()) {
               if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
                 if (enablePr)
                   evtimeHistos.fill(HIST("tracks/evtime/ft0tof/proton/h2antiProtonVspTNSigmaTOF"), track.pt(), track.tofNSigmaPr());
@@ -4362,7 +4377,7 @@ struct LFNucleiBATask {
               }
             }
           }
-          if (enableEvTimeSplitting) {
+          if (filterOptions.enableEvTimeSplitting) {
             if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
               evtimeHistos.fill(HIST("tracks/evtime/ft0tof/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
               evtimeHistos.fill(HIST("tracks/evtime/ft0tof/h2TPCsignVsTPCmomentum"), track.tpcInnerParam() / (1.f * track.sign()), track.tpcSignal());
@@ -4490,7 +4505,7 @@ struct LFNucleiBATask {
         if (passDCAxyzCut) {
           if (enablePIDplot)
             histos.fill(HIST("tracks/h2TOFmassVsPt"), massTOF, track.pt());
-          if (enableEvTimeSplitting) {
+          if (filterOptions.enableEvTimeSplitting) {
             if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
               evtimeHistos.fill(HIST("tracks/evtime/ft0tof/h2TOFmassVsPt"), massTOF, track.pt());
             } else if (track.isEvTimeT0AC()) {
@@ -4517,7 +4532,7 @@ struct LFNucleiBATask {
                 }
                 if (outFlagOptions.enableExpSignalTOF)
                   histos.fill(HIST("tracks/proton/h2ProtonTOFExpSignalDiffVsPtCut"), track.pt(), track.tofExpSignalDiffPr());
-                if (enableEvTimeSplitting) {
+                if (filterOptions.enableEvTimeSplitting) {
                   if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
                     evtimeHistos.fill(HIST("tracks/evtime/ft0tof/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - MassProtonVal * MassProtonVal, track.pt());
                   } else if (track.isEvTimeT0AC()) {
@@ -4541,7 +4556,7 @@ struct LFNucleiBATask {
                 }
                 if (outFlagOptions.enableExpSignalTOF)
                   histos.fill(HIST("tracks/proton/h2antiProtonTOFExpSignalDiffVsPtCut"), track.pt(), track.tofExpSignalDiffPr());
-                if (enableEvTimeSplitting) {
+                if (filterOptions.enableEvTimeSplitting) {
                   if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
                     evtimeHistos.fill(HIST("tracks/evtime/ft0tof/proton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - MassProtonVal * MassProtonVal, track.pt());
                   } else if (track.isEvTimeT0AC()) {
@@ -4595,7 +4610,7 @@ struct LFNucleiBATask {
           }
           if (outFlagOptions.enableExpSignalTOF)
             histos.fill(HIST("tracks/deuteron/h2DeuteronTOFExpSignalDiffVsPtCut"), DPt, track.tofExpSignalDiffDe());
-          if (enableEvTimeSplitting) {
+          if (filterOptions.enableEvTimeSplitting) {
             if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
               evtimeHistos.fill(HIST("tracks/evtime/ft0tof/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - MassDeuteronVal * MassDeuteronVal, DPt);
             } else if (track.isEvTimeT0AC()) {
@@ -4621,7 +4636,7 @@ struct LFNucleiBATask {
           }
           if (outFlagOptions.enableExpSignalTOF)
             histos.fill(HIST("tracks/deuteron/h2antiDeuteronTOFExpSignalDiffVsPtCut"), antiDPt, track.tofExpSignalDiffDe());
-          if (enableEvTimeSplitting) {
+          if (filterOptions.enableEvTimeSplitting) {
             if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
               evtimeHistos.fill(HIST("tracks/evtime/ft0tof/deuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - MassDeuteronVal * MassDeuteronVal, antiDPt);
             } else if (track.isEvTimeT0AC()) {
