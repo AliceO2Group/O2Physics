@@ -365,11 +365,11 @@ struct FemtoUniversePairTaskTrackD0 {
 
   void init(InitContext&)
   {
-    if (effConfGroup.confEfficiencyDoMCTruth) {
-      // WORK IN PROGRESS
-      // hMCTruth1.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, ConfTrack.confTrackPDGCode, false);
-      // hMCTruth2.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, 333, false);
-    }
+    // if (effConfGroup.confEfficiencyDoMCTruth) {
+    //   WORK IN PROGRESS
+    //   hMCTruth1.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, ConfTrack.confTrackPDGCode, false);
+    //   hMCTruth2.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, 333, false);
+    // }
     efficiencyCalculator.init();
 
     eventHisto.init(&qaRegistry);

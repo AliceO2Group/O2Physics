@@ -315,7 +315,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
 
   void init(InitContext&)
   {
-    if (effConfGroup.confEfficiencyDoMCTruth) {
+    if (twotracksconfigs.confIsMC) {
       hMCTruth1.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, trackonefilter.confPDGCodePartOne, false);
       if (!confIsSame) {
         hMCTruth2.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, tracktwofilter.confPDGCodePartTwo, false);
@@ -564,13 +564,13 @@ struct FemtoUniversePairTaskTrackTrackExtended {
 
     auto groupMCTruth1 = partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     for (const auto& particle : groupMCTruth1) {
-      hMCTruth1.fillQA<true, false>(particle);
+      hMCTruth1.fillQA<false, false>(particle);
     }
 
     if (!confIsSame) {
       auto groupMCTruth2 = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
       for (const auto& particle : groupMCTruth1) {
-        hMCTruth2.fillQA<true, false>(particle);
+        hMCTruth2.fillQA<false, false>(particle);
       }
     }
 
