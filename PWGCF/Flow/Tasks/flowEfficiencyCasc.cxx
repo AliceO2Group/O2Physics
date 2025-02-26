@@ -80,7 +80,7 @@ struct flowEfficiencyCasc {
   using myCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels>;
   using myMcCollisions = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
   using CascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascCoreMCLabels>;
-  using V0MCCandidates =soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels>;
+  using V0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels>;
   using DaughterTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
   // Define the output
@@ -88,7 +88,8 @@ struct flowEfficiencyCasc {
 
   std::vector<float> cfgNSigma = cfgNSigmatpctof;
 
-  void init(InitContext const&) {
+  void init(InitContext const&)
+  {
     const AxisSpec axisCounter{1, 0, +1, ""};
     // create histograms
     registry.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
@@ -177,7 +178,6 @@ struct flowEfficiencyCasc {
                  (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
         registry.fill(HIST("h2DRecXi"), casc.pt(), rectracknum);
       }
-
     }
 
     for (auto& v0 : V0s) {

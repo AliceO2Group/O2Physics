@@ -677,7 +677,7 @@ struct FlowGFWOmegaXi {
       return;
     if (eventSelected(collision, tracks.size(), cent))
       return;
-    TH1D *hLocalDensity = new TH1D("hphi", "hphi", 400, -constants::math::TwoPI, constants::math::TwoPI);
+    TH1D* hLocalDensity = new TH1D("hphi", "hphi", 400, -constants::math::TwoPI, constants::math::TwoPI);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     loadCorrections(bc.timestamp());
     float vtxz = collision.posZ();
@@ -814,7 +814,7 @@ struct FlowGFWOmegaXi {
           int density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
           setCurrentLocalDensityWeights(wloc, v0, density, 2);
         }
-        
+
         candNum[1] = candNum[1] + 1;
         registry.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta(), cent);
         registry.fill(HIST("hEtaPhiVtxzPOILambda"), v0.phi(), v0.eta(), vtxz, wacc);
@@ -920,7 +920,7 @@ struct FlowGFWOmegaXi {
           phibin = hLocalDensity->FindBin(casc.phi() - constants::math::TwoPI);
         if (phibin > -900) {
           int density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
-          setCurrentLocalDensityWeights(wloc, casc, density, 3);          
+          setCurrentLocalDensityWeights(wloc, casc, density, 3);
         }
 
         candNum[2] = candNum[2] + 1;
@@ -939,7 +939,7 @@ struct FlowGFWOmegaXi {
         registry.fill(HIST("hEventCount"), 3.5, i + 0.5);
       }
     }
-    delete hLocalDensity; 
+    delete hLocalDensity;
     // Filling cumulant with ROOT TProfile and loop for all ptBins
     fillProfile(corrconfigs.at(15), HIST("c22"), cent);
     fillProfile(corrconfigs.at(16), HIST("c24"), cent);
