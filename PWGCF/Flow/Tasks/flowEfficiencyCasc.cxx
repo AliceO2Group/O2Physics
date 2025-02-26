@@ -110,7 +110,7 @@ struct FlowEfficiencyCasc {
     if (!collision.sel8())
       return;
     int rectracknum = collision.multNTracksGlobal();
-    for (auto& casc : Cascades) {
+    for (const auto& casc : Cascades) {
       if (!casc.has_cascMCCore())
         continue;
       auto negdau = casc.negTrackExtra_as<DaughterTracks>();
@@ -164,7 +164,7 @@ struct FlowEfficiencyCasc {
       }
     }
 
-    for (auto& v0 : V0s) {
+    for (const auto& v0 : V0s) {
       if (!v0.has_v0MCCore())
         continue;
       auto v0negdau = v0.negTrackExtra_as<DaughterTracks>();
