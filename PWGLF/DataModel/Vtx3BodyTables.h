@@ -424,10 +424,10 @@ DECLARE_SOA_COLUMN(GenBachP, genbachp, float);          //! generated momentum b
 DECLARE_SOA_COLUMN(GenBachPt, genbachpt, float);        //! generated transverse momentum bachelor daughter particle
 DECLARE_SOA_COLUMN(IsTrueH3L, istrueh3l, bool);         //! flag for true hypertriton candidate
 DECLARE_SOA_COLUMN(IsTrueAntiH3L, istrueantih3l, bool); //! flag for true anti-hypertriton candidate
-DECLARE_SOA_COLUMN(PdgCode, pdgcode, int);              //! MC particle mother PDG code
 DECLARE_SOA_COLUMN(PdgCodeDau0, pdgcodedau0, int);      //! MC particle daughter 0 PDG code
 DECLARE_SOA_COLUMN(PdgCodeDau1, pdgcodedau1, int);      //! MC particle daughter 1 PDG code
 DECLARE_SOA_COLUMN(PdgCodeDau2, pdgcodedau2, int);      //! MC particle daughter 2 PDG code
+DECLARE_SOA_COLUMN(IsBachPrimary, isbachprimary, bool); //! flag for bachelor daughter primary
 DECLARE_SOA_COLUMN(SurvEvSel, survevsel, int);          //! flag if reco collision survived event selection
 DECLARE_SOA_COLUMN(IsReco, isreco, int);                //! flag if candidate was reconstructed
 
@@ -584,7 +584,8 @@ DECLARE_SOA_TABLE(McKFVtx3BodyDatas, "AOD", "MCKF3BODYDATAS",
                   kfvtx3body::GenNegP, kfvtx3body::GenNegPt,
                   kfvtx3body::GenBachP, kfvtx3body::GenBachPt,
                   kfvtx3body::IsTrueH3L, kfvtx3body::IsTrueAntiH3L,
-                  kfvtx3body::PdgCode, kfvtx3body::PdgCodeDau0, kfvtx3body::PdgCodeDau1, kfvtx3body::PdgCodeDau2,
+                  kfvtx3body::PdgCodeDau0, kfvtx3body::PdgCodeDau1, kfvtx3body::PdgCodeDau2,
+                  kfvtx3body::IsBachPrimary,
                   kfvtx3body::IsReco,
                   kfvtx3body::SurvEvSel);
 
