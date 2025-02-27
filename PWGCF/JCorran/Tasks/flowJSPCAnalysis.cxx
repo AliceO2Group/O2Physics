@@ -111,7 +111,7 @@ struct flowJSPCAnalysis {
       return;
 
     float cent = collision.multiplicity();
-    if (cent < 0. || cent > 70.) {
+    if (cent < 0. || cent > 100.) {
       return;
     }
     int cBin = histManager.getCentBin(cent);

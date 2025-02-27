@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HfMlResponsB0ToDPi.h
+/// \file HfMlResponseB0ToDPi.h
 /// \brief Class to compute the ML response for B0 → D∓ π± analysis selections
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
@@ -26,9 +26,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_B0(FEATURE)                                        \
-  {                                                                 \
-#FEATURE, static_cast < uint8_t>(InputFeaturesB0ToDPi::FEATURE) \
+#define FILL_MAP_B0(FEATURE)                                      \
+  {                                                               \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesB0ToDPi::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
