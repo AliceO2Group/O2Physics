@@ -244,7 +244,7 @@ struct Pi0EtaToGammaGammaMC {
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       mRunNumber = collision.runNumber();
@@ -434,7 +434,7 @@ struct Pi0EtaToGammaGammaMC {
         continue;
       }
 
-      if (eventcuts.onlyKeepWeightedEvents && fabs(collision.weight() - 1.) < 1E-10) {
+      if (eventcuts.onlyKeepWeightedEvents && std::fabs(collision.weight() - 1.) < 1E-10) {
         continue;
       }
 
@@ -507,7 +507,7 @@ struct Pi0EtaToGammaGammaMC {
           ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          if (std::abs(v12.Rapidity()) > maxY_rec) {
+          if (std::fabs(v12.Rapidity()) > maxY_rec) {
             continue;
           }
 
@@ -583,7 +583,7 @@ struct Pi0EtaToGammaGammaMC {
             ROOT::Math::PtEtaPhiMVector v_pos(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ele(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector veeg = v_gamma + v_pos + v_ele;
-            if (std::abs(veeg.Rapidity()) > maxY_rec) {
+            if (std::fabs(veeg.Rapidity()) > maxY_rec) {
               continue;
             }
             if (pi0id > 0) {
@@ -606,7 +606,7 @@ struct Pi0EtaToGammaGammaMC {
           ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          if (std::abs(v12.Rapidity()) > maxY_rec) {
+          if (std::fabs(v12.Rapidity()) > maxY_rec) {
             continue;
           }
           // if (pi0id > 0) {
@@ -664,7 +664,7 @@ struct Pi0EtaToGammaGammaMC {
         continue; // I don't know why this is necessary in simulation.
       }
 
-      if (eventcuts.onlyKeepWeightedEvents && fabs(collision.weight() - 1.) < 1E-10) {
+      if (eventcuts.onlyKeepWeightedEvents && std::fabs(collision.weight() - 1.) < 1E-10) {
         continue;
       }
 

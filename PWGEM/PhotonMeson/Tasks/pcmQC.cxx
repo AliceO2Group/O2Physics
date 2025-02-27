@@ -277,7 +277,7 @@ struct PCMQC {
     if (collision.sel8()) {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 8.0);
     }
-    if (abs(collision.posZ()) < 10.0) {
+    if (std::fabs(collision.posZ()) < 10.0) {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 9.0);
     }
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
