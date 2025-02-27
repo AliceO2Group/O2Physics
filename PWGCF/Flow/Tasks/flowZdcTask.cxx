@@ -83,6 +83,7 @@ struct FlowZdcTask {
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
   Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
   Configurable<float> npvTracksCut{"npvTracksCut", 1.0f, "Apply extra NPVtracks cut"};
+  // event selection
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
   Configurable<bool> isApplyVertexITSTPC{"isApplyVertexITSTPC", false, "Enable VertexITSTPC cut"};
@@ -100,7 +101,11 @@ struct FlowZdcTask {
   Configurable<bool> isApplyCentNGlobal{"isApplyCentNGlobal", false, "Centrality based on global tracks"};
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
   Configurable<bool> isGoodITSLayersAll{"isGoodITSLayersAll", false, "Centrality based on no other collisions in this Readout Frame with per-collision multiplicity above threshold tracks"};
+  Configurable<bool> isOccupancyCut{"isOccupancyCut", true, "Occupancy cut?"};
   Configurable<float> ft0cCut{"ft0cCut", 1.0f, "Apply extra FT0C cut"};
+  Configurable<float> minOccCut{"minOccCut", 0, "min Occu cut"};
+  Configurable<float> maxOccCut{"maxOccCut", 500, "max Occu cut"};
+  Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -108,7 +113,7 @@ struct FlowZdcTask {
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {3500, 0, 3500}, "centrality axis for histograms"};
   ConfigurableAxis axisEnergy{"axisEnergy", {100, 0, 700}, "energy axis for zdc histos"};
-  ConfigurableAxis axisMultTpc{"axisMultTpc", {1000, -0.5f, 1999.5f}, "TPCmultiplicity"};
+  ConfigurableAxis axisMultTpc{"axisMultTpc", {2000, -0.5f, 2999.5f}, "TPCmultiplicity"};
   ConfigurableAxis axisZN{"axisZN", {5000, 0, 500}, "axisZN"};
   ConfigurableAxis axisZP{"axisZP", {5000, 0, 500}, "axisZP"};
   ConfigurableAxis axisFT0CAmp{"axisFT0CAmp", {5000, 0, 5000}, "axisFT0CAmp"};
@@ -224,11 +229,7 @@ struct FlowZdcTask {
     xAxis->SetBinLabel(3, "kNoSameBunchPileup");  // reject collisions in case of pileup with another collision in the same foundBC
     xAxis->SetBinLabel(4, "kIsGoodZvtxFT0vsPV");  // small difference between z-vertex from PV and from FT0
     xAxis->SetBinLabel(5, "kIsVertexITSTPC");     // at least one ITS-TPC track (reject vertices built from ITS-only tracks)
-    xAxis->SetBinLabel(6, "kIsGoodITSLayersAll"); //"Centrality based on no other collisions in this Readout Frame with per-collision multiplicity above threshold tracks"
-    xAxis->SetBinLabel(7, "kIsApplyVertexTOFmatched");
-    xAxis->SetBinLabel(8, "kIsVertexTRDmatched");
-    xAxis->SetBinLabel(9, "centrality selection");
-    xAxis->SetBinLabel(10, "isApplyExtraCorrCut");
+    xAxis->SetBinLabel(6, "kIsApplyVertexTOFmatched"); //"Centrality based on no other collisions in this Readout Frame with per-collision multiplicity above threshold tracks"
     histos.add("GlobalMult_vs_FT0C", "GlobalMult_vs_FT0C", kTH2F, {axisMult, axisFT0CMult});
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ});
 
@@ -299,29 +300,35 @@ struct FlowZdcTask {
     }
     histos.fill(HIST("eventSelectionSteps"), 5);
 
-    if (isGoodITSLayersAll && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
-      return false;
-    }
-    histos.fill(HIST("eventSelectionSteps"), 6);
     if (isApplyVertexTOFmatched && !col.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
       return false;
     }
-    histos.fill(HIST("eventSelectionSteps"), 7);
+    histos.fill(HIST("eventSelectionSteps"), 6);
 
+    if (isOccupancyCut) {
+      auto occuValue{isApplyFT0CbasedOccupancy
+                       ? col.ft0cOccupancyInTimeRange()
+                       : col.trackOccupancyInTimeRange()};
+
+      if (occuValue < minOccCut || occuValue > maxOccCut)
+        return false;
+    }
+    if (isGoodITSLayersAll && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return false;
+    }
     if (isApplyVertexTRDmatched && !col.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
       return false;
     }
-    histos.fill(HIST("eventSelectionSteps"), 8);
     if (col.centFT0C() < 0. || col.centFT0C() > 100.) {
       return false;
     }
-    histos.fill(HIST("eventSelectionSteps"), 9);
 
+    if (std::fabs(col.posZ()) > posZcut) {
+      return false;
+    }
     if (isApplyExtraCorrCut && col.multNTracksPV() > npvTracksCut && col.multFT0C() < (10 * col.multNTracksPV() - ft0cCut)) {
       return false;
     }
-    histos.fill(HIST("eventSelectionSteps"), 10);
-    histos.fill(HIST("eventSelectionSteps"), 11);
     return true;
   }
 
