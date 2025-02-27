@@ -2274,7 +2274,7 @@ struct UpcTauRl {
       return;
 
     if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
-        return;
+      return;
 
     if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
       return;
