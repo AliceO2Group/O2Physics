@@ -591,8 +591,8 @@ void HFInvMassFitter::calculateSignificance(Double_t& significance, Double_t& er
   Double_t sgnErrSquare = errSignal * errSignal;
   Double_t bkgErrSquare = errBkg * errBkg;
   Double_t totalSgnBkg = signal + bkg;
-  significance = signal / sqrt(signal + bkg);
-  errSignificance = significance * sqrt((sgnErrSquare + bkgErrSquare) / (mNSigmaForSidebands * totalSgnBkg * totalSgnBkg) + (bkg / totalSgnBkg) * (sgnErrSquare / signal / signal));
+  significance = signal / std::sqrt(signal + bkg);
+  errSignificance = significance * std::sqrt((sgnErrSquare + bkgErrSquare) / (mNSigmaForSidebands * totalSgnBkg * totalSgnBkg) + (bkg / totalSgnBkg) * (sgnErrSquare / signal / signal));
 }
 
 // estimate Signnal
