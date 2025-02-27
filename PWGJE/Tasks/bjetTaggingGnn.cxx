@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file   bjetTaggingGNN.cxx
+/// \file   bjetTaggingGnn.cxx
 /// \brief  b-jet tagging using GNN
 ///
 /// \author Changhwan Choi <changhwan.choi@cern.ch>, Pusan National University
@@ -43,7 +43,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct BjetTaggingGNN {
+struct BjetTaggingGnn {
 
   HistogramRegistry registry;
 
@@ -228,7 +228,7 @@ struct BjetTaggingGNN {
   void processDummy(FilteredCollision::iterator const& /*collision*/)
   {
   }
-  PROCESS_SWITCH(BjetTaggingGNN, processDummy, "Dummy process function turned on by default", true);
+  PROCESS_SWITCH(BjetTaggingGnn, processDummy, "Dummy process function turned on by default", true);
 
   void processDataJets(FilteredCollision::iterator const& collision, DataJets const& alljets, JetTrackswID const& allTracks, SVTable const& allSVs)
   {
@@ -255,8 +255,8 @@ struct BjetTaggingGNN {
       int nTracks = analyzeJetTrackInfo(collision, analysisJet, allTracks);
 
       float mSV = -1.f;
-      float eSV = -1.f;
-      float slXY = -1.f;
+      // float eSV = -1.f;
+      // float slXY = -1.f;
 
       bool checkSV;
       // auto sv = jettaggingutilities::jetFromProngMaxDecayLength<MCDSVTable>(analysisJet, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, false, &checkSV);
@@ -264,8 +264,8 @@ struct BjetTaggingGNN {
 
       if (checkSV) {
         mSV = sv.m();
-        eSV = sv.e();
-        slXY = sv.decayLengthXY() / sv.errorDecayLengthXY();
+        // eSV = sv.e();
+        // slXY = sv.decayLengthXY() / sv.errorDecayLengthXY();
       }
 
       registry.fill(HIST("h_jetpT"), analysisJet.pt());
@@ -281,13 +281,13 @@ struct BjetTaggingGNN {
       }
     }
   }
-  PROCESS_SWITCH(BjetTaggingGNN, processDataJets, "jet information in Data", false);
+  PROCESS_SWITCH(BjetTaggingGnn, processDataJets, "jet information in Data", false);
 
   using MCDJetTable = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetFlavourDef, aod::ChargedMCDetectorLevelJetTags, aod::ChargedMCDetectorLevelJetEventWeights, aod::MCDSecondaryVertex3ProngIndices>>;
   using MCPJetTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets, aod::ChargedMCParticleLevelJetFlavourDef, aod::ChargedMCParticleLevelJetEventWeights>>;
   using FilteredCollisionMCD = soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>;
 
-  void processMCJets(FilteredCollisionMCD::iterator const& collision, MCDJetTable const& MCDjets, MCPJetTable const& /*MCPjets*/, JetTracksMCDwID const& allTracks, MCDSVTable const& allSVs, aod::JetParticles const& /*MCParticles*/)
+  void processMCJets(FilteredCollisionMCD::iterator const& collision, MCDJetTable const& MCDjets, MCPJetTable const& /*MCPjets*/, JetTracksMCDwID const& /*allTracks*/, MCDSVTable const& allSVs, aod::JetParticles const& /*MCParticles*/)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
@@ -337,16 +337,16 @@ struct BjetTaggingGNN {
       }
 
       float mSV = -1.f;
-      float eSV = -1.f;
-      float slXY = -1.f;
+      // float eSV = -1.f;
+      // float slXY = -1.f;
 
       bool checkSV;
       auto sv = analyzeJetSVInfo(analysisJet, allSVs, checkSV /*, jetFlavor, weight*/);
 
       if (checkSV) {
         mSV = sv.m();
-        eSV = sv.e();
-        slXY = sv.decayLengthXY() / sv.errorDecayLengthXY();
+        // eSV = sv.e();
+        // slXY = sv.decayLengthXY() / sv.errorDecayLengthXY();
       }
 
       registry.fill(HIST("h_jetpT"), analysisJet.pt(), weight);
@@ -435,7 +435,7 @@ struct BjetTaggingGNN {
       }
     }
   }
-  PROCESS_SWITCH(BjetTaggingGNN, processMCJets, "jet information in MC", false);
+  PROCESS_SWITCH(BjetTaggingGnn, processMCJets, "jet information in MC", false);
 
   Filter mccollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
   using FilteredCollisionMCP = soa::Filtered<aod::JMcCollisions>;
@@ -476,11 +476,11 @@ struct BjetTaggingGNN {
       }
     }
   }
-  PROCESS_SWITCH(BjetTaggingGNN, processMCTruthJets, "truth jet information", false);
+  PROCESS_SWITCH(BjetTaggingGnn, processMCTruthJets, "truth jet information", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<BjetTaggingGNN>(cfgc, TaskName{"bjet-tagging-gnn"})}; // o2-linter: disable=name/o2-task
+    adaptAnalysisTask<BjetTaggingGnn>(cfgc)};
 }
