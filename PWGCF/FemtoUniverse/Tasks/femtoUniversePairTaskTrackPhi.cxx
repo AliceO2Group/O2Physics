@@ -168,7 +168,7 @@ struct FemtoUniversePairTaskTrackPhi {
   HistogramRegistry registryDCA{"registryDCA", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   EfficiencyConfigurableGroup effConfGroup;
-  EfficiencyCalculator efficiencyCalculator{&effConfGroup};
+  EfficiencyCalculator<TH1> efficiencyCalculator{&effConfGroup};
 
   /// @brief Counter for particle swapping
   int fNeventsProcessed = 0;
@@ -357,11 +357,9 @@ struct FemtoUniversePairTaskTrackPhi {
 
   void init(InitContext&)
   {
-    if (effConfGroup.confEfficiencyDoMCTruth) {
+    if (ConfIsMC) {
       hMCTruth1.init(&qaRegistry, ConfBinsTempFitVarpT, ConfBinsTempFitVarPDG, false, ConfTrackPDGCode, false);
       hMCTruth2.init(&qaRegistry, ConfBinsTempFitVarpT, ConfBinsTempFitVarPDG, false, 333, false);
-    }
-    if (ConfIsMC) {
       hTrackDCA.init(&registryDCA, ConfBinsTempFitVarpT, ConfBinsTempFitVarDCA, true, ConfTrackPDGCode, true);
     }
     efficiencyCalculator.init();
@@ -553,7 +551,7 @@ struct FemtoUniversePairTaskTrackPhi {
         continue;
       }
 
-      weight = efficiencyCalculator.getWeight(ParticleNo::ONE, phicandidate) * efficiencyCalculator.getWeight(ParticleNo::TWO, track);
+      weight = efficiencyCalculator.getWeight(ParticleNo::ONE, phicandidate.pt()) * efficiencyCalculator.getWeight(ParticleNo::TWO, track.pt());
 
       if (swpart)
         sameEventCont.setPair<isMC>(track, phicandidate, multCol, ConfUse3D, weight);
@@ -643,7 +641,7 @@ struct FemtoUniversePairTaskTrackPhi {
         }
       }
 
-      weight = efficiencyCalculator.getWeight(ParticleNo::ONE, phicandidate) * efficiencyCalculator.getWeight(ParticleNo::TWO, track);
+      weight = efficiencyCalculator.getWeight(ParticleNo::ONE, phicandidate.pt()) * efficiencyCalculator.getWeight(ParticleNo::TWO, track.pt());
 
       if (swpart)
         mixedEventCont.setPair<isMC>(track, phicandidate, multCol, ConfUse3D, weight);
@@ -754,9 +752,7 @@ struct FemtoUniversePairTaskTrackPhi {
             registryMCreco.fill(HIST("MCrecoPpos"), mcpart.pt(), mcpart.eta());
             registryMCreco.fill(HIST("MCrecoPposPt"), mcpart.pt());
           }
-        }
-
-        else if (part.sign() < 0) {
+        } else if (part.sign() < 0) {
           registryMCreco.fill(HIST("MCrecoAllNegativePt"), mcpart.pt());
           if (mcpart.pdgMCTruth() == -2212 && isParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
             registryMCreco.fill(HIST("MCrecoPneg"), mcpart.pt(), mcpart.eta());
