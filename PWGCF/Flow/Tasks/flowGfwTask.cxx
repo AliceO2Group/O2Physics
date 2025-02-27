@@ -259,11 +259,11 @@ struct FlowGfwTask {
     registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0M + 1, "FT0M");
     registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFV0A + 1, "FV0A");
     registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0CVariant1 + 1, "FT0CVar1");
-    registry.add("hCentFT0C", "FT0C Unfiltered;Centrality FT0C ;Events", kTH1F, {axisCentrality});
-    registry.add("hCentFT0A", "FT0A Unfiltered;Centrality FT0A ;Events", kTH1F, {axisCentrality});
-    registry.add("hCentFT0M", "FT0M Unfiltered;Centrality FT0M ;Events", kTH1F, {axisCentrality});
-    registry.add("hCentFV0A", "FV0A Unfiltered;Centrality FV0A ;Events", kTH1F, {axisCentrality});
-    registry.add("hCentFT0CVariant1", "FT0CVariant1 Unfiltered;Centrality FT0CVariant1 ;Events", kTH1F, {axisCentrality});
+    registry.add("hCentFT0C", "Uncorrected FT0C;Centrality FT0C ;Events", kTH1F, {axisCentrality});
+    registry.add("hCentFT0A", "Uncorrected FT0A;Centrality FT0A ;Events", kTH1F, {axisCentrality});
+    registry.add("hCentFT0M", "Uncorrected FT0M;Centrality FT0M ;Events", kTH1F, {axisCentrality});
+    registry.add("hCentFV0A", "Uncorrected FV0A;Centrality FV0A ;Events", kTH1F, {axisCentrality});
+    registry.add("hCentFT0CVariant1", "Uncorrected FT0CVariant1;Centrality FT0CVariant1 ;Events", kTH1F, {axisCentrality});
 
     // Before cuts
     registry.add("BeforeCut_globalTracks_centT0C", "before cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
@@ -313,15 +313,16 @@ struct FlowGfwTask {
     // Track plots
     registry.add("Nch", "N_{ch 0-5%} vs #Events;N_{ch 0-5%};No. of Events", {HistType::kTH1D, {axisNch}});
     registry.add("Events_per_Centrality_Bin", "Events_per_Centrality_Bin;Centrality FT0C;No. of Events", kTH1F, {axisCentrality});
+    registry.add("Tracks_per_Centrality_Bin", "Tracks_per_Centrality_Bin;Centrality FT0C;No. of Tracks", kTH1F, {axisCentrality});
     registry.add("pt_Cen_GlobalOnly", "pt_Cen_Global;Centrality (%); p_{T} (GeV/c);", {HistType::kTH2D, {axisCentrality, axisPt}});
     registry.add("phi_Cen_GlobalOnly", "phi_Cen_Global;Centrality (%); #phi;", {HistType::kTH2D, {axisCentrality, axisPhi}});
     registry.add("pt_Cen_ITSOnly", "pt_Cen_ITS;Centrality (%); p_{T} (GeV/c);", {HistType::kTH2D, {axisCentrality, axisPt}});
     registry.add("phi_Cen_ITSOnly", "phi_Cen_ITS;Centrality (%); #phi;", {HistType::kTH2D, {axisCentrality, axisPhi}});
 
     // Track types
-    registry.add("GlobalplusITS", "Global plus ITS;Centrality FT0C;Nch", kTH1F, {axisCentrality});
-    registry.add("Globalonly", "Global only;Centrality FT0C;Nch", kTH1F, {axisCentrality});
-    registry.add("ITSonly", "ITS only;Centrality FT0C;Nch", kTH1F, {axisCentrality});
+    registry.add("GlobalplusITS", "Global plus ITS;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
+    registry.add("Globalonly", "Global only;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
+    registry.add("ITSonly", "ITS only;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
 
     // Track QA
     registry.add("hPt", "p_{T} distribution before cut", {HistType::kTH1D, {axisPtHist}});
@@ -721,29 +722,31 @@ struct FlowGfwTask {
       return;
 
     // Choose centrality estimator -- Only one can be true
-    float centrality = 0;
+    auto centrality = -1;
     if (cfgcentEstFt0c) {
-      const auto centrality = collision.centFT0C();
+      centrality = collision.centFT0C();
       registry.fill(HIST("hCentEstimators"), kCentFT0C);
       registry.fill(HIST("hCentFT0C"), centrality);
-    } else if (cfgcentEstFt0a) {
-      const auto centrality = collision.centFT0A();
+    }
+    if (cfgcentEstFt0a) {
+      centrality = collision.centFT0A();
       registry.fill(HIST("hCentEstimators"), kCentFT0A);
       registry.fill(HIST("hCentFT0A"), centrality);
-    } else if (cfgcentEstFt0m) {
-      const auto centrality = collision.centFT0M();
+    }
+    if (cfgcentEstFt0m) {
+      centrality = collision.centFT0M();
       registry.fill(HIST("hCentEstimators"), kCentFT0M);
       registry.fill(HIST("hCentFT0M"), centrality);
-    } else if (cfgcentEstFv0a) {
-      const auto centrality = collision.centFV0A();
+    }
+    if (cfgcentEstFv0a) {
+      centrality = collision.centFV0A();
       registry.fill(HIST("hCentEstimators"), kCentFV0A);
       registry.fill(HIST("hCentFV0A"), centrality);
-    } else if (cfgcentEstFt0cVariant1) {
-      const auto centrality = collision.centFT0CVariant1();
+    }
+    if (cfgcentEstFt0cVariant1) {
+      centrality = collision.centFT0CVariant1();
       registry.fill(HIST("hCentEstimators"), kCentFT0CVariant1);
       registry.fill(HIST("hCentFT0CVariant1"), centrality);
-    } else {
-      return;
     }
 
     // fill event QA before cuts
@@ -866,9 +869,6 @@ struct FlowGfwTask {
 
     // track loop
     int globalTracksNch = 0;
-    int globalPlusitsNch = 0;
-    int gloabalOnlyNch = 0;
-    int itsOnlyNch = 0;
 
     for (const auto& track : tracks) {
       if (!trackSelected(track))
@@ -898,13 +898,11 @@ struct FlowGfwTask {
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
       }
 
-      globalPlusitsNch++;
-
-      registry.fill(HIST("GlobalplusITS"), centrality);
-
       if (cfgGlobalplusITS) {
         if (withinPtRef) {
           fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+          globalTracksNch++;
+          registry.fill(HIST("GlobalplusITS"), centrality, globalTracksNch);
         }
       }
 
@@ -912,20 +910,20 @@ struct FlowGfwTask {
         if (cfgGlobalonly) {
           if (withinPtRef) {
             fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-            gloabalOnlyNch++;
-            registry.fill(HIST("Globalonly"), centrality);
-            registry.fill(HIST("pt_Cen_ITSOnly"), centrality, track.pt());
-            registry.fill(HIST("phi_Cen_GlobalOnly"), centrality, track.pt());
+            globalTracksNch++;
+            registry.fill(HIST("Globalonly"), centrality, globalTracksNch);
+            registry.fill(HIST("pt_Cen_GlobalOnly"), centrality, track.pt());
+            registry.fill(HIST("phi_Cen_GlobalOnly"), centrality, track.phi());
           }
         }
       } else {
         if (cfgITSonly) {
           if (withinPtRef) {
             fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-            itsOnlyNch++;
-            registry.fill(HIST("ITSonly"), centrality);
+            globalTracksNch++;
+            registry.fill(HIST("ITSonly"), centrality, globalTracksNch);
             registry.fill(HIST("pt_Cen_ITSOnly"), centrality, track.pt());
-            registry.fill(HIST("phi_Cen_ITSOnly"), centrality, track.pt());
+            registry.fill(HIST("phi_Cen_ITSOnly"), centrality, track.phi());
           }
         }
       }
@@ -935,14 +933,9 @@ struct FlowGfwTask {
 
     } // End of track loop
 
-    globalTracksNch = globalPlusitsNch;
-    globalTracksNch = gloabalOnlyNch;
-    globalTracksNch = itsOnlyNch;
-
+    // Only one type of track will be plotted
     registry.fill(HIST("Events_per_Centrality_Bin"), centrality);
-    registry.fill(HIST("GlobalplusITS"), centrality, globalPlusitsNch);
-    registry.fill(HIST("Globalonly"), centrality, gloabalOnlyNch);
-    registry.fill(HIST("ITSonly"), centrality, itsOnlyNch);
+    registry.fill(HIST("Tracks_per_Centrality_Bin"), centrality, globalTracksNch);
 
     // Filling c22 with ROOT TProfile
     fillProfile(corrconfigs.at(0), HIST("c22"), centrality);

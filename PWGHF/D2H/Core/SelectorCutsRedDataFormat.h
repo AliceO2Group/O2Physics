@@ -26,9 +26,9 @@ namespace o2::analysis
 {
 namespace hf_cuts_d_daughter
 {
-static constexpr int nBinsPt = 7;
-static constexpr int nCutVars = 6;
-constexpr double binsPt[nBinsPt + 1] = {
+static constexpr int NBinsPt = 7;
+static constexpr int NCutVars = 6;
+constexpr double BinsPt[NBinsPt + 1] = {
   1.,
   2.,
   4.,
@@ -37,9 +37,9 @@ constexpr double binsPt[nBinsPt + 1] = {
   12.,
   24.,
   1000.};
-auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 // default values for the cuts
-constexpr double cuts[nBinsPt][nCutVars] = {{1.84, 1.89, 1.77, 1.81, 1.92, 1.96},  /* 1   < pt < 2 */
+constexpr double Cuts[NBinsPt][NCutVars] = {{1.84, 1.89, 1.77, 1.81, 1.92, 1.96},  /* 1   < pt < 2 */
                                             {1.84, 1.89, 1.77, 1.81, 1.92, 1.96},  /* 2 < pt < 4 */
                                             {1.84, 1.89, 1.77, 1.81, 1.92, 1.96},  /* 4   < pt < 6 */
                                             {1.84, 1.89, 1.77, 1.81, 1.92, 1.96},  /* 6 < pt < 8 */
@@ -62,9 +62,9 @@ static const std::vector<std::string> labelsCutVar = {"invMassSignalLow", "invMa
 // namespace with v0 selections for reduced charmed-resonances analysis
 namespace hf_cuts_v0_daughter
 {
-static constexpr int nBinsPt = 7;
-static constexpr int nCutVars = 5;
-constexpr double binsPt[nBinsPt + 1] = {
+static constexpr int NBinsPt = 7;
+static constexpr int NCutVars = 5;
+constexpr double BinsPt[NBinsPt + 1] = {
   0.,
   1.,
   2.,
@@ -73,9 +73,9 @@ constexpr double binsPt[nBinsPt + 1] = {
   12.,
   24.,
   1000.};
-auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 // default values for the cuts
-constexpr double cuts[nBinsPt][nCutVars] = {{0.48, 0.52, 0.99, 1., 0.9},  /* 1   < pt < 2 */
+constexpr double Cuts[NBinsPt][NCutVars] = {{0.48, 0.52, 0.99, 1., 0.9},  /* 1   < pt < 2 */
                                             {0.48, 0.52, 0.99, 1., 0.9},  /* 2 < pt < 4 */
                                             {0.48, 0.52, 0.99, 1., 0.9},  /* 4   < pt < 6 */
                                             {0.48, 0.52, 0.99, 1., 0.9},  /* 6 < pt < 8 */

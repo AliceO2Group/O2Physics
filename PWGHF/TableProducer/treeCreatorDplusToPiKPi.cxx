@@ -79,7 +79,13 @@ DECLARE_SOA_COLUMN(Ct, ct, float);                                              
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int); //! Event rejection flag
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);         //! Run number
+// ML scores
+DECLARE_SOA_COLUMN(MlScore0, mlScore0, float); //! ML score of the first configured index
+DECLARE_SOA_COLUMN(MlScore1, mlScore1, float); //! ML score of the second configured index
 } // namespace full
+DECLARE_SOA_TABLE(HfCandDpMls, "AOD", "HFCANDDPML",
+                  full::MlScore0,
+                  full::MlScore1)
 
 DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE",
                   hf_cand::Chi2PCA,
@@ -233,19 +239,23 @@ struct HfTreeCreatorDplusToPiKPi {
   Produces<o2::aod::HfCandDpFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandDpFullPs> rowCandidateFullParticles;
   Produces<o2::aod::HfCandDpLites> rowCandidateLite;
+  Produces<o2::aod::HfCandDpMls> rowCandidateMl;
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
+  Configurable<bool> fillOnlySignalMl{"fillOnlySignalMl", false, "Flag to fill derived tables with MC and ML info"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
+  Configurable<std::vector<int>> classMl{"classMlindexes", {0, 2}, "Indexes of ML bkg and non-prompt scores."};
 
   HfHelper hfHelper;
 
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+  using SelectedCandidatesMcWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
@@ -253,6 +263,7 @@ struct HfTreeCreatorDplusToPiKPi {
 
   Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)); // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
   Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
+  Partition<SelectedCandidatesMcWithMl> reconstructedCandSigMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DstarToPiKPiBkg)); // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
 
   void init(InitContext const&)
   {
@@ -271,7 +282,7 @@ struct HfTreeCreatorDplusToPiKPi {
       runNumber);
   }
 
-  template <bool doMc = false, typename T>
+  template <bool doMc = false, bool doMl = false, typename T>
   void fillCandidateTable(const T& candidate)
   {
     int8_t flagMc = 0;
@@ -281,6 +292,16 @@ struct HfTreeCreatorDplusToPiKPi {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
+    }
+
+    std::vector<float> outputMl = {-999., -999.};
+    if constexpr (doMl) {
+      for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+        outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
+      }
+      rowCandidateMl(
+        outputMl[0],
+        outputMl[1]);
     }
 
     auto prong0 = candidate.template prong0_as<TracksWPid>();
@@ -450,6 +471,7 @@ struct HfTreeCreatorDplusToPiKPi {
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
                  MatchedGenCandidatesMc const& particles,
+                 SelectedCandidatesMcWithMl const&,
                  TracksWPid const&)
   {
     // Filling event properties
@@ -467,6 +489,22 @@ struct HfTreeCreatorDplusToPiKPi {
       }
       for (const auto& candidate : reconstructedCandSig) {
         fillCandidateTable<true>(candidate);
+      }
+    } else if (fillOnlySignalMl) {
+      rowCandidateMl.reserve(reconstructedCandSigMl.size());
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(reconstructedCandSigMl.size());
+      } else {
+        rowCandidateFull.reserve(reconstructedCandSigMl.size());
+      }
+      for (const auto& candidate : reconstructedCandSigMl) {
+        if (downSampleBkgFactor < 1.) {
+          float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
+          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+            continue;
+          }
+        }
+        fillCandidateTable<true, true>(candidate);
       }
     } else if (fillOnlyBackground) {
       if (fillCandidateLiteTable) {

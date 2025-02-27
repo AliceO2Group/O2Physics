@@ -125,6 +125,7 @@ struct lambdapolarization {
   Configurable<std::string> cfgQvecRefBName{"cfgQvecRefBName", "TPCneg", "The name of detector for reference B"};
 
   Configurable<bool> cfgPhiDepStudy{"cfgPhiDepStudy", false, "cfg for phi dependent study"};
+  Configurable<bool> cfgUSESP{"cfgUSESP", false, "cfg for sp"};
   Configurable<float> cfgPhiDepSig{"cfgPhiDepSig", 0.2, "cfg for significance on phi dependent study"};
 
   Configurable<bool> cfgShiftCorr{"cfgShiftCorr", false, "additional shift correction"};
@@ -134,7 +135,11 @@ struct lambdapolarization {
   Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag to apply efficiency correction"};
   Configurable<std::string> cfgEffCorPath{"cfgEffCorPath", "", "path for pseudo efficiency correction"};
 
-  Configurable<bool> cfgCalcCum{"cfgCalcCum", false, "flag to calculate cumulants"};
+  Configurable<bool> cfgAccCor{"cfgAccCor", false, "flag to apply acceptance correction"};
+  Configurable<std::string> cfgAccCorPath{"cfgAccCorPath", "", "path for pseudo acceptance correction"};
+
+  Configurable<bool> cfgCalcCum{"cfgCalcCum", false, "flag to calculate cumulants of cossin"};
+  Configurable<bool> cfgCalcCum1{"cfgCalcCum1", false, "flag to calculate cumulants of coscos"};
 
   Configurable<bool> cfgRapidityDep{"cfgRapidityDep", false, "flag for rapidity dependent study"};
   Configurable<bool> cfgAccAzimuth{"cfgAccAzimuth", false, "flag for azimuth closure study"};
@@ -167,6 +172,7 @@ struct lambdapolarization {
   int lastRunNumber = -999;
   std::vector<TProfile3D*> shiftprofile{};
   TProfile2D* EffMap = nullptr;
+  TProfile2D* AccMap = nullptr;
 
   std::string fullCCDBShiftCorrPath;
 
@@ -277,6 +283,38 @@ struct lambdapolarization {
 
       histos.add("psi2/QA/cosPhi_sinPsi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
       histos.add("psi2/QA/sinPhi_cosPsi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+    }
+
+    if (cfgCalcCum1) {
+      histos.add("psi2/QA/cosTheta_l", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/cosPsi_l", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/cosPhi_l", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+
+      histos.add("psi2/QA/cosPhi_cosPsi_l", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/cosTheta_cosPhi_l", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/cosTheta_cosPsi_l", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+
+      histos.add("psi2/QA/sinPhi_sinPsi_l", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/cosTheta_sinPhi_l", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/cosTheta_sinPsi_l", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+
+      histos.add("psi2/QA/sinPsi_l", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/sinPhi_l", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+
+      histos.add("psi2/QA/cosTheta_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/cosPsi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/cosPhi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+
+      histos.add("psi2/QA/cosPhi_cosPsi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/cosTheta_cosPhi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/cosTheta_cosPsi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+
+      histos.add("psi2/QA/sinPhi_sinPsi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/cosTheta_sinPhi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/cosTheta_sinPsi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+
+      histos.add("psi2/QA/sinPsi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add("psi2/QA/sinPhi_al", "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
     }
 
     if (cfgQAv0) {
@@ -661,9 +699,9 @@ struct lambdapolarization {
         auto deltapsiFT0A = 0.0;
         auto deltapsiFV0A = 0.0;
 
-        auto psidefFT0C = TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 28], collision.qvecRe()[3 + (nmode - 2) * 28]) / static_cast<float>(nmode);
-        auto psidefFT0A = TMath::ATan2(collision.qvecIm()[3 + 4 + (nmode - 2) * 28], collision.qvecRe()[3 + 4 + (nmode - 2) * 28]) / static_cast<float>(nmode);
-        auto psidefFV0A = TMath::ATan2(collision.qvecIm()[3 + 12 + (nmode - 2) * 28], collision.qvecRe()[3 + 12 + (nmode - 2) * 28]) / static_cast<float>(nmode);
+        auto psidefFT0C = TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode);
+        auto psidefFT0A = TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode);
+        auto psidefFV0A = TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode);
         for (int ishift = 1; ishift <= 10; ishift++) {
           auto coeffshiftxFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 0.5, ishift - 0.5));
           auto coeffshiftyFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 1.5, ishift - 0.5));
@@ -676,6 +714,7 @@ struct lambdapolarization {
           deltapsiFT0A += ((1 / (1.0 * ishift)) * (-coeffshiftxFT0A * TMath::Cos(ishift * static_cast<float>(nmode) * psidefFT0A) + coeffshiftyFT0A * TMath::Sin(ishift * static_cast<float>(nmode) * psidefFT0A)));
           deltapsiFV0A += ((1 / (1.0 * ishift)) * (-coeffshiftxFV0A * TMath::Cos(ishift * static_cast<float>(nmode) * psidefFV0A) + coeffshiftyFV0A * TMath::Sin(ishift * static_cast<float>(nmode) * psidefFV0A)));
         }
+        psi += deltapsiFT0C;
         relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - psidefFT0C - deltapsiFT0C));
       }
 
@@ -697,9 +736,13 @@ struct lambdapolarization {
                       1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)));
         }
       }
+      double weight = 1.0;
+      weight *= cfgEffCor ? 1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
+      weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v0.pt()), AccMap->GetYaxis()->FindBin(v0.yLambda())) : 1.;
 
-      double weight = cfgEffCor ? 1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
-      double qvecMag = TMath::Sqrt(TMath::Power(collision.qvecIm()[3 + (nmode - 2) * 28], 2) + TMath::Power(collision.qvecRe()[3 + (nmode - 2) * 28], 2));
+      double qvecMag = 1.0;
+      if (cfgUSESP)
+        qvecMag *= TMath::Sqrt(TMath::Power(collision.qvecIm()[3 + (nmode - 2) * 28], 2) + TMath::Power(collision.qvecRe()[3 + (nmode - 2) * 28], 2));
 
       if (nmode == 2) { ////////////
         if (LambdaTag) {
@@ -734,6 +777,22 @@ struct lambdapolarization {
             histos.fill(HIST("psi2/QA/cosPhi_sinPsi_l"), v0.mLambda(), v0.pt(), TMath::Cos(v0.phi() * 2.0) * TMath::Sin(psi * 2.0), centrality);
             histos.fill(HIST("psi2/QA/sinPhi_cosPsi_l"), v0.mLambda(), v0.pt(), TMath::Sin(v0.phi() * 2.0) * TMath::Cos(psi * 2.0), centrality);
           }
+          if (cfgCalcCum1) {
+            histos.fill(HIST("psi2/QA/cosTheta_l"), v0.mLambda(), v0.pt(), angle, centrality);
+            histos.fill(HIST("psi2/QA/cosPsi_l"), v0.mLambda(), v0.pt(), TMath::Cos(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosPhi_l"), v0.mLambda(), v0.pt(), TMath::Cos(v0.phi() * 2.0), centrality);
+
+            histos.fill(HIST("psi2/QA/cosPhi_cosPsi_l"), v0.mLambda(), v0.pt(), TMath::Cos(v0.phi() * 2.0) * TMath::Cos(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosTheta_cosPhi_l"), v0.mLambda(), v0.pt(), angle * TMath::Cos(v0.phi() * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosTheta_cosPsi_l"), v0.mLambda(), v0.pt(), angle * TMath::Cos(psi * 2.0), centrality);
+
+            histos.fill(HIST("psi2/QA/sinPhi_sinPsi_l"), v0.mLambda(), v0.pt(), TMath::Sin(v0.phi() * 2.0) * TMath::Sin(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosTheta_sinPhi_l"), v0.mLambda(), v0.pt(), angle * TMath::Sin(v0.phi() * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosTheta_sinPsi_l"), v0.mLambda(), v0.pt(), angle * TMath::Sin(psi * 2.0), centrality);
+
+            histos.fill(HIST("psi2/QA/sinPsi_l"), v0.mLambda(), v0.pt(), TMath::Sin(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/sinPhi_l"), v0.mLambda(), v0.pt(), TMath::Sin(v0.phi() * 2.0), centrality);
+          }
         }
         if (aLambdaTag) {
           histos.fill(HIST("psi2/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi, weight);
@@ -751,21 +810,37 @@ struct lambdapolarization {
           }
 
           if (cfgCalcCum) {
-            histos.fill(HIST("psi2/QA/cosTheta_al"), v0.mLambda(), v0.pt(), angle, centrality);
-            histos.fill(HIST("psi2/QA/cosPsi_al"), v0.mLambda(), v0.pt(), TMath::Cos(psi * 2.0), centrality);
-            histos.fill(HIST("psi2/QA/cosPhi_al"), v0.mLambda(), v0.pt(), TMath::Cos(v0.phi() * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosTheta_al"), v0.mAntiLambda(), v0.pt(), angle, centrality);
+            histos.fill(HIST("psi2/QA/cosPsi_al"), v0.mAntiLambda(), v0.pt(), TMath::Cos(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosPhi_al"), v0.mAntiLambda(), v0.pt(), TMath::Cos(v0.phi() * 2.0), centrality);
 
-            histos.fill(HIST("psi2/QA/sinPsi_al"), v0.mLambda(), v0.pt(), TMath::Sin(psi * 2.0), centrality);
-            histos.fill(HIST("psi2/QA/sinPhi_al"), v0.mLambda(), v0.pt(), TMath::Sin(v0.phi() * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/sinPsi_al"), v0.mAntiLambda(), v0.pt(), TMath::Sin(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/sinPhi_al"), v0.mAntiLambda(), v0.pt(), TMath::Sin(v0.phi() * 2.0), centrality);
 
-            histos.fill(HIST("psi2/QA/cosTheta_cosPhi_al"), v0.mLambda(), v0.pt(), angle * TMath::Cos(v0.phi() * 2.0), centrality);
-            histos.fill(HIST("psi2/QA/cosTheta_cosPsi_al"), v0.mLambda(), v0.pt(), angle * TMath::Cos(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosTheta_cosPhi_al"), v0.mAntiLambda(), v0.pt(), angle * TMath::Cos(v0.phi() * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosTheta_cosPsi_al"), v0.mAntiLambda(), v0.pt(), angle * TMath::Cos(psi * 2.0), centrality);
 
-            histos.fill(HIST("psi2/QA/cosTheta_sinPhi_al"), v0.mLambda(), v0.pt(), angle * TMath::Sin(v0.phi() * 2.0), centrality);
-            histos.fill(HIST("psi2/QA/cosTheta_sinPsi_al"), v0.mLambda(), v0.pt(), angle * TMath::Sin(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosTheta_sinPhi_al"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(v0.phi() * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosTheta_sinPsi_al"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(psi * 2.0), centrality);
 
-            histos.fill(HIST("psi2/QA/cosPhi_sinPsi_al"), v0.mLambda(), v0.pt(), TMath::Cos(v0.phi() * 2.0) * TMath::Sin(psi * 2.0), centrality);
-            histos.fill(HIST("psi2/QA/sinPhi_cosPsi_al"), v0.mLambda(), v0.pt(), TMath::Sin(v0.phi() * 2.0) * TMath::Cos(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosPhi_sinPsi_al"), v0.mAntiLambda(), v0.pt(), TMath::Cos(v0.phi() * 2.0) * TMath::Sin(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/sinPhi_cosPsi_al"), v0.mAntiLambda(), v0.pt(), TMath::Sin(v0.phi() * 2.0) * TMath::Cos(psi * 2.0), centrality);
+          }
+          if (cfgCalcCum1) {
+            histos.fill(HIST("psi2/QA/cosTheta_al"), v0.mAntiLambda(), v0.pt(), angle, centrality);
+            histos.fill(HIST("psi2/QA/cosPsi_al"), v0.mAntiLambda(), v0.pt(), TMath::Cos(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosPhi_al"), v0.mAntiLambda(), v0.pt(), TMath::Cos(v0.phi() * 2.0), centrality);
+
+            histos.fill(HIST("psi2/QA/cosPhi_cosPsi_al"), v0.mAntiLambda(), v0.pt(), TMath::Cos(v0.phi() * 2.0) * TMath::Cos(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosTheta_cosPhi_al"), v0.mAntiLambda(), v0.pt(), angle * TMath::Cos(v0.phi() * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosTheta_cosPsi_al"), v0.mAntiLambda(), v0.pt(), angle * TMath::Cos(psi * 2.0), centrality);
+
+            histos.fill(HIST("psi2/QA/sinPhi_sinPsi_al"), v0.mAntiLambda(), v0.pt(), TMath::Sin(v0.phi() * 2.0) * TMath::Sin(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosTheta_sinPhi_al"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(v0.phi() * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/cosTheta_sinPsi_al"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(psi * 2.0), centrality);
+
+            histos.fill(HIST("psi2/QA/sinPsi_al"), v0.mAntiLambda(), v0.pt(), TMath::Sin(psi * 2.0), centrality);
+            histos.fill(HIST("psi2/QA/sinPhi_al"), v0.mAntiLambda(), v0.pt(), TMath::Sin(v0.phi() * 2.0), centrality);
           }
         }
       } else if (nmode == 3) {
@@ -864,9 +939,12 @@ struct lambdapolarization {
         lastRunNumber = currentRunNumber;
       }
     }
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (cfgEffCor) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       EffMap = ccdb->getForTimeStamp<TProfile2D>(cfgEffCorPath.value, bc.timestamp());
+    }
+    if (cfgAccCor) {
+      AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
     }
     for (int i = 2; i < cfgnMods + 2; i++) {
       if (cfgShiftCorrDef) {

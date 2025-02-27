@@ -16,7 +16,13 @@
 ///
 /// \author Giovanni Malfattore <giovanni.malfattore@cern.ch> and Rutuparna Rath <rutuparna.rath@cern.ch>
 ///
+
 #include "PWGLF/DataModel/LFNucleiTables.h"
+
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+#include "CCDB/BasicCCDBManager.h"
+#include <string>
 #include <TLorentzVector.h>
 #include <TF1.h>
 #include "ReconstructionDataFormats/Track.h"
@@ -42,6 +48,11 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct LFNucleiBATask {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry spectraGen{"spectraGen", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry debugHistos{"debugHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -55,6 +66,13 @@ struct LFNucleiBATask {
   Configurable<bool> enableAl{"enableAl", true, "Flag to enable alpha analysis."};
 
   Configurable<bool> enableTrackingEff{"enableTrackingEff", 0, "Flag to enable tracking efficiency hitos."};
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+
+  // Set the triggered events skimming scheme
+  struct : ConfigurableGroup {
+    Configurable<bool> applySkimming{"applySkimming", false, "Skimmed dataset processing"};
+    Configurable<std::string> cfgSkimming{"cfgSkimming", "fHe", "Configurable for skimming"};
+  } skimmingOptions;
 
   // Set the event selection cuts
   struct : ConfigurableGroup {
@@ -127,8 +145,11 @@ struct LFNucleiBATask {
   ConfigurableAxis avClsBins{"avClsBins", {200, 0, 20}, "Binning in average cluster size"};
 
   // Enable custom cuts/debug functions
-  Configurable<bool> enableFiltering{"enableFiltering", false, "Flag to enable filtering for p,d,t,He only -- disable if launch on skimmed dataset!"};
-  Configurable<bool> enableEvTimeSplitting{"enableEvTimeSplitting", false, "Flag to enable histograms splitting depending on the Event Time used"};
+  struct : ConfigurableGroup {
+    Configurable<bool> enableFiltering{"enableFiltering", false, "Flag to enable filtering for p,d,t,He only -- disable if launch on skimmed dataset!"};
+    Configurable<bool> enableIsGlobalTrack{"enableIsGlobalTrack", true, "Flag to enable IsGlobalTrackWoDCA"};
+    Configurable<bool> enableEvTimeSplitting{"enableEvTimeSplitting", false, "Flag to enable histograms splitting depending on the Event Time used"};
+  } filterOptions;
 
   Configurable<bool> enableDCACustomCut{"enableDCACustomCut", false, "Flag to enable DCA custom cuts - unflag to use standard isGlobalCut DCA cut"};
   struct : ConfigurableGroup {
@@ -206,8 +227,20 @@ struct LFNucleiBATask {
     return averageClusterSizePerCoslInv(track.itsClusterSizes(), track.eta());
   }
 
+  void initCCDB(o2::aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (skimmingOptions.applySkimming) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), skimmingOptions.cfgSkimming.value);
+      zorro.populateHistRegistry(histos, bc.runNumber());
+    }
+  }
+
   void init(o2::framework::InitContext&)
   {
+    if (skimmingOptions.applySkimming) {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
+
     const AxisSpec pAxis{binsPt, "#it{p} (GeV/#it{c})"};
     const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec ptHeAxis{binsPtHe, "#it{p}_{T} (GeV/#it{c})"};
@@ -267,9 +300,17 @@ struct LFNucleiBATask {
       }
     }
 
+    histos.add<TH1>("event/eventSkimming", "eventSkimming", HistType::kTH1D, {{2, 0.0, 2.0}});
+    auto hSkim = histos.get<TH1>(HIST("event/eventSkimming"));
+    hSkim->GetXaxis()->SetBinLabel(1, "Total");
+    hSkim->GetXaxis()->SetBinLabel(2, "Skimmed events");
+
     histos.add<TH1>("event/eventSelection", "eventSelection", HistType::kTH1D, {{7, -0.5, 6.5}});
     auto h = histos.get<TH1>(HIST("event/eventSelection"));
-    h->GetXaxis()->SetBinLabel(1, "Total");
+    if (skimmingOptions.applySkimming)
+      h->GetXaxis()->SetBinLabel(1, "Skimmed events");
+    else
+      h->GetXaxis()->SetBinLabel(1, "Total");
     h->GetXaxis()->SetBinLabel(2, "TVX trigger cut");
     h->GetXaxis()->SetBinLabel(3, "TF border cut");
     h->GetXaxis()->SetBinLabel(4, "ITS ROF cut");
@@ -278,8 +319,10 @@ struct LFNucleiBATask {
     h->GetXaxis()->SetBinLabel(7, "Z-vert Cut");
     histos.add<TH1>("event/h1VtxZ", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
 
-    histos.add<TH1>("tracks/h1pT", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{500, 0., 10.}});
-    histos.add<TH1>("tracks/h1p", "Track momentum; p (GeV/#it{c}); counts", HistType::kTH1F, {{500, 0., 10.}});
+    if (enablePIDplot) {
+      histos.add<TH1>("tracks/h1pT", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{500, 0., 10.}});
+      histos.add<TH1>("tracks/h1p", "Track momentum; p (GeV/#it{c}); counts", HistType::kTH1F, {{500, 0., 10.}});
+    }
 
     histos.add<TH1>("qa/h1ITSncr", "number of crossed rows in ITS; ITSncr; counts", HistType::kTH1F, {{12, 0, 12}});
     histos.add<TH1>("qa/h1TPCncr", "number of crossed rows in TPC; TPCncr; counts", HistType::kTH1F, {{150, 60, 170}});
@@ -338,9 +381,10 @@ struct LFNucleiBATask {
     if (enableDebug) {
       debugHistos.add<TH1>("debug/event/h1CentV0M", "V0M; Multiplicity; counts", HistType::kTH1F, {{27000, 0, 27000}});
       // trackQA
-      debugHistos.add<TH1>("debug/tracks/h1Eta", "pseudoRapidity; #eta; counts", HistType::kTH1F, {{200, -1.0, 1.0}});
+      debugHistos.add<TH1>("debug/tracks/h1Eta", "pseudoRapidity; #eta; counts", HistType::kTH1F, {{200, -2.0, 2.0}});
       debugHistos.add<TH1>("debug/tracks/h1VarPhi", "#phi; #phi; counts", HistType::kTH1F, {{63, 0.0, 6.3}});
-      debugHistos.add<TH2>("debug/tracks/h2EtaVsPhi", "#eta vs #phi; #eta; #phi", HistType::kTH2F, {{200, -1.0, 1.0}, {63, 0.0, 6.3}});
+      debugHistos.add<TH2>("debug/tracks/h2EtaVsPhi", "#eta vs #phi; #eta; #phi", HistType::kTH2F, {{200, -2.0, 2.0}, {63, 0.0, 6.3}});
+      debugHistos.add<TH2>("debug/tracks/h2PionYvsPt", "#it{y} vs #it{p}_{T} (#pi)", HistType::kTH2F, {{200, -2.0, 2.0}, {ptAxis}});
     }
 
     if (enablePtSpectra) {
@@ -1442,8 +1486,7 @@ struct LFNucleiBATask {
     }
 
     //  Bethe-Bloch TPC distribution and Beta vs pT TOF distribution
-    histos.add<TH2>("tracks/h2TPCsignVsTPCmomentum", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, -8.f, 8.f}, {dedxAxis}});
-    if (nsigmaITSvar.showAverageClusterSize) {
+    if (nsigmaITSvar.showAverageClusterSize && enablePIDplot) {
       histos.add<TH2>("tracks/averageClusterSize", "", HistType::kTH2F, {{pZAxis}, {avClsAxis}});
       histos.add<TH2>("tracks/averageClusterSizePerCoslInv", "", HistType::kTH2F, {{pZAxis}, {avClsEffAxis}});
     }
@@ -1452,6 +1495,7 @@ struct LFNucleiBATask {
       debugHistos.add<TH2>("debug/h2TPCsignVsTPCmomentum_FakeHits", "TPC <-dE/dX> vs #it{p}/Z (Fake hits); Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, -8.f, 8.f}, {dedxAxis}});
     }
     if (enablePIDplot) {
+      histos.add<TH2>("tracks/h2TPCsignVsTPCmomentum", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, -8.f, 8.f}, {dedxAxis}});
       if (enablePr) {
         histos.add<TH2>("tracks/proton/h2TPCsignVsTPCmomentumProton", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, 0.f, 8.f}, {dedxAxis}});
         histos.add<TH2>("tracks/proton/h2TPCsignVsTPCmomentumantiProton", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, 0.f, 8.f}, {dedxAxis}});
@@ -1467,10 +1511,6 @@ struct LFNucleiBATask {
       if (enableHe) {
         histos.add<TH2>("tracks/helium/h2TPCsignVsTPCmomentumHelium", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, 0.f, 8.f}, {dedxAxis}});
         histos.add<TH2>("tracks/helium/h2TPCsignVsTPCmomentumantiHelium", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, 0.f, 8.f}, {dedxAxis}});
-        if (nsigmaITSvar.showAverageClusterSize) {
-          histos.add<TH2>("tracks/helium/averageClusterSize", "", HistType::kTH2F, {{pZAxis}, {avClsAxis}});
-          histos.add<TH2>("tracks/helium/averageClusterSizePerCoslInv", "", HistType::kTH2F, {{pZAxis}, {avClsEffAxis}});
-        }
       }
       if (enableAl) {
         histos.add<TH2>("tracks/alpha/h2TPCsignVsTPCmomentumAlpha", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{400, 0.f, 8.f}, {dedxAxis}});
@@ -1478,7 +1518,14 @@ struct LFNucleiBATask {
       }
     }
 
-    if (outFlagOptions.doTOFplots) {
+    if (enableHe) {
+      if (nsigmaITSvar.showAverageClusterSize) {
+        histos.add<TH2>("tracks/helium/averageClusterSize", "", HistType::kTH2F, {{pZAxis}, {avClsAxis}});
+        histos.add<TH2>("tracks/helium/averageClusterSizePerCoslInv", "", HistType::kTH2F, {{pZAxis}, {avClsEffAxis}});
+      }
+    }
+
+    if (outFlagOptions.doTOFplots && enablePIDplot) {
       histos.add<TH2>("tracks/h2TPCsignVsBetaGamma", "TPC <-dE/dX> vs #beta#gamma/Z; Signed #beta#gamma; TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{250, -5.f, 5.f}, {dedxAxis}});
       histos.add<TH2>("tracks/h2TOFbetaVsP", "TOF #beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta", HistType::kTH2F, {{250, -5.f, 5.f}, {betaAxis}});
       if (outFlagOptions.enableBetaCut)
@@ -1609,7 +1656,8 @@ struct LFNucleiBATask {
         histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaTOF", "NSigmaTOF(#bar{He}) vs #it{p}_{T}/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaTOF", HistType::kTH2F, {{ptZHeAxis}, {sigmaTOFAxis}});
       }
       // TOF mass histograms
-      histos.add<TH2>("tracks/h2TOFmassVsPt", "h2TOFmassVsPt; TOFmass; #it{p}_{T} (GeV)", HistType::kTH2F, {{180, 0.4, 4.}, {250, 0., 5.}});
+      if (enablePIDplot)
+        histos.add<TH2>("tracks/h2TOFmassVsPt", "h2TOFmassVsPt; TOFmass; #it{p}_{T} (GeV)", HistType::kTH2F, {{180, 0.4, 4.}, {250, 0., 5.}});
       if (enablePr) {
         histos.add<TH2>("tracks/proton/h2TOFmassProtonVsPt", "h2TOFmassProtonVsPt; TOFmass; #it{p}_{T} (GeV)", HistType::kTH2F, {{180, 0.4, 4.}, {250, 0., 5.}});
         histos.add<TH2>("tracks/proton/h2TOFmassantiProtonVsPt", "h2TOFmassantiProtonVsPt; TOFmass; #it{p}_{T} (GeV)", HistType::kTH2F, {{180, 0.4, 4.}, {250, 0., 5.}});
@@ -1683,7 +1731,7 @@ struct LFNucleiBATask {
         }
       }
       // TOF EvTime Splitting plots
-      if (enableEvTimeSplitting) {
+      if (filterOptions.enableEvTimeSplitting) {
         //  Bethe-Bloch TPC distribution - TOF EvTime Splitted
         evtimeHistos.add<TH2>("tracks/evtime/fill/h2TPCsignVsTPCmomentum", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{500, -5.f, 5.f}, {dedxAxis}});
         evtimeHistos.add<TH2>("tracks/evtime/tof/h2TPCsignVsTPCmomentum", "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{500, -5.f, 5.f}, {dedxAxis}});
@@ -1880,8 +1928,8 @@ struct LFNucleiBATask {
         }
       }
     }
-
-    if (!doprocessMCGen) {
+    // To be optimised
+    if (!doprocessMCGen && !doprocessMCReco && !doprocessMCRecoLfPid && !doprocessMCRecoFiltered && !doprocessMCRecoFilteredLight) {
       LOG(info) << "Histograms of LFNucleiBATask:";
       histos.print();
       return;
@@ -2007,6 +2055,19 @@ struct LFNucleiBATask {
                       const TracksType& tracks,
                       const ParticleType& /*particles*/)
   {
+    histos.fill(HIST("event/eventSkimming"), 0.5);
+    // Apply skimming
+    if constexpr (!IsFilteredData) {
+      const auto& bc = event.template bc_as<o2::aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      if (skimmingOptions.applySkimming) {
+        if (!zorro.isSelected(bc.globalBC())) {
+          return;
+        }
+      }
+      histos.fill(HIST("event/eventSkimming"), 1.5);
+    }
+
     // Event histos fill
     histos.fill(HIST("event/eventSelection"), 0);
     if (enableDebug)
@@ -2096,12 +2157,11 @@ struct LFNucleiBATask {
       LOG(fatal) << "Problem with track size";
     }
 
-    for (auto& track : tracksWithITS) {
-      histos.fill(HIST("tracks/h1pT"), track.pt());
-      histos.fill(HIST("tracks/h1p"), track.p());
+    tracks.copyIndexBindings(tracksWithITS);
 
+    for (auto& track : tracksWithITS) {
       if constexpr (!IsFilteredData) {
-        if (!track.isGlobalTrackWoDCA()) {
+        if (!track.isGlobalTrackWoDCA() && filterOptions.enableIsGlobalTrack) {
           continue;
         }
       }
@@ -2112,6 +2172,11 @@ struct LFNucleiBATask {
         continue;
       if (track.tpcNClsFound() < cfgCutTPCClusters)
         continue;
+
+      if (enablePIDplot) {
+        histos.fill(HIST("tracks/h1pT"), track.pt());
+        histos.fill(HIST("tracks/h1p"), track.p());
+      }
 
       isTritonTPCpid = std::abs(track.tpcNSigmaTr()) < nsigmaTPCvar.nsigmaTPCTr;
 
@@ -2336,6 +2401,9 @@ struct LFNucleiBATask {
 
       // p cut
       if (std::abs(track.tpcInnerParam()) < kinemOptions.pCut)
+        continue;
+      // eta cut
+      if (std::abs(track.eta()) > kinemOptions.etaCut)
         continue;
 
       // Rapidity cuts
@@ -3497,12 +3565,14 @@ struct LFNucleiBATask {
 
       // DCA Cut
       if constexpr (!IsFilteredData) {
-        if (!enableDCACustomCut) {
-          if (!track.isGlobalTrack())
-            continue;
-        } else {
-          if (!track.isGlobalTrackWoDCA())
-            continue;
+        if (filterOptions.enableIsGlobalTrack) {
+          if (!enableDCACustomCut) {
+            if (!track.isGlobalTrack())
+              continue;
+          } else {
+            if (!track.isGlobalTrackWoDCA())
+              continue;
+          }
         }
       }
 
@@ -3614,6 +3684,7 @@ struct LFNucleiBATask {
           debugHistos.fill(HIST("debug/tracks/h1Eta"), track.eta());
           debugHistos.fill(HIST("debug/tracks/h1VarPhi"), track.phi());
           debugHistos.fill(HIST("debug/tracks/h2EtaVsPhi"), track.eta(), track.phi());
+          debugHistos.fill(HIST("debug/tracks/h2PionYvsPt"), track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Pion)), track.pt());
 
           if (track.sign() > 0) {
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsPtPos"), track.tpcInnerParam(), track.tpcNClsCrossedRows());
@@ -3650,14 +3721,16 @@ struct LFNucleiBATask {
         if (enablePtSpectra)
           histos.fill(HIST("tracks/eff/h2pVsTPCmomentum"), track.tpcInnerParam(), track.p());
 
-        if (enableFiltering) {
+        if (filterOptions.enableFiltering) {
           if (track.tpcNSigmaKa() < 5)
             continue;
         }
 
-        histos.fill(HIST("tracks/h2TPCsignVsTPCmomentum"), track.tpcInnerParam() / (1.f * track.sign()), track.tpcSignal());
+        if (enablePIDplot)
+          histos.fill(HIST("tracks/h2TPCsignVsTPCmomentum"), track.tpcInnerParam() / (1.f * track.sign()), track.tpcSignal());
+
         if constexpr (!IsFilteredData) {
-          if (nsigmaITSvar.showAverageClusterSize) {
+          if (nsigmaITSvar.showAverageClusterSize && enablePIDplot) {
             histos.fill(HIST("tracks/averageClusterSize"), track.p(), averageClusterSizeTrk(track));
             histos.fill(HIST("tracks/averageClusterSizePerCoslInv"), track.p(), averageClusterSizePerCoslInv(track));
           }
@@ -3746,7 +3819,7 @@ struct LFNucleiBATask {
                 histos.fill(HIST("tracks/proton/h2ProtonTOFExpSignalDiffVsPt"), track.pt(), track.tofExpSignalDiffPr());
             }
 
-            if (enableEvTimeSplitting && track.hasTOF()) {
+            if (filterOptions.enableEvTimeSplitting && track.hasTOF()) {
               if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
                 if (enablePr)
                   evtimeHistos.fill(HIST("tracks/evtime/ft0tof/proton/h2ProtonVspTNSigmaTOF"), track.pt(), track.tofNSigmaPr());
@@ -3900,7 +3973,7 @@ struct LFNucleiBATask {
               if (outFlagOptions.enableExpSignalTOF)
                 histos.fill(HIST("tracks/proton/h2antiProtonTOFExpSignalDiffVsPt"), track.pt(), track.tofExpSignalDiffPr());
             }
-            if (enableEvTimeSplitting && track.hasTOF()) {
+            if (filterOptions.enableEvTimeSplitting && track.hasTOF()) {
               if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
                 if (enablePr)
                   evtimeHistos.fill(HIST("tracks/evtime/ft0tof/proton/h2antiProtonVspTNSigmaTOF"), track.pt(), track.tofNSigmaPr());
@@ -4249,22 +4322,24 @@ struct LFNucleiBATask {
             }
           }
 
-          if (outFlagOptions.enableBetaCut && (track.beta() > betaCut))
+          if (outFlagOptions.enableBetaCut && (track.beta() > betaCut) && enablePIDplot)
             histos.fill(HIST("tracks/h2TOFbetaVsP_BetaCut"), track.p() / (1.f * track.sign()), track.beta());
-          switch (useHasTRDConfig) {
-            case 0:
-              histos.fill(HIST("tracks/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
-              break;
-            case 1:
-              if (track.hasTRD()) {
+          if (enablePIDplot) {
+            switch (useHasTRDConfig) {
+              case 0:
                 histos.fill(HIST("tracks/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
-              }
-              break;
-            case 2:
-              if (!track.hasTRD()) {
-                histos.fill(HIST("tracks/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
-              }
-              break;
+                break;
+              case 1:
+                if (track.hasTRD()) {
+                  histos.fill(HIST("tracks/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
+                }
+                break;
+              case 2:
+                if (!track.hasTRD()) {
+                  histos.fill(HIST("tracks/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
+                }
+                break;
+            }
           }
 
           if (enablePtSpectra)
@@ -4302,7 +4377,7 @@ struct LFNucleiBATask {
               }
             }
           }
-          if (enableEvTimeSplitting) {
+          if (filterOptions.enableEvTimeSplitting) {
             if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
               evtimeHistos.fill(HIST("tracks/evtime/ft0tof/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
               evtimeHistos.fill(HIST("tracks/evtime/ft0tof/h2TPCsignVsTPCmomentum"), track.tpcInnerParam() / (1.f * track.sign()), track.tpcSignal());
@@ -4419,7 +4494,7 @@ struct LFNucleiBATask {
               massTOFantihe = antiheP * std::sqrt(1.f / (track.beta() * track.beta()) - 1.f);
               break;
           }
-          if (passDCAxyzCut)
+          if (passDCAxyzCut && outFlagOptions.doTOFplots && enablePIDplot)
             histos.fill(HIST("tracks/h2TPCsignVsBetaGamma"), (track.beta() * gamma) / (1.f * track.sign()), track.tpcSignal());
         } else {
           massTOF = -99.f;
@@ -4428,8 +4503,9 @@ struct LFNucleiBATask {
         }
 
         if (passDCAxyzCut) {
-          histos.fill(HIST("tracks/h2TOFmassVsPt"), massTOF, track.pt());
-          if (enableEvTimeSplitting) {
+          if (enablePIDplot)
+            histos.fill(HIST("tracks/h2TOFmassVsPt"), massTOF, track.pt());
+          if (filterOptions.enableEvTimeSplitting) {
             if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
               evtimeHistos.fill(HIST("tracks/evtime/ft0tof/h2TOFmassVsPt"), massTOF, track.pt());
             } else if (track.isEvTimeT0AC()) {
@@ -4456,7 +4532,7 @@ struct LFNucleiBATask {
                 }
                 if (outFlagOptions.enableExpSignalTOF)
                   histos.fill(HIST("tracks/proton/h2ProtonTOFExpSignalDiffVsPtCut"), track.pt(), track.tofExpSignalDiffPr());
-                if (enableEvTimeSplitting) {
+                if (filterOptions.enableEvTimeSplitting) {
                   if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
                     evtimeHistos.fill(HIST("tracks/evtime/ft0tof/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - MassProtonVal * MassProtonVal, track.pt());
                   } else if (track.isEvTimeT0AC()) {
@@ -4480,7 +4556,7 @@ struct LFNucleiBATask {
                 }
                 if (outFlagOptions.enableExpSignalTOF)
                   histos.fill(HIST("tracks/proton/h2antiProtonTOFExpSignalDiffVsPtCut"), track.pt(), track.tofExpSignalDiffPr());
-                if (enableEvTimeSplitting) {
+                if (filterOptions.enableEvTimeSplitting) {
                   if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
                     evtimeHistos.fill(HIST("tracks/evtime/ft0tof/proton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - MassProtonVal * MassProtonVal, track.pt());
                   } else if (track.isEvTimeT0AC()) {
@@ -4534,7 +4610,7 @@ struct LFNucleiBATask {
           }
           if (outFlagOptions.enableExpSignalTOF)
             histos.fill(HIST("tracks/deuteron/h2DeuteronTOFExpSignalDiffVsPtCut"), DPt, track.tofExpSignalDiffDe());
-          if (enableEvTimeSplitting) {
+          if (filterOptions.enableEvTimeSplitting) {
             if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
               evtimeHistos.fill(HIST("tracks/evtime/ft0tof/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - MassDeuteronVal * MassDeuteronVal, DPt);
             } else if (track.isEvTimeT0AC()) {
@@ -4560,7 +4636,7 @@ struct LFNucleiBATask {
           }
           if (outFlagOptions.enableExpSignalTOF)
             histos.fill(HIST("tracks/deuteron/h2antiDeuteronTOFExpSignalDiffVsPtCut"), antiDPt, track.tofExpSignalDiffDe());
-          if (enableEvTimeSplitting) {
+          if (filterOptions.enableEvTimeSplitting) {
             if (track.isEvTimeTOF() && track.isEvTimeT0AC()) {
               evtimeHistos.fill(HIST("tracks/evtime/ft0tof/deuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - MassDeuteronVal * MassDeuteronVal, antiDPt);
             } else if (track.isEvTimeT0AC()) {
@@ -5560,7 +5636,8 @@ struct LFNucleiBATask {
 
   // Process function that runs on the original AO2D
   void processData(EventCandidates::iterator const& event,
-                   TrackCandidates const& tracks)
+                   TrackCandidates const& tracks,
+                   o2::aod::BCsWithTimestamps const&)
   {
     fillHistograms<false /*MC*/, false /*Filtered*/>(event, tracks, true /*dummy*/);
   }
@@ -5568,7 +5645,8 @@ struct LFNucleiBATask {
 
   // Process function that runs on the original AO2D
   void processDataLfPid(EventCandidates::iterator const& event,
-                        TrackCandidatesLfPid const& tracks)
+                        TrackCandidatesLfPid const& tracks,
+                        o2::aod::BCsWithTimestamps const&)
   {
     fillHistograms<false /*MC*/, false /*Filtered*/>(event, tracks, true /*dummy*/);
   }
@@ -5576,7 +5654,8 @@ struct LFNucleiBATask {
 
   // Process function that runs on the filtered data
   void processDataFiltered(o2::aod::LfNuclEvents::iterator const& event,
-                           o2::aod::LfCandNucleusFull const& tracks)
+                           o2::aod::LfCandNucleusFull const& tracks,
+                           o2::aod::BCsWithTimestamps const&)
   {
     // Runs on data filtered on the fly with LF Tree creator nuclei task
     // Takes as input full AO2Ds
@@ -5585,7 +5664,8 @@ struct LFNucleiBATask {
   PROCESS_SWITCH(LFNucleiBATask, processDataFiltered, "process data on the filtered data", false);
 
   void processDataLight(o2::aod::LfNuclEvents::iterator const& event,
-                        o2::aod::LfCandNucleusDummy const& tracks)
+                        o2::aod::LfCandNucleusDummy const& tracks,
+                        o2::aod::BCsWithTimestamps const&)
   {
     // Runs on derived tables produced with LF Tree creator nuclei task
     // Takes as input derived trees
@@ -5600,7 +5680,8 @@ struct LFNucleiBATask {
   // Process function that runs on the original AO2D (for the MC)
   void processMCReco(EventCandidatesMC::iterator const& event,
                      soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks,
-                     aod::McParticles const& mcParticles)
+                     aod::McParticles const& mcParticles,
+                     o2::aod::BCsWithTimestamps const&)
   {
     fillHistograms<true /*MC*/, false /*Filtered*/>(event, tracks, mcParticles);
   } // CLOSING PROCESS MC RECO
@@ -5609,7 +5690,8 @@ struct LFNucleiBATask {
   // Process function that runs on the original AO2D (for the MC) with the LfPIDcalibration
   void processMCRecoLfPid(EventCandidatesMC::iterator const& event,
                           soa::Join<TrackCandidatesLfPid, aod::McTrackLabels> const& tracks,
-                          aod::McParticles const& mcParticles)
+                          aod::McParticles const& mcParticles,
+                          o2::aod::BCsWithTimestamps const&)
   {
     fillHistograms<true /*MC*/, false /*Filtered*/>(event, tracks, mcParticles);
   } // CLOSING PROCESS MC RECO
@@ -5730,14 +5812,16 @@ struct LFNucleiBATask {
 
   // Process function that runs on the filtered AO2D (for the MC)
   void processMCRecoFiltered(o2::aod::LfNuclEvents::iterator const& event,
-                             soa::Join<o2::aod::LfCandNucleusFull, o2::aod::LfCandNucleusMC> const& tracks)
+                             soa::Join<o2::aod::LfCandNucleusFull, o2::aod::LfCandNucleusMC> const& tracks,
+                             o2::aod::BCsWithTimestamps const&)
   {
     fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
   } // CLOSING PROCESS MC RECO ON FILTERED DATA
   PROCESS_SWITCH(LFNucleiBATask, processMCRecoFiltered, "process mc reco on the filtered data", false);
 
   void processMCRecoFilteredLight(o2::aod::LfNuclEvents::iterator const& event,
-                                  soa::Join<o2::aod::LfCandNucleusDummy, o2::aod::LfCandNucleusMC> const& tracks)
+                                  soa::Join<o2::aod::LfCandNucleusDummy, o2::aod::LfCandNucleusMC> const& tracks,
+                                  o2::aod::BCsWithTimestamps const&)
   {
     fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
   } // CLOSING PROCESS MC RECO ON FILTERED DATA

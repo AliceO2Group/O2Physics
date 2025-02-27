@@ -174,7 +174,7 @@ struct HfCandidateCreatorCascade {
       }
 
       int posGlobalIndex = -1, negGlobalIndex = -1;
-      float v0x, v0y, v0z, v0px, v0py, v0pz;
+      float v0X, v0Y, v0Z, v0px, v0py, v0pz;
       float v0PosPx, v0PosPy, v0PosPz, v0NegPx, v0NegPy, v0NegPz;
       float dcaV0dau, dcaPosToPV, dcaNegToPV, v0cosPA;
       std::array<float, 21> covV = {0.};
@@ -187,9 +187,9 @@ struct HfCandidateCreatorCascade {
         const auto& trackV0DaughNeg = v0row.negTrack_as<aod::TracksWCov>();
         posGlobalIndex = trackV0DaughPos.globalIndex();
         negGlobalIndex = trackV0DaughNeg.globalIndex();
-        v0x = v0row.x();
-        v0y = v0row.y();
-        v0z = v0row.z();
+        v0X = v0row.x();
+        v0Y = v0row.y();
+        v0Z = v0row.z();
         v0px = v0row.px();
         v0py = v0row.py();
         v0pz = v0row.pz();
@@ -216,9 +216,9 @@ struct HfCandidateCreatorCascade {
         const auto& trackV0DaughNeg = v0row.negTrack_as<aod::TracksWCov>();
         posGlobalIndex = trackV0DaughPos.globalIndex();
         negGlobalIndex = trackV0DaughNeg.globalIndex();
-        v0x = v0row.x();
-        v0y = v0row.y();
-        v0z = v0row.z();
+        v0X = v0row.x();
+        v0Y = v0row.y();
+        v0Z = v0row.z();
         v0px = v0row.px();
         v0py = v0row.py();
         v0pz = v0row.pz();
@@ -255,7 +255,7 @@ struct HfCandidateCreatorCascade {
       df.setBz(bz);
 
       auto trackBach = getTrackParCov(bach);
-      const std::array<float, 3> vertexV0 = {v0x, v0y, v0z};
+      const std::array<float, 3> vertexV0 = {v0X, v0Y, v0Z};
       const std::array<float, 3> momentumV0 = {v0px, v0py, v0pz};
       // we build the neutral track to then build the cascade
       auto trackV0 = o2::track::TrackParCov(vertexV0, momentumV0, covV, 0, true);
@@ -318,7 +318,7 @@ struct HfCandidateCreatorCascade {
                        impactParameterBach.getY(), impactParameterV0.getY(),
                        std::sqrt(impactParameterBach.getSigmaY2()), std::sqrt(impactParameterV0.getSigmaY2()),
                        casc.prong0Id(), casc.v0Id(),
-                       v0x, v0y, v0z,
+                       v0X, v0Y, v0Z,
                        posGlobalIndex, negGlobalIndex,
                        v0PosPx, v0PosPy, v0PosPz,
                        v0NegPx, v0NegPy, v0NegPz,

@@ -206,7 +206,8 @@ struct PCMQCMC {
     fRegistry.add("V0/primary/hPtGen_DeltaPhi", "photon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
     fRegistry.add("V0/primary/hXY_Photon_MC", "X vs. Y of true photon conversion point.;X (cm);Y (cm)", kTH2F, {{400, -100.0f, +100}, {400, -100, +100}}, true);
     fRegistry.add("V0/primary/hRZ_Photon_MC", "R vs. Z of true photon conversion point;Z (cm);R_{xy} (cm)", kTH2F, {{200, -100.0f, +100}, {200, 0, 100}}, true);
-    fRegistry.add("V0/primary/hDCAz_Pt", "DCA to PV vs. p_{T} (GeV/c);DCA_{z} (cm);p_{T} (GeV/c)", kTH2F, {{200, -5.f, +5.f}, {1000, 0.0f, 20}}, true);
+    fRegistry.add("V0/primary/hDCAz_Pt_collType", "DCA to PV vs. p_{T} (GeV/c) vs. validated collision;DCA_{z} (cm);p_{T} (GeV/c)", kTHnSparseF, {{200, -5.f, +5.f}, {1000, 0.0f, 20}, {2, -0.5f, 1.5f}}, false);
+    fRegistry.add("V0/primary/hPt_DeltaColID", "V0 pT vs. delta collision Id; p_{T,#gamma} (GeV/c); v0CollId - mcGammaCollId ", kTH2F, {{200, 0.0f, 20}, {101, -50.5f, 50.5f}}, false);
     fRegistry.addClone("V0/primary/", "V0/fromWD/"); // from weak decay
     fRegistry.addClone("V0/primary/", "V0/fromHS/"); // from hadronic shower in detector materials
 
@@ -334,9 +335,10 @@ struct PCMQCMC {
     if (collision.sel8()) {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 8.0);
     }
-    if (abs(collision.posZ()) < 10.0) {
+    if (std::abs(collision.posZ()) < 10.0) {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 9.0);
     }
+
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
 
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultNTracksPV"), collision.multNTracksPV());
@@ -382,7 +384,6 @@ struct PCMQCMC {
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hConvPoint_diffZ"), mcleg.vz(), v0.vz() - mcleg.vz());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hXY_Photon_MC"), mcleg.vx(), mcleg.vy());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRZ_Photon_MC"), mcleg.vz(), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)));
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hDCAz_Pt"), v0.dcaZtopv(), v0.pt());
   }
 
   template <int mctype, typename TLeg>
@@ -459,6 +460,8 @@ struct PCMQCMC {
 
         if (mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator()) {
           fillV0Info<0>(v0, mcphoton, elemc);
+          fRegistry.fill(HIST("V0/primary/hPt_DeltaColID"), v0.pt(), collision.emmceventId() - mcphoton.emmceventId());
+          fRegistry.fill(HIST("V0/primary/hDCAz_Pt_collType"), v0.dcaZtopv(), v0.pt(), collision.emmceventId() == mcphoton.emmceventId());
           for (auto& leg : {pos, ele}) {
             fillV0LegInfo<0>(leg);
           }
@@ -531,11 +534,11 @@ struct PCMQCMC {
 
       auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
       for (auto& mctrack : mctracks_coll) {
-        if (abs(mctrack.y()) > pcmcuts.cfg_max_eta_v0) {
+        if (std::abs(mctrack.y()) > pcmcuts.cfg_max_eta_v0) {
           continue;
         }
 
-        if (abs(mctrack.pdgCode()) == 22 && (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
+        if (std::abs(mctrack.pdgCode()) == 22 && (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           fRegistry.fill(HIST("Generated/hPt_ConvertedPhoton"), mctrack.pt());
           fRegistry.fill(HIST("Generated/hY_ConvertedPhoton"), mctrack.y());
           fRegistry.fill(HIST("Generated/hPhi_ConvertedPhoton"), mctrack.phi());
