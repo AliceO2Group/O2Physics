@@ -211,6 +211,7 @@ if(FastJet_FOUND)
     o2physics_add_dpl_workflow(nuclei-in-jets
                         SOURCES nucleiInJets.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-taggerhf-qa
                         SOURCES jetTaggerHFQA.cxx
