@@ -279,7 +279,8 @@ struct JFlucEfficiencyTask {
         }
 
         // Fill track histograms
-        for (const auto& track : tracks) {
+        auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+        for (const auto& track : groupedTracks) {
           if (!track.has_cfMCParticle()) {
             if (debugMode) {
               LOGF(debug, "Track without MC particle found");
@@ -293,7 +294,7 @@ struct JFlucEfficiencyTask {
           if (track.sign() > 0) {
             registry.fill(HIST("hPtRecDataPos"), track.pt(), collision.multiplicity());
           } else if (track.sign() < 0) {
-            registry.fill(HIST("hPtRecDatfaNeg"), track.pt(), collision.multiplicity());
+            registry.fill(HIST("hPtRecDataNeg"), track.pt(), collision.multiplicity());
           }
         }
 
