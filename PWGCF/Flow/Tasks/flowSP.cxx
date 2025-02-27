@@ -92,6 +92,7 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, false, "Use kTVXinTRD (reject TRD triggered events)");
   O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "Selects collisions with at least one ITS-TPC track");
   O2_DEFINE_CONFIGURABLE(cfgIsGoodITSLayersAll, bool, true, "Cut time intervals with dead ITS staves");
+  O2_DEFINE_CONFIGURABLE(cfgEvSelsMCReco, bool, true, "Apply event selections in MC Reco");
   // harmonics for v coefficients
   O2_DEFINE_CONFIGURABLE(cfgHarm, int, 1, "Flow harmonic n for ux and uy: (Cos(n*phi), Sin(n*phi))");
   O2_DEFINE_CONFIGURABLE(cfgHarmMixed, int, 2, "Flow harmonic n for ux and uy in mixed harmonics (MH): (Cos(n*phi), Sin(n*phi))");
@@ -678,7 +679,6 @@ struct FlowSP {
   template <ChargeType ct, typename TrackObject>
   inline void fillHistograms(TrackObject track, float wacc, float weff, double ux, double uy, double uxMH, double uyMH, double qxA, double qyA, double qxC, double qyC, double corrQQx, double corrQQy, double corrQQ, double vnA, double vnC, double vnFull, double centrality)
   {
-
     registry.fill(HIST(Charge[ct]) + HIST("vnA_eta"), track.eta(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
     registry.fill(HIST(Charge[ct]) + HIST("vnC_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
@@ -874,9 +874,9 @@ struct FlowSP {
 
         registry.fill(HIST("hTrackCount"), trackSel_FilteredTracks);
 
-        float weff = 1, wacc = 1;
-        float weffP = 1, waccP = 1;
-        float weffN = 1, waccN = 1;
+        float weff = 1., wacc = 1.;
+        float weffP = 1., waccP = 1.;
+        float weffN = 1., waccN = 1.;
 
         if (!trackSelected(track, field))
           continue;
@@ -964,7 +964,7 @@ struct FlowSP {
     if (cfgFillQAHistos)
       fillEventQA<kBefore>(collision, tracks);
 
-    if (!eventSelected(collision, tracks.size(), centrality))
+    if (cfgEvSelsMCReco && !eventSelected(collision, tracks.size(), centrality))
       return;
 
     if (cfgFillQAHistos)
