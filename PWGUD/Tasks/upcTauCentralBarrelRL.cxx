@@ -73,6 +73,8 @@ struct UpcTauRl {
     Configurable<bool> useTrueGap{"useTrueGap", true, {"Calculate gapSide for a given FV0/FT0/ZDC thresholds"}};
     Configurable<int> cutNumContribs{"cutNumContribs", 2, {"How many contributors event has"}};
     Configurable<bool> useNumContribs{"useNumContribs", true, {"Use coll.numContribs as event cut"}};
+    Configurable<int> cutRecoFlag{"cutRecoFlag", 1, {"0 = std mode, 1 = upc mode"}};
+    Configurable<bool> useRecoFlag{"useRecoFlag", false, {"Use coll.flags as event cut"}};
     Configurable<float> cutTrueGapSideFV0{"cutTrueGapSideFV0", -1, "FV0A threshold for SG selector"};
     Configurable<float> cutTrueGapSideFT0A{"cutTrueGapSideFT0A", 150., "FT0A threshold for SG selector"};
     Configurable<float> cutTrueGapSideFT0C{"cutTrueGapSideFT0C", 50., "FT0C threshold for SG selector"};
@@ -2274,6 +2276,9 @@ struct UpcTauRl {
     if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
         return;
 
+    if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
+      return;
+
     if (doMainHistos) {
       fillHistograms(reconstructedBarrelTracks);
       fillFIThistograms(reconstructedCollision);
@@ -2306,6 +2311,9 @@ struct UpcTauRl {
     if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
       return;
 
+    if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
+      return;
+
     if (doMainHistos) {
       fillHistograms(reconstructedBarrelTracks);
       fillFIThistograms(reconstructedCollision);
@@ -2328,6 +2336,9 @@ struct UpcTauRl {
       return;
 
     if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
+      return;
+
+    if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
       return;
 
     if (cutSample.applyAcceptanceSelection) {
@@ -2370,6 +2381,9 @@ struct UpcTauRl {
       return;
 
     if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
+      return;
+
+    if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
       return;
 
     if (cutSample.applyAcceptanceSelection) {
