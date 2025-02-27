@@ -66,7 +66,7 @@ std::shared_ptr<TProfile3D> omegac24[10];
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct FlowGFWOmegaXi {
+struct FlowGfwOmegaXi {
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
@@ -987,5 +987,5 @@ struct FlowGFWOmegaXi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<FlowGFWOmegaXi>(cfgc)};
+    adaptAnalysisTask<FlowGfwOmegaXi>(cfgc)};
 }
