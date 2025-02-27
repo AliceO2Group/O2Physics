@@ -30,10 +30,10 @@ using namespace o2::framework;
 using namespace o2::analysis;
 
 enum PidInfoStored {
-  KPiFromLam = 0,
-  KPrFromLam,
-  KPiFromCasc,
-  KPiFromCharm
+  PiFromLam = 0,
+  PrFromLam,
+  PiFromCasc,
+  PiFromCharm
 };
 
 /// Struct for applying Xic0 -> Xi pi selection cuts
@@ -407,28 +407,28 @@ struct HfCandidateSelectorXic0ToXiPiKf {
       }
 
       if (trackPiFromLam.hasTPC()) {
-        SETBIT(infoTpcStored, KPiFromLam);
+        SETBIT(infoTpcStored, PiFromLam);
       }
       if (trackPrFromLam.hasTPC()) {
-        SETBIT(infoTpcStored, KPiFromLam);
+        SETBIT(infoTpcStored, PiFromLam);
       }
       if (trackPiFromCasc.hasTPC()) {
-        SETBIT(infoTpcStored, KPiFromCasc);
+        SETBIT(infoTpcStored, PiFromCasc);
       }
       if (trackPiFromCharm.hasTPC()) {
-        SETBIT(infoTpcStored, KPiFromCharm);
+        SETBIT(infoTpcStored, PiFromCharm);
       }
       if (trackPiFromLam.hasTOF()) {
-        SETBIT(infoTofStored, KPiFromLam);
+        SETBIT(infoTofStored, PiFromLam);
       }
       if (trackPrFromLam.hasTOF()) {
-        SETBIT(infoTofStored, KPiFromLam);
+        SETBIT(infoTofStored, PiFromLam);
       }
       if (trackPiFromCasc.hasTOF()) {
-        SETBIT(infoTofStored, KPiFromCasc);
+        SETBIT(infoTofStored, PiFromCasc);
       }
       if (trackPiFromCharm.hasTOF()) {
-        SETBIT(infoTofStored, KPiFromCharm);
+        SETBIT(infoTofStored, PiFromCharm);
       }
 
       if (usePidTpcOnly) {
