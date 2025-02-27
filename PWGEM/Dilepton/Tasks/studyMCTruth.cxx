@@ -82,6 +82,8 @@ struct studyMCTruth {
     const AxisSpec axis_mll{ConfMllBins, "m_{ll} (GeV/c^{2})"};
     const AxisSpec axis_ptll{ConfPtllBins, "p_{T,ll} (GeV/c)"};
 
+    fRegistry.add("Event/hReccollsPerMCcoll", "Rec. colls per MC coll;Rec. colls per MC coll;Number of MC collisions", kTH1D, {{21, -0.5, 20.5}}, false);
+    fRegistry.add("Event/hSelReccollsPerMCcoll", "Selected Rec. colls per MC coll;Selected Rec. colls per MC coll;Number of MC collisions", kTH1D, {{21, -0.5, 20.5}}, false);
     fRegistry.add("Event/hDiffBC", "diffrence in BC;BC_{rec. coll.} - BC_{mc coll.}", kTH1D, {{101, -50.5, +50.5}}, false);
     fRegistry.add("Event/allMC/hZvtx", "MC Zvtx;Z_{vtx} (cm)", kTH1D, {{100, -50, +50}}, false);
     fRegistry.add("Event/allMC/hImpactParameter", "impact parameter;impact parameter b (fm)", kTH1D, {{200, 0, 20}}, false);
@@ -238,6 +240,16 @@ struct studyMCTruth {
       const auto& bc_from_mcCollision = mcCollision.template bc_as<TBCs>();
       bool isSelectedMC = isSelectedCollision(mcCollision, bc_from_mcCollision);
 
+      auto reccolls_per_mccoll = collisions.sliceBy(recColperMcCollision, mcCollision.globalIndex());
+      fRegistry.fill(HIST("Event/hReccollsPerMCcoll"), reccolls_per_mccoll.size());
+      int nselreccolls_per_mccoll = 0;
+      for (const auto& rec_col : reccolls_per_mccoll) {
+        if (isSelectedCollision(rec_col, rec_col.template foundBC_as<TBCs>())) {
+          nselreccolls_per_mccoll++;
+        }
+      } // end of reconstructed collision
+      fRegistry.fill(HIST("Event/hSelReccollsPerMCcoll"), nselreccolls_per_mccoll);
+
       bool isSelectedRec = false;
       bool hasRecCollision = false;
       if (mcCollision.mpemeventId() >= 0) {
@@ -312,6 +324,7 @@ struct studyMCTruth {
 
   SliceCache cache;
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<aod::McCollisionLabels> recColperMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   using MyMcCollisions = soa::Join<aod::McCollisions, aod::MostProbableEMEventIdsInMC>;
 
