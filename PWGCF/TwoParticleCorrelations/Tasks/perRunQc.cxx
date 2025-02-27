@@ -15,6 +15,9 @@
 
 #include <array>
 #include <cmath>
+#include <unordered_map>
+#include <memory>
+#include <vector>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/ctpRateFetcher.h"
