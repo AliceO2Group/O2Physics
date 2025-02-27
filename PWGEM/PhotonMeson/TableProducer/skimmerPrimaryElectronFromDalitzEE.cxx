@@ -39,6 +39,8 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::pwgem::photonmeson;
 
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEventsNgPCM>;
+using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCFullEl, aod::pidTPCFullPi>;
 using MyTrack = MyTracks::iterator;
 using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
@@ -288,15 +290,18 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
 
   // ---------- for data ----------
-  void processRec(Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks)
+  void processRec(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks)
   {
     stored_trackIds.reserve(tracks.size());
 
     for (const auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (collision.ngpcm() < 1) {
         continue;
       }
 
@@ -315,7 +320,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Partition<MyFilteredTracksMC> posTracksMC = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracksMC> negTracksMC = o2::aod::track::signed1Pt < 0.f;
   // ---------- for MC ----------
-  void processMC(soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks)
+  void processMC(MyCollisions const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks)
   {
     stored_trackIds.reserve(tracks.size());
 
@@ -323,9 +328,13 @@ struct skimmerPrimaryElectronFromDalitzEE {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
+
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (collision.ngpcm() < 1) {
         continue;
       }
 
