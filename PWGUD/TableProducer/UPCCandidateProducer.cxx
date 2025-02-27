@@ -98,6 +98,9 @@ struct UpcCandProducer {
   Configurable<float> fMinEtaMFT{"minEtaMFT", -3.6, "Minimum eta for MFT tracks"};
   Configurable<float> fMaxEtaMFT{"maxEtaMFT", -2.5, "Maximum eta for MFT tracks"};
 
+  Configurable<bool> fRequireNoTimeFrameBorder{"requireNoTimeFrameBorder", true, "Require kNoTimeFrameBorder selection bit"};
+  Configurable<bool> fRequireNoITSROFrameBorder{"requireNoITSROFrameBorder", true, "Require kNoITSROFrameBorder selection bit"};
+
   // QA histograms
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -701,7 +704,10 @@ struct UpcCandProducer {
                                   o2::aod::Collisions const& /*collisions*/,
                                   ForwardTracks const& fwdTracks,
                                   o2::aod::AmbiguousFwdTracks const& /*ambFwdTracks*/,
-                                  std::unordered_map<int64_t, uint64_t>& ambFwdTrBCs)
+                                  std::unordered_map<int64_t, uint64_t>& ambFwdTrBCs,
+                                  std::unordered_map<uint64_t, int64_t>& bcTRS,
+                                  std::unordered_map<uint64_t, int64_t>& bcTROFS,
+                                  std::unordered_map<uint64_t, int64_t>& bcHMPR)
   {
     for (const auto& trk : fwdTracks) {
       if (trk.trackType() != typeFilter)
@@ -711,14 +717,32 @@ struct UpcCandProducer {
       int64_t trkId = trk.globalIndex();
       int32_t nContrib = -1;
       uint64_t trackBC = 0;
+      int64_t trs = 0;   // for kNoCollInTimeRangeStandard
+      int64_t trofs = 0; // for kNoCollInRofStandard
+      int64_t hmpr = 0;  // for kNoHighMultCollInPrevRof
       auto ambIter = ambFwdTrBCs.find(trkId);
       if (ambIter == ambFwdTrBCs.end()) {
         const auto& col = trk.collision();
         nContrib = col.numContrib();
         trackBC = col.bc_as<TBCs>().globalBC();
-        if (!(col.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoTimeFrameBorder) &&
-              col.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-          continue; // skip this track if both selection bits are not set
+        const auto& bc = col.bc_as<TBCs>();
+        if (bc.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+          trs = 1;
+        }
+        if (bc.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+          trofs = 1;
+        }
+        if (bc.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+          hmpr = 1;
+        }
+        bcTRS[trackBC] = trs;
+        bcTROFS[trackBC] = trofs;
+        bcHMPR[trackBC] = hmpr;
+        if (fRequireNoTimeFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+          continue; // skip this track if the kNoTimeFrameBorder bit is required but not set
+        }
+        if (fRequireNoITSROFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          continue; // skip this track if the kNoITSROFrameBorder bit is required but not set
         }
       } else {
         trackBC = ambIter->second;
@@ -1545,6 +1569,11 @@ struct UpcCandProducer {
     std::vector<BCTracksPair> bcsMatchedTrIdsMCH;
     std::vector<BCTracksPair> bcsMatchedTrIdsGlobal;
 
+    // to store selection bits
+    std::unordered_map<uint64_t, int64_t> bcTRS;
+    std::unordered_map<uint64_t, int64_t> bcTROFS;
+    std::unordered_map<uint64_t, int64_t> bcHMPR;
+
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
     collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, ambFwdTracks);
@@ -1562,7 +1591,8 @@ struct UpcCandProducer {
     collectForwardGlobalTracks(bcsMatchedTrIdsGlobal,
                                o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack,
                                bcs, collisions,
-                               fwdTracks, ambFwdTracks, ambFwdTrBCs);
+                               fwdTracks, ambFwdTracks, ambFwdTrBCs,
+                               bcTRS, bcTROFS, bcHMPR);
 
     std::sort(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
@@ -1805,7 +1835,11 @@ struct UpcCandProducer {
                           fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                           fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, 0, 0, 0);
+      // get selection flags per BC
+      int trsVal = bcTRS.count(globalBC) ? bcTRS[globalBC] : 0;
+      int trofsVal = bcTROFS.count(globalBC) ? bcTROFS[globalBC] : 0;
+      int hmprVal = bcHMPR.count(globalBC) ? bcHMPR[globalBC] : 0;
+      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, trsVal, trofsVal, hmprVal);
       eventCandidatesSelsFwd(fitInfo.distClosestBcV0A,
                              fitInfo.distClosestBcT0A,
                              amplitudesT0A,
