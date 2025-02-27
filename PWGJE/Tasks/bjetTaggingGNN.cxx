@@ -184,7 +184,7 @@ struct BjetTaggingGNN {
   int analyzeJetTrackInfo(AnyCollision const& /*collision*/, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/ /*, int8_t jetFlavor = 0, double weight = 1.0*/)
   {
     int nTracks = 0;
-    for (auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
+    for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
 
       if (constituent.pt() < trackPtMin) {
         continue;
@@ -321,7 +321,7 @@ struct BjetTaggingGNN {
       int nTracks = 0;
 
       int nNppTracks = 0;
-      for (auto& constituent : analysisJet.template tracks_as<JetTracksMCDwID>()) {
+      for (const auto& constituent : analysisJet.template tracks_as<JetTracksMCDwID>()) {
         if (constituent.pt() < trackPtMin) {
           continue;
         }
@@ -482,5 +482,5 @@ struct BjetTaggingGNN {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<BjetTaggingGNN>(cfgc, TaskName{"bjet-tagging-gnn"})};
+    adaptAnalysisTask<BjetTaggingGNN>(cfgc, TaskName{"bjet-tagging-gnn"})}; // o2-linter: disable=name/o2-task
 }
