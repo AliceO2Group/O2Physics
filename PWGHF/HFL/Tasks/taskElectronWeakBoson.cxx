@@ -12,6 +12,7 @@
 /// \file taskElectronWeakBoson.cxx
 /// \brief task for WeakBoson (W/Z) based on electron in mid-rapidity
 /// \author S. Sakai & S. Ito (Univ. of Tsukuba)
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -30,6 +31,7 @@
 #include "Common/DataModel/PIDResponse.h"
 
 #include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGHF/Core/HfHelper.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -54,6 +56,7 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> nclItsMin{"nclItsMin", 2.0f, "its # of cluster cut"};
   Configurable<float> nclTpcMin{"nclTpcMin", 100.0f, "tpc # if cluster cut"};
   Configurable<float> nclcrossTpcMin{"nclcrossTpcMin", 100.0f, "tpc # of crossedRows cut"};
+  Configurable<float> nsigTpcMinLose{"nsigTpcMinLose", -3.0, "tpc Nsig lose lower cut"};
   Configurable<float> nsigTpcMin{"nsigTpcMin", -1.0, "tpc Nsig lower cut"};
   Configurable<float> nsigTpcMax{"nsigTpcMax", 3.0, "tpc Nsig upper cut"};
 
@@ -71,6 +74,20 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> rIsolation{"rIsolation", 0.3, "cone radius for isolation cut"};
   Configurable<float> energyIsolationMax{"energyIsolationMax", 0.1, "isolation cut on energy"};
   Configurable<int> trackIsolationMax{"trackIsolationMax", 3, "Maximum number of tracks in isolation cone"};
+
+  struct HfElectronCandidate {
+    float pt, eta, phi, energy;
+    HfElectronCandidate(float p, float e, float ph, float en)
+      : pt(p), eta(e), phi(ph), energy(en) {}
+
+    float px() const { return pt * std::cos(phi); }
+    float py() const { return pt * std::sin(phi); }
+    float pz() const { return pt * std::sinh(eta); }
+  };
+  std::vector<HfElectronCandidate> selectedElectronsIso;
+  std::vector<HfElectronCandidate> selectedElectronsAss;
+
+  HfHelper hfHelper;
 
   using SelectedClusters = o2::aod::EMCALClusters;
   // PbPb
@@ -118,6 +135,8 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisEMCtime{200, -100.0, 100, "EMC time"};
     const AxisSpec axisIsoEnergy{100, 0, 1, "Isolation energy(GeV/C)"};
     const AxisSpec axisIsoTrack{20, -0.5, 19.5, "Isolation Track"};
+    const AxisSpec axisInvMassZ{200, 0, 200, "M_{ee} (GeV/c^{2})"};
+    const AxisSpec axisInvMassDy{200, 0, 2, "M_{ee} (GeV/c^{2})"};
 
     // create registrygrams
     registry.add("hZvtx", "Z vertex", kTH1F, {axisZvtx});
@@ -144,6 +163,8 @@ struct HfTaskElectronWeakBoson {
     registry.add("hEMCtime", "EMC timing", kTH1F, {axisEMCtime});
     registry.add("hIsolationEnergy", "Isolation Energy", kTH2F, {{axisE}, {axisIsoEnergy}});
     registry.add("hIsolationTrack", "Isolation Track", kTH2F, {{axisE}, {axisIsoTrack}});
+    registry.add("hInvMassZee", "invariant mass for Z", kTH2F, {{axisPt}, {axisInvMassZ}});
+    registry.add("hInvMassDy", "invariant mass for DY", kTH2F, {{axisPt}, {axisInvMassDy}});
   }
   bool isIsolatedCluster(const o2::aod::EMCALCluster& cluster,
                          const SelectedClusters& clusters)
@@ -247,6 +268,16 @@ struct HfTaskElectronWeakBoson {
       registry.fill(HIST("hPt"), track.pt());
       registry.fill(HIST("hTPCNsigma"), track.p(), track.tpcNSigmaEl());
 
+      float energyTrk = 0.0;
+
+      if (track.tpcNSigmaEl() > nsigTpcMinLose && track.tpcNSigmaEl() < nsigTpcMax) {
+        selectedElectronsAss.emplace_back(
+          track.pt(),
+          track.eta(),
+          track.phi(),
+          energyTrk);
+      }
+
       // track - match
 
       //  continue;
@@ -279,6 +310,7 @@ struct HfTaskElectronWeakBoson {
           // LOG(info) << "tr phi0 = " << match.track_as<TrackEle>().phi();
           // LOG(info) << "tr phi1 = " << track.phi();
           // LOG(info) << "emc phi = " << phiEmc;
+
           if (nMatch == 0) {
             double dEta = match.track_as<TrackEle>().trackEtaEmcal() - etaEmc;
             double dPhi = match.track_as<TrackEle>().trackPhiEmcal() - phiEmc;
@@ -303,6 +335,7 @@ struct HfTaskElectronWeakBoson {
             const auto& cluster = match.emcalcluster_as<SelectedClusters>();
 
             double eop = energyEmc / match.track_as<TrackEle>().p();
+
             // LOG(info) << "E/p" << eop;
             registry.fill(HIST("hEopNsigTPC"), match.track_as<TrackEle>().tpcNSigmaEl(), eop);
             registry.fill(HIST("hM02"), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc);
@@ -317,6 +350,12 @@ struct HfTaskElectronWeakBoson {
 
               if (isIsolated) {
                 registry.fill(HIST("hEopIsolation"), match.track_as<TrackEle>().pt(), eop);
+
+                selectedElectronsIso.emplace_back(
+                  match.track_as<TrackEle>().pt(),
+                  match.track_as<TrackEle>().eta(),
+                  match.track_as<TrackEle>().phi(),
+                  energyEmc);
               }
 
               if (isIsolatedTr) {
@@ -335,6 +374,26 @@ struct HfTaskElectronWeakBoson {
       }
 
     } // end of track loop
+
+    // calculate inv. mass
+    if (selectedElectronsIso.size() > 1) {
+      for (size_t i = 0; i < selectedElectronsIso.size() - 1; ++i) {
+        const auto& e1 = selectedElectronsIso[i];
+        for (size_t j = 0; j < selectedElectronsAss.size() - 1; ++j) {
+          const auto& e2 = selectedElectronsAss[j];
+
+          if (e1.px() == e2.px())
+            continue;
+          auto mass = hfHelper.invMassZtoEE(e1, e2);
+          float ptIso = std::sqrt(e1.px() * e1.px() + e1.py() * e1.py());
+          float ptAss = std::sqrt(e2.px() * e2.px() + e2.py() * e2.py());
+          registry.fill(HIST("hInvMassDy"), ptIso, mass);
+          if (ptAss < 20.0 && ptIso < 20.0)
+            continue;
+          registry.fill(HIST("hInvMassZee"), ptIso, mass);
+        }
+      }
+    } // end of inv. mass calculation
   }
 };
 
