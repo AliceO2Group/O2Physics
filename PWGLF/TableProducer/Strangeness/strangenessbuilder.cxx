@@ -1116,7 +1116,7 @@ struct StrangenessBuilder {
       // if collisionId positive: get vertex, negative: origin
       // could be replaced by mean vertex (but without much benefit...)
       float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
-      if (v0.collisionId>=0) {
+      if (v0.collisionId >= 0) {
         auto const& collision = collisions.rawIteratorAt(v0.collisionId);
         pvX = collision.posX();
         pvY = collision.posY();
@@ -1547,7 +1547,7 @@ struct StrangenessBuilder {
       // if collisionId positive: get vertex, negative: origin
       // could be replaced by mean vertex (but without much benefit...)
       float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
-      if (cascade.collisionId>=0) {
+      if (cascade.collisionId >= 0) {
         auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
         pvX = collision.posX();
         pvY = collision.posY();
@@ -1862,7 +1862,7 @@ struct StrangenessBuilder {
       // if collisionId positive: get vertex, negative: origin
       // could be replaced by mean vertex (but without much benefit...)
       float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
-      if (cascade.collisionId>=0) {
+      if (cascade.collisionId >= 0) {
         auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
         pvX = collision.posX();
         pvY = collision.posY();

@@ -162,7 +162,7 @@ class strangenessBuilderHelper
   };
 
   template <typename TTrack>
-  bool buildV0Candidate(int collisionIndex, 
+  bool buildV0Candidate(int collisionIndex,
                         float pvX, float pvY, float pvZ,
                         TTrack const& positiveTrack,
                         TTrack const& negativeTrack,
@@ -309,7 +309,7 @@ class strangenessBuilderHelper
 
   // cascade builder creating a cascade from plain tracks
   template <typename TTrack>
-  bool buildCascadeCandidate(int collisionIndex, 
+  bool buildCascadeCandidate(int collisionIndex,
                              float pvX, float pvY, float pvZ,
                              TTrack const& positiveTrack,
                              TTrack const& negativeTrack,
@@ -331,7 +331,7 @@ class strangenessBuilderHelper
   // the DCAfitter again for the V0 contained in the cascade
   // if generating from scratch, prefer the other variant
   template <typename TTrack>
-  bool buildCascadeCandidate(int collisionIndex, 
+  bool buildCascadeCandidate(int collisionIndex,
                              float pvX, float pvY, float pvZ,
                              v0candidate const& v0input,
                              TTrack const& positiveTrack,
@@ -538,7 +538,7 @@ class strangenessBuilderHelper
   }
 
   template <typename TTrack>
-  bool buildCascadeCandidateWithKF(int collisionIndex, 
+  bool buildCascadeCandidateWithKF(int collisionIndex,
                                    float pvX, float pvY, float pvZ,
                                    TTrack const& positiveTrack,
                                    TTrack const& negativeTrack,
