@@ -1121,10 +1121,18 @@ struct StrangenessBuilder {
       }
 
       // Get tracks and generate candidate
-      auto const& collision = collisions.rawIteratorAt(v0.collisionId);
+      // if collisionId positive: get vertex, negative: origin 
+      // could be replaced by mean vertex (but without much benefit...)
+      float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f; 
+      if(v0.collisionId>=0){ 
+        auto const& collision = collisions.rawIteratorAt(v0.collisionId);
+        pvX = collision.posX(); 
+        pvY = collision.posY(); 
+        pvZ = collision.posZ();
+      }
       auto const& posTrack = tracks.rawIteratorAt(v0.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(v0.negTrackId);
-      if (!straHelper.buildV0Candidate(collision, posTrack, negTrack, v0.isCollinearV0, mEnabledTables[kV0Covs])) {
+      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, v0.isCollinearV0, mEnabledTables[kV0Covs])) {
         v0dataLink(-1, -1);
         continue;
       }
@@ -1544,7 +1552,15 @@ struct StrangenessBuilder {
     for (size_t icascade = 0; icascade < cascades.size(); icascade++) {
       // Get tracks and generate candidate
       auto const& cascade = cascades[sorted_cascade[icascade]];
-      auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
+      // if collisionId positive: get vertex, negative: origin 
+      // could be replaced by mean vertex (but without much benefit...)
+      float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f; 
+      if(cascade.collisionId>=0){ 
+        auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
+        pvX = collision.posX(); 
+        pvY = collision.posY(); 
+        pvZ = collision.posZ();
+      }
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(cascade.negTrackId);
       auto const& bachTrack = tracks.rawIteratorAt(cascade.bachTrackId);
@@ -1554,7 +1570,7 @@ struct StrangenessBuilder {
         interlinks.cascadeToCascCores.push_back(-1);
         continue; // didn't work out, skip
       }
-      if (!straHelper.buildCascadeCandidate(collision,
+      if (!straHelper.buildCascadeCandidate(cascade.collisionId, pvX, pvY, pvZ,
                                             v0sFromCascades[v0Map[cascade.v0Id]],
                                             posTrack,
                                             negTrack,
@@ -1851,11 +1867,19 @@ struct StrangenessBuilder {
     for (size_t icascade = 0; icascade < cascades.size(); icascade++) {
       // Get tracks and generate candidate
       auto const& cascade = cascades[sorted_cascade[icascade]];
-      auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
+      // if collisionId positive: get vertex, negative: origin 
+      // could be replaced by mean vertex (but without much benefit...)
+      float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f; 
+      if(cascade.collisionId>=0){ 
+        auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
+        pvX = collision.posX(); 
+        pvY = collision.posY(); 
+        pvZ = collision.posZ();
+      }
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(cascade.negTrackId);
       auto const& bachTrack = tracks.rawIteratorAt(cascade.bachTrackId);
-      if (!straHelper.buildCascadeCandidateWithKF(collision,
+      if (!straHelper.buildCascadeCandidateWithKF(cascade.collisionId, pvX, pvY, pvZ,
                                                   posTrack,
                                                   negTrack,
                                                   bachTrack,
@@ -1940,12 +1964,21 @@ struct StrangenessBuilder {
 
       auto const& strangeTrack = cascadeTrack.template track_as<TTracks>();
       auto const& collision = strangeTrack.collision();
+      // if collisionId positive: get vertex, negative: origin 
+      // could be replaced by mean vertex (but without much benefit...)
+      float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f; 
+      if(strangeTrack.has_collision()){ 
+        auto const& collision = strangeTrack.collision();
+        pvX = collision.posX(); 
+        pvY = collision.posY(); 
+        pvZ = collision.posZ();
+      }
       auto const& cascade = cascadeTrack.cascade();
       auto const& v0 = cascade.v0();
       auto const& posTrack = v0.template posTrack_as<TTracks>();
       auto const& negTrack = v0.template negTrack_as<TTracks>();
       auto const& bachTrack = cascade.template bachelor_as<TTracks>();
-      if (!straHelper.buildCascadeCandidate(collision,
+      if (!straHelper.buildCascadeCandidate(strangeTrack.collisionId(), pvX, pvY, pvZ,
                                             posTrack,
                                             negTrack,
                                             bachTrack,
