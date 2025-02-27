@@ -46,6 +46,9 @@ inline float getMass(int pdgCode)
     case kLambda0:
       mass = o2::constants::physics::MassLambda;
       break;
+    case kXiMinus:
+      mass = o2::constants::physics::MassXiMinus;
+      break;
     case o2::constants::physics::Pdg::kPhi:
       mass = o2::constants::physics::MassPhi;
       break;
@@ -83,7 +86,19 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
     } // switch
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0) {
-    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
+    switch (abs(motherPDG)) {
+      case kSigma0:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigma0;
+        break;
+      case kXiMinus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXiMinus;
+        break;
+      case o2::constants::physics::Pdg::kXi0:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXi0;
+        break;
+      default:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
+    }
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
     switch (abs(motherPDG)) {

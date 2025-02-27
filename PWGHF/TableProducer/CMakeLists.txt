@@ -42,7 +42,7 @@ o2physics_add_dpl_workflow(candidate-creator-2prong
 
 o2physics_add_dpl_workflow(candidate-creator-3prong
                     SOURCES candidateCreator3Prong.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-b0
@@ -98,6 +98,11 @@ o2physics_add_dpl_workflow(candidate-creator-xic-to-xi-pi-pi
 o2physics_add_dpl_workflow(candidate-creator-xicc
                     SOURCES candidateCreatorXicc.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(candidate-creator-mc-gen
+                    SOURCES candidateCreatorMcGen.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 # Candidate selectors
@@ -164,7 +169,7 @@ o2physics_add_dpl_workflow(candidate-selector-omegac0-to-omega-ka
 
 o2physics_add_dpl_workflow(candidate-selector-omegac0-to-omega-pi
                     SOURCES candidateSelectorOmegac0ToOmegaPi.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-xic0-to-xi-pi-kf
@@ -284,6 +289,10 @@ o2physics_add_dpl_workflow(tree-creator-dstar-to-d0-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(tree-creator-tcc-to-d0-d0-pi
+                    SOURCES treeCreatorTccToD0D0Pi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 # Derived-data creators
 
 o2physics_add_dpl_workflow(derived-data-creator-bplus-to-d0-pi
@@ -293,6 +302,11 @@ o2physics_add_dpl_workflow(derived-data-creator-bplus-to-d0-pi
 
 o2physics_add_dpl_workflow(derived-data-creator-d0-to-k-pi
                     SOURCES derivedDataCreatorD0ToKPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(derived-data-creator-dplus-to-pi-k-pi
+                    SOURCES derivedDataCreatorDplusToPiKPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

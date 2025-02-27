@@ -90,10 +90,12 @@ namespace femtodreamparticle
 {
 /// Distinuishes the different particle types
 enum ParticleType {
-  kTrack,           //! Track
-  kV0,              //! V0
-  kV0Child,         //! Child track of a V0
-  kCascade,         //! Cascade
+  kTrack,   //! Track
+  kV0,      //! V0
+  kV0Child, //! Child track of a V0
+  kCascade, //! Cascade
+  kCascadeV0,
+  kCascadeV0Child,
   kCascadeBachelor, //! Bachelor track of a cascade
   kCharmHadron,     //! Bachelor track of a cascade
   kNParticleTypes   //! Number of particle types
@@ -105,19 +107,20 @@ enum MomentumType {
   kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor", "CharmHadron"}; //! Naming of the different particle types
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA"};
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron"}; //! Naming of the different particle types
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
 enum TrackType {
-  kNoChild,    //! Not a V0 child
+  kNoChild,    //! Not any child
   kPosChild,   //! Positive V0 child
   kNegChild,   //! Negative V0 child
+  kBachelor,   //! Bachelor Cascade child
   kNTrackTypes //! Number of child types
 };
 
-static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg"}; //! Naming of the different particle types
+static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg", "Bach"}; //! Naming of the different particle types
 
 DECLARE_SOA_INDEX_COLUMN(FDCollision, fdCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);                       //! p_T (GeV/c)
@@ -137,11 +140,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! Compute the theta of the track
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! Compute the momentum in x in GeV/c
                            [](float pt, float phi) -> float {
-                             return pt * std::sin(phi);
+                             return pt * std::cos(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! Compute the momentum in y in GeV/c
                            [](float pt, float phi) -> float {
-                             return pt * std::cos(phi);
+                             return pt * std::sin(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! Compute the momentum in z in GeV/c
                            [](float pt, float eta) -> float {
@@ -189,6 +192,14 @@ DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! X position of the decay
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay vertex
 DECLARE_SOA_COLUMN(MKaon, mKaon, float);             //! The invariant mass of V0 candidate, assuming kaon
+// Here the cascade specific collums
+DECLARE_SOA_COLUMN(CascV0DCAtoPV, cascV0DCAtoPV, float);     //! DCA of the daughter V0 to the primar vertex
+DECLARE_SOA_COLUMN(CascDaughDCA, cascDaughDCA, float);       //! DCA between daughters
+DECLARE_SOA_COLUMN(CascTransRadius, cascTransRadius, float); //! Transverse radius of the decay vertex of the cascade
+DECLARE_SOA_COLUMN(CascDecayVtxX, cascDecayVtxX, float);     //! X position of the decay vertex of the cascade
+DECLARE_SOA_COLUMN(CascDecayVtxY, cascDecayVtxY, float);     //! Y position of the decay vertex of the cascade
+DECLARE_SOA_COLUMN(CascDecayVtxZ, cascDecayVtxZ, float);     //! Z position of the decay vertex of the cascade
+DECLARE_SOA_COLUMN(MOmega, mOmega, float);                   //! The invariant mass of Cascade candidate, assuming Omega
 } // namespace femtodreamparticle
 
 namespace fdhf
@@ -381,6 +392,13 @@ DECLARE_SOA_TABLE_STAGED(FDExtParticles, "FDEXTPARTICLE",
                          femtodreamparticle::DecayVtxY,
                          femtodreamparticle::DecayVtxZ,
                          femtodreamparticle::MKaon,
+                         femtodreamparticle::CascV0DCAtoPV,
+                         femtodreamparticle::CascDaughDCA,
+                         femtodreamparticle::CascTransRadius,
+                         femtodreamparticle::CascDecayVtxX,
+                         femtodreamparticle::CascDecayVtxY,
+                         femtodreamparticle::CascDecayVtxZ,
+                         femtodreamparticle::MOmega,
                          femtodreamparticle::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, femtodreamparticle::TPCNClsCrossedRows>)
 using FDFullParticle = FDExtParticles::iterator;
 
@@ -397,6 +415,9 @@ enum ParticleOriginMCTruth {
   kWrongCollision,             //! particle, that was associated wrongly to the collision
   kSecondaryDaughterLambda,    //! Daughter from a Lambda decay
   kSecondaryDaughterSigmaplus, //! Daughter from a Sigma^plus decay
+  kSecondaryDaughterSigma0,    //! Daughter from a Sigma^0 decay
+  kSecondaryDaughterXiMinus,   //! Daughter from a Xi^- decay
+  kSecondaryDaughterXi0,       //! Daughter from a Xi^0 decay
   kElse,                       //! none of the above; (NOTE: used to catch bugs. will be removed once MC usage is properly validated)
   kNOriginMCTruthTypes
 };

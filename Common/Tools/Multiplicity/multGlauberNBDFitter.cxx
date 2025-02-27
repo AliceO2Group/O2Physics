@@ -309,6 +309,7 @@ Bool_t multGlauberNBDFitter::DoFit()
   fk = fGlauberNBD->GetParameter(1);
   ff = fGlauberNBD->GetParameter(2);
   fnorm = fGlauberNBD->GetParameter(3);
+  fdMu = fGlauberNBD->GetParameter(4);
 
   return fitptr.Get()->IsValid();
 }
@@ -369,9 +370,25 @@ Double_t multGlauberNBDFitter::ContinuousNBD(Double_t n, Double_t mu, Double_t k
   return F;
 }
 
-void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap)
+void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap, Double_t lLoRange, Double_t lHiRange)
 {
   cout << "Calculating <Npart>, <Ncoll> in centrality bins..." << endl;
+  cout << "Range to calculate: " << lLoRange << " to " << lHiRange << endl;
+
+  cout << "Acquiring values from the fit function..." << endl;
+
+  fMu = fGlauberNBD->GetParameter(0);
+  fk = fGlauberNBD->GetParameter(1);
+  ff = fGlauberNBD->GetParameter(2);
+  fnorm = fGlauberNBD->GetParameter(3);
+  fdMu = fGlauberNBD->GetParameter(4);
+
+  cout << "Please inspect now: " << endl;
+  cout << "Glauber NBD mu ............: " << fMu << endl;
+  cout << "Glauber NBD k .............: " << fk << endl;
+  cout << "Glauber NBD f .............: " << ff << endl;
+  cout << "Glauber NBD norm ..........: " << fnorm << endl;
+  cout << "Glauber NBD dmu/dNanc .....: " << fdMu << endl;
 
   //2-fold nested loop:
   // + looping over all Nancestor combinations
@@ -379,8 +396,9 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
   // ^---> final product already multiplicity-binned
 
   //______________________________________________________
-  Double_t lLoRange, lHiRange;
-  fGlauberNBD->GetRange(lLoRange, lHiRange);
+  if (lLoRange < -1 && lHiRange < -1) {
+    fGlauberNBD->GetRange(lLoRange, lHiRange);
+  }
   // bypass to zero
   for (int ibin = 0; ibin < fNNpNcPairs; ibin++) {
     if (ibin % 2000 == 0)

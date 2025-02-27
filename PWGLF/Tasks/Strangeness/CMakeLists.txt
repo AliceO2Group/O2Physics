@@ -16,7 +16,7 @@ o2physics_add_dpl_workflow(hyperon-reco-test
 
 o2physics_add_dpl_workflow(derivedlambdakzeroanalysis
     SOURCES derivedlambdakzeroanalysis.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdakzeroanalysis-mc
@@ -51,7 +51,7 @@ o2physics_add_dpl_workflow(cascadecorrelations
 
 o2physics_add_dpl_workflow(non-prompt-cascade
     SOURCES nonPromptCascade.cxx
-    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore O2::DetectorsBase
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore O2::DetectorsBase O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(k0mixedevents
@@ -66,7 +66,7 @@ o2physics_add_dpl_workflow(vzero-cascade-absorption
 
 o2physics_add_dpl_workflow(derivedcascadeanalysis
     SOURCES derivedcascadeanalysis.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cascpostprocessing
@@ -81,7 +81,7 @@ o2physics_add_dpl_workflow(hstrangecorrelation
 
 o2physics_add_dpl_workflow(sigmaanalysis
     SOURCES sigmaanalysis.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(phik0shortanalysis
@@ -99,10 +99,17 @@ o2physics_add_dpl_workflow(lambdapolsp
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(strangeness-in-jets
-    SOURCES strangeness_in_jets.cxx
+o2physics_add_dpl_workflow(cascpolsp
+    SOURCES cascpolsp.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+if(FastJet_FOUND)
+o2physics_add_dpl_workflow(strangeness-in-jets
+    SOURCES strangenessInJets.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
+    COMPONENT_NAME Analysis)
+endif()
 
 o2physics_add_dpl_workflow(v0topologicalcuts
     SOURCES v0topologicalcuts.cxx
@@ -114,8 +121,8 @@ o2physics_add_dpl_workflow(v0ptinvmassplots
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(strange-yield-pbpb
-    SOURCES strange-yield-pbpb.cxx
+o2physics_add_dpl_workflow(derivedupcanalysis
+    SOURCES derivedupcanalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 

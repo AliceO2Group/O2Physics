@@ -222,6 +222,31 @@ enum centDetectors {
 };
 
 static const std::vector<std::string> centDetectorNames{"FV0A", "FT0M", "FT0A", "FT0C"};
+
+enum evSel {
+  kTVX = 0,
+  kZvtx,
+  kTFborder,
+  kITSROFborder,
+  kNoSameBunchPileup,
+  kIsGoodZvtxFT0vsPV,
+  kIsGoodITSLayersAll,
+  kIsEPtriggered,
+  kNevSels
+};
+
+static const std::vector<std::string> eventSelectionTitle{"Event selections"};
+static const std::vector<std::string> eventSelectionLabels{"TVX", "Z vtx", "TF border", "ITS ROF border", "No same-bunch pile-up", "kIsGoodZvtxFT0vsPV", "isGoodITSLayersAll", "isEPtriggered"};
+
+constexpr int EvSelDefault[8][1]{
+  {1},
+  {1},
+  {0},
+  {0},
+  {0},
+  {0},
+  {0},
+  {0}};
 } // namespace nuclei
 
 struct nucleiSpectra {
@@ -262,6 +287,8 @@ struct nucleiSpectra {
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
   Configurable<float> cfgCutPtMinTree{"cfgCutPtMinTree", 0.2f, "Minimum track transverse momentum for tree saving"};
   Configurable<float> cfgCutPtMaxTree{"cfgCutPtMaxTree", 15.0f, "Maximum track transverse momentum for tree saving"};
+
+  Configurable<LabeledArray<int>> cfgEventSelections{"cfgEventSelections", {nuclei::EvSelDefault[0], 8, 1, nuclei::eventSelectionLabels, nuclei::eventSelectionTitle}, "Event selections"};
 
   Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {nuclei::bbMomScalingDefault[0], 5, 2, nuclei::names, nuclei::chargeLabelNames}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {nuclei::betheBlochDefault[0], 5, 6, nuclei::names, nuclei::betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
@@ -354,6 +381,59 @@ struct nucleiSpectra {
     return collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.posZ() > -cfgCutVertex && collision.posZ() < cfgCutVertex && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
   }
 
+  template <class Tcoll>
+  bool eventSelectionWithHisto(Tcoll& collision)
+  {
+    spectra.fill(HIST("hEventSelections"), 0);
+
+    if (cfgEventSelections->get(nuclei::evSel::kTVX) && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
+    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kTVX + 1);
+
+    if (cfgEventSelections->get(nuclei::evSel::kZvtx) && std::abs(collision.posZ()) > cfgCutVertex) {
+      return false;
+    }
+    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kZvtx + 1);
+
+    if (cfgEventSelections->get(nuclei::evSel::kTFborder) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kTFborder + 1);
+
+    if (cfgEventSelections->get(nuclei::evSel::kITSROFborder) && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kITSROFborder + 1);
+
+    if (cfgEventSelections->get(nuclei::evSel::kNoSameBunchPileup) && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kNoSameBunchPileup + 1);
+
+    if (cfgEventSelections->get(nuclei::evSel::kIsGoodZvtxFT0vsPV) && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kIsGoodZvtxFT0vsPV + 1);
+
+    if (cfgEventSelections->get(nuclei::evSel::kIsGoodITSLayersAll) && !collision.selection_bit(aod::evsel::kIsGoodITSLayersAll)) {
+      return false;
+    }
+    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kIsGoodITSLayersAll + 1);
+
+    if constexpr (
+      requires {
+        collision.triggereventep();
+      }) {
+      if (cfgEventSelections->get(nuclei::evSel::kIsEPtriggered) && !collision.triggereventep()) {
+        return false;
+      }
+      spectra.fill(HIST("hEventSelections"), nuclei::evSel::kIsEPtriggered + 1);
+    }
+
+    return true;
+  }
+
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
@@ -414,6 +494,17 @@ struct nucleiSpectra {
       {cfgDCAxyBinsAlpha, "DCA_{z} (cm)"}};
     const AxisSpec etaAxis{40, -1., 1., "#eta"};
 
+    spectra.add("hEventSelections", "hEventSelections", {HistType::kTH1I, {{nuclei::evSel::kNevSels + 1, -0.5f, float(nuclei::evSel::kNevSels) + 0.5f}}});
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(1, "all");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kTVX + 2, "TVX");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kZvtx + 2, "Zvtx");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kTFborder + 2, "TFborder");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kITSROFborder + 2, "ITSROFborder");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kNoSameBunchPileup + 2, "kNoSameBunchPileup");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsGoodZvtxFT0vsPV + 2, "isGoodZvtxFT0vsPV");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsGoodITSLayersAll + 2, "IsGoodITSLayersAll");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsEPtriggered + 2, "IsEPtriggered");
+
     spectra.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
     if (doprocessMC) {
       spectra.add("hGenVtxZ", " generated collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
@@ -458,9 +549,11 @@ struct nucleiSpectra {
     }
 
     if (doprocessMatching) {
+      std::vector<double> occBins{-0.5, 499.5, 999.5, 1999.5, 2999.5, 3999.5, 4999.5, 10000., 50000.};
+      AxisSpec occAxis{occBins, "Occupancy"};
       for (int iC{0}; iC < 2; ++iC) {
         nuclei::hMatchingStudy[iC] = spectra.add<THnSparse>(fmt::format("hMatchingStudy{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;n#sigma_{ITS};n#sigma{TPC};n#sigma_{TOF};Centrality", HistType::kTHnSparseF, {{20, 1., 9.}, {10, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {50, -5., 5.}, {50, -5., 5.}, {50, 0., 1.}, {8, 0., 80.}});
-        nuclei::hMatchingStudyHadrons[iC] = spectra.add<THn>(fmt::format("hMatchingStudyHadrons{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;Centrality;Track type", HistType::kTHnF, {{23, 0.4, 5.}, {20, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {8, 0., 80.}, {2, -0.5, 1.5}});
+        nuclei::hMatchingStudyHadrons[iC] = spectra.add<THn>(fmt::format("hMatchingStudyHadrons{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;Centrality;Track type; Occupancy", HistType::kTHnF, {{23, 0.4, 5.}, {20, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {8, 0., 80.}, {2, -0.5, 1.5}, occAxis});
       }
     }
 
@@ -477,7 +570,7 @@ struct nucleiSpectra {
   float getCentrality(Tcoll const& collision)
   {
     float centrality = 1.;
-    if constexpr (std::is_same<Tcoll, CollWithCent>::value || std::is_same<Tcoll, CollWithEP>::value || std::is_same<Tcoll, CollWithQvec>::value) {
+    if constexpr (o2::aod::HasCentrality<Tcoll>) {
       if (cfgCentralityEstimator == nuclei::centDetectors::kFV0A) {
         centrality = collision.centFV0A();
       } else if (cfgCentralityEstimator == nuclei::centDetectors::kFT0M) {
@@ -638,13 +731,18 @@ struct nucleiSpectra {
                 }
 
                 if (cfgFlowHist->get(iS) && doprocessDataFlow) {
-                  if constexpr (std::is_same<Tcoll, CollWithEP>::value) {
+                  if constexpr (requires {
+                                  collision.psiFT0C();
+                                }) {
                     auto deltaPhiInRange = RecoDecay::constrainAngle(fvector.phi() - collision.psiFT0C(), 0.f, 2);
                     auto v2 = std::cos(2.0 * deltaPhiInRange);
                     nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMasses[iS], v2, track.itsNCls(), track.tpcNClsFound());
                   }
                 } else if (cfgFlowHist->get(iS) && doprocessDataFlowAlternative) {
-                  if constexpr (std::is_same<Tcoll, CollWithQvec>::value) {
+                  if constexpr (requires {
+                                  collision.qvecFT0CIm();
+                                  collision.qvecFT0CRe();
+                                }) {
                     auto deltaPhiInRange = RecoDecay::constrainAngle(fvector.phi() - computeEventPlane(collision.qvecFT0CIm(), collision.qvecFT0CRe()), 0.f, 2);
                     auto v2 = std::cos(2.0 * deltaPhiInRange);
                     nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMasses[iS], v2, track.itsNCls(), track.tpcNClsFound());
@@ -670,7 +768,9 @@ struct nucleiSpectra {
         }
       }
       if (flag & (kProton | kDeuteron | kTriton | kHe3 | kHe4) || doprocessMC) { /// ignore PID pre-selections for the MC
-        if constexpr (std::is_same<Tcoll, CollWithEP>::value) {
+        if constexpr (requires {
+                        collision.psiFT0A();
+                      }) {
           nuclei::candidates_flow.emplace_back(NucleusCandidateFlow{
             collision.centFV0A(),
             collision.centFT0M(),
@@ -687,7 +787,9 @@ struct nucleiSpectra {
             collision.qTPCL(),
             collision.qTPCR(),
           });
-        } else if constexpr (std::is_same<Tcoll, CollWithQvec>::value) {
+        } else if constexpr (requires {
+                               collision.qvecFT0AIm();
+                             }) {
           nuclei::candidates_flow.emplace_back(NucleusCandidateFlow{
             collision.centFV0A(),
             collision.centFT0M(),
@@ -749,7 +851,7 @@ struct nucleiSpectra {
   {
     nuclei::candidates.clear();
     nuclei::candidates_flow.clear();
-    if (!eventSelection(collision)) {
+    if (!eventSelectionWithHisto(collision)) {
       return;
     }
     if (!collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
@@ -778,7 +880,7 @@ struct nucleiSpectra {
   {
     nuclei::candidates.clear();
     nuclei::candidates_flow.clear();
-    if (!eventSelection(collision)) {
+    if (!eventSelectionWithHisto(collision)) {
       return;
     }
     if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
@@ -918,7 +1020,7 @@ struct nucleiSpectra {
       int iC = track.signed1Pt() > 0;
       const float pt = track.pt();
       const float phi = 2.f * RecoDecay::constrainAngle(track.phi() - collision.psiFT0C(), 0.f, 2);
-      nuclei::hMatchingStudyHadrons[iC]->Fill(pt, phi, track.eta(), centrality, track.hasTPC());
+      nuclei::hMatchingStudyHadrons[iC]->Fill(pt, phi, track.eta(), centrality, track.hasTPC(), collision.trackOccupancyInTimeRange());
       if (itsResponse.nSigmaITS<o2::track::PID::Helium3>(track) > -1.) {
         nuclei::hMatchingStudy[iC]->Fill(pt * 2, phi, track.eta(), itsResponse.nSigmaITS<o2::track::PID::Helium3>(track), nSigmaTPC, o2::pid::tof::Beta::GetBeta(track), centrality);
       }

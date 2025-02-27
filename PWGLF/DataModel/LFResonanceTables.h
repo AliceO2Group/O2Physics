@@ -118,7 +118,7 @@ using ResoEvtPlCollision = ResoEvtPlCollisions::iterator;
 // For DF mixing study
 DECLARE_SOA_TABLE(ResoCollisionDFs, "AOD", "RESOCOLLISIONDF",
                   o2::soa::Index<>,
-                  resocollision::CollisionId,
+                  // resocollision::CollisionId,
                   o2::aod::mult::MultNTracksPV,
                   collision::PosX,
                   collision::PosY,
@@ -140,6 +140,7 @@ namespace resodaughter
 {
 
 DECLARE_SOA_INDEX_COLUMN(ResoCollision, resoCollision);
+DECLARE_SOA_INDEX_COLUMN(ResoCollisionDF, resoCollisionDF);
 DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trk");       //!
 DECLARE_SOA_INDEX_COLUMN_FULL(V0, v0, int, V0s, "_V0");                 //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Cascade, cascade, int, Cascades, "_Cas"); //!
@@ -254,8 +255,8 @@ using ResoTrack = ResoTracks::iterator;
 // For DF mixing study
 DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDFs",
                   o2::soa::Index<>,
-                  resodaughter::ResoCollisionId,
-                  resodaughter::TrackId,
+                  resodaughter::ResoCollisionDFId,
+                  //  resodaughter::TrackId,
                   resodaughter::Pt,
                   resodaughter::Px,
                   resodaughter::Py,

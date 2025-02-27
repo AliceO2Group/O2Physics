@@ -32,6 +32,7 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamV0Selection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamCascadeSelection.h"
 
 namespace o2::analysis::femtoDream
 {
@@ -59,7 +60,7 @@ class FemtoDreamCutculator
 
     // check the config file for all known producer task
     std::vector<const char*> ProducerTasks = {
-      "femto-dream-producer-task", "femto-dream-producer-reduced-task"};
+      "femto-dream-producer-task", "femto-dream-producer-reduced-task", "femto-dream-producer-task-with-cascades"};
     for (auto& Producer : ProducerTasks) {
       if (root.count(Producer) > 0) {
         mConfigTree = root.get_child(Producer);
@@ -193,6 +194,44 @@ class FemtoDreamCutculator
     }
   }
 
+  /// Specialization of the setSelection function for Cascades
+
+  /// The selection passed to the function is retrieved from the dpl-config.json
+  /// \param obs Observable of the track selection
+  /// \param type Type of the track selection
+  /// \param prefix Prefix which is added to the name of the Configurable
+  void setCascadeSelection(femtoDreamCascadeSelection::CascadeSel obs,
+                           femtoDreamSelection::SelectionType type,
+                           const char* prefix)
+  {
+    auto tmpVec =
+      setSelection(FemtoDreamCascadeSelection::getSelectionName(obs, prefix));
+    if (tmpVec.size() > 0) {
+      mCascadeSel.setSelection(tmpVec, obs, type);
+    }
+  }
+
+  /// Automatically retrieves V0 selections from the dpl-config.json
+  /// \param prefix Prefix which is added to the name of the Configurable
+  void setCascadeSelectionFromFile(const char* prefix)
+  {
+    for (const auto& sel : mConfigTree) {
+      std::string sel_name = sel.first;
+      femtoDreamCascadeSelection::CascadeSel obs;
+      if (sel_name.find(prefix) != std::string::npos) {
+        int index = FemtoDreamCascadeSelection::findSelectionIndex(
+          std::string_view(sel_name), prefix);
+        if (index >= 0) {
+          obs = femtoDreamCascadeSelection::CascadeSel(index);
+        } else {
+          continue;
+        }
+        setCascadeSelection(obs, FemtoDreamCascadeSelection::getSelectionType(obs),
+                            prefix);
+      }
+    }
+  }
+
   /// This function investigates a given selection criterion. The available
   /// options are displayed in the terminal and the bit-wise container is put
   /// together according to the user input \tparam T1 Selection class under
@@ -319,6 +358,8 @@ class FemtoDreamCutculator
       output = iterateSelection(mTrackSel, SysChecks, sign);
     } else if (choice == std::string("V")) {
       output = iterateSelection(mV0Sel, SysChecks, sign);
+    } else if (choice == std::string("C")) {
+      output = iterateSelection(mCascadeSel, SysChecks, sign);
     } else {
       std::cout << "Option " << choice
                 << " not recognized - available options are (T/V)" << std::endl;
@@ -380,6 +421,7 @@ class FemtoDreamCutculator
   boost::property_tree::ptree mConfigTree;     ///< the dpl-config.json buffered into a ptree
   FemtoDreamTrackSelection mTrackSel;          ///< for setting up the bit-wise selection container for tracks
   FemtoDreamV0Selection mV0Sel;                ///< for setting up the bit-wise selection container for V0s
+  FemtoDreamCascadeSelection mCascadeSel;      ///< for setting up the bit-wise selection container for Cascades
   std::vector<o2::track::PID::ID> mPIDspecies; ///< list of particle species for which PID is stored
   std::vector<float> mPIDValues;               ///< list of nsigma values for which PID is stored
 };
