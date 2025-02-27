@@ -532,10 +532,10 @@ struct Pi0EtaToGammaGamma {
       float openingAngle1 = std::acos(photon1.Vect().Dot(photon3.Vect()) / (photon1.P() * photon3.P()));
       float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
 
-      if (openingAngle1 > emccuts.minOpenAngle && std::abs(mother1.Rapidity()) < maxY && iCellID_photon1 > 0) {
+      if (openingAngle1 > emccuts.minOpenAngle && std::fabs(mother1.Rapidity()) < maxY && iCellID_photon1 > 0) {
         fRegistry.fill(HIST("Pair/rotation/hs"), mother1.M(), mother1.Pt(), eventWeight);
       }
-      if (openingAngle2 > emccuts.minOpenAngle && std::abs(mother2.Rapidity()) < maxY && iCellID_photon2 > 0) {
+      if (openingAngle2 > emccuts.minOpenAngle && std::fabs(mother2.Rapidity()) < maxY && iCellID_photon2 > 0) {
         fRegistry.fill(HIST("Pair/rotation/hs"), mother2.M(), mother2.Pt(), eventWeight);
       }
     }
@@ -635,7 +635,7 @@ struct Pi0EtaToGammaGamma {
           ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          if (std::abs(v12.Rapidity()) > maxY) {
+          if (std::fabs(v12.Rapidity()) > maxY) {
             continue;
           }
 
@@ -699,7 +699,7 @@ struct Pi0EtaToGammaGamma {
             ROOT::Math::PtEtaPhiMVector v_ele(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ee = v_pos + v_ele;
             ROOT::Math::PtEtaPhiMVector veeg = v_gamma + v_pos + v_ele;
-            if (std::abs(veeg.Rapidity()) > maxY) {
+            if (std::fabs(veeg.Rapidity()) > maxY) {
               continue;
             }
 
@@ -729,7 +729,7 @@ struct Pi0EtaToGammaGamma {
           ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          if (std::abs(v12.Rapidity()) > maxY) {
+          if (std::fabs(v12.Rapidity()) > maxY) {
             continue;
           }
 
@@ -779,7 +779,7 @@ struct Pi0EtaToGammaGamma {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-              if (std::abs(v12.Rapidity()) > maxY) {
+              if (std::fabs(v12.Rapidity()) > maxY) {
                 continue;
               }
 
@@ -808,7 +808,7 @@ struct Pi0EtaToGammaGamma {
                 v2.SetM(g2.mass());
               }
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-              if (std::abs(v12.Rapidity()) > maxY) {
+              if (std::fabs(v12.Rapidity()) > maxY) {
                 continue;
               }
               fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), collision.weight());
@@ -834,7 +834,7 @@ struct Pi0EtaToGammaGamma {
                 v1.SetM(g1.mass());
               }
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-              if (std::abs(v12.Rapidity()) > maxY) {
+              if (std::fabs(v12.Rapidity()) > maxY) {
                 continue;
               }
               fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), collision.weight());
