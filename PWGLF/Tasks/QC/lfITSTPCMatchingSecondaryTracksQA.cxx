@@ -72,13 +72,15 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   Configurable<float> nsigmaTPCmax{"nsigmaTPCmax", +3.0f, "Maximum nsigma TPC"};
   Configurable<float> nsigmaTOFmin{"nsigmaTOFmin", -3.0f, "Minimum nsigma TOF"};
   Configurable<float> nsigmaTOFmax{"nsigmaTOFmax", +3.0f, "Maximum nsigma TOF"};
+  Configurable<float> dcaxyMax{"dcaxyMax", 0.1, "dcaxy max"};
+  Configurable<float> dcazMax{"dcazMax", 0.1, "dcaz max"};
   Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
   Configurable<bool> requireItsHits{"requireItsHits", false, "require ITS hits"};
-  Configurable<std::vector<float>> requiredHit{"requiredHit", {0, 0, 0, 1, 1, 1, 1}, "required ITS Hits"};
+  Configurable<std::vector<float>> requiredHit{"requiredHit", {0, 0, 0, 0, 0, 0, 0}, "required ITS Hits (1=required, 0=not required)"};
 
   // V0 Parameters
-  Configurable<float> minimumV0Radius{"minimumV0Radius", 0.5f, "Minimum V0 Radius"};
-  Configurable<float> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius"};
+  Configurable<float> minimumV0Radius{"minimumV0Radius", 0.0f, "Minimum V0 Radius"};
+  Configurable<float> maximumV0Radius{"maximumV0Radius", 100.0f, "Maximum V0 Radius"};
   Configurable<float> dcanegtoPVmin{"dcanegtoPVmin", 0.1f, "Minimum DCA Neg To PV"};
   Configurable<float> dcapostoPVmin{"dcapostoPVmin", 0.1f, "Minimum DCA Pos To PV"};
   Configurable<float> v0cospaMin{"v0cospaMin", 0.99f, "Minimum V0 CosPA"};
@@ -112,6 +114,27 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     return (itsClsmap & testBit);
   }
 
+  template <typename TpcTrackGlo>
+  bool passedTrackSelectionTpcGlobal(const TpcTrackGlo& track)
+  {
+    if (!track.hasTPC())
+      return false;
+    if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < minNCrossedRowsOverFindable)
+      return false;
+    if (track.tpcChi2NCl() > maxChi2TPC)
+      return false;
+    if (track.eta() < etaMin || track.eta() > etaMax)
+      return false;
+    if (std::fabs(track.dcaXY()) > dcaxyMax)
+      return false;
+    if (std::fabs(track.dcaZ()) > dcazMax)
+      return false;
+
+    return true;
+  }
+
   template <typename TpcTrack>
   bool passedTrackSelectionTpc(const TpcTrack& track)
   {
@@ -119,7 +142,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       return false;
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
       return false;
-    if ((track.tpcNClsCrossedRows() / track.tpcNClsFindable()) < minNCrossedRowsOverFindable)
+    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < minNCrossedRowsOverFindable)
       return false;
     if (track.tpcChi2NCl() > maxChi2TPC)
       return false;
@@ -182,7 +205,6 @@ struct LfITSTPCMatchingSecondaryTracksQA {
         }
       }
     }
-
     return true;
   }
 
@@ -197,7 +219,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
 
     for (const auto& track : tracks) {
 
-      if (!passedTrackSelectionTpc(track))
+      if (!passedTrackSelectionTpcGlobal(track))
         continue;
       if (!passedPionSelection(track))
         continue;
@@ -217,25 +239,17 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       if (!passedK0ShortSelection(v0))
         continue;
 
-      if (!passedTrackSelectionTpc(posTrack))
-        continue;
-      if (!passedTrackSelectionTpc(negTrack))
-        continue;
-      if (!passedPionSelection(posTrack))
-        continue;
-      if (!passedPionSelection(negTrack))
-        continue;
+      if (passedTrackSelectionTpc(posTrack) && passedPionSelection(posTrack))
+        registryData.fill(HIST("secPionTPC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
 
-      registryData.fill(HIST("secPionTPC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
-      registryData.fill(HIST("secPionTPC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
+      if (passedTrackSelectionTpc(negTrack) && passedPionSelection(negTrack))
+        registryData.fill(HIST("secPionTPC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
 
-      if (!passedTrackSelectionIts(posTrack))
-        continue;
-      registryData.fill(HIST("secPionTPC_ITS"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
+      if (passedTrackSelectionTpc(posTrack) && passedPionSelection(posTrack) && passedTrackSelectionIts(posTrack))
+        registryData.fill(HIST("secPionTPC_ITS"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
 
-      if (!passedTrackSelectionIts(negTrack))
-        continue;
-      registryData.fill(HIST("secPionTPC_ITS"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
+      if (passedTrackSelectionTpc(negTrack) && passedPionSelection(negTrack) && passedTrackSelectionIts(negTrack))
+        registryData.fill(HIST("secPionTPC_ITS"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
     }
   }
   PROCESS_SWITCH(LfITSTPCMatchingSecondaryTracksQA, processData, "Process data", true);
@@ -256,14 +270,9 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
 
       for (const auto& track : tracksPerColl) {
-        if (!passedTrackSelectionTpc(track))
+        if (!passedTrackSelectionTpcGlobal(track))
           continue;
         if (!passedPionSelection(track))
-          continue;
-        if (!track.has_mcParticle())
-          continue;
-        const auto particle = track.mcParticle();
-        if (std::fabs(particle.pdgCode()) != 211)
           continue;
 
         registryMC.fill(HIST("gloPionTPC_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
@@ -279,47 +288,18 @@ struct LfITSTPCMatchingSecondaryTracksQA {
         const auto& negTrack = v0.negTrack_as<MCTracks>();
         if (!passedK0ShortSelection(v0))
           continue;
-        if (!passedTrackSelectionTpc(posTrack))
-          continue;
-        if (!passedTrackSelectionTpc(negTrack))
-          continue;
-        if (!passedPionSelection(posTrack))
-          continue;
-        if (!passedPionSelection(negTrack))
-          continue;
-        if (!posTrack.has_mcParticle())
-          continue;
-        if (!negTrack.has_mcParticle())
-          continue;
 
-        auto posParticle = posTrack.mcParticle_as<aod::McParticles>();
-        auto negParticle = negTrack.mcParticle_as<aod::McParticles>();
-        if (!posParticle.has_mothers())
-          continue;
-        if (!negParticle.has_mothers())
-          continue;
+        if (passedTrackSelectionTpc(posTrack) && passedPionSelection(posTrack))
+          registryMC.fill(HIST("secPionTPC_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
 
-        int pdgParent(0);
-        for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
-          for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
-            if (particleMotherOfNeg == particleMotherOfPos) {
-              pdgParent = particleMotherOfNeg.pdgCode();
-            }
-          }
-        }
-        if (pdgParent != 310)
-          continue;
+        if (passedTrackSelectionTpc(negTrack) && passedPionSelection(negTrack))
+          registryMC.fill(HIST("secPionTPC_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
 
-        registryMC.fill(HIST("secPionTPC_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
-        registryMC.fill(HIST("secPionTPC_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
+        if (passedTrackSelectionTpc(posTrack) && passedPionSelection(posTrack) && passedTrackSelectionIts(posTrack))
+          registryMC.fill(HIST("secPionTPC_ITS_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
 
-        if (!passedTrackSelectionIts(posTrack))
-          continue;
-        registryMC.fill(HIST("secPionTPC_ITS_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
-
-        if (!passedTrackSelectionIts(negTrack))
-          continue;
-        registryMC.fill(HIST("secPionTPC_ITS_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
+        if (passedTrackSelectionTpc(negTrack) && passedPionSelection(negTrack) && passedTrackSelectionIts(negTrack))
+          registryMC.fill(HIST("secPionTPC_ITS_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
       }
     }
   }
