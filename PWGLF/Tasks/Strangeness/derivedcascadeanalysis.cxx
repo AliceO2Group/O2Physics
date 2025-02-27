@@ -715,10 +715,10 @@ struct Derivedcascadeanalysis {
         histos.fill(HIST("hEventSelection"), 19.5 /*rejects collisions if ITS was in rebooting stage*/);
 
       occupancyFT0 = coll.ft0cOccupancyInTimeRange();
-      if (eventSelectionRun3Flags.minOccupancyFT0 > 0 && occupancyFT0 < eventSelectionRun3Flags.minOccupancyFT0) {
+      if (eventSelectionRun3Flags.minOccupancyFT0 > -1 && occupancyFT0 < eventSelectionRun3Flags.minOccupancyFT0) {
         return false;
       }
-      if (eventSelectionRun3Flags.maxOccupancyFT0 > 0 && occupancyFT0 > eventSelectionRun3Flags.maxOccupancyFT0) {
+      if (eventSelectionRun3Flags.maxOccupancyFT0 > -1 && occupancyFT0 > eventSelectionRun3Flags.maxOccupancyFT0) {
         return false;
       }
       if (fillHists)
@@ -1129,7 +1129,7 @@ struct Derivedcascadeanalysis {
 
         if (cascMC.isPhysicalPrimary() && ((isXi && std::abs(cascMC.pdgCode()) == 3312) || (!isXi && std::abs(cascMC.pdgCode()) == 3334)))
           isTrueMCCascade = true;
-        if (isTrueMCCascade && (isPositive && cascMC.pdgCodePositive() == 211 && cascMC.pdgCodeNegative() == -2212) || (isNegative && cascMC.pdgCodePositive() == 2212 && cascMC.pdgCodeNegative() == -211))
+        if (isTrueMCCascade && ((isPositive && cascMC.pdgCodePositive() == 211 && cascMC.pdgCodeNegative() == -2212) || (isNegative && cascMC.pdgCodePositive() == 2212 && cascMC.pdgCodeNegative() == -211)))
           isCorrectLambdaDecay = true;
         if (isTrueMCCascade && isCorrectLambdaDecay && ((isXi && std::abs(cascMC.pdgCodeBachelor()) == 211) || (!isXi && std::abs(cascMC.pdgCodeBachelor()) == 321)))
           isTrueMCCascadeDecay = true;
