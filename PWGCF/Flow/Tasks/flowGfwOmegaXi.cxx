@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file   flowGFWOmegaXi.cxx
+/// \file   flowGfwOmegaXi.cxx
 /// \author Fuchun Cui(fcui@cern.ch)
 /// \since  Sep/13/2024
 /// \brief  This task is to caculate V0s and cascades flow by GenericFramework
