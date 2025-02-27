@@ -61,10 +61,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-// simple checkers
-#define BIT_SET(var, nbit) ((var) |= (1 << (nbit)))
-#define BIT_CHECK(var, nbit) ((var) & (1 << (nbit)))
-
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 using CascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascBBs, aod::CascCoreMCLabels>;
 
@@ -260,29 +256,29 @@ struct Derivedcascadeanalysis {
     selectionCheck = -1;
     selectionCheckMask = 0;
     if (!candidateSelectionFlags.doBachelorBaryonCut)
-      BIT_SET(selectionCheckMask, 0);
+      SETBIT(selectionCheckMask, 0);
     if (!candidateSelectionFlags.doDCAV0ToPVCut)
-      BIT_SET(selectionCheckMask, 1);
+      SETBIT(selectionCheckMask, 1);
     if (!candidateSelectionFlags.doV0RadiusCut)
-      BIT_SET(selectionCheckMask, 2);
+      SETBIT(selectionCheckMask, 2);
     if (!candidateSelectionFlags.doCascadeRadiusCut)
-      BIT_SET(selectionCheckMask, 3);
+      SETBIT(selectionCheckMask, 3);
     if (!candidateSelectionFlags.doDCAV0DauCut)
-      BIT_SET(selectionCheckMask, 4);
+      SETBIT(selectionCheckMask, 4);
     if (!candidateSelectionFlags.doDCACascadeDauCut)
-      BIT_SET(selectionCheckMask, 5);
+      SETBIT(selectionCheckMask, 5);
     if (!candidateSelectionFlags.doV0CosPaCut)
-      BIT_SET(selectionCheckMask, 6);
+      SETBIT(selectionCheckMask, 6);
     if (!candidateSelectionFlags.doCascadeCosPaCut)
-      BIT_SET(selectionCheckMask, 7);
+      SETBIT(selectionCheckMask, 7);
     if (!candidateSelectionFlags.doDCAbachToPVCut)
-      BIT_SET(selectionCheckMask, 8);
+      SETBIT(selectionCheckMask, 8);
     if (!candidateSelectionFlags.doDCAmesonToPVCut)
-      BIT_SET(selectionCheckMask, 9);
+      SETBIT(selectionCheckMask, 9);
     if (!candidateSelectionFlags.doDCAbaryonToPVCut)
-      BIT_SET(selectionCheckMask, 10);
+      SETBIT(selectionCheckMask, 10);
     if (!candidateSelectionFlags.doProperLifeTimeCut)
-      BIT_SET(selectionCheckMask, 11);
+      SETBIT(selectionCheckMask, 11);
 
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
     histos.add("hEventMultFt0C", "", kTH1F, {{500, 0, 5000}});
@@ -1042,7 +1038,7 @@ struct Derivedcascadeanalysis {
   {
     static_for<0, 11>([&](auto i) {
       constexpr int In = i.value;
-      if (BIT_CHECK(selectionCheckMask, In)) {
+      if (TESTBIT(selectionCheckMask, In)) {
         if (isPos)
           histos.fill(HIST("PtDepCutStudy/hPositive") + HIST(kSelectionNames[In]), pt, mass, sel);
         else
@@ -1054,7 +1050,7 @@ struct Derivedcascadeanalysis {
   {
     static_for<0, 11>([&](auto i) {
       constexpr int In = i.value;
-      if (BIT_CHECK(selectionCheckMask, In)) {
+      if (TESTBIT(selectionCheckMask, In)) {
         if (isPos)
           histos.fill(HIST("PtDepCutStudyMCTruth/hPositive") + HIST(kSelectionNames[In]), pt, mass, sel);
         else
@@ -1081,10 +1077,7 @@ struct Derivedcascadeanalysis {
         centrality = coll.centFV0A();
       if (useCentralityFT0Cvar1)
         centrality = coll.centFT0CVariant1();
-      if (useTrackOccupancyDef)
-        occupancy = coll.trackOccupancyInTimeRange();
-      if (useFT0OccupancyDef)
-        occupancy = coll.ft0cOccupancyInTimeRange();
+      occupancy = useTrackOccupancyDef ? coll.trackOccupancyInTimeRange() : coll.ft0cOccupancyInTimeRange();
     } else {
       centrality = eventSelectionRun2Flags.useSPDTrackletsCent ? coll.centRun2SPDTracklets() : coll.centRun2V0M();
     }
@@ -1384,11 +1377,7 @@ struct Derivedcascadeanalysis {
       }
 
       if (qaFlags.doOccupancyCheck) {
-        float occupancy = -2;
-        if constexpr (requires { coll.trackOccupancyInTimeRange(); }) {
-          occupancy = useTrackOccupancyDef ? coll.trackOccupancyInTimeRange() : coll.ft0cOccupancyInTimeRange();
-          fillHistOccupancyCheck(recoPt, invmass, occupancy, centrality, isPositive);
-        }
+        fillHistOccupancyCheck(recoPt, invmass, occupancy, centrality, isPositive);
       }
       if (isPositive) {
         histos.fill(HIST("InvMassAfterSel/hPositiveCascade"), recoPt, invmass, centrality);
