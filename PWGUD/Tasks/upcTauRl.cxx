@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file upcTauCentralBarrelRL.cxx
+/// \file upcTauRl.cxx
 /// \brief Personal task to analyze tau events from UPC collisions
 ///
 /// \author Roman Lavicka <roman.lavicka@cern.ch>, Austrian Academy of Sciences & SMI
@@ -727,9 +727,9 @@ struct UpcTauRl {
 
   bool isFulfillsITSHitRequirementsReinstatement(uint8_t itsClusterMap) const
   {
-    constexpr uint8_t bit = 1;
+    constexpr uint8_t kBit = 1;
     for (const auto& kITSrequirement : cutMyRequiredITSHits) {
-      auto hits = std::count_if(kITSrequirement.second.begin(), kITSrequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (bit << requiredLayer); });
+      auto hits = std::count_if(kITSrequirement.second.begin(), kITSrequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (kBit << requiredLayer); });
       if ((kITSrequirement.first == -1) && (hits > 0)) {
         return false; // no hits were required in specified layers
       } else if (hits < kITSrequirement.first) {
