@@ -993,15 +993,10 @@ struct decay3bodyBuilder {
   //------------------------------------------------------------------
   // 3body candidate builder with KFParticle
   template <typename TCollision, typename TTrack>
-  void buildVtx3BodyDataTableKFParticle(TCollision const& collision, TTrack const& trackPos, TTrack const& trackNeg, TTrack const& trackBach, int64_t decay3bodyID, int bachelorcharge, /*int nRotations, */ double tofNSigmaDeuteron)
+  void buildVtx3BodyDataTableKFParticle(TCollision const& collision, TTrack const& trackPos, TTrack const& trackNeg, TTrack const& trackBach, int64_t decay3bodyID, int bachelorcharge, double tofNSigmaDeuteron)
   {
     gROOT->SetBatch(true);
     gRandom->SetSeed(42);
-
-    bool isEventMixing = false;
-    if (decay3bodyID == -1) {
-      isEventMixing = true;
-    }
 
     // initialise KF primary vertex
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
@@ -1826,7 +1821,7 @@ struct decay3bodyBuilder {
   } // end process
   PROCESS_SWITCH(decay3bodyBuilder, processRun3withKFParticleReducedEM, "Produce KFParticle event mixing decay3body tables from derived decay3body data", false);
 
-  void processRun3withKFParticleReduced3bodyMixing(ReducedCollisionsMults const& collisions, aod::RedIUTracks const&, soa::Join<aod::RedDecay3Bodys, aod::Red3BodyInfo> const& decay3bodys)
+  void processRun3withKFParticleReduced3bodyMixing(ReducedCollisionsMults const&, aod::RedIUTracks const&, soa::Join<aod::RedDecay3Bodys, aod::Red3BodyInfo> const& decay3bodys)
   {
     Binning3Body binningOnRadPhiPosZ{{kfparticleConfigurations.bins3BodyRadius, kfparticleConfigurations.bins3BodyPhi, kfparticleConfigurations.bins3BodyPosZ}, true};
 
@@ -1835,8 +1830,6 @@ struct decay3bodyBuilder {
       auto trackPos1 = decay3body1.template track0_as<aod::RedIUTracks>();
       auto trackNeg1 = decay3body1.template track1_as<aod::RedIUTracks>();
       auto trackBach1 = decay3body1.template track2_as<aod::RedIUTracks>();
-      auto trackPos2 = decay3body2.template track0_as<aod::RedIUTracks>();
-      auto trackNeg2 = decay3body2.template track1_as<aod::RedIUTracks>();
       auto trackBach2 = decay3body2.template track2_as<aod::RedIUTracks>();
 
       registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 0.5);
