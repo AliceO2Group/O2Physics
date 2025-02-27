@@ -1116,7 +1116,7 @@ struct StrangenessBuilder {
       // if collisionId positive: get vertex, negative: origin
       // could be replaced by mean vertex (but without much benefit...)
       float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
-      if(v0.collisionId>=0){
+      if (v0.collisionId>=0) {
         auto const& collision = collisions.rawIteratorAt(v0.collisionId);
         pvX = collision.posX();
         pvY = collision.posY();
@@ -1547,7 +1547,7 @@ struct StrangenessBuilder {
       // if collisionId positive: get vertex, negative: origin
       // could be replaced by mean vertex (but without much benefit...)
       float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
-      if(cascade.collisionId>=0){
+      if (cascade.collisionId>=0) {
         auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
         pvX = collision.posX();
         pvY = collision.posY();
@@ -1862,7 +1862,7 @@ struct StrangenessBuilder {
       // if collisionId positive: get vertex, negative: origin
       // could be replaced by mean vertex (but without much benefit...)
       float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
-      if(cascade.collisionId>=0){
+      if (cascade.collisionId>=0) {
         auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
         pvX = collision.posX();
         pvY = collision.posY();
@@ -1959,7 +1959,7 @@ struct StrangenessBuilder {
       // if collisionId positive: get vertex, negative: origin
       // could be replaced by mean vertex (but without much benefit...)
       float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
-      if(strangeTrack.has_collision()){
+      if (strangeTrack.has_collision()) {
         auto const& collision = strangeTrack.collision();
         pvX = collision.posX();
         pvY = collision.posY();
@@ -2012,14 +2012,14 @@ struct StrangenessBuilder {
   template <typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTrackedCascades, typename TTracks, typename TBCs, typename TMCParticles>
   void dataProcess(TCollisions const& collisions, TMCCollisions const& mccollisions, TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades, TTracks const& tracks, TBCs const& bcs, TMCParticles const& mcParticles)
   {
-    if (!initCCDB(bcs, collisions)) 
+    if (!initCCDB(bcs, collisions))
       return;
     markV0sUsedInCascades(v0s, cascades);
     if (mEnabledTables[kV0CoresBase]) { // V0s have been requested
       buildV0s<TTracks>(collisions, v0s);
     }
     if (mEnabledTables[kStoredCascCores]) { // Cascades have been requested
-      //buildCascades<FullTracksExtIU>(Cascades);
+      // buildCascades<FullTracksExtIU>(Cascades);
     }
   }
 
