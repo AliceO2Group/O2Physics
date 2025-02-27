@@ -77,10 +77,9 @@ struct HfTaskElectronWeakBoson {
 
   struct HfElectronCandidate {
     float pt, eta, phi, energy;
-    ElectronCandidate(float p, float e, float ph, float en)
+    HfElectronCandidate(float p, float e, float ph, float en)
       : pt(p), eta(e), phi(ph), energy(en) {}
 
-    // 運動量成分を計算する関数を追加
     float px() const { return pt * std::cos(phi); }
     float py() const { return pt * std::sin(phi); }
     float pz() const { return pt * std::sinh(eta); }
