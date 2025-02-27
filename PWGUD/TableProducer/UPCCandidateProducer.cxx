@@ -98,6 +98,9 @@ struct UpcCandProducer {
   Configurable<float> fMinEtaMFT{"minEtaMFT", -3.6, "Minimum eta for MFT tracks"};
   Configurable<float> fMaxEtaMFT{"maxEtaMFT", -2.5, "Maximum eta for MFT tracks"};
 
+  Configurable<bool> fRequireNoTimeFrameBorder{"requireNoTimeFrameBorder", true, "Require kNoTimeFrameBorder selection bit"};
+  Configurable<bool> fRequireNoITSROFrameBorder{"requireNoITSROFrameBorder", true, "Require kNoITSROFrameBorder selection bit"};
+
   // QA histograms
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -732,13 +735,15 @@ struct UpcCandProducer {
         if (bc.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
           hmpr = 1;
         }
-        if (!(bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) &&
-              bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-          continue; // skip this track if both selection bits are not set
-        }
         bcTRS[trackBC] = trs;
         bcTROFS[trackBC] = trofs;
         bcHMPR[trackBC] = hmpr;
+        if (fRequireNoTimeFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+          continue; // skip this track if the kNoTimeFrameBorder bit is required but not set
+        }
+        if (fRequireNoITSROFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          continue; // skip this track if the kNoITSROFrameBorder bit is required but not set
+        }
       } else {
         trackBC = ambIter->second;
       }
