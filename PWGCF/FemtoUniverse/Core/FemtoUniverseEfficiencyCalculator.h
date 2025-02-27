@@ -35,18 +35,31 @@ enum ParticleNo : size_t {
 template <size_t T>
 concept isOneOrTwo = T == ParticleNo::ONE || T == ParticleNo::TWO;
 
+template <typename T>
+consteval auto getHistDim() -> int
+{
+  if (std::is_same_v<T, TH1>)
+    return 1;
+  else if (std::is_same_v<T, TH2>)
+    return 2;
+  else if (std::is_same_v<T, TH3>)
+    return 3;
+  else
+    return -1;
+}
+
 struct EfficiencyConfigurableGroup : ConfigurableGroup {
-  Configurable<bool> confEfficiencyDoMCTruth{"confEfficiencyDoMCTruth", false, "Should fill MC Truth histogram"};
   Configurable<bool> confEfficiencyApplyCorrections{"confEfficiencyApplyCorrections", false, "Should apply corrections from efficiency"};
-  Configurable<std::vector<std::string>> confEfficiencyCCDBLabels{"confEfficiencyCCDBLabels", {}, "Custom labels for efficiency objects in CCDB"};
-  Configurable<int> confCCDBTrainNumber{"confCCDBTrainNumber", -1, "Train number for which to query CCDB objects (set to -1 to ignore)"};
-  Configurable<std::vector<std::string>> confEfficiencyCCDBTimestamps{"confEfficiencyCCDBTimestamps", {"-1", "-1"}, "Timestamps in CCDB, to query for specific objects (default: -1 for both, the latest valid object)"};
+  Configurable<int> confEfficiencyCCDBTrainNumber{"confEfficiencyCCDBTrainNumber", -1, "Train number for which to query CCDB objects (set to -1 to ignore)"};
+  Configurable<std::vector<std::string>> confEfficiencyCCDBTimestamps{"confEfficiencyCCDBTimestamps", {}, "Timestamps of efficiency histograms in CCDB, to query for specific objects (default: ['-1', '-1'], gets the latest valid objects for both)"};
 
   // NOTE: in the future we might move the below configurables to a separate struct, eg. CCDBConfigurableGroup
   Configurable<std::string> confCCDBUrl{"confCCDBUrl", "http://alice-ccdb.cern.ch", "CCDB URL to be used"};
   Configurable<std::string> confCCDBPath{"confCCDBPath", "", "CCDB base path to where to upload objects"};
 };
 
+template <typename HistType>
+  requires std::is_base_of_v<TH1, HistType>
 class EfficiencyCalculator
 {
  public:
@@ -63,39 +76,31 @@ class EfficiencyCalculator
     int64_t now = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb.setCreatedNotAfter(now);
 
-    shouldDoTruth = config->confEfficiencyDoMCTruth;
     shouldApplyCorrections = config->confEfficiencyApplyCorrections;
 
-    if (config->confEfficiencyApplyCorrections) {
-      hLoaded = {
-        loadEfficiencyFromCCDB(ParticleNo::ONE),
-        loadEfficiencyFromCCDB(ParticleNo::TWO), //
-      };
-    }
-  }
-
-  template <size_t N>
-    requires isOneOrTwo<N>
-  auto doMCTruth(
-    FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, N>& hMCTruth,
-    const auto& particles) const -> void
-  {
-    if (shouldDoTruth) {
-      for (const auto& particle : particles) {
-        hMCTruth.template fillQA<false, false>(particle);
+    if (config->confEfficiencyApplyCorrections && !config->confEfficiencyCCDBTimestamps.value.empty()) {
+      for (const auto& timestamp : config->confEfficiencyCCDBTimestamps.value) {
+        hLoaded.push_back(loadEfficiencyFromCCDB(std::stol(timestamp)));
       }
+
+      LOGF(info, notify("Successfully loaded %d efficiency histogram(s)"), hLoaded.size());
     }
   }
 
-  auto getWeight(const size_t partNo, const auto& particle) const -> float
+  template <typename... BinVars>
+    requires(sizeof...(BinVars) == getHistDim<HistType>())
+  auto getWeight(ParticleNo partNo, const BinVars&... binVars) const -> float
   {
     auto weight = 1.0f;
-    auto hEff = hLoaded[partNo - 1];
 
-    if (shouldApplyCorrections && hEff) {
-      auto bin = hEff->FindBin(particle.pt());
-      auto eff = hEff->GetBinContent(bin);
-      weight /= eff > 0 ? eff : 1.0f;
+    if (partNo - 1 < config->confEfficiencyCCDBTimestamps.value.size()) {
+      auto hEff = hLoaded[partNo - 1];
+
+      if (shouldApplyCorrections && hEff) {
+        auto bin = hEff->FindBin(binVars...);
+        auto eff = hEff->GetBinContent(bin);
+        weight /= eff > 0 ? eff : 1.0f;
+      }
     }
 
     return weight;
@@ -107,38 +112,46 @@ class EfficiencyCalculator
     return fmt::format("[EFFICIENCY] {}", msg);
   }
 
-  auto loadEfficiencyFromCCDB(const size_t partNo) const -> TH1*
+  static auto isHistEmpty(HistType* hist) -> bool
+  {
+    if (!hist) {
+      return true;
+    }
+    for (auto idx = 0; idx <= hist->GetNbinsX() + 1; idx++) {
+      if (hist->GetBinContent(idx) > 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  auto loadEfficiencyFromCCDB(const int64_t timestamp) const -> HistType*
   {
     std::map<std::string, std::string> metadata{};
 
-    if (partNo - 1 < config->confEfficiencyCCDBLabels->size()) {
-      metadata["label"] = config->confEfficiencyCCDBLabels.value[partNo - 1];
-    }
-    if (config->confCCDBTrainNumber > 0) {
-      metadata["trainNumber"] = std::to_string(config->confCCDBTrainNumber);
+    if (config->confEfficiencyCCDBTrainNumber > 0) {
+      metadata["trainNumber"] = std::to_string(config->confEfficiencyCCDBTrainNumber);
     }
 
-    auto timestamp = partNo - 1 < config->confEfficiencyCCDBTimestamps->size()
-                       ? std::stoll(config->confEfficiencyCCDBTimestamps.value[partNo - 1])
-                       : -1;
-
-    auto hEff = ccdb.getSpecific<TH1>(config->confCCDBPath, timestamp, metadata);
+    auto hEff = ccdb.getSpecific<HistType>(config->confCCDBPath, timestamp, metadata);
     if (!hEff || hEff->IsZombie()) {
-      LOGF(error, notify("Could not load histogram from %s for particle %d"), config->confCCDBPath.value, partNo);
+      LOGF(error, notify("Could not load histogram \"%s/%ld\""), config->confCCDBPath.value, timestamp);
       return nullptr;
     }
 
-    LOGF(info, notify("Histogram for particle %d loaded from \"%s\""), partNo, config->confCCDBPath.value);
+    if (isHistEmpty(hEff)) {
+      LOGF(warn, notify("Histogram \"%s/%ld\" has been loaded, but it is empty"), config->confCCDBPath.value, timestamp);
+    }
+
     return hEff;
   }
 
   EfficiencyConfigurableGroup* config{};
 
-  bool shouldDoTruth = false;
   bool shouldApplyCorrections = false;
 
   o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
-  std::array<TH1*, 2> hLoaded{};
+  std::vector<HistType*> hLoaded{};
 };
 
 } // namespace o2::analysis::femto_universe::efficiency
