@@ -167,6 +167,7 @@ struct chargedkstaranalysis {
     histos1.add("QAbefore/chargedkstarpmRapidity",
                 "Reconstructed K*^{#pm} rapidity", kTH1F, {etaAxis});
     histos1.add("QAbefore/trkpionTOFPID", "TOF PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+    histos1.add("QAbefore/trkpionTPCTOFPID", "TPC-TOF PID map of bachelor pion candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
 
     histos1.add("QAbefore/DCAxy_pi",
                 "DCAxy distribution of pion track candidates", HistType::kTH1F,
