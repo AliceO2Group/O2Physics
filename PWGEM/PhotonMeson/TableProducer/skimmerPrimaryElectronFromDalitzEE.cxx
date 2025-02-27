@@ -71,8 +71,8 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
   Configurable<float> minpt{"minpt", 0.1, "min pt for track"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
-  Configurable<float> dca_xy_max{"dca_xy_max", 0.1, "max DCAxy in cm"};
-  Configurable<float> dca_z_max{"dca_z_max", 0.1, "max DCAz in cm"};
+  Configurable<float> dca_xy_max{"dca_xy_max", 0.05, "max DCAxy in cm"};
+  Configurable<float> dca_z_max{"dca_z_max", 0.05, "max DCAz in cm"};
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.5, "max. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 0.0, "max. TPC n sigma for pion exclusion"};
@@ -228,7 +228,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::make_pair(collision.globalIndex(), track.globalIndex())) == stored_trackIds.end()) {
       emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
-                         track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(),
+                         track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(),
                          track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                          track.tpcChi2NCl(), track.tpcInnerParam(),
                          track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
