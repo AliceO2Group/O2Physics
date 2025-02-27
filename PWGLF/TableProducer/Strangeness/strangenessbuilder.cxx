@@ -95,15 +95,80 @@ static constexpr int nTablesConst = 37;
 
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
-  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //0-9
-  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //10-19
-  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //20-29
-  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //30-39
-  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //40-49
-  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //50-59
-  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //60-69
-  {-1}, {-1}, {-1}                                            //70-72
-  };
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1}, // 0-9
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1}, // 10-19
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1}, // 20-29
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1}, // 30-39
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1}, // 40-49
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1}, // 50-59
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1}, // 60-69
+  {-1},
+  {-1},
+  {-1} // 70-72
+};
 
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
@@ -1048,13 +1113,13 @@ struct StrangenessBuilder {
     // Loops over all V0s in the time frame
     for (auto& v0 : v0s) {
       // Get tracks and generate candidate
-      // if collisionId positive: get vertex, negative: origin 
+      // if collisionId positive: get vertex, negative: origin
       // could be replaced by mean vertex (but without much benefit...)
-      float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f; 
-      if(v0.collisionId>=0){ 
+      float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
+      if(v0.collisionId>=0){
         auto const& collision = collisions.rawIteratorAt(v0.collisionId);
-        pvX = collision.posX(); 
-        pvY = collision.posY(); 
+        pvX = collision.posX();
+        pvY = collision.posY();
         pvZ = collision.posZ();
       }
       auto const& posTrack = tracks.rawIteratorAt(v0.posTrackId);
@@ -1479,13 +1544,13 @@ struct StrangenessBuilder {
     for (size_t icascade = 0; icascade < cascades.size(); icascade++) {
       // Get tracks and generate candidate
       auto const& cascade = cascades[sorted_cascade[icascade]];
-      // if collisionId positive: get vertex, negative: origin 
+      // if collisionId positive: get vertex, negative: origin
       // could be replaced by mean vertex (but without much benefit...)
-      float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f; 
-      if(cascade.collisionId>=0){ 
+      float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
+      if(cascade.collisionId>=0){
         auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
-        pvX = collision.posX(); 
-        pvY = collision.posY(); 
+        pvX = collision.posX();
+        pvY = collision.posY();
         pvZ = collision.posZ();
       }
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
@@ -1794,13 +1859,13 @@ struct StrangenessBuilder {
     for (size_t icascade = 0; icascade < cascades.size(); icascade++) {
       // Get tracks and generate candidate
       auto const& cascade = cascades[sorted_cascade[icascade]];
-      // if collisionId positive: get vertex, negative: origin 
+      // if collisionId positive: get vertex, negative: origin
       // could be replaced by mean vertex (but without much benefit...)
-      float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f; 
-      if(cascade.collisionId>=0){ 
+      float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
+      if(cascade.collisionId>=0){
         auto const& collision = collisions.rawIteratorAt(cascade.collisionId);
-        pvX = collision.posX(); 
-        pvY = collision.posY(); 
+        pvX = collision.posX();
+        pvY = collision.posY();
         pvZ = collision.posZ();
       }
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
@@ -1891,13 +1956,13 @@ struct StrangenessBuilder {
 
       auto const& strangeTrack = cascadeTrack.template track_as<TTracks>();
       auto const& collision = strangeTrack.collision();
-      // if collisionId positive: get vertex, negative: origin 
+      // if collisionId positive: get vertex, negative: origin
       // could be replaced by mean vertex (but without much benefit...)
-      float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f; 
-      if(strangeTrack.has_collision()){ 
+      float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
+      if(strangeTrack.has_collision()){
         auto const& collision = strangeTrack.collision();
-        pvX = collision.posX(); 
-        pvY = collision.posY(); 
+        pvX = collision.posX();
+        pvY = collision.posY();
         pvZ = collision.posZ();
       }
       auto const& cascade = cascadeTrack.cascade();
@@ -1910,7 +1975,6 @@ struct StrangenessBuilder {
 
   void processPreselectTPCPID(aod::Collisions const& collisions, aod::V0s const& V0s, aod::Cascades const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
   {
-
   }
 
   //__________________________________________________
@@ -1948,12 +2012,13 @@ struct StrangenessBuilder {
   template <typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTrackedCascades, typename TTracks, typename TBCs, typename TMCParticles>
   void dataProcess(TCollisions const& collisions, TMCCollisions const& mccollisions, TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades, TTracks const& tracks, TBCs const& bcs, TMCParticles const& mcParticles)
   {
-    if(!initCCDB(bcs, collisions)) return;
+    if (!initCCDB(bcs, collisions)) 
+      return;
     markV0sUsedInCascades(v0s, cascades);
-    if(mEnabledTables[kV0CoresBase]){ // V0s have been requested
+    if (mEnabledTables[kV0CoresBase]) { // V0s have been requested
       buildV0s<TTracks>(collisions, v0s);
     }
-    if(mEnabledTables[kStoredCascCores]){ // Cascades have been requested
+    if (mEnabledTables[kStoredCascCores]) { // Cascades have been requested
       //buildCascades<FullTracksExtIU>(Cascades);
     }
   }
@@ -1965,7 +2030,7 @@ struct StrangenessBuilder {
 
   void processRealDataRun2(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    //dataProcess(collisions, v0s, cascades, tracks, bcs);
+    // dataProcess(collisions, v0s, cascades, tracks, bcs);
   }
 
   void processMonteCarlo(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIU const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
