@@ -205,7 +205,7 @@ void fillMcMatchGenBplus(T const& mcParticles, U& rowMcMatchGen)
     std::vector<int> arrayDaughterB;
     if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kBPlus, std::array{-Pdg::kD0, +kPiPlus}, true, &signB, 1, &arrayDaughterB)) {
       // D0(bar) → π± K∓
-      for (const auto iD : arrayDaughterB) {
+      for (const auto iD : arrayDaughterB) { // o2-linter: disable=const-ref-in-for-loop (int values)
         auto candDaughterMC = mcParticles.rawIteratorAt(iD);
         if (std::abs(candDaughterMC.pdgCode()) == Pdg::kD0) {
           indexGenD0 = RecoDecay::isMatchedMCGen(mcParticles, candDaughterMC, Pdg::kD0, std::array{-kKPlus, +kPiPlus}, true, &signD0, 1);
