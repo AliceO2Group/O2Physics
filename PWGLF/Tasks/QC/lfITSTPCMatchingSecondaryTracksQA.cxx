@@ -128,7 +128,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       return false;
     if (track.eta() < etaMin || track.eta() > etaMax)
       return false;
-    if (std::fabs(track.dcaXYZ()) < dcaMin)
+    if (std::sqrt(track.dcaXY() * track.dcaXY() + track.dcaZ() * track.dcaZ()) < dcaMin)
       return false;
 
     return true;
