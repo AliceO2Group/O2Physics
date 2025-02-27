@@ -125,7 +125,7 @@ o2physics_add_dpl_workflow(tautau13topo
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(upc-tau-rl
-                           SOURCES upcTauCentralBarrelRL.cxx
+                           SOURCES upcTauRl.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsBase O2::DetectorsCommonDataFormats
                            COMPONENT_NAME Analysis)
 
