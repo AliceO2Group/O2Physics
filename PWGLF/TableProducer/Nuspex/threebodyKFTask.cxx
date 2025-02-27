@@ -106,7 +106,7 @@ struct threebodyKFTask {
     auto mcParticlePi = trackPi.template mcParticle_as<aod::McParticles>();
     auto mcParticleDe = trackDe.template mcParticle_as<aod::McParticles>();
 
-    if (abs(mcParticlePr.pdgCode()) != 2212 || abs(mcParticleDe.pdgCode()) != 1000010020) {
+    if (std::abs(mcParticlePr.pdgCode()) != 2212 || std::abs(mcParticleDe.pdgCode()) != 1000010020) {
       return -1;
     }
     // check proton and deuteron mother
@@ -199,7 +199,7 @@ struct threebodyKFTask {
     // loop over collisions
     for (const auto& collision : collisions) {
       // event selection
-      if (!collision.sel8() || abs(collision.posZ()) > 10.f) {
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10.f) {
         continue;
       }
       // reco collision survived event selection filter --> fill value for MC collision if collision is "true" MC collision
