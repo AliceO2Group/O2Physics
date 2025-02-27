@@ -273,11 +273,11 @@ struct skimmerPrimaryElectronFromDalitzEE {
         fillTrackTable(collision, t1);
         fillTrackTable(collision, t2);
       } // end of t2
-    }   // end of t1
+    } // end of t1
   }
 
   std::vector<std::pair<int64_t, int64_t>> stored_trackIds;
-  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true && nabs(o2::aod::track::dcaXY) < dca_xy_max && nabs(o2::aod::track::dcaZ) < dca_z_max;
+  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true && nabs(o2::aod::track::dcaXY) < dca_xy_max&& nabs(o2::aod::track::dcaZ) < dca_z_max;
   Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -300,7 +300,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
 
       fillPairInfo<false>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
-    }                                                                         // end of collision loop
+    } // end of collision loop
 
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
@@ -329,7 +329,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
       auto negTracks_per_coll = negTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
 
       fillPairInfo<true>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
-    }                                                                        // end of collision loop
+    } // end of collision loop
 
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
