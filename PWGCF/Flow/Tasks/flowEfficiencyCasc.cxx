@@ -29,6 +29,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include <TPDGCode.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -222,21 +223,21 @@ struct FlowEfficiencyCasc {
       rectracknum = col.multNTracksGlobal();
     }
     for (auto const& cascmc : cascMCs) {
-      if (std::abs(cascmc.pdgCode()) == 3312) {
+      if (std::abs(cascmc.pdgCode()) == kXiMinus) {
         if (std::fabs(cascmc.yMC()) < cfgCasc_rapidity)
           registry.fill(HIST("h2DGenXi"), cascmc.ptMC(), rectracknum);
       }
-      if (std::abs(cascmc.pdgCode()) == 3334) {
+      if (std::abs(cascmc.pdgCode()) == kOmegaMinus) {
         if (std::fabs(cascmc.yMC()) < cfgCasc_rapidity)
           registry.fill(HIST("h2DGenOmega"), cascmc.ptMC(), rectracknum);
       }
     }
     for (auto const& v0mc : v0MCs) {
-      if (std::abs(v0mc.pdgCode()) == 310) {
+      if (std::abs(v0mc.pdgCode()) == kK0Short) {
         if (std::fabs(v0mc.yMC()) < cfgCasc_rapidity)
           registry.fill(HIST("h2DGenK0s"), v0mc.ptMC(), rectracknum);
       }
-      if (std::abs(v0mc.pdgCode()) == 3122) {
+      if (std::abs(v0mc.pdgCode()) == kLambda0) {
         if (std::fabs(v0mc.yMC()) < cfgCasc_rapidity)
           registry.fill(HIST("h2DGenLambda"), v0mc.ptMC(), rectracknum);
       }
