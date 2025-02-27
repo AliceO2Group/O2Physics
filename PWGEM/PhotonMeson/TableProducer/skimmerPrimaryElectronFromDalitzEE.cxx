@@ -13,6 +13,10 @@
 /// \author daiki.sekihata@cern.ch
 
 #include <map>
+#include <string>
+#include <vector>
+#include <utility>
+
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
