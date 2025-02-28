@@ -200,13 +200,9 @@ struct UccZdc {
     true};
 
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency",
-                                 "base path to the ccdb object"};
-  Configurable<std::string> uRl{"uRl", "http://alice-ccdb.cern.ch",
-                                "url of the ccdb repository"};
-  Configurable<int64_t> noLaterThan{
-    "noLaterThan", 1740173636328,
-    "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency", "base path to the ccdb object"};
+  Configurable<std::string> uRl{"uRl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<int64_t> noLaterThan{"noLaterThan", 1740173636328, "latest acceptable timestamp of creation for the object"};
 
   // the efficiency has been previously stored in the CCDB as TH1F histogram
   TH1F* efficiency = nullptr;
