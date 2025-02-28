@@ -16,7 +16,7 @@
 #ifndef PWGCF_FEMTO3D_CORE_FEMTO3DPAIRTASK_H_
 #define PWGCF_FEMTO3D_CORE_FEMTO3DPAIRTASK_H_
 
-#define THETA(eta) 2.0 * std::atan(exp(-eta))
+#define THETA(eta) 2.0 * std::atan(std::exp(-eta))
 // #include "Framework/ASoA.h"
 // #include "Framework/DataTypes.h"
 // #include "Framework/AnalysisDataModel.h"
