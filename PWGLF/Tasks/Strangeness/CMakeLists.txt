@@ -104,10 +104,12 @@ o2physics_add_dpl_workflow(cascpolsp
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+if(FastJet_FOUND)
 o2physics_add_dpl_workflow(strangeness-in-jets
     SOURCES strangenessInJets.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
+endif()
 
 o2physics_add_dpl_workflow(v0topologicalcuts
     SOURCES v0topologicalcuts.cxx
@@ -132,4 +134,9 @@ o2physics_add_dpl_workflow(lambdak0sflattenicity
 o2physics_add_dpl_workflow(lambdalambda
     SOURCES lambdalambda.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdajetpolarization
+    SOURCES lambdaJetpolarization.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

@@ -661,7 +661,7 @@ struct HfTaskCorrelationLcHadrons {
         if (fillSign) {
           registry.fill(HIST("hCorrel2DVsPtSignSignalRegionMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, signPair, poolBin, efficiencyWeight);
         } else {
-          registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, efficiencyWeight);
+          registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, statusLcPrompt, poolBin, efficiencyWeight);
         }
         registry.fill(HIST("hCorrel2DPtIntSignalRegionMcRec"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionMcRec"), deltaEta, efficiencyWeight);

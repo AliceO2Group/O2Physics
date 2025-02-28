@@ -17,7 +17,6 @@
 #define PWGCF_FEMTO3D_CORE_FEMTO3DPAIRTASK_H_
 
 #define THETA(eta) 2.0 * atan(exp(-eta))
-
 // #include "Framework/ASoA.h"
 // #include "Framework/DataTypes.h"
 // #include "Framework/AnalysisDataModel.h"
@@ -30,6 +29,8 @@
 #include "TLorentzVector.h"
 #include "TVector3.h"
 #include "TDatabasePDG.h"
+
+#include "CommonConstants/MathConstants.h"
 
 double particle_mass(int PDGcode)
 {
@@ -194,6 +195,7 @@ class FemtoPair
   bool IsIdentical() { return _isidentical; }
 
   bool IsClosePair(const float& deta, const float& dphi, const float& radius) const;
+  bool IsClosePair(const float& deta, const float& dphi) const;
   bool IsClosePair(const float& avgSep) const { return static_cast<bool>(GetAvgSep() < avgSep); }
 
   float GetAvgSep() const;
@@ -212,6 +214,8 @@ class FemtoPair
     else
       return 1000;
   }
+  float GetAvgPhiStarDiff() const;
+
   float GetKstar() const;
   TVector3 GetQLCMS() const;
   float GetKt() const;
@@ -253,7 +257,9 @@ bool FemtoPair<TrackType>::IsClosePair(const float& deta, const float& dphi, con
     return true;
   if (_magfield1 * _magfield2 == 0)
     return true;
-  if (std::pow(std::fabs(GetEtaDiff()) / deta, 2) + std::pow(std::fabs(GetPhiStarDiff(radius)) / dphi, 2) < 1.0f)
+  const float relEtaDiff = GetEtaDiff() / deta;
+  const float relPhiStarDiff = GetPhiStarDiff(radius) / dphi;
+  if ((relEtaDiff * relEtaDiff + relPhiStarDiff * relPhiStarDiff) < 1.0f)
     return true;
   // if (std::fabs(GetEtaDiff()) < deta && std::fabs(GetPhiStarDiff(radius)) < dphi)
   //   return true;
@@ -261,6 +267,22 @@ bool FemtoPair<TrackType>::IsClosePair(const float& deta, const float& dphi, con
   return false;
 }
 
+template <typename TrackType>
+bool FemtoPair<TrackType>::IsClosePair(const float& deta, const float& dphi) const
+{
+  if (_first == NULL || _second == NULL)
+    return true;
+  if (_magfield1 * _magfield2 == 0)
+    return true;
+  const float relEtaDiff = GetEtaDiff() / deta;
+  const float relPhiStarDiff = GetAvgPhiStarDiff() / dphi;
+  if ((relEtaDiff * relEtaDiff + relPhiStarDiff * relPhiStarDiff) < 1.0f)
+    return true;
+  // if (std::fabs(GetEtaDiff()) < deta && std::fabs(GetPhiStarDiff(radius)) < dphi)
+  //   return true;
+
+  return false;
+}
 template <typename TrackType>
 float FemtoPair<TrackType>::GetAvgSep() const
 {
@@ -273,10 +295,30 @@ float FemtoPair<TrackType>::GetAvgSep() const
   float res = 0.0;
 
   for (const auto& radius : TPCradii) {
-    res += sqrt(pow(2.0 * radius * sin(0.5 * GetPhiStarDiff(radius)), 2) + pow(2.0 * radius * sin(0.5 * dtheta), 2));
+    const float dRtrans = 2.0 * radius * sin(0.5 * GetPhiStarDiff(radius));
+    const float dRlong = 2.0 * radius * sin(0.5 * dtheta);
+    res += sqrt(dRtrans * dRtrans + dRlong * dRlong);
   }
 
   return 100.0 * res / TPCradii.size();
+}
+
+template <typename TrackType>
+float FemtoPair<TrackType>::GetAvgPhiStarDiff() const
+{
+  if (_first == NULL || _second == NULL)
+    return -100.f;
+  if (_magfield1 * _magfield2 == 0)
+    return -100.f;
+
+  float res = 0.0;
+
+  for (const auto& radius : TPCradii) {
+    const float dphi = GetPhiStarDiff(radius);
+    res += fabs(dphi) > o2::constants::math::PI ? (1.0 - 2.0 * o2::constants::math::PI / fabs(dphi)) * dphi : dphi;
+  }
+
+  return res / TPCradii.size();
 }
 
 template <typename TrackType>
@@ -324,8 +366,9 @@ float FemtoPair<TrackType>::GetKt() const
     return -1000;
   if (_PDG1 * _PDG2 == 0)
     return -1000;
-
-  return 0.5 * std::sqrt(std::pow(_first->px() + _second->px(), 2) + std::pow(_first->py() + _second->py(), 2));
+  const float px = _first->px() + _second->px();
+  const float py = _first->py() + _second->py();
+  return 0.5 * std::sqrt(px * px + py * py);
 }
 
 template <typename TrackType>
