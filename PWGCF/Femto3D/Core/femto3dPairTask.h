@@ -257,7 +257,9 @@ bool FemtoPair<TrackType>::IsClosePair(const float& deta, const float& dphi, con
     return true;
   if (_magfield1 * _magfield2 == 0)
     return true;
-  if (std::pow(std::fabs(GetEtaDiff()) / deta, 2) + std::pow(std::fabs(GetPhiStarDiff(radius)) / dphi, 2) < 1.0f)
+  const float relEtaDiff = GetEtaDiff() / deta;
+  const float relPhiStarDiff = GetPhiStarDiff(radius) / dphi;
+  if ((relEtaDiff * relEtaDiff + relPhiStarDiff * relPhiStarDiff) < 1.0f)
     return true;
   // if (std::fabs(GetEtaDiff()) < deta && std::fabs(GetPhiStarDiff(radius)) < dphi)
   //   return true;
@@ -272,7 +274,9 @@ bool FemtoPair<TrackType>::IsClosePair(const float& deta, const float& dphi) con
     return true;
   if (_magfield1 * _magfield2 == 0)
     return true;
-  if (std::pow(std::fabs(GetEtaDiff()) / deta, 2) + std::pow(std::fabs(GetAvgPhiStarDiff()) / dphi, 2) < 1.0f)
+  const float relEtaDiff = GetEtaDiff() / deta;
+  const float relPhiStarDiff = GetAvgPhiStarDiff() / dphi;
+  if ((relEtaDiff * relEtaDiff + relPhiStarDiff * relPhiStarDiff) < 1.0f)
     return true;
   // if (std::fabs(GetEtaDiff()) < deta && std::fabs(GetPhiStarDiff(radius)) < dphi)
   //   return true;
@@ -291,7 +295,9 @@ float FemtoPair<TrackType>::GetAvgSep() const
   float res = 0.0;
 
   for (const auto& radius : TPCradii) {
-    res += sqrt(pow(2.0 * radius * sin(0.5 * GetPhiStarDiff(radius)), 2) + pow(2.0 * radius * sin(0.5 * dtheta), 2));
+    const float dRtrans = 2.0 * radius * sin(0.5 * GetPhiStarDiff(radius));
+    const float dRlong = 2.0 * radius * sin(0.5 * dtheta);
+    res += sqrt(dRtrans * dRtrans + dRlong * dRlong);
   }
 
   return 100.0 * res / TPCradii.size();
@@ -308,7 +314,7 @@ float FemtoPair<TrackType>::GetAvgPhiStarDiff() const
   float res = 0.0;
 
   for (const auto& radius : TPCradii) {
-    auto dphi = GetPhiStarDiff(radius);
+    const float dphi = GetPhiStarDiff(radius);
     res += fabs(dphi) > o2::constants::math::PI ? (1.0 - 2.0 * o2::constants::math::PI / fabs(dphi)) * dphi : dphi;
   }
 
@@ -360,8 +366,9 @@ float FemtoPair<TrackType>::GetKt() const
     return -1000;
   if (_PDG1 * _PDG2 == 0)
     return -1000;
-
-  return 0.5 * std::sqrt(std::pow(_first->px() + _second->px(), 2) + std::pow(_first->py() + _second->py(), 2));
+  const float px = _first->px() + _second->px();
+  const float py = _first->py() + _second->py();
+  return 0.5 * std::sqrt(px * px + py * py);
 }
 
 template <typename TrackType>
