@@ -15,6 +15,7 @@
 
 #include <array>
 #include <cmath>
+#include <unordered_map>
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
