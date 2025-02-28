@@ -16,7 +16,7 @@
 #ifndef PWGCF_FEMTO3D_CORE_FEMTO3DPAIRTASK_H_
 #define PWGCF_FEMTO3D_CORE_FEMTO3DPAIRTASK_H_
 
-#define THETA(eta) 2.0 * atan(exp(-eta))
+#define THETA(eta) 2.0 * std::atan(std::exp(-eta))
 // #include "Framework/ASoA.h"
 // #include "Framework/DataTypes.h"
 // #include "Framework/AnalysisDataModel.h"
@@ -30,15 +30,28 @@
 #include "TVector3.h"
 #include "TDatabasePDG.h"
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "CommonConstants/MathConstants.h"
 
-double particle_mass(int PDGcode)
+double particle_mass(const int PDGcode)
 {
-  // if(PDGcode == 2212) return TDatabasePDG::Instance()->GetParticle(2212)->Mass();
-  if (PDGcode == 1000010020)
-    return 1.87561294257;
-  else
-    return TDatabasePDG::Instance()->GetParticle(PDGcode)->Mass();
+  switch (std::abs(PDGcode)) {
+    case o2::constants::physics::kDeuteron:
+      return o2::constants::physics::MassDeuteron;
+    case o2::constants::physics::kTriton:
+      return o2::constants::physics::MassTriton;
+    case o2::constants::physics::kHelium3:
+      return o2::constants::physics::MassHelium3;
+    case 211:
+      return o2::constants::physics::MassPionCharged;
+    case 321:
+      return o2::constants::physics::MassKaonCharged;
+    case 2212:
+      return o2::constants::physics::MassProton;
+    default:
+      break;
+  }
+  return TDatabasePDG::Instance()->GetParticle(PDGcode)->Mass();
 }
 
 // for the variable binning in 3D DCA histos in the PairMC task
@@ -72,7 +85,7 @@ inline std::unique_ptr<double[]> calc_var_bins(const int& N, const float& xmax, 
   bins[N - 1] = xmax;
 
   for (int i = 1; i < 0.5 * N - 1; i++) {
-    bin_edge += winit * pow(q, i);
+    bin_edge += winit * std::pow(q, i);
     bins[0.5 * N - 1 - i] = -bin_edge;
     bins[0.5 * N + i] = bin_edge;
   }
@@ -295,9 +308,9 @@ float FemtoPair<TrackType>::GetAvgSep() const
   float res = 0.0;
 
   for (const auto& radius : TPCradii) {
-    const float dRtrans = 2.0 * radius * sin(0.5 * GetPhiStarDiff(radius));
-    const float dRlong = 2.0 * radius * sin(0.5 * dtheta);
-    res += sqrt(dRtrans * dRtrans + dRlong * dRlong);
+    const float dRtrans = 2.0 * radius * std::sin(0.5 * GetPhiStarDiff(radius));
+    const float dRlong = 2.0 * radius * std::sin(0.5 * dtheta);
+    res += std::sqrt(dRtrans * dRtrans + dRlong * dRlong);
   }
 
   return 100.0 * res / TPCradii.size();
@@ -315,7 +328,7 @@ float FemtoPair<TrackType>::GetAvgPhiStarDiff() const
 
   for (const auto& radius : TPCradii) {
     const float dphi = GetPhiStarDiff(radius);
-    res += fabs(dphi) > o2::constants::math::PI ? (1.0 - 2.0 * o2::constants::math::PI / fabs(dphi)) * dphi : dphi;
+    res += std::fabs(dphi) > o2::constants::math::PI ? (1.0 - 2.0 * o2::constants::math::PI / std::fabs(dphi)) * dphi : dphi;
   }
 
   return res / TPCradii.size();
