@@ -38,8 +38,12 @@ double particle_mass(const int PDGcode)
   switch (std::abs(PDGcode)) {
     case o2::constants::physics::kDeuteron:
       return o2::constants::physics::MassDeuteron;
+    case o2::constants::physics::kTriton:
+      return o2::constants::physics::MassTriton;
+    case o2::constants::physics::kHelium3:
+      return o2::constants::physics::MassHelium3;
     case 211:
-      return o2::constants::physics::MassPion;
+      return o2::constants::physics::MassPionCharged;
     case 321:
       return o2::constants::physics::MassKaonCharged;
     case 2212:
