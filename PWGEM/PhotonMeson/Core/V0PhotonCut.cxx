@@ -240,3 +240,9 @@ void V0PhotonCut::SetDisableITSonly(bool flag)
   mDisableITSonly = flag;
   LOG(info) << "V0 Photon Cut, disable ITS only track: " << mDisableITSonly;
 }
+
+void V0PhotonCut::SetDisableTPConly(bool flag)
+{
+  mDisableTPConly = flag;
+  LOG(info) << "V0 Photon Cut, disable TPC only track: " << mDisableTPConly;
+}
