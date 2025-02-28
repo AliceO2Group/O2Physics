@@ -35,11 +35,19 @@ struct HfTaskCorrelationHfeHadrons {
 
   HistogramRegistry registry{
     "registry",
-    {{"hInclusiveEHCorrel", "Sparse for Delta phi and Delta eta Hadron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", hCorrelSpec}}};
+    {{"hInclusiveEHCorrel", "Sparse for Delta phi and Delta eta Inclusive Electron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", hCorrelSpec},
+     {"hLikeSignEHCorrel", "Sparse for Delta phi and Delta eta Likesign Electronpair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", hCorrelSpec},
+     {"hUnLikeSignEHCorrel", "Sparse for Delta phi and Delta eta UnlikeSign Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", hCorrelSpec},
+     {"hMcGenInclusiveEHCorrel", "Sparse for Delta phi and Delta eta McGen Inclusive Electron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", hCorrelSpec},
+     {"hMcGenNonHfEHCorrel", "Sparse for Delta phi and Delta eta McGen Non HF Electron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", hCorrelSpec}}};
 
   void init(InitContext&)
   {
     registry.get<THnSparse>(HIST("hInclusiveEHCorrel"))->Sumw2();
+    registry.get<THnSparse>(HIST("hLikeSignEHCorrel"))->Sumw2();
+    registry.get<THnSparse>(HIST("hUnLikeSignEHCorrel"))->Sumw2();
+    registry.get<THnSparse>(HIST("hMcGenInclusiveEHCorrel"))->Sumw2();
+    registry.get<THnSparse>(HIST("hMcGenNonHfEHCorrel"))->Sumw2();
   }
 
   // correlation  for electron hadron
@@ -58,8 +66,45 @@ struct HfTaskCorrelationHfeHadrons {
       ptHadron = pairEntry.ptHadron();
 
       registry.fill(HIST("hInclusiveEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
+      if (pairEntry.isLSEHCorr() > 0) {
+        for (int i = 0; i < pairEntry.isLSEHCorr(); ++i) {
+
+          registry.fill(HIST("hLikeSignEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
+        }
+      }
+      if (pairEntry.isULSEHCorr() > 0) {
+        for (int i = 0; i < pairEntry.isULSEHCorr(); ++i) {
+
+          registry.fill(HIST("hUnlikeSignEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
+        }
+      }
     }
   }
+
+  PROCESS_SWITCH(HfTaskCorrelationHfeHadrons, process, "Process ", false);
+
+  void processMcGen(aod::HfEHadronMcPair const& McGenpairEntries)
+  {
+    double deltaPhi = -999;
+    double deltaEta = -999;
+    double ptHadron = -999;
+    double ptElectron = -999;
+
+    for (const auto& pairEntry : McGenpairEntries) {
+
+      deltaPhi = pairEntry.deltaPhi();
+      deltaEta = pairEntry.deltaEta();
+      ptElectron = pairEntry.ptElectron();
+      ptHadron = pairEntry.ptHadron();
+
+      registry.fill(HIST("hMcGenInclusiveEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
+      if (pairEntry.isNonHfEHCorr()) {
+
+        registry.fill(HIST("hMcGenNonHfEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTaskCorrelationHfeHadrons, processMcGen, "Process for Mc Gen ", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
