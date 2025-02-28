@@ -150,6 +150,9 @@ class V0PhotonCut : public TNamed
       if (mDisableITSonly && isITSonlyTrack(track)) {
         return false;
       }
+      if (mDisableTPConly && isTPConlyTrack(track)) {
+        return false;
+      }
 
       if (mRejectITSib) {
         auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
@@ -476,6 +479,7 @@ class V0PhotonCut : public TNamed
   void SetRequireTPCTOF(bool flag);
   void SetRequireTPCTRDTOF(bool flag);
   void SetDisableITSonly(bool flag);
+  void SetDisableTPConly(bool flag);
 
  private:
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement;
@@ -527,6 +531,7 @@ class V0PhotonCut : public TNamed
   bool mRequireTPCTOF{false};
   bool mRequireTPCTRDTOF{false};
   bool mDisableITSonly{false};
+  bool mDisableTPConly{false};
 
   ClassDef(V0PhotonCut, 1);
 };
