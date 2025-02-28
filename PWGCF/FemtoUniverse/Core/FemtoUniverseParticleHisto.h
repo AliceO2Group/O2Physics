@@ -371,26 +371,26 @@ class FemtoUniverseParticleHisto
     if (mHistogramRegistry) {
       if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack) {
         if (confPDG == mConfPDGCodePart[0]) {
-          PDGbin = 0;
+          binPDG = 0;
         } else if (confPDG == mConfPDGCodePart[1]) {
-          PDGbin = 1;
+          binPDG = 1;
         } else if (confPDG == mConfPDGCodePart[2]) {
-          PDGbin = 2;
+          binPDG = 2; // o2-linter: disable=pdg/explicit-code
         } else {
-          PDGbin = 3;
+          binPDG = 3; // o2-linter: disable=pdg/explicit-code
         }
         if (std::abs(pdgcode) == 211) {
           mHistogramRegistry->fill(histFolder + HIST("_MC/hMisidentification"),
-                                   PDGbin, 0, part.pt());
+                                   binPDG, 0, part.pt());
         } else if (std::abs(pdgcode) == 321) {
           mHistogramRegistry->fill(histFolder + HIST("_MC/hMisidentification"),
-                                   PDGbin, 1, part.pt());
+                                   binPDG, 1, part.pt());
         } else if (std::abs(pdgcode) == 2212) {
           mHistogramRegistry->fill(histFolder + HIST("_MC/hMisidentification"),
-                                   PDGbin, 2, part.pt());
+                                   binPDG, 2, part.pt());
         } else {
           mHistogramRegistry->fill(histFolder + HIST("_MC/hMisidentification"),
-                                   PDGbin, 3, part.pt());
+                                   binPDG, 3, part.pt());
         }
       }
     } else {
@@ -462,7 +462,7 @@ class FemtoUniverseParticleHisto
   static constexpr std::string_view mFolderSuffix[5] = {"", "_one", "_two", "_pos", "_neg"};  ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C) // o2-linter: disable=name/constexpr-constant
   int mConfPDGCodePart[4] = {211, 321, 2212, 9999};                                           ///< PDG code as per analysis
   int mPDG = 0;                                                                               ///< PDG code of the selected particle
-  int PDGbin = 0;
+  int binPDG = 0;
 };
 } // namespace o2::analysis::femto_universe
 
