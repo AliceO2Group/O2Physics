@@ -533,7 +533,7 @@ struct UpcTauRl {
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsPPofO", ";Not-electron #it{p} (GeV/c);n#sigma^{#pi}_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaEvsnSigmaPofO", ";Not-electron n#sigma^{e}_{TOF} (arb. units);Not-electron n#sigma^{#pi}_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisNsigma, confAxis.zzAxisNsigma});
 
-      if (doMixedEventsHistos){
+      if (doMixedEventsHistos) {
         histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hInvariantMass", "Mixed events;Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
         histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hInvariantMassWide", "Mixed events;Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
         histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hAcoplanarity", "Mixed events;#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisAcoplanarity});
@@ -592,7 +592,6 @@ struct UpcTauRl {
         histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPhiVsOtherPhi", "Mixed events;Electron #phi (rad); #mu/#pi #phi (rad)", HistType::kTH2D, {confAxis.zzAxisPhi, confAxis.zzAxisPhi});
         histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronRapVsOtherRap", "Mixed events;Electron #it{y} (-); #mu/#pi #it{y} (-)", HistType::kTH2D, {confAxis.zzAxisRap, confAxis.zzAxisRap});
       }
-
     }
 
     if (doTruthHistos) {
@@ -1191,15 +1190,15 @@ struct UpcTauRl {
         }
       }
       if (isElMuPion) {
-        if (cutTauEvent.useThresholdsPID){
-          if (isElectronCandidate(trkDaug1)){
-            vecMixElMupion.push_back(std::make_pair(vecPVnewPIDidx[0], vecPVnewPIDidx[1]));// storing electron first
+        if (cutTauEvent.useThresholdsPID) {
+          if (isElectronCandidate(trkDaug1)) {
+            vecMixElMupion.push_back(std::make_pair(vecPVnewPIDidx[0], vecPVnewPIDidx[1])); // storing electron first
           } else {
             vecMixElMupion.push_back(std::make_pair(vecPVnewPIDidx[1], vecPVnewPIDidx[0]));
           }
         } else {
-          if (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON){
-            vecMixElMupion.push_back(std::make_pair(vecPVidx[0], vecPVidx[1]));// storing electron first
+          if (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) {
+            vecMixElMupion.push_back(std::make_pair(vecPVidx[0], vecPVidx[1])); // storing electron first
           } else {
             vecMixElMupion.push_back(std::make_pair(vecPVidx[1], vecPVidx[0]));
           }
@@ -2013,8 +2012,8 @@ struct UpcTauRl {
   void fillMixedEventHistograms(Ts const& reconstructedBarrelTracks)
   {
     TLorentzVector mother, daug[2];
-    for (int idx = 0; idx < static_cast<int>(vecMixElEl.size()); idx++){
-      for (int cnt = 0; cnt < 5; cnt++){
+    for (int idx = 0; idx < static_cast<int>(vecMixElEl.size()); idx++) {
+      for (int cnt = 0; cnt < 5; cnt++) {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev());
         std::uniform_int_distribution<int> distr(0, static_cast<int>(vecMixElEl.size()));
@@ -2055,11 +2054,11 @@ struct UpcTauRl {
         histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPtVsOtherPt"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Pt() : daug[1].Pt()), ((daug[0].P() > daug[1].P()) ? daug[1].Pt() : daug[0].Pt()));
         histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPhiVsOtherPhi"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Phi() : daug[1].Phi()), ((daug[0].P() > daug[1].P()) ? daug[1].Phi() : daug[0].Phi()));
         histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingRapVsOtherRap"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Rapidity() : daug[1].Rapidity()), ((daug[0].P() > daug[1].P()) ? daug[1].Rapidity() : daug[0].Rapidity()));
-      }//cnt
-    }//idx
+      } // cnt
+    } // idx
 
-    for (int idx = 0; idx < static_cast<int>(vecMixElMupion.size()); idx++){
-      for (int cnt = 0; cnt < 5; cnt++){
+    for (int idx = 0; idx < static_cast<int>(vecMixElMupion.size()); idx++) {
+      for (int cnt = 0; cnt < 5; cnt++) {
         std::random_device rand_dev;
         std::mt19937 generator(rand_dev());
         std::uniform_int_distribution<int> distr(0, static_cast<int>(vecMixElMupion.size()));
@@ -2076,7 +2075,7 @@ struct UpcTauRl {
         const auto& electronPt = daug[0].Pt();
         const auto& electronP = daug[0].P();
         const auto& electronE = daug[0].E();
-        const auto& mupionPt =  daug[1].Pt();
+        const auto& mupionPt = daug[1].Pt();
         const auto& mupionP = daug[1].P();
         const auto& mupionE = daug[1].E();
         histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hInvariantMass"))->Fill(mother.M());
@@ -2109,15 +2108,15 @@ struct UpcTauRl {
         histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPtVsOtherPt"))->Fill(electronPt, mupionPt);
         histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPhiVsOtherPhi"))->Fill(isElectronCandidate(trkDaug1) ? daug[0].Phi() : daug[1].Phi(), isElectronCandidate(trkDaug1) ? daug[1].Phi() : daug[0].Phi());
         histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronRapVsOtherRap"))->Fill(isElectronCandidate(trkDaug1) ? daug[0].Rapidity() : daug[1].Rapidity(), isElectronCandidate(trkDaug1) ? daug[1].Rapidity() : daug[0].Rapidity());
-      }//cnt
-    }//idx
+      } // cnt
+    } // idx
   } // end fillMixedEventHistograms
 
   void processDataDG(FullUDCollisions const& reconstructedCollisions,
                      FullUDTracks const& reconstructedBarrelTracks)
   {
 
-    for (const auto& reconstructedCollision : reconstructedCollisions){
+    for (const auto& reconstructedCollision : reconstructedCollisions) {
       if (!isGoodROFtime(reconstructedCollision))
         return;
 
@@ -2146,7 +2145,7 @@ struct UpcTauRl {
   void processDataSG(FullSGUDCollisions const& reconstructedCollisions,
                      FullUDTracks const& reconstructedBarrelTracks)
   {
-    for (const auto& reconstructedCollision : reconstructedCollisions){
+    for (const auto& reconstructedCollision : reconstructedCollisions) {
 
       int gapSide = reconstructedCollision.gapSide();
       int trueGapSide = sgSelector.trueGap(reconstructedCollision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
@@ -2188,7 +2187,7 @@ struct UpcTauRl {
                       aod::UDMcParticles const&)
   {
     isMC = true;
-    for (const auto& reconstructedCollision : reconstructedCollisions){
+    for (const auto& reconstructedCollision : reconstructedCollisions) {
 
       if (!isGoodROFtime(reconstructedCollision))
         return;
@@ -2231,7 +2230,7 @@ struct UpcTauRl {
                       aod::UDMcParticles const&)
   {
     isMC = true;
-    for (const auto& reconstructedCollision : reconstructedCollisions){
+    for (const auto& reconstructedCollision : reconstructedCollisions) {
 
       int gapSide = reconstructedCollision.gapSide();
       histos.fill(HIST("Events/UDtableGapSide"), gapSide);
@@ -2271,7 +2270,6 @@ struct UpcTauRl {
         fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
         fillMCPIDhistograms(reconstructedBarrelTracks);
       }
-
     }
 
   } // end processMCrecDG
