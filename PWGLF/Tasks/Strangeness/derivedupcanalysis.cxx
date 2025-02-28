@@ -1017,7 +1017,7 @@ struct Derivedupcanalysis {
     const std::array<SelectionCheck, 15> checks = {{
       {true, true, 0.0},                                                                                         // All collisions
       {requireIsTriggerTVX, collision.selection_bit(aod::evsel::kIsTriggerTVX), 1.0},                            // Triggered by FT0M
-      {true, std::fabs(collision.posZ()) < maxZVtxPosition, 2.0},                                                          // Vertex-Z selected
+      {true, std::fabs(collision.posZ()) < maxZVtxPosition, 2.0},                                                // Vertex-Z selected
       {rejectITSROFBorder, collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder), 3.0},                   // Not at ITS ROF border
       {rejectTFBorder, collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder), 4.0},                        // Not at TF border
       {requireIsVertexITSTPC, collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC), 5.0},                    // At least one ITS-TPC track
@@ -1580,7 +1580,7 @@ struct Derivedupcanalysis {
   PresliceUnsorted<StraCollisonsFullMC> perMcCollision = aod::v0data::straMCCollisionId;
 
   std::vector<int> getListOfRecoCollIds(StraMCCollisionsFull const& mcCollisions,
-                                            StraCollisonsFullMC const& collisions)
+                                        StraCollisonsFullMC const& collisions)
   {
     std::vector<int> listBestCollisionIds(mcCollisions.size(), -1);
 
@@ -1834,7 +1834,7 @@ struct Derivedupcanalysis {
 
       float centrality = -1.f;
       int nTracksGlobal = -1;
-      
+
       if (listBestCollisionIds[mcCollision.globalIndex()] > -1) {
         auto collision = collisions.iteratorAt(listBestCollisionIds[mcCollision.globalIndex()]);
         centrality = collision.centFT0C();
