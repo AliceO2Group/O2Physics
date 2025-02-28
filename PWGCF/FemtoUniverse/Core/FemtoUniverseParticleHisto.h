@@ -107,7 +107,9 @@ class FemtoUniverseParticleHisto
       mHistogramRegistry->add((folderName + folderSuffix + "/hDecayVtxY").c_str(), "; #it{Vtx}_{y} (cm)); Entries", kTH1F, {{2000, 0, 200}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDecayVtxZ").c_str(), "; #it{Vtx}_{z} (cm); Entries", kTH1F, {{2000, 0, 200}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassLambda").c_str(), "; M_{#Lambda}; Entries", kTH1F, {{2000, 1.f, 3.f}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassLambdaVsPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); M_{#Lambda}; Entries", kTH2F, {{240, 0, 6}, {2000, 1.f, 3.f}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassAntiLambda").c_str(), "; M_{#bar{#Lambda}}; Entries", kTH1F, {{2000, 1.f, 3.f}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassAntiLambdaVsPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); M_{#Lambda}; Entries", kTH2F, {{240, 0, 6}, {2000, 1.f, 3.f}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassLambdaAntiLambda").c_str(), "; M_{#Lambda}; M_{#bar{#Lambda}}", kTH2F, {{2000, 1.f, 3.f}, {2000, 1.f, 3.f}});
     } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascade) {
       mHistogramRegistry->add((folderName + folderSuffix + "/hDaughDCA").c_str(), "; DCA^{daugh} (cm); Entries", kTH1F, {{1000, 0, 10}});
@@ -282,7 +284,9 @@ class FemtoUniverseParticleHisto
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hDecayVtxY"), part.decayVtxY());
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hDecayVtxZ"), part.decayVtxZ());
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hInvMassLambda"), part.mLambda());
+      mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hInvMassLambdaVsPt"), part.pt(), part.mLambda());
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hInvMassAntiLambda"), part.mAntiLambda());
+      mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hInvMassAntiLambdaVsPt"), part.pt(), part.mAntiLambda());
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hInvMassLambdaAntiLambda"), part.mLambda(), part.mAntiLambda());
     } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascade) {
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hDaughDCA"), part.daughDCA());
