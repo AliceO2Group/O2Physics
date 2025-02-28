@@ -36,12 +36,12 @@
 
 namespace o2::aod
 {
-namespace Multiplicity_Nch
+namespace multiplicity_nch
 {
 DECLARE_SOA_COLUMN(Multiplicity, mult, int);
 }
 DECLARE_SOA_TABLE(Multiplicity, "AOD", "MULTIPLICITY",
-                  Multiplicity_Nch::Multiplicity);
+                  multiplicity_nch::Multiplicity);
 
 } // namespace o2::aod
 
@@ -64,12 +64,12 @@ struct CalcNch {
   using AodCollisions = soa::Join<aod::Collisions, aod::EvSel>; // aod::CentFT0Cs
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
 
-  Produces<aod::Multiplicity> MultiplicityNch;
+  Produces<aod::Multiplicity> multiplicity_nch;
 
   void process(AodCollisions::iterator const& collision, AodTracks const& tracks)
   {
     // LOGF(info, "Nch: %i", tracks.size());
-    MultiplicityNch(tracks.size());
+    multiplicity_nch(tracks.size());
   }
 };
 
@@ -202,7 +202,7 @@ struct CorrSparse {
   // event mixing
 
   SliceCache cache;
-  using MixedBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::Multiplicity_Nch::Multiplicity>;
+  using MixedBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::multiplicity_nch::Multiplicity>;
 
   // the process for filling the mixed events
   void processMixed(AodCollisions const& collisions, AodTracks const& tracks)
