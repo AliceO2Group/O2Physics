@@ -96,12 +96,7 @@ struct UccZdc {
   Configurable<float> minMeanpT{"minMeanpT", 0.5, "minimum [pT]"};
   Configurable<float> maxMeanpT{"maxMeanpT", 1.1, "maximum [pT]"};
   Configurable<int> nBinsMeanpT{"nBinsMeanpT", 160, "# bins [pT]"};
-  ConfigurableAxis binsPt{"binsPt", {
-                                      VARIABLE_WIDTH,
-                                      0.0,
-                                      0.1,
-                                    },
-                          "pT binning"};
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "pT binning"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
 
   // Configurable event selectiond and flags ZDC
@@ -176,13 +171,9 @@ struct UccZdc {
     true};
 
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency",
-                                 "base path to the ccdb object"};
-  Configurable<std::string> uRl{"uRl", "http://alice-ccdb.cern.ch",
-                                "url of the ccdb repository"};
-  Configurable<int64_t> noLaterThan{
-    "noLaterThan", 1740173636328,
-    "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency", "base path to the ccdb object"};
+  Configurable<std::string> uRl{"uRl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<int64_t> noLaterThan{"noLaterThan", 1740173636328, "latest acceptable timestamp of creation for the object"};
 
   // the efficiency has been previously stored in the CCDB as TH1F histogram
   TH1F* efficiency = nullptr;
@@ -225,30 +216,17 @@ struct UccZdc {
       registry.add("eta", ";;Entries;", kTH1F, {axisEta});
       registry.add("pt", ";;Entries;", kTH1F, {axisPt});
       registry.add("sigma1Pt", ";;#sigma(p_{T})/p_{T};", kTProfile, {axisPt});
-      registry.add("pP1",
-                   ";Nch;P_{1}=#Sigma_{evs} W^{(1)}_{e} [p_{T}^{(1)}]_{e};",
-                   kTProfile, {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW1", ";Nch;W_{1}=#Sigma_{evs} W^{(1)}_{e};", kTProfile,
-                   {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP2",
-                   ";Nch;P_{2}=#Sigma_{evs} W^{(2)}_{e} [p_{T}^{(2)}]_{e};",
-                   kTProfile, {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW2", ";Nch;W_{2}=#Sigma_{evs} W^{(2)}_{e};", kTProfile,
-                   {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP3",
-                   ";Nch;P_{3}=#Sigma_{evs} W^{(3)}_{e} [p_{T}^{(3)}]_{e};",
-                   kTProfile, {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW3", ";Nch;W_{3}=#Sigma_{evs} W^{(3)}_{e};", kTProfile,
-                   {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP4",
-                   ";Nch;P_{4}=#Sigma_{evs} W^{(4)}_{e} [p_{T}^{(4)}]_{e};",
-                   kTProfile, {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW4", ";Nch;W_{4}=#Sigma_{evs} W^{(4)}_{e};", kTProfile,
-                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP1", ";Nch;P_{1}=#Sigma_{evs} W^{(1)}_{e} [p_{T}^{(1)}]_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW1", ";Nch;W_{1}=#Sigma_{evs} W^{(1)}_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP2", ";Nch;P_{2}=#Sigma_{evs} W^{(2)}_{e} [p_{T}^{(2)}]_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW2", ";Nch;W_{2}=#Sigma_{evs} W^{(2)}_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP3", " ;Nch;P_{3}=#Sigma_{evs} W^{(3)}_{e} [p_{T}^{(3)}]_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW3", ";Nch;W_{3}=#Sigma_{evs} W^{(3)}_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP4", ";Nch;P_{4}=#Sigma_{evs} W^{(4)}_{e} [p_{T}^{(4)}]_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW4", ";Nch;W_{4}=#Sigma_{evs} W^{(4)}_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
       registry.add("dcaXYvspT", "", kTH2F, {{{50, -1., 1.}, {axisPt}}});
       registry.add("T0Ccent", ";T0C centrality;Entries", kTH1F, {axisCent});
-      registry.add("Nch", ";Nch (|#eta|<0.8);", kTH1F,
-                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("Nch", ";Nch (|#eta|<0.8);", kTH1F, {{nBinsNch, -0.5, maxNch}});
       registry.add("ZN", "", kTH1F, {{nBinsZDC, -0.5, maxZN}});
       registry.add("ZNA", "", kTH1F, {{nBinsZDC, -0.5, maxZN}});
       registry.add("ZPA", "", kTH1F, {{nBinsZDC, -0.5, maxZP}});
@@ -293,26 +271,10 @@ struct UccZdc {
                    {{{nBinsNch, -0.5, maxNch}, {nBinsZDC, -0.5, maxZN}}});
       registry.add("ZNvsNch", ";Nch (|#eta|<0.8);ZNA+ZNC", kTH2F,
                    {{{nBinsNch, -0.5, maxNch}, {nBinsZDC, -0.5, maxZN}}});
-      registry.add(
-        "NchvsOneParCorr",
-        ";Nch (|#eta|<0.8);[p_{T}]=(#Sigma w_{i} p_{T}^{i})/(#Sigma w_{i})",
-        kTH2F,
-        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
-      registry.add(
-        "NchvsTwoParCorr",
-        ";Nch (|#eta|<0.8);[p_{T}^{2}]=(P_{1}^{2} - P_{2})/(W_{1}^{2} - "
-        "W_{2})",
-        kTH2F,
-        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
-      registry.add(
-        "NchvsThreeParCorr",
-        ";Nch (|#eta|<0.8);[p_{T}^{3}]=(P_{1}^{3} - 3P_{2}P_{1} + "
-        "2P_{3})/(W_{1}^{3} - 3W_{2}W_{1} + 2W_{3})",
-        kTH2F,
-        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
-      registry.add(
-        "NchvsFourParCorr", ";Nch (|#eta|<0.8);[p_{T}^{4}]", kTH2F,
-        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add("NchvsOneParCorr", ";Nch (|#eta|<0.8);[p_{T}]=(#Sigma w_{i} p_{T}^{i})/(#Sigma w_{i})", kTH2F, {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add("NchvsTwoParCorr", ";Nch (|#eta|<0.8);[p_{T}^{2}]=(P_{1}^{2} - P_{2})/(W_{1}^{2} - W_{2})", kTH2F, {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add("NchvsThreeParCorr", ";Nch (|#eta|<0.8);[p_{T}^{3}]=(P_{1}^{3} - 3P_{2}P_{1} + 2P_{3})/(W_{1}^{3} - 3W_{2}W_{1} + 2W_{3})", kTH2F, {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add("NchvsFourParCorr", ";Nch (|#eta|<0.8);[p_{T}^{4}]", kTH2F, {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
     }
 
     // MC Histograms
