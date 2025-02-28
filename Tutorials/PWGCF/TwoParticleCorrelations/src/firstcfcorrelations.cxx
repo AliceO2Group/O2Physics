@@ -105,7 +105,7 @@ struct firstcorrelations {
   SameKindPair<soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>,
     soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>,
     ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>>
-    pair{bindingOnVtxAndMult, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+    pair{bindingOnVtxAndMult, 10, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgZVtxCut;
   Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) && (requireGlobalTrackInFilter() || (aod::track::isGlobalTrackSDD == (uint8_t) true));
