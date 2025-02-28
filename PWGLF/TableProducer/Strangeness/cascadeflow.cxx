@@ -181,6 +181,8 @@ struct cascadeFlow {
 
   Configurable<float> MinPt{"MinPt", 0.6, "Min pt of cascade"};
   Configurable<float> MaxPt{"MaxPt", 10, "Max pt of cascade"};
+  Configurable<float> MinPtLambda{"MinPtLambda", 0.4, "Min pt of daughter lambda"};
+  Configurable<float> MaxPtLambda{"MaxPtLambda", 10, "Max pt of daughter lambda"};
   Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
   Configurable<double> sideBandEnd{"sideBandEnd", 7, "End of the sideband region in number of sigmas"};
   Configurable<double> downsample{"downsample", 1., "Downsample training output tree"};
@@ -190,6 +192,7 @@ struct cascadeFlow {
   Configurable<float> mintpccrrows{"mintpccrrows", 70, "mintpccrrows"};
   Configurable<float> etaCascMCGen{"etaCascMCGen", 0.8, "etaCascMCGen"};
   Configurable<float> etaCasc{"etaCasc", 0.8, "etaCasc"};
+  Configurable<float> etaLambdaMax{"etaLambdaMax", 0.8, "etaLambdaMax"};
   Configurable<float> yCascMCGen{"yCascMCGen", 0.5, "yCascMCGen"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -465,10 +468,19 @@ struct cascadeFlow {
     if (!listAcceptanceLambda)
       LOG(fatal) << "Problem getting TList object with acceptance for Lambda!";
     hAcceptanceXi = static_cast<TH2F*>(listAcceptanceXi->FindObject(Form("%s", acceptanceHistoNameCasc->data())));
+    if (!hAcceptanceXi) {
+      LOG(fatal) << "The histogram for Xi is not there!";
+    }
     hAcceptanceXi->SetName("hAcceptanceXi");
     hAcceptanceOmega = static_cast<TH2F*>(listAcceptanceOmega->FindObject(Form("%s", acceptanceHistoNameCasc->data())));
-    hAcceptanceXi->SetName("hAcceptanceOmega");
+    if (!hAcceptanceOmega) {
+      LOG(fatal) << "The histogram for omega is not there!";
+    }
+    hAcceptanceOmega->SetName("hAcceptanceOmega");
     hAcceptanceLambda = static_cast<TH2F*>(listAcceptanceLambda->FindObject(Form("%s", acceptanceHistoNameLambda->data())));
+    if (!hAcceptanceLambda) {
+      LOG(fatal) << "The histogram for Lambda is not there!";
+    }
     hAcceptanceLambda->SetName("hAcceptanceLambda");
     LOG(info) << "Acceptance now loaded";
   }
@@ -628,6 +640,7 @@ struct cascadeFlow {
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
+      initAcceptanceFromCCDB();
     }
   }
 
@@ -795,7 +808,7 @@ struct cascadeFlow {
 
       float massCasc[2]{casc.mXi(), casc.mOmega()};
 
-      // inv mass loose cut
+      // pt cut
       if (casc.pt() < MinPt || casc.pt() > MaxPt) {
         continue;
       }
@@ -837,11 +850,6 @@ struct cascadeFlow {
       float v1SP = 0.5 * (v1SP_ZDCA - v1SP_ZDCC);
       float v1EP = 0.5 * (v1EP_ZDCA - v1EP_ZDCC); // same as v1SP
 
-      //acceptance retrived from ccdb if requested
-      if (applyAcceptanceCorrection) {
-	initAcceptanceFromCCDB();
-      }
-
       // polarization variables
       double masses[2]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
       ROOT::Math::PxPyPzMVector cascadeVector[2], lambdaVector, protonVector;
@@ -870,6 +878,11 @@ struct cascadeFlow {
       double MeanCos2ThetaLambdaFromOmega = 1;
       double MeanCos2ThetaProtonFromLambda = 1;
       if (applyAcceptanceCorrection){
+	if (ptLambda < MinPtLambda || ptLambda > MaxPtLambda) {
+	  continue;
+	}
+	if (std::abs(casc.eta()) > etaCasc) continue;
+	if (std::abs(etaLambda) > etaLambdaMax) continue;
 	int bin2DXi = hAcceptanceXi->FindBin(casc.pt(), casc.eta());
 	int bin2DOmega = hAcceptanceOmega->FindBin(casc.pt(), casc.eta());
 	int bin2DLambda = hAcceptanceXi->FindBin(ptLambda, etaLambda);
