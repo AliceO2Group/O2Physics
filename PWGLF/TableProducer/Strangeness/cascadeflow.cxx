@@ -128,7 +128,7 @@ static const std::vector<std::string> labelsCutScore = {"Background score", "Sig
 } // namespace cascade_flow_cuts_ml
 
 struct cascadeFlow {
-  
+
   // Output filling criteria
   Configurable<bool> isFillTree{"isFillTree", 1, ""};
   Configurable<bool> isFillTHNXi{"isFillTHNXi", 1, ""};
@@ -215,7 +215,7 @@ struct cascadeFlow {
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {cascade_flow_cuts_ml::cuts[0], cascade_flow_cuts_ml::nBinsPt, cascade_flow_cuts_ml::nCutScores, cascade_flow_cuts_ml::labelsPt, cascade_flow_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(cascade_flow_cuts_ml::nCutScores), "Number of classes in ML model"};
 
-  //acceptance crrection
+  // acceptance crrection
   Configurable<bool> applyAcceptanceCorrection{"applyAcceptanceCorrection", false, "apply acceptance correction"};
 
   o2::ccdb::CcdbApi ccdbApi;
@@ -350,7 +350,7 @@ struct cascadeFlow {
   TH2F* hAcceptanceXi;
   TH2F* hAcceptanceOmega;
   TH2F* hAcceptanceLambda;
-  
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry histosMCGen{"histosMCGen", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry resolution{"resolution", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
@@ -458,13 +458,13 @@ struct cascadeFlow {
   void initAcceptanceFromCCDB()
   {
     LOG(info) << "Loading acceptance from CCDB ";
-    TList* listAcceptanceXi  = ccdb->get<TList>(acceptancePathsCCDBXi);
+    TList* listAcceptanceXi = ccdb->get<TList>(acceptancePathsCCDBXi);
     if (!listAcceptanceXi)
       LOG(fatal) << "Problem getting TList object with acceptance for Xi!";
-    TList* listAcceptanceOmega  = ccdb->get<TList>(acceptancePathsCCDBOmega);
+    TList* listAcceptanceOmega = ccdb->get<TList>(acceptancePathsCCDBOmega);
     if (!listAcceptanceOmega)
       LOG(fatal) << "Problem getting TList object with acceptance for Omega!";
-    TList* listAcceptanceLambda  = ccdb->get<TList>(acceptancePathsCCDBLambda);
+    TList* listAcceptanceLambda = ccdb->get<TList>(acceptancePathsCCDBLambda);
     if (!listAcceptanceLambda)
       LOG(fatal) << "Problem getting TList object with acceptance for Lambda!";
     hAcceptanceXi = static_cast<TH2F*>(listAcceptanceXi->FindObject(Form("%s", acceptanceHistoNameCasc->data())));
@@ -873,29 +873,31 @@ struct cascadeFlow {
       double ptLambda = sqrt(pow(casc.pxlambda(), 2) + pow(casc.pylambda(), 2));
       auto etaLambda = RecoDecay::eta(std::array{casc.pxlambda(), casc.pylambda(), casc.pzlambda()});
 
-      //acceptance values if requested
+      // acceptance values if requested
       double MeanCos2ThetaLambdaFromXi = 1;
       double MeanCos2ThetaLambdaFromOmega = 1;
       double MeanCos2ThetaProtonFromLambda = 1;
-      if (applyAcceptanceCorrection){
-	if (ptLambda < MinPtLambda || ptLambda > MaxPtLambda) {
-	  continue;
-	}
-	if (std::abs(casc.eta()) > etaCasc) continue;
-	if (std::abs(etaLambda) > etaLambdaMax) continue;
-	int bin2DXi = hAcceptanceXi->FindBin(casc.pt(), casc.eta());
-	int bin2DOmega = hAcceptanceOmega->FindBin(casc.pt(), casc.eta());
-	int bin2DLambda = hAcceptanceXi->FindBin(ptLambda, etaLambda);
-	MeanCos2ThetaLambdaFromXi = hAcceptanceXi->GetBinContent(bin2DXi);
-	MeanCos2ThetaLambdaFromOmega = hAcceptanceOmega->GetBinContent(bin2DOmega);
-	MeanCos2ThetaProtonFromLambda = hAcceptanceLambda->GetBinContent(bin2DLambda);
+      if (applyAcceptanceCorrection) {
+        if (ptLambda < MinPtLambda || ptLambda > MaxPtLambda) {
+          continue;
+        }
+        if (std::abs(casc.eta()) > etaCasc)
+          continue;
+        if (std::abs(etaLambda) > etaLambdaMax)
+          continue;
+        int bin2DXi = hAcceptanceXi->FindBin(casc.pt(), casc.eta());
+        int bin2DOmega = hAcceptanceOmega->FindBin(casc.pt(), casc.eta());
+        int bin2DLambda = hAcceptanceXi->FindBin(ptLambda, etaLambda);
+        MeanCos2ThetaLambdaFromXi = hAcceptanceXi->GetBinContent(bin2DXi);
+        MeanCos2ThetaLambdaFromOmega = hAcceptanceOmega->GetBinContent(bin2DOmega);
+        MeanCos2ThetaProtonFromLambda = hAcceptanceLambda->GetBinContent(bin2DLambda);
       }
-      
+
       int ChargeIndex = 0;
       if (casc.sign() > 0)
         ChargeIndex = 1;
       double Pzs2Xi = cosThetaStarLambda[0] * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaXi[ChargeIndex] / MeanCos2ThetaLambdaFromXi;
-      double Pzs2Omega = cosThetaStarLambda[1] * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaOmega[ChargeIndex]/ MeanCos2ThetaLambdaFromOmega;
+      double Pzs2Omega = cosThetaStarLambda[1] * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaOmega[ChargeIndex] / MeanCos2ThetaLambdaFromOmega;
       double Cos2ThetaXi = cosThetaStarLambda[0] * cosThetaStarLambda[0];
       double Cos2ThetaOmega = cosThetaStarLambda[1] * cosThetaStarLambda[1];
       double Pzs2LambdaFromCasc = cosThetaStarProton * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaLambda[ChargeIndex] / MeanCos2ThetaProtonFromLambda;
@@ -934,14 +936,14 @@ struct cascadeFlow {
           histos.get<THn>(HIST("hXiPzs2FromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], Pzs2LambdaFromCasc);
           histos.get<THn>(HIST("hXiCos2Theta"))->Fill(coll.centFT0C(), ChargeIndex, casc.eta(), casc.pt(), casc.mXi(), BDTresponse[0], Cos2ThetaXi);
           histos.get<THn>(HIST("hXiCos2ThetaFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.eta(), casc.pt(), casc.mXi(), BDTresponse[0], Cos2ThetaLambda);
-	  histos.get<THn>(HIST("hXiCos2ThetaFromLambdaL"))->Fill(coll.centFT0C(), ChargeIndex, etaLambda, ptLambda, casc.mLambda(), BDTresponse[0], Cos2ThetaLambda);
+          histos.get<THn>(HIST("hXiCos2ThetaFromLambdaL"))->Fill(coll.centFT0C(), ChargeIndex, etaLambda, ptLambda, casc.mLambda(), BDTresponse[0], Cos2ThetaLambda);
         }
         if (isFillTHNXi_PzVsPsi) {
           histos.get<THn>(HIST("hXiPzVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], CosThetaXiWithAlpha, 2 * cascminuspsiT0C);
           histos.get<THn>(HIST("hXiPzVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], CosThetaProtonWithAlpha, 2 * cascminuspsiT0C);
           histos.get<THn>(HIST("hXiCos2ThetaVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.eta(), casc.pt(), casc.mXi(), BDTresponse[0], Cos2ThetaXi, 2 * cascminuspsiT0C);
           histos.get<THn>(HIST("hXiCos2ThetaVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.eta(), casc.pt(), casc.mXi(), BDTresponse[0], Cos2ThetaLambda, 2 * cascminuspsiT0C);
-	  histos.get<THn>(HIST("hXiCos2ThetaVsPsiFromLambdaL"))->Fill(coll.centFT0C(), ChargeIndex, etaLambda, ptLambda, casc.mLambda(), BDTresponse[0], Cos2ThetaLambda, 2 * cascminuspsiT0C);
+          histos.get<THn>(HIST("hXiCos2ThetaVsPsiFromLambdaL"))->Fill(coll.centFT0C(), ChargeIndex, etaLambda, ptLambda, casc.mLambda(), BDTresponse[0], Cos2ThetaLambda, 2 * cascminuspsiT0C);
         }
         if (isFillTHNOmega) {
           histos.get<THn>(HIST("hOmegaV2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], v2CEP);
@@ -949,14 +951,14 @@ struct cascadeFlow {
           histos.get<THn>(HIST("hOmegaPzs2FromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], Pzs2LambdaFromCasc);
           histos.get<THn>(HIST("hOmegaCos2Theta"))->Fill(coll.centFT0C(), ChargeIndex, casc.eta(), casc.pt(), casc.mOmega(), BDTresponse[1], Cos2ThetaOmega);
           histos.get<THn>(HIST("hOmegaCos2ThetaFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.eta(), casc.pt(), casc.mOmega(), BDTresponse[1], Cos2ThetaLambda);
-	  histos.get<THn>(HIST("hOmegaCos2ThetaFromLambdaL"))->Fill(coll.centFT0C(), ChargeIndex, etaLambda, ptLambda, casc.mLambda(), BDTresponse[1], Cos2ThetaLambda);
+          histos.get<THn>(HIST("hOmegaCos2ThetaFromLambdaL"))->Fill(coll.centFT0C(), ChargeIndex, etaLambda, ptLambda, casc.mLambda(), BDTresponse[1], Cos2ThetaLambda);
         }
         if (isFillTHNOmega_PzVsPsi) {
           histos.get<THn>(HIST("hOmegaPzVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[0], CosThetaOmegaWithAlpha, 2 * cascminuspsiT0C);
           histos.get<THn>(HIST("hOmegaPzVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[0], CosThetaProtonWithAlpha, 2 * cascminuspsiT0C);
           histos.get<THn>(HIST("hOmegaCos2ThetaVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.eta(), casc.pt(), casc.mOmega(), BDTresponse[0], Cos2ThetaOmega, 2 * cascminuspsiT0C);
           histos.get<THn>(HIST("hOmegaCos2ThetaVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.eta(), casc.pt(), casc.mOmega(), BDTresponse[0], Cos2ThetaLambda, 2 * cascminuspsiT0C);
-	  histos.get<THn>(HIST("hOmegaCos2ThetaVsPsiFromLambdaL"))->Fill(coll.centFT0C(), ChargeIndex, etaLambda, ptLambda, casc.mLambda(), BDTresponse[0], Cos2ThetaLambda, 2 * cascminuspsiT0C);
+          histos.get<THn>(HIST("hOmegaCos2ThetaVsPsiFromLambdaL"))->Fill(coll.centFT0C(), ChargeIndex, etaLambda, ptLambda, casc.mLambda(), BDTresponse[0], Cos2ThetaLambda, 2 * cascminuspsiT0C);
         }
       }
 
