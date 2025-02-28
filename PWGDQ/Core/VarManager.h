@@ -2746,6 +2746,22 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
   values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
+  if (t1.sign() > 0) {
+    values[kPt1] = t1.pt();
+    values[kEta1] = t1.eta();
+    values[kPhi1] = t1.phi();
+    values[kPt2] = t2.pt();
+    values[kEta2] = t2.eta();
+    values[kPhi2] = t2.phi();
+  } else {
+    values[kPt1] = t2.pt();
+    values[kEta1] = t2.eta();
+    values[kPhi1] = t2.phi();
+    values[kPt2] = t1.pt();
+    values[kEta2] = t1.eta();
+    values[kPhi2] = t1.phi();
+  }
+
   if (fgUsedVars[kDeltaPhiPair2]) {
     double phipair2 = v1.Phi() - v2.Phi();
     if (phipair2 > 3 * TMath::Pi() / 2) {
