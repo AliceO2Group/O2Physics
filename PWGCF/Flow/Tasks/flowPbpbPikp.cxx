@@ -319,10 +319,10 @@ struct FlowPbpbPikp {
   void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
   {
     double dnx, val;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
-    if (dnx == 0)
-      return;
     if (!corrconf.pTDif) {
+      dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+      if (dnx == 0)
+        return;
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
       if (std::fabs(val) < 1)
         histos.fill(tarName, cent, val, dnx);
