@@ -9,12 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file f0980pbpbanalysis.cxx
+/// \brief f0980 resonance analysis in PbPb collisions
 /// \author Junlee Kim (jikim1290@gmail.com)
 
+#include <Framework/Configurable.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
 #include <chrono>
+// #include <iostream>
 #include <string>
 
 #include "TLorentzVector.h"
@@ -71,11 +75,11 @@ struct f0980pbpbanalysis {
   o2::ccdb::CcdbApi ccdbApi;
 
   Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0, "PV selection"};
   Configurable<bool> cfgQvecSel{"cfgQvecSel", true, "Reject events when no QVector"};
-  Configurable<bool> cfgOccupancySel{"cfgOccupancySe", false, "Occupancy selection"};
+  Configurable<bool> cfgOccupancySel{"cfgOccupancySel", false, "Occupancy selection"};
   Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", -100, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<bool> cfgNCollinTR{"cfgNCollinTR", false, "Additional selection for the number of coll in time range"};
@@ -103,6 +107,7 @@ struct f0980pbpbanalysis {
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"}; // TPC
   Configurable<double> cMaxTPCnSigmaPionS{"cMaxTPCnSigmaPionS", 3.0, "TPC nSigma cut for Pion as a standalone"};
   Configurable<bool> cfgUSETOF{"cfgUSETOF", false, "TPC usage"};
+  Configurable<int> cfgSelectType{"cfgSelectType", 0, "PID selection type"};
 
   Configurable<int> cfgnMods{"cfgnMods", 1, "The number of modulations of interest starting from 2"};
   Configurable<int> cfgNQvec{"cfgNQvec", 7, "The number of total Qvectors for looping over the task"};
@@ -111,6 +116,9 @@ struct f0980pbpbanalysis {
   Configurable<std::string> cfgQvecRefAName{"cfgQvecRefAName", "TPCpos", "The name of detector for reference A"};
   Configurable<std::string> cfgQvecRefBName{"cfgQvecRefBName", "TPCneg", "The name of detector for reference B"};
 
+  Configurable<bool> cfgRotBkg{"cfgRotBkg", true, "flag to construct rotational backgrounds"};
+  Configurable<int> cfgNRotBkg{"cfgNRotBkg", 10, "the number of rotational backgrounds"};
+
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "Centrality interval"};
@@ -118,30 +126,34 @@ struct f0980pbpbanalysis {
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
 
-  int DetId;
-  int RefAId;
-  int RefBId;
+  int detId;
+  int refAId;
+  int refBId;
 
-  int QvecDetInd;
-  int QvecRefAInd;
-  int QvecRefBInd;
+  int qVecDetInd;
+  int qVecRefAInd;
+  int qVecRefBInd;
 
   float centrality;
 
   double angle;
   double relPhi;
+  double relPhiRot;
 
   double massPi = o2::constants::physics::MassPionCharged;
 
+  TRandom* rn = new TRandom();
+  // float theta2;
+
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgMaxEta && nabs(aod::track::pt) > cfgMinPt);
-  Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgMaxDCArToPVcut) && (nabs(aod::track::dcaZ) < cfgMaxDCAzToPVcut);
+  Filter cutDCAFilter = (nabs(aod::track::dcaXY) < cfgMaxDCArToPVcut) && (nabs(aod::track::dcaZ) < cfgMaxDCAzToPVcut);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
 
   template <typename T>
-  int GetDetId(const T& name)
+  int getDetId(const T& name)
   {
     if (name.value == "FT0C") {
       return 0;
@@ -185,7 +197,7 @@ struct f0980pbpbanalysis {
     if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return 0;
     }
-    if (cfgQvecSel && (collision.qvecAmp()[DetId] < 1e-4 || collision.qvecAmp()[RefAId] < 1e-4 || collision.qvecAmp()[RefAId] < 1e-4)) {
+    if (cfgQvecSel && (collision.qvecAmp()[detId] < 1e-4 || collision.qvecAmp()[refAId] < 1e-4 || collision.qvecAmp()[refAId] < 1e-4)) {
       return 0;
     }
     if (cfgOccupancySel && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
@@ -236,101 +248,132 @@ struct f0980pbpbanalysis {
   }
 
   template <typename TrackType>
-  bool PIDSelected(const TrackType track)
+  bool selectionPID(const TrackType track)
   {
-    if (cfgUSETOF) {
-      if (std::fabs(track.tofNSigmaPi()) > cMaxTOFnSigmaPion) {
-        return 0;
+    if (cfgSelectType == 0) {
+      if (cfgUSETOF) {
+        if (std::fabs(track.tofNSigmaPi()) > cMaxTOFnSigmaPion) {
+          return 0;
+        }
+        if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPion) {
+          return 0;
+        }
       }
-      if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPion) {
+      if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
         return 0;
       }
     }
-    if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
-      return 0;
+    if (cfgSelectType == 1) {
+      if (cfgUSETOF) {
+        if (track.hasTOF()) {
+          if (std::fabs(track.tofNSigmaPi()) > cMaxTOFnSigmaPion) {
+            return 0;
+          }
+          if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPion) {
+            return 0;
+          }
+        } else {
+          if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
+            return 0;
+          }
+        }
+      } else {
+        if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
+          return 0;
+        }
+      }
     }
 
     return 1;
   }
 
   template <bool IsMC, typename CollisionType, typename TracksType>
-  void FillHistograms(const CollisionType& collision,
+  void fillHistograms(const CollisionType& collision,
                       const TracksType& dTracks, int nmode)
   {
-    QvecDetInd = DetId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
-    QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
-    QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    qVecDetInd = detId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    qVecRefAInd = refAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    qVecRefBInd = refBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
 
-    double eventPlaneDet = TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode);
-    double eventPlaneRefA = TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode);
-    double eventPlaneRefB = TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode);
+    double eventPlaneDet = std::atan2(collision.qvecIm()[qVecDetInd], collision.qvecRe()[qVecDetInd]) / static_cast<float>(nmode);
+    double eventPlaneRefA = std::atan2(collision.qvecIm()[qVecRefAInd], collision.qvecRe()[qVecRefAInd]) / static_cast<float>(nmode);
+    double eventPlaneRefB = std::atan2(collision.qvecIm()[qVecRefBInd], collision.qvecRe()[qVecRefBInd]) / static_cast<float>(nmode);
 
     histos.fill(HIST("QA/EPhist"), centrality, eventPlaneDet);
-    histos.fill(HIST("QA/EPResAB"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefA)));
-    histos.fill(HIST("QA/EPResAC"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefB)));
-    histos.fill(HIST("QA/EPResBC"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneRefA - eventPlaneRefB)));
+    histos.fill(HIST("QA/EPResAB"), centrality, std::cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefA)));
+    histos.fill(HIST("QA/EPResAC"), centrality, std::cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefB)));
+    histos.fill(HIST("QA/EPResBC"), centrality, std::cos(static_cast<float>(nmode) * (eventPlaneRefA - eventPlaneRefB)));
 
-    TLorentzVector Pion1, Pion2, Reco;
-    for (auto& [trk1, trk2] :
-         combinations(CombinationsUpperIndexPolicy(dTracks, dTracks))) {
-      if (trk1.index() == trk2.index()) {
-        if (!trackSelected(trk1))
+    TLorentzVector pion1, pion2, pion2Rot, reco, recoRot;
+    for (const auto& trk1 : dTracks) {
+      if (!trackSelected(trk1)) {
+        continue;
+      }
+
+      if (!selectionPID(trk1)) {
+        continue;
+      }
+
+      histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
+      histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), trk1.tofNSigmaPi());
+      histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
+
+      for (const auto& trk2 : dTracks) {
+        if (!trackSelected(trk2)) {
           continue;
-        histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
-        histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), trk1.tofNSigmaPi());
-        histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
-        continue;
-      }
+        }
 
-      if (!trackSelected(trk1) || !trackSelected(trk2))
-        continue;
-      if (!PIDSelected(trk1) || !PIDSelected(trk2))
-        continue;
+        // PID
+        if (!selectionPID(trk2)) {
+          continue;
+        }
 
-      if (trk1.index() == trk2.index()) {
-        histos.fill(HIST("QA/Nsigma_TPC_selected"), trk1.pt(), trk1.tpcNSigmaPi());
-        histos.fill(HIST("QA/Nsigma_TOF_selected"), trk1.pt(), trk1.tofNSigmaPi());
-        histos.fill(HIST("QA/TPC_TOF_selected"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
-      }
+        if (trk1.index() == trk2.index()) {
+          histos.fill(HIST("QA/Nsigma_TPC_selected"), trk1.pt(), trk1.tpcNSigmaPi());
+          histos.fill(HIST("QA/Nsigma_TOF_selected"), trk1.pt(), trk1.tofNSigmaPi());
+          histos.fill(HIST("QA/TPC_TOF_selected"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
+        }
 
-      Pion1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
-      Pion2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
-      Reco = Pion1 + Pion2;
+        pion1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
+        pion2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
+        reco = pion1 + pion2;
 
-      if (Reco.Rapidity() > cfgMaxRap || Reco.Rapidity() < cfgMinRap)
-        continue;
+        if (reco.Rapidity() > cfgMaxRap || reco.Rapidity() < cfgMinRap) {
+          continue;
+        }
 
-      relPhi = TVector2::Phi_0_2pi((Reco.Phi() - eventPlaneDet) * static_cast<float>(nmode));
+        relPhi = TVector2::Phi_0_2pi((reco.Phi() - eventPlaneDet) * static_cast<float>(nmode));
 
-      if (trk1.sign() * trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_US_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
-        /*
-                if constexpr (IsMC) {
-                  if (abs(trk1.pdgCode()) != 211 || abs(trk2.pdgCode()) != 211)
-                    continue;
-                  if (trk1.motherId() != trk2.motherId())
-                    continue;
-                  if (abs(trk1.motherPDG()) != 9010221)
-                    continue;
-                  histos.fill(HIST("MCL/hpT_f0980_REC"), Reco.M(), Reco.Pt(), centrality);
-                }
-        */
-      } else if (trk1.sign() > 0 && trk2.sign() > 0) {
-        histos.fill(HIST("hInvMass_f0980_LSpp_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
-      } else if (trk1.sign() < 0 && trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
+        if (trk1.sign() * trk2.sign() < 0) {
+          histos.fill(HIST("hInvMass_f0980_US_EPA"), reco.M(), reco.Pt(), centrality, relPhi);
+        } else if (trk1.sign() > 0 && trk2.sign() > 0) {
+          histos.fill(HIST("hInvMass_f0980_LSpp_EPA"), reco.M(), reco.Pt(), centrality, relPhi);
+        } else if (trk1.sign() < 0 && trk2.sign() < 0) {
+          histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), reco.M(), reco.Pt(), centrality, relPhi);
+        }
+
+        if (cfgRotBkg && trk1.sign() * trk2.sign() < 0) {
+          for (int nr = 0; nr < cfgNRotBkg; nr++) {
+            auto randomPhi = rn->Uniform(o2::constants::math::PI * 5.0 / 6.0, o2::constants::math::PI * 7.0 / 6.0);
+            randomPhi += pion2.Phi();
+            pion2Rot.SetXYZM(pion2.Pt() * std::cos(randomPhi), pion2.Pt() * std::sin(randomPhi), trk2.pz(), massPi);
+            recoRot = pion1 + pion2Rot;
+            relPhiRot = TVector2::Phi_0_2pi((recoRot.Phi() - eventPlaneDet) * static_cast<float>(nmode));
+            histos.fill(HIST("hInvMass_f0980_USRot_EPA"), recoRot.M(), recoRot.Pt(), centrality, relPhiRot);
+          }
+        }
       }
     }
   }
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec epAxis = {6, 0.0, 2.0 * constants::math::PI};
+    AxisSpec epAxis = {6, 0.0, 2.0 * o2::constants::math::PI};
     AxisSpec centQaAxis = {110, 0, 110};
     AxisSpec vzQaAxis = {100, -20, 20};
     AxisSpec PIDqaAxis = {100, -10, 10};
     AxisSpec pTqaAxis = {200, 0, 20};
-    AxisSpec epQaAxis = {100, -1.0 * constants::math::PI, constants::math::PI};
+    AxisSpec epQaAxis = {100, -1.0 * o2::constants::math::PI, o2::constants::math::PI};
     AxisSpec epresAxis = {102, -1.02, 1.02};
 
     histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
@@ -355,21 +398,22 @@ struct f0980pbpbanalysis {
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
     histos.add("hInvMass_f0980_LSmm_EPA", "-- invariant mass",
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
-
+    histos.add("hInvMass_f0980_USRot_EPA", "unlike invariant mass Rotation",
+               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
     //    if (doprocessMCLight) {
     //      histos.add("MCL/hpT_f0980_GEN", "generated f0 signals", HistType::kTH1F, {pTqaAxis});
     //      histos.add("MCL/hpT_f0980_REC", "reconstructed f0 signals", HistType::kTH3F, {massAxis, pTqaAxis, centAxis});
     //    }
 
-    DetId = GetDetId(cfgQvecDetName);
-    RefAId = GetDetId(cfgQvecRefAName);
-    RefBId = GetDetId(cfgQvecRefBName);
+    detId = getDetId(cfgQvecDetName);
+    refAId = getDetId(cfgQvecRefAName);
+    refBId = getDetId(cfgQvecRefBName);
 
-    if (DetId == RefAId || DetId == RefBId || RefAId == RefBId) {
+    if (detId == refAId || detId == refBId || refAId == refBId) {
       LOGF(info, "Wrong detector configuration \n The FT0C will be used to get Q-Vector \n The TPCpos and TPCneg will be used as reference systems");
-      DetId = 0;
-      RefAId = 4;
-      RefBId = 5;
+      detId = 0;
+      refAId = 4;
+      refBId = 5;
     }
 
     fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
@@ -398,7 +442,7 @@ struct f0980pbpbanalysis {
     histos.fill(HIST("QA/CentDist"), centrality, 1.0);
     histos.fill(HIST("QA/Vz"), collision.posZ(), 1.0);
 
-    FillHistograms<false>(collision, tracks, 2); // second order
+    fillHistograms<false>(collision, tracks, 2); // second order
   };
   PROCESS_SWITCH(f0980pbpbanalysis, processData, "Process Event for data", true);
 };

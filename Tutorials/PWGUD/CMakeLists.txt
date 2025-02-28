@@ -53,7 +53,3 @@ o2physics_add_dpl_workflow(udtutorial-07
                            SOURCES UDTutorial_07.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
-
-
-
-

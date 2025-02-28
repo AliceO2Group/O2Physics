@@ -38,14 +38,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
-#else
-#include <onnxruntime_cxx_api.h>
-#endif
-
-using namespace o2::constants::physics;
-
 enum JetTaggingSpecies {
   none = 0,
   charm = 1,
@@ -71,203 +63,60 @@ namespace jettaggingutilities
 const int cmTomum = 10000; // using cm -> #mum for impact parameter (dca)
 
 struct BJetParams {
-  float mJetpT = 0.0;
-  float mJetEta = 0.0;
-  float mJetPhi = 0.0;
-  int mNTracks = -1;
-  int mNSV = -1;
-  float mJetMass = 0.0;
+  float jetpT = 0.0;
+  float jetEta = 0.0;
+  float jetPhi = 0.0;
+  int nTracks = -1;
+  int nSV = -1;
+  float jetMass = 0.0;
 };
 
 struct BJetTrackParams {
-  double mTrackpT = 0.0;
-  double mTrackEta = 0.0;
-  double mDotProdTrackJet = 0.0;
-  double mDotProdTrackJetOverJet = 0.0;
-  double mDeltaRJetTrack = 0.0;
-  double mSignedIP2D = 0.0;
-  double mSignedIP2DSign = 0.0;
-  double mSignedIP3D = 0.0;
-  double mSignedIP3DSign = 0.0;
-  double mMomFraction = 0.0;
-  double mDeltaRTrackVertex = 0.0;
+  double trackpT = 0.0;
+  double trackEta = 0.0;
+  double dotProdTrackJet = 0.0;
+  double dotProdTrackJetOverJet = 0.0;
+  double deltaRJetTrack = 0.0;
+  double signedIP2D = 0.0;
+  double signedIP2DSign = 0.0;
+  double signedIP3D = 0.0;
+  double signedIP3DSign = 0.0;
+  double momFraction = 0.0;
+  double deltaRTrackVertex = 0.0;
+  double trackPhi = 0.0;
+  double trackCharge = 0.0;
+  double trackITSChi2NCl = 0.0;
+  double trackTPCChi2NCl = 0.0;
+  double trackITSNCls = 0.0;
+  double trackTPCNCls = 0.0;
+  double trackTPCNCrossedRows = 0.0;
+  int trackOrigin = -1;
+  int trackVtxIndex = -1;
 };
 
 struct BJetSVParams {
-  double mSVpT = 0.0;
-  double mDeltaRSVJet = 0.0;
-  double mSVMass = 0.0;
-  double mSVfE = 0.0;
-  double mIPXY = 0.0;
-  double mCPA = 0.0;
-  double mChi2PCA = 0.0;
-  double mDispersion = 0.0;
-  double mDecayLength2D = 0.0;
-  double mDecayLength2DError = 0.0;
-  double mDecayLength3D = 0.0;
-  double mDecayLength3DError = 0.0;
-};
-
-// ONNX Runtime tensor (Ort::Value) allocator for using customized inputs of ML models.
-class TensorAllocator
-{
- protected:
-#if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-  Ort::MemoryInfo mem_info;
-#endif
- public:
-  TensorAllocator()
-#if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-    : mem_info(Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault))
-#endif
-  {
-  }
-  ~TensorAllocator() = default;
-  template <typename T>
-  Ort::Value createTensor(std::vector<T>& input, std::vector<int64_t>& inputShape)
-  {
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-    return Ort::Experimental::Value::CreateTensor<T>(input.data(), input.size(), inputShape);
-#else
-    return Ort::Value::CreateTensor<T>(mem_info, input.data(), input.size(), inputShape.data(), inputShape.size());
-#endif
-  }
-};
-
-// TensorAllocator for GNN b-jet tagger
-class GNNBjetAllocator : public TensorAllocator
-{
- private:
-  int64_t nJetFeat;
-  int64_t nTrkFeat;
-  int64_t nFlav;
-  int64_t nTrkOrigin;
-  int64_t maxNNodes;
-
-  std::vector<float> tfJetMean;
-  std::vector<float> tfJetStdev;
-  std::vector<float> tfTrkMean;
-  std::vector<float> tfTrkStdev;
-
-  std::vector<std::vector<int64_t>> edgesList;
-
-  // Jet feature normalization
-  template <typename T>
-  T jetFeatureTransform(T feat, int idx) const
-  {
-    return (feat - tfJetMean[idx]) / tfJetStdev[idx];
-  }
-
-  // Track feature normalization
-  template <typename T>
-  T trkFeatureTransform(T feat, int idx) const
-  {
-    return (feat - tfTrkMean[idx]) / tfTrkStdev[idx];
-  }
-
-  // Edge input of GNN (fully-connected graph)
-  void setEdgesList(void)
-  {
-    for (int64_t nNodes = 0; nNodes <= maxNNodes; ++nNodes) {
-      std::vector<std::pair<int64_t, int64_t>> edges;
-      // Generate all permutations of (i, j) where i != j
-      for (int64_t i = 0; i < nNodes; ++i) {
-        for (int64_t j = 0; j < nNodes; ++j) {
-          if (i != j) {
-            edges.emplace_back(i, j);
-          }
-        }
-      }
-      // Add self-loops (i, i)
-      for (int64_t i = 0; i < nNodes; ++i) {
-        edges.emplace_back(i, i);
-      }
-      // Flatten
-      std::vector<int64_t> flattenedEdges;
-      for (const auto& edge : edges) {
-        flattenedEdges.push_back(edge.first);
-      }
-      for (const auto& edge : edges) {
-        flattenedEdges.push_back(edge.second);
-      }
-      edgesList.push_back(flattenedEdges);
-    }
-  }
-
-  // Replace NaN in a vector into value
-  template <typename T>
-  static int replaceNaN(std::vector<T>& vec, T value)
-  {
-    int numNaN = 0;
-    for (auto& el : vec) {
-      if (std::isnan(el)) {
-        el = value;
-        ++numNaN;
-      }
-    }
-    return numNaN;
-  }
-
- public:
-  GNNBjetAllocator() : TensorAllocator(), nJetFeat(4), nTrkFeat(13), nFlav(3), nTrkOrigin(5), maxNNodes(40) {}
-  GNNBjetAllocator(int64_t nJetFeat, int64_t nTrkFeat, int64_t nFlav, int64_t nTrkOrigin, std::vector<float>& tfJetMean, std::vector<float>& tfJetStdev, std::vector<float>& tfTrkMean, std::vector<float>& tfTrkStdev, int64_t maxNNodes = 40)
-    : TensorAllocator(), nJetFeat(nJetFeat), nTrkFeat(nTrkFeat), nFlav(nFlav), nTrkOrigin(nTrkOrigin), maxNNodes(maxNNodes), tfJetMean(tfJetMean), tfJetStdev(tfJetStdev), tfTrkMean(tfTrkMean), tfTrkStdev(tfTrkStdev)
-  {
-    setEdgesList();
-  }
-  ~GNNBjetAllocator() = default;
-
-  // Copy operator for initializing GNNBjetAllocator using Configurable values
-  GNNBjetAllocator& operator=(const GNNBjetAllocator& other)
-  {
-    nJetFeat = other.nJetFeat;
-    nTrkFeat = other.nTrkFeat;
-    nFlav = other.nFlav;
-    nTrkOrigin = other.nTrkOrigin;
-    maxNNodes = other.maxNNodes;
-    tfJetMean = other.tfJetMean;
-    tfJetStdev = other.tfJetStdev;
-    tfTrkMean = other.tfTrkMean;
-    tfTrkStdev = other.tfTrkStdev;
-    setEdgesList();
-    return *this;
-  }
-
-  // Allocate & Return GNN input tensors (std::vector<Ort::Value>)
-  template <typename T>
-  void getGNNInput(std::vector<T>& jetFeat, std::vector<std::vector<T>>& trkFeat, std::vector<T>& feat, std::vector<Ort::Value>& gnnInput)
-  {
-    int64_t nNodes = trkFeat.size();
-
-    std::vector<int64_t> edgesShape{2, nNodes * nNodes};
-    gnnInput.emplace_back(createTensor(edgesList[nNodes], edgesShape));
-
-    std::vector<int64_t> featShape{nNodes, nJetFeat + nTrkFeat};
-
-    int numNaN = replaceNaN(jetFeat, 0.f);
-    for (auto& aTrkFeat : trkFeat) {
-      for (size_t i = 0; i < jetFeat.size(); ++i)
-        feat.push_back(jetFeatureTransform(jetFeat[i], i));
-      numNaN += replaceNaN(aTrkFeat, 0.f);
-      for (size_t i = 0; i < aTrkFeat.size(); ++i)
-        feat.push_back(trkFeatureTransform(aTrkFeat[i], i));
-    }
-
-    gnnInput.emplace_back(createTensor(feat, featShape));
-
-    if (numNaN > 0) {
-      LOGF(info, "NaN found in GNN input feature, number of NaN: %d", numNaN);
-    }
-  }
+  double svpT = 0.0;
+  double deltaRSVJet = 0.0;
+  double svMass = 0.0;
+  double svfE = 0.0;
+  double svIPxy = 0.0;
+  double svCPA = 0.0;
+  double svChi2PCA = 0.0;
+  double dispersion = 0.0;
+  double decayLength2D = 0.0;
+  double decayLength2DError = 0.0;
+  double decayLength3D = 0.0;
+  double decayLength3DError = 0.0;
 };
 
 //________________________________________________________________________
 bool isBHadron(int pc)
 {
+  using o2::constants::physics::Pdg;
   std::vector<int> bPdG = {Pdg::kB0, Pdg::kBPlus, 10511, 10521, 513, 523, 10513, 10523, 20513, 20523, 20513, 20523, 515, 525, Pdg::kBS, 10531, 533, 10533,
                            20533, 535, 541, 10541, 543, 10543, 20543, 545, 551, 10551, 100551, 110551, 200551, 210551, 553, 10553, 20553,
                            30553, 100553, 110553, 120553, 130553, 200553, 210553, 220553, 300553, 9000533, 9010553, 555, 10555, 20555,
-                           100555, 110555, 120555, 200555, 557, 100557, Pdg::kLambdaB0, 5112, 5212, 5222, 5114, 5214, 5224, 5132, kXiB0, 5312, 5322,
+                           100555, 110555, 120555, 200555, 557, 100557, Pdg::kLambdaB0, 5112, 5212, 5222, 5114, 5214, 5224, 5132, Pdg::kXiB0, 5312, 5322,
                            5314, 5324, 5332, 5334, 5142, 5242, 5412, 5422, 5414, 5424, 5342, 5432, 5434, 5442, 5444, 5512, 5522, 5514, 5524,
                            5532, 5534, 5542, 5544, 5554};
 
@@ -276,6 +125,7 @@ bool isBHadron(int pc)
 //________________________________________________________________________
 bool isCHadron(int pc)
 {
+  using o2::constants::physics::Pdg;
   std::vector<int> bPdG = {Pdg::kDPlus, Pdg::kD0, Pdg::kD0StarPlus, Pdg::kD0Star0, 413, 423, 10413, 10423, 20431, 20423, Pdg::kD2StarPlus, Pdg::kD2Star0, Pdg::kDS, 10431, Pdg::kDSStar, Pdg::kDS1, 20433, Pdg::kDS2Star, 441,
                            10441, 100441, Pdg::kJPsi, 10443, Pdg::kChiC1, 100443, 30443, 9000443, 9010443, 9020443, 445, 100445, Pdg::kLambdaCPlus, Pdg::kSigmaCPlusPlus, 4212, Pdg::kSigmaC0,
                            4224, 4214, 4114, Pdg::kXiCPlus, Pdg::kXiC0, 4322, 4312, 4324, 4314, Pdg::kOmegaC0, 4334, 4412, Pdg::kXiCCPlusPlus, 4414, 4424, 4432, 4434, 4444};
@@ -1106,48 +956,6 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
   return nVertices;
 }
 
-std::vector<std::vector<float>> getInputsForML(BJetParams jetparams, std::vector<BJetTrackParams>& tracksParams, std::vector<BJetSVParams>& svsParams, int maxJetConst = 10)
-{
-  std::vector<float> jetInput = {jetparams.mJetpT, jetparams.mJetEta, jetparams.mJetPhi, static_cast<float>(jetparams.mNTracks), static_cast<float>(jetparams.mNSV), jetparams.mJetMass};
-  std::vector<float> tracksInputFlat;
-  std::vector<float> svsInputFlat;
-
-  for (int iconstit = 0; iconstit < maxJetConst; iconstit++) {
-
-    tracksInputFlat.push_back(tracksParams[iconstit].mTrackpT);
-    tracksInputFlat.push_back(tracksParams[iconstit].mTrackEta);
-    tracksInputFlat.push_back(tracksParams[iconstit].mDotProdTrackJet);
-    tracksInputFlat.push_back(tracksParams[iconstit].mDotProdTrackJetOverJet);
-    tracksInputFlat.push_back(tracksParams[iconstit].mDeltaRJetTrack);
-    tracksInputFlat.push_back(tracksParams[iconstit].mSignedIP2D);
-    tracksInputFlat.push_back(tracksParams[iconstit].mSignedIP2DSign);
-    tracksInputFlat.push_back(tracksParams[iconstit].mSignedIP3D);
-    tracksInputFlat.push_back(tracksParams[iconstit].mSignedIP3DSign);
-    tracksInputFlat.push_back(tracksParams[iconstit].mMomFraction);
-    tracksInputFlat.push_back(tracksParams[iconstit].mDeltaRTrackVertex);
-
-    svsInputFlat.push_back(svsParams[iconstit].mSVpT);
-    svsInputFlat.push_back(svsParams[iconstit].mDeltaRSVJet);
-    svsInputFlat.push_back(svsParams[iconstit].mSVMass);
-    svsInputFlat.push_back(svsParams[iconstit].mSVfE);
-    svsInputFlat.push_back(svsParams[iconstit].mIPXY);
-    svsInputFlat.push_back(svsParams[iconstit].mCPA);
-    svsInputFlat.push_back(svsParams[iconstit].mChi2PCA);
-    svsInputFlat.push_back(svsParams[iconstit].mDispersion);
-    svsInputFlat.push_back(svsParams[iconstit].mDecayLength2D);
-    svsInputFlat.push_back(svsParams[iconstit].mDecayLength2DError);
-    svsInputFlat.push_back(svsParams[iconstit].mDecayLength3D);
-    svsInputFlat.push_back(svsParams[iconstit].mDecayLength3DError);
-  }
-
-  std::vector<std::vector<float>> totalInput;
-  totalInput.push_back(jetInput);
-  totalInput.push_back(tracksInputFlat);
-  totalInput.push_back(svsInputFlat);
-
-  return totalInput;
-}
-
 // Looping over the SV info and putting them in the input vector
 template <typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
 void analyzeJetSVInfo4ML(AnalysisJet const& myJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<BJetSVParams>& svsParams, float svPtMin = 1.0, int svReductionFactor = 3)
@@ -1193,7 +1001,7 @@ void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*a
 
     double deltaRJetTrack = jetutilities::deltaR(analysisJet, constituent);
     double dotProduct = RecoDecay::dotProd(std::array<float, 3>{analysisJet.px(), analysisJet.py(), analysisJet.pz()}, std::array<float, 3>{constituent.px(), constituent.py(), constituent.pz()});
-    int sign = jettaggingutilities::getGeoSign(analysisJet, constituent);
+    int sign = getGeoSign(analysisJet, constituent);
 
     float rClosestSV = 10.;
     for (const auto& candSV : analysisJet.template secondaryVertices_as<SecondaryVertices>()) {
@@ -1207,7 +1015,32 @@ void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*a
   }
 
   auto compare = [](BJetTrackParams& tr1, BJetTrackParams& tr2) {
-    return (tr1.mSignedIP2D / tr1.mSignedIP2DSign) > (tr2.mSignedIP2D / tr2.mSignedIP2DSign);
+    return (tr1.signedIP2D / tr1.signedIP2DSign) > (tr2.signedIP2D / tr2.signedIP2DSign);
+  };
+
+  // Sort the tracks based on their IP significance in descending order
+  std::sort(tracksParams.begin(), tracksParams.end(), compare);
+}
+
+// Looping over the track info and putting them in the input vector without using any SV info
+template <typename AnalysisJet, typename AnyTracks>
+void analyzeJetTrackInfo4MLnoSV(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, std::vector<BJetTrackParams>& tracksParams, float trackPtMin = 0.5)
+{
+  for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
+
+    if (constituent.pt() < trackPtMin) {
+      continue;
+    }
+
+    double deltaRJetTrack = jetutilities::deltaR(analysisJet, constituent);
+    double dotProduct = RecoDecay::dotProd(std::array<float, 3>{analysisJet.px(), analysisJet.py(), analysisJet.pz()}, std::array<float, 3>{constituent.px(), constituent.py(), constituent.pz()});
+    int sign = getGeoSign(analysisJet, constituent);
+
+    tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), 0.0});
+  }
+
+  auto compare = [](BJetTrackParams& tr1, BJetTrackParams& tr2) {
+    return (tr1.signedIP2D / tr1.signedIP2DSign) > (tr2.signedIP2D / tr2.signedIP2DSign);
   };
 
   // Sort the tracks based on their IP significance in descending order
@@ -1224,7 +1057,7 @@ void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*
       continue;
     }
 
-    int sign = jettaggingutilities::getGeoSign(analysisJet, constituent);
+    int sign = getGeoSign(analysisJet, constituent);
 
     auto origConstit = constituent.template track_as<AnyOriginalTracks>();
 
@@ -1245,7 +1078,7 @@ void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*
 
 // Discriminant value for GNN b-jet tagging
 template <typename T>
-T Db(const std::vector<T>& logits, double fC = 0.018)
+T getDb(const std::vector<T>& logits, double fC = 0.018)
 {
   auto softmax = [](const std::vector<T>& logits) {
     std::vector<T> res;

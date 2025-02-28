@@ -25,6 +25,7 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/trackUtilities.h"
 #include "CommonConstants/PhysicsConstants.h"
@@ -62,6 +63,8 @@ struct skimmerPrimaryElectron {
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
 
   // Operation and minimisation criteria
@@ -97,7 +100,11 @@ struct skimmerPrimaryElectron {
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  o2::dataformats::VertexBase mVtx;
+  const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
+  o2::base::MatLayerCylSet* lut = nullptr;
 
   void init(InitContext&)
   {
@@ -154,6 +161,14 @@ struct skimmerPrimaryElectron {
       return;
     }
 
+    // load matLUT for this timestamp
+    if (!lut) {
+      LOG(info) << "Loading material look-up table for timestamp: " << bc.timestamp();
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(lutPath, bc.timestamp()));
+    } else {
+      LOG(info) << "Material look-up table already in place. Not reloading.";
+    }
+
     // In case override, don't proceed, please - no CCDB access required
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
@@ -162,6 +177,8 @@ struct skimmerPrimaryElectron {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      mMeanVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
       mRunNumber = bc.runNumber();
       return;
     }
@@ -169,10 +186,13 @@ struct skimmerPrimaryElectron {
     auto run3grp_timestamp = bc.timestamp();
     o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
+    if (!skipGRPOquery) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    }
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      mMeanVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
@@ -182,6 +202,9 @@ struct skimmerPrimaryElectron {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      mMeanVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
+
       // Fetch magnetic field from ccdb for current collision
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
@@ -240,14 +263,17 @@ struct skimmerPrimaryElectron {
       return false;
     }
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    o2::dataformats::DCA mDcaInfoCov;
+    mDcaInfoCov.set(999, 999, 999, 999, 999);
     auto track_par_cov_recalc = getTrackParCov(track);
     track_par_cov_recalc.setPID(o2::track::PID::Electron);
-    // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-    // getPxPyPz(track_par_cov_recalc, pVec_recalc);
-    float dcaXY = dcaInfo[0];
-    float dcaZ = dcaInfo[1];
+    mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+    mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
+    float dcaXY = mDcaInfoCov.getY();
+    float dcaZ = mDcaInfoCov.getZ();
+
+    // LOGF(info, "track_par_cov_recalc.getSigmaY2() = %.16f, mDcaInfoCov.getSigmaY2() = %.16f, track_par_cov_recalc.getSigmaZ2() = %.16f, mDcaInfoCov.getSigmaZ2() = %.16f, track_par_cov_recalc.getSigmaZY() = %.16f, mDcaInfoCov.getSigmaYZ() = %.16f", track_par_cov_recalc.getSigmaY2(), mDcaInfoCov.getSigmaY2(), track_par_cov_recalc.getSigmaZ2(), mDcaInfoCov.getSigmaZ2(), track_par_cov_recalc.getSigmaZY(), mDcaInfoCov.getSigmaYZ());
 
     if (std::fabs(dcaXY) > dca_xy_max || std::fabs(dcaZ) > dca_z_max) {
       return false;
@@ -312,14 +338,15 @@ struct skimmerPrimaryElectron {
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::pair<int, int>{collision.globalIndex(), track.globalIndex()}) == stored_trackIds.end()) {
-      gpu::gpustd::array<float, 2> dcaInfo;
+      o2::dataformats::DCA mDcaInfoCov;
+      mDcaInfoCov.set(999, 999, 999, 999, 999);
       auto track_par_cov_recalc = getTrackParCov(track);
       track_par_cov_recalc.setPID(o2::track::PID::Electron);
-      // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-      // getPxPyPz(track_par_cov_recalc, pVec_recalc);
-      float dcaXY = dcaInfo[0];
-      float dcaZ = dcaInfo[1];
+      mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+      mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
+      float dcaXY = mDcaInfoCov.getY();
+      float dcaZ = mDcaInfoCov.getZ();
 
       float pt_recalc = track_par_cov_recalc.getPt();
       float eta_recalc = track_par_cov_recalc.getEta();
@@ -620,6 +647,8 @@ struct prefilterPrimaryElectron {
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
 
   // Operation and minimisation criteria
@@ -649,7 +678,11 @@ struct prefilterPrimaryElectron {
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  o2::dataformats::VertexBase mVtx;
+  const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
+  o2::base::MatLayerCylSet* lut = nullptr;
 
   void init(InitContext&)
   {
@@ -684,6 +717,14 @@ struct prefilterPrimaryElectron {
       return;
     }
 
+    // load matLUT for this timestamp
+    if (!lut) {
+      LOG(info) << "Loading material look-up table for timestamp: " << bc.timestamp();
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(lutPath, bc.timestamp()));
+    } else {
+      LOG(info) << "Material look-up table already in place. Not reloading.";
+    }
+
     // In case override, don't proceed, please - no CCDB access required
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
@@ -692,6 +733,8 @@ struct prefilterPrimaryElectron {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      mMeanVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
       mRunNumber = bc.runNumber();
       return;
     }
@@ -703,6 +746,8 @@ struct prefilterPrimaryElectron {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      mMeanVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
@@ -712,6 +757,8 @@ struct prefilterPrimaryElectron {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      mMeanVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
       // Fetch magnetic field from ccdb for current collision
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
@@ -759,14 +806,17 @@ struct prefilterPrimaryElectron {
       return false;
     }
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    o2::dataformats::DCA mDcaInfoCov;
+    mDcaInfoCov.set(999, 999, 999, 999, 999);
     auto track_par_cov_recalc = getTrackParCov(track);
     track_par_cov_recalc.setPID(o2::track::PID::Electron);
-    // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-    // getPxPyPz(track_par_cov_recalc, pVec_recalc);
+    mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+    mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
+    float dcaXY = mDcaInfoCov.getY();
+    float dcaZ = mDcaInfoCov.getZ();
 
-    if (std::fabs(dcaInfo[0]) > max_dcaxy || std::fabs(dcaInfo[1]) > max_dcaz) {
+    if (std::fabs(dcaXY) > max_dcaxy || std::fabs(dcaZ) > max_dcaz) {
       return false;
     }
 
@@ -781,12 +831,15 @@ struct prefilterPrimaryElectron {
   bool reconstructPC(TCollision const& collision, TTrack1 const& ele, TTrack2 const& pos)
   {
     float mee = 0, phiv = 0;
-    gpu::gpustd::array<float, 2> dcaInfo;
+    o2::dataformats::DCA mDcaInfoCov;
+    mDcaInfoCov.set(999, 999, 999, 999, 999);
     std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
+    mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+    mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
 
     if constexpr (loose_track_sign > 0) { // positive track is loose track
       auto track_par_cov_recalc = getTrackParCov(pos);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
       getPxPyPz(track_par_cov_recalc, pVec_recalc);
 
       ROOT::Math::PtEtaPhiMVector v1(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
@@ -796,7 +849,7 @@ struct prefilterPrimaryElectron {
       phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pVec_recalc[0], pVec_recalc[1], pVec_recalc[2], ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
     } else {
       auto track_par_cov_recalc = getTrackParCov(ele);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
       getPxPyPz(track_par_cov_recalc, pVec_recalc);
 
       ROOT::Math::PtEtaPhiMVector v1(track_par_cov_recalc.getPt(), track_par_cov_recalc.getEta(), track_par_cov_recalc.getPhi(), o2::constants::physics::MassElectron);
@@ -861,11 +914,14 @@ struct prefilterPrimaryElectron {
         if (!checkTrack(collision, ele)) {
           continue;
         }
-        gpu::gpustd::array<float, 2> dcaInfo;
+        o2::dataformats::DCA mDcaInfoCov;
+        mDcaInfoCov.set(999, 999, 999, 999, 999);
         std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
         auto track_par_cov_recalc = getTrackParCov(ele);
         track_par_cov_recalc.setPID(o2::track::PID::Electron);
-        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+        mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+        mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
         getPxPyPz(track_par_cov_recalc, pVec_recalc);
 
         for (auto& empos : positrons_per_coll) {
@@ -899,11 +955,14 @@ struct prefilterPrimaryElectron {
         if (!checkTrack(collision, pos)) { // track cut is applied to loose sample
           continue;
         }
-        gpu::gpustd::array<float, 2> dcaInfo;
+        o2::dataformats::DCA mDcaInfoCov;
+        mDcaInfoCov.set(999, 999, 999, 999, 999);
         std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
         auto track_par_cov_recalc = getTrackParCov(pos);
         track_par_cov_recalc.setPID(o2::track::PID::Electron);
-        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+        mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+        mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
         getPxPyPz(track_par_cov_recalc, pVec_recalc);
         for (auto& emele : electrons_per_coll) {
           if (emele.trackId() == pos.globalIndex()) {
@@ -935,11 +994,14 @@ struct prefilterPrimaryElectron {
         if (!checkTrack(collision, pos)) { // track cut is applied to loose sample
           continue;
         }
-        gpu::gpustd::array<float, 2> dcaInfo;
+        o2::dataformats::DCA mDcaInfoCov;
+        mDcaInfoCov.set(999, 999, 999, 999, 999);
         std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
         auto track_par_cov_recalc = getTrackParCov(pos);
         track_par_cov_recalc.setPID(o2::track::PID::Electron);
-        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+        mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+        mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
         getPxPyPz(track_par_cov_recalc, pVec_recalc);
         for (auto& empos : positrons_per_coll) {
           if (empos.trackId() == pos.globalIndex()) {
@@ -959,11 +1021,14 @@ struct prefilterPrimaryElectron {
         if (!checkTrack(collision, ele)) {
           continue;
         }
-        gpu::gpustd::array<float, 2> dcaInfo;
+        o2::dataformats::DCA mDcaInfoCov;
+        mDcaInfoCov.set(999, 999, 999, 999, 999);
         std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
         auto track_par_cov_recalc = getTrackParCov(ele);
         track_par_cov_recalc.setPID(o2::track::PID::Electron);
-        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+        mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+        mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
         getPxPyPz(track_par_cov_recalc, pVec_recalc);
 
         for (auto& emele : electrons_per_coll) {

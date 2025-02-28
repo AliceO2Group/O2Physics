@@ -51,7 +51,7 @@ o2physics_add_dpl_workflow(cascadecorrelations
 
 o2physics_add_dpl_workflow(non-prompt-cascade
     SOURCES nonPromptCascade.cxx
-    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore O2::DetectorsBase
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore O2::DetectorsBase O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(k0mixedevents
@@ -66,7 +66,7 @@ o2physics_add_dpl_workflow(vzero-cascade-absorption
 
 o2physics_add_dpl_workflow(derivedcascadeanalysis
     SOURCES derivedcascadeanalysis.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cascpostprocessing
@@ -81,7 +81,7 @@ o2physics_add_dpl_workflow(hstrangecorrelation
 
 o2physics_add_dpl_workflow(sigmaanalysis
     SOURCES sigmaanalysis.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(phik0shortanalysis
@@ -104,10 +104,12 @@ o2physics_add_dpl_workflow(cascpolsp
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+if(FastJet_FOUND)
 o2physics_add_dpl_workflow(strangeness-in-jets
     SOURCES strangenessInJets.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
+endif()
 
 o2physics_add_dpl_workflow(v0topologicalcuts
     SOURCES v0topologicalcuts.cxx
@@ -132,4 +134,9 @@ o2physics_add_dpl_workflow(lambdak0sflattenicity
 o2physics_add_dpl_workflow(lambdalambda
     SOURCES lambdalambda.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdajetpolarization
+    SOURCES lambdaJetpolarization.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

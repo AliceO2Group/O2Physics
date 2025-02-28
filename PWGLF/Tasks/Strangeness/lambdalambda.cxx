@@ -125,6 +125,8 @@ struct lambdalambda {
   Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag to apply efficiency correction"};
   Configurable<std::string> cfgEffCorPath{"cfgEffCorPath", "", "path for pseudo efficiency correction"};
 
+  Configurable<bool> cfgRotBkg{"cfgRotBkg", true, "flag to construct rotational backgrounds"};
+  Configurable<int> cfgNRotBkg{"cfgNRotBkg", 10, "the number of rotational backgrounds"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 10, "Number of mixed events per event"};
 
   ConfigurableAxis massAxis{"massAxis", {110, 2.22, 2.33}, "Invariant mass axis"};
@@ -143,11 +145,18 @@ struct lambdalambda {
   float centrality;
   TProfile2D* EffMap = nullptr;
 
+  TRandom* rn = new TRandom();
+
+  bool IsTriggered;
+  bool IsSelected;
+
   void init(o2::framework::InitContext&)
   {
     AxisSpec centQaAxis = {80, 0.0, 80.0};
     AxisSpec PVzQaAxis = {300, -15.0, 15.0};
     AxisSpec combAxis = {3, -0.5, 2.5};
+
+    histos.add("hEventstat", "", {HistType::kTH1F, {{4, 0, 4}}});
 
     histos.add("Radius_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, RadiusAxis, combAxis}});
     histos.add("CPA_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, CPAAxis, combAxis}});
@@ -161,6 +170,12 @@ struct lambdalambda {
 
     histos.add("h_InvMass_same", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
     histos.add("h_InvMass_mixed", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
+    histos.add("h_InvMass_rot", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
+
+    histos.add("h_InvMass_same_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
+    histos.add("h_InvMass_mixed_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
+    histos.add("h_InvMass_rot_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
+
     if (cfgQAv0) {
       histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
       histos.add("QA/PVzDist", "", {HistType::kTH1F, {PVzQaAxis}});
@@ -180,6 +195,7 @@ struct lambdalambda {
 
   double massLambda = o2::constants::physics::MassLambda;
   ROOT::Math::PxPyPzMVector RecoV01, RecoV02, RecoV0V0;
+  ROOT::Math::PxPyPzMVector RecoV02Rot, RecoV0V0Rot;
 
   template <typename TCollision>
   bool eventSelected(TCollision collision)
@@ -338,6 +354,9 @@ struct lambdalambda {
   template <typename C1, typename C2, typename V01, typename V02>
   void FillHistograms(C1 const& c1, C2 const& c2, V01 const& V01s, V02 const& V02s)
   {
+    IsTriggered = false;
+    IsSelected = false;
+
     for (auto& v01 : V01s) {
       auto postrack_v01 = v01.template posTrack_as<TrackCandidates>();
       auto negtrack_v01 = v01.template negTrack_as<TrackCandidates>();
@@ -412,8 +431,10 @@ struct lambdalambda {
         }
 
         RecoV0V0 = RecoV01 + RecoV02;
+
         if (std::abs(RecoV0V0.Rapidity()) > cfgV0V0RapMax)
           continue;
+        IsTriggered = true;
 
         histos.fill(HIST("Radius_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02), V01Tag + V02Tag);
         histos.fill(HIST("CPA_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02), V01Tag + V02Tag);
@@ -425,16 +446,32 @@ struct lambdalambda {
           histos.fill(HIST("CPA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02), V01Tag + V02Tag);
           histos.fill(HIST("Distance_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDistance(v01, v02), V01Tag + V02Tag);
           histos.fill(HIST("DCA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02), V01Tag + V02Tag);
+          IsSelected = true;
         }
-
-        if (cfgV0V0Sel && !isSelectedV0V0(v01, v02))
-          continue;
 
         if (doprocessDataSame) {
           histos.fill(HIST("h_InvMass_same"), RecoV0V0.M(), RecoV0V0.Pt(), centrality, V01Tag + V02Tag);
+          if (cfgV0V0Sel && isSelectedV0V0(v01, v02)) {
+            histos.fill(HIST("h_InvMass_same_sel"), RecoV0V0.M(), RecoV0V0.Pt(), centrality, V01Tag + V02Tag);
+          }
+          if (cfgRotBkg) {
+            for (int nr = 0; nr < cfgNRotBkg; nr++) {
+              auto RanPhi = rn->Uniform(o2::constants::math::PI * 5.0 / 6.0, o2::constants::math::PI * 7.0 / 6.0);
+              RanPhi += RecoV02.Phi();
+              RecoV02Rot = ROOT::Math::PxPyPzMVector(RecoV02.Pt() * std::cos(RanPhi), RecoV02.Pt() * std::sin(RanPhi), RecoV02.Pz(), RecoV02.M());
+              RecoV0V0Rot = RecoV01 + RecoV02Rot;
+              histos.fill(HIST("h_InvMass_rot"), RecoV0V0Rot.M(), RecoV0V0Rot.Pt(), centrality, V01Tag + V02Tag);
+              if (cfgV0V0Sel && isSelectedV0V0(v01, v02)) {
+                histos.fill(HIST("h_InvMass_rot_sel"), RecoV0V0Rot.M(), RecoV0V0Rot.Pt(), centrality, V01Tag + V02Tag);
+              }
+            }
+          }
         }
         if (doprocessDataMixed) {
           histos.fill(HIST("h_InvMass_mixed"), RecoV0V0.M(), RecoV0V0.Pt(), centrality, V01Tag + V02Tag);
+          if (cfgV0V0Sel && isSelectedV0V0(v01, v02)) {
+            histos.fill(HIST("h_InvMass_mixed_sel"), RecoV0V0.M(), RecoV0V0.Pt(), centrality, V01Tag + V02Tag);
+          }
         }
       }
     }
@@ -449,9 +486,11 @@ struct lambdalambda {
     } else if (cfgCentEst == 2) {
       centrality = collision.centFT0M();
     }
+    histos.fill(HIST("hEventstat"), 0.5);
     if (!eventSelected(collision)) {
       return;
     }
+    histos.fill(HIST("hEventstat"), 1.5);
 
     histos.fill(HIST("QA/CentDist"), centrality, 1.0);
     histos.fill(HIST("QA/PVzDist"), collision.posZ(), 1.0);
@@ -461,6 +500,11 @@ struct lambdalambda {
       EffMap = ccdb->getForTimeStamp<TProfile2D>(cfgEffCorPath.value, bc.timestamp());
     }
     FillHistograms(collision, collision, V0s, V0s);
+
+    if (IsTriggered)
+      histos.fill(HIST("hEventstat"), 2.5);
+    if (IsSelected)
+      histos.fill(HIST("hEventstat"), 3.5);
   }
   PROCESS_SWITCH(lambdalambda, processDataSame, "Process Event for same data", true);
 

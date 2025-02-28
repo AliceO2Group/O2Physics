@@ -50,11 +50,13 @@ struct SGResonanceAnalyzer {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   Configurable<float> FV0_cut{"FV0", 50., "FV0A threshold"};
-  Configurable<float> FT0A_cut{"FT0A", 50., "FT0A threshold"};
+  Configurable<float> FT0A_cut{"FT0A", 100., "FT0A threshold"};
   Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> ZDC_cut{"ZDC", 0., "ZDC threshold"};
+  Configurable<float> Vz_cut{"Vz_cut", 10., "Vz position"};
+  Configurable<float> OccT_cut{"OccT", 1000., "Occupancy cut"};
 
   // Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
@@ -304,7 +306,10 @@ struct SGResonanceAnalyzer {
     if (use_tof && pt >= pt2 && pt < pt3 && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut3) {
       return true;
     }
-    if (pt > pt3 && use_tof && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < nsigmatof_cut) {
+    if (use_tof && pt >= pt3 && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
+      return true;
+    }
+    if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < nsigmatof_cut) {
       return true;
     }
     if (!use_tof && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
@@ -327,7 +332,10 @@ struct SGResonanceAnalyzer {
     if (use_tof && pt >= pt2 && pt < pt3 && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut3) {
       return true;
     }
-    if (pt > pt3 && use_tof && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < nsigmatof_cut) {
+    if (use_tof && pt >= pt3 && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
+      return true;
+    }
+    if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < nsigmatof_cut) {
       return true;
     }
     if (!use_tof && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
@@ -366,7 +374,7 @@ struct SGResonanceAnalyzer {
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
   using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
-  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; //
+  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDZdcsReduced>; //
   using UDCollisionFull = UDCollisionsFull::iterator;
 
   void process(UDCollisionFull const& collision, udtracksfull const& tracks)
@@ -397,6 +405,11 @@ struct SGResonanceAnalyzer {
     gapSide = truegapSide;
     if (gapSide < 0 || gapSide > 2)
       return;
+    if (std::abs(collision.posZ()) > Vz_cut)
+      return;
+    if (std::abs(collision.occupancyInTime()) > OccT_cut)
+      return;
+
     Int_t mult = collision.numContrib();
     if (gapSide == 0) {
       registry.fill(HIST("gap_mult0"), mult);

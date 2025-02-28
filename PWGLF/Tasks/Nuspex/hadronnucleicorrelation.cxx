@@ -61,6 +61,7 @@ struct hadronnucleicorrelation {
   Configurable<bool> isMC{"isMC", false, "is MC"};
   Configurable<bool> isMCGen{"isMCGen", false, "is isMCGen"};
   Configurable<bool> isPrim{"isPrim", true, "is isPrim"};
+  Configurable<bool> domatterGen{"domatterGen", true, "domatterGen"};
   Configurable<bool> mcCorrelation{"mcCorrelation", false, "true: build the correlation function only for SE"};
   Configurable<bool> docorrection{"docorrection", false, "do efficiency correction"};
 
@@ -92,13 +93,14 @@ struct hadronnucleicorrelation {
   Configurable<bool> rejectionEl{"rejectionEl", true, "use TPC El rejection"};
   Configurable<float> max_tpcSharedCls{"max_tpcSharedCls", 0.4, "maximum fraction of TPC shared clasters"};
   Configurable<int> min_itsNCls{"min_itsNCls", 0, "minimum allowed number of ITS clasters"};
+  Configurable<int> maxmixcollsGen{"maxmixcollsGen", 100, "maxmixcollsGen"};
 
   // Mixing parameters
   Configurable<int> _vertexNbinsToMix{"vertexNbinsToMix", 10, "Number of vertexZ bins for the mixing"};
   Configurable<int> _multNsubBins{"multSubBins", 10, "number of sub-bins to perform the mixing within"};
 
   // pT/A bins
-  Configurable<std::vector<double>> pTBins{"pTBins", {0.4f, 0.6f, 0.8f}, "p_{T} bins"};
+  Configurable<std::vector<double>> pTBins{"pTBins", {0.6f, 1.0f, 1.2f, 2.f}, "p_{T} bins"};
 
   ConfigurableAxis AxisNSigma{"AxisNSigma", {35, -7.f, 7.f}, "n#sigma"};
 
@@ -359,9 +361,8 @@ struct hadronnucleicorrelation {
     }
 
     if (isMCGen) {
-      registry.add("Generated/hNEventsMC", "hNEventsMC", {HistType::kTH1D, {{2, 0.f, 2.f}}});
+      registry.add("Generated/hNEventsMC", "hNEventsMC", {HistType::kTH1D, {{1, 0.f, 1.f}}});
       registry.get<TH1>(HIST("Generated/hNEventsMC"))->GetXaxis()->SetBinLabel(1, "All");
-      registry.get<TH1>(HIST("Generated/hNEventsMC"))->GetXaxis()->SetBinLabel(2, "|z_{vtx}| < 10 cm");
     }
   }
 
@@ -560,28 +561,26 @@ struct hadronnucleicorrelation {
 
   template <int ME, typename Type>
   void mixMCParticles(Type const& particles1, Type const& particles2)
-  { // last value: 0 -- SE; 1 -- ME
+  {
     for (auto it1 : particles1) {
       for (auto it2 : particles2) {
-
         // Calculate Delta-eta Delta-phi (gen)
         float deltaEtaGen = it2->eta() - it1->eta();
-        float deltaPhiGen = it2->phi() - it1->phi();
-        deltaPhiGen = getDeltaPhi(deltaPhiGen);
+        float deltaPhiGen = getDeltaPhi(it2->phi() - it1->phi());
 
+        // Loop over pT bins
         for (int k = 0; k < nBinspT; k++) {
-
           if (it1->pt() >= pTBins.value.at(k) && it1->pt() < pTBins.value.at(k + 1)) {
-
-            if (ME) {
+            // Use correct histogram based on ME flag
+            if constexpr (ME) {
               hEtaPhiGen_AntiDeAntiPr_ME[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
             } else {
               hEtaPhiGen_AntiDeAntiPr_SE[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
-            } // SE
-          } // pT condition
-        } // nBinspT loop
-      } // particles 2
-    } // particles 1
+            }
+          }
+        }
+      }
+    }
   }
 
   float getDeltaPhi(float deltaPhi)
@@ -1294,6 +1293,10 @@ struct hadronnucleicorrelation {
         continue;
       }
 
+      if (std::abs(particle.eta()) > etacut) {
+        continue;
+      }
+
       if (particle.pdgCode() == pdgDeuteron) {
         selectedparticlesMC_d[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
       }
@@ -1301,89 +1304,95 @@ struct hadronnucleicorrelation {
         selectedparticlesMC_antid[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
       }
       if (particle.pdgCode() == pdgProton) {
-        selectedparticlesMC_p[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
-      }
-      if (particle.pdgCode() == -pdgProton) {
-        selectedparticlesMC_antip[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
-      }
-    }
+        if (!particle.has_daughters()) {
+          selectedparticlesMC_p[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
+        } else {
+          bool isp = false;
 
-    for (auto collision : mcCollisions) {
-
-      registry.fill(HIST("Generated/hNEventsMC"), 0.5);
-      if (std::abs(collision.posZ()) < 10.f) {
-        // return;
-        registry.fill(HIST("Generated/hNEventsMC"), 1.5);
-      }
-
-      int vertexBinToMix = std::floor((collision.posZ() + cutzvertex) / (2 * cutzvertex / _vertexNbinsToMix));
-      // int centBinToMix = std::floor(collision.centFT0M() / (100.0 / _multNsubBins));
-
-      if (selectedparticlesMC_antid.find(collision.globalIndex()) != selectedparticlesMC_antid.end()) {
-        mixbinsMC_antidantip[vertexBinToMix].push_back(std::make_shared<decltype(collision)>(collision));
-      }
-      if (selectedparticlesMC_d.find(collision.globalIndex()) != selectedparticlesMC_d.end()) {
-        mixbinsMC_dp[vertexBinToMix].push_back(std::make_shared<decltype(collision)>(collision));
-      }
-    } // coll
-
-    if (!mixbinsMC_antidantip.empty()) {
-
-      for (auto i = mixbinsMC_antidantip.begin(); i != mixbinsMC_antidantip.end(); i++) { // iterating over all vertex&mult bins
-
-        std::vector<MCcolType> value = i->second;
-        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
-
-        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
-
-          auto col1 = value[indx1];
-
-          if (selectedparticlesMC_antip.find(col1->index()) != selectedparticlesMC_antip.end()) {
-            mixMCParticles<0>(selectedparticlesMC_antid[col1->index()], selectedparticlesMC_antip[col1->index()]); // mixing SE
+          for (auto& dau : particle.daughters_as<aod::McParticles>()) {
+            if (dau.pdgCode() == pdgProton) {
+              isp = true;
+            }
           }
 
-          for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+          if (isp) {
+            selectedparticlesMC_p[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
+          }
+        }
+      }
+      if (particle.pdgCode() == -pdgProton) {
+        if (!particle.has_daughters()) {
+          selectedparticlesMC_antip[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
+        } else {
+          bool isantip = false;
 
-            auto col2 = (i->second)[indx2];
-
-            if (col1 == col2) {
-              continue;
+          for (auto& dau : particle.daughters_as<aod::McParticles>()) {
+            if (dau.pdgCode() == -pdgProton) {
+              isantip = true;
             }
+          }
 
-            if (selectedparticlesMC_antip.find(col2->index()) != selectedparticlesMC_antip.end()) {
-              mixMCParticles<1>(selectedparticlesMC_antid[col1->index()], selectedparticlesMC_antip[col2->index()]); // mixing ME
-            }
+          if (isantip) {
+            selectedparticlesMC_antip[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
           }
         }
       }
     }
 
-    if (!mixbinsMC_dp.empty()) {
+    for (auto collision1 : mcCollisions) { // loop on collisions
 
-      for (auto i = mixbinsMC_dp.begin(); i != mixbinsMC_dp.end(); i++) { // iterating over all vertex&mult bins
+      registry.fill(HIST("Generated/hNEventsMC"), 0.5);
 
-        std::vector<MCcolType> value = i->second;
-        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+      // anti-d - anti-p correlation
+      if (selectedparticlesMC_antid.find(collision1.globalIndex()) != selectedparticlesMC_antid.end()) {
+        if (selectedparticlesMC_antip.find(collision1.globalIndex()) != selectedparticlesMC_antip.end()) {
+          mixMCParticles<0>(selectedparticlesMC_antid[collision1.globalIndex()], selectedparticlesMC_antip[collision1.globalIndex()]); // mixing SE
+        }
 
-        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+        int stop1 = 0;
 
-          auto col1 = value[indx1];
+        for (auto collision2 : mcCollisions) { // nested loop on collisions
 
-          if (selectedparticlesMC_p.find(col1->index()) != selectedparticlesMC_p.end()) {
-            mixMCParticles<0>(selectedparticlesMC_d[col1->index()], selectedparticlesMC_p[col1->index()]); // mixing SE
+          if (collision1.globalIndex() == collision2.globalIndex()) {
+            continue;
           }
 
-          for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+          if (stop1 > maxmixcollsGen) {
+            break;
+          }
 
-            auto col2 = (i->second)[indx2];
+          if (selectedparticlesMC_antip.find(collision2.globalIndex()) != selectedparticlesMC_antip.end()) {
+            mixMCParticles<1>(selectedparticlesMC_antid[collision1.globalIndex()], selectedparticlesMC_antip[collision2.globalIndex()]); // mixing ME
+          }
 
-            if (col1 == col2) {
+          stop1++;
+        }
+      }
+
+      // d - p correlation
+      if (domatterGen) {
+        if (selectedparticlesMC_d.find(collision1.globalIndex()) != selectedparticlesMC_d.end()) {
+          if (selectedparticlesMC_p.find(collision1.globalIndex()) != selectedparticlesMC_p.end()) {
+            mixMCParticles<0>(selectedparticlesMC_d[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()]); // mixing SE
+          }
+
+          int stop2 = 0;
+
+          for (auto collision2 : mcCollisions) { // nested loop on collisions
+
+            if (collision1.globalIndex() == collision2.globalIndex()) {
               continue;
             }
 
-            if (selectedparticlesMC_p.find(col2->index()) != selectedparticlesMC_p.end()) {
-              mixMCParticles<1>(selectedparticlesMC_d[col1->index()], selectedparticlesMC_p[col2->index()]); // mixing ME
+            if (stop2 > maxmixcollsGen) {
+              break;
             }
+
+            if (selectedparticlesMC_p.find(collision2.globalIndex()) != selectedparticlesMC_p.end()) {
+              mixMCParticles<1>(selectedparticlesMC_d[collision1.globalIndex()], selectedparticlesMC_p[collision2.globalIndex()]); // mixing ME
+            }
+
+            stop2++;
           }
         }
       }
@@ -1405,16 +1414,6 @@ struct hadronnucleicorrelation {
     for (auto i = selectedparticlesMC_p.begin(); i != selectedparticlesMC_p.end(); i++)
       (i->second).clear();
     selectedparticlesMC_p.clear();
-
-    for (auto& pair : mixbinsMC_antidantip) {
-      pair.second.clear(); // clear the vector associated with the key
-    }
-    mixbinsMC_antidantip.clear(); // clear the map
-
-    for (auto& pair : mixbinsMC_dp) {
-      pair.second.clear(); // clear the vector associated with the key
-    }
-    mixbinsMC_dp.clear(); // clear the map
   }
   PROCESS_SWITCH(hadronnucleicorrelation, processGen, "processGen", false);
 };

@@ -92,6 +92,7 @@ struct phipbpb {
   Configurable<float> cfgCutCentrality{"cfgCutCentrality", 80.0f, "Accepted maximum Centrality"};
   Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 3000, "Occupancy cut"};
   // track
+  Configurable<bool> useSP{"useSP", false, "use SP"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
   Configurable<bool> additionalEvselITS{"additionalEvselITS", true, "Additional event selcection for ITS"};
   Configurable<bool> removefaketrak{"removefaketrack", true, "Remove fake track from momentum difference"};
@@ -141,10 +142,10 @@ struct phipbpb {
 
   using CollisionMCTrueTable = aod::McCollisions;
   using TrackMCTrueTable = aod::McParticles;
+
   using CollisionMCRecTableCentFT0C = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::EvSels>>;
   using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
-
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
 
   SliceCache cache;
@@ -172,6 +173,7 @@ struct phipbpb {
     const AxisSpec thnAxisRapidity{configThnAxisRapidity, "Rapidity"};
     const AxisSpec thnAxisSA{configThnAxisSA, "SA"};
     AxisSpec cumulantAxis = {200, -1, 1, "phi"};
+    AxisSpec squareAxis = {200, 0, 1, "aossquare"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec resAxis = {6000, -30, 30, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
@@ -195,25 +197,26 @@ struct phipbpb {
     histos.add("hPsiTPCR", "PsiTPCR", kTH3F, {centAxis, occupancyAxis, phiAxis});
     histos.add("hPsiTPCL", "PsiTPCL", kTH3F, {centAxis, occupancyAxis, phiAxis});
 
-    histos.add("hSparseV2SameEventCosPhi", "hSparseV2SameEventCosPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
-    histos.add("hSparseV2SameEventSinPhi", "hSparseV2SameEventSinPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
-    histos.add("hSparseV2SameEventCosPsi", "hSparseV2SameEventCosPsi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
-    histos.add("hSparseV2SameEventSinPsi", "hSparseV2SameEventSinPsi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+    histos.add("hSparseV2SameEventCosPhi", "hSparseV2SameEventCosPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+    histos.add("hSparseV2SameEventSinPhi", "hSparseV2SameEventSinPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+    histos.add("hSparseV2SameEventCosPsi", "hSparseV2SameEventCosPsi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+    histos.add("hSparseV2SameEventSinPsi", "hSparseV2SameEventSinPsi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
 
-    histos.add("hSparseV2SameEventCosDeltaPhi", "hSparseV2SameEventCosDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    histos.add("hSparseV2MixedEventCosDeltaPhi", "hSparseV2MixedEventCosDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    histos.add("hSparseV2SameEventCosDeltaPhi", "hSparseV2SameEventCosDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    histos.add("hSparseV2MixedEventCosDeltaPhi", "hSparseV2MixedEventCosDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
-    histos.add("hSparseV2SameEventCosDeltaPhiSquare", "hSparseV2SameEventCosDeltaPhiSquare", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    histos.add("hSparseV2MixedEventCosDeltaPhiSquare", "hSparseV2MixedEventCosDeltaPhiSquare", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    histos.add("hSparseV2SameEventCosDeltaPhiSquare", "hSparseV2SameEventCosDeltaPhiSquare", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, squareAxis, thnAxisCentrality});
+    histos.add("hSparseV2SameEventCosDeltaPhiCube", "hSparseV2SameEventCosDeltaPhiCube", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    histos.add("hSparseV2MixedEventCosDeltaPhiSquare", "hSparseV2MixedEventCosDeltaPhiSquare", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, squareAxis, thnAxisCentrality});
 
-    histos.add("hSparseV2SameEventSinDeltaPhi", "hSparseV2SameEventSinDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    histos.add("hSparseV2MixedEventSinDeltaPhi", "hSparseV2MixedEventSinDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    histos.add("hSparseV2SameEventSinDeltaPhi", "hSparseV2SameEventSinDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    histos.add("hSparseV2MixedEventSinDeltaPhi", "hSparseV2MixedEventSinDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
     if (fillSA) {
-      histos.add("hSparseV2SameEventSA", "hSparseV2SameEventSA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
-      histos.add("hSparseV2MixedEventSA", "hSparseV2MixedEventSA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
-      histos.add("hSparseV2SameEventCosThetaStar", "hSparseV2SameEventCosThetaStar", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
-      histos.add("hSparseV2MixedEventCosThetaStar", "hSparseV2MixedEventCosThetaStar", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2SameEventSA", "hSparseV2SameEventSA", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2MixedEventSA", "hSparseV2MixedEventSA", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2SameEventCosThetaStar", "hSparseV2SameEventCosThetaStar", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2MixedEventCosThetaStar", "hSparseV2MixedEventCosThetaStar", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
     }
     // histogram for resolution
     histos.add("ResFT0CTPC", "ResFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
@@ -230,26 +233,42 @@ struct phipbpb {
     histos.add("ResSPFT0CFT0A", "ResSPFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
     histos.add("ResSPFT0ATPC", "ResSPFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
 
+    histos.add("ResTrackSPFT0CTPC", "ResTrackSPFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResTrackSPFT0CTPCR", "ResTrackSPFT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResTrackSPFT0CTPCL", "ResTrackSPFT0CTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResTrackSPTPCRTPCL", "ResTrackSPTPCRTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResTrackSPFT0CFT0A", "ResTrackSPFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
+    histos.add("ResTrackSPFT0ATPC", "ResTrackSPFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+
     // MC histogram
     if (isMC) {
       histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
       histos.add("h1PhiRecsplit", "Phi meson Rec split", kTH1F, {{100, 0.0f, 10.0f}});
       histos.add("CentPercentileMCRecHist", "MC Centrality", kTH1F, {{100, 0.0f, 100.0f}});
 
-      histos.add("hSparseV2MCGenSA", "hSparseV2SameEventSA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
-      histos.add("hSparseV2MCGenCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2MCGenSA", "hSparseV2SameEventSA", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2MCGenCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
 
-      histos.add("hSparseV2MCRecSA", "hSparseV2SameEventSA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
-      histos.add("hSparseV2MCRecCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2MCRecSA", "hSparseV2SameEventSA", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2MCRecCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
 
       // weight
+      histos.add("hSparsePhiMCGenWeight", "hSparsePhiMCGenWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, thnAxisPt, {8, -0.8, 0.8}});
+      histos.add("hSparsePhiMCRecWeight", "hSparsePhiMCRecWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, thnAxisPt, {8, -0.8, 0.8}});
+
       histos.add("hImpactParameter", "Impact parameter", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("hEventPlaneAngle", "hEventPlaneAngle", kTH1F, {{200, -2.0f * TMath::Pi(), 2.0f * TMath::Pi()}});
       histos.add("hEventPlaneAngleRec", "hEventPlaneAngleRec", kTH1F, {{200, -2.0f * TMath::Pi(), 2.0f * TMath::Pi()}});
       histos.add("hNchVsImpactParameter", "hNchVsImpactParameter", kTH2F, {{200, 0.0f, 20.0f}, {500, -0.5f, 5000.5f}});
-      histos.add("hSparseMCGenWeight", "hSparseMCGenWeight", HistType::kTHnSparseF, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, axisPtKaonWeight, {8, -0.8, 0.8}});
-      histos.add("hSparseMCRecWeight", "hSparseMCRecWeight", HistType::kTHnSparseF, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, axisPtKaonWeight, {8, -0.8, 0.8}});
-      histos.add("hSparseMCRecAllTrackWeight", "hSparseMCRecAllTrackWeight", HistType::kTHnSparseF, {thnAxisCentrality, {36, 0.0, TMath::Pi()}, axisPtKaonWeight, {8, -0.8, 0.8}});
+      histos.add("hSparseMCGenWeight", "hSparseMCGenWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+      histos.add("hSparseMCRecWeight", "hSparseMCRecWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+      histos.add("hSparseMCRecAllTrackWeight", "hSparseMCRecAllTrackWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0, TMath::Pi()}, {400, 0.0f, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+      histos.add("hSparseMCGenV2", "hSparseMCGenV2", HistType::kTHnSparseD, {thnAxisCentrality, {200, -1.0, 1.0}, axisPtKaonWeight});
+      histos.add("hSparseMCRecV2", "hSparseMCRecV2", HistType::kTHnSparseD, {thnAxisCentrality, {200, -1.0, 1.0}, axisPtKaonWeight});
+      // histos.add("hSparseMCGenV2Square", "hSparseMCGenV2Square", HistType::kTHnSparseD, {thnAxisCentrality, {1000, 0.0, 1.0}, axisPtKaonWeight});
+      // histos.add("hSparseMCRecV2Square", "hSparseMCRecV2Square", HistType::kTHnSparseD, {thnAxisCentrality, {1000, 0.0, 1.0}, axisPtKaonWeight});
+      histos.add("hSparseMCGenV2Square", "hSparseMCGenV2Square", HistType::kTH3D, {thnAxisCentrality, {1000, 0.0, 1.0}, axisPtKaonWeight});
+      histos.add("hSparseMCRecV2Square", "hSparseMCRecV2Square", HistType::kTH3D, {thnAxisCentrality, {1000, 0.0, 1.0}, axisPtKaonWeight});
     }
     // Event selection cut additional - Alex
     if (additionalEvsel) {
@@ -394,7 +413,8 @@ struct phipbpb {
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
   int currentRunNumber = -999;
   int lastRunNumber = -999;
-  TH3D* hweight;
+  // TH3D* hweight;
+  TH2D* hweight;
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks, aod::BCs const&*/, aod::BCsWithTimestamps const&)
   {
     if (!collision.sel8() || !collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
@@ -454,7 +474,8 @@ struct phipbpb {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
     if (useWeight && (currentRunNumber != lastRunNumber)) {
-      hweight = ccdb->getForTimeStamp<TH3D>(ConfWeightPath.value, bc.timestamp());
+      // hweight = ccdb->getForTimeStamp<TH3D>(ConfWeightPath.value, bc.timestamp());
+      hweight = ccdb->getForTimeStamp<TH2D>(ConfWeightPath.value, bc.timestamp());
     }
     lastRunNumber = currentRunNumber;
     int Npostrack = 0;
@@ -484,7 +505,8 @@ struct phipbpb {
       auto track1ID = track1.globalIndex();
       if (useWeight) {
         if (track1.pt() < 10.0 && track1.pt() > 0.15) {
-          weight1 = hweight->GetBinContent(hweight->FindBin(centrality, GetPhiInRange(track1.phi() - psiFT0C), track1.pt() + 0.000005));
+          // weight1 = hweight->GetBinContent(hweight->FindBin(centrality, GetPhiInRange(track1.phi() - psiFT0C), track1.pt() + 0.000005));
+          weight1 = 1 + hweight->GetBinContent(hweight->FindBin(centrality, track1.pt() + 0.000005)) * TMath::Cos(2.0 * GetPhiInRange(track1.phi() - psiFT0C));
         } else {
           weight1 = 1;
         }
@@ -522,7 +544,8 @@ struct phipbpb {
         }
         if (useWeight) {
           if (track2.pt() < 10.0 && track2.pt() > 0.15) {
-            weight2 = hweight->GetBinContent(hweight->FindBin(centrality, GetPhiInRange(track2.phi() - psiFT0C), track2.pt() + 0.000005));
+            // weight2 = hweight->GetBinContent(hweight->FindBin(centrality, GetPhiInRange(track2.phi() - psiFT0C), track2.pt() + 0.000005));
+            weight2 = 1 + hweight->GetBinContent(hweight->FindBin(centrality, track2.pt() + 0.000005)) * TMath::Cos(2.0 * GetPhiInRange(track2.phi() - psiFT0C));
           } else {
             weight2 = 1;
           }
@@ -536,11 +559,17 @@ struct phipbpb {
         auto phimother = PhiMesonMother.Phi();
         histos.fill(HIST("hpTvsRapidity"), PhiMesonMother.Pt(), PhiMesonMother.Rapidity());
         auto totalweight = weight1 * weight2;
-        if (totalweight <= 0.0005) {
+        if (totalweight <= 0.0000005) {
           totalweight = 1.0;
         }
         // LOGF(info, Form("weight %f    %f",weight1, weight2));
         if (TMath::Abs(PhiMesonMother.Rapidity()) < confRapidity) {
+          histos.fill(HIST("ResTrackSPFT0CTPC"), centrality, occupancy, QFT0C * QTPC * TMath::Cos(2.0 * (psiFT0C - psiTPC)));
+          histos.fill(HIST("ResTrackSPFT0CTPCR"), centrality, occupancy, QFT0C * QTPCR * TMath::Cos(2.0 * (psiFT0C - psiTPCR)));
+          histos.fill(HIST("ResTrackSPFT0CTPCL"), centrality, occupancy, QFT0C * QTPCL * TMath::Cos(2.0 * (psiFT0C - psiTPCL)));
+          histos.fill(HIST("ResTrackSPTPCRTPCL"), centrality, occupancy, QTPCR * QTPCL * TMath::Cos(2.0 * (psiTPCR - psiTPCL)));
+          histos.fill(HIST("ResTrackSPFT0CFT0A"), centrality, occupancy, QFT0C * QFT0A * TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
+          histos.fill(HIST("ResTrackSPFT0ATPC"), centrality, occupancy, QTPC * QFT0A * TMath::Cos(2.0 * (psiTPC - psiFT0A)));
           if (useWeight) {
             histos.fill(HIST("hSparseV2SameEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality, 1 / totalweight);
             histos.fill(HIST("hSparseV2SameEventCosDeltaPhiSquare"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * v2, centrality, 1 / totalweight);
@@ -551,8 +580,13 @@ struct phipbpb {
             histos.fill(HIST("hSparseV2SameEventCosPsi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Cos(2.0 * psiFT0C), centrality, 1 / totalweight);
             histos.fill(HIST("hSparseV2SameEventSinPsi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Sin(2.0 * psiFT0C), centrality, 1 / totalweight);
           } else {
-            histos.fill(HIST("hSparseV2SameEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
+            if (useSP) {
+              histos.fill(HIST("hSparseV2SameEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
+            } else {
+              histos.fill(HIST("hSparseV2SameEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+            }
             histos.fill(HIST("hSparseV2SameEventCosDeltaPhiSquare"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * v2, centrality);
+            histos.fill(HIST("hSparseV2SameEventCosDeltaPhiCube"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * v2 * v2, centrality);
             histos.fill(HIST("hSparseV2SameEventSinDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2sin * QFT0C, centrality);
 
             histos.fill(HIST("hSparseV2SameEventCosPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Cos(2.0 * phimother), centrality);
@@ -666,7 +700,11 @@ struct phipbpb {
         auto v2sin = TMath::Sin(2.0 * phiminuspsi);
         histos.fill(HIST("hpTvsRapidity"), PhiMesonMother.Pt(), PhiMesonMother.Rapidity());
         if (TMath::Abs(PhiMesonMother.Rapidity()) < confRapidity) {
-          histos.fill(HIST("hSparseV2MixedEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
+          if (useSP) {
+            histos.fill(HIST("hSparseV2MixedEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
+          } else {
+            histos.fill(HIST("hSparseV2MixedEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+          }
           histos.fill(HIST("hSparseV2MixedEventCosDeltaPhiSquare"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * v2, centrality);
           histos.fill(HIST("hSparseV2MixedEventSinDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2sin * QFT0C, centrality);
         }
@@ -928,7 +966,9 @@ struct phipbpb {
           continue;
         if (TMath::Abs(mcParticle.eta()) > 0.8) // main acceptance
           continue;
-        histos.fill(HIST("hSparseMCGenWeight"), centclass, GetPhiInRange(deltaPhi), mcParticle.pt(), mcParticle.eta());
+        histos.fill(HIST("hSparseMCGenWeight"), centclass, GetPhiInRange(deltaPhi), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), 2.0), mcParticle.pt(), mcParticle.eta());
+        histos.fill(HIST("hSparseMCGenV2"), centclass, TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), mcParticle.pt());
+        histos.fill(HIST("hSparseMCGenV2Square"), centclass, TMath::Power(TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), 2.0), mcParticle.pt());
         nCh++;
         bool validGlobal = false;
         bool validAny = false;
@@ -945,10 +985,12 @@ struct phipbpb {
         }
         // if valid global, fill
         if (validGlobal) {
-          histos.fill(HIST("hSparseMCRecWeight"), centclass, GetPhiInRange(deltaPhi), mcParticle.pt(), mcParticle.eta());
+          histos.fill(HIST("hSparseMCRecWeight"), centclass, GetPhiInRange(deltaPhi), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), 2.0), mcParticle.pt(), mcParticle.eta());
+          histos.fill(HIST("hSparseMCRecV2"), centclass, TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), mcParticle.pt());
+          histos.fill(HIST("hSparseMCRecV2Square"), centclass, TMath::Power(TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), 2.0), mcParticle.pt());
         }
         if (validAny) {
-          histos.fill(HIST("hSparseMCRecAllTrackWeight"), centclass, GetPhiInRange(deltaPhi), mcParticle.pt(), mcParticle.eta());
+          histos.fill(HIST("hSparseMCRecAllTrackWeight"), centclass, GetPhiInRange(deltaPhi), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(deltaPhi)), 2.0), mcParticle.pt(), mcParticle.eta());
           histos.fill(HIST("hEventPlaneAngleRec"), GetPhiInRange(deltaPhi));
         }
         // if any track present, fill
@@ -957,6 +999,153 @@ struct phipbpb {
     histos.fill(HIST("hNchVsImpactParameter"), imp, nCh);
   }
   PROCESS_SWITCH(phipbpb, processMCweight, "Process MC Weight", false);
+
+  void processMCPhiWeight(CollisionMCTrueTable::iterator const& TrueCollision, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  {
+    float imp = TrueCollision.impactParameter();
+    float evPhi = TrueCollision.eventPlaneAngle() / 2.0;
+    float centclass = -999;
+    if (imp >= 0 && imp < 3.49) {
+      centclass = 2.5;
+    }
+    if (imp >= 3.49 && imp < 4.93) {
+      centclass = 7.5;
+    }
+    if (imp >= 4.93 && imp < 6.98) {
+      centclass = 15.0;
+    }
+    if (imp >= 6.98 && imp < 8.55) {
+      centclass = 25.0;
+    }
+    if (imp >= 8.55 && imp < 9.87) {
+      centclass = 35.0;
+    }
+    if (imp >= 9.87 && imp < 11) {
+      centclass = 45.0;
+    }
+    if (imp >= 11 && imp < 12.1) {
+      centclass = 55.0;
+    }
+    if (imp >= 12.1 && imp < 13.1) {
+      centclass = 65.0;
+    }
+    if (imp >= 13.1 && imp < 14) {
+      centclass = 75.0;
+    }
+    histos.fill(HIST("hImpactParameter"), imp);
+    histos.fill(HIST("hEventPlaneAngle"), evPhi);
+    if (centclass < 0.0 || centclass > 80.0) {
+      return;
+    }
+    for (auto& RecCollision : RecCollisions) {
+      auto psiFT0C = evPhi;
+      if (!RecCollision.sel8()) {
+        continue;
+      }
+      if (!RecCollision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        continue;
+      }
+      if (TMath::Abs(RecCollision.posZ()) > cfgCutVertex) {
+        continue;
+      }
+      auto oldindex = -999;
+      auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
+      // loop over reconstructed particle
+      for (auto track1 : Rectrackspart) {
+        if (!track1.has_mcParticle()) {
+          continue;
+        }
+        auto track1ID = track1.index();
+        for (auto track2 : Rectrackspart) {
+          if (!track2.has_mcParticle()) {
+            continue;
+          }
+          auto track2ID = track2.index();
+          if (track2ID <= track1ID) {
+            continue;
+          }
+          const auto mctrack1 = track1.mcParticle();
+          const auto mctrack2 = track2.mcParticle();
+          int track1PDG = TMath::Abs(mctrack1.pdgCode());
+          int track2PDG = TMath::Abs(mctrack2.pdgCode());
+          if (!mctrack1.isPhysicalPrimary()) {
+            continue;
+          }
+          if (!mctrack2.isPhysicalPrimary()) {
+            continue;
+          }
+          if (!(track1PDG == 321 && track2PDG == 321)) {
+            continue;
+          }
+          if (!selectionTrack(track1) || !selectionTrack(track2) || !selectionPIDpTdependent(track1) || !selectionPIDpTdependent(track2) || track1.sign() * track2.sign() > 0) {
+            continue;
+          }
+          for (auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
+            for (auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
+              if (mothertrack1.pdgCode() != mothertrack2.pdgCode()) {
+                continue;
+              }
+              if (mothertrack1 != mothertrack2) {
+                continue;
+              }
+              if (TMath::Abs(mothertrack1.y()) > confRapidity) {
+                continue;
+              }
+              if (TMath::Abs(mothertrack1.pdgCode()) != 333) {
+                continue;
+              }
+              // if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
+              if (avoidsplitrackMC && oldindex == mothertrack1.index()) {
+                histos.fill(HIST("h1PhiRecsplit"), mothertrack1.pt());
+                continue;
+              }
+              // oldindex = mothertrack1.globalIndex();
+              oldindex = mothertrack1.index();
+              auto PhiMinusPsi = GetPhiInRange(mothertrack1.phi() - psiFT0C);
+              histos.fill(HIST("hSparsePhiMCRecWeight"), centclass, PhiMinusPsi, TMath::Power(TMath::Cos(2.0 * PhiMinusPsi), 2.0), mothertrack1.pt(), mothertrack1.eta());
+            }
+          }
+        }
+      }
+      // loop over generated particle
+      for (auto& mcParticle : GenParticles) {
+        if (TMath::Abs(mcParticle.y()) > confRapidity) {
+          continue;
+        }
+        if (mcParticle.pdgCode() != 333) {
+          continue;
+        }
+        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+        if (kDaughters.size() != 2) {
+          continue;
+        }
+        auto daughtp = false;
+        auto daughtm = false;
+        for (auto kCurrentDaughter : kDaughters) {
+          if (!kCurrentDaughter.isPhysicalPrimary()) {
+            continue;
+          }
+          if (kCurrentDaughter.pdgCode() == +321) {
+            if (kCurrentDaughter.pt() > cfgCutPT && TMath::Abs(kCurrentDaughter.eta()) < cfgCutEta) {
+              daughtp = true;
+            }
+            KaonPlus = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKa);
+          } else if (kCurrentDaughter.pdgCode() == -321) {
+            if (kCurrentDaughter.pt() > cfgCutPT && TMath::Abs(kCurrentDaughter.eta()) < cfgCutEta) {
+              daughtm = true;
+            }
+            KaonMinus = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKa);
+          }
+        }
+        if (daughtp && daughtm) {
+          auto PhiMinusPsiGen = GetPhiInRange(mcParticle.phi() - psiFT0C);
+          histos.fill(HIST("hSparsePhiMCGenWeight"), centclass, PhiMinusPsiGen, TMath::Power(TMath::Cos(2.0 * PhiMinusPsiGen), 2.0), mcParticle.pt(), mcParticle.eta());
+        }
+      }
+    } // rec collision loop
+
+  } // process MC
+  PROCESS_SWITCH(phipbpb, processMCPhiWeight, "Process MC Phi Weight", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

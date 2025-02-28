@@ -65,6 +65,7 @@ struct JetHadronRecoil {
   Configurable<float> pTHatExponent{"pTHatExponent", 4.0, "exponent of the event weight for the calculation of pTHat"};
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
+  Configurable<float> rhoReferenceShift{"rhoReferenceShift", 0.0, "shift in rho calculated in reference events for consistency with signal events"};
   Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events; jet-level rejection applied at the jet finder level, here rejection is applied for collision and track process functions"};
 
@@ -117,6 +118,8 @@ struct JetHadronRecoil {
                               {"hDeltaRPart", "Particle #DeltaR;#DeltaR;#frac{1}{N_{jets}}#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{80, 0.0, 0.24}}}},
                               {"hDeltaRpT", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{300, -100, 200}, {80, 0.0, 0.24}}}},
                               {"hDeltaRpTPart", "Particle jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {80, 0.0, 0.24}}}},
+                              {"hRhoSignal", "Signal Rho bkg;#rho;entries", {HistType::kTH1F, {{220, 0, 220}}}},
+                              {"hRhoReference", "Reference Rho bkg;#rho;entries", {HistType::kTH1F, {{220, 0, 220}}}},
                               {"hDeltaRSignal", "#DeltaR;#DeltaR;#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{80, 0.0, 0.24}}}},
                               {"hDeltaRSignalPart", "Particle #DeltaR;#DeltaR;#frac{1}{N_{jets}}#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{80, 0.0, 0.24}}}},
                               {"hDeltaRpTSignal", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{300, -100, 200}, {80, 0.0, 0.24}}}},
@@ -165,6 +168,7 @@ struct JetHadronRecoil {
     int trigNumber = 0;
     int nTT = 0;
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+    float rhoReference = rho + rhoReferenceShift;
 
     float dice = rand->Rndm();
     if (dice < fracSig)
@@ -197,10 +201,12 @@ struct JetHadronRecoil {
       if (isSigCol) {
         registry.fill(HIST("hNtrig"), 1.5, weight);
         registry.fill(HIST("hSigEventTriggers"), nTT, weight);
+        registry.fill(HIST("hRhoSignal"), rho, weight);
       }
       if (!isSigCol) {
         registry.fill(HIST("hNtrig"), 0.5, weight);
         registry.fill(HIST("hRefEventTriggers"), nTT, weight);
+        registry.fill(HIST("hRhoReference"), rhoReference, weight);
       }
     }
 
@@ -218,6 +224,9 @@ struct JetHadronRecoil {
         double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -o2::constants::math::PI);
         double deltaEta = jetWTA.eta() - jet.eta();
         double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
+        if (dR == 0) {
+          return;
+        }
         registry.fill(HIST("hDeltaR"), dR, weight);
         registry.fill(HIST("hDeltaRpT"), jet.pt() - (rho * jet.area()), dR, weight);
       }
@@ -245,14 +254,14 @@ struct JetHadronRecoil {
             double deltaEta = jetWTA.eta() - jet.eta();
             double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
             if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
-              registry.fill(HIST("hDeltaRpTReference"), jet.pt() - (rho * jet.area()), dR, weight);
+              registry.fill(HIST("hDeltaRpTReference"), jet.pt() - (rhoReference * jet.area()), dR, weight);
               registry.fill(HIST("hDeltaRReference"), dR, weight);
             }
-            registry.fill(HIST("hDeltaRpTDPhiReference"), jet.pt() - (rho * jet.area()), dphi, dR, weight);
+            registry.fill(HIST("hDeltaRpTDPhiReference"), jet.pt() - (rhoReference * jet.area()), dphi, dR, weight);
           }
-          registry.fill(HIST("hReferencePtDPhi"), dphi, jet.pt() - (rho * jet.area()), weight);
+          registry.fill(HIST("hReferencePtDPhi"), dphi, jet.pt() - (rhoReference * jet.area()), weight);
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
-            registry.fill(HIST("hReferencePt"), jet.pt() - (rho * jet.area()), weight);
+            registry.fill(HIST("hReferencePt"), jet.pt() - (rhoReference * jet.area()), weight);
           }
         }
       }
@@ -323,6 +332,9 @@ struct JetHadronRecoil {
         double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -o2::constants::math::PI);
         double deltaEta = jetWTA.eta() - jet.eta();
         double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
+        if (dR == 0) {
+          return;
+        }
         registry.fill(HIST("hDeltaRPart"), dR, weight);
         registry.fill(HIST("hDeltaRpTPart"), jet.pt(), dR, weight);
       }
@@ -412,6 +424,9 @@ struct JetHadronRecoil {
             dRp = djetp;
             break;
           }
+        }
+        if (dR == 0 || dRp == 0) {
+          return;
         }
         registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
         registry.fill(HIST("hPhiMatched"), jetBase.phi(), jetTag.phi(), weight);
