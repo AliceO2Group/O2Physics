@@ -1818,7 +1818,7 @@ struct KaonIsospinFluctuations {
   Preslice<aod::McParticles> mcTracksPerMcCollisionPreslice = o2::aod::mcparticle::mcCollisionId;
 
   using MyMcCollisions = aod::McCollisions;
-  void processGen(MyMcCollisions const& mcCollisions, MyCollisionsWithMcLabels const& collisions, MyV0sWithMcLabels const& V0s, MyTracksWithMcLabels const& tracks, aod::McParticles const& mcParticles)
+  void processGen(MyMcCollisions const&, MyCollisionsWithMcLabels const& collisions, aod::McParticles const& mcParticles)
   {
     float centrality = -1;
     for (const auto& collision : collisions) {
@@ -1913,7 +1913,7 @@ struct KaonIsospinFluctuations {
                                 nPiPlus, nKaPlus, nProton, nElPlus, nDePlus,
                                 nPiMinus, nKaMinus, nPBar, nElMinus, nDeMinus);
 
-      executeEventInfoPart(mcColl, centrality, V0s.size(), mcTracksTablePerMcColl,
+      executeEventInfoPart(mcColl, centrality, 0, mcTracksTablePerMcColl,
                            nTrack, nK0s,
                            nPiPlus, nKaPlus, nProton, nElPlus, nDePlus,
                            nPiMinus, nKaMinus, nPBar, nElMinus, nDeMinus);
