@@ -2136,127 +2136,142 @@ struct UpcTauRl {
         if (doMixedEventsHistos)
           fillMixedEventHistograms(reconstructedBarrelTracks);
       }
+
       if (doPIDhistos)
         fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
     }
 
   } // end processDataDG
 
-  void processDataSG(FullSGUDCollision const& reconstructedCollision,
+  void processDataSG(FullSGUDCollisions const& reconstructedCollisions,
                      FullUDTracks const& reconstructedBarrelTracks)
   {
+    for (const auto& reconstructedCollision : reconstructedCollisions){
 
-    int gapSide = reconstructedCollision.gapSide();
-    int trueGapSide = sgSelector.trueGap(reconstructedCollision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
-    histos.fill(HIST("Events/UDtableGapSide"), gapSide);
-    histos.fill(HIST("Events/TrueGapSideDiffToTableValue"), gapSide - trueGapSide);
-    if (cutSample.useTrueGap)
-      gapSide = trueGapSide;
+      int gapSide = reconstructedCollision.gapSide();
+      int trueGapSide = sgSelector.trueGap(reconstructedCollision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
+      histos.fill(HIST("Events/UDtableGapSide"), gapSide);
+      histos.fill(HIST("Events/TrueGapSideDiffToTableValue"), gapSide - trueGapSide);
+      if (cutSample.useTrueGap)
+        gapSide = trueGapSide;
 
-    if (!isGoodROFtime(reconstructedCollision))
-      return;
+      if (!isGoodROFtime(reconstructedCollision))
+        return;
 
-    if (gapSide != cutSample.whichGapSide)
-      return;
+      if (gapSide != cutSample.whichGapSide)
+        return;
 
-    if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
-      return;
+      if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
+        return;
 
-    if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
-      return;
+      if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
+        return;
 
-    if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
-      return;
+      if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
+        return;
 
-    if (doMainHistos) {
-      fillHistograms(reconstructedBarrelTracks);
-      fillFIThistograms(reconstructedCollision);
+      if (doMainHistos) {
+        fillHistograms(reconstructedBarrelTracks);
+        fillFIThistograms(reconstructedCollision);
+        if (doMixedEventsHistos)
+          fillMixedEventHistograms(reconstructedBarrelTracks);
+      }
+
+      if (doPIDhistos)
+        fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
     }
-    if (doPIDhistos)
-      fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
 
   } // end processDataSG
 
-  void processMCrecDG(FullMCUDCollision const& reconstructedCollision,
+  void processMCrecDG(FullMCUDCollisions const& reconstructedCollisions,
                       FullMCUDTracks const& reconstructedBarrelTracks,
                       aod::UDMcParticles const&)
   {
     isMC = true;
+    for (const auto& reconstructedCollision : reconstructedCollisions){
 
-    if (!isGoodROFtime(reconstructedCollision))
-      return;
+      if (!isGoodROFtime(reconstructedCollision))
+        return;
 
-    if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
-      return;
+      if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
+        return;
 
-    if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
-      return;
+      if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
+        return;
 
-    if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
-      return;
+      if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
+        return;
 
-    if (cutSample.applyAcceptanceSelection) {
-      for (const auto& track : reconstructedBarrelTracks) {
-        if (!track.isPVContributor())
-          continue;
-        if (std::abs(eta(track.px(), track.py(), track.py())) > cutSample.cutTrackEta)
-          return;
+      if (cutSample.applyAcceptanceSelection) {
+        for (const auto& track : reconstructedBarrelTracks) {
+          if (!track.isPVContributor())
+            continue;
+          if (std::abs(eta(track.px(), track.py(), track.py())) > cutSample.cutTrackEta)
+            return;
+        }
       }
-    }
 
-    if (doMainHistos) {
-      fillHistograms(reconstructedBarrelTracks);
-      fillFIThistograms(reconstructedCollision);
-    }
+      if (doMainHistos) {
+        fillHistograms(reconstructedBarrelTracks);
+        fillFIThistograms(reconstructedCollision);
+        if (doMixedEventsHistos)
+          fillMixedEventHistograms(reconstructedBarrelTracks);
+      }
 
-    if (doPIDhistos) {
-      fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
-      fillMCPIDhistograms(reconstructedBarrelTracks);
+      if (doPIDhistos) {
+        fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
+        fillMCPIDhistograms(reconstructedBarrelTracks);
+      }
     }
 
   } // end processMCrecDG
 
-  void processMCrecSG(FullMCSGUDCollision const& reconstructedCollision,
+  void processMCrecSG(FullMCSGUDCollisions const& reconstructedCollisions,
                       FullMCUDTracks const& reconstructedBarrelTracks,
                       aod::UDMcParticles const&)
   {
     isMC = true;
+    for (const auto& reconstructedCollision : reconstructedCollisions){
 
-    int gapSide = reconstructedCollision.gapSide();
-    histos.fill(HIST("Events/UDtableGapSide"), gapSide);
+      int gapSide = reconstructedCollision.gapSide();
+      histos.fill(HIST("Events/UDtableGapSide"), gapSide);
 
-    if (gapSide != cutSample.whichGapSide)
-      return;
+      if (gapSide != cutSample.whichGapSide)
+        return;
 
-    if (!isGoodROFtime(reconstructedCollision))
-      return;
+      if (!isGoodROFtime(reconstructedCollision))
+        return;
 
-    if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
-      return;
+      if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
+        return;
 
-    if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
-      return;
+      if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
+        return;
 
-    if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
-      return;
+      if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
+        return;
 
-    if (cutSample.applyAcceptanceSelection) {
-      for (const auto& track : reconstructedBarrelTracks) {
-        if (!track.isPVContributor())
-          continue;
-        if (std::abs(eta(track.px(), track.py(), track.py())) > cutSample.cutTrackEta)
-          return;
+      if (cutSample.applyAcceptanceSelection) {
+        for (const auto& track : reconstructedBarrelTracks) {
+          if (!track.isPVContributor())
+            continue;
+          if (std::abs(eta(track.px(), track.py(), track.py())) > cutSample.cutTrackEta)
+            return;
+        }
       }
-    }
 
-    if (doMainHistos) {
-      fillHistograms(reconstructedBarrelTracks);
-      fillFIThistograms(reconstructedCollision);
-    }
+      if (doMainHistos) {
+        fillHistograms(reconstructedBarrelTracks);
+        fillFIThistograms(reconstructedCollision);
+        if (doMixedEventsHistos)
+          fillMixedEventHistograms(reconstructedBarrelTracks);
+      }
 
-    if (doPIDhistos) {
-      fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
-      fillMCPIDhistograms(reconstructedBarrelTracks);
+      if (doPIDhistos) {
+        fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
+        fillMCPIDhistograms(reconstructedBarrelTracks);
+      }
+
     }
 
   } // end processMCrecDG
