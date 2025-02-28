@@ -232,40 +232,31 @@ struct tofPid {
   {
     switch (id) {
       case 0:
-        aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                              tablePIDEl);
+        aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDEl);
         break;
       case 1:
-        aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                              tablePIDMu);
+        aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDMu);
         break;
       case 2:
-        aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                              tablePIDPi);
+        aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDPi);
         break;
       case 3:
-        aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                              tablePIDKa);
+        aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDKa);
         break;
       case 4:
-        aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                              tablePIDPr);
+        aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDPr);
         break;
       case 5:
-        aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                              tablePIDDe);
+        aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDDe);
         break;
       case 6:
-        aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                              tablePIDTr);
+        aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDTr);
         break;
       case 7:
-        aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                              tablePIDHe);
+        aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDHe);
         break;
       case 8:
-        aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                              tablePIDAl);
+        aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDAl);
         break;
       default:
         LOG(fatal) << "Wrong particle ID in makeTableEmpty()";
@@ -326,40 +317,40 @@ struct tofPid {
         for (auto const& pidId : mEnabledParticles) {   // Loop on enabled particle hypotheses
           switch (pidId) {
             case 0:
-              aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseEl.GetSeparation(mRespParamsV2, trkInColl),
-                                                                    tablePIDEl);
+              aod::pidtof_tiny::binning::packInTable(responseEl.GetSeparation(mRespParamsV2, trkInColl),
+                                                     tablePIDEl);
               break;
             case 1:
-              aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseMu.GetSeparation(mRespParamsV2, trkInColl),
-                                                                    tablePIDMu);
+              aod::pidtof_tiny::binning::packInTable(responseMu.GetSeparation(mRespParamsV2, trkInColl),
+                                                     tablePIDMu);
               break;
             case 2:
-              aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responsePi.GetSeparation(mRespParamsV2, trkInColl),
-                                                                    tablePIDPi);
+              aod::pidtof_tiny::binning::packInTable(responsePi.GetSeparation(mRespParamsV2, trkInColl),
+                                                     tablePIDPi);
               break;
             case 3:
-              aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseKa.GetSeparation(mRespParamsV2, trkInColl),
-                                                                    tablePIDKa);
+              aod::pidtof_tiny::binning::packInTable(responseKa.GetSeparation(mRespParamsV2, trkInColl),
+                                                     tablePIDKa);
               break;
             case 4:
-              aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responsePr.GetSeparation(mRespParamsV2, trkInColl),
-                                                                    tablePIDPr);
+              aod::pidtof_tiny::binning::packInTable(responsePr.GetSeparation(mRespParamsV2, trkInColl),
+                                                     tablePIDPr);
               break;
             case 5:
-              aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseDe.GetSeparation(mRespParamsV2, trkInColl),
-                                                                    tablePIDDe);
+              aod::pidtof_tiny::binning::packInTable(responseDe.GetSeparation(mRespParamsV2, trkInColl),
+                                                     tablePIDDe);
               break;
             case 6:
-              aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseTr.GetSeparation(mRespParamsV2, trkInColl),
-                                                                    tablePIDTr);
+              aod::pidtof_tiny::binning::packInTable(responseTr.GetSeparation(mRespParamsV2, trkInColl),
+                                                     tablePIDTr);
               break;
             case 7:
-              aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseHe.GetSeparation(mRespParamsV2, trkInColl),
-                                                                    tablePIDHe);
+              aod::pidtof_tiny::binning::packInTable(responseHe.GetSeparation(mRespParamsV2, trkInColl),
+                                                     tablePIDHe);
               break;
             case 8:
-              aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseAl.GetSeparation(mRespParamsV2, trkInColl),
-                                                                    tablePIDAl);
+              aod::pidtof_tiny::binning::packInTable(responseAl.GetSeparation(mRespParamsV2, trkInColl),
+                                                     tablePIDAl);
               break;
             default:
               LOG(fatal) << "Wrong particle ID in processWSlice()";
@@ -414,40 +405,40 @@ struct tofPid {
       for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
         switch (pidId) {
           case 0:
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseEl.GetSeparation(mRespParamsV2, track),
-                                                                  tablePIDEl);
+            aod::pidtof_tiny::binning::packInTable(responseEl.GetSeparation(mRespParamsV2, track),
+                                                   tablePIDEl);
             break;
           case 1:
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseMu.GetSeparation(mRespParamsV2, track),
-                                                                  tablePIDMu);
+            aod::pidtof_tiny::binning::packInTable(responseMu.GetSeparation(mRespParamsV2, track),
+                                                   tablePIDMu);
             break;
           case 2:
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responsePi.GetSeparation(mRespParamsV2, track),
-                                                                  tablePIDPi);
+            aod::pidtof_tiny::binning::packInTable(responsePi.GetSeparation(mRespParamsV2, track),
+                                                   tablePIDPi);
             break;
           case 3:
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseKa.GetSeparation(mRespParamsV2, track),
-                                                                  tablePIDKa);
+            aod::pidtof_tiny::binning::packInTable(responseKa.GetSeparation(mRespParamsV2, track),
+                                                   tablePIDKa);
             break;
           case 4:
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responsePr.GetSeparation(mRespParamsV2, track),
-                                                                  tablePIDPr);
+            aod::pidtof_tiny::binning::packInTable(responsePr.GetSeparation(mRespParamsV2, track),
+                                                   tablePIDPr);
             break;
           case 5:
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseDe.GetSeparation(mRespParamsV2, track),
-                                                                  tablePIDDe);
+            aod::pidtof_tiny::binning::packInTable(responseDe.GetSeparation(mRespParamsV2, track),
+                                                   tablePIDDe);
             break;
           case 6:
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseTr.GetSeparation(mRespParamsV2, track),
-                                                                  tablePIDTr);
+            aod::pidtof_tiny::binning::packInTable(responseTr.GetSeparation(mRespParamsV2, track),
+                                                   tablePIDTr);
             break;
           case 7:
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseHe.GetSeparation(mRespParamsV2, track),
-                                                                  tablePIDHe);
+            aod::pidtof_tiny::binning::packInTable(responseHe.GetSeparation(mRespParamsV2, track),
+                                                   tablePIDHe);
             break;
           case 8:
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(responseAl.GetSeparation(mRespParamsV2, track),
-                                                                  tablePIDAl);
+            aod::pidtof_tiny::binning::packInTable(responseAl.GetSeparation(mRespParamsV2, track),
+                                                   tablePIDAl);
             break;
           default:
             LOG(fatal) << "Wrong particle ID in processWoSlice()";
