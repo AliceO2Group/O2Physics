@@ -25,6 +25,11 @@ enum class PhotonPrefilterBitDerived : int {
   kPhotonFromPi0Loose = 1,   // photon from pi0, loose
   kPhotonFromPi0Tight = 2,   // photon from pi0, tight
 };
+enum class ElectronPrefilterBitDerived : int {
+  kElectronFromPi0Default = 0, // electron from pi0, default
+  kElectronFromPi0Loose = 1,   // electron from pi0, loose
+  kElectronFromPi0Tight = 2,   // electron from pi0, tight
+};
 } // namespace o2::aod::pwgem::photonmeson::utils::pairutil
 namespace o2::aod::pwgem::photonmeson::photonpair
 {
