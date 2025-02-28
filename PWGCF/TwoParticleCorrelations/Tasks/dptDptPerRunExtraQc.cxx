@@ -8,12 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// Minimal example to run this task:
-// o2-analysis-centrality-table -b --configuration json://configuration.json | o2-analysis-timestamp -b --configuration json://configuration.json | o2-analysis-event-selection -b --configuration json://configuration.json | o2-analysis-multiplicity-table -b --configuration json://configuration.json | o2-analysis-lf-zdcsp -b --configuration json://configuration.json --aod-file @input_data.txt --aod-writer-json OutputDirector.json
+
+/// \file dptDptPerRunExtraQc.cxx
+/// \brief basic per run check of the per analyzed species p vs TPC IW momentum
+/// \author victor.gonzalez.sebastian@gmail.com
 
 #include <array>
 #include <cmath>
+#include <unordered_map>
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -31,21 +33,21 @@ using namespace o2::constants::physics;
 
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
 
-namespace perrunextraqa
+namespace perrunextraqc
 {
 std::unordered_map<int, TProfile3D*> gRunMapPvsTpcIwP;
 TProfile3D* gCurrentRunPvsPtcIwP;
-} // namespace perrunextraqa
+} // namespace perrunextraqc
 
-struct DptDptPerRunExtraQa {
+struct DptDptPerRunExtraQc {
   int mRunNumber{-1};
   AxisSpec qaPAxis{150, 0.1, 5.0};
 
-  HistogramRegistry mHistos{"PerRunExtraQaHistograms", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry mHistos{"PerRunExtraQcHistograms", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void initRunNumber(aod::BCsWithTimestamps::iterator const& bc)
   {
-    using namespace perrunextraqa;
+    using namespace perrunextraqc;
 
     if (mRunNumber == bc.runNumber()) {
       return;
@@ -60,7 +62,7 @@ struct DptDptPerRunExtraQa {
 
   void init(InitContext&)
   {
-    using namespace perrunextraqa;
+    using namespace perrunextraqc;
 
     qaPAxis.makeLogarithmic();
   }
@@ -68,9 +70,9 @@ struct DptDptPerRunExtraQa {
   template <typename PassedTracks>
   void processTracks(PassedTracks const& tracks)
   {
-    using namespace perrunextraqa;
+    using namespace perrunextraqc;
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       gCurrentRunPvsPtcIwP->Fill(track.trackacceptedid(), track.p(), track.tpcInnerParam(), track.pt());
     }
   }
@@ -95,5 +97,5 @@ struct DptDptPerRunExtraQa {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DptDptPerRunExtraQa>(cfgc)};
+    adaptAnalysisTask<DptDptPerRunExtraQc>(cfgc)};
 }
