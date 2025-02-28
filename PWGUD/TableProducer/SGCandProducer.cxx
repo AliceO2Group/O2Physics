@@ -11,6 +11,7 @@
 
 #include <cmath>
 #include <vector>
+#include <string>
 #include <map>
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoA.h"
