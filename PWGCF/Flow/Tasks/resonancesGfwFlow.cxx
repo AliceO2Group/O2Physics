@@ -114,6 +114,10 @@ struct ResonancesGfwFlow {
   O2_DEFINE_CONFIGURABLE(cfgUseMCCLambda, bool, false, "Use mass cross check for lambda")
   O2_DEFINE_CONFIGURABLE(cfgUseMCCK0, bool, false, "Use mass cross check for K0")
 
+  O2_DEFINE_CONFIGURABLE(cfgNPhiMassBins, int, 70, "Invasriant mass bins for phi")
+  O2_DEFINE_CONFIGURABLE(cfgNK0MassBins, int, 120, "Invasriant mass bins for K0")
+  O2_DEFINE_CONFIGURABLE(cfgNLambdaMassBins, int, 70, "Invasriant mass bins for lambda")
+
   // Defining configurable axis
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -197,29 +201,36 @@ struct ResonancesGfwFlow {
 
     histos.add("Phic22", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("Phic24", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("Phiv22pt", "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}});
-    histos.add("Phiv24pt", "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}});
+    histos.add("Phiv22pt", "", {HistType::kTProfile3D, {{axisPt, axisPhiMass, axisMultiplicity}}});
+    histos.add("Phiv24pt", "", {HistType::kTProfile3D, {{axisPt, axisPhiMass, axisMultiplicity}}});
+
+    histos.add("K0c22", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("K0c24", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("K0v22pt", "", {HistType::kTProfile3D, {{axisPt, axisK0Mass, axisMultiplicity}}});
+    histos.add("K0v24pt", "", {HistType::kTProfile3D, {{axisPt, axisK0Mass, axisMultiplicity}}});
+
+    histos.add("Lambdac22", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("Lambdac24", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("Lambdav22pt", "", {HistType::kTProfile3D, {{axisPt, axisLambdaMass, axisMultiplicity}}});
+    histos.add("Lambdav24pt", "", {HistType::kTProfile3D, {{axisPt, axisLambdaMass, axisMultiplicity}}});
+
+    histos.add("AnLambdac22", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("AnLambdac24", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("AnLambdav22pt", "", {HistType::kTProfile3D, {{axisPt, axisLambdaMass, axisMultiplicity}}});
+    histos.add("AnLambdav24pt", "", {HistType::kTProfile3D, {{axisPt, axisLambdaMass, axisMultiplicity}}});
 
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
     double* ptBins = &(axis.binEdges)[0];
     fPtAxis = new TAxis(nPtBins, ptBins);
 
-    o2::framework::AxisSpec axisPhisMass = axisPhiMass;
-    int nPhiMassBins = axisPhisMass.binEdges.size() - 1;
-    double* phiMassBins = &(axisPhisMass.binEdges)[0];
-    fPhiMassAxis = new TAxis(nPhiMassBins, phiMassBins);
-    int nPhisPtMassBins = nPtBins * nPhiMassBins;
+    fPhiMassAxis = new TAxis(cfgNPhiMassBins, 0.99, 1.06);
+    fK0MassAxis = new TAxis(cfgNK0MassBins, 0.44, 0.56);
+    fLambdaMassAxis = new TAxis(cfgNLambdaMassBins, 1.08, 1.15);
 
-    o2::framework::AxisSpec axisK0sMass = axisK0Mass;
-    int nK0MassBins = axisK0sMass.binEdges.size() - 1;
-    double* k0MassBins = &(axisK0sMass.binEdges)[0];
-    fK0MassAxis = new TAxis(nK0MassBins, k0MassBins);
-
-    o2::framework::AxisSpec axisLambdasMass = axisLambdaMass;
-    int nLambdaMassBins = axisLambdasMass.binEdges.size() - 1;
-    double* lambdaMassBins = &(axisLambdasMass.binEdges)[0];
-    fLambdaMassAxis = new TAxis(nLambdaMassBins, lambdaMassBins);
+    int nPhisPtMassBins = nPtBins * cfgNPhiMassBins;
+    int nK0sPtMassBins = nPtBins * cfgNK0MassBins;
+    int nLambdasPtMassBins = nPtBins * cfgNLambdaMassBins;
 
     //********** Defining the regions  **********
     // reference particles
@@ -230,21 +241,44 @@ struct ResonancesGfwFlow {
     fGFW->AddRegion("poiNphi", -0.8, -0.4, 1 + nPhisPtMassBins, 2);
     fGFW->AddRegion("olNphi", -0.8, -0.4, 1 + nPhisPtMassBins, 32);
 
+    // kshort
+    fGFW->AddRegion("poiNk0", -0.8, -0.4, 1 + nK0sPtMassBins, 4);
+    fGFW->AddRegion("olNk0", -0.8, -0.4, 1 + nK0sPtMassBins, 64);
+
+    // lambda
+    fGFW->AddRegion("poiNlam", -0.8, -0.4, 1 + nLambdasPtMassBins, 8);
+    fGFW->AddRegion("olNlam", -0.8, -0.4, 1 + nLambdasPtMassBins, 128);
+
+    // antilambda
+    fGFW->AddRegion("poiNantilam", -0.8, -0.4, 1 + nLambdasPtMassBins, 16);
+    fGFW->AddRegion("olNantilam", -0.8, -0.4, 1 + nLambdasPtMassBins, 256);
+
     //********** Defining the correlations  **********
     // reference particles
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Phi08Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ks08Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Lam08Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "AnLam08Gap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "Phi08Gap24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "Ks08Gap24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "Lam08Gap24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "AnLam08Gap24", kFALSE));
 
     // pt differential pois
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2} refP08 {-2}", "Phi08Gap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2} refP08 {-2}", "Ks08Gap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2} refP08 {-2}", "Lam08Gap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2} refP08 {-2}", "AnLam08Gap22", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2 2} refP08 {-2 -2}", "Phi08Gap24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2 2} refP08 {-2 -2}", "Ks08Gap24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2 2} refP08 {-2 -2}", "Lam08Gap24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2 2} refP08 {-2 -2}", "AnLam08Gap24", kTRUE));
 
     fGFW->CreateRegions();
   }
 
-  // This function is specific for Phi flow: will be made more generic in further iterations
   template <char... chars>
-  void fillResoProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  void fillResoProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, TAxis* partaxis)
   {
     double dnx, val;
     if (!corrconf.pTDif) {
@@ -257,13 +291,13 @@ struct ResonancesGfwFlow {
       return;
     }
     for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
-      for (int j = 1; j <= fPhiMassAxis->GetNbins(); j++) {
-        dnx = fGFW->Calculate(corrconf, ((i - 1) * fPhiMassAxis->GetNbins()) + (j - 1), kTRUE).real();
+      for (int j = 1; j <= partaxis->GetNbins(); j++) {
+        dnx = fGFW->Calculate(corrconf, ((i - 1) * partaxis->GetNbins()) + (j - 1), kTRUE).real();
         if (dnx == 0)
           continue;
-        val = fGFW->Calculate(corrconf, ((i - 1) * fPhiMassAxis->GetNbins()) + (j - 1), kFALSE).real() / dnx;
+        val = fGFW->Calculate(corrconf, ((i - 1) * partaxis->GetNbins()) + (j - 1), kFALSE).real() / dnx;
         if (std::fabs(val) < 1)
-          histos.fill(tarName, fPtAxis->GetBinCenter(i), fPhiMassAxis->GetBinCenter(j), cent, val, dnx);
+          histos.fill(tarName, fPtAxis->GetBinCenter(i), partaxis->GetBinCenter(j), cent, val, dnx);
       }
     }
     return;
@@ -336,7 +370,7 @@ struct ResonancesGfwFlow {
   }
 
   template <typename TTrack, typename vector, char... chars>
-  void resurrectPhi(TTrack trackplus, TTrack trackminus, vector plusdaug, vector minusdaug, vector mom, double plusmass, const ConstStr<chars...>& hist, const double cent, float weff, float wacc)
+  void resurrectPhi(TTrack trackplus, TTrack trackminus, vector plusdaug, vector minusdaug, vector mom, double plusmass, const ConstStr<chars...>& hist, const double cent)
   {
     for (auto const& [partplus, partminus] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(trackplus, trackminus))) {
       if (getNsigmaPID(partplus) != 2)
@@ -370,9 +404,9 @@ struct ResonancesGfwFlow {
         histos.fill(HIST("hPhiEta"), mom.Eta());
 
         if (withinPtPOI)
-          fGFW->Fill(mom.Eta(), ((fPtAxis->FindBin(pt) - 1) * fPhiMassAxis->GetNbins()) + (fPhiMassAxis->FindBin(invMass) - 1), mom.Phi(), wacc * weff, 2);
+          fGFW->Fill(mom.Eta(), ((fPtAxis->FindBin(pt) - 1) * fPhiMassAxis->GetNbins()) + (fPhiMassAxis->FindBin(invMass) - 1), mom.Phi(), 1.0, 2);
         if (withinPtPOI && withinPtRef)
-          fGFW->Fill(mom.Eta(), ((fPtAxis->FindBin(pt) - 1) * fPhiMassAxis->GetNbins()) + (fPhiMassAxis->FindBin(invMass) - 1), mom.Phi(), wacc * weff, 32);
+          fGFW->Fill(mom.Eta(), ((fPtAxis->FindBin(pt) - 1) * fPhiMassAxis->GetNbins()) + (fPhiMassAxis->FindBin(invMass) - 1), mom.Phi(), 1.0, 32);
       }
     }
     return;
@@ -459,7 +493,15 @@ struct ResonancesGfwFlow {
     if (cfgUseMCCLambda && std::abs(massK0Short - 0.497614) < 0.01)
       return false;
 
+    bool withinPtPOI = (cfgCutPtPOIMin < candidate.pt()) && (candidate.pt() < cfgCutPtPOIMax); // within POI pT range
+    bool withinPtRef = (cfgCutPtMin < candidate.pt()) && (candidate.pt() < cfgCutPtMax);
+
     if (isL) {
+      if (withinPtPOI)
+        fGFW->Fill(candidate.eta(), ((fPtAxis->FindBin(candidate.pt()) - 1) * fLambdaMassAxis->GetNbins()) + (fLambdaMassAxis->FindBin(mlambda) - 1), candidate.phi(), 1.0, 8);
+      if (withinPtPOI && withinPtRef)
+        fGFW->Fill(candidate.eta(), ((fPtAxis->FindBin(candidate.pt()) - 1) * fLambdaMassAxis->GetNbins()) + (fLambdaMassAxis->FindBin(mlambda) - 1), candidate.phi(), 1.0, 128);
+
       histos.fill(HIST("hLambdaMass_sparse"), mlambda, candidate.pt(), collision.centFT0C());
       histos.fill(HIST("hLambdaPhi"), candidate.phi());
       histos.fill(HIST("hLambdaEta"), candidate.eta());
@@ -469,6 +511,11 @@ struct ResonancesGfwFlow {
       histos.fill(HIST("MinusTOF_L"), negtrack.pt(), negtrack.tofNSigmaKa());
     }
     if (isAL) {
+      if (withinPtPOI)
+        fGFW->Fill(candidate.eta(), ((fPtAxis->FindBin(candidate.pt()) - 1) * fLambdaMassAxis->GetNbins()) + (fLambdaMassAxis->FindBin(mantilambda) - 1), candidate.phi(), 1.0, 16);
+      if (withinPtPOI && withinPtRef)
+        fGFW->Fill(candidate.eta(), ((fPtAxis->FindBin(candidate.pt()) - 1) * fLambdaMassAxis->GetNbins()) + (fLambdaMassAxis->FindBin(mantilambda) - 1), candidate.phi(), 1.0, 256);
+
       histos.fill(HIST("hAntiLambdaMass_sparse"), mantilambda, candidate.pt(), collision.centFT0C());
       histos.fill(HIST("hAntiLambdaPhi"), candidate.phi());
       histos.fill(HIST("hAntiLambdaEta"), candidate.eta());
@@ -527,6 +574,14 @@ struct ResonancesGfwFlow {
     if (cfgUseMCCK0 && std::abs(massK0Short - 1.11568) < 0.005)
       return false;
 
+    bool withinPtPOI = (cfgCutPtPOIMin < candidate.pt()) && (candidate.pt() < cfgCutPtPOIMax); // within POI pT range
+    bool withinPtRef = (cfgCutPtMin < candidate.pt()) && (candidate.pt() < cfgCutPtMax);
+
+    if (withinPtPOI)
+      fGFW->Fill(candidate.eta(), ((fPtAxis->FindBin(candidate.pt()) - 1) * fK0MassAxis->GetNbins()) + (fK0MassAxis->FindBin(mk0) - 1), candidate.phi(), 1.0, 4);
+    if (withinPtPOI && withinPtRef)
+      fGFW->Fill(candidate.eta(), ((fPtAxis->FindBin(candidate.pt()) - 1) * fK0MassAxis->GetNbins()) + (fK0MassAxis->FindBin(mk0) - 1), candidate.phi(), 1.0, 64);
+
     histos.fill(HIST("hK0Mass_sparse"), mk0, candidate.pt(), collision.centFT0C());
     histos.fill(HIST("hK0Phi"), candidate.phi());
     histos.fill(HIST("hK0Eta"), candidate.eta());
@@ -575,7 +630,7 @@ struct ResonancesGfwFlow {
     auto posSlicedTracks = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negSlicedTracks = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    resurrectPhi(posSlicedTracks, negSlicedTracks, kaonPlus, kaonMinus, phiMom, massKaPlus, HIST("hPhiMass_sparse"), cent, weff, wacc);
+    resurrectPhi(posSlicedTracks, negSlicedTracks, kaonPlus, kaonMinus, phiMom, massKaPlus, HIST("hPhiMass_sparse"), cent);
 
     for (auto const& v0s : V0s) {
       if (selectionLambda(collision, v0s) == true)
@@ -585,10 +640,25 @@ struct ResonancesGfwFlow {
 
     } // End of v0 loop
 
-    fillResoProfile(corrconfigs.at(0), HIST("Phic22"), cent);
-    fillResoProfile(corrconfigs.at(1), HIST("Phic24"), cent);
-    fillResoProfile(corrconfigs.at(2), HIST("Phiv22pt"), cent);
-    fillResoProfile(corrconfigs.at(3), HIST("Phiv24pt"), cent);
+    fillResoProfile(corrconfigs.at(0), HIST("Phic22"), cent, fPhiMassAxis);
+    fillResoProfile(corrconfigs.at(1), HIST("K0c22"), cent, fK0MassAxis);
+    fillResoProfile(corrconfigs.at(2), HIST("Lambdac22"), cent, fLambdaMassAxis);
+    fillResoProfile(corrconfigs.at(3), HIST("AnLambdac22"), cent, fLambdaMassAxis);
+
+    fillResoProfile(corrconfigs.at(4), HIST("Phic24"), cent, fPhiMassAxis);
+    fillResoProfile(corrconfigs.at(5), HIST("K0c24"), cent, fK0MassAxis);
+    fillResoProfile(corrconfigs.at(6), HIST("Lambdac24"), cent, fLambdaMassAxis);
+    fillResoProfile(corrconfigs.at(7), HIST("AnLambdac24"), cent, fLambdaMassAxis);
+
+    fillResoProfile(corrconfigs.at(8), HIST("Phiv22pt"), cent, fPhiMassAxis);
+    fillResoProfile(corrconfigs.at(9), HIST("K0v22pt"), cent, fK0MassAxis);
+    fillResoProfile(corrconfigs.at(10), HIST("Lambdav22pt"), cent, fLambdaMassAxis);
+    fillResoProfile(corrconfigs.at(11), HIST("AnLambdav22pt"), cent, fLambdaMassAxis);
+
+    fillResoProfile(corrconfigs.at(12), HIST("Phiv24pt"), cent, fPhiMassAxis);
+    fillResoProfile(corrconfigs.at(13), HIST("K0v24pt"), cent, fK0MassAxis);
+    fillResoProfile(corrconfigs.at(14), HIST("Lambdav24pt"), cent, fLambdaMassAxis);
+    fillResoProfile(corrconfigs.at(15), HIST("AnLambdav24pt"), cent, fLambdaMassAxis);
   } // end of process
 };
 
