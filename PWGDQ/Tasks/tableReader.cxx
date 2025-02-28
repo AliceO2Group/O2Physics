@@ -1442,6 +1442,7 @@ struct AnalysisSameEventPairing {
               fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][0].Data()), VarManager::fgValues);
             }
             if (useMiniTree.fConfigMiniTree) {
+              // By default (kPt1, kEta1, kPhi1) are for the positive charge
               float dileptonMass = VarManager::fgValues[VarManager::kMass];
               if (dileptonMass > useMiniTree.fConfigMiniTreeMinMass && dileptonMass < useMiniTree.fConfigMiniTreeMaxMass) {
                 dileptonMiniTree(VarManager::fgValues[VarManager::kMass],
@@ -1449,12 +1450,12 @@ struct AnalysisSameEventPairing {
                                  VarManager::fgValues[VarManager::kRap],
                                  VarManager::fgValues[VarManager::kCentFT0C],
                                  VarManager::fgValues[VarManager::kCos2DeltaPhi],
-                                 t1.pt(),
-                                 t1.eta(),
-                                 t1.phi(),
-                                 t2.pt(),
-                                 t2.eta(),
-                                 t2.phi());
+                                 VarManager::fgValues[VarManager::kPt1],
+                                 VarManager::fgValues[VarManager::kEta1],
+                                 VarManager::fgValues[VarManager::kPhi1],
+                                 VarManager::fgValues[VarManager::kPt2],
+                                 VarManager::fgValues[VarManager::kEta2],
+                                 VarManager::fgValues[VarManager::kPhi2]);
               }
             }
           } else {
