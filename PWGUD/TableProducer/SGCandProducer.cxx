@@ -11,6 +11,7 @@
 
 #include <cmath>
 #include <vector>
+#include <string>
 #include <map>
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoA.h"
@@ -37,6 +38,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::dataformats;
 
+#define getHist(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
+
 struct SGCandProducer {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   // data inputs
@@ -51,6 +54,10 @@ struct SGCandProducer {
                         aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FWs = aod::FwdTracks;
+
+  using MCCCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using MCCC = MCCCs::iterator;
+
   // get an SGCutparHolder
   SGCutParHolder sameCuts = SGCutParHolder(); // SGCutparHolder
   Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
@@ -62,6 +69,7 @@ struct SGCandProducer {
   Configurable<bool> noSameBunchPileUp{"noSameBunchPileUp", true, "reject SameBunchPileUp"};
   Configurable<bool> IsGoodVertex{"IsGoodVertex", false, "Select FT0 PV vertex matching"};
   Configurable<bool> ITSTPCVertex{"ITSTPCVertex", true, "reject ITS-only vertex"}; // if one wants to look at Single Gap pp events
+  Configurable<std::vector<int>> generatorIds{"generatorIds", std::vector<int>{-1}, "MC generatorIds to process"};
 
   // Configurables to decide which tables are filled
   Configurable<bool> fillTrackTables{"fillTrackTables", true, "Fill track tables"};
@@ -93,6 +101,7 @@ struct SGCandProducer {
   HistogramRegistry registry{
     "registry",
     {}};
+  std::map<std::string, HistPtr> histPointers;
 
   // function to update UDFwdTracks, UDFwdTracksExtra
   template <typename TFwdTrack>
@@ -171,52 +180,45 @@ struct SGCandProducer {
     outputTracksLabel(track.globalIndex());
   }
 
-  void init(InitContext&)
-  {
-    ccdb->setURL("http://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setFatalWhenNull(false);
-    sameCuts = (SGCutParHolder)SGCuts;
-    registry.add("reco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{14, -0.5, 13.5}}});
-  }
-
-  // process function for real data
-  void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
-               aod::Zdcs& /*zdcs*/, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+  // function to process reconstructed data
+  template <typename TCol>
+  void processReco(std::string histdir, TCol const& collision, BCs const& bcs,
+                   TCs const& tracks, FWs const& fwdtracks,
+                   aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
   {
     if (verboseInfo)
       LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
+    getHist(TH1, histdir + "/Stat")->Fill(0., 1.);
     // reject collisions at TF boundaries
     if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
+    getHist(TH1, histdir + "/Stat")->Fill(1., 1.);
     // reject collisions at ITS RO TF boundaries
     if (noITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return;
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(2., 1.);
+    getHist(TH1, histdir + "/Stat")->Fill(2., 1.);
     // reject Same Bunch PileUp
     if (noSameBunchPileUp && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return;
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(3., 1.);
+    getHist(TH1, histdir + "/Stat")->Fill(3., 1.);
     // check vertex matching to FT0
     if (IsGoodVertex && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return;
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(4., 1.);
+    getHist(TH1, histdir + "/Stat")->Fill(4., 1.);
     // reject ITS Only vertices
     if (ITSTPCVertex && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return;
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(5., 1.);
+    getHist(TH1, histdir + "/Stat")->Fill(5., 1.);
     // nominal BC
     if (!collision.has_foundBC()) {
       return;
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(6., 1.);
+    getHist(TH1, histdir + "/Stat")->Fill(6., 1.);
     int trs = 0;
     if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       trs = 1;
@@ -229,7 +231,7 @@ struct SGCandProducer {
     if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       hmpr = 1;
     }
-    auto bc = collision.foundBC_as<BCs>();
+    auto bc = collision.template foundBC_as<BCs>();
     double ir = 0.;
     const uint64_t ts = bc.timestamp();
     const int runnumber = bc.runNumber();
@@ -249,7 +251,7 @@ struct SGCandProducer {
       if (verboseInfo)
         LOGF(info, "No Newbc %i", bc.globalBC());
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(issgevent + 8, 1.);
+    getHist(TH1, histdir + "/Stat")->Fill(issgevent + 8, 1.);
     if (issgevent <= 2) {
       if (verboseInfo)
         LOGF(info, "Current BC: %i, %i, %i", bc.globalBC(), newbc.globalBC(), issgevent);
@@ -318,6 +320,49 @@ struct SGCandProducer {
       }
     }
   }
+
+  void init(InitContext& context)
+  {
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setFatalWhenNull(false);
+    sameCuts = (SGCutParHolder)SGCuts;
+
+    // add histograms for the different process functions
+    histPointers.clear();
+    if (context.mOptions.get<bool>("processData")) {
+      histPointers.insert({"reco/Stat", registry.add("reco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{14, -0.5, 13.5}}})});
+    }
+    if (context.mOptions.get<bool>("processMcData")) {
+      histPointers.insert({"MCreco/Stat", registry.add("MCreco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{14, -0.5, 13.5}}})});
+    }
+  }
+
+  // process function for reconstructed data
+  void processData(CC const& collision, BCs const& bcs, TCs const& tracks, FWs const& fwdtracks,
+                   aod::Zdcs const& /*zdcs*/, aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
+  {
+    processReco(std::string("reco"), collision, bcs, tracks, fwdtracks, fv0as, ft0s, fdds);
+  }
+  PROCESS_SWITCH(SGCandProducer, processData, "Produce UD table with data", true);
+
+  // process function for reconstructed MC data
+  void processMcData(MCCC const& collision, aod::McCollisions const& /*mccollisions*/, BCs const& bcs,
+                     TCs const& tracks, FWs const& fwdtracks, aod::Zdcs const& /*zdcs*/, aod::FV0As const& fv0as,
+                     aod::FT0s const& ft0s, aod::FDDs const& fdds)
+  {
+    // select specific processes with the GeneratorID
+    auto mccol = collision.mcCollision();
+    if (verboseInfo)
+      LOGF(info, "GeneratorId %d (%d)", mccol.getGeneratorId(), generatorIds->size());
+
+    if (std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) != generatorIds->end()) {
+      if (verboseInfo)
+        LOGF(info, "Event with good generatorId");
+      processReco(std::string("MCreco"), collision, bcs, tracks, fwdtracks, fv0as, ft0s, fdds);
+    }
+  }
+  PROCESS_SWITCH(SGCandProducer, processMcData, "Produce UD tables with MC data", false);
 };
 
 struct McSGCandProducer {
