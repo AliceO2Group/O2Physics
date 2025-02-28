@@ -38,9 +38,9 @@ namespace o2::aod
 {
 namespace multiplicity_nch
 {
-DECLARE_SOA_COLUMN(Multiplicity, mult, int);
+DECLARE_SOA_COLUMN(Multiplicity, mulT, int);
 }
-DECLARE_SOA_TABLE(Multiplicity, "AOD", "MULTIPLICITY",
+DECLARE_SOA_TABLE(Multiplicity, "AOD", "Multiplicity",
                   multiplicity_nch::Multiplicity);
 
 } // namespace o2::aod
@@ -64,12 +64,12 @@ struct CalcNch {
   using AodCollisions = soa::Join<aod::Collisions, aod::EvSel>; // aod::CentFT0Cs
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
 
-  Produces<aod::Multiplicity> multiplicity_nch;
+  Produces<aod::Multiplicity> multiplicityNch;
 
   void process(AodCollisions::iterator const& collision, AodTracks const& tracks)
   {
     // LOGF(info, "Nch: %i", tracks.size());
-    multiplicity_nch(tracks.size());
+    multiplicityNch(tracks.size());
   }
 };
 
@@ -192,7 +192,7 @@ struct CorrSparse {
 
   void processSame(AodCollisions::iterator const& collision, AodTracks const& tracks)
   {
-    // LOGF(info, "Process Same | Nch: %i | Mult from column %i", tracks.size(), collision.mult());
+    // LOGF(info, "Process Same | Nch: %i | Mult from column %i", tracks.size(), collision.mulT());
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     fillYield(collision, tracks);
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, tracks.size()); // fill the SE histogram and Sparse
