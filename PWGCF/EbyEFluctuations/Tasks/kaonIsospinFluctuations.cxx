@@ -515,8 +515,8 @@ struct KaonIsospinFluctuations {
 
   enum IdentificationType {
     kTPCidentified = 0,
-    kTOFidentified,
-  }
+    kTOFidentified
+  };
 
   // tpc Selections
   template <typename T>
@@ -822,7 +822,7 @@ struct KaonIsospinFluctuations {
       BITSET(v0daughterCollisionIndexTag, BIT_NEG_DAU_HAS_SAME_COLL);
     }
     if (posDaughterTrack.collisionId() == negDaughterTrack.collisionId()) {
-      BITSET(v0daughterCollisionIndexTag, kBIT_BOTH_DAU_HAS_SAME_COLL);
+      BITSET(v0daughterCollisionIndexTag, BIT_BOTH_DAU_HAS_SAME_COLL);
     }
     return v0daughterCollisionIndexTag;
   }
@@ -1820,17 +1820,11 @@ struct KaonIsospinFluctuations {
   using MyMcCollisions = aod::McCollisions;
   void processGen(MyMcCollisions const& mcCollisions, MyCollisionsWithMcLabels const& collisions, MyV0sWithMcLabels const& V0s, MyTracksWithMcLabels const& tracks, aod::McParticles const& mcParticles)
   {
-
-    int mcCollCountPreSel = 0;
-    int mcCollCountPostSel = 0;
-    int counter = 0;
-    int totalTracksAccepted = 0;
     float centrality = -1;
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      mcCollCountPreSel++;
       centrality = -1;
       const auto& mcColl = collision.mcCollision();
 
@@ -1843,11 +1837,8 @@ struct KaonIsospinFluctuations {
         centrality = collision.multFT0C();
       }
 
-      mcCollCountPostSel++;
-      counter++;
       // group over mcParticles
       const auto mcTracksTablePerMcColl = mcParticles.sliceBy(mcTracksPerMcCollisionPreslice, mcColl.globalIndex());
-      totalTracksAccepted += mcTracksTablePerMcColl.size();
 
       int nRejectedPiPlus = 0;
       int nRejectedPiMinus = 0;
