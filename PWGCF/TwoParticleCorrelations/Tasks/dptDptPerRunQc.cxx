@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file perRunQc.cxx
+/// \file dptDptPerRunQc.cxx
 /// \brief basic per run check of the ITS dead chips and of the hadronic interaction rate
 /// \author victor.gonzalez.sebastian@gmail.com
 
@@ -42,7 +42,7 @@ using namespace o2::framework::expressions;
 
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
 
-namespace perrunqatask
+namespace perrunqctask
 {
 static const int32_t nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 std::unordered_map<int, TH2*> gHadronicRate;
@@ -53,9 +53,9 @@ std::unordered_map<int, std::shared_ptr<TH1>> gCollisionOrbitAfter;
 TH2* gCurrentHadronicRate;
 std::shared_ptr<TH1> gCurrentCollisionOrbitBefore;
 std::shared_ptr<TH1> gCurrentCollisionOrbitAfter;
-} // namespace perrunqatask
+} // namespace perrunqctask
 
-struct DptDptPerRunQa {
+struct DptDptPerRunQc {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -67,7 +67,7 @@ struct DptDptPerRunQa {
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
-    using namespace perrunqatask;
+    using namespace perrunqctask;
     using namespace analysis::dptdptfilter;
 
     if (mRunNumber == bc.runNumber()) {
@@ -144,7 +144,7 @@ struct DptDptPerRunQa {
 
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::DptDptCFCollisionsInfo>::iterator const& collision, aod::BCsWithTimestamps const&)
   {
-    using namespace perrunqatask;
+    using namespace perrunqctask;
     using namespace analysis::dptdptfilter;
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -166,5 +166,5 @@ struct DptDptPerRunQa {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DptDptPerRunQa>(cfgc)};
+    adaptAnalysisTask<DptDptPerRunQc>(cfgc)};
 }
