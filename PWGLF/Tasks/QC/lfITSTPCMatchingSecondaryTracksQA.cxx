@@ -94,18 +94,22 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     // Event Counters
     if (doprocessData) {
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
-      registryData.add("gloPionTPC", "gloPionTPC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
-      registryData.add("gloPionTPC_ITS", "gloPionTPC_ITS", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
+      registryData.add("primPionTPC", "primPionTPC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
+      registryData.add("primPionTPC_ITS", "primPionTPC_ITS", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryData.add("secPionTPC", "secPionTPC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryData.add("secPionTPC_ITS", "secPionTPC_ITS", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
+      registryData.add("secPionV0TPC", "secPionV0TPC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
+      registryData.add("secPionV0TPC_ITS", "secPionV0TPC_ITS", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
     }
 
     if (doprocessMC) {
       registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
-      registryMC.add("gloPionTPC_MC", "gloPionTPC_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
-      registryMC.add("gloPionTPC_ITS_MC", "gloPionTPC_ITS_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
+      registryMC.add("primPionTPC_MC", "primPionTPC_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
+      registryMC.add("primPionTPC_ITS_MC", "primPionTPC_ITS_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryMC.add("secPionTPC_MC", "secPionTPC_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryMC.add("secPionTPC_ITS_MC", "secPionTPC_ITS_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
+      registryMC.add("secPionV0TPC_MC", "secPionV0TPC_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
+      registryMC.add("secPionV0TPC_ITS_MC", "secPionV0TPC_ITS_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
     }
   }
 
@@ -115,8 +119,28 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     return (itsClsmap & testBit);
   }
 
-  template <typename TpcTrackGlo>
-  bool passedTrackSelectionTpcGlobal(const TpcTrackGlo& track)
+  template <typename TpcPrimTrack>
+  bool passedTrackSelectionTpcPrimary(const TpcPrimTrack& track)
+  {
+    if (!track.hasTPC())
+      return false;
+    if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < minNCrossedRowsOverFindable)
+      return false;
+    if (track.tpcChi2NCl() > maxChi2TPC)
+      return false;
+    if (track.eta() < etaMin || track.eta() > etaMax)
+      return false;
+    if (std::fabs(track.dcaXY()) > dcaxyMax)
+      return false;
+    if (std::fabs(track.dcaZ()) > dcazMax)
+      return false;
+    return true;
+  }
+
+  template <typename TpcSecTrack>
+  bool passedTrackSelectionTpcSecondary(const TpcSecTrack& track)
   {
     if (!track.hasTPC())
       return false;
@@ -130,12 +154,11 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       return false;
     if (std::sqrt(track.dcaXY() * track.dcaXY() + track.dcaZ() * track.dcaZ()) < dcaMin)
       return false;
-
     return true;
   }
 
-  template <typename TpcTrack>
-  bool passedTrackSelectionTpc(const TpcTrack& track)
+  template <typename v0Track>
+  bool passedTrackSelectionV0daughTPC(const v0Track& track)
   {
     if (!track.hasTPC())
       return false;
@@ -218,11 +241,17 @@ struct LfITSTPCMatchingSecondaryTracksQA {
 
     for (const auto& track : tracks) {
 
-      if (passedTrackSelectionTpcGlobal(track) && passedPionSelection(track))
-        registryData.fill(HIST("gloPionTPC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
+      // Primary Tracks
+      if (passedTrackSelectionTpcPrimary(track) && passedPionSelection(track))
+        registryData.fill(HIST("primPionTPC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
+      if (passedTrackSelectionTpcPrimary(track) && passedPionSelection(track) && passedTrackSelectionIts(track))
+        registryData.fill(HIST("primPionTPC_ITS"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
 
-      if (passedTrackSelectionTpcGlobal(track) && passedPionSelection(track) && track.hasITS())
-        registryData.fill(HIST("gloPionTPC_ITS"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
+      // Secondary Tracks
+      if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track))
+        registryData.fill(HIST("secPionTPC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
+      if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && track.hasITS())
+        registryData.fill(HIST("secPionTPC_ITS"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
     }
 
     for (const auto& v0 : fullV0s) {
@@ -232,17 +261,14 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       if (!passedK0ShortSelection(v0))
         continue;
 
-      if (passedTrackSelectionTpc(posTrack) && passedPionSelection(posTrack))
-        registryData.fill(HIST("secPionTPC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
-
-      if (passedTrackSelectionTpc(negTrack) && passedPionSelection(negTrack))
-        registryData.fill(HIST("secPionTPC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
-
-      if (passedTrackSelectionTpc(posTrack) && passedPionSelection(posTrack) && posTrack.hasITS())
-        registryData.fill(HIST("secPionTPC_ITS"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
-
-      if (passedTrackSelectionTpc(negTrack) && passedPionSelection(negTrack) && negTrack.hasITS())
-        registryData.fill(HIST("secPionTPC_ITS"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
+      if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack))
+        registryData.fill(HIST("secPionV0TPC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
+      if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack))
+        registryData.fill(HIST("secPionV0TPC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
+      if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && posTrack.hasITS())
+        registryData.fill(HIST("secPionV0TPC_ITS"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
+      if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && negTrack.hasITS())
+        registryData.fill(HIST("secPionV0TPC_ITS"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
     }
   }
   PROCESS_SWITCH(LfITSTPCMatchingSecondaryTracksQA, processData, "Process data", true);
@@ -264,11 +290,17 @@ struct LfITSTPCMatchingSecondaryTracksQA {
 
       for (const auto& track : tracksPerColl) {
 
-        if (passedTrackSelectionTpcGlobal(track) && passedPionSelection(track))
-          registryMC.fill(HIST("gloPionTPC_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
+        // Primary Tracks
+        if (passedTrackSelectionTpcPrimary(track) && passedPionSelection(track))
+          registryMC.fill(HIST("primPionTPC_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
+        if (passedTrackSelectionTpcPrimary(track) && passedPionSelection(track) && passedTrackSelectionIts(track))
+          registryMC.fill(HIST("primPionTPC_ITS_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
 
-        if (passedTrackSelectionTpcGlobal(track) && passedPionSelection(track) && track.hasITS())
-          registryMC.fill(HIST("gloPionTPC_ITS_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
+        // Secondary Tracks
+        if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track))
+          registryMC.fill(HIST("secPionTPC_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
+        if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && track.hasITS())
+          registryMC.fill(HIST("secPionTPC_ITS_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
       }
 
       for (const auto& v0 : v0sPerColl) {
@@ -278,17 +310,14 @@ struct LfITSTPCMatchingSecondaryTracksQA {
         if (!passedK0ShortSelection(v0))
           continue;
 
-        if (passedTrackSelectionTpc(posTrack) && passedPionSelection(posTrack))
-          registryMC.fill(HIST("secPionTPC_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
-
-        if (passedTrackSelectionTpc(negTrack) && passedPionSelection(negTrack))
-          registryMC.fill(HIST("secPionTPC_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
-
-        if (passedTrackSelectionTpc(posTrack) && passedPionSelection(posTrack) && posTrack.hasITS())
-          registryMC.fill(HIST("secPionTPC_ITS_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
-
-        if (passedTrackSelectionTpc(negTrack) && passedPionSelection(negTrack) && negTrack.hasITS())
-          registryMC.fill(HIST("secPionTPC_ITS_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
+        if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack))
+          registryMC.fill(HIST("secPionV0TPC_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
+        if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack))
+          registryMC.fill(HIST("secPionV0TPC_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
+        if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && posTrack.hasITS())
+          registryMC.fill(HIST("secPionV0TPC_ITS_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
+        if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && negTrack.hasITS())
+          registryMC.fill(HIST("secPionV0TPC_ITS_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
       }
     }
   }
