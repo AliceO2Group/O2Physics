@@ -861,22 +861,36 @@ struct cascadeFlow {
         auto boostedLambda{cascadeBoost(lambdaVector)};
         cosThetaStarLambda[i] = boostedLambda.Pz() / boostedLambda.P();
       }
+
+      double ptLambda = sqrt(pow(casc.pxlambda(), 2) + pow(casc.pylambda(), 2));
+      auto etaLambda = RecoDecay::eta(std::array{casc.pxlambda(), casc.pylambda(), casc.pzlambda()});
+
+      //acceptance values if requested
+      double MeanCos2ThetaLambdaFromXi = 1;
+      double MeanCos2ThetaLambdaFromOmega = 1;
+      double MeanCos2ThetaProtonFromLambda = 1;
+      if (applyAcceptanceCorrection){
+	int bin2DXi = hAcceptanceXi->FindBin(casc.pt(), casc.eta());
+	int bin2DOmega = hAcceptanceOmega->FindBin(casc.pt(), casc.eta());
+	int bin2DLambda = hAcceptanceXi->FindBin(ptLambda, etaLambda);
+	MeanCos2ThetaLambdaFromXi = hAcceptanceXi->GetBinContent(bin2DXi);
+	MeanCos2ThetaLambdaFromOmega = hAcceptanceOmega->GetBinContent(bin2DOmega);
+	MeanCos2ThetaProtonFromLambda = hAcceptanceLambda->GetBinContent(bin2DLambda);
+      }
+      
       int ChargeIndex = 0;
       if (casc.sign() > 0)
         ChargeIndex = 1;
-      double Pzs2Xi = cosThetaStarLambda[0] * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaXi[ChargeIndex];
-      double Pzs2Omega = cosThetaStarLambda[1] * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaOmega[ChargeIndex];
+      double Pzs2Xi = cosThetaStarLambda[0] * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaXi[ChargeIndex] / MeanCos2ThetaLambdaFromXi;
+      double Pzs2Omega = cosThetaStarLambda[1] * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaOmega[ChargeIndex]/ MeanCos2ThetaLambdaFromOmega;
       double Cos2ThetaXi = cosThetaStarLambda[0] * cosThetaStarLambda[0];
       double Cos2ThetaOmega = cosThetaStarLambda[1] * cosThetaStarLambda[1];
-      double Pzs2LambdaFromCasc = cosThetaStarProton * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaLambda[ChargeIndex];
+      double Pzs2LambdaFromCasc = cosThetaStarProton * std::sin(2 * (casc.phi() - PsiT0C)) / cascadev2::AlphaLambda[ChargeIndex] / MeanCos2ThetaProtonFromLambda;
       double Cos2ThetaLambda = cosThetaStarProton * cosThetaStarProton;
 
       double CosThetaXiWithAlpha = cosThetaStarLambda[0] / cascadev2::AlphaXi[ChargeIndex];
       double CosThetaOmegaWithAlpha = cosThetaStarLambda[1] / cascadev2::AlphaOmega[ChargeIndex];
       double CosThetaProtonWithAlpha = cosThetaStarProton / cascadev2::AlphaLambda[ChargeIndex];
-
-      double ptLambda = sqrt(pow(casc.pxlambda(), 2) + pow(casc.pylambda(), 2));
-      auto etaLambda = RecoDecay::eta(std::array{casc.pxlambda(), casc.pylambda(), casc.pzlambda()});
 
       histos.fill(HIST("hv2CEPvsFT0C"), coll.centFT0C(), v2CEP);
       histos.fill(HIST("hv2CEPvsv2CSP"), v2CSP, v2CEP);
