@@ -1300,8 +1300,8 @@ struct AngularCorrelationsInJets {
   }
 
   void processRun2old(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                   soa::Filtered<FullTracksRun2> const& tracks,
-                   BCsWithRun2Info const&)
+                      soa::Filtered<FullTracksRun2> const& tracks,
+                      BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<BCsWithRun2Info>();
@@ -1321,7 +1321,7 @@ struct AngularCorrelationsInJets {
   PROCESS_SWITCH(AngularCorrelationsInJets, processRun2old, "process Run 2 data w/o jet tables", false);
 
   void processRun3old(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                   soa::Filtered<FullTracksRun3old> const& tracks)
+                      soa::Filtered<FullTracksRun3old> const& tracks)
   {
     for (const auto& collision : collisions) {
       registryData.fill(HIST("eventProtocol"), 0);
@@ -1508,7 +1508,7 @@ struct AngularCorrelationsInJets {
 
   // mcd jets seems to be the issue, also mc coll labels ig
   /// TODO: check if jets already have bkg subtracted
-  void processRun3MCReco(soa::Filtered<soa::Join<aod::JetCollisions, /* aod::JCollisionPIs, aod::McCollisionLabels, */ aod:: BkgChargedRhos>>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>> const& allJets, JetMcTracks const&, soa::Filtered<McTracksRun3> const&, aod::McParticles const&)
+  void processRun3MCReco(soa::Filtered<soa::Join<aod::JetCollisions, /* aod::JCollisionPIs, aod::McCollisionLabels, */ aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>> const& allJets, JetMcTracks const&, soa::Filtered<McTracksRun3> const&, aod::McParticles const&)
   {
     registryData.fill(HIST("eventProtocol"), 0);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
@@ -1569,7 +1569,7 @@ struct AngularCorrelationsInJets {
         if (track.hasTOF()) {
           registryData.fill(HIST("tofSignal"), track.pt() * track.sign(), track.beta());
         }
-        
+
         // MC Truth Particles
         if (!track.has_mcParticle())
           continue;
