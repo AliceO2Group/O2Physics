@@ -21,6 +21,7 @@
 #include <utility>
 #include <algorithm>
 #include <vector>
+#include <random>
 
 // O2 headers
 #include "Framework/AnalysisTask.h"
@@ -63,6 +64,7 @@ struct UpcTauRl {
   Configurable<bool> verboseInfo{"verboseInfo", false, {"Print general info to terminal; default it false."}};
   Configurable<bool> doMainHistos{"doMainHistos", false, {"Fill main histos"}};
   Configurable<bool> doPIDhistos{"doPIDhistos", false, {"Fill PID histos"}};
+  Configurable<bool> doMixedEventsHistos{"doMixedEventsHistos", false, {"Fill mixed events histos"}};
   Configurable<bool> doTruthHistos{"doTruthHistos", false, {"Do histograms specific for generated events/particles"}};
   Configurable<bool> doMCtrueElectronCheck{"doMCtrueElectronCheck", false, {"Check if track hypothesis corresponds to MC truth. If no, it cuts."}};
   Configurable<bool> oppositeMCtrueElectronCheck{"oppositeMCtrueElectronCheck", false, {"While doMCtrueElectronCheck is true, check if track hypothesis corresponds to MC truth. If yes, it cuts."}};
@@ -188,11 +190,15 @@ struct UpcTauRl {
   } confAxis;
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
-  using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras>::iterator;
-  using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
+  using FullUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras>;
+  using FullUDCollision = FullUDCollisions::iterator;
+  using FullSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDZdcsReduced>;
+  using FullSGUDCollision = FullSGUDCollisions::iterator;
   using FullMCUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags, aod::UDMcTrackLabels>;
-  using FullMCUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::UDMcCollsLabels>::iterator;
-  using FullMCSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDMcCollsLabels>::iterator;
+  using FullMCUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::UDMcCollsLabels>;
+  using FullMCUDCollision = FullMCUDCollisions::iterator;
+  using FullMCSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDMcCollsLabels>;
+  using FullMCSGUDCollision = FullMCSGUDCollisions::iterator;
 
   // init
   void init(InitContext&)
@@ -413,6 +419,7 @@ struct UpcTauRl {
       histos.add("EventTwoTracks/TwoElectrons/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
       histos.add("EventTwoTracks/TwoElectrons/hInvariantMassWidePtCut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
       histos.add("EventTwoTracks/TwoElectrons/hAcoplanarity", ";#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisAcoplanarity});
+      histos.add("EventTwoTracks/TwoElectrons/hCollinearity", ";#DeltaR (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisCollinearity});
       histos.add("EventTwoTracks/TwoElectrons/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMom});
       histos.add("EventTwoTracks/TwoElectrons/hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMomWide});
       histos.add("EventTwoTracks/TwoElectrons/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPt});
@@ -450,97 +457,6 @@ struct UpcTauRl {
       histos.add("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsP", ";Track #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
       histos.add("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsLP", ";Leading #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
       histos.add("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsOP", ";Other #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
-
-      histos.add("EventTwoTracks/TwoMuons/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
-      histos.add("EventTwoTracks/TwoMuons/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
-      histos.add("EventTwoTracks/TwoMuons/hInvariantMassWidePtCut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
-      histos.add("EventTwoTracks/TwoMuons/hAcoplanarity", ";#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisAcoplanarity});
-      histos.add("EventTwoTracks/TwoMuons/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMom});
-      histos.add("EventTwoTracks/TwoMuons/hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/TwoMuons/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/TwoMuons/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPhi});
-      histos.add("EventTwoTracks/TwoMuons/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisRap});
-      histos.add("EventTwoTracks/TwoMuons/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/TwoMuons/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisMom});
-      histos.add("EventTwoTracks/TwoMuons/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/TwoMuons/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/TwoMuons/hDaughtersPhi", ";Daughter 1 #phi (rad);Daughter 2 #phi (rad)", HistType::kTH2D, {confAxis.zzAxisPhi, confAxis.zzAxisPhi});
-      histos.add("EventTwoTracks/TwoMuons/hDaughtersPtvsModPhi", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisModPhi});
-      histos.add("EventTwoTracks/TwoMuons/hDaughtersPtvsModPhiTOF", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisModPhi});
-      histos.add("EventTwoTracks/TwoMuons/hDaughtersPtvsModPhiPtCut", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisModPhi});
-      histos.add("EventTwoTracks/TwoMuons/hDaughtersPtvsModPhiPtCutTOF", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisModPhi});
-      histos.add("EventTwoTracks/TwoMuons/hDaughtersRapidity", ";Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)", HistType::kTH2D, {confAxis.zzAxisRap, confAxis.zzAxisRap});
-      histos.add("EventTwoTracks/TwoMuons/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisTPCdEdx});
-
-      histos.add("EventTwoTracks/TwoPions/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
-      histos.add("EventTwoTracks/TwoPions/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
-      histos.add("EventTwoTracks/TwoPions/hInvariantMassWidePtCut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
-      histos.add("EventTwoTracks/TwoPions/hAcoplanarity", ";#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisAcoplanarity});
-      histos.add("EventTwoTracks/TwoPions/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMom});
-      histos.add("EventTwoTracks/TwoPions/hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/TwoPions/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/TwoPions/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPhi});
-      histos.add("EventTwoTracks/TwoPions/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisRap});
-      histos.add("EventTwoTracks/TwoPions/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisMom});
-      histos.add("EventTwoTracks/TwoPions/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/TwoPions/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/TwoPions/hDaughtersPhi", ";Daughter 1 #phi (rad);Daughter 2 #phi (rad)", HistType::kTH2D, {confAxis.zzAxisPhi, confAxis.zzAxisPhi});
-      histos.add("EventTwoTracks/TwoPions/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/TwoPions/hDaughtersPtvsModPhi", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisModPhi});
-      histos.add("EventTwoTracks/TwoPions/hDaughtersPtvsModPhiTOF", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisModPhi});
-      histos.add("EventTwoTracks/TwoPions/hDaughtersPtvsModPhiPtCut", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisModPhi});
-      histos.add("EventTwoTracks/TwoPions/hDaughtersPtvsModPhiPtCutTOF", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisModPhi});
-      histos.add("EventTwoTracks/TwoPions/hDaughtersRapidity", ";Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)", HistType::kTH2D, {confAxis.zzAxisRap, confAxis.zzAxisRap});
-      histos.add("EventTwoTracks/TwoPions/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisTPCdEdx});
-
-      histos.add("EventTwoTracks/ElectronMuon/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
-      histos.add("EventTwoTracks/ElectronMuon/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
-      histos.add("EventTwoTracks/ElectronMuon/hAcoplanarity", ";#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisAcoplanarity});
-      histos.add("EventTwoTracks/ElectronMuon/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMom});
-      histos.add("EventTwoTracks/ElectronMuon/hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/ElectronMuon/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/ElectronMuon/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPhi});
-      histos.add("EventTwoTracks/ElectronMuon/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisRap});
-      histos.add("EventTwoTracks/ElectronMuon/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/ElectronMuon/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisMom});
-      histos.add("EventTwoTracks/ElectronMuon/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/ElectronMuon/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/ElectronMuon/hDaughtersPhi", ";Daughter 1 #phi (rad);Daughter 2 #phi (rad)", HistType::kTH2D, {confAxis.zzAxisPhi, confAxis.zzAxisPhi});
-      histos.add("EventTwoTracks/ElectronMuon/hDaughtersRapidity", ";Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)", HistType::kTH2D, {confAxis.zzAxisRap, confAxis.zzAxisRap});
-      histos.add("EventTwoTracks/ElectronMuon/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisTPCdEdx});
-
-      histos.add("EventTwoTracks/ElectronPion/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
-      histos.add("EventTwoTracks/ElectronPion/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
-      histos.add("EventTwoTracks/ElectronPion/hAcoplanarity", ";#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisAcoplanarity});
-      histos.add("EventTwoTracks/ElectronPion/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMom});
-      histos.add("EventTwoTracks/ElectronPion/hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/ElectronPion/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/ElectronPion/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPhi});
-      histos.add("EventTwoTracks/ElectronPion/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisRap});
-      histos.add("EventTwoTracks/ElectronPion/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/ElectronPion/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisMom});
-      histos.add("EventTwoTracks/ElectronPion/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/ElectronPion/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/ElectronPion/hDaughtersPhi", ";Daughter 1 #phi (rad);Daughter 2 #phi (rad)", HistType::kTH2D, {confAxis.zzAxisPhi, confAxis.zzAxisPhi});
-      histos.add("EventTwoTracks/ElectronPion/hDaughtersRapidity", ";Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)", HistType::kTH2D, {confAxis.zzAxisRap, confAxis.zzAxisRap});
-      histos.add("EventTwoTracks/ElectronPion/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisTPCdEdx});
-
-      histos.add("EventTwoTracks/MuonPion/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
-      histos.add("EventTwoTracks/MuonPion/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
-      histos.add("EventTwoTracks/MuonPion/hInvariantMassWidePtCut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
-      histos.add("EventTwoTracks/MuonPion/hAcoplanarity", ";#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisAcoplanarity});
-      histos.add("EventTwoTracks/MuonPion/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMom});
-      histos.add("EventTwoTracks/MuonPion/hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/MuonPion/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/MuonPion/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPhi});
-      histos.add("EventTwoTracks/MuonPion/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisRap});
-      histos.add("EventTwoTracks/MuonPion/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/MuonPion/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisMom});
-      histos.add("EventTwoTracks/MuonPion/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/MuonPion/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/MuonPion/hDaughtersPhi", ";Daughter 1 #phi (rad);Daughter 2 #phi (rad)", HistType::kTH2D, {confAxis.zzAxisPhi, confAxis.zzAxisPhi});
-      histos.add("EventTwoTracks/MuonPion/hDaughtersRapidity", ";Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)", HistType::kTH2D, {confAxis.zzAxisRap, confAxis.zzAxisRap});
-      histos.add("EventTwoTracks/MuonPion/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisTPCdEdx});
 
       histos.add("EventTwoTracks/ElectronMuPi/hNeventsPtCuts", ";Selection (-);Number of events (-)", HistType::kTH1D, {{20, -0.5, 19.5}});
       histos.add("EventTwoTracks/ElectronMuPi/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
@@ -617,42 +533,65 @@ struct UpcTauRl {
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsPPofO", ";Not-electron #it{p} (GeV/c);n#sigma^{#pi}_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaEvsnSigmaPofO", ";Not-electron n#sigma^{e}_{TOF} (arb. units);Not-electron n#sigma^{#pi}_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisNsigma, confAxis.zzAxisNsigma});
 
-      histos.add("EventTwoTracks/ElectronOther/hNeventsPtCuts", ";Selection (-);Number of events (-)", HistType::kTH1D, {{20, -0.5, 19.5}});
-      histos.add("EventTwoTracks/ElectronOther/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
-      histos.add("EventTwoTracks/ElectronOther/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
-      histos.add("EventTwoTracks/ElectronOther/hAcoplanarity", ";#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisAcoplanarity});
-      histos.add("EventTwoTracks/ElectronOther/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMom});
-      histos.add("EventTwoTracks/ElectronOther/hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/ElectronOther/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/ElectronOther/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPhi});
-      histos.add("EventTwoTracks/ElectronOther/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisRap});
-      histos.add("EventTwoTracks/ElectronOther/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/ElectronOther/hElectronPt", ";Electron #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/ElectronOther/hElectronPtWide", ";Electron #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/ElectronOther/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisMom});
-      histos.add("EventTwoTracks/ElectronOther/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/ElectronOther/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/ElectronOther/hDaughtersPhi", ";Daughter 1 #phi (rad);Daughter 2 #phi (rad)", HistType::kTH2D, {confAxis.zzAxisPhi, confAxis.zzAxisPhi});
-      histos.add("EventTwoTracks/ElectronOther/hDaughtersRapidity", ";Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)", HistType::kTH2D, {confAxis.zzAxisRap, confAxis.zzAxisRap});
-      histos.add("EventTwoTracks/ElectronOther/hElectronPvsOtherP", ";Electron #it{p} (GeV/c); Other #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisMom});
-      histos.add("EventTwoTracks/ElectronOther/hElectronPwideVsOtherPwide", ";Electron #it{p} (GeV/c); Other #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
-      histos.add("EventTwoTracks/ElectronOther/hElectronPtVsOtherPt", ";Electron #it{p_{T}} (GeV/c); Other #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisPt});
-      histos.add("EventTwoTracks/ElectronOther/hElectronPhiVsOtherPhi", ";Electron #phi (rad); Other #phi (rad)", HistType::kTH2D, {confAxis.zzAxisPhi, confAxis.zzAxisPhi});
-      histos.add("EventTwoTracks/ElectronOther/hElectronRapVsOtherRap", ";Electron #it{y} (-); Other #it{y} (-)", HistType::kTH2D, {confAxis.zzAxisRap, confAxis.zzAxisRap});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisTPCdEdx});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTPCsignalVsEP", ";Electron #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisTPCdEdx});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTPCsignalVsOP", ";#it{e}/#mu/#pi #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisTPCdEdx});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTOFsignalVsP", ";Track #it{p} (GeV/c);TOF signal (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisTOFsignal});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTOFsignalVsEP", ";Electron #it{p} (GeV/c);TOF signal (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisTOFsignal});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTOFsignalVsOP", ";Other #it{p} (GeV/c);TOF signal (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisTOFsignal});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTPCnSigmaVsP", ";Track #it{p} (GeV/c);n#sigma_{TPC} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTPCnSigmaVsEP", ";Electron #it{p} (GeV/c);n#sigma_{TPC} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTPCnSigmaVsMP", ";Muon #it{p} (GeV/c);n#sigma_{TPC} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTPCnSigmaVsPP", ";Pion #it{p} (GeV/c);n#sigma_{TPC} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsP", ";Track #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsEP", ";Electron #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsMP", ";Muon #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
-      histos.add("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsPP", ";Pion #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
+      if (doMixedEventsHistos) {
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hInvariantMass", "Mixed events;Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hInvariantMassWide", "Mixed events;Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hAcoplanarity", "Mixed events;#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisAcoplanarity});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hCollinearity", "Mixed events;#DeltaR (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisCollinearity});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hMotherP", "Mixed events;Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMom});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hMotherPwide", "Mixed events;Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMomWide});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hMotherPt", "Mixed events;Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPt});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hMotherPhi", "Mixed events;Mother #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPhi});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hMotherRapidity", "Mixed events;Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisRap});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hMotherMassVsPt", "Mixed events;Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisPt});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hDaughtersP", "Mixed events;Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisMom});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hDaughtersPwide", "Mixed events;Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hDaughtersPt", "Mixed events;Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisPt});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hDaughtersPhi", "Mixed events;Daughter 1 #phi (rad);Daughter 2 #phi (rad)", HistType::kTH2D, {confAxis.zzAxisPhi, confAxis.zzAxisPhi});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hDaughtersPtvsModPhi", "Mixed events;Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisModPhi});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hDaughtersRapidity", "Mixed events;Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)", HistType::kTH2D, {confAxis.zzAxisRap, confAxis.zzAxisRap});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingP", "Mixed events;Leading #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMom});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPwide", "Mixed events;Leading #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMomWide});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPt", "Mixed events;Leading #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPt});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPhi", "Mixed events;Leading #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPhi});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingRapidity", "Mixed events;Leading #it{y} (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisRap});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPvsOtherP", "Mixed events;Leading #it{p} (GeV/c); Other #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisMom});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPwideVsOtherPwide", "Mixed events;Leading #it{p} (GeV/c); Other #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPtVsOtherPt", "Mixed events;Leading #it{p_{T}} (GeV/c); Other #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisPt});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPhiVsOtherPhi", "Mixed events;Leading #phi (rad); Other #phi (rad)", HistType::kTH2D, {confAxis.zzAxisPhi, confAxis.zzAxisPhi});
+        histos.add("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingRapVsOtherRap", "Mixed events;Leading #it{y} (-); Other #it{y} (-)", HistType::kTH2D, {confAxis.zzAxisRap, confAxis.zzAxisRap});
+
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hInvariantMass", "Mixed events;Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hInvariantMassWide", "Mixed events;Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hAcoplanarity", "Mixed events;#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisAcoplanarity});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hCollinearity", "Mixed events;#DeltaR (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisCollinearity});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherP", "Mixed events;Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMom});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherPwide", "Mixed events;Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMomWide});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherPt", "Mixed events;Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPt});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherPhi", "Mixed events;Mother #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPhi});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherRapidity", "Mixed events;Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisRap});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherMassVsPt", "Mixed events;Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisPt});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherMassVsElectronP", "Mixed events;Invariant mass (GeV/c^{2});Electron #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisMomWide});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherMassVsAcoplanarity", "Mixed events;Invariant mass (GeV/c^{2});#Delta#phi (rad)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisAcoplanarity});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPt", "Mixed events;Electron #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPt});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPtWide", "Mixed events;Electron #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMomWide});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersEnergyAsymmetry", "Mixed events;(E_{electron} - E_{#mu/#pi}) / (E_{electron} + E_{#mu/#pi});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMirrorFraction});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersMomentaAsymmetry", "Mixed events;(#it{p}_{electron} - #it{p}_{#mu/#pi}) / (#it{p}_{electron} + #it{p}_{#mu/#pi});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMirrorFraction});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersPtAsymmetry", "Mixed events;(#it{p_{T}}_{electron} - #it{p_{T}}_{#mu/#pi}) / (#it{p_{T}}_{electron} + #it{p_{T}}_{#mu/#pi});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMirrorFraction});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersP", "Mixed events;Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisMom});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersPwide", "Mixed events;Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersPt", "Mixed events;Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisPt});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersPhi", "Mixed events;Daughter 1 #phi (rad);Daughter 2 #phi (rad)", HistType::kTH2D, {confAxis.zzAxisPhi, confAxis.zzAxisPhi});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersRapidity", "Mixed events;Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)", HistType::kTH2D, {confAxis.zzAxisRap, confAxis.zzAxisRap});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersEnergyFractions", "Mixed events;E_{electron} / E_{tot} (-);E_{#mu/#pi} / E_{tot} (-)", HistType::kTH2D, {confAxis.zzAxisFraction, confAxis.zzAxisFraction});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPvsOtherP", "Mixed events;Electron #it{p} (GeV/c); #mu/#pi #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisMom});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPwideVsOtherPwide", "Mixed events;Electron #it{p} (GeV/c); #mu/#pi #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPvsAcoplanarity", "Mixed events;Electron #it{p} (GeV/c); #Delta#phi (rad)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisAcoplanarity});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hOtherPvsAcoplanarity", "Mixed events;#mu/#pi #it{p} (GeV/c); #Delta#phi (rad)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisAcoplanarity});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPtVsOtherPt", "Mixed events;Electron #it{p_{T}} (GeV/c); #mu/#pi #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisPt});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPhiVsOtherPhi", "Mixed events;Electron #phi (rad); #mu/#pi #phi (rad)", HistType::kTH2D, {confAxis.zzAxisPhi, confAxis.zzAxisPhi});
+        histos.add("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronRapVsOtherRap", "Mixed events;Electron #it{y} (-); #mu/#pi #it{y} (-)", HistType::kTH2D, {confAxis.zzAxisRap, confAxis.zzAxisRap});
+      }
     }
 
     if (doTruthHistos) {
@@ -1013,6 +952,10 @@ struct UpcTauRl {
     return true;
   }
 
+  // Define vectors to store info for mixed event analysis
+  std::vector<std::pair<int, int>> vecMixElEl;
+  std::vector<std::pair<int, int>> vecMixElMupion;
+
   template <typename Ts>
   void fillHistograms(Ts const& reconstructedBarrelTracks)
   {
@@ -1124,10 +1067,28 @@ struct UpcTauRl {
     histos.get<TH1>(HIST("Events/hNreconstructedPVGTothers"))->Fill(countPVGTothers);
 
     bool isTwoSelectedTracks = (cutTauEvent.useThresholdsPID ? countPVGTelmupiAlt == 2 : countPVGTselected == 2);
+    bool isElEl = (cutTauEvent.useThresholdsPID ? countPVGTelectronsAlt == 2 : countPVGTelectrons == 2);
+    bool isPiPi = (cutTauEvent.useThresholdsPID ? countPVGTmupionsAlt == 2 : (countPVGTmuons == 2 || (countPVGTmuons == 1 && countPVGTpions == 1) || countPVGTpions == 2));
+    bool isFourPion = (cutTauEvent.useThresholdsPID ? countPVGTmupionsAlt == 4 : countPVGTpions == 4);
+    bool isElThreePion = (cutTauEvent.useThresholdsPID ? (countPVGTelectronsAlt == 1 && countPVGTmupionsAlt == 3) : (countPVGTelectrons == 1 && (countPVGTmuons == 3 || (countPVGTmuons == 2 && countPVGTpions == 1) || (countPVGTmuons == 1 && countPVGTpions == 2) || countPVGTpions == 3)));
+    bool isSixPion = (cutTauEvent.useThresholdsPID ? countPVGTmupionsAlt == 6 : countPVGTpions == 6);
     bool isElMuPion = (cutTauEvent.useThresholdsPID ? (countPVGTelectronsAlt == 1 && countPVGTmupionsAlt == 1) : ((countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)));
+
+    if (isElEl)
+      histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_EE);
+    if (isPiPi)
+      histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_PIPI);
+    if (isFourPion)
+      histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_FOURPI);
+    if (isElThreePion)
+      histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_ETHREEPI);
+    if (isSixPion)
+      histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_SIXPI);
+    if (isElMuPion)
+      histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_EMUPI);
+
     if (isTwoSelectedTracks && doTwoTracks) {
       TLorentzVector mother, daug[2], motherOfPions, pion[2], motherOfMuons, muon[2];
-
       const auto& trkDaug1 = reconstructedBarrelTracks.iteratorAt(cutTauEvent.useThresholdsPID ? vecPVnewPIDidx[0] : vecPVidx[0]);
       const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(cutTauEvent.useThresholdsPID ? vecPVnewPIDidx[1] : vecPVidx[1]);
       daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
@@ -1154,7 +1115,6 @@ struct UpcTauRl {
       if (cutTauEvent.applyTauEventSelection && !selectedTauEvent(trkDaug1, trkDaug2)) {
         return;
       }
-
       histos.get<TH1>(HIST("EventTwoTracks/hInvariantMass"))->Fill(mother.M());
       histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWide"))->Fill(mother.M());
       histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWideAllPionMass"))->Fill(motherOfPions.M());
@@ -1186,12 +1146,12 @@ struct UpcTauRl {
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPvsITSclusterSizeXcos"))->Fill(getAvgITSClSize(trkDaug1) * getCosLambda(trkDaug1), trkDaug1.sign() * daug[0].P());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPvsITSclusterSizeXcos"))->Fill(getAvgITSClSize(trkDaug2) * getCosLambda(trkDaug2), trkDaug2.sign() * daug[1].P());
 
-      // ee, mm, em, pp, ep, mp, pppp, eppp, mppp, pppppp
-      if (countPVGTelectrons == 2) {
-        histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_EE);
+      if (isElEl) {
+        cutTauEvent.useThresholdsPID ? vecMixElEl.push_back(std::make_pair(vecPVnewPIDidx[0], vecPVnewPIDidx[1])) : vecMixElEl.push_back(std::make_pair(vecPVidx[0], vecPVidx[1]));
         histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hInvariantMass"))->Fill(mother.M());
         histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hInvariantMassWide"))->Fill(mother.M());
         histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hAcoplanarity"))->Fill(acoplanarity);
+        histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hCollinearity"))->Fill(collinearity);
         histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hMotherP"))->Fill(mother.P());
         histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hMotherPwide"))->Fill(mother.P());
         histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hMotherPt"))->Fill(mother.Pt());
@@ -1229,131 +1189,26 @@ struct UpcTauRl {
           histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/hDaughtersPtvsModPhiTOF"))->Fill(daug[1].P(), getPhiModN(daug[1].Phi(), trkDaug2.sign(), 1));
         }
       }
-      if (countPVGTmuons == 2) {
-        histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_MUMU);
-        histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hInvariantMass"))->Fill(mother.M());
-        histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hInvariantMassWide"))->Fill(mother.M());
-        histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hAcoplanarity"))->Fill(acoplanarity);
-        histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hMotherP"))->Fill(mother.P());
-        histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hMotherPwide"))->Fill(mother.P());
-        histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hMotherPt"))->Fill(mother.Pt());
-        histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hMotherPhi"))->Fill(mother.Phi());
-        histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hMotherRapidity"))->Fill(mother.Rapidity());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPtvsModPhi"))->Fill(daug[0].P(), getPhiModN(daug[0].Phi(), trkDaug1.sign(), 1));
-        histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPtvsModPhi"))->Fill(daug[1].P(), getPhiModN(daug[1].Phi(), trkDaug2.sign(), 1));
-        if (mother.Pt() < 0.2) {
-          histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hInvariantMassWidePtCut"))->Fill(mother.M());
-          histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPtvsModPhiPtCut"))->Fill(daug[0].P(), getPhiModN(daug[0].Phi(), trkDaug1.sign(), 1));
-          histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPtvsModPhiPtCut"))->Fill(daug[1].P(), getPhiModN(daug[1].Phi(), trkDaug2.sign(), 1));
-          if (countTOFtracks == 2) {
-            histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPtvsModPhiPtCutTOF"))->Fill(daug[0].P(), getPhiModN(daug[0].Phi(), trkDaug1.sign(), 1));
-            histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPtvsModPhiPtCutTOF"))->Fill(daug[1].P(), getPhiModN(daug[1].Phi(), trkDaug2.sign(), 1));
-          }
-        }
-        if (countTOFtracks == 2) {
-          histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPtvsModPhiTOF"))->Fill(daug[0].P(), getPhiModN(daug[0].Phi(), trkDaug1.sign(), 1));
-          histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPtvsModPhiTOF"))->Fill(daug[1].P(), getPhiModN(daug[1].Phi(), trkDaug2.sign(), 1));
-        }
-      }
-      if (countPVGTelectrons == 1 && countPVGTmuons == 1) {
-        histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_EMU);
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuon/hInvariantMass"))->Fill(mother.M());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuon/hInvariantMassWide"))->Fill(mother.M());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuon/hAcoplanarity"))->Fill(acoplanarity);
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuon/hMotherP"))->Fill(mother.P());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuon/hMotherPwide"))->Fill(mother.P());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuon/hMotherPt"))->Fill(mother.Pt());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuon/hMotherPhi"))->Fill(mother.Phi());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuon/hMotherRapidity"))->Fill(mother.Rapidity());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuon/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuon/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuon/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuon/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuon/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuon/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
-      }
-      if (countPVGTpions == 2) {
-        histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_PIPI);
-        histos.get<TH1>(HIST("EventTwoTracks/TwoPions/hInvariantMass"))->Fill(mother.M());
-        histos.get<TH1>(HIST("EventTwoTracks/TwoPions/hInvariantMassWide"))->Fill(mother.M());
-        histos.get<TH1>(HIST("EventTwoTracks/TwoPions/hAcoplanarity"))->Fill(acoplanarity);
-        histos.get<TH1>(HIST("EventTwoTracks/TwoPions/hMotherP"))->Fill(mother.P());
-        histos.get<TH1>(HIST("EventTwoTracks/TwoPions/hMotherPwide"))->Fill(mother.P());
-        histos.get<TH1>(HIST("EventTwoTracks/TwoPions/hMotherPt"))->Fill(mother.Pt());
-        histos.get<TH1>(HIST("EventTwoTracks/TwoPions/hMotherPhi"))->Fill(mother.Phi());
-        histos.get<TH1>(HIST("EventTwoTracks/TwoPions/hMotherRapidity"))->Fill(mother.Rapidity());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
-        histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersPtvsModPhi"))->Fill(daug[0].P(), getPhiModN(daug[0].Phi(), trkDaug1.sign(), 1));
-        histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersPtvsModPhi"))->Fill(daug[1].P(), getPhiModN(daug[1].Phi(), trkDaug2.sign(), 1));
-        if (mother.Pt() < 0.2) {
-          histos.get<TH1>(HIST("EventTwoTracks/TwoPions/hInvariantMassWidePtCut"))->Fill(mother.M());
-          histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersPtvsModPhiPtCut"))->Fill(daug[0].P(), getPhiModN(daug[0].Phi(), trkDaug1.sign(), 1));
-          histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersPtvsModPhiPtCut"))->Fill(daug[1].P(), getPhiModN(daug[1].Phi(), trkDaug2.sign(), 1));
-          if (countTOFtracks == 2) {
-            histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersPtvsModPhiPtCutTOF"))->Fill(daug[0].P(), getPhiModN(daug[0].Phi(), trkDaug1.sign(), 1));
-            histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersPtvsModPhiPtCutTOF"))->Fill(daug[1].P(), getPhiModN(daug[1].Phi(), trkDaug2.sign(), 1));
-          }
-        }
-        if (countTOFtracks == 2) {
-          histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersPtvsModPhiTOF"))->Fill(daug[0].P(), getPhiModN(daug[0].Phi(), trkDaug1.sign(), 1));
-          histos.get<TH2>(HIST("EventTwoTracks/TwoPions/hDaughtersPtvsModPhiTOF"))->Fill(daug[1].P(), getPhiModN(daug[1].Phi(), trkDaug2.sign(), 1));
-        }
-      }
-      if (countPVGTelectrons == 1 && countPVGTpions == 1) {
-        histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_EPI);
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronPion/hInvariantMass"))->Fill(mother.M());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronPion/hInvariantMassWide"))->Fill(mother.M());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronPion/hAcoplanarity"))->Fill(acoplanarity);
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronPion/hMotherP"))->Fill(mother.P());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronPion/hMotherPwide"))->Fill(mother.P());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronPion/hMotherPt"))->Fill(mother.Pt());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronPion/hMotherPhi"))->Fill(mother.Phi());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronPion/hMotherRapidity"))->Fill(mother.Rapidity());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronPion/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronPion/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronPion/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronPion/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronPion/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronPion/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
-      }
-      if (countPVGTpions == 1 && countPVGTmuons == 1) {
-        histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_MUPI);
-        histos.get<TH1>(HIST("EventTwoTracks/MuonPion/hInvariantMass"))->Fill(mother.M());
-        histos.get<TH1>(HIST("EventTwoTracks/MuonPion/hInvariantMassWide"))->Fill(mother.M());
-        histos.get<TH1>(HIST("EventTwoTracks/MuonPion/hAcoplanarity"))->Fill(acoplanarity);
-        histos.get<TH1>(HIST("EventTwoTracks/MuonPion/hMotherP"))->Fill(mother.P());
-        histos.get<TH1>(HIST("EventTwoTracks/MuonPion/hMotherPwide"))->Fill(mother.P());
-        histos.get<TH1>(HIST("EventTwoTracks/MuonPion/hMotherPt"))->Fill(mother.Pt());
-        histos.get<TH1>(HIST("EventTwoTracks/MuonPion/hMotherPhi"))->Fill(mother.Phi());
-        histos.get<TH1>(HIST("EventTwoTracks/MuonPion/hMotherRapidity"))->Fill(mother.Rapidity());
-        histos.get<TH2>(HIST("EventTwoTracks/MuonPion/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/MuonPion/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
-        histos.get<TH2>(HIST("EventTwoTracks/MuonPion/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
-        histos.get<TH2>(HIST("EventTwoTracks/MuonPion/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/MuonPion/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
-        histos.get<TH2>(HIST("EventTwoTracks/MuonPion/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
-        if (mother.Pt() < 0.2) {
-          histos.get<TH1>(HIST("EventTwoTracks/MuonPion/hInvariantMassWidePtCut"))->Fill(mother.M());
-        }
-      }
       if (isElMuPion) {
-        double electronPt = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
-        double electronP = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].P() : daug[1].P();
-        double electronE = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].E() : daug[1].E();
-        double mupionPt = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].Pt() : daug[0].Pt();
-        double mupionP = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].P() : daug[0].P();
-        double mupionE = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].E() : daug[0].E();
+        if (cutTauEvent.useThresholdsPID) {
+          if (isElectronCandidate(trkDaug1)) {
+            vecMixElMupion.push_back(std::make_pair(vecPVnewPIDidx[0], vecPVnewPIDidx[1])); // storing electron first
+          } else {
+            vecMixElMupion.push_back(std::make_pair(vecPVnewPIDidx[1], vecPVnewPIDidx[0]));
+          }
+        } else {
+          if (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) {
+            vecMixElMupion.push_back(std::make_pair(vecPVidx[0], vecPVidx[1])); // storing electron first
+          } else {
+            vecMixElMupion.push_back(std::make_pair(vecPVidx[1], vecPVidx[0]));
+          }
+        }
+        const auto& electronPt = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
+        const auto& electronP = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].P() : daug[1].P();
+        const auto& electronE = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].E() : daug[1].E();
+        const auto& mupionPt = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].Pt() : daug[0].Pt();
+        const auto& mupionP = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].P() : daug[0].P();
+        const auto& mupionE = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].E() : daug[0].E();
 
         TLorentzVector motherOfPiKaon, kaon;
         if (isElectronCandidate(trkDaug1)) {
@@ -1363,7 +1218,6 @@ struct UpcTauRl {
           kaon.SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassKaonCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
           motherOfPiKaon = daug[0] + kaon;
         }
-        histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_EMUPI);
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hInvariantMass"))->Fill(mother.M());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hInvariantMassWide"))->Fill(mother.M());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/PionsSelection/hInvariantMass"))->Fill(motherOfPions.M());
@@ -1439,65 +1293,6 @@ struct UpcTauRl {
           histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hNeventsPtCuts"))->Fill(11);
         if (electronPt > 2. && electronPt < 100.)
           histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hNeventsPtCuts"))->Fill(12);
-      }
-      if ((countPVGTelectrons == 2) || (countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)) {
-        double electronPt = (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
-        if (countPVGTelectrons == 2)
-          electronPt = (daug[0].Pt() > daug[1].Pt()) ? daug[0].Pt() : daug[1].Pt();
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hInvariantMass"))->Fill(mother.M());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hInvariantMassWide"))->Fill(mother.M());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hAcoplanarity"))->Fill(acoplanarity);
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hMotherP"))->Fill(mother.P());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hMotherPwide"))->Fill(mother.P());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hMotherPt"))->Fill(mother.Pt());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hMotherPhi"))->Fill(mother.Phi());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hMotherRapidity"))->Fill(mother.Rapidity());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hElectronPt"))->Fill(electronPt);
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hElectronPtWide"))->Fill(electronPt);
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
-        if (countPVGTelectrons == 2) {
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPvsOtherP"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].P() : daug[1].P()), ((daug[0].P() > daug[1].P()) ? daug[1].P() : daug[0].P()));
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPwideVsOtherPwide"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].P() : daug[1].P()), ((daug[0].P() > daug[1].P()) ? daug[1].P() : daug[0].P()));
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPtVsOtherPt"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Pt() : daug[1].Pt()), ((daug[0].P() > daug[1].P()) ? daug[1].Pt() : daug[0].Pt()));
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPhiVsOtherPhi"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Phi() : daug[1].Phi()), ((daug[0].P() > daug[1].P()) ? daug[1].Phi() : daug[0].Phi()));
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronRapVsOtherRap"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Rapidity() : daug[1].Rapidity()), ((daug[0].P() > daug[1].P()) ? daug[1].Rapidity() : daug[0].Rapidity()));
-        } else {
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPvsOtherP"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].P() : daug[1].P(), (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].P() : daug[0].P());
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPwideVsOtherPwide"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].P() : daug[1].P(), (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].P() : daug[0].P());
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPtVsOtherPt"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt(), (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].Pt() : daug[0].Pt());
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPhiVsOtherPhi"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Phi() : daug[1].Phi(), (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].Phi() : daug[0].Phi());
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronRapVsOtherRap"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Rapidity() : daug[1].Rapidity(), (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].Rapidity() : daug[0].Rapidity());
-        }
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(0);
-        if (mother.Pt() < 9.)
-          histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(1);
-        if (mother.Pt() < 8.)
-          histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(2);
-        if (mother.Pt() < 7.)
-          histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(3);
-        if (mother.Pt() < 6.)
-          histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(4);
-        if (mother.Pt() < 5.)
-          histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(5);
-        if (mother.Pt() < 4.)
-          histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(6);
-        if (mother.Pt() < 3.)
-          histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(7);
-        if (mother.Pt() < 2.)
-          histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(8);
-        if (mother.Pt() < 1.)
-          histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(9);
-        if (electronPt > 0.1 && electronPt < 1.)
-          histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(10);
-        if (electronPt > 1. && electronPt < 2.)
-          histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(11);
-        if (electronPt > 2. && electronPt < 100.)
-          histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(12);
       }
     } else {
       printDebugMessage("Other particles");
@@ -1768,6 +1563,7 @@ struct UpcTauRl {
     }
 
     bool isTwoSelectedTracks = (cutTauEvent.useThresholdsPID ? countPVGTelmupiAlt == 2 : countPVGTselected == 2);
+    bool isElEl = (cutTauEvent.useThresholdsPID ? countPVGTelectronsAlt == 2 : countPVGTelectrons == 2);
     bool isElMuPion = (cutTauEvent.useThresholdsPID ? (countPVGTelectronsAlt == 1 && countPVGTmupionsAlt == 1) : ((countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)));
     if (isTwoSelectedTracks && doTwoTracks) {
       TLorentzVector daug[2], pion[2], muon[2];
@@ -1792,7 +1588,6 @@ struct UpcTauRl {
         if (isMuPionCandidate(trkDaug2))
           daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       }
-
       if (trkDaug1.hasTPC()) {
         histos.get<TH2>(HIST("EventTwoTracks/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
         histos.get<TH2>(HIST("EventTwoTracks/PID/hTPCnSigmaElVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaEl());
@@ -1803,7 +1598,7 @@ struct UpcTauRl {
         if (trkDaug1.hasTOF()) {
           histos.get<TH2>(HIST("EventTwoTracks/PID/hTOFsignalVsP"))->Fill(daug[0].P(), trkDaug1.tofSignal());
         }
-        if (countPVGTelectrons == 2) {
+        if (isElEl) {
           histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
           histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCnSigmaVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaEl());
           if (trkDaug1.hasTOF()) {
@@ -1811,30 +1606,12 @@ struct UpcTauRl {
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsP"))->Fill(daug[0].P(), trkDaug1.tofNSigmaEl());
           }
         }
-        if (countPVGTmuons == 2)
-          histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
-        if (countPVGTpions == 2)
-          histos.get<TH2>(HIST("EventTwoTracks/TwoPions/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
-        if (countPVGTelectrons == 1 && countPVGTmuons == 1)
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronMuon/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
-        if (countPVGTelectrons == 1 && countPVGTpions == 1)
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronPion/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
-        if (countPVGTpions == 1 && countPVGTmuons == 1)
-          histos.get<TH2>(HIST("EventTwoTracks/MuonPion/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
         if (isElMuPion) {
           histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
           histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTPCnSigmaVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaEl());
           if (trkDaug1.hasTOF()) {
             histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFsignalVsP"))->Fill(daug[0].P(), trkDaug1.tofSignal());
             histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsP"))->Fill(daug[0].P(), trkDaug1.tofNSigmaEl());
-          }
-        }
-        if ((countPVGTelectrons == 2) || (countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)) {
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTPCnSigmaVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaEl());
-          if (trkDaug1.hasTOF()) {
-            histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFsignalVsP"))->Fill(daug[0].P(), trkDaug1.tofSignal());
-            histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsP"))->Fill(daug[0].P(), trkDaug1.tofNSigmaEl());
           }
         }
       }
@@ -1848,7 +1625,7 @@ struct UpcTauRl {
         if (trkDaug2.hasTOF()) {
           histos.get<TH2>(HIST("EventTwoTracks/PID/hTOFsignalVsP"))->Fill(daug[1].P(), trkDaug2.tofSignal());
         }
-        if (countPVGTelectrons == 2) {
+        if (isElEl) {
           histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
           histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCnSigmaVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaEl());
           if (trkDaug2.hasTOF()) {
@@ -1856,16 +1633,6 @@ struct UpcTauRl {
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsP"))->Fill(daug[1].P(), trkDaug2.tofNSigmaEl());
           }
         }
-        if (countPVGTmuons == 2)
-          histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/PID/hTPCsignalVsP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
-        if (countPVGTpions == 2)
-          histos.get<TH2>(HIST("EventTwoTracks/TwoPions/PID/hTPCsignalVsP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
-        if (countPVGTelectrons == 1 && countPVGTmuons == 1)
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronMuon/PID/hTPCsignalVsP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
-        if (countPVGTelectrons == 1 && countPVGTpions == 1)
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronPion/PID/hTPCsignalVsP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
-        if (countPVGTpions == 1 && countPVGTmuons == 1)
-          histos.get<TH2>(HIST("EventTwoTracks/MuonPion/PID/hTPCsignalVsP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
         if (isElMuPion) {
           histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTPCsignalVsP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
           histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTPCnSigmaVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaEl());
@@ -1874,17 +1641,9 @@ struct UpcTauRl {
             histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsP"))->Fill(daug[1].P(), trkDaug2.tofNSigmaEl());
           }
         }
-        if ((countPVGTelectrons == 2) || (countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)) {
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTPCsignalVsP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTPCnSigmaVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaEl());
-          if (trkDaug2.hasTOF()) {
-            histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFsignalVsP"))->Fill(daug[1].P(), trkDaug2.tofSignal());
-            histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsP"))->Fill(daug[1].P(), trkDaug2.tofNSigmaEl());
-          }
-        }
       }
       if (trkDaug1.hasTPC() && trkDaug2.hasTPC()) {
-        if (countPVGTelectrons == 2) {
+        if (!isMC && isElEl) {
           if (daug[0].P() > daug[1].P()) {
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsLP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsOP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
@@ -1951,49 +1710,6 @@ struct UpcTauRl {
             }
           }
         }
-        if ((countPVGTelectrons == 2) || (countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)) {
-          double electronPt = (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
-          double electronPID = (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcSignal() : trkDaug2.tpcSignal();
-          double electronNsigmaEl = (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcNSigmaEl() : trkDaug2.tpcNSigmaEl();
-          double otherPt = (enumMyParticle(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
-          double otherPID = (enumMyParticle(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcSignal() : trkDaug2.tpcSignal();
-          double otherNsigmaMu = (enumMyParticle(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcNSigmaMu() : trkDaug2.tpcNSigmaMu();
-          double otherNsigmaPi = (enumMyParticle(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcNSigmaPi() : trkDaug2.tpcNSigmaPi();
-          if (countPVGTelectrons == 2) {
-            electronPt = (daug[0].Pt() > daug[1].Pt()) ? daug[0].Pt() : daug[1].Pt();
-            electronPID = (daug[0].Pt() > daug[1].Pt()) ? trkDaug1.tpcSignal() : trkDaug2.tpcSignal();
-            electronNsigmaEl = (daug[0].Pt() > daug[1].Pt()) ? trkDaug1.tpcNSigmaEl() : trkDaug2.tpcNSigmaEl();
-            otherPt = (daug[0].Pt() > daug[1].Pt()) ? daug[1].Pt() : daug[0].Pt();
-            otherPID = (daug[0].Pt() > daug[1].Pt()) ? trkDaug2.tpcSignal() : trkDaug1.tpcSignal();
-            otherNsigmaMu = (daug[0].Pt() > daug[1].Pt()) ? trkDaug2.tpcNSigmaMu() : trkDaug1.tpcNSigmaMu();
-            otherNsigmaPi = (daug[0].Pt() > daug[1].Pt()) ? trkDaug2.tpcNSigmaPi() : trkDaug1.tpcNSigmaPi();
-          }
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTPCsignalVsEP"))->Fill(electronPt, electronPID);
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTPCsignalVsOP"))->Fill(otherPt, otherPID);
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTPCnSigmaVsEP"))->Fill(electronPt, electronNsigmaEl);
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTPCnSigmaVsMP"))->Fill(otherPt, otherNsigmaMu);
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTPCnSigmaVsPP"))->Fill(otherPt, otherNsigmaPi);
-          if (trkDaug1.hasTOF()) {
-            if (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) {
-              histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFsignalVsEP"))->Fill(electronPt, trkDaug1.tofSignal());
-              histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsEP"))->Fill(electronPt, trkDaug1.tofNSigmaEl());
-            } else {
-              histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFsignalVsOP"))->Fill(otherPt, trkDaug1.tofSignal());
-              histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsMP"))->Fill(otherPt, trkDaug1.tofNSigmaMu());
-              histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsPP"))->Fill(otherPt, trkDaug1.tofNSigmaPi());
-            }
-          }
-          if (trkDaug2.hasTOF()) {
-            if (enumMyParticle(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) {
-              histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFsignalVsEP"))->Fill(electronPt, trkDaug2.tofSignal());
-              histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsEP"))->Fill(electronPt, trkDaug2.tofNSigmaEl());
-            } else {
-              histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFsignalVsOP"))->Fill(otherPt, trkDaug2.tofSignal());
-              histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsMP"))->Fill(otherPt, trkDaug2.tofNSigmaMu());
-              histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsPP"))->Fill(otherPt, trkDaug2.tofNSigmaPi());
-            }
-          }
-        }
       }
     } else {
       printDebugMessage("Other particles");
@@ -2048,6 +1764,7 @@ struct UpcTauRl {
     } // Loop over tracks with selections
 
     bool isTwoSelectedTracks = (cutTauEvent.useThresholdsPID ? countPVGTelmupiAlt == 2 : countPVGTselected == 2);
+    bool isElEl = (cutTauEvent.useThresholdsPID ? countPVGTelectronsAlt == 2 : countPVGTelectrons == 2);
     bool isElMuPion = (cutTauEvent.useThresholdsPID ? (countPVGTelectronsAlt == 1 && countPVGTmupionsAlt == 1) : ((countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)));
     if (isTwoSelectedTracks && doTwoTracks) {
       TLorentzVector daug[2];
@@ -2069,7 +1786,35 @@ struct UpcTauRl {
           daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       }
       if (trkDaug1.hasTPC() && trkDaug2.hasTPC()) {
-
+        if (isMC && isElEl) {
+          if (daug[0].P() > daug[1].P()) {
+            histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsLP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
+            histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsOP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
+            histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCnSigmaVsLP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaEl());
+            histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCnSigmaVsOP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaEl());
+            if (trkDaug1.hasTOF()) {
+              histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFsignalVsLP"))->Fill(daug[0].P(), trkDaug1.tofSignal());
+              histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsLP"))->Fill(daug[0].P(), trkDaug1.tofNSigmaEl());
+            }
+            if (trkDaug2.hasTOF()) {
+              histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFsignalVsOP"))->Fill(daug[1].P(), trkDaug2.tofSignal());
+              histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsOP"))->Fill(daug[1].P(), trkDaug2.tofNSigmaEl());
+            }
+          } else {
+            histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsOP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
+            histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsLP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
+            histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCnSigmaVsOP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaEl());
+            histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCnSigmaVsLP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaEl());
+            if (trkDaug1.hasTOF()) {
+              histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFsignalVsOP"))->Fill(daug[0].P(), trkDaug1.tofSignal());
+              histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsOP"))->Fill(daug[0].P(), trkDaug1.tofNSigmaEl());
+            }
+            if (trkDaug2.hasTOF()) {
+              histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFsignalVsLP"))->Fill(daug[1].P(), trkDaug2.tofSignal());
+              histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTOFnSigmaVsLP"))->Fill(daug[1].P(), trkDaug2.tofNSigmaEl());
+            }
+          }
+        }
         if (isMC && isElMuPion) {
           int pid = 0;
           if (trkDaug1.has_udMcParticle()) {
@@ -2263,146 +2008,268 @@ struct UpcTauRl {
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_SIXPI);
   }
 
-  void processDataDG(FullUDCollision const& reconstructedCollision,
+  template <typename Ts>
+  void fillMixedEventHistograms(Ts const& reconstructedBarrelTracks)
+  {
+    TLorentzVector mother, daug[2];
+    for (int idx = 0; idx < static_cast<int>(vecMixElEl.size()); idx++) {
+      for (int cnt = 0; cnt < 5; cnt++) {
+        std::random_device rand_dev;
+        std::mt19937 generator(rand_dev());
+        std::uniform_int_distribution<int> distr(0, static_cast<int>(vecMixElEl.size()));
+        int idx2 = distr(generator);
+        while (idx == idx2)
+          idx2 = distr(generator);
+        const auto& trkDaug1 = reconstructedBarrelTracks.iteratorAt(vecMixElEl[idx].first);
+        const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(vecMixElEl[idx2].second);
+        daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassElectron, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+        daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassElectron, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+        mother = daug[0] + daug[1];
+        const auto acoplanarity = calculateAcoplanarity(daug[0].Phi(), daug[1].Phi());
+        const auto collinearity = calculateCollinearity(daug[0].Eta(), daug[1].Eta(), daug[0].Phi(), daug[1].Phi());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hInvariantMass"))->Fill(mother.M());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hInvariantMassWide"))->Fill(mother.M());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hAcoplanarity"))->Fill(acoplanarity);
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hCollinearity"))->Fill(collinearity);
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hMotherP"))->Fill(mother.P());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hMotherPwide"))->Fill(mother.P());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hMotherPt"))->Fill(mother.Pt());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hMotherPhi"))->Fill(mother.Phi());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hDaughtersPtvsModPhi"))->Fill(daug[0].P(), getPhiModN(daug[0].Phi(), trkDaug1.sign(), 1));
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hDaughtersPtvsModPhi"))->Fill(daug[1].P(), getPhiModN(daug[1].Phi(), trkDaug2.sign(), 1));
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingP"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].P() : daug[1].P()));
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPwide"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].P() : daug[1].P()));
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPt"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Pt() : daug[1].Pt()));
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPhi"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Phi() : daug[1].Phi()));
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingRapidity"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Rapidity() : daug[1].Rapidity()));
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPvsOtherP"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].P() : daug[1].P()), ((daug[0].P() > daug[1].P()) ? daug[1].P() : daug[0].P()));
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPwideVsOtherPwide"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].P() : daug[1].P()), ((daug[0].P() > daug[1].P()) ? daug[1].P() : daug[0].P()));
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPtVsOtherPt"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Pt() : daug[1].Pt()), ((daug[0].P() > daug[1].P()) ? daug[1].Pt() : daug[0].Pt()));
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingPhiVsOtherPhi"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Phi() : daug[1].Phi()), ((daug[0].P() > daug[1].P()) ? daug[1].Phi() : daug[0].Phi()));
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/TwoElectrons/hLeadingRapVsOtherRap"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Rapidity() : daug[1].Rapidity()), ((daug[0].P() > daug[1].P()) ? daug[1].Rapidity() : daug[0].Rapidity()));
+      } // cnt
+    } // idx
+
+    for (int idx = 0; idx < static_cast<int>(vecMixElMupion.size()); idx++) {
+      for (int cnt = 0; cnt < 5; cnt++) {
+        std::random_device rand_dev;
+        std::mt19937 generator(rand_dev());
+        std::uniform_int_distribution<int> distr(0, static_cast<int>(vecMixElMupion.size()));
+        int idx2 = distr(generator);
+        while (idx == idx2)
+          idx2 = distr(generator);
+        const auto& trkDaug1 = reconstructedBarrelTracks.iteratorAt(vecMixElMupion[idx].first);
+        const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(vecMixElMupion[idx2].second);
+        daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassElectron, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+        daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+        mother = daug[0] + daug[1];
+        const auto acoplanarity = calculateAcoplanarity(daug[0].Phi(), daug[1].Phi());
+        const auto collinearity = calculateCollinearity(daug[0].Eta(), daug[1].Eta(), daug[0].Phi(), daug[1].Phi());
+        const auto& electronPt = daug[0].Pt();
+        const auto& electronP = daug[0].P();
+        const auto& electronE = daug[0].E();
+        const auto& mupionPt = daug[1].Pt();
+        const auto& mupionP = daug[1].P();
+        const auto& mupionE = daug[1].E();
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hInvariantMass"))->Fill(mother.M());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hInvariantMassWide"))->Fill(mother.M());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hAcoplanarity"))->Fill(acoplanarity);
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hCollinearity"))->Fill(collinearity);
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherP"))->Fill(mother.P());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherPwide"))->Fill(mother.P());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherPt"))->Fill(mother.Pt());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherPhi"))->Fill(mother.Phi());
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherRapidity"))->Fill(mother.Rapidity());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherMassVsElectronP"))->Fill(mother.M(), electronP);
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hMotherMassVsAcoplanarity"))->Fill(mother.M(), acoplanarity);
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPt"))->Fill(electronPt);
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPtWide"))->Fill(electronPt);
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersEnergyAsymmetry"))->Fill((daug[0].E() - daug[1].E()) / (daug[0].E() + daug[1].E()));
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersMomentaAsymmetry"))->Fill((daug[0].P() - daug[1].P()) / (daug[0].P() + daug[1].P()));
+        histos.get<TH1>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersPtAsymmetry"))->Fill((daug[0].Pt() - daug[1].Pt()) / (daug[0].Pt() + daug[1].Pt()));
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hDaughtersEnergyFractions"))->Fill(electronE / (electronE + mupionE), mupionE / (electronE + mupionE));
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPvsOtherP"))->Fill(electronP, mupionP);
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPwideVsOtherPwide"))->Fill(electronP, mupionP);
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPvsAcoplanarity"))->Fill(electronP, acoplanarity);
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hOtherPvsAcoplanarity"))->Fill(mupionP, acoplanarity);
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPtVsOtherPt"))->Fill(electronPt, mupionPt);
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronPhiVsOtherPhi"))->Fill(isElectronCandidate(trkDaug1) ? daug[0].Phi() : daug[1].Phi(), isElectronCandidate(trkDaug1) ? daug[1].Phi() : daug[0].Phi());
+        histos.get<TH2>(HIST("EventTwoTracks/MixedEvents/ElectronMuPi/hElectronRapVsOtherRap"))->Fill(isElectronCandidate(trkDaug1) ? daug[0].Rapidity() : daug[1].Rapidity(), isElectronCandidate(trkDaug1) ? daug[1].Rapidity() : daug[0].Rapidity());
+      } // cnt
+    } // idx
+  } // end fillMixedEventHistograms
+
+  void processDataDG(FullUDCollisions const& reconstructedCollisions,
                      FullUDTracks const& reconstructedBarrelTracks)
   {
 
-    if (!isGoodROFtime(reconstructedCollision))
-      return;
+    for (const auto& reconstructedCollision : reconstructedCollisions) {
+      if (!isGoodROFtime(reconstructedCollision))
+        return;
 
-    if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
-      return;
+      if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
+        return;
 
-    if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
-      return;
+      if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
+        return;
 
-    if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
-      return;
+      if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
+        return;
 
-    if (doMainHistos) {
-      fillHistograms(reconstructedBarrelTracks);
-      fillFIThistograms(reconstructedCollision);
+      if (doMainHistos) {
+        fillHistograms(reconstructedBarrelTracks);
+        fillFIThistograms(reconstructedCollision);
+        if (doMixedEventsHistos)
+          fillMixedEventHistograms(reconstructedBarrelTracks);
+      }
+
+      if (doPIDhistos)
+        fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
     }
-    if (doPIDhistos)
-      fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
 
   } // end processDataDG
 
-  void processDataSG(FullSGUDCollision const& reconstructedCollision,
+  void processDataSG(FullSGUDCollisions const& reconstructedCollisions,
                      FullUDTracks const& reconstructedBarrelTracks)
   {
+    for (const auto& reconstructedCollision : reconstructedCollisions) {
 
-    int gapSide = reconstructedCollision.gapSide();
-    int trueGapSide = sgSelector.trueGap(reconstructedCollision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
-    histos.fill(HIST("Events/UDtableGapSide"), gapSide);
-    histos.fill(HIST("Events/TrueGapSideDiffToTableValue"), gapSide - trueGapSide);
-    if (cutSample.useTrueGap)
-      gapSide = trueGapSide;
+      int gapSide = reconstructedCollision.gapSide();
+      int trueGapSide = sgSelector.trueGap(reconstructedCollision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
+      histos.fill(HIST("Events/UDtableGapSide"), gapSide);
+      histos.fill(HIST("Events/TrueGapSideDiffToTableValue"), gapSide - trueGapSide);
+      if (cutSample.useTrueGap)
+        gapSide = trueGapSide;
 
-    if (!isGoodROFtime(reconstructedCollision))
-      return;
+      if (!isGoodROFtime(reconstructedCollision))
+        return;
 
-    if (gapSide != cutSample.whichGapSide)
-      return;
+      if (gapSide != cutSample.whichGapSide)
+        return;
 
-    if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
-      return;
+      if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
+        return;
 
-    if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
-      return;
+      if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
+        return;
 
-    if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
-      return;
+      if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
+        return;
 
-    if (doMainHistos) {
-      fillHistograms(reconstructedBarrelTracks);
-      fillFIThistograms(reconstructedCollision);
+      if (doMainHistos) {
+        fillHistograms(reconstructedBarrelTracks);
+        fillFIThistograms(reconstructedCollision);
+        if (doMixedEventsHistos)
+          fillMixedEventHistograms(reconstructedBarrelTracks);
+      }
+
+      if (doPIDhistos)
+        fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
     }
-    if (doPIDhistos)
-      fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
 
   } // end processDataSG
 
-  void processMCrecDG(FullMCUDCollision const& reconstructedCollision,
+  void processMCrecDG(FullMCUDCollisions const& reconstructedCollisions,
                       FullMCUDTracks const& reconstructedBarrelTracks,
                       aod::UDMcParticles const&)
   {
     isMC = true;
+    for (const auto& reconstructedCollision : reconstructedCollisions) {
 
-    if (!isGoodROFtime(reconstructedCollision))
-      return;
+      if (!isGoodROFtime(reconstructedCollision))
+        return;
 
-    if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
-      return;
+      if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
+        return;
 
-    if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
-      return;
+      if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
+        return;
 
-    if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
-      return;
+      if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
+        return;
 
-    if (cutSample.applyAcceptanceSelection) {
-      for (const auto& track : reconstructedBarrelTracks) {
-        if (!track.isPVContributor())
-          continue;
-        if (std::abs(eta(track.px(), track.py(), track.py())) > cutSample.cutTrackEta)
-          return;
+      if (cutSample.applyAcceptanceSelection) {
+        for (const auto& track : reconstructedBarrelTracks) {
+          if (!track.isPVContributor())
+            continue;
+          if (std::abs(eta(track.px(), track.py(), track.py())) > cutSample.cutTrackEta)
+            return;
+        }
       }
-    }
 
-    if (doMainHistos) {
-      fillHistograms(reconstructedBarrelTracks);
-      fillFIThistograms(reconstructedCollision);
-    }
+      if (doMainHistos) {
+        fillHistograms(reconstructedBarrelTracks);
+        fillFIThistograms(reconstructedCollision);
+        if (doMixedEventsHistos)
+          fillMixedEventHistograms(reconstructedBarrelTracks);
+      }
 
-    if (doPIDhistos) {
-      fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
-      fillMCPIDhistograms(reconstructedBarrelTracks);
+      if (doPIDhistos) {
+        fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
+        fillMCPIDhistograms(reconstructedBarrelTracks);
+      }
     }
 
   } // end processMCrecDG
 
-  void processMCrecSG(FullMCSGUDCollision const& reconstructedCollision,
+  void processMCrecSG(FullMCSGUDCollisions const& reconstructedCollisions,
                       FullMCUDTracks const& reconstructedBarrelTracks,
                       aod::UDMcParticles const&)
   {
     isMC = true;
+    for (const auto& reconstructedCollision : reconstructedCollisions) {
 
-    int gapSide = reconstructedCollision.gapSide();
-    histos.fill(HIST("Events/UDtableGapSide"), gapSide);
+      int gapSide = reconstructedCollision.gapSide();
+      histos.fill(HIST("Events/UDtableGapSide"), gapSide);
 
-    if (gapSide != cutSample.whichGapSide)
-      return;
+      if (gapSide != cutSample.whichGapSide)
+        return;
 
-    if (!isGoodROFtime(reconstructedCollision))
-      return;
+      if (!isGoodROFtime(reconstructedCollision))
+        return;
 
-    if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
-      return;
+      if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
+        return;
 
-    if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
-      return;
+      if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
+        return;
 
-    if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
-      return;
+      if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
+        return;
 
-    if (cutSample.applyAcceptanceSelection) {
-      for (const auto& track : reconstructedBarrelTracks) {
-        if (!track.isPVContributor())
-          continue;
-        if (std::abs(eta(track.px(), track.py(), track.py())) > cutSample.cutTrackEta)
-          return;
+      if (cutSample.applyAcceptanceSelection) {
+        for (const auto& track : reconstructedBarrelTracks) {
+          if (!track.isPVContributor())
+            continue;
+          if (std::abs(eta(track.px(), track.py(), track.py())) > cutSample.cutTrackEta)
+            return;
+        }
       }
-    }
 
-    if (doMainHistos) {
-      fillHistograms(reconstructedBarrelTracks);
-      fillFIThistograms(reconstructedCollision);
-    }
+      if (doMainHistos) {
+        fillHistograms(reconstructedBarrelTracks);
+        fillFIThistograms(reconstructedCollision);
+        if (doMixedEventsHistos)
+          fillMixedEventHistograms(reconstructedBarrelTracks);
+      }
 
-    if (doPIDhistos) {
-      fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
-      fillMCPIDhistograms(reconstructedBarrelTracks);
+      if (doPIDhistos) {
+        fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
+        fillMCPIDhistograms(reconstructedBarrelTracks);
+      }
     }
 
   } // end processMCrecDG
