@@ -97,14 +97,8 @@ struct UccZdc {
   Configurable<float> minMeanpT{"minMeanpT", 0.5, "minimum [pT]"};
   Configurable<float> maxMeanpT{"maxMeanpT", 1.1, "maximum [pT]"};
   Configurable<int> nBinsMeanpT{"nBinsMeanpT", 160, "# bins [pT]"};
-  ConfigurableAxis binsPt{
-    "binsPt",
-    {VARIABLE_WIDTH, 0.0, 0.1, 0.12},
-    "pT binning"};
-  ConfigurableAxis binsCent{
-    "binsCent",
-    {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.},
-    "T0C binning"};
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12}, "pT binning"};
+  ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
 
   // Configurable event selectiond and flags ZDC
   Configurable<bool> isOccupancyCut{"isOccupancyCut", true, "Occupancy cut?"};
@@ -153,26 +147,26 @@ struct UccZdc {
   };
 
   // Histograms names
-  static constexpr std::string_view ptCorrNames[4] = {
+  static constexpr std::string_view PtCorrNames[4] = {
     "NchvsOneParCorr", "NchvsTwoParCorr", "NchvsThreeParCorr",
     "NchvsFourParCorr"};
-  static constexpr std::string_view ptCorrMCNchNames[4] = {
+  static constexpr std::string_view PtCorrMCNchNames[4] = {
     "NchvsOneParCorrMC", "NchvsTwoParCorrMC", "NchvsThreeParCorrMC",
     "NchvsFourParCorrMC"};
-  static constexpr std::string_view ptCorrMCNchMCNames[4] = {
+  static constexpr std::string_view PtCorrMCNchMCNames[4] = {
     "NchMCvsOneParCorrMC", "NchMCvsTwoParCorrMC", "NchMCvsThreeParCorrMC",
     "NchMCvsFourParCorrMC"};
-  static constexpr std::string_view pSTitles[4] = {
+  static constexpr std::string_view PsTitles[4] = {
     ";Nch;P_{1}=#Sigma_{evs} W^{(1)}_{e} [p_{T}^{(1)}]_{e};",
     ";Nch;P_{2}=#Sigma_{evs} W^{(2)}_{e} [p_{T}^{(2)}]_{e};",
     ";Nch;P_{3}=#Sigma_{evs} W^{(3)}_{e} [p_{T}^{(3)}]_{e};",
     ";Nch;P_{4}=#Sigma_{evs} W^{(4)}_{e} [p_{T}^{(4)}]_{e};"};
-  static constexpr std::string_view wSTitles[4] = {
+  static constexpr std::string_view WsTitles[4] = {
     ";Nch;W_{1}=#Sigma_{evs} W^{(1)}_{e};",
     ";Nch;W_{2}=#Sigma_{evs} W^{(2)}_{e};",
     ";Nch;W_{3}=#Sigma_{evs} W^{(3)}_{e};",
     ";Nch;W_{4}=#Sigma_{evs} W^{(4)}_{e};"};
-  static constexpr std::string_view ptCorrTitles[4] = {
+  static constexpr std::string_view PtCorrTitles[4] = {
     ";Nch (|#eta|<0.8);[p_{T}]=(#Sigma w_{i} p_{T}^{i})/(#Sigma w_{i})",
     ";Nch (|#eta|<0.8);[p_{T}^{2}]=(P_{1}^{2} - P_{2})/(W_{1}^{2} - "
     "W_{2})",
@@ -307,32 +301,32 @@ struct UccZdc {
     if (doprocessMCclosure || doprocessZdcCollAss) {
       registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
       registry.add(
-        ptCorrNames[0].data(), ptCorrTitles[0].data(), kTH2F,
+        PtCorrNames[0].data(), PtCorrTitles[0].data(), kTH2F,
         {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
       registry.add(
-        ptCorrNames[1].data(), ptCorrTitles[1].data(), kTH2F,
+        PtCorrNames[1].data(), PtCorrTitles[1].data(), kTH2F,
         {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
       registry.add(
-        ptCorrNames[2].data(), ptCorrTitles[2].data(), kTH2F,
+        PtCorrNames[2].data(), PtCorrTitles[2].data(), kTH2F,
         {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
       registry.add(
-        ptCorrNames[3].data(), ptCorrTitles[3].data(), kTH2F,
+        PtCorrNames[3].data(), PtCorrTitles[3].data(), kTH2F,
         {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
-      registry.add("pP1", pSTitles[0].data(), kTProfile,
+      registry.add("pP1", PsTitles[0].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW1", wSTitles[0].data(), kTProfile,
+      registry.add("pW1", WsTitles[0].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP2", pSTitles[1].data(), kTProfile,
+      registry.add("pP2", PsTitles[1].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW2", wSTitles[1].data(), kTProfile,
+      registry.add("pW2", WsTitles[1].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP3", pSTitles[2].data(), kTProfile,
+      registry.add("pP3", PsTitles[2].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW3", wSTitles[2].data(), kTProfile,
+      registry.add("pW3", WsTitles[2].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP4", pSTitles[3].data(), kTProfile,
+      registry.add("pP4", PsTitles[3].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW4", wSTitles[3].data(), kTProfile,
+      registry.add("pW4", WsTitles[3].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
     }
 
@@ -365,44 +359,44 @@ struct UccZdc {
       // registry.add("nRecColvsCent", "", kTH2F, {{6, -0.5, 5.5},
       // {{axisCent}}});
       registry.add(
-        ptCorrMCNchNames[0].data(), ptCorrTitles[0].data(), kTH2F,
+        PtCorrMCNchNames[0].data(), PtCorrTitles[0].data(), kTH2F,
         {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
       registry.add(
-        ptCorrMCNchNames[1].data(), ptCorrTitles[1].data(), kTH2F,
+        PtCorrMCNchNames[1].data(), PtCorrTitles[1].data(), kTH2F,
         {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
       registry.add(
-        ptCorrMCNchNames[2].data(), ptCorrTitles[2].data(), kTH2F,
+        PtCorrMCNchNames[2].data(), PtCorrTitles[2].data(), kTH2F,
         {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
       registry.add(
-        ptCorrMCNchNames[3].data(), ptCorrTitles[3].data(), kTH2F,
+        PtCorrMCNchNames[3].data(), PtCorrTitles[3].data(), kTH2F,
         {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
-      registry.add("pP1MC", pSTitles[0].data(), kTProfile,
+      registry.add("pP1MC", PsTitles[0].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW1MC", wSTitles[0].data(), kTProfile,
+      registry.add("pW1MC", WsTitles[0].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP2MC", pSTitles[1].data(), kTProfile,
+      registry.add("pP2MC", PsTitles[1].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW2MC", wSTitles[1].data(), kTProfile,
+      registry.add("pW2MC", WsTitles[1].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP3MC", pSTitles[2].data(), kTProfile,
+      registry.add("pP3MC", PsTitles[2].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW3MC", wSTitles[2].data(), kTProfile,
+      registry.add("pW3MC", WsTitles[2].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP4MC", pSTitles[3].data(), kTProfile,
+      registry.add("pP4MC", PsTitles[3].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW4MC", wSTitles[3].data(), kTProfile,
+      registry.add("pW4MC", WsTitles[3].data(), kTProfile,
                    {{nBinsNch, -0.5, maxNch}});
       registry.add(
-        ptCorrMCNchMCNames[0].data(), ptCorrTitles[0].data(), kTH2F,
+        PtCorrMCNchMCNames[0].data(), PtCorrTitles[0].data(), kTH2F,
         {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
       registry.add(
-        ptCorrMCNchMCNames[1].data(), ptCorrTitles[1].data(), kTH2F,
+        PtCorrMCNchMCNames[1].data(), PtCorrTitles[1].data(), kTH2F,
         {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
       registry.add(
-        ptCorrMCNchMCNames[2].data(), ptCorrTitles[2].data(), kTH2F,
+        PtCorrMCNchMCNames[2].data(), PtCorrTitles[2].data(), kTH2F,
         {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
       registry.add(
-        ptCorrMCNchMCNames[3].data(), ptCorrTitles[3].data(), kTH2F,
+        PtCorrMCNchMCNames[3].data(), PtCorrTitles[3].data(), kTH2F,
         {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
     }
 
