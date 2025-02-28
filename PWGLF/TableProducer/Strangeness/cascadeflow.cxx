@@ -30,6 +30,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "Tools/ML/MlResponse.h"
+#include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -127,7 +128,7 @@ static const std::vector<std::string> labelsCutScore = {"Background score", "Sig
 } // namespace cascade_flow_cuts_ml
 
 struct cascadeFlow {
-
+  
   // Output filling criteria
   Configurable<bool> isFillTree{"isFillTree", 1, ""};
   Configurable<bool> isFillTHNXi{"isFillTHNXi", 1, ""};
@@ -198,6 +199,11 @@ struct cascadeFlow {
   Configurable<std::vector<std::string>> onnxFileNamesOmega{"onnxFileNamesOmega", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", true, "Flag to enable or disable the loading of models from CCDB"};
+  Configurable<std::string> acceptancePathsCCDBXi{"acceptancePathsCCDBXi", "Users/c/chdemart/AcceptanceXi", "Paths of Xi acceptance on CCDB"};
+  Configurable<std::string> acceptancePathsCCDBOmega{"acceptancePathsCCDBOmega", "Users/c/chdemart/AcceptanceOmega", "Paths of Omega acceptance on CCDB"};
+  Configurable<std::string> acceptancePathsCCDBLambda{"acceptancePathsCCDBLambda", "Users/c/chdemart/AcceptanceLambda", "Paths of Lambda acceptance on CCDB"};
+  Configurable<std::string> acceptanceHistoNameCasc{"acceptanceHistoNameCasc", "histoCos2ThetaNoFit2D", "Histo name of acceptance on CCDB"};
+  Configurable<std::string> acceptanceHistoNameLambda{"acceptanceHistoNameLambda", "histoCos2ThetaLambdaFromCNoFit2D", "Histo name of acceptance on CCDB"};
 
   // ML inference
   Configurable<bool> isApplyML{"isApplyML", 1, "Flag to apply ML selections"};
@@ -206,7 +212,11 @@ struct cascadeFlow {
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {cascade_flow_cuts_ml::cuts[0], cascade_flow_cuts_ml::nBinsPt, cascade_flow_cuts_ml::nCutScores, cascade_flow_cuts_ml::labelsPt, cascade_flow_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(cascade_flow_cuts_ml::nCutScores), "Number of classes in ML model"};
 
+  //acceptance crrection
+  Configurable<bool> applyAcceptanceCorrection{"applyAcceptanceCorrection", false, "apply acceptance correction"};
+
   o2::ccdb::CcdbApi ccdbApi;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Add objects needed for ML inference
   o2::analysis::MlResponse<float> mlResponseXi;
@@ -333,6 +343,11 @@ struct cascadeFlow {
     return phi;
   }
 
+  // objects to use for acceptance correction
+  TH2F* hAcceptanceXi;
+  TH2F* hAcceptanceOmega;
+  TH2F* hAcceptanceLambda;
+  
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry histosMCGen{"histosMCGen", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry resolution{"resolution", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
@@ -436,6 +451,26 @@ struct cascadeFlow {
                    cosThetaStarLambda[1],
                    cosThetaStarProton,
                    pdgCode);
+  }
+  void initAcceptanceFromCCDB()
+  {
+    LOG(info) << "Loading acceptance from CCDB ";
+    TList* listAcceptanceXi  = ccdb->get<TList>(acceptancePathsCCDBXi);
+    if (!listAcceptanceXi)
+      LOG(fatal) << "Problem getting TList object with acceptance for Xi!";
+    TList* listAcceptanceOmega  = ccdb->get<TList>(acceptancePathsCCDBOmega);
+    if (!listAcceptanceOmega)
+      LOG(fatal) << "Problem getting TList object with acceptance for Omega!";
+    TList* listAcceptanceLambda  = ccdb->get<TList>(acceptancePathsCCDBLambda);
+    if (!listAcceptanceLambda)
+      LOG(fatal) << "Problem getting TList object with acceptance for Lambda!";
+    hAcceptanceXi = static_cast<TH2F*>(listAcceptanceXi->FindObject(Form("%s", acceptanceHistoNameCasc->data())));
+    hAcceptanceXi->SetName("hAcceptanceXi");
+    hAcceptanceOmega = static_cast<TH2F*>(listAcceptanceOmega->FindObject(Form("%s", acceptanceHistoNameCasc->data())));
+    hAcceptanceXi->SetName("hAcceptanceOmega");
+    hAcceptanceLambda = static_cast<TH2F*>(listAcceptanceLambda->FindObject(Form("%s", acceptanceHistoNameLambda->data())));
+    hAcceptanceLambda->SetName("hAcceptanceLambda");
+    LOG(info) << "Acceptance now loaded";
   }
 
   void init(InitContext const&)
@@ -587,6 +622,12 @@ struct cascadeFlow {
       }
       mlResponseXi.init();
       mlResponseOmega.init();
+    }
+    if (applyAcceptanceCorrection) {
+      ccdb->setURL(ccdbUrl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(false);
     }
   }
 
@@ -795,6 +836,11 @@ struct cascadeFlow {
       auto v1EP_ZDCC = TMath::Cos(casc.phi() - coll.psiZDCC());
       float v1SP = 0.5 * (v1SP_ZDCA - v1SP_ZDCC);
       float v1EP = 0.5 * (v1EP_ZDCA - v1EP_ZDCC); // same as v1SP
+
+      //acceptance retrived from ccdb if requested
+      if (applyAcceptanceCorrection) {
+	initAcceptanceFromCCDB();
+      }
 
       // polarization variables
       double masses[2]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
