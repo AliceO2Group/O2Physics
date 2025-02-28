@@ -62,7 +62,7 @@ struct HfCandidateSelectorLbToLcPi {
 
   bool passesImpactParameterResolution(float pT, float d0Resolution)
   {
-    float expectedResolution(0.001 + 0.0052 * exp(-0.655 * pT));
+    float expectedResolution(0.001 + 0.0052 * std::exp(-0.655 * pT));
     if (d0Resolution > expectedResolution * 1.5)
       return false;
     else
@@ -149,7 +149,7 @@ struct HfCandidateSelectorLbToLcPi {
     float diffXVert = hfCandLb.xSecondaryVertex() - hfCandLc.xSecondaryVertex();
     float diffYVert = hfCandLb.ySecondaryVertex() - hfCandLc.ySecondaryVertex();
     float diffZVert = hfCandLb.zSecondaryVertex() - hfCandLc.zSecondaryVertex();
-    float vertexDistance = sqrt(diffXVert * diffXVert + diffYVert * diffYVert + diffZVert * diffZVert);
+    float vertexDistance = std::sqrt(diffXVert * diffXVert + diffYVert * diffYVert + diffZVert * diffZVert);
     if (vertexDistance > maxVertexDistanceLbLc) {
       return false;
     }

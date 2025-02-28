@@ -78,8 +78,6 @@ struct phianalysisrun3_PbPb {
   Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> fillOccupancy{"fillOccupancy", true, "fill Occupancy"};
-  Configurable<int> cfgOccupancyCut1{"cfgOccupancyCut1", 500, "Occupancy cut"};
-  Configurable<int> cfgOccupancyCut2{"cfgOccupancyCut2", 1500, "Occupancy cut"};
   Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
   Configurable<bool> additionalEvSel2{"additionalEvSel2", true, "Additional evsel2"};
   Configurable<bool> additionalEvSel3{"additionalEvSel3", true, "Additional evsel3"};
@@ -98,6 +96,13 @@ struct phianalysisrun3_PbPb {
   Configurable<float> confMaxRot{"confMaxRot", 7.0 * TMath::Pi() / 6.0, "Maximum of rotation"};
   Configurable<bool> PDGcheck{"PDGcheck", true, "PDGcheck"};
   Configurable<bool> Reco{"Reco", true, "Reco"};
+  ConfigurableAxis binsImpactPar{"binsImpactPar", {VARIABLE_WIDTH, 0, 3.5, 5.67, 7.45, 8.85, 10.0, 11.21, 12.26, 13.28, 14.23, 15.27}, "Binning of the impact parameter axis"};
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0}, "Binning of the pT axis"};
+  ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
+  Configurable<float> cfgCutCentrality{"cfgCutCentrality", 80.0f, "Accepted maximum Centrality"};
+  Configurable<float> cfgCutMaxOccupancy{"cfgCutMaxOccupancy", 2000.0f, "Accepted maximum Occupancy"};
+  Configurable<bool> cfgApplyOccupancyCut{"cfgApplyOccupancyCut", false, "Apply maximum Occupancy"};
+  Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 3000, "Occupancy cut"};
 
   Configurable<bool> genacceptancecut{"genacceptancecut", true, "use acceptance cut for generated"};
   // MC
@@ -105,7 +110,9 @@ struct phianalysisrun3_PbPb {
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
   void init(o2::framework::InitContext&)
   {
-
+    AxisSpec impactParAxis = {binsImpactPar, "Impact Parameter"};
+    AxisSpec ptAxis = {binsPt, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec centAxis = {binsCent, "V0M (%)"};
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{200, 0.0, 200.0}});
     histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
     histos.add("hOccupancy", "Occupancy distribution", kTH1F, {{500, 0, 50000}});
@@ -116,12 +123,12 @@ struct phianalysisrun3_PbPb {
       histos.add("h3PhiInvMassSame", "Invariant mass of Phi meson same", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
     } else if (isMC) {
       histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
-      histos.add("EL1", "MC Event statistics", kTH2F, {{1, 0.0f, 1.0f}, {200, 0.0f, 20.0f}});
-      histos.add("EL2", "MC Event statistics", kTH2F, {{1, 0.0f, 1.0f}, {200, 0.0, 200.0}});
-      histos.add("ES1", "MC Event statistics", kTH2F, {{1, 0.0f, 1.0f}, {200, 0.0f, 20.0f}});
-      histos.add("ES3", "MC Event statistics", kTH2F, {{1, 0.0f, 1.0f}, {200, 0.0f, 20.0f}});
-      histos.add("ES2", "MC Event statistics", kTH2F, {{1, 0.0f, 1.0f}, {200, 0.0, 200.0}});
-      histos.add("ES4", "MC Event statistics", kTH2F, {{1, 0.0f, 1.0f}, {200, 0.0, 200.0}});
+      histos.add("EL1", "MC Event statistics", kTH1F, {impactParAxis});
+      histos.add("EL2", "MC Event statistics", kTH1F, {centAxis});
+      histos.add("ES1", "MC Event statistics", kTH1F, {impactParAxis});
+      histos.add("ES3", "MC Event statistics", kTH1F, {impactParAxis});
+      histos.add("ES2", "MC Event statistics", kTH1F, {centAxis});
+      histos.add("ES4", "MC Event statistics", kTH1F, {centAxis});
       histos.add("h1PhiGen", "Phi meson Gen", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("h1PhiGen1", "Phi meson Gen", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("h1PhiRecsplit", "Phi meson Rec split", kTH1F, {{200, 0.0f, 20.0f}});
@@ -135,6 +142,7 @@ struct phianalysisrun3_PbPb {
       histos.add("h3PhiInvMassSameMC", "Invariant mass of Phi meson same", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
       histos.add("h3PhiInvMassRotMC", "Invariant mass of Phi meson Rotation", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
       histos.add("h2PhiGen2", "Phi meson gen", kTH2F, {{200, 0.0f, 20.0f}, {200, 0.0, 200.0}});
+      histos.add("h2PhiGen1", "Phi meson gen", kTH2F, {ptAxis, impactParAxis});
       histos.add("h1PhiRec1", "Phi meson Rec", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("h1Phimassgen", "Phi meson gen", kTH1F, {{200, 0.9, 1.1}});
       histos.add("h1Phimassrec", "Phi meson Rec", kTH1F, {{200, 0.9, 1.1}});
@@ -144,12 +152,19 @@ struct phianalysisrun3_PbPb {
       histos.add("h1Phi1massrec", "Phi meson Rec", kTH1F, {{200, 0.9, 1.1}});
       histos.add("h1Phipt", "Phi meson Rec", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("hOccupancy1", "Occupancy distribution", kTH1F, {{500, 0, 50000}});
-      histos.add("hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {{200, 0.0f, 20.0f}});
-      histos.add("hImpactParameterRec", "Impact parameter of generated MC events", kTH1F, {{200, 0.0f, 20.0f}});
-      histos.add("hImpactParameterGenCen", "Impact parameter of generated MC events", kTH2F, {{200, 0.0f, 20.0f}, {200, 0.0, 200.0}});
-      histos.add("hImpactParameterRecCen", "Impact parameter of generated MC events", kTH2F, {{200, 0.0f, 20.0f}, {200, 0.0, 200.0}});
+      histos.add("hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
+      histos.add("hImpactParameterRec", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
+      histos.add("hImpactParameterGenCen", "Impact parameter of generated MC events", kTH2F, {impactParAxis, centAxis});
+      histos.add("hImpactParameterRecCen", "Impact parameter of generated MC events", kTH2F, {impactParAxis, centAxis});
       histos.add("TOF_Nsigma_MC", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
       histos.add("TPC_Nsigma_MC", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
+      if (doprocessEvtLossSigLossMC) {
+        histos.add("QAevent/hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
+        histos.add("QAevent/hImpactParameterRec", "Impact parameter of selected MC events", kTH1F, {impactParAxis});
+        histos.add("QAevent/hImpactParvsCentrRec", "Impact parameter of selected MC events vs centrality", kTH2F, {{120, 0.0f, 120.0f}, impactParAxis});
+        histos.add("QAevent/phigenBeforeEvtSel", "phi before event selections", kTH2F, {ptAxis, impactParAxis});
+        histos.add("QAevent/phigenAfterEvtSel", "phi after event selections", kTH2F, {ptAxis, impactParAxis});
+      }
     }
 
     // DCA QA
@@ -213,6 +228,22 @@ struct phianalysisrun3_PbPb {
       return true;
     }
     return false;
+  }
+  template <typename CollType>
+  bool myEventSelections(const CollType& collision)
+  {
+    if (std::abs(collision.posZ()) > cfgCutVertex)
+      return false;
+    if (!collision.sel8())
+      return false;
+    if (additionalEvSel2 && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)))
+      return false;
+    if (additionalEvSel3 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)))
+      return false;
+    int occupancy = collision.trackOccupancyInTimeRange();
+    if (fillOccupancy && (occupancy > cfgCutOccupancy))
+      return false;
+    return true;
   }
   // deep angle cut on pair to remove photon conversion
   template <typename T1, typename T2>
@@ -293,7 +324,7 @@ struct phianalysisrun3_PbPb {
       return;
     }
     int occupancy = collision.trackOccupancyInTimeRange();
-    if (fillOccupancy && !(occupancy > cfgOccupancyCut1 && occupancy < cfgOccupancyCut2)) {
+    if (fillOccupancy && (occupancy > cfgCutOccupancy)) {
       return;
     }
     float multiplicity{-1};
@@ -374,10 +405,10 @@ struct phianalysisrun3_PbPb {
       }
       int occupancy1 = c1.trackOccupancyInTimeRange();
       int occupancy2 = c2.trackOccupancyInTimeRange();
-      if (fillOccupancy && !(occupancy1 > cfgOccupancyCut1 && occupancy1 < cfgOccupancyCut2)) {
+      if (fillOccupancy && (occupancy1 > cfgCutOccupancy)) {
         continue;
       }
-      if (fillOccupancy && !(occupancy2 > cfgOccupancyCut1 && occupancy2 < cfgOccupancyCut2)) {
+      if (fillOccupancy && (occupancy2 > cfgCutOccupancy)) {
         continue;
       }
       float multiplicity;
@@ -421,7 +452,7 @@ struct phianalysisrun3_PbPb {
       return;
     }
     int occupancy = collision.trackOccupancyInTimeRange();
-    if (fillOccupancy && !(occupancy > cfgOccupancyCut1 && occupancy < cfgOccupancyCut2)) {
+    if (fillOccupancy && (occupancy > cfgCutOccupancy)) {
       return;
     }
     float multiplicity{-1};
@@ -434,8 +465,8 @@ struct phianalysisrun3_PbPb {
       if (!selectionTrack(track1)) {
         continue;
       }
-      histos.fill(HIST("QAbefore/TPC_Nsigma_all"), track1.tpcNSigmaKa(), multiplicity);
-      histos.fill(HIST("QAbefore/TOF_Nsigma_all"), track1.tofNSigmaKa(), multiplicity);
+      histos.fill(HIST("QAbefore/TPC_Nsigma_all"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
+      histos.fill(HIST("QAbefore/TOF_Nsigma_all"), track1.tofNSigmaKa(), multiplicity, track1.pt());
       histos.fill(HIST("QAbefore/trkDCAxy"), track1.dcaXY());
       histos.fill(HIST("QAbefore/trkDCAz"), track1.dcaZ());
       histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
@@ -512,8 +543,11 @@ struct phianalysisrun3_PbPb {
         histos.fill(HIST("hMC"), 5);
         continue;
       }
+      if (additionalEvSel2 && (!RecCollision.selection_bit(aod::evsel::kNoSameBunchPileup) || !RecCollision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
       int occupancy = RecCollision.trackOccupancyInTimeRange();
-      if (fillOccupancy && !(occupancy > cfgOccupancyCut1 && occupancy < cfgOccupancyCut2)) {
+      if (fillOccupancy && (occupancy > cfgCutOccupancy)) {
         continue;
       }
       if (TMath::Abs(RecCollision.posZ()) > cfgCutVertex) {
@@ -682,8 +716,11 @@ struct phianalysisrun3_PbPb {
       if (!collision.sel8() || std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
         continue;
       }
+      if (additionalEvSel2 && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
       int occupancy = collision.trackOccupancyInTimeRange();
-      if (fillOccupancy && !(occupancy > cfgOccupancyCut1 && occupancy < cfgOccupancyCut2)) {
+      if (fillOccupancy && (occupancy > cfgCutOccupancy)) {
         continue;
       }
       histos.fill(HIST("hOccupancy1"), occupancy);
@@ -697,13 +734,13 @@ struct phianalysisrun3_PbPb {
     SelectedEvents.resize(nevts);
 
     const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
-    histos.fill(HIST("EL1"), 0, imp);
-    histos.fill(HIST("EL2"), 0, multiplicity);
+    histos.fill(HIST("EL1"), imp);
+    histos.fill(HIST("EL2"), multiplicity);
     if (Reco && !evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
-    histos.fill(HIST("ES1"), 0, imp);
-    histos.fill(HIST("ES2"), 0, multiplicity);
+    histos.fill(HIST("ES1"), imp);
+    histos.fill(HIST("ES2"), multiplicity);
     for (auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.y()) >= 0.5) {
         continue;
@@ -733,6 +770,7 @@ struct phianalysisrun3_PbPb {
         PhiMesonMother = KaonPlus + KaonMinus;
         histos.fill(HIST("h1PhiGen"), PhiMesonMother.pt());
         histos.fill(HIST("h2PhiGen2"), PhiMesonMother.pt(), multiplicity);
+        histos.fill(HIST("h2PhiGen1"), PhiMesonMother.pt(), imp);
         histos.fill(HIST("h1Phimassgen"), PhiMesonMother.M());
         histos.fill(HIST("h3PhiGen3"), PhiMesonMother.pt(), multiplicity, PhiMesonMother.M());
       }
@@ -747,8 +785,11 @@ struct phianalysisrun3_PbPb {
     if (std::abs(collision.mcCollision().posZ()) > cfgCutVertex || !collision.sel8()) {
       return;
     }
+    if (additionalEvSel2 && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      return;
+    }
     int occupancy = collision.trackOccupancyInTimeRange();
-    if (fillOccupancy && !(occupancy > cfgOccupancyCut1 && occupancy < cfgOccupancyCut2)) {
+    if (fillOccupancy && (occupancy > cfgCutOccupancy)) {
       return;
     }
     auto multiplicity = collision.centFT0C();
@@ -756,8 +797,8 @@ struct phianalysisrun3_PbPb {
     float imp = collision.mcCollision().impactParameter();
     histos.fill(HIST("hImpactParameterRec"), imp);
     histos.fill(HIST("hImpactParameterRecCen"), imp, multiplicity);
-    histos.fill(HIST("ES3"), 0, imp);
-    histos.fill(HIST("ES4"), 0, multiplicity);
+    histos.fill(HIST("ES3"), imp);
+    histos.fill(HIST("ES4"), multiplicity);
     auto oldindex = -999;
     for (auto track1 : tracks) {
       if (!selectionTrack(track1)) {
@@ -866,7 +907,7 @@ struct phianalysisrun3_PbPb {
       return;
     }
     int occupancy = collision.trackOccupancyInTimeRange();
-    if (fillOccupancy && !(occupancy > cfgOccupancyCut1 && occupancy < cfgOccupancyCut2)) {
+    if (fillOccupancy && (occupancy > cfgCutOccupancy)) {
       return;
     }
     float multiplicity{-1};
@@ -956,10 +997,10 @@ struct phianalysisrun3_PbPb {
       }
       int occupancy1 = c1.trackOccupancyInTimeRange();
       int occupancy2 = c2.trackOccupancyInTimeRange();
-      if (fillOccupancy && !(occupancy1 > cfgOccupancyCut1 && occupancy1 < cfgOccupancyCut2)) {
+      if (fillOccupancy && (occupancy1 > cfgCutOccupancy)) {
         continue;
       }
-      if (fillOccupancy && !(occupancy2 > cfgOccupancyCut1 && occupancy2 < cfgOccupancyCut2)) {
+      if (fillOccupancy && (occupancy2 > cfgCutOccupancy)) {
         continue;
       }
       auto multiplicity = c1.centFT0C();
@@ -994,6 +1035,41 @@ struct phianalysisrun3_PbPb {
     }
   }
   PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEventMC, "Process Mixed event MC", true);
+  void processEvtLossSigLossMC(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
+  {
+
+    // Event loss estimation
+    auto impactPar = mcCollision.impactParameter();
+    histos.fill(HIST("QAevent/hImpactParameterGen"), impactPar);
+
+    bool isSel = false;
+    auto centrality = -999.;
+    for (const auto& RecCollision : recCollisions) {
+      if (!myEventSelections(RecCollision))
+        continue;
+      centrality = RecCollision.centFT0C();
+      isSel = true;
+    }
+
+    if (isSel) {
+      histos.fill(HIST("QAevent/hImpactParameterRec"), impactPar);
+      histos.fill(HIST("QAevent/hImpactParvsCentrRec"), centrality, impactPar);
+    }
+
+    // Generated MC
+    for (const auto& mcPart : mcParticles) {
+      if (std::abs(mcPart.y()) >= 0.5 || std::abs(mcPart.pdgCode()) != 333)
+        continue;
+
+      // signal loss estimation
+      histos.fill(HIST("QAevent/phigenBeforeEvtSel"), mcPart.pt(), impactPar);
+      if (isSel) {
+        // signal loss estimation
+        histos.fill(HIST("QAevent/phigenAfterEvtSel"), mcPart.pt(), impactPar);
+      }
+    } // end loop on gen particles
+  }
+  PROCESS_SWITCH(phianalysisrun3_PbPb, processEvtLossSigLossMC, "Process Signal Loss, Event Loss", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

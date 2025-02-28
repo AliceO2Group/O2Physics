@@ -256,6 +256,9 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Track0, track0, int, RedIUTracks, "_0");       //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Track1, track1, int, RedIUTracks, "_1");       //! Track 1 index
 DECLARE_SOA_INDEX_COLUMN_FULL(Track2, track2, int, RedIUTracks, "_2");       //! Track 2 index
 DECLARE_SOA_INDEX_COLUMN_FULL(Collision, collision, int, RedCollisions, ""); //! Collision index
+DECLARE_SOA_COLUMN(Phi, phi, float);                                         //! decay3body radius
+DECLARE_SOA_COLUMN(Radius, radius, float);                                   //! decay3body phi
+DECLARE_SOA_COLUMN(PosZ, posz, float);                                       //! decay3body z position
 } // namespace reduceddecay3body
 
 DECLARE_SOA_TABLE(RedDecay3Bodys, "AOD", "REDDECAY3BODY", //! reduced 3-body decay table
@@ -263,6 +266,9 @@ DECLARE_SOA_TABLE(RedDecay3Bodys, "AOD", "REDDECAY3BODY", //! reduced 3-body dec
 
 using ReducedDecay3BodysLinked = soa::Join<RedDecay3Bodys, Decay3BodyDataLink>;
 using ReducedDecay3BodyLinked = ReducedDecay3BodysLinked::iterator;
+
+DECLARE_SOA_TABLE(Red3BodyInfo, "AOD", "RED3BODYINFO", //! joinable with RedDecay3Bodys
+                  reduceddecay3body::Radius, reduceddecay3body::Phi, reduceddecay3body::PosZ);
 
 } // namespace o2::aod
 

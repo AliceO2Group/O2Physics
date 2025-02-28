@@ -198,6 +198,9 @@ struct Derivedupcanalysis {
   Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
   Configurable<float> maxOccupancy{"maxOccupancy", 1000, "maximum occupancy from neighbouring collisions"};
 
+  // z vertex cut
+  Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10.0f, "max Z vtx position"};
+
   // Kinematic axes
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for v0 analysis"};
   ConfigurableAxis axisPtXi{"axisPtXi", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for cascade analysis"};
@@ -1014,7 +1017,7 @@ struct Derivedupcanalysis {
     const std::array<SelectionCheck, 15> checks = {{
       {true, true, 0.0},                                                                                         // All collisions
       {requireIsTriggerTVX, collision.selection_bit(aod::evsel::kIsTriggerTVX), 1.0},                            // Triggered by FT0M
-      {true, std::fabs(collision.posZ()) <= 10.f, 2.0},                                                          // Vertex-Z selected
+      {true, std::fabs(collision.posZ()) < maxZVtxPosition, 2.0},                                                // Vertex-Z selected
       {rejectITSROFBorder, collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder), 3.0},                   // Not at ITS ROF border
       {rejectTFBorder, collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder), 4.0},                        // Not at TF border
       {requireIsVertexITSTPC, collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC), 5.0},                    // At least one ITS-TPC track
@@ -1576,10 +1579,10 @@ struct Derivedupcanalysis {
 
   PresliceUnsorted<StraCollisonsFullMC> perMcCollision = aod::v0data::straMCCollisionId;
 
-  std::vector<int> getListOfRecoCollIndices(StraMCCollisionsFull const& mcCollisions,
-                                            StraCollisonsFullMC const& collisions)
+  std::vector<int> getListOfRecoCollIds(StraMCCollisionsFull const& mcCollisions,
+                                        StraCollisonsFullMC const& collisions)
   {
-    std::vector<int> listBestCollisionIdx(mcCollisions.size(), -1);
+    std::vector<int> listBestCollisionIds(mcCollisions.size(), -1);
 
     for (auto const& mcCollision : mcCollisions) {
       auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
@@ -1588,15 +1591,23 @@ struct Derivedupcanalysis {
       int biggestNContribs = -1;
       int bestCollisionIndex = -1;
       for (auto const& collision : groupedCollisions) {
+        if (!acceptEvent(collision, false)) {
+          continue;
+        }
+
+        int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
+        if (studyUPConly && (selGapSide < -0.5))
+          continue;
+
         if (biggestNContribs < collision.multPVTotalContributors()) {
           biggestNContribs = collision.multPVTotalContributors();
           bestCollisionIndex = collision.globalIndex();
         }
       }
-      listBestCollisionIdx[mcCollision.globalIndex()] = bestCollisionIndex;
+      listBestCollisionIds[mcCollision.globalIndex()] = bestCollisionIndex;
     }
 
-    return listBestCollisionIdx;
+    return listBestCollisionIds;
   }
 
   void fillGenMCHistogramsQA(StraMCCollisionsFull const& mcCollisions, StraCollisonsFullMC const& collisions)
@@ -1605,7 +1616,7 @@ struct Derivedupcanalysis {
       histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 0.0);
       histos.fill(HIST("eventQA/mc/hMCNParticlesEta10"), mcCollision.multMCNParticlesEta10(), 0 /* all gen. events*/);
 
-      if (std::abs(mcCollision.posZ()) > 10.f)
+      if (std::abs(mcCollision.posZ()) > maxZVtxPosition)
         continue;
 
       histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 1.0);
@@ -1629,14 +1640,14 @@ struct Derivedupcanalysis {
         if (studyUPConly && (selGapSide < -0.5))
           continue;
 
+        ++nCollisions;
+        atLeastOne = true;
+
         if (biggestNContribs < collision.multPVTotalContributors()) {
           biggestNContribs = collision.multPVTotalContributors();
           centrality = collision.centFT0C();
           nTracksGlobal = collision.multNTracksGlobal();
         }
-
-        ++nCollisions;
-        atLeastOne = true;
       }
 
       // Fill histograms
@@ -1759,7 +1770,7 @@ struct Derivedupcanalysis {
                         StraCollisonsFullMC const& collisions)
   {
     fillGenMCHistogramsQA(mcCollisions, collisions);
-    std::vector<int> listBestCollisionIdx = getListOfRecoCollIndices(mcCollisions, collisions);
+    std::vector<int> listBestCollisionIds = getListOfRecoCollIds(mcCollisions, collisions);
     // V0 start
     for (auto const& v0MC : V0MCCores) {
       // Consider only primaries
@@ -1777,13 +1788,15 @@ struct Derivedupcanalysis {
         continue;
 
       auto mcCollision = v0MC.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision
-      if (std::abs(mcCollision.posZ()) > 10.f)
+
+      if (std::abs(mcCollision.posZ()) > maxZVtxPosition)
         continue;
 
       float centrality = -1.f;
       int nTracksGlobal = -1;
-      if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
-        auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
+
+      if (listBestCollisionIds[mcCollision.globalIndex()] > -1) {
+        auto collision = collisions.iteratorAt(listBestCollisionIds[mcCollision.globalIndex()]);
         centrality = collision.centFT0C();
         nTracksGlobal = collision.multNTracksGlobal();
       }
@@ -1816,13 +1829,14 @@ struct Derivedupcanalysis {
         continue;
 
       auto mcCollision = cascMC.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision
-      if (std::abs(mcCollision.posZ()) > 10.f)
+      if (std::abs(mcCollision.posZ()) > maxZVtxPosition)
         continue;
 
       float centrality = -1.f;
       int nTracksGlobal = -1;
-      if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
-        auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
+
+      if (listBestCollisionIds[mcCollision.globalIndex()] > -1) {
+        auto collision = collisions.iteratorAt(listBestCollisionIds[mcCollision.globalIndex()]);
         centrality = collision.centFT0C();
         nTracksGlobal = collision.multNTracksGlobal();
       }

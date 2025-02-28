@@ -18,6 +18,14 @@
 #include <TVector2.h>
 #include <cmath>
 
+namespace o2::aod::pwgem::photonmeson::utils::pairutil
+{
+enum class PhotonPrefilterBitDerived : int {
+  kPhotonFromPi0Default = 0, // photon from pi0, default
+  kPhotonFromPi0Loose = 1,   // photon from pi0, loose
+  kPhotonFromPi0Tight = 2,   // photon from pi0, tight
+};
+} // namespace o2::aod::pwgem::photonmeson::utils::pairutil
 namespace o2::aod::pwgem::photonmeson::photonpair
 {
 enum PairType {

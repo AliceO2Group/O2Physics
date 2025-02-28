@@ -548,7 +548,7 @@ struct K0MixedEvents {
       registry.fill(HIST("rapidity_first"), track.pt(), track.rapidity(particle_mass(_particlePDG_1)));
 
       if ((track.sign() == _sign_1) &&
-          (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1))) { // filling the map: eventID <-> selected particles1
+          (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection<false>(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1))) { // filling the map: eventID <-> selected particles1
         selectedtracks_1[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
         registry.fill(HIST("p_first"), track.p());
@@ -580,7 +580,7 @@ struct K0MixedEvents {
         continue;
       } else if ((track.sign() == _sign_2) &&
                  (_particlePDGtoReject != 0 || !o2::aod::singletrackselector::TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF))) &&
-                 (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
+                 (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection<false>(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
         selectedtracks_2[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
         registry.fill(HIST("p_second"), track.p());
@@ -746,7 +746,7 @@ struct K0MixedEvents {
       registry.fill(HIST("rapidity_first"), track.pt(), track.rapidity(particle_mass(_particlePDG_1)));
 
       if ((track.sign() == _sign_1) &&
-          (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1))) { // filling the map: eventID <-> selected particles1
+          (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection<false>(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1))) { // filling the map: eventID <-> selected particles1
         selectedtracks_1[track.collisionId()].push_back(std::make_shared<decltype(track)>(track));
 
         registry.fill(HIST("p_first"), track.p());
@@ -778,7 +778,7 @@ struct K0MixedEvents {
         continue;
       } else if ((track.sign() == _sign_2) &&
                  (_particlePDGtoReject != 0 || !o2::aod::singletrackselector::TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF))) &&
-                 (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
+                 (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection<false>(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
         selectedtracks_2[track.collisionId()].push_back(std::make_shared<decltype(track)>(track));
 
         registry.fill(HIST("p_second"), track.p());
