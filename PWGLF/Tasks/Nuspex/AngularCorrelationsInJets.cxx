@@ -33,13 +33,6 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/Jet.h"
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Multiplicity.h"
-
-// #include "PWGLF/DataModel/LFParticleIdentification.h"
-
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
