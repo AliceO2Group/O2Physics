@@ -119,8 +119,6 @@ struct HfTaskCharmHadImpactPar {
   Filter filterDplusFlag = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
   Filter filterDzeroFlag = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
 
-  HistogramRegistry registry{"registry"};
-
   ConfigurableAxis axisPt{"axisPt", {0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 10.f, 12.f, 16.f, 24.f, 36.f, 50.f}, "axis for pT of charm hadron"};
   ConfigurableAxis axisMass{"axisMass", {250, 1.65f, 2.15f}, "axis for mass of charm hadron"};
   ConfigurableAxis axisPhi{"axisPhi", {180, 0.f, TwoPI}, "axis for azimuthal angle of charm hadron"};
@@ -129,6 +127,8 @@ struct HfTaskCharmHadImpactPar {
   ConfigurableAxis axisMlScore0{"axisMlScore0", {100, 0.f, 1.f}, "axis for ML output score 0"};
   ConfigurableAxis axisMlScore1{"axisMlScore1", {100, 0.f, 1.f}, "axis for ML output score 1"};
   ConfigurableAxis axisMlScore2{"axisMlScore2", {100, 0.f, 1.f}, "axis for ML output score 2"};
+
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
   {
