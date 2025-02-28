@@ -16,7 +16,7 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
 #ifndef HomogeneousField
-#define HomogeneousField
+#define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
 #include <memory>
@@ -404,7 +404,7 @@ struct HfCandidateCreator3Prong {
         kfpVertex.SetCovarianceMatrix(rowTrackIndexProng3.pvRefitSigmaX2(), rowTrackIndexProng3.pvRefitSigmaXY(), rowTrackIndexProng3.pvRefitSigmaY2(), rowTrackIndexProng3.pvRefitSigmaXZ(), rowTrackIndexProng3.pvRefitSigmaYZ(), rowTrackIndexProng3.pvRefitSigmaZ2());
       }
       kfpVertex.GetCovarianceMatrix(covMatrixPV);
-      KFParticle KFPV(kfpVertex);
+      KFParticle kfpV(kfpVertex);
       registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
       registry.fill(HIST("hCovPVYY"), covMatrixPV[2]);
       registry.fill(HIST("hCovPVXZ"), covMatrixPV[3]);
@@ -423,35 +423,35 @@ struct HfCandidateCreator3Prong {
       KFParticle kfThirdKaon(kfpTrack2, kKPlus);
 
       float impactParameter0XY = 0., errImpactParameter0XY = 0., impactParameter1XY = 0., errImpactParameter1XY = 0., impactParameter2XY = 0., errImpactParameter2XY = 0.;
-      if (!kfFirstProton.GetDistanceFromVertexXY(KFPV, impactParameter0XY, errImpactParameter0XY)) {
+      if (!kfFirstProton.GetDistanceFromVertexXY(kfpV, impactParameter0XY, errImpactParameter0XY)) {
         registry.fill(HIST("hDcaXYProngs"), track0.pt(), impactParameter0XY * toMicrometers);
-        registry.fill(HIST("hDcaZProngs"), track0.pt(), std::sqrt(kfFirstProton.GetDistanceFromVertex(KFPV) * kfFirstProton.GetDistanceFromVertex(KFPV) - impactParameter0XY * impactParameter0XY) * toMicrometers);
+        registry.fill(HIST("hDcaZProngs"), track0.pt(), std::sqrt(kfFirstProton.GetDistanceFromVertex(kfpV) * kfFirstProton.GetDistanceFromVertex(kfpV) - impactParameter0XY * impactParameter0XY) * toMicrometers);
       } else {
         registry.fill(HIST("hDcaXYProngs"), track0.pt(), UndefValueFloat);
         registry.fill(HIST("hDcaZProngs"), track0.pt(), UndefValueFloat);
       }
-      if (!kfSecondKaon.GetDistanceFromVertexXY(KFPV, impactParameter1XY, errImpactParameter1XY)) {
+      if (!kfSecondKaon.GetDistanceFromVertexXY(kfpV, impactParameter1XY, errImpactParameter1XY)) {
         registry.fill(HIST("hDcaXYProngs"), track1.pt(), impactParameter1XY * toMicrometers);
-        registry.fill(HIST("hDcaZProngs"), track1.pt(), std::sqrt(kfSecondKaon.GetDistanceFromVertex(KFPV) * kfSecondKaon.GetDistanceFromVertex(KFPV) - impactParameter1XY * impactParameter1XY) * toMicrometers);
+        registry.fill(HIST("hDcaZProngs"), track1.pt(), std::sqrt(kfSecondKaon.GetDistanceFromVertex(kfpV) * kfSecondKaon.GetDistanceFromVertex(kfpV) - impactParameter1XY * impactParameter1XY) * toMicrometers);
       } else {
         registry.fill(HIST("hDcaXYProngs"), track1.pt(), UndefValueFloat);
         registry.fill(HIST("hDcaZProngs"), track1.pt(), UndefValueFloat);
       }
-      if (!kfThirdProton.GetDistanceFromVertexXY(KFPV, impactParameter2XY, errImpactParameter2XY)) {
+      if (!kfThirdProton.GetDistanceFromVertexXY(kfpV, impactParameter2XY, errImpactParameter2XY)) {
         registry.fill(HIST("hDcaXYProngs"), track2.pt(), impactParameter2XY * toMicrometers);
-        registry.fill(HIST("hDcaZProngs"), track2.pt(), std::sqrt(kfThirdProton.GetDistanceFromVertex(KFPV) * kfThirdProton.GetDistanceFromVertex(KFPV) - impactParameter2XY * impactParameter2XY) * toMicrometers);
+        registry.fill(HIST("hDcaZProngs"), track2.pt(), std::sqrt(kfThirdProton.GetDistanceFromVertex(kfpV) * kfThirdProton.GetDistanceFromVertex(kfpV) - impactParameter2XY * impactParameter2XY) * toMicrometers);
       } else {
         registry.fill(HIST("hDcaXYProngs"), track2.pt(), UndefValueFloat);
         registry.fill(HIST("hDcaZProngs"), track2.pt(), UndefValueFloat);
       }
 
-      auto [impactParameter0Z, errImpactParameter0Z] = kfCalculateImpactParameterZ(kfFirstProton, KFPV);
-      auto [impactParameter1Z, errImpactParameter1Z] = kfCalculateImpactParameterZ(kfSecondKaon, KFPV);
-      auto [impactParameter2Z, errImpactParameter2Z] = kfCalculateImpactParameterZ(kfThirdProton, KFPV);
+      auto [impactParameter0Z, errImpactParameter0Z] = kfCalculateImpactParameterZ(kfFirstProton, kfpV);
+      auto [impactParameter1Z, errImpactParameter1Z] = kfCalculateImpactParameterZ(kfSecondKaon, kfpV);
+      auto [impactParameter2Z, errImpactParameter2Z] = kfCalculateImpactParameterZ(kfThirdProton, kfpV);
 
-      const float chi2primFirst = kfCalculateChi2ToPrimaryVertex(kfFirstProton, KFPV);
-      const float chi2primSecond = kfCalculateChi2ToPrimaryVertex(kfSecondKaon, KFPV);
-      const float chi2primThird = kfCalculateChi2ToPrimaryVertex(kfThirdPion, KFPV);
+      const float chi2primFirst = kfCalculateChi2ToPrimaryVertex(kfFirstProton, kfpV);
+      const float chi2primSecond = kfCalculateChi2ToPrimaryVertex(kfSecondKaon, kfpV);
+      const float chi2primThird = kfCalculateChi2ToPrimaryVertex(kfThirdPion, kfpV);
 
       const float dcaSecondThird = kfCalculateDistanceBetweenParticles(kfSecondKaon, kfThirdPion);
       const float dcaFirstThird = kfCalculateDistanceBetweenParticles(kfFirstProton, kfThirdPion);
@@ -506,8 +506,8 @@ struct HfCandidateCreator3Prong {
       const float massPiK = kfPairPiK.GetMass();
 
       const float chi2geo = kfCandPKPi.Chi2() / kfCandPKPi.NDF();
-      const float chi2topo = kfCalculateChi2ToPrimaryVertex(kfCandPKPi, KFPV);
-      const std::pair<float, float> ldl = kfCalculateLdL(kfCandPKPi, KFPV);
+      const float chi2topo = kfCalculateChi2ToPrimaryVertex(kfCandPKPi, kfpV);
+      const std::pair<float, float> ldl = kfCalculateLdL(kfCandPKPi, kfpV);
 
       std::array<float, 3> pProng0 = kfCalculateProngMomentumInSecondaryVertex(kfFirstProton, kfCandPiKP);
       std::array<float, 3> pProng1 = kfCalculateProngMomentumInSecondaryVertex(kfSecondKaon, kfCandPiKP);
@@ -520,7 +520,7 @@ struct HfCandidateCreator3Prong {
 
       auto covMatrixSV = kfCandPKPi.CovarianceMatrix();
       double phi, theta;
-      getPointDirection(std::array{KFPV.GetX(), KFPV.GetY(), KFPV.GetZ()}, std::array{kfCandPKPi.GetX(), kfCandPKPi.GetY(), kfCandPKPi.GetZ()}, phi, theta);
+      getPointDirection(std::array{kfpV.GetX(), kfpV.GetY(), kfpV.GetZ()}, std::array{kfCandPKPi.GetX(), kfCandPKPi.GetY(), kfCandPKPi.GetZ()}, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
 
@@ -539,7 +539,7 @@ struct HfCandidateCreator3Prong {
 
       // fill candidate table rows
       rowCandidateBase(indexCollision,
-                       KFPV.GetX(), KFPV.GetY(), KFPV.GetZ(),
+                       kfpV.GetX(), kfpV.GetY(), kfpV.GetZ(),
                        kfCandPKPi.GetX(), kfCandPKPi.GetY(), kfCandPKPi.GetZ(),
                        errorDecayLength, errorDecayLengthXY,
                        kfCandPKPi.GetChi2() / kfCandPKPi.GetNDF(),
@@ -555,7 +555,7 @@ struct HfCandidateCreator3Prong {
 
       // fill KF info
       rowCandidateKF(kfCandPKPi.GetErrX(), kfCandPKPi.GetErrY(), kfCandPKPi.GetErrZ(),
-                     std::sqrt(KFPV.Covariance(0, 0)), std::sqrt(KFPV.Covariance(1, 1)), std::sqrt(KFPV.Covariance(2, 2)),
+                     std::sqrt(kfpV.Covariance(0, 0)), std::sqrt(kfpV.Covariance(1, 1)), std::sqrt(kfpV.Covariance(2, 2)),
                      massPKPi, massPiKP, massPiKPi, massKKPi, massPiKK, massKPi, massPiK,
                      kfCandPKPi.GetPx(), kfCandPKPi.GetPy(), kfCandPKPi.GetPz(),
                      kfCandPKPi.GetErrPx(), kfCandPKPi.GetErrPy(), kfCandPKPi.GetErrPz(),
@@ -783,22 +783,24 @@ struct HfCandidateCreator3ProngExpressions {
   Produces<aod::HfCand3ProngMcGen> rowMcMatchGen;
 
   // Configuration
-  o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
-  o2::framework::Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
-  o2::framework::Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
+  Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+  Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
+  Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
-  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
-  HistogramRegistry registry{"registry"};
 
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
-  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
+
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext& initContext)
   {
@@ -1078,6 +1080,6 @@ struct HfCandidateCreator3ProngExpressions {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateCreator3Prong>(cfgc, TaskName{"hf-candidate-creator-3prong"}),
-    adaptAnalysisTask<HfCandidateCreator3ProngExpressions>(cfgc, TaskName{"hf-candidate-creator-3prong-expressions"})};
+    adaptAnalysisTask<HfCandidateCreator3Prong>(cfgc, TaskName{"hf-candidate-creator-3prong"}),                         // o2-linter: disable=name/o2-task (wrong hyphenation)
+    adaptAnalysisTask<HfCandidateCreator3ProngExpressions>(cfgc, TaskName{"hf-candidate-creator-3prong-expressions"})}; // o2-linter: disable=name/o2-task (wrong hyphenation)
 }
