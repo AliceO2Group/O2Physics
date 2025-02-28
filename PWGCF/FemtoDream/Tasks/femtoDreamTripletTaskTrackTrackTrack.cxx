@@ -148,6 +148,8 @@ struct femtoDreamTripletTaskTrackTrackTrack {
     std::vector<double> tmpVecMult = ConfMultBins;
     framework::AxisSpec multAxis = {tmpVecMult, "Multiplicity"};
     ThreeBodyQARegistry.add("TripletTaskQA/hSEMultVSGoodTracks", ";Mult;GoodT", kTH2F, {multAxis, {100, 0, 100}});
+    ThreeBodyQARegistry.add("TripletTaskQA/hTripletsPerEventBelow14", ";Triplets;Entries", kTH1F, {{10, 0, 10}});
+    ThreeBodyQARegistry.add("TripletTaskQA/NumberOfTacksPassingSelection", ";Triplets;Entries", kTH1F, {{30, 0, 30}});
     if (ConfIsMC) {
       ThreeBodyQARegistry.add("TrackMC_QA/hMazzachi", ";gen;(reco-gen)/gen", kTH2F, {{100, ConfMinpT, ConfMaxpT}, {300, -1, 1}});
     }
@@ -220,11 +222,15 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   void doSameEvent(PartitionType groupSelectedParts, PartType parts, float magFieldTesla, int multCol, float centCol)
   {
     /// Histogramming same event
+    int numberOfTracksPassingSelection = 0;
     for (auto& part : groupSelectedParts) {
+      numberOfTracksPassingSelection = numberOfTracksPassingSelection + 1;
       trackHistoSelectedParts.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, multCol, centCol);
     }
+    ThreeBodyQARegistry.fill(HIST("TripletTaskQA/NumberOfTacksPassingSelection"), numberOfTracksPassingSelection);
 
     /// Now build the combinations
+    int numberOfTriplets = 0;
     for (auto& [p1, p2, p3] : combinations(CombinationsStrictlyUpperIndexPolicy(groupSelectedParts, groupSelectedParts, groupSelectedParts))) {
       auto Q3 = FemtoDreamMath::getQ3(p1, mMassOne, p2, mMassTwo, p3, mMassThree);
 
@@ -252,10 +258,14 @@ struct femtoDreamTripletTaskTrackTrackTrack {
       }
 
       // fill pT of all three particles as a function of Q3 for lambda calculations
+      if (Q3 < 1.4) {
+        numberOfTriplets = numberOfTriplets + 1;
+      }
       ThreeBodyQARegistry.fill(HIST("TripletTaskQA/particle_pT_in_Triplet_SE"), p1.pt(), p2.pt(), p3.pt(), Q3);
       sameEventCont.setTriplet<isMC>(p1, p2, p3, multCol, Q3);
       ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hCentrality"), centCol, Q3);
     }
+    ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTripletsPerEventBelow14"), numberOfTriplets);
   }
 
   /// process function to call doSameEvent with Data
