@@ -192,7 +192,7 @@ struct CorrSparse {
 
   void processSame(AodCollisions::iterator const& collision, AodTracks const& tracks)
   {
-    //LOGF(info, "Process Same | Nch: %i | Mult from column %i", tracks.size(), collision.mult());
+    // LOGF(info, "Process Same | Nch: %i | Mult from column %i", tracks.size(), collision.mult());
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     fillYield(collision, tracks);
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, tracks.size()); // fill the SE histogram and Sparse
