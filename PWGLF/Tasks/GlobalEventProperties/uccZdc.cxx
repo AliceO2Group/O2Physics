@@ -22,8 +22,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
@@ -146,7 +146,7 @@ struct UccZdc {
   };
 
   // Filters
-  Filter collFilter = (nabs(aod::collision::posZ) < posZcut);
+  // Filter collFilter = (nabs(aod::collision::posZ) < posZcut);
   // Filter trackFilter = (requireGlobalTrackInFilter());
   Filter trackFilter =
     ((aod::track::eta > minEta) && (aod::track::eta < maxEta) &&
@@ -159,7 +159,7 @@ struct UccZdc {
   using TheFilteredTracks = soa::Filtered<o2::aod::TracksSel>;
   // using TheFilteredTrack = TheFilteredTracks::iterator;
 
-  using TheFilteredSimCollisions = soa::Filtered<o2::aod::SimCollisions>;
+  // using TheFilteredSimCollisions = soa::Filtered<o2::aod::SimCollisions>;
   using TheFilteredSimTracks = soa::Filtered<o2::aod::SimTracks>;
 
   // Histograms: Data
@@ -216,30 +216,17 @@ struct UccZdc {
       registry.add("eta", ";;Entries;", kTH1F, {axisEta});
       registry.add("pt", ";;Entries;", kTH1F, {axisPt});
       registry.add("sigma1Pt", ";;#sigma(p_{T})/p_{T};", kTProfile, {axisPt});
-      registry.add("pP1",
-                   ";Nch;P_{1}=#Sigma_{evs} W^{(1)}_{e} [p_{T}^{(1)}]_{e};",
-                   kTProfile, {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW1", ";Nch;W_{1}=#Sigma_{evs} W^{(1)}_{e};", kTProfile,
-                   {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP2",
-                   ";Nch;P_{2}=#Sigma_{evs} W^{(2)}_{e} [p_{T}^{(2)}]_{e};",
-                   kTProfile, {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW2", ";Nch;W_{2}=#Sigma_{evs} W^{(2)}_{e};", kTProfile,
-                   {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP3",
-                   ";Nch;P_{3}=#Sigma_{evs} W^{(3)}_{e} [p_{T}^{(3)}]_{e};",
-                   kTProfile, {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW3", ";Nch;W_{3}=#Sigma_{evs} W^{(3)}_{e};", kTProfile,
-                   {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP4",
-                   ";Nch;P_{4}=#Sigma_{evs} W^{(4)}_{e} [p_{T}^{(4)}]_{e};",
-                   kTProfile, {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW4", ";Nch;W_{4}=#Sigma_{evs} W^{(4)}_{e};", kTProfile,
-                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP1", ";Nch;P_{1}=#Sigma_{evs} W^{(1)}_{e} [p_{T}^{(1)}]_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW1", ";Nch;W_{1}=#Sigma_{evs} W^{(1)}_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP2", ";Nch;P_{2}=#Sigma_{evs} W^{(2)}_{e} [p_{T}^{(2)}]_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW2", ";Nch;W_{2}=#Sigma_{evs} W^{(2)}_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP3", " ;Nch;P_{3}=#Sigma_{evs} W^{(3)}_{e} [p_{T}^{(3)}]_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW3", ";Nch;W_{3}=#Sigma_{evs} W^{(3)}_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP4", ";Nch;P_{4}=#Sigma_{evs} W^{(4)}_{e} [p_{T}^{(4)}]_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW4", ";Nch;W_{4}=#Sigma_{evs} W^{(4)}_{e};", kTProfile, {{nBinsNch, -0.5, maxNch}});
       registry.add("dcaXYvspT", "", kTH2F, {{{50, -1., 1.}, {axisPt}}});
       registry.add("T0Ccent", ";T0C centrality;Entries", kTH1F, {axisCent});
-      registry.add("Nch", ";Nch (|#eta|<0.8);", kTH1F,
-                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("Nch", ";Nch (|#eta|<0.8);", kTH1F, {{nBinsNch, -0.5, maxNch}});
       registry.add("ZN", "", kTH1F, {{nBinsZDC, -0.5, maxZN}});
       registry.add("ZNA", "", kTH1F, {{nBinsZDC, -0.5, maxZN}});
       registry.add("ZPA", "", kTH1F, {{nBinsZDC, -0.5, maxZP}});
@@ -630,7 +617,8 @@ struct UccZdc {
   PROCESS_SWITCH(UccZdc, processZdcCollAss, "Process ZDC W/Coll Ass.", true);
 
   template <typename T, typename U>
-  void getMoments(const T& pTs, const T& wIs, U& pOne, U& wOne, U& pTwo, U& wTwo, U& pThree, U& wThree, U& pFour, U& wFour)
+  void getMoments(const T& pTs, const T& wIs, U& pOne, U& wOne, U& pTwo,
+                  U& wTwo, U& pThree, U& wThree, U& pFour, U& wFour)
   {
     pOne = wOne = pTwo = wTwo = pThree = wThree = pFour = wFour = 0.;
 
