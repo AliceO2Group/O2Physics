@@ -224,16 +224,8 @@ struct ResonancesGfwFlow {
     double* ptBins = &(axis.binEdges)[0];
     fPtAxis = new TAxis(nPtBins, ptBins);
 
-    // o2::framework::AxisSpec axisPhisMass = axisPhiMass;
-    // double* phiMassBins = &(axisPhisMass.binEdges)[0];
     fPhiMassAxis = new TAxis(cfgNPhiMassBins, 0.99, 1.06);
-
-    // o2::framework::AxisSpec axisK0sMass = axisK0Mass;
-    // double* k0MassBins = &(axisK0sMass.binEdges)[0];
     fK0MassAxis = new TAxis(cfgNK0MassBins, 0.44, 0.56);
-
-    // o2::framework::AxisSpec axisLambdasMass = axisLambdaMass;
-    // double* lambdaMassBins = &(axisLambdasMass.binEdges)[0];
     fLambdaMassAxis = new TAxis(cfgNLambdaMassBins, 1.08, 1.15);
 
     int nPhisPtMassBins = nPtBins * cfgNPhiMassBins;
@@ -285,7 +277,6 @@ struct ResonancesGfwFlow {
     fGFW->CreateRegions();
   }
 
-  // This function is specific for Phi flow: will be made more generic in further iterations
   template <char... chars>
   void fillResoProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, TAxis* partaxis)
   {
