@@ -152,14 +152,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! absolute p
   DECLARE_JETMATCHING_TABLE(_jet_type_##MCParticleLevel, _jet_type_##MCDetectorLevel, _shortname_ "JETP2D")                                           \
   DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCDetectorLevel, _shortname_ "DJETMW")                                         \
   DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCParticleLevel, _jet_type_##MCParticleLevel, _shortname_ "PETMPW")                                         \
-  DECLARE_JET_TABLES(JCollision, _jet_type_##EventWiseSubtracted, _subtracted_track_type_, _hfcand_type_, _shortname_ "JETEWS")                       \
+  DECLARE_JET_TABLES(JCollision, _jet_type_##EventWiseSubtracted, _subtracted_track_type_, _hfcand_type_, _shortname_ "EWSJET")                       \
   DECLARE_JETMATCHING_TABLE(_jet_type_, _jet_type_##EventWiseSubtracted, _shortname_ "JET2EWS")                                                       \
-  DECLARE_JETMATCHING_TABLE(_jet_type_##EventWiseSubtracted, _jet_type_, _shortname_ "JETEWS2")                                                       \
-  DECLARE_JET_TABLES(JCollision, _jet_type_##MCDetectorLevelEventWiseSubtracted, _subtracted_track_type_, _hfcand_type_, _shortname_ "DJETEWS")       \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##EventWiseSubtracted, _jet_type_, _shortname_ "EWSJET2")                                                       \
+  DECLARE_JET_TABLES(JCollision, _jet_type_##MCDetectorLevelEventWiseSubtracted, _subtracted_track_type_, _hfcand_type_, _shortname_ "DEWSJET")       \
   DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCDetectorLevelEventWiseSubtracted, _jet_type_##MCDetectorLevelEventWiseSubtracted, _shortname_ "DJETEWSW") \
   DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCDetectorLevelEventWiseSubtracted, _shortname_ "DJET2DEWS")                     \
-  DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevelEventWiseSubtracted, _jet_type_##MCDetectorLevel, _shortname_ "JETDEWS2D")                     \
-  DECLARE_JET_TABLES(JMcCollision, _jet_type_##MCParticleLevelEventWiseSubtracted, _subtracted_track_type_, _hfparticle_type_, _shortname_ "PJETEWS")
+  DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevelEventWiseSubtracted, _jet_type_##MCDetectorLevel, _shortname_ "DEWSJET2D")                     \
+  DECLARE_JET_TABLES(JMcCollision, _jet_type_##MCParticleLevelEventWiseSubtracted, _subtracted_track_type_, _hfparticle_type_, _shortname_ "PEWSJET")
 
 #define STRINGIFY(x) #x
 
