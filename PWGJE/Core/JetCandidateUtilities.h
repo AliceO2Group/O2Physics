@@ -256,6 +256,24 @@ auto slicedPerCandidateCollision(T const& table, U const& candidates, V const& c
 }
 
 /**
+ * returns a slice of the table depending on the index of the candidate
+ * @param CandidateTable candidtae table type
+ * @param jet jet that the slice is based on
+ * @param table the table to be sliced
+ */
+template <typename CandidateTable, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
+auto slicedPerJet(T const& table, U const& jet, V const& perD0Jet, M const& perDplusJet, N const& perLcJet, O const& perBplusJet, P const& perDielectronJet)
+{
+  if constexpr (jethfutilities::isHFTable<CandidateTable>() || jethfutilities::isHFMcTable<CandidateTable>()) {
+    return jethfutilities::slicedPerHFJet<CandidateTable>(table, jet, perD0Jet, perDplusJet, perLcJet, perBplusJet);
+  } else if constexpr (jetdqutilities::isDielectronTable<CandidateTable>() || jetdqutilities::isDielectronMcTable<CandidateTable>()) {
+    return jetdqutilities::slicedPerDielectronJet<CandidateTable>(table, jet, perDielectronJet);
+  } else {
+    return table;
+  }
+}
+
+/**
  * returns the candidate collision Id of candidate based on type of candidate
  *
  * @param candidate candidate that is being checked

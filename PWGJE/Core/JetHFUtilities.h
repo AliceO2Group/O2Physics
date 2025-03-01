@@ -441,6 +441,29 @@ auto slicedPerHFCollision(T const& table, U const& /*candidates*/, V const& coll
 }
 
 /**
+ * returns a slice of the table depending on the index of the HF candidate
+ *
+ * @param HFTable HF table type
+ * @param jet jet that is being sliced based on
+ * @param table the table to be sliced
+ */
+template <typename HFTable, typename T, typename U, typename V, typename M, typename N, typename O>
+auto slicedPerHFJet(T const& table, U const& jet, V const& perD0Jet, M const& perDplusJet, N const& perLcJet, O const& perBplusJet)
+{
+  if constexpr (isD0Table<HFTable>() || isD0McTable<HFTable>()) {
+    return table.sliceBy(perD0Jet, jet.globalIndex());
+  } else if constexpr (isDplusTable<HFTable>() || isDplusMcTable<HFTable>()) {
+    return table.sliceBy(perDplusJet, jet.globalIndex());
+  } else if constexpr (isLcTable<HFTable>() || isLcMcTable<HFTable>()) {
+    return table.sliceBy(perLcJet, jet.globalIndex());
+  } else if constexpr (isBplusTable<HFTable>() || isBplusMcTable<HFTable>()) {
+    return table.sliceBy(perBplusJet, jet.globalIndex());
+  } else {
+    return table;
+  }
+}
+
+/**
  * returns the HF collision Id of candidate based on type of HF candidate
  *
  * @param candidate HF candidate that is being checked
