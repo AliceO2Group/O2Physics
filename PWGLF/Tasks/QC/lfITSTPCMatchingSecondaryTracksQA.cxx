@@ -61,7 +61,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
 
   // Track Parameters
-  Configurable<float> minITSnCls{"minITSnCls", 3.0f, "min number of ITS clusters"};
+  Configurable<float> minITSnCls{"minITSnCls", 1.0f, "min number of ITS clusters"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80.0f, "min number of TPC crossed rows"};
   Configurable<float> minNCrossedRowsOverFindable{"minNCrossedRowsOverFindable", 0.8f, "min number of TPC crossed rows/findable"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
@@ -211,15 +211,27 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   template <typename ItsTrack>
   bool passedTrackSelectionIts(const ItsTrack& track)
   {
+    /*
     if (!track.hasITS())
       return false;
     if (track.itsNCls() < minITSnCls)
       return false;
     if (track.itsChi2NCl() > maxChi2ITS)
       return false;
+    */
+
+    if (track.itsNCls() < minITSnCls)
+      return false;
+
+    bool hasHitOnAnyLayer = false;
+    for (int i = 0; i < 7; i++) {
+      if (hasHitOnITSlayer(track.itsClusterMap(), i))
+        hasHitOnAnyLayer = true;
+    }
+    if (!hasHitOnAnyLayer)
+      return false;
 
     auto requiredItsHit = static_cast<std::vector<float>>(requiredHit);
-
     if (requireItsHits) {
       for (int i = 0; i < 7; i++) {
         if (requiredItsHit[i] > 0 && !hasHitOnITSlayer(track.itsClusterMap(), i)) {
@@ -250,7 +262,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       // Secondary Tracks
       if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track))
         registryData.fill(HIST("secPionTPC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
-      if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && track.hasITS())
+      if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && passedTrackSelectionIts(track))
         registryData.fill(HIST("secPionTPC_ITS"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
     }
 
@@ -265,9 +277,9 @@ struct LfITSTPCMatchingSecondaryTracksQA {
         registryData.fill(HIST("secPionV0TPC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
       if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack))
         registryData.fill(HIST("secPionV0TPC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
-      if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && posTrack.hasITS())
+      if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && passedTrackSelectionIts(posTrack))
         registryData.fill(HIST("secPionV0TPC_ITS"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
-      if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && negTrack.hasITS())
+      if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && passedTrackSelectionIts(negTrack))
         registryData.fill(HIST("secPionV0TPC_ITS"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
     }
   }
@@ -299,7 +311,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
         // Secondary Tracks
         if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track))
           registryMC.fill(HIST("secPionTPC_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
-        if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && track.hasITS())
+        if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && passedTrackSelectionIts(track))
           registryMC.fill(HIST("secPionTPC_ITS_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
       }
 
@@ -314,9 +326,9 @@ struct LfITSTPCMatchingSecondaryTracksQA {
           registryMC.fill(HIST("secPionV0TPC_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
         if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack))
           registryMC.fill(HIST("secPionV0TPC_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
-        if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && posTrack.hasITS())
+        if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && passedTrackSelectionIts(posTrack))
           registryMC.fill(HIST("secPionV0TPC_ITS_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
-        if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && negTrack.hasITS())
+        if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && passedTrackSelectionIts(negTrack))
           registryMC.fill(HIST("secPionV0TPC_ITS_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
       }
     }
