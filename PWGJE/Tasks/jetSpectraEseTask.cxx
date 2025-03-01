@@ -287,16 +287,18 @@ struct JetSpectraEseTask {
 
     auto rho = collision.rho();
     std::unique_ptr<TF1> rhoFit{nullptr};
-    if (cfgrhoPhi)
+    if (cfgrhoPhi) {
       rhoFit = fitRho<true>(collision, psi, tracks);
+    }
 
     registry.fill(HIST("hEventCounter"), counter++);
     registry.fill(HIST("hRho"), rho);
     registry.fill(HIST("hCentralityAnalyzed"), collision.centrality());
     for (auto const& jet : jets) {
-      float jetpTbkgsub = jet.pt() - (rho * jet.area());
-      if (cfgrhoPhi)
+      if (cfgrhoPhi) {
         rho = evalRho(rhoFit.get(), jet.phi(), rho);
+      }
+      float jetpTbkgsub = jet.pt() - (rho * jet.area());
       registry.fill(HIST("hJetPt"), jet.pt());
       registry.fill(HIST("hJetPt_bkgsub"), jetpTbkgsub);
       registry.fill(HIST("hJetEta"), jet.eta());
@@ -631,17 +633,12 @@ struct JetSpectraEseTask {
 
     hPhiPt->Fit(modulationFit.get(), "Q", "", 0, o2::constants::math::TwoPI);
 
-    std::array<double, 5> fitParams{};
-    for (int i{0}; i < 5; ++i) {
-      fitParams[i] = modulationFit->GetParameter(i);
-    }
-
     if constexpr (fillHist) {
-      registry.fill(HIST("hfitPar0"), col.centrality(), fitParams[0]);
-      registry.fill(HIST("hfitPar1"), col.centrality(), fitParams[1]);
-      registry.fill(HIST("hfitPar2"), col.centrality(), fitParams[2]);
-      registry.fill(HIST("hfitPar3"), col.centrality(), fitParams[3]);
-      registry.fill(HIST("hfitPar4"), col.centrality(), fitParams[4]);
+      registry.fill(HIST("hfitPar0"), col.centrality(), modulationFit->GetParameter(0));
+      registry.fill(HIST("hfitPar1"), col.centrality(), modulationFit->GetParameter(1));
+      registry.fill(HIST("hfitPar2"), col.centrality(), modulationFit->GetParameter(2));
+      registry.fill(HIST("hfitPar3"), col.centrality(), modulationFit->GetParameter(3));
+      registry.fill(HIST("hfitPar4"), col.centrality(), modulationFit->GetParameter(4));
     }
 
     double chi2{0.};
