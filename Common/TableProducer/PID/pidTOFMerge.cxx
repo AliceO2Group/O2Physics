@@ -212,7 +212,9 @@ struct TOFCalibConfig {
         LOG(info) << "Initializing the time shift for " << (isPositive ? "positive" : "negative")
                   << " from ccdb '" << nameShift << "' and timestamp " << mTimestamp
                   << " and pass '" << mReconstructionPass << "'";
+        ccdb->setFatalWhenNull(false);
         mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(nameShift, mTimestamp, metadata), isPositive);
+        ccdb->setFatalWhenNull(true);
       }
       LOG(info) << " test getTimeShift at 0 " << (isPositive ? "pos" : "neg") << ": "
                 << mRespParamsV3.getTimeShift(0, isPositive);
@@ -302,7 +304,9 @@ struct TOFCalibConfig {
       LOG(info) << "Updating the time shift for " << (isPositive ? "positive" : "negative")
                 << " from ccdb '" << nameShift << "' and timestamp " << mTimestamp
                 << " and pass '" << mReconstructionPass << "'";
+      ccdb->setFatalWhenNull(false);
       mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(nameShift, mTimestamp, metadata), isPositive);
+      ccdb->setFatalWhenNull(true);
       LOG(info) << " test getTimeShift at 0 " << (isPositive ? "pos" : "neg") << ": "
                 << mRespParamsV3.getTimeShift(0, isPositive);
     };

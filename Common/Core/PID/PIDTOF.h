@@ -141,12 +141,16 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
   }
   void setTimeShiftParameters(TGraph* g, bool positive)
   {
+    if (!g) {
+      LOG(info) << "No Time Shift parameter is passed for " << (positive ? "positive" : "negative");
+    } else {
+      LOG(info) << "Set the Time Shift parameters from object " << g->GetName() << " " << g->GetTitle() << " for " << (positive ? "positive" : "negative");
+    }
     if (positive) {
       gPosEtaTimeCorr = g;
     } else {
       gNegEtaTimeCorr = g;
     }
-    LOG(info) << "Set the Time Shift parameters from object " << g->GetName() << " " << g->GetTitle() << " for " << (positive ? "positive" : "negative");
   }
   float getTimeShift(float eta, int16_t sign) const
   {
