@@ -13,6 +13,9 @@
 // Class for dilepton Cut
 //
 
+#include <utility>
+#include <set>
+
 #include "Framework/Logger.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 
