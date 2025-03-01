@@ -10,6 +10,7 @@
 # or submit itself to any jurisdiction.
 
 add_subdirectory(Duplicates)
+add_subdirectory(Substructure)
 
 if(FastJet_FOUND)
 
