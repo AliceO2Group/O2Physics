@@ -76,8 +76,6 @@ struct HfCandidateSelectorXicToPKPi {
   // QA switch
   Configurable<bool> activateQA{"activateQA", true, "Flag to enable QA histogram"};
 
-  HistogramRegistry registry{"registry"};
-
   o2::analysis::HfMlResponseXicToPKPi<float> hfMlResponse;
   std::vector<float> outputMlXicToPKPi = {};
   std::vector<float> outputMlXicToPiKP = {};
@@ -88,6 +86,8 @@ struct HfCandidateSelectorXicToPKPi {
   HfHelper hfHelper;
 
   using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
+
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
