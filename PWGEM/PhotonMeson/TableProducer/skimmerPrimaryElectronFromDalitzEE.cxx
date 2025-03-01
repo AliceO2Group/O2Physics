@@ -41,7 +41,7 @@ using namespace o2::pwgem::photonmeson;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEventsNgPCM>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
-using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCFullEl, aod::pidTPCFullPi>;
+using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFbeta>;
 using MyTrack = MyTracks::iterator;
 using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
 using MyTrackMC = MyTracksMC::iterator;
@@ -69,13 +69,15 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
   Configurable<float> minpt{"minpt", 0.05, "min pt for track"};
-  Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
+  Configurable<float> maxeta{"maxeta", 2.0, "max eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 0.05, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 0.05, "max DCAz in cm"};
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
-  Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.5, "max. TPC n sigma for electron inclusion"};
+  Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", +3.5, "max. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 0.0, "max. TPC n sigma for pion exclusion"};
   Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", 0.0, "min. TPC n sigma for pion exclusion"};
+  Configurable<float> minTOFNsigmaEl{"minTOFNsigmaEl", -3.5, "min. TOF n sigma for electron inclusion"};
+  Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", +3.5, "max. TOF n sigma for electron inclusion"};
   Configurable<float> maxMee{"maxMee", 0.03, "max. mee to store dalitz ee pairs"};
   Configurable<bool> fillLS{"fillLS", true, "flag to fill LS histograms for QA"};
 
@@ -98,7 +100,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
     ccdb->setFatalWhenNull(false);
 
     fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
-    fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -1.0f, 1.0f}}, false);
+    fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {400, -2.0f, 2.0f}}, false);
     fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
     fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("Track/hDCAxy_Pt", "DCA_{xy} vs. pT;p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {{200, 0, 10}, {200, -1, 1}}, false);
@@ -123,6 +125,12 @@ struct skimmerPrimaryElectronFromDalitzEE {
     fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
     fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
+
+    // TOF
+    fRegistry.add("Track/hChi2TOF", "chi2 of TOF", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/hTOFbeta", "TOF beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
+    fRegistry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
 
     // pair
     fRegistry.add("Pair/uls/hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{100, 0, 0.1}, {200, 0, 2}}, false);
@@ -235,6 +243,9 @@ struct skimmerPrimaryElectronFromDalitzEE {
     if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi) {
       return false;
     }
+    if (track.hasTOF() && (track.tofNSigmaEl() < minTOFNsigmaEl || maxTOFNsigmaEl < track.tofNSigmaEl())) { // TOFif
+      return false;
+    }
     return true;
   }
 
@@ -247,7 +258,8 @@ struct skimmerPrimaryElectronFromDalitzEE {
                          track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                          track.tpcChi2NCl(), track.tpcInnerParam(),
                          track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
-                         track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(), track.tgl());
+                         track.beta(), track.tofNSigmaEl(), track.tofNSigmaPi(),
+                         track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap(), track.tgl());
 
       fRegistry.fill(HIST("Track/hPt"), track.pt());
       fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
@@ -268,6 +280,11 @@ struct skimmerPrimaryElectronFromDalitzEE {
       fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
       fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
+
+      fRegistry.fill(HIST("Track/hChi2TOF"), track.tofChi2());
+      fRegistry.fill(HIST("Track/hTOFbeta"), track.p(), track.beta());
+      fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
+      fRegistry.fill(HIST("Track/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
 
       fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
       fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
