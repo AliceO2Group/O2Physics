@@ -545,12 +545,9 @@ struct converterRun2TrackExtras_000 {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{};
-  std::unordered_set<std::string> addedConverters; // Track added converters
-
   // Check if 'aod-metadata-tables' option is available in the config context
   if (cfgc.options().hasOption("aod-metadata-tables")) {
     const std::vector<std::string> tables = cfgc.options().get<std::vector<std::string>>("aod-metadata-tables");
-
     // Map of table names to their corresponding converter task functions
     std::unordered_map<std::string, std::vector<std::function<void()>>> tableToTasks = {
       {"O2bc", {[&]() { workflow.push_back(adaptAnalysisTask<converterBCs_000>(cfgc)); }}},
@@ -585,7 +582,25 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       }
     }
   } else {
-    LOG(warning) << "AOD converter: No tables found in the meta data";
+    LOG(warning) << "AOD converter: No tables found in the meta data. Adding them all.";
+    workflow.push_back(adaptAnalysisTask<converterBCs_000>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterCollisions_000>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterFDDs_000>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterHMPID_000>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterMcCaloLabels_000>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterStoredMFTTracks_000>(cfgc));
+    workflow.push_back(adaptAnalysisTask<spawnerMFTTracks>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterV0s_000>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterV0s_001>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterCascades_000>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterMcCollisions_000>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterStoredMcParticles_000>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterRun2BCInfos_000>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterRun2TrackExtras_000>(cfgc));
+    // workflow.push_back(adaptAnalysisTask<converterStoredTracksExtra_000>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterStoredTracksExtra_001>(cfgc));
+    workflow.push_back(adaptAnalysisTask<spawnerTracksExtra_002>(cfgc));
+    workflow.push_back(adaptAnalysisTask<converterZdcs_000>(cfgc));
   }
   return workflow;
 }
