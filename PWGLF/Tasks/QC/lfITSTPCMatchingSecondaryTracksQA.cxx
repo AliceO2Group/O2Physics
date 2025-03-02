@@ -74,7 +74,8 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   Configurable<float> nsigmaTOFmax{"nsigmaTOFmax", +3.0f, "Maximum nsigma TOF"};
   Configurable<float> dcaxyMax{"dcaxyMax", 0.1f, "dcaxy max"};
   Configurable<float> dcazMax{"dcazMax", 0.1f, "dcaz max"};
-  Configurable<float> dcaMin{"dcaMin", 0.1f, "dca min"};
+  Configurable<float> dcaxyMin{"dcaxyMin", 0.1f, "dcaxy min"};
+  Configurable<float> dcazMin{"dcazMin", 0.1f, "dcaz min"};
   Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
   Configurable<bool> requireItsHits{"requireItsHits", false, "require ITS hits"};
   Configurable<std::vector<float>> requiredHit{"requiredHit", {0, 0, 0, 0, 0, 0, 0}, "required ITS Hits (1=required, 0=not required)"};
@@ -152,7 +153,9 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       return false;
     if (track.eta() < etaMin || track.eta() > etaMax)
       return false;
-    if (std::sqrt(track.dcaXY() * track.dcaXY() + track.dcaZ() * track.dcaZ()) < dcaMin)
+    if (std::fabs(track.dcaXY()) < dcaxyMin)
+      return false;
+    if (std::fabs(track.dcaZ()) < dcazMin)
       return false;
     return true;
   }
@@ -221,14 +224,6 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     */
 
     if (track.itsNCls() < minITSnCls)
-      return false;
-
-    bool hasHitOnAnyLayer = false;
-    for (int i = 0; i < 7; i++) {
-      if (hasHitOnITSlayer(track.itsClusterMap(), i))
-        hasHitOnAnyLayer = true;
-    }
-    if (!hasHitOnAnyLayer)
       return false;
 
     auto requiredItsHit = static_cast<std::vector<float>>(requiredHit);
