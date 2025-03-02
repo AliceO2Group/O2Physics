@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file PidMLEffAndPurProducer.cxx
+/// \file pidMlEffAndPurProducer.cxx
 /// \brief Produce pt histograms for tracks accepted by ML network and for MC mcParticles.
 ///
 /// \author Michał Olędzki <m.oledzki@cern.ch>
@@ -23,15 +23,15 @@
 #include "CCDB/CcdbApi.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Tools/PIDML/PidOnnxModel.h"
-#include "Tools/PIDML/PidUtils.h"
+#include "Tools/PIDML/pidOnnxModel.h"
+#include "Tools/PIDML/pidUtils.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace pidml::pidutils;
 
-struct PidMLEffAndPurProducer {
+struct PidMlEffAndPurProducer {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> pdgPid{"pdgPid", 211, "PID to predict"};
@@ -208,5 +208,5 @@ struct PidMLEffAndPurProducer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<PidMLEffAndPurProducer>(cfgc)};
+    adaptAnalysisTask<PidMlEffAndPurProducer>(cfgc)};
 }

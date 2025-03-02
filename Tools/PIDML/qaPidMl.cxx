@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file QaPidML.cxx
+/// \file qaPidMl.cxx
 /// \brief Task to check ML PID efficiency. Based on Maja's simpleApplyPidOnnxModel.cxx code
 /// \author Łukasz Sawicki
 /// \since
@@ -23,13 +23,13 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include <TParameter.h>
-#include "Tools/PIDML/PidOnnxModel.h"
+#include "Tools/PIDML/pidOnnxModel.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct QaPidML {
+struct QaPidMl {
   static const int maxP = 5;
   // nb of bins for TH1 hists
   static const int binsNb = 100;
@@ -396,6 +396,6 @@ struct QaPidML {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<QaPidML>(cfgc),
+    adaptAnalysisTask<QaPidMl>(cfgc),
   };
 }

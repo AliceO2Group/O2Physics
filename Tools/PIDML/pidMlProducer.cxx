@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file PidMLProducer.cxx
+/// \file pidMlProducer.cxx
 /// \brief Produce PID ML skimmed data from MC or data files.
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
@@ -24,8 +24,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Tools/PIDML/PidML.h"
-#include "Tools/PIDML/PidUtils.h"
+#include "Tools/PIDML/pidMl.h"
+#include "Tools/PIDML/pidUtils.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -36,7 +36,7 @@ using namespace pidml::pidutils;
 //  Data: experimental data without simulation
 //  MC: experimental data with Monte Carlo simulation
 //  ML: only columns used by Machine Learning network
-struct PidMLProducer {
+struct PidMlProducer {
   Produces<aod::PidTracksDataMl> pidTracksTableDataML;
   Produces<aod::PidTracksData> pidTracksTableData;
   Produces<aod::PidTracksMcMl> pidTracksTableMCML;
@@ -230,7 +230,7 @@ struct PidMLProducer {
       fillHist(track);
     }
   }
-  PROCESS_SWITCH(PidMLProducer, processDataML, "Produce only ML real data", true);
+  PROCESS_SWITCH(PidMlProducer, processDataML, "Produce only ML real data", true);
 
   void processDataAll(MyCollision const& collision, BigTracksData const& tracks)
   {
@@ -264,7 +264,7 @@ struct PidMLProducer {
       fillHist(track);
     }
   }
-  PROCESS_SWITCH(PidMLProducer, processDataAll, "Produce all real data", false);
+  PROCESS_SWITCH(PidMlProducer, processDataAll, "Produce all real data", false);
 
   void processMcMl(MyCollisionML const& /*collision*/, BigTracksMCML const& tracks, aod::McParticles const& /*mctracks*/)
   {
@@ -290,7 +290,7 @@ struct PidMLProducer {
       fillHistMC(track, pdgCode, isPrimary);
     }
   }
-  PROCESS_SWITCH(PidMLProducer, processMcMl, "Produce only ML MC essential data", false);
+  PROCESS_SWITCH(PidMlProducer, processMcMl, "Produce only ML MC essential data", false);
 
   void processMcAll(MyCollision const& collision, BigTracksMC const& tracks, aod::McParticles const& /*mctracks*/)
   {
@@ -332,10 +332,10 @@ struct PidMLProducer {
       fillHistMC(track, pdgCode, isPrimary);
     }
   }
-  PROCESS_SWITCH(PidMLProducer, processMcAll, "Produce all MC data", false);
+  PROCESS_SWITCH(PidMlProducer, processMcAll, "Produce all MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<PidMLProducer>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<PidMlProducer>(cfgc)};
 }

@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file PidUtils.h
+/// \file pidUtils.h
 /// \brief Common constants and functions for PID.
 ///
 /// \author Marek Mytkowski <marek.mytkowski@cern.ch>

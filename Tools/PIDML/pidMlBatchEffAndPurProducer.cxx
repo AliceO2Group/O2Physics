@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file PidMLBatchEffAndPurProducer.cxx
+/// \file pidMlBatchEffAndPurProducer.cxx
 /// \brief Batch PID execution task. It produces derived data needed for ROOT script, which
 /// generate PIDML neural network performance benchmark plots.
 ///
@@ -30,8 +30,8 @@
 #include "CCDB/CcdbApi.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Tools/PIDML/PidOnnxModel.h"
-#include "Tools/PIDML/PidUtils.h"
+#include "Tools/PIDML/pidOnnxModel.h"
+#include "Tools/PIDML/pidUtils.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -57,7 +57,7 @@ DECLARE_SOA_TABLE(EffAndPurPidResult, "AOD", "PIDEFFANDPURRES", o2::soa::Index<>
                   effandpurpidresult::NSigma, effandpurpidresult::IsPidMC, effandpurpidresult::HasTOF, effandpurpidresult::HasTRD);
 } // namespace o2::aod
 
-struct PidMLBatchEffAndPurProducer {
+struct PidMlBatchEffAndPurProducer {
   Produces<o2::aod::EffAndPurPidResult> effAndPurPIDResult;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -245,5 +245,5 @@ struct PidMLBatchEffAndPurProducer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<PidMLBatchEffAndPurProducer>(cfgc)};
+    adaptAnalysisTask<PidMlBatchEffAndPurProducer>(cfgc)};
 }
