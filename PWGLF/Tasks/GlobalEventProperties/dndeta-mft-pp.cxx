@@ -190,6 +190,12 @@ struct PseudorapidityDensityMFT {
       registry.add({"TracksPhiEtaGen",
                     "; #varphi; #eta; tracks",
                     {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+      registry.add({"TracksPhiEtaGen_gt0",
+                    "; #varphi; #eta; tracks",
+                    {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+      registry.add({"TracksPhiEtaGen_gt0t",
+                    "; #varphi; #eta; tracks",
+                    {HistType::kTH2F, {PhiAxis, EtaAxis}}});
       registry.add({"TracksPhiZvtxGen",
                     "; #varphi; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {PhiAxis, ZAxis}}}); //
@@ -842,6 +848,7 @@ struct PseudorapidityDensityMFT {
         if (perCollisionMCSampleCentral.size() > 0) {
           registry.fill(HIST("TracksEtaZvtxGen_gt0t"), particle.eta(),
                         mcCollision.posZ());
+          registry.fill(HIST("TracksPhiEtaGen_gt0t"), particle.phi(), particle.eta());
         }
         if (atLeastOne) {
           registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(),
@@ -850,6 +857,7 @@ struct PseudorapidityDensityMFT {
           if (atLeastOne_gt0) {
             registry.fill(HIST("TracksEtaZvtxGen_gt0"), particle.eta(),
                           mcCollision.posZ());
+            registry.fill(HIST("TracksPhiEtaGen_gt0"), particle.phi(), particle.eta());
           }
         }
 
