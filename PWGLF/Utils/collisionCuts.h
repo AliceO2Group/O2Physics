@@ -88,7 +88,7 @@ class CollisonCuts
       LOGF(error, "Event selection not set - quitting!");
     }
     for (int i = 0; i < kNaliases; i++) {
-      bit_list.push_back(1 << i); // BIT(i)
+      bitList.push_back(1 << i); // BIT(i)
     }
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}});       // z-vertex histogram after event selections
@@ -197,7 +197,7 @@ class CollisonCuts
       return false;
     }
     if (mInitialColBitScan) {
-      for (int bit : bit_list) {
+      for (const auto& bit : bitList) {
         if (col.selection_bit(bit)) {
           LOGF(info, "Trigger %d fired", bit);
         }
@@ -315,7 +315,7 @@ class CollisonCuts
  private:
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr; ///< For QA output
-  std::vector<int> bit_list;
+  std::vector<int> bitList;
   bool mCutsSet = false;                      ///< Protection against running without cuts
   bool mInitialColBitScan = true;             ///< Scan for collision bit
   bool mCheckTrigger = false;                 ///< Check for trigger
