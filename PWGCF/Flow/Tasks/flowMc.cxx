@@ -281,7 +281,7 @@ struct FlowMc {
 
     int64_t nCh = 0;
     int64_t nChGlobal = 0;
-    float centrality;
+    float centrality = 0;
     float lRandom = fRndm->Rndm();
     float weff = 1.;
     float wacc = 1.;
