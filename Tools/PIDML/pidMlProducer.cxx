@@ -16,6 +16,7 @@
 /// \author Marek Mytkowski <marek.mytkowski@cern.ch>
 
 #include <string_view>
+#include <limits>
 #include "Framework/AnalysisTask.h"
 #include "Framework/StaticFor.h"
 #include "Framework/AnalysisDataModel.h"
