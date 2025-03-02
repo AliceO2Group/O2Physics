@@ -29,7 +29,7 @@ using namespace o2::framework::expressions;
 struct QaPid {
   double combinedSignal(float val1, float val2)
   {
-    return abs::sqrt(std::pow(val1, 2) + std::pow(val2, 2));
+    return std::sqrt(std::pow(val1, 2) + std::pow(val2, 2));
   }
 
   int indexOfSmallestElement(const float array[], int size)
@@ -329,7 +329,7 @@ struct QaPid {
     /*
     Simplest possible PID, accept particle when:
     TPCSignal < X if p < Value or
-    abs::sqrt(TPCSignal^2 + TOFSignal^2) < X if p > Value
+    std::sqrt(TPCSignal^2 + TOFSignal^2) < X if p > Value
     */
     const float p = track.p();
 
@@ -342,7 +342,7 @@ struct QaPid {
         }
       }
     } else if ((p >= PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
-      if (abs::sqrt(std::pow(tpcNSigmas[i], 2) + std::pow(tofNSigmas[i], 2)) < nsigmacut.value) {
+      if (std::sqrt(std::pow(tpcNSigmas[i], 2) + std::pow(tofNSigmas[i], 2)) < nsigmacut.value) {
         if (pdgCode == PdgCodes[i]) {
           fillPidHistos<i>(track, pdgCode, true);
         } else {

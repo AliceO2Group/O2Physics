@@ -23,7 +23,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include <TParameter.h>
-#include "Tools/PIDML/pidOnnxModel.h"
+#include "Tools/PIDML/PidOnnxModel.h"
 
 using namespace o2;
 using namespace o2::framework;

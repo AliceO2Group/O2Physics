@@ -24,8 +24,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Tools/PIDML/pidML.h"
-#include "Tools/PIDML/pidUtils.h"
+#include "Tools/PIDML/PidML.h"
+#include "Tools/PIDML/PidUtils.h"
 
 using namespace o2;
 using namespace o2::framework;

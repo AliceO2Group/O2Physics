@@ -21,7 +21,7 @@
 #include "CCDB/CcdbApi.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Tools/PIDML/pidOnnxInterface.h"
+#include "Tools/PIDML/PidOnnxInterface.h"
 
 using namespace o2;
 using namespace o2::framework;

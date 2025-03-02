@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "Framework/Array2D.h"
-#include "Tools/PIDML/pidOnnxModel.h"
+#include "Tools/PIDML/PidOnnxModel.h"
 
 namespace pidml_pt_cuts
 {

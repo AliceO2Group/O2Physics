@@ -21,7 +21,7 @@
 #include "CCDB/CcdbApi.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Tools/PIDML/pidOnnxModel.h"
+#include "Tools/PIDML/PidOnnxModel.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -39,7 +39,7 @@ DECLARE_SOA_TABLE(MlPidResults, "AOD", "MLPIDRESULTS", o2::soa::Index<>, mlpidre
 } // namespace o2::aod
 
 struct SimpleApplyPidOnnxModel {
-  Configurable<int> pid{"pid", 211, "PID to predict"};
+  Configurable<int> pdgPid{"pdgPid", 211, "PID to predict"};
   Configurable<double> certainty{"certainty", 0.5, "Min certainty of the model to accept given particle to be of given kind"};
 
   Configurable<std::string> ccdbPath{"ccdbPath", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
@@ -48,7 +48,7 @@ struct SimpleApplyPidOnnxModel {
   Configurable<std::string> localPath{"localPath", "/home/mkabus/PIDML", "base path to the local directory with ONNX models"};
 
   Configurable<bool> useFixedTimestamp{"useFixedTimestamp", false, "Whether to use fixed timestamp from configurable instead of timestamp calculated from the data"};
-  Configurable<uint64_t> timestamp{"timestamp", 1524176895000, "Hardcoded timestamp for tests"};
+  Configurable<uint64_t> fixedTimestamp{"fixedTimestamp", 1524176895000, "Hardcoded timestamp for tests"};
 
   o2::ccdb::CcdbApi ccdbApi;
   int currentRunNumber = -1;
@@ -67,23 +67,23 @@ struct SimpleApplyPidOnnxModel {
     if (useCcdb) {
       ccdbApi.init(ccdbUrl);
     } else {
-      pidModel = PidONNXModel<BigTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, pid.value, certainty.value);
+      pidModel = PidONNXModel<BigTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, pdgPid.value, certainty.value);
     }
   }
 
   void processCollisions(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&)
   {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
-    if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
-      uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
-      pidModel = PidONNXModel<BigTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, timestamp, pid.value, certainty.value);
+    if (useCcdb && bc.runNumber() != currentRunNumber) {
+      uint64_t timestamp = useFixedTimestamp ? fixedTimestamp.value : bc.timestamp();
+      pidModel = PidONNXModel<BigTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, timestamp, pdgPid.value, certainty.value);
     }
 
     for (const auto& track : tracks) {
       bool accepted = pidModel.applyModelBoolean(track);
       LOGF(info, "collision id: %d track id: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
            track.collisionId(), track.index(), accepted, track.p(), track.x(), track.y(), track.z());
-      pidMLResults(track.index(), cfgPid.value, accepted);
+      pidMLResults(track.index(), pdgPid.value, accepted);
     }
   }
   PROCESS_SWITCH(SimpleApplyPidOnnxModel, processCollisions, "Process with collisions and bcs for CCDB", true);
@@ -94,7 +94,7 @@ struct SimpleApplyPidOnnxModel {
       bool accepted = pidModel.applyModelBoolean(track);
       LOGF(info, "collision id: %d track id: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
            track.collisionId(), track.index(), accepted, track.p(), track.x(), track.y(), track.z());
-      pidMLResults(track.index(), cfgPid.value, accepted);
+      pidMLResults(track.index(), pdgPid.value, accepted);
     }
   }
   PROCESS_SWITCH(SimpleApplyPidOnnxModel, processTracksOnly, "Process with tracks only -- faster but no CCDB", false);

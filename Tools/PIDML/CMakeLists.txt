@@ -10,47 +10,41 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(pid-ml-producer
-                           SOURCES pidMLProducer.cxx
+                           SOURCES PidMLProducer.cxx
                            JOB_POOL analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pid-ml-batch-eff-and-pur-producer
-                           SOURCES pidMLBatchEffAndPurProducer.cxx
+                           SOURCES PidMLBatchEffAndPurProducer.cxx
                            JOB_POOL analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pid-ml-eff-and-pur-producer
-                           SOURCES pidMLEffAndPurProducer.cxx
+                           SOURCES PidMLEffAndPurProducer.cxx
                            JOB_POOL analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(simple-apply-pid-onnx-model
-                           SOURCES simpleApplyPidOnnxModel.cxx
+                           SOURCES SimpleApplyPidOnnxModel.cxx
                            JOB_POOL analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(simple-apply-pid-onnx-interface
-                           SOURCES simpleApplyPidOnnxInterface.cxx
+                           SOURCES SimpleApplyPidOnnxInterface.cxx
                            JOB_POOL analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(qa-pid
-                  SOURCES qaPid.cxx
+                  SOURCES QaPid.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::CCDB
                   COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(qa-pid-ml
-                  SOURCES qaPidML.cxx
+                  SOURCES QaPidML.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime
-                  COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(kaon-pid-ml
-                  SOURCES KaonPidTask.cxx
-                  JOB_POOL analysis
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2::CCDB O2Physics::DataModel
                   COMPONENT_NAME Analysis)

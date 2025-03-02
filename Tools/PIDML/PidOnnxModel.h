@@ -40,7 +40,7 @@
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
 #include "CCDB/CcdbApi.h"
-#include "Tools/PIDML/pidUtils.h"
+#include "Tools/PIDML/PidUtils.h"
 
 using namespace pidml::pidutils;
 

@@ -30,8 +30,8 @@
 #include "CCDB/CcdbApi.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Tools/PIDML/pidOnnxModel.h"
-#include "Tools/PIDML/pidUtils.h"
+#include "Tools/PIDML/PidOnnxModel.h"
+#include "Tools/PIDML/PidUtils.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -102,7 +102,7 @@ struct PidMLBatchEffAndPurProducer {
 
   void init(InitContext const&)
   {
-    if (useCCDB) {
+    if (useCcdb) {
       ccdbApi.init(ccdbUrl);
     }
 
@@ -186,7 +186,7 @@ struct PidMLBatchEffAndPurProducer {
         break;
     }
 
-    if (!inPLimit(track, cfgDetectorsPLimits.value[kTPCTOF]) || tofMissing(track)) {
+    if (!inPLimit(track, detectorMomentumLimits.value[kTPCTOF]) || tofMissing(track)) {
       nSigma.composed = std::abs(nSigma.tpc);
     } else {
       nSigma.composed = std::hypot(nSigma.tof, nSigma.tpc);
@@ -205,7 +205,7 @@ struct PidMLBatchEffAndPurProducer {
     effAndPurPIDResult.reserve(mcParticles.size());
 
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
-    if (useCCDB && bc.runNumber() != CurrentRunNumber) {
+    if (useCcdb && bc.runNumber() != CurrentRunNumber) {
       uint64_t timestamp = useFixedTimestamp ? fixedTimestamp.value : bc.timestamp();
       for (const int32_t& pid : pdgPids.value)
         models.emplace_back(PidONNXModel<BigTracks>(localPath.value, ccdbPath.value, useCcdb.value,
