@@ -18,6 +18,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -25,12 +26,14 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGLF/Utils/collisionCuts.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JFlucEfficiencyTask {
+  Service<o2::framework::O2DatabasePDG> pdg;
   // Add the pT binning array as a static member
   static constexpr std::array<double, 94> PttJacek = {
     0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45,
@@ -47,6 +50,24 @@ struct JFlucEfficiencyTask {
   // Update the axisPt configuration with proper vector initialization
   ConfigurableAxis axisPt{"axisPt", std::vector<double>(PttJacek.begin(), PttJacek.end()), "pT axis"};
 
+  // Event cuts
+  Configurable<int> cfgAcceptSplitCollisions{"cfgAcceptSplitCollisions", 0, "0: only look at mcCollisions that are not split; 1: accept split mcCollisions, 2: accept split mcCollisions but only look at the first reco collision associated with it"};
+  o2::analysis::CollisonCuts colCuts;
+  struct : ConfigurableGroup {
+    Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+    Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
+    Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
+    Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
+    Configurable<bool> cfgEvtOfflineCheck{"cfgEvtOfflineCheck", true, "Evt sel: check for offline selection"};
+    Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
+    Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
+    Configurable<bool> cfgEvtUseITSTPCvertex{"cfgEvtUseITSTPCvertex", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
+    Configurable<bool> cfgEvtZvertexTimedifference{"cfgEvtZvertexTimedifference", true, "Evt sel: apply Z-vertex time difference"};
+    Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", true, "Evt sel: apply pileup rejection"};
+    Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
+    Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", true, "Evt sel: apply NoCollInTimeRangeStandard"};
+  } EventCuts;
+
   // Configurable for track selection
   Configurable<float> cfgPtMin{"cfgPtMin", 0.2f, "Minimum transverse momentum"};
   Configurable<float> cfgPtMax{"cfgPtMax", 300.0f, "Maximum transverse momentum"};
@@ -56,34 +77,34 @@ struct JFlucEfficiencyTask {
   Configurable<float> cfgCentMin{"cfgCentMin", 0.0f, "Min centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 100.0f, "Max centrality"};
   Configurable<uint8_t> cfgTrackBitMask{"cfgTrackBitMask", 0, "BitMask for track selection systematics"};
+  Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
 
   // Configurable axes
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "multiplicity / centrality axis"};
 
   // Filter declarations
-  Filter cfCollisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex) &&
-                             (aod::cfcollision::multiplicity > cfgCentMin) &&
-                             (aod::cfcollision::multiplicity < cfgCentMax);
-  Filter cfMCCollisionFilter = (nabs(aod::mccollision::posZ) < cfgCutVertex) &&
-                               (aod::cfmccollision::multiplicity > cfgCentMin) &&
-                               (aod::cfmccollision::multiplicity < cfgCentMax);
-  Filter cfMCParticleFilter = (aod::cfmcparticle::pt >= cfgPtMin) &&
-                              (aod::cfmcparticle::pt <= cfgPtMax) &&
-                              (aod::cfmcparticle::eta >= cfgEtaMin) &&
-                              (aod::cfmcparticle::eta <= cfgEtaMax);
+  Filter cfCollisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
   Filter cfTrackFilter = (aod::cftrack::pt >= cfgPtMin) &&
                          (aod::cftrack::pt <= cfgPtMax) &&
                          (aod::cftrack::eta >= cfgEtaMin) &&
-                         (aod::cftrack::eta <= cfgEtaMax) &&
-                         ((aod::track::trackType & (uint8_t)cfgTrackBitMask) == (uint8_t)cfgTrackBitMask);
+                         (aod::cftrack::eta <= cfgEtaMax);
+  // Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
+  // Filter trackFilter = (aod::track::pt >= cfgPtMin) &&
+  //                      (aod::track::pt <= cfgPtMax) &&
+  //                      (aod::track::eta >= cfgEtaMin) &&
+  //                      (aod::track::eta <= cfgEtaMax);
+  Filter trackSelectionFilter = (trackSelection.node() == 0) || // from tpcSkimsTableCreator
+                                ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                                ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                                ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                                ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                                ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
-  Filter trackFilter = (nabs(aod::track::eta) < cfgEtaMax) &&
-                       (aod::track::pt > cfgPtMin) &&
-                       ((requireGlobalTrackInFilter()) ||
-                        (aod::track::isGlobalTrackSDD == (uint8_t) true));
-
-  Configurable<bool> cfgEfficiencyFromData{"cfgEfficiencyFromData", false, "Calculate efficiency using data events as reference"};
-  Configurable<int> cfgVerbosity{"cfgVerbosity", 0, "Verbosity level"};
+  Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 1, "Centrality bins for MC, 0: off, 1: on"};
+  using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
+  using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TrackSelection>;
+  using MCCollisionCandidates = soa::Join<CollisionCandidates, aod::McCollisionLabel>;
+  using MCTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabel>;
 
   // Histogram Registry
   HistogramRegistry registry{
@@ -103,33 +124,48 @@ struct JFlucEfficiencyTask {
       LOGF(info, "Initializing JFlucEfficiencyTask");
     }
 
-    if (doprocessMC) {
+    colCuts.setCuts(EventCuts.cfgEvtZvtx, EventCuts.cfgEvtTriggerCheck, EventCuts.cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, EventCuts.cfgEvtOccupancyInTimeRangeMax, EventCuts.cfgEvtOccupancyInTimeRangeMin);
+    colCuts.init(&registry);
+    colCuts.setTriggerTVX(EventCuts.cfgEvtTriggerTVXSel);
+    colCuts.setApplyTFBorderCut(EventCuts.cfgEvtTFBorderCut);
+    colCuts.setApplyITSTPCvertex(EventCuts.cfgEvtUseITSTPCvertex);
+    colCuts.setApplyZvertexTimedifference(EventCuts.cfgEvtZvertexTimedifference);
+    colCuts.setApplyPileupRejection(EventCuts.cfgEvtPileupRejection);
+    colCuts.setApplyNoITSROBorderCut(EventCuts.cfgEvtNoITSROBorderCut);
+    colCuts.setApplyCollInTimeRangeStandard(EventCuts.cfgEvtCollInTimeRangeStandard);
+    colCuts.printCuts();
+
+    if (doprocessDerivedMC || doprocessMC) {
       registry.add("hPtGen", "Generated p_{T} (all);p_{T} (GeV/c);Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
       registry.add("hEtaGen", "Generated #eta (all);#eta;Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(100, -1, 1), AxisSpec(axisMultiplicity)});
       registry.add("hPtGenPos", "Generated p_{T} (positive);p_{T} (GeV/c);Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
-
       registry.add("hPtGenNeg", "Generated p_{T} (negative);p_{T} (GeV/c);Centrality (%);Counts",
+                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+      registry.add("hPtGenParticle", "Generated p_{T} (all);p_{T} (GeV/c);Centrality (%);Counts",
+                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+      registry.add("hEtaGenParticle", "Generated #eta (all);#eta;Centrality (%);Counts",
+                   o2::framework::HistType::kTH2F, {AxisSpec(100, -1, 1), AxisSpec(axisMultiplicity)});
+      registry.add("hPtGenParticlePos", "Generated p_{T} (positive);p_{T} (GeV/c);Centrality (%);Counts",
+                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+      registry.add("hPtGenParticleNeg", "Generated p_{T} (negative);p_{T} (GeV/c);Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
     }
 
-    if (doprocessData) {
+    if (doprocessData || doprocessDerivedData) {
       registry.add("hPtRec", "Reconstructed p_{T} (all);p_{T} (GeV/c);Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
-
       registry.add("hEtaRec", "Reconstructed #eta (all);#eta;Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(100, -1, 1), AxisSpec(axisMultiplicity)});
-
       registry.add("hPtRecPos", "Reconstructed p_{T} (positive);p_{T} (GeV/c);Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
-
       registry.add("hPtRecNeg", "Reconstructed p_{T} (negative);p_{T} (GeV/c);Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
     }
 
-    if (cfgEfficiencyFromData) {
+    if (doprocessEfficiency) {
       registry.add("hPtGenData", "Generated p_{T} from data events (all);p_{T} (GeV/c);Centrality (%);Counts",
                    {HistType::kTH2F, {axisPt, axisMultiplicity}});
       registry.add("hEtaGenData", "Generated #eta from data events (all);#eta;Centrality (%);Counts",
@@ -165,9 +201,30 @@ struct JFlucEfficiencyTask {
     }
   }
 
-  void processMC(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision, soa::Filtered<aod::CFMcParticles> const& mcParticles)
+  template <typename ParticleType>
+  double getCharge(ParticleType const& particle)
   {
-    float centrality = mcCollision.multiplicity();
+    auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+    if (!pdgParticle) {
+      return 10.f;
+    }
+    return pdgParticle->Charge();
+  }
+  bool isChargedParticle(int code)
+  {
+    auto p = pdg->GetParticle(code);
+    auto charge = 0.;
+    if (p != nullptr) {
+      charge = p->Charge();
+    }
+    return std::abs(charge) >= 3.;
+  }
+
+  void processDerivedMC(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision, soa::Filtered<aod::CFMcParticles> const& mcParticles)
+  {
+    float centrality = mcCollision.multiplicity(); // multiplicity: number of primary particles TODO: apply percentiles
+    registry.fill(HIST("hEventCounterMC"), 0);
+    registry.fill(HIST("hZVertexMC"), mcCollision.posZ(), centrality);
 
     for (const auto& particle : mcParticles) {
       if (!particle.isPhysicalPrimary()) {
@@ -185,7 +242,7 @@ struct JFlucEfficiencyTask {
     }
   }
 
-  void processData(soa::Filtered<aod::CFCollisions>::iterator const& cfCollision, soa::Filtered<aod::CFTracks> const& cfTracks)
+  void processDerivedData(soa::Filtered<aod::CFCollisions>::iterator const& cfCollision, soa::Filtered<aod::CFTracks> const& cfTracks)
   {
     float centrality = cfCollision.multiplicity();
 
@@ -205,18 +262,103 @@ struct JFlucEfficiencyTask {
     }
   }
 
-  template <typename TCollision, typename TTracks>
-  void fillQA(const TCollision& /*collision*/, float multiplicity, const TTracks& tracks)
+  Preslice<TrackCandidates> perCollision = aod::track::collisionId;
+  void processMC(aod::McCollisions::iterator const& mcCollision,
+                 soa::SmallGroups<MCCollisionCandidates> const& collisions,
+                 MCTrackCandidates const& mcTracks,
+                 aod::McParticles const& mcParticles)
   {
-    registry.fill(HIST("multiplicity"), multiplicity);
+    registry.fill(HIST("hEventCounterMC"), 0);
+    if (!(std::abs(mcCollision.posZ()) < cfgCutVertex)) {
+      return;
+    }
+    if (collisions.size() < 1) {
+      return;
+    }
+    if (cfgAcceptSplitCollisions == 0 && collisions.size() > 1) {
+      return;
+    }
+    float centrality = -999;
+    for (const auto& collision : collisions) { // Anayway only 1 collision per mcCollision will be selected
+      if (!colCuts.isSelected(collision))      // Default event selection
+        return;
+      colCuts.fillQA(collision);
+      centrality = collision.centFT0C();
+    }
+    registry.fill(HIST("hEventCounterMC"), 1);
+    registry.fill(HIST("hZVertexMC"), mcCollision.posZ(), centrality);
+    if (centrality < cfgCentMin || centrality > cfgCentMax) {
+      return;
+    }
+    for (const auto& particle : mcParticles) {
+      auto charge = getCharge(particle);
+      if ((!particle.isPhysicalPrimary()) || !isChargedParticle(particle.pdgCode())) {
+        continue;
+      }
+      // pT and eta selections
+      if (particle.pt() < cfgPtMin || particle.pt() > cfgPtMax || particle.eta() < cfgEtaMin || particle.eta() > cfgEtaMax) {
+        continue;
+      }
+      registry.fill(HIST("hPtGenParticle"), particle.pt(), centrality);
+      registry.fill(HIST("hEtaGenParticle"), particle.eta(), centrality);
+      if (charge > 0) { // Positive particles
+        registry.fill(HIST("hPtGenParticlePos"), particle.pt(), centrality);
+      } else if (charge < 0) { // Negative particles
+        registry.fill(HIST("hPtGenParticleNeg"), particle.pt(), centrality);
+      }
+    }
+    // Reconstruct tracks from MC particles
+    for (const auto& collision : collisions) {
+      auto tracks = mcTracks.sliceBy(perCollision, collision.globalIndex());
+      for (const auto& track : tracks) {
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        auto mcPart = track.mcParticle();
+        if (!mcPart.isPhysicalPrimary() || !isChargedParticle(mcPart.pdgCode())) {
+          continue;
+        }
+        // pT and eta selections
+        if (track.pt() < cfgPtMin || track.pt() > cfgPtMax || track.eta() < cfgEtaMin || track.eta() > cfgEtaMax) {
+          continue;
+        }
+        registry.fill(HIST("hPtGen"), track.pt(), centrality);
+        registry.fill(HIST("hEtaGen"), track.eta(), centrality);
+        if (track.sign() > 0) { // Positive tracks
+          registry.fill(HIST("hPtGenPos"), track.pt(), centrality);
+        } else if (track.sign() < 0) { // Negative tracks
+          registry.fill(HIST("hPtGenNeg"), track.pt(), centrality);
+        }
+      }
+    }
+  }
+
+  void processData(CollisionCandidates::iterator const& collision, TrackCandidates const& tracks)
+  {
+    if (!colCuts.isSelected(collision)) // Default event selection
+      return;
+    colCuts.fillQA(collision);
+    auto centrality = collision.centFT0C();
+    if (centrality < cfgCentMin || centrality > cfgCentMax) {
+      return;
+    }
     for (const auto& track : tracks) {
-      registry.fill(HIST("yields"), multiplicity, track.pt(), track.eta());
-      registry.fill(HIST("etaphi"), track.eta(), track.phi());
+      // pT and eta selections
+      if (track.pt() < cfgPtMin || track.pt() > cfgPtMax || track.eta() < cfgEtaMin || track.eta() > cfgEtaMax) {
+        continue;
+      }
+      registry.fill(HIST("hPtRec"), track.pt(), centrality);
+      registry.fill(HIST("hEtaRec"), track.eta(), centrality);
+      if (track.sign() > 0) { // Positive tracks
+        registry.fill(HIST("hPtRecPos"), track.pt(), centrality);
+      } else if (track.sign() < 0) { // Negative tracks
+        registry.fill(HIST("hPtRecNeg"), track.pt(), centrality);
+      }
     }
   }
 
   // NOTE SmallGroups includes soa::Filtered always
-  Preslice<aod::CFTracksWithLabel> perCollision = aod::cftrack::cfCollisionId;
+  Preslice<aod::CFTracksWithLabel> perCFCollision = aod::cftrack::cfCollisionId;
   void processEfficiency(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision,
                          aod::CFMcParticles const& mcParticles,
                          soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions,
@@ -224,39 +366,40 @@ struct JFlucEfficiencyTask {
   {
     try {
       // Count MC events and fill MC z-vertex with centrality
+      if (debugMode) {
+        LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisions.size());
+      }
+      auto multiplicity = mcCollision.multiplicity();
+      if (cfgCentBinsForMC > 0) {
+        if (collisions.size() == 0) {
+          return;
+        }
+        for (const auto& collision : collisions) {
+          multiplicity = collision.multiplicity();
+        }
+      }
+      if (debugMode) {
+        LOGF(info, "MC collision multiplicity: %f", multiplicity);
+      }
       registry.fill(HIST("hEventCounterMC"), 0);
-      registry.fill(HIST("hZVertexMC"), mcCollision.posZ(), mcCollision.multiplicity());
-
+      registry.fill(HIST("hZVertexMC"), mcCollision.posZ(), multiplicity);
       if (debugMode) {
         LOGF(info, "Processing MC collision %d at z = %.3f", mcCollision.globalIndex(), mcCollision.posZ());
       }
 
       // Fill MC particle histograms
       for (const auto& mcParticle : mcParticles) {
-        if (!mcParticle.isPhysicalPrimary())
+        if (!mcParticle.isPhysicalPrimary() || mcParticle.sign() == 0) {
           continue;
-
-        // Fill generated particle histograms
-        registry.fill(HIST("hPtGen"), mcParticle.pt(), mcCollision.multiplicity());
-        registry.fill(HIST("hEtaGen"), mcParticle.eta(), mcCollision.multiplicity());
-
-        if (mcParticle.sign() > 0) {
-          registry.fill(HIST("hPtGenPos"), mcParticle.pt(), mcCollision.multiplicity());
-        } else if (mcParticle.sign() < 0) {
-          registry.fill(HIST("hPtGenNeg"), mcParticle.pt(), mcCollision.multiplicity());
         }
-
-        if (cfgEfficiencyFromData) {
-          registry.fill(HIST("hPtGenData"), mcParticle.pt(), mcCollision.multiplicity());
-          registry.fill(HIST("hEtaGenData"), mcParticle.eta(), mcCollision.multiplicity());
-          if (mcParticle.sign() > 0) {
-            registry.fill(HIST("hPtGenDataPos"), mcParticle.pt(), mcCollision.multiplicity());
-          } else if (mcParticle.sign() < 0) {
-            registry.fill(HIST("hPtGenDataNeg"), mcParticle.pt(), mcCollision.multiplicity());
-          }
+        registry.fill(HIST("hPtGenData"), mcParticle.pt(), multiplicity);
+        registry.fill(HIST("hEtaGenData"), mcParticle.eta(), multiplicity);
+        if (mcParticle.sign() > 0) {
+          registry.fill(HIST("hPtGenDataPos"), mcParticle.pt(), multiplicity);
+        } else if (mcParticle.sign() < 0) {
+          registry.fill(HIST("hPtGenDataNeg"), mcParticle.pt(), multiplicity);
         }
       }
-
       registry.fill(HIST("hEventCounterMC"), 1);
 
       // Check reconstructed collisions
@@ -277,9 +420,13 @@ struct JFlucEfficiencyTask {
           LOGF(info, "Processing reconstructed collision %d at z = %.3f",
                collision.globalIndex(), collision.posZ());
         }
+        registry.fill(HIST("hEventCounterReco"), 1);
 
         // Fill track histograms
-        auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+        auto groupedTracks = tracks.sliceBy(perCFCollision, collision.globalIndex());
+        if (debugMode) {
+          LOGF(info, "Reconstructed collision %d has %d tracks", collision.globalIndex(), groupedTracks.size());
+        }
         for (const auto& track : groupedTracks) {
           if (!track.has_cfMCParticle()) {
             if (debugMode) {
@@ -287,10 +434,13 @@ struct JFlucEfficiencyTask {
             }
             continue;
           }
-
+          // primary particles only
+          const auto& mcParticle = track.cfMCParticle();
+          if (!mcParticle.isPhysicalPrimary()) {
+            continue;
+          }
           registry.fill(HIST("hPtRecData"), track.pt(), collision.multiplicity());
           registry.fill(HIST("hEtaRecData"), track.eta(), collision.multiplicity());
-
           if (track.sign() > 0) {
             registry.fill(HIST("hPtRecDataPos"), track.pt(), collision.multiplicity());
           } else if (track.sign() < 0) {
@@ -299,7 +449,6 @@ struct JFlucEfficiencyTask {
         }
 
         // Count selected and analyzed events
-        registry.fill(HIST("hEventCounterReco"), 1);
         registry.fill(HIST("hEventCounterReco"), 2);
       }
 
@@ -314,6 +463,8 @@ struct JFlucEfficiencyTask {
 
   PROCESS_SWITCH(JFlucEfficiencyTask, processMC, "Process MC only", false);
   PROCESS_SWITCH(JFlucEfficiencyTask, processData, "Process data only", false);
+  PROCESS_SWITCH(JFlucEfficiencyTask, processDerivedMC, "Process derived MC only", false);
+  PROCESS_SWITCH(JFlucEfficiencyTask, processDerivedData, "Process derived data only", false);
   PROCESS_SWITCH(JFlucEfficiencyTask, processEfficiency, "Process efficiency task", true);
 };
 
