@@ -15,6 +15,7 @@
 /// \author Maja Kabus <mkabus@cern.ch>
 
 #include <string>
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"

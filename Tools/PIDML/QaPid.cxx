@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file qaPid.cxx
+/// \file QaPid.cxx
 /// \brief Task to check PID efficiency
 /// \author Łukasz Sawicki
 /// \since
@@ -324,7 +324,7 @@ struct QaPid {
      {"TOFPidFalse/011", "PID false e^{+};p (GeV/c); TOF #beta", {HistType::kTH2F, {{binsNb2D, 0.2, 10}, {110, 0, 1.1}}}}}};
 
   template <std::size_t i, typename T>
-  void pidSimple(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[])
+  void pidSimple(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[], int /*arrLen*/)
   {
     /*
     Simplest possible PID, accept particle when:
@@ -352,8 +352,8 @@ struct QaPid {
     }
   }
 
-  template <std::size_t i, std::size_t arrLen, typename T>
-  void pidMinStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[])
+  template <std::size_t i, typename T>
+  void pidMinStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[], int arrLen)
   {
     const float p = track.p();
 
@@ -390,8 +390,8 @@ struct QaPid {
     }
   }
 
-  template <std::size_t i, std::size_t arrLen, typename T>
-  void pidExclusiveStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[])
+  template <std::size_t i, typename T>
+  void pidExclusiveStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[], int arrLen)
   {
     const float p = track.p();
 
@@ -470,19 +470,28 @@ struct QaPid {
       histReg.fill(HIST("MC/211"), track.pt());
     } else if (pdgCode == -211) {
       histReg.fill(HIST("MC/0211"), track.pt());
-    } /* protons */ else if (pdgCode == 2212) {
+    }
+    // protons
+    else if (pdgCode == 2212) {
       histReg.fill(HIST("MC/2212"), track.pt());
     } else if (pdgCode == -2212) {
       histReg.fill(HIST("MC/02212"), track.pt());
-    } /* kaons */ else if (pdgCode == 321) {
+    }
+    // kaons
+    else if (pdgCode == 321) {
       histReg.fill(HIST("MC/321"), track.pt());
     } else if (pdgCode == -321) {
       histReg.fill(HIST("MC/0321"), track.pt());
-    } /* electrons */ else if (pdgCode == 11) {
+    }
+    // electrons
+    else if (pdgCode == 11) {
       histReg.fill(HIST("MC/11"), track.pt());
+      ;
     } else if (pdgCode == -11) {
       histReg.fill(HIST("MC/011"), track.pt());
-    } /* muons */ else if (pdgCode == 13) {
+    }
+    // muons
+    else if (pdgCode == 13) {
       histReg.fill(HIST("MC/13"), track.pt());
     } else if (pdgCode == -13) {
       histReg.fill(HIST("MC/013"), track.pt());
@@ -513,17 +522,17 @@ struct QaPid {
       if (strategy.value == 1) {
         // Simplest strategy. PID with Nsigma method only
         static_for<0, 9>([&](auto i) {
-          pidSimple<i>(track, pdgCode, tpcNSigmas, tofNSigmas);
+          pidSimple<i>(track, pdgCode, tpcNSigmas, tofNSigmas, 5);
         });
       } else if (strategy.value == 2) {
         // PID with Nsigma method and additional condition. Selected particle's Nsigma value must be the lowest in order to count particle
         static_for<0, 9>([&](auto i) {
-          pidMinStrategy<i, 5>(track, pdgCode, tpcNSigmas, tofNSigmas);
+          pidMinStrategy<i>(track, pdgCode, tpcNSigmas, tofNSigmas, 5);
         });
       } else if (strategy.value == 3) {
         // Particle is counted only if one can satisfy the PID NSigma condition
         static_for<0, 9>([&](auto i) {
-          pidExclusiveStrategy<i, 5>(track, pdgCode, tpcNSigmas, tofNSigmas);
+          pidExclusiveStrategy<i>(track, pdgCode, tpcNSigmas, tofNSigmas, 5);
         });
       } else if (strategy.value == 4) {
         int bayesPdg = getPdgFromPid(track);
