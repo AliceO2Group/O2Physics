@@ -365,8 +365,14 @@ template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename 
 void MatchHF(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingHF, std::vector<std::vector<int>>& tagToBaseMatchingHF, V const& /*candidatesBase*/, M const& /*candidatesTag*/, N const& tracksBase, O const& tracksTag)
 {
   for (const auto& jetBase : jetsBasePerCollision) {
+    if (jetBase.candidatesIds().size() == 0) {
+      continue;
+    }
     const auto candidateBase = jetBase.template candidates_first_as<V>();
     for (const auto& jetTag : jetsTagPerCollision) {
+      if (jetTag.candidatesIds().size() == 0) {
+        continue;
+      }
       if (std::round(jetBase.r()) != std::round(jetTag.r())) {
         continue;
       }
