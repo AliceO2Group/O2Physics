@@ -15,6 +15,7 @@
 /// \brief  QC of synthetic flow exercise
 
 #include <CCDB/BasicCCDBManager.h>
+#include <vector>
 #include <string>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
