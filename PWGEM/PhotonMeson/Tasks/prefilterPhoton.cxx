@@ -20,12 +20,12 @@
 #include <map>
 #include <tuple>
 
-#include "TString.h"
+// #include "TString.h"
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
-#include "Common/Core/RecoDecay.h"
+// #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 
 #include "DetectorsBase/Propagator.h"
@@ -39,6 +39,7 @@
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -61,6 +62,12 @@ struct prefilterPhoton {
   Produces<aod::EMPrimaryElectronsPrefilterBitDerived> pfb_ele_derived;
 
   // Configurables
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
+
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
@@ -115,7 +122,7 @@ struct prefilterPhoton {
 
     Configurable<float> cfg_min_mee{"cfg_min_mee", 0.0, "min mass"};
     Configurable<float> cfg_max_mee{"cfg_max_mee", 0.02, "max mass"};
-    Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", false, "flag to apply phiv cut"};
+    // Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", false, "flag to apply phiv cut"};
     Configurable<bool> cfg_apply_pf{"cfg_apply_pf", false, "flag to apply phiv prefilter"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
@@ -139,6 +146,8 @@ struct prefilterPhoton {
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron inclusion"};
     Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", 0.0, "min. TPC n sigma for pion exclusion"};
     Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", 0.0, "max. TPC n sigma for pion exclusion"};
+    Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -3.0, "min. TOF n sigma for electron inclusion"};
+    Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +3.0, "max. TOF n sigma for electron inclusion"};
   } dileptoncuts;
 
   struct : ConfigurableGroup {
@@ -155,24 +164,79 @@ struct prefilterPhoton {
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
+  o2::ccdb::CcdbApi ccdbApi;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  int mRunNumber;
+  float d_bz;
+
   void init(InitContext& /*context*/)
   {
     DefineEMEventCut();
     DefinePCMCut();
     addhistograms();
+
+    mRunNumber = 0;
+    d_bz = 0;
+
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
   }
 
   ~prefilterPhoton() {}
+
+  template <typename TCollision>
+  void initCCDB(TCollision const& collision)
+  {
+    if (mRunNumber == collision.runNumber()) {
+      return;
+    }
+
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
+      d_bz = d_bz_input;
+      o2::parameters::GRPMagField grpmag;
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      }
+      mRunNumber = collision.runNumber();
+      return;
+    }
+
+    auto run3grp_timestamp = collision.timestamp();
+    o2::parameters::GRPObject* grpo = 0x0;
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (!skipGRPOquery)
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    if (grpo) {
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    }
+    mRunNumber = collision.runNumber();
+  }
 
   void addhistograms()
   {
     const AxisSpec axis_mass{200, 0, 0.8, "m_{#gamma#gamma} (GeV/c^{2})"};
     const AxisSpec axis_pair_pt{100, 0, 10, "p_{T,#gamma#gamma} (GeV/c)"};
+    const AxisSpec axis_phiv{180, 0, M_PI, "#varphi_{V} (rad.)"};
 
     // for pair
     fRegistry.add("Pair/PCMPCM/before/hMvsPt", "m_{#gamma#gamma} vs. p_{T,#gamma#gamma}", kTH2D, {axis_mass, axis_pair_pt}, true);
+    fRegistry.add("Pair/PCMDalitzEE/before/hMvsPt", "m_{ee#gamma} vs. p_{T,ee#gamma}", kTH2D, {axis_mass, axis_pair_pt}, true);
+    fRegistry.add("Pair/PCMDalitzEE/before/hMvsPhiV", "m_{ee} vs. #varphi_{V}", kTH2D, {{180, 0, M_PI}, {100, 0, 0.1}}, true);
     fRegistry.addClone("Pair/PCMPCM/before/", "Pair/PCMPCM/after/");
-    fRegistry.addClone("Pair/PCMPCM/", "Pair/PCMDalitzEE/");
+    fRegistry.addClone("Pair/PCMDalitzEE/before/", "Pair/PCMDalitzEE/after/");
   }
 
   void DefineEMEventCut()
@@ -224,7 +288,7 @@ struct prefilterPhoton {
     // for pair
     fDileptonCut.SetMeeRange(dileptoncuts.cfg_min_mee, dileptoncuts.cfg_max_mee);
     fDileptonCut.SetMaxPhivPairMeeDep([&](float mll) { return (mll - dileptoncuts.cfg_phiv_intercept) / dileptoncuts.cfg_phiv_slope; });
-    fDileptonCut.ApplyPhiV(dileptoncuts.cfg_apply_phiv);
+    fDileptonCut.ApplyPhiV(false);
     fDileptonCut.RequireITSibAny(dileptoncuts.cfg_require_itsib_any);
     fDileptonCut.RequireITSib1st(dileptoncuts.cfg_require_itsib_1st);
 
@@ -244,6 +308,7 @@ struct prefilterPhoton {
     fDileptonCut.SetPIDScheme(dileptoncuts.cfg_pid_scheme);
     fDileptonCut.SetTPCNsigmaElRange(dileptoncuts.cfg_min_TPCNsigmaEl, dileptoncuts.cfg_max_TPCNsigmaEl);
     fDileptonCut.SetTPCNsigmaPiRange(dileptoncuts.cfg_min_TPCNsigmaPi, dileptoncuts.cfg_max_TPCNsigmaPi);
+    fDileptonCut.SetTOFNsigmaElRange(dileptoncuts.cfg_min_TOFNsigmaEl, dileptoncuts.cfg_max_TOFNsigmaEl);
   }
 
   template <PairType pairtype, typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2>
@@ -268,6 +333,7 @@ struct prefilterPhoton {
 
     if constexpr (pairtype == PairType::kPCMPCM) {
       for (const auto& collision : collisions) {
+        initCCDB(collision);
         const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
         bool is_cent_ok = true;
         if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
@@ -295,13 +361,14 @@ struct prefilterPhoton {
           fRegistry.fill(HIST("Pair/PCMPCM/before/hMvsPt"), v12.M(), v12.Pt());
 
           if (ggcuts.cfg_min_mass < v12.M() && v12.M() < ggcuts.cfg_max_mass) {
-            map_pfb_v0[g1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::PhotonPrefilterBitDerived::kPhotonFromPi0ggDefault);
-            map_pfb_v0[g2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::PhotonPrefilterBitDerived::kPhotonFromPi0ggDefault);
+            map_pfb_v0[g1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::PhotonPrefilterBitDerived::kPhotonFromPi0gg);
+            map_pfb_v0[g2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::PhotonPrefilterBitDerived::kPhotonFromPi0gg);
           }
         } // end of 2photon pairing loop
       } // end of collision loop
     } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
       for (const auto& collision : collisions) {
+        initCCDB(collision);
         const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
         bool is_cent_ok = true;
         if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
@@ -337,8 +404,8 @@ struct prefilterPhoton {
           fRegistry.fill(HIST("Pair/PCMPCM/before/hMvsPt"), v12.M(), v12.Pt());
 
           if (ggcuts.cfg_min_mass < v12.M() && v12.M() < ggcuts.cfg_max_mass) {
-            map_pfb_v0[g1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::PhotonPrefilterBitDerived::kPhotonFromPi0ggDefault);
-            map_pfb_v0[g2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::PhotonPrefilterBitDerived::kPhotonFromPi0ggDefault);
+            map_pfb_v0[g1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::PhotonPrefilterBitDerived::kPhotonFromPi0gg);
+            map_pfb_v0[g2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::PhotonPrefilterBitDerived::kPhotonFromPi0gg);
           }
         } // end of 2photon pairing loop
 
@@ -372,12 +439,33 @@ struct prefilterPhoton {
             fRegistry.fill(HIST("Pair/PCMDalitzEE/before/hMvsPt"), veeg.M(), veeg.Pt());
 
             if (eegcuts.cfg_min_mass < veeg.M() && veeg.M() < eegcuts.cfg_max_mass) {
-              map_pfb_v0[g1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::PhotonPrefilterBitDerived::kPhotonFromPi0eegDefault);
-              map_pfb_ele[pos2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::ElectronPrefilterBitDerived::kElectronFromPi0eegDefault);
-              map_pfb_ele[ele2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::ElectronPrefilterBitDerived::kElectronFromPi0eegDefault);
+              map_pfb_v0[g1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::PhotonPrefilterBitDerived::kPhotonFromPi0eeg);
+              map_pfb_ele[pos2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::ElectronPrefilterBitDerived::kElectronFromPi0eeg);
+              map_pfb_ele[ele2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::ElectronPrefilterBitDerived::kElectronFromPi0eeg);
             }
           } // end of dielectron loop
         } // end of g1 loop
+
+        for (const auto& [pos2, ele2] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
+          if (pos2.trackId() == ele2.trackId()) { // this is protection against pairing identical 2 tracks.
+            continue;
+          }
+
+          if (!cut2.template IsSelectedTrack<false>(pos2, collision) || !cut2.template IsSelectedTrack<false>(ele2, collision)) {
+            continue;
+          }
+
+          ROOT::Math::PtEtaPhiMVector v_pos(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v_ele(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v_ee = v_pos + v_ele;
+          float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos2.px(), pos2.py(), pos2.pz(), ele2.px(), ele2.py(), ele2.pz(), pos2.sign(), ele2.sign(), d_bz);
+          fRegistry.fill(HIST("Pair/PCMDalitzEE/before/hMvsPhiV"), phiv, v_ee.M());
+
+          if (v_ee.M() < phiv * dileptoncuts.cfg_phiv_slope + dileptoncuts.cfg_phiv_intercept) {
+            map_pfb_ele[pos2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::ElectronPrefilterBitDerived::kElectronFromFakePC);
+            map_pfb_ele[ele2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::photonmeson::utils::pairutil::ElectronPrefilterBitDerived::kElectronFromFakePC);
+          }
+        } // end of dielectron loop to reject photon conversion
       } // end of collision loop
     }
 
@@ -425,6 +513,7 @@ struct prefilterPhoton {
       } // end of collision loop
     } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
       for (auto& collision : collisions) {
+        initCCDB(collision);
         const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
         if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
           continue;
@@ -478,11 +567,13 @@ struct prefilterPhoton {
             ROOT::Math::PtEtaPhiMVector v_pos(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ele(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ee = v_pos + v_ele;
+            float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos2.px(), pos2.py(), pos2.pz(), ele2.px(), ele2.py(), ele2.pz(), pos2.sign(), ele2.sign(), d_bz);
             if (!(dileptoncuts.cfg_min_mee < v_ee.M() && v_ee.M() < dileptoncuts.cfg_max_mee)) {
               continue;
             }
             ROOT::Math::PtEtaPhiMVector veeg = v_gamma + v_pos + v_ele;
             fRegistry.fill(HIST("Pair/PCMDalitzEE/after/hMvsPt"), veeg.M(), veeg.Pt());
+            fRegistry.fill(HIST("Pair/PCMDalitzEE/after/hMvsPhiV"), phiv, v_ee.M());
           } // end of dielectron loop
         } // end of g1 loop
       } // end of collision loop

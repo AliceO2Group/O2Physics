@@ -21,17 +21,12 @@
 namespace o2::aod::pwgem::photonmeson::utils::pairutil
 {
 enum class PhotonPrefilterBitDerived : int {
-  kPhotonFromPi0ggDefault = 0,  // photon from pi0->gg, default
-  kPhotonFromPi0ggLoose = 1,    // photon from pi0->gg, loose
-  kPhotonFromPi0ggTight = 2,    // photon from pi0->gg, tight
-  kPhotonFromPi0eegDefault = 3, // photon from pi0->eeg, default
-  kPhotonFromPi0eegLoose = 4,   // photon from pi0->eeg, loose
-  kPhotonFromPi0eegTight = 5,   // photon from pi0->eeg, tight
+  kPhotonFromPi0gg = 0,  // photon from pi0->gg
+  kPhotonFromPi0eeg = 1, // photon from pi0->eeg
 };
 enum class ElectronPrefilterBitDerived : int {
-  kElectronFromPi0eegDefault = 0, // electron from pi0->eeg, default
-  kElectronFromPi0eegLoose = 1,   // electron from pi0->eeg, loose
-  kElectronFromPi0eegTight = 2,   // electron from pi0->eeg, tight
+  kElectronFromPi0eeg = 0, // electron from pi0->eeg
+  kElectronFromFakePC = 1, // electron from photon->ee, misidentified photon conversion as virtual photon
 };
 } // namespace o2::aod::pwgem::photonmeson::utils::pairutil
 namespace o2::aod::pwgem::photonmeson::photonpair
