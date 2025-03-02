@@ -15,6 +15,10 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
+#include <vector>
+#include <string>
+#include <memory>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
@@ -30,6 +34,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+#include "PWGHF/Utils/utilsMcGen.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -57,7 +62,7 @@ struct HfCandidateCreatorB0 {
   Configurable<bool> usePionIsGlobalTrackWoDCA{"usePionIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for pions, for Run3 studies"};
   Configurable<double> ptPionMin{"ptPionMin", 0.5, "minimum pion pT threshold (GeV/c)"};
   Configurable<std::vector<double>> binsPtPion{"binsPtPion", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for pion DCA XY pT-dependent cut"};
-  Configurable<LabeledArray<double>> cutsTrackPionDCA{"cutsTrackPionDCA", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for pions"};
+  Configurable<LabeledArray<double>> cutsTrackPionDCA{"cutsTrackPionDCA", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for pions"};
   Configurable<double> invMassWindowB0{"invMassWindowB0", 0.3, "invariant-mass window for B0 candidates"};
   Configurable<int> selectionFlagD{"selectionFlagD", 1, "Selection Flag for D"};
   // magnetic field setting from CCDB
@@ -355,10 +360,10 @@ struct HfCandidateCreatorB0 {
 
           rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
         } // pi loop
-      }   // D loop
-    }     // collision loop
-  }       // process
-};        // struct
+      } // D loop
+    } // collision loop
+  } // process
+}; // struct
 
 /// Extends the base table with expression columns and performs MC matching.
 struct HfCandidateCreatorB0Expressions {
@@ -448,21 +453,8 @@ struct HfCandidateCreatorB0Expressions {
       rowMcMatchRec(flag, origin, debug);
     } // rec
 
-    // Match generated particles.
-    for (const auto& particle : mcParticles) {
-      flag = 0;
-      origin = 0;
-      // B0 → D- π+
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true)) {
-        // D- → π- K+ π-
-        auto candDMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(mcParticles, candDMC, -static_cast<int>(Pdg::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
-          flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
-        }
-      }
-      rowMcMatchGen(flag, origin);
-    } // gen
-  }   // processMc
+    hf_mc_gen::fillMcMatchGenB0(mcParticles, rowMcMatchGen); // gen
+  } // processMc
   PROCESS_SWITCH(HfCandidateCreatorB0Expressions, processMc, "Process MC", false);
 }; // struct
 

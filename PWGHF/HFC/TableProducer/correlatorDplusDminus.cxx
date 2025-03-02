@@ -14,6 +14,8 @@
 ///
 /// \author Fabio Colamaria <fabio.colamaria@ba.infn.it>, INFN Bari
 
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -48,7 +50,7 @@ const double incrementEtaCut = 0.1;
 const double incrementPtThreshold = 0.5;
 const double epsilon = 1E-5;
 
-const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_dplus_to_pi_k_pi::nBinsPt;
+const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_dplus_to_pi_k_pi::NBinsPt;
 const double efficiencyDmesonDefault[npTBinsMassAndEfficiency] = {};
 auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsMassAndEfficiency};
 
@@ -241,7 +243,7 @@ struct HfCorrelatorDplusDminus {
           } while (ptCut < ptThresholdForMaxEtaCut - epsilon);
         } while (etaCut < maxEtaCut - epsilon);
       } // end inner loop (Dminus)
-    }   // end outer loop (Dplus)
+    } // end outer loop (Dplus)
   }
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processData, "Process data", false);
 
@@ -458,7 +460,7 @@ struct HfCorrelatorDplusDminus {
           } while (ptCut < ptThresholdForMaxEtaCut - epsilon);
         } while (etaCut < maxEtaCut - epsilon);
       } // end inner loop
-    }   // end outer loop
+    } // end outer loop
     registry.fill(HIST("hCountDplusDminusPerEvent"), counterDplusDminus);
   }
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processMcGen, "Process MC Gen mode", false);
@@ -522,8 +524,8 @@ struct HfCorrelatorDplusDminus {
         entryDplusDminusRecoInfo(1.869,
                                  1.869,
                                  8); // Dummy
-      }                              // end inner loop
-    }                                // end outer loop
+      } // end inner loop
+    } // end outer loop
     registry.fill(HIST("hCountCCbarPerEvent"), counterCCbar);
     registry.fill(HIST("hCountCCbarPerEventBeforeEtaCut"), counterCCbarBeforeEtasel);
   }

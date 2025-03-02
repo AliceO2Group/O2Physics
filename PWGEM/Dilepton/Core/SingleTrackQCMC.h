@@ -87,6 +87,7 @@ struct SingleTrackQCMC {
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "flag to fill QA histograms"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
+  Configurable<bool> cfgRequireTrueAssociation{"cfgRequireTrueAssociation", false, "flag to require true mc collision association"};
 
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
   ConfigurableAxis ConfDCABins{"ConfDCABins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCA bins for output histograms"};
@@ -112,6 +113,9 @@ struct SingleTrackQCMC {
     Configurable<bool> cfgRequireNoCollInITSROFStandard{"cfgRequireNoCollInITSROFStandard", false, "require no collision in time range standard"};
     Configurable<bool> cfgRequireNoCollInITSROFStrict{"cfgRequireNoCollInITSROFStrict", false, "require no collision in time range strict"};
     Configurable<bool> cfgRequireNoHighMultCollInPrevRof{"cfgRequireNoHighMultCollInPrevRof", false, "require no HM collision in previous ITS ROF"};
+    Configurable<bool> cfgRequireGoodITSLayer3{"cfgRequireGoodITSLayer3", false, "number of inactive chips on ITS layer 3 are below threshold "};
+    Configurable<bool> cfgRequireGoodITSLayer0123{"cfgRequireGoodITSLayer0123", false, "number of inactive chips on ITS layers 0-3 are below threshold "};
+    Configurable<bool> cfgRequireGoodITSLayersAll{"cfgRequireGoodITSLayersAll", false, "number of inactive chips on all ITS layers are below threshold "};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -218,7 +222,8 @@ struct SingleTrackQCMC {
   {
     // event info
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
-    fRegistry.add("MCEvent/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
+    fRegistry.add("MCEvent/before/hZvtx", "mc vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
+    fRegistry.add("MCEvent/before/hZvtx_rec", "rec. mc vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
     fRegistry.addClone("MCEvent/before/", "MCEvent/after/");
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
@@ -394,6 +399,9 @@ struct SingleTrackQCMC {
     fEMEventCut.SetRequireNoCollInITSROFStandard(eventcuts.cfgRequireNoCollInITSROFStandard);
     fEMEventCut.SetRequireNoCollInITSROFStrict(eventcuts.cfgRequireNoCollInITSROFStrict);
     fEMEventCut.SetRequireNoHighMultCollInPrevRof(eventcuts.cfgRequireNoHighMultCollInPrevRof);
+    fEMEventCut.SetRequireGoodITSLayer3(eventcuts.cfgRequireGoodITSLayer3);
+    fEMEventCut.SetRequireGoodITSLayer0123(eventcuts.cfgRequireGoodITSLayer0123);
+    fEMEventCut.SetRequireGoodITSLayersAll(eventcuts.cfgRequireGoodITSLayersAll);
   }
 
   o2::analysis::MlResponseDielectronSingleTrack<float> mlResponseSingleTrack;
@@ -695,11 +703,6 @@ struct SingleTrackQCMC {
         continue;
       }
 
-      // auto mccollision = collision.template emmcevent_as<TMCCollisions>();
-      // if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
-      //   continue;
-      // }
-
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
@@ -725,9 +728,9 @@ struct SingleTrackQCMC {
           continue;
         }
 
-        // if (mctrack.emmceventId() != collision.emmceventId()) {
-        //   continue;
-        // }
+        if (cfgRequireTrueAssociation && (mctrack.emmceventId() != collision.emmceventId())) {
+          continue;
+        }
 
         if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
           if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
@@ -796,20 +799,6 @@ struct SingleTrackQCMC {
       }
       fRegistry.fill(HIST("MCEvent/before/hZvtx"), mccollision.posZ());
 
-      // auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
-      // if (rec_colls_per_mccoll.size() < 1) {
-      //   continue;
-      // }
-      // uint32_t maxNumContrib = 0;
-      // int rec_col_globalIndex = -999;
-      // for (auto& rec_col : rec_colls_per_mccoll) {
-      //   if (rec_col.numContrib() > maxNumContrib) {
-      //     rec_col_globalIndex = rec_col.globalIndex();
-      //     maxNumContrib = rec_col.numContrib(); // assign mc collision to collision where the number of contibutor is lager. LF/MM recommendation
-      //   }
-      // }
-      // auto collision = collisions.rawIteratorAt(rec_col_globalIndex);
-
       if (mccollision.mpemeventId() < 0) {
         continue;
       }
@@ -819,6 +808,7 @@ struct SingleTrackQCMC {
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
+      fRegistry.fill(HIST("MCEvent/before/hZvtx_rec"), mccollision.posZ());
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
@@ -987,7 +977,7 @@ struct SingleTrackQCMC {
   SliceCache cache;
   Preslice<MyMCElectrons> perCollision_electron = aod::emprimaryelectron::emeventId;
   Filter trackFilter_electron = dielectroncuts.cfg_min_phi_track < o2::aod::track::phi && o2::aod::track::phi < dielectroncuts.cfg_max_phi_track && o2::aod::track::tpcChi2NCl < dielectroncuts.cfg_max_chi2tpc && o2::aod::track::itsChi2NCl < dielectroncuts.cfg_max_chi2its && nabs(o2::aod::track::dcaXY) < dielectroncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dielectroncuts.cfg_max_dcaz;
-  Filter pidFilter_electron = (dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl) && (o2::aod::pidtpc::tpcNSigmaPi < dielectroncuts.cfg_min_TPCNsigmaPi || dielectroncuts.cfg_max_TPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
+  Filter pidFilter_electron = dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl;
   Filter ttcaFilter_electron = ifnode(dielectroncuts.enableTTCA.node(), o2::aod::emprimaryelectron::isAssociatedToMPC == true || o2::aod::emprimaryelectron::isAssociatedToMPC == false, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
 
   Preslice<MyMCMuons> perCollision_muon = aod::emprimarymuon::emeventId;
@@ -997,7 +987,7 @@ struct SingleTrackQCMC {
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   // Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
-  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin < o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
+  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   Partition<aod::EMMCParticles> electronsMC = nabs(o2::aod::mcparticle::pdgCode) == 11; // e+, e-
@@ -1083,6 +1073,27 @@ struct SingleTrackQCMC {
       }
       if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 12.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 13.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 14.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 15.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 16.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 17.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 18.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 19.0);
       }
       if (!fEMEventCut.IsSelected(collision)) {
         continue;

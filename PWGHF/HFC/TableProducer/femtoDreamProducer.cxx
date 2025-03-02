@@ -228,9 +228,12 @@ struct HfFemtoDreamProducer {
                      particle.tofNSigmaKa(),
                      particle.tofNSigmaPr(),
                      particle.tofNSigmaDe(),
-                     -999.,
-                     -999.,
-                     -999., -999., -999., -999., -999., -999.);
+                     -999., -999., -999., -999.,
+                     -999., -999., -999., -999.,
+                     -999., -999., -999., -999.,
+                     -999., -999., -999., -999.,
+                     -999., -999., -999., -999.,
+                     -999., -999., -999.);
   }
 
   template <typename CollisionType, typename ParticleType>
@@ -246,7 +249,7 @@ struct HfFemtoDreamProducer {
       auto motherparticlesMc = particleMc.template mothers_as<aod::McParticles>();
       // check pdg code
       // if this fails, the particle is a fake
-      if (abs(pdgCode) == abs(trkPDGCode.value)) {
+      if (std::abs(pdgCode) == std::abs(trkPDGCode.value)) {
         // check first if particle is from pile up
         // check if the collision associated with the particle is the same as the analyzed collision by checking their Ids
         if ((col.has_mcCollision() && (particleMc.mcCollisionId() != col.mcCollisionId())) || !col.has_mcCollision()) {
@@ -320,7 +323,7 @@ struct HfFemtoDreamProducer {
 
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, true>(track);
       // the bit-wise container of the systematic variations is obtained
-      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
+      auto cutContainer = trackCuts.getCutContainer<false, aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
 
       // track global index
       outputPartsIndex(track.globalIndex());

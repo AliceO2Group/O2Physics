@@ -32,6 +32,42 @@ enum class EM_HFeeType : int {
 };
 
 //_______________________________________________________________________
+template <typename TTrack>
+int hasFakeMatchITSTPC(TTrack const& track)
+{
+  // track and mctracklabel have to be joined.
+  // bit 13 -- ITS/TPC labels are not equal
+
+  if ((track.mcMask() & 1 << 13)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//_______________________________________________________________________
+template <typename TTrack>
+int hasFakeMatchITSTPCTOF(TTrack const&)
+{
+  // track and mctracklabel have to be joined.
+  return false;
+  // if ((track.mcMask() & 1 << 13) && (track.mcMask() & 1 << 15)) {
+  //   return true;
+  // } else {
+  //   return false;
+  // }
+}
+//_______________________________________________________________________
+template <typename TTrack>
+int hasFakeMatchMFTMCH(TTrack const& track)
+{
+  // fwdtrack and mcfwdtracklabel have to be joined.
+  if ((track.mcMask() & 1 << 7)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//_______________________________________________________________________
 template <typename TMCParticle1, typename TMCParticle2>
 int FindCommonMotherFrom2ProngsWithoutPDG(TMCParticle1 const& p1, TMCParticle2 const& p2)
 {
@@ -186,6 +222,14 @@ int FindCommonMotherFrom3Prongs(TMCParticle1 const& p1, TMCParticle2 const& p2, 
 }
 //_______________________________________________________________________
 template <typename TMCParticle, typename TMCParticles>
+int getMotherPDGCode(TMCParticle const& p, TMCParticles const& mcparticles)
+{
+  int motherid = p.mothersIds()[0];
+  auto mother = mcparticles.iteratorAt(motherid);
+  return (mother.pdgCode());
+}
+//_______________________________________________________________________
+template <typename TMCParticle, typename TMCParticles>
 int IsFromBeauty(TMCParticle const& p, TMCParticles const& mcparticles)
 {
   if (!p.has_mothers()) {
@@ -217,6 +261,7 @@ int IsFromBeauty(TMCParticle const& p, TMCParticles const& mcparticles)
   return -999;
 }
 
+//_______________________________________________________________________
 template <typename TMCParticle, typename TMCParticles>
 int IsFromCharm(TMCParticle const& p, TMCParticles const& mcparticles)
 {
@@ -248,6 +293,7 @@ int IsFromCharm(TMCParticle const& p, TMCParticles const& mcparticles)
   return -999;
 }
 
+//_______________________________________________________________________
 template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
 int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcparticles)
 {
@@ -359,8 +405,8 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
               return static_cast<int>(EM_HFeeType::kBCe_Be_SameB); // b->c->e and b->e, decay type = 3. this should happen only in ULS.
             }
           }
-        }    // end of motherid2
-      }      // end of motherid1
+        } // end of motherid2
+      } // end of motherid1
     } else { // LS
       bool is_same_mother_found = false;
       for (auto& mid1 : mothers_id1) {
@@ -374,7 +420,7 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
             }
           }
         } // end of motherid2
-      }   // end of motherid1
+      } // end of motherid1
       if (!is_same_mother_found) {
         mothers_id1.clear();
         mothers_pdg1.clear();
@@ -400,6 +446,7 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
   return static_cast<int>(EM_HFeeType::kUndef);
 }
 
+//_______________________________________________________________________
 template <typename T, typename U>
 int searchMothers(T& p, U& mcParticles, int pdg, bool equal)
 { // find the first ancestor that is equal/not-equal pdg
@@ -479,6 +526,7 @@ int searchMothers(T& p, U& mcParticles, int pdg, bool equal)
   return -1;
 }
 
+//_______________________________________________________________________
 template <typename T, typename U>
 int findHFOrigin(T& p, U& mcParticles, int pdg)
 {
@@ -490,7 +538,7 @@ int findHFOrigin(T& p, U& mcParticles, int pdg)
   int id = searchMothers(quark, mcParticles, pdg, false); // try to find the first ancestor that is not the hf quark anymore
   return id;
 }
-
+//_______________________________________________________________________
 template <typename T, typename U>
 bool checkFromSameQuarkPair(T& p1, T& p2, U& mcParticles, int pdg)
 { // check if two particles come from the same hf q-qbar pair

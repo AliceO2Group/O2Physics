@@ -8,6 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <experimental/type_traits>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -35,9 +38,19 @@ struct Filter2Prong {
 
   HfHelper hfHelper;
   Produces<aod::CF2ProngTracks> output2ProngTracks;
+  Produces<aod::CF2ProngTrackmls> output2ProngTrackmls;
+
+  std::vector<float> mlvecd{};
+  std::vector<float> mlvecdbar{};
 
   using HFCandidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
-  void processData(aod::Collisions::iterator const&, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, HFCandidates const& candidates)
+  using HFCandidatesML = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
+
+  template <class T>
+  using HasMLProb = decltype(std::declval<T&>().mlProbD0());
+
+  template <class HFCandidatesType>
+  void processDataT(aod::Collisions::iterator const&, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, HFCandidatesType const& candidates)
   {
     if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
       return; // rejected collision
@@ -62,13 +75,50 @@ struct Filter2Prong {
         continue;
       if (cfgYMax >= 0.0f && std::abs(hfHelper.yD0(c)) > cfgYMax)
         continue;
-      if (c.isSelD0() > 0)
+
+      if (c.isSelD0() > 0) {
         output2ProngTracks(cfcollisions.begin().globalIndex(),
                            prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0ToPiK(c), aod::cf2prongtrack::D0ToPiK);
-      if (c.isSelD0bar() > 0)
+        if constexpr (std::experimental::is_detected<HasMLProb, typename HFCandidatesType::iterator>::value) {
+          mlvecd.clear();
+          for (float val : c.mlProbD0()) {
+            mlvecd.push_back(val);
+          }
+          mlvecdbar.clear();
+          for (float val : c.mlProbD0bar()) {
+            mlvecdbar.push_back(val);
+          }
+          output2ProngTrackmls(cfcollisions.begin().globalIndex(), mlvecd, mlvecdbar);
+        }
+      }
+
+      if (c.isSelD0bar() > 0) {
         output2ProngTracks(cfcollisions.begin().globalIndex(),
                            prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0barToKPi(c), aod::cf2prongtrack::D0barToKPi);
+        if constexpr (std::experimental::is_detected<HasMLProb, typename HFCandidatesType::iterator>::value) {
+          mlvecd.clear();
+          for (float val : c.mlProbD0()) {
+            mlvecd.push_back(val);
+          }
+          mlvecdbar.clear();
+          for (float val : c.mlProbD0bar()) {
+            mlvecdbar.push_back(val);
+          }
+          output2ProngTrackmls(cfcollisions.begin().globalIndex(), mlvecd, mlvecdbar);
+        }
+      }
     }
+  }
+
+  void processDataML(aod::Collisions::iterator const& cols, aod::BCsWithTimestamps const& bcs, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, HFCandidatesML const& candidates)
+  {
+    processDataT(cols, bcs, cfcollisions, cftracks, candidates);
+  }
+  PROCESS_SWITCH(Filter2Prong, processDataML, "Process data D0 candidates with ML", false);
+
+  void processData(aod::Collisions::iterator const& cols, aod::BCsWithTimestamps const& bcs, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, HFCandidates const& candidates)
+  {
+    processDataT(cols, bcs, cfcollisions, cftracks, candidates);
   }
   PROCESS_SWITCH(Filter2Prong, processData, "Process data D0 candidates", true);
 }; // struct
