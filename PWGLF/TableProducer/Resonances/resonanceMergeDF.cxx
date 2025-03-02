@@ -8,9 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-/// \file LFResonanceInitializer.cxx
-/// \brief Initializes variables for the resonance candidate producers
+///
+/// \file resonanceMergeDF.cxx
+/// \brief Merges multiple dataframes into a single dataframe
 ///
 ///
 ///  In typical dataframes (DF), we usually observe a range of 200 to 300 collisions.
@@ -24,7 +24,8 @@
 ///
 /// ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
-///    Nasir Mehdi Malik
+///         Nasir Mehdi Malik <nasir.mehdi.malik@cern.ch>
+///         Min-jae Kim <minjae.kim@cern.ch>
 #include <vector>
 
 #include "Common/DataModel/PIDResponse.h"
@@ -58,7 +59,7 @@ using namespace o2::soa;
 
 /// Initializer for the resonance candidate producers
 
-struct reso2dfmerged {
+struct ResonanceMergeDF {
   //  SliceCache cache;
   Configurable<int> nDF{"nDF", 1, "no of combination of collision"};
   Configurable<bool> cpidCut{"cpidCut", 0, "pid cut"};
@@ -75,17 +76,16 @@ struct reso2dfmerged {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  using resoCols = aod::ResoCollisions;
-  using resoTracks = aod::ResoTracks;
-
   void init(InitContext const&)
   {
 
     const AxisSpec axisCent(110, 0, 110, "FT0 (%)");
     histos.add("Event/h1d_ft0_mult_percentile", "FT0 (%)", kTH1F, {axisCent});
+    histos.add("Event/h1d_ft0_mult_percentile_CASC", "FT0 (%)", kTH1F, {axisCent});
   }
   Produces<aod::ResoCollisionDFs> resoCollisionsdf;
   Produces<aod::ResoTrackDFs> reso2trksdf;
+  Produces<aod::ResoCascadeDFs> reso2cascadesdf;
   int df = 0;
 
   std::vector<std::tuple<float, float, float, float, float, float, int>> vecOfTuples;
@@ -97,7 +97,7 @@ struct reso2dfmerged {
                                      float, float, bool, bool,
                                      bool, bool, bool, bool, float, float, float>>>
     vecOfVecOfTuples;
-  void processTrackDataDF(resoCols::iterator const& collision, resoTracks const& tracks)
+  void processTrackDataDF(aod::ResoCollisions::iterator const& collision, aod::ResoTracks const& tracks)
   {
 
     int nCollisions = nDF;
@@ -110,7 +110,7 @@ struct reso2dfmerged {
                            float, float, bool, bool,
                            bool, bool, bool, bool, float, float, float>>
       innerVector;
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (cpidCut) {
         if (!track.hasTOF()) {
           if (std::abs(track.tpcNSigmaPr()) > nsigmaPr && std::abs(track.tpcNSigmaKa()) > nsigmaKa)
@@ -175,6 +175,7 @@ struct reso2dfmerged {
     vecOfVecOfTuples.push_back(innerVector);
     innerVector.clear();
     df++;
+    LOGF(info, "collisions: df = %i", df);
     if (df < nCollisions)
       return;
     df = 0;
@@ -231,10 +232,9 @@ struct reso2dfmerged {
     vecOfVecOfTuples.clear(); //
   }
 
-  PROCESS_SWITCH(reso2dfmerged, processTrackDataDF, "Process for data merged DF", true);
+  PROCESS_SWITCH(ResonanceMergeDF, processTrackDataDF, "Process for data merged DF", true);
 
-  void processLambdaStarCandidate(resoCols::iterator const& collision, resoTracks const&
-                                                                         tracks)
+  void processLambdaStarCandidate(aod::ResoCollisions::iterator const& collision, aod::ResoTracks const& tracks)
   {
 
     if (doprocessTrackDataDF)
@@ -244,7 +244,7 @@ struct reso2dfmerged {
 
     resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (isPrimary && !track.isPrimaryTrack())
         continue;
       if (isGlobal && !track.isGlobalTrack())
@@ -308,10 +308,69 @@ struct reso2dfmerged {
                   track.tpcChi2NCl());
     }
   }
-  PROCESS_SWITCH(reso2dfmerged, processLambdaStarCandidate, "Process for lambda star candidate", false);
+  PROCESS_SWITCH(ResonanceMergeDF, processLambdaStarCandidate, "Process for lambda star candidate", false);
+
+  void processCascadesCandidate(aod::ResoCollisions::iterator const& collision, aod::ResoCascades const& resocasctracks)
+  {
+    histos.fill(HIST("Event/h1d_ft0_mult_percentile_CASC"), collision.cent());
+
+    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
+
+    for (const auto& track : resocasctracks) {
+      reso2cascadesdf(resoCollisionsdf.lastIndex(),
+                      // casc.globalIndex(),
+                      track.pt(),
+                      track.px(),
+                      track.py(),
+                      track.pz(),
+                      track.eta(),
+                      track.phi(),
+                      const_cast<int*>(track.cascadeIndices()),
+                      track.daughterTPCNSigmaPosPi(),
+                      track.daughterTPCNSigmaPosKa(),
+                      track.daughterTPCNSigmaPosPr(),
+                      track.daughterTPCNSigmaNegPi(),
+                      track.daughterTPCNSigmaNegKa(),
+                      track.daughterTPCNSigmaNegPr(),
+                      track.daughterTPCNSigmaBachPi(),
+                      track.daughterTPCNSigmaBachKa(),
+                      track.daughterTPCNSigmaBachPr(),
+                      track.daughterTOFNSigmaPosPi(),
+                      track.daughterTOFNSigmaPosKa(),
+                      track.daughterTOFNSigmaPosPr(),
+                      track.daughterTOFNSigmaNegPi(),
+                      track.daughterTOFNSigmaNegKa(),
+                      track.daughterTOFNSigmaNegPr(),
+                      track.daughterTOFNSigmaBachPi(),
+                      track.daughterTOFNSigmaBachKa(),
+                      track.daughterTOFNSigmaBachPr(),
+                      track.v0CosPA(),
+                      track.cascCosPA(),
+                      track.daughDCA(),
+                      track.cascDaughDCA(),
+                      track.dcapostopv(),
+                      track.dcanegtopv(),
+                      track.dcabachtopv(),
+                      track.dcav0topv(),
+                      track.dcaXYCascToPV(),
+                      track.dcaZCascToPV(),
+                      track.sign(),
+                      track.mLambda(),
+                      track.mXi(),
+                      track.transRadius(), track.cascTransRadius(), track.decayVtxX(), track.decayVtxY(), track.decayVtxZ());
+    }
+  }
+
+  PROCESS_SWITCH(ResonanceMergeDF, processCascadesCandidate, "Process for Cascade candidate", true);
+
+  void processXiStarCandidate(aod::ResoCollisions::iterator const& /*collision*/, aod::ResoTracks const& /*tracks*/)
+  {
+    // TODO: Implement Xi star candidate processing
+  }
+  PROCESS_SWITCH(ResonanceMergeDF, processXiStarCandidate, "Process for Xi star candidate", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<reso2dfmerged>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<ResonanceMergeDF>(cfgc)};
 }
