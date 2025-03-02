@@ -243,11 +243,15 @@ struct JetSubstructureTask {
       float deltaEta = jet.eta() - track.eta();
 
       if (TMath::Sqrt((deltaPhi1 * deltaPhi1) + (deltaEta * deltaEta)) <= jet.r() / 100.0) {
-        tracksPerpCone1Vec.push_back(track);
+        if (track.pt() >= pairConstituentPtMin) {
+          tracksPerpCone1Vec.push_back(track);
+        }
         perpCone1Pt += track.pt();
       }
       if (TMath::Sqrt((deltaPhi2 * deltaPhi2) + (deltaEta * deltaEta)) <= jet.r() / 100.0) {
-        tracksPerpCone2Vec.push_back(track);
+        if (track.pt() >= pairConstituentPtMin) {
+          tracksPerpCone2Vec.push_back(track);
+        }
         perpCone2Pt += track.pt();
       }
     }

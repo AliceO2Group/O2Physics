@@ -59,6 +59,7 @@ struct JetSubstructureMatchingSub {
   Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
   Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
   Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
+  Configurable<bool> requireGeoMatchedJets{"requireGeoMatchedJets", false, "require jets are geo matched as well"};
   Configurable<bool> requirePtMatchedJets{"requirePtMatchedJets", false, "require jets are pT matched as well"};
   Configurable<bool> requireHFMatchedJets{"requireHFMatchedJets", false, "require jets are HF matched as well"};
 
@@ -108,6 +109,16 @@ struct JetSubstructureMatchingSub {
     }
   }
 
+  template <typename T>
+  auto defaultMatchedJets(T const& jetTag)
+  {
+    if constexpr (jetcandidateutilities::isCandidateTable<Candidates>()) {
+      return jetTag.template matchedJetCand_as<JetsBase>();
+    } else {
+      return jetTag.template matchedJetGeo_as<JetsBase>();
+    }
+  }
+
   void processData(JetsTag const& jetsTag,
                    JetsBase const&,
                    SplittingsBase const& jetsBaseSplittings,
@@ -145,7 +156,13 @@ struct JetSubstructureMatchingSub {
     jetBasePairsMap.resize(jetsBasePairs.size(), -1);
 
     for (auto jetTag : jetsTag) {
-      if (jetTag.has_matchedJetGeo()) {
+      bool hasMatchedJet = false;
+      if constexpr (jetcandidateutilities::isCandidateTable<Candidates>()) {
+        hasMatchedJet = jetTag.has_matchedJetCand();
+      } else {
+        hasMatchedJet = jetTag.has_matchedJetGeo();
+      }
+      if (hasMatchedJet) {
         // auto const& jetTagSplittings = jetsTagSplittings.sliceBy(TagSplittingsPerTagJet, jetTag.globalIndex());
         auto const& jetTagSplittings = slicedPerJetForMatching<Candidates>(jetsTagSplittings, jetTag, TagSplittingsPerTagJetInclusive, TagSplittingsPerTagJetD0, TagSplittingsPerTagJetDplus, TagSplittingsPerTagJetLc, TagSplittingsPerTagJetBplus, TagSplittingsPerTagJetDielectron);
         int tagSplittingIndex = 0;
@@ -160,7 +177,18 @@ struct JetSubstructureMatchingSub {
           jetTagPairsMap[jetTagPair.globalIndex()] = tagPairIndex;
           tagPairIndex++;
         }
-        for (auto& jetBase : jetTag.template matchedJetGeo_as<JetsBase>()) {
+        for (auto& jetBase : defaultMatchedJets(jetTag)) {
+          if (requireGeoMatchedJets) {
+            bool jetsMatchedWithGeo = false;
+            for (auto& jetBaseForMatchGeo : jetTag.template matchedJetGeo_as<JetsBase>()) {
+              if (jetBaseForMatchGeo.globalIndex() == jetBase.globalIndex()) {
+                jetsMatchedWithGeo = true;
+              }
+            }
+            if (!jetsMatchedWithGeo) {
+              continue;
+            }
+          }
           if (requirePtMatchedJets) {
             bool jetsMatchedWithPt = false;
             for (auto& jetBaseForMatchPt : jetTag.template matchedJetPt_as<JetsBase>()) {
