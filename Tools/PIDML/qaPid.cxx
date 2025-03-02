@@ -352,16 +352,16 @@ struct QaPid {
     }
   }
 
-  template <std::size_t i, std::size_t arrLen, typename T>
+  template <std::size_t i, std::size_t kArrLen, typename T>
   void pidMinStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[])
   {
     const float p = track.p();
 
     // list of Nsigmas for particles
-    float particleNSigma[arrLen];
+    float particleNSigma[kArrLen];
 
     // calculate Nsigmas for every particle
-    for (int j = 0; j < arrLen; ++j) {
+    for (int j = 0; j < kArrLen; ++j) {
       if (p < PSwitch[j]) {
         particleNSigma[j] = std::abs(tpcNSigmas[j]);
       } else if (p >= PSwitch[j]) {
@@ -371,7 +371,7 @@ struct QaPid {
 
     if ((p < PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
       float tmpNSigma = std::abs(tpcNSigmas[i]);
-      if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
+      if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, kArrLen) == i)) {
         if (pdgCode == PdgCodes[i]) {
           fillPidHistos<i>(track, pdgCode, true);
         } else {
@@ -380,7 +380,7 @@ struct QaPid {
       }
     } else if ((p >= PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
       float tmpNSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
-      if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
+      if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, kArrLen) == i)) {
         if (pdgCode == PdgCodes[i]) {
           fillPidHistos<i>(track, pdgCode, true);
         } else {
@@ -390,16 +390,16 @@ struct QaPid {
     }
   }
 
-  template <std::size_t i, std::size_t arrLen, typename T>
+  template <std::size_t i, std::size_t kArrLen, typename T>
   void pidExclusiveStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[])
   {
     const float p = track.p();
 
     // list of Nsigmas for particles
-    float particleNSigma[arrLen];
+    float particleNSigma[kArrLen];
 
     // calculate Nsigmas for every particle
-    for (int j = 0; j < arrLen; ++j) {
+    for (int j = 0; j < kArrLen; ++j) {
       if (p < PSwitch[j]) {
         particleNSigma[j] = std::abs(tpcNSigmas[j]);
       } else if (p >= PSwitch[j]) {
@@ -409,7 +409,7 @@ struct QaPid {
 
     // check how many particles satisfy the condition
     int counts = 0;
-    for (int j = 0; j < arrLen; ++j) {
+    for (int j = 0; j < kArrLen; ++j) {
       if (particleNSigma[j] < nsigmacut.value) {
         counts++;
       }
@@ -418,7 +418,7 @@ struct QaPid {
     if (counts == 1) {
       if ((p < PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
         float tmpNSigma = std::abs(tpcNSigmas[i]);
-        if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
+        if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, kArrLen) == i)) {
           if (pdgCode == PdgCodes[i]) {
             fillPidHistos<i>(track, pdgCode, true);
           } else {
@@ -427,7 +427,7 @@ struct QaPid {
         }
       } else if ((p >= PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
         float tmpNSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
-        if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
+        if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, kArrLen) == i)) {
           if (pdgCode == PdgCodes[i]) {
             fillPidHistos<i>(track, pdgCode, true);
           } else {
