@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file pidONNXModel.h
+/// \file PidONNXModel.h
 /// \brief A class that wraps PID ML ONNX model. See README.md for more detailed instructions.
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
@@ -51,11 +51,13 @@ enum PidMLDetector {
   kNDetectors ///< number of available detectors configurations
 };
 
+using MomentumLimitsMatrix = std::array<double, kNDetectors>;
+
 namespace pidml_pt_cuts
 {
 // TODO: for now first limit wouldn't be used,
 // network needs TPC, so we can either do not cut it by p or return 0.0f as prediction
-constexpr std::array<double, kNDetectors> defaultModelPLimits({0.0, 0.5, 0.8});
+constexpr MomentumLimitsMatrix defaultModelPLimits({0.0, 0.5, 0.8});
 } // namespace pidml_pt_cuts
 
 // TODO: Copied from cefpTask, shall we put it in some common utils code?

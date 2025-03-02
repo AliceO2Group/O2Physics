@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
+/// \file QaPid.cxx
 /// \brief Task to check PID efficiency
 /// \author Łukasz Sawicki
 /// \since
@@ -25,10 +26,10 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct EvaluatePid {
+struct QaPid {
   double combinedSignal(float val1, float val2)
   {
-    return sqrt(pow(val1, 2) + pow(val2, 2));
+    return abs::sqrt(std::pow(val1, 2) + std::pow(val2, 2));
   }
 
   int indexOfSmallestElement(const float array[], int size)
@@ -157,13 +158,13 @@ struct EvaluatePid {
   void fillPidHistos(const T& track, const int pdgCode, bool isPidTrue)
   {
     if (isPidTrue) {
-      histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
+      histReg.fill(HIST(PidTrueRegistryNames[i]), track.pt());
       histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
       histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
       histReg.fill(HIST("TOFSignalPidTrue"), track.p(), track.beta());
       histReg.fill(HIST(TOFPidTrueRegistryNames[i]), track.p(), track.beta());
     } else {
-      histReg.fill(HIST(pidFalseRegistryNames[i]), track.pt());
+      histReg.fill(HIST(PidFalseRegistryNames[i]), track.pt());
       histReg.fill(HIST(TPCPidFalseRegistryNames[i]), track.p(), track.tpcSignal());
       histReg.fill(HIST("TPCSignalPidFalse"), track.p(), track.tpcSignal());
       histReg.fill(HIST("TOFSignalPidFalse"), track.p(), track.beta());
@@ -177,8 +178,8 @@ struct EvaluatePid {
   // nb of particles (5 particles - Pi, Pr, Ka, e, mu, and 5 antiparticles)
   static const int numParticles = 10;
 
-  static constexpr std::string_view pidTrueRegistryNames[numParticles] = {"pidTrue/211", "pidTrue/2212", "pidTrue/321", "pidTrue/11", "pidTrue/13", "pidTrue/0211", "pidTrue/02212", "pidTrue/0321", "pidTrue/011", "pidTrue/013"};
-  static constexpr std::string_view pidFalseRegistryNames[numParticles] = {"pidFalse/211", "pidFalse/2212", "pidFalse/321", "pidFalse/11", "pidFalse/13", "pidFalse/0211", "pidFalse/02212", "pidFalse/0321", "pidFalse/011", "pidFalse/013"};
+  static constexpr std::string_view PidTrueRegistryNames[numParticles] = {"pidTrue/211", "pidTrue/2212", "pidTrue/321", "pidTrue/11", "pidTrue/13", "pidTrue/0211", "pidTrue/02212", "pidTrue/0321", "pidTrue/011", "pidTrue/013"};
+  static constexpr std::string_view PidFalseRegistryNames[numParticles] = {"pidFalse/211", "pidFalse/2212", "pidFalse/321", "pidFalse/11", "pidFalse/13", "pidFalse/0211", "pidFalse/02212", "pidFalse/0321", "pidFalse/011", "pidFalse/013"};
 
   static constexpr std::string_view TPCPidTrueRegistryNames[numParticles] = {"TPCPidTrue/211", "TPCPidTrue/2212", "TPCPidTrue/321", "TPCPidTrue/11", "TPCPidTrue/13", "TPCPidTrue/0211", "TPCPidTrue/02212", "TPCPidTrue/0321", "TPCPidTrue/011", "TPCPidTrue/013"};
   static constexpr std::string_view TPCPidFalseRegistryNames[numParticles] = {"TPCPidFalse/211", "TPCPidFalse/2212", "TPCPidFalse/321", "TPCPidFalse/11", "TPCPidFalse/13", "TPCPidFalse/0211", "TPCPidFalse/02212", "TPCPidFalse/0321", "TPCPidFalse/011", "TPCPidFalse/013"};
@@ -186,13 +187,13 @@ struct EvaluatePid {
   static constexpr std::string_view TOFPidTrueRegistryNames[numParticles] = {"TOFPidTrue/211", "TOFPidTrue/2212", "TOFPidTrue/321", "TOFPidTrue/11", "TOFPidTrue/13", "TOFPidTrue/0211", "TOFPidTrue/02212", "TOFPidTrue/0321", "TOFPidTrue/011", "TOFPidTrue/013"};
   static constexpr std::string_view TOFPidFalseRegistryNames[numParticles] = {"TOFPidFalse/211", "TOFPidFalse/2212", "TOFPidFalse/321", "TOFPidFalse/11", "TOFPidFalse/13", "TOFPidFalse/0211", "TOFPidFalse/02212", "TOFPidFalse/0321", "TOFPidFalse/011", "TOFPidFalse/013"};
 
-  static constexpr int pdgCodes[numParticles] = {211, 2212, 321, 11, 13, -211, -2212, -321, -11, -13};
-  static constexpr int pidToPdg[numParticles] = {11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
-  // charge with index i corresponds to i-th particle from pdgCodes array
-  static constexpr int particleCharge[numParticles] = {1, 1, 1, -1, -1, -1, -1, -1, 1, 1};
+  static constexpr int PdgCodes[numParticles] = {211, 2212, 321, 11, 13, -211, -2212, -321, -11, -13};
+  static constexpr int PidToPdg[numParticles] = {11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
+  // charge with index i corresponds to i-th particle from PdgCodes array
+  static constexpr int ParticleCharge[numParticles] = {1, 1, 1, -1, -1, -1, -1, -1, 1, 1};
   // momentum value when to switch from pid based only on TPC (below the value) to combination of TPC and TOF (above the value)
   // i-th momentum corresponds to the i-th particle
-  static constexpr float pSwitch[numParticles] = {0.5, 0.8, 0.5, 0.5, 0.5, 0.5, 0.8, 0.5, 0.5, 0.5};
+  static constexpr float PSwitch[numParticles] = {0.5, 0.8, 0.5, 0.5, 0.5, 0.5, 0.8, 0.5, 0.5, 0.5};
 
   static const int maxP = 5;
   // nb of bins for TH1 hists
@@ -328,21 +329,21 @@ struct EvaluatePid {
     /*
     Simplest possible PID, accept particle when:
     TPCSignal < X if p < Value or
-    sqrt(TPCSignal^2 + TOFSignal^2) < X if p > Value
+    abs::sqrt(TPCSignal^2 + TOFSignal^2) < X if p > Value
     */
     const float p = track.p();
 
-    if ((p < pSwitch[i]) & (track.sign() == particleCharge[i])) {
-      if (abs(tpcNSigmas[i]) < nsigmacut.value) {
-        if (pdgCode == pdgCodes[i]) {
+    if ((p < PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
+      if (std::abs(tpcNSigmas[i]) < nsigmacut.value) {
+        if (pdgCode == PdgCodes[i]) {
           fillPidHistos<i>(track, pdgCode, true);
         } else {
           fillPidHistos<i>(track, pdgCode, false);
         }
       }
-    } else if ((p >= pSwitch[i]) & (track.sign() == particleCharge[i])) {
-      if (sqrt(pow(tpcNSigmas[i], 2) + pow(tofNSigmas[i], 2)) < nsigmacut.value) {
-        if (pdgCode == pdgCodes[i]) {
+    } else if ((p >= PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
+      if (abs::sqrt(std::pow(tpcNSigmas[i], 2) + std::pow(tofNSigmas[i], 2)) < nsigmacut.value) {
+        if (pdgCode == PdgCodes[i]) {
           fillPidHistos<i>(track, pdgCode, true);
         } else {
           fillPidHistos<i>(track, pdgCode, false);
@@ -361,26 +362,26 @@ struct EvaluatePid {
 
     // calculate Nsigmas for every particle
     for (int j = 0; j < arrLen; ++j) {
-      if (p < pSwitch[j]) {
-        particleNSigma[j] = abs(tpcNSigmas[j]);
-      } else if (p >= pSwitch[j]) {
+      if (p < PSwitch[j]) {
+        particleNSigma[j] = std::abs(tpcNSigmas[j]);
+      } else if (p >= PSwitch[j]) {
         particleNSigma[j] = combinedSignal(tpcNSigmas[j], tofNSigmas[j]);
       }
     }
 
-    if ((p < pSwitch[i]) & (track.sign() == particleCharge[i])) {
-      float tmp_NSigma = abs(tpcNSigmas[i]);
-      if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
-        if (pdgCode == pdgCodes[i]) {
+    if ((p < PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
+      float tmpNSigma = std::abs(tpcNSigmas[i]);
+      if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
+        if (pdgCode == PdgCodes[i]) {
           fillPidHistos<i>(track, pdgCode, true);
         } else {
           fillPidHistos<i>(track, pdgCode, false);
         }
       }
-    } else if ((p >= pSwitch[i]) & (track.sign() == particleCharge[i])) {
-      float tmp_NSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
-      if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
-        if (pdgCode == pdgCodes[i]) {
+    } else if ((p >= PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
+      float tmpNSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
+      if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
+        if (pdgCode == PdgCodes[i]) {
           fillPidHistos<i>(track, pdgCode, true);
         } else {
           fillPidHistos<i>(track, pdgCode, false);
@@ -399,9 +400,9 @@ struct EvaluatePid {
 
     // calculate Nsigmas for every particle
     for (int j = 0; j < arrLen; ++j) {
-      if (p < pSwitch[j]) {
-        particleNSigma[j] = abs(tpcNSigmas[j]);
-      } else if (p >= pSwitch[j]) {
+      if (p < PSwitch[j]) {
+        particleNSigma[j] = std::abs(tpcNSigmas[j]);
+      } else if (p >= PSwitch[j]) {
         particleNSigma[j] = combinedSignal(tpcNSigmas[j], tofNSigmas[j]);
       }
     }
@@ -415,19 +416,19 @@ struct EvaluatePid {
     }
 
     if (counts == 1) {
-      if ((p < pSwitch[i]) & (track.sign() == particleCharge[i])) {
-        float tmp_NSigma = abs(tpcNSigmas[i]);
-        if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
-          if (pdgCode == pdgCodes[i]) {
+      if ((p < PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
+        float tmpNSigma = std::abs(tpcNSigmas[i]);
+        if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
+          if (pdgCode == PdgCodes[i]) {
             fillPidHistos<i>(track, pdgCode, true);
           } else {
             fillPidHistos<i>(track, pdgCode, false);
           }
         }
-      } else if ((p >= pSwitch[i]) & (track.sign() == particleCharge[i])) {
-        float tmp_NSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
-        if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
-          if (pdgCode == pdgCodes[i]) {
+      } else if ((p >= PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
+        float tmpNSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
+        if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
+          if (pdgCode == PdgCodes[i]) {
             fillPidHistos<i>(track, pdgCode, true);
           } else {
             fillPidHistos<i>(track, pdgCode, false);
@@ -442,8 +443,8 @@ struct EvaluatePid {
   {
     // Convert PID to PDG code
     // We don't identify particles with PID bigger than Proton, putting dummy code so they will be skipped.
-    int bayesPdg = track.bayesID() > o2::track::PID::Proton ? 999 : pidToPdg[track.bayesID()];
-    if (track.bayesID() <= o2::track::PID::Proton && track.sign() == -1 * particleCharge[track.bayesID()]) { // Check if antiparticle
+    int bayesPdg = track.bayesID() > o2::track::PID::Proton ? 999 : PidToPdg[track.bayesID()];
+    if (track.bayesID() <= o2::track::PID::Proton && track.sign() == -1 * ParticleCharge[track.bayesID()]) { // Check if antiparticle
       bayesPdg += numParticles / 2;
     }
     return bayesPdg;
@@ -453,7 +454,7 @@ struct EvaluatePid {
   void pidBayes(const T& track, const int pdgCode, const int bayesPdg)
   {
     if (bayesPdg == pdgCode) {
-      if (pdgCode == pdgCodes[i]) {
+      if (pdgCode == PdgCodes[i]) {
         fillPidHistos<i>(track, pdgCode, true);
       } else {
         fillPidHistos<i>(track, pdgCode, false);
@@ -503,11 +504,11 @@ struct EvaluatePid {
   Configurable<int> strategy{"strategy", 1, "1-PID with Nsigma method, 2-PID with NSigma and condition for minimal Nsigma value for particle, 3-Exclusive condition for NSigma, 4-Bayesian PID"};
 
   Filter trackFilter = requireGlobalTrackInFilter();
-  using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu, aod::pidBayes>>;
+  using PidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu, aod::pidBayes>>;
 
-  void process(pidTracks const& tracks, aod::McParticles const& /*mcParticles*/)
+  void process(PidTracks const& tracks, aod::McParticles const& /*mcParticles*/)
   {
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       auto particle = track.mcParticle_as<aod::McParticles_000>();
       int pdgCode = particle.pdgCode();
 
@@ -546,6 +547,6 @@ struct EvaluatePid {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<EvaluatePid>(cfgc),
+    adaptAnalysisTask<QaPid>(cfgc),
   };
 }

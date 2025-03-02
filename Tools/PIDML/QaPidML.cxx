@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
+/// \file QaPidML.cxx
 /// \brief Task to check ML PID efficiency. Based on Maja's simpleApplyPidOnnxModel.cxx code
 /// \author Łukasz Sawicki
 /// \since
@@ -36,8 +37,8 @@ struct QaPidML {
   static const int binsNb2D = 1000;
   static const int numParticles = 3;
 
-  static constexpr std::string_view pidTrueRegistryNames[numParticles] = {"pidTrue/211", "pidTrue/2212", "pidTrue/321"};
-  static constexpr std::string_view pidFalseRegistryNames[numParticles] = {"pidFalse/211", "pidFalse/2212", "pidFalse/321"};
+  static constexpr std::string_view PidTrueRegistryNames[numParticles] = {"pidTrue/211", "pidTrue/2212", "pidTrue/321"};
+  static constexpr std::string_view PidFalseRegistryNames[numParticles] = {"pidFalse/211", "pidFalse/2212", "pidFalse/321"};
 
   static constexpr std::string_view TPCPidTrueRegistryNames[numParticles] = {"TPCPidTrue/211", "TPCPidTrue/2212", "TPCPidTrue/321"};
   static constexpr std::string_view TPCPidFalseRegistryNames[numParticles] = {"TPCPidFalse/211", "TPCPidFalse/2212", "TPCPidFalse/321"};
@@ -46,11 +47,11 @@ struct QaPidML {
   static constexpr std::string_view TOFPidFalseRegistryNames[numParticles] = {"TOFPidFalse/211", "TOFPidFalse/2212", "TOFPidFalse/321"};
 
   // available particles: 211, 2212, 321
-  static constexpr int particlesPdgCode[numParticles] = {211, 2212, 321};
+  static constexpr int ParticlesPdgCode[numParticles] = {211, 2212, 321};
 
   // values of track momentum when to switch from only TPC signal to combined TPC and TOF signal and to TPC+TOF+TRD
   // i-th momentum corresponds to the i-th particle
-  static constexpr double pSwitchValue[numParticles][kNDetectors] = {{0.0, 0.5, 0.8}, {0.0, 0.8, 0.8}, {0.0, 0.5, 0.8}};
+  static constexpr double PSwitchValue[numParticles][kNDetectors] = {{0.0, 0.5, 0.8}, {0.0, 0.8, 0.8}, {0.0, 0.5, 0.8}};
 
   HistogramRegistry histReg{
     "allHistograms",
@@ -284,13 +285,13 @@ struct QaPidML {
   void fillPidHistos(const T& track, const int pdgCode, bool isPidTrue)
   {
     if (isPidTrue) {
-      histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
+      histReg.fill(HIST(PidTrueRegistryNames[i]), track.pt());
       histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
       histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
       histReg.fill(HIST("TOFSignalPidTrue"), track.p(), track.beta());
       histReg.fill(HIST(TOFPidTrueRegistryNames[i]), track.p(), track.beta());
     } else {
-      histReg.fill(HIST(pidFalseRegistryNames[i]), track.pt());
+      histReg.fill(HIST(PidFalseRegistryNames[i]), track.pt());
       histReg.fill(HIST(TPCPidFalseRegistryNames[i]), track.p(), track.tpcSignal());
       histReg.fill(HIST("TPCSignalPidFalse"), track.p(), track.tpcSignal());
       histReg.fill(HIST("TOFSignalPidFalse"), track.p(), track.beta());
@@ -306,21 +307,21 @@ struct QaPidML {
     // index of the biggest value in an array
     int index = 0;
     // index of the second biggest value in an array
-    int smaller_index = 0;
+    int smallerIndex = 0;
 
     for (int j = 1; j < numParticles; j++) {
       if (pidCertainties[j] > pidCertainties[index]) {
         // assign new indexes
-        smaller_index = index;
+        smallerIndex = index;
         index = j;
       }
     }
 
     // return 0 if certainty with index 'index' is below 0.5 or two indexes have the same value, else map index to particle pdgCode
-    if ((pidCertainties[index] < 0.5f) | ((pidCertainties[index] == pidCertainties[smaller_index]) & (smaller_index != 0))) {
+    if ((pidCertainties[index] < 0.5f) | ((pidCertainties[index] == pidCertainties[smallerIndex]) & (smallerIndex != 0))) {
       return 0;
     } else {
-      return particlesPdgCode[index];
+      return ParticlesPdgCode[index];
     }
   }
 
@@ -333,8 +334,8 @@ struct QaPidML {
     pidCertainties[2] = model321.applyModel(track);
     int pid = getParticlePdg(pidCertainties);
     // condition for sign: we want to work only with pi, p and K, without antiparticles
-    if (pid == particlesPdgCode[i] && track.sign() == 1) {
-      if (pdgCodeMC == particlesPdgCode[i]) {
+    if (pid == ParticlesPdgCode[i] && track.sign() == 1) {
+      if (pdgCodeMC == ParticlesPdgCode[i]) {
         fillPidHistos<i>(track, pdgCodeMC, true);
       } else {
         fillPidHistos<i>(track, pdgCodeMC, false);
@@ -342,43 +343,43 @@ struct QaPidML {
     }
   }
 
-  Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
-  Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
-  Configurable<bool> cfgUseCCDB{"useCCDB", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
-  Configurable<std::string> cfgPathLocal{"local-path", "/home/mkabus/PIDML/", "base path to the local directory with ONNX models"};
+  Configurable<std::string> ccdbPath{"ccdbPath", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
+  Configurable<bool> useCcdb{"useCcdb", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
+  Configurable<std::string> localPath{"localPath", "/home/mkabus/PIDML/", "base path to the local directory with ONNX models"};
 
   o2::ccdb::CcdbApi ccdbApi;
   int currentRunNumber = -1;
 
   Filter trackFilter = requireGlobalTrackInFilter();
-  using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::TOFSignal>>;
+  using PidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::TOFSignal>>;
 
   // one model for one particle
-  PidONNXModel<pidTracks> model211;
-  PidONNXModel<pidTracks> model2212;
-  PidONNXModel<pidTracks> model321;
+  PidONNXModel<PidTracks> model211;
+  PidONNXModel<PidTracks> model2212;
+  PidONNXModel<PidTracks> model321;
 
   void init(InitContext const&)
   {
-    if (cfgUseCCDB) {
-      ccdbApi.init(cfgCCDBURL);
+    if (useCcdb) {
+      ccdbApi.init(ccdbUrl);
     } else {
-      model211 = PidONNXModel<pidTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 211, 0.5f, pSwitchValue[0]);
-      model2212 = PidONNXModel<pidTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 2211, 0.5f, pSwitchValue[1]);
-      model321 = PidONNXModel<pidTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 321, 0.5f, pSwitchValue[2]);
+      model211 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, 211, 0.5f, PSwitchValue[0]);
+      model2212 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, 2211, 0.5f, PSwitchValue[1]);
+      model321 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, 321, 0.5f, PSwitchValue[2]);
     }
   }
 
-  void process(aod::Collisions const& collisions, pidTracks const& tracks, aod::McParticles const& /*mcParticles*/, aod::BCsWithTimestamps const&)
+  void process(aod::Collisions const& collisions, PidTracks const& tracks, aod::McParticles const& /*mcParticles*/, aod::BCsWithTimestamps const&)
   {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
-    if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
-      model211 = PidONNXModel<pidTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 211, 0.5f, pSwitchValue[0]);
-      model2212 = PidONNXModel<pidTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 2211, 0.5f, pSwitchValue[1]);
-      model321 = PidONNXModel<pidTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 321, 0.5f, pSwitchValue[2]);
+    if (useCcdb && bc.runNumber() != currentRunNumber) {
+      model211 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, bc.timestamp(), 211, 0.5f, PSwitchValue[0]);
+      model2212 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, bc.timestamp(), 2211, 0.5f, PSwitchValue[1]);
+      model321 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, bc.timestamp(), 321, 0.5f, PSwitchValue[2]);
     }
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       auto particle = track.mcParticle_as<aod::McParticles_000>();
       int pdgCodeMC = particle.pdgCode();
 
