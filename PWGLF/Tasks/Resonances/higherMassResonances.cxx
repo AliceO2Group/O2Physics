@@ -544,7 +544,7 @@ struct HigherMassResonances {
 
     double angle = std::sqrt(std::pow(eta1 - eta2, 2) + std::pow(phi1 - phi2, 2));
     rKzeroShort.fill(HIST("angularSeparation"), angle);
-    if (config.applyAngSepCut && angle < config.angSepCut) {
+    if (config.applyAngSepCut && angle > config.angSepCut) {
       return false;
     }
     return true;
