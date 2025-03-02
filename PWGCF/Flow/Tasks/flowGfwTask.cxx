@@ -706,14 +706,15 @@ struct FlowGfwTask {
 
     if (cfgTrackSel) {
       return myTrackSel.IsSelected(track);
-    } else if (cfgGlobalplusITS) {
+    }else if (cfgGlobalplusITS) {
       return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
-    } else if (cfgGlobalonly) {
+    }else if (cfgGlobalonly) {
       return ((track.tpcNClsFound() >= cfgCutTPCclu));
     }else if (cfgITSonly) {
-     return ((track.itsNCls() >= cfgCutITSclu));
-   }else
+      return ((track.itsNCls() >= cfgCutITSclu));
+    }else{
       return false;
+    }
   }
 
   // Apply process filters
