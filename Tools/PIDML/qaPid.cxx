@@ -352,7 +352,7 @@ struct QaPid {
     }
   }
 
-  template <std::size_t i, std::size_t kArrLen, typename T>
+  template <std::size_t i, int kArrLen, typename T>
   void pidMinStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[])
   {
     const float p = track.p();
@@ -390,7 +390,7 @@ struct QaPid {
     }
   }
 
-  template <std::size_t i, std::size_t kArrLen, typename T>
+  template <std::size_t i, int kArrLen, typename T>
   void pidExclusiveStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[])
   {
     const float p = track.p();
