@@ -16,7 +16,7 @@
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 
 #ifndef HomogeneousField
-#define HomogeneousField
+#define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
 #include <iterator>
@@ -797,7 +797,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       // mass window cut on lambda before mass constraint
       float massLam, sigLam;
       kfV0.GetMass(massLam, sigLam);
-      if (TMath::Abs(massLam - MassLambda0) > lambdaMassWindow)
+      if (std::abs(massLam - MassLambda0) > lambdaMassWindow)
         continue;
       // err_mass>0 of Lambda
       if (sigLam <= 0)
@@ -1264,7 +1264,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       // mass window cut on lambda before mass constraint
       float massLam, sigLam;
       kfV0.GetMass(massLam, sigLam);
-      if (TMath::Abs(massLam - MassLambda0) > lambdaMassWindow)
+      if (std::abs(massLam - MassLambda0) > lambdaMassWindow)
         continue;
 
       // err_mass>0 of Lambda
@@ -1819,20 +1819,21 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   Produces<aod::HfToOmegaKMCGen> rowMCMatchGenToOmegaK;
 
   // Configuration
-  o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+  Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
 
   using MyTracksWMc = soa::Join<TracksIU, McTrackLabels>;
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
-  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
-  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   std::shared_ptr<TH1> hGenCharmBaryonPtRapidityTightXicToXiPi, hGenCharmBaryonPtRapidityLooseXicToXiPi, hGenCharmBaryonPtRapidityTightOmegacToXiPi, hGenCharmBaryonPtRapidityLooseOmegacToXiPi, hGenCharmBaryonPtRapidityTightOmegacToOmegaPi, hGenCharmBaryonPtRapidityLooseOmegacToOmegaPi, hGenCharmBaryonPtRapidityTightOmegacToOmegaK, hGenCharmBaryonPtRapidityLooseOmegacToOmegaK;
 
