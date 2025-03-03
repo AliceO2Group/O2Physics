@@ -87,6 +87,10 @@ struct JetDerivedDataProducerTask {
     Produces<aod::JD0McCollisionIds> jD0McCollisionIdsTable;
     Produces<aod::JD0Ids> jD0IdsTable;
     Produces<aod::JD0PIds> jD0ParticleIdsTable;
+    Produces<aod::JDplusCollisionIds> jDplusCollisionIdsTable;
+    Produces<aod::JDplusMcCollisionIds> jDplusMcCollisionIdsTable;
+    Produces<aod::JDplusIds> jDplusIdsTable;
+    Produces<aod::JDplusPIds> jDplusParticleIdsTable;
     Produces<aod::JLcCollisionIds> jLcCollisionIdsTable;
     Produces<aod::JLcMcCollisionIds> jLcMcCollisionIdsTable;
     Produces<aod::JLcIds> jLcIdsTable;
@@ -234,11 +238,18 @@ struct JetDerivedDataProducerTask {
 
   void processMcCollisions(aod::McCollision const& mcCollision)
   {
-    products.jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.weight(), mcCollision.getSubGeneratorId());
+    products.jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.weight(), mcCollision.getSubGeneratorId(), 1, 1, 1.0, 1.0);
     products.jMcCollisionsParentIndexTable(mcCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisions, "produces derived MC collision table", false);
 
+  void processMcCollisionsWithXsection(soa::Join<aod::McCollisions, aod::HepMCXSections>::iterator const& mcCollision)
+  {
+    products.jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.weight(), mcCollision.getSubGeneratorId(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr());
+    products.jMcCollisionsParentIndexTable(mcCollision.globalIndex());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionsWithXsection, "produces derived MC collision table with cross section information", false);
+  
   void processTracks(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::TrackSelectionExtension>::iterator const& track, aod::Collisions const&)
   {
     products.jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), dcaZMax));
