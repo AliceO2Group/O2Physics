@@ -1048,6 +1048,9 @@ struct Phik0shortanalysis {
           if (fillMethodSingleWeight)
             phiPurity = getPhiPurity(multiplicity, recPhi);
 
+          if (fillMethodMultipleWeights)
+            listrecPhi.push_back(recPhi);
+
           counts.at(0)++;
           weights.at(0) *= (1 - phiPurity);
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFCutOnDeltaY)
@@ -1058,9 +1061,6 @@ struct Phik0shortanalysis {
             continue;
           counts.at(2)++;
           weights.at(2) *= (1 - phiPurity);
-
-          if (fillMethodMultipleWeights)
-            listrecPhi.push_back(std::move(recPhi));
         }
       }
 
@@ -1137,6 +1137,9 @@ struct Phik0shortanalysis {
           if (fillMethodSingleWeight)
             phiPurity = getPhiPurity(multiplicity, recPhi);
 
+          if (fillMethodMultipleWeights)
+            listrecPhi.push_back(recPhi);
+
           counts.at(0)++;
           weights.at(0) *= (1 - phiPurity);
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFCutOnDeltaY)
@@ -1147,9 +1150,6 @@ struct Phik0shortanalysis {
             continue;
           counts.at(2)++;
           weights.at(2) *= (1 - phiPurity);
-
-          if (fillMethodMultipleWeights)
-            listrecPhi.push_back(std::move(recPhi));
         }
       }
 
@@ -1755,6 +1755,9 @@ struct Phik0shortanalysis {
           if (fillMethodSingleWeight)
             phiPurity = getPhiPurity(genmultiplicity, recPhi);
 
+          if (fillMethodMultipleWeights)
+            listrecPhi.push_back(recPhi);
+
           counts.at(0)++;
           weights.at(0) *= (1 - phiPurity);
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFCutOnDeltaY)
@@ -1765,9 +1768,6 @@ struct Phik0shortanalysis {
             continue;
           counts.at(2)++;
           weights.at(2) *= (1 - phiPurity);
-
-          if (fillMethodMultipleWeights)
-            listrecPhi.push_back(std::move(recPhi));
         }
       }
 
@@ -1879,6 +1879,9 @@ struct Phik0shortanalysis {
           if (fillMethodSingleWeight)
             phiPurity = getPhiPurity(genmultiplicity, recPhi);
 
+          if (fillMethodMultipleWeights)
+            listrecPhi.push_back(recPhi);
+
           counts.at(0)++;
           weights.at(0) *= (1 - phiPurity);
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFCutOnDeltaY)
@@ -1889,9 +1892,6 @@ struct Phik0shortanalysis {
             continue;
           counts.at(2)++;
           weights.at(2) *= (1 - phiPurity);
-
-          if (fillMethodMultipleWeights)
-            listrecPhi.push_back(std::move(recPhi));
         }
       }
 
