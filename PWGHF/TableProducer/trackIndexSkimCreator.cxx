@@ -91,7 +91,7 @@ enum ChannelsProtonPid {
   NChannelsProtonPid
 };
 // kaon PID (opposite-sign track in 3-prong decays)
-constexpr int channelKaonPid = ChannelsProtonPid::NChannelsProtonPid;
+constexpr int ChannelKaonPid = ChannelsProtonPid::NChannelsProtonPid;
 
 /// Event selection
 struct HfTrackIndexSkimCreatorTagSelCollisions {
@@ -198,9 +198,6 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
 /// Track selection
 struct HfTrackIndexSkimCreatorTagSelTracks {
-  SliceCache cache;
-  Preslice<aod::Tracks> perCol = aod::track::collisionId;
-
   Produces<aod::HfSelTrack> rowSelectedTrack;
   Produces<aod::HfPvRefitTrack> tabPvRefitTrack;
 
@@ -257,11 +254,21 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
   } config;
 
+  SliceCache cache;
+
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber;
+
+  using TracksWithSelAndDca = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection>;
+  using TracksWithSelAndDcaAndPidTpc = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTPCFullKa>;
+  using TracksWithSelAndDcaAndPidTof = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::pidTOFFullPr, aod::pidTOFFullKa>;
+  using TracksWithSelAndDcaAndPidTpcTof = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
+  Preslice<TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
   // single-track cuts
   static const int nCuts = 4;
@@ -270,13 +277,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   // proton PID, if enabled
   std::array<TrackSelectorPr, ChannelsProtonPid::NChannelsProtonPid> selectorProton;
   TrackSelectorKa selectorKaon;
-
-  using TracksWithSelAndDca = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection>;
-  using TracksWithSelAndDcaAndPidTpc = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTPCFullKa>;
-  using TracksWithSelAndDcaAndPidTof = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::pidTOFFullPr, aod::pidTOFFullKa>;
-  using TracksWithSelAndDcaAndPidTpcTof = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullKa, aod::pidTOFFullKa>;
-
-  Preslice<TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
   Partition<TracksWithSelAndDca> pvContributors = ((aod::track::flags & static_cast<uint32_t>(aod::track::PVContributor)) == static_cast<uint32_t>(aod::track::PVContributor));
   Partition<TracksWithSelAndDcaAndPidTpc> pvContributorsWithPidTpc = ((aod::track::flags & static_cast<uint32_t>(aod::track::PVContributor)) == static_cast<uint32_t>(aod::track::PVContributor));
@@ -395,10 +395,10 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       selectorProton[iChannel].setRangeNSigmaTof(-config.selectionsPid->get(iChannel, 5u), config.selectionsPid->get(iChannel, 5u)); // 5u == "nSigmaMaxTof"
     }
     // after the proton PID we have the kaon PID
-    selectorKaon.setRangePtTpc(config.selectionsPid->get(channelKaonPid, 0u), config.selectionsPid->get(channelKaonPid, 1u));      // 0u == "minPtTpc", 1u == "maxPtTpc"
-    selectorKaon.setRangePtTof(config.selectionsPid->get(channelKaonPid, 3u), config.selectionsPid->get(channelKaonPid, 4u));      // 3u == "minPtTof, 4u == "maxPtTof"
-    selectorKaon.setRangeNSigmaTpc(-config.selectionsPid->get(channelKaonPid, 2u), config.selectionsPid->get(channelKaonPid, 2u)); // 2u == "nSigmaMaxTpc"
-    selectorKaon.setRangeNSigmaTof(-config.selectionsPid->get(channelKaonPid, 5u), config.selectionsPid->get(channelKaonPid, 5u)); // 5u == "nSigmaMaxTof"
+    selectorKaon.setRangePtTpc(config.selectionsPid->get(ChannelKaonPid, 0u), config.selectionsPid->get(ChannelKaonPid, 1u));      // 0u == "minPtTpc", 1u == "maxPtTpc"
+    selectorKaon.setRangePtTof(config.selectionsPid->get(ChannelKaonPid, 3u), config.selectionsPid->get(ChannelKaonPid, 4u));      // 3u == "minPtTof, 4u == "maxPtTof"
+    selectorKaon.setRangeNSigmaTpc(-config.selectionsPid->get(ChannelKaonPid, 2u), config.selectionsPid->get(ChannelKaonPid, 2u)); // 2u == "nSigmaMaxTpc"
+    selectorKaon.setRangeNSigmaTof(-config.selectionsPid->get(ChannelKaonPid, 5u), config.selectionsPid->get(ChannelKaonPid, 5u)); // 5u == "nSigmaMaxTof"
   }
 
   /// PID track cuts (for proton only)
@@ -413,7 +413,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
           statusPid[iChannel] = selectorProton[iChannel].statusTof(hfTrack);
         }
-        statusPid[channelKaonPid] = selectorKaon.statusTof(hfTrack);
+        statusPid[ChannelKaonPid] = selectorKaon.statusTof(hfTrack);
       }
     }
     if constexpr (pidStrategy == ProtonPidStrategy::PidTpcOnly) {
@@ -421,20 +421,20 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
           statusPid[iChannel] = selectorProton[iChannel].statusTpc(hfTrack);
         }
-        statusPid[channelKaonPid] = selectorKaon.statusTpc(hfTrack);
+        statusPid[ChannelKaonPid] = selectorKaon.statusTpc(hfTrack);
       }
     }
     if constexpr (pidStrategy == ProtonPidStrategy::PidTpcOrTof) {
       for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
         statusPid[iChannel] = selectorProton[iChannel].statusTpcOrTof(hfTrack);
       }
-      statusPid[channelKaonPid] = selectorKaon.statusTpcOrTof(hfTrack);
+      statusPid[ChannelKaonPid] = selectorKaon.statusTpcOrTof(hfTrack);
     }
     if constexpr (pidStrategy == ProtonPidStrategy::PidTpcAndTof) {
       for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
         statusPid[iChannel] = selectorProton[iChannel].statusTpcAndTof(hfTrack);
       }
-      statusPid[channelKaonPid] = selectorKaon.statusTpcAndTof(hfTrack);
+      statusPid[ChannelKaonPid] = selectorKaon.statusTpcAndTof(hfTrack);
     }
 
     int8_t flag = BIT(ChannelsProtonPid::NChannelsProtonPid + 1) - 1; // all bits on (including the kaon one)
@@ -1246,13 +1246,12 @@ struct HfTrackIndexSkimCreator {
 
   // filter collisions
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint16_t>(0));
-
-  // define slice of track indices per collisions
-  Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
-
   // filter track indices
   Filter filterSelectTrackIds = ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand2Prong))) != 0u) || ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand3Prong))) != 0u) || ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandDstar))) != 0u);
+
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
+  // define slice of track indices per collisions
+  Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
 
   // define partitions
   Partition<FilteredTrackAssocSel> positiveFor2And3Prongs = aod::hf_sel_track::isPositive == true && (((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand2Prong))) != 0u) || ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand3Prong))) != 0u));
@@ -1920,7 +1919,7 @@ struct HfTrackIndexSkimCreator {
       }
       recalcPvRefit = true;
       int nCandContr = 0;
-      for (uint64_t myGlobalID : vecCandPvContributorGlobId) {
+      for (uint64_t myGlobalID : vecCandPvContributorGlobId) {                                                    // o2-linter: disable=const-ref-in-for-loop (small type)
         auto trackIterator = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), myGlobalID); /// track global index
         if (trackIterator != vecPvContributorGlobId.end()) {
           /// this is a contributor, let's remove it for the PV refit
@@ -2270,16 +2269,16 @@ struct HfTrackIndexSkimCreator {
                   }
 
                   if (config.debug) {
-                    int Prong2CutStatus[kN2ProngDecays];
+                    int prong2CutStatus[kN2ProngDecays];
                     for (int iDecay2P = 0; iDecay2P < kN2ProngDecays; iDecay2P++) {
-                      Prong2CutStatus[iDecay2P] = nCutStatus2ProngBit[iDecay2P];
+                      prong2CutStatus[iDecay2P] = nCutStatus2ProngBit[iDecay2P];
                       for (int iCut = 0; iCut < kNCuts2Prong[iDecay2P]; iCut++) {
                         if (!cutStatus2Prong[iDecay2P][iCut]) {
-                          CLRBIT(Prong2CutStatus[iDecay2P], iCut);
+                          CLRBIT(prong2CutStatus[iDecay2P], iCut);
                         }
                       }
                     }
-                    rowProng2CutStatus(Prong2CutStatus[0], Prong2CutStatus[1], Prong2CutStatus[2]); // FIXME when we can do this by looping over kN2ProngDecays
+                    rowProng2CutStatus(prong2CutStatus[0], prong2CutStatus[1], prong2CutStatus[2]); // FIXME when we can do this by looping over kN2ProngDecays
                   }
 
                   // fill histograms
@@ -2350,7 +2349,7 @@ struct HfTrackIndexSkimCreator {
                 }
               }
 
-              if (config.applyKaonPidIn3Prongs && !TESTBIT(trackIndexNeg1.isIdentifiedPid(), channelKaonPid)) { // continue immediately if kaon PID enabled and opposite-sign track not a kaon
+              if (config.applyKaonPidIn3Prongs && !TESTBIT(trackIndexNeg1.isIdentifiedPid(), ChannelKaonPid)) { // continue immediately if kaon PID enabled and opposite-sign track not a kaon
                 if (!config.debug) {
                   continue;
                 } else {
@@ -2526,16 +2525,16 @@ struct HfTrackIndexSkimCreator {
               }
 
               if (config.debug) {
-                int Prong3CutStatus[kN3ProngDecays];
+                int prong3CutStatus[kN3ProngDecays];
                 for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
-                  Prong3CutStatus[iDecay3P] = nCutStatus3ProngBit[iDecay3P];
+                  prong3CutStatus[iDecay3P] = nCutStatus3ProngBit[iDecay3P];
                   for (int iCut = 0; iCut < kNCuts3Prong[iDecay3P]; iCut++) {
                     if (!cutStatus3Prong[iDecay3P][iCut]) {
-                      CLRBIT(Prong3CutStatus[iDecay3P], iCut);
+                      CLRBIT(prong3CutStatus[iDecay3P], iCut);
                     }
                   }
                 }
-                rowProng3CutStatus(Prong3CutStatus[0], Prong3CutStatus[1], Prong3CutStatus[2], Prong3CutStatus[3]); // FIXME when we can do this by looping over kN3ProngDecays
+                rowProng3CutStatus(prong3CutStatus[0], prong3CutStatus[1], prong3CutStatus[2], prong3CutStatus[3]); // FIXME when we can do this by looping over kN3ProngDecays
               }
 
               // fill histograms
@@ -2594,7 +2593,7 @@ struct HfTrackIndexSkimCreator {
                 }
               }
 
-              if (config.applyKaonPidIn3Prongs && !TESTBIT(trackIndexPos1.isIdentifiedPid(), channelKaonPid)) { // continue immediately if kaon PID enabled and opposite-sign track not a kaon
+              if (config.applyKaonPidIn3Prongs && !TESTBIT(trackIndexPos1.isIdentifiedPid(), ChannelKaonPid)) { // continue immediately if kaon PID enabled and opposite-sign track not a kaon
                 if (!config.debug) {
                   continue;
                 } else {
@@ -2771,16 +2770,16 @@ struct HfTrackIndexSkimCreator {
               }
 
               if (config.debug) {
-                int Prong3CutStatus[kN3ProngDecays];
+                int prong3CutStatus[kN3ProngDecays];
                 for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
-                  Prong3CutStatus[iDecay3P] = nCutStatus3ProngBit[iDecay3P];
+                  prong3CutStatus[iDecay3P] = nCutStatus3ProngBit[iDecay3P];
                   for (int iCut = 0; iCut < kNCuts3Prong[iDecay3P]; iCut++) {
                     if (!cutStatus3Prong[iDecay3P][iCut]) {
-                      CLRBIT(Prong3CutStatus[iDecay3P], iCut);
+                      CLRBIT(prong3CutStatus[iDecay3P], iCut);
                     }
                   }
                 }
-                rowProng3CutStatus(Prong3CutStatus[0], Prong3CutStatus[1], Prong3CutStatus[2], Prong3CutStatus[3]); // FIXME when we can do this by looping over kN3ProngDecays
+                rowProng3CutStatus(prong3CutStatus[0], prong3CutStatus[1], prong3CutStatus[2], prong3CutStatus[3]); // FIXME when we can do this by looping over kN3ProngDecays
               }
 
               // fill histograms
@@ -2830,7 +2829,7 @@ struct HfTrackIndexSkimCreator {
 
           if (config.doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (pt2Prong + config.ptTolerance) * 1.2 > config.binsPtDstarToD0Pi->at(0) && whichHypo2Prong[kN2ProngDecays] != 0) { // if D* enabled and pt of the D0 is larger than the minimum of the D* one within 20% (D* and D0 momenta are very similar, always within 20% according to PYTHIA8)
             // second loop over positive tracks
-            if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 0) && (!config.applyKaonPidIn3Prongs || TESTBIT(trackIndexNeg1.isIdentifiedPid(), channelKaonPid))) { // only for D0 candidates; moreover if kaon PID enabled, apply to the negative track
+            if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 0) && (!config.applyKaonPidIn3Prongs || TESTBIT(trackIndexNeg1.isIdentifiedPid(), ChannelKaonPid))) { // only for D0 candidates; moreover if kaon PID enabled, apply to the negative track
               auto groupedTrackIndicesSoftPionsPos = positiveSoftPions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
               for (auto trackIndexPos2 = groupedTrackIndicesSoftPionsPos.begin(); trackIndexPos2 != groupedTrackIndicesSoftPionsPos.end(); ++trackIndexPos2) {
                 if (trackIndexPos2 == trackIndexPos1) {
@@ -2867,7 +2866,7 @@ struct HfTrackIndexSkimCreator {
             }
 
             // second loop over negative tracks
-            if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 1) && (!config.applyKaonPidIn3Prongs || TESTBIT(trackIndexPos1.isIdentifiedPid(), channelKaonPid))) { // only for D0bar candidates; moreover if kaon PID enabled, apply to the positive track
+            if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 1) && (!config.applyKaonPidIn3Prongs || TESTBIT(trackIndexPos1.isIdentifiedPid(), ChannelKaonPid))) { // only for D0bar candidates; moreover if kaon PID enabled, apply to the positive track
               auto groupedTrackIndicesSoftPionsNeg = negativeSoftPions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
               for (auto trackIndexNeg2 = groupedTrackIndicesSoftPionsNeg.begin(); trackIndexNeg2 != groupedTrackIndicesSoftPionsNeg.end(); ++trackIndexNeg2) {
                 if (trackIndexNeg1 == trackIndexNeg2) {

@@ -162,7 +162,7 @@ struct HfTreeCreatorB0ToDPi {
   Produces<o2::aod::HfCandB0FullPs> rowCandidateFullParticles;
   Produces<o2::aod::HfCandB0Lites> rowCandidateLite;
 
-  Configurable<int> selectionFlagB0{"selectionB0", 1, "Selection Flag for B0"};
+  Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
