@@ -40,8 +40,8 @@ o2physics_add_dpl_workflow(resonance-module-initializer
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(reso2mergedf
-    SOURCES LFResonanceMergeDF.cxx
+o2physics_add_dpl_workflow(resonance-merge-df
+    SOURCES resonanceMergeDF.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
