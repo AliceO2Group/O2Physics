@@ -360,7 +360,6 @@ struct HigherMassResonances {
 
     if (config.qAv0) {
       rKzeroShort.fill(HIST("hMassK0Shortbefore"), candidate.mK0Short(), candidate.pt());
-      rKzeroShort.fill(HIST("hMasscorrelationbefore"), candidate.mK0Short(), candidate.mK0Short());
       rKzeroShort.fill(HIST("hLT"), ctauK0s);
       rKzeroShort.fill(HIST("hDCAV0Daughters"), candidate.dcaV0daughters());
       rKzeroShort.fill(HIST("hV0CosPA"), candidate.v0cosPA());
@@ -731,6 +730,9 @@ struct HigherMassResonances {
         continue;
       }
 
+      if (config.qAv0) {
+        rKzeroShort.fill(HIST("hMasscorrelationbefore"), v1.mK0Short(), v2.mK0Short());
+      }
       allConditionsMet = 1;
       daughter1 = ROOT::Math::PxPyPzMVector(v1.px(), v1.py(), v1.pz(), o2::constants::physics::MassK0Short); // Kshort
 
