@@ -79,6 +79,8 @@ struct ResonanceMergeDF {
   Configurable<bool> requireTOF{"requireTOF", false, "Require TOF"};
   Configurable<float> applyTOFveto{"applyTOFveto", 999, "Apply TOF veto with value, 999 for passing all"};
   Configurable<float> nsigmaPi{"nsigmaPi", 5., "nsigma value for pion"};
+  Configurable<float> minCent{"minCent", 0., "Minimum centrality"};
+  Configurable<float> maxCent{"maxCent", 100., "Maximum centrality"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -320,6 +322,9 @@ struct ResonanceMergeDF {
       LOG(fatal) << "Disable processTrackDataDF first!";
     if (doprocessLambdaStarCandidate)
       LOG(fatal) << "Disable processLambdaStarCandidate first!";
+
+    if (collision.cent() < minCent || collision.cent() > maxCent)
+      return;
 
     resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
