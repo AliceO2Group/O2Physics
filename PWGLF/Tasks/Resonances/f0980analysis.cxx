@@ -11,6 +11,7 @@
 
 /// \author Junlee Kim (jikim1290@gmail.com)
 
+#include <vector>
 #include <Framework/Configurable.h>
 #include <TLorentzVector.h>
 #include "TVector2.h"

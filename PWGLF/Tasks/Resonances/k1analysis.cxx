@@ -15,6 +15,7 @@
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
+#include <vector>
 #include <TLorentzVector.h>
 #include <TDatabasePDG.h> // FIXME
 #include <TPDGCode.h>     // FIXME
