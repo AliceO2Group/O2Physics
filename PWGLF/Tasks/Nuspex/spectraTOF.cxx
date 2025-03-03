@@ -227,7 +227,7 @@ struct tofSpectra {
       LOG(info) << "Customizing track cuts:";
       customTrackCuts.SetRequireITSRefit(requireITS.value);
       customTrackCuts.SetRequireTPCRefit(requireTPC.value);
-      customTrackCuts.SetITSnClusters(min_ITS_nClusters.value);
+      customTrackCuts.SetMinNClustersITS(min_ITS_nClusters.value);
       customTrackCuts.SetRequireGoldenChi2(requireGoldenChi2.value);
       customTrackCuts.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
       customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
@@ -1427,7 +1427,7 @@ void processMCclosure(CollisionCandidates::iterator const& collisions,
                       aod::McTrackLabels const& mcTrackLabels, aod::McParticles const& mcParticles)
   {
     const float multiplicity = getMultiplicity(collisions);
-    int trackwoCut =0; int trackwCut=0;
+    int trackwoCut = 0; int trackwCut = 0;
 
     for (const auto& track : tracks) {
 if (!track.has_collision()) {
@@ -1441,7 +1441,7 @@ const auto& collision = track.collision_as<CollisionCandidates>();
         continue;
       }
       trackwoCut++;
-        if (!std::abs(track.dcaXY())>0.5) { // Skipping tracks that don't pass the standard cuts
+        if (!std::abs(track.dcaXY()) > 0.5) { // Skipping tracks that don't pass the standard cuts
       return;
     }
     trackwCut++;
@@ -1510,40 +1510,40 @@ if(usePDGcode){
 
 // TOF Selection and Histogram Filling
 if (isTOFPion && rapidityPi <= trkselOptions.cfgCutY) {
-if(usePDGcode){
+if (usePDGcode){
     if (pdgCode == 211) {
         histos.fill(HIST("nsigmatof/mc_closure/pos/pi"), track.pt(), nsigmaTOFPi, multiplicity);
-    } else if (pdgCode == -211) {
+    }else if (pdgCode == -211) {
         histos.fill(HIST("nsigmatof/mc_closure/neg/pi"), track.pt(), nsigmaTOFPi, multiplicity);
     }
-   } else {
-   histos.fill(HIST("nsigmatof/mc_closure/pos/pi"), track.pt(), nsigmaTOFPi, multiplicity);
-   histos.fill(HIST("nsigmatof/mc_closure/neg/pi"), track.pt(), nsigmaTOFPi, multiplicity);
-   }
+    }else{
+histos.fill(HIST("nsigmatof/mc_closure/pos/pi"), track.pt(), nsigmaTOFPi, multiplicity);
+histos.fill(HIST("nsigmatof/mc_closure/neg/pi"), track.pt(), nsigmaTOFPi, multiplicity);
 }
- if (isTOFKaon && rapidityKa <= trkselOptions.cfgCutY) {
- if(usePDGcode){
+}
+if (isTOFKaon && rapidityKa <= trkselOptions.cfgCutY){
+if (usePDGcode){
     if (pdgCode == 321) {
         histos.fill(HIST("nsigmatof/mc_closure/pos/ka"), track.pt(), nsigmaTOFKa, multiplicity);
     } else if (pdgCode == -321) {
         histos.fill(HIST("nsigmatof/mc_closure/neg/ka"), track.pt(), nsigmaTOFKa, multiplicity);
     }
-   } else {
-   histos.fill(HIST("nsigmatof/mc_closure/pos/ka"), track.pt(), nsigmaTOFKa, multiplicity);
-   histos.fill(HIST("nsigmatof/mc_closure/neg/ka"), track.pt(), nsigmaTOFKa, multiplicity);
-   }
+}else {
+histos.fill(HIST("nsigmatof/mc_closure/pos/ka"), track.pt(), nsigmaTOFKa, multiplicity);
+histos.fill(HIST("nsigmatof/mc_closure/neg/ka"), track.pt(), nsigmaTOFKa, multiplicity);
 }
- if (isTOFProton && rapidityPr <= trkselOptions.cfgCutY) {
- if(usePDGcode){
+}
+if (isTOFProton && rapidityPr <= trkselOptions.cfgCutY) {
+if (usePDGcode){
     if (pdgCode == 2212) {
         histos.fill(HIST("nsigmatof/mc_closure/pos/pr"), track.pt(), nsigmaTOFPr, multiplicity);
     } else if (pdgCode == -2212) {
         histos.fill(HIST("nsigmatof/mc_closure/neg/pr"), track.pt(), nsigmaTOFPr, multiplicity);
     }
-   } else {
+   }else {
         histos.fill(HIST("nsigmatof/mc_closure/pos/pr"), track.pt(), nsigmaTOFPr, multiplicity);
         histos.fill(HIST("nsigmatof/mc_closure/neg/pr"), track.pt(), nsigmaTOFPr, multiplicity);
- }
+}
 }
 }
     }
@@ -2537,7 +2537,7 @@ PROCESS_SWITCH(tofSpectra, processMCclosure, "MC closure test", true);
           fillParticleHistograms_MCGenEvs<i>(mcParticle, mcCollision);
         });
       }
-       if (mcCollision.isInelGt0()) {
+      /* if (mcCollision.isInelGt0()) {
          histos.fill(HIST("MC/GenRecoCollisions"), 3.f);
        }
        if (mcCollision.isInelGt1()) {
@@ -2545,7 +2545,7 @@ PROCESS_SWITCH(tofSpectra, processMCclosure, "MC closure test", true);
        }
       if (hasParticleInFT0C && hasParticleInFT0A) {
         histos.fill(HIST("MC/GenRecoCollisions"), 5.f);
-      }
+      }*/
     }
   }
   PROCESS_SWITCH(tofSpectra, processMC, "Process MC", false);
