@@ -112,6 +112,7 @@ struct phipbpb {
   Configurable<float> cfgTPCSharedcluster{"cfgTPCSharedcluster", 0.4, "Maximum Number of TPC shared cluster"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<bool> ispTdepPID{"ispTdepPID", true, "pT dependent PID"};
+  Configurable<bool> isTOFOnly{"isTOFOnly", false, "use TOF only PID"};
   Configurable<bool> checkAllCharge{"checkAllCharge", true, "check all charge for MC weight"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
   Configurable<double> confRapidity{"confRapidity", 0.5, "Rapidity cut"};
@@ -363,6 +364,15 @@ struct phipbpb {
     }
     return false;
   }
+
+  template <typename T>
+  bool selectionPID2(const T& candidate)
+  {
+    if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
+      return true;
+    }
+    return false;
+  }
   // deep angle cut on pair to remove photon conversion
   template <typename T1, typename T2>
   bool selectionPair(const T1& candidate1, const T2& candidate2)
@@ -502,10 +512,13 @@ struct phipbpb {
         continue;
       }
       // PID check
-      if (ispTdepPID && !selectionPIDpTdependent(track1)) {
+      if (ispTdepPID && !isTOFOnly && !selectionPIDpTdependent(track1)) {
         continue;
       }
-      if (!ispTdepPID && !selectionPID(track1)) {
+      if (!ispTdepPID && !isTOFOnly && !selectionPID(track1)) {
+        continue;
+      }
+      if (isTOFOnly && !selectionPID2(track1)) {
         continue;
       }
       if (useGlobalTrack && track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 2.5)) {
@@ -537,10 +550,13 @@ struct phipbpb {
           continue;
         }
         // PID check
-        if (ispTdepPID && !selectionPIDpTdependent(track2)) {
+        if (ispTdepPID && !isTOFOnly && !selectionPIDpTdependent(track2)) {
           continue;
         }
-        if (!ispTdepPID && !selectionPID(track2)) {
+        if (!ispTdepPID && !isTOFOnly && !selectionPID(track2)) {
+          continue;
+        }
+        if (isTOFOnly && !selectionPID2(track2)) {
           continue;
         }
         auto track2ID = track2.globalIndex();
@@ -698,10 +714,13 @@ struct phipbpb {
           continue;
         }
         // PID check
-        if (ispTdepPID && (!selectionPIDpTdependent(track1) || !selectionPIDpTdependent(track2))) {
+        if (ispTdepPID && !isTOFOnly && (!selectionPIDpTdependent(track1) || !selectionPIDpTdependent(track2))) {
           continue;
         }
-        if (!ispTdepPID && (!selectionPID(track1) || !selectionPID(track2))) {
+        if (!ispTdepPID && !isTOFOnly && (!selectionPID(track1) || !selectionPID(track2))) {
+          continue;
+        }
+        if (isTOFOnly && (!selectionPID2(track1) || !selectionPID2(track2))) {
           continue;
         }
         if (!selectionPair(track1, track2)) {
@@ -1114,7 +1133,17 @@ struct phipbpb {
           if (!(track1PDG == 321 && track2PDG == 321)) {
             continue;
           }
-          if (!selectionTrack(track1) || !selectionTrack(track2) || !selectionPIDpTdependent(track1) || !selectionPIDpTdependent(track2) || track1.sign() * track2.sign() > 0) {
+          if (!selectionTrack(track1) || !selectionTrack(track2) || track1.sign() * track2.sign() > 0) {
+            continue;
+          }
+          // PID check
+          if (ispTdepPID && !isTOFOnly && (!selectionPIDpTdependent(track1) || !selectionPIDpTdependent(track2))) {
+            continue;
+          }
+          if (!ispTdepPID && !isTOFOnly && (!selectionPID(track1) || !selectionPID(track2))) {
+            continue;
+          }
+          if (isTOFOnly && (!selectionPID2(track1) || !selectionPID2(track2))) {
             continue;
           }
           for (auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
