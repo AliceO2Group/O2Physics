@@ -72,7 +72,7 @@ DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
 DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);  //! ImpactParameter
 
 } // namespace resocollision
-DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
+DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISIONS",
                   o2::soa::Index<>,
                   resocollision::CollisionId,
                   o2::aod::mult::MultNTracksPV,
@@ -90,7 +90,7 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   evsel::NumTracksInTimeRange);
 using ResoCollision = ResoCollisions::iterator;
 
-DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOL",
+DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOLLISIONS",
                   o2::soa::Index<>,
                   resocollision::IsVtxIn10,
                   resocollision::IsINELgt0,
@@ -100,13 +100,13 @@ DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOL",
                   resocollision::ImpactParameter);
 using ResoMCCollision = ResoMCCollisions::iterator;
 
-DECLARE_SOA_TABLE(ResoSpheroCollisions, "AOD", "RESOSPHEROCOLL",
+DECLARE_SOA_TABLE(ResoSpheroCollisions, "AOD", "RESOSPHEROCOLLISIONS",
                   o2::soa::Index<>,
                   resocollision::CollisionId,
                   resocollision::Spherocity);
 using ResoSpheroCollision = ResoSpheroCollisions::iterator;
 
-DECLARE_SOA_TABLE(ResoEvtPlCollisions, "AOD", "RESOEVTPLCOLL",
+DECLARE_SOA_TABLE(ResoEvtPlCollisions, "AOD", "RESOEVTPLCOLLISIONS",
                   o2::soa::Index<>,
                   resocollision::CollisionId,
                   resocollision::EvtPl,
@@ -116,7 +116,7 @@ DECLARE_SOA_TABLE(ResoEvtPlCollisions, "AOD", "RESOEVTPLCOLL",
 using ResoEvtPlCollision = ResoEvtPlCollisions::iterator;
 
 // For DF mixing study
-DECLARE_SOA_TABLE(ResoCollisionDFs, "AOD", "RESOCOLLISIONDF",
+DECLARE_SOA_TABLE(ResoCollisionDFs, "AOD", "RESOCOLLISIONDFS",
                   o2::soa::Index<>,
                   // resocollision::CollisionId,
                   o2::aod::mult::MultNTracksPV,
@@ -253,7 +253,7 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
 using ResoTrack = ResoTracks::iterator;
 
 // For DF mixing study
-DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDFs",
+DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDFS",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionDFId,
                   //  resodaughter::TrackId,
