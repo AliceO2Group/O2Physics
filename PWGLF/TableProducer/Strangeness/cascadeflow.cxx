@@ -963,11 +963,11 @@ struct cascadeFlow {
 	  if (fillingConfigs.isFillTHN_AccFromLambdaVsLambda)          histos.get<THn>(HIST("hOmegaCos2ThetaFromLambdaL"))->Fill(coll.centFT0C(), ChargeIndex, etaLambda, ptLambda, casc.mLambda(), BDTresponse[1], Cos2ThetaLambda);
         }
         if (fillingConfigs.isFillTHNOmega_PzVsPsi) {
-	  if (fillingConfigs.isFillTHN_Pz)          histos.get<THn>(HIST("hOmegaPzVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[0], CosThetaOmegaWithAlpha, 2 * cascminuspsiT0C);
-	  if (fillingConfigs.isFillTHN_PzFromLambda)          histos.get<THn>(HIST("hOmegaPzVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[0], CosThetaProtonWithAlpha, 2 * cascminuspsiT0C);
-	  if (fillingConfigs.isFillTHN_Acc)          histos.get<THn>(HIST("hOmegaCos2ThetaVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.eta(), casc.pt(), casc.mOmega(), BDTresponse[0], Cos2ThetaOmega, 2 * cascminuspsiT0C);
-	  if (fillingConfigs.isFillTHN_AccFromLambdaVsCasc)          histos.get<THn>(HIST("hOmegaCos2ThetaVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.eta(), casc.pt(), casc.mOmega(), BDTresponse[0], Cos2ThetaLambda, 2 * cascminuspsiT0C);
-	  if (fillingConfigs.isFillTHN_AccFromLambdaVsLambda)          histos.get<THn>(HIST("hOmegaCos2ThetaVsPsiFromLambdaL"))->Fill(coll.centFT0C(), ChargeIndex, etaLambda, ptLambda, casc.mLambda(), BDTresponse[0], Cos2ThetaLambda, 2 * cascminuspsiT0C);
+	  if (fillingConfigs.isFillTHN_Pz)          histos.get<THn>(HIST("hOmegaPzVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], CosThetaOmegaWithAlpha, 2 * cascminuspsiT0C);
+	  if (fillingConfigs.isFillTHN_PzFromLambda)          histos.get<THn>(HIST("hOmegaPzVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], CosThetaProtonWithAlpha, 2 * cascminuspsiT0C);
+	  if (fillingConfigs.isFillTHN_Acc)          histos.get<THn>(HIST("hOmegaCos2ThetaVsPsi"))->Fill(coll.centFT0C(), ChargeIndex, casc.eta(), casc.pt(), casc.mOmega(), BDTresponse[1], Cos2ThetaOmega, 2 * cascminuspsiT0C);
+	  if (fillingConfigs.isFillTHN_AccFromLambdaVsCasc)          histos.get<THn>(HIST("hOmegaCos2ThetaVsPsiFromLambda"))->Fill(coll.centFT0C(), ChargeIndex, casc.eta(), casc.pt(), casc.mOmega(), BDTresponse[1], Cos2ThetaLambda, 2 * cascminuspsiT0C);
+	  if (fillingConfigs.isFillTHN_AccFromLambdaVsLambda)          histos.get<THn>(HIST("hOmegaCos2ThetaVsPsiFromLambdaL"))->Fill(coll.centFT0C(), ChargeIndex, etaLambda, ptLambda, casc.mLambda(), BDTresponse[1], Cos2ThetaLambda, 2 * cascminuspsiT0C);
         }
       }
 
