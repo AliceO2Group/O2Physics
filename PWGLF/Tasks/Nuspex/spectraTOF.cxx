@@ -2537,7 +2537,7 @@ PROCESS_SWITCH(tofSpectra, processMCclosure, "MC closure test", true);
           fillParticleHistograms_MCGenEvs<i>(mcParticle, mcCollision);
         });
       }
-      /* if (mcCollision.isInelGt0()) {
+       if (mcCollision.isInelGt0()) {
          histos.fill(HIST("MC/GenRecoCollisions"), 3.f);
        }
        if (mcCollision.isInelGt1()) {
@@ -2545,7 +2545,7 @@ PROCESS_SWITCH(tofSpectra, processMCclosure, "MC closure test", true);
        }
       if (hasParticleInFT0C && hasParticleInFT0A) {
         histos.fill(HIST("MC/GenRecoCollisions"), 5.f);
-      }*/
+      }
     }
   }
   PROCESS_SWITCH(tofSpectra, processMC, "Process MC", false);
