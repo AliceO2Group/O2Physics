@@ -213,6 +213,9 @@ DECLARE_SOA_TABLE(ReducedMCEvents, "AOD", "REDUCEDMCEVENT", //!   Event level MC
                   mccollision::GeneratorsID, reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
                   mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
 
+DECLARE_SOA_TABLE(ReducedMCEventsExtra, "AOD", "REMCEVENTEXTRA", //!   MC Multiplicity information
+                  mult::MultMCNParticlesEta10, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta05);
+
 using ReducedEvent = ReducedEvents::iterator;
 using StoredReducedEvent = StoredReducedEvents::iterator;
 using ReducedEventExtended = ReducedEventsExtended::iterator;
@@ -226,6 +229,7 @@ using ReducedEventQvectorCentrExtra = ReducedEventsQvectorCentrExtra::iterator;
 using ReducedEventRefFlow = ReducedEventsRefFlow::iterator;
 using ReducedEventQvectorZN = ReducedEventsQvectorZN::iterator;
 using ReducedMCEvent = ReducedMCEvents::iterator;
+using ReducedMCEventExtra = ReducedMCEventsExtra::iterator;
 
 namespace reducedeventlabel
 {

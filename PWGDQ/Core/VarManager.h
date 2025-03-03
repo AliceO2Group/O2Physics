@@ -106,6 +106,7 @@ class VarManager : public TObject
     ReducedEventMultExtra = BIT(19),
     CollisionQvectCentr = BIT(20),
     RapidityGapFilter = BIT(21),
+    CollisionMultMC = BIT(22),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -276,6 +277,9 @@ class VarManager : public TObject
     kMCEventTime,
     kMCEventWeight,
     kMCEventImpParam,
+    kMultMCNParticlesEta10,
+    kMultMCNParticlesEta08,
+    kMultMCNParticlesEta05,
     kQ1ZNAX,
     kQ1ZNAY,
     kQ1ZNCX,
@@ -1878,6 +1882,12 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMCEventTime] = event.t();
     values[kMCEventWeight] = event.weight();
     values[kMCEventImpParam] = event.impactParameter();
+  }
+
+  if constexpr ((fillMap & CollisionMultMC) > 0) {
+    values[kMultMCNParticlesEta10] = event.multMCNParticlesEta10();
+    values[kMultMCNParticlesEta08] = event.multMCNParticlesEta08();
+    values[kMultMCNParticlesEta05] = event.multMCNParticlesEta05();
   }
 
   if constexpr ((fillMap & EventFilter) > 0 || (fillMap & RapidityGapFilter) > 0) {
