@@ -1540,7 +1540,7 @@ if (usePDGcode){
     } else if (pdgCode == -2212) {
         histos.fill(HIST("nsigmatof/mc_closure/neg/pr"), track.pt(), nsigmaTOFPr, multiplicity);
     }
-   }else {
+}else {
         histos.fill(HIST("nsigmatof/mc_closure/pos/pr"), track.pt(), nsigmaTOFPr, multiplicity);
         histos.fill(HIST("nsigmatof/mc_closure/neg/pr"), track.pt(), nsigmaTOFPr, multiplicity);
 }
