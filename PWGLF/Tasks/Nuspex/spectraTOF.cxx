@@ -1441,7 +1441,7 @@ struct tofSpectra {
         continue;
       }
       // trackwoCut++;
-      if (std::abs(track.dcaXY()) > 0.5) { // Skipping tracks that don't pass the standard cuts
+      if (std::abs(track.dcaXY()) > 0.05) { // Skipping tracks that don't pass the standard cuts
         return;
       }
 
