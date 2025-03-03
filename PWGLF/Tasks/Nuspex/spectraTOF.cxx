@@ -16,7 +16,6 @@
 /// \brief Task for the analysis of the spectra with the TOF detector.
 ///        Depending on the configuration it can also run on tiny tables.
 ///
-
 // O2 includes
 #include <string>
 #include <vector>
