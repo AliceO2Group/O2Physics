@@ -258,7 +258,7 @@ class TrackSelection
   float mMaxDcaZ{1e10f};                        // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
 
-  float mMaxTPCFractionSharedCls{1e10f};                        // max fraction of shared TPC clusters
+  float mMaxTPCFractionSharedCls{1e10f}; // max fraction of shared TPC clusters
 
   bool mRequireITSRefit{false};   // require refit in ITS
   bool mRequireTPCRefit{false};   // require refit in TPC
