@@ -74,6 +74,14 @@ struct ResonanceMergeDF {
   Configurable<float> nsigmatofPr{"nsigmatofPr", 6., "nsigma value for tof prot"};
   Configurable<float> nsigmatofKa{"nsigmatofKa", 6., "nsigma value for tof kaon"};
 
+  // Xi1530 candidate cuts
+  Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoDCA"};
+  Configurable<bool> requireTOF{"requireTOF", false, "Require TOF"};
+  Configurable<float> applyTOFveto{"applyTOFveto", 999, "Apply TOF veto with value, 999 for passing all"};
+  Configurable<float> nsigmaPi{"nsigmaPi", 5., "nsigma value for pion"};
+  Configurable<float> minCent{"minCent", 0., "Minimum centrality"};
+  Configurable<float> maxCent{"maxCent", 100., "Maximum centrality"};
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext const&)
@@ -263,6 +271,86 @@ struct ResonanceMergeDF {
         if (crejtof && ((std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaEl()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaEl())) || (std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaPi()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaPi()))))
           continue;
       }
+      if (std::abs(track.dcaXY()) > cDCAXY)
+        continue;
+      if (std::abs(track.dcaZ()) > cDCAZ)
+        continue;
+      reso2trksdf(resoCollisionsdf.lastIndex(),
+                  // track.trackId(),
+                  track.pt(),
+                  track.px(),
+                  track.py(),
+                  track.pz(),
+                  track.eta(),
+                  track.phi(),
+                  track.sign(),
+                  (uint8_t)track.tpcNClsCrossedRows(),
+                  (uint8_t)track.tpcNClsFound(),
+                  (uint8_t)track.itsNCls(),
+                  track.dcaXY(),
+                  track.dcaZ(),
+                  track.x(),
+                  track.alpha(),
+                  track.hasITS(),
+                  track.hasTPC(),
+                  track.hasTOF(),
+                  track.tpcNSigmaPi(),
+                  track.tpcNSigmaKa(),
+                  track.tpcNSigmaPr(),
+                  track.tpcNSigmaEl(),
+                  track.tofNSigmaPi(),
+                  track.tofNSigmaKa(),
+                  track.tofNSigmaPr(),
+                  track.tofNSigmaEl(),
+                  track.tpcSignal(),
+                  track.passedITSRefit(),
+                  track.passedTPCRefit(),
+                  track.isGlobalTrackWoDCA(),
+                  track.isGlobalTrack(),
+                  track.isPrimaryTrack(),
+                  track.isPVContributor(),
+                  track.tpcCrossedRowsOverFindableCls(),
+                  track.itsChi2NCl(),
+                  track.tpcChi2NCl());
+    }
+  }
+  PROCESS_SWITCH(ResonanceMergeDF, processLambdaStarCandidate, "Process for lambda star candidate", false);
+
+  void processXi1530Candidate(aod::ResoCollisions::iterator const& collision, aod::ResoTracks const& tracks, aod::ResoCascades const& resocasctracks)
+  {
+    if (doprocessTrackDataDF)
+      LOG(fatal) << "Disable processTrackDataDF first!";
+    if (doprocessLambdaStarCandidate)
+      LOG(fatal) << "Disable processLambdaStarCandidate first!";
+
+    if (collision.cent() < minCent || collision.cent() > maxCent)
+      return;
+
+    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
+
+    for (const auto& track : tracks) {
+      if (trackSelection == 1) {
+        if (!track.isGlobalTrack())
+          continue;
+      } else if (trackSelection == 2) {
+        if (!track.isGlobalTrackWoDCA())
+          continue;
+      }
+      if (!track.hasTOF()) {
+        if (requireTOF) {
+          continue;
+        }
+        // TPC selection
+        if (std::abs(track.tpcNSigmaPi()) > nsigmaPi)
+          continue;
+      } else {
+        if (applyTOFveto > 998 && std::abs(track.tofNSigmaPi()) > applyTOFveto)
+          continue;
+        // TPC selection
+        if (std::abs(track.tpcNSigmaPi()) > nsigmaPi)
+          continue;
+      }
 
       if (std::abs(track.dcaXY()) > cDCAXY)
         continue;
@@ -307,16 +395,9 @@ struct ResonanceMergeDF {
                   track.itsChi2NCl(),
                   track.tpcChi2NCl());
     }
-  }
-  PROCESS_SWITCH(ResonanceMergeDF, processLambdaStarCandidate, "Process for lambda star candidate", false);
-
-  void processCascadesCandidate(aod::ResoCollisions::iterator const& collision, aod::ResoCascades const& resocasctracks)
-  {
-    histos.fill(HIST("Event/h1d_ft0_mult_percentile_CASC"), collision.cent());
-
-    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
-
+    // Cascade candidate
     for (const auto& track : resocasctracks) {
+      // TODO: add cascade cuts
       reso2cascadesdf(resoCollisionsdf.lastIndex(),
                       // casc.globalIndex(),
                       track.pt(),
@@ -360,14 +441,7 @@ struct ResonanceMergeDF {
                       track.transRadius(), track.cascTransRadius(), track.decayVtxX(), track.decayVtxY(), track.decayVtxZ());
     }
   }
-
-  PROCESS_SWITCH(ResonanceMergeDF, processCascadesCandidate, "Process for Cascade candidate", true);
-
-  void processXiStarCandidate(aod::ResoCollisions::iterator const& /*collision*/, aod::ResoTracks const& /*tracks*/)
-  {
-    // TODO: Implement Xi star candidate processing
-  }
-  PROCESS_SWITCH(ResonanceMergeDF, processXiStarCandidate, "Process for Xi star candidate", false);
+  PROCESS_SWITCH(ResonanceMergeDF, processXi1530Candidate, "Process for Xi(1530) candidate", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
