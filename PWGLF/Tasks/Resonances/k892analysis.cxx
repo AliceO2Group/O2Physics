@@ -464,7 +464,7 @@ struct k892analysis {
     }
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance, ldaughter_rot, lresonance_rot;
-    for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
+    for (const auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
 
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
@@ -493,9 +493,9 @@ struct k892analysis {
       auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
       auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
 
-      auto deltaEta = TMath::Abs(trk1.eta() - trk2.eta());
-      auto deltaPhi = TMath::Abs(trk1.phi() - trk2.phi());
-      deltaPhi = (deltaPhi > TMath::Pi()) ? (2 * TMath::Pi() - deltaPhi) : deltaPhi;
+      auto deltaEta = std::abs(trk1.eta() - trk2.eta());
+      auto deltaPhi = std::abs(trk1.phi() - trk2.phi());
+      deltaPhi = (deltaPhi > constants::math::PI) ? (constants::math::TwoPI - deltaPhi) : deltaPhi;
 
       if constexpr (!IsMix) {
         //// QA plots before the selection
@@ -583,7 +583,7 @@ struct k892analysis {
       lDecayDaughter2.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi(), massKa);
       lResonance = lDecayDaughter1 + lDecayDaughter2;
       // Rapidity cut
-      if (abs(lResonance.Rapidity()) >= 0.5)
+      if (std::abs(lResonance.Rapidity()) >= 0.5)
         continue;
       if (cfgCutsOnMother) {
         if (lResonance.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
@@ -613,7 +613,7 @@ struct k892analysis {
         if constexpr (!IsMix) {
           if (IsCalcRotBkg) {
             for (int i = 0; i < c_nof_rotations; i++) {
-              float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
+              float theta2 = rn->Uniform(constants::math::PI - constants::math::PI / rotational_cut, constants::math::PI + constants::math::PI / rotational_cut);
               ldaughter_rot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
               lresonance_rot = lDecayDaughter1 + ldaughter_rot;
               histos.fill(HIST("h3K892InvMassRotation"), multiplicity, lresonance_rot.Pt(), lresonance_rot.M(), occupancy_no);
@@ -653,11 +653,11 @@ struct k892analysis {
 
         // MC
         if constexpr (IsMC) {
-          if (abs(trk1.pdgCode()) != 211 || abs(trk2.pdgCode()) != 321)
+          if (std::abs(trk1.pdgCode()) != 211 || std::abs(trk2.pdgCode()) != 321)
             continue;
           if (trk1.motherId() != trk2.motherId()) // Same mother
             continue;
-          if (abs(trk1.motherPDG()) != 313)
+          if (std::abs(trk1.motherPDG()) != 313)
             continue;
 
           // Track selection check.
@@ -703,7 +703,7 @@ struct k892analysis {
     }
   }
 
-  void processDataLight(aod::ResoCollision& collision,
+  void processDataLight(aod::ResoCollision const& collision,
                         aod::ResoTracks const& resotracks)
   {
     // LOG(info) << "new collision, zvtx: " << collision.posZ();
@@ -716,20 +716,20 @@ struct k892analysis {
   void processMCLight(ResoMCCols::iterator const& collision,
                       soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
-    if (!collision.isInAfterAllCuts() || (abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
+    if (!collision.isInAfterAllCuts() || (std::abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
     fillHistograms<true, false>(collision, resotracks, resotracks);
   }
   PROCESS_SWITCH(k892analysis, processMCLight, "Process Event for MC (Reconstructed)", false);
 
-  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents& resoParents)
+  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents const& resoParents)
   {
     auto multiplicity = collision.cent();
-    for (auto& part : resoParents) { // loop over all pre-filtered MC particles
-      if (abs(part.pdgCode()) != 313 || abs(part.y()) >= 0.5)
+    for (const auto& part : resoParents) { // loop over all pre-filtered MC particles
+      if (std::abs(part.pdgCode()) != 313 || std::abs(part.y()) >= 0.5)
         continue;
-      bool pass1 = abs(part.daughterPDG1()) == 211 || abs(part.daughterPDG2()) == 211;
-      bool pass2 = abs(part.daughterPDG1()) == 321 || abs(part.daughterPDG2()) == 321;
+      bool pass1 = std::abs(part.daughterPDG1()) == 211 || std::abs(part.daughterPDG2()) == 211;
+      bool pass2 = std::abs(part.daughterPDG1()) == 321 || std::abs(part.daughterPDG2()) == 321;
 
       if (!pass1 || !pass2)
         continue;
@@ -768,13 +768,13 @@ struct k892analysis {
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
-  void processMELight(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
+  void processMELight(o2::aod::ResoCollisions const& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
     BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
-    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+    for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (additionalQAeventPlots)
         histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
       fillHistograms<false, true>(collision1, tracks1, tracks2);
