@@ -726,11 +726,10 @@ struct HigherMassResonances {
         continue;
       }
 
-      
       if (!applyAngSep(v1, v2)) {
         continue;
       }
-      
+
       if (config.qAv0) {
         rKzeroShort.fill(HIST("hMasscorrelationbefore"), v1.mK0Short(), v2.mK0Short());
       }
