@@ -46,7 +46,6 @@ namespace perrunqctask
 {
 static const int32_t nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 std::unordered_map<int, TH2*> gHadronicRate;
-std::unordered_map<int, std::vector<std::shared_ptr<TH2>>> gDeadChipsVsOrbitInLayer;
 std::unordered_map<int, std::shared_ptr<TH1>> gCollisionOrbitBefore;
 std::unordered_map<int, std::shared_ptr<TH1>> gCollisionOrbitAfter;
 
@@ -82,7 +81,7 @@ struct DptDptPerRunQc {
       const AxisSpec axisSeconds{static_cast<int>(maxSec - mMinSeconds), 0, maxSec - mMinSeconds, "Seconds since SOR"};
       gHadronicRate[mRunNumber] = mHistos.add<TH2>(Form("%i/hadronicRate", mRunNumber), ";Time since SOR (s);Hadronic rate (kHz)", kTH2D, {{static_cast<int>((maxSec - mMinSeconds) / 20.f), 0, maxSec - mMinSeconds, "Seconds since SOR"}, {1010, 0., 1010.}}).get();
 
-      /* initializing the ITS chips dead map*/
+      /* initializing the ITS chips dead map orbit axis*/
       /* inspired in DPG/Tasks/AOTEvent/eventSelectionQa.cxx */
       auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), mRunNumber);
       int64_t tsSOR = runInfo.sor;
@@ -92,38 +91,8 @@ struct DptDptPerRunQc {
       if (itsDeadMapOrbits.size() > 0) {
         std::vector<double> itsDeadMapOrbitsDouble(itsDeadMapOrbits.begin(), itsDeadMapOrbits.end());
         const AxisSpec axisItsDeadMapOrbits{itsDeadMapOrbitsDouble};
-        gDeadChipsVsOrbitInLayer[mRunNumber] = std::vector<std::shared_ptr<TH2>>(o2::itsmft::ChipMappingITS::NLayers, nullptr);
-        for (int layer = 0; layer < o2::itsmft::ChipMappingITS::NLayers; ++layer) {
-          int nChips = o2::itsmft::ChipMappingITS::getNChipsOnLayer(layer);
-          double idFirstChip = o2::itsmft::ChipMappingITS::getFirstChipsOnLayer(layer);
-          gDeadChipsVsOrbitInLayer[mRunNumber][layer] = mHistos.add<TH2>(TString::Format("%d/Before/hDeadChipsVsOrbitInLayer%d", mRunNumber, layer),
-                                                                         TString::Format("Dead chips in ITS layer %d, before;orbit; chip", layer),
-                                                                         kTH2C, {axisItsDeadMapOrbits, {nChips, idFirstChip, idFirstChip + nChips}});
-        }
         gCollisionOrbitBefore[mRunNumber] = mHistos.add<TH1>(TString::Format("%d/Before/hCollisionOrbitB", mRunNumber), "Collision orbit before; orbit", kTH1I, {axisItsDeadMapOrbits});
         gCollisionOrbitAfter[mRunNumber] = mHistos.add<TH1>(TString::Format("%d/After/hCollisionOrbitA", mRunNumber), "Collision orbit; orbit", kTH1I, {axisItsDeadMapOrbits});
-        LOGF(info, "Created the histograms");
-
-        std::vector<uint16_t> vClosest;
-        for (const auto& orbit : itsDeadMapOrbits) {
-          itsDeadMap->getMapAtOrbit(orbit, vClosest);
-          for (size_t iel = 0; iel < vClosest.size(); iel++) {
-            // dead chips are stored as ranges
-            // vClosest contains first and last chip ids in the range
-            // last chip id in the range is marked with 0x8000 bit set to 1
-            uint16_t w1 = vClosest[iel];
-            bool isLastInSequence = (w1 & 0x8000) == 0;
-            uint16_t w2 = isLastInSequence ? w1 + 1 : vClosest[iel + 1];
-            uint16_t chipId1 = w1 & 0x7FFF;
-            uint16_t chipId2 = w2 & 0x7FFF;
-            for (int chipId = chipId1; chipId < chipId2; chipId++) {
-              for (int layer = 0; layer < o2::itsmft::ChipMappingITS::NLayers; ++layer) {
-                gDeadChipsVsOrbitInLayer[mRunNumber][layer]->Fill(orbit, chipId, 1);
-              }
-            }
-          }
-        }
-        LOGF(info, "Initializing the current ones");
         gCurrentCollisionOrbitBefore = gCollisionOrbitBefore[mRunNumber];
         gCurrentCollisionOrbitAfter = gCollisionOrbitAfter[mRunNumber];
       } else {

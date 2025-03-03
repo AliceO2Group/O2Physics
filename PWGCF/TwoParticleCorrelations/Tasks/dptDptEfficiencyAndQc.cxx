@@ -279,10 +279,10 @@ struct QADataCollectingEngine {
       int nPhiSectorBins = fhNchVsPhiVsPtPosB->GetNbinsY();
       float phiSectorLow = fhNchVsPhiVsPtNegB->GetYaxis()->GetBinLowEdge(1);
       float phiSectorHigh = fhNchVsPhiVsPtNegB->GetYaxis()->GetBinUpEdge(nPhiSectorBins);
-      fhPerColNchVsPhiVsPtPosB = new TH2F("PerColNchVsPhiVsPtPosB", "", nPtBins, ptLow, ptHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
-      fhPerColNchVsPhiVsInnerWallMomPosB = new TH2F("PerColNchVsPhiVsInnerWallMomPosB", "", nTpcIwMomBins, tpcIwMomLow, tpcIwMomHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
-      fhPerColNchVsPhiVsPtNegB = new TH2F("PerColNchVsPhiVsPtNegB", "", nPtBins, ptLow, ptHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
-      fhPerColNchVsPhiVsInnerWallMomNegB = new TH2F("PerColNchVsPhiVsInnerWallMomNegB", "", nTpcIwMomBins, tpcIwMomLow, tpcIwMomHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
+      fhPerColNchVsPhiVsPtPosB = new TH2F(TString::Format("%s_PerColNchVsPhiVsPtPosB", dirname), "", nPtBins, ptLow, ptHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
+      fhPerColNchVsPhiVsInnerWallMomPosB = new TH2F(TString::Format("%s_PerColNchVsPhiVsInnerWallMomPosB", dirname), "", nTpcIwMomBins, tpcIwMomLow, tpcIwMomHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
+      fhPerColNchVsPhiVsPtNegB = new TH2F(TString::Format("%s_PerColNchVsPhiVsPtNegB", dirname), "", nPtBins, ptLow, ptHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
+      fhPerColNchVsPhiVsInnerWallMomNegB = new TH2F(TString::Format("%s_PerColNchVsPhiVsInnerWallMomNegB", dirname), "", nTpcIwMomBins, tpcIwMomLow, tpcIwMomHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
       for (uint isp = 0; isp < nsp; ++isp) {
         fhPhiVsPtA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("PhiVsPt_%s", tnames[isp].c_str()), HTITLESTRING("#varphi %s (mod(2#pi/18))", tnames[isp].c_str()), kTH2F, {pidPtAxis, phiSectorAxis});
         fhNchVsPhiVsPtA[isp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("NchVsPhiVsPt_%s", tnames[isp].c_str()), HTITLESTRING("#it{N}_{ch}^{%s} #varphi (mod(2#pi/18))", tnames[isp].c_str()), kTH3F, {pidPtAxisReduced, phiSectorAxisReduced, nChargeAxis});
@@ -307,8 +307,8 @@ struct QADataCollectingEngine {
         fhPtVsEtaTpcTofA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), HNAMESTRING("ptTpcTof_%s", tnames[isp].c_str()), HTITLESTRING("TPC&TOF %s tracks", tnames[isp].c_str()), kTH2F, {etaAxis, ptAxis});
         fhPtVsEtaItsTpcTofA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), HNAMESTRING("ptItsTpcTof_%s", tnames[isp].c_str()), HTITLESTRING("ITS&TPC&TOF %s tracks", tnames[isp].c_str()), kTH2F, {etaAxis, ptAxis});
         /* per collision histograms not going to the results file */
-        fhPerColNchVsPhiVsPtA[isp] = new TH2F(HNAMESTRING("PerColNchVsPhiVsPt_%s", tnames[isp].c_str()), "", nPtBins, ptLow, ptHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
-        fhPerColNchVsPhiVsInnerWallMomA[isp] = new TH2F(HNAMESTRING("PerColNchVsPhiVsInnerWallMom_%s", tnames[isp].c_str()), "", nTpcIwMomBins, tpcIwMomLow, tpcIwMomHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
+        fhPerColNchVsPhiVsPtA[isp] = new TH2F(HNAMESTRING("%s_PerColNchVsPhiVsPt_%s", dirname, tnames[isp].c_str()), "", nPtBins, ptLow, ptHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
+        fhPerColNchVsPhiVsInnerWallMomA[isp] = new TH2F(HNAMESTRING("%s_PerColNchVsPhiVsInnerWallMom_%s", dirname, tnames[isp].c_str()), "", nTpcIwMomBins, tpcIwMomLow, tpcIwMomHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
       }
     } else {
       AxisSpec recoSpecies{static_cast<int>(nsp) + 1, -0.5, nsp - 0.5, "reco species"};
@@ -582,8 +582,10 @@ struct QAExtraDataCollectingEngine {
   /* pairs histograms */
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhPhiPhiA{2, {nsp, {nsp, nullptr}}};
   std::vector<std::vector<std::vector<std::shared_ptr<TH3>>>> fhDeltaPhiVsPhiPhiA{2, {nsp, {nsp, nullptr}}};
+  std::vector<std::vector<std::vector<std::shared_ptr<TH3>>>> fhDeltaPhiVsEtaEtaA{2, {nsp, {nsp, nullptr}}};
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhEtaEtaA{2, {nsp, {nsp, nullptr}}};
   std::vector<std::vector<std::vector<std::shared_ptr<TH3>>>> fhDeltaEtaVsEtaEtaA{2, {nsp, {nsp, nullptr}}};
+  std::vector<std::vector<std::vector<std::shared_ptr<TH3>>>> fhDeltaEtaVsPhiPhiA{2, {nsp, {nsp, nullptr}}};
 
   template <efficiencyandqatask::KindOfData kindOfData>
   void init(HistogramRegistry& registry, const char* dirname)
@@ -591,10 +593,10 @@ struct QAExtraDataCollectingEngine {
     using namespace efficiencyandqatask;
     using namespace analysis::dptdptfilter;
 
-    AxisSpec phiAxis = {72, 0.0f, constants::math::TwoPI, "#varphi"};
-    AxisSpec deltaPhiAxis = {72, 0.0f, constants::math::TwoPI, "#Delta#varphi"};
+    AxisSpec phiAxis = {phibins, 0.0f, constants::math::TwoPI, "#varphi"};
+    AxisSpec deltaPhiAxis = {phibins, 0.0f, constants::math::TwoPI, "#Delta#varphi"};
     AxisSpec etaAxis = {etabins, etalow, etaup, "#eta"};
-    AxisSpec deltaEta = {2 * etabins - 1, etalow - etaup, etaup - etalow, "#DeltaEta"};
+    AxisSpec deltaEtaAxis = {2 * etabins - 1, etalow - etaup, etaup - etalow, "#DeltaEta"};
 
     /* the reconstructed and generated levels histograms */
     std::string recogen = (kindOfData == kReco) ? "Reco" : "Gen";
@@ -602,12 +604,16 @@ struct QAExtraDataCollectingEngine {
       for (uint jsp = 0; jsp < nsp; ++jsp) {
         fhPhiPhiA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("PhiPhi_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
                                                        HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH2F, {phiAxis, phiAxis});
-        fhDeltaPhiVsPhiPhiA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("deltaPhiVsPhiPhi_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+        fhDeltaPhiVsPhiPhiA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsPhiPhi_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
                                                                  HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH3F, {phiAxis, phiAxis, deltaPhiAxis});
+        fhDeltaEtaVsPhiPhiA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaEtaVsPhiPhi_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+                                                                 HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH3F, {phiAxis, phiAxis, deltaEtaAxis});
         fhEtaEtaA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("EtaEta_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
                                                        HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH2F, {etaAxis, etaAxis});
-        fhDeltaEtaVsEtaEtaA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("deltaPhiVsEtaEta_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
-                                                                 HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH3F, {phiAxis, phiAxis, deltaPhiAxis});
+        fhDeltaEtaVsEtaEtaA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaEtaVsEtaEta_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+                                                                 HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH3F, {etaAxis, etaAxis, deltaEtaAxis});
+        fhDeltaPhiVsEtaEtaA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsEtaEta_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+                                                                 HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH3F, {etaAxis, etaAxis, deltaPhiAxis});
       }
     }
   }
@@ -630,8 +636,10 @@ struct QAExtraDataCollectingEngine {
         float deltaEta = track1.eta() - track2.eta();
         fhPhiPhiA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.phi(), track2.phi());
         fhDeltaPhiVsPhiPhiA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.phi(), track2.phi(), deltaPhi);
+        fhDeltaEtaVsPhiPhiA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.phi(), track2.phi(), deltaEta);
         fhEtaEtaA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta());
         fhDeltaEtaVsEtaEtaA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta(), deltaEta);
+        fhDeltaPhiVsEtaEtaA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta(), deltaPhi);
       }
     }
   }
@@ -933,6 +941,16 @@ struct DptDptEfficiencyAndQc {
   HistogramRegistry registryEight{"registryEight", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryNine{"registryNine", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryTen{"registryTen", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraOne{"extraregistryOne", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraTwo{"extraregistryTwo", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraThree{"extraregistryThree", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraFour{"extraregistryFour", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraFive{"extraregistryFive", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraSix{"extraregistrySix", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraSeven{"extraregistrySeven", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraEight{"extraregistryEight", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraNine{"extraregistryNine", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraTen{"extraregistryTen", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryPidOne{"pidregistryOne", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryPidTwo{"pidregistryTwo", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryPidThree{"pidregistryThree", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -943,9 +961,11 @@ struct DptDptEfficiencyAndQc {
   HistogramRegistry registryPidEight{"pidregistryEight", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryPidNine{"pidregistryNine", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryPidTen{"pidregistryTen", {}, OutputObjHandlingPolicy::AnalysisObject};
-  std::vector<HistogramRegistry*> registrybank{&registryOne, &registryTwo, &registryThree, &registryFour, &registryFive,
+  std::vector<HistogramRegistry*> registryBank{&registryOne, &registryTwo, &registryThree, &registryFour, &registryFive,
                                                &registrySix, &registrySeven, &registryEight, &registryNine, &registryTen};
-  std::vector<HistogramRegistry*> pidregistrybank{&registryPidOne, &registryPidTwo, &registryPidThree, &registryPidFour, &registryPidFive,
+  std::vector<HistogramRegistry*> extraRegistryBank{&registryExtraOne, &registryExtraTwo, &registryExtraThree, &registryExtraFour, &registryExtraFive,
+                                                    &registryExtraSix, &registryExtraSeven, &registryExtraEight, &registryExtraNine, &registryExtraTen};
+  std::vector<HistogramRegistry*> pidRegistryBank{&registryPidOne, &registryPidTwo, &registryPidThree, &registryPidFour, &registryPidFive,
                                                   &registryPidSix, &registryPidSeven, &registryPidEight, &registryPidNine, &registryPidTen};
 
   Configurable<bool> useCentrality{"useCentrality", false, "Perform the task using centrality/multiplicity classes. Default value: false"};
@@ -987,6 +1007,7 @@ struct DptDptEfficiencyAndQc {
       getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
       getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
       getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibins", phibins, false);
 
       /* configuring the involved species */
       std::vector<std::string> cfgnames = {"elpidsel", "mupidsel", "pipidsel", "kapidsel", "prpidsel"};
@@ -1071,37 +1092,37 @@ struct DptDptEfficiencyAndQc {
         pidExtraDataCE = new PidExtraDataCollectingEngine*[ncmranges];
       }
       std::string recogen;
-      if (ncmranges > registrybank.size()) {
+      if (ncmranges > registryBank.size()) {
         LOGF(fatal, "There are more centrality ranges configured than registries in the bank. Please fix it!");
       }
       /* in reverse order for proper order in results file */
       for (uint i = 0; i < ncmranges; ++i) {
-        auto initializeCEInstance = [&](auto dce, auto name, auto& registry) {
+        auto initializeCEInstance = [&](auto dce, auto name, auto& registry, bool genlevel) {
           /* crete the output list for the passed centrality/multiplicity range */
           /* init the data collection instance */
           dce->template init<kReco>(registry, name.Data());
-          if (doprocessGeneratorLevelNotStored) {
+          if (genlevel) {
             dce->template init<kGen>(registry, name.Data());
           }
         };
         auto buildQACEInstance = [&](float min, float max) {
           auto* dce = new QADataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndQaData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *registrybank[i]);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndQaData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *registryBank[i], doprocessGeneratorLevelNotStored);
           return dce;
         };
         auto buildQACEExtraInstance = [&](float min, float max) {
           auto* dce = new QAExtraDataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndQaExtraData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *registrybank[i]);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndQaExtraData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *extraRegistryBank[i], doprocessExtraGeneratorLevelNotStored);
           return dce;
         };
         auto buildPidCEInstance = [&](float min, float max) {
           auto* dce = new PidDataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidregistrybank[i]);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidRegistryBank[i], doprocessGeneratorLevelNotStored);
           return dce;
         };
         auto buildPidExtraCEInstance = [&](float min, float max) {
           auto* dce = new PidExtraDataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidregistrybank[i]);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidRegistryBank[i], doprocessGeneratorLevelNotStored);
           return dce;
         };
         /* in reverse order for proper order in results file */
