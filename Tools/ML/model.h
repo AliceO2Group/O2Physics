@@ -103,9 +103,9 @@ class OnnxModel
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
     inputTensors.emplace_back(Ort::Experimental::Value::CreateTensor<T>(input.data(), size, inputShape));
 #else
-    Ort::MemoryInfo mem_info =
+    Ort::MemoryInfo memInfo =
       Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
-    inputTensors.emplace_back(Ort::Value::CreateTensor<T>(mem_info, input.data(), size, inputShape.data(), inputShape.size()));
+    inputTensors.emplace_back(Ort::Value::CreateTensor<T>(memInfo, input.data(), size, inputShape.data(), inputShape.size()));
 #endif
     LOG(debug) << "Input shape calculated from vector: " << printShape(inputShape);
     return evalModel<T>(inputTensors);
@@ -118,7 +118,7 @@ class OnnxModel
     std::vector<Ort::Value> inputTensors;
 
 #if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-    Ort::MemoryInfo mem_info = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+    Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
 #endif
 
     for (size_t iinput = 0; iinput < input.size(); iinput++) {
@@ -137,7 +137,7 @@ class OnnxModel
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
       inputTensors.emplace_back(Ort::Experimental::Value::CreateTensor<T>(input[iinput].data(), size, inputShape));
 #else
-      inputTensors.emplace_back(Ort::Value::CreateTensor<T>(mem_info, input[iinput].data(), size, inputShape.data(), inputShape.size()));
+      inputTensors.emplace_back(Ort::Value::CreateTensor<T>(memInfo, input[iinput].data(), size, inputShape.data(), inputShape.size()));
 #endif
     }
 
@@ -165,6 +165,7 @@ class OnnxModel
   }
 #endif
   int getNumInputNodes() const { return mInputShapes[0][1]; }
+  std::vector<std::vector<int64_t>> getInputShapes() const { return mInputShapes; }
   int getNumOutputNodes() const { return mOutputShapes[0][1]; }
   uint64_t getValidityFrom() const { return validFrom; }
   uint64_t getValidityUntil() const { return validUntil; }

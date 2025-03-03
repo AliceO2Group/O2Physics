@@ -42,7 +42,7 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<float> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_xi_pi_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xic_to_xi_pi_pi::cuts[0], hf_cuts_xic_to_xi_pi_pi::nBinsPt, hf_cuts_xic_to_xi_pi_pi::nCutVars, hf_cuts_xic_to_xi_pi_pi::labelsPt, hf_cuts_xic_to_xi_pi_pi::labelsCutVar}, "Xicplus candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xic_to_xi_pi_pi::Cuts[0], hf_cuts_xic_to_xi_pi_pi::NBinsPt, hf_cuts_xic_to_xi_pi_pi::NCutVars, hf_cuts_xic_to_xi_pi_pi::labelsPt, hf_cuts_xic_to_xi_pi_pi::labelsCutVar}, "Xicplus candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // Enable PID
@@ -62,8 +62,8 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
-  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -231,7 +231,7 @@ struct HfCandidateSelectorXicToXiPiPi {
         registry.fill(HIST("hSelections"), 1, ptCandXic);
       }
 
-      // No hfFlag -> by default skim selected
+      // No hfflag -> by default skim selected
       SETBIT(statusXicToXiPiPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusXicToXiPiPi = 1
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoSkims, ptCandXic);

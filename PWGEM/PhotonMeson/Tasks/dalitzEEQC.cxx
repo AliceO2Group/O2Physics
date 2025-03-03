@@ -82,7 +82,6 @@ struct DalitzEEQC {
     Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
     Configurable<float> cfg_max_mass{"cfg_max_mass", 0.5, "max mass"};
     Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", true, "flag to apply phiv cut"};
-    Configurable<bool> cfg_apply_pf{"cfg_apply_pf", false, "flag to apply phiv prefilter"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", true, "flag to require ITS ib any hits"};
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", false, "flag to require ITS ib 1st hit"};
     Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};
@@ -175,21 +174,8 @@ struct DalitzEEQC {
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
 
     // pair info
-    std::vector<double> ptbins;
-    std::vector<double> massbins;
-
-    for (int i = 0; i < 51; i++) {
-      massbins.emplace_back(0.01 * (i - 0) + 0.0); // every 0.01 GeV/c2 from 0.0 to 0.5 GeV/c2
-    }
-    const AxisSpec axis_mass{massbins, "m_{ee} (GeV/c^{2})"};
-
-    for (int i = 0; i < 50; i++) {
-      ptbins.emplace_back(0.1 * (i - 0) + 0.0); // every 0.1 GeV/c from 0.0 to 5.0 GeV/c
-    }
-    for (int i = 50; i < 61; i++) {
-      ptbins.emplace_back(0.5 * (i - 50) + 5.0); // every 0.5 GeV/c from 5.0 to 10 GeV/c
-    }
-    const AxisSpec axis_pt{ptbins, "p_{T,ee} (GeV/c)"};
+    const AxisSpec axis_mass{200, 0, 0.2, "m_{ee} (GeV/c^{2})"};
+    const AxisSpec axis_pt{200, 0, 2, "p_{T,ee} (GeV/c)"};
 
     fRegistry.add("Pair/same/hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {axis_mass, axis_pt}, true);
     fRegistry.add("Pair/same/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
@@ -331,8 +317,8 @@ struct DalitzEEQC {
 
   SliceCache cache;
   Preslice<MyTracks> perCollision_track = aod::emprimaryelectron::emeventId;
-  Filter trackFilter = static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt && nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && o2::aod::track::tpcChi2NCl < static_cast<float>(dileptoncuts.cfg_max_chi2tpc) && o2::aod::track::itsChi2NCl < static_cast<float>(dileptoncuts.cfg_max_chi2its) && nabs(o2::aod::track::dcaXY) < static_cast<float>(dileptoncuts.cfg_max_dcaxy) && nabs(o2::aod::track::dcaZ) < static_cast<float>(dileptoncuts.cfg_max_dcaz);
-  Filter pidFilter = (static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl)) && (o2::aod::pidtpc::tpcNSigmaPi < static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaPi) || static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaPi) < o2::aod::pidtpc::tpcNSigmaPi);
+  Filter trackFilter = dileptoncuts.cfg_min_pt_track < o2::aod::track::pt && nabs(o2::aod::track::eta) < dileptoncuts.cfg_max_eta_track && o2::aod::track::tpcChi2NCl < dileptoncuts.cfg_max_chi2tpc && o2::aod::track::itsChi2NCl < dileptoncuts.cfg_max_chi2its && nabs(o2::aod::track::dcaXY) < dileptoncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dileptoncuts.cfg_max_dcaz;
+  Filter pidFilter = dileptoncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dileptoncuts.cfg_max_TPCNsigmaEl && (o2::aod::pidtpc::tpcNSigmaPi < dileptoncuts.cfg_min_TPCNsigmaPi || dileptoncuts.cfg_max_TPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
   using FilteredMyTracks = soa::Filtered<MyTracks>;
   Partition<FilteredMyTracks> posTracks = o2::aod::emprimaryelectron::sign > int8_t(0);
   Partition<FilteredMyTracks> negTracks = o2::aod::emprimaryelectron::sign < int8_t(0);

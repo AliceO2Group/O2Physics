@@ -101,10 +101,10 @@ DECLARE_SOA_COLUMN(CosPACasc, cosPACasc, float);
 DECLARE_SOA_COLUMN(CosPAXYV0, cosPAXYV0, float);
 DECLARE_SOA_COLUMN(CosPAXYCharmBaryon, cosPAXYCharmBaryon, float);
 DECLARE_SOA_COLUMN(CosPAXYCasc, cosPAXYCasc, float);
-DECLARE_SOA_COLUMN(CTauOmegac, ctauOmegac, float);
-DECLARE_SOA_COLUMN(CTauCascade, ctauCascade, float);
-DECLARE_SOA_COLUMN(CTauV0, ctauV0, float);
-DECLARE_SOA_COLUMN(CTauXic, ctauXic, float);
+DECLARE_SOA_COLUMN(CTauOmegac, cTauOmegac, float);
+DECLARE_SOA_COLUMN(CTauCascade, cTauCascade, float);
+DECLARE_SOA_COLUMN(CTauV0, cTauV0, float);
+DECLARE_SOA_COLUMN(CTauXic, cTauXic, float);
 DECLARE_SOA_COLUMN(EtaV0PosDau, etaV0PosDau, float);
 DECLARE_SOA_COLUMN(EtaV0NegDau, etaV0NegDau, float);
 DECLARE_SOA_COLUMN(EtaPiFromCasc, etaPiFromCasc, float);
@@ -249,12 +249,13 @@ struct HfTreeCreatorToXiPi {
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
 
   SliceCache cache;
-  Preslice<aod::HfCandToXiPi> candXicPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
 
   using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
   using MyEventTable = soa::Join<aod::Collisions, aod::EvSels>;
   using MyEventTableWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::PVMultZeqs, Cents>;
+
+  Preslice<aod::HfCandToXiPi> candXicPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
 
   void init(InitContext const&)
   {
@@ -357,10 +358,10 @@ struct HfTreeCreatorToXiPi {
       candidate.cosPAXYV0(),
       candidate.cosPAXYCharmBaryon(),
       candidate.cosPAXYCasc(),
-      candidate.ctauOmegac(),
-      candidate.ctauCascade(),
-      candidate.ctauV0(),
-      candidate.ctauXic(),
+      candidate.cTauOmegac(),
+      candidate.cTauCascade(),
+      candidate.cTauV0(),
+      candidate.cTauXic(),
       candidate.etaV0PosDau(),
       candidate.etaV0NegDau(),
       candidate.etaBachFromCasc(),

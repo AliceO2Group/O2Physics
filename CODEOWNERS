@@ -19,7 +19,9 @@
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo @altsybee
 /DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio @lbariogl @f3sch
 /DPG/Tasks/TOF @alibuild @noferini @njacazio
-/DPG/Tasks/FT0 @alibuild @afurs
+/DPG/Tasks/FT0 @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
+/DPG/Tasks/FV0 @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
+/DPG/Tasks/FDD @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
 /EventFiltering @alibuild @mpuccio @lietava
 /EventFiltering/PWGHF @alibuild @fgrosa @zhangbiao-phy @mpuccio @lietava
 /EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @lietava
@@ -27,11 +29,11 @@
 /EventFiltering/PWGCF @alibuild @lauraser @mpuccio @lietava
 /EventFiltering/PWGMM @alibuild @aortizve @mpuccio @lietava
 /EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @mpuccio @lietava
-/PWGCF               @alibuild @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
-/PWGCF/Core          @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
-/PWGCF/DataModel     @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
-/PWGCF/TableProducer @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
-/PWGCF/Tasks         @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
+/PWGCF               @alibuild @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGCF/Core          @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGCF/DataModel     @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGCF/TableProducer @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGCF/Tasks         @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
 /PWGDQ @alibuild @iarsene @dsekihat @feisenhu @lucamicheletti93
 /PWGEM @alibuild @feisenhu @dsekihat @ivorobye
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
@@ -50,7 +52,7 @@
 
 # PWG-MM
 /PWGMM      @alibuild @njacazio @skundu692 @aalkin
-/PWGMM/Mult @alibuild @njacazio @skundu692 @aalkin @aortizve @ddobrigk
+/PWGMM/Mult @alibuild @njacazio @skundu692 @aalkin @aortizve @ddobrigk @gbencedi
 /PWGMM/Lumi @alibuild @aalkin
 /PWGMM/UE   @alibuild @aalkin @aortizve
 

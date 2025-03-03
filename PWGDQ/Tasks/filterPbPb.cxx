@@ -18,6 +18,7 @@
 #include "PWGDQ/Core/VarManager.h"
 #include "CommonConstants/LHCConstants.h"
 #include "ReconstructionDataFormats/Vertex.h"
+#include "PWGUD/Core/SGSelector.h"
 
 using namespace std;
 
@@ -30,11 +31,10 @@ using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 struct DQFilterPbPbTask {
+  Produces<aod::DQRapidityGapFilter> eventRapidityGapFilter;
   Produces<aod::DQEventFilter> eventFilter;
-  OutputObj<TH1D> fStats{"Statistics"};
   OutputObj<TH1D> fFilterOutcome{"Filter outcome"};
 
-  Configurable<std::string> fConfigEventTypes{"cfgEventTypes", "doublegap,singlegap", "Which event types to select. doublegap, singlegap or both, comma separated"};
   Configurable<int> fConfigNDtColl{"cfgNDtColl", 4, "Number of standard deviations to consider in BC range"};
   Configurable<int> fConfigMinNBCs{"cfgMinNBCs", 7, "Minimum number of BCs to consider in BC range"};
   Configurable<int> fConfigMinNPVCs{"cfgMinNPVCs", 2, "Minimum number of PV contributors"};
@@ -52,47 +52,51 @@ struct DQFilterPbPbTask {
   int eventTypeMap = 0;
   std::vector<std::string> eventTypeOptions = {"doublegap", "singlegap"}; // Map for which types of event to select
 
+  SGSelector sgSelector;
+  SGCutParHolder sgCuts = SGCutParHolder();
+
   void init(o2::framework::InitContext&)
   {
-    // setup the Stats histogram
-    fStats.setObject(new TH1D("Statistics", "Stats for DQ triggers", 2, -2.5, -0.5));
-    fStats->GetXaxis()->SetBinLabel(1, "Events inspected");
-    fStats->GetXaxis()->SetBinLabel(2, "Events selected");
     // setup the FilterOutcome histogram
-    fFilterOutcome.setObject(new TH1D("Filter outcome", "Filter outcome", 9, 0.5, 9.5));
+    fFilterOutcome.setObject(new TH1D("Filter outcome", "Filter outcome", 8, 0.5, 8.5));
     fFilterOutcome->GetXaxis()->SetBinLabel(1, "Events inspected");
-    fFilterOutcome->GetXaxis()->SetBinLabel(2, "Events selected");
-    fFilterOutcome->GetXaxis()->SetBinLabel(3, "!A && !C");
-    fFilterOutcome->GetXaxis()->SetBinLabel(4, "!A && C");
-    fFilterOutcome->GetXaxis()->SetBinLabel(5, "A && !C");
-    fFilterOutcome->GetXaxis()->SetBinLabel(6, "A && C");
-    fFilterOutcome->GetXaxis()->SetBinLabel(7, Form("numContrib not in [%d, %d]", fConfigMinNPVCs.value, fConfigMaxNPVCs.value));
-    fFilterOutcome->GetXaxis()->SetBinLabel(8, "BC not found");
-    fFilterOutcome->GetXaxis()->SetBinLabel(9, "ITS UPC settings used");
+    fFilterOutcome->GetXaxis()->SetBinLabel(2, "!A && !C");
+    fFilterOutcome->GetXaxis()->SetBinLabel(3, "!A && C");
+    fFilterOutcome->GetXaxis()->SetBinLabel(4, "A && !C");
+    fFilterOutcome->GetXaxis()->SetBinLabel(5, "A && C");
+    fFilterOutcome->GetXaxis()->SetBinLabel(6, Form("numContrib not in [%d, %d]", fConfigMinNPVCs.value, fConfigMaxNPVCs.value));
+    fFilterOutcome->GetXaxis()->SetBinLabel(7, "BC not found");
+    fFilterOutcome->GetXaxis()->SetBinLabel(8, "ITS UPC settings used");
 
-    TString eventTypesString = fConfigEventTypes.value;
-    for (std::vector<std::string>::size_type i = 0; i < eventTypeOptions.size(); i++) {
-      if (eventTypesString.Contains(eventTypeOptions[i])) {
-        eventTypeMap |= (uint32_t(1) << i);
-        LOGF(info, "filterPbPb will select '%s' events", eventTypeOptions[i]);
-      }
-    }
-    if (eventTypeMap == 0) {
-      LOGF(fatal, "No valid choice of event types to select. Use 'doublegap', 'singlegap' or both");
-    }
+    sgCuts.SetNDtcoll(fConfigNDtColl);
+    sgCuts.SetMinNBCs(fConfigMinNBCs);
+    sgCuts.SetNTracks(fConfigMinNPVCs, fConfigMaxNPVCs);
+    sgCuts.SetMaxFITtime(fConfigMaxFITTime);
+    sgCuts.SetFITAmpLimits({static_cast<float>((fConfigUseFV0) ? fConfigFV0AmpLimit : -1.),
+                            static_cast<float>((fConfigUseFT0) ? fConfigFT0AAmpLimit : -1.),
+                            static_cast<float>((fConfigUseFT0) ? fConfigFT0CAmpLimit : -1.),
+                            static_cast<float>((fConfigUseFDD) ? fConfigFDDAAmpLimit : -1.),
+                            static_cast<float>((fConfigUseFDD) ? fConfigFDDCAmpLimit : -1.)});
   }
 
   // Helper function for selecting double gap and single gap events
   template <typename TEvent, typename TBCs>
   uint64_t rapidityGapFilter(TEvent const& collision, TBCs const& bcs,
                              aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
-                             int eventTypes, std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, int minNPVCs, int maxNPVCs, float maxFITTime,
+                             std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, int minNPVCs, int maxNPVCs, float maxFITTime,
                              bool useFV0, bool useFT0, bool useFDD)
   {
     fFilterOutcome->Fill(1., 1.);
+
+    // Number of primary vertex contributors
+    if (collision.numContrib() < minNPVCs || collision.numContrib() > maxNPVCs) {
+      fFilterOutcome->Fill(6, 1);
+      return 0;
+    }
+
     // Find BC associated with collision
     if (!collision.has_foundBC()) {
-      fFilterOutcome->Fill(8., 1);
+      fFilterOutcome->Fill(7., 1);
       return 0;
     }
     // foundBCId is stored in EvSels
@@ -218,37 +222,23 @@ struct DQFilterPbPbTask {
     // Compute FIT decision
     uint64_t FITDecision = 0;
     if (isSideAClean && isSideCClean) {
-      fFilterOutcome->Fill(3, 1);
-      if (eventTypes & (uint32_t(1) << 0)) {
-        FITDecision |= (uint64_t(1) << VarManager::kDoubleGap);
-      }
+      fFilterOutcome->Fill(2, 1);
+      FITDecision |= (uint64_t(1) << VarManager::kDoubleGap);
     }
     if (isSideAClean && !isSideCClean) {
-      fFilterOutcome->Fill(4, 1);
-      if (eventTypes & (uint32_t(1) << 1)) {
-        FITDecision |= (uint64_t(1) << VarManager::kSingleGapA);
-      }
+      fFilterOutcome->Fill(3, 1);
+      FITDecision |= (uint64_t(1) << VarManager::kSingleGapA);
     } else if (!isSideAClean && isSideCClean) {
-      fFilterOutcome->Fill(5, 1);
-      if (eventTypes & (uint32_t(1) << 1)) {
-        FITDecision |= (uint64_t(1) << VarManager::kSingleGapC);
-      }
+      fFilterOutcome->Fill(4, 1);
+      FITDecision |= (uint64_t(1) << VarManager::kSingleGapC);
     } else if (!isSideAClean && !isSideCClean) {
-      fFilterOutcome->Fill(6, 1);
+      fFilterOutcome->Fill(5, 1);
     }
 
     if (!FITDecision) {
       return 0;
     }
 
-    // Number of primary vertex contributors
-    if (collision.numContrib() < minNPVCs || collision.numContrib() > maxNPVCs) {
-      fFilterOutcome->Fill(7, 1);
-      return 0;
-    }
-
-    // If we made it here, the event passed
-    fFilterOutcome->Fill(2, 1);
     // Return filter bitmap corresponding to FIT decision
     return FITDecision;
   }
@@ -256,23 +246,75 @@ struct DQFilterPbPbTask {
   void processFilterPbPb(MyEvents::iterator const& collision, MyBCs const& bcs,
                          aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
-    fStats->Fill(-2.0);
-
     std::vector<float> FITAmpLimits = {fConfigFV0AmpLimit, fConfigFT0AAmpLimit, fConfigFT0CAmpLimit, fConfigFDDAAmpLimit, fConfigFDDCAmpLimit};
 
     uint64_t filter = rapidityGapFilter(collision, bcs, ft0s, fv0as, fdds,
-                                        eventTypeMap, FITAmpLimits, fConfigNDtColl, fConfigMinNBCs, fConfigMinNPVCs, fConfigMaxNPVCs, fConfigMaxFITTime,
+                                        FITAmpLimits, fConfigNDtColl, fConfigMinNBCs, fConfigMinNPVCs, fConfigMaxNPVCs, fConfigMaxFITTime,
                                         fConfigUseFV0, fConfigUseFT0, fConfigUseFDD);
-
-    bool isSelected = filter;
-    fStats->Fill(-1.0, isSelected);
 
     // Record whether UPC settings were used for this event
     if (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) {
       filter |= (uint64_t(1) << VarManager::kITSUPCMode);
-      fFilterOutcome->Fill(9, 1);
+      fFilterOutcome->Fill(8, 1);
     }
 
+    eventRapidityGapFilter(filter, -9999.0, -9999.0, -9999.0, -9999.0, -9999.0, -9999.0, -9999.0, -9999.0, -9999.0, -9999.0, -9999.0, -9999.0, -9999.0);
+    eventFilter(filter);
+  }
+
+  void processUDSGSelector(MyEvents::iterator const& collision, MyBCs const& bcs,
+                           aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds, aod::Zdcs& /*zdcs*/)
+  {
+    uint64_t filter = 0;
+    fFilterOutcome->Fill(1, 1.);
+    if (!collision.has_foundBC()) {
+      fFilterOutcome->Fill(7, 1);
+      return;
+    }
+
+    auto bc = collision.foundBC_as<MyBCs>();
+    auto newbc = bc;
+    auto bcRange = udhelpers::compatibleBCs(collision, fConfigNDtColl, bcs, fConfigMinNBCs);
+    auto isSGEvent = sgSelector.IsSelected(sgCuts, collision, bcRange, bc);
+    int issgevent = isSGEvent.value;
+    // Translate SGSelector values to DQEventFilter values
+    if (issgevent == 0) {
+      filter |= (uint64_t(1) << VarManager::kSingleGapA);
+      fFilterOutcome->Fill(3, 1);
+    } else if (issgevent == 1) {
+      filter |= (uint64_t(1) << VarManager::kSingleGapC);
+      fFilterOutcome->Fill(4, 1);
+    } else if (issgevent == 2) {
+      filter |= (uint64_t(1) << VarManager::kDoubleGap);
+      fFilterOutcome->Fill(2, 1);
+    } else if (issgevent == 3) {
+      fFilterOutcome->Fill(5, 1);
+    } else if (issgevent == 4) {
+      fFilterOutcome->Fill(6, 1);
+    }
+
+    // Get closest bc with FIT activity above threshold
+    if (isSGEvent.bc && issgevent < 2) {
+      newbc = *(isSGEvent.bc);
+    }
+    upchelpers::FITInfo fitInfo{};
+    udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
+
+    // Record whether UPC settings were used for this event
+    if (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) {
+      filter |= (uint64_t(1) << VarManager::kITSUPCMode);
+      fFilterOutcome->Fill(8, 1);
+    }
+
+    if (newbc.has_zdc()) {
+      auto zdc = newbc.zdc();
+      eventRapidityGapFilter(filter, fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.ampFV0A,
+                             zdc.energyCommonZNA(), zdc.energyCommonZNC(), zdc.energyCommonZPA(), zdc.energyCommonZPC(),
+                             zdc.timeZNA(), zdc.timeZNC(), zdc.timeZPA(), zdc.timeZPC());
+    } else {
+      eventRapidityGapFilter(filter, fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.ampFV0A,
+                             -9999.0, -9999.0, -9999.0, -9999.0, -9999.0, -9999.0, -9999.0, -9999.0);
+    }
     eventFilter(filter);
   }
 
@@ -282,6 +324,7 @@ struct DQFilterPbPbTask {
   }
 
   PROCESS_SWITCH(DQFilterPbPbTask, processFilterPbPb, "Run filter task", true);
+  PROCESS_SWITCH(DQFilterPbPbTask, processUDSGSelector, "Run filter task with SG selector from UD", false);
   PROCESS_SWITCH(DQFilterPbPbTask, processDummy, "Dummy function", false);
 };
 

@@ -1728,14 +1728,14 @@ struct CaloClusterProducer {
       case 0:
         return en;
       case 1: { // Data Run3
-        const double a = 9.3494e-01;
-        const double b = 1.00526e-02;
-        const double c = 8.45164e-02;
-        const double d = -1.03364e-02;
-        const double f = 5.4803e-03;
-        const double g = 0.779983;
-        const double h = 0.622282;
-        const double k = 8.0182e-05;
+        const double a = 0.892787;
+        const double b = 0.004053;
+        const double c = 0.074652;
+        const double d = -0.016306;
+        const double f = 7.616314;
+        const double g = -104.409;
+        const double h = 1837.17;
+        const double k = 0.000091;
         double eMin = std::max(static_cast<float>(0.1), en); // Parameterization valid down to 100 MeV
         return en * (a + b * eMin + c / eMin + d / (eMin * eMin) + f / ((eMin - g) * (eMin - g) + h * h) + k / std::pow(eMin, 4));
       }

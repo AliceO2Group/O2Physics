@@ -51,21 +51,27 @@ DECLARE_SOA_TABLE(DDbarRecoInfo, "AOD", "DDBARRECOINFO",
 // definition of columns and tables for D0-Hadron correlation pairs
 namespace hf_correlation_d0_hadron
 {
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                           //! DeltaPhi between D0 and Hadrons
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                           //! DeltaEta between D0 and Hadrons
-DECLARE_SOA_COLUMN(PtD, ptD, float);                                     //! Transverse momentum of D0
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                           //! Transverse momentum of Hadron
-DECLARE_SOA_COLUMN(MD, mD, float);                                       //! Invariant mass of D0
-DECLARE_SOA_COLUMN(MDbar, mDbar, float);                                 //! Invariant mass of D0bar
-DECLARE_SOA_COLUMN(MlScoreBkgD0, mlScoreBkgD0, float);                   //! ML background score for D0 selection
-DECLARE_SOA_COLUMN(MlScoreNonPromptD0, mlScoreNonPromptD0, float);       //! ML prompt score for D0 selection
-DECLARE_SOA_COLUMN(MlScorePromptD0, mlScorePromptD0, float);             //! ML prompt score for D0 selection
-DECLARE_SOA_COLUMN(MlScoreBkgD0bar, mlScoreBkgD0bar, float);             //! ML background score for D0 selection
-DECLARE_SOA_COLUMN(MlScoreNonPromptD0bar, mlScoreNonPromptD0bar, float); //! ML prompt score for D0 selection
-DECLARE_SOA_COLUMN(MlScorePromptD0bar, mlScorePromptD0bar, float);       //! ML prompt score for D0 selection
-DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);                     //! Tag for D0,D0bar
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                               //! Pool Bin for the MixedEvent
-DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool);            //! Correlation Status
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                             //! DeltaPhi between D0 and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                             //! DeltaEta between D0 and Hadrons
+DECLARE_SOA_COLUMN(PtD, ptD, float);                                       //! Transverse momentum of D0
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                             //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MD, mD, float);                                         //! Invariant mass of D0
+DECLARE_SOA_COLUMN(MDbar, mDbar, float);                                   //! Invariant mass of D0bar
+DECLARE_SOA_COLUMN(MlScoreBkgD0, mlScoreBkgD0, float);                     //! ML background score for D0 selection
+DECLARE_SOA_COLUMN(MlScoreNonPromptD0, mlScoreNonPromptD0, float);         //! ML prompt score for D0 selection
+DECLARE_SOA_COLUMN(MlScorePromptD0, mlScorePromptD0, float);               //! ML prompt score for D0 selection
+DECLARE_SOA_COLUMN(MlScoreBkgD0bar, mlScoreBkgD0bar, float);               //! ML background score for D0 selection
+DECLARE_SOA_COLUMN(MlScoreNonPromptD0bar, mlScoreNonPromptD0bar, float);   //! ML prompt score for D0 selection
+DECLARE_SOA_COLUMN(MlScorePromptD0bar, mlScorePromptD0bar, float);         //! ML prompt score for D0 selection
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);                       //! Tag for D0,D0bar
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                 //! Pool Bin for the MixedEvent
+DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, float);                         //! DCA xy of the track
+DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, float);                           //! DCA z of the track
+DECLARE_SOA_COLUMN(TrackTPCNClsCrossedRows, trackTPCNClsCrossedRows, int); //! Number of crossed TPC Rows
+DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool);              //! Correlation Status
+DECLARE_SOA_COLUMN(TrackOrigin, trackOrigin, int);                         //! Check track origin
+DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);                              //! Used in MC-Rec, D0 Prompt or Non-Prompt
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);            //! Used in MC-Rec, primary associated particles
 
 enum ParticleTypeData {
   D0Only = 1,        // Identified as D0
@@ -100,6 +106,11 @@ DECLARE_SOA_TABLE(D0HadronRecoInfo, "AOD", "D0HRECOINFO", //! D0-Hadrons pairs R
                   aod::hf_correlation_d0_hadron::MDbar,
                   aod::hf_correlation_d0_hadron::SignalStatus);
 
+DECLARE_SOA_TABLE(D0HadronGenInfo, "AOD", "D0HGENINFO", //! D0-Hadrons pairs Generated Information
+                  aod::hf_correlation_d0_hadron::IsPrompt,
+                  aod::hf_correlation_d0_hadron::IsPhysicalPrimary,
+                  aod::hf_correlation_d0_hadron::TrackOrigin);
+
 DECLARE_SOA_TABLE(D0HadronMlInfo, "AOD", "D0HMLINFO", //! D0-Hadrons pairs Machine Learning Information
                   aod::hf_correlation_d0_hadron::MlScoreBkgD0,
                   aod::hf_correlation_d0_hadron::MlScoreNonPromptD0,
@@ -116,6 +127,14 @@ DECLARE_SOA_TABLE(D0CandRecoInfo, "AOD", "D0CANDRECOINFO", //! Ds candidates Rec
                   aod::hf_correlation_d0_hadron::MlScorePromptD0,
                   aod::hf_correlation_d0_hadron::MlScoreBkgD0bar,
                   aod::hf_correlation_d0_hadron::MlScorePromptD0bar);
+
+DECLARE_SOA_TABLE(D0CandGenInfo, "AOD", "D0CANDGENOINFO", //! Ds candidates Generated Information
+                  aod::hf_correlation_d0_hadron::IsPrompt);
+
+DECLARE_SOA_TABLE(D0TrackRecoInfo, "AOD", "D0TRACKRECOINFO", //! Tracks Reconstructed Information
+                  aod::hf_correlation_d0_hadron::TrackDcaXY,
+                  aod::hf_correlation_d0_hadron::TrackDcaZ,
+                  aod::hf_correlation_d0_hadron::TrackTPCNClsCrossedRows);
 
 // Note: definition of columns and tables for Lc-Hadron correlation pairs
 namespace hf_correlation_lc_hadron
@@ -157,6 +176,13 @@ DECLARE_SOA_TABLE(LcHadronRecoInfo, "AOD", "LCHRECOINFO", //! Lc-Hadrons pairs R
                   aod::hf_correlation_lc_hadron::MLc,
                   aod::hf_correlation_lc_hadron::SignalStatus);
 DECLARE_SOA_TABLE(LcHadronPairTrkPID, "AOD", "LCHPAIRPID", //! Lc-proton details
+                  aod::hf_correlation_lc_hadron::PrNsigmTPC,
+                  aod::hf_correlation_lc_hadron::KaNsigmTPC,
+                  aod::hf_correlation_lc_hadron::PiNsigmTPC,
+                  aod::hf_correlation_lc_hadron::PrNsigmTOF,
+                  aod::hf_correlation_lc_hadron::KaNsigmTOF,
+                  aod::hf_correlation_lc_hadron::PiNsigmTOF);
+DECLARE_SOA_TABLE(LcHadronTrkPID, "AOD", "LCHTRKPID", //! Lc-proton details
                   aod::hf_correlation_lc_hadron::PrNsigmTPC,
                   aod::hf_correlation_lc_hadron::KaNsigmTPC,
                   aod::hf_correlation_lc_hadron::PiNsigmTPC,
@@ -449,13 +475,36 @@ DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);     //! DeltaEta between Electron
 DECLARE_SOA_COLUMN(PtElectron, ptElectron, float); //! Transverse momentum of Electron
 DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);     //! Transverse momentum of Hadron;
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);         //! Pool Bin of event defined using zvtx and multiplicity
+DECLARE_SOA_COLUMN(IsLSEHCorr, isLSEHCorr, int);   //! like sign Electron hadron coorelation
+DECLARE_SOA_COLUMN(IsULSEHCorr, isULSEHCorr, int); //! unLike sign Electron hadron coorelation
 } // namespace hf_correlation_electron_hadron
 DECLARE_SOA_TABLE(HfEHadronPair, "AOD", "HFEHADRONPAIR", //! Hfe-Hadrons pairs Informations
                   hf_correlation_electron_hadron::DeltaPhi,
                   hf_correlation_electron_hadron::DeltaEta,
                   hf_correlation_electron_hadron::PtElectron,
                   hf_correlation_electron_hadron::PtHadron,
-                  hf_correlation_electron_hadron::PoolBin);
+                  hf_correlation_electron_hadron::PoolBin,
+                  hf_correlation_electron_hadron::IsLSEHCorr,
+                  hf_correlation_electron_hadron::IsULSEHCorr);
+
+// Note: definition of columns and tables for Electron Hadron correlation pairs for MC Gen
+namespace hf_correlation_mcgenelectron_hadron
+{
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);         //! DeltaPhi between Electron and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);         //! DeltaEta between Electron and Hadrons
+DECLARE_SOA_COLUMN(PtElectron, ptElectron, float);     //! Transverse momentum of Electron
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);         //! Transverse momentum of Hadron;
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);             //! Pool Bin of event defined using zvtx and multiplicity
+DECLARE_SOA_COLUMN(IsNonHfEHCorr, isNonHfEHCorr, int); //! nonHeavy Flavour Electron hadron coorelation
+
+} // namespace hf_correlation_mcgenelectron_hadron
+DECLARE_SOA_TABLE(HfEHadronMcPair, "AOD", "HFEHADRONMCPAIR", //! Hfe-Hadrons pairs Informations
+                  hf_correlation_mcgenelectron_hadron::DeltaPhi,
+                  hf_correlation_mcgenelectron_hadron::DeltaEta,
+                  hf_correlation_mcgenelectron_hadron::PtElectron,
+                  hf_correlation_mcgenelectron_hadron::PtHadron,
+                  hf_correlation_mcgenelectron_hadron::PoolBin,
+                  hf_correlation_mcgenelectron_hadron::IsNonHfEHCorr);
 } // namespace o2::aod
 
 #endif // PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_

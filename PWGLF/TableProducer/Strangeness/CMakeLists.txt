@@ -61,7 +61,6 @@ o2physics_add_dpl_workflow(double-casc-tree-creator
     PUBLIC_LINK_LIBRARIES O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
-
 o2physics_add_dpl_workflow(lambdakzerobuilder
     SOURCES lambdakzerobuilder.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::MLCore
@@ -146,4 +145,9 @@ o2physics_add_dpl_workflow(cascademlselection
 o2physics_add_dpl_workflow(sigma0builder
     SOURCES sigma0builder.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdajetpolarizationbuilder
+    SOURCES lambdaJetpolarizationbuilder.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

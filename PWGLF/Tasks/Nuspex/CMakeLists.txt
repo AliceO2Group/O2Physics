@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(nuclei-batask
     SOURCES LFNucleiBATask.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypertritonanalysis
@@ -30,7 +30,7 @@ o2physics_add_dpl_workflow(hypertriton3bodyanalysis
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypertriton3bodymcqa
-    SOURCES hypertriton3bodyMCQA.cxx
+    SOURCES hypertriton3bodyMcqa.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2::TOFBase
     COMPONENT_NAME Analysis)
 
@@ -152,6 +152,11 @@ o2physics_add_dpl_workflow(nuclei-from-hypertriton-map
 if(FastJet_FOUND)
 o2physics_add_dpl_workflow(angular-correlations-in-jets
     SOURCES AngularCorrelationsInJets.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(antinuclei-in-jets
+    SOURCES antinucleiInJets.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
 endif()

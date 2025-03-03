@@ -14,6 +14,9 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #include <cmath>
+#include <vector>
+#include <string>
+#include <algorithm>
 #include <TRandom3.h>
 
 #include "Framework/ASoA.h"
@@ -324,6 +327,26 @@ struct JetFinderQATask {
     if (doprocessMCCollisionsWeighted) {
       AxisSpec weightAxis = {{VARIABLE_WIDTH, 1e-13, 1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10.0}, "weights"};
       registry.add("h_collision_eventweight_part", "event weight;event weight;entries", {HistType::kTH1F, {weightAxis}});
+      registry.add("h_accepted", "No. of Generated Events;No. of Generated Events;entries", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("h_attempted", "No. of Attempted Events;No. of Attempted Events;entries", {HistType::kTH1F, {{5000, 0., 5000.}}});
+      registry.add("h_xsecGen", "Cross section in pb; Cross section in pb; entries", {HistType::kTH1F, {{200000, 0., 2e11}}});
+      registry.add("h_xsecErr", "Error associated with the cross section", {HistType::kTH1F, {{200000, 0., 2e11}}});
+      registry.add("h_xsecGenSum", "Summed Cross section per collision in pb; Summed Cross section per collision in pb; entries", {HistType::kTH1F, {{1, 0., 1.}}});
+      registry.add("h_xsecGenSumWeighted", "Summed Cross section per collision in pb with weights; Summed Cross section per collision in pb with weights; entries", {HistType::kTH1F, {{1, 0., 1.}}});
+      registry.add("h_xsecErrSum", "Summed Cross section error per collision in pb; Summed Cross section error per collision in pb; entries", {HistType::kTH1F, {{1, 0., 1.}}});
+      registry.add("h_xsecErrSumWeighted", "Summed Cross section error per collision in pb with weights; Summed Cross section error per collision in pb with weights; entries", {HistType::kTH1F, {{1, 0., 1.}}});
+    }
+
+    AxisSpec occupancyAxis = {142, -1.5, 14000.5, "occupancy"};
+    AxisSpec nTracksAxis = {16001, -1., 16000, "n tracks"};
+
+    if (doprocessOccupancyQA) {
+      registry.add("h2_occupancy_ntracksall_presel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntracksall_postsel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntrackssel_presel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntrackssel_postsel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntracksselptetacuts_presel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntracksselptetacuts_postsel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
     }
   }
 
@@ -934,6 +957,14 @@ struct JetFinderQATask {
       return;
     }
     registry.fill(HIST("h_collision_eventweight_part"), collision.weight());
+    registry.fill(HIST("h_accepted"), collision.accepted());
+    registry.fill(HIST("h_attempted"), collision.attempted());
+    registry.fill(HIST("h_xsecGen"), collision.xsectGen());
+    registry.fill(HIST("h_xsecErr"), collision.xsectErr());
+    registry.fill(HIST("h_xsecGenSum"), 0.5, collision.xsectGen());
+    registry.fill(HIST("h_xsecGenSumWeighted"), 0.5, collision.xsectGen() * collision.weight());
+    registry.fill(HIST("h_xsecErrSum"), 0.5, collision.xsectErr());
+    registry.fill(HIST("h_xsecErrSumWeighted"), 0.5, collision.xsectErr() * collision.weight());
   }
   PROCESS_SWITCH(JetFinderQATask, processMCCollisionsWeighted, "collision QA for weighted events", false);
 
@@ -1168,6 +1199,35 @@ struct JetFinderQATask {
     randomCone(collision, jets, tracks);
   }
   PROCESS_SWITCH(JetFinderQATask, processRandomConeMCD, "QA for random cone estimation of background fluctuations in mcd", false);
+
+  void processOccupancyQA(soa::Filtered<aod::JetCollisions>::iterator const& collision, aod::JetTracks const& tracks)
+  {
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
+    int occupancy = collision.trackOccupancyInTimeRange();
+    int nTracksAll = tracks.size();
+    int nTracksAllAcceptanceAndSelected = 0;
+    int nTracksInAcceptanceAndSelected = 0;
+    for (auto const& track : tracks) {
+      if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        nTracksAllAcceptanceAndSelected += 1;
+        if (track.pt() >= trackPtMin && track.pt() < trackPtMax && track.eta() > trackEtaMin && track.eta() < trackEtaMax) {
+          nTracksInAcceptanceAndSelected += 1;
+        }
+      }
+    }
+
+    registry.fill(HIST("h2_occupancy_ntracksall_presel"), occupancy, nTracksAll);
+    registry.fill(HIST("h2_occupancy_ntrackssel_presel"), occupancy, nTracksAllAcceptanceAndSelected);
+    registry.fill(HIST("h2_occupancy_ntracksselptetacuts_presel"), occupancy, nTracksInAcceptanceAndSelected);
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      registry.fill(HIST("h2_occupancy_ntracksall_postsel"), occupancy, nTracksAll);
+      registry.fill(HIST("h2_occupancy_ntrackssel_postsel"), occupancy, nTracksAllAcceptanceAndSelected);
+      registry.fill(HIST("h2_occupancy_ntracksselptetacuts_postsel"), occupancy, nTracksInAcceptanceAndSelected);
+    }
+  }
+  PROCESS_SWITCH(JetFinderQATask, processOccupancyQA, "occupancy QA on jet derived data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetFinderQATask>(cfgc, TaskName{"jet-finder-charged-qa"})}; }

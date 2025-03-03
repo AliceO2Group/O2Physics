@@ -75,6 +75,7 @@ struct PCMQC {
     Configurable<bool> cfg_require_v0_with_tpconly{"cfg_require_v0_with_tpconly", false, "flag to select V0s with TPConly tracks"};
     Configurable<bool> cfg_require_v0_on_wwire_ib{"cfg_require_v0_on_wwire_ib", false, "flag to select V0s on W wires ITSib"};
     Configurable<float> cfg_min_pt_v0{"cfg_min_pt_v0", 0.1, "min pT for v0 photons at PV"};
+    Configurable<float> cfg_max_pt_v0{"cfg_max_pt_v0", 1e+10, "max pT for v0 photons at PV"};
     Configurable<float> cfg_min_eta_v0{"cfg_min_eta_v0", -0.8, "min eta for v0 photons at PV"};
     Configurable<float> cfg_max_eta_v0{"cfg_max_eta_v0", +0.8, "max eta for v0 photons at PV"};
     Configurable<float> cfg_min_v0radius{"cfg_min_v0radius", 4.0, "min v0 radius"};
@@ -94,6 +95,7 @@ struct PCMQC {
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -3.0, "min. TPC n sigma for electron"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron"};
     Configurable<bool> cfg_disable_itsonly_track{"cfg_disable_itsonly_track", false, "flag to disable ITSonly tracks"};
+    Configurable<bool> cfg_disable_tpconly_track{"cfg_disable_tpconly_track", false, "flag to disable TPConly tracks"};
   } pcmcuts;
 
   static constexpr std::string_view event_types[2] = {"before/", "after/"};
@@ -134,7 +136,7 @@ struct PCMQC {
 
     // v0 info
     fRegistry.add("V0/hPt", "pT;p_{T,#gamma} (GeV/c)", kTH1F, {{2000, 0.0f, 20}}, false);
-    fRegistry.add("V0/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {40, -1.0f, 1.0f}}, false);
+    fRegistry.add("V0/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("V0/hRadius", "V0Radius; radius in Z (cm);radius in XY (cm)", kTH2F, {{200, -100, 100}, {200, 0.0f, 100.0f}}, false);
     fRegistry.add("V0/hCosPA", "V0CosPA;cosine pointing angle", kTH1F, {{100, 0.99f, 1.0f}}, false);
     fRegistry.add("V0/hCosPA_Rxy", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", kTH2F, {{200, 0.f, 100.f}, {100, 0.99f, 1.0f}}, false);
@@ -156,11 +158,12 @@ struct PCMQC {
     fRegistry.add("V0/hThetaResolution", "#theta resolution;p_{#gamma} (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
     fRegistry.add("V0/hPhiResolution", "#varphi resolution;p_{#gamma} (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
     fRegistry.add("V0/hNgamma", "Number of #gamma candidates per collision", kTH1F, {{101, -0.5f, 100.5f}});
+    fRegistry.add("V0/hDCAz_Pt", "DCA to PV vs. p_{T} (GeV/c);DCA_{z} (cm);p_{T} (GeV/c)", kTH2F, {{200, -5.f, +5.f}, {1000, 0.0f, 10}}, false);
 
     // v0leg info
     fRegistry.add("V0Leg/hPt", "pT;p_{T,e} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
     fRegistry.add("V0Leg/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{1000, -50, 50}}, false);
-    fRegistry.add("V0Leg/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {40, -1.0f, 1.0f}}, false);
+    fRegistry.add("V0Leg/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("V0Leg/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -50.0f, 50.0f}, {200, -50.0f, 50.0f}}, false);
     fRegistry.add("V0Leg/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
     fRegistry.add("V0Leg/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
@@ -203,7 +206,7 @@ struct PCMQC {
     fV0PhotonCut = V0PhotonCut("fV0PhotonCut", "fV0PhotonCut");
 
     // for v0
-    fV0PhotonCut.SetV0PtRange(pcmcuts.cfg_min_pt_v0, 1e10f);
+    fV0PhotonCut.SetV0PtRange(pcmcuts.cfg_min_pt_v0, pcmcuts.cfg_max_pt_v0);
     fV0PhotonCut.SetV0EtaRange(pcmcuts.cfg_min_eta_v0, pcmcuts.cfg_max_eta_v0);
     fV0PhotonCut.SetMinCosPA(pcmcuts.cfg_min_cospa);
     fV0PhotonCut.SetMaxPCA(pcmcuts.cfg_max_pca);
@@ -223,6 +226,7 @@ struct PCMQC {
     fV0PhotonCut.SetTPCNsigmaElRange(pcmcuts.cfg_min_TPCNsigmaEl, pcmcuts.cfg_max_TPCNsigmaEl);
     fV0PhotonCut.SetChi2PerClusterITS(-1e+10, pcmcuts.cfg_max_chi2its);
     fV0PhotonCut.SetDisableITSonly(pcmcuts.cfg_disable_itsonly_track);
+    fV0PhotonCut.SetDisableTPConly(pcmcuts.cfg_disable_tpconly_track);
 
     if (pcmcuts.cfg_reject_v0_on_itsib) {
       fV0PhotonCut.SetNClustersITS(2, 4);
@@ -276,7 +280,7 @@ struct PCMQC {
     if (collision.sel8()) {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 8.0);
     }
-    if (abs(collision.posZ()) < 10.0) {
+    if (std::fabs(collision.posZ()) < 10.0) {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 9.0);
     }
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
@@ -316,6 +320,7 @@ struct PCMQC {
     fRegistry.fill(HIST("V0/hEtaResolution"), v0.p(), getEtaResolution(v0));
     fRegistry.fill(HIST("V0/hThetaResolution"), v0.p(), getThetaResolution(v0));
     fRegistry.fill(HIST("V0/hPhiResolution"), v0.p(), getPhiResolution(v0));
+    fRegistry.fill(HIST("V0/hDCAz_Pt"), v0.dcaZtopv(), v0.pt());
   }
 
   template <typename TLeg>
@@ -348,7 +353,7 @@ struct PCMQC {
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
-  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin < o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
+  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   void processQC(FilteredMyCollisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const&)
