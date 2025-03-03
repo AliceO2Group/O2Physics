@@ -29,11 +29,11 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::analysis;
 
-enum pidInfoStored {
-  kPiFromLam = 0,
-  kPrFromLam,
-  kPiFromCasc,
-  kPiFromCharm
+enum PidInfoStored {
+  PiFromLam = 0,
+  PrFromLam,
+  PiFromCasc,
+  PiFromCharm
 };
 
 /// Struct for applying Omegac0/Xic0 selection cuts
@@ -408,28 +408,28 @@ struct HfCandidateSelectorToXiPi {
       }
 
       if (trackPiFromLam.hasTPC()) {
-        SETBIT(infoTpcStored, kPiFromLam);
+        SETBIT(infoTpcStored, PiFromLam);
       }
       if (trackPrFromLam.hasTPC()) {
-        SETBIT(infoTpcStored, kPrFromLam);
+        SETBIT(infoTpcStored, PrFromLam);
       }
       if (trackPiFromCasc.hasTPC()) {
-        SETBIT(infoTpcStored, kPiFromCasc);
+        SETBIT(infoTpcStored, PiFromCasc);
       }
       if (trackPiFromCharm.hasTPC()) {
-        SETBIT(infoTpcStored, kPiFromCharm);
+        SETBIT(infoTpcStored, PiFromCharm);
       }
       if (trackPiFromLam.hasTOF()) {
-        SETBIT(infoTofStored, kPiFromLam);
+        SETBIT(infoTofStored, PiFromLam);
       }
       if (trackPrFromLam.hasTOF()) {
-        SETBIT(infoTofStored, kPrFromLam);
+        SETBIT(infoTofStored, PrFromLam);
       }
       if (trackPiFromCasc.hasTOF()) {
-        SETBIT(infoTofStored, kPiFromCasc);
+        SETBIT(infoTofStored, PiFromCasc);
       }
       if (trackPiFromCharm.hasTOF()) {
-        SETBIT(infoTofStored, kPiFromCharm);
+        SETBIT(infoTofStored, PiFromCharm);
       }
 
       if (usePidTpcOnly) {
@@ -552,7 +552,7 @@ struct HfCandidateSelectorToXiPi {
       }
     }
   } // end process
-};  // end struct
+}; // end struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

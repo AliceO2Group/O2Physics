@@ -68,6 +68,8 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
   Configurable<bool> addQA{"addQA", true, "Switch for the qa PLOTS"};
 
+  HfHelper hfHelper;
+
   using TracksWithPID = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
 
   /// Filter the candidate Λc+ used for the Σc0,++ creation
@@ -78,7 +80,6 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   Preslice<TracksWithPID> trackIndicesPerCollision = aod::track::collisionId;
 
   HistogramRegistry registry;
-  HfHelper hfHelper;
 
   void init(InitContext&)
   {
@@ -290,9 +291,9 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
         continue;
       }
       registry.fill(HIST("candidateStat"), 1);
-      auto K0short = candidateLc.v0_as<o2::aod::V0s>(); // get the soft pions for the given collId
-      auto pos = K0short.template posTrack_as<TracksWithPID>();
-      auto neg = K0short.template negTrack_as<TracksWithPID>();
+      auto k0Short = candidateLc.v0_as<o2::aod::V0s>(); // get the soft pions for the given collId
+      auto pos = k0Short.template posTrack_as<TracksWithPID>();
+      auto neg = k0Short.template negTrack_as<TracksWithPID>();
       for (const auto& trackSoftPi : tracksInThisCollision) {
         int chargeSoftPi = trackSoftPi.sign();
         if (chargeSoftPi == pos.sign() && trackSoftPi.globalIndex() == pos.globalIndex()) {

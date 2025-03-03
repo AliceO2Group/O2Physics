@@ -395,7 +395,7 @@ struct tofSignal {
     if (enableTablepidTOFFlags) {
       tableFlags.reserve(tracks.size());
     }
-    for (auto& trk : tracks) {
+    for (auto const& trk : tracks) {
       const float& sig = o2::pid::tof::TOFSignal<Trks::iterator>::GetTOFSignal(trk);
       if (enableQaHistograms) {
         histos.fill(HIST("tofSignal"), sig);
@@ -514,7 +514,7 @@ struct tofEventTime {
   Preslice<TrksWtof> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
   using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksWtof::iterator, pid>;
-  void process(TrksWtof& tracks,
+  void process(TrksWtof const& tracks,
                aod::FT0s const&,
                EvTimeCollisionsFT0 const&,
                aod::BCsWithTimestamps const& bcs)
