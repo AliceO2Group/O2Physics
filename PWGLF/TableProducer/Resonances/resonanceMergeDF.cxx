@@ -320,7 +320,7 @@ struct ResonanceMergeDF {
       LOG(fatal) << "Disable processTrackDataDF first!";
     if (doprocessLambdaStarCandidate)
       LOG(fatal) << "Disable processLambdaStarCandidate first!";
-    
+
     resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
 
