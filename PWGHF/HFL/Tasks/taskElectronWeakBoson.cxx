@@ -77,17 +77,17 @@ struct HfTaskElectronWeakBoson {
 
   struct HfElectronCandidate {
     float pt, eta, phi, energy;
-    HfElectronCandidate(float p, float e, float ph, float en)
-      : pt(p), eta(e), phi(ph), energy(en) {}
+    int charge;
+    HfElectronCandidate(float p, float e, float ph, float en, int ch)
+      : pt(p), eta(e), phi(ph), energy(en), charge(ch) {}
 
     float px() const { return pt * std::cos(phi); }
     float py() const { return pt * std::sin(phi); }
     float pz() const { return pt * std::sinh(eta); }
+    int sign() const { return charge; }
   };
   std::vector<HfElectronCandidate> selectedElectronsIso;
   std::vector<HfElectronCandidate> selectedElectronsAss;
-
-  HfHelper hfHelper;
 
   using SelectedClusters = o2::aod::EMCALClusters;
   // PbPb
@@ -163,8 +163,10 @@ struct HfTaskElectronWeakBoson {
     registry.add("hEMCtime", "EMC timing", kTH1F, {axisEMCtime});
     registry.add("hIsolationEnergy", "Isolation Energy", kTH2F, {{axisE}, {axisIsoEnergy}});
     registry.add("hIsolationTrack", "Isolation Track", kTH2F, {{axisE}, {axisIsoTrack}});
-    registry.add("hInvMassZee", "invariant mass for Z", kTH2F, {{axisPt}, {axisInvMassZ}});
-    registry.add("hInvMassDy", "invariant mass for DY", kTH2F, {{axisPt}, {axisInvMassDy}});
+    registry.add("hInvMassZeeLs", "invariant mass for Z LS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
+    registry.add("hInvMassZeeUls", "invariant mass for Z ULS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
+    registry.add("hInvMassDyLs", "invariant mass for DY LS pair", kTH2F, {{axisPt}, {axisInvMassDy}});
+    registry.add("hInvMassDyULs", "invariant mass for DY ULS pair", kTH2F, {{axisPt}, {axisInvMassDy}});
   }
   bool isIsolatedCluster(const o2::aod::EMCALCluster& cluster,
                          const SelectedClusters& clusters)
@@ -275,7 +277,8 @@ struct HfTaskElectronWeakBoson {
           track.pt(),
           track.eta(),
           track.phi(),
-          energyTrk);
+          energyTrk,
+          track.sign());
       }
 
       // track - match
@@ -355,7 +358,8 @@ struct HfTaskElectronWeakBoson {
                   match.track_as<TrackEle>().pt(),
                   match.track_as<TrackEle>().eta(),
                   match.track_as<TrackEle>().phi(),
-                  energyEmc);
+                  energyEmc,
+                  match.track_as<TrackEle>().sign());
               }
 
               if (isIsolatedTr) {
@@ -382,15 +386,28 @@ struct HfTaskElectronWeakBoson {
         for (size_t j = 0; j < selectedElectronsAss.size() - 1; ++j) {
           const auto& e2 = selectedElectronsAss[j];
 
-          if (e1.px() == e2.px())
+          float ptIso = RecoDecay::pt2(e1.px(), e1.py());
+          float ptAss = RecoDecay::pt2(e2.px(), e2.py());
+          if (ptIso == ptAss)
             continue;
-          auto mass = hfHelper.invMassZtoEE(e1, e2);
-          float ptIso = std::sqrt(e1.px() * e1.px() + e1.py() * e1.py());
-          float ptAss = std::sqrt(e2.px() * e2.px() + e2.py() * e2.py());
-          registry.fill(HIST("hInvMassDy"), ptIso, mass);
+
+          auto arr1 = std::array{e1.px(), e1.py(), e1.pz()};
+          auto arr2 = std::array{e2.px(), e2.py(), e2.pz()};
+          double mass = RecoDecay::m(std::array{arr1, arr2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
+          if (e1.sign() * e2.sign() > 0) {
+            registry.fill(HIST("hInvMassDyLs"), ptIso, mass);
+          } else {
+            registry.fill(HIST("hInvMassDyUls"), ptIso, mass);
+          }
+
           if (ptAss < 20.0 && ptIso < 20.0)
             continue;
-          registry.fill(HIST("hInvMassZee"), ptIso, mass);
+
+          if (e1.sign() * e2.sign() > 0) {
+            registry.fill(HIST("hInvMassZeeLs"), ptIso, mass);
+          } else {
+            registry.fill(HIST("hInvMassZeeUls"), ptIso, mass);
+          }
         }
       }
     } // end of inv. mass calculation

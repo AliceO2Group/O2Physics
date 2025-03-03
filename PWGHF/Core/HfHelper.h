@@ -177,16 +177,6 @@ class HfHelper
     return candidate.cosThetaStar(std::array{o2::constants::physics::MassD0, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassBPlus, 1);
   }
 
-  // Z → e+ e- decay
-
-  template <typename T>
-  auto invMassZtoEE(const T& e1, const T& e2)
-  {
-    auto arr1 = std::array{e1.px(), e1.py(), e1.pz()};
-    auto arr2 = std::array{e2.px(), e2.py(), e2.pz()};
-    return RecoDecay::m(std::array{arr1, arr2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
-  }
-
   // 3-prong
 
   // D± → π± K∓ π±
