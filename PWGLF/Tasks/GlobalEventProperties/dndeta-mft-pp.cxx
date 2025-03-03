@@ -190,6 +190,12 @@ struct PseudorapidityDensityMFT {
       registry.add({"TracksPhiEtaGen",
                     "; #varphi; #eta; tracks",
                     {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+      registry.add({"TracksPhiEtaGen_gt0",
+                    "; #varphi; #eta; tracks",
+                    {HistType::kTH2F, {PhiAxis, EtaAxis}}});
+      registry.add({"TracksPhiEtaGen_gt0t",
+                    "; #varphi; #eta; tracks",
+                    {HistType::kTH2F, {PhiAxis, EtaAxis}}});
       registry.add({"TracksPhiZvtxGen",
                     "; #varphi; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {PhiAxis, ZAxis}}}); //
@@ -774,13 +780,13 @@ struct PseudorapidityDensityMFT {
       }
       nChargedCentral++;
     }
-
-    if (nChargedCentral > 0) {
-      registry.fill(HIST("EventEfficiency"), 2.);
-      registry.fill(HIST("EventsNtrkZvtxGen_gt0t"), nCharged,
-                    mcCollision.posZ());
+    if ((mcCollision.posZ() >= cfgVzCut1) && (mcCollision.posZ() <= cfgVzCut2)) {
+      if (nChargedCentral > 0) {
+        registry.fill(HIST("EventEfficiency"), 2.);
+        registry.fill(HIST("EventsNtrkZvtxGen_gt0t"), nCharged,
+                      mcCollision.posZ());
+      }
     }
-
     //-----------
     bool atLeastOne = false;
     bool atLeastOne_gt0 = false;
@@ -799,24 +805,25 @@ struct PseudorapidityDensityMFT {
 
         auto perCollisionSampleCentral =
           midtracks.sliceBy(perColCentral, collision.globalIndex());
-
-        if (perCollisionSampleCentral.size() > 0) {
-          registry.fill(HIST("EventEfficiency"), 5.);
-          atLeastOne_gt0 = true;
-          registry.fill(HIST("EventsNtrkZvtxGen_gt0"),
-                        perCollisionSample.size(), collision.posZ());
-        }
-
-        registry.fill(HIST("EventsZposDiff"),
-                      collision.posZ() - mcCollision.posZ());
-        if (useZDiffCut) {
-          if (std::abs(collision.posZ() - mcCollision.posZ()) > maxZDiff) {
-            continue;
+        if ((collision.posZ() >= cfgVzCut1) && (collision.posZ() <= cfgVzCut2) && (mcCollision.posZ() >= cfgVzCut1) && (mcCollision.posZ() <= cfgVzCut2)) {
+          if (perCollisionSampleCentral.size() > 0) {
+            registry.fill(HIST("EventEfficiency"), 5.);
+            atLeastOne_gt0 = true;
+            registry.fill(HIST("EventsNtrkZvtxGen_gt0"),
+                          perCollisionSample.size(), collision.posZ());
           }
+
+          registry.fill(HIST("EventsZposDiff"),
+                        collision.posZ() - mcCollision.posZ());
+          if (useZDiffCut) {
+            if (std::abs(collision.posZ() - mcCollision.posZ()) > maxZDiff) {
+              continue;
+            }
+          }
+          registry.fill(HIST("EventsNtrkZvtxGen"), perCollisionSample.size(),
+                        collision.posZ());
+          ++moreThanOne;
         }
-        registry.fill(HIST("EventsNtrkZvtxGen"), perCollisionSample.size(),
-                      collision.posZ());
-        ++moreThanOne;
       }
     }
     if (collisions.size() == 0) {
@@ -825,37 +832,40 @@ struct PseudorapidityDensityMFT {
     if (moreThanOne > 1) {
       registry.fill(HIST("EventsSplitMult"), nCharged);
     }
-
-    for (auto& particle : particles) {
-      auto p = pdg->GetParticle(particle.pdgCode());
-      auto charge = 0;
-      if (p != nullptr) {
-        charge = static_cast<int>(p->Charge());
-      }
-      if (std::abs(charge) < 3.) {
-        continue;
-      }
-
-      registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(),
-                    mcCollision.posZ());
-      if (perCollisionMCSampleCentral.size() > 0) {
-        registry.fill(HIST("TracksEtaZvtxGen_gt0t"), particle.eta(),
-                      mcCollision.posZ());
-      }
-      if (atLeastOne) {
-        registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(),
-                      mcCollision.posZ());
-        registry.fill(HIST("TracksPtEtaGen"), particle.pt(), particle.eta());
-        if (atLeastOne_gt0) {
-          registry.fill(HIST("TracksEtaZvtxGen_gt0"), particle.eta(),
-                        mcCollision.posZ());
+    if ((mcCollision.posZ() >= cfgVzCut1) && (mcCollision.posZ() <= cfgVzCut2)) {
+      for (auto& particle : particles) {
+        auto p = pdg->GetParticle(particle.pdgCode());
+        auto charge = 0;
+        if (p != nullptr) {
+          charge = static_cast<int>(p->Charge());
         }
-      }
+        if (std::abs(charge) < 3.) {
+          continue;
+        }
 
-      registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
-      registry.fill(HIST("TracksPhiZvtxGen"), particle.phi(),
-                    mcCollision.posZ());
-      registry.fill(HIST("TracksPtEtaGen_t"), particle.pt(), particle.eta());
+        registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(),
+                      mcCollision.posZ());
+        if (perCollisionMCSampleCentral.size() > 0) {
+          registry.fill(HIST("TracksEtaZvtxGen_gt0t"), particle.eta(),
+                        mcCollision.posZ());
+          registry.fill(HIST("TracksPhiEtaGen_gt0t"), particle.phi(), particle.eta());
+        }
+        if (atLeastOne) {
+          registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(),
+                        mcCollision.posZ());
+          registry.fill(HIST("TracksPtEtaGen"), particle.pt(), particle.eta());
+          if (atLeastOne_gt0) {
+            registry.fill(HIST("TracksEtaZvtxGen_gt0"), particle.eta(),
+                          mcCollision.posZ());
+            registry.fill(HIST("TracksPhiEtaGen_gt0"), particle.phi(), particle.eta());
+          }
+        }
+
+        registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
+        registry.fill(HIST("TracksPhiZvtxGen"), particle.phi(),
+                      mcCollision.posZ());
+        registry.fill(HIST("TracksPtEtaGen_t"), particle.pt(), particle.eta());
+      }
     }
   }
 

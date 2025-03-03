@@ -34,6 +34,8 @@ struct eventWiseConstituentSubtractorTask {
   Produces<aod::JMcParticleSubs> particleSubtractedTable;
   Produces<aod::JTrackD0Subs> trackSubtractedD0Table;
   Produces<aod::JMcParticleD0Subs> particleSubtractedD0Table;
+  Produces<aod::JTrackDplusSubs> trackSubtractedDplusTable;
+  Produces<aod::JMcParticleDplusSubs> particleSubtractedDplusTable;
   Produces<aod::JTrackLcSubs> trackSubtractedLcTable;
   Produces<aod::JMcParticleLcSubs> particleSubtractedLcTable;
   Produces<aod::JTrackBplusSubs> trackSubtractedBplusTable;
@@ -157,6 +159,18 @@ struct eventWiseConstituentSubtractorTask {
     analyseHFMc(tracks, candidates, particleSubtractedD0Table);
   }
   PROCESS_SWITCH(eventWiseConstituentSubtractorTask, processD0McCollisions, "Fill table of subtracted tracks for collisions with D0 MCP candidates", false);
+
+  void processDplusCollisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, soa::Join<aod::CandidatesDplusData, aod::BkgDplusRhos> const& candidates)
+  {
+    analyseHF(tracks, candidates, trackSubtractedDplusTable);
+  }
+  PROCESS_SWITCH(eventWiseConstituentSubtractorTask, processDplusCollisions, "Fill table of subtracted tracks for collisions with Dplus candidates", false);
+
+  void processDplusMcCollisions(aod::JetMcCollision const&, soa::Filtered<aod::JetParticles> const& tracks, soa::Join<aod::CandidatesDplusMCP, aod::BkgDplusMcRhos> const& candidates)
+  {
+    analyseHFMc(tracks, candidates, particleSubtractedDplusTable);
+  }
+  PROCESS_SWITCH(eventWiseConstituentSubtractorTask, processDplusMcCollisions, "Fill table of subtracted tracks for collisions with Dplus MCP candidates", false);
 
   void processLcCollisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, soa::Join<aod::CandidatesLcData, aod::BkgLcRhos> const& candidates)
   {

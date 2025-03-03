@@ -500,29 +500,29 @@ struct HfCandidateCreatorDstar {
 
 struct HfCandidateCreatorDstarExpressions {
   Spawns<aod::HfD0FromDstarExt> rowsCandidateD0;
+  Spawns<aod::HfCandDstarExt> rowsCandidateDstar;
   Produces<aod::HfCand2ProngMcRec> rowsMcMatchRecD0;
   Produces<aod::HfCand2ProngMcGen> rowsMcMatchGenD0;
-
-  Spawns<aod::HfCandDstarExt> rowsCandidateDstar;
   Produces<aod::HfCandDstarMcRec> rowsMcMatchRecDstar;
   Produces<aod::HfCandDstarMcGen> rowsMcMatchGenDstar;
 
   // Configuration
-  o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
-  o2::framework::Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
-  o2::framework::Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
+  Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+  Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
+  Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
 
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
-  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
-  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   HistogramRegistry registry{"registry"};
 
   // inspect for which zPvPosMax cut was set for reconstructed

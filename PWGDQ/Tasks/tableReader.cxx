@@ -91,6 +91,7 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBca
 
 // Declarations of various short names
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
+using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
 using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes>;
 using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
@@ -106,7 +107,7 @@ using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExt
 using MyEventsQvectorCentrMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra>;
 using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
-using MyEventsHashSelectedQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra>;
+using MyEventsHashSelectedQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventVtxCov, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra, aod::ReducedEventsRefFlow>;
 using MyEventsHashSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvectorCentr>;
 
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID>;
@@ -262,6 +263,10 @@ struct AnalysisEventSelection {
   {
     runEventSelection<gkEventFillMap>(event);
   }
+  void processSkimmedWithMultPV(MyEventsMultExtra::iterator const& event)
+  {
+    runEventSelection<gkEventFillMapWithMultExtra>(event);
+  }
   void processSkimmedQVector(MyEventsQvector::iterator const& event)
   {
     runEventSelection<gkEventFillMapWithQvector>(event);
@@ -288,6 +293,7 @@ struct AnalysisEventSelection {
   }
 
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultPV, "Run event selection on DQ skimmed events with mult", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVector, "Run event selection on DQ skimmed events with Q vector from GFW", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorCentr, "Run event selection on DQ skimmed events with Q vector from CFW", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorMultExtra, "Run event selection on DQ skimmed events with Q vector from GFW and MultPV", false);
@@ -645,13 +651,19 @@ struct AnalysisEventMixing {
   Configurable<bool> fConfigAmbiguousHist{"cfgAmbiHist", false, "Enable Ambiguous histograms for time association studies"};
   Configurable<string> ccdbPathFlow{"ccdb-path-flow", "Users/c/chizh/FlowResolution", "path to the ccdb object for flow resolution factors"};
   Configurable<bool> fConfigFlowReso{"cfgFlowReso", false, "Enable loading of flow resolution factors from CCDB"};
+  Configurable<bool> fConfigSingleMuCumulants{"cfgSingleMuCumulants", false, "Enable loading of flow resolution factors from CCDB"};
+  Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   o2::parameters::GRPMagField* grpmag = nullptr;
-  TH1D* ResoFlowSP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
-  TH1D* ResoFlowEP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
-  int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
+  TH1D* ResoFlowSP = nullptr;   // Resolution factors for flow analysis, this will be loaded from CCDB
+  TH1D* ResoFlowEP = nullptr;   // Resolution factors for flow analysis, this will be loaded from CCDB
+  TH2D* SingleMuv22m = nullptr; // Single muon v22, loaded from CCDB
+  TH2D* SingleMuv24m = nullptr; // Single muon v24, loaded from CCDB
+  TH2D* SingleMuv22p = nullptr; // Single antimuon v22, loaded from CCDB
+  TH2D* SingleMuv24p = nullptr; // Single antimuon v24, loaded from CCDB
+  int fCurrentRun;              // needed to detect if the run changed and trigger update of calibrations etc.
 
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   Filter filterTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
@@ -701,7 +713,7 @@ struct AnalysisEventMixing {
         }
       }
     }
-    if (context.mOptions.get<bool>("processMuonSkimmed") || context.mOptions.get<bool>("processMuonVnSkimmed") || context.mOptions.get<bool>("processMuonVnCentrSkimmed")) {
+    if (context.mOptions.get<bool>("processMuonSkimmed") || context.mOptions.get<bool>("processMuonVnSkimmed") || context.mOptions.get<bool>("processMuonVnCentrSkimmed") || context.mOptions.get<bool>("processMuonVnExtraSkimmed")) {
       TString cutNames = fConfigMuonCuts.value;
       if (!cutNames.IsNull()) {
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
@@ -742,7 +754,9 @@ struct AnalysisEventMixing {
     }
 
     DefineHistograms(fHistMan, histNames.Data(), fConfigAddEventMixingHistogram); // define all histograms
-    VarManager::SetUseVars(fHistMan->GetUsedVars());                              // provide the list of required variables so that VarManager knows what to fill
+    // Additional histograms via JSON
+    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());
+    VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
@@ -762,6 +776,20 @@ struct AnalysisEventMixing {
     }
 
     uint32_t twoTrackFilter = 0;
+    uint32_t mult_dimuons = 0;
+    for (auto& track1 : tracks1) {
+      for (auto& track2 : tracks2) {
+        if constexpr (TPairType == VarManager::kDecayToMuMu) {
+          twoTrackFilter = static_cast<uint32_t>(track1.isMuonSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoMuonFilterMask;
+        }
+        if (twoTrackFilter && track1.sign() * track2.sign() < 0) {
+          mult_dimuons++;
+        }
+      } // end for (track2)
+    } // end for (track1)
+    VarManager::fgValues[VarManager::kMultDimuonsME] = mult_dimuons;
+
+    twoTrackFilter = 0;
     for (auto& track1 : tracks1) {
       for (auto& track2 : tracks2) {
         if constexpr (TPairType == VarManager::kDecayToEE) {
@@ -769,6 +797,9 @@ struct AnalysisEventMixing {
         }
         if constexpr (TPairType == VarManager::kDecayToMuMu) {
           twoTrackFilter = static_cast<uint32_t>(track1.isMuonSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoMuonFilterMask;
+          if (fConfigSingleMuCumulants) {
+            VarManager::FillTwoMixEventsCumulants(SingleMuv22m, SingleMuv24m, SingleMuv22p, SingleMuv24p, track1, track2);
+          }
         }
         if constexpr (TPairType == VarManager::kElectronMuon) {
           twoTrackFilter = static_cast<uint32_t>(track1.isBarrelSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoTrackFilterMask;
@@ -824,6 +855,20 @@ struct AnalysisEventMixing {
         ResoFlowEP = ccdb->getForTimeStamp<TH1D>(ccdbPathFlowEP.Data(), events.begin().timestamp());
         if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
           LOGF(fatal, "Resolution factor is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+        }
+      }
+      if (fConfigSingleMuCumulants) {
+        TString PathFlow = ccdbPathFlow.value;
+        TString ccdbPathMuv22m = Form("%s/SingleMuv22m", PathFlow.Data());
+        TString ccdbPathMuv24m = Form("%s/SingleMuv24m", PathFlow.Data());
+        TString ccdbPathMuv22p = Form("%s/SingleMuv22p", PathFlow.Data());
+        TString ccdbPathMuv24p = Form("%s/SingleMuv24p", PathFlow.Data());
+        SingleMuv22m = ccdb->getForTimeStamp<TH2D>(ccdbPathMuv22m.Data(), events.begin().timestamp());
+        SingleMuv24m = ccdb->getForTimeStamp<TH2D>(ccdbPathMuv24m.Data(), events.begin().timestamp());
+        SingleMuv22p = ccdb->getForTimeStamp<TH2D>(ccdbPathMuv22p.Data(), events.begin().timestamp());
+        SingleMuv24p = ccdb->getForTimeStamp<TH2D>(ccdbPathMuv24p.Data(), events.begin().timestamp());
+        if (SingleMuv22m == nullptr || SingleMuv24m == nullptr || SingleMuv22p == nullptr || SingleMuv24p == nullptr) {
+          LOGF(fatal, "Single muon cumulants are not available in CCDB at timestamp=%llu", events.begin().timestamp());
         }
       }
       fCurrentRun = events.begin().runNumber();
@@ -906,6 +951,10 @@ struct AnalysisEventMixing {
   {
     runSameSide<pairTypeMuMu, gkEventFillMapWithQvectorCentr>(events, muons, perEventsSelectedM);
   }
+  void processMuonVnExtraSkimmed(soa::Filtered<MyEventsHashSelectedQvectorExtra>& events, soa::Filtered<MyMuonTracksSelected> const& muons)
+  {
+    runSameSide<pairTypeMuMu, gkEventFillMapWithCovQvectorExtraWithRefFlow>(events, muons, perEventsSelectedM);
+  }
   // TODO: This is a dummy process function for the case when the user does not want to run any of the process functions (no event mixing)
   //    If there is no process function enabled, the workflow hangs
   void processDummy(MyEvents&)
@@ -919,6 +968,7 @@ struct AnalysisEventMixing {
   PROCESS_SWITCH(AnalysisEventMixing, processBarrelVnSkimmed, "Run barrel-barrel vn mixing on skimmed tracks", false);
   PROCESS_SWITCH(AnalysisEventMixing, processMuonVnSkimmed, "Run muon-muon vn mixing on skimmed tracks", false);
   PROCESS_SWITCH(AnalysisEventMixing, processMuonVnCentrSkimmed, "Run muon-muon vn mixing on skimmed tracks from central framework", false);
+  PROCESS_SWITCH(AnalysisEventMixing, processMuonVnExtraSkimmed, "Run muon-muon vn mixing on skimmed tracks from GFW", false);
   PROCESS_SWITCH(AnalysisEventMixing, processDummy, "Dummy function", false);
 };
 
@@ -968,6 +1018,7 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> fCollisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
   Configurable<float> fCenterMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
   Configurable<bool> fConfigCumulants{"cfgCumulants", false, "If true, fill Cumulants with Weights different than 0"};
+  Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
 
   // Configurables to create output tree (flat tables or minitree)
   struct : ConfigurableGroup {
@@ -1145,8 +1196,9 @@ struct AnalysisSameEventPairing {
 
     VarManager::SetCollisionSystem((TString)fCollisionSystem, fCenterMassEnergy); // set collision system and center of mass energy
 
-    DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram); // define all histograms
-    VarManager::SetUseVars(fHistMan->GetUsedVars());                      // provide the list of required variables so that VarManager knows what to fill
+    DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram);                  // define all histograms
+    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
+    VarManager::SetUseVars(fHistMan->GetUsedVars());                                       // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
@@ -1233,6 +1285,20 @@ struct AnalysisSameEventPairing {
     if (fConfigMultDimuons.value) {
 
       uint32_t mult_dimuons = 0;
+      uint32_t mult_antimuons = 0;
+      uint32_t mult_muons = 0;
+
+      for (auto& t : tracks1) {
+        if constexpr (TPairType == VarManager::kDecayToMuMu) {
+          if (static_cast<uint32_t>(t.isMuonSelected()) & fTwoMuonFilterMask) {
+            if (t.sign() < 0) {
+              mult_muons++;
+            } else {
+              mult_antimuons++;
+            }
+          }
+        }
+      }
 
       for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
         if constexpr (TPairType == VarManager::kDecayToMuMu) {
@@ -1245,6 +1311,8 @@ struct AnalysisSameEventPairing {
       }
 
       VarManager::fgValues[VarManager::kMultDimuons] = mult_dimuons;
+      VarManager::fgValues[VarManager::kMultMuons] = mult_muons;
+      VarManager::fgValues[VarManager::kMultAntiMuons] = mult_antimuons;
     }
 
     if (fConfigFlowReso) {
@@ -1374,13 +1442,20 @@ struct AnalysisSameEventPairing {
               fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][0].Data()), VarManager::fgValues);
             }
             if (useMiniTree.fConfigMiniTree) {
+              // By default (kPt1, kEta1, kPhi1) are for the positive charge
               float dileptonMass = VarManager::fgValues[VarManager::kMass];
               if (dileptonMass > useMiniTree.fConfigMiniTreeMinMass && dileptonMass < useMiniTree.fConfigMiniTreeMaxMass) {
                 dileptonMiniTree(VarManager::fgValues[VarManager::kMass],
                                  VarManager::fgValues[VarManager::kPt],
                                  VarManager::fgValues[VarManager::kRap],
                                  VarManager::fgValues[VarManager::kCentFT0C],
-                                 VarManager::fgValues[VarManager::kCos2DeltaPhi]);
+                                 VarManager::fgValues[VarManager::kCos2DeltaPhi],
+                                 VarManager::fgValues[VarManager::kPt1],
+                                 VarManager::fgValues[VarManager::kEta1],
+                                 VarManager::fgValues[VarManager::kPhi1],
+                                 VarManager::fgValues[VarManager::kPt2],
+                                 VarManager::fgValues[VarManager::kEta2],
+                                 VarManager::fgValues[VarManager::kPhi2]);
               }
             }
           } else {
@@ -1433,6 +1508,13 @@ struct AnalysisSameEventPairing {
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
+  }
+  void processDecayToEESkimmedWithMult(soa::Filtered<MyEventsVtxCovSelectedMultExtra>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
+  {
+    // Reset the fValues array
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<gkEventFillMapWithMultExtra>(event, VarManager::fgValues);
+    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithMultExtra, gkTrackFillMap>(event, tracks, tracks);
   }
   void processDecayToEESkimmedNoTwoProngFitter(soa::Filtered<MyEventsSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
   {
@@ -1585,6 +1667,7 @@ struct AnalysisSameEventPairing {
   }
 
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmed, "Run electron-electron pairing, with skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedWithMult, "Run electron-electron pairing, with skimmed tracks and multiplicity", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedNoTwoProngFitter, "Run electron-electron pairing, with skimmed tracks but no two prong fitter", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedWithCov, "Run electron-electron pairing, with skimmed covariant tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedWithCovNoTwoProngFitter, "Run electron-electron pairing, with skimmed covariant tracks but no two prong fitter", false);

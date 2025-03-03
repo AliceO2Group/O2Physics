@@ -41,7 +41,7 @@ o2physics_add_dpl_workflow(filter-pp-with-association
 
 o2physics_add_dpl_workflow(filter-pb-pb
                     SOURCES filterPbPb.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore O2Physics::SGCutParHolder
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(v0-selector
@@ -112,4 +112,9 @@ o2physics_add_dpl_workflow(task-fwd-track-pid
 o2physics_add_dpl_workflow(quarkonia-to-hyperons
                     SOURCES quarkoniaToHyperons.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(model-converter-mult-pv
+                    SOURCES ModelConverterMultPv.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
