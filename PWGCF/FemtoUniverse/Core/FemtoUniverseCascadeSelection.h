@@ -23,18 +23,16 @@
 
 #include <string>
 #include <vector>
-
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseObjectSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
-
 #include "Common/Core/RecoDecay.h"
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/PID.h"
 
-namespace o2::analysis::femto_universe // o2-linter: disable=name/namespace
+namespace o2::analysis::femto_universe
 {
-namespace femto_universe_cascade_selection // o2-linter: disable=name/namespace
+namespace femto_universe_cascade_selection
 {
 /// The different selections this task is capable of doing
 enum CascadeSel {
@@ -430,6 +428,7 @@ bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const
   const float dcav0topv = cascade.dcav0topv(col.posX(), col.posY(), col.posZ());
   const float invMassLambda = cascade.mLambda();
   const float invMass = isCascOmega ? cascade.mOmega() : cascade.mXi();
+  const float nSigmaPIDMax = bachTrackSel.getSigmaPIDMax();
 
   if (invMassLambda < fV0InvMassLowLimit || invMassLambda > fV0InvMassUpLimit) {
     return false;
@@ -501,7 +500,7 @@ bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const
   if (!negDaughTrack.isSelectedMinimal(negTrack)) {
     return false;
   }
-  if (!bachTrack.hasTOF()) {
+  if (bachTrack.hasTOF() && ((isCascOmega && bachTrack.tofNSigmaKa() > nSigmaPIDMax) || (!isCascOmega && bachTrack.tofNSigmaPi() > nSigmaPIDMax))) {
     return false;
   }
   if (!bachTrackSel.isSelectedMinimal(bachTrack)) {
