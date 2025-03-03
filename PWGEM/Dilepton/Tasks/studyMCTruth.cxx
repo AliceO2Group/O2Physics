@@ -82,9 +82,9 @@ struct studyMCTruth {
     const AxisSpec axis_mll{ConfMllBins, "m_{ll} (GeV/c^{2})"};
     const AxisSpec axis_ptll{ConfPtllBins, "p_{T,ll} (GeV/c)"};
 
-    fRegistry.add("Event/hReccollsPerMCcoll", "Rec. colls per MC coll;Rec. colls per MC coll;Number of MC collisions", kTH1D, {{21, -0.5, 20.5}}, false);
-    fRegistry.add("Event/hSelReccollsPerMCcoll", "Selected Rec. colls per MC coll;Selected Rec. colls per MC coll;Number of MC collisions", kTH1D, {{21, -0.5, 20.5}}, false);
     fRegistry.add("Event/hDiffBC", "diffrence in BC;BC_{rec. coll.} - BC_{mc coll.}", kTH1D, {{101, -50.5, +50.5}}, false);
+    fRegistry.add("Event/allMC/hReccollsPerMCcoll", "Rec. colls per MC coll;Rec. colls per MC coll;Number of MC collisions", kTH1D, {{21, -0.5, 20.5}}, false);
+    fRegistry.add("Event/allMC/hSelReccollsPerMCcoll", "Selected Rec. colls per MC coll;Selected Rec. colls per MC coll;Number of MC collisions", kTH1D, {{21, -0.5, 20.5}}, false);
     fRegistry.add("Event/allMC/hZvtx", "MC Zvtx;Z_{vtx} (cm)", kTH1D, {{100, -50, +50}}, false);
     fRegistry.add("Event/allMC/hImpactParameter", "impact parameter;impact parameter b (fm)", kTH1D, {{200, 0, 20}}, false);
     fRegistry.addClone("Event/allMC/", "Event/selectedMC/");
@@ -240,15 +240,15 @@ struct studyMCTruth {
       const auto& bc_from_mcCollision = mcCollision.template bc_as<TBCs>();
       bool isSelectedMC = isSelectedCollision(mcCollision, bc_from_mcCollision);
 
-      auto reccolls_per_mccoll = collisions.sliceBy(recColperMcCollision, mcCollision.globalIndex());
-      fRegistry.fill(HIST("Event/hReccollsPerMCcoll"), reccolls_per_mccoll.size());
+      const auto& reccolls_per_mccoll = collisions.sliceBy(recColperMcCollision, mcCollision.globalIndex());
       int nselreccolls_per_mccoll = 0;
       for (const auto& rec_col : reccolls_per_mccoll) {
         if (isSelectedCollision(rec_col, rec_col.template foundBC_as<TBCs>())) {
           nselreccolls_per_mccoll++;
         }
       } // end of reconstructed collision
-      fRegistry.fill(HIST("Event/hSelReccollsPerMCcoll"), nselreccolls_per_mccoll);
+      fRegistry.fill(HIST("Event/allMC/hReccollsPerMCcoll"), reccolls_per_mccoll.size());
+      fRegistry.fill(HIST("Event/allMC/hSelReccollsPerMCcoll"), nselreccolls_per_mccoll);
 
       bool isSelectedRec = false;
       bool hasRecCollision = false;
@@ -259,16 +259,22 @@ struct studyMCTruth {
         isSelectedRec = isSelectedCollision(collision, bc_from_collision);
         fRegistry.fill(HIST("Event/hDiffBC"), bc_from_collision.globalBC() - bc_from_mcCollision.globalBC());
       }
-
       fRegistry.fill(HIST("Event/allMC/hZvtx"), mcCollision.posZ());
       fRegistry.fill(HIST("Event/allMC/hImpactParameter"), mcCollision.impactParameter());
+
       if (isSelectedMC) {
+        fRegistry.fill(HIST("Event/selectedMC/hReccollsPerMCcoll"), reccolls_per_mccoll.size());
+        fRegistry.fill(HIST("Event/selectedMC/hSelReccollsPerMCcoll"), nselreccolls_per_mccoll);
         fRegistry.fill(HIST("Event/selectedMC/hZvtx"), mcCollision.posZ());
         fRegistry.fill(HIST("Event/selectedMC/hImpactParameter"), mcCollision.impactParameter());
         if (hasRecCollision) {
+          fRegistry.fill(HIST("Event/selectedMC_and_Rec/hReccollsPerMCcoll"), reccolls_per_mccoll.size());
+          fRegistry.fill(HIST("Event/selectedMC_and_Rec/hSelReccollsPerMCcoll"), nselreccolls_per_mccoll);
           fRegistry.fill(HIST("Event/selectedMC_and_Rec/hZvtx"), mcCollision.posZ());
           fRegistry.fill(HIST("Event/selectedMC_and_Rec/hImpactParameter"), mcCollision.impactParameter());
           if (isSelectedRec) {
+            fRegistry.fill(HIST("Event/selectedMC_and_selectedRec/hReccollsPerMCcoll"), reccolls_per_mccoll.size());
+            fRegistry.fill(HIST("Event/selectedMC_and_selectedRec/hSelReccollsPerMCcoll"), nselreccolls_per_mccoll);
             fRegistry.fill(HIST("Event/selectedMC_and_selectedRec/hZvtx"), mcCollision.posZ());
             fRegistry.fill(HIST("Event/selectedMC_and_selectedRec/hImpactParameter"), mcCollision.impactParameter());
           }
