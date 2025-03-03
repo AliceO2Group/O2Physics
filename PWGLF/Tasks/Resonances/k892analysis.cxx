@@ -97,15 +97,9 @@ struct k892analysis {
 
   Configurable<bool> tof_at_high_pt{"tof_at_high_pt", false, "Use TOF at high pT"};
   Configurable<bool> additionalEvsel{"additionalEvsel", true, "Additional event selcection"};
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"};
-  Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.0f, "TPC Crossed Rows to Findable Clusters"};
-  Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 999.0, "ITS Chi2/NCl"};
-  Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 999.0, "TPC Chi2/NCl"};
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
-  Configurable<bool> cfgHasITS{"cfgHasITS", false, "Require ITS"};
-  Configurable<bool> cfgHasTPC{"cfgHasTPC", false, "Require TPC"};
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
   // Rotational background
@@ -343,19 +337,7 @@ struct k892analysis {
       return false;
     if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
-    if (track.itsNCls() < cfgITScluster)
-      return false;
     if (track.tpcNClsFound() < cfgTPCcluster)
-      return false;
-    if (track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls)
-      return false;
-    if (track.itsChi2NCl() >= cfgITSChi2NCl)
-      return false;
-    if (track.tpcChi2NCl() >= cfgTPCChi2NCl)
-      return false;
-    if (cfgHasITS && !track.hasITS())
-      return false;
-    if (cfgHasTPC && !track.hasTPC())
       return false;
     if (cfgHasTOF && !track.hasTOF())
       return false;
