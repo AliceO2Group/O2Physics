@@ -249,12 +249,13 @@ struct HfTreeCreatorToXiPi {
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
 
   SliceCache cache;
-  Preslice<aod::HfCandToXiPi> candXicPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
 
   using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
   using MyEventTable = soa::Join<aod::Collisions, aod::EvSels>;
   using MyEventTableWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::PVMultZeqs, Cents>;
+
+  Preslice<aod::HfCandToXiPi> candXicPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
 
   void init(InitContext const&)
   {

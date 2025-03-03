@@ -145,7 +145,7 @@ struct HfCorrelatorDsHadrons {
   Produces<aod::DsCandReduceds> candReduced;
   Produces<aod::DsCandSelInfos> candSelInfo;
   Produces<aod::AssocTrackReds> assocTrackReduced;
-  Produces<aod::AssocTrackSelInfos> assocTrackSelInfo;
+  Produces<aod::AssocTrackSels> assocTrackSelInfo;
 
   Configurable<bool> fillHistoData{"fillHistoData", true, "Flag for filling histograms in data processes"};
   Configurable<bool> fillHistoMcRec{"fillHistoMcRec", true, "Flag for filling histograms in MC Rec processes"};
@@ -717,13 +717,13 @@ struct HfCorrelatorDsHadrons {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
           }
-          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToKKPi(candidate));
+          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToKKPi(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
           candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[2]);
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
           }
-          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToPiKK(candidate));
+          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToPiKK(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
           candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[2]);
         }
       }
@@ -733,7 +733,7 @@ struct HfCorrelatorDsHadrons {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
-        assocTrackReduced(indexHfcReducedCollision, track.phi(), track.eta(), track.pt());
+        assocTrackReduced(indexHfcReducedCollision, track.globalIndex(), track.phi(), track.eta(), track.pt());
         assocTrackSelInfo(indexHfcReducedCollision, track.tpcNClsCrossedRows(), track.itsClusterMap(), track.itsNCls(), track.dcaXY(), track.dcaZ());
       }
 
