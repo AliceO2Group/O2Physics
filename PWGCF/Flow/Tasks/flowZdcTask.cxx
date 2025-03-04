@@ -191,7 +191,7 @@ struct FlowZdcTask {
                {axisCent, axisZP});
     histos.add("hNchvsNPV", ";NPVTracks (|#eta|<1);N_{ch} (|#eta|<0.8);",
                 kTH2F,
-                {{{nBinsNch, -0.5, maxNch}, {nBinsNch, -0.5, maxNch}}});             
+                {{{nBinsNch, -0.5, maxNch}, {nBinsNch, -0.5, maxNch}}});          
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ}); // for q vector recentering
     histos.add("hYield", "Nch vs pT", kTH2F, {axisMultiplicity, axisPt});
     histos.add("hGlobalTracks", "hGlobalTracks", kTH1F, {axisMultiplicity});
@@ -403,7 +403,7 @@ struct FlowZdcTask {
     histos.fill(HIST("hFT0MAmp"), ft0mAmp);
     if (foundBC.has_zdc()) {
       const auto& zdcread = foundBC.zdc();
-      const auto cent = collision.centFT0C();  
+      const auto cent = collision.centFT0C();
 
       // ZDC data and histogram filling
       histos.get<TH1>(HIST("ZNAcoll"))->Fill(zdcread.amplitudeZNA());
