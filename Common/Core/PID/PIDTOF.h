@@ -237,58 +237,10 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
   }
 
   // Time shift for post calibration to realign as a function of eta
-  void setTimeShiftParameters(std::unordered_map<std::string, float> const& pars, bool positive)
-  {
-    std::string baseOpt = positive ? "TimeShift.Pos." : "TimeShift.Neg.";
-
-    if (pars.count(baseOpt + "GetN") == 0) { // If the map does not contain the number of eta bins, we assume that no correction has to be applied
-      return;
-    }
-    const int nPoints = static_cast<int>(pars.at(baseOpt + "GetN"));
-    if (nPoints <= 0) {
-      LOG(fatal) << "TOFResoParamsV3 shift: time must be positive";
-    }
-    TGraph graph;
-    for (int i = 0; i < nPoints; ++i) {
-      graph.AddPoint(pars.at(Form("TimeShift.eta%i", i)), pars.at(Form("TimeShift.cor%i", i)));
-    }
-    setTimeShiftParameters(&graph, positive);
-  }
-  void setTimeShiftParameters(std::string const& filename, std::string const& objname, bool positive)
-  {
-    TFile f(filename.c_str(), "READ");
-    if (f.IsOpen()) {
-      if (positive) {
-        f.GetObject(objname.c_str(), gPosEtaTimeCorr);
-      } else {
-        f.GetObject(objname.c_str(), gNegEtaTimeCorr);
-      }
-      f.Close();
-    }
-    LOG(info) << "Set the Time Shift parameters from file " << filename << " and object " << objname << " for " << (positive ? "positive" : "negative");
-  }
-  void setTimeShiftParameters(TGraph* g, bool positive)
-  {
-    if (positive) {
-      gPosEtaTimeCorr = g;
-    } else {
-      gNegEtaTimeCorr = g;
-    }
-    LOG(info) << "Set the Time Shift parameters from object " << g->GetName() << " " << g->GetTitle() << " for " << (positive ? "positive" : "negative");
-  }
-  float getTimeShift(float eta, int16_t sign) const
-  {
-    if (sign > 0) {
-      if (!gPosEtaTimeCorr) {
-        return 0.f;
-      }
-      return gPosEtaTimeCorr->Eval(eta);
-    }
-    if (!gNegEtaTimeCorr) {
-      return 0.f;
-    }
-    return gNegEtaTimeCorr->Eval(eta);
-  }
+  void setTimeShiftParameters(std::unordered_map<std::string, float> const& pars, const bool positive);
+  void setTimeShiftParameters(std::string const& filename, std::string const& objname, const bool positive);
+  void setTimeShiftParameters(TGraph* g, const bool positive);
+  float getTimeShift(float eta, int16_t sign) const;
 
   void printTimeShiftParameters() const
   {
