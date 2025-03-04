@@ -144,26 +144,15 @@ struct JFlucEfficiencyTask {
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
       registry.add("hPtGenNeg", "Generated p_{T} (negative);p_{T} (GeV/c);Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
-      registry.add("hPtGenParticle", "Generated p_{T} (all);p_{T} (GeV/c);Centrality (%);Counts",
-                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
-      registry.add("hEtaGenParticle", "Generated #eta (all);#eta;Centrality (%);Counts",
-                   o2::framework::HistType::kTH2F, {AxisSpec(100, -1, 1), AxisSpec(axisMultiplicity)});
-      registry.add("hPtGenParticlePos", "Generated p_{T} (positive);p_{T} (GeV/c);Centrality (%);Counts",
-                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
-      registry.add("hPtGenParticleNeg", "Generated p_{T} (negative);p_{T} (GeV/c);Centrality (%);Counts",
-                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
     }
-
-    if (doprocessData || doprocessDerivedData) {
-      registry.add("hPtRec", "Reconstructed p_{T} (all);p_{T} (GeV/c);Centrality (%);Counts",
-                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
-      registry.add("hEtaRec", "Reconstructed #eta (all);#eta;Centrality (%);Counts",
-                   o2::framework::HistType::kTH2F, {AxisSpec(100, -1, 1), AxisSpec(axisMultiplicity)});
-      registry.add("hPtRecPos", "Reconstructed p_{T} (positive);p_{T} (GeV/c);Centrality (%);Counts",
-                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
-      registry.add("hPtRecNeg", "Reconstructed p_{T} (negative);p_{T} (GeV/c);Centrality (%);Counts",
-                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
-    }
+    registry.add("hPtRec", "Reconstructed p_{T} (all);p_{T} (GeV/c);Centrality (%);Counts",
+                 o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+    registry.add("hEtaRec", "Reconstructed #eta (all);#eta;Centrality (%);Counts",
+                 o2::framework::HistType::kTH2F, {AxisSpec(100, -1, 1), AxisSpec(axisMultiplicity)});
+    registry.add("hPtRecPos", "Reconstructed p_{T} (positive);p_{T} (GeV/c);Centrality (%);Counts",
+                 o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+    registry.add("hPtRecNeg", "Reconstructed p_{T} (negative);p_{T} (GeV/c);Centrality (%);Counts",
+                 o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
 
     if (doprocessEfficiency) {
       registry.add("hPtGenData", "Generated p_{T} from data events (all);p_{T} (GeV/c);Centrality (%);Counts",
@@ -300,12 +289,12 @@ struct JFlucEfficiencyTask {
       if (particle.pt() < cfgPtMin || particle.pt() > cfgPtMax || particle.eta() < cfgEtaMin || particle.eta() > cfgEtaMax) {
         continue;
       }
-      registry.fill(HIST("hPtGenParticle"), particle.pt(), centrality);
-      registry.fill(HIST("hEtaGenParticle"), particle.eta(), centrality);
+      registry.fill(HIST("hPtGen"), particle.pt(), centrality);
+      registry.fill(HIST("hEtaGen"), particle.eta(), centrality);
       if (charge > 0) { // Positive particles
-        registry.fill(HIST("hPtGenParticlePos"), particle.pt(), centrality);
+        registry.fill(HIST("hPtGenPos"), particle.pt(), centrality);
       } else if (charge < 0) { // Negative particles
-        registry.fill(HIST("hPtGenParticleNeg"), particle.pt(), centrality);
+        registry.fill(HIST("hPtGenNeg"), particle.pt(), centrality);
       }
     }
     // Reconstruct tracks from MC particles
@@ -323,12 +312,12 @@ struct JFlucEfficiencyTask {
         if (track.pt() < cfgPtMin || track.pt() > cfgPtMax || track.eta() < cfgEtaMin || track.eta() > cfgEtaMax) {
           continue;
         }
-        registry.fill(HIST("hPtGen"), track.pt(), centrality);
-        registry.fill(HIST("hEtaGen"), track.eta(), centrality);
+        registry.fill(HIST("hPtRec"), track.pt(), centrality);
+        registry.fill(HIST("hEtaRec"), track.eta(), centrality);
         if (track.sign() > 0) { // Positive tracks
-          registry.fill(HIST("hPtGenPos"), track.pt(), centrality);
+          registry.fill(HIST("hPtRecPos"), track.pt(), centrality);
         } else if (track.sign() < 0) { // Negative tracks
-          registry.fill(HIST("hPtGenNeg"), track.pt(), centrality);
+          registry.fill(HIST("hPtRecNeg"), track.pt(), centrality);
         }
       }
     }
