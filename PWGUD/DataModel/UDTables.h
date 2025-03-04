@@ -272,7 +272,7 @@ DECLARE_SOA_TABLE(UDMcCollsLabels, "AOD", "UDMCCOLLSLABEL",
                   udcollision::UDMcCollisionId);
 
 using UDCollisions = UDCollisions_001;
-using UDCollisionSelExtras = UDCollisionSelExtras_001;
+using UDCollisionSelExtras = UDCollisionSelExtras_002;
 
 using UDCollision = UDCollisions::iterator;
 using SGCollision = SGCollisions::iterator;
