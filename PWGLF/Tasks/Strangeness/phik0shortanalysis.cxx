@@ -98,6 +98,11 @@ struct Phik0shortanalysis {
     Configurable<float> cMaxDCArToPV2Pion{"cMaxDCArToPV2Pion", 0.013f, "Track DCAr cut to PV config 2 for Pions"};
     Configurable<float> cMaxDCArToPV3Pion{"cMaxDCArToPV3Pion", 1.0f, "Track DCAr cut to PV config 3 for Pions"};
 
+    Configurable<bool> cfgIsDCAzParameterized{"cfgIsDCAzParameterized", false, "IsDCAzParameterized"};
+    Configurable<float> cMaxDCAzToPV1Pion{"cMaxDCAzToPV1Pion", 0.004f, "Track DCAz cut to PV config 1 for Pion"};
+    Configurable<float> cMaxDCAzToPV2Pion{"cMaxDCAzToPV2Pion", 0.013f, "Track DCAz cut to PV config 2 for Pion"};
+    Configurable<float> cMaxDCAzToPV3Pion{"cMaxDCAzToPV3Pion", 1.0f, "Track DCAz cut to PV config 3 for Pion"};
+
     Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
     Configurable<float> nSigmaCutTPCKa{"nSigmaCutTPCKa", 3.0f, "Value of the TPC Nsigma cut for Kaons"};
     Configurable<float> nSigmaCutCombinedKa{"nSigmaCutCombinedKa", 3.0f, "Value of the TOF Nsigma cut for Kaons"};
@@ -723,8 +728,13 @@ struct Phik0shortanalysis {
         mcPionHist.fill(HIST("h2TracksPiDCAzPostCutMCReco"), track.pt(), track.dcaZ());
       }
     }
-    if (std::abs(track.dcaZ()) > trackConfigs.cMaxDCAzToPVcut)
-      return false;
+    if (cfgIsDCAzParameterized) {
+      if (std::abs(track.dcaZ()) > trackConfigs.cMaxDCAzToPV1Pion + (trackConfigs.cMaxDCAzToPV2Pion / std::pow(track.pt(), trackConfigs.cMaxDCAzToPV3Pion)))
+        return false;
+    } else {
+      if (std::abs(track.dcaZ()) > trackConfigs.cMaxDCAzToPVcut)
+        return false;
+    }
     return true;
   }
 
