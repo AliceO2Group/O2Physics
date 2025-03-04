@@ -88,11 +88,7 @@ struct kstar892analysis {
   Configurable<bool> additionalMEPlots{"additionalMEPlots", false, "Additional Mixed event plots"};
 
   Configurable<bool> tof_at_high_pt{"tof_at_high_pt", false, "Use TOF at high pT"};
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"};
-  Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.0f, "TPC Crossed Rows to Findable Clusters"};
-  Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 999.0, "ITS Chi2/NCl"};
-  Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 999.0, "TPC Chi2/NCl"};
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
 
@@ -111,7 +107,6 @@ struct kstar892analysis {
   void init(o2::framework::InitContext&)
   {
 
-    // LOG(info) << "\n cfgITScluster ============>"<< static_cast<uint8_t>(cfgITScluster);
     // LOG(info)<< "\n cfgTPCcluster ============>"<< static_cast<uint8_t>(cfgTPCcluster);
 
     AxisSpec centAxis = {binsCent, "V0M (%)"};
@@ -248,9 +243,7 @@ struct kstar892analysis {
 
   // Filters
   Filter acceptanceFilter = nabs(aod::resodaughter::pt) >= cMinPtcut;
-  Filter qualityFilter = (aod::track::itsChi2NCl <= cfgITSChi2NCl) && (aod::track::tpcChi2NCl <= cfgTPCChi2NCl) && (aod::resodaughter::tpcCrossedRowsOverFindableCls >= cfgRatioTPCRowsOverFindableCls);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) <= cMaxDCArToPVcut) && (nabs(aod::track::dcaZ) <= cMaxDCAzToPVcut);
-  Filter hasTPCfilter = aod::resodaughter::hasTPC == true;
   Filter primarytrackFilter = aod::resodaughter::isPVContributor && aod::resodaughter::isPrimaryTrack && aod::resodaughter::isGlobalTrackWoDCA;
 
   // partitions for data
@@ -283,8 +276,6 @@ struct kstar892analysis {
   template <typename TrackType>
   bool trackCut(const TrackType track)
   {
-    if (track.itsNCls() < cfgITScluster)
-      return false;
     if (track.tpcNClsFound() < cfgTPCcluster)
       return false;
 

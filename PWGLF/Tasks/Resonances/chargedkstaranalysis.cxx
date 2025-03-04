@@ -92,7 +92,6 @@ struct chargedkstaranalysis {
   /// PID Selections
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999,
                                              "Combined nSigma cut for Pion"}; // Combined
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
 
   // DCAr to PV
   Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.5,
@@ -348,8 +347,6 @@ struct chargedkstaranalysis {
     if (std::abs(track.pt()) < cMinPtcut)
       return false;
     if (std::abs(track.eta()) > confdaugheta)
-      return false;
-    if (track.itsNCls() < cfgITScluster)
       return false;
     if (std::abs(track.dcaXY()) > cMaxDCArToPVcut)
       return false;

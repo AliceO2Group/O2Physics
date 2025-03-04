@@ -71,10 +71,8 @@ struct lambdaAnalysis_pb {
   Configurable<float> cRejNsigmaTpcPi{"cRejNsigmaTpcPi", 3.0, "Reject tracks to improve purity of TPC PID"};  // TPC And TOF tracks
                                                                                                               // Configurable<float> cRejNsigmaTpcPr{"cRejNsigmaTpcPr", 3.0, "Reject tracks to improve purity of TPC PID"};
   Configurable<float> cRejNsigmaTpcKa{"cRejNsigmaTpcKa", 3.0, "Reject tracks to improve purity of TPC PID"};
-  Configurable<float> cRejNsigmaTpcEl{"cRejNsigmaTpcEl", 3.0, "Reject tracks to improve purity of TPC PID"};
   Configurable<float> cRejNsigmakTpcPi{"cRejNsigmakTpcPi", 3.0, "Reject tracks to improve purity of TPC PID"};
   Configurable<float> cRejNsigmakTpcPr{"cRejNsigmakTpcPr", 3.0, "Reject tracks to improve purity of TPC PID"};
-  Configurable<float> cRejNsigmakTpcEl{"cRejNsigmakTpcEl", 3.0, "Reject tracks to improve purity of TPC PID"};
   Configurable<float> minnsigmatpcKa{"minnsigmatpcKa", -6.0, "Reject tracks to improve purity of TPC PID"};
   Configurable<float> minnsigmatpcPr{"minnsigmatpcPr", -6.0, "Reject tracks to improve purity of TPC PID"};
   Configurable<float> minnsigmatofKa{"minnsigmatofKa", -6.0, "Reject tracks to improve purity of TofPID"};
@@ -148,13 +146,11 @@ struct lambdaAnalysis_pb {
     histos.add("QAafter/Proton/h2d_pr_nsigma_tpc_pt", " Protons", kTH2F, {axisPt_pid, axisTPCNsigma});
     histos.add("QAafter/Proton/h2d_Prpi_nsigma_tpc_p", " Protons pion", kTH2F, {axisPt_pid, axisTPCNsigma});
     histos.add("QAafter/Proton/h2d_Prka_nsigma_tpc_p", " Protons kaon", kTH2F, {axisPt_pid, axisTPCNsigma});
-    histos.add("QAafter/Proton/h2d_Prel_nsigma_tpc_p", " Protons electron", kTH2F, {axisPt_pid, axisTPCNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tpc_p", " Protons", kTH2F, {axisP_pid, axisTPCNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tof_pt", " Protons", kTH2F, {axisPt_pid, axisTOFNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tof_p", " Protons", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Proton/h2d_Prpi_nsigma_tof_p", " Protons pion", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Proton/h2d_Prka_nsigma_tof_p", " Protons kaon", kTH2F, {axisP_pid, axisTOFNsigma});
-    histos.add("QAafter/Proton/h2d_Prel_nsigma_tof_p", " Protons electron", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tof_vs_tpc", "n#sigma(TOF) vs n#sigma(TPC) Protons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
     histos.add("QAafter/Kaon/hd_ka_pt", "p_{T}-spectra Kaons", kTH2F, {axisPt_pid, axisCent});
     histos.add("QAafter/Kaon/h2d_ka_dca_z", "dca_{z} Kaons", kTH2F, {axisPt_pid, axisDCAz});
@@ -162,14 +158,12 @@ struct lambdaAnalysis_pb {
     histos.add("QAafter/Kaon/h2d_ka_dEdx_p", "TPC Signal Kaon", kTH2F, {axisP_pid, axisdEdx});
     histos.add("QAafter/Kaon/h2d_Kapi_nsigma_tpc_p", " Kaons pion", kTH2F, {axisPt_pid, axisTPCNsigma});
     histos.add("QAafter/Kaon/h2d_Kapr_nsigma_tpc_p", " Kaons proton", kTH2F, {axisP_pid, axisTPCNsigma});
-    histos.add("QAafter/Kaon/h2d_Kael_nsigma_tpc_p", " Kaons electron", kTH2F, {axisP_pid, axisTPCNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tpc_pt", " Kaons", kTH2F, {axisPt_pid, axisTPCNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tpc_p", " Kaons", kTH2F, {axisP_pid, axisTPCNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_pt", " Kaons", kTH2F, {axisPt_pid, axisTOFNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_p", " Kaons", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Kaon/h2d_Kapi_nsigma_tof_p", " Kaons pion", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Kaon/h2d_Kapr_nsigma_tof_p", " Kaons proton", kTH2F, {axisP_pid, axisTOFNsigma});
-    histos.add("QAafter/Kaon/h2d_Kael_nsigma_tof_p", " Kaons electron", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_vs_tpc", "n#sigma(TOF) vs n#sigma(TPC) Kaons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
 
     // Analysis
@@ -242,16 +236,13 @@ struct lambdaAnalysis_pb {
     float tpcNsigmaPi = std::abs(candidate.tpcNSigmaPi());
     float tpcNsigmaKa = std::abs(candidate.tpcNSigmaKa());
     float tpcNsigmaPr = std::abs(candidate.tpcNSigmaPr());
-    float tpcNsigmaEl = std::abs(candidate.tpcNSigmaEl());
     float tofNsigmaPi = std::abs(candidate.tofNSigmaPi());
     float tofNsigmaKa = std::abs(candidate.tofNSigmaKa());
     float tofNsigmaPr = std::abs(candidate.tofNSigmaPr());
-    float tofNsigmaEl = std::abs(candidate.tofNSigmaEl());
 
     float tpcTofNsigmaPi = tpcNsigmaPi * tpcNsigmaPi + tofNsigmaPi * tofNsigmaPi;
     float tpcTofNsigmaKa = tpcNsigmaKa * tpcNsigmaKa + tofNsigmaKa * tofNsigmaKa;
     float tpcTofNsigmaPr = tpcNsigmaPr * tpcNsigmaPr + tofNsigmaPr * tofNsigmaPr;
-    float tpcTofNsigmaEl = tpcNsigmaEl * tpcNsigmaEl + tofNsigmaEl * tofNsigmaEl;
     float combinedCut = nsigmaCutCombinedProton * nsigmaCutCombinedProton;
     float combinedRejCut = cRejNsigmaTof * cRejNsigmaTpc;
 
@@ -261,17 +252,17 @@ struct lambdaAnalysis_pb {
       if (nsigmaCutCombinedProton < 0 && p >= cPMin) {
 
         for (int i = 0; i < nitrtof - 1; ++i) {
-          if (p >= tofPIDp[i] && p < tofPIDp[i + 1] && (tofNsigmaPr < tofPIDcut[i] && tofNsigmaPi > cRejNsigmaTof && tofNsigmaKa > cRejNsigmaTof && tofNsigmaEl > cRejNsigmaTof))
+          if (p >= tofPIDp[i] && p < tofPIDp[i + 1] && (tofNsigmaPr < tofPIDcut[i] && tofNsigmaPi > cRejNsigmaTof && tofNsigmaKa > cRejNsigmaTof))
             tofPIDPassed = true;
         }
         if (candidate.tpcNSigmaPr() < minnsigmatpctofPr)
           return false;
-        if (tpcNsigmaPr < cMaxTPCnSigmaProton && tpcNsigmaPi > cRejNsigmaTpcVeto && tpcNsigmaKa > cRejNsigmaTpcVeto && tpcNsigmaEl > cRejNsigmaTpcVeto)
+        if (tpcNsigmaPr < cMaxTPCnSigmaProton && tpcNsigmaPi > cRejNsigmaTpcVeto && tpcNsigmaKa > cRejNsigmaTpcVeto)
           tpcPIDPassed = true;
       }
 
       // circular cut
-      if ((nsigmaCutCombinedProton > 0) && p >= cPMin && (tpcTofNsigmaPr < combinedCut && tpcTofNsigmaPi > combinedRejCut && tpcTofNsigmaKa > combinedRejCut && tpcTofNsigmaEl > combinedRejCut)) {
+      if ((nsigmaCutCombinedProton > 0) && p >= cPMin && (tpcTofNsigmaPr < combinedCut && tpcTofNsigmaPi > combinedRejCut && tpcTofNsigmaKa > combinedRejCut)) {
         tofPIDPassed = true;
         tpcPIDPassed = true;
       }
@@ -286,7 +277,7 @@ struct lambdaAnalysis_pb {
       if (candidate.tpcNSigmaPr() < minnsigmatpcPr)
         return false;
       for (int i = 0; i < nitr - 1; ++i) {
-        if (p >= tpcPIDp[i] && p < tpcPIDp[i + 1] && (tpcNsigmaPr < tpcPIDcut[i] && tpcNsigmaPi > cRejNsigmaTpcPi && tpcNsigmaKa > cRejNsigmaTpcKa && tpcNsigmaEl > cRejNsigmaTpcEl)) {
+        if (p >= tpcPIDp[i] && p < tpcPIDp[i + 1] && (tpcNsigmaPr < tpcPIDcut[i] && tpcNsigmaPi > cRejNsigmaTpcPi && tpcNsigmaKa > cRejNsigmaTpcKa)) {
           tpcPIDPassed = true;
         }
       }
@@ -310,16 +301,13 @@ struct lambdaAnalysis_pb {
     float tpcNsigmaPi = std::abs(candidate.tpcNSigmaPi());
     float tpcNsigmaKa = std::abs(candidate.tpcNSigmaKa());
     float tpcNsigmaPr = std::abs(candidate.tpcNSigmaPr());
-    float tpcNsigmaEl = std::abs(candidate.tpcNSigmaEl());
     float tofNsigmaPi = std::abs(candidate.tofNSigmaPi());
     float tofNsigmaKa = std::abs(candidate.tofNSigmaKa());
     float tofNsigmaPr = std::abs(candidate.tofNSigmaPr());
-    float tofNsigmaEl = std::abs(candidate.tofNSigmaEl());
 
     float tpcTofNsigmaPi = tpcNsigmaPi * tpcNsigmaPi + tofNsigmaPi * tofNsigmaPi;
     float tpcTofNsigmaKa = tpcNsigmaKa * tpcNsigmaKa + tofNsigmaKa * tofNsigmaKa;
     float tpcTofNsigmaPr = tpcNsigmaPr * tpcNsigmaPr + tofNsigmaPr * tofNsigmaPr;
-    float tpcTofNsigmaEl = tpcNsigmaEl * tpcNsigmaEl + tofNsigmaEl * tofNsigmaEl;
     float combinedCut = nsigmaCutCombinedKaon * nsigmaCutCombinedKaon;
     float combinedRejCut = cRejNsigmaTpc * cRejNsigmaTof;
 
@@ -329,17 +317,17 @@ struct lambdaAnalysis_pb {
       if (nsigmaCutCombinedKaon < 0 && p >= cPMin) {
 
         for (int i = 0; i < nitrtof - 1; ++i) {
-          if (p >= tofPIDp[i] && p < tofPIDp[i + 1] && (tofNsigmaKa < tofPIDcut[i] && tofNsigmaPi > cRejNsigmaTof && tofNsigmaPr > cRejNsigmaTof && tofNsigmaEl > cRejNsigmaTof))
+          if (p >= tofPIDp[i] && p < tofPIDp[i + 1] && (tofNsigmaKa < tofPIDcut[i] && tofNsigmaPi > cRejNsigmaTof && tofNsigmaPr > cRejNsigmaTof))
             tofPIDPassed = true;
         }
         if (candidate.tpcNSigmaKa() < minnsigmatpctofKa)
           return false;
-        if (tpcNsigmaKa < cMaxTPCnSigmaKaon && tpcNsigmaPi > cRejNsigmaTpcVeto && tpcNsigmaPr > cRejNsigmaTpcVeto && tpcNsigmaEl > cRejNsigmaTpcVeto)
+        if (tpcNsigmaKa < cMaxTPCnSigmaKaon && tpcNsigmaPi > cRejNsigmaTpcVeto && tpcNsigmaPr > cRejNsigmaTpcVeto)
           tpcPIDPassed = true;
       }
 
       // circular
-      if ((nsigmaCutCombinedKaon > 0) && p >= cPMin && (tpcTofNsigmaKa < combinedCut && tpcTofNsigmaPi > combinedRejCut && tpcTofNsigmaPr > combinedRejCut && tpcTofNsigmaEl > combinedRejCut)) {
+      if ((nsigmaCutCombinedKaon > 0) && p >= cPMin && (tpcTofNsigmaKa < combinedCut && tpcTofNsigmaPi > combinedRejCut && tpcTofNsigmaPr > combinedRejCut)) {
         tofPIDPassed = true;
         tpcPIDPassed = true;
       }
@@ -355,7 +343,7 @@ struct lambdaAnalysis_pb {
       if (candidate.tpcNSigmaKa() < minnsigmatpcKa)
         return false;
       for (int i = 0; i < nitr - 1; ++i) {
-        if (p >= tpcPIDp[i] && p < tpcPIDp[i + 1] && (tpcNsigmaKa < tpcPIDcut[i] && tpcNsigmaPi > cRejNsigmakTpcPi && tpcNsigmaPr > cRejNsigmakTpcPr && tpcNsigmaEl > cRejNsigmakTpcEl)) {
+        if (p >= tpcPIDp[i] && p < tpcPIDp[i + 1] && (tpcNsigmaKa < tpcPIDcut[i] && tpcNsigmaPi > cRejNsigmakTpcPi && tpcNsigmaPr > cRejNsigmakTpcPr)) {
           tpcPIDPassed = true;
         }
       }
@@ -399,7 +387,6 @@ struct lambdaAnalysis_pb {
         auto _tpcnsigmaPr = trkPr.tpcNSigmaPr();
 
         histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tpc_p"), p_ptot, _tpcnsigmaPr);
-        // histos.fill(HIST("QAbefore/Proton/h2d_prel_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaEl());
         if (trkPr.hasTOF()) {
           auto _tofnsigmaPr = trkPr.tofNSigmaPr();
           histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tof_p"), p_ptot, _tofnsigmaPr);
@@ -436,7 +423,6 @@ struct lambdaAnalysis_pb {
         histos.fill(HIST("QAafter/Proton/h2d_pr_dEdx_p"), p_ptot, trkPr.tpcSignal());
         histos.fill(HIST("QAafter/Proton/h2d_Prpi_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaPi());
         histos.fill(HIST("QAafter/Proton/h2d_Prka_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaKa());
-        histos.fill(HIST("QAafter/Proton/h2d_Prel_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaEl());
         histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tpc_p"), p_ptot, _tpcnsigmaPr);
         histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tpc_pt"), _ptPr, _tpcnsigmaPr);
         if (!cUseTpcOnly && trkPr.hasTOF()) {
@@ -445,7 +431,6 @@ struct lambdaAnalysis_pb {
           histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_pt"), _ptPr, _tofnsigmaPr);
           histos.fill(HIST("QAafter/Proton/h2d_Prpi_nsigma_tof_p"), p_ptot, trkPr.tofNSigmaPi());
           histos.fill(HIST("QAafter/Proton/h2d_Prka_nsigma_tof_p"), p_ptot, trkPr.tofNSigmaKa());
-          histos.fill(HIST("QAafter/Proton/h2d_Prel_nsigma_tof_p"), p_ptot, trkPr.tofNSigmaEl());
           histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_vs_tpc"), _tpcnsigmaPr, _tofnsigmaPr);
         }
         auto _ptKa = trkKa.pt();
@@ -458,7 +443,6 @@ struct lambdaAnalysis_pb {
         histos.fill(HIST("QAafter/Kaon/h2d_ka_dEdx_p"), k_ptot, trkKa.tpcSignal());
         histos.fill(HIST("QAafter/Kaon/h2d_Kapi_nsigma_tpc_p"), k_ptot, trkKa.tpcNSigmaPi());
         histos.fill(HIST("QAafter/Kaon/h2d_Kapr_nsigma_tpc_p"), k_ptot, trkKa.tpcNSigmaPr());
-        histos.fill(HIST("QAafter/Kaon/h2d_Kael_nsigma_tpc_p"), k_ptot, trkKa.tpcNSigmaEl());
         histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tpc_p"), k_ptot, _tpcnsigmaKa);
         histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tpc_pt"), _ptKa, _tpcnsigmaKa);
         if (!cUseTpcOnly && trkKa.hasTOF()) {
@@ -467,7 +451,6 @@ struct lambdaAnalysis_pb {
           histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tof_pt"), _ptKa, _tofnsigmaKa);
           histos.fill(HIST("QAafter/Kaon/h2d_Kapi_nsigma_tof_p"), k_ptot, trkKa.tofNSigmaPi());
           histos.fill(HIST("QAafter/Kaon/h2d_Kapr_nsigma_tof_p"), k_ptot, trkKa.tofNSigmaPr());
-          histos.fill(HIST("QAafter/Kaon/h2d_Kael_nsigma_tof_p"), k_ptot, trkKa.tofNSigmaEl());
           histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tof_vs_tpc"), _tpcnsigmaKa, _tofnsigmaKa);
         }
       }
