@@ -697,47 +697,45 @@ struct UpcCandProducer {
     }
   }
 
-
-    template <typename TBCs>
-    void collectForwardGlobalTracks(std::vector<BCTracksPair>& bcsMatchedTrIds,
-                                    int typeFilter,
-                                    TBCs const& /*bcs*/,
-                                    o2::aod::Collisions const& /*collisions*/,
-                                    ForwardTracks const& fwdTracks,
-                                    o2::aod::AmbiguousFwdTracks const& /*ambFwdTracks*/,
-                                    std::unordered_map<int64_t, uint64_t>& ambFwdTrBCs)
-    {
-      for (const auto& trk : fwdTracks) {
-        if (trk.trackType() != typeFilter)
-          continue;
-        if (!applyFwdCuts(trk))
-          continue;
-        int64_t trkId = trk.globalIndex();
-        int32_t nContrib = -1;
-        uint64_t trackBC = 0;
-        auto ambIter = ambFwdTrBCs.find(trkId);
-        if (ambIter == ambFwdTrBCs.end()) {
-          const auto& col = trk.collision();
-          nContrib = col.numContrib();
-          trackBC = col.bc_as<TBCs>().globalBC();
-          const auto& bc = col.bc_as<TBCs>();
-          if (fRequireNoTimeFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-            continue; // skip this track if the kNoTimeFrameBorder bit is required but not set
-          }
-          if (fRequireNoITSROFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-            continue; // skip this track if the kNoITSROFrameBorder bit is required but not set
-          }
-        } else {
-          trackBC = ambIter->second;
+  template <typename TBCs>
+  void collectForwardGlobalTracks(std::vector<BCTracksPair>& bcsMatchedTrIds,
+                                  int typeFilter,
+                                  TBCs const& /*bcs*/,
+                                  o2::aod::Collisions const& /*collisions*/,
+                                  ForwardTracks const& fwdTracks,
+                                  o2::aod::AmbiguousFwdTracks const& /*ambFwdTracks*/,
+                                  std::unordered_map<int64_t, uint64_t>& ambFwdTrBCs)
+  {
+    for (const auto& trk : fwdTracks) {
+      if (trk.trackType() != typeFilter)
+        continue;
+      if (!applyFwdCuts(trk))
+        continue;
+      int64_t trkId = trk.globalIndex();
+      int32_t nContrib = -1;
+      uint64_t trackBC = 0;
+      auto ambIter = ambFwdTrBCs.find(trkId);
+      if (ambIter == ambFwdTrBCs.end()) {
+        const auto& col = trk.collision();
+        nContrib = col.numContrib();
+        trackBC = col.bc_as<TBCs>().globalBC();
+        const auto& bc = col.bc_as<TBCs>();
+        if (fRequireNoTimeFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+          continue; // skip this track if the kNoTimeFrameBorder bit is required but not set
         }
-        int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fMuonTrackTShift));
-        uint64_t bc = trackBC + tint;
-        if (nContrib > upcCuts.getMaxNContrib())
-          continue;
-        addTrack(bcsMatchedTrIds, bc, trkId);
+        if (fRequireNoITSROFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          continue; // skip this track if the kNoITSROFrameBorder bit is required but not set
+        }
+      } else {
+        trackBC = ambIter->second;
       }
+      int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fMuonTrackTShift));
+      uint64_t bc = trackBC + tint;
+      if (nContrib > upcCuts.getMaxNContrib())
+        continue;
+      addTrack(bcsMatchedTrIds, bc, trkId);
     }
-
+  }
 
   int32_t searchTracks(uint64_t midbc, uint64_t range, uint32_t tracksToFind,
                        std::vector<int64_t>& tracks,
