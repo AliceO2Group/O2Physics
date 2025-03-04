@@ -118,8 +118,8 @@ struct CorrSparse {
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
 
   // Define the outputs
-  OutputObj<CorrelationContainer> same{Form("sameEvent_%i_%i", (int)cfgMinMult, (int)cfgMaxMult)};
-  OutputObj<CorrelationContainer> mixed{Form("mixedEvent_%i_%i", (int)cfgMinMult, (int)cfgMaxMult)};
+  OutputObj<CorrelationContainer> same{Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+  OutputObj<CorrelationContainer> mixed{Form("mixedEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
 
   HistogramRegistry registry{"registry"};
 
@@ -152,8 +152,8 @@ struct CorrSparse {
     };
     std::vector<AxisSpec> userAxis;
 
-    same.setObject(new CorrelationContainer(Form("sameEvent_%i_%i", (int)cfgMinMult, (int)cfgMaxMult), Form("sameEvent_%i_%i", (int)cfgMinMult, (int)cfgMaxMult), corrAxis, effAxis, userAxis));
-    mixed.setObject(new CorrelationContainer(Form("mixedEvent_%i_%i", (int)cfgMinMult, (int)cfgMaxMult), Form("mixedEvent_%i_%i", (int)cfgMinMult, (int)cfgMaxMult), corrAxis, effAxis, userAxis));
+    same.setObject(new CorrelationContainer(Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult), Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult), corrAxis, effAxis, userAxis));
+    mixed.setObject(new CorrelationContainer(Form("mixedEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult), Form("mixedEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult), corrAxis, effAxis, userAxis));
   }
   enum EventType {
     SameEvent = 1,
