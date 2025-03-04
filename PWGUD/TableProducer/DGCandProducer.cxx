@@ -284,6 +284,26 @@ struct DGCandProducer {
     const uint64_t ts = bc.timestamp();
     const int runnumber = bc.runNumber();
 
+    int tfb = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      tfb = 1;
+    }
+    int itsROFb = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      itsROFb = 1;
+    }
+    int sbp = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      sbp = 1;
+    }
+    int zVtxFT0vPv = 0;
+    if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      zVtxFT0vPv = 1;
+    }
+    int vtxITSTPC = 0;
+    if (collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      vtxITSTPC = 1;
+    }
     int trs = 0;
     if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       trs = 1;
@@ -363,7 +383,7 @@ struct DGCandProducer {
                            fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr);
+      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC);
       outputCollsLabels(collision.globalIndex());
 
       // update DGTracks tables

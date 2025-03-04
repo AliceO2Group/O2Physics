@@ -193,25 +193,45 @@ struct SGCandProducer {
     if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
+    int tfb = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      tfb = 1;
+    }
     getHist(TH1, histdir + "/Stat")->Fill(1., 1.);
     // reject collisions at ITS RO TF boundaries
     if (noITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return;
+    }
+    int itsROFb = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      itsROFb = 1;
     }
     getHist(TH1, histdir + "/Stat")->Fill(2., 1.);
     // reject Same Bunch PileUp
     if (noSameBunchPileUp && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return;
     }
+    int sbp = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      sbp = 1;
+    }
     getHist(TH1, histdir + "/Stat")->Fill(3., 1.);
     // check vertex matching to FT0
     if (IsGoodVertex && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return;
     }
+    int zVtxFT0vPv = 0;
+    if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      zVtxFT0vPv = 1;
+    }
     getHist(TH1, histdir + "/Stat")->Fill(4., 1.);
     // reject ITS Only vertices
     if (ITSTPCVertex && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return;
+    }
+    int vtxITSTPC = 0;
+    if (collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      vtxITSTPC = 1;
     }
     getHist(TH1, histdir + "/Stat")->Fill(5., 1.);
     // nominal BC
@@ -287,7 +307,7 @@ struct SGCandProducer {
                            fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr);
+      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC);
       outputCollsLabels(collision.globalIndex());
       if (newbc.has_zdc()) {
         auto zdc = newbc.zdc();
