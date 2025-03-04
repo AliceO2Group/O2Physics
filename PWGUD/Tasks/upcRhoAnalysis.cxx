@@ -123,7 +123,7 @@ struct UpcRhoAnalysis {
   // Configurable<int> selectedMcGeneratorId{"selectedMcGeneratorId", 0, "flag for selected MC process ID"};
 
   Configurable<float> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
-  Configurable<int> collisionsNumContribsMaxCut{"collisionsNumContribsMaxCut", 4, "max number of contributors cut on collisions"};
+  Configurable<int> collisionsNumContribsMaxCut{"collisionsNumContribsMaxCut", 5, "max number of contributors cut on collisions"};
   Configurable<float> znCommonEnergyCut{"znCommonEnergyCut", 0.0, "ZN common energy cut"};
   Configurable<float> znTimeCut{"znTimeCut", 2.0, "ZN time cut"};
 
@@ -159,6 +159,7 @@ struct UpcRhoAnalysis {
   ConfigurableAxis momentumFromPhiAxis{"momentumFromPhiAxis", {400, -0.1, 0.1}, "p (GeV/#it{c})"};
   ConfigurableAxis znCommonEnergyAxis{"znCommonEnergyAxis", {250, -5.0, 20.0}, "ZN common energy (TeV)"};
   ConfigurableAxis znTimeAxis{"znTimeAxis", {200, -10.0, 10.0}, "ZN time (ns)"};
+  ConfigurableAxis runNumberAxis{"runNumberAxis", {1355, 544012.5, 545367.5}, "run number"};
 
   HistogramRegistry rQC{"rQC", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry rTracks{"rTracks", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -199,7 +200,7 @@ struct UpcRhoAnalysis {
     rQC.add("QC/tracks/all/hTpcNClsCrossedRows", ";TPC crossed rows;counts", kTH1D, {{200, 0.0, 200.0}});
     rQC.add("QC/tracks/all/hTpcNClsCrossedRowsOverNClsFindable", ";TPC crossed rows/findable N_{cls};counts", kTH1D, {{100, 0.0, 10.0}});
     rQC.add("QC/tracks/all/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    rQC.add("QC/tracks/all/hEta", ";y;counts", kTH1D, {etaAxis});
+    rQC.add("QC/tracks/all/hEta", ";#eta;counts", kTH1D, {etaAxis});
     rQC.add("QC/tracks/all/hPhi", ";#phi;counts", kTH1D, {phiAxis});
     rQC.add("QC/tracks/all/hTpcSignalVsP", ";p (GeV/#it{c});TPC signal;counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
     rQC.add("QC/tracks/all/hTpcSignalVsPt", ";p_{T} (GeV/#it{c});TPC signal;counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
@@ -214,9 +215,12 @@ struct UpcRhoAnalysis {
                                                        "TPC crossed rows/N_{clusters}",
                                                        "TOF requirement",
                                                        "p_{T}", "DCA", "#eta", "exactly 2 tracks"};
-    rQC.add("QC/tracks/hSelectionCounter", ";;tracks passing selections", kTH1D, {{static_cast<int>(selectionCounterLabels.size()), -0.5, static_cast<float>(selectionCounterLabels.size()) - 0.5}});
-    for (int i = 0; i < static_cast<int>(selectionCounterLabels.size()); ++i)
+    rQC.add("QC/tracks/hSelectionCounter", ";;selection;tracks passing selections", kTH1D, {{static_cast<int>(selectionCounterLabels.size()), -0.5, static_cast<float>(selectionCounterLabels.size()) - 0.5}});
+    rQC.add("QC/tracks/hSelectionCounterPerRun", ";;run number;tracks passing selections", kTH2D, {{static_cast<int>(selectionCounterLabels.size()), -0.5, static_cast<float>(selectionCounterLabels.size()) - 0.5}, runNumberAxis});
+    for (int i = 0; i < static_cast<int>(selectionCounterLabels.size()); ++i) {
       rQC.get<TH1>(HIST("QC/tracks/hSelectionCounter"))->GetXaxis()->SetBinLabel(i + 1, selectionCounterLabels[i].c_str());
+      rQC.get<TH2>(HIST("QC/tracks/hSelectionCounterPerRun"))->GetXaxis()->SetBinLabel(i + 1, selectionCounterLabels[i].c_str());
+    }
     rQC.add("QC/tracks/hTofHitCheck", ";leading track TOF hit;subleading track TOF hit;counts", kTH2D, {{2, -0.5, 1.5}, {2, -0.5, 1.5}});
 
     // TRACKS (2D)
@@ -361,60 +365,73 @@ struct UpcRhoAnalysis {
     return true;
   }
 
-  template <typename T>
-  bool trackPassesCuts(const T& track) // track cuts (PID done separately)
+  template <typename T, typename C>
+  bool trackPassesCuts(const T& track, const C& collision) // track cuts (PID done separately)
   {
     if (!track.isPVContributor())
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 1);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 1, collision.runNumber());
 
     if (!track.hasITS())
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 2);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 2, collision.runNumber());
 
     if (track.itsNCls() < tracksMinItsNClsCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 3);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 3, collision.runNumber());
 
     if (track.itsChi2NCl() > tracksMaxItsChi2NClCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 4);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 4, collision.runNumber());
 
     if (!track.hasTPC())
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 5);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 5, collision.runNumber());
 
     if ((track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()) < tracksMinTpcNClsCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 6);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 6, collision.runNumber());
 
     if (track.tpcChi2NCl() > tracksMaxTpcChi2NClCut || track.tpcChi2NCl() < tracksMinTpcChi2NClCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 7);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 7, collision.runNumber());
 
     if (track.tpcNClsCrossedRows() < tracksMinTpcNClsCrossedRowsCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 8);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 8, collision.runNumber());
 
     if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < tracksMinTpcNClsCrossedOverFindableCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 9);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 9, collision.runNumber());
 
     if (requireTof && !track.hasTOF())
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 10);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 10, collision.runNumber());
 
     if (track.pt() < tracksMinPtCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 11);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 11, collision.runNumber());
 
     if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0105 + 0.0350 / std::pow(track.pt(), 1.01)))
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 12);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 12, collision.runNumber());
 
     if (std::abs(eta(track.px(), track.py(), track.pz())) > pcEtaCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 13);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 13, collision.runNumber());
     // if all selections passed
     return true;
   }
@@ -548,9 +565,10 @@ struct UpcRhoAnalysis {
     std::vector<decltype(tracks.begin())> cutTracks; // store selected tracks
     for (const auto& track : tracks) {
       rQC.fill(HIST("QC/tracks/hSelectionCounter"), 0);
+      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 0, collision.runNumber());
       fillTrackQcHistos<0>(track); // fill QC histograms before cuts
 
-      if (!trackPassesCuts(track)) // apply track cuts
+      if (!trackPassesCuts(track, collision)) // apply track cuts
         continue;
 
       fillTrackQcHistos<1>(track); // fill QC histograms after cuts
@@ -560,8 +578,10 @@ struct UpcRhoAnalysis {
 
     if (cutTracks.size() != 2) // further consider only two pion systems
       return;
-    for (int i = 0; i < static_cast<int>(cutTracks.size()); i++)
+    for (int i = 0; i < static_cast<int>(cutTracks.size()); i++) {
       rQC.fill(HIST("QC/tracks/hSelectionCounter"), 14);
+      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 14, collision.runNumber());
+    }
     rQC.fill(HIST("QC/tracks/selected/hTpcNSigmaPi2D"), cutTracks[0].tpcNSigmaPi(), cutTracks[1].tpcNSigmaPi());
     rQC.fill(HIST("QC/tracks/selected/hTpcNSigmaEl2D"), cutTracks[0].tpcNSigmaEl(), cutTracks[1].tpcNSigmaEl());
     rQC.fill(HIST("QC/tracks/selected/hTpcNSigmaKa2D"), cutTracks[0].tpcNSigmaKa(), cutTracks[1].tpcNSigmaKa());
