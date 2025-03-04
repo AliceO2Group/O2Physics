@@ -95,6 +95,7 @@ struct FlowQa {
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
+  O2_DEFINE_CONFIGURABLE(cfgUseEPcorrection, bool, false, "Use event plane efficiency correction")
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN02 {2} refP02 {-2}", "refN12 {2} refP12 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch02Gap22", "Ch12Gap22"}, "User defined GFW Name"};
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
@@ -156,6 +157,12 @@ struct FlowQa {
   std::unordered_map<int, TH2*> gHadronicRate;
   ctpRateFetcher mRateFetcher;
   TH2* gCurrentHadronicRate;
+
+  TF1* funcEff;
+  TF1* funcV2;
+  TF1* funcV3;
+  TF1* funcV4;
+  TH1D* hPhiPri;
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
@@ -355,6 +362,18 @@ struct FlowQa {
       }
     }
     fGFW->CreateRegions();
+
+    if (cfgUseEPcorrection) {
+      funcEff = new TF1("funcEff", "[0]+[1]*x", 0, 100);
+      funcEff->SetParameters(0.762752, -2.81324e-05);
+      funcV2 = new TF1("funcV2", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV2->SetParameters(0.0186111, 0.00351907, -4.38264e-05, 1.35383e-07, -3.96266e-10);
+      funcV3 = new TF1("funcV3", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV3->SetParameters(0.0174056, 0.000703329, -1.45044e-05, 1.91991e-07, -1.62137e-09);
+      funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
+      hPhiPri = new TH1D("hPhiPri", "hPhiPri", 60, 0.0, constants::math::TwoPI);
+    }
   }
 
   template <char... chars>
@@ -670,6 +689,24 @@ struct FlowQa {
     if (cfgUseNch)
       independent = static_cast<float>(tracks.size());
 
+    float fakeEP = 0;
+    float wEPeff = 1;
+    double v2 = 0;
+    double v3 = 0;
+    double v4 = 0;
+    if (cfgUseEPcorrection) {
+      for (const auto& track : tracks) {
+        bool withinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT rang
+        if (withinPtRef) {
+          hPhiPri->Fill(track.phi());
+        }
+      }
+      fakeEP = hPhiPri->GetBinCenter(hPhiPri->GetMaximumBin());
+      v2 = funcV2->Eval(cent);
+      v3 = funcV3->Eval(cent);
+      v4 = funcV4->Eval(cent);
+    }
+
     for (const auto& track : tracks) {
       if (!trackSelected(track))
         continue;
@@ -685,6 +722,12 @@ struct FlowQa {
       }
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         continue;
+      if (cfgUseEPcorrection) {
+        double fphi = v2 * std::cos(2 * (track.phi() - fakeEP)) + v3 * std::cos(3 * (track.phi() - fakeEP)) + v4 * std::cos(4 * (track.phi() - fakeEP));
+        fphi = (1 + 2 * fphi);
+        wEPeff = funcEff->Eval(fphi * tracks.size());
+        weff *= wEPeff;
+      }
       registry.fill(HIST("hPt"), track.pt());
       if (withinPtRef) {
         registry.fill(HIST("hPhi"), track.phi());
