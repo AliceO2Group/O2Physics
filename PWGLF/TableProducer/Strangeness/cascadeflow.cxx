@@ -930,7 +930,7 @@ struct cascadeFlow {
           continue;
         int bin2DXi = hAcceptanceXi->FindBin(casc.pt(), casc.eta());
         int bin2DOmega = hAcceptanceOmega->FindBin(casc.pt(), casc.eta());
-        int bin2DLambda = hAcceptanceXi->FindBin(ptLambda, etaLambda);
+        int bin2DLambda = hAcceptanceLambda->FindBin(ptLambda, etaLambda);
         MeanCos2ThetaLambdaFromXi = hAcceptanceXi->GetBinContent(bin2DXi);
         MeanCos2ThetaLambdaFromOmega = hAcceptanceOmega->GetBinContent(bin2DOmega);
         MeanCos2ThetaProtonFromLambda = hAcceptanceLambda->GetBinContent(bin2DLambda);
