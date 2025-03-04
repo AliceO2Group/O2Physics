@@ -158,10 +158,8 @@ struct LfMyV0s {
       registry.fill(HIST("V0protonpxInLab"), candidate.v0protonpx());
       registry.fill(HIST("V0protonpyInLab"), candidate.v0protonpy());
       registry.fill(HIST("V0protonpzInLab"), candidate.v0protonpz());
-
       double protonsinPhiInLab = candidate.v0protonpy() / sqrt(candidate.v0protonpx() * candidate.v0protonpx() + candidate.v0protonpy() * candidate.v0protonpy());
       registry.fill(HIST("V0protonphiInLab"), protonsinPhiInLab);
-
       double PLambda = sqrt(candidate.v0px() * candidate.v0px() + candidate.v0py() * candidate.v0py() + candidate.v0pz() * candidate.v0pz());
       double ELambda = sqrt(candidate.v0Lambdamass() * candidate.v0Lambdamass() + PLambda * PLambda);
       TMatrixD pLabV0(4, 1);
@@ -176,7 +174,6 @@ struct LfMyV0s {
       registry.fill(HIST("V0pzInRest_frame"), V0InV0(3, 0));
     }
     for (auto& candidate : myv0s) {
-
       double PLambda = sqrt(candidate.v0px() * candidate.v0px() + candidate.v0py() * candidate.v0py() + candidate.v0pz() * candidate.v0pz());
       double ELambda = sqrt(candidate.v0Lambdamass() * candidate.v0Lambdamass() + PLambda * PLambda);
       TMatrixD pLabproton(4, 1);
@@ -201,15 +198,16 @@ struct LfMyV0s {
       registry.fill(HIST("JetpTInLab"), Jet.jetpt());
     }
   }
-
   PROCESS_SWITCH(LfMyV0s, processJetV0Analysis, "processJetV0Analysis", true);
-  // aod::MyTableJet
-  // aod::MyCollision const& collision,
   void processLeadingJetV0Analysis(aod::MyTable const& myv0s, aod::MyTableLeadingJet const& myleadingJets)
   {
-    for (auto& candidate : myv0s) {
-      for (auto& LeadingJet : myleadingJets) {
+    //
+    for (auto& LeadingJet : myleadingJets) {
+      int V0Numbers = 0;
+      double protonsinPhiInJetV0frame = 0;
+      for (auto& candidate : myv0s) {
         if (candidate.mycollisionv0() == LeadingJet.mycollisionleadingjet()) {
+          V0Numbers = V0Numbers + 1;
           double PLambda = sqrt(candidate.v0px() * candidate.v0px() + candidate.v0py() * candidate.v0py() + candidate.v0pz() * candidate.v0pz());
           double ELambda = sqrt(candidate.v0Lambdamass() * candidate.v0Lambdamass() + PLambda * PLambda);
           TMatrixD pLabproton(4, 1);
@@ -223,10 +221,14 @@ struct LfMyV0s {
           registry.fill(HIST("V0protonpxInJetV0frame"), protonInJetV0(1, 0));
           registry.fill(HIST("V0protonpyInJetV0frame"), protonInJetV0(2, 0));
           registry.fill(HIST("V0protonpzInJetV0frame"), protonInJetV0(3, 0));
-          double protonsinPhiInJetV0frame = protonInJetV0(2, 0) / sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0));
-          registry.fill(HIST("V0protonphiInJetV0frame"), protonsinPhiInJetV0frame);
-          registry.fill(HIST("hLambdamassandSinPhi"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame);
-          registry.fill(HIST("profile"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame);
+          protonsinPhiInJetV0frame = protonsinPhiInJetV0frame + protonInJetV0(2, 0) / sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0));
+        }
+      }
+      for (auto& candidate : myv0s) {
+        if (candidate.mycollisionv0() == LeadingJet.mycollisionleadingjet()) {
+          registry.fill(HIST("V0protonphiInJetV0frame"), protonsinPhiInJetV0frame / V0Numbers);
+          registry.fill(HIST("hLambdamassandSinPhi"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame / V0Numbers);
+          registry.fill(HIST("profile"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame / V0Numbers);
         }
       }
     }
