@@ -697,63 +697,47 @@ struct UpcCandProducer {
     }
   }
 
-  template <typename TBCs>
-  void collectForwardGlobalTracks(std::vector<BCTracksPair>& bcsMatchedTrIds,
-                                  int typeFilter,
-                                  TBCs const& /*bcs*/,
-                                  o2::aod::Collisions const& /*collisions*/,
-                                  ForwardTracks const& fwdTracks,
-                                  o2::aod::AmbiguousFwdTracks const& /*ambFwdTracks*/,
-                                  std::unordered_map<int64_t, uint64_t>& ambFwdTrBCs,
-                                  std::unordered_map<uint64_t, int64_t>& bcTRS,
-                                  std::unordered_map<uint64_t, int64_t>& bcTROFS,
-                                  std::unordered_map<uint64_t, int64_t>& bcHMPR)
-  {
-    for (const auto& trk : fwdTracks) {
-      if (trk.trackType() != typeFilter)
-        continue;
-      if (!applyFwdCuts(trk))
-        continue;
-      int64_t trkId = trk.globalIndex();
-      int32_t nContrib = -1;
-      uint64_t trackBC = 0;
-      int64_t trs = 0;   // for kNoCollInTimeRangeStandard
-      int64_t trofs = 0; // for kNoCollInRofStandard
-      int64_t hmpr = 0;  // for kNoHighMultCollInPrevRof
-      auto ambIter = ambFwdTrBCs.find(trkId);
-      if (ambIter == ambFwdTrBCs.end()) {
-        const auto& col = trk.collision();
-        nContrib = col.numContrib();
-        trackBC = col.bc_as<TBCs>().globalBC();
-        const auto& bc = col.bc_as<TBCs>();
-        if (bc.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-          trs = 1;
+
+    template <typename TBCs>
+    void collectForwardGlobalTracks(std::vector<BCTracksPair>& bcsMatchedTrIds,
+                                    int typeFilter,
+                                    TBCs const& /*bcs*/,
+                                    o2::aod::Collisions const& /*collisions*/,
+                                    ForwardTracks const& fwdTracks,
+                                    o2::aod::AmbiguousFwdTracks const& /*ambFwdTracks*/,
+                                    std::unordered_map<int64_t, uint64_t>& ambFwdTrBCs)
+    {
+      for (const auto& trk : fwdTracks) {
+        if (trk.trackType() != typeFilter)
+          continue;
+        if (!applyFwdCuts(trk))
+          continue;
+        int64_t trkId = trk.globalIndex();
+        int32_t nContrib = -1;
+        uint64_t trackBC = 0;
+        auto ambIter = ambFwdTrBCs.find(trkId);
+        if (ambIter == ambFwdTrBCs.end()) {
+          const auto& col = trk.collision();
+          nContrib = col.numContrib();
+          trackBC = col.bc_as<TBCs>().globalBC();
+          const auto& bc = col.bc_as<TBCs>();
+          if (fRequireNoTimeFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+            continue; // skip this track if the kNoTimeFrameBorder bit is required but not set
+          }
+          if (fRequireNoITSROFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+            continue; // skip this track if the kNoITSROFrameBorder bit is required but not set
+          }
+        } else {
+          trackBC = ambIter->second;
         }
-        if (bc.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
-          trofs = 1;
-        }
-        if (bc.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
-          hmpr = 1;
-        }
-        bcTRS[trackBC] = trs;
-        bcTROFS[trackBC] = trofs;
-        bcHMPR[trackBC] = hmpr;
-        if (fRequireNoTimeFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-          continue; // skip this track if the kNoTimeFrameBorder bit is required but not set
-        }
-        if (fRequireNoITSROFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-          continue; // skip this track if the kNoITSROFrameBorder bit is required but not set
-        }
-      } else {
-        trackBC = ambIter->second;
+        int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fMuonTrackTShift));
+        uint64_t bc = trackBC + tint;
+        if (nContrib > upcCuts.getMaxNContrib())
+          continue;
+        addTrack(bcsMatchedTrIds, bc, trkId);
       }
-      int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fMuonTrackTShift));
-      uint64_t bc = trackBC + tint;
-      if (nContrib > upcCuts.getMaxNContrib())
-        continue;
-      addTrack(bcsMatchedTrIds, bc, trkId);
     }
-  }
+
 
   int32_t searchTracks(uint64_t midbc, uint64_t range, uint32_t tracksToFind,
                        std::vector<int64_t>& tracks,
@@ -1569,11 +1553,6 @@ struct UpcCandProducer {
     std::vector<BCTracksPair> bcsMatchedTrIdsMCH;
     std::vector<BCTracksPair> bcsMatchedTrIdsGlobal;
 
-    // to store selection bits
-    std::unordered_map<uint64_t, int64_t> bcTRS;
-    std::unordered_map<uint64_t, int64_t> bcTROFS;
-    std::unordered_map<uint64_t, int64_t> bcHMPR;
-
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
     collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, ambFwdTracks);
@@ -1591,8 +1570,7 @@ struct UpcCandProducer {
     collectForwardGlobalTracks(bcsMatchedTrIdsGlobal,
                                o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack,
                                bcs, collisions,
-                               fwdTracks, ambFwdTracks, ambFwdTrBCs,
-                               bcTRS, bcTROFS, bcHMPR);
+                               fwdTracks, ambFwdTracks, ambFwdTrBCs);
 
     std::sort(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
