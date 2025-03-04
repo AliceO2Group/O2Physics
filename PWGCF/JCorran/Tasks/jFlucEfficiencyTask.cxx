@@ -95,7 +95,7 @@ struct JFlucEfficiencyTask {
   //                      (aod::track::eta <= cfgEtaMax);
   Filter trackSelectionFilter = (trackSelection.node() == 0) || // from tpcSkimsTableCreator
                                 ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
-                                ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                                ((trackSelection.node() == 2) && requirePrimaryTracksInFilter()) ||
                                 ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                                 ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                                 ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
@@ -266,7 +266,7 @@ struct JFlucEfficiencyTask {
   Preslice<TrackCandidates> perCollision = aod::track::collisionId;
   void processMC(aod::McCollisions::iterator const& mcCollision,
                  soa::SmallGroups<MCCollisionCandidates> const& collisions,
-                 MCTrackCandidates const& mcTracks,
+                 soa::Filtered<MCTrackCandidates> const& mcTracks,
                  aod::McParticles const& mcParticles)
   {
     registry.fill(HIST("hEventCounterMC"), 0);
@@ -334,7 +334,7 @@ struct JFlucEfficiencyTask {
     }
   }
 
-  void processData(CollisionCandidates::iterator const& collision, TrackCandidates const& tracks)
+  void processData(CollisionCandidates::iterator const& collision, soa::Filtered<TrackCandidates> const& tracks)
   {
     if (!colCuts.isSelected(collision)) // Default event selection
       return;
@@ -364,7 +364,7 @@ struct JFlucEfficiencyTask {
   void processEfficiency(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision,
                          aod::CFMcParticles const& mcParticles,
                          soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions,
-                         aod::CFTracksWithLabel const& tracks)
+                         soa::Filtered<aod::CFTracksWithLabel> const& tracks)
   {
     try {
       // Count MC events and fill MC z-vertex with centrality
