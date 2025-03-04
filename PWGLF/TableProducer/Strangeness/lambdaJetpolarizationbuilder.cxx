@@ -317,27 +317,28 @@ struct myAnalysis {
     return true;
   }
 
-// init Selection
-template <typename Lambda, typename TrackPos, typename TrackNeg>
-bool passedInitLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack){
+  // init Selection
+  template <typename Lambda, typename TrackPos, typename TrackNeg>
+  bool passedInitLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
+  {
     if (v0.v0radius() < minimumV0Radius || v0.v0cosPA() < v0cospa ||
-          TMath::Abs(ptrack.eta()) > etaMax ||
-          TMath::Abs(ntrack.eta()) > etaMax) {
-        return false;
-      }
-    if (v0.dcaV0daughters() > dcav0dau){
+        TMath::Abs(ptrack.eta()) > etaMax ||
+        TMath::Abs(ntrack.eta()) > etaMax) {
       return false;
     }
-      
-    if (TMath::Abs(v0.dcanegtopv()) < dcanegtopv){
+    if (v0.dcaV0daughters() > dcav0dau) {
       return false;
     }
-      
-    if (TMath::Abs(v0.dcapostopv()) < dcapostopv){
+
+    if (TMath::Abs(v0.dcanegtopv()) < dcanegtopv) {
+      return false;
+    }
+
+    if (TMath::Abs(v0.dcapostopv()) < dcapostopv) {
       return false;
     }
     return true;
-}
+  }
 
   // Lambda Selections
   template <typename Lambda, typename TrackPos, typename TrackNeg>
@@ -599,7 +600,7 @@ bool passedInitLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const T
         JEhistos.fill(HIST("V0DCANegToPV"), v0.dcanegtopv());
         JEhistos.fill(HIST("V0DCAPosToPV"), v0.dcapostopv());
         JEhistos.fill(HIST("V0DCAV0Daughters"), v0.dcaV0daughters());
-      }else if(passedInitLambdaSelection(v0, pos, neg)){
+      } else if (passedInitLambdaSelection(v0, pos, neg)) {
         JEhistos.fill(HIST("hPt"), v0.pt());
         JEhistos.fill(HIST("V0Radius"), v0.v0radius());
         JEhistos.fill(HIST("CosPA"), v0.v0cosPA());
@@ -620,7 +621,7 @@ bool passedInitLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const T
         JEhistos.fill(HIST("v0Lambdapz"), v0.pz());
         myTable(outputCollisionsV0.lastIndex(), v0.collisionId(), v0.px(), v0.py(), v0.pz(), v0.pt(), v0.mLambda(), pos.px(), pos.py(), pos.pz());
         JEhistos.fill(HIST("hV0Lambda"), nEventsV0, v0.px(), v0.py(), v0.pz(), v0.mLambda(), pos.px(), pos.py(), pos.pz());
-      }else if(passedInitLambdaSelection(v0, pos, neg)){
+      } else if (passedInitLambdaSelection(v0, pos, neg)) {
         V0LambdaNumbers = V0LambdaNumbers + 1;
         JEhistos.fill(HIST("hMassVsPtLambda"), v0.pt(), v0.mLambda());
         JEhistos.fill(HIST("hMassLambda"), v0.mLambda());
@@ -643,7 +644,7 @@ bool passedInitLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const T
         JEhistos.fill(HIST("v0AntiLambdapx"), v0.px());
         JEhistos.fill(HIST("v0AntiLambdapy"), v0.py());
         JEhistos.fill(HIST("v0AntiLambdapz"), v0.pz());
-      }else if(passedInitLambdaSelection(v0, pos, neg)){
+      } else if (passedInitLambdaSelection(v0, pos, neg)) {
         JEhistos.fill(HIST("hMassVsPtAntiLambda"), v0.pt(), v0.mAntiLambda());
         JEhistos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
         JEhistos.fill(HIST("TPCNSigmaPosPi"), pos.tpcNSigmaPi());
