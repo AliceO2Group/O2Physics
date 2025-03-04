@@ -74,26 +74,25 @@ struct UDCollisionSelExtrasV002Converter {
                                collision.trs(),
                                collision.trofs(),
                                collision.hmpr(),
-                               0,    // dummy tfb
-                               0,    // dummy itsROFb
-                               0,    // dummy sbp
-                               0,    // dummy zVtxFT0vPV
-                               0);   // dummy vtxITSTPC
+                               0,  // dummy tfb
+                               0,  // dummy itsROFb
+                               0,  // dummy sbp
+                               0,  // dummy zVtxFT0vPV
+                               0); // dummy vtxITSTPC
     }
   }
   PROCESS_SWITCH(UDCollisionSelExtrasV002Converter, processV001ToV002, "process v001-to-v002 conversion", true);
-
 };
 
 /// Spawn the extended table for UDCollisionSelExtras002 to avoid the call to the internal spawner and a consequent circular dependency
-//struct UDCollisionSelExtrasSpawner {
-//  Spawns<aod::UDCollisionSelExtras_002> udCollisionSelExtras_002;
-//};
+// struct UDCollisionSelExtrasSpawner {
+//   Spawns<aod::UDCollisionSelExtras_002> udCollisionSelExtras_002;
+// };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<UDCollisionSelExtrasV002Converter>(cfgc),
-//    adaptAnalysisTask<UDCollisionSelExtrasSpawner>(cfgc),
+    //    adaptAnalysisTask<UDCollisionSelExtrasSpawner>(cfgc),
   };
 }
