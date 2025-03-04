@@ -190,12 +190,12 @@ struct FlowZdcTask {
                kTH2F,
                {axisCent, axisZP});
     histos.add("hNchvsNPV", ";NPVTracks (|#eta|<1);N_{ch} (|#eta|<0.8);",
-                   kTH2F,
-                   {{{nBinsNch, -0.5, maxNch}, {nBinsNch, -0.5, maxNch}}});               
+                kTH2F,
+                {{{nBinsNch, -0.5, maxNch}, {nBinsNch, -0.5, maxNch}}});             
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ}); // for q vector recentering
     histos.add("hYield", "Nch vs pT", kTH2F, {axisMultiplicity, axisPt});
     histos.add("hGlobalTracks", "hGlobalTracks", kTH1F, {axisMultiplicity});
-    //event selection steps
+    // event selection steps
     histos.add("eventSelectionSteps", "eventSelectionSteps", kTH1D, {axisEvent});
     auto hstat = histos.get<TH1>(HIST("eventSelectionSteps"));
     auto* xAxis = hstat->GetXaxis();
@@ -379,14 +379,14 @@ struct FlowZdcTask {
     double sumCosPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
     double sumSinPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
     int countEvents = 0;        // initialize Counter for the number of events processed
-    double ft0aAmp = 0;    
+    double ft0aAmp = 0;
     double ft0cAmp = 0;
     float tZNA{0.0};
     float tZNC{0.0};
     float tZPA{0.0};
     float tZPC{0.0};
     float tZDCdif{0.0};
-    float tZDCsum{0.0};    
+    float tZDCsum{0.0};
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
@@ -403,7 +403,7 @@ struct FlowZdcTask {
     histos.fill(HIST("hFT0MAmp"), ft0mAmp);
     if (foundBC.has_zdc()) {
       const auto& zdcread = foundBC.zdc();
-      const auto cent = collision.centFT0C();    
+      const auto cent = collision.centFT0C();  
 
       // ZDC data and histogram filling
       histos.get<TH1>(HIST("ZNAcoll"))->Fill(zdcread.amplitudeZNA());
@@ -427,11 +427,11 @@ struct FlowZdcTask {
       float sumZDC = sumZPA + sumZPC + sumZNA + sumZNC;
       float sumZEM = zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2();
     // ZEM cut
-    if (isZEMcut) {
-      if (sumZEM < zemCut) {
-        return;
+      if (isZEMcut) {
+        if (sumZEM < zemCut) {
+          return;
+        }
       }
-    }  
       // common energies
       float commonSumZnc = (zdcread.energyCommonZNC()) / acceptanceZnc;
       float commonSumZna = (zdcread.energyCommonZNA()) / acceptanceZna;
