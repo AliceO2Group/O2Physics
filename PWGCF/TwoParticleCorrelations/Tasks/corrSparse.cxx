@@ -66,10 +66,22 @@ struct CalcNch {
 
   Produces<aod::Multiplicity> multiplicityNch;
 
+  HistogramRegistry registry{"registry"};
+
+  void init(InitContext&)
+  {
+    AxisSpec axisNch = {100, 0, 100};
+    AxisSpec axisVrtx = {10, -10, 10};
+
+    registry.add("Ncharge", "N_{charge}", {HistType::kTH1D, {axisNch}});
+    registry.add("zVtx_all", "zVtx_all", {HistType::kTH1D, {axisVrtx}});
+  }
+
   void process(AodCollisions::iterator const& collision, AodTracks const& tracks)
   {
-
     multiplicityNch(tracks.size());
+    registry.fill(HIST("Ncharge"), tracks.size());
+    registry.fill(HIST("zVtx_all"), collision.posZ());
   }
 };
 
