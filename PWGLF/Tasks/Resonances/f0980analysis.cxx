@@ -11,10 +11,10 @@
 
 /// \author Junlee Kim (jikim1290@gmail.com)
 
-#include <vector>
 #include <Framework/Configurable.h>
 #include <TLorentzVector.h>
 #include "TVector2.h"
+#include <vector>
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
