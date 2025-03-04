@@ -72,7 +72,7 @@ DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
 DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);  //! ImpactParameter
 
 } // namespace resocollision
-DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
+DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISIONS",
                   o2::soa::Index<>,
                   resocollision::CollisionId,
                   o2::aod::mult::MultNTracksPV,
@@ -90,7 +90,7 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   evsel::NumTracksInTimeRange);
 using ResoCollision = ResoCollisions::iterator;
 
-DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOL",
+DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOLLISIONS",
                   o2::soa::Index<>,
                   resocollision::IsVtxIn10,
                   resocollision::IsINELgt0,
@@ -100,13 +100,13 @@ DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOL",
                   resocollision::ImpactParameter);
 using ResoMCCollision = ResoMCCollisions::iterator;
 
-DECLARE_SOA_TABLE(ResoSpheroCollisions, "AOD", "RESOSPHEROCOLL",
+DECLARE_SOA_TABLE(ResoSpheroCollisions, "AOD", "RESOSPHEROCOLLISIONS",
                   o2::soa::Index<>,
                   resocollision::CollisionId,
                   resocollision::Spherocity);
 using ResoSpheroCollision = ResoSpheroCollisions::iterator;
 
-DECLARE_SOA_TABLE(ResoEvtPlCollisions, "AOD", "RESOEVTPLCOLL",
+DECLARE_SOA_TABLE(ResoEvtPlCollisions, "AOD", "RESOEVTPLCOLLISIONS",
                   o2::soa::Index<>,
                   resocollision::CollisionId,
                   resocollision::EvtPl,
@@ -116,7 +116,7 @@ DECLARE_SOA_TABLE(ResoEvtPlCollisions, "AOD", "RESOEVTPLCOLL",
 using ResoEvtPlCollision = ResoEvtPlCollisions::iterator;
 
 // For DF mixing study
-DECLARE_SOA_TABLE(ResoCollisionDFs, "AOD", "RESOCOLLISIONDF",
+DECLARE_SOA_TABLE(ResoCollisionDFs, "AOD", "RESOCOLLISIONDFS",
                   o2::soa::Index<>,
                   // resocollision::CollisionId,
                   o2::aod::mult::MultNTracksPV,
@@ -253,7 +253,7 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
 using ResoTrack = ResoTracks::iterator;
 
 // For DF mixing study
-DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDFs",
+DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDFS",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionDFId,
                   //  resodaughter::TrackId,
@@ -379,6 +379,55 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADES",
                   resodaughter::DecayVtxY,
                   resodaughter::DecayVtxZ);
 using ResoCascade = ResoCascades::iterator;
+
+DECLARE_SOA_TABLE(ResoCascadeDFs, "AOD", "RESOCASCADEDFS",
+                  o2::soa::Index<>,
+                  resodaughter::ResoCollisionDFId,
+                  // resodaughter::CascadeId,
+                  resodaughter::Pt,
+                  resodaughter::Px,
+                  resodaughter::Py,
+                  resodaughter::Pz,
+                  resodaughter::Eta,
+                  resodaughter::Phi,
+                  resodaughter::CascadeIndices,
+                  resodaughter::DaughterTPCNSigmaPosPi,
+                  resodaughter::DaughterTPCNSigmaPosKa,
+                  resodaughter::DaughterTPCNSigmaPosPr,
+                  resodaughter::DaughterTPCNSigmaNegPi,
+                  resodaughter::DaughterTPCNSigmaNegKa,
+                  resodaughter::DaughterTPCNSigmaNegPr,
+                  resodaughter::DaughterTPCNSigmaBachPi,
+                  resodaughter::DaughterTPCNSigmaBachKa,
+                  resodaughter::DaughterTPCNSigmaBachPr,
+                  resodaughter::DaughterTOFNSigmaPosPi,
+                  resodaughter::DaughterTOFNSigmaPosKa,
+                  resodaughter::DaughterTOFNSigmaPosPr,
+                  resodaughter::DaughterTOFNSigmaNegPi,
+                  resodaughter::DaughterTOFNSigmaNegKa,
+                  resodaughter::DaughterTOFNSigmaNegPr,
+                  resodaughter::DaughterTOFNSigmaBachPi,
+                  resodaughter::DaughterTOFNSigmaBachKa,
+                  resodaughter::DaughterTOFNSigmaBachPr,
+                  resodaughter::V0CosPA,
+                  resodaughter::CascCosPA,
+                  resodaughter::DaughDCA,
+                  resodaughter::CascDaughDCA,
+                  cascdata::DCAPosToPV,
+                  cascdata::DCANegToPV,
+                  cascdata::DCABachToPV,
+                  v0data::DCAV0ToPV,
+                  cascdata::DCAXYCascToPV,
+                  cascdata::DCAZCascToPV,
+                  cascdata::Sign,
+                  resodaughter::MLambda,
+                  resodaughter::MXi,
+                  resodaughter::TransRadius,
+                  resodaughter::CascTransRadius,
+                  resodaughter::DecayVtxX,
+                  resodaughter::DecayVtxY,
+                  resodaughter::DecayVtxZ);
+using ResoCascadeDF = ResoCascadeDFs::iterator;
 
 DECLARE_SOA_TABLE(ResoMCTracks, "AOD", "RESOMCTRACKS",
                   mcparticle::PdgCode,

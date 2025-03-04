@@ -252,12 +252,17 @@ struct LambdaTableProducer {
   // V0s MC
   Configurable<bool> cHasMcFlag{"cHasMcFlag", true, "Has Mc Tag"};
   Configurable<bool> cSelectTrueLambda{"cSelectTrueLambda", false, "Select True Lambda"};
+  Configurable<bool> cSelectPrimaryV0{"cSelectPrimaryV0", true, "Select Primary V0"};
   Configurable<bool> cRecPrimaryLambda{"cRecPrimaryLambda", false, "Primary Reconstructed Lambda"};
   Configurable<bool> cRecSecondaryLambda{"cRecSecondaryLambda", false, "Secondary Reconstructed Lambda"};
   Configurable<bool> cGenPrimaryLambda{"cGenPrimaryLambda", true, "Primary Generated Lambda"};
   Configurable<bool> cGenSecondaryLambda{"cGenSecondaryLambda", false, "Secondary Generated Lambda"};
   Configurable<bool> cGenDecayChannel{"cGenDecayChannel", true, "Gen Level Decay Channel Flag"};
   Configurable<bool> cMcGenDauTrackKinCutFlag{"cMcGenDauTrackKinCutFlag", false, "Gen Level Daughter Track Kinematic Cut Flag"};
+
+  // Mc Matching
+  Configurable<float> cSelMcMatchValue{"cSelMcMatchValue", 0.4, "Mc Matching Percentage"};
+  Configurable<bool> cDoMcMatching{"cDoMcMatching", true, "Do Mc Matching Flag"};
 
   // Efficiency Correction
   Configurable<bool> cCorrectionFlag{"cCorrectionFlag", false, "Efficiency Correction Flag"};
@@ -299,9 +304,9 @@ struct LambdaTableProducer {
     const AxisSpec axisPID(8000, -4000, 4000, "PdgCode");
 
     const AxisSpec axisV0Mass(200, 1.09, 1.14, "M_{p#pi} (GeV/#it{c}^{2})");
-    const AxisSpec axisV0Pt(38, 0.2, 4.0, "p_{T} (GeV/#it{c})");
-    const AxisSpec axisV0Rap(24, -1.2, 1.2, "y");
-    const AxisSpec axisV0Eta(24, -1.2, 1.2, "#eta");
+    const AxisSpec axisV0Pt(84, 0.2, 4.4, "p_{T} (GeV/#it{c})");
+    const AxisSpec axisV0Rap(48, -1.2, 1.2, "y");
+    const AxisSpec axisV0Eta(48, -1.2, 1.2, "#eta");
     const AxisSpec axisV0Phi(36, 0., TwoPI, "#phi (rad)");
 
     const AxisSpec axisRadius(2000, 0, 200, "r(cm)");
@@ -342,6 +347,11 @@ struct LambdaTableProducer {
     histos.add("QA/Lambda/h1f_V0_radius", "V_{0} Decay Radius in XY plane", kTH1F, {axisRadius});
     histos.add("QA/Lambda/h1f_V0_ctau", "V_{0} c#tau", kTH1F, {axisCTau});
     histos.add("QA/Lambda/h1f_V0_gctau", "V_{0} #gammac#tau", kTH1F, {axisGCTau});
+
+    histos.add("QA/Lambda/h2f_V0_ptpt", "Rec vs Truth p_{T}", kTH2F, {axisV0Pt, axisV0Pt});
+    histos.add("QA/Lambda/h2f_V0_etaeta", "Rec vs Truth #eta", kTH2F, {axisV0Eta, axisV0Eta});
+    histos.add("QA/Lambda/h2f_V0_raprap", "Rec vs Truth y", kTH2F, {axisV0Rap, axisV0Rap});
+    histos.add("QA/Lambda/h2f_V0_phiphi", "Rec vs Truth #phi", kTH2F, {axisV0Phi, axisV0Phi});
 
     histos.add("QA/Lambda/h1f_pos_prong_pt", "Pos-Prong p_{T}", kTH1F, {axisTrackPt});
     histos.add("QA/Lambda/h1f_neg_prong_pt", "Neg-Prong p_{T}", kTH1F, {axisTrackPt});
@@ -694,14 +704,10 @@ struct LambdaTableProducer {
     return true;
   }
 
-  template <typename V, typename T>
-  bool selTrueMcRecLambda(V const& v0, T const&)
+  template <typename V>
+  bool selPrimaryV0(V const& v0)
   {
     auto mcpart = v0.template mcParticle_as<aod::McParticles>();
-
-    if (std::abs(mcpart.pdgCode()) != kLambda0) {
-      return false;
-    }
 
     // check for primary/secondary lambda
     if (cRecPrimaryLambda && !mcpart.isPhysicalPrimary()) {
@@ -709,6 +715,18 @@ struct LambdaTableProducer {
       return false;
     } else if (cRecSecondaryLambda && mcpart.isPhysicalPrimary()) {
       histos.fill(HIST("Tracks/h1f_tracks_info"), kNotSecondaryLambda);
+      return false;
+    }
+
+    return true;
+  }
+
+  template <typename V, typename T>
+  bool selTrueMcRecLambda(V const& v0, T const&)
+  {
+    auto mcpart = v0.template mcParticle_as<aod::McParticles>();
+
+    if (std::abs(mcpart.pdgCode()) != kLambda0) {
       return false;
     }
 
@@ -746,6 +764,42 @@ struct LambdaTableProducer {
       } else if (std::abs(lambdaMothers[0].pdgCode()) == 3334) {
         histos.fill(HIST("Tracks/h2f_lambda_from_omega"), mcpart.pdgCode(), mcpart.pt());
       }
+    }
+
+    return true;
+  }
+
+  template <typename T>
+  bool getMcMatch(T const& vrec, T const& vgen)
+  {
+    float v = std::abs(1. - (vrec / vgen));
+
+    if (v >= cSelMcMatchValue) {
+      return false;
+    }
+
+    return true;
+  }
+
+  template <typename V>
+  bool passMcMatching(V const& v0)
+  {
+    auto mcpart = v0.template mcParticle_as<aod::McParticles>();
+
+    if (!getMcMatch(v0.pt(), mcpart.pt())) {
+      return false;
+    }
+
+    if (!getMcMatch(v0.eta(), mcpart.eta())) {
+      return false;
+    }
+
+    if (!getMcMatch(v0.yLambda(), mcpart.y())) {
+      return false;
+    }
+
+    if (!getMcMatch(v0.phi(), mcpart.phi())) {
+      return false;
     }
 
     return true;
@@ -791,6 +845,18 @@ struct LambdaTableProducer {
 
     delete hist;
     return retVal;
+  }
+
+  template <ParticleType part, typename V>
+  void fillMCMatchingHistos(V const& v0)
+  {
+    static constexpr std::string_view SubDir[] = {"QA/Lambda/", "QA/AntiLambda/"};
+    auto mcpart = v0.template mcParticle_as<aod::McParticles>();
+
+    histos.fill(HIST(SubDir[part]) + HIST("h2f_V0_ptpt"), v0.pt(), mcpart.pt());
+    histos.fill(HIST(SubDir[part]) + HIST("h2f_V0_etaeta"), v0.eta(), mcpart.eta());
+    histos.fill(HIST(SubDir[part]) + HIST("h2f_V0_raprap"), v0.yLambda(), mcpart.y());
+    histos.fill(HIST(SubDir[part]) + HIST("h2f_V0_phiphi"), v0.phi(), mcpart.phi());
   }
 
   template <ParticleType part, typename C, typename V, typename T>
@@ -902,8 +968,20 @@ struct LambdaTableProducer {
       // do MC analysis
       if constexpr (dmc == kMC) {
         histos.fill(HIST("Tracks/h2f_tracks_pid_before_sel"), v0.mcParticle().pdgCode(), v0.pt());
-        if (cSelectTrueLambda && !selTrueMcRecLambda(v0, tracks)) {
+        if (cSelectPrimaryV0 && !selPrimaryV0(v0)) { // check for Primary V0
           continue;
+        }
+        if (cSelectTrueLambda && !selTrueMcRecLambda(v0, tracks)) { // check for true Lambda/Anti-Lambda
+          continue;
+        }
+        if (cDoMcMatching && !passMcMatching(v0)) { // Do Mc Matching
+          continue;
+        }
+        // Fill MC Matching Histos (MC Matching Cuts to be implemented soon...)
+        if (v0Type == kLambda) {
+          fillMCMatchingHistos<kLambda>(v0);
+        } else {
+          fillMCMatchingHistos<kAntiLambda>(v0);
         }
         histos.fill(HIST("Tracks/h1f_tracks_info"), kPassTrueLambdaSel);
         histos.fill(HIST("Tracks/h2f_tracks_pid_after_sel"), v0.mcParticle().pdgCode(), v0.pt());
@@ -1000,8 +1078,16 @@ struct LambdaTableProducer {
       if (cMcGenDauTrackKinCutFlag && !dauKinCutFlag) { // check daughter acceptance
         continue;
       }
-      if (cGenDecayChannel && (std::abs(daughterPDGs[0]) != kProton || std::abs(daughterPDGs[1]) != kPiPlus)) { // check decay channel
-        continue;
+      if (cGenDecayChannel) { // check decay channel
+        if (v0Type == kLambda) {
+          if (daughterPDGs[0] != kProton || daughterPDGs[1] != kPiMinus) {
+            continue;
+          }
+        } else if (v0Type == kAntiLambda) {
+          if (daughterPDGs[0] != kProtonBar || daughterPDGs[1] != kPiPlus) {
+            continue;
+          }
+        }
       }
 
       histos.fill(HIST("Tracks/h1f_tracks_info"), kGenLambdaToPrPi);
@@ -1056,6 +1142,10 @@ struct LambdaTableProducer {
     histos.fill(HIST("McGen/h1f_collisions_info"), kTotCol);
     // Check the reco collision
     if (!collisions.begin().has_mcCollision() || !selCollision<run>(collisions.begin()) || collisions.begin().mcCollisionId() != mcCollision.globalIndex()) {
+      return;
+    }
+    // Mc Matching
+    if (cDoMcMatching && !getMcMatch(collisions.begin().posZ(), mcCollision.posZ())) {
       return;
     }
     histos.fill(HIST("McGen/h1f_collisions_info"), kPassSelCol);
@@ -1277,6 +1367,10 @@ struct LambdaR2Correlation {
   // Eta/Rap Analysis
   Configurable<bool> cDoEtaAnalysis{"cDoEtaAnalysis", false, "Eta/Rap Analysis Flag"};
 
+  // Generator Level Particles
+  Configurable<bool> cGenParticleFlag{"cGenParticleFlag", true, "Generator Number Flag"};
+  Configurable<int> cGenParticles{"cGenParticles", 3, "Number of Truth Lambda to construct correlation"};
+
   // Rotation Angle Min/Max
   Configurable<float> cRotAngleMin{"cRotAngleMin", -0.12, "Rotation Angle Minimum"};
   Configurable<float> cRotAngleMax{"cRotAngleMax", 0.12, "Rotation Angle Minimum"};
@@ -1367,6 +1461,10 @@ struct LambdaR2Correlation {
     histos.add("Reco/h2d_n1_rapphi_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH2D, {axisRap, axisPhi});
 
     // rho2 for R2 Rap1Phi1Rap2Phi2 histograms
+    histos.add("Reco/h2d_n2_raprap_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2D, {axisRap, axisRap});
+    histos.add("Reco/h2d_n2_raprap_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisRap, axisRap});
+    histos.add("Reco/h2d_n2_raprap_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2D, {axisRap, axisRap});
+
     histos.add("Reco/h2d_n2_rapphi_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2D, {axisRapPhi, axisRapPhi});
     histos.add("Reco/h2d_n2_rapphi_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisRapPhi, axisRapPhi});
     histos.add("Reco/h2d_n2_rapphi_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2D, {axisRapPhi, axisRapPhi});
@@ -1520,11 +1618,30 @@ struct LambdaR2Correlation {
     auto lambdaMcGenTracks = partLambdaMcGenTracks->sliceByCached(aod::lambdamcgentrack::lambdaMcGenCollisionId, mcgencol.globalIndex(), cachemc);
     auto antiLambdaMcGenTracks = partAntiLambdaMcGenTracks->sliceByCached(aod::lambdamcgentrack::lambdaMcGenCollisionId, mcgencol.globalIndex(), cachemc);
 
-    analyzeSingles<kLambda, kGen>(mcgencol, lambdaMcGenTracks);
-    analyzeSingles<kAntiLambda, kGen>(mcgencol, antiLambdaMcGenTracks);
-    analyzePairs<kLambdaAntiLambda, kGen, false>(lambdaMcGenTracks, antiLambdaMcGenTracks);
-    analyzePairs<kLambdaLambda, kGen, true>(lambdaMcGenTracks, lambdaMcGenTracks);
-    analyzePairs<kAntiLambdaAntiLambda, kGen, true>(antiLambdaMcGenTracks, antiLambdaMcGenTracks);
+    bool lambdaFlag = true, antiLambdaFlag = true;
+
+    if (cGenParticleFlag) {
+      if (lambdaMcGenTracks.size() > cGenParticles) {
+        lambdaFlag = false;
+      }
+      if (antiLambdaMcGenTracks.size() > cGenParticles) {
+        antiLambdaFlag = false;
+      }
+    }
+
+    if (lambdaFlag) {
+      analyzeSingles<kLambda, kGen>(mcgencol, lambdaMcGenTracks);
+      analyzePairs<kLambdaLambda, kGen, true>(lambdaMcGenTracks, lambdaMcGenTracks);
+    }
+
+    if (antiLambdaFlag) {
+      analyzeSingles<kAntiLambda, kGen>(mcgencol, antiLambdaMcGenTracks);
+      analyzePairs<kAntiLambdaAntiLambda, kGen, true>(antiLambdaMcGenTracks, antiLambdaMcGenTracks);
+    }
+
+    if (lambdaFlag && antiLambdaFlag) {
+      analyzePairs<kLambdaAntiLambda, kGen, false>(lambdaMcGenTracks, antiLambdaMcGenTracks);
+    }
   }
 
   PROCESS_SWITCH(LambdaR2Correlation, processMCGen, "Process for MC Generated", false);

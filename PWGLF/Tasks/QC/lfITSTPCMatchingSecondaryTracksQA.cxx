@@ -61,7 +61,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
 
   // Track Parameters
-  Configurable<float> minITSnCls{"minITSnCls", 3.0f, "min number of ITS clusters"};
+  Configurable<float> minITSnCls{"minITSnCls", 1.0f, "min number of ITS clusters"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80.0f, "min number of TPC crossed rows"};
   Configurable<float> minNCrossedRowsOverFindable{"minNCrossedRowsOverFindable", 0.8f, "min number of TPC crossed rows/findable"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
@@ -74,7 +74,8 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   Configurable<float> nsigmaTOFmax{"nsigmaTOFmax", +3.0f, "Maximum nsigma TOF"};
   Configurable<float> dcaxyMax{"dcaxyMax", 0.1f, "dcaxy max"};
   Configurable<float> dcazMax{"dcazMax", 0.1f, "dcaz max"};
-  Configurable<float> dcaMin{"dcaMin", 0.1f, "dca min"};
+  Configurable<float> dcaxyMin{"dcaxyMin", 0.1f, "dcaxy min"};
+  Configurable<float> dcazMin{"dcazMin", 0.1f, "dcaz min"};
   Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
   Configurable<bool> requireItsHits{"requireItsHits", false, "require ITS hits"};
   Configurable<std::vector<float>> requiredHit{"requiredHit", {0, 0, 0, 0, 0, 0, 0}, "required ITS Hits (1=required, 0=not required)"};
@@ -152,7 +153,9 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       return false;
     if (track.eta() < etaMin || track.eta() > etaMax)
       return false;
-    if (std::sqrt(track.dcaXY() * track.dcaXY() + track.dcaZ() * track.dcaZ()) < dcaMin)
+    if (std::fabs(track.dcaXY()) < dcaxyMin)
+      return false;
+    if (std::fabs(track.dcaZ()) < dcazMin)
       return false;
     return true;
   }
@@ -211,15 +214,19 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   template <typename ItsTrack>
   bool passedTrackSelectionIts(const ItsTrack& track)
   {
+    /*
     if (!track.hasITS())
       return false;
     if (track.itsNCls() < minITSnCls)
       return false;
     if (track.itsChi2NCl() > maxChi2ITS)
       return false;
+    */
+
+    if (track.itsNCls() < minITSnCls)
+      return false;
 
     auto requiredItsHit = static_cast<std::vector<float>>(requiredHit);
-
     if (requireItsHits) {
       for (int i = 0; i < 7; i++) {
         if (requiredItsHit[i] > 0 && !hasHitOnITSlayer(track.itsClusterMap(), i)) {
@@ -250,7 +257,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       // Secondary Tracks
       if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track))
         registryData.fill(HIST("secPionTPC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
-      if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && track.hasITS())
+      if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && passedTrackSelectionIts(track))
         registryData.fill(HIST("secPionTPC_ITS"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
     }
 
@@ -265,9 +272,9 @@ struct LfITSTPCMatchingSecondaryTracksQA {
         registryData.fill(HIST("secPionV0TPC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
       if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack))
         registryData.fill(HIST("secPionV0TPC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
-      if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && posTrack.hasITS())
+      if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && passedTrackSelectionIts(posTrack))
         registryData.fill(HIST("secPionV0TPC_ITS"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
-      if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && negTrack.hasITS())
+      if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && passedTrackSelectionIts(negTrack))
         registryData.fill(HIST("secPionV0TPC_ITS"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
     }
   }
@@ -299,7 +306,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
         // Secondary Tracks
         if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track))
           registryMC.fill(HIST("secPionTPC_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
-        if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && track.hasITS())
+        if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && passedTrackSelectionIts(track))
           registryMC.fill(HIST("secPionTPC_ITS_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
       }
 
@@ -314,9 +321,9 @@ struct LfITSTPCMatchingSecondaryTracksQA {
           registryMC.fill(HIST("secPionV0TPC_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
         if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack))
           registryMC.fill(HIST("secPionV0TPC_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
-        if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && posTrack.hasITS())
+        if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && passedTrackSelectionIts(posTrack))
           registryMC.fill(HIST("secPionV0TPC_ITS_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
-        if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && negTrack.hasITS())
+        if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && passedTrackSelectionIts(negTrack))
           registryMC.fill(HIST("secPionV0TPC_ITS_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
       }
     }

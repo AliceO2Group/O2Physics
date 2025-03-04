@@ -154,7 +154,7 @@ struct NetprotonCumulantsMc {
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
   Configurable<bool> cfgIfRejectElectron{"cfgIfRejectElectron", true, "Remove electrons"};
   Configurable<bool> cfgIfMandatoryTOF{"cfgIfMandatoryTOF", true, "Mandatory TOF requirement to remove pileup"};
-
+  Configurable<bool> cfgEvSelkIsVertexTOFmatched{"cfgEvSelkIsVertexTOFmatched", true, "If matched with TOF, for pileup"};
   ConfigurableAxis cfgCentralityBins{"cfgCentralityBins", {90, 0., 90.}, "Centrality/Multiplicity percentile bining"};
 
   // Connect to ccdb
@@ -1025,6 +1025,9 @@ struct NetprotonCumulantsMc {
       if (cfgEvSelkNoSameBunchPileup && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
         continue;
       }
+      if (cfgEvSelkIsVertexTOFmatched && !(collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))) {
+        continue;
+      }
 
       cent = collision.centFT0M();
 
@@ -1133,6 +1136,9 @@ struct NetprotonCumulantsMc {
       return;
     }
     if (cfgEvSelkNoSameBunchPileup && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
+      return;
+    }
+    if (cfgEvSelkIsVertexTOFmatched && !(collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))) {
       return;
       ;
     }
@@ -2074,6 +2080,11 @@ struct NetprotonCumulantsMc {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return;
+    }
+
+    if (cfgEvSelkIsVertexTOFmatched && !(coll.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))) {
+      return;
+      ;
     }
 
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());

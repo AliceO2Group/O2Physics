@@ -19,6 +19,7 @@
 #include <utility>
 #include <array>
 #include <string>
+#include <map>
 
 #include "Math/Vector4D.h"
 
@@ -75,7 +76,8 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, true, "Fill NUA weights")
-  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, true, "Fill and output NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgOutputRunByRun, bool, true, "Fill and output NUA weights run by run")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgTpcNsigmaCut, float, 2.0f, "TPC N-sigma cut for pions, kaons, protons")
@@ -107,6 +109,20 @@ struct FlowPbpbPikp {
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
 
+  std::map<int, std::vector<std::shared_ptr<TH3>>> th3sList;
+  enum OutputSpecies {
+    hRef = 0,
+    hCharge,
+    hPion,
+    hKaon,
+    hProton,
+    kCount_OutputSpecies
+  };
+  int lastRunNumer = -1;
+  std::vector<int> runNumbers;
+  std::vector<GFWWeights*> mAcceptance;
+  bool correctionsLoaded = false;
+
   void init(InitContext const&)
   {
     ccdb->setURL(ccdbUrl.value);
@@ -130,6 +146,13 @@ struct FlowPbpbPikp {
     histos.add("c24_gap08_pr", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("TofTpcNsigma", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaTPC, axisNsigmaTOF, axisPt}}});
     histos.add("partCount", "", {HistType::kTHnSparseD, {{axisParticles, axisMultiplicity, axisPt}}});
+    if (cfgOutputNUAWeights && !cfgOutputRunByRun) {
+      histos.add<TH3>("NUA/hPhiEtaVtxz_ref", ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+      histos.add<TH3>("NUA/hPhiEtaVtxz_ch", ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+      histos.add<TH3>("NUA/hPhiEtaVtxz_pi", ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+      histos.add<TH3>("NUA/hPhiEtaVtxz_ka", ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+      histos.add<TH3>("NUA/hPhiEtaVtxz_pr", ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+    }
 
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
@@ -296,10 +319,10 @@ struct FlowPbpbPikp {
   void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
   {
     double dnx, val;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
-    if (dnx == 0)
-      return;
     if (!corrconf.pTDif) {
+      dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+      if (dnx == 0)
+        return;
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
       if (std::fabs(val) < 1)
         histos.fill(tarName, cent, val, dnx);
@@ -319,11 +342,11 @@ struct FlowPbpbPikp {
   void fillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
     double dnx, val;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
-    if (dnx == 0) {
-      return;
-    }
     if (!corrconf.pTDif) {
+      dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+      if (dnx == 0) {
+        return;
+      }
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
       if (std::fabs(val) < 1) {
         fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
@@ -341,6 +364,80 @@ struct FlowPbpbPikp {
     return;
   }
 
+  void createRunByRunHistos(int runNumber)
+  {
+    if (cfgOutputNUAWeights) {
+      std::vector<std::shared_ptr<TH3>> tH3s(kCount_OutputSpecies);
+      tH3s[hRef] = histos.add<TH3>(Form("NUA/%d/hPhiEtaVtxz_ref", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+      tH3s[hCharge] = histos.add<TH3>(Form("NUA/%d/hPhiEtaVtxz_ch", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+      tH3s[hPion] = histos.add<TH3>(Form("NUA/%d/hPhiEtaVtxz_pi", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+      tH3s[hKaon] = histos.add<TH3>(Form("NUA/%d/hPhiEtaVtxz_ka", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+      tH3s[hProton] = histos.add<TH3>(Form("NUA/%d/hPhiEtaVtxz_pr", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+      th3sList.insert(std::make_pair(runNumber, tH3s));
+    }
+  }
+
+  void loadCorrections(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (correctionsLoaded)
+      return;
+    if (!cfgAcceptance.value.empty()) {
+      uint64_t timestamp = bc.timestamp();
+      mAcceptance.clear();
+      mAcceptance.resize(kCount_OutputSpecies);
+      mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_ref", timestamp));
+      mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_ch", timestamp));
+      mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_pi", timestamp));
+      mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_ka", timestamp));
+      mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_pr", timestamp));
+    }
+
+    correctionsLoaded = true;
+  }
+
+  template <typename TTrack>
+  double getAcceptance(TTrack track, const double& vtxz, int index)
+  { // 0 ref, 1 ch, 2 pi, 3 ka, 4 pr
+    double wacc = 1;
+    if (!mAcceptance.empty())
+      wacc = mAcceptance[index]->getNUA(track.phi(), track.eta(), vtxz);
+    return wacc;
+  }
+
+  template <typename TTrack>
+  void fillWeights(const TTrack track, const double vtxz, const int& pid_index, const int& run)
+  {
+    double pt = track.pt();
+    bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
+    bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
+
+    if (cfgOutputRunByRun) {
+      if (withinPtRef && !pid_index)
+        th3sList[run][hRef]->Fill(track.phi(), track.eta(), vtxz); // pt-subset of charged particles for ref flow
+      if (withinPtPOI)
+        th3sList[run][hCharge + pid_index]->Fill(track.phi(), track.eta(), vtxz); // charged and id'ed particle weights
+    } else {
+      if (withinPtRef && !pid_index)
+        histos.fill(HIST("NUA/hPhiEtaVtxz_ref"), track.phi(), track.eta(), vtxz); // pt-subset of charged particles for ref flow
+      if (withinPtPOI) {
+        switch (pid_index) {
+          case 0:
+            histos.fill(HIST("NUA/hPhiEtaVtxz_ch"), track.phi(), track.eta(), vtxz); // charged particle weights
+            break;
+          case 1:
+            histos.fill(HIST("NUA/hPhiEtaVtxz_pi"), track.phi(), track.eta(), vtxz); // pion weights
+            break;
+          case 2:
+            histos.fill(HIST("NUA/hPhiEtaVtxz_ka"), track.phi(), track.eta(), vtxz); // kaon weights
+            break;
+          case 3:
+            histos.fill(HIST("NUA/hPhiEtaVtxz_pr"), track.phi(), track.eta(), vtxz); // proton weights
+            break;
+        }
+      }
+    }
+  }
+
   void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracksWithoutBayes const& tracks)
   {
     int nTot = tracks.size();
@@ -352,13 +449,23 @@ struct FlowPbpbPikp {
     float lRandom = fRndm->Rndm();
     float vtxz = collision.posZ();
     const auto cent = collision.centFT0C();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int runNumber = bc.runNumber();
+    if (cfgOutputRunByRun && runNumber != lastRunNumer) {
+      lastRunNumer = runNumber;
+      if (std::find(runNumbers.begin(), runNumbers.end(), runNumber) == runNumbers.end()) {
+        // if run number is not in the preconfigured list, create new output histograms for this run
+        createRunByRunHistos(runNumber);
+        runNumbers.push_back(runNumber);
+      }
+    }
 
     histos.fill(HIST("hVtxZ"), vtxz);
     histos.fill(HIST("hMult"), nTot);
     histos.fill(HIST("hCent"), collision.centFT0C());
     fGFW->Clear();
 
-    float weff = 1, wacc = 1;
+    float weff = 1;
     int pidIndex;
 
     for (auto const& track : tracks) {
@@ -376,38 +483,48 @@ struct FlowPbpbPikp {
 
       // pidIndex = getBayesPIDIndex(track);
       pidIndex = getNsigmaPID(track);
+      if (cfgOutputNUAWeights)
+        fillWeights(track, vtxz, pidIndex, runNumber);
+
+      if (!withinPtPOI && !withinPtRef)
+        return;
+      double waccRef = getAcceptance(track, vtxz, 0);
+      double waccPOI = withinPtPOI ? getAcceptance(track, vtxz, pidIndex + 1) : getAcceptance(track, vtxz, 0);
+      if (withinPtRef && withinPtPOI && pidIndex)
+        waccRef = waccPOI; // if particle is both (then it's overlap), override ref with POI
+
       if (withinPtRef) {
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1);
-        fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 512);
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccRef * weff, 1);
+        fGFW->Fill(track.eta(), 1, track.phi(), waccRef * weff, 512);
       }
       if (withinPtPOI) {
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 128);
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1024);
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 128);
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 1024);
       }
       if (withinPtPOI && withinPtRef) {
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 256);
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 2048);
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 256);
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 2048);
       }
 
       if (pidIndex) {
         histos.fill(HIST("partCount"), pidIndex - 1, cent, pt);
         if (withinPtPOI)
-          fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1 << (pidIndex));
+          fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 1 << (pidIndex));
         if (withinPtPOI && withinPtRef)
-          fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1 << (pidIndex + 3));
+          fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 1 << (pidIndex + 3));
       }
     } // track loop ends
 
     // Filling cumulants with ROOT TProfile
-    fillProfile(corrconfigs.at(0), HIST("c22_gap08"), cent);
-    fillProfile(corrconfigs.at(1), HIST("c22_gap08_pi"), cent);
-    fillProfile(corrconfigs.at(2), HIST("c22_gap08_ka"), cent);
-    fillProfile(corrconfigs.at(3), HIST("c22_gap08_pr"), cent);
-    fillProfile(corrconfigs.at(4), HIST("c24_full"), cent);
-    fillProfile(corrconfigs.at(5), HIST("c24_gap08"), cent);
-    fillProfile(corrconfigs.at(6), HIST("c24_gap08_pi"), cent);
-    fillProfile(corrconfigs.at(7), HIST("c24_gap08_ka"), cent);
-    fillProfile(corrconfigs.at(8), HIST("c24_gap08_pr"), cent);
+    fillProfile(corrconfigs.at(1), HIST("c22_gap08"), cent);
+    fillProfile(corrconfigs.at(2), HIST("c22_gap08_pi"), cent);
+    fillProfile(corrconfigs.at(3), HIST("c22_gap08_ka"), cent);
+    fillProfile(corrconfigs.at(4), HIST("c22_gap08_pr"), cent);
+    fillProfile(corrconfigs.at(5), HIST("c24_full"), cent);
+    fillProfile(corrconfigs.at(6), HIST("c24_gap08"), cent);
+    fillProfile(corrconfigs.at(7), HIST("c24_gap08_pi"), cent);
+    fillProfile(corrconfigs.at(8), HIST("c24_gap08_ka"), cent);
+    fillProfile(corrconfigs.at(9), HIST("c24_gap08_pr"), cent);
 
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
       fillFC(corrconfigs.at(l_ind), cent, lRandom);
