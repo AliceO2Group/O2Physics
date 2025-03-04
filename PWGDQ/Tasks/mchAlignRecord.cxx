@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <vector>
 #include <iostream>
+#include <memory>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
