@@ -2079,8 +2079,7 @@ struct UpcTauRl {
 
     int gapSide = reconstructedCollision.gapSide();
     int trueGapSide = sgSelector.trueGap(reconstructedCollision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
-    histos.fill(HIST("Events/UDtableGapSide"), gapSide);
-    histos.fill(HIST("Events/TrueGapSideDiffToTableValue"), gapSide - trueGapSide);
+
     if (cutSample.useTrueGap)
       gapSide = trueGapSide;
 
@@ -2100,6 +2099,8 @@ struct UpcTauRl {
       return;
 
     if (doMainHistos) {
+      histos.fill(HIST("Events/UDtableGapSide"), gapSide);
+      histos.fill(HIST("Events/TrueGapSideDiffToTableValue"), gapSide - trueGapSide);
       fillHistograms(reconstructedBarrelTracks);
       fillFIThistograms(reconstructedCollision);
     }
@@ -2161,7 +2162,6 @@ struct UpcTauRl {
     isMC = true;
 
     int gapSide = reconstructedCollision.gapSide();
-    histos.fill(HIST("Events/UDtableGapSide"), gapSide);
 
     if (gapSide != cutSample.whichGapSide)
       return;
@@ -2188,6 +2188,7 @@ struct UpcTauRl {
     }
 
     if (doMainHistos) {
+      histos.fill(HIST("Events/UDtableGapSide"), gapSide);
       fillHistograms(reconstructedBarrelTracks);
       fillFIThistograms(reconstructedCollision);
     }
