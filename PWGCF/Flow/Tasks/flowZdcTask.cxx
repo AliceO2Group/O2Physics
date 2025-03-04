@@ -190,8 +190,8 @@ struct FlowZdcTask {
                kTH2F,
                {axisCent, axisZP});
     histos.add("hNchvsNPV", ";NPVTracks (|#eta|<1);N_{ch} (|#eta|<0.8);",
-                kTH2F,
-                {{{nBinsNch, -0.5, maxNch}, {nBinsNch, -0.5, maxNch}}});          
+               kTH2F,
+               {{{nBinsNch, -0.5, maxNch}, {nBinsNch, -0.5, maxNch}}});
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ}); // for q vector recentering
     histos.add("hYield", "Nch vs pT", kTH2F, {axisMultiplicity, axisPt});
     histos.add("hGlobalTracks", "hGlobalTracks", kTH1F, {axisMultiplicity});
@@ -426,7 +426,7 @@ struct FlowZdcTask {
       float sumZPA = (zdcread.energySectorZPA())[0] + (zdcread.energySectorZPA())[1] + (zdcread.energySectorZPA())[2] + (zdcread.energySectorZPA())[3];
       float sumZDC = sumZPA + sumZPC + sumZNA + sumZNC;
       float sumZEM = zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2();
-    // ZEM cut
+      // ZEM cut
       if (isZEMcut) {
         if (sumZEM < zemCut) {
           return;
