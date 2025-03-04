@@ -119,8 +119,8 @@ struct UpcRhoAnalysis {
   Configurable<bool> saveKaons{"saveKaons", false, "save kaon tracks into derived tables"};
 
   float pcEtaCut = 0.9; // physics coordination recommendation
+  Configurable<int> numPions{"numPions", 2, "required number of pions in the event"};
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
-  // Configurable<int> selectedMcGeneratorId{"selectedMcGeneratorId", 0, "flag for selected MC process ID"};
 
   Configurable<float> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
   Configurable<int> collisionsNumContribsMaxCut{"collisionsNumContribsMaxCut", 5, "max number of contributors cut on collisions"};
@@ -131,7 +131,7 @@ struct UpcRhoAnalysis {
   Configurable<float> tracksTpcNSigmaElCut{"tracksTpcNSigmaElCut", 3.0, "TPC nSigma electron cut"};
   Configurable<float> tracksTpcNSigmaKaCut{"tracksTpcNSigmaKaCut", 3.0, "TPC nSigma kaon cut"};
   Configurable<float> tracksDcaMaxCut{"tracksDcaMaxCut", 1.0, "max DCA cut on tracks"};
-  Configurable<int> tracksMinItsNClsCut{"tracksMinItsNClsCut", 6, "min ITS clusters cut"};
+  Configurable<int> tracksMinItsNClsCut{"tracksMinItsNClsCut", 4, "min ITS clusters cut"};
   Configurable<float> tracksMaxItsChi2NClCut{"tracksMaxItsChi2NClCut", 3.0, "max ITS chi2/Ncls cut"};
   Configurable<int> tracksMinTpcNClsCut{"tracksMinTpcNClsCut", 120, "min TPC clusters cut"};
   Configurable<int> tracksMinTpcNClsCrossedRowsCut{"tracksMinTpcNClsCrossedRowsCut", 140, "min TPC crossed rows cut"};
@@ -211,7 +211,7 @@ struct UpcRhoAnalysis {
     rQC.add("QC/tracks/selected/hTpcNSigmaEl2D", ";TPC n#sigma(e_{leading});TPC n#sigma(e_{subleading});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
     rQC.add("QC/tracks/selected/hTpcNSigmaKa2D", ";TPC n#sigma(K_{leading});TPC n#sigma(K_{subleading});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
     // selection counter
-    std::vector<std::string> selectionCounterLabels = {"all tracks", "PV contributor", "ITS hit", "ITS N_{clusters}", "ITS #chi^{2}/N_{clusters}", "TPC hit", "TPC N_{clusters} found", "TPC #chi^{2}/N_{clusters}", "TPC crossed rows",
+    std::vector<std::string> selectionCounterLabels = {"all tracks", "PV contributor", "ITS hit", "ITS N_{clusters}", "hit in innermost ITS layer", "ITS #chi^{2}/N_{clusters}", "TPC hit", "TPC N_{clusters} found", "TPC #chi^{2}/N_{clusters}", "TPC crossed rows",
                                                        "TPC crossed rows/N_{clusters}",
                                                        "TOF requirement",
                                                        "p_{T}", "DCA", "#eta", "exactly 2 tracks"};
@@ -355,6 +355,23 @@ struct UpcRhoAnalysis {
     }
   }
 
+  bool cutItsLayers(uint8_t itsClusterMap) const
+  {
+    std::vector<std::pair<int8_t, std::array<uint8_t, 3>>> requiredITSHits{};
+    requiredITSHits.push_back(std::make_pair(1, std::array<uint8_t, 3>{0, 1, 2})); // at least one hit in the innermost layer
+    constexpr uint8_t kBit = 1;
+    for (const auto& itsRequirement : requiredITSHits) {
+      auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (kBit << requiredLayer); });
+
+      if ((itsRequirement.first == -1) && (hits > 0)) {
+        return false; // no hits were required in specified layers
+      } else if (hits < itsRequirement.first) {
+        return false; // not enough hits found in specified layers
+      }
+    }
+    return true;
+  }
+
   template <typename C>
   bool collisionPassesCuts(const C& collision) // collision cuts
   {
@@ -383,55 +400,60 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 3);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 3, collision.runNumber());
 
-    if (track.itsChi2NCl() > tracksMaxItsChi2NClCut)
+    if (!cutItsLayers(track.itsClusterMap()))
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 4);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 4, collision.runNumber());
 
-    if (!track.hasTPC())
+    if (track.itsChi2NCl() > tracksMaxItsChi2NClCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 5);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 5, collision.runNumber());
 
-    if ((track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()) < tracksMinTpcNClsCut)
+    if (!track.hasTPC())
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 6);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 6, collision.runNumber());
 
-    if (track.tpcChi2NCl() > tracksMaxTpcChi2NClCut || track.tpcChi2NCl() < tracksMinTpcChi2NClCut)
+    if ((track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()) < tracksMinTpcNClsCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 7);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 7, collision.runNumber());
 
-    if (track.tpcNClsCrossedRows() < tracksMinTpcNClsCrossedRowsCut)
+    if (track.tpcChi2NCl() > tracksMaxTpcChi2NClCut || track.tpcChi2NCl() < tracksMinTpcChi2NClCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 8);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 8, collision.runNumber());
 
-    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < tracksMinTpcNClsCrossedOverFindableCut)
+    if (track.tpcNClsCrossedRows() < tracksMinTpcNClsCrossedRowsCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 9);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 9, collision.runNumber());
 
-    if (requireTof && !track.hasTOF())
+    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < tracksMinTpcNClsCrossedOverFindableCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 10);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 10, collision.runNumber());
 
-    if (track.pt() < tracksMinPtCut)
+    if (requireTof && !track.hasTOF())
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 11);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 11, collision.runNumber());
 
-    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0105 + 0.0350 / std::pow(track.pt(), 1.01)))
+    if (track.pt() < tracksMinPtCut)
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 12);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 12, collision.runNumber());
 
-    if (std::abs(eta(track.px(), track.py(), track.pz())) > pcEtaCut)
+    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0105 + 0.0350 / std::pow(track.pt(), 1.01)))
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 13);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 13, collision.runNumber());
+
+    if (std::abs(eta(track.px(), track.py(), track.pz())) > pcEtaCut)
+      return false;
+    rQC.fill(HIST("QC/tracks/hSelectionCounter"), 14);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 14, collision.runNumber());
     // if all selections passed
     return true;
   }
@@ -576,11 +598,11 @@ struct UpcRhoAnalysis {
     }
     rQC.fill(HIST("QC/tracks/selected/hRemainingTracks"), cutTracks.size());
 
-    if (cutTracks.size() != 2) // further consider only two pion systems
+    if (static_cast<int>(cutTracks.size()) != numPions) // further consider only two pion systems
       return;
     for (int i = 0; i < static_cast<int>(cutTracks.size()); i++) {
-      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 14);
-      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 14, collision.runNumber());
+      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 15);
+      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 15, collision.runNumber());
     }
     rQC.fill(HIST("QC/tracks/selected/hTpcNSigmaPi2D"), cutTracks[0].tpcNSigmaPi(), cutTracks[1].tpcNSigmaPi());
     rQC.fill(HIST("QC/tracks/selected/hTpcNSigmaEl2D"), cutTracks[0].tpcNSigmaEl(), cutTracks[1].tpcNSigmaEl());
@@ -714,8 +736,6 @@ struct UpcRhoAnalysis {
   template <typename C, typename T>
   void processMC(C const& mcCollision, T const& mcParticles)
   {
-    // if (mcCollision.getGeneratorId() != selectedMcGeneratorId)
-    //   return;
     rMC.fill(HIST("MC/collisions/hPosXY"), mcCollision.posX(), mcCollision.posY());
     rMC.fill(HIST("MC/collisions/hPosZ"), mcCollision.posZ());
 
@@ -738,7 +758,7 @@ struct UpcRhoAnalysis {
     }
     rMC.fill(HIST("MC/collisions/hNPions"), cutMcParticles.size());
 
-    if (cutMcParticles.size() != 2)
+    if (static_cast<int>(cutMcParticles.size()) != numPions)
       return;
     if (mcParticlesLVs.size() != cutMcParticles.size())
       return;
