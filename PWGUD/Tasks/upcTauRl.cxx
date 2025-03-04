@@ -58,7 +58,9 @@ namespace tau_tree
 // event info
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
 DECLARE_SOA_COLUMN(Bc, bc, int);
+DECLARE_SOA_COLUMN(TotalTracks, totalTracks, int);
 DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
+DECLARE_SOA_COLUMN(GlobalNonPVtracks, globalNonPVtracks, int);
 DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
@@ -102,7 +104,7 @@ DECLARE_SOA_COLUMN(TrkTOFnSigmaPr, trkTOFnSigmaPr, float[2]);
 
 } // namespace reco_tree
 DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
-                  tau_tree::RunNumber, tau_tree::Bc, tau_tree::NumContrib, tau_tree::PosX, tau_tree::PosY, tau_tree::PosZ,
+                  tau_tree::RunNumber, tau_tree::Bc, tau_tree::TotalTracks, tau_tree::NumContrib, tau_tree::GlobalNonPVtracks, tau_tree::PosX, tau_tree::PosY, tau_tree::PosZ,
                   tau_tree::RecoMode, tau_tree::OccupancyInTime, tau_tree::HadronicRate,
                   tau_tree::Trs, tau_tree::Trofs, tau_tree::Hmpr, tau_tree::TFb, tau_tree::ITSROFb, tau_tree::Sbp, tau_tree::ZvtxFT0vPV, tau_tree::VtxITSTPC,
                   tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA,
@@ -1999,15 +2001,20 @@ struct UpcTauRl {
   template <typename C, typename Ts>
   void outputTauEventCandidates(C const& collision, Ts const& tracks){
 
+    int countTracksPerCollision = 0;
+    int countGoodNonPVtracks = 0;
     int countPVGTel = 0;
     int countPVGTmupi = 0;
     std::vector<int> vecTrkIdx;
     // Loop over tracks with selections
     for (const auto& track : tracks) {
-      if (!track.isPVContributor())
+      countTracksPerCollision++;
+      if (!isGlobalTrackReinstatement(track))
         continue;
-      if (cutGlobalTrack.applyGlobalTrackSelection && !isGlobalTrackReinstatement(track))
+      if (!track.isPVContributor()) {
+        countGoodNonPVtracks++;
         continue;
+      }
       // alternative selection
       if (isElectronCandidate(track)) {
         countPVGTel++;
@@ -2042,7 +2049,7 @@ struct UpcTauRl {
       float tofKa[2] = {trk1.tofNSigmaKa(), trk2.tofNSigmaKa()};
       float tofPr[2] = {trk1.tofNSigmaPr(), trk2.tofNSigmaPr()};
 
-      tauTwoTracks(collision.runNumber(), collision.globalBC(), collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(),
+      tauTwoTracks(collision.runNumber(), collision.globalBC(), countTracksPerCollision, collision.numContrib(), countGoodNonPVtracks, collision.posX(), collision.posY(), collision.posZ(),
                    collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.hmpr(), collision.hmpr(),
                    collision.tfb(), collision.itsROFb(), collision.sbp(), collision.zVtxFT0vPV(), collision.vtxITSTPC(),
                    collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(),
