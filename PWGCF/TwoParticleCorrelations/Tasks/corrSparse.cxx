@@ -68,7 +68,7 @@ struct CalcNch {
 
   void process(AodCollisions::iterator const& collision, AodTracks const& tracks)
   {
-    
+
     multiplicityNch(tracks.size());
   }
 };
@@ -192,7 +192,7 @@ struct CorrSparse {
 
   void processSame(AodCollisions::iterator const& collision, AodTracks const& tracks)
   {
-    
+
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     fillYield(collision, tracks);
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, tracks.size()); // fill the SE histogram and Sparse
