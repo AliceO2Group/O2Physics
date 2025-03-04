@@ -861,13 +861,13 @@ struct IdentifiedBfFilterTracks {
                                 TString::Format("P_{T} distribution for reconstructed  %s^{#minus};P_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
                                 ptbins, ptlow, ptup);
         fhPtEtaPosA[sp] = new TH2F(TString::Format("fHistPtEtaPosA_%s", speciesName[sp]),
-                                TString::Format("P_{T} vs #eta distribution for reconstructed  %s^{#plus};P_{T} (GeV/c);#eta;dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
-                                ptbins, ptlow, ptup,
-                                etabins, etalow, etaup);
+                                   TString::Format("P_{T} vs #eta distribution for reconstructed  %s^{#plus};P_{T} (GeV/c);#eta;dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
+                                   ptbins, ptlow, ptup,
+                                   etabins, etalow, etaup);
         fhPtEtaNegA[sp] = new TH2F(TString::Format("fHistPtEtaNegA_%s", speciesName[sp]),
-                                TString::Format("P_{T} vs #eta distribution for reconstructed  %s^{#minus};P_{T} (GeV/c);#eta;dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
-                                ptbins, ptlow, ptup,
-                                etabins, etalow, etaup);
+                                   TString::Format("P_{T} vs #eta distribution for reconstructed  %s^{#minus};P_{T} (GeV/c);#eta;dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
+                                   ptbins, ptlow, ptup,
+                                   etabins, etalow, etaup);
         fhNPosNegA[sp] = new TH2F(TString::Format("fhNPosNegA_%s", speciesName[sp]).Data(),
                                   TString::Format("N(%s^{#plus}) N(%s^{#minus}) distribution for reconstructed;N(%s^{#plus});N(%s^{#minus})", speciesTitle[sp], speciesTitle[sp], speciesTitle[sp], speciesTitle[sp]).Data(),
                                   40, -0.5, 39.5, 40, -0.5, 39.5);
@@ -1001,13 +1001,13 @@ struct IdentifiedBfFilterTracks {
                                     TString::Format("P_{T} distribution %s^{#minus} (truth);P_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
                                     ptbins, ptlow, ptup);
         fhTruePtEtaPosA[sp] = new TH2F(TString::Format("fTrueHistPtEtaPosA_%s", speciesName[sp]),
-                                    TString::Format("P_{T} vs #eta distribution %s^{#plus} (truth);P_{T} (GeV/c);#eta;dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
-                                    ptbins, ptlow, ptup,
-                                    etabins, etalow, etaup);
+                                       TString::Format("P_{T} vs #eta distribution %s^{#plus} (truth);P_{T} (GeV/c);#eta;dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
+                                       ptbins, ptlow, ptup,
+                                       etabins, etalow, etaup);
         fhTruePtEtaNegA[sp] = new TH2F(TString::Format("fTrueHistPtEtaNegA_%s", speciesName[sp]),
-                                    TString::Format("P_{T} vs #eta distribution %s^{#minus} (truth);P_{T} (GeV/c);#eta;dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
-                                    ptbins, ptlow, ptup,
-                                    etabins, etalow, etaup);
+                                       TString::Format("P_{T} vs #eta distribution %s^{#minus} (truth);P_{T} (GeV/c);#eta;dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
+                                       ptbins, ptlow, ptup,
+                                       etabins, etalow, etaup);
         fhTrueNPosNegA[sp] = new TH2F(TString::Format("fhTrueNPosNegA_%s", speciesName[sp]).Data(),
                                       TString::Format("N(%s^{#plus}) N(%s^{#minus}) distribution (truth);N(%s^{#plus});N(%s^{#minus})", speciesTitle[sp], speciesTitle[sp], speciesTitle[sp], speciesTitle[sp]).Data(),
                                       40, -0.5, 39.5, 40, -0.5, 39.5);
@@ -1684,10 +1684,10 @@ void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& 
   fhdEdxIPTPCA[sp]->Fill(track.tpcInnerParam(), track.tpcSignal());
   if (track.sign() > 0) {
     fhPtPosA[sp]->Fill(track.pt());
-    fhPtEtaPosA[sp]->Fill(track.pt(),track.eta());
+    fhPtEtaPosA[sp]->Fill(track.pt(), track.eta());
   } else {
     fhPtNegA[sp]->Fill(track.pt());
-    fhPtEtaNegA[sp]->Fill(track.pt(),track.eta());
+    fhPtEtaNegA[sp]->Fill(track.pt(), track.eta());
   }
 }
 
@@ -1748,11 +1748,10 @@ void IdentifiedBfFilterTracks::fillParticleHistosAfterSelection(ParticleObject c
   fhTruePtA[sp]->Fill(particle.pt());
   if (charge > 0) {
     fhTruePtPosA[sp]->Fill(particle.pt());
-    fhTruePtEtaPosA[sp]->Fill(particle.pt(),particle.eta());
+    fhTruePtEtaPosA[sp]->Fill(particle.pt(), particle.eta());
   } else {
     fhTruePtNegA[sp]->Fill(particle.pt());
-    fhTruePtEtaNegA[sp]->Fill(particle.pt(),particle.eta());
-
+    fhTruePtEtaNegA[sp]->Fill(particle.pt(), particle.eta());
   }
 }
 
