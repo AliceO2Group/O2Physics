@@ -249,6 +249,7 @@ struct JFlucEfficiencyTask {
     if (centrality < cfgCentMin || centrality > cfgCentMax) {
       return;
     }
+    registry.fill(HIST("hZVertexReco"), cfCollision.posZ(), centrality);
 
     for (const auto& track : cfTracks) {
       registry.fill(HIST("hPtRec"), track.pt(), centrality);
@@ -342,6 +343,7 @@ struct JFlucEfficiencyTask {
     if (centrality < cfgCentMin || centrality > cfgCentMax) {
       return;
     }
+    registry.fill(HIST("hZVertexReco"), collision.posZ(), centrality);
     for (const auto& track : tracks) {
       // pT and eta selections
       if (track.pt() < cfgPtMin || track.pt() > cfgPtMax || track.eta() < cfgEtaMin || track.eta() > cfgEtaMax) {
