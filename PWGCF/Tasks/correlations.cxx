@@ -133,7 +133,9 @@ struct CorrelationTask {
   OutputObj<CorrelationContainer> same{"sameEvent"};
   OutputObj<CorrelationContainer> mixed{"mixedEvent"};
 
+  // persistent caches
   std::vector<float> efficiencyAssociatedCache;
+  std::vector<int> p2indexCache;
 
   struct Config {
     bool mPairCuts = false;
@@ -215,7 +217,13 @@ struct CorrelationTask {
     same->setTrackEtaCut(cfgCutEta);
     mixed->setTrackEtaCut(cfgCutEta);
 
-    efficiencyAssociatedCache.reserve(512);
+    if (!cfgEfficiencyAssociated.value.empty())
+      efficiencyAssociatedCache.reserve(512);
+    if (doprocessMCEfficiency2Prong) {
+      p2indexCache.reserve(16);
+      if (cfgMcTriggerPDGs->empty())
+        LOGF(fatal, "At least one PDG code in {} is to be selected to process 2-prong efficiency.", cfgMcTriggerPDGs.name);
+    }
 
     // o2-ccdb-upload -p Users/jgrosseo/correlations/LHC15o -f /tmp/correction_2011_global.root -k correction
 
@@ -949,11 +957,8 @@ struct CorrelationTask {
       case 2212: // proton
       case -2212:
         return 2;
-      case 421: // D0
-      case -421:
+      default: // NOTE. The efficiency histogram is hardcoded to contain 4 species. Anything special will have the last slot.
         return 3;
-      default:
-        return 4;
     }
   }
 
@@ -1003,6 +1008,57 @@ struct CorrelationTask {
     }
   }
   PROCESS_SWITCH(CorrelationTask, processMCEfficiency, "MC: Extract efficiencies", false);
+
+  Preslice<aod::CF2ProngTracks> perCollision2Prong = aod::cftrack::cfCollisionId;
+  void processMCEfficiency2Prong(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision, soa::Join<aod::CFMcParticles, aod::CF2ProngMcParts> const& mcParticles, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions, aod::CFTracksWithLabel const&, aod::CF2ProngTracks const& p2tracks)
+  {
+    auto multiplicity = mcCollision.multiplicity();
+    if (cfgCentBinsForMC > 0) {
+      if (collisions.size() == 0) {
+        return;
+      }
+      for (const auto& collision : collisions) {
+        multiplicity = collision.multiplicity();
+      }
+    }
+    // Primaries
+    p2indexCache.clear();
+    for (const auto& mcParticle : mcParticles) {
+      if (mcParticle.isPhysicalPrimary() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) != cfgMcTriggerPDGs->end()) {
+        same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
+        if (mcParticle.cfParticleDaugh0Id() < 0 || mcParticle.cfParticleDaugh1Id() < 0)
+          continue;
+        p2indexCache.push_back(mcParticle.globalIndex());
+      }
+    }
+    for (const auto& collision : collisions) {
+      auto grouped2ProngTracks = p2tracks.sliceBy(perCollision2Prong, collision.globalIndex());
+
+      for (const auto& p2track : grouped2ProngTracks) {
+        // Check if the mc particles of the prongs are found.
+        const auto& p0 = p2track.cfTrackProng0_as<aod::CFTracksWithLabel>();
+        const auto& p1 = p2track.cfTrackProng1_as<aod::CFTracksWithLabel>();
+        if (p0.has_cfMCParticle() && p1.has_cfMCParticle()) {
+          // find the 2-prong MC particle by the daughter MC particle IDs
+          auto m = std::find_if(p2indexCache.begin(), p2indexCache.end(), [&](const auto& t) -> bool {
+            const auto& mcParticle = mcParticles.iteratorAt(t);
+            return p0.cfMCParticleId() == mcParticle.cfParticleDaugh0Id() && p1.cfMCParticleId() == mcParticle.cfParticleDaugh1Id();
+          });
+          if (m == p2indexCache.end())
+            continue;
+          const auto& mcParticle = mcParticles.iteratorAt(*m);
+          if (mcParticle.isPhysicalPrimary()) {
+            same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
+          }
+          same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
+        } else {
+          // fake track
+          same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, p2track.eta(), p2track.pt(), 0, multiplicity, mcCollision.posZ());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(CorrelationTask, processMCEfficiency2Prong, "MC: Extract efficiencies for 2-prong particles", false);
 
   // NOTE SmallGroups includes soa::Filtered always
   void processMCSameDerived(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision, soa::Filtered<aod::CFMcParticles> const& mcParticles, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions)
