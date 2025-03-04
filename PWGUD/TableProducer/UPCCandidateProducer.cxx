@@ -1836,10 +1836,16 @@ struct UpcCandProducer {
                           fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
       // get selection flags per BC
-      int trsVal = bcTRS.count(globalBC) ? bcTRS[globalBC] : 0;
-      int trofsVal = bcTROFS.count(globalBC) ? bcTROFS[globalBC] : 0;
-      int hmprVal = bcHMPR.count(globalBC) ? bcHMPR[globalBC] : 0;
-      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, trsVal, trofsVal, hmprVal);
+      int trs = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ? 1 : 0;
+      int trofs = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoCollInRofStandard) ? 1 : 0;
+      int hmpr = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof) ? 1 : 0;
+      int tfb = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoTimeFrameBorder) ? 1 : 0;
+      int itsROFb = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoITSROFrameBorder) ? 1 : 0;
+      int sbp = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoSameBunchPileup) ? 1 : 0;
+      int zVtxFT0vPv = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) ? 1 : 0;
+      int vtxITSTPC = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kIsVertexITSTPC) ? 1 : 0;
+
+      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, trs, trofs, tfb, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC);
       eventCandidatesSelsFwd(fitInfo.distClosestBcV0A,
                              fitInfo.distClosestBcT0A,
                              amplitudesT0A,
