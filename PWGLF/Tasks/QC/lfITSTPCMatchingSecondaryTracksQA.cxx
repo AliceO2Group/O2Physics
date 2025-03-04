@@ -63,7 +63,6 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   // Track Parameters
   Configurable<float> minITSnCls{"minITSnCls", 1.0f, "min number of ITS clusters"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80.0f, "min number of TPC crossed rows"};
-  Configurable<float> minNCrossedRowsOverFindable{"minNCrossedRowsOverFindable", 0.8f, "min number of TPC crossed rows/findable"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
   Configurable<float> etaMin{"etaMin", -0.8f, "eta min"};
@@ -74,8 +73,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   Configurable<float> nsigmaTOFmax{"nsigmaTOFmax", +3.0f, "Maximum nsigma TOF"};
   Configurable<float> dcaxyMax{"dcaxyMax", 0.1f, "dcaxy max"};
   Configurable<float> dcazMax{"dcazMax", 0.1f, "dcaz max"};
-  Configurable<float> dcaxyMin{"dcaxyMin", 0.1f, "dcaxy min"};
-  Configurable<float> dcazMin{"dcazMin", 0.1f, "dcaz min"};
+  Configurable<float> dcaMin{"dcaMin", 0.1f, "dca min"};
   Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
   Configurable<bool> requireItsHits{"requireItsHits", false, "require ITS hits"};
   Configurable<std::vector<float>> requiredHit{"requiredHit", {0, 0, 0, 0, 0, 0, 0}, "required ITS Hits (1=required, 0=not required)"};
@@ -95,6 +93,8 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     // Event Counters
     if (doprocessData) {
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
+      registryData.add("dcaxyDatavspt", "dcaxyDatavspt", HistType::kTH2D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {400, -2, 2, "DCA_{xy} (cm)"}});
+      registryData.add("dcazDatavspt", "dcazDatavspt", HistType::kTH2D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {400, -2, 2, "DCA_{z} (cm)"}});
       registryData.add("primPionTPC", "primPionTPC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryData.add("primPionTPC_ITS", "primPionTPC_ITS", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryData.add("secPionTPC", "secPionTPC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
@@ -105,6 +105,8 @@ struct LfITSTPCMatchingSecondaryTracksQA {
 
     if (doprocessMC) {
       registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
+      registryMC.add("dcaxyMCvspt", "dcaxyMCvspt", HistType::kTH2D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {400, -2, 2, "DCA_{xy} (cm)"}});
+      registryMC.add("dcazMCvspt", "dcazMCvspt", HistType::kTH2D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {400, -2, 2, "DCA_{z} (cm)"}});
       registryMC.add("primPionTPC_MC", "primPionTPC_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryMC.add("primPionTPC_ITS_MC", "primPionTPC_ITS_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryMC.add("secPionTPC_MC", "secPionTPC_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
@@ -127,8 +129,6 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       return false;
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
       return false;
-    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < minNCrossedRowsOverFindable)
-      return false;
     if (track.tpcChi2NCl() > maxChi2TPC)
       return false;
     if (track.eta() < etaMin || track.eta() > etaMax)
@@ -147,15 +147,11 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       return false;
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
       return false;
-    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < minNCrossedRowsOverFindable)
-      return false;
     if (track.tpcChi2NCl() > maxChi2TPC)
       return false;
     if (track.eta() < etaMin || track.eta() > etaMax)
       return false;
-    if (std::fabs(track.dcaXY()) < dcaxyMin)
-      return false;
-    if (std::fabs(track.dcaZ()) < dcazMin)
+    if (std::sqrt(track.dcaXY() * track.dcaXY() + track.dcaZ() * track.dcaZ()) < dcaMin)
       return false;
     return true;
   }
@@ -166,8 +162,6 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     if (!track.hasTPC())
       return false;
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
-      return false;
-    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < minNCrossedRowsOverFindable)
       return false;
     if (track.tpcChi2NCl() > maxChi2TPC)
       return false;
@@ -248,6 +242,12 @@ struct LfITSTPCMatchingSecondaryTracksQA {
 
     for (const auto& track : tracks) {
 
+      // DCA distributions
+      if (passedTrackSelectionV0daughTPC(track) && passedPionSelection(track)) {
+        registryData.fill(HIST("dcaxyDatavspt"), track.pt(), track.dcaXY());
+        registryData.fill(HIST("dcazDatavspt"), track.pt(), track.dcaZ());
+      }
+
       // Primary Tracks
       if (passedTrackSelectionTpcPrimary(track) && passedPionSelection(track))
         registryData.fill(HIST("primPionTPC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
@@ -296,6 +296,12 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
 
       for (const auto& track : tracksPerColl) {
+
+        // DCA distributions
+        if (passedTrackSelectionV0daughTPC(track) && passedPionSelection(track)) {
+          registryMC.fill(HIST("dcaxyMCvspt"), track.pt(), track.dcaXY());
+          registryMC.fill(HIST("dcazMCvspt"), track.pt(), track.dcaZ());
+        }
 
         // Primary Tracks
         if (passedTrackSelectionTpcPrimary(track) && passedPionSelection(track))
