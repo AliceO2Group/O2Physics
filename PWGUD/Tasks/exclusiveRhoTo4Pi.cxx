@@ -44,8 +44,8 @@ namespace o2::aod
 namespace zero_charge_events
 {
 
-DECLARE_SOA_COLUMN(DCAxy, dcaxy, std::vector<double>);
-DECLARE_SOA_COLUMN(DCAz, dcaz, std::vector<double>);
+DECLARE_SOA_COLUMN(Dcaxy, dcaxy, std::vector<double>);
+DECLARE_SOA_COLUMN(Dcaz, dcaz, std::vector<double>);
 
 DECLARE_SOA_COLUMN(PionPt, pionPt, std::vector<double>);
 DECLARE_SOA_COLUMN(PionEta, pionEta, std::vector<double>);
@@ -63,8 +63,8 @@ DECLARE_SOA_COLUMN(FourPionCosThetaPair2, fourPionCosThetaPair2, double);
 } // namespace zero_charge_events
 DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
 
-                  zero_charge_events::DCAxy,
-                  zero_charge_events::DCAz,
+                  zero_charge_events::Dcaxy,
+                  zero_charge_events::Dcaz,
 
                   zero_charge_events::PionPt,
                   zero_charge_events::PionEta,
