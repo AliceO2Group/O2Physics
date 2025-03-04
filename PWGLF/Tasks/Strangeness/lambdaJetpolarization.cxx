@@ -226,9 +226,9 @@ struct LfMyV0s {
       }
       for (auto& candidate : myv0s) {
         if (candidate.mycollisionv0() == LeadingJet.mycollisionleadingjet()) {
-          registry.fill(HIST("V0protonphiInJetV0frame"), protonsinPhiInJetV0frame/V0Numbers);
-          registry.fill(HIST("hLambdamassandSinPhi"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame/V0Numbers);
-          registry.fill(HIST("profile"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame/V0Numbers);
+          registry.fill(HIST("V0protonphiInJetV0frame"), protonsinPhiInJetV0frame / V0Numbers);
+          registry.fill(HIST("hLambdamassandSinPhi"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame / V0Numbers);
+          registry.fill(HIST("profile"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame / V0Numbers);
         }
       }
     }
