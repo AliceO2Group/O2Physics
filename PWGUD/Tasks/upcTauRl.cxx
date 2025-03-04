@@ -63,6 +63,16 @@ DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(RecoMode, recoMode, int);
+DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, int);
+DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
+DECLARE_SOA_COLUMN(Trs, trs, int);
+DECLARE_SOA_COLUMN(Trofs, trofs, int);
+DECLARE_SOA_COLUMN(Hmpr, hmpr, int);
+DECLARE_SOA_COLUMN(TFb, tfb, int);
+DECLARE_SOA_COLUMN(ITSROFb, itsROFb, int);
+DECLARE_SOA_COLUMN(Sbp, sbp, int);
+DECLARE_SOA_COLUMN(ZvtxFT0vPV, zVtxFT0vPV, int);
+DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int);
 // FIT info
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
@@ -92,7 +102,9 @@ DECLARE_SOA_COLUMN(TrkTOFnSigmaPr, trkTOFnSigmaPr, float[2]);
 
 } // namespace reco_tree
 DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
-                  tau_tree::RunNumber, tau_tree::Bc, tau_tree::NumContrib, tau_tree::PosX, tau_tree::PosY, tau_tree::PosZ, tau_tree::RecoMode,
+                  tau_tree::RunNumber, tau_tree::Bc, tau_tree::NumContrib, tau_tree::PosX, tau_tree::PosY, tau_tree::PosZ,
+                  tau_tree::RecoMode, tau_tree::OccupancyInTime, tau_tree::HadronicRate,
+                  tau_tree::Trs, tau_tree::Trofs, tau_tree::Hmpr, tau_tree::TFb, tau_tree::ITSROFb, tau_tree::Sbp, tau_tree::ZvtxFT0vPV, tau_tree::VtxITSTPC,
                   tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA,
                   tau_tree::TimeFT0A, tau_tree::TimeFT0C, tau_tree::TimeFV0A,
                   tau_tree::TrkPx, tau_tree::TrkPy, tau_tree::TrkPz, tau_tree::TrkSign, tau_tree::TrkDCAxy, tau_tree::TrkDCAz,
@@ -100,8 +112,6 @@ DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
                   tau_tree::TrkTOFsignal, tau_tree::TrkTOFnSigmaEl, tau_tree::TrkTOFnSigmaMu, tau_tree::TrkTOFnSigmaPi, tau_tree::TrkTOFnSigmaKa, tau_tree::TrkTOFnSigmaPr);
 
 } // namespace o2::aod
-
-
 
 
 struct UpcTauRl {
@@ -2033,12 +2043,13 @@ struct UpcTauRl {
       float tofPr[2] = {trk1.tofNSigmaPr(), trk2.tofNSigmaPr()};
 
       tauTwoTracks(collision.runNumber(), collision.globalBC(), collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(),
-                  collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(),
-                  collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(),
-                  collision.flags(),
-                  px, py, pz, sign, dcaxy, dcaz,
-                  tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr,
-                  tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr);
+                   collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.hmpr(), collision.hmpr(),
+                   collision.tfb(), collision.itsROFb(), collision.sbp(), collision.zVtxFT0vPV(), collision.vtxITSTPC(),
+                   collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(),
+                   collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(),
+                   px, py, pz, sign, dcaxy, dcaz,
+                   tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr,
+                   tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr);
     }
 
   }
