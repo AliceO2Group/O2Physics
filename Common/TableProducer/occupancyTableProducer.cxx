@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
+/// \file   occupancyTableProducer.cxx
 /// \brief  Occupancy Table Producer : TPC PID - Calibration
 ///         Occupancy calculater using tracks which have entry for collision and trackQA tables
 ///         Ambg tracks were not used
@@ -17,6 +18,7 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <cmath>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -48,7 +50,7 @@ int32_t nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 // for 128 => nBCsPerTF = 456192 , for 32 => nBCsPerTF = 114048
 const int nBCinTF = 114048;         /// CCDB value // to be obtained from CCDB in future
 const int nBCinDrift = 114048 / 32; /// to get from ccdb in future
-const int arraySize = 3;            // Max no timeframes that can be present in a dataframe
+const int arraySize = 10;           // Max no timeframes that can be present in a dataframe
 
 struct OccupancyTableProducer {
 
@@ -88,6 +90,7 @@ struct OccupancyTableProducer {
 
   // Histogram registry;
   HistogramRegistry recoEvent{"recoEvent", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry occupancyQA{"occupancyQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Data Structures for Occupancy estimation
   std::array<int, arraySize> tfList;
@@ -722,6 +725,8 @@ struct TrackMeanOccTableProducer {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  HistogramRegistry occupancyQA{"occupancyQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
   // Configurables
   Configurable<int> customOrbitOffset{"customOrbitOffset", 0, "customOrbitOffset for MC"};
 
@@ -733,6 +738,9 @@ struct TrackMeanOccTableProducer {
   Configurable<bool> buildTrackMeanOccs6{"buildTrackMeanOccs6", true, "builder TrackMeanOccs6"};
   Configurable<bool> buildTrackMeanOccs7{"buildTrackMeanOccs7", true, "builder TrackMeanOccs7"};
   Configurable<bool> buildTrackMeanOccs8{"buildTrackMeanOccs8", true, "builder TrackMeanOccs8"};
+
+  Configurable<bool> fillQA1{"fillQA1", false, "fill QA LOG Ratios"};
+  Configurable<bool> fillQA2{"fillQA2", false, "fill QA condition dependent QAs"};
 
   // vectors to be used for occupancy estimation
   std::vector<float> occPrimUnfm80;
@@ -803,7 +811,219 @@ struct TrackMeanOccTableProducer {
     occRobustFDDT0V0PrimUnfm80.resize(nBCinTF / 80);
     occRobustNtrackDetUnfm80.resize(nBCinTF / 80);
     occRobustMultTableUnfm80.resize(nBCinTF / 80);
+
+    const AxisSpec axisQA1 = {500, 0, 50000};
+    const AxisSpec axisQA2 = {200, -2, 2};
+    const AxisSpec axisQA3 = {200, -20, 20};
+
+    occupancyQA.add("occTrackQA/Mean/OccPrimUnfm80", "OccPrimUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccFV0AUnfm80", "OccFV0AUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccFV0CUnfm80", "OccFV0CUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccFT0AUnfm80", "OccFT0AUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccFT0CUnfm80", "OccFT0CUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccFDDAUnfm80", "OccFDDAUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccFDDCUnfm80", "OccFDDCUnfm80", kTH1F, {axisQA1});
+
+    occupancyQA.add("occTrackQA/Mean/OccNTrackITSUnfm80", "OccNTrackITSUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccNTrackTPCUnfm80", "OccNTrackTPCUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccNTrackTRDUnfm80", "OccNTrackTRDUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccNTrackTOFUnfm80", "OccNTrackTOFUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccNTrackSizeUnfm80", "OccNTrackSizeUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccNTrackTPCAUnfm80", "OccNTrackTPCAUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccNTrackTPCCUnfm80", "OccNTrackTPCCUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccNTrackITSTPCUnfm80", "OccNTrackITSTPCUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccNTrackITSTPCAUnfm80", "OccNTrackITSTPCAUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccNTrackITSTPCCUnfm80", "OccNTrackITSTPCCUnfm80", kTH1F, {axisQA1});
+
+    occupancyQA.add("occTrackQA/Mean/OccMultNTracksHasITSUnfm80", "OccMultNTracksHasITSUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccMultNTracksHasTPCUnfm80", "OccMultNTracksHasTPCUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccMultNTracksHasTOFUnfm80", "OccMultNTracksHasTOFUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccMultNTracksHasTRDUnfm80", "OccMultNTracksHasTRDUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccMultNTracksITSOnlyUnfm80", "OccMultNTracksITSOnlyUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccMultNTracksTPCOnlyUnfm80", "OccMultNTracksTPCOnlyUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccMultNTracksITSTPCUnfm80", "OccMultNTracksITSTPCUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccMultAllTracksTPCOnlyUnfm80", "OccMultAllTracksTPCOnlyUnfm80", kTH1F, {axisQA1});
+
+    occupancyQA.add("occTrackQA/Mean/OccRobustT0V0PrimUnfm80", "OccRobustT0V0PrimUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccRobustFDDT0V0PrimUnfm80", "OccRobustFDDT0V0PrimUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccRobustNtrackDetUnfm80", "OccRobustNtrackDetUnfm80", kTH1F, {axisQA1});
+    occupancyQA.add("occTrackQA/Mean/OccRobustMultExtraTableUnfm80", "OccRobustMultExtraTableUnfm80", kTH1F, {axisQA1});
+
+    occupancyQA.addClone("occTrackQA/Mean/", "occTrackQA/WeightMean/");
+
+    if (fillQA1) {
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccPrimUnfm80", "OccPrimUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccFV0AUnfm80", "OccFV0AUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccFV0CUnfm80", "OccFV0CUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccFT0AUnfm80", "OccFT0AUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccFT0CUnfm80", "OccFT0CUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccFDDAUnfm80", "OccFDDAUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccFDDCUnfm80", "OccFDDCUnfm80", kTH1F, {axisQA2});
+
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccNTrackITSUnfm80", "OccNTrackITSUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccNTrackTPCUnfm80", "OccNTrackTPCUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccNTrackTRDUnfm80", "OccNTrackTRDUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccNTrackTOFUnfm80", "OccNTrackTOFUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccNTrackSizeUnfm80", "OccNTrackSizeUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccNTrackTPCAUnfm80", "OccNTrackTPCAUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccNTrackTPCCUnfm80", "OccNTrackTPCCUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccNTrackITSTPCUnfm80", "OccNTrackITSTPCUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccNTrackITSTPCAUnfm80", "OccNTrackITSTPCAUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccNTrackITSTPCCUnfm80", "OccNTrackITSTPCCUnfm80", kTH1F, {axisQA2});
+
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccMultNTracksHasITSUnfm80", "OccMultNTracksHasITSUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccMultNTracksHasTPCUnfm80", "OccMultNTracksHasTPCUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccMultNTracksHasTOFUnfm80", "OccMultNTracksHasTOFUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccMultNTracksHasTRDUnfm80", "OccMultNTracksHasTRDUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccMultNTracksITSOnlyUnfm80", "OccMultNTracksITSOnlyUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccMultNTracksTPCOnlyUnfm80", "OccMultNTracksTPCOnlyUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccMultNTracksITSTPCUnfm80", "OccMultNTracksITSTPCUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccMultAllTracksTPCOnlyUnfm80", "OccMultAllTracksTPCOnlyUnfm80", kTH1F, {axisQA2});
+
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccRobustT0V0PrimUnfm80", "OccRobustT0V0PrimUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccRobustFDDT0V0PrimUnfm80", "OccRobustFDDT0V0PrimUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccRobustNtrackDetUnfm80", "OccRobustNtrackDetUnfm80", kTH1F, {axisQA2});
+      occupancyQA.add("occTrackQA/LogRatio/RobustT0V0Prim/Mean/OccRobustMultExtraTableUnfm80", "OccRobustMultExtraTableUnfm80", kTH1F, {axisQA2});
+
+      occupancyQA.addClone("occTrackQA/LogRatio/RobustT0V0Prim/Mean/", "occTrackQA/LogRatio/RobustT0V0Prim/WeightMean/");
+      occupancyQA.addClone("occTrackQA/LogRatio/RobustT0V0Prim/WeightMean/", "occTrackQA/LogRatio/weightRobustT0V0Prim/WeightMean/");
+    }
+
+    if (fillQA2) {
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccPrimUnfm80", "OccPrimUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccFV0AUnfm80", "OccFV0AUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccFV0CUnfm80", "OccFV0CUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccFT0AUnfm80", "OccFT0AUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccFT0CUnfm80", "OccFT0CUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccFDDAUnfm80", "OccFDDAUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccFDDCUnfm80", "OccFDDCUnfm80", kTH1F, {axisQA3});
+
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccNTrackITSUnfm80", "OccNTrackITSUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccNTrackTPCUnfm80", "OccNTrackTPCUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccNTrackTRDUnfm80", "OccNTrackTRDUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccNTrackTOFUnfm80", "OccNTrackTOFUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccNTrackSizeUnfm80", "OccNTrackSizeUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccNTrackTPCAUnfm80", "OccNTrackTPCAUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccNTrackTPCCUnfm80", "OccNTrackTPCCUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccNTrackITSTPCUnfm80", "OccNTrackITSTPCUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccNTrackITSTPCAUnfm80", "OccNTrackITSTPCAUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccNTrackITSTPCCUnfm80", "OccNTrackITSTPCCUnfm80", kTH1F, {axisQA3});
+
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccMultNTracksHasITSUnfm80", "OccMultNTracksHasITSUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccMultNTracksHasTPCUnfm80", "OccMultNTracksHasTPCUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccMultNTracksHasTOFUnfm80", "OccMultNTracksHasTOFUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccMultNTracksHasTRDUnfm80", "OccMultNTracksHasTRDUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccMultNTracksITSOnlyUnfm80", "OccMultNTracksITSOnlyUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccMultNTracksTPCOnlyUnfm80", "OccMultNTracksTPCOnlyUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccMultNTracksITSTPCUnfm80", "OccMultNTracksITSTPCUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccMultAllTracksTPCOnlyUnfm80", "OccMultAllTracksTPCOnlyUnfm80", kTH1F, {axisQA3});
+
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccRobustT0V0PrimUnfm80", "OccRobustT0V0PrimUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccRobustFDDT0V0PrimUnfm80", "OccRobustFDDT0V0PrimUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccRobustNtrackDetUnfm80", "OccRobustNtrackDetUnfm80", kTH1F, {axisQA3});
+      occupancyQA.add("occTrackQA/Condition1/RobustT0V0Prim/Mean/OccRobustMultExtraTableUnfm80", "OccRobustMultExtraTableUnfm80", kTH1F, {axisQA3});
+
+      occupancyQA.addClone("occTrackQA/Condition1/RobustT0V0Prim/Mean/", "occTrackQA/Condition1/RobustT0V0Prim/WeightMean/");
+      occupancyQA.addClone("occTrackQA/Condition1/RobustT0V0Prim/WeightMean/", "occTrackQA/Condition1/weightRobustT0V0Prim/WeightMean/");
+
+      occupancyQA.addClone("occTrackQA/Condition1/", "occTrackQA/Condition2/");
+      occupancyQA.addClone("occTrackQA/Condition1/", "occTrackQA/Condition3/");
+      occupancyQA.addClone("occTrackQA/Condition1/", "occTrackQA/Condition4/");
+    }
+    occupancyQA.print();
   }
+
+  enum OccNamesEnum {
+    kOccPrimUnfm80 = 0,
+    kOccFV0AUnfm80,
+    kOccFV0CUnfm80,
+    kOccFT0AUnfm80,
+    kOccFT0CUnfm80,
+    kOccFDDAUnfm80,
+    kOccFDDCUnfm80,
+
+    kOccNTrackITSUnfm80,
+    kOccNTrackTPCUnfm80,
+    kOccNTrackTRDUnfm80,
+    kOccNTrackTOFUnfm80,
+    kOccNTrackSizeUnfm80,
+    kOccNTrackTPCAUnfm80,
+    kOccNTrackTPCCUnfm80,
+    kOccNTrackITSTPCUnfm80,
+    kOccNTrackITSTPCAUnfm80,
+    kOccNTrackITSTPCCUnfm80,
+
+    kOccMultNTracksHasITSUnfm80,
+    kOccMultNTracksHasTPCUnfm80,
+    kOccMultNTracksHasTOFUnfm80,
+    kOccMultNTracksHasTRDUnfm80,
+    kOccMultNTracksITSOnlyUnfm80,
+    kOccMultNTracksTPCOnlyUnfm80,
+    kOccMultNTracksITSTPCUnfm80,
+    kOccMultAllTracksTPCOnlyUnfm80,
+
+    kOccRobustT0V0PrimUnfm80,
+    kOccRobustFDDT0V0PrimUnfm80,
+    kOccRobustNtrackDetUnfm80,
+    kOccRobustMultTableUnfm80
+  };
+
+  static constexpr std::string_view OccNames[]{
+    "OccPrimUnfm80",
+    "OccFV0AUnfm80",
+    "OccFV0CUnfm80",
+    "OccFT0AUnfm80",
+    "OccFT0CUnfm80",
+    "OccFDDAUnfm80",
+    "OccFDDCUnfm80",
+
+    "OccNTrackITSUnfm80",
+    "OccNTrackTPCUnfm80",
+    "OccNTrackTRDUnfm80",
+    "OccNTrackTOFUnfm80",
+    "OccNTrackSizeUnfm80",
+    "OccNTrackTPCAUnfm80",
+    "OccNTrackTPCCUnfm80",
+    "OccNTrackITSTPCUnfm80",
+    "OccNTrackITSTPCAUnfm80",
+    "OccNTrackITSTPCCUnfm80",
+
+    "OccMultNTracksHasITSUnfm80",
+    "OccMultNTracksHasTPCUnfm80",
+    "OccMultNTracksHasTOFUnfm80",
+    "OccMultNTracksHasTRDUnfm80",
+    "OccMultNTracksITSOnlyUnfm80",
+    "OccMultNTracksTPCOnlyUnfm80",
+    "OccMultNTracksITSTPCUnfm80",
+    "OccMultAllTracksTPCOnlyUnfm80",
+
+    "OccRobustT0V0PrimUnfm80",
+    "OccRobustFDDT0V0PrimUnfm80",
+    "OccRobustNtrackDetUnfm80",
+    "OccRobustMultExtraTableUnfm80"};
+
+  enum OccDirEnum {
+    kMean = 0,
+    kWeightMean,
+    kLogRatio,
+    kRobustT0V0Prim,
+    kWeightRobustT0V0Prim,
+    kCondition1,
+    kCondition2,
+    kCondition3,
+    kCondition4
+  };
+
+  static constexpr std::string_view OccDire[] = {
+    "Mean/",
+    "WeightMean/",
+    "LogRatio/",
+    "RobustT0V0Prim/",
+    "weightRobustT0V0Prim/",
+    "Condition1/",
+    "Condition2/",
+    "Condition3/",
+    "Condition4/"};
 
   void getRunInfo(const int& run, int& nBCsPerTF, int64_t& bcSOR)
   {
@@ -893,9 +1113,33 @@ struct TrackMeanOccTableProducer {
     return meanOccupancy;
   }
 
+  template <int occMode, int occRobustMode, int occName>
+  void fillQAInfo(const float& occValue, const float& occRobustValue)
+  {
+    occupancyQA.fill(HIST("occTrackQA/") + HIST(OccDire[occMode]) + HIST(OccNames[occName]), occValue);
+    if (fillQA1) {
+      occupancyQA.fill(HIST("occTrackQA/LogRatio/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), std::log(std::abs(occValue / occRobustValue)));
+      if (fillQA2) {
+        if (std::abs(std::log(occValue / occRobustValue)) < 2) { // conditional filling start
+          occupancyQA.fill(HIST("occTrackQA/Condition1/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
+          if (std::abs(occRobustValue + occValue) > 200) {
+            occupancyQA.fill(HIST("occTrackQA/Condition4/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
+            occupancyQA.fill(HIST("occTrackQA/Condition3/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
+            occupancyQA.fill(HIST("occTrackQA/Condition2/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
+          } else if (std::abs(occRobustValue + occValue) > 50) {
+            occupancyQA.fill(HIST("occTrackQA/Condition3/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
+            occupancyQA.fill(HIST("occTrackQA/Condition2/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
+          } else if (std::abs(occRobustValue + occValue) > 20) {
+            occupancyQA.fill(HIST("occTrackQA/Condition2/") + HIST(OccDire[occRobustMode]) + HIST(OccDire[occMode]) + HIST(OccNames[occName]), (std::log(occValue / occRobustValue)) * std::sqrt(occValue + occRobustValue));
+          }
+        } // conditional filling end
+      }
+    }
+  }
+
   using MyCollisions = soa::Join<aod::Collisions, aod::Mults>;
   using MyTracks = soa::Join<aod::Tracks, o2::aod::TracksCov, aod::TracksExtra>;
-  using MyTracksQA = aod::TracksQA_000; // aod::TracksQAVersion; //aod::TracksQA
+  using MyTracksQA = aod::TracksQA_002;
   using MyBCTable = soa::Join<aod::BCsWithTimestamps, aod::OccIndexTable, aod::BCTFinfoTable>;
 
   using MyOccsDet = soa::Join<aod::OccsBCsList, aod::OccsDet>;
@@ -959,6 +1203,73 @@ struct TrackMeanOccTableProducer {
 
     int binBCbegin;
     int binBCend;
+
+    float meanOccPrimUnfm80 = 0;
+    float meanOccFV0AUnfm80 = 0;
+    float meanOccFV0CUnfm80 = 0;
+    float meanOccFT0AUnfm80 = 0;
+    float meanOccFT0CUnfm80 = 0;
+    float meanOccFDDAUnfm80 = 0;
+    float meanOccFDDCUnfm80 = 0;
+
+    float meanOccNTrackITSUnfm80 = 0;
+    float meanOccNTrackTPCUnfm80 = 0;
+    float meanOccNTrackTRDUnfm80 = 0;
+    float meanOccNTrackTOFUnfm80 = 0;
+    float meanOccNTrackSizeUnfm80 = 0;
+    float meanOccNTrackTPCAUnfm80 = 0;
+    float meanOccNTrackTPCCUnfm80 = 0;
+    float meanOccNTrackITSTPCUnfm80 = 0;
+    float meanOccNTrackITSTPCAUnfm80 = 0;
+    float meanOccNTrackITSTPCCUnfm80 = 0;
+
+    float meanOccMultNTracksHasITSUnfm80 = 0;
+    float meanOccMultNTracksHasTPCUnfm80 = 0;
+    float meanOccMultNTracksHasTOFUnfm80 = 0;
+    float meanOccMultNTracksHasTRDUnfm80 = 0;
+    float meanOccMultNTracksITSOnlyUnfm80 = 0;
+    float meanOccMultNTracksTPCOnlyUnfm80 = 0;
+    float meanOccMultNTracksITSTPCUnfm80 = 0;
+    float meanOccMultAllTracksTPCOnlyUnfm80 = 0;
+
+    float meanOccRobustT0V0PrimUnfm80 = 0;
+    float meanOccRobustFDDT0V0PrimUnfm80 = 0;
+    float meanOccRobustNtrackDetUnfm80 = 0;
+    float meanOccRobustMultTableUnfm80 = 0;
+
+    float weightMeanOccPrimUnfm80 = 0;
+    float weightMeanOccFV0AUnfm80 = 0;
+    float weightMeanOccFV0CUnfm80 = 0;
+    float weightMeanOccFT0AUnfm80 = 0;
+    float weightMeanOccFT0CUnfm80 = 0;
+    float weightMeanOccFDDAUnfm80 = 0;
+    float weightMeanOccFDDCUnfm80 = 0;
+
+    float weightMeanOccNTrackITSUnfm80 = 0;
+    float weightMeanOccNTrackTPCUnfm80 = 0;
+    float weightMeanOccNTrackTRDUnfm80 = 0;
+    float weightMeanOccNTrackTOFUnfm80 = 0;
+    float weightMeanOccNTrackSizeUnfm80 = 0;
+    float weightMeanOccNTrackTPCAUnfm80 = 0;
+    float weightMeanOccNTrackTPCCUnfm80 = 0;
+    float weightMeanOccNTrackITSTPCUnfm80 = 0;
+    float weightMeanOccNTrackITSTPCAUnfm80 = 0;
+    float weightMeanOccNTrackITSTPCCUnfm80 = 0;
+
+    float weightMeanOccMultNTracksHasITSUnfm80 = 0;
+    float weightMeanOccMultNTracksHasTPCUnfm80 = 0;
+    float weightMeanOccMultNTracksHasTOFUnfm80 = 0;
+    float weightMeanOccMultNTracksHasTRDUnfm80 = 0;
+    float weightMeanOccMultNTracksITSOnlyUnfm80 = 0;
+    float weightMeanOccMultNTracksTPCOnlyUnfm80 = 0;
+    float weightMeanOccMultNTracksITSTPCUnfm80 = 0;
+    float weightMeanOccMultAllTracksTPCOnlyUnfm80 = 0;
+
+    float weightMeanOccRobustT0V0PrimUnfm80 = 0;
+    float weightMeanOccRobustFDDT0V0PrimUnfm80 = 0;
+    float weightMeanOccRobustNtrackDetUnfm80 = 0;
+    float weightMeanOccRobustMultTableUnfm80 = 0;
+
     for (const auto& trackQA : tracksQA) {
       auto const& track = trackQA.track_as<MyTracks>();
       auto collision = collisions.begin();
@@ -1071,9 +1382,9 @@ struct TrackMeanOccTableProducer {
           std::copy(listOccsMultExtra.occMultAllTracksTPCOnlyUnfm80().begin(), listOccsMultExtra.occMultAllTracksTPCOnlyUnfm80().end(), occMultAllTracksTPCOnlyUnfm80.begin());
         }
 
+        auto listOccsRobust = occsRobust.iteratorAt(bc.occId());
+        std::copy(listOccsRobust.occRobustT0V0PrimUnfm80().begin(), listOccsRobust.occRobustT0V0PrimUnfm80().end(), occRobustT0V0PrimUnfm80.begin());
         if (buildTrackMeanOccs4 || buildTrackMeanOccs8) {
-          auto listOccsRobust = occsRobust.iteratorAt(bc.occId());
-          std::copy(listOccsRobust.occRobustT0V0PrimUnfm80().begin(), listOccsRobust.occRobustT0V0PrimUnfm80().end(), occRobustT0V0PrimUnfm80.begin());
           std::copy(listOccsRobust.occRobustFDDT0V0PrimUnfm80().begin(), listOccsRobust.occRobustFDDT0V0PrimUnfm80().end(), occRobustFDDT0V0PrimUnfm80.begin());
           std::copy(listOccsRobust.occRobustNtrackDetUnfm80().begin(), listOccsRobust.occRobustNtrackDetUnfm80().end(), occRobustNtrackDetUnfm80.begin());
           std::copy(listOccsRobust.occRobustMultExtraTableUnfm80().begin(), listOccsRobust.occRobustMultExtraTableUnfm80().end(), occRobustMultTableUnfm80.begin());
@@ -1114,86 +1425,249 @@ struct TrackMeanOccTableProducer {
 
       genTrackMeanOccs0(track.globalIndex());
 
+      meanOccRobustT0V0PrimUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occRobustT0V0PrimUnfm80);
+      weightMeanOccRobustT0V0PrimUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occRobustT0V0PrimUnfm80);
+
       if (buildTrackMeanOccs1) {
-        genTrackMeanOccs1(getMeanOccupancy(binBCbegin, binBCend, occPrimUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occFV0AUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occFV0CUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occFT0AUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occFT0CUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occFDDAUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occFDDCUnfm80));
+        meanOccPrimUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occPrimUnfm80);
+        meanOccFV0AUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occFV0AUnfm80);
+        meanOccFV0CUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occFV0CUnfm80);
+        meanOccFT0AUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occFT0AUnfm80);
+        meanOccFT0CUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occFT0CUnfm80);
+        meanOccFDDAUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occFDDAUnfm80);
+        meanOccFDDCUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occFDDCUnfm80);
+
+        genTrackMeanOccs1(meanOccPrimUnfm80,
+                          meanOccFV0AUnfm80,
+                          meanOccFV0CUnfm80,
+                          meanOccFT0AUnfm80,
+                          meanOccFT0CUnfm80,
+                          meanOccFDDAUnfm80,
+                          meanOccFDDCUnfm80);
+
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccPrimUnfm80>(meanOccPrimUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccFV0AUnfm80>(meanOccFV0AUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccFV0CUnfm80>(meanOccFV0CUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccFT0AUnfm80>(meanOccFT0AUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccFT0CUnfm80>(meanOccFT0CUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccFDDAUnfm80>(meanOccFDDAUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccFDDCUnfm80>(meanOccFDDCUnfm80, meanOccRobustT0V0PrimUnfm80);
       }
       if (buildTrackMeanOccs2) {
-        genTrackMeanOccs2(
-          getMeanOccupancy(binBCbegin, binBCend, occNTrackITSUnfm80),
-          getMeanOccupancy(binBCbegin, binBCend, occNTrackTPCUnfm80),
-          getMeanOccupancy(binBCbegin, binBCend, occNTrackTRDUnfm80),
-          getMeanOccupancy(binBCbegin, binBCend, occNTrackTOFUnfm80),
-          getMeanOccupancy(binBCbegin, binBCend, occNTrackSizeUnfm80),
-          getMeanOccupancy(binBCbegin, binBCend, occNTrackTPCAUnfm80),
-          getMeanOccupancy(binBCbegin, binBCend, occNTrackTPCCUnfm80),
-          getMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCUnfm80),
-          getMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCAUnfm80),
-          getMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCCUnfm80));
+        meanOccNTrackITSUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occNTrackITSUnfm80);
+        meanOccNTrackTPCUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occNTrackTPCUnfm80);
+        meanOccNTrackTRDUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occNTrackTRDUnfm80);
+        meanOccNTrackTOFUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occNTrackTOFUnfm80);
+        meanOccNTrackSizeUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occNTrackSizeUnfm80);
+        meanOccNTrackTPCAUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occNTrackTPCAUnfm80);
+        meanOccNTrackTPCCUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occNTrackTPCCUnfm80);
+        meanOccNTrackITSTPCUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCUnfm80);
+        meanOccNTrackITSTPCAUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCAUnfm80);
+        meanOccNTrackITSTPCCUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCCUnfm80);
+
+        genTrackMeanOccs2(meanOccNTrackITSUnfm80,
+                          meanOccNTrackTPCUnfm80,
+                          meanOccNTrackTRDUnfm80,
+                          meanOccNTrackTOFUnfm80,
+                          meanOccNTrackSizeUnfm80,
+                          meanOccNTrackTPCAUnfm80,
+                          meanOccNTrackTPCCUnfm80,
+                          meanOccNTrackITSTPCUnfm80,
+                          meanOccNTrackITSTPCAUnfm80,
+                          meanOccNTrackITSTPCCUnfm80);
+
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccNTrackITSUnfm80>(meanOccNTrackITSUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccNTrackTPCUnfm80>(meanOccNTrackTPCUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccNTrackTRDUnfm80>(meanOccNTrackTRDUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccNTrackTOFUnfm80>(meanOccNTrackTOFUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccNTrackSizeUnfm80>(meanOccNTrackSizeUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccNTrackTPCAUnfm80>(meanOccNTrackTPCAUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccNTrackTPCCUnfm80>(meanOccNTrackTPCCUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccNTrackITSTPCUnfm80>(meanOccNTrackITSTPCUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccNTrackITSTPCAUnfm80>(meanOccNTrackITSTPCAUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccNTrackITSTPCCUnfm80>(meanOccNTrackITSTPCCUnfm80, meanOccRobustT0V0PrimUnfm80);
       }
       if (buildTrackMeanOccs3) {
-        genTrackMeanOccs3(getMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasITSUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasTPCUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasTOFUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasTRDUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occMultNTracksITSOnlyUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occMultNTracksTPCOnlyUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occMultNTracksITSTPCUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occMultAllTracksTPCOnlyUnfm80));
+        meanOccMultNTracksHasITSUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasITSUnfm80);
+        meanOccMultNTracksHasTPCUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasTPCUnfm80);
+        meanOccMultNTracksHasTOFUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasTOFUnfm80);
+        meanOccMultNTracksHasTRDUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasTRDUnfm80);
+        meanOccMultNTracksITSOnlyUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occMultNTracksITSOnlyUnfm80);
+        meanOccMultNTracksTPCOnlyUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occMultNTracksTPCOnlyUnfm80);
+        meanOccMultNTracksITSTPCUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occMultNTracksITSTPCUnfm80);
+        meanOccMultAllTracksTPCOnlyUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occMultAllTracksTPCOnlyUnfm80);
+
+        genTrackMeanOccs3(meanOccMultNTracksHasITSUnfm80,
+                          meanOccMultNTracksHasTPCUnfm80,
+                          meanOccMultNTracksHasTOFUnfm80,
+                          meanOccMultNTracksHasTRDUnfm80,
+                          meanOccMultNTracksITSOnlyUnfm80,
+                          meanOccMultNTracksTPCOnlyUnfm80,
+                          meanOccMultNTracksITSTPCUnfm80,
+                          meanOccMultAllTracksTPCOnlyUnfm80);
+
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccMultNTracksHasITSUnfm80>(meanOccMultNTracksHasITSUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccMultNTracksHasTPCUnfm80>(meanOccMultNTracksHasTPCUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccMultNTracksHasTOFUnfm80>(meanOccMultNTracksHasTOFUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccMultNTracksHasTRDUnfm80>(meanOccMultNTracksHasTRDUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccMultNTracksITSOnlyUnfm80>(meanOccMultNTracksITSOnlyUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccMultNTracksTPCOnlyUnfm80>(meanOccMultNTracksTPCOnlyUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccMultNTracksITSTPCUnfm80>(meanOccMultNTracksITSTPCUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccMultAllTracksTPCOnlyUnfm80>(meanOccMultAllTracksTPCOnlyUnfm80, meanOccRobustT0V0PrimUnfm80);
       }
       if (buildTrackMeanOccs4) {
-        genTrackMeanOccs4(getMeanOccupancy(binBCbegin, binBCend, occRobustT0V0PrimUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occRobustFDDT0V0PrimUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occRobustNtrackDetUnfm80),
-                          getMeanOccupancy(binBCbegin, binBCend, occRobustMultTableUnfm80));
+        meanOccRobustFDDT0V0PrimUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occRobustFDDT0V0PrimUnfm80);
+        meanOccRobustNtrackDetUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occRobustNtrackDetUnfm80);
+        meanOccRobustMultTableUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occRobustMultTableUnfm80);
+
+        genTrackMeanOccs4(meanOccRobustT0V0PrimUnfm80,
+                          meanOccRobustFDDT0V0PrimUnfm80,
+                          meanOccRobustNtrackDetUnfm80,
+                          meanOccRobustMultTableUnfm80);
+
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccRobustT0V0PrimUnfm80>(meanOccRobustT0V0PrimUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccRobustFDDT0V0PrimUnfm80>(meanOccRobustFDDT0V0PrimUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccRobustNtrackDetUnfm80>(meanOccRobustNtrackDetUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kMean, kRobustT0V0Prim, kOccRobustMultTableUnfm80>(meanOccRobustMultTableUnfm80, meanOccRobustT0V0PrimUnfm80);
       }
 
       if (buildTrackMeanOccs5) {
-        genTrackMeanOccs5(getWeightedMeanOccupancy(binBCbegin, binBCend, occPrimUnfm80),
-                          getWeightedMeanOccupancy(binBCbegin, binBCend, occFV0AUnfm80),
-                          getWeightedMeanOccupancy(binBCbegin, binBCend, occFV0CUnfm80),
-                          getWeightedMeanOccupancy(binBCbegin, binBCend, occFT0AUnfm80),
-                          getWeightedMeanOccupancy(binBCbegin, binBCend, occFT0CUnfm80),
-                          getWeightedMeanOccupancy(binBCbegin, binBCend, occFDDAUnfm80),
-                          getWeightedMeanOccupancy(binBCbegin, binBCend, occFDDCUnfm80));
+        weightMeanOccPrimUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occPrimUnfm80);
+        weightMeanOccFV0AUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occFV0AUnfm80);
+        weightMeanOccFV0CUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occFV0CUnfm80);
+        weightMeanOccFT0AUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occFT0AUnfm80);
+        weightMeanOccFT0CUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occFT0CUnfm80);
+        weightMeanOccFDDAUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occFDDAUnfm80);
+        weightMeanOccFDDCUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occFDDCUnfm80);
+
+        genTrackMeanOccs5(weightMeanOccPrimUnfm80,
+                          weightMeanOccFV0AUnfm80,
+                          weightMeanOccFV0CUnfm80,
+                          weightMeanOccFT0AUnfm80,
+                          weightMeanOccFT0CUnfm80,
+                          weightMeanOccFDDAUnfm80,
+                          weightMeanOccFDDCUnfm80);
+
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccPrimUnfm80>(weightMeanOccPrimUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccFV0AUnfm80>(weightMeanOccFV0AUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccFV0CUnfm80>(weightMeanOccFV0CUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccFT0AUnfm80>(weightMeanOccFT0AUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccFT0CUnfm80>(weightMeanOccFT0CUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccFDDAUnfm80>(weightMeanOccFDDAUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccFDDCUnfm80>(weightMeanOccFDDCUnfm80, meanOccRobustT0V0PrimUnfm80);
+
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccPrimUnfm80>(weightMeanOccPrimUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccFV0AUnfm80>(weightMeanOccFV0AUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccFV0CUnfm80>(weightMeanOccFV0CUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccFT0AUnfm80>(weightMeanOccFT0AUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccFT0CUnfm80>(weightMeanOccFT0CUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccFDDAUnfm80>(weightMeanOccFDDAUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccFDDCUnfm80>(weightMeanOccFDDCUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
       }
 
       if (buildTrackMeanOccs6) {
-        genTrackMeanOccs6(
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackITSUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackTPCUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackTRDUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackTOFUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackSizeUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackTPCAUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackTPCCUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCAUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCCUnfm80));
+        weightMeanOccNTrackITSUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackITSUnfm80);
+        weightMeanOccNTrackTPCUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackTPCUnfm80);
+        weightMeanOccNTrackTRDUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackTRDUnfm80);
+        weightMeanOccNTrackTOFUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackTOFUnfm80);
+        weightMeanOccNTrackSizeUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackSizeUnfm80);
+        weightMeanOccNTrackTPCAUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackTPCAUnfm80);
+        weightMeanOccNTrackTPCCUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackTPCCUnfm80);
+        weightMeanOccNTrackITSTPCUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCUnfm80);
+        weightMeanOccNTrackITSTPCAUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCAUnfm80);
+        weightMeanOccNTrackITSTPCCUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCCUnfm80);
+
+        genTrackMeanOccs6(weightMeanOccNTrackITSUnfm80,
+                          weightMeanOccNTrackTPCUnfm80,
+                          weightMeanOccNTrackTRDUnfm80,
+                          weightMeanOccNTrackTOFUnfm80,
+                          weightMeanOccNTrackSizeUnfm80,
+                          weightMeanOccNTrackTPCAUnfm80,
+                          weightMeanOccNTrackTPCCUnfm80,
+                          weightMeanOccNTrackITSTPCUnfm80,
+                          weightMeanOccNTrackITSTPCAUnfm80,
+                          weightMeanOccNTrackITSTPCCUnfm80);
+
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccNTrackITSUnfm80>(weightMeanOccNTrackITSUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccNTrackTPCUnfm80>(weightMeanOccNTrackTPCUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccNTrackTRDUnfm80>(weightMeanOccNTrackTRDUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccNTrackTOFUnfm80>(weightMeanOccNTrackTOFUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccNTrackSizeUnfm80>(weightMeanOccNTrackSizeUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccNTrackTPCAUnfm80>(weightMeanOccNTrackTPCAUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccNTrackTPCCUnfm80>(weightMeanOccNTrackTPCCUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccNTrackITSTPCUnfm80>(weightMeanOccNTrackITSTPCUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccNTrackITSTPCAUnfm80>(weightMeanOccNTrackITSTPCAUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccNTrackITSTPCCUnfm80>(weightMeanOccNTrackITSTPCCUnfm80, meanOccRobustT0V0PrimUnfm80);
+
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccNTrackITSUnfm80>(weightMeanOccNTrackITSUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccNTrackTPCUnfm80>(weightMeanOccNTrackTPCUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccNTrackTRDUnfm80>(weightMeanOccNTrackTRDUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccNTrackTOFUnfm80>(weightMeanOccNTrackTOFUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccNTrackSizeUnfm80>(weightMeanOccNTrackSizeUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccNTrackTPCAUnfm80>(weightMeanOccNTrackTPCAUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccNTrackTPCCUnfm80>(weightMeanOccNTrackTPCCUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccNTrackITSTPCUnfm80>(weightMeanOccNTrackITSTPCUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccNTrackITSTPCAUnfm80>(weightMeanOccNTrackITSTPCAUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccNTrackITSTPCCUnfm80>(weightMeanOccNTrackITSTPCCUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
       }
 
       if (buildTrackMeanOccs7) {
-        genTrackMeanOccs7(
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasITSUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasTPCUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasTOFUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasTRDUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksITSOnlyUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksTPCOnlyUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksITSTPCUnfm80),
-          getWeightedMeanOccupancy(binBCbegin, binBCend, occMultAllTracksTPCOnlyUnfm80));
+        weightMeanOccMultNTracksHasITSUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasITSUnfm80);
+        weightMeanOccMultNTracksHasTPCUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasTPCUnfm80);
+        weightMeanOccMultNTracksHasTOFUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasTOFUnfm80);
+        weightMeanOccMultNTracksHasTRDUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksHasTRDUnfm80);
+        weightMeanOccMultNTracksITSOnlyUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksITSOnlyUnfm80);
+        weightMeanOccMultNTracksTPCOnlyUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksTPCOnlyUnfm80);
+        weightMeanOccMultNTracksITSTPCUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksITSTPCUnfm80);
+        weightMeanOccMultAllTracksTPCOnlyUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occMultAllTracksTPCOnlyUnfm80);
+
+        genTrackMeanOccs7(weightMeanOccMultNTracksHasITSUnfm80,
+                          weightMeanOccMultNTracksHasTPCUnfm80,
+                          weightMeanOccMultNTracksHasTOFUnfm80,
+                          weightMeanOccMultNTracksHasTRDUnfm80,
+                          weightMeanOccMultNTracksITSOnlyUnfm80,
+                          weightMeanOccMultNTracksTPCOnlyUnfm80,
+                          weightMeanOccMultNTracksITSTPCUnfm80,
+                          weightMeanOccMultAllTracksTPCOnlyUnfm80);
+
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccMultNTracksHasITSUnfm80>(weightMeanOccMultNTracksHasITSUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccMultNTracksHasTPCUnfm80>(weightMeanOccMultNTracksHasTPCUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccMultNTracksHasTOFUnfm80>(weightMeanOccMultNTracksHasTOFUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccMultNTracksHasTRDUnfm80>(weightMeanOccMultNTracksHasTRDUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccMultNTracksITSOnlyUnfm80>(weightMeanOccMultNTracksITSOnlyUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccMultNTracksTPCOnlyUnfm80>(weightMeanOccMultNTracksTPCOnlyUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccMultNTracksITSTPCUnfm80>(weightMeanOccMultNTracksITSTPCUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccMultAllTracksTPCOnlyUnfm80>(weightMeanOccMultAllTracksTPCOnlyUnfm80, meanOccRobustT0V0PrimUnfm80);
+
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccMultNTracksHasITSUnfm80>(weightMeanOccMultNTracksHasITSUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccMultNTracksHasTPCUnfm80>(weightMeanOccMultNTracksHasTPCUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccMultNTracksHasTOFUnfm80>(weightMeanOccMultNTracksHasTOFUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccMultNTracksHasTRDUnfm80>(weightMeanOccMultNTracksHasTRDUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccMultNTracksITSOnlyUnfm80>(weightMeanOccMultNTracksITSOnlyUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccMultNTracksTPCOnlyUnfm80>(weightMeanOccMultNTracksTPCOnlyUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccMultNTracksITSTPCUnfm80>(weightMeanOccMultNTracksITSTPCUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccMultAllTracksTPCOnlyUnfm80>(weightMeanOccMultAllTracksTPCOnlyUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
       }
 
       if (buildTrackMeanOccs8) {
-        genTrackMeanOccs8(getWeightedMeanOccupancy(binBCbegin, binBCend, occRobustT0V0PrimUnfm80),
-                          getWeightedMeanOccupancy(binBCbegin, binBCend, occRobustFDDT0V0PrimUnfm80),
-                          getWeightedMeanOccupancy(binBCbegin, binBCend, occRobustNtrackDetUnfm80),
-                          getWeightedMeanOccupancy(binBCbegin, binBCend, occRobustMultTableUnfm80));
+        weightMeanOccRobustFDDT0V0PrimUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occRobustFDDT0V0PrimUnfm80);
+        weightMeanOccRobustNtrackDetUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occRobustNtrackDetUnfm80);
+        weightMeanOccRobustMultTableUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occRobustMultTableUnfm80);
+
+        genTrackMeanOccs8(weightMeanOccRobustT0V0PrimUnfm80,
+                          weightMeanOccRobustFDDT0V0PrimUnfm80,
+                          weightMeanOccRobustNtrackDetUnfm80,
+                          weightMeanOccRobustMultTableUnfm80);
+
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccRobustT0V0PrimUnfm80>(weightMeanOccRobustT0V0PrimUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccRobustFDDT0V0PrimUnfm80>(weightMeanOccRobustFDDT0V0PrimUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccRobustNtrackDetUnfm80>(weightMeanOccRobustNtrackDetUnfm80, meanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccRobustMultTableUnfm80>(weightMeanOccRobustMultTableUnfm80, meanOccRobustT0V0PrimUnfm80);
+
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccRobustT0V0PrimUnfm80>(weightMeanOccRobustT0V0PrimUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccRobustFDDT0V0PrimUnfm80>(weightMeanOccRobustFDDT0V0PrimUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccRobustNtrackDetUnfm80>(weightMeanOccRobustNtrackDetUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
+        fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccRobustMultTableUnfm80>(weightMeanOccRobustMultTableUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
       }
     } // end of trackQA loop
   } // Process function ends
