@@ -91,7 +91,7 @@ DECLARE_SOA_COLUMN(TrkTOFnSigmaKa, trkTOFnSigmaKa, float[2]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaPr, trkTOFnSigmaPr, float[2]);
 
 } // namespace reco_tree
-DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACKS",
+DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
                   tau_tree::RunNumber, tau_tree::Bc, tau_tree::NumContrib, tau_tree::PosX, tau_tree::PosY, tau_tree::PosZ, tau_tree::RecoMode,
                   tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA,
                   tau_tree::TimeFT0A, tau_tree::TimeFT0C, tau_tree::TimeFV0A,
