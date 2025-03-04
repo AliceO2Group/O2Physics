@@ -81,9 +81,6 @@ struct HfTaskElectronWeakBoson {
     HfElectronCandidate(float p, float e, float ph, float en, int ch)
       : pt(p), eta(e), phi(ph), energy(en), charge(ch) {}
 
-    float px() const { return pt * std::cos(phi); }
-    float py() const { return pt * std::sin(phi); }
-    float pz() const { return pt * std::sinh(eta); }
     int sign() const { return charge; }
   };
   std::vector<HfElectronCandidate> selectedElectronsIso;
@@ -381,18 +378,17 @@ struct HfTaskElectronWeakBoson {
 
     // calculate inv. mass
     if (selectedElectronsIso.size() > 1) {
-      for (size_t i = 0; i < selectedElectronsIso.size() - 1; ++i) {
+      for (size_t i = 0; i < selectedElectronsIso.size(); i++) {
         const auto& e1 = selectedElectronsIso[i];
-        for (size_t j = 0; j < selectedElectronsAss.size() - 1; ++j) {
+        for (size_t j = 0; j < selectedElectronsAss.size(); j++) {
           const auto& e2 = selectedElectronsAss[j];
 
-          float ptIso = RecoDecay::pt2(e1.px(), e1.py());
-          float ptAss = RecoDecay::pt2(e2.px(), e2.py());
+          float ptIso = e1.pt;
+          float ptAss = e2.pt;
           if (ptIso == ptAss)
             continue;
-
-          auto arr1 = std::array{e1.px(), e1.py(), e1.pz()};
-          auto arr2 = std::array{e2.px(), e2.py(), e2.pz()};
+          auto arr1 = RecoDecayPtEtaPhi::pVector(e1.pt, e1.eta, e1.phi);
+          auto arr2 = RecoDecayPtEtaPhi::pVector(e2.pt, e2.eta, e2.phi);
           double mass = RecoDecay::m(std::array{arr1, arr2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
           if (e1.sign() * e2.sign() > 0) {
             registry.fill(HIST("hInvMassDyLs"), ptIso, mass);
