@@ -36,12 +36,12 @@
 
 namespace o2::aod
 {
-namespace multiplicity_nch
+namespace corrsparse
 {
-DECLARE_SOA_COLUMN(Multiplicity, mulT, int);
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, int);
 }
 DECLARE_SOA_TABLE(Multiplicity, "AOD", "Multiplicity",
-                  multiplicity_nch::Multiplicity);
+                  corrsparse::Multiplicity);
 
 } // namespace o2::aod
 
@@ -68,7 +68,7 @@ struct CalcNch {
 
   void process(AodCollisions::iterator const& collision, AodTracks const& tracks)
   {
-    // LOGF(info, "Nch: %i", tracks.size());
+    
     multiplicityNch(tracks.size());
   }
 };
@@ -192,7 +192,7 @@ struct CorrSparse {
 
   void processSame(AodCollisions::iterator const& collision, AodTracks const& tracks)
   {
-    // LOGF(info, "Process Same | Nch: %i | Mult from column %i", tracks.size(), collision.mulT());
+    
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     fillYield(collision, tracks);
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, tracks.size()); // fill the SE histogram and Sparse
@@ -202,7 +202,7 @@ struct CorrSparse {
   // event mixing
 
   SliceCache cache;
-  using MixedBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::multiplicity_nch::Multiplicity>;
+  using MixedBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::corrsparse::Multiplicity>;
 
   // the process for filling the mixed events
   void processMixed(AodCollisions const& collisions, AodTracks const& tracks)
