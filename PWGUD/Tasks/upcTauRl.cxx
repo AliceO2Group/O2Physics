@@ -102,7 +102,7 @@ DECLARE_SOA_COLUMN(TrkTOFnSigmaPi, trkTOFnSigmaPi, float[2]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaKa, trkTOFnSigmaKa, float[2]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaPr, trkTOFnSigmaPr, float[2]);
 
-} // namespace reco_tree
+} // namespace tau_tree
 DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
                   tau_tree::RunNumber, tau_tree::Bc, tau_tree::TotalTracks, tau_tree::NumContrib, tau_tree::GlobalNonPVtracks, tau_tree::PosX, tau_tree::PosY, tau_tree::PosZ,
                   tau_tree::RecoMode, tau_tree::OccupancyInTime, tau_tree::HadronicRate,
@@ -114,7 +114,6 @@ DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
                   tau_tree::TrkTOFsignal, tau_tree::TrkTOFnSigmaEl, tau_tree::TrkTOFnSigmaMu, tau_tree::TrkTOFnSigmaPi, tau_tree::TrkTOFnSigmaKa, tau_tree::TrkTOFnSigmaPr);
 
 } // namespace o2::aod
-
 
 struct UpcTauRl {
   Produces<o2::aod::TauTwoTracks> tauTwoTracks;
@@ -601,7 +600,6 @@ struct UpcTauRl {
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsMPofO", ";Not-electron #it{p} (GeV/c);n#sigma^{#mu}_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsPPofO", ";Not-electron #it{p} (GeV/c);n#sigma^{#pi}_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisNsigma});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaEvsnSigmaPofO", ";Not-electron n#sigma^{e}_{TOF} (arb. units);Not-electron n#sigma^{#pi}_{TOF} (arb. units)", HistType::kTH2D, {confAxis.zzAxisNsigma, confAxis.zzAxisNsigma});
-
     }
 
     if (doTruthHistos) {
@@ -1999,7 +1997,8 @@ struct UpcTauRl {
   }
 
   template <typename C, typename Ts>
-  void outputTauEventCandidates(C const& collision, Ts const& tracks){
+  void outputTauEventCandidates(C const& collision, Ts const& tracks)
+  {
 
     int countTracksPerCollision = 0;
     int countGoodNonPVtracks = 0;
@@ -2026,7 +2025,7 @@ struct UpcTauRl {
       }
     } // Loop over tracks with selections
 
-    if (countPVGTel == 2 || (countPVGTel == 1 && countPVGTmupi == 1)){
+    if (countPVGTel == 2 || (countPVGTel == 1 && countPVGTmupi == 1)) {
       const auto& trk1 = tracks.iteratorAt(vecTrkIdx[0]);
       const auto& trk2 = tracks.iteratorAt(vecTrkIdx[1]);
 
@@ -2058,9 +2057,7 @@ struct UpcTauRl {
                    tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr,
                    tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr);
     }
-
   }
-
 
   void processDataDG(FullUDCollision const& reconstructedCollision,
                      FullUDTracks const& reconstructedBarrelTracks)
