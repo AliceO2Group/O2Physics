@@ -147,8 +147,6 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       return false;
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
       return false;
-    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < minNCrossedRowsOverFindable)
-      return false;
     if (track.tpcChi2NCl() > maxChi2TPC)
       return false;
     if (track.eta() < etaMin || track.eta() > etaMax)
