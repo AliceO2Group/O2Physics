@@ -408,7 +408,7 @@ struct TableMakerMC {
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::MFTTrackAssoc> mfttrackIndicesPerCollision = aod::track_association::collisionId;
 
-  void skimMCCollisions(aod::McCollisions const& mcCollisions)
+  void skimMCCollisions(aod::McCollisions const& mcCollisions, MyMCEventsWithMults const& collMults)
   {
     // skim MC collisions
     // NOTE: So far, all MC collisions are skimmed. In case there will be filtering based on MC collisions,
@@ -424,6 +424,9 @@ struct TableMakerMC {
       // Create the skimmed table entry for this collision
       eventMC(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
               mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter());
+    }
+    for (auto&  mult: collMults) {
+      multMCPV(mult.multMCNParticlesEta10(), mult.multMCNParticlesEta08(), mult.multMCNParticlesEta05());
     }
   }
 
@@ -1040,7 +1043,7 @@ struct TableMakerMC {
 
     // skim MC Collisions
     eventMC.reserve(mcCollisions.size());
-    skimMCCollisions(mcCollisions);
+    skimMCCollisions(mcCollisions, collMults);
 
     // select MC particles to be written using the specified MC signals
     // NOTE: tables are not written at this point, only label maps are being created
