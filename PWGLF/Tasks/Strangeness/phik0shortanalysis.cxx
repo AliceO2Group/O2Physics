@@ -728,7 +728,7 @@ struct Phik0shortanalysis {
         mcPionHist.fill(HIST("h2TracksPiDCAzPostCutMCReco"), track.pt(), track.dcaZ());
       }
     }
-    if (cfgIsDCAzParameterized) {
+    if (trackConfigs.cfgIsDCAzParameterized) {
       if (std::abs(track.dcaZ()) > trackConfigs.cMaxDCAzToPV1Pion + (trackConfigs.cMaxDCAzToPV2Pion / std::pow(track.pt(), trackConfigs.cMaxDCAzToPV3Pion)))
         return false;
     } else {
