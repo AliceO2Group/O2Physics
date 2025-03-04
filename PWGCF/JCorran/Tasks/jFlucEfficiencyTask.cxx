@@ -299,7 +299,7 @@ struct JFlucEfficiencyTask {
     }
     // Reconstruct tracks from MC particles
     for (const auto& collision : collisions) {
-      registry.fill(HIST("hZVertexReco"), collision.posZ(), collision.multiplicity());
+      registry.fill(HIST("hZVertexReco"), collision.posZ(), centrality);
       registry.fill(HIST("hZVertexCorrelation"), mcCollision.posZ(), collision.posZ());
       auto tracks = mcTracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& track : tracks) {
