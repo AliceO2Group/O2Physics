@@ -425,7 +425,7 @@ struct TableMakerMC {
       eventMC(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
               mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter());
     }
-    for (auto& mult: collMults) {
+    for (auto& mult : collMults) {
       multMCPV(mult.multMCNParticlesEta10(), mult.multMCNParticlesEta08(), mult.multMCNParticlesEta05());
     }
   }
