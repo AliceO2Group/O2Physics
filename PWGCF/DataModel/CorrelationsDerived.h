@@ -85,6 +85,8 @@ using CFTrackWithLabel = CFTracksWithLabel::iterator;
 //------transient CF-filter to CF-2prong-filter
 DECLARE_SOA_TABLE(CFCollRefs, "AOD", "CFCOLLREF", o2::soa::Index<>, track::CollisionId); //! Transient cf collision index table
 
+// Reco
+
 using CFCollRef = CFCollRefs::iterator;
 
 namespace cftrackref
@@ -94,6 +96,16 @@ DECLARE_SOA_INDEX_COLUMN(Track, track);
 DECLARE_SOA_TABLE(CFTrackRefs, "AOD", "CFTRACKREF", o2::soa::Index<>, track::CollisionId, cftrackref::TrackId); //! Transient cf track index table
 
 using CFTrackRef = CFTrackRefs::iterator;
+
+// MC
+
+namespace cfmcparticleref
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
+} // namespace cfmcparticleref
+DECLARE_SOA_TABLE(CFMcParticleRefs, "AOD", "CFMCPARTICLEREF", o2::soa::Index<>, mcparticle::McCollisionId, cfmcparticleref::McParticleId); //! Transient cf track index table
+
+using CFMcParticleRef = CFMcParticleRefs::iterator;
 //------
 
 namespace cf2prongtrack
@@ -132,6 +144,17 @@ DECLARE_SOA_TABLE(CF2ProngTrackmls, "AOD", "CF2PRONGTRACKML", //! Reduced track 
                   cf2prongtrackml::MlProbD0, cf2prongtrackml::MlProbD0bar);
 using CF2ProngTrackml = CF2ProngTrackmls::iterator;
 //------
+
+namespace cf2prongmcpart
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh0, cfParticleDaugh0, int, CFMcParticles, "_0"); //! Index to prong 1 CFMcParticle
+DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh1, cfParticleDaugh1, int, CFMcParticles, "_1"); //! Index to prong 2 CFMcParticle
+} // namespace cf2prongmcpart
+DECLARE_SOA_TABLE(CF2ProngMcParts, "AOD", "CF2PRONGMCPART", //! Table for the daughter particles of a 2-prong particle, to be joined with CFMcParticles
+                  o2::soa::Index<>,
+                  cf2prongmcpart::CFParticleDaugh0Id,
+                  cf2prongmcpart::CFParticleDaugh1Id)
+using CF2ProngMcPart = CF2ProngMcParts::iterator;
 
 } // namespace o2::aod
 
