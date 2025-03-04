@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
+///
 /// \file k892analysis.cxx
 /// \brief Reconstruction of track-track decay resonance candidates
 ///
@@ -35,7 +35,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
 
-struct k892analysis {
+struct K892analysis {
   SliceCache cache;
   Preslice<aod::ResoTracks> perRCol = aod::resodaughter::resoCollisionId;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
@@ -48,7 +48,7 @@ struct k892analysis {
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.0}, "Binning of the pT axis"};
   ConfigurableAxis binsPtQA{"binsPtQA", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0}, "Binning of the pT axis"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
-  ConfigurableAxis occupancy_bins{"occupancy_bins", {VARIABLE_WIDTH, 0.0, 100, 500, 600, 1000, 1100, 1500, 1600, 2000, 2100, 2500, 2600, 3000, 3100, 3500, 3600, 4000, 4100, 4500, 4600, 5000, 5100, 9999}, "Binning of the occupancy axis"};
+  ConfigurableAxis occupancyBins{"occupancyBins", {VARIABLE_WIDTH, 0.0, 100, 500, 600, 1000, 1100, 1500, 1600, 2000, 2100, 2500, 2600, 3000, 3100, 3500, 3600, 4000, 4100, 4500, 4600, 5000, 5100, 9999}, "Binning of the occupancy axis"};
   // ConfigurableAxis binsCent{"binsCent", {200, 0.0f, 200.0f}, "Binning of the centrality axis"};
   Configurable<float> cInvMassStart{"cInvMassStart", 0.6, "Invariant mass start"};
   Configurable<float> cInvMassEnd{"cInvMassEnd", 1.5, "Invariant mass end"};
@@ -57,15 +57,15 @@ struct k892analysis {
   Configurable<float> cPIDQALimit{"cPIDQALimit", 6.5, "PID QA limit"};
   Configurable<int> cDCABins{"cDCABins", 150, "DCA binning"};
   Configurable<bool> invmass1D{"invmass1D", false, "Invariant mass 1D"};
-  Configurable<bool> study_antiparticle{"study_antiparticle", false, "Study anti-particles separately"};
-  Configurable<bool> PIDplots{"PIDplots", false, "Make TPC and TOF PID plots"};
+  Configurable<bool> studyAntiparticle{"studyAntiparticle", false, "Study anti-particles separately"};
+  Configurable<bool> fillPidPlots{"fillPidPlots", false, "Make TPC and TOF PID plots"};
   Configurable<bool> applyOccupancyCut{"applyOccupancyCut", false, "Apply occupancy cut"};
-  Configurable<int> OccupancyCut{"OccupancyCut", 1000, "Mimimum Occupancy cut"};
+  Configurable<int> occupancyCut{"occupancyCut", 1000, "Mimimum Occupancy cut"};
 
   /// Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
-  ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - z-vertex"};
 
   /// Pre-selection cuts
   Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minium pt cut"};
@@ -95,23 +95,17 @@ struct k892analysis {
   Configurable<bool> additionalQAeventPlots{"additionalQAeventPlots", false, "Additional QA event plots"};
   Configurable<bool> additionalMEPlots{"additionalMEPlots", false, "Additional Mixed event plots"};
 
-  Configurable<bool> tof_at_high_pt{"tof_at_high_pt", false, "Use TOF at high pT"};
+  Configurable<bool> tofAtHighPt{"tofAtHighPt", false, "Use TOF at high pT"};
   Configurable<bool> additionalEvsel{"additionalEvsel", true, "Additional event selcection"};
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"};
-  Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.0f, "TPC Crossed Rows to Findable Clusters"};
-  Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 999.0, "ITS Chi2/NCl"};
-  Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 999.0, "TPC Chi2/NCl"};
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
-  Configurable<bool> cfgHasITS{"cfgHasITS", false, "Require ITS"};
-  Configurable<bool> cfgHasTPC{"cfgHasTPC", false, "Require TPC"};
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
   // Rotational background
-  Configurable<bool> IsCalcRotBkg{"IsCalcRotBkg", true, "Calculate rotational background"};
-  Configurable<int> rotational_cut{"rotational_cut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
-  Configurable<int> c_nof_rotations{"c_nof_rotations", 3, "Number of random rotations in the rotational background"};
+  Configurable<bool> isCalcRotBkg{"isCalcRotBkg", true, "Calculate rotational background"};
+  Configurable<int> rotationalCut{"rotationalCut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
+  Configurable<int> cNofRotations{"cNofRotations", 3, "Number of random rotations in the rotational background"};
 
   // MC Event selection
   Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0, "MC Z-vertex cut"};
@@ -143,7 +137,7 @@ struct k892analysis {
     AxisSpec ptAxisQA = {binsPtQA, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec invMassAxis = {cInvMassBins, cInvMassStart, cInvMassEnd, "Invariant Mass (GeV/#it{c}^2)"};
     AxisSpec pidQAAxis = {cPIDBins, -cPIDQALimit, cPIDQALimit};
-    AxisSpec occupancy_axis = {occupancy_bins, "Occupancy [-40,100]"};
+    AxisSpec occupancyAxis = {occupancyBins, "Occupancy [-40,100]"};
 
     if (additionalQAeventPlots) {
       // Test on Mixed event
@@ -169,7 +163,7 @@ struct k892analysis {
       histos.add("k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTH1F, {invMassAxis});
       histos.add("k892invmassLS", "Invariant mass of K(892)0 like sign", kTH1F, {invMassAxis});
       histos.add("k892invmassME", "Invariant mass of K(892)0 mixed event", kTH1F, {invMassAxis});
-      if (study_antiparticle) {
+      if (studyAntiparticle) {
         histos.add("k892invmassDSAnti", "Invariant mass of Anti-K(892)0 differnt sign", kTH1F, {invMassAxis});
         histos.add("k892invmassLSAnti", "Invariant mass of Anti-K(892)0 like sign", kTH1F, {invMassAxis});
       }
@@ -214,7 +208,7 @@ struct k892analysis {
     histos.add("QAafter/trkpT_pi", "pT distribution of pion track candidates", kTH1F, {ptAxis});
     histos.add("QAafter/trkpT_ka", "pT distribution of kaon track candidates", kTH1F, {ptAxis});
     // PID QA before cuts
-    if (PIDplots) {
+    if (fillPidPlots) {
       histos.add("QAbefore/TOF_TPC_Map_pi_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
       histos.add("QAbefore/TOF_Nsigma_pi_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
       histos.add("QAbefore/TPC_Nsigma_pi_all", "TPC NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
@@ -253,17 +247,17 @@ struct k892analysis {
     }
 
     // 3d histogram
-    histos.add("h3k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancy_axis});
-    histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancy_axis});
-    histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancy_axis});
-    histos.add("h3k892invmassLSAnti", "Invariant mass of Anti-K(892)0 same sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancy_axis});
+    histos.add("h3k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancyAxis});
+    histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancyAxis});
+    histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancyAxis});
+    histos.add("h3k892invmassLSAnti", "Invariant mass of Anti-K(892)0 same sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancyAxis});
 
-    if (study_antiparticle) {
-      histos.add("h3k892invmassDSAnti", "Invariant mass of Anti-K(892)0 differnt sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancy_axis});
+    if (studyAntiparticle) {
+      histos.add("h3k892invmassDSAnti", "Invariant mass of Anti-K(892)0 differnt sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancyAxis});
     }
 
-    if (IsCalcRotBkg) {
-      histos.add("h3K892InvMassRotation", "Invariant mass of K(892)0 rotation", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancy_axis});
+    if (isCalcRotBkg) {
+      histos.add("h3K892InvMassRotation", "Invariant mass of K(892)0 rotation", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancyAxis});
     }
 
     if (additionalMEPlots) {
@@ -277,7 +271,7 @@ struct k892analysis {
       histos.add("QAMCTrue/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
       histos.add("QAMCTrue/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
       histos.add("QAMCTrue/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {dcazAxis});
-      if (PIDplots) {
+      if (fillPidPlots) {
         histos.add("QAMCTrue/TOF_Nsigma_pi_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
         histos.add("QAMCTrue/TPC_Nsigma_pi_all", "TPC NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
         histos.add("QAMCTrue/TOF_Nsigma_ka_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
@@ -343,19 +337,7 @@ struct k892analysis {
       return false;
     if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
-    if (track.itsNCls() < cfgITScluster)
-      return false;
     if (track.tpcNClsFound() < cfgTPCcluster)
-      return false;
-    if (track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls)
-      return false;
-    if (track.itsChi2NCl() >= cfgITSChi2NCl)
-      return false;
-    if (track.tpcChi2NCl() >= cfgTPCChi2NCl)
-      return false;
-    if (cfgHasITS && !track.hasITS())
-      return false;
-    if (cfgHasTPC && !track.hasTPC())
       return false;
     if (cfgHasTOF && !track.hasTOF())
       return false;
@@ -378,7 +360,7 @@ struct k892analysis {
   template <typename T>
   bool selectionPIDPion(const T& candidate)
   {
-    if (tof_at_high_pt) {
+    if (tofAtHighPt) {
       if (candidate.hasTOF() && (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion)) {
         return true;
       }
@@ -412,7 +394,7 @@ struct k892analysis {
   template <typename T>
   bool selectionPIDKaon(const T& candidate)
   {
-    if (tof_at_high_pt) {
+    if (tofAtHighPt) {
       if (candidate.hasTOF() && (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon)) {
         return true;
       }
@@ -452,8 +434,8 @@ struct k892analysis {
     if (additionalEvsel && !eventSelected(collision, multiplicity)) {
       return;
     }
-    auto occupancy_no = collision.trackOccupancyInTimeRange();
-    if (applyOccupancyCut && occupancy_no < OccupancyCut) {
+    auto occupancyNo = collision.trackOccupancyInTimeRange();
+    if (applyOccupancyCut && occupancyNo < occupancyCut) {
       return;
     }
 
@@ -481,8 +463,8 @@ struct k892analysis {
       histos.fill(HIST("MultCalib/GloPVpi_after"), dTracks1.size(), collision.multNTracksPV()); // global tracks vs PV tracks after the multiplicity calibration cuts
     }
 
-    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance, ldaughter_rot, lresonance_rot;
-    for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
+    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance, ldaughterRot, lresonanceRot;
+    for (const auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
 
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
@@ -511,14 +493,14 @@ struct k892analysis {
       auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
       auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
 
-      auto deltaEta = TMath::Abs(trk1.eta() - trk2.eta());
-      auto deltaPhi = TMath::Abs(trk1.phi() - trk2.phi());
-      deltaPhi = (deltaPhi > TMath::Pi()) ? (2 * TMath::Pi() - deltaPhi) : deltaPhi;
+      auto deltaEta = std::abs(trk1.eta() - trk2.eta());
+      auto deltaPhi = std::abs(trk1.phi() - trk2.phi());
+      deltaPhi = (deltaPhi > constants::math::PI) ? (constants::math::TwoPI - deltaPhi) : deltaPhi;
 
       if constexpr (!IsMix) {
         //// QA plots before the selection
         //  --- PID QA Pion
-        if (PIDplots) {
+        if (fillPidPlots) {
           histos.fill(HIST("QAbefore/TPC_Nsigma_pi_all"), multiplicity, trk1ptPi, trk1NSigmaPiTPC);
           if (isTrk1hasTOF) {
             histos.fill(HIST("QAbefore/TOF_Nsigma_pi_all"), multiplicity, trk1ptPi, trk1NSigmaPiTOF);
@@ -565,7 +547,7 @@ struct k892analysis {
       if constexpr (!IsMix) {
         //// QA plots after the selection
         //  --- PID QA Pion
-        if (PIDplots) {
+        if (fillPidPlots) {
           histos.fill(HIST("QAafter/TPC_Nsigma_pi_all"), multiplicity, trk1ptPi, trk1NSigmaPiTPC);
           if (isTrk1hasTOF) {
             histos.fill(HIST("QAafter/TOF_Nsigma_pi_all"), multiplicity, trk1ptPi, trk1NSigmaPiTOF);
@@ -601,7 +583,7 @@ struct k892analysis {
       lDecayDaughter2.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi(), massKa);
       lResonance = lDecayDaughter1 + lDecayDaughter2;
       // Rapidity cut
-      if (abs(lResonance.Rapidity()) >= 0.5)
+      if (std::abs(lResonance.Rapidity()) >= 0.5)
         continue;
       if (cfgCutsOnMother) {
         if (lResonance.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
@@ -629,33 +611,33 @@ struct k892analysis {
       //// Un-like sign pair only
       if (trk1.sign() * trk2.sign() < 0) {
         if constexpr (!IsMix) {
-          if (IsCalcRotBkg) {
-            for (int i = 0; i < c_nof_rotations; i++) {
-              float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
-              ldaughter_rot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
-              lresonance_rot = lDecayDaughter1 + ldaughter_rot;
-              histos.fill(HIST("h3K892InvMassRotation"), multiplicity, lresonance_rot.Pt(), lresonance_rot.M(), occupancy_no);
+          if (isCalcRotBkg) {
+            for (int i = 0; i < cNofRotations; i++) {
+              float theta2 = rn->Uniform(constants::math::PI - constants::math::PI / rotationalCut, constants::math::PI + constants::math::PI / rotationalCut);
+              ldaughterRot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
+              lresonanceRot = lDecayDaughter1 + ldaughterRot;
+              histos.fill(HIST("h3K892InvMassRotation"), multiplicity, lresonanceRot.Pt(), lresonanceRot.M(), occupancyNo);
             }
           }
-          if (study_antiparticle) {
+          if (studyAntiparticle) {
             if (trk1.sign() < 0) {
               if (invmass1D)
                 histos.fill(HIST("k892invmassDS"), lResonance.M());
-              histos.fill(HIST("h3k892invmassDS"), multiplicity, lResonance.Pt(), lResonance.M(), occupancy_no);
+              histos.fill(HIST("h3k892invmassDS"), multiplicity, lResonance.Pt(), lResonance.M(), occupancyNo);
             } else if (trk1.sign() > 0) {
               if (invmass1D)
                 histos.fill(HIST("k892invmassDSAnti"), lResonance.M());
-              histos.fill(HIST("h3k892invmassDSAnti"), multiplicity, lResonance.Pt(), lResonance.M(), occupancy_no);
+              histos.fill(HIST("h3k892invmassDSAnti"), multiplicity, lResonance.Pt(), lResonance.M(), occupancyNo);
             }
           } else {
             if (invmass1D)
               histos.fill(HIST("k892invmassDS"), lResonance.M());
-            histos.fill(HIST("h3k892invmassDS"), multiplicity, lResonance.Pt(), lResonance.M(), occupancy_no);
+            histos.fill(HIST("h3k892invmassDS"), multiplicity, lResonance.Pt(), lResonance.M(), occupancyNo);
           }
         } else {
           if (invmass1D)
             histos.fill(HIST("k892invmassME"), lResonance.M());
-          histos.fill(HIST("h3k892invmassME"), multiplicity, lResonance.Pt(), lResonance.M(), occupancy_no);
+          histos.fill(HIST("h3k892invmassME"), multiplicity, lResonance.Pt(), lResonance.M(), occupancyNo);
           if (additionalMEPlots) {
             if (trk1.sign() < 0) {
               if (invmass1D)
@@ -671,11 +653,11 @@ struct k892analysis {
 
         // MC
         if constexpr (IsMC) {
-          if (abs(trk1.pdgCode()) != 211 || abs(trk2.pdgCode()) != 321)
+          if (std::abs(trk1.pdgCode()) != 211 || std::abs(trk2.pdgCode()) != 321)
             continue;
           if (trk1.motherId() != trk2.motherId()) // Same mother
             continue;
-          if (abs(trk1.motherPDG()) != 313)
+          if (std::abs(trk1.motherPDG()) != 313)
             continue;
 
           // Track selection check.
@@ -683,7 +665,7 @@ struct k892analysis {
           histos.fill(HIST("QAMCTrue/trkDCAxy_ka"), trk2.dcaXY());
           histos.fill(HIST("QAMCTrue/trkDCAz_pi"), trk1.dcaZ());
           histos.fill(HIST("QAMCTrue/trkDCAz_ka"), trk2.dcaZ());
-          if (PIDplots) {
+          if (fillPidPlots) {
             histos.fill(HIST("QAMCTrue/TPC_Nsigma_pi_all"), multiplicity, trk1ptPi, trk1NSigmaPiTPC);
             if (isTrk1hasTOF) {
               histos.fill(HIST("QAMCTrue/TOF_Nsigma_pi_all"), multiplicity, trk1ptPi, trk1NSigmaPiTOF);
@@ -710,18 +692,18 @@ struct k892analysis {
           if (trk1.sign() < 0) {
             if (invmass1D)
               histos.fill(HIST("k892invmassLS"), lResonance.M());
-            histos.fill(HIST("h3k892invmassLS"), multiplicity, lResonance.Pt(), lResonance.M(), occupancy_no);
+            histos.fill(HIST("h3k892invmassLS"), multiplicity, lResonance.Pt(), lResonance.M(), occupancyNo);
           } else if (trk1.sign() > 0) {
             if (invmass1D)
               histos.fill(HIST("k892invmassLSAnti"), lResonance.M());
-            histos.fill(HIST("h3k892invmassLSAnti"), multiplicity, lResonance.Pt(), lResonance.M(), occupancy_no);
+            histos.fill(HIST("h3k892invmassLSAnti"), multiplicity, lResonance.Pt(), lResonance.M(), occupancyNo);
           }
         }
       }
     }
   }
 
-  void processDataLight(aod::ResoCollision& collision,
+  void processDataLight(aod::ResoCollision const& collision,
                         aod::ResoTracks const& resotracks)
   {
     // LOG(info) << "new collision, zvtx: " << collision.posZ();
@@ -729,25 +711,25 @@ struct k892analysis {
       histos.fill(HIST("QAevent/hEvtCounterSameE"), 1.0);
     fillHistograms<false, false>(collision, resotracks, resotracks);
   }
-  PROCESS_SWITCH(k892analysis, processDataLight, "Process Event for data", false);
+  PROCESS_SWITCH(K892analysis, processDataLight, "Process Event for data", false);
 
   void processMCLight(ResoMCCols::iterator const& collision,
                       soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
-    if (!collision.isInAfterAllCuts() || (abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
+    if (!collision.isInAfterAllCuts() || (std::abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
     fillHistograms<true, false>(collision, resotracks, resotracks);
   }
-  PROCESS_SWITCH(k892analysis, processMCLight, "Process Event for MC (Reconstructed)", false);
+  PROCESS_SWITCH(K892analysis, processMCLight, "Process Event for MC (Reconstructed)", false);
 
-  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents& resoParents)
+  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents const& resoParents)
   {
     auto multiplicity = collision.cent();
-    for (auto& part : resoParents) { // loop over all pre-filtered MC particles
-      if (abs(part.pdgCode()) != 313 || abs(part.y()) >= 0.5)
+    for (const auto& part : resoParents) { // loop over all pre-filtered MC particles
+      if (std::abs(part.pdgCode()) != 313 || std::abs(part.y()) >= 0.5)
         continue;
-      bool pass1 = abs(part.daughterPDG1()) == 211 || abs(part.daughterPDG2()) == 211;
-      bool pass2 = abs(part.daughterPDG1()) == 321 || abs(part.daughterPDG2()) == 321;
+      bool pass1 = std::abs(part.daughterPDG1()) == 211 || std::abs(part.daughterPDG2()) == 211;
+      bool pass2 = std::abs(part.daughterPDG1()) == 321 || std::abs(part.daughterPDG2()) == 321;
 
       if (!pass1 || !pass2)
         continue;
@@ -782,26 +764,26 @@ struct k892analysis {
       }
     }
   }
-  PROCESS_SWITCH(k892analysis, processMCTrue, "Process Event for MC (Generated)", false);
+  PROCESS_SWITCH(K892analysis, processMCTrue, "Process Event for MC (Generated)", false);
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
-  void processMELight(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
+  void processMELight(o2::aod::ResoCollisions const& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}, true};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
-    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+    for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (additionalQAeventPlots)
         histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
       fillHistograms<false, true>(collision1, tracks1, tracks2);
     }
   };
-  PROCESS_SWITCH(k892analysis, processMELight, "Process EventMixing light without partition", false);
+  PROCESS_SWITCH(K892analysis, processMELight, "Process EventMixing light without partition", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<k892analysis>(cfgc, TaskName{"lf-k892analysis"})};
+  return WorkflowSpec{adaptAnalysisTask<K892analysis>(cfgc)};
 }
