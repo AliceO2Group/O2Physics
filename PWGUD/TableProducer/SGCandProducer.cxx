@@ -219,18 +219,14 @@ struct SGCandProducer {
       return;
     }
     getHist(TH1, histdir + "/Stat")->Fill(6., 1.);
-    int trs = 0;
-    if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-      trs = 1;
-    }
-    int trofs = 0;
-    if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
-      trofs = 1;
-    }
-    int hmpr = 0;
-    if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
-      hmpr = 1;
-    }
+    int trs = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ? 1 : 0;
+    int trofs = collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard) ? 1 : 0;
+    int hmpr = collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof) ? 1 : 0;
+    int tfb = collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) ? 1 : 0;
+    int itsROFb = collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) ? 1 : 0;
+    int sbp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) ? 1 : 0;
+    int zVtxFT0vPv = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) ? 1 : 0;
+    int vtxITSTPC = collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC) ? 1 : 0;
     auto bc = collision.template foundBC_as<BCs>();
     double ir = 0.;
     const uint64_t ts = bc.timestamp();
@@ -265,14 +261,10 @@ struct SGCandProducer {
       uint8_t chFDDA = 0;
       uint8_t chFDDC = 0;
       uint8_t chFV0A = 0;
-      int occ = 0;
-      occ = collision.trackOccupancyInTimeRange();
+      int occ = collision.trackOccupancyInTimeRange();
       udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
+      int upc_flag = (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? 1 : 0;
       // update SG candidates tables
-      int upc_flag = 0;
-      ushort flags = collision.flags();
-      if (flags & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode)
-        upc_flag = 1;
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(), upc_flag,
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
@@ -287,7 +279,7 @@ struct SGCandProducer {
                            fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr);
+      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC);
       outputCollsLabels(collision.globalIndex());
       if (newbc.has_zdc()) {
         auto zdc = newbc.zdc();
