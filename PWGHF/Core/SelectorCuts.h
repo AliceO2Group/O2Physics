@@ -496,7 +496,7 @@ constexpr double Cuts[NBinsPt][NCutVars] = {{0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 
 
 // default value for the cuts                    Chi2Prim      Chi2Geo       DCA, cm     Chi2Geo  Chi2Topo
 //                                               P   K  Pi  KPi PPi  PK  KPi    PPi   PK   ↓  LdL  ↓
-constexpr double kfCuts[nBinsPt][NKfCutVars] = {{3., 3., 3., 3., 3., 3., 0.01, 0.01, 0.01, 3., 5., 5.},  /* 0  < pT < 1  */
+constexpr double kfCuts[NBinsPt][NKfCutVars] = {{3., 3., 3., 3., 3., 3., 0.01, 0.01, 0.01, 3., 5., 5.},  /* 0  < pT < 1  */
                                                 {3., 3., 3., 3., 3., 3., 0.01, 0.01, 0.01, 3., 5., 5.},  /* 1  < pT < 2  */
                                                 {3., 3., 3., 3., 3., 3., 0.01, 0.01, 0.01, 3., 5., 5.},  /* 2  < pT < 3  */
                                                 {3., 3., 3., 3., 3., 3., 0.01, 0.01, 0.01, 3., 5., 5.},  /* 3  < pT < 4  */

@@ -498,7 +498,7 @@ struct HfCandidateCreator3Prong {
 
       if (applyTopoConstraint) { // constraints applied after chi2topo getter - to preserve unbiased value of chi2topo
         for (auto& kfCand : std::array<KFParticle*, 5>{&kfCandPKPi, &kfCandPiKP, &kfCandPiKPi, &kfCandKKPi, &kfCandPiKK}) {
-          kfCand->SetProductionVertex(KFPV);
+          kfCand->SetProductionVertex(kfpV);
           kfCand->TransportToDecayVertex();
         }
       }
