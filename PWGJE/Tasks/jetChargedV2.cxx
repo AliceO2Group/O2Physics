@@ -710,7 +710,7 @@ struct JetChargedV2 {
       double integralValueRC = fFitModulationV2v3->Integral(randomConePhi - randomConeR, randomConePhi + randomConeR);
       double rholocalRC = collision.rho() / (2 * randomConeR * temppara[0]) * integralValueRC;
 
-      int nmode = cfgnMods->at(i);      
+      int nmode = cfgnMods->at(i);
       if (nmode == 2) {
         double rcPhiPsi2;
         rcPhiPsi2 = randomConePhi - ep2;
