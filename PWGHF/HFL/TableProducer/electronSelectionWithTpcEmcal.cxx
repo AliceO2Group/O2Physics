@@ -43,10 +43,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-const int passEMCalBins = 3;
-const int passEMCalAxisMin = 0.;
-const int passEMCalAxisMax = 3;
-
 const int kEta = 221;
 
 struct HfElectronSelectionWithTpcEmcal {
