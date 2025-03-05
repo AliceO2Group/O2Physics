@@ -156,8 +156,8 @@ DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                           //!
 DECLARE_SOA_COLUMN(Indices, indices, int[2]);                                //! Field for the track indices to remove auto-correlations
 DECLARE_SOA_COLUMN(CascadeIndices, cascadeIndices, int[3]);                  //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                      //! Sign of the track charge
-DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);         //! Number of TPC crossed rows
-DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);                     //! Number of TPC clusters found
+DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, uint8_t);         //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, uint8_t);                     //! Number of TPC clusters found
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);            //! Is global track without DCA
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                      //! Is global track
 DECLARE_SOA_COLUMN(IsPrimaryTrack, isPrimaryTrack, bool);                    //! Is primary track
@@ -251,8 +251,8 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   resodaughter::Eta,
                   resodaughter::Phi,
                   resodaughter::Sign,
-                  resodaughter::TPCNClsCrossedRows,
-                  resodaughter::TPCNClsFound,
+                  resodaughter::TpcNClsCrossedRows,
+                  resodaughter::TpcNClsFound,
                   o2::aod::track::DcaXY,
                   o2::aod::track::DcaZ,
                   resodaughter::HasTOF,
@@ -290,8 +290,8 @@ DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDF",
                   resodaughter::Eta,
                   resodaughter::Phi,
                   resodaughter::Sign,
-                  resodaughter::TPCNClsCrossedRows,
-                  resodaughter::TPCNClsFound,
+                  resodaughter::TpcNClsCrossedRows,
+                  resodaughter::TpcNClsFound,
                   o2::aod::track::DcaXY,
                   o2::aod::track::DcaZ,
                   resodaughter::HasTOF,
