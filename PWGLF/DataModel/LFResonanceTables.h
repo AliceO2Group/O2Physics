@@ -16,6 +16,7 @@
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 /// \author Nasir Mehdi Malik <nasir.mehdi.malik@cern.ch>
+/// \author Minjae Kim <minjae.kim@cern.ch>
 ///
 
 #ifndef PWGLF_DATAMODEL_LFRESONANCETABLES_H_
@@ -72,7 +73,7 @@ DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
 DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);  //! ImpactParameter
 
 } // namespace resocollision
-DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISIONS",
+DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   o2::soa::Index<>,
                   resocollision::CollisionId,
                   o2::aod::mult::MultNTracksPV,
@@ -90,7 +91,7 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISIONS",
                   evsel::NumTracksInTimeRange);
 using ResoCollision = ResoCollisions::iterator;
 
-DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOLLISIONS",
+DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOLLISION",
                   o2::soa::Index<>,
                   resocollision::IsVtxIn10,
                   resocollision::IsINELgt0,
@@ -100,13 +101,13 @@ DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOLLISIONS",
                   resocollision::ImpactParameter);
 using ResoMCCollision = ResoMCCollisions::iterator;
 
-DECLARE_SOA_TABLE(ResoSpheroCollisions, "AOD", "RESOSPHEROCOLLISIONS",
+DECLARE_SOA_TABLE(ResoSpheroCollisions, "AOD", "RESOSPHEROCOLLISION",
                   o2::soa::Index<>,
                   resocollision::CollisionId,
                   resocollision::Spherocity);
 using ResoSpheroCollision = ResoSpheroCollisions::iterator;
 
-DECLARE_SOA_TABLE(ResoEvtPlCollisions, "AOD", "RESOEVTPLCOLLISIONS",
+DECLARE_SOA_TABLE(ResoEvtPlCollisions, "AOD", "RESOEVTPLCOLLISION",
                   o2::soa::Index<>,
                   resocollision::CollisionId,
                   resocollision::EvtPl,
@@ -116,7 +117,7 @@ DECLARE_SOA_TABLE(ResoEvtPlCollisions, "AOD", "RESOEVTPLCOLLISIONS",
 using ResoEvtPlCollision = ResoEvtPlCollisions::iterator;
 
 // For DF mixing study
-DECLARE_SOA_TABLE(ResoCollisionDFs, "AOD", "RESOCOLLISIONDFS",
+DECLARE_SOA_TABLE(ResoCollisionDFs, "AOD", "RESOCOLLISIONDF",
                   o2::soa::Index<>,
                   // resocollision::CollisionId,
                   o2::aod::mult::MultNTracksPV,
@@ -155,8 +156,8 @@ DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                           //!
 DECLARE_SOA_COLUMN(Indices, indices, int[2]);                                //! Field for the track indices to remove auto-correlations
 DECLARE_SOA_COLUMN(CascadeIndices, cascadeIndices, int[3]);                  //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                      //! Sign of the track charge
-DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);         //! Number of TPC crossed rows
-DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);                     //! Number of TPC clusters found
+DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, uint8_t);         //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, uint8_t);                     //! Number of TPC clusters found
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);            //! Is global track without DCA
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                      //! Is global track
 DECLARE_SOA_COLUMN(IsPrimaryTrack, isPrimaryTrack, bool);                    //! Is primary track
@@ -239,7 +240,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(TofNSigmaPr, tofNSigmaPr,
                              return (float)tofNSigmaPr10 / 10.f;
                            });
 } // namespace resodaughter
-DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
+DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionId,
                   resodaughter::TrackId,
@@ -250,8 +251,8 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   resodaughter::Eta,
                   resodaughter::Phi,
                   resodaughter::Sign,
-                  resodaughter::TPCNClsCrossedRows,
-                  resodaughter::TPCNClsFound,
+                  resodaughter::TpcNClsCrossedRows,
+                  resodaughter::TpcNClsFound,
                   o2::aod::track::DcaXY,
                   o2::aod::track::DcaZ,
                   resodaughter::HasTOF,
@@ -278,7 +279,7 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
 using ResoTrack = ResoTracks::iterator;
 
 // For DF mixing study
-DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDFS",
+DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDF",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionDFId,
                   //  resodaughter::TrackId,
@@ -289,8 +290,8 @@ DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDFS",
                   resodaughter::Eta,
                   resodaughter::Phi,
                   resodaughter::Sign,
-                  resodaughter::TPCNClsCrossedRows,
-                  resodaughter::TPCNClsFound,
+                  resodaughter::TpcNClsCrossedRows,
+                  resodaughter::TpcNClsFound,
                   o2::aod::track::DcaXY,
                   o2::aod::track::DcaZ,
                   resodaughter::HasTOF,
@@ -316,7 +317,7 @@ DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDFS",
                   resodaughter::TofNSigmaPr<resodaughter::TofNSigmaPr10>);
 using ResoTrackDF = ResoTrackDFs::iterator;
 
-DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0S",
+DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionId,
                   resodaughter::V0Id,
@@ -353,7 +354,7 @@ DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0S",
                   resodaughter::DecayVtxZ);
 using ResoV0 = ResoV0s::iterator;
 
-DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADES",
+DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADE",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionId,
                   resodaughter::CascadeId,
@@ -402,7 +403,7 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADES",
                   resodaughter::DecayVtxZ);
 using ResoCascade = ResoCascades::iterator;
 
-DECLARE_SOA_TABLE(ResoCascadeDFs, "AOD", "RESOCASCADEDFS",
+DECLARE_SOA_TABLE(ResoCascadeDFs, "AOD", "RESOCASCADEDF",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionDFId,
                   // resodaughter::CascadeId,
@@ -451,7 +452,7 @@ DECLARE_SOA_TABLE(ResoCascadeDFs, "AOD", "RESOCASCADEDFS",
                   resodaughter::DecayVtxZ);
 using ResoCascadeDF = ResoCascadeDFs::iterator;
 
-DECLARE_SOA_TABLE(ResoMCTracks, "AOD", "RESOMCTRACKS",
+DECLARE_SOA_TABLE(ResoMCTracks, "AOD", "RESOMCTRACK",
                   mcparticle::PdgCode,
                   resodaughter::MotherId,
                   resodaughter::MotherPDG,
@@ -460,7 +461,7 @@ DECLARE_SOA_TABLE(ResoMCTracks, "AOD", "RESOMCTRACKS",
                   resodaughter::ProducedByGenerator);
 using ResoMCTrack = ResoMCTracks::iterator;
 
-DECLARE_SOA_TABLE(ResoMCV0s, "AOD", "RESOMCV0S",
+DECLARE_SOA_TABLE(ResoMCV0s, "AOD", "RESOMCV0",
                   mcparticle::PdgCode,
                   resodaughter::MotherId,
                   resodaughter::MotherPDG,
@@ -472,7 +473,7 @@ DECLARE_SOA_TABLE(ResoMCV0s, "AOD", "RESOMCV0S",
                   resodaughter::ProducedByGenerator);
 using ResoMCV0 = ResoMCV0s::iterator;
 
-DECLARE_SOA_TABLE(ResoMCCascades, "AOD", "RESOMCCASCADES",
+DECLARE_SOA_TABLE(ResoMCCascades, "AOD", "RESOMCCASCADE",
                   mcparticle::PdgCode,
                   resodaughter::MotherId,
                   resodaughter::MotherPDG,
@@ -484,7 +485,7 @@ DECLARE_SOA_TABLE(ResoMCCascades, "AOD", "RESOMCCASCADES",
                   resodaughter::ProducedByGenerator);
 using ResoMCCascade = ResoMCCascades::iterator;
 
-DECLARE_SOA_TABLE(ResoMCParents, "AOD", "RESOMCPARENTS",
+DECLARE_SOA_TABLE(ResoMCParents, "AOD", "RESOMCPARENT",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionId,
                   resodaughter::McParticleId,
@@ -509,7 +510,7 @@ using Reso2TracksMC = soa::Join<aod::FullTracks, McTrackLabels>;
 using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
 using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>; // Without Extra
 
-using ResoCollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
+using ResoCollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
 using ResoRun2CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
 using ResoCollisionCandidatesMC = soa::Join<ResoCollisionCandidates, aod::McCollisionLabels>;
 using ResoRun2CollisionCandidatesMC = soa::Join<ResoRun2CollisionCandidates, aod::McCollisionLabels>;
