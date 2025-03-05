@@ -118,15 +118,21 @@ struct FemtoUniversePairTaskTrackPhi {
   /// Particle 2 --- PHI MESON
   Configurable<float> ConfPhiPtLow{"ConfPhiPtLow", 0.8, "Lower limit of the Phi pT."};
   Configurable<float> ConfPhiPtHigh{"ConfPhiPtHigh", 4.0, "Higher limit of the Phi pT."};
+  Configurable<float> confInvMassLowLimitPhi{"confInvMassLowLimitPhi", 1.011, "Lower limit of the Phi invariant mass"}; // change that to do invariant mass cut
+  Configurable<float> confInvMassUpLimitPhi{"confInvMassUpLimitPhi", 1.027, "Upper limit of the Phi invariant mass"};
 
   /// Partitions for the Phi meson (particle 2)
   Partition<FilteredFemtoFullParticles> partsPhi = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhi)) &&
                                                    (aod::femtouniverseparticle::pt > ConfPhiPtLow) &&
-                                                   (aod::femtouniverseparticle::pt < ConfPhiPtHigh);
+                                                   (aod::femtouniverseparticle::pt < ConfPhiPtHigh) &&
+                                                   (aod::femtouniverseparticle::tempFitVar > confInvMassLowLimitPhi) &&
+                                                   (aod::femtouniverseparticle::tempFitVar < confInvMassUpLimitPhi);
 
   Partition<FemtoRecoParticles> partsPhiMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhi)) &&
                                                  (aod::femtouniverseparticle::pt > ConfPhiPtLow) &&
-                                                 (aod::femtouniverseparticle::pt < ConfPhiPtHigh);
+                                                 (aod::femtouniverseparticle::pt < ConfPhiPtHigh) &&
+                                                 (aod::femtouniverseparticle::tempFitVar > confInvMassLowLimitPhi) &&
+                                                 (aod::femtouniverseparticle::tempFitVar < confInvMassUpLimitPhi);
 
   /// Partitions  for Phi daughters kPhiChild
   Partition<FilteredFemtoFullParticles> partsPhiDaugh = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhiChild));
@@ -374,11 +380,9 @@ struct FemtoUniversePairTaskTrackPhi {
       hTrackDCA.init(&registryDCA, ConfBinsTempFitVarpT, ConfBinsTempFitVarDCA, true, ConfTrackPDGCode, true);
 
       registryMCpT.add("MCReco/C_phi_pT", "; #it{p_T} (GeV/#it{c}); Counts", kTH1F, {{100, 0, 10}});
-      registryMCpT.add("MCReco/Correction_phi", "; #it{p_T} (GeV/#it{c}); Counts", kTH1F, {{100, 0, 10}});
       registryMCpT.add("MCReco/NC_phi_pT", "; #it{p_T} (GeV/#it{c}); Counts", kTH1F, {{100, 0, 10}});
 
       registryMCpT.add("MCReco/C_p_pT", "; #it{p_T} (GeV/#it{c}); Counts", kTH1F, {{100, 0, 10}});
-      registryMCpT.add("MCReco/Correction_p", "; #it{p_T} (GeV/#it{c}); Counts", kTH1F, {{100, 0, 10}});
       registryMCpT.add("MCReco/NC_p_pT", "; #it{p_T} (GeV/#it{c}); Counts", kTH1F, {{100, 0, 10}});
     }
     efficiencyCalculator.init();

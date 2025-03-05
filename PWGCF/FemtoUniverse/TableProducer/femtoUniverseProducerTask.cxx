@@ -287,8 +287,6 @@ struct FemtoUniverseProducerTask {
   FemtoUniversePhiSelection phiCuts;
   struct : o2::framework::ConfigurableGroup {
     /// Phi meson
-    Configurable<float> confInvMassLowLimitPhi{"confInvMassLowLimitPhi", 1.011, "Lower limit of the Phi invariant mass"}; // change that to do invariant mass cut
-    Configurable<float> confInvMassUpLimitPhi{"confInvMassUpLimitPhi", 1.027, "Upper limit of the Phi invariant mass"};
     Configurable<float> confPtLowLimitPhi{"confPtLowLimitPhi", 0.8, "Lower limit of the Phi pT."};
     Configurable<float> confPtHighLimitPhi{"confPtHighLimitPhi", 4.0, "Higher limit of the Phi pT."};
     // Phi meson daughters
@@ -1632,10 +1630,6 @@ struct FemtoUniverseProducerTask {
 
       float phiPhi = RecoDecay::constrainAngle(sumVec.Phi(), 0);
       float phiM = sumVec.M();
-
-      if (((phiM < ConfPhiSelection.confInvMassLowLimitPhi.value) || (phiM > ConfPhiSelection.confInvMassUpLimitPhi.value))) {
-        continue;
-      }
 
       phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, 321, -321); ///\todo fill QA also for daughters
 
