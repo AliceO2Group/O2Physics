@@ -800,11 +800,11 @@ struct nucleiSpectra {
             computeEventPlane(collision.qvecBTotIm(), collision.qvecBTotRe()),
             computeEventPlane(collision.qvecBNegIm(), collision.qvecBNegRe()),
             computeEventPlane(collision.qvecBPosIm(), collision.qvecBPosRe()),
-            collision.sumAmplFT0A(),
-            collision.sumAmplFT0C(),
-            static_cast<float>(collision.nTrkBTot()),
-            static_cast<float>(collision.nTrkBNeg()),
-            static_cast<float>(collision.nTrkBPos())});
+            std::hypot(collision.qvecFT0AIm(), collision.qvecFT0ARe()),
+            std::hypot(collision.qvecFT0CIm(), collision.qvecFT0CRe()),
+            std::hypot(collision.qvecBTotIm(), collision.qvecBTotRe()),
+            std::hypot(collision.qvecBNegIm(), collision.qvecBNegRe()),
+            std::hypot(collision.qvecBPosIm(), collision.qvecBPosRe())});
         }
         if (fillTree) {
           if (flag & BIT(2)) {
