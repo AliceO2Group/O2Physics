@@ -78,8 +78,8 @@ struct HfTaskElectronWeakBoson {
   struct HfElectronCandidate {
     float pt, eta, phi, energy;
     int charge;
-    HfElectronCandidate(float p, float e, float ph, float en, int ch)
-      : pt(p), eta(e), phi(ph), energy(en), charge(ch) {}
+    HfElectronCandidate(float ptr, float e, float ph, float en, int ch)
+      : pt(ptr), eta(e), phi(ph), energy(en), charge(ch) {}
 
     int sign() const { return charge; }
   };
@@ -163,7 +163,7 @@ struct HfTaskElectronWeakBoson {
     registry.add("hInvMassZeeLs", "invariant mass for Z LS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
     registry.add("hInvMassZeeUls", "invariant mass for Z ULS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
     registry.add("hInvMassDyLs", "invariant mass for DY LS pair", kTH2F, {{axisPt}, {axisInvMassDy}});
-    registry.add("hInvMassDyULs", "invariant mass for DY ULS pair", kTH2F, {{axisPt}, {axisInvMassDy}});
+    registry.add("hInvMassDyUls", "invariant mass for DY ULS pair", kTH2F, {{axisPt}, {axisInvMassDy}});
   }
   bool isIsolatedCluster(const o2::aod::EMCALCluster& cluster,
                          const SelectedClusters& clusters)
