@@ -293,7 +293,7 @@ struct flowQC {
     float QxFT0C_Qvec = collision.qvecFT0CRe();
     float QyFT0C_Qvec = collision.qvecFT0CIm();
     float QmodFT0C_Qvec = std::hypot(QxFT0C_Qvec, QyFT0C_Qvec);
-    float psiFT0C_Qvec = computeEventPlane(QyFT0C_Qvec, QxFT0A_Qvec);
+    float psiFT0C_Qvec = computeEventPlane(QyFT0C_Qvec, QxFT0C_Qvec);
 
     float QxTPCl_Qvec = collision.qvecBNegRe();
     float QyTPCl_Qvec = collision.qvecBNegIm();
