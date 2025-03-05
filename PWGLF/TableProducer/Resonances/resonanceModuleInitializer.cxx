@@ -139,8 +139,6 @@ struct ResonanceModuleInitializer {
       multEstimator = 1;
     } else if (cfgMultName.value == "FT0A") {
       multEstimator = 2;
-    } else if (cfgMultName.value == "FV0A") {
-      multEstimator = 99;
     }
     LOGF(info, "Mult estimator: %d, %s", multEstimator, cfgMultName.value.c_str());
 
@@ -278,7 +276,7 @@ struct ResonanceModuleInitializer {
         break;
       case 1:
         if constexpr (isMC) {
-          LOG(fatal) << "CentFV0A is not available for MC";
+          LOG(fatal) << "CentFT0C is not available for MC";
           return returnValue;
         } else {
           returnValue = ResoEvents.centFT0C();
@@ -290,14 +288,6 @@ struct ResonanceModuleInitializer {
           return returnValue;
         } else {
           returnValue = ResoEvents.centFT0A();
-          break;
-        }
-      case 99:
-        if constexpr (isMC) {
-          LOG(fatal) << "CentFV0A is not available for MC";
-          return returnValue;
-        } else {
-          returnValue = ResoEvents.centFV0A();
           break;
         }
       default:
