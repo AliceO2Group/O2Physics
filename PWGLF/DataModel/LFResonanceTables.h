@@ -142,64 +142,58 @@ namespace resodaughter
 
 DECLARE_SOA_INDEX_COLUMN(ResoCollision, resoCollision);
 DECLARE_SOA_INDEX_COLUMN(ResoCollisionDF, resoCollisionDF);
-DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trk");            //!
-DECLARE_SOA_INDEX_COLUMN_FULL(V0, v0, int, V0s, "_V0");                      //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Cascade, cascade, int, Cascades, "_Cas");      //!
-DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! p_T (GeV/c)
-DECLARE_SOA_COLUMN(Px, px, float);                                           //! p_x (GeV/c)
-DECLARE_SOA_COLUMN(Py, py, float);                                           //! p_y (GeV/c)
-DECLARE_SOA_COLUMN(Pz, pz, float);                                           //! p_z (GeV/c)
-DECLARE_SOA_COLUMN(Eta, eta, float);                                         //! Eta
-DECLARE_SOA_COLUMN(Phi, phi, float);                                         //! Phi
-DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                             //! Type of the particle, according to resodaughter::ParticleType
-DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                           //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
-DECLARE_SOA_COLUMN(Indices, indices, int[2]);                                //! Field for the track indices to remove auto-correlations
-DECLARE_SOA_COLUMN(CascadeIndices, cascadeIndices, int[3]);                  //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                      //! Sign of the track charge
-DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, uint8_t);         //! Number of TPC crossed rows
-DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, uint8_t);                     //! Number of TPC clusters found
-DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);            //! Is global track without DCA
-DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                      //! Is global track
-DECLARE_SOA_COLUMN(IsPrimaryTrack, isPrimaryTrack, bool);                    //! Is primary track
-DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);                  //! Is primary vertex contributor
-DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                                    //! Has TOF
-DECLARE_SOA_COLUMN(TpcNSigmaPi10, tpcNSigmaPi10, int8_t);                    //! TPC PID x10 of the track as Pion
-DECLARE_SOA_COLUMN(TpcNSigmaKa10, tpcNSigmaKa10, int8_t);                    //! TPC PID x10 of the track as Kaon
-DECLARE_SOA_COLUMN(TpcNSigmaPr10, tpcNSigmaPr10, int8_t);                    //! TPC PID x10 of the track as Proton
-DECLARE_SOA_COLUMN(TofNSigmaPi10, tofNSigmaPi10, int8_t);                    //! TOF PID x10 of the track as Pion
-DECLARE_SOA_COLUMN(TofNSigmaKa10, tofNSigmaKa10, int8_t);                    //! TOF PID x10 of the track as Kaon
-DECLARE_SOA_COLUMN(TofNSigmaPr10, tofNSigmaPr10, int8_t);                    //! TOF PID x10 of the track as Proton
-DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);                               //! DCA between daughters
-DECLARE_SOA_COLUMN(CascDaughDCA, cascDaughDCA, float);                       //! DCA between daughters from cascade
-DECLARE_SOA_COLUMN(V0CosPA, v0CosPA, float);                                 //! V0 Cosine of Pointing Angle
-DECLARE_SOA_COLUMN(CascCosPA, cascCosPA, float);                             //! Cascade Cosine of Pointing Angle
-DECLARE_SOA_COLUMN(MLambda, mLambda, float);                                 //! The invariant mass of V0 candidate, assuming lambda
-DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);                         //! The invariant mass of V0 candidate, assuming antilambda
-DECLARE_SOA_COLUMN(MK0Short, mK0Short, float);                               //! The invariant mass of V0 candidate, assuming k0s
-DECLARE_SOA_COLUMN(MXi, mXi, float);                                         //! The invariant mass of Xi candidate
-DECLARE_SOA_COLUMN(TransRadius, transRadius, float);                         //! Transverse radius of the decay vertex
-DECLARE_SOA_COLUMN(CascTransRadius, cascTransRadius, float);                 //! Transverse radius of the decay vertex from cascade
-DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                             //! X position of the decay vertex
-DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                             //! Y position of the decay vertex
-DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                             //! Z position of the decay vertex
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPi, daughterTPCNSigmaPosPi, float);   //! TPC PID of the positive daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosKa, daughterTPCNSigmaPosKa, float);   //! TPC PID of the positive daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPr, daughterTPCNSigmaPosPr, float);   //! TPC PID of the positive daughter as Proton
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegPi, daughterTPCNSigmaNegPi, float);   //! TPC PID of the negative daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegKa, daughterTPCNSigmaNegKa, float);   //! TPC PID of the negative daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegPr, daughterTPCNSigmaNegPr, float);   //! TPC PID of the negative daughter as Proton
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaBachPi, daughterTPCNSigmaBachPi, float); //! TPC PID of the bachelor daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaBachKa, daughterTPCNSigmaBachKa, float); //! TPC PID of the bachelor daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaBachPr, daughterTPCNSigmaBachPr, float); //! TPC PID of the bachelor daughter as Proton
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosPi, daughterTOFNSigmaPosPi, float);   //! TOF PID of the positive daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosKa, daughterTOFNSigmaPosKa, float);   //! TOF PID of the positive daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosPr, daughterTOFNSigmaPosPr, float);   //! TOF PID of the positive daughter as Proton
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegPi, daughterTOFNSigmaNegPi, float);   //! TOF PID of the negative daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegKa, daughterTOFNSigmaNegKa, float);   //! TOF PID of the negative daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegPr, daughterTOFNSigmaNegPr, float);   //! TOF PID of the negative daughter as Proton
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachPi, daughterTOFNSigmaBachPi, float); //! TOF PID of the bachelor daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachKa, daughterTOFNSigmaBachKa, float); //! TOF PID of the bachelor daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachPr, daughterTOFNSigmaBachPr, float); //! TOF PID of the bachelor daughter as Proton
+DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trk");                 //!
+DECLARE_SOA_INDEX_COLUMN_FULL(V0, v0, int, V0s, "_V0");                           //!
+DECLARE_SOA_INDEX_COLUMN_FULL(Cascade, cascade, int, Cascades, "_Cas");           //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                //! p_t (GeV/c)
+DECLARE_SOA_COLUMN(Px, px, float);                                                //! p_x (GeV/c)
+DECLARE_SOA_COLUMN(Py, py, float);                                                //! p_y (GeV/c)
+DECLARE_SOA_COLUMN(Pz, pz, float);                                                //! p_z (GeV/c)
+DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                                  //! Type of the particle, according to resodaughter::ParticleType
+DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                                //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
+DECLARE_SOA_COLUMN(Indices, indices, int[2]);                                     //! Field for the track indices to remove auto-correlations
+DECLARE_SOA_COLUMN(CascadeIndices, cascadeIndices, int[3]);                       //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
+DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, uint8_t);              //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, uint8_t);                          //! Number of TPC clusters found
+DECLARE_SOA_COLUMN(TrackFlags, trackFlags, uint8_t);                              //! Track flags
+DECLARE_SOA_COLUMN(TpcNSigmaPi10, tpcNSigmaPi10, int8_t);                         //! TPC PID x10 of the track as Pion
+DECLARE_SOA_COLUMN(TpcNSigmaKa10, tpcNSigmaKa10, int8_t);                         //! TPC PID x10 of the track as Kaon
+DECLARE_SOA_COLUMN(TpcNSigmaPr10, tpcNSigmaPr10, int8_t);                         //! TPC PID x10 of the track as Proton
+DECLARE_SOA_COLUMN(TofNSigmaPi10, tofNSigmaPi10, int8_t);                         //! TOF PID x10 of the track as Pion
+DECLARE_SOA_COLUMN(TofNSigmaKa10, tofNSigmaKa10, int8_t);                         //! TOF PID x10 of the track as Kaon
+DECLARE_SOA_COLUMN(TofNSigmaPr10, tofNSigmaPr10, int8_t);                         //! TOF PID x10 of the track as Proton
+DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);                                    //! DCA between daughters
+DECLARE_SOA_COLUMN(CascDaughDCA, cascDaughDCA, float);                            //! DCA between daughters from cascade
+DECLARE_SOA_COLUMN(V0CosPA, v0CosPA, float);                                      //! V0 Cosine of Pointing Angle
+DECLARE_SOA_COLUMN(CascCosPA, cascCosPA, float);                                  //! Cascade Cosine of Pointing Angle
+DECLARE_SOA_COLUMN(MLambda, mLambda, float);                                      //! The invariant mass of V0 candidate, assuming lambda
+DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);                              //! The invariant mass of V0 candidate, assuming antilambda
+DECLARE_SOA_COLUMN(MK0Short, mK0Short, float);                                    //! The invariant mass of V0 candidate, assuming k0s
+DECLARE_SOA_COLUMN(MXi, mXi, float);                                              //! The invariant mass of Xi candidate
+DECLARE_SOA_COLUMN(TransRadius, transRadius, float);                              //! Transverse radius of the decay vertex
+DECLARE_SOA_COLUMN(CascTransRadius, cascTransRadius, float);                      //! Transverse radius of the decay vertex from cascade
+DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                                  //! X position of the decay vertex
+DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                                  //! Y position of the decay vertex
+DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                                  //! Z position of the decay vertex
+DECLARE_SOA_COLUMN(TpcSignal10, tpcSignal10, int8_t);                             //! TPC signal of the track x10
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPi10, daughterTPCNSigmaPosPi10, int8_t);   //! TPC PID x10 of the positive daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosKa10, daughterTPCNSigmaPosKa10, int8_t);   //! TPC PID x10 of the positive daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPr10, daughterTPCNSigmaPosPr10, int8_t);   //! TPC PID x10 of the positive daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegPi10, daughterTPCNSigmaNegPi10, int8_t);   //! TPC PID x10 of the negative daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegKa10, daughterTPCNSigmaNegKa10, int8_t);   //! TPC PID x10 of the negative daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegPr10, daughterTPCNSigmaNegPr10, int8_t);   //! TPC PID x10 of the negative daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaBachPi10, daughterTPCNSigmaBachPi10, int8_t); //! TPC PID x10 of the bachelor daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaBachKa10, daughterTPCNSigmaBachKa10, int8_t); //! TPC PID x10 of the bachelor daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaBachPr10, daughterTPCNSigmaBachPr10, int8_t); //! TPC PID x10 of the bachelor daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosPi10, daughterTOFNSigmaPosPi10, int8_t);   //! TOF PID x10 of the positive daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosKa10, daughterTOFNSigmaPosKa10, int8_t);   //! TOF PID x10 of the positive daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosPr10, daughterTOFNSigmaPosPr10, int8_t);   //! TOF PID x10 of the positive daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegPi10, daughterTOFNSigmaNegPi10, int8_t);   //! TOF PID x10 of the negative daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegKa10, daughterTOFNSigmaNegKa10, int8_t);   //! TOF PID x10 of the negative daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegPr10, daughterTOFNSigmaNegPr10, int8_t);   //! TOF PID x10 of the negative daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachPi10, daughterTOFNSigmaBachPi10, int8_t); //! TOF PID x10 of the bachelor daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachKa10, daughterTOFNSigmaBachKa10, int8_t); //! TOF PID x10 of the bachelor daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachPr10, daughterTOFNSigmaBachPr10, int8_t); //! TOF PID x10 of the bachelor daughter as Proton
 // For MC
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! Index of the corresponding MC particle
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
@@ -216,29 +210,77 @@ DECLARE_SOA_COLUMN(V0ID, v0ID, int);                 //! Id of the V0 from casca
 // Dynamic columns
 // TPC PID return value/10
 DECLARE_SOA_DYNAMIC_COLUMN(TpcNSigmaPi, tpcNSigmaPi,
-                           [](int8_t tpcNSigmaPi10) {
-                             return (float)tpcNSigmaPi10 / 10.f;
-                           });
+                           [](int8_t tpcNSigmaPi10) { return (float)tpcNSigmaPi10 / 10.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcNSigmaKa, tpcNSigmaKa,
-                           [](int8_t tpcNSigmaKa10) {
-                             return (float)tpcNSigmaKa10 / 10.f;
-                           });
+                           [](int8_t tpcNSigmaKa10) { return (float)tpcNSigmaKa10 / 10.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcNSigmaPr, tpcNSigmaPr,
-                           [](int8_t tpcNSigmaPr10) {
-                             return (float)tpcNSigmaPr10 / 10.f;
-                           });
+                           [](int8_t tpcNSigmaPr10) { return (float)tpcNSigmaPr10 / 10.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TofNSigmaPi, tofNSigmaPi,
-                           [](int8_t tofNSigmaPi10) {
-                             return (float)tofNSigmaPi10 / 10.f;
-                           });
+                           [](int8_t tofNSigmaPi10) { return (float)tofNSigmaPi10 / 10.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TofNSigmaKa, tofNSigmaKa,
-                           [](int8_t tofNSigmaKa10) {
-                             return (float)tofNSigmaKa10 / 10.f;
-                           });
+                           [](int8_t tofNSigmaKa10) { return (float)tofNSigmaKa10 / 10.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TofNSigmaPr, tofNSigmaPr,
-                           [](int8_t tofNSigmaPr10) {
-                             return (float)tofNSigmaPr10 / 10.f;
-                           });
+                           [](int8_t tofNSigmaPr10) { return (float)tofNSigmaPr10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTPCNSigmaPosPi, daughterTPCNSigmaPosPi,
+                           [](int8_t daughterTPCNSigmaPosPi10) { return (float)daughterTPCNSigmaPosPi10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTPCNSigmaPosKa, daughterTPCNSigmaPosKa,
+                           [](int8_t daughterTPCNSigmaPosKa10) { return (float)daughterTPCNSigmaPosKa10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTPCNSigmaPosPr, daughterTPCNSigmaPosPr,
+                           [](int8_t daughterTPCNSigmaPosPr10) { return (float)daughterTPCNSigmaPosPr10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTPCNSigmaNegPi, daughterTPCNSigmaNegPi,
+                           [](int8_t daughterTPCNSigmaNegPi10) { return (float)daughterTPCNSigmaNegPi10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTPCNSigmaNegKa, daughterTPCNSigmaNegKa,
+                           [](int8_t daughterTPCNSigmaNegKa10) { return (float)daughterTPCNSigmaNegKa10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTPCNSigmaNegPr, daughterTPCNSigmaNegPr,
+                           [](int8_t daughterTPCNSigmaNegPr10) { return (float)daughterTPCNSigmaNegPr10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTPCNSigmaBachPi, daughterTPCNSigmaBachPi,
+                           [](int8_t daughterTPCNSigmaBachPi10) { return (float)daughterTPCNSigmaBachPi10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTPCNSigmaBachKa, daughterTPCNSigmaBachKa,
+                           [](int8_t daughterTPCNSigmaBachKa10) { return (float)daughterTPCNSigmaBachKa10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTPCNSigmaBachPr, daughterTPCNSigmaBachPr,
+                           [](int8_t daughterTPCNSigmaBachPr10) { return (float)daughterTPCNSigmaBachPr10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTOFNSigmaPosPi, daughterTOFNSigmaPosPi,
+                           [](int8_t daughterTOFNSigmaPosPi10) { return (float)daughterTOFNSigmaPosPi10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTOFNSigmaPosKa, daughterTOFNSigmaPosKa,
+                           [](int8_t daughterTOFNSigmaPosKa10) { return (float)daughterTOFNSigmaPosKa10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTOFNSigmaPosPr, daughterTOFNSigmaPosPr,
+                           [](int8_t daughterTOFNSigmaPosPr10) { return (float)daughterTOFNSigmaPosPr10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTOFNSigmaNegPi, daughterTOFNSigmaNegPi,
+                           [](int8_t daughterTOFNSigmaNegPi10) { return (float)daughterTOFNSigmaNegPi10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTOFNSigmaNegKa, daughterTOFNSigmaNegKa,
+                           [](int8_t daughterTOFNSigmaNegKa10) { return (float)daughterTOFNSigmaNegKa10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTOFNSigmaNegPr, daughterTOFNSigmaNegPr,
+                           [](int8_t daughterTOFNSigmaNegPr10) { return (float)daughterTOFNSigmaNegPr10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTOFNSigmaBachPi, daughterTOFNSigmaBachPi,
+                           [](int8_t daughterTOFNSigmaBachPi10) { return (float)daughterTOFNSigmaBachPi10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTOFNSigmaBachKa, daughterTOFNSigmaBachKa,
+                           [](int8_t daughterTOFNSigmaBachKa10) { return (float)daughterTOFNSigmaBachKa10 / 10.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(DaughterTOFNSigmaBachPr, daughterTOFNSigmaBachPr,
+                           [](int8_t daughterTOFNSigmaBachPr10) { return (float)daughterTOFNSigmaBachPr10 / 10.f; });
+// TPC signal x10
+DECLARE_SOA_DYNAMIC_COLUMN(TpcSignal, tpcSignal,
+                           [](int8_t tpcSignal10) { return (float)tpcSignal10 / 10.f; });
+// pT, Eta, Phi
+// DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array{px, py, pz}); });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
+// Track flags
+DECLARE_SOA_DYNAMIC_COLUMN(PassedITSRefit, passedITSRefit,
+                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 0)) != 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(PassedTPCRefit, passedTPCRefit,
+                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 1)) != 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA,
+                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 2)) != 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsGlobalTrack, isGlobalTrack,
+                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 3)) != 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsPrimaryTrack, isPrimaryTrack,
+                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 4)) != 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsPVContributor, isPVContributor,
+                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 5)) != 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,
+                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 6)) != 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,
+                           [](uint8_t trackFlags) -> int8_t { return (trackFlags & (1 << 7)) ? 1 : -1; });
 } // namespace resodaughter
 DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   o2::soa::Index<>,
@@ -248,34 +290,37 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   resodaughter::Px,
                   resodaughter::Py,
                   resodaughter::Pz,
-                  resodaughter::Eta,
-                  resodaughter::Phi,
-                  resodaughter::Sign,
                   resodaughter::TpcNClsCrossedRows,
                   resodaughter::TpcNClsFound,
                   o2::aod::track::DcaXY,
                   o2::aod::track::DcaZ,
-                  resodaughter::HasTOF,
                   resodaughter::TpcNSigmaPi10,
                   resodaughter::TpcNSigmaKa10,
                   resodaughter::TpcNSigmaPr10,
                   resodaughter::TofNSigmaPi10,
                   resodaughter::TofNSigmaKa10,
                   resodaughter::TofNSigmaPr10,
-                  o2::aod::track::TPCSignal,
-                  o2::aod::track::PassedITSRefit,
-                  o2::aod::track::PassedTPCRefit,
-                  resodaughter::IsGlobalTrackWoDCA,
-                  resodaughter::IsGlobalTrack,
-                  resodaughter::IsPrimaryTrack,
-                  resodaughter::IsPVContributor,
+                  resodaughter::TpcSignal10,
+                  resodaughter::TrackFlags,
                   // Dynamic columns
                   resodaughter::TpcNSigmaPi<resodaughter::TpcNSigmaPi10>,
                   resodaughter::TpcNSigmaKa<resodaughter::TpcNSigmaKa10>,
                   resodaughter::TpcNSigmaPr<resodaughter::TpcNSigmaPr10>,
                   resodaughter::TofNSigmaPi<resodaughter::TofNSigmaPi10>,
                   resodaughter::TofNSigmaKa<resodaughter::TofNSigmaKa10>,
-                  resodaughter::TofNSigmaPr<resodaughter::TofNSigmaPr10>);
+                  resodaughter::TofNSigmaPr<resodaughter::TofNSigmaPr10>,
+                  resodaughter::TpcSignal<resodaughter::TpcSignal10>,
+                  // resodaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
+                  resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::PassedITSRefit<resodaughter::TrackFlags>,
+                  resodaughter::PassedTPCRefit<resodaughter::TrackFlags>,
+                  resodaughter::IsGlobalTrackWoDCA<resodaughter::TrackFlags>,
+                  resodaughter::IsGlobalTrack<resodaughter::TrackFlags>,
+                  resodaughter::IsPrimaryTrack<resodaughter::TrackFlags>,
+                  resodaughter::IsPVContributor<resodaughter::TrackFlags>,
+                  resodaughter::HasTOF<resodaughter::TrackFlags>,
+                  resodaughter::Sign<resodaughter::TrackFlags>);
 using ResoTrack = ResoTracks::iterator;
 
 // For DF mixing study
@@ -287,34 +332,37 @@ DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDF",
                   resodaughter::Px,
                   resodaughter::Py,
                   resodaughter::Pz,
-                  resodaughter::Eta,
-                  resodaughter::Phi,
-                  resodaughter::Sign,
                   resodaughter::TpcNClsCrossedRows,
                   resodaughter::TpcNClsFound,
                   o2::aod::track::DcaXY,
                   o2::aod::track::DcaZ,
-                  resodaughter::HasTOF,
                   resodaughter::TpcNSigmaPi10,
                   resodaughter::TpcNSigmaKa10,
                   resodaughter::TpcNSigmaPr10,
                   resodaughter::TofNSigmaPi10,
                   resodaughter::TofNSigmaKa10,
                   resodaughter::TofNSigmaPr10,
-                  o2::aod::track::TPCSignal,
-                  o2::aod::track::PassedITSRefit,
-                  o2::aod::track::PassedTPCRefit,
-                  resodaughter::IsGlobalTrackWoDCA,
-                  resodaughter::IsGlobalTrack,
-                  resodaughter::IsPrimaryTrack,
-                  resodaughter::IsPVContributor,
+                  resodaughter::TpcSignal10,
+                  resodaughter::TrackFlags,
                   // Dynamic columns
                   resodaughter::TpcNSigmaPi<resodaughter::TpcNSigmaPi10>,
                   resodaughter::TpcNSigmaKa<resodaughter::TpcNSigmaKa10>,
                   resodaughter::TpcNSigmaPr<resodaughter::TpcNSigmaPr10>,
                   resodaughter::TofNSigmaPi<resodaughter::TofNSigmaPi10>,
                   resodaughter::TofNSigmaKa<resodaughter::TofNSigmaKa10>,
-                  resodaughter::TofNSigmaPr<resodaughter::TofNSigmaPr10>);
+                  resodaughter::TofNSigmaPr<resodaughter::TofNSigmaPr10>,
+                  resodaughter::TpcSignal<resodaughter::TpcSignal10>,
+                  // resodaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
+                  resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::PassedITSRefit<resodaughter::TrackFlags>,
+                  resodaughter::PassedTPCRefit<resodaughter::TrackFlags>,
+                  resodaughter::IsGlobalTrackWoDCA<resodaughter::TrackFlags>,
+                  resodaughter::IsGlobalTrack<resodaughter::TrackFlags>,
+                  resodaughter::IsPrimaryTrack<resodaughter::TrackFlags>,
+                  resodaughter::IsPVContributor<resodaughter::TrackFlags>,
+                  resodaughter::HasTOF<resodaughter::TrackFlags>,
+                  resodaughter::Sign<resodaughter::TrackFlags>);
 using ResoTrackDF = ResoTrackDFs::iterator;
 
 DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0",
@@ -325,21 +373,19 @@ DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0",
                   resodaughter::Px,
                   resodaughter::Py,
                   resodaughter::Pz,
-                  resodaughter::Eta,
-                  resodaughter::Phi,
                   resodaughter::Indices,
-                  resodaughter::DaughterTPCNSigmaPosPi,
-                  resodaughter::DaughterTPCNSigmaPosKa,
-                  resodaughter::DaughterTPCNSigmaPosPr,
-                  resodaughter::DaughterTPCNSigmaNegPi,
-                  resodaughter::DaughterTPCNSigmaNegKa,
-                  resodaughter::DaughterTPCNSigmaNegPr,
-                  resodaughter::DaughterTOFNSigmaPosPi,
-                  resodaughter::DaughterTOFNSigmaPosKa,
-                  resodaughter::DaughterTOFNSigmaPosPr,
-                  resodaughter::DaughterTOFNSigmaNegPi,
-                  resodaughter::DaughterTOFNSigmaNegKa,
-                  resodaughter::DaughterTOFNSigmaNegPr,
+                  resodaughter::DaughterTPCNSigmaPosPi10,
+                  resodaughter::DaughterTPCNSigmaPosKa10,
+                  resodaughter::DaughterTPCNSigmaPosPr10,
+                  resodaughter::DaughterTPCNSigmaNegPi10,
+                  resodaughter::DaughterTPCNSigmaNegKa10,
+                  resodaughter::DaughterTPCNSigmaNegPr10,
+                  resodaughter::DaughterTOFNSigmaPosPi10,
+                  resodaughter::DaughterTOFNSigmaPosKa10,
+                  resodaughter::DaughterTOFNSigmaPosPr10,
+                  resodaughter::DaughterTOFNSigmaNegPi10,
+                  resodaughter::DaughterTOFNSigmaNegKa10,
+                  resodaughter::DaughterTOFNSigmaNegPr10,
                   resodaughter::V0CosPA,
                   resodaughter::DaughDCA,
                   v0data::DCAPosToPV,
@@ -351,7 +397,22 @@ DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0",
                   resodaughter::TransRadius,
                   resodaughter::DecayVtxX,
                   resodaughter::DecayVtxY,
-                  resodaughter::DecayVtxZ);
+                  resodaughter::DecayVtxZ,
+                  // resodaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
+                  resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::DaughterTPCNSigmaPosPi<resodaughter::DaughterTPCNSigmaPosPi10>,
+                  resodaughter::DaughterTPCNSigmaPosKa<resodaughter::DaughterTPCNSigmaPosKa10>,
+                  resodaughter::DaughterTPCNSigmaPosPr<resodaughter::DaughterTPCNSigmaPosPr10>,
+                  resodaughter::DaughterTPCNSigmaNegPi<resodaughter::DaughterTPCNSigmaNegPi10>,
+                  resodaughter::DaughterTPCNSigmaNegKa<resodaughter::DaughterTPCNSigmaNegKa10>,
+                  resodaughter::DaughterTPCNSigmaNegPr<resodaughter::DaughterTPCNSigmaNegPr10>,
+                  resodaughter::DaughterTOFNSigmaPosPi<resodaughter::DaughterTOFNSigmaPosPi10>,
+                  resodaughter::DaughterTOFNSigmaPosKa<resodaughter::DaughterTOFNSigmaPosKa10>,
+                  resodaughter::DaughterTOFNSigmaPosPr<resodaughter::DaughterTOFNSigmaPosPr10>,
+                  resodaughter::DaughterTOFNSigmaNegPi<resodaughter::DaughterTOFNSigmaNegPi10>,
+                  resodaughter::DaughterTOFNSigmaNegKa<resodaughter::DaughterTOFNSigmaNegKa10>,
+                  resodaughter::DaughterTOFNSigmaNegPr<resodaughter::DaughterTOFNSigmaNegPr10>);
 using ResoV0 = ResoV0s::iterator;
 
 DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADE",
@@ -362,27 +423,25 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADE",
                   resodaughter::Px,
                   resodaughter::Py,
                   resodaughter::Pz,
-                  resodaughter::Eta,
-                  resodaughter::Phi,
                   resodaughter::CascadeIndices,
-                  resodaughter::DaughterTPCNSigmaPosPi,
-                  resodaughter::DaughterTPCNSigmaPosKa,
-                  resodaughter::DaughterTPCNSigmaPosPr,
-                  resodaughter::DaughterTPCNSigmaNegPi,
-                  resodaughter::DaughterTPCNSigmaNegKa,
-                  resodaughter::DaughterTPCNSigmaNegPr,
-                  resodaughter::DaughterTPCNSigmaBachPi,
-                  resodaughter::DaughterTPCNSigmaBachKa,
-                  resodaughter::DaughterTPCNSigmaBachPr,
-                  resodaughter::DaughterTOFNSigmaPosPi,
-                  resodaughter::DaughterTOFNSigmaPosKa,
-                  resodaughter::DaughterTOFNSigmaPosPr,
-                  resodaughter::DaughterTOFNSigmaNegPi,
-                  resodaughter::DaughterTOFNSigmaNegKa,
-                  resodaughter::DaughterTOFNSigmaNegPr,
-                  resodaughter::DaughterTOFNSigmaBachPi,
-                  resodaughter::DaughterTOFNSigmaBachKa,
-                  resodaughter::DaughterTOFNSigmaBachPr,
+                  resodaughter::DaughterTPCNSigmaPosPi10,
+                  resodaughter::DaughterTPCNSigmaPosKa10,
+                  resodaughter::DaughterTPCNSigmaPosPr10,
+                  resodaughter::DaughterTPCNSigmaNegPi10,
+                  resodaughter::DaughterTPCNSigmaNegKa10,
+                  resodaughter::DaughterTPCNSigmaNegPr10,
+                  resodaughter::DaughterTPCNSigmaBachPi10,
+                  resodaughter::DaughterTPCNSigmaBachKa10,
+                  resodaughter::DaughterTPCNSigmaBachPr10,
+                  resodaughter::DaughterTOFNSigmaPosPi10,
+                  resodaughter::DaughterTOFNSigmaPosKa10,
+                  resodaughter::DaughterTOFNSigmaPosPr10,
+                  resodaughter::DaughterTOFNSigmaNegPi10,
+                  resodaughter::DaughterTOFNSigmaNegKa10,
+                  resodaughter::DaughterTOFNSigmaNegPr10,
+                  resodaughter::DaughterTOFNSigmaBachPi10,
+                  resodaughter::DaughterTOFNSigmaBachKa10,
+                  resodaughter::DaughterTOFNSigmaBachPr10,
                   resodaughter::V0CosPA,
                   resodaughter::CascCosPA,
                   resodaughter::DaughDCA,
@@ -400,7 +459,28 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADE",
                   resodaughter::CascTransRadius,
                   resodaughter::DecayVtxX,
                   resodaughter::DecayVtxY,
-                  resodaughter::DecayVtxZ);
+                  resodaughter::DecayVtxZ,
+                  // resodaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
+                  resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::DaughterTPCNSigmaPosPi<resodaughter::DaughterTPCNSigmaPosPi10>,
+                  resodaughter::DaughterTPCNSigmaPosKa<resodaughter::DaughterTPCNSigmaPosKa10>,
+                  resodaughter::DaughterTPCNSigmaPosPr<resodaughter::DaughterTPCNSigmaPosPr10>,
+                  resodaughter::DaughterTPCNSigmaNegPi<resodaughter::DaughterTPCNSigmaNegPi10>,
+                  resodaughter::DaughterTPCNSigmaNegKa<resodaughter::DaughterTPCNSigmaNegKa10>,
+                  resodaughter::DaughterTPCNSigmaNegPr<resodaughter::DaughterTPCNSigmaNegPr10>,
+                  resodaughter::DaughterTPCNSigmaBachPi<resodaughter::DaughterTPCNSigmaBachPi10>,
+                  resodaughter::DaughterTPCNSigmaBachKa<resodaughter::DaughterTPCNSigmaBachKa10>,
+                  resodaughter::DaughterTPCNSigmaBachPr<resodaughter::DaughterTPCNSigmaBachPr10>,
+                  resodaughter::DaughterTOFNSigmaPosPi<resodaughter::DaughterTOFNSigmaPosPi10>,
+                  resodaughter::DaughterTOFNSigmaPosKa<resodaughter::DaughterTOFNSigmaPosKa10>,
+                  resodaughter::DaughterTOFNSigmaPosPr<resodaughter::DaughterTOFNSigmaPosPr10>,
+                  resodaughter::DaughterTOFNSigmaNegPi<resodaughter::DaughterTOFNSigmaNegPi10>,
+                  resodaughter::DaughterTOFNSigmaNegKa<resodaughter::DaughterTOFNSigmaNegKa10>,
+                  resodaughter::DaughterTOFNSigmaNegPr<resodaughter::DaughterTOFNSigmaNegPr10>,
+                  resodaughter::DaughterTOFNSigmaBachPi<resodaughter::DaughterTOFNSigmaBachPi10>,
+                  resodaughter::DaughterTOFNSigmaBachKa<resodaughter::DaughterTOFNSigmaBachKa10>,
+                  resodaughter::DaughterTOFNSigmaBachPr<resodaughter::DaughterTOFNSigmaBachPr10>);
 using ResoCascade = ResoCascades::iterator;
 
 DECLARE_SOA_TABLE(ResoCascadeDFs, "AOD", "RESOCASCADEDF",
@@ -411,27 +491,25 @@ DECLARE_SOA_TABLE(ResoCascadeDFs, "AOD", "RESOCASCADEDF",
                   resodaughter::Px,
                   resodaughter::Py,
                   resodaughter::Pz,
-                  resodaughter::Eta,
-                  resodaughter::Phi,
                   resodaughter::CascadeIndices,
-                  resodaughter::DaughterTPCNSigmaPosPi,
-                  resodaughter::DaughterTPCNSigmaPosKa,
-                  resodaughter::DaughterTPCNSigmaPosPr,
-                  resodaughter::DaughterTPCNSigmaNegPi,
-                  resodaughter::DaughterTPCNSigmaNegKa,
-                  resodaughter::DaughterTPCNSigmaNegPr,
-                  resodaughter::DaughterTPCNSigmaBachPi,
-                  resodaughter::DaughterTPCNSigmaBachKa,
-                  resodaughter::DaughterTPCNSigmaBachPr,
-                  resodaughter::DaughterTOFNSigmaPosPi,
-                  resodaughter::DaughterTOFNSigmaPosKa,
-                  resodaughter::DaughterTOFNSigmaPosPr,
-                  resodaughter::DaughterTOFNSigmaNegPi,
-                  resodaughter::DaughterTOFNSigmaNegKa,
-                  resodaughter::DaughterTOFNSigmaNegPr,
-                  resodaughter::DaughterTOFNSigmaBachPi,
-                  resodaughter::DaughterTOFNSigmaBachKa,
-                  resodaughter::DaughterTOFNSigmaBachPr,
+                  resodaughter::DaughterTPCNSigmaPosPi10,
+                  resodaughter::DaughterTPCNSigmaPosKa10,
+                  resodaughter::DaughterTPCNSigmaPosPr10,
+                  resodaughter::DaughterTPCNSigmaNegPi10,
+                  resodaughter::DaughterTPCNSigmaNegKa10,
+                  resodaughter::DaughterTPCNSigmaNegPr10,
+                  resodaughter::DaughterTPCNSigmaBachPi10,
+                  resodaughter::DaughterTPCNSigmaBachKa10,
+                  resodaughter::DaughterTPCNSigmaBachPr10,
+                  resodaughter::DaughterTOFNSigmaPosPi10,
+                  resodaughter::DaughterTOFNSigmaPosKa10,
+                  resodaughter::DaughterTOFNSigmaPosPr10,
+                  resodaughter::DaughterTOFNSigmaNegPi10,
+                  resodaughter::DaughterTOFNSigmaNegKa10,
+                  resodaughter::DaughterTOFNSigmaNegPr10,
+                  resodaughter::DaughterTOFNSigmaBachPi10,
+                  resodaughter::DaughterTOFNSigmaBachKa10,
+                  resodaughter::DaughterTOFNSigmaBachPr10,
                   resodaughter::V0CosPA,
                   resodaughter::CascCosPA,
                   resodaughter::DaughDCA,
@@ -449,7 +527,28 @@ DECLARE_SOA_TABLE(ResoCascadeDFs, "AOD", "RESOCASCADEDF",
                   resodaughter::CascTransRadius,
                   resodaughter::DecayVtxX,
                   resodaughter::DecayVtxY,
-                  resodaughter::DecayVtxZ);
+                  resodaughter::DecayVtxZ,
+                  // resodaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
+                  resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::DaughterTPCNSigmaPosPi<resodaughter::DaughterTPCNSigmaPosPi10>,
+                  resodaughter::DaughterTPCNSigmaPosKa<resodaughter::DaughterTPCNSigmaPosKa10>,
+                  resodaughter::DaughterTPCNSigmaPosPr<resodaughter::DaughterTPCNSigmaPosPr10>,
+                  resodaughter::DaughterTPCNSigmaNegPi<resodaughter::DaughterTPCNSigmaNegPi10>,
+                  resodaughter::DaughterTPCNSigmaNegKa<resodaughter::DaughterTPCNSigmaNegKa10>,
+                  resodaughter::DaughterTPCNSigmaNegPr<resodaughter::DaughterTPCNSigmaNegPr10>,
+                  resodaughter::DaughterTPCNSigmaBachPi<resodaughter::DaughterTPCNSigmaBachPi10>,
+                  resodaughter::DaughterTPCNSigmaBachKa<resodaughter::DaughterTPCNSigmaBachKa10>,
+                  resodaughter::DaughterTPCNSigmaBachPr<resodaughter::DaughterTPCNSigmaBachPr10>,
+                  resodaughter::DaughterTOFNSigmaPosPi<resodaughter::DaughterTOFNSigmaPosPi10>,
+                  resodaughter::DaughterTOFNSigmaPosKa<resodaughter::DaughterTOFNSigmaPosKa10>,
+                  resodaughter::DaughterTOFNSigmaPosPr<resodaughter::DaughterTOFNSigmaPosPr10>,
+                  resodaughter::DaughterTOFNSigmaNegPi<resodaughter::DaughterTOFNSigmaNegPi10>,
+                  resodaughter::DaughterTOFNSigmaNegKa<resodaughter::DaughterTOFNSigmaNegKa10>,
+                  resodaughter::DaughterTOFNSigmaNegPr<resodaughter::DaughterTOFNSigmaNegPr10>,
+                  resodaughter::DaughterTOFNSigmaBachPi<resodaughter::DaughterTOFNSigmaBachPi10>,
+                  resodaughter::DaughterTOFNSigmaBachKa<resodaughter::DaughterTOFNSigmaBachKa10>,
+                  resodaughter::DaughterTOFNSigmaBachPr<resodaughter::DaughterTOFNSigmaBachPr10>);
 using ResoCascadeDF = ResoCascadeDFs::iterator;
 
 DECLARE_SOA_TABLE(ResoMCTracks, "AOD", "RESOMCTRACK",
@@ -498,11 +597,12 @@ DECLARE_SOA_TABLE(ResoMCParents, "AOD", "RESOMCPARENT",
                   resodaughter::Px,
                   resodaughter::Py,
                   resodaughter::Pz,
-                  resodaughter::Eta,
-                  resodaughter::Phi,
                   mcparticle::Y,
                   mcparticle::E,
-                  mcparticle::StatusCode);
+                  mcparticle::StatusCode,
+                  // resodaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
+                  resodaughter::Phi<resodaughter::Px, resodaughter::Py>);
 using ResoMCParent = ResoMCParents::iterator;
 
 using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>; // without Extra

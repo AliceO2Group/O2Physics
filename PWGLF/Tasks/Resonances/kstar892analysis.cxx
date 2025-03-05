@@ -244,27 +244,74 @@ struct kstar892analysis {
   // Filters
   Filter acceptanceFilter = nabs(aod::resodaughter::pt) >= cMinPtcut;
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) <= cMaxDCArToPVcut) && (nabs(aod::track::dcaZ) <= cMaxDCAzToPVcut);
-  Filter primarytrackFilter = aod::resodaughter::isPVContributor && aod::resodaughter::isPrimaryTrack && aod::resodaughter::isGlobalTrackWoDCA;
+  // Filter primarytrackFilter = aod::resodaughter::isPVContributor && aod::resodaughter::isPrimaryTrack && aod::resodaughter::isGlobalTrackWoDCA;
+  Filter primarytrackFilter = ((aod::resodaughter::trackFlags & ((1 << 5) | (1 << 4) | (1 << 2))) == ((1 << 5) | (1 << 4) | (1 << 2)));
 
   // partitions for data
-  Partition<soa::Filtered<aod::ResoTracks>> resoKaWithTof = (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (aod::resodaughter::hasTOF == true);
-  Partition<soa::Filtered<aod::ResoTracks>> resoPiWithTof = (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (aod::resodaughter::hasTOF == true);
-  Partition<soa::Filtered<aod::ResoTracks>> resoKa = (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon);
-  Partition<soa::Filtered<aod::ResoTracks>> resoPi = (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion);
-  Partition<soa::Filtered<aod::ResoTracks>> resoKaTPClowPt = (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon) && (nabs(aod::resodaughter::pt) < cMaxPtTPC);
-  Partition<soa::Filtered<aod::ResoTracks>> resoPiTPClowPt = (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion) && (nabs(aod::resodaughter::pt) < cMaxPtTPC);
-  Partition<soa::Filtered<aod::ResoTracks>> resoKaTOFhighPt = (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (aod::resodaughter::hasTOF == true) && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
-  Partition<soa::Filtered<aod::ResoTracks>> resoPiTOFhighPt = (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (aod::resodaughter::hasTOF == true) && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
+  Partition<aod::ResoTracks> resoKaWithTof =
+    (nabs(aod::resodaughter::tofNSigmaKa10) <= 10 * cMaxTOFnSigmaKaon) &&
+    ((aod::resodaughter::trackFlags & (1 << 6)) != 0);
+
+  Partition<aod::ResoTracks> resoPiWithTof =
+    (nabs(aod::resodaughter::tofNSigmaPi10) <= 10 * cMaxTOFnSigmaPion) &&
+    ((aod::resodaughter::trackFlags & (1 << 6)) != 0);
+
+  Partition<aod::ResoTracks> resoKa =
+    (nabs(aod::resodaughter::tpcNSigmaKa10) <= 10 * cMaxTPCnSigmaKaon);
+
+  Partition<aod::ResoTracks> resoPi =
+    (nabs(aod::resodaughter::tpcNSigmaPi10) <= 10 * cMaxTPCnSigmaPion);
+
+  Partition<aod::ResoTracks> resoKaTPClowPt =
+    (nabs(aod::resodaughter::tpcNSigmaKa10) <= 10 * cMaxTPCnSigmaKaon) &&
+    (nabs(aod::resodaughter::pt) < cMaxPtTPC);
+
+  Partition<aod::ResoTracks> resoPiTPClowPt =
+    (nabs(aod::resodaughter::tpcNSigmaPi10) <= 10 * cMaxTPCnSigmaPion) &&
+    (nabs(aod::resodaughter::pt) < cMaxPtTPC);
+
+  Partition<aod::ResoTracks> resoKaTOFhighPt =
+    (nabs(aod::resodaughter::tofNSigmaKa10) <= 10 * cMaxTOFnSigmaKaon) &&
+    ((aod::resodaughter::trackFlags & (1 << 6)) != 0) &&
+    (nabs(aod::resodaughter::pt) >= cMinPtTOF);
+
+  Partition<aod::ResoTracks> resoPiTOFhighPt =
+    (nabs(aod::resodaughter::tofNSigmaPi10) <= 10 * cMaxTOFnSigmaPion) &&
+    ((aod::resodaughter::trackFlags & (1 << 6)) != 0) &&
+    (nabs(aod::resodaughter::pt) >= cMinPtTOF);
 
   // Partitions for mc
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecKaWithTof = (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (aod::resodaughter::hasTOF == true);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecPiWithTof = (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (aod::resodaughter::hasTOF == true);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecKa = (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecPi = (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecKaTPClowPt = (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon) && (nabs(aod::resodaughter::pt) < cMaxPtTPC);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecPiTPClowPt = (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion) && (nabs(aod::resodaughter::pt) < cMaxPtTPC);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecKaTOFhighPt = (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (aod::resodaughter::hasTOF == true) && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecPiTOFhighPt = (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (aod::resodaughter::hasTOF == true) && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecKaWithTof =
+    (nabs(aod::resodaughter::tofNSigmaKa10) <= 10 * cMaxTOFnSigmaKaon) &&
+    ((aod::resodaughter::trackFlags & (1 << 6)) != 0);
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecPiWithTof =
+    (nabs(aod::resodaughter::tofNSigmaPi10) <= 10 * cMaxTOFnSigmaPion) &&
+    ((aod::resodaughter::trackFlags & (1 << 6)) != 0);
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecKa =
+    (nabs(aod::resodaughter::tpcNSigmaKa10) <= 10 * cMaxTPCnSigmaKaon);
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecPi =
+    (nabs(aod::resodaughter::tpcNSigmaPi10) <= 10 * cMaxTPCnSigmaPion);
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecKaTPClowPt =
+    (nabs(aod::resodaughter::tpcNSigmaKa10) <= 10 * cMaxTPCnSigmaKaon) &&
+    (nabs(aod::resodaughter::pt) < cMaxPtTPC);
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecPiTPClowPt =
+    (nabs(aod::resodaughter::tpcNSigmaPi10) <= 10 * cMaxTPCnSigmaPion) &&
+    (nabs(aod::resodaughter::pt) < cMaxPtTPC);
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecKaTOFhighPt =
+    (nabs(aod::resodaughter::tofNSigmaKa10) <= 10 * cMaxTOFnSigmaKaon) &&
+    ((aod::resodaughter::trackFlags & (1 << 6)) != 0) &&
+    (nabs(aod::resodaughter::pt) >= cMinPtTOF);
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecPiTOFhighPt =
+    (nabs(aod::resodaughter::tofNSigmaPi10) <= 10 * cMaxTOFnSigmaPion) &&
+    ((aod::resodaughter::trackFlags & (1 << 6)) != 0) &&
+    (nabs(aod::resodaughter::pt) >= cMinPtTOF);
 
   using ResoMCCols = soa::Join<aod::ResoCollisions, aod::ResoMCCollisions>;
 
@@ -276,8 +323,26 @@ struct kstar892analysis {
   template <typename TrackType>
   bool trackCut(const TrackType track)
   {
+    // pT
+    if (track.pt() < cMinPtcut)
+      return false;
+    // DCA
+    if (track.dcaXY() > cMaxDCArToPVcut)
+      return false;
+    if (track.dcaZ() > cMaxDCAzToPVcut)
+      return false;
+    // Primary filters
+    if (!track.isPrimaryTrack())
+      return false;
+    if (!track.isGlobalTrackWoDCA())
+      return false;
+    // PV contributor
+    if (!track.isPVContributor())
+      return false;
+    // TPC
     if (track.tpcNClsFound() < cfgTPCcluster)
       return false;
+    // ITS
 
     if (cfgUseITSRefit && !track.passedITSRefit())
       return false;
