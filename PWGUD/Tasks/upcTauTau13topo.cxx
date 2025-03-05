@@ -49,7 +49,7 @@ struct TauTau13topo {
   Configurable<float> cutFT0A{"cutFT0A", 150., "FT0A threshold"};
   Configurable<float> cutFT0C{"cutFT0C", 50., "FT0C threshold"};
   Configurable<float> cutZDC{"cutZDC", 10000., "ZDC threshold"};
-  Configurable<float> gap_Side{"gap", 2, "gap selection"};
+  Configurable<float> mGapSide{"mGapSide", 2, "gap selection"};
   //  ConfigurableAxis ptAxis{"pAxis", {100, 0., 5.}, "#it{p} (GeV/#it{c})"};
   ConfigurableAxis ptAxis{"ptAxis", {120, 0., 4.}, "#it{p} (GeV/#it{c})"};
   //  ConfigurableAxis etaAxis{"etaAxis", {100, -2., 2.}, "#eta"};
@@ -85,7 +85,7 @@ struct TauTau13topo {
   Configurable<int> nTPCcrossedRowsMinCut{"nTPCcrossedRowsMinCut", 50, "min N_crossed TPC rows for electron candidate"};
   Configurable<float> nSigma3piMaxCut{"nSigma3piMaxCut", 5., "n sigma 3 pi max cut"};
 
-  Configurable<int> MCGeneratorID{"MCGeneratorID", -1, "MC generator ID"};
+  Configurable<int> generatorIDMC{"generatorIDMC", -1, "MC generator ID"};
 
   // Configurable<bool> DGactive{"DGactive", false, "Switch on DGproducer"};
   // Configurable<bool> SGactive{"SGactive", true, "Switch on SGproducer"};
@@ -1381,7 +1381,7 @@ struct TauTau13topo {
     return std::sqrt(E * E - px * px - py * py - pz * pz);
   }
 
-  float CalculateDeltaPhi(TLorentzVector p, TLorentzVector p1)
+  float calculateDeltaPhi(TLorentzVector p, TLorentzVector p1)
   {
     //    float delta = p.Phi();
     float delta = RecoDecay::constrainAngle(p.Phi());
@@ -1399,7 +1399,7 @@ struct TauTau13topo {
     return delta;
   }
 
-  float CalculateDeltaPhi(float p, float p1)
+  float calculateDeltaPhi(float p, float p1)
   {
     float delta = RecoDecay::constrainAngle(p);
     // if (delta < 0)
@@ -1452,67 +1452,67 @@ struct TauTau13topo {
 
   // fill control histograms per track
   template <int mode, typename T>
-  //   void FillControlHistos(T pi3invMass, float pi3pt, float pi3deltaPhi, float pi3assymav, float pi3vector, float pi3scalar, float pi3etasum, float nCRtpc)
-  void FillControlHistos(T pi3invMass, float pi3pt, float pi3deltaPhi, float pi3assymav, float pi3vector, float pi3scalar, float nCRtpc, float ptelec, float tofchi2)
+  //   void fillControlHistos(T pi3invMass, float pi3pt, float pi3deltaPhi, float pi3assymav, float pi3vector, float pi3scalar, float pi3etasum, float nCRtpc)
+  void fillControlHistos(T pi3invMass, float pi3pt, float pi3deltaPhi, float pi3assymav, float pi3vector, float pi3scalar, float nCRtpc, float ptelec, float tofchi2)
   {
-    static constexpr std::string_view histoname[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-                                                     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
-                                                     "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
-                                                     "30", "31", "32", "33", "34", "35", "36", "37", "38", "39"};
-    registry.get<TH1>(HIST("control/cut") + HIST(histoname[mode]) + HIST("/h3piMassComb"))->Fill(pi3invMass);
-    registry.get<TH1>(HIST("control/cut") + HIST(histoname[mode]) + HIST("/h3trkPtTot"))->Fill(pi3pt);
-    registry.get<TH1>(HIST("control/cut") + HIST(histoname[mode]) + HIST("/hDeltaPhi13topo"))->Fill(pi3deltaPhi);
-    registry.get<TH1>(HIST("control/cut") + HIST(histoname[mode]) + HIST("/h13AssymPt1ProngAver"))->Fill(pi3assymav);
-    registry.get<TH1>(HIST("control/cut") + HIST(histoname[mode]) + HIST("/h13Vector"))->Fill(pi3vector);
-    registry.get<TH1>(HIST("control/cut") + HIST(histoname[mode]) + HIST("/h13Scalar"))->Fill(pi3scalar);
-    // registry.get<TH1>(HIST("control/cut") + HIST(histoname[mode]) + HIST("/h13EtaSum"))->Fill(pi3etasum);
-    registry.get<TH1>(HIST("control/cut") + HIST(histoname[mode]) + HIST("/hTPCnCrossedRows"))->Fill(nCRtpc);
-    registry.get<TH1>(HIST("control/cut") + HIST(histoname[mode]) + HIST("/hPtSpectrumEl"))->Fill(ptelec);
-    registry.get<TH1>(HIST("control/cut") + HIST(histoname[mode]) + HIST("/hTofChi2El"))->Fill(tofchi2);
+    static constexpr std::string_view kHistoname[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+                                                      "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+                                                      "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+                                                      "30", "31", "32", "33", "34", "35", "36", "37", "38", "39"};
+    registry.get<TH1>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/h3piMassComb"))->Fill(pi3invMass);
+    registry.get<TH1>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/h3trkPtTot"))->Fill(pi3pt);
+    registry.get<TH1>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/hDeltaPhi13topo"))->Fill(pi3deltaPhi);
+    registry.get<TH1>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/h13AssymPt1ProngAver"))->Fill(pi3assymav);
+    registry.get<TH1>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/h13Vector"))->Fill(pi3vector);
+    registry.get<TH1>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/h13Scalar"))->Fill(pi3scalar);
+    // registry.get<TH1>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/h13EtaSum"))->Fill(pi3etasum);
+    registry.get<TH1>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/hTPCnCrossedRows"))->Fill(nCRtpc);
+    registry.get<TH1>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/hPtSpectrumEl"))->Fill(ptelec);
+    registry.get<TH1>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/hTofChi2El"))->Fill(tofchi2);
   }
 
   // fill control histograms per track in MC true
   template <int mode, typename T>
-  void FillControlHistosMCtrue(T pi3invMass, float pi3pt, float pi3deltaPhi, float pi3assymav, float pi3vector, float pi3scalar, float nCRtpc, float ptelec, float tofchi2)
+  void fillControlHistosMCtrue(T pi3invMass, float pi3pt, float pi3deltaPhi, float pi3assymav, float pi3vector, float pi3scalar, float nCRtpc, float ptelec, float tofchi2)
   {
-    static constexpr std::string_view histoname[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-                                                     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
-                                                     "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
-                                                     "30", "31", "32", "33", "34", "35", "36", "37", "38", "39"};
-    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(histoname[mode]) + HIST("/h3piMass"))->Fill(pi3invMass);
-    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(histoname[mode]) + HIST("/h3trkPtTot"))->Fill(pi3pt);
-    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(histoname[mode]) + HIST("/hDeltaPhi13topo"))->Fill(pi3deltaPhi);
-    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(histoname[mode]) + HIST("/h13AssymPt1ProngAver"))->Fill(pi3assymav);
-    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(histoname[mode]) + HIST("/h13Vector"))->Fill(pi3vector);
-    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(histoname[mode]) + HIST("/h13Scalar"))->Fill(pi3scalar);
-    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(histoname[mode]) + HIST("/hTPCnCrossedRows"))->Fill(nCRtpc);
-    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(histoname[mode]) + HIST("/hPtSpectrumEl"))->Fill(ptelec);
-    // registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(histoname[mode]) + HIST("/h13EtaSum"))->Fill(pi3etasum);
-    registry1MC.get<TH1>(HIST("controlMCtrue/cut") + HIST(histoname[mode]) + HIST("/hTofChi2El"))->Fill(tofchi2);
+    static constexpr std::string_view kHistoname[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+                                                      "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+                                                      "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+                                                      "30", "31", "32", "33", "34", "35", "36", "37", "38", "39"};
+    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/h3piMass"))->Fill(pi3invMass);
+    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/h3trkPtTot"))->Fill(pi3pt);
+    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/hDeltaPhi13topo"))->Fill(pi3deltaPhi);
+    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/h13AssymPt1ProngAver"))->Fill(pi3assymav);
+    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/h13Vector"))->Fill(pi3vector);
+    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/h13Scalar"))->Fill(pi3scalar);
+    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/hTPCnCrossedRows"))->Fill(nCRtpc);
+    registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/hPtSpectrumEl"))->Fill(ptelec);
+    // registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/h13EtaSum"))->Fill(pi3etasum);
+    registry1MC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/hTofChi2El"))->Fill(tofchi2);
   }
 
   // fill control histograms per track in MC true
   template <int mode, typename T>
-  void FillControlHistosMCcomb(T pi3invMass, float pi3pt, float pi3deltaPhi, float pi3assymav, float pi3vector, float pi3scalar, float nCRtpc, float ptelec, float tofchi2)
+  void fillControlHistosMCcomb(T pi3invMass, float pi3pt, float pi3deltaPhi, float pi3assymav, float pi3vector, float pi3scalar, float nCRtpc, float ptelec, float tofchi2)
   {
-    static constexpr std::string_view histoname[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-                                                     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
-                                                     "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
-                                                     "30", "31", "32", "33", "34", "35", "36", "37", "38", "39"};
-    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(histoname[mode]) + HIST("/h3piMass"))->Fill(pi3invMass);
-    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(histoname[mode]) + HIST("/h3trkPtTot"))->Fill(pi3pt);
-    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(histoname[mode]) + HIST("/hDeltaPhi13topo"))->Fill(pi3deltaPhi);
-    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(histoname[mode]) + HIST("/h13AssymPt1ProngAver"))->Fill(pi3assymav);
-    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(histoname[mode]) + HIST("/h13Vector"))->Fill(pi3vector);
-    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(histoname[mode]) + HIST("/h13Scalar"))->Fill(pi3scalar);
-    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(histoname[mode]) + HIST("/hTPCnCrossedRows"))->Fill(nCRtpc);
-    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(histoname[mode]) + HIST("/hPtSpectrumEl"))->Fill(ptelec);
-    // registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(histoname[mode]) + HIST("/h13EtaSum"))->Fill(pi3etasum);
-    registry1MC.get<TH1>(HIST("controlMCcomb/cut") + HIST(histoname[mode]) + HIST("/hTofChi2El"))->Fill(tofchi2);
+    static constexpr std::string_view kHistoname[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+                                                      "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+                                                      "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+                                                      "30", "31", "32", "33", "34", "35", "36", "37", "38", "39"};
+    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(kHistoname[mode]) + HIST("/h3piMass"))->Fill(pi3invMass);
+    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(kHistoname[mode]) + HIST("/h3trkPtTot"))->Fill(pi3pt);
+    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(kHistoname[mode]) + HIST("/hDeltaPhi13topo"))->Fill(pi3deltaPhi);
+    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(kHistoname[mode]) + HIST("/h13AssymPt1ProngAver"))->Fill(pi3assymav);
+    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(kHistoname[mode]) + HIST("/h13Vector"))->Fill(pi3vector);
+    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(kHistoname[mode]) + HIST("/h13Scalar"))->Fill(pi3scalar);
+    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(kHistoname[mode]) + HIST("/hTPCnCrossedRows"))->Fill(nCRtpc);
+    registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(kHistoname[mode]) + HIST("/hPtSpectrumEl"))->Fill(ptelec);
+    // registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/h13EtaSum"))->Fill(pi3etasum);
+    registry1MC.get<TH1>(HIST("controlMCcomb/cut") + HIST(kHistoname[mode]) + HIST("/hTofChi2El"))->Fill(tofchi2);
   }
 
   template <typename T>
-  int TrackCheck(T track)
+  int trackCheck(T track)
   {
     // 1
     if (track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF())
@@ -1558,14 +1558,14 @@ struct TauTau13topo {
   using UDCollisionFull2 = UDCollisionsFull2::iterator;
 
   // PVContributors
-  Filter PVContributorFilter = aod::udtrack::isPVContributor == true;
+  Filter pVContributorFilter = aod::udtrack::isPVContributor == true;
   using PVTracks = soa::Filtered<UDTracksFull>;
 
   //  using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
   using LabeledTracks = soa::Join<aod::UDTracks, aod::UDMcTrackLabels, aod::UDTracksExtra, aod::UDTracksPID, aod::UDTracksFlags, aod::UDTracksDCA>;
   Preslice<aod::UDTracks> perCollision = aod::udtrack::udCollisionId;
   // PVContributors in MC handling
-  Filter PVContributorFilterMC = aod::udtrack::isPVContributor == true;
+  Filter pVContributorFilterMC = aod::udtrack::isPVContributor == true;
   using PVTracksMC = soa::Filtered<LabeledTracks>;
 
   //  void processDG(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks)
@@ -1597,7 +1597,7 @@ struct TauTau13topo {
     //  void mainTask(int gapSide, UDTracksFull const& dgtracks)
     //  {
     registry.get<TH1>(HIST("global/hEventEff"))->Fill(1., 1.);
-    if (gapSide != gap_Side)
+    if (gapSide != mGapSide)
       return;
     // global checks
     registry.get<TH2>(HIST("global/hVertexXY"))->Fill(dgcand.posX(), dgcand.posY());
@@ -1614,15 +1614,15 @@ struct TauTau13topo {
     registry.get<TH1>(HIST("global/hNTracksPV"))->Fill(PVContributors.size());
 
     // zdc information
-    float ZNAenergy = dgcand.energyCommonZNA();
-    float ZNCenergy = dgcand.energyCommonZNC();
-    // if (ZNAenergy < 0) registry.get<TH1>(HIST("global/hZNACenergyTest"))->Fill(ZNAenergy);
-    // if (ZNCenergy < 0) registry.get<TH1>(HIST("global/hZNACenergyTest"))->Fill(ZNCenergy);
-    if (ZNAenergy < 0)
-      ZNAenergy = -1.;
-    if (ZNCenergy < 0)
-      ZNCenergy = -1.;
-    registry.get<TH2>(HIST("global/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+    float energyZNA = dgcand.energyCommonZNA();
+    float energyZNC = dgcand.energyCommonZNC();
+    // if (energyZNA < 0) registry.get<TH1>(HIST("global/hZNACenergyTest"))->Fill(energyZNA);
+    // if (energyZNC < 0) registry.get<TH1>(HIST("global/hZNACenergyTest"))->Fill(energyZNC);
+    if (energyZNA < 0)
+      energyZNA = -1.;
+    if (energyZNC < 0)
+      energyZNC = -1.;
+    registry.get<TH2>(HIST("global/hZNACenergy"))->Fill(energyZNA, energyZNC);
     registry.get<TH2>(HIST("global/hZNACtime"))->Fill(dgcand.timeZNA(), dgcand.timeZNC());
 
     uint32_t clusterSizes;
@@ -1997,7 +1997,7 @@ struct TauTau13topo {
     counterTmp = 0;
     int tmpTrkCheck = -1;
     for (const auto& trk : PVContributors) {
-      tmpTrkCheck = TrackCheck(trk); // check detectors associated to track
+      tmpTrkCheck = trackCheck(trk); // check detectors associated to track
       registry.get<TH1>(HIST("global/hTrkCheck"))->Fill(tmpTrkCheck);
 
       // inv mass of 3pi + 1e
@@ -2040,7 +2040,7 @@ struct TauTau13topo {
       tmpDedx[counterTmp] = trk.tpcSignal();
       tmpTofNsigmaEl[counterTmp] = trk.tofNSigmaEl();
 
-      deltaPhiTmp = CalculateDeltaPhi(p - p1, p1);
+      deltaPhiTmp = calculateDeltaPhi(p - p1, p1);
       pi3invMass[counterTmp] = (p - p1).Mag();
       pi3pt[counterTmp] = (p - p1).Pt();
       pi3deltaPhi[counterTmp] = deltaPhiTmp;
@@ -2075,7 +2075,7 @@ struct TauTau13topo {
 
     // control histos, max 4 per event, cut0
     for (int i = 0; i < 4; i++) {
-      FillControlHistos<0>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+      fillControlHistos<0>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
       registry.get<TH2>(HIST("control/cut0/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
       registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut0"))->Fill(tmpMomentum[i], tmpDedx[i]);
       registry.get<TH2>(HIST("pidTOF/hpvsNsigmaElHipCut0"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
@@ -2091,7 +2091,7 @@ struct TauTau13topo {
     registry.get<TH1>(HIST("control/cut0/h4piMass"))->Fill(mass4pi);
     registry.get<TH2>(HIST("control/cut0/h4trkMassVsPt"))->Fill(mass4pi, pttot);
     registry.get<TH1>(HIST("control/cut0/hNtofTrk"))->Fill(nTofTrk);
-    registry.get<TH2>(HIST("control/cut0/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+    registry.get<TH2>(HIST("control/cut0/hZNACenergy"))->Fill(energyZNA, energyZNC);
 
     if (pttot < 0.150) {
       // give all the gg combinations
@@ -2136,7 +2136,7 @@ struct TauTau13topo {
         registry.get<TH1>(HIST("control/cut0/hGamAS"))->Fill(scalarAsym);
         registry.get<TH1>(HIST("control/cut0/hGamAV"))->Fill(vectorAsym);
         registry.get<TH1>(HIST("control/cut0/hInvMass2GamCoh"))->Fill((gammaPair[whichPair][1] + gammaPair[whichPair][0]).M());
-        registry.get<TH1>(HIST("control/cut0/hDeltaPhi2GamCoh"))->Fill(CalculateDeltaPhi(gammaPair[whichPair][1], gammaPair[whichPair][0]));
+        registry.get<TH1>(HIST("control/cut0/hDeltaPhi2GamCoh"))->Fill(calculateDeltaPhi(gammaPair[whichPair][1], gammaPair[whichPair][0]));
         for (int j = 0; j < 4; j++)
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut40"))->Fill(tmpMomentum[j], tmpDedx[j]);
         if ((gammaPair[whichPair][1] + gammaPair[whichPair][0]).M() > 3. &&
@@ -2153,7 +2153,7 @@ struct TauTau13topo {
           registry.get<TH1>(HIST("control/cut20/hGamAS"))->Fill(scalarAsym);
           registry.get<TH1>(HIST("control/cut20/hGamAV"))->Fill(vectorAsym);
           registry.get<TH1>(HIST("control/cut20/hInvMass2GamCoh"))->Fill((gammaPair[whichPair][1] + gammaPair[whichPair][0]).M());
-          registry.get<TH1>(HIST("control/cut20/hDeltaPhi2GamCoh"))->Fill(CalculateDeltaPhi(gammaPair[whichPair][1], gammaPair[whichPair][0]));
+          registry.get<TH1>(HIST("control/cut20/hDeltaPhi2GamCoh"))->Fill(calculateDeltaPhi(gammaPair[whichPair][1], gammaPair[whichPair][0]));
         }
 
       } // ngam = 1
@@ -2283,7 +2283,7 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("control/cut20/h4piMass"))->Fill(mass4pi);
       registry.get<TH2>(HIST("control/cut20/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut20/hNtofTrk"))->Fill(nTofTrk);
-      registry.get<TH2>(HIST("control/cut20/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+      registry.get<TH2>(HIST("control/cut20/hZNACenergy"))->Fill(energyZNA, energyZNC);
       for (int i = 0; i < 4; i++) {
         if (flagEl[i]) {
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut20"))->Fill(tmpMomentum[i], tmpDedx[i]);
@@ -2292,7 +2292,7 @@ struct TauTau13topo {
           //   if (i == j) continue;
           //   registry.get<TH2>(HIST("pidTPC3pi/hpvsdedxElHipCut20"))->Fill(tmpMomentum[j], tmpDedx[j]);
           // }
-          FillControlHistos<20>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+          fillControlHistos<20>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
           registry.get<TH2>(HIST("control/cut20/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
           registry.get<TH1>(HIST("control/cut20/hsigma3Pi"))->Fill(nSigma3Pi[i]);
           registry.get<TH1>(HIST("control/cut20/h3pi1eMass"))->Fill(mass3pi1e[i]);
@@ -2323,10 +2323,10 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("control/cut33/h4piMass"))->Fill(mass4pi);
       registry.get<TH2>(HIST("control/cut33/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut33/hNtofTrk"))->Fill(nTofTrk);
-      registry.get<TH2>(HIST("control/cut33/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+      registry.get<TH2>(HIST("control/cut33/hZNACenergy"))->Fill(energyZNA, energyZNC);
       for (int i = 0; i < 4; i++) {
         if (flagEl[i] && trkHasTof[i]) {
-          FillControlHistos<33>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+          fillControlHistos<33>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
           registry.get<TH2>(HIST("control/cut33/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut33"))->Fill(tmpMomentum[i], tmpDedx[i]);
           registry.get<TH2>(HIST("pidTOF/hpvsNsigmaElHipCut33"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
@@ -2356,12 +2356,12 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("control/cut21/h4piMass"))->Fill(mass4pi);
       registry.get<TH2>(HIST("control/cut21/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut21/hNtofTrk"))->Fill(nTofTrk);
-      registry.get<TH2>(HIST("control/cut21/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+      registry.get<TH2>(HIST("control/cut21/hZNACenergy"))->Fill(energyZNA, energyZNC);
       for (int i = 0; i < 4; i++) {
         if (flagEl[i] && trkHasTof[i] && flagPi[i]) {
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut21"))->Fill(tmpMomentum[i], tmpDedx[i]);
           registry.get<TH2>(HIST("pidTOF/hpvsNsigmaElHipCut21"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-          FillControlHistos<21>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+          fillControlHistos<21>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
           registry.get<TH2>(HIST("control/cut21/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
           registry.get<TH1>(HIST("control/cut21/hsigma3Pi"))->Fill(nSigma3Pi[i]);
           registry.get<TH1>(HIST("control/cut21/h3pi1eMass"))->Fill(mass3pi1e[i]);
@@ -2387,7 +2387,7 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("control/cut24/h4piMass"))->Fill(mass4pi);
       registry.get<TH2>(HIST("control/cut24/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut24/hNtofTrk"))->Fill(nTofTrk);
-      registry.get<TH2>(HIST("control/cut24/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+      registry.get<TH2>(HIST("control/cut24/hZNACenergy"))->Fill(energyZNA, energyZNC);
       for (int i = 0; i < 4; i++) {
         if (flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i]) {
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut24"))->Fill(tmpMomentum[i], tmpDedx[i]);
@@ -2396,7 +2396,7 @@ struct TauTau13topo {
           //   if (i == j) continue;
           //   registry.get<TH2>(HIST("pidTPC3pi/hpvsdedxElHipCut24"))->Fill(tmpMomentum[j], tmpDedx[j]);
           // }
-          FillControlHistos<24>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+          fillControlHistos<24>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
           registry.get<TH2>(HIST("control/cut24/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
           registry.get<TH1>(HIST("control/cut24/hsigma3Pi"))->Fill(nSigma3Pi[i]);
           registry.get<TH1>(HIST("control/cut24/h3pi1eMass"))->Fill(mass3pi1e[i]);
@@ -2422,7 +2422,7 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("control/cut25/h4piMass"))->Fill(mass4pi);
       registry.get<TH2>(HIST("control/cut25/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut25/hNtofTrk"))->Fill(nTofTrk);
-      registry.get<TH2>(HIST("control/cut25/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+      registry.get<TH2>(HIST("control/cut25/hZNACenergy"))->Fill(energyZNA, energyZNC);
       for (int i = 0; i < 4; i++) {
         if (flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i]) {
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut25"))->Fill(tmpMomentum[i], tmpDedx[i]);
@@ -2431,7 +2431,7 @@ struct TauTau13topo {
           //   if (i == j) continue;
           //   registry.get<TH2>(HIST("pidTPC3pi/hpvsdedxElHipCut25"))->Fill(tmpMomentum[j], tmpDedx[j]);
           // }
-          FillControlHistos<25>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+          fillControlHistos<25>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
           registry.get<TH2>(HIST("control/cut25/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
           registry.get<TH1>(HIST("control/cut25/hsigma3Pi"))->Fill(nSigma3Pi[i]);
           registry.get<TH1>(HIST("control/cut25/h3pi1eMass"))->Fill(mass3pi1e[i]);
@@ -2457,12 +2457,12 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("control/cut28/h4piMass"))->Fill(mass4pi);
       registry.get<TH2>(HIST("control/cut28/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut28/hNtofTrk"))->Fill(nTofTrk);
-      registry.get<TH2>(HIST("control/cut28/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+      registry.get<TH2>(HIST("control/cut28/hZNACenergy"))->Fill(energyZNA, energyZNC);
       for (int i = 0; i < 4; i++) {
         if (flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i]) {
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut28"))->Fill(tmpMomentum[i], tmpDedx[i]);
           registry.get<TH2>(HIST("pidTOF/hpvsNsigmaElHipCut28"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-          FillControlHistos<28>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+          fillControlHistos<28>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
           registry.get<TH2>(HIST("control/cut28/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
           registry.get<TH1>(HIST("control/cut28/hsigma3Pi"))->Fill(nSigma3Pi[i]);
           registry.get<TH1>(HIST("control/cut28/h3pi1eMass"))->Fill(mass3pi1e[i]);
@@ -2488,7 +2488,7 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("control/cut22/h4piMass"))->Fill(mass4pi);
       registry.get<TH2>(HIST("control/cut22/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut22/hNtofTrk"))->Fill(nTofTrk);
-      registry.get<TH2>(HIST("control/cut22/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+      registry.get<TH2>(HIST("control/cut22/hZNACenergy"))->Fill(energyZNA, energyZNC);
       for (int i = 0; i < 4; i++) {
         if (flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i]) {
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut22"))->Fill(tmpMomentum[i], tmpDedx[i]);
@@ -2497,7 +2497,7 @@ struct TauTau13topo {
           //  if (i == j) continue;
           //  registry.get<TH2>(HIST("pidTPC3pi/hpvsdedxElHipCut22"))->Fill(tmpMomentum[j], tmpDedx[j]);
           // }
-          FillControlHistos<22>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+          fillControlHistos<22>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
           registry.get<TH2>(HIST("control/cut22/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
           registry.get<TH1>(HIST("control/cut22/hsigma3Pi"))->Fill(nSigma3Pi[i]);
           registry.get<TH1>(HIST("control/cut22/h3pi1eMass"))->Fill(mass3pi1e[i]);
@@ -2523,12 +2523,12 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("control/cut29/h4piMass"))->Fill(mass4pi);
       registry.get<TH2>(HIST("control/cut29/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut29/hNtofTrk"))->Fill(nTofTrk);
-      registry.get<TH2>(HIST("control/cut29/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+      registry.get<TH2>(HIST("control/cut29/hZNACenergy"))->Fill(energyZNA, energyZNC);
       for (int i = 0; i < 4; i++) {
         if (flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagS3pi[i]) {
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut29"))->Fill(tmpMomentum[i], tmpDedx[i]);
           registry.get<TH2>(HIST("pidTOF/hpvsNsigmaElHipCut29"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-          FillControlHistos<29>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+          fillControlHistos<29>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
           registry.get<TH2>(HIST("control/cut29/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
           registry.get<TH1>(HIST("control/cut29/hsigma3Pi"))->Fill(nSigma3Pi[i]);
           registry.get<TH1>(HIST("control/cut29/h3pi1eMass"))->Fill(mass3pi1e[i]);
@@ -2557,7 +2557,7 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("control/cut26/h4piMass"))->Fill(mass4pi);
       registry.get<TH2>(HIST("control/cut26/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut26/hNtofTrk"))->Fill(nTofTrk);
-      registry.get<TH2>(HIST("control/cut26/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+      registry.get<TH2>(HIST("control/cut26/hZNACenergy"))->Fill(energyZNA, energyZNC);
       for (int i = 0; i < 4; i++) {
         if (flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagS3pi[i] && flagIM[i]) {
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut26"))->Fill(tmpMomentum[i], tmpDedx[i]);
@@ -2566,7 +2566,7 @@ struct TauTau13topo {
           //   if (i == j) continue;
           //   registry.get<TH2>(HIST("pidTPC3pi/hpvsdedxElHipCut26"))->Fill(tmpMomentum[j], tmpDedx[j]);
           // }
-          FillControlHistos<26>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+          fillControlHistos<26>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
           registry.get<TH2>(HIST("control/cut26/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
           registry.get<TH1>(HIST("control/cut26/hsigma3Pi"))->Fill(nSigma3Pi[i]);
           registry.get<TH1>(HIST("control/cut26/h3pi1eMass"))->Fill(mass3pi1e[i]);
@@ -2612,10 +2612,10 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("control/cut34/h4piMass"))->Fill(mass4pi);
       registry.get<TH2>(HIST("control/cut34/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut34/hNtofTrk"))->Fill(nTofTrk);
-      registry.get<TH2>(HIST("control/cut34/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+      registry.get<TH2>(HIST("control/cut34/hZNACenergy"))->Fill(energyZNA, energyZNC);
       for (int i = 0; i < 4; i++) {
         if (flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagS3pi[i] && flagIM[i] && (otherTOFtracks[i] >= 1)) {
-          FillControlHistos<34>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+          fillControlHistos<34>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
           registry.get<TH2>(HIST("control/cut34/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut34"))->Fill(tmpMomentum[i], tmpDedx[i]);
           registry.get<TH2>(HIST("pidTOF/hpvsNsigmaElHipCut34"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
@@ -2647,12 +2647,12 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("control/cut30/h4piMass"))->Fill(mass4pi);
       registry.get<TH2>(HIST("control/cut30/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut30/hNtofTrk"))->Fill(nTofTrk);
-      registry.get<TH2>(HIST("control/cut30/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+      registry.get<TH2>(HIST("control/cut30/hZNACenergy"))->Fill(energyZNA, energyZNC);
       for (int i = 0; i < 4; i++) {
         if (flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagS3pi[i] && flagIM[i] && (otherTOFtracks[i] >= 1)) {
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut30"))->Fill(tmpMomentum[i], tmpDedx[i]);
           registry.get<TH2>(HIST("pidTOF/hpvsNsigmaElHipCut30"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-          FillControlHistos<30>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+          fillControlHistos<30>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
           registry.get<TH2>(HIST("control/cut30/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
           registry.get<TH1>(HIST("control/cut30/hsigma3Pi"))->Fill(nSigma3Pi[i]);
           registry.get<TH1>(HIST("control/cut30/h3pi1eMass"))->Fill(mass3pi1e[i]);
@@ -2675,7 +2675,7 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("control/cut27/h4piMass"))->Fill(mass4pi);
       registry.get<TH2>(HIST("control/cut27/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut27/hNtofTrk"))->Fill(nTofTrk);
-      registry.get<TH2>(HIST("control/cut27/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+      registry.get<TH2>(HIST("control/cut27/hZNACenergy"))->Fill(energyZNA, energyZNC);
       for (int i = 0; i < 4; i++) {
         if (flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagS3pi[i] && flagIM[i] && (otherTOFtracks[i] >= 1) && flagDP[i]) {
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut27"))->Fill(tmpMomentum[i], tmpDedx[i]);
@@ -2684,7 +2684,7 @@ struct TauTau13topo {
           //   if (i == j) continue;
           //   registry.get<TH2>(HIST("pidTPC3pi/hpvsdedxElHipCut27"))->Fill(tmpMomentum[j], tmpDedx[j]);
           // }
-          FillControlHistos<27>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+          fillControlHistos<27>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
           registry.get<TH2>(HIST("control/cut27/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
           registry.get<TH1>(HIST("control/cut27/hsigma3Pi"))->Fill(nSigma3Pi[i]);
           registry.get<TH1>(HIST("control/cut27/h3pi1eMass"))->Fill(mass3pi1e[i]);
@@ -2710,7 +2710,7 @@ struct TauTau13topo {
     //     registry.get<TH1>(HIST("control/cut1/hChi2ITS"))->Fill(chi2ITS[i]);
     //     registry.get<TH1>(HIST("control/cut1/hChi2TOF"))->Fill(chi2TOF[i]);
     //     if (flagTotal[i]) {
-    //       FillControlHistos<1>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+    //       fillControlHistos<1>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
     //       registry.get<TH2>(HIST("control/cut1/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
     //       registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut1"))->Fill(tmpMomentum[i], tmpDedx[i]);
     //       for (int j = 0; j < 4; j++) {
@@ -2731,7 +2731,7 @@ struct TauTau13topo {
     //   registry.get<TH1>(HIST("control/cut1/h4piMass"))->Fill(mass4pi);
     //   registry.get<TH2>(HIST("control/cut1/h4trkMassVsPt"))->Fill(mass4pi, pttot);
     //   registry.get<TH1>(HIST("control/cut1/hNtofTrk"))->Fill(nTofTrk);
-    //   registry.get<TH2>(HIST("control/cut1/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+    //   registry.get<TH2>(HIST("control/cut1/hZNACenergy"))->Fill(energyZNA, energyZNC);
     //   // special case invmass 4pi (2,2.3)
     //   // if (mass4pi<2.3 && mass4pi>2) {
     //   // for (int i = 0; i < 4; i++) {
@@ -2906,14 +2906,14 @@ struct TauTau13topo {
           if (pionCounter == 1) {
             singlePionFound = true;
             singlePionIndex = tmpPionIndex;
-            auto MCparttmp = mcParticle.daughters_as<aod::McParticles>().begin() + singlePionIndex;
-            if (MCparttmp.pdgCode() == -211)
+            auto mcPartTmp = mcParticle.daughters_as<aod::McParticles>().begin() + singlePionIndex;
+            if (mcPartTmp.pdgCode() == -211)
               flagPiPlusPiMinus = true;
-            partPt = static_cast<float> MCparttmp.pt();
+            partPt = static_cast<float> mcPartTmp.pt();
             // motherOfSinglePionIndex = mcParticle.index();
-            if (std::abs(MCparttmp.eta()) > 0.9)
+            if (std::abs(mcPartTmp.eta()) > 0.9)
               partFromTauInEta = false;
-            // LOGF(info,"size %d; tau ID %d GID %d (pdg %d); pi ID %d LID %d GID %d, pt %f", mcParticle.size(), motherOfSinglePionIndex, mcParticle.globalIndex(), mcParticle.pdgCode(),singlePionIndex, MCparttmp.index(), MCparttmp.globalIndex(), MCparttmp.pt());
+            // LOGF(info,"size %d; tau ID %d GID %d (pdg %d); pi ID %d LID %d GID %d, pt %f", mcParticle.size(), motherOfSinglePionIndex, mcParticle.globalIndex(), mcParticle.pdgCode(),singlePionIndex, mcPartTmp.index(), mcPartTmp.globalIndex(), mcPartTmp.pt());
           } // end of 1 pi check
         } // end check tau has daughter
       } // end of tau
@@ -2923,7 +2923,7 @@ struct TauTau13topo {
     // tau related things
     if (countTau == 2) {
       registryMC.get<TH1>(HIST("tauMC/hMCdeltaeta"))->Fill(etaTau[0] - etaTau[1]);
-      registryMC.get<TH1>(HIST("tauMC/hMCdeltaphi"))->Fill(CalculateDeltaPhi(phiTau[0], phiTau[1]) * 180. / o2::constants::math::PI);
+      registryMC.get<TH1>(HIST("tauMC/hMCdeltaphi"))->Fill(calculateDeltaPhi(phiTau[0], phiTau[1]) * 180. / o2::constants::math::PI);
     }
 
     if (threePionsFound && electronFound) {
@@ -2947,7 +2947,7 @@ struct TauTau13topo {
         if (partFromTauInEta) {
           registryMC.get<TH1>(HIST("efficiencyMCMu/effiMu"))->Fill(3., 1.);
           registryMC.get<TH1>(HIST("efficiencyMCMu/hpTmuon"))->Fill(partPt, 1.);
-          //	  flagMu3pi = true;
+          // flagMu3pi = true;
         } // particles from tau in eta
       } // tau in y
     } // el + 3pi
@@ -3006,8 +3006,8 @@ struct TauTau13topo {
       // LOGF(info,"<tautau13topo_MC> GeneratorIDtot %d, GenID %d, subGenID %d, source %d", mcCollision.generatorsID(), mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId());
     }
     registry1MC.get<TH1>(HIST("globalMC/hGeneratorID"))->Fill(mcCollision.generatorsID());
-    if (!(MCGeneratorID < 0)) { // do not check generatorsID process if MCGeneratorID < 0
-      if (mcCollision.generatorsID() != MCGeneratorID)
+    if (!(generatorIDMC < 0)) { // do not check generatorsID process if generatorIDMC < 0
+      if (mcCollision.generatorsID() != generatorIDMC)
         return;
     }
 
@@ -3139,13 +3139,13 @@ struct TauTau13topo {
     registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaAlphaEpi"))->Fill(deltaAlpha2);
     registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaAlphaEpi"))->Fill(deltaAlpha3);
     //
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiEpi"))->Fill(CalculateDeltaPhi(phi(tmp1ProngMC.px(), tmp1ProngMC.py()), phi(tmpPion1MC.px(), tmpPion1MC.py())));
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiEpi"))->Fill(CalculateDeltaPhi(phi(tmp1ProngMC.px(), tmp1ProngMC.py()), phi(tmpPion2MC.px(), tmpPion2MC.py())));
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiEpi"))->Fill(CalculateDeltaPhi(phi(tmp1ProngMC.px(), tmp1ProngMC.py()), phi(tmpPion3MC.px(), tmpPion3MC.py())));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiEpi"))->Fill(calculateDeltaPhi(phi(tmp1ProngMC.px(), tmp1ProngMC.py()), phi(tmpPion1MC.px(), tmpPion1MC.py())));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiEpi"))->Fill(calculateDeltaPhi(phi(tmp1ProngMC.px(), tmp1ProngMC.py()), phi(tmpPion2MC.px(), tmpPion2MC.py())));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiEpi"))->Fill(calculateDeltaPhi(phi(tmp1ProngMC.px(), tmp1ProngMC.py()), phi(tmpPion3MC.px(), tmpPion3MC.py())));
     //
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiPipi"))->Fill(CalculateDeltaPhi(phi(tmpPion1MC.px(), tmpPion1MC.py()), phi(tmpPion2MC.px(), tmpPion2MC.py())));
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiPipi"))->Fill(CalculateDeltaPhi(phi(tmpPion1MC.px(), tmpPion1MC.py()), phi(tmpPion3MC.px(), tmpPion3MC.py())));
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiPipi"))->Fill(CalculateDeltaPhi(phi(tmpPion2MC.px(), tmpPion2MC.py()), phi(tmpPion3MC.px(), tmpPion3MC.py())));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiPipi"))->Fill(calculateDeltaPhi(phi(tmpPion1MC.px(), tmpPion1MC.py()), phi(tmpPion2MC.px(), tmpPion2MC.py())));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiPipi"))->Fill(calculateDeltaPhi(phi(tmpPion1MC.px(), tmpPion1MC.py()), phi(tmpPion3MC.px(), tmpPion3MC.py())));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiPipi"))->Fill(calculateDeltaPhi(phi(tmpPion2MC.px(), tmpPion2MC.py()), phi(tmpPion3MC.px(), tmpPion3MC.py())));
 
     //
     auto deltaAlphaPi1 = deltaAlpha(tmpPion1MC, tmpPion2MC);
@@ -3187,7 +3187,7 @@ struct TauTau13topo {
     registryMC.get<TH1>(HIST("efficiencyMCEl/hMCpt4trk"))->Fill(pt(tmp1ProngMC.px() + px3pi, tmp1ProngMC.py() + py3pi));
     registryMC.get<TH1>(HIST("efficiencyMCEl/hMCinvmass4pi"))->Fill(invariantMass(tmp1ProngMC.e() + en3pi, tmp1ProngMC.px() + px3pi, tmp1ProngMC.py() + py3pi, tmp1ProngMC.pz() + pz3pi));
     registryMC.get<TH1>(HIST("efficiencyMCEl/hMCinvmass3pi"))->Fill(invariantMass(en3pi, px3pi, py3pi, pz3pi));
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaphi13"))->Fill(CalculateDeltaPhi(phi(tmp1ProngMC.px(), tmp1ProngMC.py()), phi(px3pi, py3pi)));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaphi13"))->Fill(calculateDeltaPhi(phi(tmp1ProngMC.px(), tmp1ProngMC.py()), phi(px3pi, py3pi)));
 
     // reconstructed event
     if (collisions.size() < 1)
@@ -3199,7 +3199,7 @@ struct TauTau13topo {
         registryMC.get<TH1>(HIST("efficiencyMCEl/effiEl"))->Fill(5., 1.);
 
       // event selection flags
-      bool ZvertexFlag = false;
+      bool zVertexFlag = false;
       bool allInEtaAcceptance = false;
       int nTrkInEtaRange = 0;
       // bool allAbovePtThreshold = false;
@@ -3266,17 +3266,17 @@ struct TauTau13topo {
         // if (flagGapSideSGP) registryMC.get<TH1>(HIST("efficiencyMCEl/effiEl"))->Fill(6., 1./collisions.size());
         // if (flagGapSideSGP && tracksMatchedToMC) registryMC.get<TH1>(HIST("efficiencyMCEl/effiEl"))->Fill(7., 1./collisions.size()); // with true information
 
-        // if (gapSide != gap_Side) continue; //old way
-        if (gapSide == gap_Side)
+        // if (gapSide != mGapSide) continue; //old way
+        if (gapSide == mGapSide)
           flagDoubleGap = true;
         // if (flagDoubleGap) registryMC.get<TH1>(HIST("efficiencyMCEl/effiEl"))->Fill(8., 1./collisions.size());
         // if (flagDoubleGap && tracksMatchedToMC) registryMC.get<TH1>(HIST("efficiencyMCEl/effiEl"))->Fill(9., 1./collisions.size()); // with true information
         registryMC.get<TH2>(HIST("globalMCrec/hVertexXY"))->Fill(collision.posX(), collision.posY());
         registryMC.get<TH1>(HIST("globalMCrec/hVertexZ"))->Fill(collision.posZ());
 
-        ZvertexFlag = true;
+        zVertexFlag = true;
         if (std::abs(collision.posZ()) >= zvertexcut)
-          ZvertexFlag = false;
+          zVertexFlag = false;
 
         auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
         registryMC.get<TH1>(HIST("globalMCrec/hNTracks"))->Fill(groupedTracks.size());
@@ -3371,15 +3371,15 @@ struct TauTau13topo {
           nTrkAbovePtThreshold = true;
 
         // zdc information
-        float ZNAenergy = collision.energyCommonZNA();
-        float ZNCenergy = collision.energyCommonZNC();
-        // if (ZNAenergy < 0) registry.get<TH1>(HIST("global/hZNACenergyTest"))->Fill(ZNAenergy);
-        // if (ZNCenergy < 0) registry.get<TH1>(HIST("global/hZNACenergyTest"))->Fill(ZNCenergy);
-        if (ZNAenergy < 0)
-          ZNAenergy = -1.;
-        if (ZNCenergy < 0)
-          ZNCenergy = -1.;
-        registryMC.get<TH2>(HIST("globalMCrec/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+        float energyZNA = collision.energyCommonZNA();
+        float energyZNC = collision.energyCommonZNC();
+        // if (energyZNA < 0) registry.get<TH1>(HIST("global/hZNACenergyTest"))->Fill(energyZNA);
+        // if (energyZNC < 0) registry.get<TH1>(HIST("global/hZNACenergyTest"))->Fill(energyZNC);
+        if (energyZNA < 0)
+          energyZNA = -1.;
+        if (energyZNC < 0)
+          energyZNC = -1.;
+        registryMC.get<TH2>(HIST("globalMCrec/hZNACenergy"))->Fill(energyZNA, energyZNC);
         registryMC.get<TH2>(HIST("globalMCrec/hZNACtime"))->Fill(collision.timeZNA(), collision.timeZNC());
 
         //
@@ -3388,7 +3388,7 @@ struct TauTau13topo {
         // SG producer: flagGapSideSGP ok
         // Double gap: flagDoubleGap ok
         // npvtracks: nPVTracks ok
-        // Zvertex: ZvertexFlag
+        // Zvertex: zVertexFlag
         // tracks in eta: allInEtaAcceptance
         // tracks charge : trackCharge
         // MC to data matching: tracksMatchedToMC
@@ -3493,7 +3493,7 @@ struct TauTau13topo {
             registryMC.get<TH2>(HIST("global1MCrec/hEtaGenRecTracksPV"))->Fill(tmpEtaData, tmpEta);
             registryMC.get<TH2>(HIST("global1MCrec/hDeltaEtaGenRecVsRecpTTracksPV"))->Fill(tmpEtaData - tmpEta, tmptrack.pt());
             registryMC.get<TH2>(HIST("global1MCrec/hPhiGenRecTracksPV"))->Fill(tmpPhiData, tmpPhi);
-            registryMC.get<TH2>(HIST("global1MCrec/hDeltaPhiGenRecVsRecpTTracksPV"))->Fill(CalculateDeltaPhi(tmpPhiData, tmpPhi), tmptrack.pt());
+            registryMC.get<TH2>(HIST("global1MCrec/hDeltaPhiGenRecVsRecpTTracksPV"))->Fill(calculateDeltaPhi(tmpPhiData, tmpPhi), tmptrack.pt());
           } // MC infor exists
           p += p1;
           scalarPtsum += p1.Pt();
@@ -3502,7 +3502,7 @@ struct TauTau13topo {
         int nTofTracks = trkHasTof[0] + trkHasTof[1] + trkHasTof[2] + trkHasTof[3];
 
         // if vz < 10
-        if (!ZvertexFlag) { // default = 10
+        if (!zVertexFlag) { // default = 10
           if (verbose) {
             LOGF(info, "<tautau13topo> Candidate rejected: VertexZ is %f", collision.posZ());
           }
@@ -3672,7 +3672,7 @@ struct TauTau13topo {
           tmpDedx[counterTmp] = tmptrack.tpcSignal();
           tmpTofNsigmaEl[counterTmp] = tmptrack.tofNSigmaEl();
 
-          deltaPhiTmp = CalculateDeltaPhi(p - p1, p1);
+          deltaPhiTmp = calculateDeltaPhi(p - p1, p1);
           pi3invMass[counterTmp] = (p - p1).Mag();
           pi3pt[counterTmp] = (p - p1).Pt();
           pi3deltaPhi[counterTmp] = deltaPhiTmp;
@@ -3688,14 +3688,14 @@ struct TauTau13topo {
           nSigma3Pi[i] = nSigma3Pi[3] - (nSigmaPi[i] * nSigmaPi[i]);
           nSigma3Pi[i] = std::sqrt(nSigma3Pi[i]);
           if (i == matchedElIndexToData) {
-            FillControlHistosMCtrue<0>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+            fillControlHistosMCtrue<0>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
             registryMC.get<TH2>(HIST("controlMCtrue/cut0/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
             registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut0"))->Fill(tmpMomentum[i], tmpDedx[i]);
             registryMC.get<TH1>(HIST("controlMCtrue/cut0/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut0"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             // registryMC.get<TH1>(HIST("control/cut0/h3pi1eMass"))->Fill(mass3pi1e[i]);
           } else { // only for 1prong = electron true
-            FillControlHistosMCcomb<0>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+            fillControlHistosMCcomb<0>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
             registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut0"))->Fill(tmpMomentum[i], tmpDedx[i]);
             registryMC.get<TH1>(HIST("controlMCcomb/cut0/hsigma3Pi"))->Fill(nSigma3Pi[i]);
           }
@@ -3706,7 +3706,7 @@ struct TauTau13topo {
         registryMC.get<TH1>(HIST("controlMCtrue/cut0/h4piMass"))->Fill(mass4pi);
         registryMC.get<TH2>(HIST("controlMCtrue/cut0/h4trkMassVsPt"))->Fill(mass4pi, pttot);
         // registryMC.get<TH1>(HIST("controlMCtrue/cut0/hNtofTrk"))->Fill(nTofTrk);
-        registryMC.get<TH2>(HIST("controlMCtrue/cut0/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+        registryMC.get<TH2>(HIST("controlMCtrue/cut0/hZNACenergy"))->Fill(energyZNA, energyZNC);
 
         // remove combinatorics
         // bool flagTotal[4] = {false, false, false, false};
@@ -3808,19 +3808,19 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut20/h4piMass"))->Fill(mass4pi);
             registryMC.get<TH1>(HIST("controlMCtrue/cut20/h4trkPtTot"))->Fill(pttot);
             registryMC.get<TH2>(HIST("controlMCtrue/cut20/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-            registryMC.get<TH2>(HIST("controlMCtrue/cut20/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+            registryMC.get<TH2>(HIST("controlMCtrue/cut20/hZNACenergy"))->Fill(energyZNA, energyZNC);
             // registryMC.get<TH1>(HIST("controlMCtrue/cut20/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
             if (flagEl[i] && tracksMatchedToMC && (i == matchedElIndexToData)) { // only for 1prong = electron true
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut20"))->Fill(tmpMomentum[i], tmpDedx[i]);
-              FillControlHistosMCtrue<20>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCtrue<20>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut20/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut20/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut20"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
               // registry1MC.get<TH1>(HIST("controlMCtrue/cut20/hTofChi2El"))->Fill(chi2TOF[i]);
             } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
-              FillControlHistosMCcomb<20>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCcomb<20>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut20"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut20/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               // registry1MC.get<TH1>(HIST("controlMCcomb/cut20/hTofChi2El"))->Fill(chi2TOF[i]);
@@ -3852,19 +3852,19 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut33/h4piMass"))->Fill(mass4pi);
             registryMC.get<TH1>(HIST("controlMCtrue/cut33/h4trkPtTot"))->Fill(pttot);
             registryMC.get<TH2>(HIST("controlMCtrue/cut33/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-            registryMC.get<TH2>(HIST("controlMCtrue/cut33/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+            registryMC.get<TH2>(HIST("controlMCtrue/cut33/hZNACenergy"))->Fill(energyZNA, energyZNC);
             // registryMC.get<TH1>(HIST("controlMCtrue/cut33/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
             if (tracksMatchedToMC && flagEl[i] &&
                 trkHasTof[i] && (i == matchedElIndexToData)) { // only for 1prong = electron true
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut33"))->Fill(tmpMomentum[i], tmpDedx[i]);
-              FillControlHistosMCtrue<33>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCtrue<33>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut33/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut33/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut33"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
-              FillControlHistosMCcomb<33>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCcomb<33>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut33"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut33/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
@@ -3894,18 +3894,18 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut21/h4piMass"))->Fill(mass4pi);
             registryMC.get<TH1>(HIST("controlMCtrue/cut21/h4trkPtTot"))->Fill(pttot);
             registryMC.get<TH2>(HIST("controlMCtrue/cut21/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-            registryMC.get<TH2>(HIST("controlMCtrue/cut21/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+            registryMC.get<TH2>(HIST("controlMCtrue/cut21/hZNACenergy"))->Fill(energyZNA, energyZNC);
             // registryMC.get<TH1>(HIST("controlMCtrue/cut21/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
             if (tracksMatchedToMC && flagEl[i] && trkHasTof[i] && flagPi[i] && (i == matchedElIndexToData)) { // only for 1prong = electron true
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut21"))->Fill(tmpMomentum[i], tmpDedx[i]);
-              FillControlHistosMCtrue<21>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCtrue<21>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut21/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut21/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut21"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
-              FillControlHistosMCcomb<21>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCcomb<21>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut21"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut21/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
@@ -3934,18 +3934,18 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut24/h4piMass"))->Fill(mass4pi);
             registryMC.get<TH1>(HIST("controlMCtrue/cut24/h4trkPtTot"))->Fill(pttot);
             registryMC.get<TH2>(HIST("controlMCtrue/cut24/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-            registryMC.get<TH2>(HIST("controlMCtrue/cut24/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+            registryMC.get<TH2>(HIST("controlMCtrue/cut24/hZNACenergy"))->Fill(energyZNA, energyZNC);
             // registryMC.get<TH1>(HIST("controlMCtrue/cut24/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
             if (tracksMatchedToMC && flagEl[i] && flagEl[i] && flagPi[i] && flagPr[i] && (i == matchedElIndexToData)) { // only for 1prong = electron true
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut24"))->Fill(tmpMomentum[i], tmpDedx[i]);
-              FillControlHistosMCtrue<24>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCtrue<24>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut24/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut24/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut24"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
-              FillControlHistosMCcomb<24>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCcomb<24>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut24"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut24/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
@@ -3975,18 +3975,18 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut25/h4piMass"))->Fill(mass4pi);
             registryMC.get<TH1>(HIST("controlMCtrue/cut25/h4trkPtTot"))->Fill(pttot);
             registryMC.get<TH2>(HIST("controlMCtrue/cut25/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-            registryMC.get<TH2>(HIST("controlMCtrue/cut25/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+            registryMC.get<TH2>(HIST("controlMCtrue/cut25/hZNACenergy"))->Fill(energyZNA, energyZNC);
             // registryMC.get<TH1>(HIST("controlMCtrue/cut25/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
             if (tracksMatchedToMC && flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && (i == matchedElIndexToData)) {
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut25"))->Fill(tmpMomentum[i], tmpDedx[i]);
-              FillControlHistosMCtrue<25>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCtrue<25>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut25/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut25/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut25"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
-              FillControlHistosMCcomb<25>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCcomb<25>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut25"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut25/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
@@ -4016,18 +4016,18 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut28/h4piMass"))->Fill(mass4pi);
             registryMC.get<TH1>(HIST("controlMCtrue/cut28/h4trkPtTot"))->Fill(pttot);
             registryMC.get<TH2>(HIST("controlMCtrue/cut28/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-            registryMC.get<TH2>(HIST("controlMCtrue/cut28/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+            registryMC.get<TH2>(HIST("controlMCtrue/cut28/hZNACenergy"))->Fill(energyZNA, energyZNC);
             // registryMC.get<TH1>(HIST("controlMCtrue/cut28/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
             if (tracksMatchedToMC && flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && (i == matchedElIndexToData)) {
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut28"))->Fill(tmpMomentum[i], tmpDedx[i]);
-              FillControlHistosMCtrue<28>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCtrue<28>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut28/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut28/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut28"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
-              FillControlHistosMCcomb<28>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCcomb<28>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut28"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut28/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
@@ -4058,18 +4058,18 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut22/h4piMass"))->Fill(mass4pi);
             registryMC.get<TH1>(HIST("controlMCtrue/cut22/h4trkPtTot"))->Fill(pttot);
             registryMC.get<TH2>(HIST("controlMCtrue/cut22/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-            registryMC.get<TH2>(HIST("controlMCtrue/cut22/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+            registryMC.get<TH2>(HIST("controlMCtrue/cut22/hZNACenergy"))->Fill(energyZNA, energyZNC);
             // registryMC.get<TH1>(HIST("controlMCtrue/cut22/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
             if (tracksMatchedToMC && flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && (i == matchedElIndexToData)) {
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut22"))->Fill(tmpMomentum[i], tmpDedx[i]);
-              FillControlHistosMCtrue<22>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCtrue<22>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut22/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut22/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut22"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
-              FillControlHistosMCcomb<22>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCcomb<22>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut22"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut22/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
@@ -4100,18 +4100,18 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut29/h4piMass"))->Fill(mass4pi);
             registryMC.get<TH1>(HIST("controlMCtrue/cut29/h4trkPtTot"))->Fill(pttot);
             registryMC.get<TH2>(HIST("controlMCtrue/cut29/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-            registryMC.get<TH2>(HIST("controlMCtrue/cut29/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+            registryMC.get<TH2>(HIST("controlMCtrue/cut29/hZNACenergy"))->Fill(energyZNA, energyZNC);
             // registryMC.get<TH1>(HIST("controlMCtrue/cut29/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
             if (tracksMatchedToMC && flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagS3pi[i] && (i == matchedElIndexToData)) {
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut29"))->Fill(tmpMomentum[i], tmpDedx[i]);
-              FillControlHistosMCtrue<29>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCtrue<29>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut29/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut29/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut29"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
-              FillControlHistosMCcomb<29>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCcomb<29>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut29"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut29/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
@@ -4143,18 +4143,18 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut26/h4piMass"))->Fill(mass4pi);
             registryMC.get<TH1>(HIST("controlMCtrue/cut26/h4trkPtTot"))->Fill(pttot);
             registryMC.get<TH2>(HIST("controlMCtrue/cut26/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-            registryMC.get<TH2>(HIST("controlMCtrue/cut26/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+            registryMC.get<TH2>(HIST("controlMCtrue/cut26/hZNACenergy"))->Fill(energyZNA, energyZNC);
             // registryMC.get<TH1>(HIST("controlMCtrue/cut26/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
             if (tracksMatchedToMC && flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagS3pi[i] && flagIM[i] && (i == matchedElIndexToData)) {
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut26"))->Fill(tmpMomentum[i], tmpDedx[i]);
-              FillControlHistosMCtrue<26>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCtrue<26>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut26/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut26/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut26"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
-              FillControlHistosMCcomb<26>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCcomb<26>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut26"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut26/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
@@ -4189,19 +4189,19 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut34/h4piMass"))->Fill(mass4pi);
             registryMC.get<TH1>(HIST("controlMCtrue/cut34/h4trkPtTot"))->Fill(pttot);
             registryMC.get<TH2>(HIST("controlMCtrue/cut34/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-            registryMC.get<TH2>(HIST("controlMCtrue/cut34/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+            registryMC.get<TH2>(HIST("controlMCtrue/cut34/hZNACenergy"))->Fill(energyZNA, energyZNC);
             registry1MC.get<TH1>(HIST("globalMCrec/hRecFlag"))->Fill(5 + collision.flags()); // reconstruction with upc settings flag
             // registryMC.get<TH1>(HIST("controlMCtrue/cut34/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
             if (tracksMatchedToMC && flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagS3pi[i] && flagIM[i] && (i == matchedElIndexToData)) {
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut34"))->Fill(tmpMomentum[i], tmpDedx[i]);
-              FillControlHistosMCtrue<34>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCtrue<34>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut34/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut34/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut34"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
-              FillControlHistosMCcomb<34>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCcomb<34>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut34"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut34/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
@@ -4229,18 +4229,18 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut30/h4piMass"))->Fill(mass4pi);
             registryMC.get<TH1>(HIST("controlMCtrue/cut30/h4trkPtTot"))->Fill(pttot);
             registryMC.get<TH2>(HIST("controlMCtrue/cut30/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-            registryMC.get<TH2>(HIST("controlMCtrue/cut30/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+            registryMC.get<TH2>(HIST("controlMCtrue/cut30/hZNACenergy"))->Fill(energyZNA, energyZNC);
             // registryMC.get<TH1>(HIST("controlMCtrue/cut30/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
             if (tracksMatchedToMC && flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagS3pi[i] && flagIM[i] && (i == matchedElIndexToData)) {
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut30"))->Fill(tmpMomentum[i], tmpDedx[i]);
-              FillControlHistosMCtrue<30>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCtrue<30>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut30/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut30/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut30"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
-              FillControlHistosMCcomb<30>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCcomb<30>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut30"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut30/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
@@ -4272,18 +4272,18 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut27/h4piMass"))->Fill(mass4pi);
             registryMC.get<TH1>(HIST("controlMCtrue/cut27/h4trkPtTot"))->Fill(pttot);
             registryMC.get<TH2>(HIST("controlMCtrue/cut27/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-            registryMC.get<TH2>(HIST("controlMCtrue/cut27/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+            registryMC.get<TH2>(HIST("controlMCtrue/cut27/hZNACenergy"))->Fill(energyZNA, energyZNC);
             // registryMC.get<TH1>(HIST("controlMCtrue/cut27/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
             if (tracksMatchedToMC && flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagS3pi[i] && flagIM[i] && flagDP[i] && (i == matchedElIndexToData)) {
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut27"))->Fill(tmpMomentum[i], tmpDedx[i]);
-              FillControlHistosMCtrue<27>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCtrue<27>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut27/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut27/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut27"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
-              FillControlHistosMCcomb<27>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCcomb<27>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut27"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut27/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
@@ -4298,7 +4298,7 @@ struct TauTau13topo {
         //
         // ZDC cut Energy < 1 TeV on both sides
         //
-        if (ZNAenergy < 1. && ZNCenergy < 1.) {
+        if (energyZNA < 1. && energyZNC < 1.) {
           registryMC.get<TH1>(HIST("efficiencyMCEl/effiEl"))->Fill(65., 1.); // electron identified
           if (tracksMatchedToMC)
             registryMC.get<TH1>(HIST("efficiencyMCEl/effiEl"))->Fill(66., 1.); // electron identified, tracks match to MC Particles
@@ -4311,18 +4311,18 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut35/h4piMass"))->Fill(mass4pi);
             registryMC.get<TH1>(HIST("controlMCtrue/cut35/h4trkPtTot"))->Fill(pttot);
             registryMC.get<TH2>(HIST("controlMCtrue/cut35/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-            registryMC.get<TH2>(HIST("controlMCtrue/cut35/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
+            registryMC.get<TH2>(HIST("controlMCtrue/cut35/hZNACenergy"))->Fill(energyZNA, energyZNC);
             // registryMC.get<TH1>(HIST("controlMCtrue/cut35/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
             if (tracksMatchedToMC && flagEl[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagS3pi[i] && flagIM[i] && flagDP[i] && trkHasTof[i] && (i == matchedElIndexToData)) {
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut35"))->Fill(tmpMomentum[i], tmpDedx[i]);
-              FillControlHistosMCtrue<35>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCtrue<35>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut35/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut35/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut35"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
-              FillControlHistosMCcomb<35>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
+              fillControlHistosMCcomb<35>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut35"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut35/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
