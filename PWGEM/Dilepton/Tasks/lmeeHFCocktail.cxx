@@ -76,7 +76,6 @@ const char* stageNames[Nstages] = {"gen", "meas", "meas_and_acc"};
 template <typename T>
 void doQuark(T& p, std::vector<std::shared_ptr<TH1>> hRapQuark, float ptMin, float etaMax, int pdg)
 {
-  float weight[Nstages] = {p.weight(), p.efficiency() * p.weight(), p.efficiency() * p.weight()};
   float pt[Nstages] = {p.pt(), p.ptSmeared(), p.ptSmeared()};
   float eta[Nstages] = {p.eta(), p.etaSmeared(), p.etaSmeared()};
   float cut_pt[Nstages] = {0., 0., ptMin};
@@ -84,11 +83,11 @@ void doQuark(T& p, std::vector<std::shared_ptr<TH1>> hRapQuark, float ptMin, flo
   for (int i = 0; i < Nstages; i++) {
     if (pt[i] > cut_pt[i] && fabs(eta[i]) < cut_eta[i]) {
       if (pdg == 4)
-        hRapQuark[i]->Fill(p.cQuarkRap(), weight[i]);
+        hRapQuark[i]->Fill(p.cQuarkRap());
       else if (pdg == 5)
-        hRapQuark[i]->Fill(p.bQuarkRap(), weight[i]);
+        hRapQuark[i]->Fill(p.bQuarkRap());
       else
-        hRapQuark[i]->Fill(999., weight[i]);
+        hRapQuark[i]->Fill(999.);
     }
   }
 }
