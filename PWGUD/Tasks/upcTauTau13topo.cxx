@@ -34,10 +34,13 @@
 #include "PWGUD/Core/SGSelector.h"
 
 #include "Common/Core/RecoDecay.h"
+// #include <CommonUtils/EnumFlags.h>
+#include "TPDGCode.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 
 struct TauTau13topo {
   SGSelector sgSelector;
@@ -89,7 +92,7 @@ struct TauTau13topo {
 
   // a pdg object
   // TDatabasePDG* pdg = nullptr; //not recommended
-  Service<o2::framework::O2DatabasePDG> pdg;
+  // Service<o2::framework::O2DatabasePDG> pdg;
 
   // initialize histogram registry
   HistogramRegistry registry{
@@ -784,7 +787,7 @@ struct TauTau13topo {
     registryMC.add("controlMCtrue/cut0/hTPCnCrossedRows", "N crossed rows ;N_{TPC,crossed rows};entries", {HistType::kTH1F, {{160, 0, 160.}}});
     registryMC.add("controlMCtrue/cut0/hZNACenergy", "ZNA vs ZNC energy, cut0; #it{E}_{ZNA} (GeV); #it{E}_{ZNC} (GeV); Collisions", {HistType::kTH2F, {axisZDC, axisZDC}});
     registry1MC.add("controlMCtrue/cut0/hTofChi2El", ";TOF #chi^{2};entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    //	    MC
+    //
     registryMC.add("controlMCcomb/cut0/h3piMass", "3#pi mass, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});entries", {HistType::kTH1F, {minvAxis}});
     registryMC.add("controlMCcomb/cut0/h3trkPtTot", ";p_{T} (GeV/c);entries", {HistType::kTH1F, {ptAxis}});
     registryMC.add("controlMCcomb/cut0/hDeltaPhi13topo", "#Delta #varphi 1+3 topo, 4 entries/event;#Delta#varphi^{1+3};entries", {HistType::kTH1F, {phiAxis}});
@@ -1415,17 +1418,17 @@ struct TauTau13topo {
 
   //  // helper function to calculate scalar asymmetry
   //  float scalarAsym(auto particle1, auto particle2){
-  //    auto delta = particle1.pt() - particle2.pt();
-  //    return TMath::Abs(delta)/(particle1.pt() + particle2.pt());
+  //  auto delta = particle1.pt() - particle2.pt();
+  //  return TMath::Abs(delta)/(particle1.pt() + particle2.pt());
   //  }
   //
   //  // helper function to calculate vector asymmetry
   //  float vectorAsym(auto particle1, auto particle2){
-  //    auto delta = TMath::Sqrt((particle1.px() - particle2.px()) * (particle1.px() - particle2.px()) +
-  //			     (particle1.py() - particle2.py()) * (particle1.py() - particle2.py()));
-  //    auto sum =  TMath::Sqrt((particle1.px() + particle2.px()) * (particle1.px() + particle2.px()) +
-  //			    (particle1.py() + particle2.py()) * (particle1.py() + particle2.py()));
-  //    return sum/delta;
+  //   auto delta = TMath::Sqrt((particle1.px() - particle2.px()) * (particle1.px() - particle2.px()) +
+  //   (particle1.py() - particle2.py()) * (particle1.py() - particle2.py()));
+  //   auto sum =  TMath::Sqrt((particle1.px() + particle2.px()) * (particle1.px() + particle2.px()) +
+  //   (particle1.py() + particle2.py()) * (particle1.py() + particle2.py()));
+  //   return sum/delta;
   //  }
 
   // helper function to calculate scalar asymmetry
@@ -1630,8 +1633,11 @@ struct TauTau13topo {
     int nITSbits = -1;
     int npT100 = 0;
     TLorentzVector p;
-    auto const pionMass = pdg->Mass(211);
-    auto const electronMass = pdg->Mass(11);
+    // auto const pionMass = pdg->Mass(211); // o2::constants::physics::pdg::kPiPlus); // 211
+    // auto const electronMass = pdg->Mass(11); // 11 kElectron
+    auto const pionMass = MassPiPlus;
+    auto const electronMass = MassElectron;
+    
     // TParticlePDG* pion = pdg->GetParticle(211);
     // TParticlePDG* electron = pdg->GetParticle(11);
     bool flagGlobalCheck = true;
@@ -1934,12 +1940,12 @@ struct TauTau13topo {
     float nSigma3Pi[4] = {0., 0., 0., 0.};
     float nSigmaPr[4];
     float nSigmaKa[4];
-    float dcaZ[4];
-    float dcaXY[4];
-    float chi2TPC[4];
-    float chi2ITS[4];
+    // float dcaZ[4];
+    // float dcaXY[4];
+    // float chi2TPC[4];
+    // float chi2ITS[4];
     float chi2TOF[4];
-    float nclTPCfind[4];
+    // float nclTPCfind[4];
     float nclTPCcrossedRows[4];
     bool trkHasTof[4];
     float mass3pi1e[4];
@@ -2022,12 +2028,12 @@ struct TauTau13topo {
       nSigmaPr[counterTmp] = std::sqrt(trk.tofNSigmaPr() * trk.tofNSigmaPr() + trk.tpcNSigmaPr() * trk.tpcNSigmaPr());
       //      nSigmaKa[counterTmp] = trk.tpcNSigmaKa();
       nSigmaKa[counterTmp] = std::sqrt(trk.tofNSigmaKa() * trk.tofNSigmaKa() + trk.tpcNSigmaKa() * trk.tpcNSigmaKa());
-      dcaZ[counterTmp] = trk.dcaZ();
-      dcaXY[counterTmp] = trk.dcaXY();
-      chi2TPC[counterTmp] = trk.tpcChi2NCl();
-      chi2ITS[counterTmp] = trk.itsChi2NCl();
+      // dcaZ[counterTmp] = trk.dcaZ();
+      // dcaXY[counterTmp] = trk.dcaXY();
+      // chi2TPC[counterTmp] = trk.tpcChi2NCl();
+      // chi2ITS[counterTmp] = trk.itsChi2NCl();
       chi2TOF[counterTmp] = trk.tofChi2();
-      nclTPCfind[counterTmp] = trk.tpcNClsFindable();
+      // nclTPCfind[counterTmp] = trk.tpcNClsFindable();
       nclTPCcrossedRows[counterTmp] = trk.tpcNClsCrossedRows();
       trkHasTof[counterTmp] = trk.hasTOF();
       trkTime[counterTmp] = trk.trackTime();
@@ -2065,7 +2071,7 @@ struct TauTau13topo {
     for (int i = 0; i < 4; i++) {
       if (i == iTmpBest)
         continue;
-      trkTimeTot += fabs(trkTime[iTmpBest] - trkTime[i]);
+      trkTimeTot += std::abs(trkTime[iTmpBest] - trkTime[i]);
     }
     trkTimeResTot = std::sqrt(trkTimeRes[0] * trkTimeRes[0] +
                               trkTimeRes[1] * trkTimeRes[1] +
@@ -2816,7 +2822,7 @@ struct TauTau13topo {
     bool flagPiPlusPiMinus = false; // pi+ = 0, pi- =1
 
     // loop over MC particles
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       // primaries
       if (mcParticle.isPhysicalPrimary()) {
         countPrim++;
@@ -2864,9 +2870,9 @@ struct TauTau13topo {
           tauInRapidity = false;
         pionCounter = 0;
         if (mcParticle.has_daughters()) {
-          for (auto& daughter : mcParticle.daughters_as<aod::McParticles>()) {
+          for (const auto& daughter : mcParticle.daughters_as<aod::McParticles>()) {
             // pions from tau
-            if (std::abs(daughter.pdgCode()) == 211) {
+            if (std::abs(daughter.pdgCode()) == 211) { // 211 = pi+
               pionCounter++;
               tmpPionIndex = daughter.index(); // returns index of daughter of tau, not in the event, not in the MC particles
               if (std::abs(daughter.eta()) > 0.9)
@@ -2874,7 +2880,7 @@ struct TauTau13topo {
             } // end of pion check
             // electron from tau
             if (std::abs(daughter.pdgCode()) == 11) { // == 11
-              if (daughter.pdgCode() == 11)
+              if (daughter.pdgCode() == 11) // 11
                 flagElPlusElMinus = true;
               registryMC.get<TH1>(HIST("electronMC/hMCeta"))->Fill(daughter.eta());
               registryMC.get<TH1>(HIST("electronMC/hMCphi"))->Fill(daughter.phi());
@@ -2997,8 +3003,7 @@ struct TauTau13topo {
   void processEfficiencyMCSG(aod::UDMcCollision const& mcCollision,
                              soa::SmallGroups<soa::Join<aod::UDMcCollsLabels, aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>> const& collisions,
                              LabeledTracks const& tracks,
-                             aod::UDMcParticles const& mcParticles //,
-                             // PVTracksMC const& PVContributors
+                             aod::UDMcParticles const& mcParticles
   )
   {
     if (verbose) {
@@ -3015,8 +3020,8 @@ struct TauTau13topo {
     int indexProngMC[4];
     int index1ProngMC = -1;
     bool is1ProngElectronMC = false;
-    bool is1ProngMuonMC = false;
-    bool is1ProngPionMC = false;
+    // bool is1ProngMuonMC = false;
+    // bool is1ProngPionMC = false;
     bool is3prong3PiMC = false;
     int motherIndex[4];
 
@@ -3025,7 +3030,7 @@ struct TauTau13topo {
     bool tauInRapidity = true;
     bool partFromTauInEta = true;
 
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary()) {
         if (mcParticle.pdgCode() != 22 && std::abs(mcParticle.pdgCode()) != 12 && std::abs(mcParticle.pdgCode()) != 14 && std::abs(mcParticle.pdgCode()) != 16 && mcParticle.pdgCode() != 130 && mcParticle.pdgCode() != 111) {
           if (mcParticle.has_mothers()) {
@@ -3041,7 +3046,7 @@ struct TauTau13topo {
                 is1ProngElectronMC = true;
               } else if (std::abs(mcParticle.pdgCode()) == 13) {
                 index1ProngMC = mcParticle.index();
-                is1ProngMuonMC = true;
+                // is1ProngMuonMC = true;
               }
 
               if (count < 4) {
@@ -3077,12 +3082,12 @@ struct TauTau13topo {
       // bool onlyPi = true;
       // // int motherIndex[4];
       // for (int i = 0; i < 4; i++) {
-      // 	auto const& tmpMC = mcParticles.begin() + indexProngMC[i];
-      // 	if (std::abs(tmpMC.pdgCode()) != 211) onlyPi = false;
-      // 	// // mother's check already done in a loop before
-      // 	// // auto const& mother = tmpMC.mothers_first_as<aod::UDMcParticles>();
-      // 	// // motherIndex[i] = mother.globalIndex();
-      // 	// motherIndex[i] = (tmpMC.mothers_first_as<aod::UDMcParticles>()).globalIndex();
+      // auto const& tmpMC = mcParticles.begin() + indexProngMC[i];
+      // if (std::abs(tmpMC.pdgCode()) != 211) onlyPi = false;
+      // // // mother's check already done in a loop before
+      // // // auto const& mother = tmpMC.mothers_first_as<aod::UDMcParticles>();
+      // // // motherIndex[i] = mother.globalIndex();
+      // // motherIndex[i] = (tmpMC.mothers_first_as<aod::UDMcParticles>()).globalIndex();
       // }
       int motherIndex1Pi = motherIndex[0];
       int motherIndexNew = -1;
@@ -3097,7 +3102,7 @@ struct TauTau13topo {
         index1ProngMC = indexProngMC[0];
       else
         index1ProngMC = indexProngMC[motherIndexNew];
-      is1ProngPionMC = true;
+      // is1ProngPionMC = true;
       // if (!onlyPi) LOGF(info, "ERROR: should be 4 pions, but they are not!");
     } // end of special check for pi + 3pi
 
@@ -3234,7 +3239,7 @@ struct TauTau13topo {
       auto bitMax = 16 + FITvetoWindow;
       bool flagFITveto = false;
 
-      for (auto& collision : collisions) {
+      for (const auto& collision : collisions) {
         // FIT flag set
         flagFITveto = false;
         for (auto bit = bitMin; bit <= bitMax; bit++) {
@@ -3307,14 +3312,7 @@ struct TauTau13topo {
         for (auto const& track : groupedTracks) {
           // all tracks
           if (track.has_udMcParticle()) {
-            // if (track.mcParticle().producedByGenerator()) {
-            //   //nGenTracks++;
-            //   //if (track.mcParticle().isPhysicalPrimary()) {
-            //   //	//nGenPrimTracks++;
-            //   //	//      htrkptDiff->Fill(track.mcParticle().pt()
-            //   //	//mcParticle.isPhysicalPrimary()
-            //   //}
-            // }
+	    //
           } else {
             // ghost track
             nGhostTracks++;
@@ -3351,24 +3349,6 @@ struct TauTau13topo {
                     trackMCId[nPVTracks - 1] == tmpPion3MC.globalIndex())
                   trackToMCmatch[nPVTracks - 1] = true; // flag, we have a match data <=> MC
               }
-
-              // 	for(int iindex = 0; iindex < 3; iindex++){
-              // 	  LOGF(info,"id %d, 3piGID %d, trkMC GID %d, 1piGID %d",iindex, threePionGlobalIndex[iindex], track.mcParticle().globalIndex(), singlePionGlobalIndex );
-              // 	  if((threePionGlobalIndex[iindex] > 0) && (track.mcParticle().globalIndex() == threePionGlobalIndex[iindex]) && (track.mcParticle().globalIndex() != singlePionGlobalIndex)) {
-              // 	    flag3pi[iindex] = true;
-              // 	  }
-              // 	}
-              //   }
-              //   if (track.mcParticle().producedByGenerator()) {
-              // 	nGenPVTracks++;
-              // 	if (track.mcParticle().isPhysicalPrimary()) {
-              // 	  // if(countBoth>2) LOGF(info,"trackMCcode %d",track.mcParticle().pdgCode());
-              // 	  nGenPrimPVTracks++;
-              // 	  auto delta = track.phi()-track.mcParticle().phi();
-              // 	  if (delta > PI) delta -= TwoPI;
-              // 	  if (delta < -PI) delta += TwoPI;
-              // 	  registryMC.get<TH2>(HIST("tracks/hDeltaPhiGenRecVsRecpTTracksPV"))->Fill(delta,track.pt());
-              // 	  LOGF(info,"pid %4.0d (%f, %f, %f) id %d gid %d pt %f",track.mcParticle().pdgCode(), track.mcParticle().vx(),track.mcParticle().vy(),track.mcParticle().vz(),track.mcParticle().index(),track.mcParticle().globalIndex(),track.pt());
 
             } // end of case where track has MC Particle associated
             else {
@@ -3607,31 +3587,6 @@ struct TauTau13topo {
           registryMC.get<TH1>(HIST("efficiencyMCEl/effiEl"))->Fill(57., 1.);                              // electron identified, tracks match to MC Particles
           registryMC.get<TH1>(HIST("globalMCrec/hPtSpectrumElRec8"))->Fill(reconstructedPtElMatchedToMC); // pt El confirmed with true information
         }
-        //	if (tracksMatchedToMC && flagEl[matchedElIndexToData] && flagPi[matchedElIndexToData] &&
-        //	      flagPr[matchedElIndexToData] && flagKa[matchedElIndexToData] && flagCR[matchedElIndexToData] &&
-        //	      !flagVcalPV[matchedElIndexToData] && flagPt[matchedElIndexToData] && flagS3pi[matchedElIndexToData] &&
-        //	      flagIM[matchedElIndexToData] && flagDP[matchedElIndexToData]) {
-        //	    registryMC.get<TH1>(HIST("efficiencyMCEl/effiEl"))->Fill(58., 1.); // IM 3pi, tracks match to MC Particles, El is MC El true
-        //
-        //	    registryMC.get<TH1>(HIST("controlMCtrue/cut32/h4piMass"))->Fill(mass4pi);
-        //	    registryMC.get<TH1>(HIST("controlMCtrue/cut32/h4trkPtTot"))->Fill(pttot);
-        //	    registryMC.get<TH2>(HIST("controlMCtrue/cut32/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-        //	    registryMC.get<TH2>(HIST("controlMCtrue/cut32/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
-        //	    // registryMC.get<TH1>(HIST("controlMCtrue/cut32/hNtofTrk"))->Fill(nTofTrk);
-        //	  }
-        //	  for (int i = 0; i < 4; i++) {
-        //	    if (tracksMatchedToMC && flagEl[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagPt[i] && flagS3pi[i] && flagIM[i] && flagDP[i] && (i == matchedElIndexToData)) {
-        //	      registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut32"))->Fill(tmpMomentum[i], tmpDedx[i]);
-        //	      FillControlHistosMCtrue<32>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
-        //	      registryMC.get<TH2>(HIST("controlMCtrue/cut32/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
-        //	      registryMC.get<TH1>(HIST("controlMCtrue/cut32/hsigma3Pi"))->Fill(nSigma3Pi[i]);
-        //	    } // only for 1prong = electron true
-        //	    else {
-        //	      FillControlHistosMCcomb<32>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
-        //	      registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut32"))->Fill(tmpMomentum[i], tmpDedx[i]);
-        //	      registryMC.get<TH1>(HIST("controlMCcomb/cut32/hsigma3Pi"))->Fill(nSigma3Pi[i]);
-        //	    }
-        //	  } // end of loop over 4 PV tracks
 
         //
         // check FIT information
@@ -3649,32 +3604,6 @@ struct TauTau13topo {
           registryMC.get<TH1>(HIST("efficiencyMCEl/effiEl"))->Fill(54., 1.);                              // electron identified, tracks match to MC Particles
           registryMC.get<TH1>(HIST("globalMCrec/hPtSpectrumElRec9"))->Fill(reconstructedPtElMatchedToMC); // pt El confirmed with true information
         }
-        //	if (tracksMatchedToMC && flagEl[matchedElIndexToData] && flagPi[matchedElIndexToData] &&
-        //	    flagPr[matchedElIndexToData] && flagKa[matchedElIndexToData] && flagCR[matchedElIndexToData] &&
-        //	    !flagVcalPV[matchedElIndexToData] && flagPt[matchedElIndexToData] && flagS3pi[matchedElIndexToData] &&
-        //	    flagIM[matchedElIndexToData] && flagDP[matchedElIndexToData]) {
-        //	  registryMC.get<TH1>(HIST("efficiencyMCEl/effiEl"))->Fill(55., 1.); // IM 3pi, tracks match to MC Particles, El is MC El true
-        //
-        //	  registryMC.get<TH1>(HIST("controlMCtrue/cut31/h4piMass"))->Fill(mass4pi);
-        //	  registryMC.get<TH1>(HIST("controlMCtrue/cut31/h4trkPtTot"))->Fill(pttot);
-        //	  registryMC.get<TH2>(HIST("controlMCtrue/cut31/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-        //	  registryMC.get<TH2>(HIST("controlMCtrue/cut31/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
-        //	  // registryMC.get<TH1>(HIST("controlMCtrue/cut31/hNtofTrk"))->Fill(nTofTrk);
-        //	}
-        //	for (int i = 0; i < 4; i++) {
-        //	  if (tracksMatchedToMC && flagEl[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagPt[i] && flagS3pi[i] && flagIM[i] && flagDP[i] && (i == matchedElIndexToData)) {
-        //	    registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut31"))->Fill(tmpMomentum[i], tmpDedx[i]);
-        //	    FillControlHistosMCtrue<31>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
-        //	    registryMC.get<TH2>(HIST("controlMCtrue/cut31/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
-        //	    registryMC.get<TH1>(HIST("controlMCtrue/cut31/hsigma3Pi"))->Fill(nSigma3Pi[i]);
-        //	  } // only for 1prong = electron true
-        //	  else {
-        //	    FillControlHistosMCcomb<31>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
-        //	    registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut31"))->Fill(tmpMomentum[i], tmpDedx[i]);
-        //	    registryMC.get<TH1>(HIST("controlMCcomb/cut31/hsigma3Pi"))->Fill(nSigma3Pi[i]);
-        //	  }
-        //	} // end of loop over 4 PV tracks
-        //	// end of FIT empty plots 31
 
         //
         // here PID from TPC starts to be
