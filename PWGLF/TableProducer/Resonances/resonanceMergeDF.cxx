@@ -98,12 +98,10 @@ struct ResonanceMergeDF {
 
   std::vector<std::tuple<float, float, float, float, float, float, int>> vecOfTuples;
   std::vector<std::vector<std::tuple<float, float, float, float,
-                                     float, float, signed char, unsigned char, unsigned char,
-                                     float, float,
-                                     bool, int8_t, int8_t, int8_t,
+                                     signed char, unsigned char, unsigned char,
+                                     float, float, int8_t, int8_t, int8_t,
                                      int8_t, int8_t, int8_t, float,
-                                     bool, bool,
-                                     bool, bool, bool, bool>>>
+                                     uint8_t>>>
     vecOfVecOfTuples;
   void processTrackDataDF(aod::ResoCollisions::iterator const& collision, aod::ResoTracks const& tracks)
   {
@@ -111,12 +109,10 @@ struct ResonanceMergeDF {
     int nCollisions = nDF;
     vecOfTuples.push_back(std::make_tuple(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), collision.trackOccupancyInTimeRange()));
     std::vector<std::tuple<float, float, float, float,
-                           float, float, signed char, unsigned char, unsigned char,
-                           float, float,
-                           bool, int8_t, int8_t, int8_t,
+                           signed char, unsigned char, unsigned char,
+                           float, float, int8_t, int8_t, int8_t,
                            int8_t, int8_t, int8_t, float,
-                           bool, bool,
-                           bool, bool, bool, bool>>
+                           uint8_t>>
       innerVector;
     for (const auto& track : tracks) {
       if (cpidCut) {
@@ -147,27 +143,19 @@ struct ResonanceMergeDF {
         track.px(),
         track.py(),
         track.pz(),
-        track.eta(),
-        track.phi(),
         track.sign(),
         (uint8_t)track.tpcNClsCrossedRows(),
         (uint8_t)track.tpcNClsFound(),
         track.dcaXY(),
         track.dcaZ(),
-        track.hasTOF(),
         (int8_t)(track.tpcNSigmaPi() * 10),
         (int8_t)(track.tpcNSigmaKa() * 10),
         (int8_t)(track.tpcNSigmaPr() * 10),
         (int8_t)(track.tofNSigmaPi() * 10),
         (int8_t)(track.tofNSigmaKa() * 10),
         (int8_t)(track.tofNSigmaPr() * 10),
-        track.tpcSignal(),
-        track.passedITSRefit(),
-        track.passedTPCRefit(),
-        track.isGlobalTrackWoDCA(),
-        track.isGlobalTrack(),
-        track.isPrimaryTrack(),
-        track.isPVContributor()));
+        (int8_t)(track.tpcSignal() * 10),
+        track.trackFlags()));
     }
 
     vecOfVecOfTuples.push_back(innerVector);
@@ -203,16 +191,7 @@ struct ResonanceMergeDF {
                     std::get<12>(tuple),
                     std::get<13>(tuple),
                     std::get<14>(tuple),
-                    std::get<15>(tuple),
-                    std::get<16>(tuple),
-                    std::get<17>(tuple),
-                    std::get<18>(tuple),
-                    std::get<19>(tuple),
-                    std::get<20>(tuple),
-                    std::get<21>(tuple),
-                    std::get<22>(tuple),
-                    std::get<23>(tuple),
-                    std::get<24>(tuple));
+                    std::get<15>(tuple));
       }
     }
 
@@ -261,27 +240,18 @@ struct ResonanceMergeDF {
                   track.px(),
                   track.py(),
                   track.pz(),
-                  track.eta(),
-                  track.phi(),
-                  track.sign(),
                   (uint8_t)track.tpcNClsCrossedRows(),
                   (uint8_t)track.tpcNClsFound(),
                   track.dcaXY(),
                   track.dcaZ(),
-                  track.hasTOF(),
                   (int8_t)(track.tpcNSigmaPi() * 10),
                   (int8_t)(track.tpcNSigmaKa() * 10),
                   (int8_t)(track.tpcNSigmaPr() * 10),
                   (int8_t)(track.tofNSigmaPi() * 10),
                   (int8_t)(track.tofNSigmaKa() * 10),
                   (int8_t)(track.tofNSigmaPr() * 10),
-                  track.tpcSignal(),
-                  track.passedITSRefit(),
-                  track.passedTPCRefit(),
-                  track.isGlobalTrackWoDCA(),
-                  track.isGlobalTrack(),
-                  track.isPrimaryTrack(),
-                  track.isPVContributor());
+                  (int8_t)(track.tpcSignal() * 10),
+                  track.trackFlags());
     }
   }
   PROCESS_SWITCH(ResonanceMergeDF, processLambdaStarCandidate, "Process for lambda star candidate", false);
@@ -333,27 +303,18 @@ struct ResonanceMergeDF {
                   track.px(),
                   track.py(),
                   track.pz(),
-                  track.eta(),
-                  track.phi(),
-                  track.sign(),
                   (uint8_t)track.tpcNClsCrossedRows(),
                   (uint8_t)track.tpcNClsFound(),
                   track.dcaXY(),
                   track.dcaZ(),
-                  track.hasTOF(),
                   (int8_t)(track.tpcNSigmaPi() * 10),
                   (int8_t)(track.tpcNSigmaKa() * 10),
                   (int8_t)(track.tpcNSigmaPr() * 10),
                   (int8_t)(track.tofNSigmaPi() * 10),
                   (int8_t)(track.tofNSigmaKa() * 10),
                   (int8_t)(track.tofNSigmaPr() * 10),
-                  track.tpcSignal(),
-                  track.passedITSRefit(),
-                  track.passedTPCRefit(),
-                  track.isGlobalTrackWoDCA(),
-                  track.isGlobalTrack(),
-                  track.isPrimaryTrack(),
-                  track.isPVContributor());
+                  (int8_t)(track.tpcSignal() * 10),
+                  track.trackFlags());
     }
     // Cascade candidate
     for (const auto& track : resocasctracks) {
@@ -364,27 +325,25 @@ struct ResonanceMergeDF {
                       track.px(),
                       track.py(),
                       track.pz(),
-                      track.eta(),
-                      track.phi(),
                       const_cast<int*>(track.cascadeIndices()),
-                      track.daughterTPCNSigmaPosPi(),
-                      track.daughterTPCNSigmaPosKa(),
-                      track.daughterTPCNSigmaPosPr(),
-                      track.daughterTPCNSigmaNegPi(),
-                      track.daughterTPCNSigmaNegKa(),
-                      track.daughterTPCNSigmaNegPr(),
-                      track.daughterTPCNSigmaBachPi(),
-                      track.daughterTPCNSigmaBachKa(),
-                      track.daughterTPCNSigmaBachPr(),
-                      track.daughterTOFNSigmaPosPi(),
-                      track.daughterTOFNSigmaPosKa(),
-                      track.daughterTOFNSigmaPosPr(),
-                      track.daughterTOFNSigmaNegPi(),
-                      track.daughterTOFNSigmaNegKa(),
-                      track.daughterTOFNSigmaNegPr(),
-                      track.daughterTOFNSigmaBachPi(),
-                      track.daughterTOFNSigmaBachKa(),
-                      track.daughterTOFNSigmaBachPr(),
+                      (int8_t)(track.daughterTPCNSigmaPosPi() * 10),
+                      (int8_t)(track.daughterTPCNSigmaPosKa() * 10),
+                      (int8_t)(track.daughterTPCNSigmaPosPr() * 10),
+                      (int8_t)(track.daughterTPCNSigmaNegPi() * 10),
+                      (int8_t)(track.daughterTPCNSigmaNegKa() * 10),
+                      (int8_t)(track.daughterTPCNSigmaNegPr() * 10),
+                      (int8_t)(track.daughterTPCNSigmaBachPi() * 10),
+                      (int8_t)(track.daughterTPCNSigmaBachKa() * 10),
+                      (int8_t)(track.daughterTPCNSigmaBachPr() * 10),
+                      (int8_t)(track.daughterTOFNSigmaPosPi() * 10),
+                      (int8_t)(track.daughterTOFNSigmaPosKa() * 10),
+                      (int8_t)(track.daughterTOFNSigmaPosPr() * 10),
+                      (int8_t)(track.daughterTOFNSigmaNegPi() * 10),
+                      (int8_t)(track.daughterTOFNSigmaNegKa() * 10),
+                      (int8_t)(track.daughterTOFNSigmaNegPr() * 10),
+                      (int8_t)(track.daughterTOFNSigmaBachPi() * 10),
+                      (int8_t)(track.daughterTOFNSigmaBachKa() * 10),
+                      (int8_t)(track.daughterTOFNSigmaBachPr() * 10),
                       track.v0CosPA(),
                       track.cascCosPA(),
                       track.daughDCA(),
