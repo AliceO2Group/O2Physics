@@ -45,26 +45,26 @@ using namespace o2::constants::physics;
 struct TauTau13topo {
   SGSelector sgSelector;
   // configurables
-  Configurable<float> FV0_cut{"FV0", 10000., "FV0A threshold"};
-  Configurable<float> FT0A_cut{"FT0A", 150., "FT0A threshold"};
-  Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
-  Configurable<float> ZDC_cut{"ZDC", 10000., "ZDC threshold"};
+  Configurable<float> cutFV0{"cutFV0", 10000., "FV0A threshold"};
+  Configurable<float> cutFT0A{"cutFT0A", 150., "FT0A threshold"};
+  Configurable<float> cutFT0C{"cutFT0C", 50., "FT0C threshold"};
+  Configurable<float> cutZDC{"cutZDC", 10000., "ZDC threshold"};
   Configurable<float> gap_Side{"gap", 2, "gap selection"};
   //  ConfigurableAxis ptAxis{"pAxis", {100, 0., 5.}, "#it{p} (GeV/#it{c})"};
   ConfigurableAxis ptAxis{"ptAxis", {120, 0., 4.}, "#it{p} (GeV/#it{c})"};
   //  ConfigurableAxis etaAxis{"etaAxis", {100, -2., 2.}, "#eta"};
   ConfigurableAxis dedxAxis{"dedxAxis", {100, 20., 160.}, "dE/dx"};
-  ConfigurableAxis minvAxis{"MinvAxis", {100, 0.4, 3.5}, "M_{inv} (GeV/#it{c}^{2})"};
+  ConfigurableAxis minvAxis{"minvAxis", {100, 0.4, 3.5}, "M_{inv} (GeV/#it{c}^{2})"};
   ConfigurableAxis phiAxis{"phiAxis", {120, 0., 3.2}, "#phi"};
   //  ConfigurableAxis vectorAxis{"vectorAxis", {100, 0., 2.}, "A_{V}"};
   //  ConfigurableAxis scalarAxis{"scalarAxis", {100, -1., 1.}, "A_{S}"};
-  Configurable<bool> verbose{"Verbose", {}, "Additional print outs"};
+  Configurable<bool> verbose{"verbose", {}, "Additional print outs"};
 
   // cut selection configurables
-  Configurable<float> zvertexcut{"Zvertexcut", 10., "Z vertex cut"};
-  Configurable<float> trkEtacut{"TrkEtacut", 0.9, "max track eta cut"};
+  Configurable<float> zvertexcut{"zvertexcut", 10., "Z vertex cut"};
+  Configurable<float> trkEtacut{"trkEtacut", 0.9, "max track eta cut"};
   Configurable<bool> sameSign{"sameSign", {}, "Switch: same(true) or opposite(false) sign"};
-  Configurable<float> ptTotcut{"PtTotcut", 0.15, "min pt of all 4 tracks cut"};
+  Configurable<float> ptTotcut{"ptTotcut", 0.15, "min pt of all 4 tracks cut"};
   Configurable<float> minAnglecut{"minAnglecut", 0.05, "min angle between tracks cut"};
   Configurable<float> minNsigmaElcut{"minNsigmaElcut", -2., "min Nsigma for Electrons cut"};
   Configurable<float> maxNsigmaElcut{"maxNsigmaElcut", 3., "max Nsigma for Electrons cut"};
@@ -72,8 +72,8 @@ struct TauTau13topo {
   Configurable<float> maxNsigmaPrVetocut{"maxNsigmaPrVetocut", 3., "max Nsigma for Proton veto cut"};
   Configurable<float> maxNsigmaKaVetocut{"maxNsigmaKaVetocut", 3., "max Nsigma for Kaon veto cut"};
   Configurable<float> minPtEtrkcut{"minPtEtrkcut", 0.25, "min Pt for El track cut"};
-  Configurable<bool> FITvetoFlag{"FITvetoFlag", {}, "To apply FIT veto"};
-  Configurable<int> FITvetoWindow{"FITvetoWindow", 1, "FIT veto window"};
+  Configurable<bool> mFITvetoFlag{"mFITvetoFlag", {}, "To apply FIT veto"};
+  Configurable<int> mFITvetoWindow{"mFITvetoWindow", 6, "FIT veto window"};
   Configurable<bool> useFV0ForVeto{"useFV0ForVeto", 0, "use FV0 for veto"};
   Configurable<bool> useFDDAForVeto{"useFDDAForVeto", 0, "use FDDA for veto"};
   Configurable<bool> useFDDCForVeto{"useFDDCForVeto", 0, "use FDDC for veto"};
@@ -1584,7 +1584,7 @@ struct TauTau13topo {
     // registry.get<TH1>(HIST("global/hOccupancyInTime"))->Fill(dgcand.occupancyInTime());
 
     int gapSide = dgcand.gapSide();
-    int truegapSide = sgSelector.trueGap(dgcand, FV0_cut, FT0A_cut, FT0C_cut, ZDC_cut);
+    int truegapSide = sgSelector.trueGap(dgcand, cutFV0, cutFT0A, cutFT0C, cutZDC);
     registry.fill(HIST("global/GapSide"), gapSide);
     registry.fill(HIST("global/GapSideTrue"), truegapSide);
     if (gapSide < 0 || gapSide > 2)
@@ -1633,13 +1633,8 @@ struct TauTau13topo {
     int nITSbits = -1;
     int npT100 = 0;
     TLorentzVector p;
-    // auto const pionMass = pdg->Mass(211); // o2::constants::physics::pdg::kPiPlus); // 211
-    // auto const electronMass = pdg->Mass(11); // 11 kElectron
     auto const pionMass = MassPiPlus;
     auto const electronMass = MassElectron;
-    
-    // TParticlePDG* pion = pdg->GetParticle(211);
-    // TParticlePDG* electron = pdg->GetParticle(11);
     bool flagGlobalCheck = true;
     bool isGlobalTrack = true;
     int qtot = 0;
@@ -1874,8 +1869,8 @@ struct TauTau13topo {
     //
     // FIT informaton
     //
-    auto bitMin = 16 - FITvetoWindow; // default is +- 1 bc (1 bit)
-    auto bitMax = 16 + FITvetoWindow;
+    auto bitMin = 16 - mFITvetoWindow; // default is +- 1 bc (1 bit)
+    auto bitMax = 16 + mFITvetoWindow;
     bool flagFITveto = false;
     // check FIT information
     for (auto bit = bitMin; bit <= bitMax; bit++) {
@@ -1910,7 +1905,7 @@ struct TauTau13topo {
     registry.get<TH2>(HIST("fit/timeFDD"))->Fill(dgcand.timeFDDA(), dgcand.timeFDDC());
 
     // FIT empty
-    if (FITvetoFlag && flagFITveto) {
+    if (mFITvetoFlag && flagFITveto) {
       if (verbose) {
         LOGF(info, "<tautau13topo> Candidate rejected: FIT is not empty");
       }
@@ -2879,8 +2874,8 @@ struct TauTau13topo {
                 partFromTauInEta = false;
             } // end of pion check
             // electron from tau
-            if (std::abs(daughter.pdgCode()) == 11) { // == 11
-              if (daughter.pdgCode() == 11) // 11
+            if (std::abs(daughter.pdgCode()) == 11) { // 11 = electron
+              if (daughter.pdgCode() == 11)
                 flagElPlusElMinus = true;
               registryMC.get<TH1>(HIST("electronMC/hMCeta"))->Fill(daughter.eta());
               registryMC.get<TH1>(HIST("electronMC/hMCphi"))->Fill(daughter.phi());
@@ -2888,7 +2883,7 @@ struct TauTau13topo {
               registryMC.get<TH1>(HIST("electronMC/hMCpt"))->Fill(daughter.pt());
 
               electronFound = !electronFound;
-              partPt = (float)daughter.pt();
+              partPt = static_cast<float> daughter.pt();
               // singleElectronGlobalIndex = daughter.globalIndex();
               //  LOGF(info,"e pt %f",daughter.pt());
               if (std::abs(daughter.eta()) > 0.9)
@@ -2899,7 +2894,7 @@ struct TauTau13topo {
               if (daughter.pdgCode() == 13)
                 flagMuPlusMuMinus = true;
               muonFound = !muonFound;
-              partPt = (float)daughter.pt();
+              partPt = static_cast<float> daughter.pt();
               // LOGF(info,"mu pt %f",daughter.pt());
               if (std::abs(daughter.eta()) > 0.9)
                 partFromTauInEta = false;
@@ -2914,7 +2909,7 @@ struct TauTau13topo {
             auto MCparttmp = mcParticle.daughters_as<aod::McParticles>().begin() + singlePionIndex;
             if (MCparttmp.pdgCode() == -211)
               flagPiPlusPiMinus = true;
-            partPt = (float)MCparttmp.pt();
+            partPt = static_cast<float> MCparttmp.pt();
             // motherOfSinglePionIndex = mcParticle.index();
             if (std::abs(MCparttmp.eta()) > 0.9)
               partFromTauInEta = false;
@@ -3003,8 +2998,7 @@ struct TauTau13topo {
   void processEfficiencyMCSG(aod::UDMcCollision const& mcCollision,
                              soa::SmallGroups<soa::Join<aod::UDMcCollsLabels, aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>> const& collisions,
                              LabeledTracks const& tracks,
-                             aod::UDMcParticles const& mcParticles
-  )
+                             aod::UDMcParticles const& mcParticles)
   {
     if (verbose) {
       LOGF(info, "<tautau13topo_MC> GeneratorIDtot %d", mcCollision.generatorsID());
@@ -3235,8 +3229,8 @@ struct TauTau13topo {
       bool tracksMatchedToMC = false;
 
       // FIT checks
-      auto bitMin = 16 - FITvetoWindow; // default is +- 1 bc (1 bit)
-      auto bitMax = 16 + FITvetoWindow;
+      auto bitMin = 16 - mFITvetoWindow; // default is +- 1 bc (1 bit)
+      auto bitMax = 16 + mFITvetoWindow;
       bool flagFITveto = false;
 
       for (const auto& collision : collisions) {
@@ -3261,7 +3255,7 @@ struct TauTau13topo {
         matchedElIndexToData = -1;
         reconstructedPtElMatchedToMC = -1;
         gapSide = collision.gapSide();
-        truegapSide = sgSelector.trueGap(collision, FV0_cut, FT0A_cut, FT0C_cut, ZDC_cut);
+        truegapSide = sgSelector.trueGap(collision, cutFV0, cutFT0A, cutFT0C, cutZDC);
         registryMC.fill(HIST("globalMCrec/GapSide"), gapSide);
         registryMC.fill(HIST("globalMCrec/GapSideTrue"), truegapSide);
         // if (gapSide < 0 || gapSide > 2) continue; //old way
@@ -3310,11 +3304,8 @@ struct TauTau13topo {
         // first loop over grouped Tracks
         //
         for (auto const& track : groupedTracks) {
-          // all tracks
-          if (track.has_udMcParticle()) {
-	    //
-          } else {
-            // ghost track
+          // ghost track
+          if (!track.has_udMcParticle()) {
             nGhostTracks++;
           }
 
@@ -3350,13 +3341,11 @@ struct TauTau13topo {
                   trackToMCmatch[nPVTracks - 1] = true; // flag, we have a match data <=> MC
               }
 
-            } // end of case where track has MC Particle associated
-            else {
+            } else { // end of case where track has MC Particle associated
               // ghost PV track
               nGhostPVTracks++;
             }
-          } // PV contributor
-          else {
+          } else { // PV contributor
             if (track.has_udMcParticle()) {
               // LOGF(info,"non-PV trk: pid %4.0d (%f, %f, %f) gid %d pt %f",track.udMcParticle().pdgCode(), track.udMcParticle().vx(),track.udMcParticle().vy(),track.udMcParticle().vz(),track.udMcParticle().globalIndex(),track.pt());
               if (verbose) {
@@ -3591,7 +3580,7 @@ struct TauTau13topo {
         //
         // check FIT information
         //
-        if (FITvetoFlag) {
+        if (mFITvetoFlag) {
           if (flagFITveto) {
             if (verbose) {
               LOGF(info, "<tautau13topo> Candidate rejected: FIT not empty");
@@ -3705,8 +3694,7 @@ struct TauTau13topo {
             registryMC.get<TH1>(HIST("controlMCtrue/cut0/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut0"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
             // registryMC.get<TH1>(HIST("control/cut0/h3pi1eMass"))->Fill(mass3pi1e[i]);
-          } // only for 1prong = electron true
-          else {
+          } else { // only for 1prong = electron true
             FillControlHistosMCcomb<0>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
             registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut0"))->Fill(tmpMomentum[i], tmpDedx[i]);
             registryMC.get<TH1>(HIST("controlMCcomb/cut0/hsigma3Pi"))->Fill(nSigma3Pi[i]);
@@ -3824,23 +3812,22 @@ struct TauTau13topo {
             // registryMC.get<TH1>(HIST("controlMCtrue/cut20/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
-            if (flagEl[i] && tracksMatchedToMC && (i == matchedElIndexToData)) {
+            if (flagEl[i] && tracksMatchedToMC && (i == matchedElIndexToData)) { // only for 1prong = electron true
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut20"))->Fill(tmpMomentum[i], tmpDedx[i]);
               FillControlHistosMCtrue<20>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut20/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut20/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut20"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
               // registry1MC.get<TH1>(HIST("controlMCtrue/cut20/hTofChi2El"))->Fill(chi2TOF[i]);
-            } // only for 1prong = electron true
-            else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
+            } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
               FillControlHistosMCcomb<20>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut20"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut20/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               // registry1MC.get<TH1>(HIST("controlMCcomb/cut20/hTofChi2El"))->Fill(chi2TOF[i]);
             }
           } // end of loop over 4 PV tracks
-        } // end of electron found cut20
-        else { // no electron
+          // end of electron found cut20
+        } else { // no electron
           if (verbose) {
             LOGF(debug, "<tautau13topo_MC> Candidate rejected: no electron PID among 4 tracks");
           }
@@ -3870,21 +3857,19 @@ struct TauTau13topo {
           }
           for (int i = 0; i < 4; i++) {
             if (tracksMatchedToMC && flagEl[i] &&
-                trkHasTof[i] && (i == matchedElIndexToData)) {
+                trkHasTof[i] && (i == matchedElIndexToData)) { // only for 1prong = electron true
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut33"))->Fill(tmpMomentum[i], tmpDedx[i]);
               FillControlHistosMCtrue<33>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut33/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut33/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut33"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-            } // only for 1prong = electron true
-            else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
+            } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
               FillControlHistosMCcomb<33>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut33"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut33/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
           } // end of loop over 4 PV tracks
-        } // end of electron has tof hit, cut33
-        else {
+        } else {
           if (verbose) {
             LOGF(debug, "<tautau13topo_MC> Candidate rejected: electron has no tof hit ");
           }
@@ -3913,26 +3898,24 @@ struct TauTau13topo {
             // registryMC.get<TH1>(HIST("controlMCtrue/cut21/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
-            if (tracksMatchedToMC && flagEl[i] && trkHasTof[i] && flagPi[i] && (i == matchedElIndexToData)) {
+            if (tracksMatchedToMC && flagEl[i] && trkHasTof[i] && flagPi[i] && (i == matchedElIndexToData)) { // only for 1prong = electron true
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut21"))->Fill(tmpMomentum[i], tmpDedx[i]);
               FillControlHistosMCtrue<21>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut21/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut21/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut21"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-            } // only for 1prong = electron true
-            else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
+            } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
               FillControlHistosMCcomb<21>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut21"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut21/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
           } // end of loop over 4 PV tracks
-        } // end of pi veto, cut21
-        else {
+        } else {
           if (verbose) {
             LOGF(debug, "<tautau13topo_MC> Candidate rejected: all electrons vetoed by pi PID");
           }
           return;
-        } // end of pi veto
+        } // end of pi veto, cut21
 
         //
         // additional proton veto on electron, cut24
@@ -3955,26 +3938,24 @@ struct TauTau13topo {
             // registryMC.get<TH1>(HIST("controlMCtrue/cut24/hNtofTrk"))->Fill(nTofTrk);
           }
           for (int i = 0; i < 4; i++) {
-            if (tracksMatchedToMC && flagEl[i] && flagEl[i] && flagPi[i] && flagPr[i] && (i == matchedElIndexToData)) {
+            if (tracksMatchedToMC && flagEl[i] && flagEl[i] && flagPi[i] && flagPr[i] && (i == matchedElIndexToData)) { // only for 1prong = electron true
               registryMC.get<TH2>(HIST("pidTPCMCEltrue/hpvsdedxElHipCut24"))->Fill(tmpMomentum[i], tmpDedx[i]);
               FillControlHistosMCtrue<24>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("controlMCtrue/cut24/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut24/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut24"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-            } // only for 1prong = electron true
-            else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
+            } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
               FillControlHistosMCcomb<24>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut24"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut24/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
           } // end of loop over 4 PV tracks
-        } // end of proton veto, cut24
-        else {
+        } else {
           if (verbose) {
             LOGF(debug, "<tautau13topo_MC> Candidate rejected: all electrons vetoed by proton PID");
           }
           return;
-        } // end of proton veto
+        } // end of proton veto, cut24
 
         //
         // additional kaon veto on electron, cut25
@@ -4004,20 +3985,18 @@ struct TauTau13topo {
               registryMC.get<TH2>(HIST("controlMCtrue/cut25/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut25/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut25"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-            } // only for 1prong = electron true
-            else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
+            } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
               FillControlHistosMCcomb<25>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut25"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut25/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
           } // end of loop over 4 PV tracks
-        } // end of proton veto, cut25
-        else {
+        } else {
           if (verbose) {
             LOGF(debug, "<tautau13topo_MC> Candidate rejected: all electrons vetoed by K PID");
           }
           return;
-        } // end of kaon veto
+        } // end of proton veto, cut25
 
         //
         // crossd rows in TPC
@@ -4047,20 +4026,18 @@ struct TauTau13topo {
               registryMC.get<TH2>(HIST("controlMCtrue/cut28/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut28/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut28"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-            } // only for 1prong = electron true
-            else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
+            } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
               FillControlHistosMCcomb<28>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut28"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut28/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
           } // end of loop over 4 PV tracks
-        } // end of CR TPC cut on electron, cut28
-        else {
+        } else {
           if (verbose) {
             LOGF(debug, "<tautau13topo_MC> Candidate rejected: all electrons vetoed by CR in TPC");
           }
           return;
-        } // end of TPC crossed rows for electron cut
+        } // end of TPC crossed rows for electron cut, cut28
 
         //
         // virtual calorimeter for electron
@@ -4091,20 +4068,18 @@ struct TauTau13topo {
               registryMC.get<TH2>(HIST("controlMCtrue/cut22/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut22/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut22"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-            } // only for 1prong = electron true
-            else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
+            } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
               FillControlHistosMCcomb<22>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut22"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut22/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
           } // end of loop over 4 PV tracks
-        } // end of vcal cut on electron, cut22
-        else {
+        } else {
           if (verbose) {
             LOGF(debug, "<tautau13topo_MC> Candidate rejected: all electrons vetoed by Vcal");
           }
           return;
-        } // end of vcal veto
+        } // end of vcal cut on electron, cut22
 
         //
         // nsigma 3pi cut, cut29
@@ -4135,20 +4110,18 @@ struct TauTau13topo {
               registryMC.get<TH2>(HIST("controlMCtrue/cut29/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut29/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut29"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-            } // only for 1prong = electron true
-            else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
+            } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
               FillControlHistosMCcomb<29>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut29"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut29/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
           } // end of loop over 4 PV tracks
-        } // end of sigma 3pi cut, cut29
-        else {
+        } else {
           if (verbose) {
             LOGF(debug, "<tautau13topo_MC> Candidate rejected: all electrons vetoed by 3piSigma");
           }
           return;
-        } // end of nsigma 3pi cut
+        } // end of sigma 3pi cut, cut29
 
         //
         // invariant mass of 3 pi <1.8
@@ -4180,20 +4153,18 @@ struct TauTau13topo {
               registryMC.get<TH2>(HIST("controlMCtrue/cut26/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut26/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut26"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-            } // only for 1prong = electron true
-            else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
+            } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
               FillControlHistosMCcomb<26>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut26"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut26/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
           } // end of loop over 4 PV tracks
-        } // end of IM 3pi cut, cut26
-        else {
+        } else {
           if (verbose) {
             LOGF(debug, "<tautau13topo_MC> Candidate rejected: all electrons vetoed by IM");
           }
           return;
-        } // end of inv mass 3 pi cut
+        } // end of IM 3pi cut, cut26
 
         //
         // at least one pion with tof hit (cut34)
@@ -4229,20 +4200,18 @@ struct TauTau13topo {
               registryMC.get<TH2>(HIST("controlMCtrue/cut34/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut34/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut34"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-            } // only for 1prong = electron true
-            else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
+            } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
               FillControlHistosMCcomb<34>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut34"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut34/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
           } // end of loop over 4 PV tracks
-        } // end of at least one tof hit in 3pi, cut34
-        else {
+        } else {
           if (verbose) {
             LOGF(debug, "<tautau13topo_MC> Candidate rejected: none of 3pi has no tof hit ");
           }
           return;
-        } // end of at least one tof hit in 3pi cut 34
+        } // end of at least one tof hit in 3pi, cut34
 
         //
         // skip events with pttot<0.15
@@ -4270,20 +4239,18 @@ struct TauTau13topo {
               registryMC.get<TH2>(HIST("controlMCtrue/cut30/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut30/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut30"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-            } // only for 1prong = electron true
-            else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
+            } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
               FillControlHistosMCcomb<30>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut30"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut30/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
           } // end of loop over 4 PV tracks
-        } // end of pttot cut, cut30
-        else {
+        } else {
           if (verbose) {
             LOGF(info, "<tautau13topo_MC> Candidate rejected: pt tot is %f", pttot);
           }
           return;
-        }
+        } // end of pttot cut, cut30
 
         //
         //  delta phi cut, cut27
@@ -4315,20 +4282,18 @@ struct TauTau13topo {
               registryMC.get<TH2>(HIST("controlMCtrue/cut27/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut27/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut27"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-            } // only for 1prong = electron true
-            else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
+            } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
               FillControlHistosMCcomb<27>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut27"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut27/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
           } // end of loop over 4 PV tracks
-        } // end of dphi 3pi-e cut, cut27
-        else {
+        } else {
           if (verbose) {
             LOGF(debug, "<tautau13topo> Candidate rejected: all electrons vetoed by piPID+Vcal+pT+prPID+KaPID+IM");
           }
           return;
-        } // end of dphi cut
+        } // end of dphi 3pi-e cut, cut27
 
         //
         // ZDC cut Energy < 1 TeV on both sides
@@ -4356,20 +4321,18 @@ struct TauTau13topo {
               registryMC.get<TH2>(HIST("controlMCtrue/cut35/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registryMC.get<TH1>(HIST("controlMCtrue/cut35/hsigma3Pi"))->Fill(nSigma3Pi[i]);
               registry1MC.get<TH2>(HIST("pidTOFMCEltrue/hpvsNsigmaElHipCut35"))->Fill(tmpMomentum[i], tmpTofNsigmaEl[i]);
-            } // only for 1prong = electron true
-            else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
+            } else if (tracksMatchedToMC && (i != matchedElIndexToData)) {
               FillControlHistosMCcomb<35>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i], tmpPt[i], chi2TOF[i]);
               registryMC.get<TH2>(HIST("pidTPCMCPitrue/hpvsdedxElHipCut35"))->Fill(tmpMomentum[i], tmpDedx[i]);
               registryMC.get<TH1>(HIST("controlMCcomb/cut35/hsigma3Pi"))->Fill(nSigma3Pi[i]);
             }
           } // end of loop over 4 PV tracks
-        } // end of zdc, cut35
-        else {
+        } else {
           if (verbose) {
             LOGF(debug, "<tautau13topo> Candidate rejected: zdc cut ");
           }
           return;
-        } // end of zdc cut 35
+        } // end of zdc, cut35
 
       } // end of loop over collisions
     } // end of electron + 3pi
