@@ -108,9 +108,9 @@ DECLARE_SOA_TABLE(BarrelAmbiguities, "AOD", "DQBARRELAMBA", dqanalysisflags::Bar
 DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTSA", dqanalysisflags::IsMuonSelected);                                                       //!  joinable to ReducedMuonsAssoc
 DECLARE_SOA_TABLE(MuonAmbiguities, "AOD", "DQMUONAMBA", dqanalysisflags::MuonAmbiguityInBunch, dqanalysisflags::MuonAmbiguityOutOfBunch);         //!  joinable to ReducedMuonTracks
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTERA", dqanalysisflags::IsBarrelSelectedPrefilter);                                                  //!  joinable to ReducedTracksAssoc
-DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONSA", 
-                  dqanalysisflags::massBcandidate, dqanalysisflags::deltamassBcandidate, dqanalysisflags::pTBcandidate, 
-                  dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, 
+DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONSA",
+                  dqanalysisflags::massBcandidate, dqanalysisflags::deltamassBcandidate, dqanalysisflags::pTBcandidate,
+                  dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate,
                   dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate,
                   dqanalysisflags::IsJpsiFromBSelected, dqanalysisflags::IsBarrelSelected);
 DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER", dqanalysisflags::Massee, dqanalysisflags::Ptee, dqanalysisflags::Lxyee, dqanalysisflags::LxyeePoleMass, dqanalysisflags::Lzee, dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs);
@@ -1189,7 +1189,7 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
-    
+
     fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov");
     fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed");
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMixingMuonSkimmed");
@@ -1202,7 +1202,7 @@ struct AnalysisSameEventPairing {
       return;
     }
     VarManager::SetDefaultVarNames();
-    
+
     // Keep track of all the histogram class names to avoid composing strings in the pairing loop
     TString histNames = "";
     std::vector<TString> names;
@@ -1431,7 +1431,6 @@ struct AnalysisSameEventPairing {
       VarManager::SetUseVars(fHistMan->GetUsedVars());                                                          // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
-
   }
 
   void initParamsFromCCDB(uint64_t timestamp, int runNumber, bool withTwoProngFitter = true)
@@ -2801,7 +2800,7 @@ struct AnalysisDileptonTrack {
   int fNPairCuts;  // number of pair cuts
   int fNCommonTrackCuts;
   std::map<int, int> fCommonTrackCutMap;
-  uint32_t fTrackCutBitMap;   // track cut bit mask to be used in the selection of tracks associated with dileptons
+  uint32_t fTrackCutBitMap; // track cut bit mask to be used in the selection of tracks associated with dileptons
   // vector for single-lepton and track cut names for easy access when calling FillHistogramList()
   std::vector<TString> fTrackCutNames;
   // vector for pair cut names, used mainly for pairs built via the asymmetric pairing task
@@ -2901,12 +2900,12 @@ struct AnalysisDileptonTrack {
         LOG(fatal) << " No track cuts specified! Check it out!";
       }
       for (int icut = 0; icut < cfgDileptonTrack_objArrayTrackCuts->GetEntries(); icut++) {
-        if (! cfgTrackSelection_objArrayTrackCuts->FindObject(cfgDileptonTrack_objArrayTrackCuts->At(icut)->GetName()) ) {
+        if (!cfgTrackSelection_objArrayTrackCuts->FindObject(cfgDileptonTrack_objArrayTrackCuts->At(icut)->GetName())) {
           LOG(fatal) << "Specified track cut (" << cfgDileptonTrack_objArrayTrackCuts->At(icut)->GetName() << ") not found in the list of computed cuts by the single barrel / muon selection tasks";
         }
       }
       for (int icut = 0; icut < cfgTrackSelection_objArrayTrackCuts->GetEntries(); icut++) {
-        if (cfgDileptonTrack_objArrayTrackCuts->FindObject(cfgTrackSelection_objArrayTrackCuts->At(icut)->GetName()) ) {
+        if (cfgDileptonTrack_objArrayTrackCuts->FindObject(cfgTrackSelection_objArrayTrackCuts->At(icut)->GetName())) {
           fTrackCutBitMap |= (uint32_t(1) << icut);
         }
       }
@@ -2937,7 +2936,7 @@ struct AnalysisDileptonTrack {
 
       // If asymmetric pair is used, it may have common track cuts
       TString cfgPairing_strCommonTrackCuts = cfgPairing_CommonTrackCuts;
-      if (!cfgPairing_strCommonTrackCuts.IsNull()) { // if common track cuts        
+      if (!cfgPairing_strCommonTrackCuts.IsNull()) { // if common track cuts
         std::unique_ptr<TObjArray> objArrayCommon(cfgPairing_strCommonTrackCuts.Tokenize(","));
         fNCommonTrackCuts = objArrayCommon->GetEntries();
         for (int icut = 0; icut < fNCommonTrackCuts; ++icut) {
@@ -2948,25 +2947,25 @@ struct AnalysisDileptonTrack {
             }
           }
         }
-      }  // end if (common cuts)
+      } // end if (common cuts)
 
       std::unique_ptr<TObjArray> objArrayPairCuts(TString(cfgPairing_PairCuts).Tokenize(","));
       fNPairCuts = objArrayPairCuts->GetEntries();
       for (int j = 0; j < fNPairCuts; j++) {
         fPairCutNames.push_back(objArrayPairCuts->At(j)->GetName());
       }
-      
+
       // array of single lepton cuts specified in the same-analysis-pairing task
       std::unique_ptr<TObjArray> cfgPairing_objArrayTrackCuts(TString(cfgPairing_TrackCuts).Tokenize(","));
-        
+
       // loop over single lepton cuts
-      for (int icut = 0; icut < fNCuts; ++icut) {        
+      for (int icut = 0; icut < fNCuts; ++icut) {
 
         // here we check that this cut is one of those used for building the dileptons
-        if ( !cfgPairing_objArrayTrackCuts->FindObject(fTrackCutNames[icut].Data()) ) {
+        if (!cfgPairing_objArrayTrackCuts->FindObject(fTrackCutNames[icut].Data())) {
           continue;
         }
-        
+
         TString pairLegCutName = fTrackCutNames[icut].Data();
         // define dilepton histograms
         DefineHistograms(fHistMan, Form("DileptonsSelected_%s", pairLegCutName.Data()), "barrel,vertexing");
@@ -2974,12 +2973,12 @@ struct AnalysisDileptonTrack {
         for (int iCutTrack = 0; iCutTrack < fNCuts; iCutTrack++) {
 
           // here we check that this track cut is one of those required to associate with the dileptons
-          if ( !(fTrackCutBitMap & (uint32_t(1) << iCutTrack) )) {
+          if (!(fTrackCutBitMap & (uint32_t(1) << iCutTrack))) {
             continue;
           }
 
           DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s", pairLegCutName.Data(), fTrackCutNames[iCutTrack].Data()), fConfigHistogramSubgroups.value.data());
-            
+
           if (!cfgPairing_strCommonTrackCuts.IsNull()) {
             std::unique_ptr<TObjArray> objArrayCommon(cfgPairing_strCommonTrackCuts.Tokenize(","));
             for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
@@ -2989,11 +2988,11 @@ struct AnalysisDileptonTrack {
           }
 
           if (fNPairCuts != 0) {
-              
+
             for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) {
               DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s_%s", pairLegCutName.Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iCutTrack].Data()), fConfigHistogramSubgroups.value.data());
               DefineHistograms(fHistMan, Form("DileptonsSelected_%s_%s", pairLegCutName.Data(), fPairCutNames[iPairCut].Data()), "barrel,vertexing");
-              
+
               if (!cfgPairing_strCommonTrackCuts.IsNull()) {
                 std::unique_ptr<TObjArray> objArrayCommon(cfgPairing_strCommonTrackCuts.Tokenize(","));
                 for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
@@ -3007,10 +3006,10 @@ struct AnalysisDileptonTrack {
           if (isBarrelME || isMuonME) {
             DefineHistograms(fHistMan, Form("DileptonTrackME_%s_%s", pairLegCutName.Data(), fTrackCutNames[iCutTrack].Data()), "mixedevent"); // define ME histograms
           }
-        }  // end loop over track cuts to be combined with dileptons / di-tracks
-      }  // end loop over pair leg track cuts
+        } // end loop over track cuts to be combined with dileptons / di-tracks
+      } // end loop over pair leg track cuts
     }
-    
+
     dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
 
     VarManager::SetUseVars(fHistMan->GetUsedVars());
@@ -3060,17 +3059,17 @@ struct AnalysisDileptonTrack {
         continue;
       }
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
-      
+
       // loop over existing dilepton leg cuts (e.g. electron1, electron2, etc)
       for (int icut = 0; icut < fNCuts; icut++) {
-        
-        if ( ! dilepton.filterMap_bit(icut) ) {
+
+        if (!dilepton.filterMap_bit(icut)) {
           continue;
         }
-  
+
         // regular dileptons
         fHistMan->FillHistClass(Form("DileptonsSelected_%s", fTrackCutNames[icut].Data()), fValuesDilepton);
-          
+
         // other pairs, e.g.: D0s
         if constexpr (TCandidateType == VarManager::kDstarToD0KPiPi) { // Dielectrons and Dimuons don't have the PairFilterMap column
           for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
@@ -3089,11 +3088,11 @@ struct AnalysisDileptonTrack {
             }
           }
         }
-      }    // end loop over single lepton selections
+      } // end loop over single lepton selections
 
       // loop over hadrons
       for (auto& assoc : assocs) {
-        
+
         uint32_t trackSelection = 0;
         if constexpr (TCandidateType == VarManager::kBtoJpsiEEK) {
           // check the cuts fulfilled by this candidate track; if none just continue
@@ -3101,7 +3100,7 @@ struct AnalysisDileptonTrack {
           if (!trackSelection) {
             continue;
           }
-          
+
           // get the track from this association
           auto track = assoc.template reducedtrack_as<TTracks>();
           // check that this track is not included in the current dilepton
@@ -3145,19 +3144,19 @@ struct AnalysisDileptonTrack {
         // Fill histograms for the triplets
         // loop over dilepton / ditrack cuts
         for (int icut = 0; icut < fNCuts; icut++) {
-          
+
           if (!dilepton.filterMap_bit(icut)) {
             continue;
           }
-          
+
           // loop over specified track cuts (the tracks to be combined with the dileptons)
           for (int iTrackCut = 0; iTrackCut < fNCuts; iTrackCut++) {
-            
-            if (! (trackSelection & (uint32_t(1) << iTrackCut)) ) {
+
+            if (!(trackSelection & (uint32_t(1) << iTrackCut))) {
               continue;
             }
             fHistMan->FillHistClass(Form("DileptonTrack_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
-            
+
             if constexpr (TCandidateType == VarManager::kDstarToD0KPiPi) { // Dielectrons and Dimuons don't have the PairFilterMap column
               for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
                 if (dilepton.commonFilterMap_bit(fCommonTrackCutMap[iCommonCut])) {
@@ -3175,12 +3174,12 @@ struct AnalysisDileptonTrack {
                 }
               }
             }
-          }  // end loop over track cuts
-        }  // end loop over dilepton cuts
+          } // end loop over track cuts
+        } // end loop over dilepton cuts
         // table to be written out for ML analysis
-        BmesonsTable(fValuesHadron[VarManager::kPairMass], fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], 
-                     fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz], 
-                     fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle], 
+        BmesonsTable(fValuesHadron[VarManager::kPairMass], fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt],
+                     fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
+                     fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle],
                      fValuesHadron[VarManager::kVertexingChi2PCA], dilepton.filterMap_raw(), trackSelection);
       }
     }
@@ -3298,7 +3297,7 @@ struct AnalysisDileptonTrack {
               continue;
             }
             for (uint32_t iTrackCut = 0; iTrackCut < fTrackCutNames.size(); iTrackCut++) {
-              if (trackSelection & (uint32_t(1) << iTrackCut) ) {
+              if (trackSelection & (uint32_t(1) << iTrackCut)) {
                 fHistMan->FillHistClass(Form("DileptonTrackME_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), VarManager::fgValues);
               }
             }
@@ -3343,7 +3342,7 @@ struct AnalysisDileptonTrack {
               continue;
             }
             for (uint32_t iTrackCut = 0; iTrackCut < fTrackCutNames.size(); iTrackCut++) {
-              if (muonSelection & (uint32_t(1) << iTrackCut) ) {
+              if (muonSelection & (uint32_t(1) << iTrackCut)) {
                 fHistMan->FillHistClass(Form("DileptonTrackME_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), VarManager::fgValues);
               }
             }
