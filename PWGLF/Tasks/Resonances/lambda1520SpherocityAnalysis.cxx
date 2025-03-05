@@ -15,6 +15,7 @@
 
 #include <TLorentzVector.h>
 #include <TRandom.h>
+#include <vector>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
