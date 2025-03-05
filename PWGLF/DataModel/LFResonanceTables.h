@@ -81,14 +81,7 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   collision::PosY,
                   collision::PosZ,
                   resocollision::Cent,
-                  resocollision::Spherocity,
-                  resocollision::EvtPl,
-                  resocollision::EvtPlResAB,
-                  resocollision::EvtPlResAC,
-                  resocollision::EvtPlResBC,
-                  resocollision::BMagField,
-                  timestamp::Timestamp,
-                  evsel::NumTracksInTimeRange);
+                  resocollision::BMagField);
 using ResoCollision = ResoCollisions::iterator;
 
 DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOLLISION",
@@ -139,6 +132,36 @@ using ResoCollisionDF = ResoCollisionDFs::iterator;
 // inspired from PWGCF/DataModel/FemtoDerived.h
 namespace resodaughter
 {
+struct ResoTrackFlags {
+ public:
+  typedef uint8_t flagtype;
+  static constexpr flagtype kPassedITSRefit = 1 << 0;
+  static constexpr flagtype kPassedTPCRefit = 1 << 1;
+  static constexpr flagtype kIsGlobalTrackWoDCA = 1 << 2;
+  static constexpr flagtype kIsGlobalTrack = 1 << 3;
+  static constexpr flagtype kIsPrimaryTrack = 1 << 4;
+  static constexpr flagtype kIsPVContributor = 1 << 5;
+  static constexpr flagtype kHasTOF = 1 << 6;
+  static constexpr flagtype kSign = 1 << 7;
+  /// @brief check if the flag is set
+  static bool checkFlag(const flagtype flags, const flagtype mask)
+  {
+    return (flags & mask) == mask;
+  }
+};
+#define requireTrackFlag(mask) ((o2::aod::resodaughter::trackFlags & o2::aod::resodaughter::mask) == o2::aod::resodaughter::mask)
+
+#define requirePassedITSRefit() requireTrackFlag(ResoTrackFlags::kPassedITSRefit)
+#define requirePassedTPCRefit() requireTrackFlag(ResoTrackFlags::kPassedTPCRefit)
+#define requireGlobalTrack() requireTrackFlag(ResoTrackFlags::kIsGlobalTrack)
+#define requireGlobalTrackWoDCA() requireTrackFlag(ResoTrackFlags::kIsGlobalTrackWoDCA)
+#define requirePrimaryTrack() requireTrackFlag(ResoTrackFlags::kIsPrimaryTrack)
+#define requirePVContributor() requireTrackFlag(ResoTrackFlags::kIsPVContributor)
+#define requireHasTOF() requireTrackFlag(ResoTrackFlags::kHasTOF)
+#define requireSign() requireTrackFlag(ResoTrackFlags::kSign)
+
+#define DECLARE_DYN_TRKSEL_COLUMN(name, getter, mask) \
+  DECLARE_SOA_DYNAMIC_COLUMN(name, getter, [](ResoTrackFlags::flagtype flags) -> bool { return ResoTrackFlags::checkFlag(flags, mask); });
 
 DECLARE_SOA_INDEX_COLUMN(ResoCollision, resoCollision);
 DECLARE_SOA_INDEX_COLUMN(ResoCollisionDF, resoCollisionDF);
@@ -266,21 +289,38 @@ DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float {
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
 // Track flags
 DECLARE_SOA_DYNAMIC_COLUMN(PassedITSRefit, passedITSRefit,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 0)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kPassedITSRefit);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(PassedTPCRefit, passedTPCRefit,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 1)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kPassedTPCRefit);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 2)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kIsGlobalTrackWoDCA);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(IsGlobalTrack, isGlobalTrack,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 3)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kIsGlobalTrack);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(IsPrimaryTrack, isPrimaryTrack,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 4)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kIsPrimaryTrack);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(IsPVContributor, isPVContributor,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 5)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kIsPVContributor);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 6)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kHasTOF);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,
-                           [](uint8_t trackFlags) -> int8_t { return (trackFlags & (1 << 7)) ? 1 : -1; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> int8_t {
+                             return (trackFlags & ResoTrackFlags::kSign) ? 1 : -1;
+                           });
+
 } // namespace resodaughter
 DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   o2::soa::Index<>,

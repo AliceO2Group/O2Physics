@@ -107,7 +107,7 @@ struct ResonanceMergeDF {
   {
 
     int nCollisions = nDF;
-    vecOfTuples.push_back(std::make_tuple(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), collision.trackOccupancyInTimeRange()));
+    vecOfTuples.push_back(std::make_tuple(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), 0, 0, 0));
     std::vector<std::tuple<float, float, float, float,
                            signed char, unsigned char, unsigned char,
                            float, float, int8_t, int8_t, int8_t,
@@ -209,7 +209,7 @@ struct ResonanceMergeDF {
 
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
 
-    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
+    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), 0, 0, 0., 0., 0., 0., 0, 0);
 
     for (const auto& track : tracks) {
       if (isPrimary && !track.isPrimaryTrack())
@@ -266,7 +266,7 @@ struct ResonanceMergeDF {
     if (collision.cent() < minCent || collision.cent() > maxCent)
       return;
 
-    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
+    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), 0, 0, 0., 0., 0., 0., 0, 0);
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
 
     for (const auto& track : tracks) {
