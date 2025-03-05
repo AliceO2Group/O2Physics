@@ -76,11 +76,11 @@ struct HfCorrelatorHfeHadrons {
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Preslice<aod::HfSelEl> perCollision = aod::hf_sel_electron::collisionId;
 
-  ConfigurableAxis binDeltasEta{"binsDeltaEta", {30, -1.8, 1.8}, "#it{#Delta#eta}"};
+  ConfigurableAxis binsDeltaEta{"binsDeltaEta", {30, -1.8, 1.8}, "#it{#Delta#eta}"};
   ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {32, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, "#it{#Delta#varphi}"};
   ConfigurableAxis binsP{"binsP", {50, 0.0, 50}, "#it{p_{T}}(GeV/#it{c})"};
 
-  HistogramConfigSpec hCorrelSpec{HistType::kTHnSparseD, {{binsP}, {binsP}, {binsDeltaPhi}, {binDeltasEta}}};
+  HistogramConfigSpec hCorrelSpec{HistType::kTHnSparseD, {{binsP}, {binsP}, {binsDeltaPhi}, {binsDeltaEta}}};
 
   HistogramRegistry registry{
     "registry",
