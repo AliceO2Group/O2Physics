@@ -45,7 +45,7 @@ using namespace o2::framework::expressions;
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
-template <typename CandidateCollisionTable, typename CandidateMcCollisionTable, typename CandidateTable, typename CandidateTableMCD, typename CandidateTableMCP, typename CandidateRhosTable, typename CandidateMCRhosTable, typename TracksSub, typename JetTableData, typename JetMatchedTableData, typename SplittingTableData, typename PairTableData, typename OutputCollisionTableData, typename OutputTableData, typename SubstructureOutputTableData, typename MatchingOutputTableData, typename JetTableMCD, typename SplittingTableMCD, typename PairTableMCD, typename OutputCollisionTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename MatchingOutputTableMCD, typename JetTableMCP, typename JetTableMatchedMCP, typename SplittingTableMCP, typename PairTableMCP, typename OutputCollisionTableMCP, typename OutputTableMCP, typename SubstructureOutputTableMCP, typename MatchingOutputTableMCP, typename JetTableDataSub, typename SplittingTableDataSub, typename PairTableDataSub, typename OutputCollisionTableDataSub, typename OutputTableDataSub, typename SubstructureOutputTableDataSub, typename MatchingOutputTableDataSub, typename CandidateCollisionOutputTable, typename CandidateOutputTable, typename CandidateParOutputTable, typename CandidateParExtraOutputTable, typename CandidateParDaughterOutputTable, typename CandidateSelOutputTable, typename CandidateMlOutputTable, typename CandidateMlDaughterOutputTable, typename CandidateMCDOutputTable, typename CandidateMcCollisionOutputTable, typename CandidateMcCollisionMatchingOutputTable, typename CandidateMCPOutputTable>
+template <typename CandidateCollisionTable, typename CandidateMcCollisionTable, typename CandidateMcOnlyCollisionTable, typename CandidateTable, typename CandidateTableMCD, typename CandidateTableMCP, typename CandidateRhosTable, typename CandidateMCRhosTable, typename TracksSub, typename JetTableData, typename JetMatchedTableData, typename SplittingTableData, typename PairTableData, typename OutputCollisionTableData, typename OutputTableData, typename SubstructureOutputTableData, typename MatchingOutputTableData, typename JetTableMCD, typename SplittingTableMCD, typename PairTableMCD, typename OutputCollisionTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename MatchingOutputTableMCD, typename JetTableMCP, typename JetTableMatchedMCP, typename SplittingTableMCP, typename PairTableMCP, typename OutputCollisionTableMCP, typename OutputTableMCP, typename SubstructureOutputTableMCP, typename MatchingOutputTableMCP, typename JetTableDataSub, typename SplittingTableDataSub, typename PairTableDataSub, typename OutputCollisionTableDataSub, typename OutputTableDataSub, typename SubstructureOutputTableDataSub, typename MatchingOutputTableDataSub, typename CandidateCollisionOutputTable, typename CandidateOutputTable, typename CandidateParOutputTable, typename CandidateParExtraOutputTable, typename CandidateParDaughterOutputTable, typename CandidateSelOutputTable, typename CandidateMlOutputTable, typename CandidateMlDaughterOutputTable, typename CandidateMCDOutputTable, typename CandidateMcCollisionOutputTable, typename CandidateMcCollisionMatchingOutputTable, typename CandidateMCPOutputTable>
 struct JetSubstructureHFOutputTask {
 
   struct : ProducesGroup {
@@ -131,16 +131,9 @@ struct JetSubstructureHFOutputTask {
   }
 
   PresliceUnsorted<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>> CollisionsPerMcCollision = aod::jmccollisionlb::mcCollisionId;
-  PresliceOptional<aod::CollisionsD0> D0CollisionsPerCollision = aod::jd0indices::collisionId;
-  PresliceOptional<aod::CollisionsDplus> DplusCollisionsPerCollision = aod::jdplusindices::collisionId;
-  PresliceOptional<aod::CollisionsLc> LcCollisionsPerCollision = aod::jlcindices::collisionId;
-  PresliceOptional<aod::CollisionsBplus> BplusCollisionsPerCollision = aod::jbplusindices::collisionId;
-  PresliceOptional<aod::CollisionsDielectron> DielectronCollisionsPerCollision = aod::jdielectronindices::collisionId;
-  PresliceOptional<soa::Join<aod::McCollisionsD0, aod::HfD0McRCollIds>> D0McCollisionsPerMcCollision = aod::jd0indices::mcCollisionId;
-  PresliceOptional<soa::Join<aod::McCollisionsDplus, aod::HfDplusMcRCollIds>> DplusMcCollisionsPerMcCollision = aod::jdplusindices::mcCollisionId;
-  PresliceOptional<soa::Join<aod::McCollisionsLc, aod::HfLcMcRCollIds>> LcMcCollisionsPerMcCollision = aod::jlcindices::mcCollisionId;
-  PresliceOptional<soa::Join<aod::McCollisionsBplus, aod::HfBplusMcRCollIds>> BplusMcCollisionsPerMcCollision = aod::jbplusindices::mcCollisionId;
-  PresliceOptional<aod::McCollisionsDielectron> DielectronMcCollisionsPerMcCollision = aod::jdielectronindices::mcCollisionId;
+  PresliceOptional<CandidateCollisionTable> CandidateCollisionsPerCollision = aod::jcandidateindices::collisionId;
+  PresliceOptional<CandidateMcCollisionTable> CandidateMcCollisionsPerMcCollision = aod::jcandidateindices::mcCollisionId;
+  PresliceOptional<CandidateMcOnlyCollisionTable> CandidateMcCollisionsPerMcCollisionMCPOnly = aod::jcandidateindices::mcCollisionId;
 
   PresliceOptional<soa::Join<aod::D0ChargedSPs, aod::D0ChargedSPsMatchedToD0ChargedEventWiseSubtractedSPs>> D0SplittingsPerJetData = aod::d0chargedsplitting::jetId;
   PresliceOptional<soa::Join<aod::D0ChargedEventWiseSubtractedSPs, aod::D0ChargedEventWiseSubtractedSPsMatchedToD0ChargedSPs>> D0SplittingsPerJetDataSub = aod::d0chargedeventwisesubtractedsplitting::jetId;
@@ -191,6 +184,16 @@ struct JetSubstructureHFOutputTask {
   PresliceOptional<soa::Join<aod::DielectronChargedEventWiseSubtractedPRs, aod::DielectronChargedEventWiseSubtractedPRsMatchedToDielectronChargedPRs>> DielectronPairsPerJetDataSub = aod::dielectronchargedeventwisesubtractedpair::jetId;
   PresliceOptional<soa::Join<aod::DielectronChargedMCDetectorLevelPRs, aod::DielectronChargedMCDetectorLevelPRsMatchedToDielectronChargedMCParticleLevelPRs>> DielectronPairsPerJetMCD = aod::dielectronchargedmcdetectorlevelpair::jetId;
   PresliceOptional<soa::Join<aod::DielectronChargedMCParticleLevelPRs, aod::DielectronChargedMCParticleLevelPRsMatchedToDielectronChargedMCDetectorLevelPRs>> DielectronPairsPerJetMCP = aod::dielectronchargedmcparticlelevelpair::jetId;
+
+  template <bool isMCP, typename T, typename U>
+  auto candidateMCCollisionSlicer(T const& McCollisionsPerMcCollision, U const& McCollisionsPerMcCollisionMCPOnly)
+  {
+    if constexpr (isMCP) {
+      return McCollisionsPerMcCollisionMCPOnly;
+    } else {
+      return McCollisionsPerMcCollision;
+    }
+  }
 
   template <typename T>
   void fillSplittingMatchingVectors(T const& splittingsMatches, int jetIndex, std::vector<std::vector<int32_t>>& splittingMatchesGeoVecVec, std::vector<std::vector<int32_t>>& splittingMatchesPtVecVec, std::vector<std::vector<int32_t>>& splittingMatchesHFVecVec)
@@ -490,7 +493,7 @@ struct JetSubstructureHFOutputTask {
     if constexpr (!isMCPOnly) {
       for (const auto& collision : collisions) {
         if (collisionFlag[collision.globalIndex()]) {
-          const auto hfCollisionsPerCollision = jetcandidateutilities::slicedPerCandidateCollision(hfCollisions, candidates, collision, D0CollisionsPerCollision, DplusCollisionsPerCollision, LcCollisionsPerCollision, BplusCollisionsPerCollision, DielectronCollisionsPerCollision);
+          const auto hfCollisionsPerCollision = hfCollisions.sliceBy(CandidateCollisionsPerCollision, collision.globalIndex());
           for (const auto& hfCollisionPerCollision : hfCollisionsPerCollision) { // should only ever be one
             auto hfCollisionTableIndex = candidateCollisionMapping.find(hfCollisionPerCollision.globalIndex());
             if (hfCollisionTableIndex != candidateCollisionMapping.end()) {
@@ -505,7 +508,7 @@ struct JetSubstructureHFOutputTask {
     if constexpr (isMC) {
       for (const auto& mcCollision : mcCollisions) {
         if (mcCollisionFlag[mcCollision.globalIndex()]) {
-          const auto hfMcCollisionsPerMcCollision = jetcandidateutilities::slicedPerCandidateCollision(hfMcCollisions, candidatesMCP, mcCollision, D0McCollisionsPerMcCollision, DplusMcCollisionsPerMcCollision, LcMcCollisionsPerMcCollision, BplusMcCollisionsPerMcCollision, DielectronMcCollisionsPerMcCollision); // add Bplus later
+          const auto hfMcCollisionsPerMcCollision = hfMcCollisions.sliceBy(candidateMCCollisionSlicer<isMCPOnly>(CandidateMcCollisionsPerMcCollision, CandidateMcCollisionsPerMcCollisionMCPOnly), mcCollision.globalIndex());
           for (const auto& hfMcCollisionPerMcCollision : hfMcCollisionsPerMcCollision) { // should only ever be one
             auto hfMcCollisionTableIndex = candidateMcCollisionMapping.find(hfMcCollisionPerMcCollision.globalIndex());
             if (hfMcCollisionTableIndex != candidateMcCollisionMapping.end()) {
@@ -580,7 +583,7 @@ struct JetSubstructureHFOutputTask {
 
   void processOutputCollisionsMCPOnly(aod::JetMcCollisions const& mcCollisions,
                                       JetTableMCP const& jetsMCP,
-                                      CandidateMcCollisionTable const& canidateMcCollisions,
+                                      CandidateMcOnlyCollisionTable const& canidateMcCollisions,
                                       CandidateTableMCP const& candidatesMCP)
   {
     analyseHFCollisions<true, true>(mcCollisions, mcCollisions, canidateMcCollisions, canidateMcCollisions, jetsMCP, jetsMCP, candidatesMCP, candidatesMCP, 0.0, configs.jetPtMinMCP);
