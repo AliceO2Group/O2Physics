@@ -366,19 +366,19 @@ struct FlowQa {
     if (cfgUseEPcorrection) {
       hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", 7, 0.2, 3.0);
       funcEff.resize(7);
-      funcEff[0] = new TF1("funcEff0", "chebyshev4", 0, 3000);
+      funcEff[0] = new TF1("funcEff0", "[0]+[1]*x+[2]*(2*x*x - 1)+[3]*(4*x*x*x - 3*x)+[4]*(8*x*x*x*x - 8*x*x + 1)", 0, 3000);
       funcEff[0]->SetParameters(0.7366162408, -2.11923e-05, 1.5258e-09, -2.23824e-12, 4.53824e-16);
-      funcEff[1] = new TF1("funcEff1", "chebyshev4", 0, 3000);
+      funcEff[1] = new TF1("funcEff1", "[0]+[1]*x+[2]*(2*x*x - 1)+[3]*(4*x*x*x - 3*x)+[4]*(8*x*x*x*x - 8*x*x + 1)", 0, 3000);
       funcEff[1]->SetParameters(0.7742102264, -2.50337e-05, -1.12602e-09, -1.38765e-12, 3.86733e-16);
-      funcEff[2] = new TF1("funcEff2", "chebyshev4", 0, 3000);
+      funcEff[2] = new TF1("funcEff2", "[0]+[1]*x+[2]*(2*x*x - 1)+[3]*(4*x*x*x - 3*x)+[4]*(8*x*x*x*x - 8*x*x + 1)", 0, 3000);
       funcEff[2]->SetParameters(0.7933082148, -2.24092e-05, -2.55079e-09, -8.59327e-13, 3.1966e-16);
-      funcEff[3] = new TF1("funcEff3", "chebyshev4", 0, 3000);
+      funcEff[3] = new TF1("funcEff3", "[0]+[1]*x+[2]*(2*x*x - 1)+[3]*(4*x*x*x - 3*x)+[4]*(8*x*x*x*x - 8*x*x + 1)", 0, 3000);
       funcEff[3]->SetParameters(0.8084143879, -1.88185e-05, -3.26378e-09, -6.57021e-13, 2.92597e-16);
-      funcEff[4] = new TF1("funcEff4", "chebyshev4", 0, 3000);
+      funcEff[4] = new TF1("funcEff4", "[0]+[1]*x+[2]*(2*x*x - 1)+[3]*(4*x*x*x - 3*x)+[4]*(8*x*x*x*x - 8*x*x + 1)", 0, 3000);
       funcEff[4]->SetParameters(0.8160584679, -4.0401e-06, -1.5118e-08, 3.22423e-12, -1.21729e-16);
-      funcEff[5] = new TF1("funcEff5", "chebyshev4", 0, 3000);
+      funcEff[5] = new TF1("funcEff5", "[0]+[1]*x+[2]*(2*x*x - 1)+[3]*(4*x*x*x - 3*x)+[4]*(8*x*x*x*x - 8*x*x + 1)", 0, 3000);
       funcEff[5]->SetParameters(0.8245747952, -1.88827e-05, 9.88837e-10, -2.23894e-12, 4.62594e-16);
-      funcEff[6] = new TF1("funcEff6", "chebyshev4", 0, 3000);
+      funcEff[6] = new TF1("funcEff6", "[0]+[1]*x+[2]*(2*x*x - 1)+[3]*(4*x*x*x - 3*x)+[4]*(8*x*x*x*x - 8*x*x + 1)", 0, 3000);
       funcEff[6]->SetParameters(0.8277255051, -1.07687e-05, -3.9408e-09, -8.7277e-13, 3.3104e-16);
       funcV2 = new TF1("funcV2", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
       funcV2->SetParameters(0.0186111, 0.00351907, -4.38264e-05, 1.35383e-07, -3.96266e-10);
