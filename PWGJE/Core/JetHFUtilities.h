@@ -714,7 +714,7 @@ void fillDplusCandidateTable(T const& candidate, U& DplusParTable, V& DplusParET
   DplusMlTable(mlScoresVector);
 
   if constexpr (isMc) {
-    DplusMCDTable(candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.isCandidateSwapped());
+    DplusMCDTable(candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.isCandidateSwapped(), candidate.flagMcDecayChanRec());
   }
 }
 
