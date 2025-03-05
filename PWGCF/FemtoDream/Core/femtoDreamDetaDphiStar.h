@@ -558,7 +558,7 @@ class FemtoDreamDetaDphiStar
       if (!runOldVersion) {
         auto arg = 0.3 * charge * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt);
         // for very low pT particles, this value goes outside of range -1 to 1 at at large tpc radius; asin fails
-        if (abs(arg) < 1) {
+        if (std::fabs(arg) < 1) {
           tmpVec.push_back(phi0 - std::asin(0.3 * charge * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt)));
         } else {
           tmpVec.push_back(999);
@@ -618,7 +618,7 @@ class FemtoDreamDetaDphiStar
     if (!runOldVersion) {
       auto arg = 0.3 * charge * magfield * radii * 0.01 / (2. * pt);
       // for very low pT particles, this value goes outside of range -1 to 1 at at large tpc radius; asin fails
-      if (abs(arg) < 1) {
+      if (std::fabs(arg) < 1) {
         phiAtRadii = phi0 - std::asin(0.3 * charge * magfield * radii * 0.01 / (2. * pt));
       } else {
         phiAtRadii = 999.;
@@ -661,7 +661,7 @@ class FemtoDreamDetaDphiStar
       if (!runOldVersion) {
         auto arg = 0.3 * charge * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt);
         // for very low pT particles, this value goes outside of range -1 to 1 at at large tpc radius; asin fails
-        if (abs(arg) < 1) {
+        if (std::fabs(arg) < 1) {
           tmpVec.push_back(phi0 - std::asin(0.3 * charge * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt)));
         } else {
           tmpVec.push_back(999);

@@ -47,6 +47,26 @@ const int passEMCalBins = 3;
 const int passEMCalAxisMin = 0.;
 const int passEMCalAxisMax = 3;
 
+
+const int eopAxisBins = 60;
+const float eopAxisMin = 0.;
+const float eopAxisMax = 3.0;
+const int pAxisBins = 500;
+const float pAxisMin = 0.;
+const float pAxisMax = 50.0;
+const int m02AxisBins = 100;
+const float m02AxisMin = 0.;
+const float m02AxisMax = 2.0;
+const int m20AxisBins = 100;
+const float m20AxisMin = 0.;
+const float m20AxisMax = 2.0;
+const int nSigmaAxisBins = 300;
+const float nSigmaAxisMin = -15.;
+const float nSigmaAxisMax = 15.;
+const int dEdxAxisBins = 480;
+const float dEdxAxisMin = 0.;
+const float dEdxAxisMax = 160.;
+
 const int kEta = 221;
 
 struct HfElectronSelectionWithTpcEmcal {
@@ -80,7 +100,11 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> invariantMass{"invariantMass", 0.14f, "max Invariant Mass for Photonic electron"};
   Configurable<float> chiSquareMax{"chiSquareMax", 3.0f, "chiSquare on the reconstructed parent particle"};
 
+
   // EtMcal and Dcal selection cut
+
+  // EMcal and Dcal selection cut
+
   Configurable<float> etaTrackDCalNegativeMax{"etaTrackDCalNegativeMax", -0.22f, "Eta range for electron Dcal tracks"};
   Configurable<float> etaTrackDCalNegativeMin{"etaTrackDCalNegativeMin", -0.6f, "Eta range for electron tracks"};
   Configurable<float> etaTrackDCalPositiveMax{"etaTrackDCalPositiveMax", 0.6f, "Eta range for electron Dcal tracks"};
@@ -156,6 +180,7 @@ struct HfElectronSelectionWithTpcEmcal {
   HistogramRegistry registry{
     "registry",
     {{"hNevents", "No of events", {HistType::kTH1F, {{3, 1, 4}}}},
+<
      {"hZvertex", "z vertex", {HistType::kTH1F, {{binsPosZ}}}},
      {"hLikeMass", "Like mass", {HistType::kTH1F, {{binsMass}}}},
      {"hUnLikeMass", "unLike mass", {HistType::kTH1F, {{binsMass}}}},
@@ -170,6 +195,22 @@ struct HfElectronSelectionWithTpcEmcal {
      {"hEmcClusterM02", "m02", {HistType::kTH1F, {{binsM02}}}},
      {"hEmcClusterM20", "m20", {HistType::kTH1F, {{binsM20}}}},
      {"hTrackEtaPhi", "TPC EtaPhi Info; #eta;#varphi;passEMcal;", {HistType::kTH3F, {{binsEta}, {binsPhi}, {binsPassEMcal}}}},
+
+     {"hZvertex", "z vertex", {HistType::kTH1F, {{100, -100, 100}}}},
+     {"hLikeMass", "Like mass", {HistType::kTH1F, {{1000, 0, 2.0}}}},
+     {"hUnLikeMass", "unLike mass", {HistType::kTH1F, {{1000, 0, 1.0}}}},
+     {"hLikeSignPt", "Like sign Momentum ", {HistType::kTH1F, {{pAxisBins, pAxisMin, pAxisMax}}}},
+     {"hUnLikeSignPt", "UnLike sign Momentum", {HistType::kTH1F, {{pAxisBins, pAxisMin, pAxisMax}}}},
+     {"hMcgenInElectron", "Mc Gen Inclusive Electron", {HistType::kTH1F, {{pAxisBins, pAxisMin, pAxisMax}}}},
+     {"hMcgenAllNonHfeElectron", "Mc Gen All NonHf Electron", {HistType::kTH1F, {{pAxisBins, pAxisMin, pAxisMax}}}},
+     {"hMcgenNonHfeElectron", "Mc Gen NonHf  Electron with mother", {HistType::kTH1F, {{pAxisBins, pAxisMin, pAxisMax}}}},
+     {"hPi0eEmbTrkPt", "Mc Gen  Pi0 mother NonHf Electron", {HistType::kTH1F, {{pAxisBins, pAxisMin, pAxisMax}}}},
+
+     {"hEtaeEmbTrkPt", "Mc Gen  Eta mother  NonHf Electron", {HistType::kTH1F, {{pAxisBins, pAxisMin, pAxisMax}}}},
+     {"hEmcClusterM02", "m02", {HistType::kTH1F, {{m02AxisBins, m02AxisMin, m02AxisMax}}}},
+     {"hEmcClusterM20", "m20", {HistType::kTH1F, {{m20AxisBins, m20AxisMin, m20AxisMax}}}},
+     {"hTrackEtaPhi", "TPC EtaPhi Info; #eta;#varphi;passEMcal;", {HistType::kTH3F, {{etaAxisBins, trackEtaAxisMin, trackEtaAxisMax}, {phiAxisBins, trackPhiAxisMin, trackPhiAxisMax}, {passEMCalBins, passEMCalAxisMin, passEMCalAxisMax}}}},
+
      {"hTrackEnergyLossVsP", " TPC Energy loss info vs P; dE/dx;#it{p} (GeV#it{/c});passEMcal;", hTrackEnergyLossSpec},
      {"hTrackEnergyLossVsPt", " TPC Energy loss info vs Pt; dE/dx;#it{p}_{T} (GeV#it{/c});passEMcal;", hTrackEnergyLossSpec},
      {"hTracknSigmaVsP", " TPC nSigma info vs P; n#sigma;#it{p} (GeV#it{/c});passEMcal;", hTracknSigmaSpec},
@@ -309,6 +350,7 @@ struct HfElectronSelectionWithTpcEmcal {
         continue;
       }
 
+
       if (std::sqrt(std::abs(chi2recg)) > chiSquareMax) {
         continue;
       }
@@ -331,6 +373,32 @@ struct HfElectronSelectionWithTpcEmcal {
           registry.fill(HIST("hUnLikeMass"), massUnLike);
         }
       }
+
+
+
+      if (std::sqrt(std::abs(chi2recg)) > chiSquareMax) {
+        continue;
+      }
+
+      invMassElectron = RecoDecay::m(std::array{pTrack.pVector(), electron.pVector()}, std::array{MassElectron, MassElectron});
+
+      // for like charge
+      if (pTrack.sign() == electron.sign()) {
+        massLike = invMassElectron;
+        isLSElectron = true;
+        if (isEMcal) {
+          registry.fill(HIST("hLikeMass"), massLike);
+        }
+      }
+      // for unlike charge
+      if (pTrack.sign() != electron.sign()) {
+        massUnLike = invMassElectron;
+        isULSElectron = true;
+        if (isEMcal) {
+          registry.fill(HIST("hUnLikeMass"), massUnLike);
+        }
+      }
+
 
       // for like charge
       if (isLSElectron && (invMassElectron <= invariantMass)) {
@@ -515,7 +583,11 @@ struct HfElectronSelectionWithTpcEmcal {
   {
     fillElectronTrack<false>(collision, tracks, emcClusters, matchedTracks, 0);
   }
+
   PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processData, "process Data info only", true);
+
+  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processData, "process Data info only", false);
+
   ///  Electron selection - for MC reco-level analysis
   void processMcRec(McTableCollision const& mcCollision,
                     McTableTracks const& mcTracks,
@@ -607,7 +679,11 @@ struct HfElectronSelectionWithTpcEmcal {
     }
   }
 
+
   PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcGen, "Process MC Gen mode", false);
+=======
+  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcGen, "Process MC Gen mode", true);
+
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -92,7 +92,6 @@ struct chargedkstaranalysis {
   /// PID Selections
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999,
                                              "Combined nSigma cut for Pion"}; // Combined
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
 
   // DCAr to PV
   Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.5,
@@ -167,6 +166,7 @@ struct chargedkstaranalysis {
     histos1.add("QAbefore/chargedkstarpmRapidity",
                 "Reconstructed K*^{#pm} rapidity", kTH1F, {etaAxis});
     histos1.add("QAbefore/trkpionTOFPID", "TOF PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+    histos1.add("QAbefore/trkpionTPCTOFPID", "TPC-TOF PID map of bachelor pion candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
 
     histos1.add("QAbefore/DCAxy_pi",
                 "DCAxy distribution of pion track candidates", HistType::kTH1F,
@@ -246,8 +246,8 @@ struct chargedkstaranalysis {
         // TPC PID (before cuts)
         histos1.fill(HIST("QAbefore/tpcNsigmaPionQA"), trackptPi, trkNSigmaPiTPC);
         if (istrkhasTOF) {
-          histos1.fill(HIST("QA/before/trkpionTOFPID"), trackptPi, trkNSigmaPiTOF);
-          histos1.fill(HIST("QA/before/trkpionTPCTOFPID"), trkNSigmaPiTPC, trkNSigmaPiTOF);
+          histos1.fill(HIST("QAbefore/trkpionTOFPID"), trackptPi, trkNSigmaPiTOF);
+          histos1.fill(HIST("QAbefore/trkpionTPCTOFPID"), trkNSigmaPiTPC, trkNSigmaPiTOF);
         }
         // DCA QA (before cuts)
         histos1.fill(HIST("QAbefore/DCAxy_pi"), track.dcaXY());
@@ -347,8 +347,6 @@ struct chargedkstaranalysis {
     if (std::abs(track.pt()) < cMinPtcut)
       return false;
     if (std::abs(track.eta()) > confdaugheta)
-      return false;
-    if (track.itsNCls() < cfgITScluster)
       return false;
     if (std::abs(track.dcaXY()) > cMaxDCArToPVcut)
       return false;

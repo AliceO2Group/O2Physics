@@ -8,9 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-/// \file LFResonanceInitializer.cxx
-/// \brief Initializes variables for the resonance candidate producers
+///
+/// \file resonanceMergeDF.cxx
+/// \brief Merges multiple dataframes into a single dataframe
 ///
 ///
 ///  In typical dataframes (DF), we usually observe a range of 200 to 300 collisions.
@@ -24,7 +24,8 @@
 ///
 /// ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
-///    Nasir Mehdi Malik
+///         Nasir Mehdi Malik <nasir.mehdi.malik@cern.ch>
+///         Min-jae Kim <minjae.kim@cern.ch>
 #include <vector>
 
 #include "Common/DataModel/PIDResponse.h"
@@ -58,7 +59,7 @@ using namespace o2::soa;
 
 /// Initializer for the resonance candidate producers
 
-struct reso2dfmerged {
+struct ResonanceMergeDF {
   //  SliceCache cache;
   Configurable<int> nDF{"nDF", 1, "no of combination of collision"};
   Configurable<bool> cpidCut{"cpidCut", 0, "pid cut"};
@@ -73,57 +74,64 @@ struct reso2dfmerged {
   Configurable<float> nsigmatofPr{"nsigmatofPr", 6., "nsigma value for tof prot"};
   Configurable<float> nsigmatofKa{"nsigmatofKa", 6., "nsigma value for tof kaon"};
 
-  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  // Xi1530 candidate cuts
+  Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoDCA"};
+  Configurable<bool> requireTOF{"requireTOF", false, "Require TOF"};
+  Configurable<float> applyTOFveto{"applyTOFveto", 999, "Apply TOF veto with value, 999 for passing all"};
+  Configurable<float> nsigmaPi{"nsigmaPi", 5., "nsigma value for pion"};
+  Configurable<float> minCent{"minCent", 0., "Minimum centrality"};
+  Configurable<float> maxCent{"maxCent", 100., "Maximum centrality"};
 
-  using resoCols = aod::ResoCollisions;
-  using resoTracks = aod::ResoTracks;
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext const&)
   {
 
     const AxisSpec axisCent(110, 0, 110, "FT0 (%)");
     histos.add("Event/h1d_ft0_mult_percentile", "FT0 (%)", kTH1F, {axisCent});
+    histos.add("Event/h1d_ft0_mult_percentile_CASC", "FT0 (%)", kTH1F, {axisCent});
   }
   Produces<aod::ResoCollisionDFs> resoCollisionsdf;
   Produces<aod::ResoTrackDFs> reso2trksdf;
+  Produces<aod::ResoCascadeDFs> reso2cascadesdf;
   int df = 0;
 
   std::vector<std::tuple<float, float, float, float, float, float, int>> vecOfTuples;
   std::vector<std::vector<std::tuple<float, float, float, float,
-                                     float, float, signed char, unsigned char, unsigned char, unsigned char,
-                                     float, float, float, float,
-                                     bool, bool, bool, float, float, float,
-                                     float, float, float, float,
-                                     float, float, bool, bool,
-                                     bool, bool, bool, bool, float, float, float>>>
+                                     float, float, signed char, unsigned char, unsigned char,
+                                     float, float,
+                                     bool, int8_t, int8_t, int8_t,
+                                     int8_t, int8_t, int8_t, float,
+                                     bool, bool,
+                                     bool, bool, bool, bool>>>
     vecOfVecOfTuples;
-  void processTrackDataDF(resoCols::iterator const& collision, resoTracks const& tracks)
+  void processTrackDataDF(aod::ResoCollisions::iterator const& collision, aod::ResoTracks const& tracks)
   {
 
     int nCollisions = nDF;
     vecOfTuples.push_back(std::make_tuple(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), collision.trackOccupancyInTimeRange()));
     std::vector<std::tuple<float, float, float, float,
-                           float, float, signed char, unsigned char, unsigned char, unsigned char,
-                           float, float, float, float,
-                           bool, bool, bool, float, float, float,
-                           float, float, float, float,
-                           float, float, bool, bool,
-                           bool, bool, bool, bool, float, float, float>>
+                           float, float, signed char, unsigned char, unsigned char,
+                           float, float,
+                           bool, int8_t, int8_t, int8_t,
+                           int8_t, int8_t, int8_t, float,
+                           bool, bool,
+                           bool, bool, bool, bool>>
       innerVector;
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (cpidCut) {
         if (!track.hasTOF()) {
           if (std::abs(track.tpcNSigmaPr()) > nsigmaPr && std::abs(track.tpcNSigmaKa()) > nsigmaKa)
             continue;
 
-          if (crejtpc && ((std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaEl()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaEl())) || (std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaPi()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaPi()))))
+          if (crejtpc && (std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaPi()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaPi())))
             continue;
 
         } else {
           if (std::abs(track.tofNSigmaPr()) > nsigmatofPr && std::abs(track.tofNSigmaKa()) > nsigmatofKa)
             continue;
 
-          if (crejtof && ((std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaEl()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaEl())) || (std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaPi()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaPi()))))
+          if (crejtof && (std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaPi()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaPi())))
             continue;
         }
 
@@ -144,37 +152,28 @@ struct reso2dfmerged {
         track.sign(),
         (uint8_t)track.tpcNClsCrossedRows(),
         (uint8_t)track.tpcNClsFound(),
-        (uint8_t)track.itsNCls(),
         track.dcaXY(),
         track.dcaZ(),
-        track.x(),
-        track.alpha(),
-        track.hasITS(),
-        track.hasTPC(),
         track.hasTOF(),
-        track.tpcNSigmaPi(),
-        track.tpcNSigmaKa(),
-        track.tpcNSigmaPr(),
-        track.tpcNSigmaEl(),
-        track.tofNSigmaPi(),
-        track.tofNSigmaKa(),
-        track.tofNSigmaPr(),
-        track.tofNSigmaEl(),
+        (int8_t)(track.tpcNSigmaPi() * 10),
+        (int8_t)(track.tpcNSigmaKa() * 10),
+        (int8_t)(track.tpcNSigmaPr() * 10),
+        (int8_t)(track.tofNSigmaPi() * 10),
+        (int8_t)(track.tofNSigmaKa() * 10),
+        (int8_t)(track.tofNSigmaPr() * 10),
         track.tpcSignal(),
         track.passedITSRefit(),
         track.passedTPCRefit(),
         track.isGlobalTrackWoDCA(),
         track.isGlobalTrack(),
         track.isPrimaryTrack(),
-        track.isPVContributor(),
-        track.tpcCrossedRowsOverFindableCls(),
-        track.itsChi2NCl(),
-        track.tpcChi2NCl()));
+        track.isPVContributor()));
     }
 
     vecOfVecOfTuples.push_back(innerVector);
     innerVector.clear();
     df++;
+    LOGF(info, "collisions: df = %i", df);
     if (df < nCollisions)
       return;
     df = 0;
@@ -213,17 +212,7 @@ struct reso2dfmerged {
                     std::get<21>(tuple),
                     std::get<22>(tuple),
                     std::get<23>(tuple),
-                    std::get<24>(tuple),
-                    std::get<25>(tuple),
-                    std::get<26>(tuple),
-                    std::get<27>(tuple),
-                    std::get<28>(tuple),
-                    std::get<29>(tuple),
-                    std::get<30>(tuple),
-                    std::get<31>(tuple),
-                    std::get<32>(tuple),
-                    std::get<33>(tuple),
-                    std::get<34>(tuple));
+                    std::get<24>(tuple));
       }
     }
 
@@ -231,10 +220,9 @@ struct reso2dfmerged {
     vecOfVecOfTuples.clear(); //
   }
 
-  PROCESS_SWITCH(reso2dfmerged, processTrackDataDF, "Process for data merged DF", true);
+  PROCESS_SWITCH(ResonanceMergeDF, processTrackDataDF, "Process for data merged DF", true);
 
-  void processLambdaStarCandidate(resoCols::iterator const& collision, resoTracks const&
-                                                                         tracks)
+  void processLambdaStarCandidate(aod::ResoCollisions::iterator const& collision, aod::ResoTracks const& tracks)
   {
 
     if (doprocessTrackDataDF)
@@ -244,7 +232,7 @@ struct reso2dfmerged {
 
     resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (isPrimary && !track.isPrimaryTrack())
         continue;
       if (isGlobal && !track.isGlobalTrack())
@@ -253,14 +241,84 @@ struct reso2dfmerged {
         if (std::abs(track.tpcNSigmaPr()) > nsigmaPr && std::abs(track.tpcNSigmaKa()) > nsigmaKa)
           continue;
 
-        if (crejtpc && ((std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaEl()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaEl())) || (std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaPi()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaPi()))))
+        if (crejtpc && (std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaPi()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaPi())))
           continue;
 
       } else {
         if (std::abs(track.tofNSigmaPr()) > nsigmatofPr && std::abs(track.tofNSigmaKa()) > nsigmatofKa)
           continue;
 
-        if (crejtof && ((std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaEl()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaEl())) || (std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaPi()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaPi()))))
+        if (crejtof && (std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaPi()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaPi())))
+          continue;
+      }
+      if (std::abs(track.dcaXY()) > cDCAXY)
+        continue;
+      if (std::abs(track.dcaZ()) > cDCAZ)
+        continue;
+      reso2trksdf(resoCollisionsdf.lastIndex(),
+                  // track.trackId(),
+                  track.pt(),
+                  track.px(),
+                  track.py(),
+                  track.pz(),
+                  track.eta(),
+                  track.phi(),
+                  track.sign(),
+                  (uint8_t)track.tpcNClsCrossedRows(),
+                  (uint8_t)track.tpcNClsFound(),
+                  track.dcaXY(),
+                  track.dcaZ(),
+                  track.hasTOF(),
+                  (int8_t)(track.tpcNSigmaPi() * 10),
+                  (int8_t)(track.tpcNSigmaKa() * 10),
+                  (int8_t)(track.tpcNSigmaPr() * 10),
+                  (int8_t)(track.tofNSigmaPi() * 10),
+                  (int8_t)(track.tofNSigmaKa() * 10),
+                  (int8_t)(track.tofNSigmaPr() * 10),
+                  track.tpcSignal(),
+                  track.passedITSRefit(),
+                  track.passedTPCRefit(),
+                  track.isGlobalTrackWoDCA(),
+                  track.isGlobalTrack(),
+                  track.isPrimaryTrack(),
+                  track.isPVContributor());
+    }
+  }
+  PROCESS_SWITCH(ResonanceMergeDF, processLambdaStarCandidate, "Process for lambda star candidate", false);
+
+  void processXi1530Candidate(aod::ResoCollisions::iterator const& collision, aod::ResoTracks const& tracks, aod::ResoCascades const& resocasctracks)
+  {
+    if (doprocessTrackDataDF)
+      LOG(fatal) << "Disable processTrackDataDF first!";
+    if (doprocessLambdaStarCandidate)
+      LOG(fatal) << "Disable processLambdaStarCandidate first!";
+
+    if (collision.cent() < minCent || collision.cent() > maxCent)
+      return;
+
+    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
+
+    for (const auto& track : tracks) {
+      if (trackSelection == 1) {
+        if (!track.isGlobalTrack())
+          continue;
+      } else if (trackSelection == 2) {
+        if (!track.isGlobalTrackWoDCA())
+          continue;
+      }
+      if (!track.hasTOF()) {
+        if (requireTOF) {
+          continue;
+        }
+        // TPC selection
+        if (std::abs(track.tpcNSigmaPi()) > nsigmaPi)
+          continue;
+      } else {
+        if (applyTOFveto > 998 && std::abs(track.tofNSigmaPi()) > applyTOFveto)
+          continue;
+        // TPC selection
+        if (std::abs(track.tpcNSigmaPi()) > nsigmaPi)
           continue;
       }
 
@@ -280,38 +338,73 @@ struct reso2dfmerged {
                   track.sign(),
                   (uint8_t)track.tpcNClsCrossedRows(),
                   (uint8_t)track.tpcNClsFound(),
-                  (uint8_t)track.itsNCls(),
                   track.dcaXY(),
                   track.dcaZ(),
-                  track.x(),
-                  track.alpha(),
-                  track.hasITS(),
-                  track.hasTPC(),
                   track.hasTOF(),
-                  track.tpcNSigmaPi(),
-                  track.tpcNSigmaKa(),
-                  track.tpcNSigmaPr(),
-                  track.tpcNSigmaEl(),
-                  track.tofNSigmaPi(),
-                  track.tofNSigmaKa(),
-                  track.tofNSigmaPr(),
-                  track.tofNSigmaEl(),
+                  (int8_t)(track.tpcNSigmaPi() * 10),
+                  (int8_t)(track.tpcNSigmaKa() * 10),
+                  (int8_t)(track.tpcNSigmaPr() * 10),
+                  (int8_t)(track.tofNSigmaPi() * 10),
+                  (int8_t)(track.tofNSigmaKa() * 10),
+                  (int8_t)(track.tofNSigmaPr() * 10),
                   track.tpcSignal(),
                   track.passedITSRefit(),
                   track.passedTPCRefit(),
                   track.isGlobalTrackWoDCA(),
                   track.isGlobalTrack(),
                   track.isPrimaryTrack(),
-                  track.isPVContributor(),
-                  track.tpcCrossedRowsOverFindableCls(),
-                  track.itsChi2NCl(),
-                  track.tpcChi2NCl());
+                  track.isPVContributor());
+    }
+    // Cascade candidate
+    for (const auto& track : resocasctracks) {
+      // TODO: add cascade cuts
+      reso2cascadesdf(resoCollisionsdf.lastIndex(),
+                      // casc.globalIndex(),
+                      track.pt(),
+                      track.px(),
+                      track.py(),
+                      track.pz(),
+                      track.eta(),
+                      track.phi(),
+                      const_cast<int*>(track.cascadeIndices()),
+                      track.daughterTPCNSigmaPosPi(),
+                      track.daughterTPCNSigmaPosKa(),
+                      track.daughterTPCNSigmaPosPr(),
+                      track.daughterTPCNSigmaNegPi(),
+                      track.daughterTPCNSigmaNegKa(),
+                      track.daughterTPCNSigmaNegPr(),
+                      track.daughterTPCNSigmaBachPi(),
+                      track.daughterTPCNSigmaBachKa(),
+                      track.daughterTPCNSigmaBachPr(),
+                      track.daughterTOFNSigmaPosPi(),
+                      track.daughterTOFNSigmaPosKa(),
+                      track.daughterTOFNSigmaPosPr(),
+                      track.daughterTOFNSigmaNegPi(),
+                      track.daughterTOFNSigmaNegKa(),
+                      track.daughterTOFNSigmaNegPr(),
+                      track.daughterTOFNSigmaBachPi(),
+                      track.daughterTOFNSigmaBachKa(),
+                      track.daughterTOFNSigmaBachPr(),
+                      track.v0CosPA(),
+                      track.cascCosPA(),
+                      track.daughDCA(),
+                      track.cascDaughDCA(),
+                      track.dcapostopv(),
+                      track.dcanegtopv(),
+                      track.dcabachtopv(),
+                      track.dcav0topv(),
+                      track.dcaXYCascToPV(),
+                      track.dcaZCascToPV(),
+                      track.sign(),
+                      track.mLambda(),
+                      track.mXi(),
+                      track.transRadius(), track.cascTransRadius(), track.decayVtxX(), track.decayVtxY(), track.decayVtxZ());
     }
   }
-  PROCESS_SWITCH(reso2dfmerged, processLambdaStarCandidate, "Process for lambda star candidate", false);
+  PROCESS_SWITCH(ResonanceMergeDF, processXi1530Candidate, "Process for Xi(1530) candidate", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<reso2dfmerged>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<ResonanceMergeDF>(cfgc)};
 }

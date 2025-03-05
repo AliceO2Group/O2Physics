@@ -181,6 +181,22 @@ auto slicedPerDielectronCollision(T const& table, U const& /*candidates*/, V con
 }
 
 /**
+ * returns a slice of the table depending on the index of the Dielectron jet
+ * @param DielectronTable dielectron table type
+ * @param jet jet that the slice is based on
+ * @param table the table to be sliced
+ */
+template <typename DielectronTable, typename T, typename U, typename V>
+auto slicedPerDielectronJet(T const& table, U const& jet, V const& perDielectronJet)
+{
+  if constexpr (isDielectronTable<DielectronTable>() || isDielectronMcTable<DielectronTable>()) {
+    return table.sliceBy(perDielectronJet, jet.globalIndex());
+  } else {
+    return table;
+  }
+}
+
+/**
  * returns the Dielectron collision Id of candidate based on type of Dielectron candidate
  *
  * @param candidate dielectron candidate that is being checked

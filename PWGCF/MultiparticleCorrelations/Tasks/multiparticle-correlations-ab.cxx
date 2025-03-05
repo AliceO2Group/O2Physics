@@ -73,6 +73,7 @@ using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, 
 #include <TF1.h>
 #include <TF3.h>
 #include <TObjString.h>
+#include <THnSparse.h>
 using namespace std;
 
 // *) Enums:

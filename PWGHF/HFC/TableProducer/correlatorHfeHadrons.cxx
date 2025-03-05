@@ -89,7 +89,11 @@ struct HfCorrelatorHfeHadrons {
      {"hULSEHCorrel", "Sparse for Delta phi and Delta eta  UnLike sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", hCorrelSpec},
      {"hMCgenNonHfEHCorrel", "Sparse for Delta phi and Delta eta Non Hf for McGen Inclusive Electron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", hCorrelSpec},
      {"hMCgenInclusiveEHCorrl", "Sparse for Delta phi and Delta eta  for McGen Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", hCorrelSpec},
+
      {"hptElectron", "hptElectron", {HistType::kTH1F, {{binsP}}}},
+
+     {"hptElectron", "hptElectron", {HistType::kTH1F, {{100, 0, 100}}}},
+
 
      {"hMixEventInclusiveEHCorrl", "Sparse for mix event Delta phi and Delta eta Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", hCorrelSpec},
      {"hMixEventLSEHCorrel", "Sparse for mix event Delta phi and Delta eta Like sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", hCorrelSpec},
@@ -379,6 +383,7 @@ struct HfCorrelatorHfeHadrons {
     auto tracksTuple = std::make_tuple(electrons, mcParticles);
     Pair<McGenTableCollisions, aod::HfMcGenSelEl, aod::McParticles, BinningTypeMcGen> pairMcGen{corrBinningMcGen, 5, -1, mcCollision, tracksTuple, &cache};
 
+
     // loop over the rows of the new table
     double ptElectronMix = -999;
     double phiElectronMix = -999;
@@ -417,6 +422,47 @@ struct HfCorrelatorHfeHadrons {
 
           registry.fill(HIST("hMixEventMcGenInclusiveEHCorrl"), ptElectronMix, ptHadronMix, deltaPhiMix, deltaEtaMix);
         }
+
+
+    // loop over the rows of the new table
+    double ptElectronMix = -999;
+    double phiElectronMix = -999;
+    double etaElectronMix = -999;
+    double deltaPhiMix = -999;
+    double deltaEtaMix = -999;
+    double ptHadronMix = -999;
+    double etaHadronMix = -999;
+    double phiHadronMix = -999;
+    for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
+      int poolBin = corrBinningMcGen.getBin(std::make_tuple(c1.posZ(), c1.multMCFT0A()));
+      for (const auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        ptHadronMix = t2.pt();
+        ptElectronMix = t1.ptTrackMc();
+        phiElectronMix = t1.phiTrackMc();
+        phiHadronMix = t2.phi();
+        etaElectronMix = t1.etaTrackMc();
+        etaHadronMix = t2.eta();
+        if (t2.eta() < etaTrackMin || t2.eta() > etaTrackMax) {
+          continue;
+        }
+        if (t2.pt() < ptTrackMin) {
+          continue;
+        }
+        if (ptCondition && (ptElectronMix < ptHadronMix)) {
+          continue;
+        }
+
+        deltaPhiMix = RecoDecay::constrainAngle(phiElectronMix - phiHadronMix, -o2::constants::math::PIHalf);
+        deltaEtaMix = etaElectronMix - etaHadronMix;
+        bool isNonHfeCorr = false;
+        if (t1.isNonHfeMc()) {
+          isNonHfeCorr = true;
+          registry.fill(HIST("hMixEventMcGenNonHfEHCorrl"), ptElectronMix, ptHadronMix, deltaPhiMix, deltaEtaMix);
+        } else {
+
+          registry.fill(HIST("hMixEventMcGenInclusiveEHCorrl"), ptElectronMix, ptHadronMix, deltaPhiMix, deltaEtaMix);
+        }
+
 
         entryElectronHadronPairmcGen(deltaPhiMix, deltaEtaMix, ptElectronMix, ptHadronMix, poolBin, isNonHfeCorr);
       }

@@ -11,7 +11,7 @@
 //
 // ========================
 //
-// This code is to study MC truth. e.g. S/B
+// This code is to study MC truth. e.g. evet selection bias
 //    Please write to: daiki.sekihata@cern.ch
 
 #include <string>
@@ -38,11 +38,18 @@ struct studyMCTruth {
 
   struct : ConfigurableGroup {
     std::string prefix = "mccut_group";
+    Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
     Configurable<int> cfgPdgCodeLepton{"cfgPdgCodeLepton", 11, "pdg code for desired lepton"};
-    Configurable<float> cfgMinPtGen{"cfgMinPtGen", 0.1, "min. pT of single lepton"};
+    Configurable<float> cfgMinPtGen{"cfgMinPtGen", 0.2, "min. pT of single lepton"};
     Configurable<float> cfgMaxPtGen{"cfgMaxPtGen", 1e+10f, "max. pT of single lepton"};
     Configurable<float> cfgMinEtaGen{"cfgMinEtaGen", -0.8, "min. eta of for single lepton"};
     Configurable<float> cfgMaxEtaGen{"cfgMaxEtaGen", +0.8, "max. eta of for single lepton"};
+    Configurable<float> cfgMinPtGenWide{"cfgMinPtGenWide", 0.01, "min. pT of single lepton in wide acceptance"};        // this is only to speed up pairing loop
+    Configurable<float> cfgMaxPtGenWide{"cfgMaxPtGenWide", 1e+10f, "max. pT of single lepton in wide acceptance"};      // this is only to speed up pairing loop
+    Configurable<float> cfgMinEtaGenWide{"cfgMinEtaGenWide", -1.5, "min. eta of for single lepton in wide acceptance"}; // this is only to speed up pairing loop
+    Configurable<float> cfgMaxEtaGenWide{"cfgMaxEtaGenWide", +1.5, "max. eta of for single lepton in wide acceptance"}; // this is only to speed up pairing loop
+
+    Configurable<uint> cfgMuonTrackType{"cfgMuonTrackType", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
   } mccuts;
 
   struct : ConfigurableGroup {
@@ -83,6 +90,8 @@ struct studyMCTruth {
     const AxisSpec axis_ptll{ConfPtllBins, "p_{T,ll} (GeV/c)"};
 
     fRegistry.add("Event/hDiffBC", "diffrence in BC;BC_{rec. coll.} - BC_{mc coll.}", kTH1D, {{101, -50.5, +50.5}}, false);
+    fRegistry.add("Event/allMC/hReccollsPerMCcoll", "Rec. colls per MC coll;Rec. colls per MC coll;Number of MC collisions", kTH1D, {{21, -0.5, 20.5}}, false);
+    fRegistry.add("Event/allMC/hSelReccollsPerMCcoll", "Selected Rec. colls per MC coll;Selected Rec. colls per MC coll;Number of MC collisions", kTH1D, {{21, -0.5, 20.5}}, false);
     fRegistry.add("Event/allMC/hZvtx", "MC Zvtx;Z_{vtx} (cm)", kTH1D, {{100, -50, +50}}, false);
     fRegistry.add("Event/allMC/hImpactParameter", "impact parameter;impact parameter b (fm)", kTH1D, {{200, 0, 20}}, false);
     fRegistry.addClone("Event/allMC/", "Event/selectedMC/");
@@ -126,7 +135,7 @@ struct studyMCTruth {
     return max;
   }
 
-  template <typename TMCParticle>
+  template <bool isSmeared, typename TMCParticle>
   bool isSelectedMCParticle(TMCParticle const& mcparticle)
   {
     if (std::abs(mcparticle.pdgCode()) != mccuts.cfgPdgCodeLepton) {
@@ -135,11 +144,45 @@ struct studyMCTruth {
     if (!mcparticle.has_mothers()) {
       return false;
     }
-    if (mcparticle.isPhysicalPrimary() || mcparticle.producedByGenerator()) {
-      return true;
-    } else {
+    if (!(mcparticle.isPhysicalPrimary() || mcparticle.producedByGenerator())) {
       return false;
     }
+
+    if constexpr (isSmeared) {
+      if (std::abs(mccuts.cfgPdgCodeLepton) == 11) {
+        if (mcparticle.ptSmeared() < mccuts.cfgMinPtGen || mccuts.cfgMaxPtGen < mcparticle.ptSmeared()) {
+          return false;
+        }
+        if (mcparticle.etaSmeared() < mccuts.cfgMinEtaGen || mccuts.cfgMaxEtaGen < mcparticle.etaSmeared()) {
+          return false;
+        }
+      } else if (std::abs(mccuts.cfgPdgCodeLepton) == 13) {
+        if (mccuts.cfgMuonTrackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
+          if (mcparticle.ptSmeared_sa_muon() < mccuts.cfgMinPtGen || mccuts.cfgMaxPtGen < mcparticle.ptSmeared_sa_muon()) {
+            return false;
+          }
+          if (mcparticle.etaSmeared_sa_muon() < mccuts.cfgMinEtaGen || mccuts.cfgMaxEtaGen < mcparticle.etaSmeared_sa_muon()) {
+            return false;
+          }
+        } else if (mccuts.cfgMuonTrackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
+          if (mcparticle.ptSmeared_gl_muon() < mccuts.cfgMinPtGen || mccuts.cfgMaxPtGen < mcparticle.ptSmeared_gl_muon()) {
+            return false;
+          }
+          if (mcparticle.etaSmeared_gl_muon() < mccuts.cfgMinEtaGen || mccuts.cfgMaxEtaGen < mcparticle.etaSmeared_gl_muon()) {
+            return false;
+          }
+        }
+      }
+    } else {
+      if (mcparticle.pt() < mccuts.cfgMinPtGen || mccuts.cfgMaxPtGen < mcparticle.pt()) {
+        return false;
+      }
+      if (mcparticle.eta() < mccuts.cfgMinEtaGen || mccuts.cfgMaxEtaGen < mcparticle.eta()) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   template <typename TCollision, typename TBC>
@@ -161,15 +204,57 @@ struct studyMCTruth {
     return true;
   }
 
-  template <int evtype, int signtype, typename TMCLepton, typename TMCParticles>
+  template <int evtype, int signtype, bool isSmeared, typename TMCLepton, typename TMCParticles>
   void fillTrueInfo(TMCLepton const& t1, TMCLepton const& t2, TMCParticles const& mcParticles)
   {
-    if (!isSelectedMCParticle(t1) || !isSelectedMCParticle(t2)) {
+    if (!isSelectedMCParticle<isSmeared>(t1) || !isSelectedMCParticle<isSmeared>(t2)) {
       return;
     }
 
-    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), leptonMass);
-    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonMass);
+    float pt1 = 0.f, eta1 = 0.f, phi1 = 0.f, pt2 = 0.f, eta2 = 0.f, phi2 = 0.f;
+    if constexpr (isSmeared) {
+      if (std::abs(mccuts.cfgPdgCodeLepton) == 11) {
+        pt1 = t1.ptSmeared();
+        eta1 = t1.etaSmeared();
+        phi1 = t1.phiSmeared();
+        pt2 = t2.ptSmeared();
+        eta2 = t2.etaSmeared();
+        phi2 = t2.phiSmeared();
+      } else if (std::abs(mccuts.cfgPdgCodeLepton) == 13) {
+        if (mccuts.cfgMuonTrackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
+          pt1 = t1.ptSmeared_sa_muon();
+          eta1 = t1.etaSmeared_sa_muon();
+          phi1 = t1.phiSmeared_sa_muon();
+          pt2 = t2.ptSmeared_sa_muon();
+          eta2 = t2.etaSmeared_sa_muon();
+          phi2 = t2.phiSmeared_sa_muon();
+        } else if (mccuts.cfgMuonTrackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
+          pt1 = t1.ptSmeared_gl_muon();
+          eta1 = t1.etaSmeared_gl_muon();
+          phi1 = t1.phiSmeared_gl_muon();
+          pt2 = t2.ptSmeared_gl_muon();
+          eta2 = t2.etaSmeared_gl_muon();
+          phi2 = t2.phiSmeared_gl_muon();
+        } else {
+          pt1 = t1.pt();
+          eta1 = t1.eta();
+          phi1 = t1.phi();
+          pt2 = t2.pt();
+          eta2 = t2.eta();
+          phi2 = t2.phi();
+        }
+      }
+    } else {
+      pt1 = t1.pt();
+      eta1 = t1.eta();
+      phi1 = t1.phi();
+      pt2 = t2.pt();
+      eta2 = t2.eta();
+      phi2 = t2.phi();
+    }
+
+    ROOT::Math::PtEtaPhiMVector v1(pt1, eta1, phi1, leptonMass);
+    ROOT::Math::PtEtaPhiMVector v2(pt2, eta2, phi2, leptonMass);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
     if (v12.Rapidity() < mccuts.cfgMinEtaGen || mccuts.cfgMaxEtaGen < v12.Rapidity()) {
@@ -231,12 +316,27 @@ struct studyMCTruth {
     }
   }
 
-  template <typename TMCCollisions, typename TMCParticles, typename TBCs, typename TCollisions>
-  void runMC(TMCCollisions const& mcCollisions, TMCParticles const& mcParticles, TBCs const&, TCollisions const& collisions)
+  template <bool isSmeared, typename TMCCollisions, typename TMCParticles, typename TBCs, typename TCollisions, typename TMCPosLeptons, typename TMCNegLeptons>
+  void runMC(TMCCollisions const& mcCollisions, TMCParticles const& mcParticles, TBCs const&, TCollisions const& collisions, TMCPosLeptons const& mcPosLeptons, TMCNegLeptons const& mcNegLeptons)
   {
     for (const auto& mcCollision : mcCollisions) {
+
+      if (mccuts.cfgEventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != mccuts.cfgEventGeneratorType) {
+        continue;
+      }
+
       const auto& bc_from_mcCollision = mcCollision.template bc_as<TBCs>();
       bool isSelectedMC = isSelectedCollision(mcCollision, bc_from_mcCollision);
+
+      const auto& reccolls_per_mccoll = collisions.sliceBy(recColperMcCollision, mcCollision.globalIndex());
+      int nselreccolls_per_mccoll = 0;
+      for (const auto& rec_col : reccolls_per_mccoll) {
+        if (isSelectedCollision(rec_col, rec_col.template foundBC_as<TBCs>())) {
+          nselreccolls_per_mccoll++;
+        }
+      } // end of reconstructed collision
+      fRegistry.fill(HIST("Event/allMC/hReccollsPerMCcoll"), reccolls_per_mccoll.size());
+      fRegistry.fill(HIST("Event/allMC/hSelReccollsPerMCcoll"), nselreccolls_per_mccoll);
 
       bool isSelectedRec = false;
       bool hasRecCollision = false;
@@ -247,16 +347,22 @@ struct studyMCTruth {
         isSelectedRec = isSelectedCollision(collision, bc_from_collision);
         fRegistry.fill(HIST("Event/hDiffBC"), bc_from_collision.globalBC() - bc_from_mcCollision.globalBC());
       }
-
       fRegistry.fill(HIST("Event/allMC/hZvtx"), mcCollision.posZ());
       fRegistry.fill(HIST("Event/allMC/hImpactParameter"), mcCollision.impactParameter());
+
       if (isSelectedMC) {
+        fRegistry.fill(HIST("Event/selectedMC/hReccollsPerMCcoll"), reccolls_per_mccoll.size());
+        fRegistry.fill(HIST("Event/selectedMC/hSelReccollsPerMCcoll"), nselreccolls_per_mccoll);
         fRegistry.fill(HIST("Event/selectedMC/hZvtx"), mcCollision.posZ());
         fRegistry.fill(HIST("Event/selectedMC/hImpactParameter"), mcCollision.impactParameter());
         if (hasRecCollision) {
+          fRegistry.fill(HIST("Event/selectedMC_and_Rec/hReccollsPerMCcoll"), reccolls_per_mccoll.size());
+          fRegistry.fill(HIST("Event/selectedMC_and_Rec/hSelReccollsPerMCcoll"), nselreccolls_per_mccoll);
           fRegistry.fill(HIST("Event/selectedMC_and_Rec/hZvtx"), mcCollision.posZ());
           fRegistry.fill(HIST("Event/selectedMC_and_Rec/hImpactParameter"), mcCollision.impactParameter());
           if (isSelectedRec) {
+            fRegistry.fill(HIST("Event/selectedMC_and_selectedRec/hReccollsPerMCcoll"), reccolls_per_mccoll.size());
+            fRegistry.fill(HIST("Event/selectedMC_and_selectedRec/hSelReccollsPerMCcoll"), nselreccolls_per_mccoll);
             fRegistry.fill(HIST("Event/selectedMC_and_selectedRec/hZvtx"), mcCollision.posZ());
             fRegistry.fill(HIST("Event/selectedMC_and_selectedRec/hImpactParameter"), mcCollision.impactParameter());
           }
@@ -268,39 +374,39 @@ struct studyMCTruth {
       auto negLeptons_per_mccollision = mcNegLeptons.sliceBy(perMcCollision, mcCollision.globalIndex());
 
       for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posLeptons_per_mccollision, negLeptons_per_mccollision))) { // ULS
-        fillTrueInfo<0, 0>(pos, neg, mcParticles);
+        fillTrueInfo<0, 0, isSmeared>(pos, neg, mcParticles);
         if (isSelectedMC) {
-          fillTrueInfo<1, 0>(pos, neg, mcParticles);
+          fillTrueInfo<1, 0, isSmeared>(pos, neg, mcParticles);
           if (hasRecCollision) {
-            fillTrueInfo<2, 0>(pos, neg, mcParticles);
+            fillTrueInfo<2, 0, isSmeared>(pos, neg, mcParticles);
             if (isSelectedRec) {
-              fillTrueInfo<3, 0>(pos, neg, mcParticles);
+              fillTrueInfo<3, 0, isSmeared>(pos, neg, mcParticles);
             }
           }
         }
       } // end of ULS pair loop
 
       for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posLeptons_per_mccollision, posLeptons_per_mccollision))) { // LS++
-        fillTrueInfo<0, 1>(pos1, pos2, mcParticles);
+        fillTrueInfo<0, 1, isSmeared>(pos1, pos2, mcParticles);
         if (isSelectedMC) {
-          fillTrueInfo<1, 1>(pos1, pos2, mcParticles);
+          fillTrueInfo<1, 1, isSmeared>(pos1, pos2, mcParticles);
           if (hasRecCollision) {
-            fillTrueInfo<2, 1>(pos1, pos2, mcParticles);
+            fillTrueInfo<2, 1, isSmeared>(pos1, pos2, mcParticles);
             if (isSelectedRec) {
-              fillTrueInfo<3, 1>(pos1, pos2, mcParticles);
+              fillTrueInfo<3, 1, isSmeared>(pos1, pos2, mcParticles);
             }
           }
         }
       } // end of LS++ pair loop
 
       for (auto& [neg1, neg2] : combinations(CombinationsStrictlyUpperIndexPolicy(negLeptons_per_mccollision, negLeptons_per_mccollision))) { // LS--
-        fillTrueInfo<0, 2>(neg1, neg2, mcParticles);
+        fillTrueInfo<0, 2, isSmeared>(neg1, neg2, mcParticles);
         if (isSelectedMC) {
-          fillTrueInfo<1, 2>(neg1, neg2, mcParticles);
+          fillTrueInfo<1, 2, isSmeared>(neg1, neg2, mcParticles);
           if (hasRecCollision) {
-            fillTrueInfo<2, 2>(neg1, neg2, mcParticles);
+            fillTrueInfo<2, 2, isSmeared>(neg1, neg2, mcParticles);
             if (isSelectedRec) {
-              fillTrueInfo<3, 2>(neg1, neg2, mcParticles);
+              fillTrueInfo<3, 2, isSmeared>(neg1, neg2, mcParticles);
             }
           }
         }
@@ -312,20 +418,31 @@ struct studyMCTruth {
 
   SliceCache cache;
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<aod::McCollisionLabels> recColperMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   using MyMcCollisions = soa::Join<aod::McCollisions, aod::MostProbableEMEventIdsInMC>;
 
   Filter collisionFilter = eventcuts.cfgMinImpPar < o2::aod::mccollision::impactParameter && o2::aod::mccollision::impactParameter < eventcuts.cfgMaxImpPar;
   using FilteredMyMcCollisions = soa::Filtered<MyMcCollisions>;
 
-  Partition<aod::McParticles> mcPosLeptons = o2::aod::mcparticle::pdgCode == -mccuts.cfgPdgCodeLepton && (mccuts.cfgMinPtGen < o2::aod::mcparticle::pt && o2::aod::mcparticle::pt < mccuts.cfgMaxPtGen) && (mccuts.cfgMinEtaGen < o2::aod::mcparticle::eta && o2::aod::mcparticle::eta < mccuts.cfgMaxEtaGen);
-  Partition<aod::McParticles> mcNegLeptons = o2::aod::mcparticle::pdgCode == mccuts.cfgPdgCodeLepton && (mccuts.cfgMinPtGen < o2::aod::mcparticle::pt && o2::aod::mcparticle::pt < mccuts.cfgMaxPtGen) && (mccuts.cfgMinEtaGen < o2::aod::mcparticle::eta && o2::aod::mcparticle::eta < mccuts.cfgMaxEtaGen);
+  Partition<aod::McParticles> McPosLeptons = o2::aod::mcparticle::pdgCode == -mccuts.cfgPdgCodeLepton && (mccuts.cfgMinPtGen < o2::aod::mcparticle::pt && o2::aod::mcparticle::pt < mccuts.cfgMaxPtGen) && (mccuts.cfgMinEtaGen < o2::aod::mcparticle::eta && o2::aod::mcparticle::eta < mccuts.cfgMaxEtaGen);
+  Partition<aod::McParticles> McNegLeptons = o2::aod::mcparticle::pdgCode == mccuts.cfgPdgCodeLepton && (mccuts.cfgMinPtGen < o2::aod::mcparticle::pt && o2::aod::mcparticle::pt < mccuts.cfgMaxPtGen) && (mccuts.cfgMinEtaGen < o2::aod::mcparticle::eta && o2::aod::mcparticle::eta < mccuts.cfgMaxEtaGen);
+
+  using SmearedMcParticles = soa::Join<aod::McParticles, aod::SmearedElectrons, aod::SmearedMuons>;
+  Partition<SmearedMcParticles> McPosLeptonsSmeared = o2::aod::mcparticle::pdgCode == -mccuts.cfgPdgCodeLepton && ifnode(mccuts.cfgPdgCodeLepton.node() == 11, (mccuts.cfgMinPtGen.node() < o2::aod::smearedtrack::ptSmeared && o2::aod::smearedtrack::ptSmeared < mccuts.cfgMaxPtGen.node()) && (mccuts.cfgMinEtaGen.node() < o2::aod::smearedtrack::etaSmeared && o2::aod::smearedtrack::etaSmeared < mccuts.cfgMaxEtaGen.node()), ifnode(mccuts.cfgMuonTrackType.node() == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack), (mccuts.cfgMinPtGen.node() < o2::aod::smearedtrack::ptSmeared_gl_muon && o2::aod::smearedtrack::ptSmeared_gl_muon < mccuts.cfgMaxPtGen.node()) && (mccuts.cfgMinEtaGen.node() < o2::aod::smearedtrack::etaSmeared_gl_muon && o2::aod::smearedtrack::etaSmeared_gl_muon < mccuts.cfgMaxEtaGen.node()), (mccuts.cfgMinPtGen.node() < o2::aod::smearedtrack::ptSmeared_sa_muon && o2::aod::smearedtrack::ptSmeared_sa_muon < mccuts.cfgMaxPtGen.node()) && (mccuts.cfgMinEtaGen.node() < o2::aod::smearedtrack::etaSmeared_sa_muon && o2::aod::smearedtrack::etaSmeared_sa_muon < mccuts.cfgMaxEtaGen.node())));
+  Partition<SmearedMcParticles> McNegLeptonsSmeared = o2::aod::mcparticle::pdgCode == mccuts.cfgPdgCodeLepton && ifnode(mccuts.cfgPdgCodeLepton.node() == 11, (mccuts.cfgMinPtGen.node() < o2::aod::smearedtrack::ptSmeared && o2::aod::smearedtrack::ptSmeared < mccuts.cfgMaxPtGen.node()) && (mccuts.cfgMinEtaGen.node() < o2::aod::smearedtrack::etaSmeared && o2::aod::smearedtrack::etaSmeared < mccuts.cfgMaxEtaGen.node()), ifnode(mccuts.cfgMuonTrackType.node() == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack), (mccuts.cfgMinPtGen.node() < o2::aod::smearedtrack::ptSmeared_gl_muon && o2::aod::smearedtrack::ptSmeared_gl_muon < mccuts.cfgMaxPtGen.node()) && (mccuts.cfgMinEtaGen.node() < o2::aod::smearedtrack::etaSmeared_gl_muon && o2::aod::smearedtrack::etaSmeared_gl_muon < mccuts.cfgMaxEtaGen.node()), (mccuts.cfgMinPtGen.node() < o2::aod::smearedtrack::ptSmeared_sa_muon && o2::aod::smearedtrack::ptSmeared_sa_muon < mccuts.cfgMaxPtGen.node()) && (mccuts.cfgMinEtaGen.node() < o2::aod::smearedtrack::etaSmeared_sa_muon && o2::aod::smearedtrack::etaSmeared_sa_muon < mccuts.cfgMaxEtaGen.node())));
 
   void processMC(FilteredMyMcCollisions const& mcCollisions, aod::McParticles const& mcParticles, soa::Join<aod::BCsWithTimestamps, aod::BcSels> const& bcs, soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions)
   {
-    runMC(mcCollisions, mcParticles, bcs, collisions);
+    runMC<false>(mcCollisions, mcParticles, bcs, collisions, McPosLeptons, McNegLeptons);
   }
-  PROCESS_SWITCH(studyMCTruth, processMC, "process", true);
+  PROCESS_SWITCH(studyMCTruth, processMC, "process MC", true);
+
+  void processMCSmeared(FilteredMyMcCollisions const& mcCollisions, SmearedMcParticles const& mcParticles, soa::Join<aod::BCsWithTimestamps, aod::BcSels> const& bcs, soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions)
+  {
+    runMC<true>(mcCollisions, mcParticles, bcs, collisions, McPosLeptonsSmeared, McNegLeptonsSmeared);
+  }
+  PROCESS_SWITCH(studyMCTruth, processMCSmeared, "processMC with smeared values", false);
 
   void processDummy(FilteredMyMcCollisions const&) {}
   PROCESS_SWITCH(studyMCTruth, processDummy, "process Dummy", false);
