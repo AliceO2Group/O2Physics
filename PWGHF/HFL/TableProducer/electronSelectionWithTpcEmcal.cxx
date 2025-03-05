@@ -76,7 +76,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> invariantMass{"invariantMass", 0.14f, "max Invariant Mass for Photonic electron"};
   Configurable<float> chiSquareMax{"chiSquareMax", 3.0f, "chiSquare on the reconstructed parent particle"};
 
-  // EtMcal and Dcal selection cut
+  // EMcal and Dcal selection cut
   Configurable<float> etaTrackDCalNegativeMax{"etaTrackDCalNegativeMax", -0.22f, "Eta range for electron Dcal tracks"};
   Configurable<float> etaTrackDCalNegativeMin{"etaTrackDCalNegativeMin", -0.6f, "Eta range for electron tracks"};
   Configurable<float> etaTrackDCalPositiveMax{"etaTrackDCalPositiveMax", 0.6f, "Eta range for electron Dcal tracks"};
