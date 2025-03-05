@@ -218,7 +218,7 @@ struct ApplySmearing {
       }
 
       int pdgCode = mctrack.pdgCode();
-      if (abs(pdgCode) == 11) {
+      if (std::abs(pdgCode) == 11) {
         int ch = -1;
         if (pdgCode < 0) {
           ch = 1;
@@ -232,7 +232,7 @@ struct ApplySmearing {
         // fill the table
         smearedelectron(ptsmeared, etasmeared, phismeared, efficiency, dca);
         smearedmuon(ptgen, etagen, phigen, 1.f, 0.f, ptgen, etagen, phigen, 1.f, 0.f);
-      } else if (abs(pdgCode) == 13) {
+      } else if (std::abs(pdgCode) == 13) {
         int ch = -1;
         if (pdgCode < 0) {
           ch = 1;
@@ -249,7 +249,6 @@ struct ApplySmearing {
         efficiency_gl = smearer_GlobalMuon.getEfficiency(ptgen, etagen, phigen);
         dca_gl = smearer_GlobalMuon.getDCA(ptsmeared_gl);
         smearedmuon(ptsmeared_sa, etasmeared_sa, phismeared_sa, efficiency_sa, dca_sa, ptsmeared_gl, etasmeared_gl, phismeared_gl, efficiency_gl, dca_gl);
-
         smearedelectron(ptgen, etagen, phigen, 1.f, 0.f);
       } else {
         // don't apply smearing
@@ -279,12 +278,14 @@ struct ApplySmearing {
     // don't apply smearing
     for (auto& mctrack : tracksMC) {
       int pdgCode = mctrack.pdgCode();
-      if (abs(pdgCode) == 11) {
+      if (std::abs(pdgCode) == 11) {
         smearedelectron(mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0);
-      } else if (abs(pdgCode) == 13) {
+        smearedmuon(mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0, mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0);
+      } else if (std::abs(pdgCode) == 13) {
+        smearedelectron(mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0);
         smearedmuon(mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0, mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0);
       } else {
-        smearedelectron(mctrack.pt(), mctrack.eta(), mctrack.eta(), 1.0, 0.0);
+        smearedelectron(mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0);
         smearedmuon(mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0, mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0);
       }
     }
@@ -348,7 +349,7 @@ struct CheckSmearing {
   void Check(TTracksMC const& tracksMC, TMCCollisions const&)
   {
     for (auto& mctrack : tracksMC) {
-      if (abs(mctrack.pdgCode()) != fPdgCode) {
+      if (std::abs(mctrack.pdgCode()) != fPdgCode) {
         continue;
       }
 
