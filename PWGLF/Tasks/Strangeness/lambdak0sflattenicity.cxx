@@ -1892,6 +1892,7 @@ struct Lambdak0sflattenicity {
       float cosPAcasc = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
       float cosPAv0 = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
       float massXi = casc.mXi();
+      rXi.fill(HIST("hMassXi"), massXi);
       // Cascade
       if (posDaughterTrack.tpcNSigmaPi() < nSigmaTPCPion && negDaughterTrack.tpcNSigmaPi() < nSigmaTPCPion && bacDaughterTrack.tpcNSigmaPi() < nSigmaTPCPion &&
           posDaughterTrack.tpcNSigmaKa() < nSigmaTPCKaon && negDaughterTrack.tpcNSigmaKa() < nSigmaTPCKaon && bacDaughterTrack.tpcNSigmaKa() < nSigmaTPCKaon &&
@@ -1899,7 +1900,7 @@ struct Lambdak0sflattenicity {
           posDaughterTrack.tpcNClsCrossedRows() > nTPCcrossedRows && negDaughterTrack.tpcNClsCrossedRows() > nTPCcrossedRows && bacDaughterTrack.tpcNClsCrossedRows() > nTPCcrossedRows &&
           std::abs(posDaughterTrack.eta()) < cfgTrkEtaCut && std::abs(negDaughterTrack.eta()) < cfgTrkEtaCut && std::abs(bacDaughterTrack.eta()) < cfgTrkEtaCut &&
           casc.dcapostopv() > v0settingDCApostopv && casc.dcanegtopv() > v0settingDCAnegtopv && casc.dcabachtopv() > v0settingDCAbactopv && casc.dcaV0daughters() < v0settingDCAv0dau && dcav0pv > cascsettingDCAv0toPV &&
-          casc.dcacascdaughters() < cascsettingDCAv0bach && casc.bachBaryonDCAxyToPV() > cascsettingDCAxybaryonbach && cosPAcasc > cascsettingCosPAcascPV && cosPAv0 > cascsettingCosPAv0PV &&
+          casc.dcacascdaughters() < cascsettingDCAv0bach && casc.bachBaryonDCAxyToPV() < cascsettingDCAxybaryonbach && cosPAcasc > cascsettingCosPAcascPV && cosPAv0 > cascsettingCosPAv0PV &&
           casc.cascradius() > cascsettingcascradius && casc.v0radius() > cascsettingv0radius &&
           std::abs(casc.yXi()) < cascsettingRapidity && ctauXi < ctauxiPDG * cascsettingproplifetime &&
           std::abs(casc.mLambda() - pdgmassLambda) < cascsettingMassRejectionLambdaXi && std::abs(casc.mOmega() - pdgmassOmega) > cascsettingMassRejectioOmegaXi) {
@@ -1958,6 +1959,7 @@ struct Lambdak0sflattenicity {
         float cosPAcasc = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
         float cosPAv0 = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
         float massXi = casc.mXi();
+        rXi.fill(HIST("hMassXi"), massXi);
         // Cascade
         if (posDaughterTrack.tpcNSigmaPi() < nSigmaTPCPion && negDaughterTrack.tpcNSigmaPi() < nSigmaTPCPion && bacDaughterTrack.tpcNSigmaPi() < nSigmaTPCPion &&
             posDaughterTrack.tpcNSigmaKa() < nSigmaTPCKaon && negDaughterTrack.tpcNSigmaKa() < nSigmaTPCKaon && bacDaughterTrack.tpcNSigmaKa() < nSigmaTPCKaon &&
@@ -1965,7 +1967,7 @@ struct Lambdak0sflattenicity {
             posDaughterTrack.tpcNClsCrossedRows() > nTPCcrossedRows && negDaughterTrack.tpcNClsCrossedRows() > nTPCcrossedRows && bacDaughterTrack.tpcNClsCrossedRows() > nTPCcrossedRows &&
             std::abs(posDaughterTrack.eta()) < cfgTrkEtaCut && std::abs(negDaughterTrack.eta()) < cfgTrkEtaCut && std::abs(bacDaughterTrack.eta()) < cfgTrkEtaCut &&
             casc.dcapostopv() > v0settingDCApostopv && casc.dcanegtopv() > v0settingDCAnegtopv && casc.dcabachtopv() > v0settingDCAbactopv && casc.dcaV0daughters() < v0settingDCAv0dau && dcav0pv > cascsettingDCAv0toPV &&
-            casc.dcacascdaughters() < cascsettingDCAv0bach && casc.bachBaryonDCAxyToPV() > cascsettingDCAxybaryonbach && cosPAcasc > cascsettingCosPAcascPV && cosPAv0 > cascsettingCosPAv0PV &&
+            casc.dcacascdaughters() < cascsettingDCAv0bach && casc.bachBaryonDCAxyToPV() < cascsettingDCAxybaryonbach && cosPAcasc > cascsettingCosPAcascPV && cosPAv0 > cascsettingCosPAv0PV &&
             casc.cascradius() > cascsettingcascradius && casc.v0radius() > cascsettingv0radius &&
             std::abs(casc.yXi()) < cascsettingRapidity && ctauXi < ctauxiPDG * cascsettingproplifetime &&
             std::abs(casc.mLambda() - pdgmassLambda) < cascsettingMassRejectionLambdaXi && std::abs(casc.mOmega() - pdgmassOmega) > cascsettingMassRejectioOmegaXi) {

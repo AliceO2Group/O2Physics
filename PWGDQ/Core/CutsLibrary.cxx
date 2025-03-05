@@ -3848,6 +3848,21 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
   }
 
+  for (size_t icase = 0; icase < vecOccupancies.size() - 1; icase++) {
+    if (!nameStr.compare(Form("eventStandardSel8PbPbQualityTrackOccupancySlice_0_%lu", icase))) {
+      cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+      cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsNoITSROFBorder, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
+      cut->AddCut(VarManager::kCentFT0C, 0.0, 90.0);
+      cut->AddCut(VarManager::kTrackOccupancyInTimeRange, 0, vecOccupancies[icase]);
+
+      return cut;
+    }
+  }
+
   if (!nameStr.compare("eventStandardSel8ppQuality")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
