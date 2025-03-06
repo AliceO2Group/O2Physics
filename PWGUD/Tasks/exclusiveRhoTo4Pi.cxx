@@ -39,9 +39,52 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace o2::aod
+{
+namespace zero_charge_events
+{
+
+DECLARE_SOA_COLUMN(Dcaxy, dcaxy, std::vector<double>);
+DECLARE_SOA_COLUMN(Dcaz, dcaz, std::vector<double>);
+
+DECLARE_SOA_COLUMN(PionPt, pionPt, std::vector<double>);
+DECLARE_SOA_COLUMN(PionEta, pionEta, std::vector<double>);
+DECLARE_SOA_COLUMN(PionRapidity, pionRapidity, std::vector<double>);
+
+DECLARE_SOA_COLUMN(FourPionPt, fourPionPt, double);
+DECLARE_SOA_COLUMN(FourPionEta, fourPionEta, double);
+DECLARE_SOA_COLUMN(FourPionRapidity, fourPionRapidity, double);
+DECLARE_SOA_COLUMN(FourPionMass, fourPionMass, double);
+
+DECLARE_SOA_COLUMN(FourPionPhiPair1, fourPionPhiPair1, double);
+DECLARE_SOA_COLUMN(FourPionPhiPair2, fourPionPhiPair2, double);
+DECLARE_SOA_COLUMN(FourPionCosThetaPair1, fourPionCosThetaPair1, double);
+DECLARE_SOA_COLUMN(FourPionCosThetaPair2, fourPionCosThetaPair2, double);
+} // namespace zero_charge_events
+DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
+
+                  zero_charge_events::Dcaxy,
+                  zero_charge_events::Dcaz,
+
+                  zero_charge_events::PionPt,
+                  zero_charge_events::PionEta,
+                  zero_charge_events::PionRapidity,
+
+                  zero_charge_events::FourPionPt,
+                  zero_charge_events::FourPionEta,
+                  zero_charge_events::FourPionRapidity,
+                  zero_charge_events::FourPionMass,
+
+                  zero_charge_events::FourPionPhiPair1,
+                  zero_charge_events::FourPionPhiPair2,
+                  zero_charge_events::FourPionCosThetaPair1,
+                  zero_charge_events::FourPionCosThetaPair2);
+} // namespace o2::aod
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   SGSelector sgSelector;
+  Produces<aod::TREE> zeroChargeEvents;
 
   HistogramRegistry histosData{"histosData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry histosMCgen{"histosMCgen", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -67,8 +110,6 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   Configurable<float> nSigmaTPCcut{"nSigmaTPCcut", 3, "TPC cut"};
   Configurable<float> nSigmaTOFcut{"nSigmaTOFcut", 3, "TOF cut"};
   Configurable<bool> strictEventSelection{"strictEventSelection", true, "Event Selection"};
-  // Configurable<bool> ifDataAnalysis{"ifDataAnalysis", true, "Data Analysis"};
-  // Configurable<bool> ifMCAnalysis{"ifMCAnalysis", false, "MC Analysis"};
 
   Configurable<int> nBinsPt{"nBinsPt", 1000, "Number of bins for pT"};
   Configurable<int> nBinsInvariantMass{"nBinsInvariantMass", 1000, "Number of bins for Invariant Mass"};
@@ -87,6 +128,13 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosData.add("GapSide", "Gap Side; Events", kTH1F, {{4, -1.5, 2.5}});
     histosData.add("TrueGapSide", "Gap Side; Events", kTH1F, {{4, -1.5, 2.5}});
     histosData.add("EventCounts", "Total Events; Events", kTH1F, {{10, 0, 10}});
+
+    histosData.add("vertexZ", "Vertex Z; Vertex Z [cm]; Counts", kTH1F, {{1000, -20, 20}});
+    histosData.add("dcaXY", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{10000, -5, 5}});
+    histosData.add("dcaZ", "dcaZ; dcaZ [cm]; Counts", kTH1F, {{10000, -10, 10}});
+    histosData.add("tpcChi2NCl", "TPC Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{200, 0, 200}});
+    histosData.add("itsChi2NCl", "ITS Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{200, 0, 200}});
+    histosData.add("tpcNClsFindable", "TPC N Cls Findable; N Cls Findable; Counts", kTH1F, {{200, 0, 200}});
 
     // TPC nSigma
     histosData.add("tpcNSigmaPi_WOTS", "TPC nSigma Pion without track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
@@ -163,8 +211,8 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosData.add("tofBeta_Pi", "TOF beta vs p for pions; p [GeV/c]; #beta", kTH2F, {{500, 0, 10}, {500, 0.0, 1.0}});
 
     // Other signals
-    histosData.add("FT0A", "T0A amplitude", kTH1F, {{200, 0.0, 500.0}});
-    histosData.add("FT0C", "T0C amplitude", kTH1F, {{200, 0.0, 500.0}});
+    histosData.add("FT0A", "T0A amplitude", kTH1F, {{2000, 0.0, 500.0}});
+    histosData.add("FT0C", "T0C amplitude", kTH1F, {{2000, 0.0, 500.0}});
     histosData.add("ZDC_A", "ZDC amplitude", kTH1F, {{1000, 0.0, 15}});
     histosData.add("ZDC_C", "ZDC amplitude", kTH1F, {{1000, 0.0, 15}});
     histosData.add("V0A", "V0A amplitude", kTH1F, {{1000, 0.0, 100}});
@@ -209,6 +257,13 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosMCgen.add("MCgen_phi_cosTheta_pair_2", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {{nBinsPhi, -3.2, 3.2}, {nBinsCosTheta, -1, 1}});
 
     // MC Reco Stuff
+
+    histosMCreco.add("vertexZ", "Vertex Z; Vertex Z [cm]; Counts", kTH1F, {{1000, -20, 20}});
+    histosMCreco.add("dcaXY", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{10000, -5, 5}});
+    histosMCreco.add("dcaZ", "dcaZ; dcaZ [cm]; Counts", kTH1F, {{10000, -10, 10}});
+    histosMCreco.add("tpcChi2NCl", "TPC Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{200, 0, 200}});
+    histosMCreco.add("itsChi2NCl", "ITS Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{200, 0, 200}});
+    histosMCreco.add("tpcNClsFindable", "TPC N Cls Findable; N Cls Findable; Counts", kTH1F, {{200, 0, 200}});
 
     histosMCreco.add("GapSide", "Gap Side; Events", kTH1F, {{4, -1.5, 2.5}});
     histosMCreco.add("TrueGapSide", "Gap Side; Events", kTH1F, {{4, -1.5, 2.5}});
@@ -289,8 +344,8 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosMCreco.add("tofBeta_Pi", "TOF beta vs p for pions; p [GeV/c]; #beta", kTH2F, {{500, 0, 10}, {500, 0.0, 1.0}});
 
     // Other signals
-    histosMCreco.add("FT0A", "T0A amplitude", kTH1F, {{200, 0.0, 500.0}});
-    histosMCreco.add("FT0C", "T0C amplitude", kTH1F, {{200, 0.0, 500.0}});
+    histosMCreco.add("FT0A", "T0A amplitude", kTH1F, {{2000, 0.0, 500.0}});
+    histosMCreco.add("FT0C", "T0C amplitude", kTH1F, {{2000, 0.0, 500.0}});
     histosMCreco.add("ZDC_A", "ZDC amplitude", kTH1F, {{1000, 0.0, 15}});
     histosMCreco.add("ZDC_C", "ZDC amplitude", kTH1F, {{1000, 0.0, 15}});
     histosMCreco.add("V0A", "V0A amplitude", kTH1F, {{1000, 0.0, 100}});
@@ -389,7 +444,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     if ((gapSide != 2)) {
       return;
     }
-
+    histosData.fill(HIST("vertexZ"), collision.posZ());
     histosData.fill(HIST("V0A"), collision.totalFV0AmplitudeA());
     histosData.fill(HIST("FT0A"), collision.totalFT0AmplitudeA());
     histosData.fill(HIST("FT0C"), collision.totalFT0AmplitudeC());
@@ -457,6 +512,13 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       histosData.fill(HIST("tofNSigmaPi_WTS"), WTS_tracks[i].tofNSigmaPi(), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py()));
       histosData.fill(HIST("pT_track_WTS"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py()));
       histosData.fill(HIST("rapidity_track_WTS"), tempWTS.Rapidity());
+
+      histosData.fill(HIST("itsChi2NCl"), WTS_tracks[i].itsChi2NCl());
+      histosData.fill(HIST("tpcChi2NCl"), WTS_tracks[i].tpcChi2NCl());
+      histosData.fill(HIST("tpcNClsFindable"), WTS_tracks[i].tpcNClsFindable());
+      histosData.fill(HIST("dcaXY"), WTS_tracks[i].dcaXY());
+      histosData.fill(HIST("dcaZ"), WTS_tracks[i].dcaZ());
+
     } // End of loop over tracks with selection only
 
     TLorentzVector tempWTSPIDPi;
@@ -487,6 +549,18 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       return;
     }
 
+    std::vector<double> pidcaXY;
+    std::vector<double> pidcaZ;
+
+    std::vector<double> piPt;
+    std::vector<double> piEta;
+    std::vector<double> piRapidity;
+
+    double fourPiPhiPair1 = 0;
+    double fourPiPhiPair2 = 0;
+    double fourPiCosThetaPair1 = 0;
+    double fourPiCosThetaPair2 = 0;
+
     // Selecting Events with net charge = 0
     if (numPionMinusTRacks == 2 && numPiPlusTracks == 2) {
 
@@ -497,6 +571,31 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       p2.SetXYZM(Pi_plus_tracks[1].px(), Pi_plus_tracks[1].py(), Pi_plus_tracks[1].pz(), o2::constants::physics::MassPionCharged);
       p3.SetXYZM(Pi_minus_tracks[0].px(), Pi_minus_tracks[0].py(), Pi_minus_tracks[0].pz(), o2::constants::physics::MassPionCharged);
       p4.SetXYZM(Pi_minus_tracks[1].px(), Pi_minus_tracks[1].py(), Pi_minus_tracks[1].pz(), o2::constants::physics::MassPionCharged);
+
+      pidcaXY.push_back(Pi_plus_tracks[0].dcaXY());
+      pidcaXY.push_back(Pi_plus_tracks[1].dcaXY());
+      pidcaXY.push_back(Pi_minus_tracks[0].dcaXY());
+      pidcaXY.push_back(Pi_minus_tracks[1].dcaXY());
+
+      pidcaZ.push_back(Pi_plus_tracks[0].dcaZ());
+      pidcaZ.push_back(Pi_plus_tracks[1].dcaZ());
+      pidcaZ.push_back(Pi_minus_tracks[0].dcaZ());
+      pidcaZ.push_back(Pi_minus_tracks[1].dcaZ());
+
+      piPt.push_back(p1.Pt());
+      piPt.push_back(p2.Pt());
+      piPt.push_back(p3.Pt());
+      piPt.push_back(p4.Pt());
+
+      piEta.push_back(p1.Eta());
+      piEta.push_back(p2.Eta());
+      piEta.push_back(p3.Eta());
+      piEta.push_back(p4.Eta());
+
+      piRapidity.push_back(p1.Rapidity());
+      piRapidity.push_back(p2.Rapidity());
+      piRapidity.push_back(p3.Rapidity());
+      piRapidity.push_back(p4.Rapidity());
 
       histosData.fill(HIST("pT_track_WTS_PID_Pi_contributed"), p1.Pt());
       histosData.fill(HIST("pT_track_WTS_PID_Pi_contributed"), p2.Pt());
@@ -521,6 +620,17 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       k23 = k2 + k3;
       k24 = k2 + k4;
 
+      fourPiPhiPair1 = phiCollinsSoperFrame(k13, k24, k1234);
+      fourPiPhiPair2 = phiCollinsSoperFrame(k14, k23, k1234);
+      fourPiCosThetaPair1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
+      fourPiCosThetaPair2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
+
+      zeroChargeEvents(
+        pidcaXY, pidcaZ,
+        piPt, piEta, piRapidity,
+        p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M(),
+        fourPiPhiPair1, fourPiPhiPair2, fourPiCosThetaPair1, fourPiCosThetaPair2);
+
       if (std::fabs(p1234.Rapidity()) < 0.5) {
         histosData.fill(HIST("pT_event_0charge_WTS_PID_Pi"), p1234.Pt());
         if (p1234.Pt() < 0.15) {
@@ -532,18 +642,13 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
           histosData.fill(HIST("invMass_pair_3"), (p2 + p3).M());
           histosData.fill(HIST("invMass_pair_4"), (p2 + p4).M());
 
-          auto phiPair1 = phiCollinsSoperFrame(k13, k24, k1234);
-          auto phiPair2 = phiCollinsSoperFrame(k14, k23, k1234);
-          auto cosThetaPair1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
-          auto cosThetaPair2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
+          histosData.fill(HIST("CS_phi_pair_1"), fourPiPhiPair1);
+          histosData.fill(HIST("CS_phi_pair_2"), fourPiPhiPair2);
+          histosData.fill(HIST("CS_costheta_pair_1"), fourPiCosThetaPair1);
+          histosData.fill(HIST("CS_costheta_pair_2"), fourPiCosThetaPair2);
 
-          histosData.fill(HIST("CS_phi_pair_1"), phiPair1);
-          histosData.fill(HIST("CS_phi_pair_2"), phiPair2);
-          histosData.fill(HIST("CS_costheta_pair_1"), cosThetaPair1);
-          histosData.fill(HIST("CS_costheta_pair_2"), cosThetaPair2);
-
-          histosData.fill(HIST("phi_cosTheta_pair_1"), phiPair1, cosThetaPair1);
-          histosData.fill(HIST("phi_cosTheta_pair_2"), phiPair2, cosThetaPair2);
+          histosData.fill(HIST("phi_cosTheta_pair_1"), fourPiPhiPair1, fourPiCosThetaPair1);
+          histosData.fill(HIST("phi_cosTheta_pair_2"), fourPiPhiPair2, fourPiCosThetaPair2);
         }
         if (p1234.Pt() > 0.15 && p1234.Pt() < 0.80) {
           histosData.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainB"), p1234.Rapidity());
@@ -607,8 +712,9 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       if (!particle.has_mothers()) {
         continue;
       }
-
       for (const auto& mother : particle.mothers_as<aod::UDMcParticles>()) {
+        // LOGF(info, "Mother ID: %d", mother.pdgCode());
+
         if (mother.pdgCode() == 30113) {
           motherVector.SetXYZM(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassPionCharged);
           histosMCgen.fill(HIST("MCgen_rhoPrime_pT"), motherVector.Pt());
@@ -620,16 +726,16 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
           if (particle.pdgCode() == 211) {
             histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
             histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
-            // if(std::abs(tempVector.Rapidity()) < 0.9){
-            piPlusvectors.push_back(tempVector);
-            // }
+            if (std::abs(tempVector.Eta()) < 0.9) {
+              piPlusvectors.push_back(tempVector);
+            }
           }
           if (particle.pdgCode() == -211) {
             histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
             histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
-            // if(std::abs(tempVector.Rapidity()) < 0.9){
-            piMinusvectors.push_back(tempVector);
-            // }
+            if (std::abs(tempVector.Eta()) < 0.9) {
+              piMinusvectors.push_back(tempVector);
+            }
           }
         } // End of Mother ID 30113 rho prime
       } // End of loop over mothers
@@ -717,11 +823,14 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       return;
     }
 
+    histosMCreco.fill(HIST("vertexZ"), collision.posZ());
     histosMCreco.fill(HIST("V0A"), collision.totalFV0AmplitudeA());
     histosMCreco.fill(HIST("FT0A"), collision.totalFT0AmplitudeA());
     histosMCreco.fill(HIST("FT0C"), collision.totalFT0AmplitudeC());
     histosMCreco.fill(HIST("ZDC_A"), collision.energyCommonZNA());
+    LOGF(info, "ZDC_A: %f", collision.energyCommonZNA());
     histosMCreco.fill(HIST("ZDC_C"), collision.energyCommonZNC());
+    LOGF(info, "ZDC_C: %f", collision.energyCommonZNC());
 
     if (strictEventSelection) {
       if (collision.numContrib() != 4) {
@@ -773,6 +882,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       histosMCreco.fill(HIST("tofNSigmaPi_WOTS"), WOTS_tracks[i].tofNSigmaPi(), std::sqrt(WOTS_tracks[i].px() * WOTS_tracks[i].px() + WOTS_tracks[i].py() * WOTS_tracks[i].py()));
       histosMCreco.fill(HIST("pT_track_WOTS"), std::sqrt(WOTS_tracks[i].px() * WOTS_tracks[i].px() + WOTS_tracks[i].py() * WOTS_tracks[i].py()));
       histosMCreco.fill(HIST("rapidity_track_WOTS"), tempWOTS.Rapidity());
+
     } // End of loop over tracks without selection
 
     TLorentzVector tempWTS;
@@ -784,6 +894,12 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       histosMCreco.fill(HIST("tofNSigmaPi_WTS"), WTS_tracks[i].tofNSigmaPi(), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py()));
       histosMCreco.fill(HIST("pT_track_WTS"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py()));
       histosMCreco.fill(HIST("rapidity_track_WTS"), tempWTS.Rapidity());
+
+      histosMCreco.fill(HIST("itsChi2NCl"), WTS_tracks[i].itsChi2NCl());
+      histosMCreco.fill(HIST("tpcChi2NCl"), WTS_tracks[i].tpcChi2NCl());
+      histosMCreco.fill(HIST("tpcNClsFindable"), WTS_tracks[i].tpcNClsFindable());
+      histosMCreco.fill(HIST("dcaXY"), WTS_tracks[i].dcaXY());
+      histosMCreco.fill(HIST("dcaZ"), WTS_tracks[i].dcaZ());
     } // End of loop over tracks with selection only
 
     TLorentzVector tempWTSPIDPi;

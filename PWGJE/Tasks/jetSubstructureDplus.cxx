@@ -13,9 +13,10 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
+#include <vector>
 #include "PWGJE/Tasks/jetSubstructureHF.cxx"
 
-using JetSubstructureDplus = JetSubstructureHFTask<soa::Join<aod::DplusChargedJets, aod::DplusChargedJetConstituents>, soa::Join<aod::DplusChargedMCDetectorLevelJets, aod::DplusChargedMCDetectorLevelJetConstituents>, soa::Join<aod::DplusChargedMCParticleLevelJets, aod::DplusChargedMCParticleLevelJetConstituents>, soa::Join<aod::DplusChargedEventWiseSubtractedJets, aod::DplusChargedEventWiseSubtractedJetConstituents>, aod::CandidatesDplusData, aod::CandidatesDplusMCP, aod::DplusCJetSSs, aod::DplusCMCDJetSSs, aod::DplusCMCPJetSSs, aod::DplusCEWSJetSSs, aod::JTrackDplusSubs>;
+using JetSubstructureDplus = JetSubstructureHFTask<soa::Join<aod::DplusChargedJets, aod::DplusChargedJetConstituents>, soa::Join<aod::DplusChargedMCDetectorLevelJets, aod::DplusChargedMCDetectorLevelJetConstituents>, soa::Join<aod::DplusChargedMCParticleLevelJets, aod::DplusChargedMCParticleLevelJetConstituents>, soa::Join<aod::DplusChargedEventWiseSubtractedJets, aod::DplusChargedEventWiseSubtractedJetConstituents>, aod::CandidatesDplusData, aod::CandidatesDplusMCP, aod::DplusCJetSSs, aod::DplusChargedSPs, aod::DplusChargedPRs, aod::DplusCMCDJetSSs, aod::DplusChargedMCDetectorLevelSPs, aod::DplusChargedMCDetectorLevelPRs, aod::DplusCMCPJetSSs, aod::DplusChargedMCParticleLevelSPs, aod::DplusChargedMCParticleLevelPRs, aod::DplusCEWSJetSSs, aod::DplusChargedEventWiseSubtractedSPs, aod::DplusChargedEventWiseSubtractedPRs, aod::JTrackDplusSubs>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

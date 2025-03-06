@@ -237,6 +237,7 @@ DECLARE_SOA_COLUMN(SigmaPz2, sigmaPz2, float);                          //! erro
 DECLARE_SOA_COLUMN(SigmaPxPy, sigmaPxPy, float);                        //! error of px x py in covariant matrix
 DECLARE_SOA_COLUMN(SigmaPyPz, sigmaPyPz, float);                        //! error of py x pz in covariant matrix
 DECLARE_SOA_COLUMN(SigmaPzPx, sigmaPzPx, float);                        //! error of pz x px in covariant matrix
+DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);          //!
 
 DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float px, float py, float pz, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz, m); }); //! energy of v0 photn, mass to be given as argument when getter is called!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
@@ -274,14 +275,19 @@ DECLARE_SOA_TABLE(V0PhotonsKFCov, "AOD", "V0PHOTONKFCOV", //! To be joined with 
 // iterators
 using V0PhotonKFCov = V0PhotonsKFCov::iterator;
 
+DECLARE_SOA_TABLE(V0PhotonsKFPrefilterBitDerived, "AOD", "V0PHOTONKFPFBPI0", v0photonkf::PrefilterBitDerived); // To be joined with V0PhotonsKF table at analysis level.
+// iterators
+using V0PhotonKFPrefilterBitDerived = V0PhotonsKFPrefilterBitDerived::iterator;
+
 DECLARE_SOA_TABLE(EMPrimaryElectronsFromDalitz, "AOD", "EMPRIMARYELDA", //!
                   o2::soa::Index<>, emprimaryelectron::CollisionId,
                   emprimaryelectron::TrackId, emprimaryelectron::Sign,
-                  track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ,
+                  track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ, track::CYY, track::CZY, track::CZZ,
                   track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
-                  track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap, track::Tgl,
+                  pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaPi,
+                  track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, track::Tgl,
 
                   // dynamic column
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,

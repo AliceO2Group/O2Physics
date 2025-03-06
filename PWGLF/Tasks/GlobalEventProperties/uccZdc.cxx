@@ -22,8 +22,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <vector>
 #include <string>
+#include <string_view>
+#include <vector>
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
@@ -96,7 +97,7 @@ struct UccZdc {
   Configurable<float> minMeanpT{"minMeanpT", 0.5, "minimum [pT]"};
   Configurable<float> maxMeanpT{"maxMeanpT", 1.1, "maximum [pT]"};
   Configurable<int> nBinsMeanpT{"nBinsMeanpT", 160, "# bins [pT]"};
-  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "pT binning"};
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12}, "pT binning"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
 
   // Configurable event selectiond and flags ZDC
@@ -145,8 +146,36 @@ struct UccZdc {
     Zem
   };
 
+  // Histograms names
+  static constexpr std::string_view PtCorrNames[4] = {
+    "NchvsOneParCorr", "NchvsTwoParCorr", "NchvsThreeParCorr",
+    "NchvsFourParCorr"};
+  static constexpr std::string_view PtCorrMCNchNames[4] = {
+    "NchvsOneParCorrMC", "NchvsTwoParCorrMC", "NchvsThreeParCorrMC",
+    "NchvsFourParCorrMC"};
+  static constexpr std::string_view PtCorrMCNchMCNames[4] = {
+    "NchMCvsOneParCorrMC", "NchMCvsTwoParCorrMC", "NchMCvsThreeParCorrMC",
+    "NchMCvsFourParCorrMC"};
+  static constexpr std::string_view PsTitles[4] = {
+    ";Nch;P_{1}=#Sigma_{evs} W^{(1)}_{e} [p_{T}^{(1)}]_{e};",
+    ";Nch;P_{2}=#Sigma_{evs} W^{(2)}_{e} [p_{T}^{(2)}]_{e};",
+    ";Nch;P_{3}=#Sigma_{evs} W^{(3)}_{e} [p_{T}^{(3)}]_{e};",
+    ";Nch;P_{4}=#Sigma_{evs} W^{(4)}_{e} [p_{T}^{(4)}]_{e};"};
+  static constexpr std::string_view WsTitles[4] = {
+    ";Nch;W_{1}=#Sigma_{evs} W^{(1)}_{e};",
+    ";Nch;W_{2}=#Sigma_{evs} W^{(2)}_{e};",
+    ";Nch;W_{3}=#Sigma_{evs} W^{(3)}_{e};",
+    ";Nch;W_{4}=#Sigma_{evs} W^{(4)}_{e};"};
+  static constexpr std::string_view PtCorrTitles[4] = {
+    ";Nch (|#eta|<0.8);[p_{T}]=(#Sigma w_{i} p_{T}^{i})/(#Sigma w_{i})",
+    ";Nch (|#eta|<0.8);[p_{T}^{2}]=(P_{1}^{2} - P_{2})/(W_{1}^{2} - "
+    "W_{2})",
+    ";Nch (|#eta|<0.8);[p_{T}^{3}]=(P_{1}^{3} - 3P_{2}P_{1} + "
+    "2P_{3})/(W_{1}^{3} - 3W_{2}W_{1} + 2W_{3})",
+    ";Nch (|#eta|<0.8);[p_{T}^{4}]"};
+
   // Filters
-  Filter collFilter = (nabs(aod::collision::posZ) < posZcut);
+  // Filter collFilter = (nabs(aod::collision::posZ) < posZcut);
   // Filter trackFilter = (requireGlobalTrackInFilter());
   Filter trackFilter =
     ((aod::track::eta > minEta) && (aod::track::eta < maxEta) &&
@@ -159,7 +188,7 @@ struct UccZdc {
   using TheFilteredTracks = soa::Filtered<o2::aod::TracksSel>;
   // using TheFilteredTrack = TheFilteredTracks::iterator;
 
-  using TheFilteredSimCollisions = soa::Filtered<o2::aod::SimCollisions>;
+  // using TheFilteredSimCollisions = soa::Filtered<o2::aod::SimCollisions>;
   using TheFilteredSimTracks = soa::Filtered<o2::aod::SimTracks>;
 
   // Histograms: Data
@@ -216,28 +245,7 @@ struct UccZdc {
       registry.add("eta", ";;Entries;", kTH1F, {axisEta});
       registry.add("pt", ";;Entries;", kTH1F, {axisPt});
       registry.add("sigma1Pt", ";;#sigma(p_{T})/p_{T};", kTProfile, {axisPt});
-      registry.add("pP1",
-                   ";Nch;P_{1}=#Sigma_{evs} W^{(1)}_{e} [p_{T}^{(1)}]_{e};",
-                   kTProfile, {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW1", ";Nch;W_{1}=#Sigma_{evs} W^{(1)}_{e};", kTProfile,
-                   {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP2",
-                   ";Nch;P_{2}=#Sigma_{evs} W^{(2)}_{e} [p_{T}^{(2)}]_{e};",
-                   kTProfile, {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW2", ";Nch;W_{2}=#Sigma_{evs} W^{(2)}_{e};", kTProfile,
-                   {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP3",
-                   ";Nch;P_{3}=#Sigma_{evs} W^{(3)}_{e} [p_{T}^{(3)}]_{e};",
-                   kTProfile, {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW3", ";Nch;W_{3}=#Sigma_{evs} W^{(3)}_{e};", kTProfile,
-                   {{nBinsNch, -0.5, maxNch}});
-      registry.add("pP4",
-                   ";Nch;P_{4}=#Sigma_{evs} W^{(4)}_{e} [p_{T}^{(4)}]_{e};",
-                   kTProfile, {{nBinsNch, -0.5, maxNch}});
-      registry.add("pW4", ";Nch;W_{4}=#Sigma_{evs} W^{(4)}_{e};", kTProfile,
-                   {{nBinsNch, -0.5, maxNch}});
       registry.add("dcaXYvspT", "", kTH2F, {{{50, -1., 1.}, {axisPt}}});
-      registry.add("T0Ccent", ";T0C centrality;Entries", kTH1F, {axisCent});
       registry.add("Nch", ";Nch (|#eta|<0.8);", kTH1F,
                    {{nBinsNch, -0.5, maxNch}});
       registry.add("ZN", "", kTH1F, {{nBinsZDC, -0.5, maxZN}});
@@ -284,47 +292,108 @@ struct UccZdc {
                    {{{nBinsNch, -0.5, maxNch}, {nBinsZDC, -0.5, maxZN}}});
       registry.add("ZNvsNch", ";Nch (|#eta|<0.8);ZNA+ZNC", kTH2F,
                    {{{nBinsNch, -0.5, maxNch}, {nBinsZDC, -0.5, maxZN}}});
-      registry.add("NchvsOneParCorr", ";Nch (|#eta|<0.8);[p_{T}]=(#Sigma w_{i} p_{T}^{i})/(#Sigma w_{i})", kTH2F, {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
-      registry.add("NchvsTwoParCorr", ";Nch (|#eta|<0.8);[p_{T}^{2}]=(P_{1}^{2} - P_{2})/(W_{1}^{2} - W_{2})", kTH2F, {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
-      registry.add("NchvsThreeParCorr", ";Nch (|#eta|<0.8);[p_{T}^{3}]=(P_{1}^{3} - 3P_{2}P_{1} + 2P_{3})/(W_{1}^{3} - 3W_{2}W_{1} + 2W_{3})", kTH2F, {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
-      registry.add("NchvsFourParCorr", ";Nch (|#eta|<0.8);[p_{T}^{4}]", kTH2F, {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+    }
+
+    if (doprocessMCclosure || doprocessZdcCollAss) {
+      registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
+      registry.add(
+        PtCorrNames[0].data(), PtCorrTitles[0].data(), kTH2F,
+        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add(
+        PtCorrNames[1].data(), PtCorrTitles[1].data(), kTH2F,
+        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add(
+        PtCorrNames[2].data(), PtCorrTitles[2].data(), kTH2F,
+        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add(
+        PtCorrNames[3].data(), PtCorrTitles[3].data(), kTH2F,
+        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add("pP1", PsTitles[0].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW1", WsTitles[0].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP2", PsTitles[1].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW2", WsTitles[1].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP3", PsTitles[2].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW3", WsTitles[2].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP4", PsTitles[3].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW4", WsTitles[3].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
     }
 
     // MC Histograms
-    if (doprocessMC) {
-      registry.add("hT0C_cent_rec", ";T0C centrality;Entries", kTH1F,
-                   {axisCent});
-      registry.add("Pt_MC_rec_all_ch", ";;Entries;", kTH1F, {axisPt});
-      registry.add("Pt_MC_rec_ch", ";;Entries;", kTH1F, {axisPt});
-      registry.add("Pt_MC_rec_pi", ";;Entries;", kTH1F, {axisPt});
-      registry.add("Pt_MC_rec_ka", ";;Entries;", kTH1F, {axisPt});
-      registry.add("Pt_MC_rec_pr", ";;Entries;", kTH1F, {axisPt});
-      registry.add("Pt_MC_rec_sigpos", ";;Entries;", kTH1F, {axisPt});
-      registry.add("Pt_MC_rec_signeg", ";;Entries;", kTH1F, {axisPt});
-      registry.add("Pt_MC_rec_re", ";;Entries;", kTH1F, {axisPt});
-      registry.add("EtaVsPhi_MC_rec", ";;#varphi;", kTH2F,
+    if (doprocesspTEff) {
+      registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
+      registry.add("nRecColvsCent", "", kTH2F, {{6, -0.5, 5.5}, {{axisCent}}});
+      registry.add("Pt_all_ch", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("Pt_ch", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("Pt_pi", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("Pt_ka", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("Pt_pr", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("Pt_sigpos", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("Pt_signeg", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("Pt_re", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("EtaVsPhi", ";;#varphi;", kTH2F,
                    {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
+      registry.add("hEventCounterMC", "Event counter", kTH1F, {axisEvent});
+      registry.add("zPosMC", ";;Entries;", kTH1F, {axisZpos});
+      registry.add("PtMC_ch", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("PtMC_pi", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("PtMC_ka", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("PtMC_pr", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("PtMC_sigpos", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("PtMC_signeg", "", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("PtMC_re", "", kTH2F, {{axisCent}, {axisPt}});
+    }
 
-      // registry.add("numberOfRecoCollisions", "",
-      //              {HistType::kTH1F, {{6, -0.5, 5.5}}});
-      registry.add("hEventCounter_MC", "Event counter", kTH1F, {axisEvent});
-      registry.add("zPos_MC", ";;Entries;", kTH1F, {axisZpos});
-      registry.add("aV0Avsb", ";V0A amplitude;Impact parameter", kTH2F,
-                   {{{nBinsAmpFV0, 0., maxAmpFV0}, {19, 0., 18.}}});
-      registry.add("aT0Avsb", ";T0A amplitude; Impact parameter", kTH2F,
-                   {{{nBinsAmpFT0, 0., maxAmpFT0}, {19, 0., 18.}}});
-      registry.add("aT0Cvsb", ";T0C amplitude; Impact parameter", kTH2F,
-                   {{{nBinsAmpFT0, 0., maxAmpFT0}, {19, -0.5, 18.5}}});
-      registry.add("Pt_MC_tru_ch", ";p_{T};Entries;", kTH1F, {axisPt});
-      registry.add("Pt_MC_tru_pi", ";p_{T};Entries;", kTH1F, {axisPt});
-      registry.add("Pt_MC_tru_ka", ";p_{T};Entries;", kTH1F, {axisPt});
-      registry.add("Pt_MC_tru_pr", ";p_{T};Entries;", kTH1F, {axisPt});
-      registry.add("Pt_MC_tru_sigpos", "#Sigma^{+};p_{T};Entries;", kTH1F,
-                   {axisPt});
-      registry.add("Pt_MC_tru_signeg", "#Sigma^{-};p_{T};Entries;", kTH1F,
-                   {axisPt});
-      registry.add("Pt_MC_tru_re", "Remaining ch particles;p_{T};Entries;",
-                   kTH1F, {axisPt});
+    if (doprocessMCclosure) {
+      // registry.add("nRecColvsCent", "", kTH2F, {{6, -0.5, 5.5},
+      // {{axisCent}}});
+      registry.add(
+        PtCorrMCNchNames[0].data(), PtCorrTitles[0].data(), kTH2F,
+        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add(
+        PtCorrMCNchNames[1].data(), PtCorrTitles[1].data(), kTH2F,
+        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add(
+        PtCorrMCNchNames[2].data(), PtCorrTitles[2].data(), kTH2F,
+        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add(
+        PtCorrMCNchNames[3].data(), PtCorrTitles[3].data(), kTH2F,
+        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add("pP1MC", PsTitles[0].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW1MC", WsTitles[0].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP2MC", PsTitles[1].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW2MC", WsTitles[1].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP3MC", PsTitles[2].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW3MC", WsTitles[2].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pP4MC", PsTitles[3].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add("pW4MC", WsTitles[3].data(), kTProfile,
+                   {{nBinsNch, -0.5, maxNch}});
+      registry.add(
+        PtCorrMCNchMCNames[0].data(), PtCorrTitles[0].data(), kTH2F,
+        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add(
+        PtCorrMCNchMCNames[1].data(), PtCorrTitles[1].data(), kTH2F,
+        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add(
+        PtCorrMCNchMCNames[2].data(), PtCorrTitles[2].data(), kTH2F,
+        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
+      registry.add(
+        PtCorrMCNchMCNames[3].data(), PtCorrTitles[3].data(), kTH2F,
+        {{{nBinsNch, -0.5, maxNch}, {nBinsMeanpT, minMeanpT, maxMeanpT}}});
     }
 
     ccdb->setURL(uRl.value);
@@ -564,8 +633,8 @@ struct UccZdc {
       float pt{track.pt()};
       double trkEff{efficiency->GetBinContent(efficiency->FindBin(pt))};
       if (trkEff > 0.) {
-        pTs.push_back(pt);
-        wIs.push_back(trkEff);
+        pTs.emplace_back(pt);
+        wIs.emplace_back(trkEff);
       }
     }
 
@@ -630,7 +699,8 @@ struct UccZdc {
   PROCESS_SWITCH(UccZdc, processZdcCollAss, "Process ZDC W/Coll Ass.", true);
 
   template <typename T, typename U>
-  void getMoments(const T& pTs, const T& wIs, U& pOne, U& wOne, U& pTwo, U& wTwo, U& pThree, U& wThree, U& pFour, U& wFour)
+  void getMoments(const T& pTs, const T& wIs, U& pOne, U& wOne, U& pTwo,
+                  U& wTwo, U& pThree, U& wThree, U& pFour, U& wFour)
   {
     pOne = wOne = pTwo = wTwo = pThree = wThree = pFour = wFour = 0.;
 
@@ -650,27 +720,70 @@ struct UccZdc {
 
   Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
   Preslice<TheFilteredSimTracks> perCollision = aod::track::collisionId;
-  void processMC(aod::McCollisions const& mcCollisions,
-                 o2::aod::BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/,
-                 aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/,
-                 o2::aod::SimCollisions const& collisions,
-                 aod::McParticles const& mcParticles,
-                 TheFilteredSimTracks const& simTracks)
+  void processpTEff(aod::McCollisions::iterator const& mccollision,
+                    soa::SmallGroups<o2::aod::SimCollisions> const& collisions,
+                    aod::McParticles const& mcParticles,
+                    TheFilteredSimTracks const& simTracks)
   {
-    // Generated MC
-    for (const auto& mccollision : mcCollisions) {
-      registry.fill(HIST("hEventCounter_MC"), EvCutLabel::All);
-      // Z-vtx position cut
-      if (std::fabs(mccollision.posZ()) > posZcut) {
+    //----- MC reconstructed -----//
+    for (const auto& collision : collisions) {
+      // Event selection
+      if (!isEventSelected(collision))
         continue;
+
+      // MC collision?
+      if (!collision.has_mcCollision())
+        continue;
+
+      registry.fill(HIST("zPos"), collision.posZ());
+      registry.fill(HIST("nRecColvsCent"), collisions.size(),
+                    collision.centFT0C());
+
+      const auto& cent{collision.centFT0C()};
+      registry.fill(HIST("T0Ccent"), cent);
+
+      const auto& groupedTracks =
+        simTracks.sliceBy(perCollision, collision.globalIndex());
+      for (const auto& track : groupedTracks) {
+        if (!track.has_mcParticle())
+          continue;
+
+        const auto& particle = track.mcParticle();
+        registry.fill(HIST("Pt_all_ch"), cent, track.pt());
+        registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+
+        if (!particle.isPhysicalPrimary())
+          continue;
+
+        registry.fill(HIST("Pt_ch"), cent, track.pt());
+        if (particle.pdgCode() == PDG_t::kPiPlus ||
+            particle.pdgCode() == PDG_t::kPiMinus) {
+          registry.fill(HIST("Pt_pi"), cent, track.pt());
+        } else if (particle.pdgCode() == PDG_t::kKPlus ||
+                   particle.pdgCode() == PDG_t::kKMinus) {
+          registry.fill(HIST("Pt_ka"), cent, track.pt());
+        } else if (particle.pdgCode() == PDG_t::kProton ||
+                   particle.pdgCode() == PDG_t::kProtonBar) {
+          registry.fill(HIST("Pt_pr"), cent, track.pt());
+        } else if (particle.pdgCode() == PDG_t::kSigmaPlus ||
+                   particle.pdgCode() == PDG_t::kSigmaBarMinus) {
+          registry.fill(HIST("Pt_sigpos"), cent, track.pt());
+        } else if (particle.pdgCode() == PDG_t::kSigmaMinus ||
+                   particle.pdgCode() == PDG_t::kSigmaBarPlus) {
+          registry.fill(HIST("Pt_signeg"), cent, track.pt());
+        } else {
+          registry.fill(HIST("Pt_re"), cent, track.pt());
+        }
       }
-      registry.fill(HIST("zPos_MC"), mccollision.posZ());
-      registry.fill(HIST("hEventCounter_MC"), EvCutLabel::VtxZ);
 
-      auto mcParticlesPerColl =
-        mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
+      // Generated MC
+      registry.fill(HIST("hEventCounterMC"), EvCutLabel::All);
+      if (std::fabs(mccollision.posZ()) > posZcut)
+        continue;
+      registry.fill(HIST("zPosMC"), mccollision.posZ());
+      registry.fill(HIST("hEventCounterMC"), EvCutLabel::VtxZ);
 
-      for (const auto& particle : mcParticlesPerColl) {
+      for (const auto& particle : mcParticles) {
         if (particle.eta() < minEta || particle.eta() > maxEta) {
           continue;
         }
@@ -680,112 +793,156 @@ struct UccZdc {
         if (!particle.isPhysicalPrimary()) {
           continue;
         }
-        registry.fill(HIST("Pt_MC_tru_ch"), particle.pt());
+        registry.fill(HIST("PtMC_ch"), cent, particle.pt());
         if (particle.pdgCode() == PDG_t::kPiPlus ||
             particle.pdgCode() == PDG_t::kPiMinus) { // pion
-          registry.fill(HIST("Pt_MC_tru_pi"), particle.pt());
+          registry.fill(HIST("PtMC_pi"), cent, particle.pt());
         } else if (particle.pdgCode() == PDG_t::kKPlus ||
                    particle.pdgCode() == PDG_t::kKMinus) { // kaon
-          registry.fill(HIST("Pt_MC_tru_ka"), particle.pt());
+          registry.fill(HIST("PtMC_ka"), cent, particle.pt());
         } else if (particle.pdgCode() == PDG_t::kProton ||
                    particle.pdgCode() == PDG_t::kProtonBar) { // proton
-          registry.fill(HIST("Pt_MC_tru_pr"), particle.pt());
+          registry.fill(HIST("PtMC_pr"), cent, particle.pt());
         } else if (particle.pdgCode() == PDG_t::kSigmaPlus ||
                    particle.pdgCode() ==
                      PDG_t::kSigmaBarMinus) { // positive sigma
-          registry.fill(HIST("Pt_MC_tru_sigpos"), particle.pt());
+          registry.fill(HIST("PtMC_sigpos"), cent, particle.pt());
         } else if (particle.pdgCode() == PDG_t::kSigmaMinus ||
                    particle.pdgCode() ==
                      PDG_t::kSigmaBarPlus) { // negative sigma
-          registry.fill(HIST("Pt_MC_tru_signeg"), particle.pt());
+          registry.fill(HIST("PtMC_signeg"), cent, particle.pt());
         } else { // rest
-          registry.fill(HIST("Pt_MC_tru_re"), particle.pt());
-        }
-      }
-    }
-    // registry.fill(HIST("numberOfRecoCollisions"), collisions.size());
-    // if (collisions.size() == 0 || collisions.size() > 1) {
-    //   return;
-    // }
-    //----- MC reconstructed -----//
-    for (const auto& collision : collisions) {
-      // Event selection
-      if (!isEventSelected(collision)) {
-        continue;
-      }
-      // MC collision?
-      if (!collision.has_mcCollision()) {
-        continue;
-      }
-      const auto& mccollision = collision.mcCollision_as<aod::McCollisions>();
-      const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
-      registry.fill(HIST("zPos"), collision.posZ());
-
-      float aT0A{0.0};
-      float aT0C{0.0};
-      float aV0A{0.0};
-      float b{mccollision.impactParameter()};
-      if (foundBC.has_ft0()) {
-        for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
-          aT0A += amplitude;
-        }
-        for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
-          aT0C += amplitude;
-        }
-      } else {
-        aT0A = aT0C = -999;
-      }
-      if (foundBC.has_fv0a()) {
-        for (const auto& amplitude : foundBC.fv0a().amplitude()) {
-          aV0A += amplitude;
-        }
-      } else {
-        aV0A = -999;
-      }
-
-      registry.fill(HIST("hT0C_cent_rec"), collision.centFT0C());
-      registry.fill(HIST("aT0Avsb"), aT0A / 100., b);
-      registry.fill(HIST("aT0Cvsb"), aT0C / 100., b);
-      registry.fill(HIST("aV0Avsb"), aV0A / 100., b);
-
-      const auto groupedTracks =
-        simTracks.sliceBy(perCollision, collision.globalIndex());
-
-      for (const auto& track : groupedTracks) {
-        if (!track.has_mcParticle()) {
-          continue;
-        }
-        const auto particle = track.mcParticle();
-
-        registry.fill(HIST("Pt_MC_rec_all_ch"), track.pt());
-        if (!particle.isPhysicalPrimary()) {
-          continue;
-        }
-
-        registry.fill(HIST("EtaVsPhi_MC_rec"), track.eta(), track.phi());
-        registry.fill(HIST("Pt_MC_rec_ch"), track.pt());
-        if (particle.pdgCode() == PDG_t::kPiPlus ||
-            particle.pdgCode() == PDG_t::kPiMinus) {
-          registry.fill(HIST("Pt_MC_rec_pi"), track.pt());
-        } else if (particle.pdgCode() == PDG_t::kKPlus ||
-                   particle.pdgCode() == PDG_t::kKMinus) {
-          registry.fill(HIST("Pt_MC_rec_ka"), track.pt());
-        } else if (particle.pdgCode() == PDG_t::kProton ||
-                   particle.pdgCode() == PDG_t::kProtonBar) {
-          registry.fill(HIST("Pt_MC_rec_pr"), track.pt());
-        } else if (particle.pdgCode() == PDG_t::kSigmaPlus ||
-                   particle.pdgCode() == PDG_t::kSigmaBarMinus) {
-          registry.fill(HIST("Pt_MC_rec_sigpos"), track.pt());
-        } else if (particle.pdgCode() == PDG_t::kSigmaMinus ||
-                   particle.pdgCode() == PDG_t::kSigmaBarPlus) {
-          registry.fill(HIST("Pt_MC_rec_signeg"), track.pt());
-        } else {
-          registry.fill(HIST("Pt_MC_rec_re"), track.pt());
+          registry.fill(HIST("PtMC_re"), cent, particle.pt());
         }
       }
     }
   }
-  PROCESS_SWITCH(UccZdc, processMC, "Process MC", false);
+  PROCESS_SWITCH(UccZdc, processpTEff, "Process pT Eff", false);
+
+  void processMCclosure(
+    aod::McCollisions::iterator const& mccollision,
+    soa::SmallGroups<o2::aod::SimCollisions> const& collisions,
+    aod::McParticles const& mcParticles,
+    TheFilteredSimTracks const& simTracks)
+  {
+    //----- MC reconstructed -----//
+    for (const auto& collision : collisions) {
+      // Event selection
+      if (!isEventSelected(collision))
+        continue;
+      // MC collision?
+      if (!collision.has_mcCollision())
+        continue;
+
+      const auto& cent{collision.centFT0C()};
+      registry.fill(HIST("T0Ccent"), cent);
+      registry.fill(HIST("zPos"), collision.posZ());
+      // registry.fill(HIST("nRecColvsCent"), collisions.size(), cent);
+
+      const auto& groupedTracks =
+        simTracks.sliceBy(perCollision, collision.globalIndex());
+
+      std::vector<float> pTs;
+      std::vector<float> wIs;
+
+      // Calculates the event weight, W_k
+      for (const auto& track : groupedTracks) {
+        // Track Selection
+        if (!track.isGlobalTrack())
+          continue;
+
+        float pt{track.pt()};
+        double trkEff{efficiency->GetBinContent(efficiency->FindBin(pt))};
+        if (trkEff > 0.) {
+          pTs.emplace_back(pt);
+          wIs.emplace_back(trkEff);
+        }
+      }
+
+      const double nch{static_cast<double>(pTs.size())};
+      double p1, p2, p3, p4, w1, w2, w3, w4;
+      p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
+      getMoments(pTs, wIs, p1, w1, p2, w2, p3, w3, p4, w4);
+
+      double oneParCorr{p1 / w1};
+      double twoParCorr{(std::pow(p1, 2.) - p2) / (std::pow(w1, 2.) - w2)};
+      double threeParCorr{(std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3) /
+                          (std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3)};
+      double fourParCorr{(std::pow(p1, 4.) - 6. * p2 * std::pow(p1, 2.) +
+                          3. * std::pow(p2, 2.) + 8 * p3 * p1 - 6. * p4) /
+                         (std::pow(w1, 4.) - 6. * w2 * std::pow(w1, 2.) +
+                          3. * std::pow(w2, 2.) + 8 * w3 * w1 - 6. * w4)};
+
+      registry.fill(HIST("NchvsOneParCorr"), nch, oneParCorr);
+      registry.fill(HIST("NchvsTwoParCorr"), nch, twoParCorr);
+      registry.fill(HIST("NchvsThreeParCorr"), nch, threeParCorr);
+      registry.fill(HIST("NchvsFourParCorr"), nch, fourParCorr);
+      registry.fill(HIST("pP1"), nch, w1 * oneParCorr);
+      registry.fill(HIST("pW1"), nch, w1);
+      registry.fill(HIST("pP2"), nch, w2 * twoParCorr);
+      registry.fill(HIST("pW2"), nch, w2);
+      registry.fill(HIST("pP3"), nch, w3 * threeParCorr);
+      registry.fill(HIST("pW3"), nch, w3);
+      registry.fill(HIST("pP4"), nch, w4 * fourParCorr);
+      registry.fill(HIST("pW4"), nch, w4);
+
+      // Generated MC
+      if (std::fabs(mccollision.posZ()) > posZcut)
+        continue;
+
+      std::vector<float> pTsMC;
+      std::vector<float> wIsMC;
+
+      // Calculates the event weight, W_k
+      for (const auto& particle : mcParticles) {
+        if (particle.eta() < minEta || particle.eta() > maxEta)
+          continue;
+        if (particle.pt() < minPt || particle.pt() > maxPt)
+          continue;
+        if (!particle.isPhysicalPrimary())
+          continue;
+
+        float pt{particle.pt()};
+        pTsMC.emplace_back(pt);
+        wIsMC.emplace_back(1.);
+      }
+
+      const double nchMC{static_cast<double>(pTsMC.size())};
+      double p1MC, p2MC, p3MC, p4MC, w1MC, w2MC, w3MC, w4MC;
+      p1MC = p2MC = p3MC = p4MC = w1MC = w2MC = w3MC = w4MC = 0.0;
+      getMoments(pTsMC, wIsMC, p1MC, w1MC, p2MC, w2MC, p3MC, w3MC, p4MC, w4MC);
+
+      double oneParCorrMC{p1MC / w1MC};
+      double twoParCorrMC{(std::pow(p1MC, 2.) - p2MC) /
+                          (std::pow(w1MC, 2.) - w2MC)};
+      double threeParCorrMC{
+        (std::pow(p1MC, 3.) - 3. * p2MC * p1MC + 2. * p3MC) /
+        (std::pow(w1MC, 3.) - 3. * w2MC * w1MC + 2. * w3MC)};
+      double fourParCorrMC{
+        (std::pow(p1MC, 4.) - 6. * p2MC * std::pow(p1MC, 2.) +
+         3. * std::pow(p2MC, 2.) + 8 * p3MC * p1MC - 6. * p4MC) /
+        (std::pow(w1MC, 4.) - 6. * w2MC * std::pow(w1MC, 2.) +
+         3. * std::pow(w2MC, 2.) + 8 * w3MC * w1MC - 6. * w4MC)};
+
+      registry.fill(HIST("NchvsOneParCorrMC"), nch, oneParCorrMC);
+      registry.fill(HIST("NchvsTwoParCorrMC"), nch, twoParCorrMC);
+      registry.fill(HIST("NchvsThreeParCorrMC"), nch, threeParCorrMC);
+      registry.fill(HIST("NchvsFourParCorrMC"), nch, fourParCorrMC);
+      registry.fill(HIST("pP1MC"), nch, w1MC * oneParCorrMC);
+      registry.fill(HIST("pW1MC"), nch, w1MC);
+      registry.fill(HIST("pP2MC"), nch, w2MC * twoParCorrMC);
+      registry.fill(HIST("pW2MC"), nch, w2MC);
+      registry.fill(HIST("pP3MC"), nch, w3MC * threeParCorrMC);
+      registry.fill(HIST("pW3MC"), nch, w3MC);
+      registry.fill(HIST("pP4MC"), nch, w4MC * fourParCorrMC);
+      registry.fill(HIST("pW4MC"), nch, w4MC);
+      registry.fill(HIST("NchMCvsOneParCorrMC"), nchMC, oneParCorrMC);
+      registry.fill(HIST("NchMCvsTwoParCorrMC"), nchMC, twoParCorrMC);
+      registry.fill(HIST("NchMCvsThreeParCorrMC"), nchMC, threeParCorrMC);
+      registry.fill(HIST("NchMCvsFourParCorrMC"), nchMC, fourParCorrMC);
+    }
+  }
+  PROCESS_SWITCH(UccZdc, processMCclosure, "Process MC closure", false);
 
   // Single-Track Selection
   // template <typename T2>

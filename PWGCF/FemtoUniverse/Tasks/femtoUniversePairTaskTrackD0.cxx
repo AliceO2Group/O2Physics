@@ -239,7 +239,7 @@ struct FemtoUniversePairTaskTrackD0 {
 
   // Efficiency
   EfficiencyConfigurableGroup effConfGroup;
-  EfficiencyCalculator efficiencyCalculator{&effConfGroup};
+  EfficiencyCalculator<TH1> efficiencyCalculator{&effConfGroup};
   float weight = 1.0;
 
   HistogramRegistry registry{"registry",
@@ -365,11 +365,11 @@ struct FemtoUniversePairTaskTrackD0 {
 
   void init(InitContext&)
   {
-    if (effConfGroup.confEfficiencyDoMCTruth) {
-      // WORK IN PROGRESS
-      // hMCTruth1.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, ConfTrack.confTrackPDGCode, false);
-      // hMCTruth2.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, 333, false);
-    }
+    // if (effConfGroup.confEfficiencyDoMCTruth) {
+    //   WORK IN PROGRESS
+    //   hMCTruth1.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, ConfTrack.confTrackPDGCode, false);
+    //   hMCTruth2.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, 333, false);
+    // }
     efficiencyCalculator.init();
 
     eventHisto.init(&qaRegistry);
@@ -763,7 +763,7 @@ struct FemtoUniversePairTaskTrackD0 {
       // Efficiency
       weight = 1.0f;
       if (ConfEff.doEfficiencyCorr) {
-        weight = efficiencyCalculator.getWeight(ParticleNo::ONE, track) * efficiencyCalculator.getWeight(ParticleNo::TWO, d0candidate);
+        weight = efficiencyCalculator.getWeight(ParticleNo::ONE, track.pt()) * efficiencyCalculator.getWeight(ParticleNo::TWO, d0candidate.pt());
       }
       sameEventAngularCont.setPair<isMC>(track, d0candidate, multCol, ConfBothTracks.confUse3D);
     }
@@ -861,7 +861,7 @@ struct FemtoUniversePairTaskTrackD0 {
       // Efficiency
       weight = 1.0f;
       if (ConfEff.doEfficiencyCorr) {
-        weight = efficiencyCalculator.getWeight(ParticleNo::ONE, track) * efficiencyCalculator.getWeight(ParticleNo::TWO, d0candidate);
+        weight = efficiencyCalculator.getWeight(ParticleNo::ONE, track.pt()) * efficiencyCalculator.getWeight(ParticleNo::TWO, d0candidate.pt());
       }
 
       mixedEventAngularCont.setPair<isMC>(track, d0candidate, multCol, ConfBothTracks.confUse3D);

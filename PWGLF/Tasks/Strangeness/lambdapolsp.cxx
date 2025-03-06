@@ -466,6 +466,13 @@ struct lambdapolsp {
       return false;
     }
 
+    if (pid == 0 && (TMath::Abs(v0.dcapostopv()) < cMinV0DCAPr || TMath::Abs(v0.dcanegtopv()) < cMinV0DCAPi)) {
+      return false;
+    }
+    if (pid == 1 && (TMath::Abs(v0.dcapostopv()) < cMinV0DCAPi || TMath::Abs(v0.dcanegtopv()) < cMinV0DCAPr)) {
+      return false;
+    }
+
     // if we made it this far, it's good
     return true;
   }
@@ -919,14 +926,30 @@ struct lambdapolsp {
 
     //___________________________________________________________________________________________________
     // retrieve further info provided by StraZDCSP
-    /*auto qxZDCA = collision.qxZDCA();
+    auto qxZDCA = collision.qxZDCA();
     auto qxZDCC = collision.qxZDCC();
     auto qyZDCA = collision.qyZDCA();
-    auto qyZDCC = collision.qyZDCC();*/
+    auto qyZDCC = collision.qyZDCC();
     auto psiZDCC = collision.psiZDCC();
     auto psiZDCA = collision.psiZDCA();
-    // auto psiZDC=TMath::ATan2((qyZDCC-qyZDCA),(qxZDCC-qxZDCA)); //full event plane
-    auto psiZDC = psiZDCC - psiZDCA;
+    double modqxZDCA;
+    double modqyZDCA;
+    double modqxZDCC;
+    double modqyZDCC;
+
+    if (cqvas) {
+      modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
+      modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
+      modqxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
+      modqyZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Sin(psiZDCC);
+    } else {
+      modqxZDCA = qxZDCA;
+      modqyZDCA = qyZDCA;
+      modqxZDCC = qxZDCC;
+      modqyZDCC = qyZDCC;
+    }
+
+    auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane
 
     // fill histograms
     histos.fill(HIST("hCentrality"), centrality);
@@ -969,6 +992,9 @@ struct lambdapolsp {
       if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
         continue;
       }
+
+      if (TMath::Abs(v0.eta()) > 0.8)
+        continue;
 
       int taga = LambdaTag;
       int tagb = aLambdaTag;

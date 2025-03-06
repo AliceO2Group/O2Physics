@@ -2746,6 +2746,22 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
   values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
+  if (t1.sign() > 0) {
+    values[kPt1] = t1.pt();
+    values[kEta1] = t1.eta();
+    values[kPhi1] = t1.phi();
+    values[kPt2] = t2.pt();
+    values[kEta2] = t2.eta();
+    values[kPhi2] = t2.phi();
+  } else {
+    values[kPt1] = t2.pt();
+    values[kEta1] = t2.eta();
+    values[kPhi1] = t2.phi();
+    values[kPt2] = t1.pt();
+    values[kEta2] = t1.eta();
+    values[kPhi2] = t1.phi();
+  }
+
   if (fgUsedVars[kDeltaPhiPair2]) {
     double phipair2 = v1.Phi() - v2.Phi();
     if (phipair2 > 3 * TMath::Pi() / 2) {
@@ -3105,8 +3121,10 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     // Compute the scalar product UQ for two muon from different event using Q-vector from A, for second and third harmonic
     float Psi2A1 = getEventPlane(2, values[kQ2X0A1], values[kQ2Y0A1]);
     float Psi2A2 = getEventPlane(2, values[kQ2X0A2], values[kQ2Y0A2]);
+    values[kCos2DeltaPhi] = TMath::Cos(2 * (v12.Phi() - Psi2A1)); // WARNING: using the first event EP
     values[kCos2DeltaPhiEv1] = TMath::Cos(2 * (v1.Phi() - Psi2A1));
     values[kCos2DeltaPhiEv2] = TMath::Cos(2 * (v2.Phi() - Psi2A2));
+    values[kU2Q2] = values[kQ2X0A1] * TMath::Cos(2 * v12.Phi()) + values[kQ2Y0A1] * TMath::Sin(2 * v12.Phi()); // WARNING: using the first event EP
     values[kU2Q2Ev1] = values[kQ2X0A1] * TMath::Cos(2 * v1.Phi()) + values[kQ2Y0A1] * TMath::Sin(2 * v1.Phi());
     values[kU2Q2Ev2] = values[kQ2X0A2] * TMath::Cos(2 * v2.Phi()) + values[kQ2Y0A2] * TMath::Sin(2 * v2.Phi());
 

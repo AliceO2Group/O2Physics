@@ -419,22 +419,23 @@ auto slicedPerHFCandidate(T const& table, U const& candidate, V const& perD0Cand
 }
 
 /**
- * returns a slice of the table depending on the type of the HF candidate and index of the collision
+ * returns a slice of the table depending on the index of the HF candidate
  *
- * @param candidate HF candidate that is being checked
+ * @param HFTable HF table type
+ * @param jet jet that is being sliced based on
  * @param table the table to be sliced
  */
-template <typename T, typename U, typename V, typename M, typename N, typename O, typename P>
-auto slicedPerHFCollision(T const& table, U const& /*candidates*/, V const& collision, M const& D0CollisionPerCollision, N const& DplusCollisionPerCollision, O const& LcCollisionPerCollision, P const& BplusCollisionPerCollision)
+template <typename HFTable, typename T, typename U, typename V, typename M, typename N, typename O>
+auto slicedPerHFJet(T const& table, U const& jet, V const& perD0Jet, M const& perDplusJet, N const& perLcJet, O const& perBplusJet)
 {
-  if constexpr (isD0Table<U>() || isD0McTable<U>()) {
-    return table.sliceBy(D0CollisionPerCollision, collision.globalIndex());
-  } else if constexpr (isDplusTable<U>() || isDplusMcTable<U>()) {
-    return table.sliceBy(DplusCollisionPerCollision, collision.globalIndex());
-  } else if constexpr (isLcTable<U>() || isLcMcTable<U>()) {
-    return table.sliceBy(LcCollisionPerCollision, collision.globalIndex());
-  } else if constexpr (isBplusTable<U>() || isBplusMcTable<U>()) {
-    return table.sliceBy(BplusCollisionPerCollision, collision.globalIndex());
+  if constexpr (isD0Table<HFTable>() || isD0McTable<HFTable>()) {
+    return table.sliceBy(perD0Jet, jet.globalIndex());
+  } else if constexpr (isDplusTable<HFTable>() || isDplusMcTable<HFTable>()) {
+    return table.sliceBy(perDplusJet, jet.globalIndex());
+  } else if constexpr (isLcTable<HFTable>() || isLcMcTable<HFTable>()) {
+    return table.sliceBy(perLcJet, jet.globalIndex());
+  } else if constexpr (isBplusTable<HFTable>() || isBplusMcTable<HFTable>()) {
+    return table.sliceBy(perBplusJet, jet.globalIndex());
   } else {
     return table;
   }
@@ -691,7 +692,7 @@ void fillDplusCandidateTable(T const& candidate, U& DplusParTable, V& DplusParET
   DplusMlTable(mlScoresVector);
 
   if constexpr (isMc) {
-    DplusMCDTable(candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.isCandidateSwapped());
+    DplusMCDTable(candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.isCandidateSwapped(), candidate.flagMcDecayChanRec());
   }
 }
 
