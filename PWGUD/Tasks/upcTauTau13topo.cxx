@@ -2884,7 +2884,7 @@ struct TauTau13topo {
               registryMC.get<TH1>(HIST("electronMC/hMCpt"))->Fill(daughter.pt());
 
               electronFound = !electronFound;
-              partPt = static_cast<float> (daughter.pt());
+              partPt = static_cast<float>(daughter.pt());
               // singleElectronGlobalIndex = daughter.globalIndex();
               //  LOGF(info,"e pt %f",daughter.pt());
               if (std::abs(daughter.eta()) > 0.9)
@@ -2895,7 +2895,7 @@ struct TauTau13topo {
               if (daughter.pdgCode() == 13)
                 flagMuPlusMuMinus = true;
               muonFound = !muonFound;
-              partPt = static_cast<float> (daughter.pt());
+              partPt = static_cast<float>(daughter.pt());
               // LOGF(info,"mu pt %f",daughter.pt());
               if (std::abs(daughter.eta()) > 0.9)
                 partFromTauInEta = false;
@@ -2910,7 +2910,7 @@ struct TauTau13topo {
             auto mcPartTmp = mcParticle.daughters_as<aod::McParticles>().begin() + singlePionIndex;
             if (mcPartTmp.pdgCode() == -211)
               flagPiPlusPiMinus = true;
-            partPt = static_cast<float> (mcPartTmp.pt());
+            partPt = static_cast<float>(mcPartTmp.pt());
             // motherOfSinglePionIndex = mcParticle.index();
             if (std::abs(mcPartTmp.eta()) > 0.9)
               partFromTauInEta = false;
