@@ -27,6 +27,8 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 
+#include "TDatabasePDG.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -40,6 +42,8 @@ struct MCGeneratorStudies {
   Configurable<float> mVertexCut{"vertexCut", 10.f, "apply z-vertex cut with value in cm"};
   Configurable<float> mRapidityCut{"rapidityCut", 0.9f, "Maximum absolute rapidity of counted generated particles"};
   Configurable<int> mSelectedParticleCode{"particlePDGCode", 111, "PDG code of the particle to be investigated (0 for all)"};
+  Configurable<bool> mSelectOnlyChargedParticles{"mSelectOnlyChargedParticles", false, "set true to only count charged particles"};
+
   Configurable<bool> mRequireGammaGammaDecay{"requireGammaGammaDecay", false, "Only count generated particles that decayed into two photons"};
   Configurable<bool> mRequireEMCCellContent{"requireEMCCellContent", false, "Ask forEMCal cell content instead of the kTVXinEMC trigger"};
 
@@ -145,6 +149,8 @@ struct MCGeneratorStudies {
           for (auto& mcParticle : mcParticles_inColl) {
             if (mSelectedParticleCode != 0 && mcParticle.pdgCode() != mSelectedParticleCode)
               continue;
+            else if (mSelectOnlyChargedParticles && TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode())->Charge())
+              continue;
             if (fabs(mcParticle.y()) > mRapidityCut)
               continue;
             if (!mcParticle.isPhysicalPrimary() && !mcParticle.producedByGenerator())
@@ -169,6 +175,8 @@ struct MCGeneratorStudies {
 
       for (auto& mcParticle : mcParticles_inColl) {
         if (mSelectedParticleCode != 0 && mcParticle.pdgCode() != mSelectedParticleCode)
+          continue;
+        else if (mSelectOnlyChargedParticles && TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode())->Charge())
           continue;
         if (fabs(mcParticle.y()) > mRapidityCut)
           continue;
