@@ -615,6 +615,10 @@ class VarManager : public TObject
     kMCY,
     kMCParticleGeneratorId,
     kNMCParticleVariables,
+    kMCStatusCode,
+
+    // POWHEG Drell-Yan Muon MC Status Code condition
+    kIsPowhegDYMuon,
 
     // MC mother particle variables
     kMCMotherPdgCode,
@@ -2663,6 +2667,8 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   values[kMCEta] = track.eta();
   values[kMCY] = -track.y();
   values[kMCParticleGeneratorId] = track.producedByGenerator();
+  values[kMCStatusCode]=track.getGenStatusCode();
+  values[kIsPowhegDYMuon] = (track.getGenStatusCode() == 23 ? 1.0 : 0.0);
   if (fgUsedVars[kMCMotherPdgCode]) {
     if (track.has_mothers()) {
       auto motherId = track.mothersIds()[0];

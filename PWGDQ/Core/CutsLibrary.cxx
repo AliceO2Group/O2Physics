@@ -6063,6 +6063,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kMuonChi2MatchMCHMFT, 0, 60);
     return cut;
   }
+  
+  if (!nameStr.compare("PowhegDYMuons")) {
+    cut->AddCut(VarManager::kIsPowhegDYMuon, 0.5, 1.5);
+    return cut;
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Pair cuts
