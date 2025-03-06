@@ -22,9 +22,14 @@
 #include "Framework/AnalysisDataModel.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetReducedDataHF.h"
 
 namespace o2::aod
 {
+namespace jdielectronmccollision
+{
+DECLARE_SOA_COLUMN(DummyDQ, dummyDQ, bool);
+} // namespace jdielectronmccollision
 
 DECLARE_SOA_TABLE_STAGED(JDielectronMcCollisions, "JDIELMCCOLL",
                          o2::soa::Index<>,
@@ -32,26 +37,29 @@ DECLARE_SOA_TABLE_STAGED(JDielectronMcCollisions, "JDIELMCCOLL",
                          jmccollision::PosY,
                          jmccollision::PosZ);
 
+DECLARE_SOA_TABLE_STAGED(JDielectronMcRCollDummys, "JDIELMCRCOLLDUM",
+                         jdielectronmccollision::DummyDQ);
+
 namespace jdielectronindices
 {
-DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
 DECLARE_SOA_INDEX_COLUMN_CUSTOM(JDielectronMcCollision, dielectronmccollision, "JDIELMCCOLLS");
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
-DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
-DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jdielectronindices
 
 DECLARE_SOA_TABLE_STAGED(JDielectronCollisionIds, "JDIELCOLLID",
-                         jdielectronindices::JCollisionId);
+                         jcandidateindices::JCollisionId,
+                         o2::soa::Marker<JMarkerDielectron>);
 
 DECLARE_SOA_TABLE_STAGED(JDielectronMcCollisionIds, "JDIELMCCOLLID",
-                         jdielectronindices::JMcCollisionId);
+                         jcandidateindices::JMcCollisionId,
+                         o2::soa::Marker<JMarkerDielectron>);
 
 DECLARE_SOA_TABLE_STAGED(JDielectronIds, "JDIELID",
-                         jdielectronindices::JCollisionId,
+                         jcandidateindices::JCollisionId,
                          jdielectronindices::Prong0Id,
-                         jdielectronindices::Prong1Id);
+                         jdielectronindices::Prong1Id,
+                         o2::soa::Marker<JMarkerDielectron>);
 
 namespace jdielectronmc
 {
@@ -103,8 +111,8 @@ using JDielectronMc = JDielectronMcs::iterator;
 using StoredJDielectronMc = StoredJDielectronMcs::iterator;
 
 DECLARE_SOA_TABLE_STAGED(JDielectronMcIds, "JDIELMCID",
-                         jdielectronindices::JMcCollisionId,
-                         jdielectronindices::JMcParticleId,
+                         jcandidateindices::JMcCollisionId,
+                         jcandidateindices::JMcParticleId,
                          jdielectronmc::MothersIds,
                          jdielectronmc::DaughtersIdSlice);
 

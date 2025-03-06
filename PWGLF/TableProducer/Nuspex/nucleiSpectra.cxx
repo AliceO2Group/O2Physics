@@ -494,7 +494,7 @@ struct nucleiSpectra {
       {cfgDCAxyBinsAlpha, "DCA_{z} (cm)"}};
     const AxisSpec etaAxis{40, -1., 1., "#eta"};
 
-    spectra.add("hEventSelections", "hEventSelections", {HistType::kTH1I, {{nuclei::evSel::kNevSels + 1, -0.5f, float(nuclei::evSel::kNevSels) + 0.5f}}});
+    spectra.add("hEventSelections", "hEventSelections", {HistType::kTH1D, {{nuclei::evSel::kNevSels + 1, -0.5f, float(nuclei::evSel::kNevSels) + 0.5f}}});
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(1, "all");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kTVX + 2, "TVX");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kZvtx + 2, "Zvtx");
@@ -800,11 +800,11 @@ struct nucleiSpectra {
             computeEventPlane(collision.qvecBTotIm(), collision.qvecBTotRe()),
             computeEventPlane(collision.qvecBNegIm(), collision.qvecBNegRe()),
             computeEventPlane(collision.qvecBPosIm(), collision.qvecBPosRe()),
-            collision.sumAmplFT0A(),
-            collision.sumAmplFT0C(),
-            static_cast<float>(collision.nTrkBTot()),
-            static_cast<float>(collision.nTrkBNeg()),
-            static_cast<float>(collision.nTrkBPos())});
+            std::hypot(collision.qvecFT0AIm(), collision.qvecFT0ARe()),
+            std::hypot(collision.qvecFT0CIm(), collision.qvecFT0CRe()),
+            std::hypot(collision.qvecBTotIm(), collision.qvecBTotRe()),
+            std::hypot(collision.qvecBNegIm(), collision.qvecBNegRe()),
+            std::hypot(collision.qvecBPosIm(), collision.qvecBPosRe())});
         }
         if (fillTree) {
           if (flag & BIT(2)) {

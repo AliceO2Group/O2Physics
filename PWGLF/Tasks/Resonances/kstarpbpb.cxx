@@ -114,7 +114,7 @@ struct kstarpbpb {
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
   Configurable<bool> additionalEvselITS{"additionalEvselITS", true, "Additional event selcection for ITS"};
   Configurable<bool> ispTdepPID{"ispTdepPID", true, "pT dependent PID"};
-  Configurable<bool> isNoTOF{"isNoTOF", true, "isNoTOF"};
+  Configurable<bool> isTOFOnly{"isTOFOnly", false, "use TOF only PID"};
   Configurable<bool> PDGcheck{"PDGcheck", true, "PDGcheck"};
   Configurable<int> strategyPID{"strategyPID", 2, "PID strategy"};
   Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
@@ -125,6 +125,7 @@ struct kstarpbpb {
   Configurable<int> nBkgRotations{"nBkgRotations", 9, "Number of rotated copies (background) per each original candidate"};
   Configurable<bool> fillRotation{"fillRotation", true, "fill rotation"};
   Configurable<bool> same{"same", true, "same event"};
+  Configurable<bool> isNoTOF{"isNoTOF", true, "isNoTOF"};
   Configurable<bool> like{"like", false, "like-sign"};
   Configurable<bool> fillOccupancy{"fillOccupancy", false, "fill Occupancy"};
   Configurable<int> cfgOccupancyCut{"cfgOccupancyCut", 500, "Occupancy cut"};
@@ -421,7 +422,21 @@ struct kstarpbpb {
     }
     return false;
   }
-
+  template <typename T>
+  bool selectionPID2(const T& candidate, int PID)
+  {
+    if (PID == 0) {
+      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
+        return true;
+      }
+    }
+    if (PID == 1) {
+      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Abs(candidate.tofNSigmaPi()) < nsigmaCutTOF) {
+        return true;
+      }
+    }
+    return false;
+  }
   double GetPhiInRange(double phi)
   {
     double result = phi;
@@ -506,7 +521,10 @@ struct kstarpbpb {
       }
       bool track1kaon = false;
       auto track1ID = track1.globalIndex();
-      if (!strategySelectionPID(track1, 0, strategyPID)) {
+      if (!isTOFOnly && !strategySelectionPID(track1, 0, strategyPID)) {
+        continue;
+      }
+      if (isTOFOnly && !selectionPID2(track1, 0)) {
         continue;
       }
       track1kaon = true;
@@ -523,7 +541,10 @@ struct kstarpbpb {
         }
         bool track2pion = false;
         auto track2ID = track2.globalIndex();
-        if (!strategySelectionPID(track2, 1, strategyPID)) {
+        if (!isTOFOnly && !strategySelectionPID(track2, 1, strategyPID)) {
+          continue;
+        }
+        if (isTOFOnly && !selectionPID2(track2, 1)) {
           continue;
         }
         track2pion = true;
@@ -670,10 +691,13 @@ struct kstarpbpb {
 
       bool track1pion = false;
       bool track1kaon = false;
-      if (ispTdepPID && !(selectionPIDNew(track1, 0) || selectionPIDNew(track1, 1))) {
+      if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track1, 0) || selectionPIDNew(track1, 1))) {
         continue;
       }
-      if (!ispTdepPID && !(selectionPID(track1, 0) || selectionPID(track1, 1))) {
+      if (!ispTdepPID && !isTOFOnly && !(selectionPID(track1, 0) || selectionPID(track1, 1))) {
+        continue;
+      }
+      if (isTOFOnly && !(selectionPID2(track1, 0) || selectionPID2(track1, 1))) {
         continue;
       }
       auto track1ID = track1.globalIndex();
@@ -690,10 +714,13 @@ struct kstarpbpb {
           histos.fill(HIST("QAbefore/trkDCAxypi"), track2.dcaXY());
           histos.fill(HIST("QAbefore/trkDCAzpi"), track2.dcaZ());
         }
-        if (ispTdepPID && !(selectionPIDNew(track2, 0) || selectionPIDNew(track2, 1))) {
+        if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track2, 0) || selectionPIDNew(track2, 1))) {
           continue;
         }
-        if (!ispTdepPID && !(selectionPID(track2, 0) || selectionPID(track2, 1))) {
+        if (!ispTdepPID && !isTOFOnly && !(selectionPID(track2, 0) || selectionPID(track2, 1))) {
+          continue;
+        }
+        if (isTOFOnly && !(selectionPID2(track2, 0) || selectionPID2(track2, 1))) {
           continue;
         }
         auto track2ID = track2.globalIndex();
@@ -704,7 +731,7 @@ struct kstarpbpb {
           continue;
         }
 
-        if (ispTdepPID) {
+        if (ispTdepPID && !isTOFOnly) {
           if (selectionPIDNew(track1, 1) && selectionPIDNew(track2, 0)) {
             track1pion = true;
             track2kaon = true;
@@ -720,7 +747,7 @@ struct kstarpbpb {
             }
           }
         }
-        if (!ispTdepPID) {
+        if (!ispTdepPID && !isTOFOnly) {
           if (selectionPID(track1, 1) && selectionPID(track2, 0)) {
             track1pion = true;
             track2kaon = true;
@@ -729,6 +756,22 @@ struct kstarpbpb {
             }
           }
           if (selectionPID(track2, 1) && selectionPID(track1, 0)) {
+            track2pion = true;
+            track1kaon = true;
+            if (removefaketrak && isFakeKaon(track1, 0)) {
+              continue;
+            }
+          }
+        }
+        if (isTOFOnly) {
+          if (selectionPID2(track1, 1) && selectionPID2(track2, 0)) {
+            track1pion = true;
+            track2kaon = true;
+            if (removefaketrak && isFakeKaon(track2, 0)) {
+              continue;
+            }
+          }
+          if (selectionPID2(track2, 1) && selectionPID2(track1, 0)) {
             track2pion = true;
             track1kaon = true;
             if (removefaketrak && isFakeKaon(track1, 0)) {
@@ -852,10 +895,13 @@ struct kstarpbpb {
       }
       bool track1pion = false;
       bool track1kaon = false;
-      if (ispTdepPID && !(selectionPIDNew(track1, 0) || selectionPIDNew(track1, 1))) {
+      if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track1, 0) || selectionPIDNew(track1, 1))) {
         continue;
       }
-      if (!ispTdepPID && !(selectionPID(track1, 0) || selectionPID(track1, 1))) {
+      if (!ispTdepPID && !isTOFOnly && !(selectionPID(track1, 0) || selectionPID(track1, 1))) {
+        continue;
+      }
+      if (isTOFOnly && !(selectionPID2(track1, 0) || selectionPID2(track1, 1))) {
         continue;
       }
       for (auto track2 : tracks) {
@@ -864,17 +910,20 @@ struct kstarpbpb {
         if (!selectionTrack(track2)) {
           continue;
         }
-        if (ispTdepPID && !(selectionPIDNew(track2, 0) || selectionPIDNew(track2, 1))) {
+        if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track2, 0) || selectionPIDNew(track2, 1))) {
           continue;
         }
-        if (!ispTdepPID && !(selectionPID(track2, 0) || selectionPID(track2, 1))) {
+        if (!ispTdepPID && !isTOFOnly && !(selectionPID(track2, 0) || selectionPID(track2, 1))) {
+          continue;
+        }
+        if (isTOFOnly && !(selectionPID2(track2, 0) || selectionPID2(track2, 1))) {
           continue;
         }
         if (track1.sign() * track2.sign() < 0) {
           continue;
         }
 
-        if (ispTdepPID) {
+        if (ispTdepPID && !isTOFOnly) {
           if (selectionPIDNew(track1, 1) && selectionPIDNew(track2, 0)) {
             track1pion = true;
             track2kaon = true;
@@ -890,7 +939,7 @@ struct kstarpbpb {
             }
           }
         }
-        if (!ispTdepPID) {
+        if (!ispTdepPID && !isTOFOnly) {
           if (selectionPID(track1, 1) && selectionPID(track2, 0)) {
             track1pion = true;
             track2kaon = true;
@@ -899,6 +948,22 @@ struct kstarpbpb {
             }
           }
           if (selectionPID(track2, 1) && selectionPID(track1, 0)) {
+            track2pion = true;
+            track1kaon = true;
+            if (removefaketrak && isFakeKaon(track1, 0)) {
+              continue;
+            }
+          }
+        }
+        if (isTOFOnly) {
+          if (selectionPID2(track1, 1) && selectionPID2(track2, 0)) {
+            track1pion = true;
+            track2kaon = true;
+            if (removefaketrak && isFakeKaon(track2, 0)) {
+              continue;
+            }
+          }
+          if (selectionPID2(track2, 1) && selectionPID2(track1, 0)) {
             track2pion = true;
             track1kaon = true;
             if (removefaketrak && isFakeKaon(track1, 0)) {
@@ -1001,18 +1066,25 @@ struct kstarpbpb {
         if (track2ID == track1ID) {
           continue;
         }
-        if (ispTdepPID && !(selectionPIDNew(track1, 0))) {
+        if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track1, 0))) {
           continue;
         }
-        if (ispTdepPID && !(selectionPIDNew(track2, 1))) {
+        if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track2, 1))) {
           continue;
         }
-        if (!ispTdepPID && !(selectionPID(track1, 0))) {
+        if (!ispTdepPID && !isTOFOnly && !(selectionPID(track1, 0))) {
           continue;
         }
-        if (!ispTdepPID && !(selectionPID(track2, 1))) {
+        if (!ispTdepPID && !isTOFOnly && !(selectionPID(track2, 1))) {
           continue;
         }
+        if (isTOFOnly && !selectionPID2(track1, 0)) {
+          continue;
+        }
+        if (isTOFOnly && !selectionPID2(track2, 1)) {
+          continue;
+        }
+
         daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
         daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
         KstarMother = daughter1 + daughter2;
