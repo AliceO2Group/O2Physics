@@ -1728,27 +1728,28 @@ struct CaloClusterProducer {
       case 0:
         return en;
       case 1: { // Data Run3
-        const double a = 0.892787;
-        const double b = 0.004053;
-        const double c = 0.074652;
-        const double d = -0.016306;
-        const double f = 7.616314;
-        const double g = -104.409;
-        const double h = 1837.17;
-        const double k = 0.000091;
-        double eMin = std::max(static_cast<float>(0.1), en); // Parameterization valid down to 100 MeV
+        const double a = 0.885621;
+        const double b = 0.003864;
+        const double c = 0.143948;
+        const double d = -0.034200;
+        const double f = -0.038992;
+        const double g = 0.436003;
+        const double h = 0.642263;
+        const double k = 0.000523;
+        double eMin = std::max(static_cast<float>(0.25), en); // Parameterization valid down to 250 MeV
         return en * (a + b * eMin + c / eMin + d / (eMin * eMin) + f / ((eMin - g) * (eMin - g) + h * h) + k / std::pow(eMin, 4));
       }
       case 2: { // MC
-        const double a = 1.14875;
-        const double b = -1.24286e-04;
-        const double c = -0.0498217;
-        const double d = -0.00215362;
-        const double f = 0.886539;
-        const double g = -1.98282;
-        const double h = 0.0178562;
-        const double k = 5.03164e-04;
-        double eMin = std::max(static_cast<float>(0.1), en); // Parameterization valid down to 100 MeV
+        const double a = 1.2428430;
+        const double b = -0.0001866;
+        const double c = -0.0299751;
+        const double d = -0.0003103;
+        const double f = 0.4053021;
+        const double g = -0.139670;
+        const double h = 1.909846;
+        const double k = 0.00028866050;
+
+        double eMin = std::max(static_cast<float>(0.25), en); // Parameterization valid down to 250 MeV
         return en * (a + b * eMin + c / eMin + d / (eMin * eMin) + f / ((eMin - g) * (eMin - g) + h * h) + k / std::pow(eMin, 4));
       }
       case 3: { // Obsolete data Run3
