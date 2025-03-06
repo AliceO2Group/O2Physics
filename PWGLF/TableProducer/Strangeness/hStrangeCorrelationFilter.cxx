@@ -509,6 +509,9 @@ struct hstrangecorrelationfilter {
       if (v0.v0radius() < v0RadiusMin || v0.v0radius() > v0RadiusMax || v0.eta() > assocEtaMax || v0.eta() < assocEtaMin || v0.v0cosPA() < v0Cospa) {
         continue;
       }
+      if (v0.pt() > assocPtCutMax || v0.pt() < assocPtCutMin) {
+        continue;
+      }
       // check dE/dx compatibility
       int compatibleK0Short = 0;
       int compatibleLambda = 0;
@@ -596,6 +599,12 @@ struct hstrangecorrelationfilter {
     /// _________________________________________________
     /// Step 3: Populate table with associated Cascades
     for (auto const& casc : Cascades) {
+      if (casc.eta() > assocEtaMax || casc.eta() < assocEtaMin) {
+        continue;
+      }
+      if (casc.pt() > assocPtCutMax || casc.pt() < assocPtCutMin) {
+        continue;
+      }
       auto bachTrackCast = casc.bachelor_as<DauTracks>();
       auto posTrackCast = casc.posTrack_as<DauTracks>();
       auto negTrackCast = casc.negTrack_as<DauTracks>();
