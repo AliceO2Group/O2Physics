@@ -2783,7 +2783,7 @@ struct TauTau13topo {
     registryMC.get<TH1>(HIST("efficiencyMCPi/effiPi"))->Fill(0., 1.);
 
     // check how many physical primaries
-    int countPrim = 0;
+    // int countPrim = 0;
     int countGen = 0;
     int countBoth = 0;
     int countCharged = 0;
@@ -2820,9 +2820,9 @@ struct TauTau13topo {
     // loop over MC particles
     for (const auto& mcParticle : mcParticles) {
       // primaries
-      if (mcParticle.isPhysicalPrimary()) {
-        countPrim++;
-      }
+      // if (mcParticle.isPhysicalPrimary()) {
+      // countPrim++;
+      // }
       //
       // MC particles produced by generator only
       //
