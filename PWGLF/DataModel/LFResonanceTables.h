@@ -178,6 +178,8 @@ DECLARE_SOA_COLUMN(Indices, indices, int[2]);                                   
 DECLARE_SOA_COLUMN(CascadeIndices, cascadeIndices, int[3]);                       //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
 DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, uint8_t);              //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, uint8_t);                          //! Number of TPC clusters found
+DECLARE_SOA_COLUMN(DcaXY10000, dcaXY10000, int16_t);                              //! DCA_xy x10,000 in int16_t, resolution 10 um
+DECLARE_SOA_COLUMN(DcaZ10000, dcaZ10000, int16_t);                                //! DCA_z x10,000 in int16_t, resolution 10 um
 DECLARE_SOA_COLUMN(TrackFlags, trackFlags, uint8_t);                              //! Track flags
 DECLARE_SOA_COLUMN(TpcNSigmaPi10, tpcNSigmaPi10, int8_t);                         //! TPC PID x10 of the track as Pion
 DECLARE_SOA_COLUMN(TpcNSigmaKa10, tpcNSigmaKa10, int8_t);                         //! TPC PID x10 of the track as Kaon
@@ -231,6 +233,12 @@ DECLARE_SOA_COLUMN(SiblingIds, siblingIds, int[2]);  //! Index of the particles 
 DECLARE_SOA_COLUMN(BachTrkID, bachTrkID, int);       //! Id of the bach track from cascade
 DECLARE_SOA_COLUMN(V0ID, v0ID, int);                 //! Id of the V0 from cascade
 // Dynamic columns
+// DCA_xy x10,000
+DECLARE_SOA_DYNAMIC_COLUMN(DcaXY, dcaXY,
+                           [](int16_t dcaXY10000) { return (float)dcaXY10000 / 10000.f; });
+// DCA_z x10,000
+DECLARE_SOA_DYNAMIC_COLUMN(DcaZ, dcaZ,
+                           [](int16_t dcaZ10000) { return (float)dcaZ10000 / 10000.f; });
 // TPC PID return value/10
 DECLARE_SOA_DYNAMIC_COLUMN(TpcNSigmaPi, tpcNSigmaPi,
                            [](int8_t tpcNSigmaPi10) { return (float)tpcNSigmaPi10 / 10.f; });
@@ -332,8 +340,8 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   resodaughter::Pz,
                   resodaughter::TpcNClsCrossedRows,
                   resodaughter::TpcNClsFound,
-                  o2::aod::track::DcaXY,
-                  o2::aod::track::DcaZ,
+                  resodaughter::DcaXY10000,
+                  resodaughter::DcaZ10000,
                   resodaughter::TpcNSigmaPi10,
                   resodaughter::TpcNSigmaKa10,
                   resodaughter::TpcNSigmaPr10,
@@ -351,6 +359,8 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   resodaughter::TofNSigmaPr<resodaughter::TofNSigmaPr10>,
                   resodaughter::TpcSignal<resodaughter::TpcSignal10>,
                   // resodaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::DcaXY<resodaughter::DcaXY10000>,
+                  resodaughter::DcaZ<resodaughter::DcaZ10000>,
                   resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
                   resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
                   resodaughter::PassedITSRefit<resodaughter::TrackFlags>,
@@ -374,8 +384,8 @@ DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDF",
                   resodaughter::Pz,
                   resodaughter::TpcNClsCrossedRows,
                   resodaughter::TpcNClsFound,
-                  o2::aod::track::DcaXY,
-                  o2::aod::track::DcaZ,
+                  resodaughter::DcaXY10000,
+                  resodaughter::DcaZ10000,
                   resodaughter::TpcNSigmaPi10,
                   resodaughter::TpcNSigmaKa10,
                   resodaughter::TpcNSigmaPr10,
@@ -393,6 +403,8 @@ DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDF",
                   resodaughter::TofNSigmaPr<resodaughter::TofNSigmaPr10>,
                   resodaughter::TpcSignal<resodaughter::TpcSignal10>,
                   // resodaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::DcaXY<resodaughter::DcaXY10000>,
+                  resodaughter::DcaZ<resodaughter::DcaZ10000>,
                   resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
                   resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
                   resodaughter::PassedITSRefit<resodaughter::TrackFlags>,
