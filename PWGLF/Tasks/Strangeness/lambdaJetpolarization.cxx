@@ -45,6 +45,7 @@ struct LfMyV0s {
     const AxisSpec axisPz{100, -10, 10, "#pz (GeV/c)"};
     const AxisSpec axisPT{200, 0, 50, "#p_{T} (GeV/c)"};
     const AxisSpec axisPhi{100, -3.14, 3.14, "#Phi"};
+    const AxisSpec axisMass{100, 0, 2, "Mass(GeV/c^{2})"};
 
     registry.add("hMassLambda", "hMassLambda", {HistType::kTH1F, {{200, 0.9f, 1.2f}}});
     registry.add("V0pTInLab", "V0pTInLab", kTH1F, {axisPT});
@@ -76,12 +77,17 @@ struct LfMyV0s {
     registry.add("V0protonpxInRest_frame", "V0protonpxInRest_frame", kTH1F, {axisPx});
     registry.add("V0protonpyInRest_frame", "V0protonpyInRest_frame", kTH1F, {axisPy});
     registry.add("V0protonpzInRest_frame", "V0protonpzInRest_frame", kTH1F, {axisPz});
+    registry.add("V0protonMassInRest_frame", "V0protonMassInRest_frame", kTH1F, {axisMass});
     registry.add("V0protonphiInRest_frame", "V0protonphiInRest_frame", kTH1F, {axisPhi});
 
     registry.add("V0protonpxInJetV0frame", "V0protonpxInJetV0frame", kTH1F, {axisPx});
     registry.add("V0protonpyInJetV0frame", "V0protonpyInJetV0frame", kTH1F, {axisPy});
     registry.add("V0protonpzInJetV0frame", "V0protonpzInJetV0frame", kTH1F, {axisPz});
     registry.add("V0protonphiInJetV0frame", "V0protonphiInJetV0frame", kTH1F, {axisPhi});
+
+    registry.add("V0LambdapxInJetV0frame", "V0LambdapxInJetV0frame", kTH1F, {axisPx});
+    registry.add("V0LambdapyInJetV0frame", "V0LambdapyInJetV0frame", kTH1F, {axisPy});
+    registry.add("V0LambdapzInJetV0frame", "V0LambdapzInJetV0frame", kTH1F, {axisPz});
 
     registry.add("hLambdamassandSinPhi", "hLambdamassandSinPhi", kTH2F, {{200, 0.9, 1.2}, {200, -1, 1}});
     registry.add("profile", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
@@ -120,11 +126,12 @@ struct LfMyV0s {
     TVector3 UnitZ(0.0, 0.0, 1.0);
     TVector3 JetP(Jetpx, Jetpy, Jetpz);
     TVector3 V0LambdaP(Lambdapx, Lambdapy, Lambdapz);
-    TVector3 JetCrossV0 = (JetP.Cross(V0LambdaP));
-    TVector3 YinJet = (JetCrossV0).Cross(JetP);
-    TVector3 UnitXInJet = YinJet.Unit();
-    TVector3 UnitYInJet = JetCrossV0.Unit();
-    TVector3 UnitZInJet = JetP.Unit();
+    TVector3 vortex_y = (JetP.Cross(V0LambdaP));
+
+    TVector3 z_hat = JetP.Unit();
+    TVector3 y_hat = vortex_y.Unit();
+    TVector3 x_hat1 = y_hat.Cross(z_hat);
+    TVector3 x_hat = x_hat1.Unit();
 
     TMatrixD matrixLabToJet(4, 4);
     matrixLabToJet(0, 0) = 1;
@@ -132,17 +139,17 @@ struct LfMyV0s {
     matrixLabToJet(0, 2) = 0.0;
     matrixLabToJet(0, 3) = 0.0;
     matrixLabToJet(1, 0) = 0.0;
-    matrixLabToJet(1, 1) = UnitXInJet * UnitX;
-    matrixLabToJet(1, 2) = UnitXInJet * UnitY;
-    matrixLabToJet(1, 3) = UnitXInJet * UnitZ;
+    matrixLabToJet(1, 1) = x_hat.X();
+    matrixLabToJet(1, 2) = x_hat.Y();
+    matrixLabToJet(1, 3) = x_hat.Z();
     matrixLabToJet(2, 0) = 0.0;
-    matrixLabToJet(2, 1) = UnitYInJet * UnitX;
-    matrixLabToJet(2, 2) = UnitYInJet * UnitY;
-    matrixLabToJet(2, 3) = UnitYInJet * UnitZ;
+    matrixLabToJet(2, 1) = y_hat.X();
+    matrixLabToJet(2, 2) = y_hat.Y();
+    matrixLabToJet(2, 3) = y_hat.Z();
     matrixLabToJet(3, 0) = 0.0;
-    matrixLabToJet(3, 1) = UnitZInJet * UnitX;
-    matrixLabToJet(3, 2) = UnitZInJet * UnitY;
-    matrixLabToJet(3, 3) = UnitZInJet * UnitZ;
+    matrixLabToJet(3, 1) = z_hat.X();
+    matrixLabToJet(3, 2) = z_hat.Y();
+    matrixLabToJet(3, 3) = z_hat.Z();
     return matrixLabToJet;
   }
   // aod::MyCollision const& collision
@@ -184,6 +191,8 @@ struct LfMyV0s {
       pLabproton(3, 0) = candidate.v0protonpz();
       TMatrixD protonInV0(4, 1);
       protonInV0 = LorentzTransInV0frame(ELambda, candidate.v0px(), candidate.v0py(), candidate.v0pz()) * pLabproton;
+      double protonMassInV0 = sqrt(protonInV0(0, 0) * protonInV0(0, 0) - protonInV0(1, 0) * protonInV0(1, 0) - protonInV0(2, 0) * protonInV0(2, 0) - protonInV0(3, 0) * protonInV0(3, 0));
+      registry.fill(HIST("V0protonMassInRest_frame"), protonMassInV0);
       registry.fill(HIST("V0protonpxInRest_frame"), protonInV0(1, 0));
       registry.fill(HIST("V0protonpyInRest_frame"), protonInV0(2, 0));
       registry.fill(HIST("V0protonpzInRest_frame"), protonInV0(3, 0));
@@ -201,7 +210,6 @@ struct LfMyV0s {
   PROCESS_SWITCH(LfMyV0s, processJetV0Analysis, "processJetV0Analysis", true);
   void processLeadingJetV0Analysis(aod::MyTable const& myv0s, aod::MyTableLeadingJet const& myleadingJets)
   {
-    //
     for (auto& LeadingJet : myleadingJets) {
       int V0Numbers = 0;
       double protonsinPhiInJetV0frame = 0;
@@ -210,14 +218,30 @@ struct LfMyV0s {
           V0Numbers = V0Numbers + 1;
           double PLambda = sqrt(candidate.v0px() * candidate.v0px() + candidate.v0py() * candidate.v0py() + candidate.v0pz() * candidate.v0pz());
           double ELambda = sqrt(candidate.v0Lambdamass() * candidate.v0Lambdamass() + PLambda * PLambda);
-          TMatrixD pLabproton(4, 1);
           double protonE = sqrt(massPr * massPr + candidate.v0protonpx() * candidate.v0protonpx() + candidate.v0protonpy() * candidate.v0protonpy() + candidate.v0protonpz() * candidate.v0protonpz());
+
+          TMatrixD pLabV0(4, 1);
+          pLabV0(0, 0) = ELambda;
+          pLabV0(1, 0) = candidate.v0px();
+          pLabV0(2, 0) = candidate.v0py();
+          pLabV0(3, 0) = candidate.v0pz();
+
+          TMatrixD lambdaInJet(4, 1);
+          lambdaInJet = MyTMatrixTranslationToJet(LeadingJet.leadingjetpx(), LeadingJet.leadingjetpy(), LeadingJet.leadingjetpz(), candidate.v0px(), candidate.v0py(), candidate.v0pz()) * pLabV0;
+
+          TMatrixD lambdaInJetV0(4, 1);
+          lambdaInJetV0 = LorentzTransInV0frame(ELambda, lambdaInJet(1, 0), lambdaInJet(2, 0), lambdaInJet(3, 0)) * MyTMatrixTranslationToJet(LeadingJet.leadingjetpx(), LeadingJet.leadingjetpy(), LeadingJet.leadingjetpz(), candidate.v0px(), candidate.v0py(), candidate.v0pz()) * pLabV0;
+          registry.fill(HIST("V0LambdapxInJetV0frame"), lambdaInJetV0(1, 0));
+          registry.fill(HIST("V0LambdapyInJetV0frame"), lambdaInJetV0(2, 0));
+          registry.fill(HIST("V0LambdapzInJetV0frame"), lambdaInJetV0(3, 0));
+
+          TMatrixD pLabproton(4, 1);
           pLabproton(0, 0) = protonE;
           pLabproton(1, 0) = candidate.v0protonpx();
           pLabproton(2, 0) = candidate.v0protonpy();
           pLabproton(3, 0) = candidate.v0protonpz();
           TMatrixD protonInJetV0(4, 1);
-          protonInJetV0 = LorentzTransInV0frame(ELambda, candidate.v0px(), candidate.v0py(), candidate.v0pz()) * MyTMatrixTranslationToJet(LeadingJet.leadingjetpx(), LeadingJet.leadingjetpy(), LeadingJet.leadingjetpz(), candidate.v0px(), candidate.v0py(), candidate.v0pz()) * pLabproton;
+          protonInJetV0 = LorentzTransInV0frame(ELambda, lambdaInJet(1, 0), lambdaInJet(2, 0), lambdaInJet(3, 0)) * MyTMatrixTranslationToJet(LeadingJet.leadingjetpx(), LeadingJet.leadingjetpy(), LeadingJet.leadingjetpz(), candidate.v0px(), candidate.v0py(), candidate.v0pz()) * pLabproton;
           registry.fill(HIST("V0protonpxInJetV0frame"), protonInJetV0(1, 0));
           registry.fill(HIST("V0protonpyInJetV0frame"), protonInJetV0(2, 0));
           registry.fill(HIST("V0protonpzInJetV0frame"), protonInJetV0(3, 0));
