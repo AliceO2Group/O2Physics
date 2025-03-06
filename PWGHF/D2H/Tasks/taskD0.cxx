@@ -304,7 +304,7 @@ struct HfTaskD0 {
   }
 
   template <int reconstructionType, bool applyMl, typename CandType, typename CollType>
-  void processData(CandType const& candidates, CollType const&, aod::TracksWExtra const& tracks)
+  void processData(CandType const& candidates, CollType const&, aod::TracksWExtra const&)
   {
     for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
