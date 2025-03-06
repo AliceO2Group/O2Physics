@@ -80,6 +80,7 @@ struct phiInJets {
   Configurable<bool> cfgIsKstar{"cfgIsKstar", false, "Swaps Phi for Kstar analysis"};
   Configurable<bool> cfgDataHists{"cfgDataHists", false, "Enables DataHists"};
   Configurable<bool> cfgMCRecHists{"cfgMCRecHists", false, "Enables MCRecHists"};
+  Configurable<bool> cfgMCRecInsideHists{"cfgMCRecInsideHists", false, "Enables MCRec Inside Hists"};
   Configurable<bool> cfgMCGenHists{"cfgMCGenHists", false, "Enables MCGenHists"};
   Configurable<bool> cfgMCGenMATCHEDHists{"cfgMCGenMATCHEDHists", false, "Enables MCGenMATCHEDHists"};
   Configurable<bool> cfgMCRecMATCHEDHists{"cfgMCRecMATCHEDHists", false, "Enables MCRecMATCHEDHists"};
@@ -164,36 +165,24 @@ struct phiInJets {
       JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta", "hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta", kTH2F, {PtAxis, axisEta});
       JEhistos.add("JetVsPhi_REC", "JetVsPhi_REC", kTH2F, {{4000, 0., 200.}, {200, 0, 20.0}});
 
+      //used for Minv closure tests
+      // MB
+      JEhistos.add("hMCRec_hUSS", "hMCRec_hUSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
+      JEhistos.add("hMCRec_hLSS", "hMCRec_hLSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
       JEhistos.add("hMCRecTrue_hUSS", "hMCRecTrue_hUSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
       JEhistos.add("hMCRecTrue_hLSS", "hMCRecTrue_hLSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
 
-      JEhistos.add("hMCRec_hUSS", "hMCRec_hUSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRec_hUSS_1D", "hMCRec_hUSS_1D", kTH1F, {MinvAxis});
-      JEhistos.add("hMCRec_hUSS_1D_2_3", "hMCRec_hUSS_1D_2_3", kTH1F, {MinvAxis});
-
-      JEhistos.add("hMCRec_hLSS", "hMCRec_hLSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRec_hLSS_1D", "hMCRec_hLSS_1D", kTH1F, {MinvAxis});
-      JEhistos.add("hMCRec_hLSS_1D_2_3", "hMCRec_hLSS_1D_2_3", kTH1F, {MinvAxis});
-
+      // INSIDE
+      if (cfgMCRecInsideHists){
       JEhistos.add("hMCRec_hUSS_INSIDE", "hMCRec_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRec_hUSS_INSIDE_1D", "hMCRec_hUSS_INSIDE_1D", kTH1F, {MinvAxis});
-      JEhistos.add("hMCRec_hUSS_INSIDE_1D_2_3", "hMCRec_hUSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
-
       JEhistos.add("hMCRec_hLSS_INSIDE", "hMCRec_hLSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRec_hLSS_INSIDE_1D", "hMCRec_hLSS_INSIDE_1D", kTH1F, {MinvAxis});
-      JEhistos.add("hMCRec_hLSS_INSIDE_1D_2_3", "hMCRec_hLSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
-
       JEhistos.add("hMCRecTrue_hUSS_INSIDE", "hMCRecTrue_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRecTrue_hUSS_INSIDE_1D", "hMCRecTrue_hUSS_INSIDE_1D", kTH1F, {MinvAxis});
-      JEhistos.add("hMCRecTrue_hUSS_INSIDE_1D_2_3", "hMCRecTrue_hUSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
-
       JEhistos.add("hMCRecTrue_hLSS_INSIDE", "hMCRecTrue_hLSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRecTrue_hLSS_INSIDE_1D", "hMCRecTrue_hLSS_INSIDE_1D", kTH1F, {MinvAxis});
-      JEhistos.add("hMCRecTrue_hLSS_INSIDE_1D_2_3", "hMCRecTrue_hLSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
 
       JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE", "hMCRec_nonmatch_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
       JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_1D", "hMCRec_nonmatch_hUSS_INSIDE_1D", kTH1F, {MinvAxis});
       JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3", "hMCRec_nonmatch_hUSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
+      }
     }
 
     if (cfgMCGenHists) {
