@@ -728,6 +728,7 @@ DECLARE_SOA_TABLE_STAGED(HfDplusMcs, "HFDPMC", //! Table with MC candidate info
                          hf_cand_mc::FlagMcMatchRec,
                          hf_cand_mc::OriginMcRec,
                          hf_cand_mc::IsCandidateSwapped, // useless
+                         hf_cand_mc::FlagMcDecayChanRec,
                          o2::soa::Marker<MarkerDplus>);
 
 } // namespace o2::aod
