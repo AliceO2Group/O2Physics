@@ -1634,15 +1634,15 @@ struct TauTau13topo {
     int nITSbits = -1;
     int npT100 = 0;
     TLorentzVector p;
-    auto const pionMass = MassPiPlus;
-    auto const electronMass = MassElectron;
+    // auto const pionMass = MassPiPlus;
+    // auto const electronMass = MassElectron;
     bool flagGlobalCheck = true;
     bool isGlobalTrack = true;
     int qtot = 0;
     // loop over PV contributors
     for (const auto& trk : PVContributors) {
       qtot += trk.sign();
-      p.SetXYZM(trk.px(), trk.py(), trk.pz(), pionMass);
+      p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
       registry.get<TH1>(HIST("global/hTrackPtPV"))->Fill(p.Pt());
       if (std::abs(p.Eta()) < trkEtacut)
         nEtaIn15++; // 1.5 is a default
@@ -1797,7 +1797,7 @@ struct TauTau13topo {
     registry.get<TH1>(HIST("global1/hNTracks"))->Fill(dgtracks.size());
     registry.get<TH1>(HIST("global1/hNTracksPV"))->Fill(PVContributors.size());
     for (const auto& trk : PVContributors) {
-      p.SetXYZM(trk.px(), trk.py(), trk.pz(), pionMass);
+      p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
       registry.get<TH1>(HIST("global1/hTrackPtPV"))->Fill(p.Pt());
       registry.get<TH2>(HIST("global1/hTrackEtaPhiPV"))->Fill(p.Eta(), p.Phi());
     }
@@ -1961,11 +1961,11 @@ struct TauTau13topo {
     bool flagIMGam2ePV[4] = {true, true, true, true};
 
     for (const auto& trk : PVContributors) {
-      p.SetXYZM(trk.px(), trk.py(), trk.pz(), electronMass);
+      p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassElectron);
       for (const auto& trk1 : PVContributors) {
         if (trk.index() >= trk1.index())
           continue;
-        p1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), electronMass);
+        p1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), MassElectron);
         invMass2El[(counterTmp < 3 ? counterTmp : 5 - counterTmp)][(counterTmp < 3 ? 0 : 1)] = (p + p1).Mag2();
         gammaPair[(counterTmp < 3 ? counterTmp : 5 - counterTmp)][(counterTmp < 3 ? 0 : 1)] = (p + p1);
         registry.get<TH1>(HIST("control/cut0/hInvMass2ElAll"))->Fill((p + p1).Mag2());
@@ -1980,7 +1980,7 @@ struct TauTau13topo {
     // first loop to add all the tracks together
     p = TLorentzVector(0., 0., 0., 0.);
     for (const auto& trk : PVContributors) {
-      p1.SetXYZM(trk.px(), trk.py(), trk.pz(), pionMass);
+      p1.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
       p += p1;
       scalarPtsum += trk.pt();
     } // end of loop over PVContributors
@@ -2002,8 +2002,8 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("global/hTrkCheck"))->Fill(tmpTrkCheck);
 
       // inv mass of 3pi + 1e
-      p1.SetXYZM(trk.px(), trk.py(), trk.pz(), pionMass);
-      p2.SetXYZM(trk.px(), trk.py(), trk.pz(), electronMass);
+      p1.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
+      p2.SetXYZM(trk.px(), trk.py(), trk.pz(), MassElectron);
       mass3pi1e[counterTmp] = (p - p1 + p2).Mag();
 
       v1.SetXYZ(trk.px(), trk.py(), trk.pz());
@@ -2035,7 +2035,7 @@ struct TauTau13topo {
       trkTime[counterTmp] = trk.trackTime();
       trkTimeRes[counterTmp] = trk.trackTimeRes();
 
-      p1.SetXYZM(trk.px(), trk.py(), trk.pz(), pionMass);
+      p1.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
       tmpMomentum[counterTmp] = p1.P();
       tmpPt[counterTmp] = p1.Pt();
       tmpDedx[counterTmp] = trk.tpcSignal();
@@ -3482,10 +3482,10 @@ struct TauTau13topo {
           float tmpPhiData = phi(tmptrack.px(), tmptrack.py());
           registryMC.get<TH2>(HIST("global1MCrec/hTrackEtaPhiPV"))->Fill(tmpEtaData, tmpPhiData);
           registryMC.get<TH1>(HIST("global1MCrec/hTrackPtPV"))->Fill(tmptrack.pt());
-          p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), pionMass); // in case of ghost
+          p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), MassPiPlus); // in case of ghost
 
           if (trackMCId[i] >= 0) {
-            p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (std::abs(tmptrack.udMcParticle().pdgCode()) == 211 ? pionMass : electronMass));
+            p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (std::abs(tmptrack.udMcParticle().pdgCode()) == 211 ? MassPiPlus : MassElectron));
             float tmpPt = pt(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py());
             float tmpEta = eta(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py(), tmptrack.udMcParticle().pz());
             float tmpPhi = phi(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py());
@@ -3641,9 +3641,9 @@ struct TauTau13topo {
           auto const tmptrack = groupedTracks.begin() + trackId[i];
           // if (tmptrack.hasTOF()) trkHasTof[i] = true;
           v1.SetXYZ(tmptrack.px(), tmptrack.py(), tmptrack.pz());
-          p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), pionMass); // in case of ghost
+          p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), MassPiPlus); // in case of ghost
           if (trackMCId[i] >= 0) {
-            p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (i == matchedElIndexToData ? electronMass : pionMass));
+            p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (i == matchedElIndexToData ? MassElectron : MassPiPlus));
           }
 
           nSigmaEl[counterTmp] = tmptrack.tpcNSigmaEl();
