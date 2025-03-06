@@ -245,6 +245,31 @@ DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float {
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
 DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0radius, [](float vx, float vy) -> float { return RecoDecay::sqrtSumOfSquares(vx, vy); });
+DECLARE_SOA_DYNAMIC_COLUMN(CosPAXY, cosPAXY, [](float px, float py, float vx, float vy, float pvx, float pvy) -> float {
+  float lx = vx - pvx; // flight length X
+  float ly = vy - pvy; // flight length Y
+  float cospaXY = RecoDecay::dotProd(std::array{lx, ly}, std::array{px, py}) / (RecoDecay::sqrtSumOfSquares(lx, ly) * RecoDecay::sqrtSumOfSquares(px, py));
+  if (cospaXY < -1.) {
+    return -1.;
+  } else if (cospaXY > 1.) {
+    return 1.;
+  }
+  return cospaXY;
+});
+DECLARE_SOA_DYNAMIC_COLUMN(CosPARZ, cosPARZ, [](float px, float py, float pz, float vx, float vy, float vz, float pvx, float pvy, float pvz) -> float {
+  float lx = vx - pvx;                            // flight length X
+  float ly = vy - pvy;                            // flight length Y
+  float lz = vz - pvz;                            // flight length Z
+  float lt = RecoDecay::sqrtSumOfSquares(lx, ly); // flight length R, i.e. transverse plane.
+  float pt = RecoDecay::sqrtSumOfSquares(px, py);
+  float cospaRZ = RecoDecay::dotProd(std::array{lt, lz}, std::array{pt, pz}) / (RecoDecay::sqrtSumOfSquares(lt, lz) * RecoDecay::sqrtSumOfSquares(pt, pz));
+  if (cospaRZ < -1.) {
+    return -1.;
+  } else if (cospaRZ > 1.) {
+    return 1.;
+  }
+  return cospaRZ;
+});
 } // namespace v0photonkf
 DECLARE_SOA_TABLE(V0PhotonsKF, "AOD", "V0PHOTONKF", //!
                   o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::V0Id, v0photonkf::PosTrackId, v0photonkf::NegTrackId,
@@ -262,7 +287,9 @@ DECLARE_SOA_TABLE(V0PhotonsKF, "AOD", "V0PHOTONKF", //!
                   v0photonkf::Eta<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
                   v0photonkf::Phi<v0photonkf::Px, v0photonkf::Py>,
                   v0photonkf::P<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
-                  v0photonkf::V0Radius<v0photonkf::Vx, v0photonkf::Vy>);
+                  v0photonkf::V0Radius<v0photonkf::Vx, v0photonkf::Vy>,
+                  v0photonkf::CosPAXY<v0photonkf::Px, v0photonkf::Py, v0photonkf::Vx, v0photonkf::Vy>,
+                  v0photonkf::CosPARZ<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz, v0photonkf::Vx, v0photonkf::Vy, v0photonkf::Vz>);
 // iterators
 using V0PhotonKF = V0PhotonsKF::iterator;
 
