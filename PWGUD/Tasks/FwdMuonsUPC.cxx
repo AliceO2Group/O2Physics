@@ -86,28 +86,28 @@ DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
 namespace gendimu
 {
 // dimuon
-DECLARE_SOA_COLUMN(M, m, float);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Rap, rap, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(PhiAv, phiAv, float);
-DECLARE_SOA_COLUMN(PhiCh, phiCh, float);
+DECLARE_SOA_COLUMN(GenM,     genM, float);
+DECLARE_SOA_COLUMN(GenPt,    genPt, float);
+DECLARE_SOA_COLUMN(GenRap,   genRap, float);
+DECLARE_SOA_COLUMN(GenPhi,   genPhi, float);
+DECLARE_SOA_COLUMN(GenPhiAv, genPhiAv, float);
+DECLARE_SOA_COLUMN(GenPhiCh, genPhiCh, float);
 // tracks positive (p) and negative (n)
-DECLARE_SOA_COLUMN(Ptp, ptp, float);
-DECLARE_SOA_COLUMN(Etap, etap, float);
-DECLARE_SOA_COLUMN(Phip, phip, float);
-DECLARE_SOA_COLUMN(Ptn, ptn, float);
-DECLARE_SOA_COLUMN(Etan, etan, float);
-DECLARE_SOA_COLUMN(Phin, phin, float);
+DECLARE_SOA_COLUMN(GenPtp,  genPtp, float);
+DECLARE_SOA_COLUMN(GenEtap, genEtap, float);
+DECLARE_SOA_COLUMN(GenPhip, genPhip, float);
+DECLARE_SOA_COLUMN(GenPtn,  genPtn, float);
+DECLARE_SOA_COLUMN(GenEtan, genEtan, float);
+DECLARE_SOA_COLUMN(GenPhin, genPhin, float);
 } // namespace gendimu
 
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(GenDimu, "AOD", "GENDIMU",
-                  gendimu::M, gendimu::Pt, gendimu::Rap, gendimu::Phi,
-                  gendimu::PhiAv, gendimu::PhiCh,
-                  gendimu::Ptp, gendimu::Etap, gendimu::Phip,
-                  gendimu::Ptn, gendimu::Etan, gendimu::Phin);
+                  gendimu::GenM,     gendimu::GenPt,   gendimu::GenRap, gendimu::GenPhi,
+                  gendimu::GenPhiAv, gendimu::GenPhiCh,
+                  gendimu::GenPtp,   gendimu::GenEtap, gendimu::GenPhip,
+                  gendimu::GenPtn,   gendimu::GenEtan, gendimu::GenPhin);
 } // namespace o2::aod
 
 // for saving tree with info on reco MC
