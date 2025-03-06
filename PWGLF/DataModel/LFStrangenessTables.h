@@ -66,11 +66,16 @@ DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! basic collision pr
 DECLARE_SOA_TABLE(StraCents_000, "AOD", "STRACENTS", //! centrality percentiles
                   cent::CentFT0M, cent::CentFT0A,
                   cent::CentFT0C, cent::CentFV0A);
-DECLARE_SOA_TABLE_VERSIONED(StraCents_001, "AOD", "STRACENTS", 1, //! centrality percentiles
+DECLARE_SOA_TABLE_VERSIONED(StraCents_001, "AOD", "STRACENTS", 1, //! centrality percentiles in Run 3
                             cent::CentFT0M, cent::CentFT0A,
                             cent::CentFT0C, cent::CentFV0A,
                             cent::CentFT0CVariant1, cent::CentMFT,
                             cent::CentNGlobal);
+
+DECLARE_SOA_TABLE(StraCentsRun2, "AOD", "STRACENTSRUN2", //! centrality percentiles in Run 2
+                  cent::CentRun2V0M, cent::CentRun2V0A,
+                  cent::CentRun2SPDTracklets, cent::CentRun2SPDClusters);
+
 // !!! DEPRECATED TABLE: StraRawCents_000 !!! All info in StraEvSels_001, in order to group all event characteristics in a unique table. Please use StraEvSels_001
 DECLARE_SOA_TABLE(StraRawCents_000, "AOD", "STRARAWCENTS", //! debug information
                   mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultNTracksPVeta1);
@@ -221,6 +226,20 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_004, "AOD", "STRAEVSELS", 4,         //! 
                             // stracollision::EnergyCommonZNC<mult::MultZNC>,
                             stracollision::IsUPC<udcollision::GapSide>);
 
+DECLARE_SOA_TABLE(StraEvSelsRun2, "AOD", "STRAEVSELSRUN2",        //! debug information
+                  evsel::Sel8, evsel::Sel7, evsel::Selection,     //! event selection: sel8
+                  mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+                  mult::MultFDDA, mult::MultFDDC,
+                  mult::MultNTracksPVeta1,                      // track multiplicities with eta cut for INEL>0
+                  mult::MultPVTotalContributors,                // number of PV contribs total
+                  mult::MultNTracksGlobal,                      // global track multiplicities
+                  mult::MultNTracksITSTPC,                      // track multiplicities, PV contribs, no eta cut
+                  mult::MultAllTracksTPCOnly,                   // TPConly track multiplicities, all, no eta cut
+                  mult::MultAllTracksITSTPC,                    // ITSTPC track multiplicities, all, no eta cut
+                  mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
+                  mult::MultZEM2, mult::MultZPA, mult::MultZPC,
+                  evsel::Alias); // trigger aliases (e.g. kTVXinTRD for v2)
+
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);
 DECLARE_SOA_TABLE(StraFT0CQVs, "AOD", "STRAFT0CQVS", //! t0c Qvec
@@ -236,7 +255,7 @@ DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to comp
                   epcalibrationtable::TriggerEventEP);
 DECLARE_SOA_TABLE(StraZDCSP, "AOD", "STRAZDCSP", //! ZDC SP information
                   spcalibrationtable::TriggerEventSP,
-                  spcalibrationtable::PsiZDCA, spcalibrationtable::PsiZDCC);
+                  spcalibrationtable::PsiZDCA, spcalibrationtable::PsiZDCC, spcalibrationtable::QXZDCA, spcalibrationtable::QXZDCC, spcalibrationtable::QYZDCA, spcalibrationtable::QYZDCC);
 DECLARE_SOA_TABLE(StraStamps_000, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
                   bc::RunNumber, timestamp::Timestamp);
 DECLARE_SOA_TABLE_VERSIONED(StraStamps_001, "AOD", "STRASTAMPS", 1, //! information for ID-ing mag field if needed
@@ -398,10 +417,45 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_002, "AOD", "DAUTRACKEXTRA", 2, //! d
                             dautrack::HasTRD<dautrack::DetectorMap>,
                             dautrack::HasTOF<dautrack::DetectorMap>);
 
+DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_003, "AOD", "DAUTRACKEXTRA", 3, //! detector properties of decay daughters
+                            track::ITSChi2NCl,
+                            track::TPCChi2NCl,
+                            dautrack::DetectorMap, // here we don´t save everything so we simplify this
+                            track::ITSClusterSizes,
+                            track::TPCNClsFindable,
+                            track::TPCNClsFindableMinusFound,
+                            track::TPCNClsFindableMinusCrossedRows,
+                            track::TPCNClsShared,
+
+                            // Dynamics for ITS matching TracksExtra
+                            track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                            track::v001::ITSClsSizeInLayer<track::ITSClusterSizes>,
+                            track::v001::ITSClusterMap<track::ITSClusterSizes>,
+                            track::v001::ITSNCls<track::ITSClusterSizes>,
+                            track::v001::IsITSAfterburner<track::v001::DetectorMap, track::ITSChi2NCl>,
+                            /*compatibility*/ dautrack::HasITSTracker<dautrack::DetectorMap, track::ITSChi2NCl>,
+                            /*compatibility*/ dautrack::HasITSAfterburner<dautrack::DetectorMap, track::ITSChi2NCl>,
+
+                            // dynamics for TPC tracking properties matching main data model
+                            track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            /*compatibility*/ dautrack::compatibility::TPCClusters<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            /*compatibility*/ dautrack::compatibility::TPCCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            /*compatibility*/ dautrack::compatibility::ITSChi2PerNcl<track::ITSChi2NCl>,
+
+                            // dynamics to identify detectors
+                            dautrack::HasITS<dautrack::DetectorMap>,
+                            dautrack::HasTPC<dautrack::DetectorMap>,
+                            dautrack::HasTRD<dautrack::DetectorMap>,
+                            dautrack::HasTOF<dautrack::DetectorMap>);
+
 DECLARE_SOA_TABLE(DauTrackMCIds, "AOD", "DAUTRACKMCID", // index table when using AO2Ds
                   dautrack::ParticleMCId);
 
-using DauTrackExtras = DauTrackExtras_002;
+using DauTrackExtras = DauTrackExtras_003;
 using DauTrackExtra = DauTrackExtras::iterator;
 
 namespace motherParticle

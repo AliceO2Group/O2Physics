@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include "GFWWeights.h"
+#include "TMath.h"
 #include <cstdio>
 
 GFWWeights::GFWWeights() : TNamed("", ""),
@@ -67,7 +68,7 @@ void GFWWeights::init(bool AddData, bool AddMC)
     fW_data->SetName("GFWWeights_Data");
     fW_data->SetOwner(kTRUE);
     const char* tnd = getBinName(0, 0, Form("data_%s", this->GetName()));
-    fW_data->Add(new TH3D(tnd, ";#varphi;#eta;v_{z}", 60, 0, TwoPI, 64, -1.6, 1.6, 40, -10, 10));
+    fW_data->Add(new TH3D(tnd, ";#varphi;#eta;v_{z}", 60, 0, TMath::TwoPi(), 64, -1.6, 1.6, 40, -10, 10));
     fDataFilled = kTRUE;
   }
   if (AddMC) {
@@ -108,7 +109,7 @@ void GFWWeights::fill(double phi, double eta, double vz, double pt, double /*cen
   TH3D* th3 = reinterpret_cast<TH3D*>(tar->FindObject(getBinName(0, 0, pf))); // pT bin 0, V0M bin 0, since all integrated
   if (!th3) {
     if (!htype)
-      tar->Add(new TH3D(getBinName(0, 0, pf), ";#varphi;#eta;v_{z}", 60, 0, TwoPI, 64, -1.6, 1.6, 40, -10, 10)); // 0,0 since all integrated
+      tar->Add(new TH3D(getBinName(0, 0, pf), ";#varphi;#eta;v_{z}", 60, 0, TMath::TwoPi(), 64, -1.6, 1.6, 40, -10, 10)); // 0,0 since all integrated
     th3 = reinterpret_cast<TH3D*>(tar->At(tar->GetEntries() - 1));
   }
   th3->Fill(htype ? pt : phi, eta, vz, weight);
@@ -480,4 +481,18 @@ void GFWWeights::mergeWeights(GFWWeights* other)
   }
   addArray(fW_data, other->getDataArray());
   return;
+}
+void GFWWeights::setTH3D(TH3D* th3d)
+{
+  if (!fW_data) {
+    fW_data = new TObjArray();
+    fW_data->SetName("GFWWeights_Data");
+    fW_data->SetOwner(kTRUE);
+    fW_data->Add(th3d);
+    return;
+  }
+  TString ts(fW_data->At(0)->GetName());
+  TH3D* trash = reinterpret_cast<TH3D*>(fW_data->RemoveAt(0));
+  delete trash;
+  fW_data->Add(reinterpret_cast<TH3D*>(th3d->Clone(ts.Data())));
 }

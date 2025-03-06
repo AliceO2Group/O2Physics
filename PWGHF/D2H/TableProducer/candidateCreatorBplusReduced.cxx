@@ -200,8 +200,8 @@ struct HfCandidateCreatorBplusReduced {
           }
         }
       } // pi loop
-    }   // D0 loop
-  }     // end runCandidateCreation
+    } // D0 loop
+  } // end runCandidateCreation
 
   void processData(HfRedCollisionsWithExtras const& collisions,
                    soa::Join<aod::HfRed2Prongs, aod::HfRed2ProngsCov> const& candsD,
@@ -297,6 +297,7 @@ struct HfCandidateCreatorBplusReducedExpressions {
         filledMcInfo = true;
         if constexpr (checkDecayTypeMc) {
           rowBplusMcCheck(rowD0PiMcRec.pdgCodeBeautyMother(),
+                          rowD0PiMcRec.pdgCodeCharmMother(),
                           rowD0PiMcRec.pdgCodeProng0(),
                           rowD0PiMcRec.pdgCodeProng1(),
                           rowD0PiMcRec.pdgCodeProng2());
@@ -306,7 +307,7 @@ struct HfCandidateCreatorBplusReducedExpressions {
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D0-Pi creator
         rowBplusMcRec(0, -1, -1, -1.f);
         if constexpr (checkDecayTypeMc) {
-          rowBplusMcCheck(-1, -1, -1, -1);
+          rowBplusMcCheck(-1, -1, -1, -1, -1);
         }
       }
     }

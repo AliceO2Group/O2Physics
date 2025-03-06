@@ -53,7 +53,7 @@ struct HfCandidateSelectorLbToLcPi {
   Configurable<float> maxDecayLengthError{"maxDecayLengthError", 0.015, "decay length error quality selection"};
   Configurable<float> maxDecayLengthXYError{"maxDecayLengthXYError", 0.01, "decay length xy error quality selection"};
   Configurable<float> maxVertexDistanceLbLc{"maxVertexDistanceLbLc", 0.05, "maximum distance between Lb and Lc vertex"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lb_to_lc_pi::cuts[0], hf_cuts_lb_to_lc_pi::nBinsPt, hf_cuts_lb_to_lc_pi::nCutVars, hf_cuts_lb_to_lc_pi::labelsPt, hf_cuts_lb_to_lc_pi::labelsCutVar}, "Lb0 candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lb_to_lc_pi::Cuts[0], hf_cuts_lb_to_lc_pi::NBinsPt, hf_cuts_lb_to_lc_pi::NCutVars, hf_cuts_lb_to_lc_pi::labelsPt, hf_cuts_lb_to_lc_pi::labelsCutVar}, "Lb0 candidate selection per pT bin"};
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc+"};
 
   HfHelper hfHelper;
@@ -62,7 +62,7 @@ struct HfCandidateSelectorLbToLcPi {
 
   bool passesImpactParameterResolution(float pT, float d0Resolution)
   {
-    float expectedResolution(0.001 + 0.0052 * exp(-0.655 * pT));
+    float expectedResolution(0.001 + 0.0052 * std::exp(-0.655 * pT));
     if (d0Resolution > expectedResolution * 1.5)
       return false;
     else
@@ -149,7 +149,7 @@ struct HfCandidateSelectorLbToLcPi {
     float diffXVert = hfCandLb.xSecondaryVertex() - hfCandLc.xSecondaryVertex();
     float diffYVert = hfCandLb.ySecondaryVertex() - hfCandLc.ySecondaryVertex();
     float diffZVert = hfCandLb.zSecondaryVertex() - hfCandLc.zSecondaryVertex();
-    float vertexDistance = sqrt(diffXVert * diffXVert + diffYVert * diffYVert + diffZVert * diffZVert);
+    float vertexDistance = std::sqrt(diffXVert * diffXVert + diffYVert * diffYVert + diffZVert * diffZVert);
     if (vertexDistance > maxVertexDistanceLbLc) {
       return false;
     }
