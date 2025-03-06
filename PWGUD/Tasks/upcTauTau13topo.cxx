@@ -9,9 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// \brief tau tau analysis 1e+3pi topology
-// \author Adam Matyja, adam.tomasz.matyja@cern.ch, adam.matryja@ifj.edu.pl
-// \since  January 2024
+/// \file upcTauTau13topo.cxx
+/// \brief tau tau analysis 1e+3pi topology
+/// \author Adam Matyja, adam.tomasz.matyja@cern.ch, adam.matryja@ifj.edu.pl
+/// \since  January 2024
 // to run it execute:
 // copts="--configuration json://tautauConfig.json -b"
 // o2-analysis-ud-tautau13topo $copts > output.log
@@ -2883,7 +2884,7 @@ struct TauTau13topo {
               registryMC.get<TH1>(HIST("electronMC/hMCpt"))->Fill(daughter.pt());
 
               electronFound = !electronFound;
-              partPt = static_cast<float> daughter.pt();
+              partPt = static_cast<float> (daughter.pt());
               // singleElectronGlobalIndex = daughter.globalIndex();
               //  LOGF(info,"e pt %f",daughter.pt());
               if (std::abs(daughter.eta()) > 0.9)
@@ -2894,7 +2895,7 @@ struct TauTau13topo {
               if (daughter.pdgCode() == 13)
                 flagMuPlusMuMinus = true;
               muonFound = !muonFound;
-              partPt = static_cast<float> daughter.pt();
+              partPt = static_cast<float> (daughter.pt());
               // LOGF(info,"mu pt %f",daughter.pt());
               if (std::abs(daughter.eta()) > 0.9)
                 partFromTauInEta = false;
@@ -2909,7 +2910,7 @@ struct TauTau13topo {
             auto mcPartTmp = mcParticle.daughters_as<aod::McParticles>().begin() + singlePionIndex;
             if (mcPartTmp.pdgCode() == -211)
               flagPiPlusPiMinus = true;
-            partPt = static_cast<float> mcPartTmp.pt();
+            partPt = static_cast<float> (mcPartTmp.pt());
             // motherOfSinglePionIndex = mcParticle.index();
             if (std::abs(mcPartTmp.eta()) > 0.9)
               partFromTauInEta = false;
@@ -3481,10 +3482,10 @@ struct TauTau13topo {
           float tmpPhiData = phi(tmptrack.px(), tmptrack.py());
           registryMC.get<TH2>(HIST("global1MCrec/hTrackEtaPhiPV"))->Fill(tmpEtaData, tmpPhiData);
           registryMC.get<TH1>(HIST("global1MCrec/hTrackPtPV"))->Fill(tmptrack.pt());
-          p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), pdg->Mass(211)); // in case of ghost
+          p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), pionMass); // in case of ghost
 
           if (trackMCId[i] >= 0) {
-            p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (std::abs(tmptrack.udMcParticle().pdgCode()) == 211 ? pdg->Mass(211) : pdg->Mass(11)));
+            p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (std::abs(tmptrack.udMcParticle().pdgCode()) == 211 ? pionMass : electronMass));
             float tmpPt = pt(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py());
             float tmpEta = eta(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py(), tmptrack.udMcParticle().pz());
             float tmpPhi = phi(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py());
@@ -3640,9 +3641,9 @@ struct TauTau13topo {
           auto const tmptrack = groupedTracks.begin() + trackId[i];
           // if (tmptrack.hasTOF()) trkHasTof[i] = true;
           v1.SetXYZ(tmptrack.px(), tmptrack.py(), tmptrack.pz());
-          p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), pdg->Mass(211)); // in case of ghost
+          p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), pionMass); // in case of ghost
           if (trackMCId[i] >= 0) {
-            p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (i == matchedElIndexToData ? pdg->Mass(11) : pdg->Mass(211)));
+            p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (i == matchedElIndexToData ? electronMass : pionMass));
           }
 
           nSigmaEl[counterTmp] = tmptrack.tpcNSigmaEl();
