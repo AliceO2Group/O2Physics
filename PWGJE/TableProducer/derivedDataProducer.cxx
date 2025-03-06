@@ -108,6 +108,7 @@ struct JetDerivedDataProducerTask {
     Produces<aod::JDielectronIds> jDielectronIdsTable;
     Produces<aod::JDielectronMcCollisions> jDielectronMcCollisionsTable;
     Produces<aod::JDielectronMcCollisionIds> jDielectronMcCollisionIdsTable;
+    Produces<aod::JDielectronMcRCollDummys> JDielectronMcRCollDummysTable;
     Produces<aod::JDielectronMcs> jDielectronMcsTable;
     Produces<aod::JDielectronMcIds> jDielectronMcIdsTable;
   } products;
@@ -646,6 +647,7 @@ struct JetDerivedDataProducerTask {
         auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
         products.jDielectronMcsTable(products.jDielectronMcCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), jetdqutilities::setDielectronParticleDecayBit(particles, particle), RecoDecay::getCharmHadronOrigin(particles, particle, false)); // Todo: should the last thing be false?
         products.jDielectronMcIdsTable(mcCollision.globalIndex(), particle.globalIndex(), mothersId, daughtersId);
+        products.JDielectronMcRCollDummysTable(false);
       }
     }
   }
