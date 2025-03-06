@@ -419,28 +419,6 @@ auto slicedPerHFCandidate(T const& table, U const& candidate, V const& perD0Cand
 }
 
 /**
- * returns a slice of the table depending on the type of the HF candidate and index of the collision
- *
- * @param candidate HF candidate that is being checked
- * @param table the table to be sliced
- */
-template <typename T, typename U, typename V, typename M, typename N, typename O, typename P>
-auto slicedPerHFCollision(T const& table, U const& /*candidates*/, V const& collision, M const& D0CollisionPerCollision, N const& DplusCollisionPerCollision, O const& LcCollisionPerCollision, P const& BplusCollisionPerCollision)
-{
-  if constexpr (isD0Table<U>() || isD0McTable<U>()) {
-    return table.sliceBy(D0CollisionPerCollision, collision.globalIndex());
-  } else if constexpr (isDplusTable<U>() || isDplusMcTable<U>()) {
-    return table.sliceBy(DplusCollisionPerCollision, collision.globalIndex());
-  } else if constexpr (isLcTable<U>() || isLcMcTable<U>()) {
-    return table.sliceBy(LcCollisionPerCollision, collision.globalIndex());
-  } else if constexpr (isBplusTable<U>() || isBplusMcTable<U>()) {
-    return table.sliceBy(BplusCollisionPerCollision, collision.globalIndex());
-  } else {
-    return table;
-  }
-}
-
-/**
  * returns a slice of the table depending on the index of the HF candidate
  *
  * @param HFTable HF table type
