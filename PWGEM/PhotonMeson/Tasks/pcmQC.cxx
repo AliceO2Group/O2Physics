@@ -73,7 +73,6 @@ struct PCMQC {
     Configurable<bool> cfg_require_v0_with_itstpc{"cfg_require_v0_with_itstpc", false, "flag to select V0s with ITS-TPC matched tracks"};
     Configurable<bool> cfg_require_v0_with_itsonly{"cfg_require_v0_with_itsonly", false, "flag to select V0s with ITSonly tracks"};
     Configurable<bool> cfg_require_v0_with_tpconly{"cfg_require_v0_with_tpconly", false, "flag to select V0s with TPConly tracks"};
-    Configurable<bool> cfg_require_v0_on_wwire_ib{"cfg_require_v0_on_wwire_ib", false, "flag to select V0s on W wires ITSib"};
     Configurable<float> cfg_min_pt_v0{"cfg_min_pt_v0", 0.1, "min pT for v0 photons at PV"};
     Configurable<float> cfg_max_pt_v0{"cfg_max_pt_v0", 1e+10, "max pT for v0 photons at PV"};
     Configurable<float> cfg_min_eta_v0{"cfg_min_eta_v0", -0.8, "min eta for v0 photons at PV"};
@@ -138,12 +137,12 @@ struct PCMQC {
     fRegistry.add("V0/hPt", "pT;p_{T,#gamma} (GeV/c)", kTH1F, {{2000, 0.0f, 20}}, false);
     fRegistry.add("V0/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("V0/hRadius", "V0Radius; radius in Z (cm);radius in XY (cm)", kTH2F, {{200, -100, 100}, {200, 0.0f, 100.0f}}, false);
-    fRegistry.add("V0/hCosPA", "V0CosPA;cosine pointing angle", kTH1F, {{100, 0.99f, 1.0f}}, false);
-    fRegistry.add("V0/hCosPA_Rxy", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", kTH2F, {{200, 0.f, 100.f}, {100, 0.99f, 1.0f}}, false);
+    fRegistry.add("V0/hCosPA", "V0CosPA;cosine pointing angle in 3D", kTH1F, {{100, 0.99f, 1.0f}}, false);
+    fRegistry.add("V0/hCosPAXY", "V0CosPA;cosine pointing angle in XY", kTH1F, {{100, 0.99f, 1.0f}}, false);
+    fRegistry.add("V0/hCosPARZ", "V0CosPA;cosine pointing angle in RZ", kTH1F, {{100, 0.99f, 1.0f}}, false);
     fRegistry.add("V0/hPCA", "distance between 2 legs;PCA (cm)", kTH1F, {{500, 0.0f, 5.0f}}, false);
-    fRegistry.add("V0/hPCA_Rxy", "distance between 2 legs vs. R_{xy};R_{xy} (cm);PCA (cm)", kTH2F, {{200, 0.f, 100.f}, {500, 0.0f, 5.0f}}, false);
-    fRegistry.add("V0/hPCA_CosPA", "distance between 2 legs vs. cosPA;cosine of pointing angle;PCA (cm)", kTH2F, {{100, 0.99f, 1.f}, {500, 0.0f, 5.0f}}, false);
     fRegistry.add("V0/hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -5.f, +5.f}, {200, -5.f, +5.f}}, false);
+    fRegistry.add("V0/hDCAz_Pt", "DCA_{z} to PV vs. p_{T};DCA_{z} (cm);p_{T} (GeV/c)", kTH2F, {{200, -5.f, +5.f}, {2000, 0.0f, 20}}, false);
     fRegistry.add("V0/hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}}, false);
     fRegistry.add("V0/hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", kTH2F, {{200, 0.0f, 100.0f}, {100, 0.0f, 0.1f}}, false);
     fRegistry.add("V0/hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", kTH2F, {{400, -100.0f, 100.0f}, {400, -100.0f, 100.0f}}, false);
@@ -157,8 +156,8 @@ struct PCMQC {
     fRegistry.add("V0/hEtaResolution", "#eta resolution;p_{#gamma} (GeV/c);#Delta#eta", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
     fRegistry.add("V0/hThetaResolution", "#theta resolution;p_{#gamma} (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
     fRegistry.add("V0/hPhiResolution", "#varphi resolution;p_{#gamma} (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
+    fRegistry.add("V0/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {40, -2, +2}}, false);
     fRegistry.add("V0/hNgamma", "Number of #gamma candidates per collision", kTH1F, {{101, -0.5f, 100.5f}});
-    fRegistry.add("V0/hDCAz_Pt", "DCA to PV vs. p_{T} (GeV/c);DCA_{z} (cm);p_{T} (GeV/c)", kTH2F, {{200, -5.f, +5.f}, {1000, 0.0f, 10}}, false);
 
     // v0leg info
     fRegistry.add("V0Leg/hPt", "pT;p_{T,e} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
@@ -225,34 +224,14 @@ struct PCMQC {
     fV0PhotonCut.SetChi2PerClusterTPC(0.0, pcmcuts.cfg_max_chi2tpc);
     fV0PhotonCut.SetTPCNsigmaElRange(pcmcuts.cfg_min_TPCNsigmaEl, pcmcuts.cfg_max_TPCNsigmaEl);
     fV0PhotonCut.SetChi2PerClusterITS(-1e+10, pcmcuts.cfg_max_chi2its);
-    fV0PhotonCut.SetDisableITSonly(pcmcuts.cfg_disable_itsonly_track);
-    fV0PhotonCut.SetDisableTPConly(pcmcuts.cfg_disable_tpconly_track);
-
-    if (pcmcuts.cfg_reject_v0_on_itsib) {
-      fV0PhotonCut.SetNClustersITS(2, 4);
-    } else {
-      fV0PhotonCut.SetNClustersITS(0, 7);
-    }
+    fV0PhotonCut.SetNClustersITS(0, 7);
     fV0PhotonCut.SetMeanClusterSizeITSob(0.0, 16.0);
     fV0PhotonCut.SetIsWithinBeamPipe(pcmcuts.cfg_require_v0_with_correct_xz);
-
-    if (pcmcuts.cfg_require_v0_with_itstpc) {
-      fV0PhotonCut.SetRequireITSTPC(true);
-      fV0PhotonCut.SetRxyRange(4, 40);
-    }
-    if (pcmcuts.cfg_require_v0_with_itsonly) {
-      fV0PhotonCut.SetRequireITSonly(true);
-      fV0PhotonCut.SetRxyRange(4, 24);
-    }
-    if (pcmcuts.cfg_require_v0_with_tpconly) {
-      fV0PhotonCut.SetRequireTPConly(true);
-      fV0PhotonCut.SetRxyRange(32, 90);
-    }
-    if (pcmcuts.cfg_require_v0_on_wwire_ib) {
-      fV0PhotonCut.SetOnWwireIB(true);
-      fV0PhotonCut.SetOnWwireOB(false);
-      fV0PhotonCut.SetRxyRange(7, 14);
-    }
+    fV0PhotonCut.SetDisableITSonly(pcmcuts.cfg_disable_itsonly_track);
+    fV0PhotonCut.SetDisableTPConly(pcmcuts.cfg_disable_tpconly_track);
+    fV0PhotonCut.SetRequireITSTPC(pcmcuts.cfg_require_v0_with_itstpc);
+    fV0PhotonCut.SetRequireITSonly(pcmcuts.cfg_require_v0_with_itsonly);
+    fV0PhotonCut.SetRequireTPConly(pcmcuts.cfg_require_v0_with_tpconly);
   }
 
   template <const int ev_id, typename TCollision>
@@ -295,18 +274,18 @@ struct PCMQC {
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0MvsMultNTracksPV"), collision.multFT0A() + collision.multFT0C(), collision.multNTracksPV());
   }
 
-  template <typename TV0>
-  void fillV0Info(TV0 const& v0)
+  template <typename TCollision, typename TV0>
+  void fillV0Info(TCollision const& collision, TV0 const& v0)
   {
     fRegistry.fill(HIST("V0/hPt"), v0.pt());
     fRegistry.fill(HIST("V0/hEtaPhi"), v0.phi(), v0.eta());
     fRegistry.fill(HIST("V0/hRadius"), v0.vz(), v0.v0radius());
     fRegistry.fill(HIST("V0/hCosPA"), v0.cospa());
-    fRegistry.fill(HIST("V0/hCosPA_Rxy"), v0.v0radius(), v0.cospa());
+    fRegistry.fill(HIST("V0/hCosPAXY"), v0.cosPAXY(collision.posX(), collision.posY()));
+    fRegistry.fill(HIST("V0/hCosPARZ"), v0.cosPARZ(collision.posX(), collision.posY(), collision.posZ()));
     fRegistry.fill(HIST("V0/hPCA"), v0.pca());
-    fRegistry.fill(HIST("V0/hPCA_CosPA"), v0.cospa(), v0.pca());
-    fRegistry.fill(HIST("V0/hPCA_Rxy"), v0.v0radius(), v0.pca());
     fRegistry.fill(HIST("V0/hDCAxyz"), v0.dcaXYtopv(), v0.dcaZtopv());
+    fRegistry.fill(HIST("V0/hDCAz_Pt"), v0.dcaZtopv(), v0.pt());
     fRegistry.fill(HIST("V0/hAPplot"), v0.alpha(), v0.qtarm());
     fRegistry.fill(HIST("V0/hMassGamma"), v0.v0radius(), v0.mGamma());
     fRegistry.fill(HIST("V0/hGammaRxy"), v0.vx(), v0.vy());
@@ -320,7 +299,11 @@ struct PCMQC {
     fRegistry.fill(HIST("V0/hEtaResolution"), v0.p(), getEtaResolution(v0));
     fRegistry.fill(HIST("V0/hThetaResolution"), v0.p(), getThetaResolution(v0));
     fRegistry.fill(HIST("V0/hPhiResolution"), v0.p(), getPhiResolution(v0));
-    fRegistry.fill(HIST("V0/hDCAz_Pt"), v0.dcaZtopv(), v0.pt());
+
+    float phi_cp = atan2(v0.vy(), v0.vx());
+    o2::math_utils::bringTo02Pi(phi_cp);
+    float eta_cp = std::atanh(v0.vz() / std::sqrt(std::pow(v0.vx(), 2) + std::pow(v0.vy(), 2) + std::pow(v0.vz(), 2)));
+    fRegistry.fill(HIST("V0/hsConvPoint"), v0.v0radius(), phi_cp, eta_cp);
   }
 
   template <typename TLeg>
@@ -381,7 +364,7 @@ struct PCMQC {
         if (!fV0PhotonCut.IsSelected<aod::V0Legs>(v0)) {
           continue;
         }
-        fillV0Info(v0);
+        fillV0Info(collision, v0);
         for (auto& leg : {pos, ele}) {
           fillV0LegInfo(leg);
         }
