@@ -1198,6 +1198,7 @@ struct ResonanceInitializer {
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
     resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
   }
@@ -1215,6 +1216,7 @@ struct ResonanceInitializer {
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
     resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
   }
@@ -1252,6 +1254,7 @@ struct ResonanceInitializer {
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
     resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
@@ -1271,6 +1274,7 @@ struct ResonanceInitializer {
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
     resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
@@ -1292,7 +1296,7 @@ struct ResonanceInitializer {
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
     resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-
+    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
     fillCascades<false>(collision, Cascades, tracks);
@@ -1313,6 +1317,7 @@ struct ResonanceInitializer {
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
     resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
@@ -1331,7 +1336,7 @@ struct ResonanceInitializer {
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
     resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-
+    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
     auto mccollision = collision.mcCollision_as<aod::McCollisions>();
     float impactpar = mccollision.impactParameter();
     fillMCCollision<false>(collision, mcParticles, impactpar);
@@ -1376,6 +1381,7 @@ struct ResonanceInitializer {
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
     resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
     fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
@@ -1398,6 +1404,7 @@ struct ResonanceInitializer {
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
     resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
     fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
@@ -1420,6 +1427,7 @@ struct ResonanceInitializer {
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
     resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
     fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
@@ -1444,6 +1452,7 @@ struct ResonanceInitializer {
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
     resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
     fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
@@ -1468,6 +1477,7 @@ struct ResonanceInitializer {
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
     resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
     fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
