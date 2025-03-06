@@ -117,7 +117,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
 
   template <typename T, typename U>
   void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prong2, int candFlag, double invMass,
-                           double ct, double y, int8_t flagMc, int8_t origin, int8_t swapping, const std::vector<float>& mlScores)
+                           double ct, double y, int8_t flagMc, int8_t origin, int8_t swapping, int8_t flagDecayChan, const std::vector<float>& mlScores)
   {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
@@ -193,7 +193,8 @@ struct HfDerivedDataCreatorDplusToPiKPi {
       rowCandidateMc(
         flagMc,
         origin,
-        swapping);
+        swapping,
+        flagDecayChan);
     }
   }
 
@@ -239,7 +240,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
       if constexpr (isMc) {
         reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
       }
-      int8_t flagMcRec = 0, origin = 0, swapping = 0;
+      int8_t flagMcRec = 0, origin = 0, swapping = 0, flagDecayChanRec = 0;
       for (const auto& candidate : candidatesThisColl) {
         if constexpr (isMl) {
           if (!TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoMl)) {
@@ -250,6 +251,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
           flagMcRec = candidate.flagMcMatchRec();
           origin = candidate.originMcRec();
           swapping = candidate.isCandidateSwapped();
+          flagDecayChanRec = candidate.flagMcDecayChanRec();
           if constexpr (onlyBkg) {
             if (TESTBIT(std::abs(flagMcRec), aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
               continue;
@@ -277,7 +279,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
         if constexpr (isMl) {
           std::copy(candidate.mlProbDplusToPiKPi().begin(), candidate.mlProbDplusToPiKPi().end(), std::back_inserter(mlScoresDplusToPiKPi));
         }
-        fillTablesCandidate(candidate, prong0, prong1, prong2, 0, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, mlScoresDplusToPiKPi);
+        fillTablesCandidate(candidate, prong0, prong1, prong2, 0, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, flagDecayChanRec, mlScoresDplusToPiKPi);
       }
     }
   }

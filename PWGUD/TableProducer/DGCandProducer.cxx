@@ -283,19 +283,14 @@ struct DGCandProducer {
     LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
     const uint64_t ts = bc.timestamp();
     const int runnumber = bc.runNumber();
-
-    int trs = 0;
-    if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-      trs = 1;
-    }
-    int trofs = 0;
-    if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
-      trofs = 1;
-    }
-    int hmpr = 0;
-    if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
-      hmpr = 1;
-    }
+    int trs = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ? 1 : 0;
+    int trofs = collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard) ? 1 : 0;
+    int hmpr = collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof) ? 1 : 0;
+    int tfb = collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) ? 1 : 0;
+    int itsROFb = collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) ? 1 : 0;
+    int sbp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) ? 1 : 0;
+    int zVtxFT0vPv = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) ? 1 : 0;
+    int vtxITSTPC = collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC) ? 1 : 0;
     double ir = 0.;
     if (bc.has_zdc()) {
       ir = mRateFetcher.fetch(ccdb.service, ts, runnumber, "ZNC hadronic") * 1.e-3;
@@ -305,8 +300,7 @@ struct DGCandProducer {
     uint8_t chFDDA = 0;
     uint8_t chFDDC = 0;
     uint8_t chFV0A = 0;
-    int occ = 0;
-    occ = collision.trackOccupancyInTimeRange();
+    int occ = collision.trackOccupancyInTimeRange();
 
     if (cfgSkimmedProcessing) {
       // update ccdb setting for zorro
@@ -347,10 +341,7 @@ struct DGCandProducer {
 
       // update DG candidates tables
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
-      int upc_flag = 0;
-      ushort flags = collision.flags();
-      if (flags & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode)
-        upc_flag = 1;
+      int upc_flag = (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? 1 : 0;
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(), upc_flag,
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
@@ -363,7 +354,7 @@ struct DGCandProducer {
                            fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr);
+      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC);
       outputCollsLabels(collision.globalIndex());
 
       // update DGTracks tables
