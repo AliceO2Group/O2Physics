@@ -643,7 +643,6 @@ struct HfTaskD0 {
       auto trackNeg = candidate.template prong1_as<TracksSelQuality>(); // negative daughter
       int minProngItsClustersFound = trackPos.itsNCls() > trackNeg.itsNCls() ? trackNeg.itsNCls() : trackPos.itsNCls();
       int minProngTpcNCrossedRows = trackPos.tpcNClsCrossedRows() > trackNeg.tpcNClsCrossedRows() ? trackNeg.tpcNClsCrossedRows() : trackPos.tpcNClsCrossedRows();
-      
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
