@@ -1207,7 +1207,7 @@ struct ResonanceInitializer {
                             soa::Filtered<ResoTracks> const& tracks,
                             BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<BCsWithRun2Info>();
+    // auto bc = collision.bc_as<BCsWithRun2Info>();
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
@@ -1263,7 +1263,7 @@ struct ResonanceInitializer {
                               ResoV0s const& V0s,
                               BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<BCsWithRun2Info>();
+    // auto bc = collision.bc_as<BCsWithRun2Info>();
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
@@ -1305,7 +1305,7 @@ struct ResonanceInitializer {
                                   ResoCascades const& Cascades,
                                   BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<BCsWithRun2Info>();
+    // auto bc = collision.bc_as<BCsWithRun2Info>();
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
@@ -1371,7 +1371,7 @@ struct ResonanceInitializer {
                           aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
                           aod::McParticles const& mcParticles, BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<BCsWithRun2Info>();
+    // auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
@@ -1415,7 +1415,7 @@ struct ResonanceInitializer {
                             ResoV0sMC const& V0s,
                             aod::McParticles const& mcParticles, BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<BCsWithRun2Info>();
+    // auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
@@ -1463,7 +1463,7 @@ struct ResonanceInitializer {
                                 ResoCascadesMC const& Cascades,
                                 aod::McParticles const& mcParticles, BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<BCsWithRun2Info>();
+    // auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
     resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
