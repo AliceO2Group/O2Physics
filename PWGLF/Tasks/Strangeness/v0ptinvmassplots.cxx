@@ -128,9 +128,9 @@ struct V0PtInvMassPlots {
     AxisSpec armenterosasymAxis = {nBinsArmenteros, -1.f, 1.f, "#ait{p}^{+}_{||}-it{p}^{-}_{||}/it{p}^{+}_{||}+it{p}^{-}_{||}"};
     AxisSpec vertexZAxis = {nBins, -10.0f, 10.0f, "vrtx_{Z} [cm]"};
 
-    std::string kaonhistvalue[nmaxHistograms + 1];
-    std::string lambdahistvalue[nmaxHistograms + 1];
-    std::string antilambdahistvalue[nmaxHistograms + 1];
+    std::vector<std::string> kaonhistvalue(nmaxHistograms + 1);
+    std::vector<std::string> lambdahistvalue(nmaxHistograms + 1);
+    std::vector<std::string> antilambdahistvalue(nmaxHistograms + 1);
     // K0short Histogram Pt Bin Edges
     for (int i = 0; i < nmaxHistograms + 1; i++) {     // Histos won't accept "." character so converting it to "_"
       std::string kaonptbin = pthistos::kaonPtBins[i]; // getting the value of the bin edge
