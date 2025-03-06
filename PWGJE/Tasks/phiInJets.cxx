@@ -80,7 +80,7 @@ struct phiInJets {
   Configurable<bool> cfgIsKstar{"cfgIsKstar", false, "Swaps Phi for Kstar analysis"};
   Configurable<bool> cfgDataHists{"cfgDataHists", false, "Enables DataHists"};
   Configurable<bool> cfgMCRecHists{"cfgMCRecHists", false, "Enables MCRecHists"};
-  Configurable<bool> cfgMCRecInsideHists{"cfgMCRecInsideHists", false, "Enables MCRec Inside Hists"};
+  // Configurable<bool> cfgMCRecInsideHists{"cfgMCRecInsideHists", false, "Enables MCRec Inside Hists"};
   Configurable<bool> cfgMCGenHists{"cfgMCGenHists", false, "Enables MCGenHists"};
   Configurable<bool> cfgMCGenMATCHEDHists{"cfgMCGenMATCHEDHists", false, "Enables MCGenMATCHEDHists"};
   Configurable<bool> cfgMCRecMATCHEDHists{"cfgMCRecMATCHEDHists", false, "Enables MCRecMATCHEDHists"};
@@ -173,7 +173,7 @@ struct phiInJets {
       JEhistos.add("hMCRecTrue_hLSS", "hMCRecTrue_hLSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
 
       // INSIDE
-      if (cfgMCRecInsideHists){
+      // if (cfgMCRecInsideHists){
       JEhistos.add("hMCRec_hUSS_INSIDE", "hMCRec_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
       JEhistos.add("hMCRec_hLSS_INSIDE", "hMCRec_hLSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
       JEhistos.add("hMCRecTrue_hUSS_INSIDE", "hMCRecTrue_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
@@ -182,7 +182,7 @@ struct phiInJets {
       JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE", "hMCRec_nonmatch_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
       JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_1D", "hMCRec_nonmatch_hUSS_INSIDE_1D", kTH1F, {MinvAxis});
       JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3", "hMCRec_nonmatch_hUSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
-      }
+      //}
     }
 
     if (cfgMCGenHists) {
@@ -828,6 +828,7 @@ struct phiInJets {
           //===========================
           // 5.INSIDE REC True Closure
           //===========================
+
           if (jetFlag) {
             if (originalTrack.sign() * originalTrack2.sign() < 0) {
               JEhistos.fill(HIST("hMCRecTrue_hUSS_INSIDE"), 1.0, lResonance.Pt(), lResonance.M());
