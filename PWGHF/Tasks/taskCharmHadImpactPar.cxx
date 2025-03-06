@@ -70,7 +70,6 @@ DECLARE_SOA_COLUMN(EtaProng2, etaProng2, float);                 //! Eta of the 
 } // namespace hf_charm_cand_lite
 
 DECLARE_SOA_TABLE(HfCharmCandLites, "AOD", "HFCHARMCANDLITE", //! Table with some charm hadron properties
-                  collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -244,7 +243,6 @@ struct HfTaskCharmHadImpactPar {
 
     hfCharmCandLite(
       // Event features
-      collision.bcId(),
       collision.numContrib(),
       collision.posX(),
       collision.posY(),
