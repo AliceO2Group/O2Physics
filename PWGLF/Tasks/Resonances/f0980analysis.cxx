@@ -288,7 +288,7 @@ struct f0980analysis {
     }
   }
 
-  void processData(aod::ResoCollision& collision,
+  void processData(soa::Join<aod::ResoCollisions, aod::ResoEvtPlCollisions>::iterator const& collision,
                    aod::ResoTracks const& resotracks)
   {
     fillHistograms<false>(collision, resotracks);
@@ -296,7 +296,7 @@ struct f0980analysis {
   PROCESS_SWITCH(f0980analysis, processData, "Process Event for data", true);
 
   void processMCLight(
-    aod::ResoCollision& collision,
+    soa::Join<aod::ResoCollisions, aod::ResoEvtPlCollisions>::iterator const& collision,
     soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true>(collision, resotracks);
