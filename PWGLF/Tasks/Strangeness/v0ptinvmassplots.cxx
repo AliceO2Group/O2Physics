@@ -56,7 +56,7 @@ struct V0PtInvMassPlots {
   // Configurable for histograms
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
   Configurable<int> nBinsArmenteros{"nBinsArmenteros", 500, "N bins in Armenteros histos"};
-  Configurable<int> nmaxHistograms{"nmaxHistos", 20, "N Pt Histograms"};
+  Configurable<int> nmaxHistograms{"nmaxHistograms", 20, "N Pt Histograms"};
 
   // Configurables for Cuts
   Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
