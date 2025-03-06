@@ -122,32 +122,32 @@ struct HfElectronSelectionWithTpcEmcal {
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsEta{"binsEta", {100, -2.0, 2.}, "#it{#eta}"};
   ConfigurableAxis binsPhi{"binsPhi", {32, 0.0, o2::constants::math::TwoPI}, "#it{#varphi}"};
-  ConfigurableAxis binsP{"binsP", {50, 0.0, 50}, "#it{p_{T}}(GeV/#it{c})"};
+  ConfigurableAxis binsPt{"binsPt", {50, 0.0, 50}, "#it{p_{T}}(GeV/#it{c})"};
   ConfigurableAxis binsdEdx{"binsdEdx", {160, 0., 160.}, "dE/dX"};
   ConfigurableAxis binsnSigma{"binsnSigma", {30, -15., 15.}, "#it{#sigma_{TPC}}"};
   ConfigurableAxis binsM02{"binsM02", {50, 0., 2.0}, "M02; entries"};
   ConfigurableAxis binsM20{"binsM20", {50, 0., 2.0}, "M20; entries"};
   ConfigurableAxis binsEoP{"binsEoP", {30, 0., 3.}, "e/p"};
-  ConfigurableAxis binsEnergy{"binsEnergy", {50, 0., 50.}, "Cluster Energy (GeV/#it{c}^{2})"};
-  ConfigurableAxis binsnCells{"binsnCells", {50, 0., 50.}, "nCells"};
-  ConfigurableAxis binsTime{"binsTime", {1800, -900.0, 900.}, "Cluster Time"};
+  ConfigurableAxis binsEmcEnergy{"binsEmcEnergy", {50, 0., 50.}, "Cluster Energy (GeV/#it{c}^{2})"};
+  ConfigurableAxis binsEmcClsNCells{"binsEmcClsNCells", {50, 0., 50.}, "nCells"};
+  ConfigurableAxis binsEmcClsTime{"binsEmcClsTime", {1800, -900.0, 900.}, "Cluster Time"};
   ConfigurableAxis binsPassEMcal{"binsPassEMcal", {3, 0.0, 3.}, "Pass EMcal"};
 
   ConfigurableAxis binsDeltaEta{"binsDeltaEta", {20, -0.2, 0.2}, "Track Cluser Match #Delta #eta"};
   ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {20, -0.2, 0.2}, "Track Cluser Match #Delta #varphi"};
   ConfigurableAxis binsMass{"binsMass", {100, 0.0, 2.0}, "Mass (GeV/#it{c}^{2}); entries"};
 
-  HistogramConfigSpec hEmcClusterEnergySpec{HistType::kTH1F, {{binsEnergy}}};
+  HistogramConfigSpec hEmcClusterEnergySpec{HistType::kTH1F, {{binsEmcEnergy}}};
   HistogramConfigSpec hEmcClusterEtaPhiSpec{HistType::kTH2F, {{binsEta}, {binsPhi}}};
-  HistogramConfigSpec hEmcClusterEnergyCellSpec{HistType::kTH2F, {{binsEnergy}, {binsnCells}}};
-  HistogramConfigSpec hEmcClusterEnergyTimeSpec{HistType::kTH2F, {{binsEnergy}, {binsTime}}};
+  HistogramConfigSpec hEmcClusterEnergyCellSpec{HistType::kTH2F, {{binsEmcEnergy}, {binsEmcClsNCells}}};
+  HistogramConfigSpec hEmcClusterEnergyTimeSpec{HistType::kTH2F, {{binsEmcEnergy}, {binsEmcClsTime}}};
 
-  HistogramConfigSpec hDeltaPhiDeltaEtaEmcClusterTrackTime{HistType::kTH3F, {{binsDeltaEta}, {binsDeltaPhi}, {binsTime}}};
-  HistogramConfigSpec hAfterMatchEoPSigamSpec{HistType::kTHnSparseD, {{binsEoP}, {binsP}, {binsnSigma}, {binsM02}, {binsM20}}};
+  HistogramConfigSpec hDeltaPhiDeltaEtaEmcClusterTrackTime{HistType::kTH3F, {{binsDeltaEta}, {binsDeltaPhi}, {binsEmcClsTime}}};
+  HistogramConfigSpec hAfterMatchEoPSigamSpec{HistType::kTHnSparseD, {{binsEoP}, {binsPt}, {binsnSigma}, {binsM02}, {binsM20}}};
 
-  HistogramConfigSpec hTrackEnergyLossSpec{HistType::kTH3F, {{binsdEdx}, {binsP}, {binsPassEMcal}}};
+  HistogramConfigSpec hTrackEnergyLossSpec{HistType::kTH3F, {{binsdEdx}, {binsPt}, {binsPassEMcal}}};
 
-  HistogramConfigSpec hTracknSigmaSpec{HistType::kTH3F, {{binsnSigma}, {binsP}, {binsPassEMcal}}};
+  HistogramConfigSpec hTracknSigmaSpec{HistType::kTH3F, {{binsnSigma}, {binsPt}, {binsPassEMcal}}};
 
   HistogramRegistry registry{
     "registry",
@@ -155,14 +155,14 @@ struct HfElectronSelectionWithTpcEmcal {
      {"hZvertex", "z vertex", {HistType::kTH1F, {{binsPosZ}}}},
      {"hLikeMass", "Like mass", {HistType::kTH1F, {{binsMass}}}},
      {"hUnLikeMass", "unLike mass", {HistType::kTH1F, {{binsMass}}}},
-     {"hLikeSignPt", "Like sign Momentum ", {HistType::kTH1F, {{binsP}}}},
-     {"hUnLikeSignPt", "UnLike sign Momentum", {HistType::kTH1F, {{binsP}}}},
-     {"hMcgenInElectron", "Mc Gen Inclusive Electron", {HistType::kTH1F, {{binsP}}}},
-     {"hMcgenAllNonHfeElectron", "Mc Gen All NonHf Electron", {HistType::kTH1F, {{binsP}}}},
-     {"hMcgenNonHfeElectron", "Mc Gen NonHf  Electron with mother", {HistType::kTH1F, {{binsP}}}},
-     {"hPi0eEmbTrkPt", "Mc Gen  Pi0 mother NonHf Electron", {HistType::kTH1F, {{binsP}}}},
+     {"hLikeSignPt", "Like sign Momentum ", {HistType::kTH1F, {{binsPt}}}},
+     {"hUnLikeSignPt", "UnLike sign Momentum", {HistType::kTH1F, {{binsPt}}}},
+     {"hMcgenInElectron", "Mc Gen Inclusive Electron", {HistType::kTH1F, {{binsPt}}}},
+     {"hMcgenAllNonHfeElectron", "Mc Gen All NonHf Electron", {HistType::kTH1F, {{binsPt}}}},
+     {"hMcgenNonHfeElectron", "Mc Gen NonHf  Electron with mother", {HistType::kTH1F, {{binsPt}}}},
+     {"hPi0eEmbTrkPt", "Mc Gen  Pi0 mother NonHf Electron", {HistType::kTH1F, {{binsPt}}}},
 
-     {"hEtaeEmbTrkPt", "Mc Gen  Eta mother  NonHf Electron", {HistType::kTH1F, {{binsP}}}},
+     {"hEtaeEmbTrkPt", "Mc Gen  Eta mother  NonHf Electron", {HistType::kTH1F, {{binsPt}}}},
      {"hEmcClusterM02", "m02", {HistType::kTH1F, {{binsM02}}}},
      {"hEmcClusterM20", "m20", {HistType::kTH1F, {{binsM20}}}},
      {"hTrackEtaPhi", "TPC EtaPhi Info; #eta;#varphi;passEMcal;", {HistType::kTH3F, {{binsEta}, {binsPhi}, {binsPassEMcal}}}},
@@ -180,14 +180,14 @@ struct HfElectronSelectionWithTpcEmcal {
      {"hEmcClusterAfterMatchEnergyTime", "EMCal Cluster Info After match Energy vs time; Energy (GeV); sec;", hEmcClusterEnergyTimeSpec},
 
      {"hAfterMatchSigmaVsEoP", "PID Info after  match EoP vs Sigma ; E/P;#it{p}_{T} (GeV#it{/c});n#sigma; m02; m20;", hAfterMatchEoPSigamSpec},
-     {"hAfterMatchEoPVsP", "PID Info after match  EoP vs P; E/P;#it{p} (GeV#it{/c});", {HistType::kTH2F, {{binsEoP}, {binsP}}}},
-     {"hAfterMatchSigmaVsP", "PID Info after match Sigma vs Momentum ; n#sigma; #it{p} (GeV#it{/c}; ", {HistType::kTH2F, {{binsnSigma}, {binsP}}}},
+     {"hAfterMatchEoPVsP", "PID Info after match  EoP vs P; E/P;#it{p} (GeV#it{/c});", {HistType::kTH2F, {{binsEoP}, {binsPt}}}},
+     {"hAfterMatchSigmaVsP", "PID Info after match Sigma vs Momentum ; n#sigma; #it{p} (GeV#it{/c}; ", {HistType::kTH2F, {{binsnSigma}, {binsPt}}}},
      {"hAfterMatchEtaPhi", "PID Info after match Eta vs Phi ; #eta; #varphi; ", {HistType::kTH2F, {{binsEta}, {binsPhi}}}},
-     {"hAfterMatchEnergyLossVsP", "PID Info after match Energy loss info vs P ; dE/dx;#it{p} (GeV#it{/c});; ", {HistType::kTH2F, {{binsdEdx}, {binsP}}}},
-     {"hAfterMatchEnergyLossVsPt", "PID Info after match Energy loss info vs Pt ;dE/dx;#it{p}_{T} (GeV#it{/c}); ", {HistType::kTH2F, {{binsdEdx}, {binsP}}}},
+     {"hAfterMatchEnergyLossVsP", "PID Info after match Energy loss info vs P ; dE/dx;#it{p} (GeV#it{/c});; ", {HistType::kTH2F, {{binsdEdx}, {binsPt}}}},
+     {"hAfterMatchEnergyLossVsPt", "PID Info after match Energy loss info vs Pt ;dE/dx;#it{p}_{T} (GeV#it{/c}); ", {HistType::kTH2F, {{binsdEdx}, {binsPt}}}},
 
      {"hAfterPIDEtaPhi", "PID Info after PID Cuts Eta vs Phi ; #eta; #varphi; ", {HistType::kTH2F, {{binsEta}, {binsPhi}}}},
-     {"hEPRatioAfterPID", "E/P Ratio after PID Cuts apply only trackwodca filter", {HistType::kTH2F, {{binsP}, {binsEnergy}}}},
+     {"hEPRatioAfterPID", "E/P Ratio after PID Cuts apply only trackwodca filter", {HistType::kTH2F, {{binsPt}, {binsEmcEnergy}}}},
      {"hPIDAfterPIDCuts", "PID Info after PID cuts; E/P;#it{p}_{T} (GeV#it{/c});n#sigma;m02; m20;", hAfterMatchEoPSigamSpec},
      {"hEmcClsTrkEtaPhiDiffTime", "EmcClsTrkEtaPhiDiffTime;#Delta#eta;#Delta#varphi;Sec;", hDeltaPhiDeltaEtaEmcClusterTrackTime}}};
 
