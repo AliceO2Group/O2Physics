@@ -8,6 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+//
+/// \file stramccollisionconverter2.cxx
+/// \brief Converter task to convert StraMCCollisions_001 --> StraMCCollisions_002
+///
+/// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & SMI
+//
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
