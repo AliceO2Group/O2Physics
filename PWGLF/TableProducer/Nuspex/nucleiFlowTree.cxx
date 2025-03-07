@@ -247,7 +247,7 @@ struct nucleiFlowTree {
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsGoodITSLayersAll + 2, "IsGoodITSLayersAll");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsEPtriggered + 2, "IsEPtriggered");
 
-    spectra.add("hCentrality", "hCentrality", HistType::kTH1D, {100, 0., 100., "Centrality (%)"});
+    spectra.add("hCentrality", "hCentrality", HistType::kTH1D, {{100, 0., 100., "Centrality (%)"}});
 
     spectra.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., 20., "z position (cm)"}});
     spectra.add("hTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
