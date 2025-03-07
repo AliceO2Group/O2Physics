@@ -382,7 +382,6 @@ struct HfTaskD0 {
       auto trackNeg = candidate.template prong1_as<o2::aod::TracksWExtra>(); // negative daughter
       int minItsClustersOfProngs = std::min(trackPos.itsNCls(), trackNeg.itsNCls());
       int minTpcCrossedRowsOfProngs = std::min(trackPos.tpcNClsCrossedRows(), trackNeg.tpcNClsCrossedRows());
-      
       if constexpr (applyMl) {
         if (storeCentrality && storeOccupancy) {
           if (candidate.isSelD0() >= selectionFlagD0) {
