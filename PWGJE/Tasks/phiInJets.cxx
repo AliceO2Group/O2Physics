@@ -712,11 +712,13 @@ struct phiInJets {
         //==================
         // 1.MB REC Closure
         //==================
-        if (originalTrack.sign() * originalTrack2.sign() < 0) {
-          JEhistos.fill(HIST("hMCRec_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
-        } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
-          JEhistos.fill(HIST("hMCRec_hLSS"), 1.0, lResonance.Pt(), lResonance.M());
-        }
+	if (!cfgMCRecInsideHists) {
+	  if (originalTrack.sign() * originalTrack2.sign() < 0) {
+	    JEhistos.fill(HIST("hMCRec_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
+	  } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
+	    JEhistos.fill(HIST("hMCRec_hLSS"), 1.0, lResonance.Pt(), lResonance.M());
+	  }
+	}
         //============================================
         // 2.Check if particle is inside a jet or not
         //============================================
@@ -820,12 +822,13 @@ struct phiInJets {
           //=====================
           // 4.MB True Closure
           //=====================
-          if (originalTrack.sign() * originalTrack2.sign() < 0) {
-            JEhistos.fill(HIST("hMCRecTrue_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
-          } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
-            JEhistos.fill(HIST("hMCRecTrue_hLSS"), 1.0, lResonance.Pt(), lResonance.M());
-          }
-
+	  if (!cfgMCRecInsideHists) {
+	    if (originalTrack.sign() * originalTrack2.sign() < 0) {
+	      JEhistos.fill(HIST("hMCRecTrue_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
+	    } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
+	      JEhistos.fill(HIST("hMCRecTrue_hLSS"), 1.0, lResonance.Pt(), lResonance.M());
+	    }
+	  }
           //===========================
           // 5.INSIDE REC True Closure
           //===========================
