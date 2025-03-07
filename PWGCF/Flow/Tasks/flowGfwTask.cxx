@@ -34,6 +34,11 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "ReconstructionDataFormats/GlobalTrackID.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "TPDGCode.h"
+
 #include "GFWPowerArray.h"
 #include "GFW.h"
 #include "GFWCumulant.h"
@@ -51,6 +56,20 @@ using namespace o2::aod::track;
 using namespace o2::aod::evsel;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+
+namespace o2::aod
+{
+  using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
+                                aod::McCollisionLabels, o2::aod::CentFT0Cs,
+                                aod::CentFT0As, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0CVariant1s>;
+
+  using SimTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra,
+                            aod::TracksDCA, aod::McTrackLabels>;
+}
+
+using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0CVariant1s>>;
+using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>;
+using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 struct FlowGfwTask {
 
@@ -92,7 +111,7 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, false, "kIsGoodITSLayersAll")
   O2_DEFINE_CONFIGURABLE(cfgOccupancy, bool, false, "Bool for event selection on detector occupancy");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, false, "Use additional event cut on mult correlations");
-  O2_DEFINE_CONFIGURABLE(cfgV0AT0A5Sigma, bool, true, "V0A T0A 5 sigma cut")
+  O2_DEFINE_CONFIGURABLE(cfgV0AT0A5Sigma, bool, false, "V0A T0A 5 sigma cut")
   O2_DEFINE_CONFIGURABLE(cfgGlobalplusITS, bool, false, "Global and ITS tracks")
   O2_DEFINE_CONFIGURABLE(cfgGlobalonly, bool, false, "Global only tracks")
   O2_DEFINE_CONFIGURABLE(cfgITSonly, bool, false, "ITS only tracks")
@@ -236,6 +255,7 @@ struct FlowGfwTask {
     ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
 
     // Add some output objects to the histogram registry
+    if (doprocessData) {
     registry.add("hEventCount", "Number of Events;; No. of Events", {HistType::kTH1D, {{kNOOFEVENTSTEPS, -0.5, static_cast<int>(kNOOFEVENTSTEPS) - 0.5}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kFILTERED + 1, "Filtered events");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kSEL8 + 1, "Sel8");
@@ -367,20 +387,42 @@ struct FlowGfwTask {
     registry.add("c32Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{2} ", {HistType::kTProfile, {axisNch}});
     registry.add("c32Nch05etagap", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
     registry.add("c34Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
+    } // End doprocessData
 
-    // Create histograms for Reco and MC
-    const AxisSpec axisCounter{1, 0, +1, ""};
-    registry.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
-    registry.add("hPtMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
-    registry.add("hCenMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisCentrality}});
-    registry.add("hPtMCRec05", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
-    registry.add("hPtMCRec5060", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
+    const AxisSpec axisZpos{48, -12., 12., "Vtx_{z} (cm)"};
+    const AxisSpec axisEvent{2, 0, +2, ""};
+    // MC Histograms
+    if (doprocesspTEff) {
+      registry.add("hEventCounterMCRec", "Event counter", kTH1F, {axisEvent});
+      registry.add("zPos", ";;Entries;", kTH1F, {axisZpos});
+      registry.add("T0Ccent", ";;Entries", kTH1F, {axisCentrality});
+      registry.add("nRecColvsCent", "", kTH2F, {{6, -0.5, 5.5}, {{axisCentrality}}});
+      registry.add("Pt_all_ch", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("Pt_ch", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("hPtMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
+      registry.add("hCenMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisCentrality}});
+      registry.add("Pt_pi", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("Pt_ka", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("Pt_pr", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("Pt_sigpos", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("Pt_signeg", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("Pt_re", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("EtaVsPhi", ";;#varphi;", kTH2F,
+                   {{{axisEta}, {100, -0.1 * o2::constants::math::PI, +2.1 * o2::constants::math::PI}}});
+      registry.add("hEventCounterMCGen", "Event counter", kTH1F, {axisEvent});
+      registry.add("zPosMC", ";;Entries;", kTH1F, {axisZpos});
+      registry.add("PtMC_ch", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("hPtMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
+      registry.add("hCenMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisCentrality}});
+      registry.add("PtMC_pi", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("PtMC_ka", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("PtMC_pr", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("PtMC_sigpos", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("PtMC_signeg", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("PtMC_re", "", kTH2F, {{axisCentrality}, {axisPt}});
+    }
 
-    registry.add("mcEventCounter", "Monte Carlo Truth EventCounter", kTH1F, {axisCounter});
-    registry.add("hPtMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
-    registry.add("hCenMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisCentrality}});
-    registry.add("hPtMCGen05", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
-    registry.add("hPtMCGen5060", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
+
 
     // initial array
     bootstrapArray.resize(cfgNbootstrap);
@@ -615,50 +657,50 @@ struct FlowGfwTask {
         return false;
       }
       registry.fill(HIST("hEventCount"), kISVERTEXITSTPC);
-      if (cfgNoCollInTimeRangeStandard) {
-        if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-          // no collisions in specified time range
-          return false;
-        }
-        registry.fill(HIST("hEventCount"), kNOCOLLINTIMERANGESTANDART);
-      }
-      if (cfgEvSelkIsGoodITSLayersAll) {
-        if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
-          // removes dead staves of ITS
-          return false;
-        }
-        registry.fill(HIST("hEventCount"), kISGOODITSLAYERSALL);
-      }
-
-      float vtxz = -999;
-      if (collision.numContrib() > 1) {
-        vtxz = collision.posZ();
-        float zRes = std::sqrt(collision.covZZ());
-        if (zRes > 0.25 && collision.numContrib() < 20)
-          vtxz = -999;
-      }
-
-      auto multNTracksPV = collision.multNTracksPV();
-
-      if (std::abs(vtxz) > cfgCutVertex)
+    if (cfgNoCollInTimeRangeStandard) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        // no collisions in specified time range
         return false;
-
-      if (cfgMultCut) {
-        if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-          return false;
-        if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-          return false;
-        if (multTrk < fMultCutLow->Eval(centrality))
-          return false;
-        if (multTrk > fMultCutHigh->Eval(centrality))
-          return false;
-        registry.fill(HIST("hEventCount"), kAFTERMULTCUTS);
       }
+      registry.fill(HIST("hEventCount"), kNOCOLLINTIMERANGESTANDART);
+    }
+    if (cfgEvSelkIsGoodITSLayersAll) {
+      if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        // removes dead staves of ITS
+        return false;
+      }
+      registry.fill(HIST("hEventCount"), kISGOODITSLAYERSALL);
+    }
 
-      // V0A T0A 5 sigma cut
-      if (cfgV0AT0A5Sigma)
-        if (std::abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
-          return false;
+    float vtxz = -999;
+    if (collision.numContrib() > 1) {
+      vtxz = collision.posZ();
+      float zRes = std::sqrt(collision.covZZ());
+      if (zRes > 0.25 && collision.numContrib() < 20)
+        vtxz = -999;
+    }
+
+    auto multNTracksPV = collision.multNTracksPV();
+
+    if (std::abs(vtxz) > cfgCutVertex)
+      return false;
+
+    if (cfgMultCut) {
+      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+        return false;
+      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+        return false;
+      if (multTrk < fMultCutLow->Eval(centrality))
+        return false;
+      if (multTrk > fMultCutHigh->Eval(centrality))
+        return false;
+      registry.fill(HIST("hEventCount"), kAFTERMULTCUTS);
+    }
+
+    // V0A T0A 5 sigma cut
+    if(cfgV0AT0A5Sigma)
+      if (std::abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
+      return false;
     }
 
     return true;
@@ -706,13 +748,13 @@ struct FlowGfwTask {
 
     if (cfgTrackSel) {
       return myTrackSel.IsSelected(track);
-    } else if (cfgGlobalplusITS) {
+    }else if (cfgGlobalplusITS) {
       return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
-    } else if (cfgGlobalonly) {
-      return ((track.tpcNClsFound() >= cfgCutTPCclu));
-    } else if (cfgITSonly) {
+    }else if (cfgGlobalonly) {
+      return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
+    }else if (cfgITSonly) {
       return ((track.itsNCls() >= cfgCutITSclu));
-    } else {
+    }else{
       return false;
     }
   }
@@ -726,11 +768,6 @@ struct FlowGfwTask {
                        ifnode(dcaZ > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDCAXYonly),
                               ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA)) &&
                        (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
-
-  using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0CVariant1s>>; // collisions filter
-  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>; // tracks filter
-
-  using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
   void processData(Colls::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, aod::FT0s const&, aod::Zdcs const&, BCsRun3 const&)
   {
@@ -938,7 +975,7 @@ struct FlowGfwTask {
           }
         }
       } else {
-        if (cfgITSonly) {
+       if (cfgITSonly) {
           if (withinPtRef) {
             globalTracksNch++;
             registry.fill(HIST("ITSonly"), centrality, globalTracksNch);
@@ -1030,61 +1067,119 @@ struct FlowGfwTask {
   } // End of process
   PROCESS_SWITCH(FlowGfwTask, processData, "Process analysis for Run 3 data", false);
 
-  // Filter the Reconstructed tracks
-  Filter mytrackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
-  using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>>;
-  using MyCollisions = soa::Join<aod::Collisions, aod::CentFT0Cs>;
+  using TheFilteredSimTracks = soa::Filtered<o2::aod::SimTracks>;
 
-  void processMCReco(MyCollisions::iterator const& collision, MyTracks const& tracks, aod::McParticles const&)
+  Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
+  Preslice<TheFilteredSimTracks> perCollision = aod::track::collisionId;
+  void processpTEff(aod::McCollisions::iterator const& mccollision,
+                    soa::SmallGroups<o2::aod::SimCollisions> const& collisions,
+                    aod::McParticles const& mcParticles,
+                    TheFilteredSimTracks const& simTracks)
   {
-    registry.fill(HIST("eventCounter"), 0.5);
-    const auto centrality = collision.centFT0C();
-    registry.fill(HIST("hCenMCRec"), centrality);
-    for (const auto& track : tracks) {
-      if (track.tpcNClsCrossedRows() < 70)
+    // MC reconstructed
+    for (const auto& collision : collisions)
+    {
+      const auto& centrality = collision.centFT0C();
+
+      if (!collision.sel8())
+      return;
+
+      if (cfgUseAdditionalEventCut && !eventSelected(o2::aod::mult::MultNTracksPV(), collision, simTracks.size(), centrality)) {
+        return;
+      }
+
+      if (!collision.has_mcCollision())
         continue;
 
-      if (track.has_mcParticle()) {
+      registry.fill(HIST("zPos"), collision.posZ());
+      registry.fill(HIST("nRecColvsCent"), collisions.size(), collision.centFT0C());
+      registry.fill(HIST("T0Ccent"), centrality);
+
+      const auto& groupedTracks = simTracks.sliceBy(perCollision, collision.globalIndex());
+      for (const auto& track : groupedTracks) {
+
+        if (!trackSelected(track))
+        continue;
+
+        if (!track.has_mcParticle())
+          continue;
+
+        const auto& particle = track.mcParticle();
+        registry.fill(HIST("hEventCounterMCRec"), 0.5);
         registry.fill(HIST("hPtMCRec"), track.pt());
-        if (centrality > 0 && centrality <= 5) {
-          registry.fill(HIST("hPtMCRec05"), track.pt());
+        registry.fill(HIST("hCenMCRec"), centrality);
+        registry.fill(HIST("Pt_all_ch"), centrality, track.pt());
+        registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+
+        if (!particle.isPhysicalPrimary())
+          continue;
+
+        registry.fill(HIST("Pt_ch"), centrality, track.pt());
+        if (particle.pdgCode() == PDG_t::kPiPlus ||
+            particle.pdgCode() == PDG_t::kPiMinus) {
+          registry.fill(HIST("Pt_pi"), centrality, track.pt());
+        } else if (particle.pdgCode() == PDG_t::kKPlus ||
+                   particle.pdgCode() == PDG_t::kKMinus) {
+          registry.fill(HIST("Pt_ka"), centrality, track.pt());
+        } else if (particle.pdgCode() == PDG_t::kProton ||
+                   particle.pdgCode() == PDG_t::kProtonBar) {
+          registry.fill(HIST("Pt_pr"), centrality, track.pt());
+        } else if (particle.pdgCode() == PDG_t::kSigmaPlus ||
+                   particle.pdgCode() == PDG_t::kSigmaBarMinus) {
+          registry.fill(HIST("Pt_sigpos"), centrality, track.pt());
+        } else if (particle.pdgCode() == PDG_t::kSigmaMinus ||
+                   particle.pdgCode() == PDG_t::kSigmaBarPlus) {
+          registry.fill(HIST("Pt_signeg"), centrality, track.pt());
+        } else {
+          registry.fill(HIST("Pt_re"), centrality, track.pt());
         }
-        if (centrality >= 50 && centrality <= 60) {
-          registry.fill(HIST("hPtMCRec5060"), track.pt());
+      }
+
+      // Generated MC
+      registry.fill(HIST("hEventCounterMCGen"), 0.5);
+      if (std::fabs(mccollision.posZ()) > cfgCutVertex)
+        continue;
+      registry.fill(HIST("zPosMC"), mccollision.posZ());
+      registry.fill(HIST("hEventCounterMCGen"), 1);
+
+      for (const auto& particle : mcParticles) {
+        if (particle.eta() < -cfgCutEta || particle.eta() > cfgCutEta) {
+          continue;
+        }
+        if (particle.pt() < cfgCutPtMin || particle.pt() > cfgCutPtMax) {
+          continue;
+        }
+        if (!particle.isPhysicalPrimary()) {
+          continue;
+        }
+        registry.fill(HIST("hEventCounterMCGen"), 1.5);
+        registry.fill(HIST("hPtMCGen"), particle.pt());
+        registry.fill(HIST("hCenMCGen"), centrality);
+        registry.fill(HIST("PtMC_ch"), centrality, particle.pt());
+        if (particle.pdgCode() == PDG_t::kPiPlus ||
+            particle.pdgCode() == PDG_t::kPiMinus) { // pion
+          registry.fill(HIST("PtMC_pi"), centrality, particle.pt());
+        } else if (particle.pdgCode() == PDG_t::kKPlus ||
+                   particle.pdgCode() == PDG_t::kKMinus) { // kaon
+          registry.fill(HIST("PtMC_ka"), centrality, particle.pt());
+        } else if (particle.pdgCode() == PDG_t::kProton ||
+                   particle.pdgCode() == PDG_t::kProtonBar) { // proton
+          registry.fill(HIST("PtMC_pr"), centrality, particle.pt());
+        } else if (particle.pdgCode() == PDG_t::kSigmaPlus ||
+                   particle.pdgCode() ==
+                     PDG_t::kSigmaBarMinus) { // positive sigma
+          registry.fill(HIST("PtMC_sigpos"), centrality, particle.pt());
+        } else if (particle.pdgCode() == PDG_t::kSigmaMinus ||
+                   particle.pdgCode() ==
+                     PDG_t::kSigmaBarPlus) { // negative sigma
+          registry.fill(HIST("PtMC_signeg"), centrality, particle.pt());
+        } else { // rest
+          registry.fill(HIST("PtMC_re"), centrality, particle.pt());
         }
       }
     }
   }
-  PROCESS_SWITCH(FlowGfwTask, processMCReco, "process reconstructed information", false);
-
-  // Filter for MCParticle simulation
-  Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPtMin) && (aod::mcparticle::pt < cfgCutPtMax);
-  using MyMcParticles = soa::Filtered<aod::McParticles>;
-  using MyMcCollisionsFT0Cs = soa::Join<o2::aod::Collisions, o2::aod::CentFT0Cs>;
-
-  void processMCGEN(aod::McCollision const&, soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>> const& collisions, MyMcParticles const& mcParticles, MyMcCollisionsFT0Cs const& mcCollisionsFT0Cs)
-  {
-    if (collisions.size() > -1) {
-      registry.fill(HIST("mcEventCounter"), 0.5);
-      for (const auto& mcCollisionsFT0C : mcCollisionsFT0Cs) {
-        registry.fill(HIST("hCenMCGen"), mcCollisionsFT0C.centFT0C());
-      }
-
-      for (const auto& mcCollisionsFT0C : mcCollisionsFT0Cs) {
-        const auto centrality = mcCollisionsFT0C.centFT0C();
-        for (const auto& mcParticle : mcParticles) {
-          registry.fill(HIST("hPtMCGen"), mcParticle.pt());
-          if (centrality > 0 && centrality <= 5) {
-            registry.fill(HIST("hPtMCGen05"), mcParticle.pt());
-          }
-          if (centrality >= 50 && centrality <= 60) {
-            registry.fill(HIST("hPtMCGen5060"), mcParticle.pt());
-          }
-        }
-      }
-    }
-  }
-  PROCESS_SWITCH(FlowGfwTask, processMCGEN, "process pure simulation information", false);
+  PROCESS_SWITCH(FlowGfwTask, processpTEff, "Process pT Eff", false);
 
 }; // End of struct
 
