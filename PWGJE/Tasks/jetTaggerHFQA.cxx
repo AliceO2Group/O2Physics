@@ -183,6 +183,18 @@ struct JetTaggerHFQA {
       registry.add("h3_part_jet_pt_flavour_const_hadron_part_flavour_dist_hadron", "", {HistType::kTH3F, {{axisJetPt}, {axisJetFlavour}, {axisJetFlavour}}});
       registry.add("h3_part_jet_pt_flavour_const_quark_part_flavour_dist_quark", "", {HistType::kTH3F, {{axisJetPt}, {axisJetFlavour}, {axisJetFlavour}}});
     }
+    if (doprocessValFlavourDefMCD) {
+      registry.add("h2_flavour_dist_quark_flavour_dist_hadron", "", {HistType::kTH2F, {{axisJetFlavour}, {axisJetFlavour}}});
+      registry.add("h2_flavour_const_quark_flavour_const_hadron", "", {HistType::kTH2F, {{axisJetFlavour}, {axisJetFlavour}}});
+      registry.add("h2_flavour_const_hadron_flavour_dist_hadron", "", {HistType::kTH2F, {{axisJetFlavour}, {axisJetFlavour}}});
+      registry.add("h2_flavour_const_quark_flavour_dist_quark", "", {HistType::kTH2F, {{axisJetFlavour}, {axisJetFlavour}}});
+    }
+    if (doprocessValFlavourDefMCP) {
+      registry.add("h2_part_flavour_dist_quark_part_flavour_dist_hadron", "", {HistType::kTH2F, {{axisJetFlavour}, {axisJetFlavour}}});
+      registry.add("h2_part_flavour_const_quark_part_flavour_const_hadron", "", {HistType::kTH2F, {{axisJetFlavour}, {axisJetFlavour}}});
+      registry.add("h2_part_flavour_const_hadron_part_flavour_dist_hadron", "", {HistType::kTH2F, {{axisJetFlavour}, {axisJetFlavour}}});
+      registry.add("h2_part_flavour_const_quark_part_flavour_dist_quark", "", {HistType::kTH2F, {{axisJetFlavour}, {axisJetFlavour}}});
+    }
     if (doprocessIPsData) {
       registry.add("h_jet_pt", "", {HistType::kTH1F, {{axisJetPt}}});
       registry.add("h_jet_eta", "", {HistType::kTH1F, {{axisEta}}});
