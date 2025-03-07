@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGLF_TABLEPRODUCER_NUSPEX_NUCLEIUTILS_H
-#define PWGLF_TABLEPRODUCER_NUSPEX_NUCLEIUTILS_H
+#ifndef PWGLF_TABLEPRODUCER_NUSPEX_NUCLEIUTILS_H_
+#define PWGLF_TABLEPRODUCER_NUSPEX_NUCLEIUTILS_H_
 
 #include <string>
 #include <vector>
@@ -182,3 +182,5 @@ constexpr int EvSelDefault[8][1]{
   {0},
   {0}};
 } // namespace nuclei
+
+#endif // PWGLF_TABLEPRODUCER_NUSPEX_NUCLEIUTILS_H_
