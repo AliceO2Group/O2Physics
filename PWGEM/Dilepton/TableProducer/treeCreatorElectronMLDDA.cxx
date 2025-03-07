@@ -37,6 +37,7 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "PWGEM/Dilepton/DataModel/lmeeMLTables.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
@@ -52,7 +53,7 @@ using namespace o2::constants::physics;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
+using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using MyTrack = MyTracks::iterator;
@@ -103,19 +104,19 @@ struct TreeCreatorElectronMLDDA {
       {"V0/hITSClusterSize_P_Ka", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
       {"V0/hITSClusterSize_P_Pr", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
 
-      {"PrimaryTrack/hTPCdEdx_P", "TPC dEdx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
-      {"PrimaryTrack/hTOFbeta_P", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
-      {"PrimaryTrack/hITSClusterSize_P", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      {"PrimaryTrack/hTPCNsigmaEl_P", "TPC n#sigma_{e} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"PrimaryTrack/hTPCNsigmaMu_P", "TPC n#sigma_{#mu} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{#mu}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"PrimaryTrack/hTPCNsigmaPi_P", "TPC n#sigma_{#pi} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{#pi}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"PrimaryTrack/hTPCNsigmaKa_P", "TPC n#sigma_{K} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{K}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"PrimaryTrack/hTPCNsigmaPr_P", "TPC n#sigma_{p} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{p}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"PrimaryTrack/hTOFNsigmaEl_P", "TOF n#sigma_{e} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{e}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"PrimaryTrack/hTOFNsigmaMu_P", "TOF n#sigma_{#mu} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{#mu}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"PrimaryTrack/hTOFNsigmaPi_P", "TOF n#sigma_{#pi} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{#pi}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"PrimaryTrack/hTOFNsigmaKa_P", "TOF n#sigma_{K} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{K}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"PrimaryTrack/hTOFNsigmaPr_P", "TOF n#sigma_{p} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{p}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
+      // {"PrimaryTrack/hTPCdEdx_P", "TPC dEdx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
+      // {"PrimaryTrack/hTOFbeta_P", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
+      // {"PrimaryTrack/hITSClusterSize_P", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
+      // {"PrimaryTrack/hTPCNsigmaEl_P", "TPC n#sigma_{e} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
+      // {"PrimaryTrack/hTPCNsigmaMu_P", "TPC n#sigma_{#mu} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{#mu}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
+      // {"PrimaryTrack/hTPCNsigmaPi_P", "TPC n#sigma_{#pi} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{#pi}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
+      // {"PrimaryTrack/hTPCNsigmaKa_P", "TPC n#sigma_{K} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{K}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
+      // {"PrimaryTrack/hTPCNsigmaPr_P", "TPC n#sigma_{p} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{p}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
+      // {"PrimaryTrack/hTOFNsigmaEl_P", "TOF n#sigma_{e} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{e}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
+      // {"PrimaryTrack/hTOFNsigmaMu_P", "TOF n#sigma_{#mu} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{#mu}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
+      // {"PrimaryTrack/hTOFNsigmaPi_P", "TOF n#sigma_{#pi} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{#pi}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
+      // {"PrimaryTrack/hTOFNsigmaKa_P", "TOF n#sigma_{K} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{K}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
+      // {"PrimaryTrack/hTOFNsigmaPr_P", "TOF n#sigma_{p} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{p}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
 
       {"Cascade/hRxy_Xi", "R_{xy} of cascade vs. mass;m_{#Lambda#pi};R_{xy} (cm)", {HistType::kTH2F, {{200, 1.2, 1.4}, {200, 0, 20.f}}}},
       {"Cascade/hRxy_Omega", "R_{xy} of cascade vs. mass;m_{#LambdaK};R_{xy} (cm)", {HistType::kTH2F, {{200, 1.6, 1.8}, {200, 0, 20.f}}}},
@@ -144,6 +145,7 @@ struct TreeCreatorElectronMLDDA {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz_input", -999, "bz field, -999 is automatic"};
@@ -170,6 +172,7 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 5.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 6.0, "max chi2/NclsITS"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.3, "max dca XY in cm"};
+    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.3, "max dca Z in cm"};
   } trackcuts;
 
   struct : ConfigurableGroup {
@@ -244,7 +247,11 @@ struct TreeCreatorElectronMLDDA {
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  o2::dataformats::VertexBase mVtx;
+  const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
+  o2::dataformats::DCA mDcaInfoCov;
 
   std::mt19937 engine;
   std::uniform_real_distribution<float> dist01;
@@ -281,6 +288,14 @@ struct TreeCreatorElectronMLDDA {
       return;
     }
 
+    // load matLUT for this timestamp
+    if (!lut) {
+      LOG(info) << "Loading material look-up table for timestamp: " << bc.timestamp();
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(lutPath, bc.timestamp()));
+    } else {
+      LOG(info) << "Material look-up table already in place. Not reloading.";
+    }
+
     // In case override, don't proceed, please - no CCDB access required
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
@@ -289,6 +304,8 @@ struct TreeCreatorElectronMLDDA {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      mMeanVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
       mRunNumber = bc.runNumber();
       return;
     }
@@ -300,6 +317,8 @@ struct TreeCreatorElectronMLDDA {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      mMeanVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
@@ -309,16 +328,13 @@ struct TreeCreatorElectronMLDDA {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      mMeanVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
       // Fetch magnetic field from ccdb for current collision
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
     mRunNumber = bc.runNumber();
-
-    if (useMatCorrType == 2) {
-      // setMatLUT only after magfield has been initalized (setMatLUT has implicit and problematic init field call if not)
-      o2::base::Propagator::Instance()->setMatLUT(lut);
-    }
   }
 
   template <int il0, int il1, typename TTrack>
@@ -339,18 +355,10 @@ struct TreeCreatorElectronMLDDA {
     }
   }
 
-  template <typename TTrack>
-  bool isSelectedTrack(TTrack const& track)
+  template <typename TCollision, typename TTrack>
+  bool isSelectedTrack(TCollision const& collision, TTrack const& track)
   {
-    if (std::fabs(track.eta()) > trackcuts.cfg_max_eta || track.pt() < trackcuts.cfg_min_pt) {
-      return false;
-    }
-
     if (!track.hasITS() || !track.hasTPC()) {
-      return false;
-    }
-
-    if (std::fabs(track.dcaXY()) > trackcuts.cfg_max_dcaxy) {
       return false;
     }
 
@@ -379,23 +387,36 @@ struct TreeCreatorElectronMLDDA {
     if (track.tpcFractionSharedCls() > trackcuts.cfg_max_frac_shared_clusters_tpc) {
       return false;
     }
+
+    mDcaInfoCov.set(999, 999, 999, 999, 999);
+    auto track_par_cov_recalc = getTrackParCov(track);
+    track_par_cov_recalc.setPID(track.pidForTracking());
+    mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+    mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
+    float dcaXY = mDcaInfoCov.getY();
+    float dcaZ = mDcaInfoCov.getZ();
+
+    if (std::fabs(track_par_cov_recalc.getEta()) > trackcuts.cfg_max_eta || track_par_cov_recalc.getPt() < trackcuts.cfg_min_pt) {
+      return false;
+    }
+
+    if (std::fabs(dcaXY) > trackcuts.cfg_max_dcaxy) {
+      return false;
+    }
+    if (std::fabs(dcaZ) > trackcuts.cfg_max_dcaz) {
+      return false;
+    }
+
     return true;
   }
 
-  template <typename TTrack>
-  bool isSelectedV0Leg(TTrack const& track)
+  template <typename TCollision, typename TTrack>
+  bool isSelectedV0Leg(TCollision const& collision, TTrack const& track)
   {
-    if (std::fabs(track.eta()) > v0cuts.cfg_max_eta || track.pt() < v0cuts.cfg_min_pt) {
-      return false;
-    }
-
     if (!track.hasITS() || !track.hasTPC()) {
       return false;
     }
-
-    // if (std::fabs(track.dcaXY()) < v0cuts.cfg_min_dcaxy_v0leg) { // this is applied in filter.
-    //   return false;
-    // }
 
     if (track.itsNCls() < v0cuts.cfg_min_ncluster_its) {
       return false;
@@ -422,6 +443,24 @@ struct TreeCreatorElectronMLDDA {
     if (track.tpcFractionSharedCls() > v0cuts.cfg_max_frac_shared_clusters_tpc) {
       return false;
     }
+
+    mDcaInfoCov.set(999, 999, 999, 999, 999);
+    auto track_par_cov_recalc = getTrackParCov(track);
+    track_par_cov_recalc.setPID(track.pidForTracking());
+    mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+    mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
+    float dcaXY = mDcaInfoCov.getY();
+    // float dcaZ = mDcaInfoCov.getZ();
+
+    if (std::fabs(track_par_cov_recalc.getEta()) > v0cuts.cfg_max_eta || track_par_cov_recalc.getPt() < v0cuts.cfg_min_pt) {
+      return false;
+    }
+
+    if (std::fabs(dcaXY) < v0cuts.cfg_min_dcaxy_v0leg) { // this is applied in filter.
+      return false;
+    }
+
     return true;
   }
 
@@ -477,9 +516,18 @@ struct TreeCreatorElectronMLDDA {
   void fillTrackTable(TCollision const& collision, TTrack const& track, const int pidlabel, const int tracktype)
   {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), track.globalIndex()) == stored_trackIds.end()) {
+      mDcaInfoCov.set(999, 999, 999, 999, 999);
+      auto track_par_cov_recalc = getTrackParCov(track);
+      track_par_cov_recalc.setPID(track.pidForTracking());
+      mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+      mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
+      float dcaXY = mDcaInfoCov.getY();
+      float dcaZ = mDcaInfoCov.getZ();
+
       emprimarytracks(collision.globalIndex(), collision.posZ(), collision.numContrib(),
                       track.pt(), track.eta(), track.phi(), track.tgl(), track.signed1Pt(),
-                      track.dcaXY(), track.dcaZ(), track.cYY(), track.cZZ(), track.cZY(),
+                      dcaXY, dcaZ, track_par_cov_recalc.getSigmaY2(), track_par_cov_recalc.getSigmaZ2(), track_par_cov_recalc.getSigmaZY(),
                       track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                       track.tpcChi2NCl(), track.tpcInnerParam(),
                       track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
@@ -520,7 +568,7 @@ struct TreeCreatorElectronMLDDA {
       for (const auto& v0 : v0s_coll) {
         auto pos = v0.template posTrack_as<MyTracks>();
         auto neg = v0.template negTrack_as<MyTracks>();
-        if (!isSelectedV0Leg(pos) || !isSelectedV0Leg(neg)) {
+        if (!isSelectedV0Leg(collision, pos) || !isSelectedV0Leg(collision, neg)) {
           continue;
         }
         if (pos.sign() * neg.sign() > 0) {
@@ -596,7 +644,7 @@ struct TreeCreatorElectronMLDDA {
         auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
         auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
         for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) {
-          if (!isSelectedTrack(pos) || !isSelectedTrack(neg)) {
+          if (!isSelectedTrack(collision, pos) || !isSelectedTrack(collision, neg)) {
             continue;
           }
 
@@ -632,7 +680,7 @@ struct TreeCreatorElectronMLDDA {
         auto bachelor = cascade.template bachelor_as<MyTracks>();
         auto pos = cascade.template posTrack_as<MyTracks>();
         auto neg = cascade.template negTrack_as<MyTracks>();
-        if (!isSelectedV0Leg(pos) || !isSelectedV0Leg(neg) || !isSelectedV0Leg(bachelor)) {
+        if (!isSelectedV0Leg(collision, pos) || !isSelectedV0Leg(collision, neg) || !isSelectedV0Leg(collision, bachelor)) {
           continue;
         }
 
@@ -713,26 +761,25 @@ struct TreeCreatorElectronMLDDA {
         }
       } // end of cascade loop
 
-      auto tracks_coll = tracks.sliceBy(perCollision_track, collision.globalIndex());
-      for (const auto& track : tracks_coll) {
-        if (!isSelectedTrack(track)) {
-          continue;
-        }
-
-        registry.fill(HIST("PrimaryTrack/hTPCdEdx_P"), track.p(), track.tpcSignal());
-        registry.fill(HIST("PrimaryTrack/hTOFbeta_P"), track.p(), track.beta());
-        registry.fill(HIST("PrimaryTrack/hITSClusterSize_P"), track.p(), meanClusterSizeITS<0, 7>(track) * std::cos(std::atan(track.tgl())));
-        registry.fill(HIST("PrimaryTrack/hTPCNsigmaEl_P"), track.p(), track.tpcNSigmaEl());
-        registry.fill(HIST("PrimaryTrack/hTOFNsigmaEl_P"), track.p(), track.tofNSigmaEl());
-        registry.fill(HIST("PrimaryTrack/hTPCNsigmaMu_P"), track.p(), track.tpcNSigmaMu());
-        registry.fill(HIST("PrimaryTrack/hTOFNsigmaMu_P"), track.p(), track.tofNSigmaMu());
-        registry.fill(HIST("PrimaryTrack/hTPCNsigmaPi_P"), track.p(), track.tpcNSigmaPi());
-        registry.fill(HIST("PrimaryTrack/hTOFNsigmaPi_P"), track.p(), track.tofNSigmaPi());
-        registry.fill(HIST("PrimaryTrack/hTPCNsigmaKa_P"), track.p(), track.tpcNSigmaKa());
-        registry.fill(HIST("PrimaryTrack/hTOFNsigmaKa_P"), track.p(), track.tofNSigmaKa());
-        registry.fill(HIST("PrimaryTrack/hTPCNsigmaPr_P"), track.p(), track.tpcNSigmaPr());
-        registry.fill(HIST("PrimaryTrack/hTOFNsigmaPr_P"), track.p(), track.tofNSigmaPr());
-      } // end of track loop
+      // auto tracks_coll = tracks.sliceBy(perCollision_track, collision.globalIndex());
+      // for (const auto& track : tracks_coll) {
+      //   if (!isSelectedTrack(collision, track)) {
+      //     continue;
+      //   }
+      //   registry.fill(HIST("PrimaryTrack/hTPCdEdx_P"), track.p(), track.tpcSignal());
+      //   registry.fill(HIST("PrimaryTrack/hTOFbeta_P"), track.p(), track.beta());
+      //   registry.fill(HIST("PrimaryTrack/hITSClusterSize_P"), track.p(), meanClusterSizeITS<0, 7>(track) * std::cos(std::atan(track.tgl())));
+      //   registry.fill(HIST("PrimaryTrack/hTPCNsigmaEl_P"), track.p(), track.tpcNSigmaEl());
+      //   registry.fill(HIST("PrimaryTrack/hTOFNsigmaEl_P"), track.p(), track.tofNSigmaEl());
+      //   registry.fill(HIST("PrimaryTrack/hTPCNsigmaMu_P"), track.p(), track.tpcNSigmaMu());
+      //   registry.fill(HIST("PrimaryTrack/hTOFNsigmaMu_P"), track.p(), track.tofNSigmaMu());
+      //   registry.fill(HIST("PrimaryTrack/hTPCNsigmaPi_P"), track.p(), track.tpcNSigmaPi());
+      //   registry.fill(HIST("PrimaryTrack/hTOFNsigmaPi_P"), track.p(), track.tofNSigmaPi());
+      //   registry.fill(HIST("PrimaryTrack/hTPCNsigmaKa_P"), track.p(), track.tpcNSigmaKa());
+      //   registry.fill(HIST("PrimaryTrack/hTOFNsigmaKa_P"), track.p(), track.tofNSigmaKa());
+      //   registry.fill(HIST("PrimaryTrack/hTPCNsigmaPr_P"), track.p(), track.tpcNSigmaPr());
+      //   registry.fill(HIST("PrimaryTrack/hTOFNsigmaPr_P"), track.p(), track.tofNSigmaPr());
+      // } // end of track loop
 
     } // end of collision loop
     stored_trackIds.clear();

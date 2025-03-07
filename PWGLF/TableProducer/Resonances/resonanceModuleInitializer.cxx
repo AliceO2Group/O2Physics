@@ -532,7 +532,7 @@ struct ResonanceModuleInitializer {
     colCuts.fillQA(collision);
     centrality = centEst(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centrality, -999, 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz);
   }
   PROCESS_SWITCH(ResonanceModuleInitializer, processRun3, "Default process for RUN3", false);
 
@@ -545,14 +545,14 @@ struct ResonanceModuleInitializer {
   void processRun2(soa::Filtered<aod::ResoRun2CollisionCandidates>::iterator const& collision,
                    aod::BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<aod::BCsWithRun2Info>();
+    // auto bc = collision.bc_as<aod::BCsWithRun2Info>();
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
     colCuts.fillQARun2(collision);
     centrality = collision.centRun2V0M();
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centrality, -999, 0., 0., 0., 0., dBz, bc.timestamp(), -999);
+    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz);
   }
   PROCESS_SWITCH(ResonanceModuleInitializer, processRun2, "process for RUN2", false);
 
@@ -757,8 +757,8 @@ struct ResonanceDaughterInitializer {
                 track.pz(),
                 (uint8_t)track.tpcNClsCrossedRows(),
                 (uint8_t)track.tpcNClsFound(),
-                track.dcaXY(),
-                track.dcaZ(),
+                static_cast<int16_t>(track.dcaXY() * 10000),
+                static_cast<int16_t>(track.dcaZ() * 10000),
                 (int8_t)(track.tpcNSigmaPi() * 10),
                 (int8_t)(track.tpcNSigmaKa() * 10),
                 (int8_t)(track.tpcNSigmaPr() * 10),
