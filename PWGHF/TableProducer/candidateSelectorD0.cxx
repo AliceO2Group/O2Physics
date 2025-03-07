@@ -57,13 +57,13 @@ struct HfCandidateSelectorD0 {
   // AND logic for TOF+TPC PID (as in Run2)
   Configurable<bool> usePidTpcAndTof{"usePidTpcAndTof", false, "Use AND logic for TPC and TOF PID"};
   // ITS quality track cuts
-  Configurable<int> itsNClustersFoundMin{"itsNClustersFoundMin", 0, "min. number of found ITS clusters"};
-  Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 1e10f, "max its fit chi2 per ITS cluster"};
+  Configurable<int> itsNClustersFoundMin{"itsNClustersFoundMin", 0, "Minimum number of found ITS clusters"};
+  Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 1e10f, "Maximum its fit chi2 per ITS cluster"};
   // TPC quality track cuts
-  Configurable<int> tpcNClustersFoundMin{"tpcNClustersFoundMin", 0, "min number of found TPC clusters"};
-  Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 0, "min number of crossed rows in TPC"};
-  Configurable<float> tpcNCrossedRowsOverFindableClustersMin{"tpcNCrossedRowsOverFindableClustersMin", 0., "min ratio crossed rows / findable clusters"};
-  Configurable<float> tpcChi2PerClusterMax{"tpcChi2PerClusterMax", 1e10f, "max tpc fit chi2 per TPC cluster"};
+  Configurable<int> tpcNClustersFoundMin{"tpcNClustersFoundMin", 0, "Minimum number of found TPC clusters"};
+  Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 0, "Minimum number of crossed rows in TPC"};
+  Configurable<float> tpcNCrossedRowsOverFindableClustersMin{"tpcNCrossedRowsOverFindableClustersMin", 0., "Minimum ratio crossed rows / findable clusters"};
+  Configurable<float> tpcChi2PerClusterMax{"tpcChi2PerClusterMax", 1e10f, "Maximum TPC fit chi2 per TPC cluster"};
   // selecting only background candidates
   Configurable<bool> keepOnlySidebandCandidates{"keepOnlySidebandCandidates", false, "Select only sideband candidates, for studying background cut variable distributions"};
   Configurable<double> distanceFromD0MassForSidebands{"distanceFromD0MassForSidebands", 0.15, "Minimum distance from nominal D0 mass value for sideband region"};
