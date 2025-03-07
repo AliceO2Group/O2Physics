@@ -9,6 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#ifndef PWGLF_TABLEPRODUCER_NUSPEX_NUCLEIUTILS_H
+#define PWGLF_TABLEPRODUCER_NUSPEX_NUCLEIUTILS_H
+
+#include <string>
+#include <vector>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
