@@ -838,6 +838,17 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "tpcNSigmaKa_tofNSigmaKa", "", false, 200, -10., 10., VarManager::kTPCnSigmaKa, 200, -10., 10., VarManager::kTOFnSigmaKa);
       hm->AddHistogram(histClass, "tpcNSigmaPi_tofNSigmaPi", "", false, 200, -10., 10., VarManager::kTPCnSigmaPi, 200, -10., 10., VarManager::kTOFnSigmaPi);
     }
+    if (subGroupStr.Contains("singlemucumulant")) {
+      int var[4] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C};
+      int bins[4] = {250, 60, 6, 18};
+      double minBins[4] = {0.0, 0.0, 2.5, 0.0};
+      double maxBins[4] = {5.0, 30.0, 4.0, 90.0};
+      hm->AddHistogram(histClass, "Mass_Pt_Rapidity_CentFT0C", "", 4, var, bins, minBins, maxBins, 0, -1, kTRUE);
+      hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2REFsingle", "", true, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, 0, 0.0, 1.0, VarManager::kCORR2REFbydimuons, "", "", "", VarManager::kNothing, VarManager::kM11REFoverMpsingle);
+      hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr4REFsingle", "", true, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, 0, 0.0, 1.0, VarManager::kCORR4REFbydimuons, "", "", "", VarManager::kNothing, VarManager::kM1111REFoverMpsingle);
+      hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2POIsingle", "", true, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, 0, 0.0, 1.0, VarManager::kCORR2POIsingle, "", "", "", VarManager::kNothing, VarManager::kM01POIoverMpsingle);
+      hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr4POIsingle", "", true, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, 0, 0.0, 1.0, VarManager::kCORR4POIsingle, "", "", "", VarManager::kNothing, VarManager::kM0111POIoverMpsingle);
+    }
   }
 
   if (!groupStr.CompareTo("mctruth_triple")) {
