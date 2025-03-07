@@ -396,7 +396,7 @@ struct alice3multicharm {
     // CombinationsXiCC: doublets XiC-pi considered per XiC
     histos.add("hCombinationsXiC", "hCombinationsXiC", kTH1D, {axisNConsidered});
     histos.add("hCombinationsXiCC", "hCombinationsXiCC", kTH1D, {axisNConsidered});
-    histos.add("hNCollisions", "hNCollisions", kTH1D, {{1, 0.5, 1.5}});
+    histos.add("hNCollisions", "hNCollisions", kTH1D, {{2, 0.5, 2.5}});
     if (doDCAplots) {
       histos.add("h2dDCAxyVsPtXiFromXiC", "h2dDCAxyVsPtXiFromXiC", kTH2D, {axisPt, axisDCA});
       histos.add("h2dDCAxyVsPtPiFromXiC", "h2dDCAxyVsPtPiFromXiC", kTH2D, {axisPt, axisDCA});
@@ -420,10 +420,11 @@ struct alice3multicharm {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processFindXiCC(aod::Collision const& collision, alice3tracks const& tracks, aod::McParticles const&, aod::UpgradeCascades const& cascades)
   {
-    if (tracks.size() < minMultiplicity)
-      return;
-
     histos.fill(HIST("hNCollisions"), 1);
+    if (tracks.size() < minMultiplicity)
+    return;
+    
+    histos.fill(HIST("hNCollisions"), 2);
     // group with this collision
     // n.b. cascades do not need to be grouped, being used directly in iterator-grouping
     auto tracksPiFromXiCgrouped = tracksPiFromXiC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
