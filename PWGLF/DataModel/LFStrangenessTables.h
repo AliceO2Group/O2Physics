@@ -282,7 +282,10 @@ DECLARE_SOA_TABLE(StraMCCollisions_000, "AOD", "STRAMCCOLLISION", //! MC collisi
 DECLARE_SOA_TABLE_VERSIONED(StraMCCollisions_001, "AOD", "STRAMCCOLLISION", 1, //! debug information
                             o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
                             mccollision::ImpactParameter, mccollision::EventPlaneAngle);
-using StraMCCollisions = StraMCCollisions_001;
+DECLARE_SOA_TABLE_VERSIONED(StraMCCollisions_002, "AOD", "STRAMCCOLLISION", 2, //! debug information
+                            o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
+                            mccollision::ImpactParameter, mccollision::EventPlaneAngle, mccollision::GeneratorsID);
+using StraMCCollisions = StraMCCollisions_002;
 using StraMCCollision = StraMCCollisions::iterator;
 
 DECLARE_SOA_TABLE(StraMCCollMults_000, "AOD", "STRAMCCOLLMULTS", //! MC collision multiplicities
