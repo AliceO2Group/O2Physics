@@ -15,6 +15,9 @@
 
 #include <vector>
 #include <string>
+#include <map>
+#include <utility>
+#include <algorithm>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -37,6 +40,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 
@@ -121,6 +125,7 @@ struct JetDerivedDataProducerTask {
 
   Configurable<std::string> ccdbURL{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> includeTriggers{"includeTriggers", false, "fill the collision information with software trigger decisions"};
+  Configurable<bool> includeHadronicRate{"includeHadronicRate", true, "fill the collision information with the hadronic rate"};
 
   Preslice<aod::EMCALClusterCells> perClusterCells = aod::emcalclustercell::emcalclusterId;
   Preslice<aod::EMCALMatchedTracks> perClusterTracks = aod::emcalclustercell::emcalclusterId;
@@ -133,11 +138,14 @@ struct JetDerivedDataProducerTask {
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
   Zorro triggerDecider;
 
+  ctpRateFetcher rateFetcher;
   int runNumber;
+  float hadronicRate;
   bool withCollisionAssociator;
   void init(InitContext const&)
   {
-    if (doprocessTracksWithCollisionAssociator || includeTriggers) {
+    hadronicRate = -1.0;
+    if (doprocessTracksWithCollisionAssociator || includeHadronicRate || includeTriggers) {
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
@@ -169,15 +177,21 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processBunchCrossings, "produces derived bunch crossing table", false);
 
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs>::iterator const& collision, soa::Join<aod::BCs, aod::Timestamps> const&)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s>::iterator const& collision, soa::Join<aod::BCs, aod::Timestamps> const&)
   {
+    auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
+    if (includeHadronicRate) {
+      if (runNumber != bc.runNumber()) {
+        runNumber = bc.runNumber();
+        hadronicRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 0.001;
+      }
+    }
     uint64_t triggerBit = 0;
     if (includeTriggers) {
-      auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
       triggerDecider.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), jetderiveddatautilities::JTriggerMasks);
       triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults(bc.globalBC()));
     }
-    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centFT0C(), collision.trackOccupancyInTimeRange(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit); // note change multFT0C to multFT0M when problems with multFT0A are fixed
+    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centFT0C(), collision.centFT0CVariant1(), hadronicRate, collision.trackOccupancyInTimeRange(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit); // note change multFT0C to multFT0M when problems with multFT0A are fixed
     products.jCollisionsParentIndexTable(collision.globalIndex());
     products.jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
@@ -191,7 +205,7 @@ struct JetDerivedDataProducerTask {
       triggerDecider.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), jetderiveddatautilities::JTriggerMasks);
       triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults(bc.globalBC()));
     }
-    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit);
+    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, -1.0, -1, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), triggerBit);
     products.jCollisionsParentIndexTable(collision.globalIndex());
     products.jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
@@ -199,7 +213,7 @@ struct JetDerivedDataProducerTask {
 
   void processCollisionsRun2(soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentRun2V0Ms>::iterator const& collision)
   {
-    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centRun2V0M(), -1, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), 0); // note change multFT0C to multFT0M when problems with multFT0A are fixed
+    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centRun2V0M(), -1.0, -1.0, -1, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw(), 0); // note change multFT0C to multFT0M when problems with multFT0A are fixed
     products.jCollisionsParentIndexTable(collision.globalIndex());
     products.jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
@@ -207,7 +221,7 @@ struct JetDerivedDataProducerTask {
 
   void processCollisionsALICE3(aod::Collision const& collision)
   {
-    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1, -1.0, 0, 0);
+    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, -1.0, -1, -1.0, 0, 0);
     products.jCollisionsParentIndexTable(collision.globalIndex());
     products.jCollisionsBunchCrossingIndexTable(-1);
   }
@@ -274,6 +288,7 @@ struct JetDerivedDataProducerTask {
 
   void processTracksWithCollisionAssociator(aod::Collisions const& collisions, soa::Join<aod::BCs, aod::Timestamps> const&, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::TrackSelectionExtension> const&, aod::TrackAssoc const& assocCollisions)
   {
+    runNumber = 0;
     for (auto const& collision : collisions) {
       auto collisionTrackIndices = assocCollisions.sliceBy(perCollisionTrackIndices, collision.globalIndex());
       for (auto const& collisionTrackIndex : collisionTrackIndices) {

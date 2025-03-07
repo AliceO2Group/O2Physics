@@ -62,6 +62,7 @@ struct JetSubstructureOutputTask {
   Produces<aod::CMCPJetOs> jetOutputTableMCP;
   Produces<aod::CMCPJetSSOs> jetSubstructureOutputTableMCP;
   Produces<aod::CMCPJetMOs> jetMatchingOutputTableMCP;
+  Produces<aod::CMCPJetMCCOs> mcCollisionOutputTable;
 
   Configurable<float> jetPtMinData{"jetPtMinData", 0.0, "minimum jet pT cut for data jets"};
   Configurable<float> jetPtMinDataSub{"jetPtMinDataSub", 0.0, "minimum jet pT cut for eventwise constituent subtracted data jets"};
@@ -309,9 +310,12 @@ struct JetSubstructureOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processClearMaps, "process function that clears all the non-mcp maps in each dataframe", true);
 
-  void processClearMapsMCP(aod::JetMcCollisions const&)
+  void processClearMapsMCP(aod::JetMcCollisions const& mcCollisions)
   {
     jetMappingMCP.clear();
+    for (auto mcCollision : mcCollisions) {
+      mcCollisionOutputTable(mcCollision.posZ(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.weight());
+    }
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processClearMapsMCP, "process function that clears all the mcp maps in each dataframe", true);
 

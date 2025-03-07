@@ -292,7 +292,7 @@ struct JetDerivedDataWriter {
     for (auto const& collision : collisions) {
       if (collision.isCollisionSelected()) {
 
-        products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.trackOccupancyInTimeRange(), collision.eventSel(), collision.alias_raw(), collision.triggerSel());
+        products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.centralityVariant1(), collision.hadronicRate(), collision.trackOccupancyInTimeRange(), collision.eventSel(), collision.alias_raw(), collision.triggerSel());
         collisionMapping[collision.globalIndex()] = products.storedJCollisionsTable.lastIndex();
         products.storedJCollisionMcInfosTable(collision.weight(), collision.subGeneratorId());
         products.storedJCollisionsParentIndexTable(collision.collisionId());
