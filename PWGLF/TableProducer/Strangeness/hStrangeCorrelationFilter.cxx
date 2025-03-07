@@ -659,9 +659,12 @@ struct HStrangeCorrelationFilter {
       bool trueLambda = false;
       bool trueAntiLambda = false;
       v0PhysicalPrimary = v0.isPhysicalPrimary();
-      if (v0.pdgCode() == 310) trueK0Short = true;
-      if (v0.pdgCode() == 3122) trueLambda = true;
-      if (v0.pdgCode() == -3122) trueAntiLambda = true;
+      if (v0.pdgCode() == 310)
+        trueK0Short = true;
+      if (v0.pdgCode() == 3122)
+        trueLambda = true;
+      if (v0.pdgCode() == -3122)
+        trueAntiLambda = true;
       if (compatibleK0Short && (!doTrueSelectionInMass || (trueK0Short && v0PhysicalPrimary)))
         histos.fill(HIST("h3dMassK0Short"), v0.pt(), v0.mK0Short(), collision.centFT0M());
       if (compatibleLambda && (!doTrueSelectionInMass || (trueLambda && v0PhysicalPrimary)))
@@ -862,10 +865,14 @@ struct HStrangeCorrelationFilter {
       bool trueOmegaMinus = false;
       bool trueOmegaPlus = false;
       cascPhysicalPrimary = casc.isPhysicalPrimary();
-      if (casc.pdgCode() == 3312) trueXiMinus = true;
-      if (casc.pdgCode() == -3312) trueXiPlus = true;
-      if (casc.pdgCode() == 3334) trueOmegaMinus = true;
-      if (casc.pdgCode() == -3334) trueOmegaPlus = true;
+      if (casc.pdgCode() == 3312)
+        trueXiMinus = true;
+      if (casc.pdgCode() == -3312)
+        trueXiPlus = true;
+      if (casc.pdgCode() == 3334)
+        trueOmegaMinus = true;
+      if (casc.pdgCode() == -3334)
+        trueOmegaPlus = true;
       if (compatibleXiMinus && (!doTrueSelectionInMass || (trueXiMinus && cascPhysicalPrimary)))
         histos.fill(HIST("h3dMassXiMinus"), casc.pt(), casc.mXi(), collision.centFT0M());
       if (compatibleXiPlus && (!doTrueSelectionInMass || (trueXiPlus && cascPhysicalPrimary)))
