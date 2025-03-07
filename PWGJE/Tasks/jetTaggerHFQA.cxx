@@ -156,10 +156,6 @@ struct JetTaggerHFQA {
       registry.add("h_impact_parameter_xyz", "", {HistType::kTH1F, {{axisImpactParameterXYZ}}});
       registry.add("h_impact_parameter_xyz_significance", "", {HistType::kTH1F, {{axisImpactParameterXYZSignificance}}});
     }
-    if (doprocessTracks) {
-      registry.add("h_mother_status", "", {HistType::kTH1F, {{101, -0.5, 100.5}}});
-      registry.add("h_mother_pdg", "", {HistType::kTH1F, {{1001, -0.5, 1000.5}}});
-    }
     if (doprocessValFlavourDefMCD) {
       registry.add("h2_flavour_dist_quark_flavour_dist_hadron", "", {HistType::kTH2F, {{axisJetFlavour}, {axisJetFlavour}}});
       registry.add("h2_flavour_const_quark_flavour_const_hadron", "", {HistType::kTH2F, {{axisJetFlavour}, {axisJetFlavour}}});
@@ -1070,22 +1066,6 @@ struct JetTaggerHFQA {
     }
   }
   PROCESS_SWITCH(JetTaggerHFQA, processTracksDca, "Fill inclusive tracks' imformation for data", false);
-
-  void processTracks(soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs> const& tracks, aod::JetParticles const&)
-  {
-    for (auto const& track : tracks) {
-      if (!track.has_mcParticle()) continue;
-      auto mother = track.mcParticle();
-      while (mother.has_mothers()) {
-        mother = mother.mothers_first_as<aod::JetParticles>();
-        int motherStatusCode = std::abs(mother.getGenStatusCode());
-        int motherPdgCode = std::abs(mother.pdgCode());
-        registry.fill(HIST("h_mother_status"), motherStatusCode);
-        registry.fill(HIST("h_mother_pdg"), motherPdgCode);
-      }
-    }
-  }
-  PROCESS_SWITCH(JetTaggerHFQA, processTracks, "Fill inclusive tracks' imformation for data", false);
 
   void processValFlavourDefMCD(soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, weightMCD> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& /*mcpjets*/, JetTagTracksMCD const& tracks, aod::JetParticles const& particles)
   {
