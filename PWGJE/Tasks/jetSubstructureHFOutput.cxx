@@ -45,7 +45,7 @@ using namespace o2::framework::expressions;
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
-template <typename CandidateCollisionTable, typename CandidateMcCollisionTable, typename CandidateMcOnlyCollisionTable, typename CandidateTable, typename CandidateTableMCD, typename CandidateTableMCP, typename CandidateRhosTable, typename CandidateMCRhosTable, typename TracksSub, typename JetTableData, typename JetMatchedTableData, typename SplittingTableData, typename PairTableData, typename OutputCollisionTableData, typename OutputTableData, typename SubstructureOutputTableData, typename MatchingOutputTableData, typename JetTableMCD, typename SplittingTableMCD, typename PairTableMCD, typename OutputCollisionTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename MatchingOutputTableMCD, typename JetTableMCP, typename JetTableMatchedMCP, typename SplittingTableMCP, typename PairTableMCP, typename OutputCollisionTableMCP, typename OutputTableMCP, typename SubstructureOutputTableMCP, typename MatchingOutputTableMCP, typename JetTableDataSub, typename SplittingTableDataSub, typename PairTableDataSub, typename OutputCollisionTableDataSub, typename OutputTableDataSub, typename SubstructureOutputTableDataSub, typename MatchingOutputTableDataSub, typename CandidateCollisionOutputTable, typename CandidateOutputTable, typename CandidateParOutputTable, typename CandidateParExtraOutputTable, typename CandidateParDaughterOutputTable, typename CandidateSelOutputTable, typename CandidateMlOutputTable, typename CandidateMlDaughterOutputTable, typename CandidateMCDOutputTable, typename CandidateMcCollisionOutputTable, typename CandidateMcCollisionMatchingOutputTable, typename CandidateMCPOutputTable>
+template <typename CandidateCollisionTable, typename CandidateMcCollisionTable, typename CandidateMcOnlyCollisionTable, typename CandidateTable, typename CandidateTableMCD, typename CandidateTableMCP, typename CandidateRhosTable, typename CandidateMCRhosTable, typename TracksSub, typename JetTableData, typename JetMatchedTableData, typename SplittingTableData, typename PairTableData, typename OutputCollisionTableData, typename OutputTableData, typename SubstructureOutputTableData, typename MatchingOutputTableData, typename JetTableMCD, typename SplittingTableMCD, typename PairTableMCD, typename OutputCollisionTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename MatchingOutputTableMCD, typename JetTableMCP, typename JetTableMatchedMCP, typename SplittingTableMCP, typename PairTableMCP, typename OutputCollisionTableMCP, typename CandidateMcOnlyCollisionOutputTable, typename OutputTableMCP, typename SubstructureOutputTableMCP, typename MatchingOutputTableMCP, typename JetTableDataSub, typename SplittingTableDataSub, typename PairTableDataSub, typename OutputCollisionTableDataSub, typename OutputTableDataSub, typename SubstructureOutputTableDataSub, typename MatchingOutputTableDataSub, typename CandidateCollisionOutputTable, typename CandidateOutputTable, typename CandidateParOutputTable, typename CandidateParExtraOutputTable, typename CandidateParDaughterOutputTable, typename CandidateSelOutputTable, typename CandidateMlOutputTable, typename CandidateMlDaughterOutputTable, typename CandidateMCDOutputTable, typename CandidateMcCollisionOutputTable, typename CandidateMcCollisionMatchingOutputTable, typename CandidateMCPOutputTable>
 struct JetSubstructureHFOutputTask {
 
   struct : ProducesGroup {
@@ -62,6 +62,7 @@ struct JetSubstructureHFOutputTask {
     Produces<SubstructureOutputTableMCD> jetSubstructureOutputTableMCD;
     Produces<MatchingOutputTableMCD> jetMatchingOutputTableMCD;
     Produces<OutputCollisionTableMCP> collisionOutputTableMCP;
+    Produces<CandidateMcOnlyCollisionOutputTable> hfMcOnlyCollisionsTable;
     Produces<OutputTableMCP> jetOutputTableMCP;
     Produces<SubstructureOutputTableMCP> jetSubstructureOutputTableMCP;
     Produces<MatchingOutputTableMCP> jetMatchingOutputTableMCP;
@@ -542,11 +543,14 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processClearMaps, "process function that clears all the non-mcp maps in each dataframe", true);
 
-  void processClearMapsMCP(aod::JetMcCollisions const&)
+  void processClearMapsMCP(aod::JetMcCollisions const& mcCollisions)
   {
     candidateMappingMCP.clear();
     jetMappingMCP.clear();
     candidateMcCollisionMapping.clear();
+    for (auto mcCollision : mcCollisions) {
+      products.hfMcOnlyCollisionsTable(mcCollision.posZ(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.weight());
+    }
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processClearMapsMCP, "process function that clears all the mcp maps in each dataframe", true);
 
