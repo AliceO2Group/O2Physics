@@ -482,5 +482,5 @@ struct nucleiFlowTree {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<nucleiFlowTree>(cfgc, TaskName{"nuclei-flow-tree"})};
+    adaptAnalysisTask<nucleiFlowTree>(cfgc, TaskName{"nuclei-flow-trees"})};
 }
