@@ -16,6 +16,7 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
 #include <vector>
+#include <algorithm> // std::min
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -304,7 +305,9 @@ struct HfTaskD0 {
   }
 
   template <int reconstructionType, bool applyMl, typename CandType, typename CollType>
-  void processData(CandType const& candidates, CollType const&, aod::TracksWExtra const&)
+  void processData(CandType const& candidates,
+                   CollType const&,
+                   aod::TracksWExtra const&)
   {
     for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
@@ -377,9 +380,9 @@ struct HfTaskD0 {
 
       auto trackPos = candidate.template prong0_as<o2::aod::TracksWExtra>(); // positive daughter
       auto trackNeg = candidate.template prong1_as<o2::aod::TracksWExtra>(); // negative daughter
-      int minProngItsClustersFound = trackPos.itsNCls() > trackNeg.itsNCls() ? trackNeg.itsNCls() : trackPos.itsNCls();
-      int minProngTpcNCrossedRows = trackPos.tpcNClsCrossedRows() > trackNeg.tpcNClsCrossedRows() ? trackNeg.tpcNClsCrossedRows() : trackPos.tpcNClsCrossedRows();
-
+      int minItsClustersOfProngs = std::min(trackPos.itsNCls(), trackNeg.itsNCls());
+      int minTpcCrossedRowsOfProngs = std::min(trackPos.tpcNClsCrossedRows(), trackNeg.tpcNClsCrossedRows());
+      
       if constexpr (applyMl) {
         if (storeCentrality && storeOccupancy) {
           if (candidate.isSelD0() >= selectionFlagD0) {
@@ -410,12 +413,12 @@ struct HfTaskD0 {
           }
         } else if (storeTrackQuality) {
           if (candidate.isSelD0() >= selectionFlagD0) {
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), SigD0, minProngItsClustersFound, minProngTpcNCrossedRows);
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, minProngItsClustersFound, minProngTpcNCrossedRows);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), SigD0, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
           }
           if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, hfHelper.yD0(candidate), SigD0bar, minProngItsClustersFound, minProngTpcNCrossedRows);
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, minProngItsClustersFound, minProngTpcNCrossedRows);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, hfHelper.yD0(candidate), SigD0bar, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
           }
         } else {
           if (candidate.isSelD0() >= selectionFlagD0) {
@@ -457,8 +460,8 @@ struct HfTaskD0 {
           }
         } else if (storeTrackQuality) {
           if (candidate.isSelD0() >= selectionFlagD0) {
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), SigD0, minProngItsClustersFound, minProngTpcNCrossedRows);
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, minProngItsClustersFound, minProngTpcNCrossedRows);
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), SigD0, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
           }
           if (candidate.isSelD0bar() >= selectionFlagD0bar) {
             registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, hfHelper.yD0(candidate), SigD0bar);
@@ -517,7 +520,8 @@ struct HfTaskD0 {
 
   template <int reconstructionType, bool applyMl, typename CandType, typename CollType>
   void processMc(CandType const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
+                 soa::Join<aod::McParticles,
+                 aod::HfCand2ProngMcGen> const& mcParticles,
                  TracksSelQuality const&,
                  CollType const& collisions,
                  aod::McCollisions const&)
@@ -549,9 +553,11 @@ struct HfTaskD0 {
         massD0 = hfHelper.invMassD0ToPiK(candidate);
         massD0bar = hfHelper.invMassD0barToKPi(candidate);
       }
+      auto trackPos = candidate.template prong0_as<TracksSelQuality>(); // positive daughter
+      auto trackNeg = candidate.template prong1_as<TracksSelQuality>(); // negative daughter
       if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(mcParticles, candidate.template prong0_as<TracksSelQuality>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), o2::constants::physics::Pdg::kD0, true);
+        auto indexMother = RecoDecay::getMother(mcParticles, trackPos.template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), o2::constants::physics::Pdg::kD0, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
         auto ptGen = particleMother.pt();                                                   // gen. level pT
         auto yGen = RecoDecay::y(particleMother.pVector(), o2::constants::physics::MassD0); // gen. level y
@@ -639,10 +645,8 @@ struct HfTaskD0 {
       auto ctCandidate = hfHelper.ctD0(candidate);
       auto cpaCandidate = candidate.cpa();
       auto cpaxyCandidate = candidate.cpaXY();
-      auto trackPos = candidate.template prong0_as<TracksSelQuality>(); // positive daughter
-      auto trackNeg = candidate.template prong1_as<TracksSelQuality>(); // negative daughter
-      int minProngItsClustersFound = trackPos.itsNCls() > trackNeg.itsNCls() ? trackNeg.itsNCls() : trackPos.itsNCls();
-      int minProngTpcNCrossedRows = trackPos.tpcNClsCrossedRows() > trackNeg.tpcNClsCrossedRows() ? trackNeg.tpcNClsCrossedRows() : trackPos.tpcNClsCrossedRows();
+      int minItsClustersOfProngs = std::min(trackPos.itsNCls(), trackNeg.itsNCls());
+      int minTpcCrossedRowsOfProngs = std::min(trackPos.tpcNClsCrossedRows(), trackNeg.tpcNClsCrossedRows());
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
@@ -677,7 +681,7 @@ struct HfTaskD0 {
             } else if (!storeCentrality && storeOccupancy) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
             } else if (storeTrackQuality) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minProngItsClustersFound, minProngTpcNCrossedRows);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
             } else {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
             }
@@ -689,7 +693,7 @@ struct HfTaskD0 {
             } else if (!storeCentrality && storeOccupancy) {
               registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
             } else if (storeTrackQuality) {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minProngItsClustersFound, minProngTpcNCrossedRows);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
             } else {
               registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
             }
@@ -719,7 +723,7 @@ struct HfTaskD0 {
               } else if (!storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
               } else if (storeTrackQuality) {
-                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minProngItsClustersFound, minProngTpcNCrossedRows);
+                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
               } else {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
               }
@@ -731,7 +735,7 @@ struct HfTaskD0 {
               } else if (!storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
               } else if (storeTrackQuality) {
-                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minProngItsClustersFound, minProngTpcNCrossedRows);
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
               } else {
                 registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
               }
@@ -751,7 +755,7 @@ struct HfTaskD0 {
             } else if (!storeCentrality && storeOccupancy) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
             } else if (storeTrackQuality) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minProngItsClustersFound, minProngTpcNCrossedRows);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
             } else {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
             }
@@ -763,7 +767,7 @@ struct HfTaskD0 {
             } else if (!storeCentrality && storeOccupancy) {
               registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
             } else if (storeTrackQuality) {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minProngItsClustersFound, minProngTpcNCrossedRows);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
             } else {
               registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
             }
@@ -780,7 +784,7 @@ struct HfTaskD0 {
               } else if (!storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
               } else if (storeTrackQuality) {
-                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minProngItsClustersFound, minProngTpcNCrossedRows);
+                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
               } else {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
               }
@@ -792,7 +796,7 @@ struct HfTaskD0 {
               } else if (!storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
               } else if (storeTrackQuality) {
-                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minProngItsClustersFound, minProngTpcNCrossedRows);
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
               } else {
                 registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
               }
