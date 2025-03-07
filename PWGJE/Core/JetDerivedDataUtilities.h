@@ -121,10 +121,10 @@ std::vector<int> initialiseEventSelectionBits(std::string eventSelectionMasks)
   }
   if (eventSelectionMasksContainSelection(eventSelectionMasks, "selUnanchoredMC")) {
     eventSelectionMaskBits.push_back(JCollisionSel::selTVX);
-    eventSelectionMaskBits.push_back(JCollisionSel::selNoTimeFrameBorder);
   }
   if (eventSelectionMasksContainSelection(eventSelectionMasks, "selMC")) {
     eventSelectionMaskBits.push_back(JCollisionSel::selTVX);
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoTimeFrameBorder);
   }
   if (eventSelectionMasksContainSelection(eventSelectionMasks, "selMCFull")) {
     eventSelectionMaskBits.push_back(JCollisionSel::selTVX);
