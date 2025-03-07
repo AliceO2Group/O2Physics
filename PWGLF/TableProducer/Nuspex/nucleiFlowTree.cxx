@@ -236,7 +236,7 @@ struct nucleiFlowTree {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    spectra.add("hEventSelections", "hEventSelections", {HistType::kTH1D, {{nuclei::evSel::kNevSels + 1, -0.5f, float(nuclei::evSel::kNevSels) + 0.5f}}});
+    spectra.add("hEventSelections", "hEventSelections", {HistType::kTH1D, {{nuclei::evSel::kNevSels + 1, -0.5f, static_cast<float>(nuclei::evSel::kNevSels) + 0.5f}}});
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(1, "all");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kTVX + 2, "TVX");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kZvtx + 2, "Zvtx");
