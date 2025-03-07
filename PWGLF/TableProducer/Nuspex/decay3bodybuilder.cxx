@@ -81,8 +81,9 @@ using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 using ReducedCollisionsMults = soa::Join<aod::RedCollisions, aod::RedPVMults>;
 using ReducedCollisionsMultsCents = soa::Join<ReducedCollisionsMults, aod::RedCentFT0Cs>;
 
-namespace {
-  const float pidCutsLambda[o2::vertexing::SVertexHypothesis::NPIDParams] = {0., 20, 0., 5.0, 0.0, 1.09004e-03, 2.62291e-04, 8.93179e-03, 2.83121}; // Lambda
+namespace
+{
+const float pidCutsLambda[o2::vertexing::SVertexHypothesis::NPIDParams] = {0., 20, 0., 5.0, 0.0, 1.09004e-03, 2.62291e-04, 8.93179e-03, 2.83121}; // Lambda
 } // namespace
 
 struct vtxCandidate {
@@ -307,30 +308,28 @@ struct decay3bodyBuilder {
   // Sets for event mixing
   struct : ConfigurableGroup {
     Configurable<int> nUseMixedEvent{"EMSel.nUseMixedEvent", 5, "nUseMixedEvent"};
-    Configurable<float> mMinPt2V0{"EMSel.mMinPt2V0", 0.25, "mMinPt2V0"};                // minimum pT^2 of V0
-    Configurable<float> mMaxTgl2V0{"EMSel.mMaxTgl2V0", 4, "mMaxTgl2V0"};                // maximum tgLambda^2 of V0
+    Configurable<float> mMinPt2V0{"EMSel.mMinPt2V0", 0.25, "mMinPt2V0"};                                                            // minimum pT^2 of V0
+    Configurable<float> mMaxTgl2V0{"EMSel.mMaxTgl2V0", 4, "mMaxTgl2V0"};                                                            // maximum tgLambda^2 of V0
     Configurable<float> mMaxDCAXY2ToMeanVertex3bodyV0{"EMSel.mMaxDCAXY2ToMeanVertex3bodyV0", 0.5, "mMaxDCAXY2ToMeanVertex3bodyV0"}; // max DCA^2 of 2 body decay to mean vertex of 3 body decay in XY
     Configurable<float> minCosPAXYMeanVertex3bodyV0{"EMSel.minCosPAXYMeanVertex3bodyV0", 0.9, "minCosPAXYMeanVertex3bodyV0"};       // min CosPA of 2 body decay to mean vertex of 3 body decay in XY
-    Configurable<float> minCosPA3bodyV0{"EMSel.minCosPA3bodyV0", 0.8, "minCosPA3bodyV0"};                                             // min CosPA of 3 body decay to PV
-    Configurable<float> mMaxDCAZ2V0{"EMSel.mMaxDCAZ2V0", 1.0, "mMaxDCAZ2V0"};           // max DCA of 2 body decay to PV in Z
-    Configurable<float> maxRDiffV03body{"EMSel.maxRDiffV03body", 3, "maxRDiffV03body"}; // Maximum difference between virtual V0 and 3body radius
-    Configurable<float> minPt3Body = {"EMSel.minPt3Body", 0.01, ""};                    // minimum pT of 3body Vertex
-    Configurable<float> maxTgl3Body = {"EMSel.maxTgl3Body", 2, ""};                     // maximum tgLambda of 3body Vertex
-    Configurable<float> maxDCAXY3Body{"EMSel.maxDCAXY3Body", 0.5, "DCAXY H3L to PV"};   // max DCA of 3 body decay to PV in XY
-    Configurable<float> maxDCAZ3Body{"EMSel.maxDCAZ3Body", 1.0, "DCAZ H3L to PV"};      // max DCA of 3 body decay to PV in Z
+    Configurable<float> minCosPA3bodyV0{"EMSel.minCosPA3bodyV0", 0.8, "minCosPA3bodyV0"};                                           // min CosPA of 3 body decay to PV
+    Configurable<float> mMaxDCAZ2V0{"EMSel.mMaxDCAZ2V0", 1.0, "mMaxDCAZ2V0"};                                                       // max DCA of 2 body decay to PV in Z
+    Configurable<float> maxRDiffV03body{"EMSel.maxRDiffV03body", 3, "maxRDiffV03body"};                                             // Maximum difference between virtual V0 and 3body radius
+    Configurable<float> minPt3Body = {"EMSel.minPt3Body", 0.01, ""};                                                                // minimum pT of 3body Vertex
+    Configurable<float> maxTgl3Body = {"EMSel.maxTgl3Body", 2, ""};                                                                 // maximum tgLambda of 3body Vertex
+    Configurable<float> maxDCAXY3Body{"EMSel.maxDCAXY3Body", 0.5, "DCAXY H3L to PV"};                                               // max DCA of 3 body decay to PV in XY
+    Configurable<float> maxDCAZ3Body{"EMSel.maxDCAZ3Body", 1.0, "DCAZ H3L to PV"};                                                  // max DCA of 3 body decay to PV in Z
     ConfigurableAxis binsVtxZ{"EMSel.binsVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
     ConfigurableAxis binsMultiplicity{"EMSel.binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
     ConfigurableAxis bins3BodyRadius{"EMSel.bins3BodyRadius", {VARIABLE_WIDTH, 0.0f, 2.0f, 4.0f, 7.0f, 10.0f, 14.0f, 18.0f, 22.0f, 30.0f, 40.0f, 50.0f, 100.0f}, "Mixing bins - 3body radius"};
-    ConfigurableAxis bins3BodyPhi{"EMSel.bins3BodyPhi", {VARIABLE_WIDTH, -3.15, -2.15, -1, 0, 1, 2.15, 3.15}, "Mixing bins - 3body phi"};
-    ConfigurableAxis bins3BodyPosZ{"EMSel.bins3BodyPosZ", {VARIABLE_WIDTH, -500.0f, -200.0f, -100.0f, -70.0f, -60.0f, -50.0f, -40.0f, -35.0f, -30.0f, -25.0f, -20.0f, -15.0f, -13.0f, -10.0f, -8.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 13.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f, 60.0f, 70.0f, 100.0f, 200.0f, 500.0f}, "Mixing bins - 3body z position"};
+    ConfigurableAxis bins3BodyPhi{"EMSel.bins3BodyPhi", {VARIABLE_WIDTH, -3.15, -2.65, -2.15, -1.55, -1, 0.5, 0, 0.5, 1, 1.55, 2.15, 2.65, 3.15}, "Mixing bins - 3body phi"};
+    ConfigurableAxis bins3BodyPhiDegree{"EMSel.bins3BodyPhiDegree", {VARIABLE_WIDTH, -180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180}, "Mixing bins - 3body phi"};
+    ConfigurableAxis bins3BodyPosZ{"EMSel.bins3BodyPosZ", {VARIABLE_WIDTH, -500.0f, -200.0f, -100.0f, -70.0f, -60.0f, -50.0f, -40.0f, -35.0f, -30.0f, -25.0f, -20.0f, -15.0f, -13.0f, -10.0f, -8.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 13.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f, 60.0f, 70.0f, 100.0f, 200.0f, 500.0f}, "3body SV z position"};
     Configurable<bool> selectVtxZ3bodyMixing{"EMSel.selectVtxZ3bodyMixing", true, "Select same VtxZ events in case of 3body mixing"};
     Configurable<float> VtxZBin3bodyMixing{"EMSel.VtxZBin3bodyMixing", 1., "Bin width for event vtx z position in case of 3body mixing"};
   } EMSel;
 
   SliceCache cache;
-  // ConfigurableAxis axisPosZ{"axisPosZ", {10, -10, 10}, "Mixing bins - posZ"};
-  // ConfigurableAxis axisCentrality{"axisCentrality", {10, 0, 100}, "Mixing bins - centrality"};
-  // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
   using BinningTypeMixed3Body = ColumnBinningPolicy<aod::reduceddecay3body::Radius, aod::reduceddecay3body::Phi>;
 
@@ -455,28 +454,12 @@ struct decay3bodyBuilder {
       registry.add("hPhi0", "hPhi0", HistType::kTH1F, {{360, -180.0f, 180.0f, "#phi (degree)"}});
       registry.add("hPhi1", "hPhi1", HistType::kTH1F, {{360, -180.0f, 180.0f, "#phi (degree)"}});
       registry.add("hDeltaPhi", "hDeltaPhi", HistType::kTH1F, {{360, -180.0f, 180.0f, "#Delta #phi (degree)"}});
-
-      registry.add("QA/EM/hPairCounterMixing", "hPairCounterMixing", HistType::kTH1D, {{1, 0.0f, 1.0f}});
-      auto hCombinationCounterMixing = registry.add<TH1>("QA/EM/hCombinationCounterMixing", "hCombinationCounterMixing", HistType::kTH1D, {{3, 0.0f, 3.0f}});
-      hCombinationCounterMixing->GetXaxis()->SetBinLabel(1, "total");
-      hCombinationCounterMixing->GetXaxis()->SetBinLabel(2, "bach sign/ID");
-      hCombinationCounterMixing->GetXaxis()->SetBinLabel(3, "radius, phi");
-      hCombinationCounterMixing->LabelsOption("v");
-
-      registry.add("QA/EM/hEventBinCounts", "hEventBinCounts", HistType::kTH2D, {{10, 0, 10, "bins VtxZ"}, {13, 0, 13, "bins mult"}});
-
-      registry.add("QA/EM/hRadius1", "hRadius1", HistType::kTH1F, {{200, 0.0f, 20.0f, "Radius (cm)"}});
-      registry.add("QA/EM/hRadius2", "hRadius2", HistType::kTH1F, {{200, 0.0f, 20.0f, "Radius (cm)"}});
-      registry.add("QA/EM/hPhi1", "hPhi1", HistType::kTH1F, {{360, 0.0f, 360.0f, "#phi (degree)"}});
-      registry.add("QA/EM/hPhi2", "hPhi2", HistType::kTH1F, {{360, 0.0f, 360.0f, "#phi (degree)"}});
-      registry.add("QA/EM/hDeltaRadius", "hDeltaRadius", HistType::kTH1F, {{200, 0.0f, 10.0f, "#Delta Radius (cm)"}});
-      registry.add("QA/EM/hDeltaPhi", "hDeltaPhi", HistType::kTH1F, {{360, 0.0f, 360.0f, "#Delta #phi (degree)"}});
     }
 
     if (doprocessRun3Reduced3bodyMixing == true) {
       registry.add("hDecay3BodyXY2D", "hDecay3BodyXY2D", HistType::kTH2F, {EMSel.bins3BodyRadius, EMSel.bins3BodyPhi});
       registry.add("hDecay3BodyZ", "hDecay3BodyZ", HistType::kTH1F, {EMSel.bins3BodyPosZ});
-      auto h3bodyCombinationCounter = registry.add<TH1>("QA/EM/h3bodyCombinationCounter", "h3bodyCombinationCounter", HistType::kTH1D, {{4, 0.0f, 4.0f}});
+      auto h3bodyCombinationCounter = registry.add<TH1>("h3bodyCombinationCounter", "h3bodyCombinationCounter", HistType::kTH1D, {{4, 0.0f, 4.0f}});
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(1, "total");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(2, "bach sign/ID");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(3, "not same collision");
@@ -1675,7 +1658,6 @@ struct decay3bodyBuilder {
     vtxCandidates.clear();
 
     auto tuple = std::make_tuple(decay3bodys);
-    // BinningType binningEvent{{axisPosZ, axisCentrality}, true};
     BinningType binningEvent{{EMSel.binsVtxZ, EMSel.binsMultiplicity}, true};
     SameKindPair<ReducedCollisionsMultsCents, aod::RedDecay3Bodys, BinningType> pair{binningEvent, EMSel.nUseMixedEvent, -1, collisions, tuple, &cache};
 
@@ -1696,68 +1678,6 @@ struct decay3bodyBuilder {
 
         registry.fill(HIST("hDecay3BodyPairs_BeforeCut"), xAxis->GetBinCenter(bin_PosZ), yAxis->GetBinCenter(bin_Mult));
 
-        // // event mixing method copied from KFParticle
-        // auto trackPos1 = d3body0.template track0_as<aod::RedIUTracks>();
-        // auto trackNeg1 = d3body0.template track1_as<aod::RedIUTracks>();
-        // auto trackBach1 = d3body0.template track2_as<aod::RedIUTracks>();
-        // auto trackPos2 = d3body1.template track0_as<aod::RedIUTracks>();
-        // auto trackNeg2 = d3body1.template track1_as<aod::RedIUTracks>();
-        // auto trackBach2 = d3body1.template track2_as<aod::RedIUTracks>();
-
-        // registry.fill(HIST("QA/EM/hCombinationCounterMixing"), 0.5);
-
-        // // ---------- selections bachelor track ----------
-        // if ((trackBach1.sign() > 0 && !(trackBach2.sign() > 0)) || (trackBach1.sign() < 0 && !(trackBach2.sign() < 0)) || trackBach1.globalIndex() == trackBach2.globalIndex()) { // only combine if trackBach2 has correct sign and is not same as trackBach1
-        //   continue;
-        // }
-        // registry.fill(HIST("QA/EM/hCombinationCounterMixing"), 1.5);
-
-        // // ---------- check radius and phi of decay3bodys ----------
-        // auto trackParCovPos1 = getTrackParCov(trackPos1);
-        // auto trackParCovNeg1 = getTrackParCov(trackNeg1);
-        // auto trackParCovBach1 = getTrackParCov(trackBach1);
-        // auto trackParCovPos2 = getTrackParCov(trackPos2);
-        // auto trackParCovNeg2 = getTrackParCov(trackNeg2);
-        // auto trackParCovBach2 = getTrackParCov(trackBach2);
-        // // create KFParticle objects from tracks
-        // KFParticle kfpProton1, kfpPion1, kfpDeuteron1;
-        // if (trackBach1.sign() > 0) {
-        //   kfpProton1 = createKFParticleFromTrackParCov(trackParCovPos1, trackPos1.sign(), constants::physics::MassProton);
-        //   kfpPion1 = createKFParticleFromTrackParCov(trackParCovNeg1, trackNeg1.sign(), constants::physics::MassPionCharged);
-        // } else if (!(trackBach1.sign() > 0)) {
-        //   kfpProton1 = createKFParticleFromTrackParCov(trackParCovNeg1, trackNeg1.sign(), constants::physics::MassProton);
-        //   kfpPion1 = createKFParticleFromTrackParCov(trackParCovPos1, trackPos1.sign(), constants::physics::MassPionCharged);
-        // }
-        // kfpDeuteron1 = createKFParticleFromTrackParCov(trackParCovBach1, trackBach1.sign() * bachelorcharge, constants::physics::MassDeuteron);
-        // KFParticle kfpProton2, kfpPion2, kfpDeuteron2;
-        // if (trackBach2.sign() > 0) {
-        //   kfpProton2 = createKFParticleFromTrackParCov(trackParCovPos2, trackPos2.sign(), constants::physics::MassProton);
-        //   kfpPion2 = createKFParticleFromTrackParCov(trackParCovNeg2, trackNeg2.sign(), constants::physics::MassPionCharged);
-        // } else if (!(trackBach2.sign() > 0)) {
-        //   kfpProton2 = createKFParticleFromTrackParCov(trackParCovNeg2, trackNeg2.sign(), constants::physics::MassProton);
-        //   kfpPion2 = createKFParticleFromTrackParCov(trackParCovPos2, trackPos2.sign(), constants::physics::MassPionCharged);
-        // }
-        // kfpDeuteron2 = createKFParticleFromTrackParCov(trackParCovBach2, trackBach2.sign() * bachelorcharge, constants::physics::MassDeuteron);
-        // // fit vertices
-        // KFParticle KFHt1, KFHt2;
-        // fit3bodyVertex(kfpProton1, kfpPion1, kfpDeuteron1, KFHt1);
-        // fit3bodyVertex(kfpProton2, kfpPion2, kfpDeuteron2, KFHt2);
-
-        // // ---------- select common radius and phi region ----------
-        // auto radius1 = std::sqrt(KFHt1.GetX() * KFHt1.GetX() + KFHt1.GetY() * KFHt1.GetY());
-        // auto radius2 = std::sqrt(KFHt2.GetX() * KFHt2.GetX() + KFHt2.GetY() * KFHt2.GetY());
-        // registry.fill(HIST("QA/EM/hRadius1"), radius1);
-        // registry.fill(HIST("QA/EM/hRadius2"), radius2);
-        // registry.fill(HIST("QA/EM/hPhi1"), KFHt1.GetPhi() * (180.0 / TMath::Pi()));
-        // registry.fill(HIST("QA/EM/hPhi2"), KFHt2.GetPhi() * (180.0 / TMath::Pi()));
-        // registry.fill(HIST("QA/EM/hDeltaRadius"), std::abs(radius1 - radius2));
-        // registry.fill(HIST("QA/EM/hDeltaPhi"), std::abs(KFHt1.GetPhi() - KFHt2.GetPhi()) * (180.0 / TMath::Pi()));
-        // if (std::abs(KFHt1.GetPhi() - KFHt2.GetPhi()) * (180.0 / TMath::Pi()) > 10 || std::abs(radius1 - radius2) > 2) {
-        //   continue;
-        // }
-        // registry.fill(HIST("QA/EM/hCombinationCounterMixing"), 2.5);
-
-        // default mixing method
         auto tpos0 = d3body0.track0_as<aod::RedIUTracks>();
         auto tneg0 = d3body0.track1_as<aod::RedIUTracks>();
         auto tbach0 = d3body0.track2_as<aod::RedIUTracks>();
@@ -1849,7 +1769,7 @@ struct decay3bodyBuilder {
         //   lastRunNumber = c1.runNumber(); // Update the last run number
         //   LOG(debug) << "CCDB initialized for run " << lastRunNumber;
         // }
-        // fillVtxCand(c1, tpos1, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
+        fillVtxCand(c1, tpos1, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
       }
     }
 
@@ -1892,18 +1812,18 @@ struct decay3bodyBuilder {
       auto tneg1 = decay3body1.template track1_as<aod::RedIUTracks>();
       auto tbach1 = decay3body1.template track2_as<aod::RedIUTracks>();
 
-      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 0.5);
+      registry.fill(HIST("h3bodyCombinationCounter"), 0.5);
 
       // ---------- selections ----------
       if ((tbach0.sign() > 0 && !(tbach1.sign() > 0)) || (tbach0.sign() < 0 && !(tbach1.sign() < 0)) || tbach0.globalIndex() == tbach1.globalIndex()) { // only combine if tbach1 has correct sign and is not same as tbach0
         continue;
       }
-      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 1.5);
+      registry.fill(HIST("h3bodyCombinationCounter"), 1.5);
 
       if (decay3body0.collisionId() == decay3body1.collisionId()) { // only combine if from different event
         continue;
       }
-      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 2.5);
+      registry.fill(HIST("h3bodyCombinationCounter"), 2.5);
 
       auto c0 = decay3body0.template collision_as<ReducedCollisionsMults>();
       auto c1 = decay3body1.template collision_as<ReducedCollisionsMults>();
@@ -1917,7 +1837,7 @@ struct decay3bodyBuilder {
       if (EMSel.selectVtxZ3bodyMixing && std::abs(c0.posZ() - c1.posZ()) > EMSel.VtxZBin3bodyMixing) { // only combine if collision similar in VtxZ
         continue;
       }
-      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 3.5);
+      registry.fill(HIST("h3bodyCombinationCounter"), 3.5);
 
       // fillVtxCand(c0, tpos0, tneg0, tbach1, -1, bachelorcharge, tbach1.tofNSigmaDe());
       // fillVtxCand(c1, tpos1, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
