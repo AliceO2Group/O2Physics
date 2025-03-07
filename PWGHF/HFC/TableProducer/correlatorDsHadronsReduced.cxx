@@ -116,6 +116,10 @@ struct HfCorrelatorDsHadronsReduced {
         registry.fill(HIST("hEtaVsPtCand"), candidate.etaCand(), candidate.ptCand());
         entryDsCandRecoInfo(candidate.invMassDs(), candidate.ptCand(), candidate.bdtScorePrompt(), candidate.bdtScoreBkg());
         for (const auto& track : tracksThisColl) {
+          // Removing Ds daughters by checking track indices
+          if ((candidate.prong0Id() == track.originTrackId()) || (candidate.prong1Id() == track.originTrackId()) || (candidate.prong2Id() == track.originTrackId())) {
+            continue;
+          }
           registry.fill(HIST("hTracksPoolBin"), poolBin);
           registry.fill(HIST("hPhiVsPtPartAssoc"), RecoDecay::constrainAngle(track.phiAssocTrack(), -PIHalf), candidate.ptCand(), track.ptAssocTrack());
           registry.fill(HIST("hEtaVsPtPartAssoc"), track.etaAssocTrack(), candidate.ptCand(), track.ptAssocTrack());
