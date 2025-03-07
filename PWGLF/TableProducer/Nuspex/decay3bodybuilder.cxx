@@ -29,6 +29,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "DetectorsVertexing/SVertexHypothesis.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -79,6 +80,10 @@ using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 using ReducedCollisionsMults = soa::Join<aod::RedCollisions, aod::RedPVMults>;
 using ReducedCollisionsMultsCents = soa::Join<ReducedCollisionsMults, aod::RedCentFT0Cs>;
+
+namespace {
+  const float pidCutsLambda[o2::vertexing::SVertexHypothesis::NPIDParams] = {0., 20, 0., 5.0, 0.0, 1.09004e-03, 2.62291e-04, 8.93179e-03, 2.83121}; // Lambda
+} // namespace
 
 struct vtxCandidate {
   int track0Id;
@@ -162,7 +167,8 @@ struct decay3bodyBuilder {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   std::vector<vtxCandidate> vtxCandidates;
 
-  std::unordered_map<int, float> ccdbCache; // Maps runNumber -> d_bz
+  std::unordered_map<int, float> ccdbCache;                                          // Maps runNumber -> d_bz
+  std::unordered_map<int, std::shared_ptr<o2::parameters::GRPMagField>> grpMagCache; // Maps runNumber -> grpmap
 
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
@@ -300,25 +306,33 @@ struct decay3bodyBuilder {
   //------------------------------------------------------------------
   // Sets for event mixing
   struct : ConfigurableGroup {
-    Configurable<int> nUseMixedEvent{"nUseMixedEvent", 5, "nUseMixedEvent"};
-    Configurable<bool> em_event_sel8_selection{"em_event_sel8_selection", true, "event selection count post sel8 cut"};
-    Configurable<float> etacut{"etacut", 0.9, "etacut"};
-    Configurable<float> minProtonPt{"minProtonPt", 0.3, "minProtonPt"};
-    Configurable<float> maxProtonPt{"maxProtonPt", 5, "maxProtonPt"};
-    Configurable<float> minPionPt{"minPionPt", 0.1, "minPionPt"};
-    Configurable<float> maxPionPt{"maxPionPt", 1.2, "maxPionPt"};
-    Configurable<float> minDeuteronPt{"minDeuteronPt", 0.6, "minDeuteronPt"};
-    Configurable<float> maxDeuteronPt{"maxDeuteronPt", 10, "maxDeuteronPt"};
-    Configurable<int> mintpcNClsproton{"mintpcNClsproton", 90, "min tpc Nclusters for proton"};
-    Configurable<int> mintpcNClspion{"mintpcNClspion", 70, "min tpc Nclusters for pion"};
-    Configurable<int> mintpcNClsbachelor{"mintpcNClsbachelor", 100, "min tpc Nclusters for bachelor"};
-    Configurable<float> emTpcPidNsigmaCut{"emTpcPidNsigmaCut", 5, "emTpcPidNsigmaCut"};
-  } EMTrackSel;
+    Configurable<int> nUseMixedEvent{"EMSel.nUseMixedEvent", 5, "nUseMixedEvent"};
+    Configurable<float> mMinPt2V0{"EMSel.mMinPt2V0", 0.25, "mMinPt2V0"};                // minimum pT^2 of V0
+    Configurable<float> mMaxTgl2V0{"EMSel.mMaxTgl2V0", 4, "mMaxTgl2V0"};                // maximum tgLambda^2 of V0
+    Configurable<float> mMaxDCAXY2ToMeanVertex3bodyV0{"EMSel.mMaxDCAXY2ToMeanVertex3bodyV0", 0.5, "mMaxDCAXY2ToMeanVertex3bodyV0"}; // max DCA^2 of 2 body decay to mean vertex of 3 body decay in XY
+    Configurable<float> minCosPAXYMeanVertex3bodyV0{"EMSel.minCosPAXYMeanVertex3bodyV0", 0.9, "minCosPAXYMeanVertex3bodyV0"};       // min CosPA of 2 body decay to mean vertex of 3 body decay in XY
+    Configurable<float> minCosPA3bodyV0{"EMSel.minCosPA3bodyV0", 0.8, "minCosPA3bodyV0"};                                             // min CosPA of 3 body decay to PV
+    Configurable<float> mMaxDCAZ2V0{"EMSel.mMaxDCAZ2V0", 1.0, "mMaxDCAZ2V0"};           // max DCA of 2 body decay to PV in Z
+    Configurable<float> maxRDiffV03body{"EMSel.maxRDiffV03body", 3, "maxRDiffV03body"}; // Maximum difference between virtual V0 and 3body radius
+    Configurable<float> minPt3Body = {"EMSel.minPt3Body", 0.01, ""};                    // minimum pT of 3body Vertex
+    Configurable<float> maxTgl3Body = {"EMSel.maxTgl3Body", 2, ""};                     // maximum tgLambda of 3body Vertex
+    Configurable<float> maxDCAXY3Body{"EMSel.maxDCAXY3Body", 0.5, "DCAXY H3L to PV"};   // max DCA of 3 body decay to PV in XY
+    Configurable<float> maxDCAZ3Body{"EMSel.maxDCAZ3Body", 1.0, "DCAZ H3L to PV"};      // max DCA of 3 body decay to PV in Z
+    ConfigurableAxis binsVtxZ{"EMSel.binsVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+    ConfigurableAxis binsMultiplicity{"EMSel.binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
+    ConfigurableAxis bins3BodyRadius{"EMSel.bins3BodyRadius", {VARIABLE_WIDTH, 0.0f, 2.0f, 4.0f, 7.0f, 10.0f, 14.0f, 18.0f, 22.0f, 30.0f, 40.0f, 50.0f, 100.0f}, "Mixing bins - 3body radius"};
+    ConfigurableAxis bins3BodyPhi{"EMSel.bins3BodyPhi", {VARIABLE_WIDTH, -3.15, -2.15, -1, 0, 1, 2.15, 3.15}, "Mixing bins - 3body phi"};
+    ConfigurableAxis bins3BodyPosZ{"EMSel.bins3BodyPosZ", {VARIABLE_WIDTH, -500.0f, -200.0f, -100.0f, -70.0f, -60.0f, -50.0f, -40.0f, -35.0f, -30.0f, -25.0f, -20.0f, -15.0f, -13.0f, -10.0f, -8.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 13.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f, 60.0f, 70.0f, 100.0f, 200.0f, 500.0f}, "Mixing bins - 3body z position"};
+    Configurable<bool> selectVtxZ3bodyMixing{"EMSel.selectVtxZ3bodyMixing", true, "Select same VtxZ events in case of 3body mixing"};
+    Configurable<float> VtxZBin3bodyMixing{"EMSel.VtxZBin3bodyMixing", 1., "Bin width for event vtx z position in case of 3body mixing"};
+  } EMSel;
 
   SliceCache cache;
-  ConfigurableAxis axisPosZ{"axisPosZ", {10, -10, 10}, "Mixing bins - posZ"};
-  ConfigurableAxis axisCentrality{"axisCentrality", {10, 0, 100}, "Mixing bins - centrality"};
-  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  // ConfigurableAxis axisPosZ{"axisPosZ", {10, -10, 10}, "Mixing bins - posZ"};
+  // ConfigurableAxis axisCentrality{"axisCentrality", {10, 0, 100}, "Mixing bins - centrality"};
+  // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
+  using BinningTypeMixed3Body = ColumnBinningPolicy<aod::reduceddecay3body::Radius, aod::reduceddecay3body::Phi>;
 
   // KF event mixing
   using BinningTypeKF = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
@@ -335,8 +349,10 @@ struct decay3bodyBuilder {
   float maxSnp;  // max sine phi for propagation
   float maxStep; // max step size (cm) for propagation
   o2::base::MatLayerCylSet* lut = nullptr;
+  o2::vertexing::DCAFitterN<2> fitterV0;
   o2::vertexing::DCAFitterN<3> fitter3body;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
+  std::array<o2::vertexing::SVertexHypothesis, 2> mV0Hyps; // 0 - Lambda, 1 - AntiLambda
 
   void init(InitContext&)
   {
@@ -370,6 +386,14 @@ struct decay3bodyBuilder {
         return;
     }
 
+    fitterV0.setPropagateToPCA(true);
+    fitterV0.setMaxR(200.);
+    fitterV0.setMinParamChange(1e-3);
+    fitterV0.setMinRelChi2Change(0.9);
+    fitterV0.setMaxDZIni(1e9);
+    fitterV0.setMaxChi2(1e9);
+    fitterV0.setUseAbsDCA(d_UseAbsDCA);
+
     fitter3body.setPropagateToPCA(true);
     fitter3body.setMaxR(200.); //->maxRIni3body
     fitter3body.setMinParamChange(1e-3);
@@ -401,11 +425,15 @@ struct decay3bodyBuilder {
     if (useMatCorrType == 2)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
+    fitterV0.setMatCorrType(matCorr);
     fitter3body.setMatCorrType(matCorr);
 
     // Add histograms separately for different process functions
-    if (doprocessRun3 == true || doprocessRun3Reduced || doprocessRun3ReducedEM == true) {
+    if (doprocessRun3 == true || doprocessRun3Reduced) {
       registry.add("hEventCounter", "hEventCounter", HistType::kTH1F, {{1, 0.0f, 1.0f}});
+    }
+
+    if (doprocessRun3 == true || doprocessRun3Reduced || doprocessRun3ReducedEM == true || doprocessRun3Reduced3bodyMixing == true) {
       auto hVtx3BodyCounter = registry.add<TH1>("hVtx3BodyCounter", "hVtx3BodyCounter", HistType::kTH1F, {{6, 0.0f, 6.0f}});
       hVtx3BodyCounter->GetXaxis()->SetBinLabel(1, "Total");
       hVtx3BodyCounter->GetXaxis()->SetBinLabel(2, "TPCNcls");
@@ -414,6 +442,46 @@ struct decay3bodyBuilder {
       hVtx3BodyCounter->GetXaxis()->SetBinLabel(5, "DcaDau");
       hVtx3BodyCounter->GetXaxis()->SetBinLabel(6, "CosPA");
       registry.add("hBachelorTOFNSigmaDe", "", HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}});
+    }
+
+    if (doprocessRun3ReducedEM == true) {
+      registry.add("hEventCount", "hEventCount", HistType::kTH2F, {EMSel.binsVtxZ, EMSel.binsMultiplicity});
+      registry.add("hEventPairs", "hEventPairs", HistType::kTH2F, {EMSel.binsVtxZ, EMSel.binsMultiplicity});
+      registry.add("hDecay3BodyPairs_BeforeCut", "hDecay3BodyPairs_BeforeCut", HistType::kTH2F, {EMSel.binsVtxZ, EMSel.binsMultiplicity});
+      registry.add("hDecay3BodyPairs_AfterCut", "hDecay3BodyPairs_AfterCut", HistType::kTH2F, {EMSel.binsVtxZ, EMSel.binsMultiplicity});
+      registry.add("hRadius0", "hRadius0", HistType::kTH1F, {{200, 0.0f, 20.0f, "Radius (cm)"}});
+      registry.add("hRadius1", "hRadius1", HistType::kTH1F, {{200, 0.0f, 20.0f, "Radius (cm)"}});
+      registry.add("hDeltaRadius", "hDeltaRadius", HistType::kTH1F, {{400, -20.0f, 20.0f, "#Delta Radius (cm)"}});
+      registry.add("hPhi0", "hPhi0", HistType::kTH1F, {{360, -180.0f, 180.0f, "#phi (degree)"}});
+      registry.add("hPhi1", "hPhi1", HistType::kTH1F, {{360, -180.0f, 180.0f, "#phi (degree)"}});
+      registry.add("hDeltaPhi", "hDeltaPhi", HistType::kTH1F, {{360, -180.0f, 180.0f, "#Delta #phi (degree)"}});
+
+      registry.add("QA/EM/hPairCounterMixing", "hPairCounterMixing", HistType::kTH1D, {{1, 0.0f, 1.0f}});
+      auto hCombinationCounterMixing = registry.add<TH1>("QA/EM/hCombinationCounterMixing", "hCombinationCounterMixing", HistType::kTH1D, {{3, 0.0f, 3.0f}});
+      hCombinationCounterMixing->GetXaxis()->SetBinLabel(1, "total");
+      hCombinationCounterMixing->GetXaxis()->SetBinLabel(2, "bach sign/ID");
+      hCombinationCounterMixing->GetXaxis()->SetBinLabel(3, "radius, phi");
+      hCombinationCounterMixing->LabelsOption("v");
+
+      registry.add("QA/EM/hEventBinCounts", "hEventBinCounts", HistType::kTH2D, {{10, 0, 10, "bins VtxZ"}, {13, 0, 13, "bins mult"}});
+
+      registry.add("QA/EM/hRadius1", "hRadius1", HistType::kTH1F, {{200, 0.0f, 20.0f, "Radius (cm)"}});
+      registry.add("QA/EM/hRadius2", "hRadius2", HistType::kTH1F, {{200, 0.0f, 20.0f, "Radius (cm)"}});
+      registry.add("QA/EM/hPhi1", "hPhi1", HistType::kTH1F, {{360, 0.0f, 360.0f, "#phi (degree)"}});
+      registry.add("QA/EM/hPhi2", "hPhi2", HistType::kTH1F, {{360, 0.0f, 360.0f, "#phi (degree)"}});
+      registry.add("QA/EM/hDeltaRadius", "hDeltaRadius", HistType::kTH1F, {{200, 0.0f, 10.0f, "#Delta Radius (cm)"}});
+      registry.add("QA/EM/hDeltaPhi", "hDeltaPhi", HistType::kTH1F, {{360, 0.0f, 360.0f, "#Delta #phi (degree)"}});
+    }
+
+    if (doprocessRun3Reduced3bodyMixing == true) {
+      registry.add("hDecay3BodyXY2D", "hDecay3BodyXY2D", HistType::kTH2F, {EMSel.bins3BodyRadius, EMSel.bins3BodyPhi});
+      registry.add("hDecay3BodyZ", "hDecay3BodyZ", HistType::kTH1F, {EMSel.bins3BodyPosZ});
+      auto h3bodyCombinationCounter = registry.add<TH1>("QA/EM/h3bodyCombinationCounter", "h3bodyCombinationCounter", HistType::kTH1D, {{4, 0.0f, 4.0f}});
+      h3bodyCombinationCounter->GetXaxis()->SetBinLabel(1, "total");
+      h3bodyCombinationCounter->GetXaxis()->SetBinLabel(2, "bach sign/ID");
+      h3bodyCombinationCounter->GetXaxis()->SetBinLabel(3, "not same collision");
+      h3bodyCombinationCounter->GetXaxis()->SetBinLabel(3, "collision VtxZ");
+      h3bodyCombinationCounter->LabelsOption("v");
     }
 
     if (doprocessRun3withKFParticle == true || doprocessRun3withKFParticleStrangenessTracking == true || doprocessRun3withKFParticleReduced == true || doprocessRun3withKFParticleReducedEM == true || doprocessRun3withKFParticleReduced3bodyMixing == true) {
@@ -509,8 +577,7 @@ struct decay3bodyBuilder {
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(1, "total");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(2, "bach sign/ID");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(3, "not same collision");
-      h3bodyCombinationCounter->GetXaxis()->SetBinLabel(3, "collision VtxZ");
-      h3bodyCombinationCounter->LabelsOption("v");
+      h3bodyCombinationCounter->GetXaxis()->SetBinLabel(4, "collision VtxZ");
     }
   }
 
@@ -527,6 +594,7 @@ struct decay3bodyBuilder {
     // In case override, don't proceed, please - no CCDB access required
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
+      fitterV0.setBz(d_bz);
       fitter3body.setBz(d_bz);
 #ifdef HomogeneousField
       KFParticle::SetField(d_bz);
@@ -561,6 +629,7 @@ struct decay3bodyBuilder {
     }
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
+    fitterV0.setBz(d_bz);
     fitter3body.setBz(d_bz);
 // Set magnetic field for KF vertexing
 #ifdef HomogeneousField
@@ -639,45 +708,41 @@ struct decay3bodyBuilder {
     // Check if the CCDB data for this run is already cached
     if (ccdbCache.find(runNumber) != ccdbCache.end()) {
       LOG(debug) << "CCDB data already cached for run " << runNumber;
-
-      // get magnetic field info from cache
-      float d_bz = ccdbCache[runNumber];
-
-      // Set magnetic field for KF vertexing
-#ifdef HomogeneousField
-      KFParticle::SetField(d_bz);
-#endif
-      // Set field for DCAfitter
-      fitter3body.setBz(d_bz);
-
-      if (useMatCorrType == 2) {
-        // setMatLUT only after magfield has been initalized
-        o2::base::Propagator::Instance()->setMatLUT(lut);
-      }
-    } else { // fetch data from CCDB and cache it
-      o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, runNumber);
+      d_bz = ccdbCache[runNumber];
+      std::shared_ptr<o2::parameters::GRPMagField> grpmag = grpMagCache[runNumber];
+      o2::base::Propagator::initFieldFromGRP(grpmag.get());
+    } else {
+      // o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, runNumber);
+      std::shared_ptr<o2::parameters::GRPMagField> grpmag = std::make_shared<o2::parameters::GRPMagField>(*ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, runNumber));
       if (!grpmag) {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for run number " << runNumber;
       }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
+      o2::base::Propagator::initFieldFromGRP(grpmag.get());
       // Fetch magnetic field from ccdb for current collision
       d_bz = o2::base::Propagator::Instance()->getNominalBz();
       LOG(info) << "Retrieved GRP for run number " << runNumber << " with magnetic field of " << d_bz << " kZG";
 
-      // Set magnetic field for KF vertexing
-#ifdef HomogeneousField
-      KFParticle::SetField(d_bz);
-#endif
-      // Set field for DCAfitter
-      fitter3body.setBz(d_bz);
-
-      if (useMatCorrType == 2) {
-        // setMatLUT only after magfield has been initalized
-        o2::base::Propagator::Instance()->setMatLUT(lut);
-      }
-
-      // cache magnetic field info
       ccdbCache[runNumber] = d_bz;
+      grpMagCache[runNumber] = grpmag;
+    }
+
+    // get magnetic field info from cache
+    float d_bz = ccdbCache[runNumber];
+
+    // Set magnetic field for KF vertexing
+#ifdef HomogeneousField
+    KFParticle::SetField(d_bz);
+#endif
+    // Set field for DCAfitter
+    fitterV0.setBz(d_bz);
+    fitter3body.setBz(d_bz);
+
+    mV0Hyps[0].set(o2::track::PID::Lambda, o2::track::PID::Proton, o2::track::PID::Pion, pidCutsLambda, d_bz);
+    mV0Hyps[1].set(o2::track::PID::Lambda, o2::track::PID::Pion, o2::track::PID::Proton, pidCutsLambda, d_bz);
+
+    if (useMatCorrType == 2) {
+      // setMatLUT only after magfield has been initalized
+      o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   }
 
@@ -791,6 +856,91 @@ struct decay3bodyBuilder {
     registry.fill(HIST("hVtx3BodyCounter"), kVtxCosPA);
 
     registry.fill(HIST("hBachelorTOFNSigmaDe"), t2.sign() * t2.p(), tofNSigmaBach);
+
+    // additional cut for EM
+    if (decay3bodyId == -1) {
+      auto v0Track0 = getTrackParCov(t0);
+      auto v0Track1 = getTrackParCov(t1);
+      int nV0 = fitterV0.process(v0Track0, v0Track1);
+      if (nV0 == 0) {
+        return;
+      }
+
+      std::array<float, 3> v0pos = {0.};
+      const auto& v0vtxXYZ = fitterV0.getPCACandidate();
+      for (int i = 0; i < 3; i++) {
+        v0pos[i] = v0vtxXYZ[i];
+      }
+      float rv0 = std::hypot(v0pos[0], v0pos[1]);
+      const int cand = 0;
+      if (!fitterV0.isPropagateTracksToVertexDone(cand) && !fitterV0.propagateTracksToVertex(cand)) {
+        return;
+      }
+      const auto& trPProp = fitterV0.getTrack(0, cand);
+      const auto& trNProp = fitterV0.getTrack(1, cand);
+      std::array<float, 3> pP{}, pN{};
+      trPProp.getPxPyPzGlo(pP);
+      trNProp.getPxPyPzGlo(pN);
+      std::array<float, 3> pV0 = {pP[0] + pN[0], pP[1] + pN[1], pP[2] + pN[2]};
+      // Cut for Virtual V0
+      float dxv0 = v0pos[0], dyv0 = v0pos[1]; // To MeanVertex
+      float pt2V0 = pV0[0] * pV0[0] + pV0[1] * pV0[1], prodXYv0 = dxv0 * pV0[0] + dyv0 * pV0[1], tDCAXY = prodXYv0 / pt2V0;
+      if (pt2V0 < EMSel.mMinPt2V0) { // pt cut 0.5
+        return;
+      }
+      if (pV0[2] * pV0[2] / pt2V0 > EMSel.mMaxTgl2V0) { // tgLambda cut
+        return;
+      }
+      float p2V0 = pt2V0 + pV0[2] * pV0[2], ptV0 = std::sqrt(pt2V0);
+      // apply mass selections
+      float p2Pos = pP[0] * pP[0] + pP[1] * pP[1] + pP[2] * pP[2], p2Neg = pN[0] * pN[0] + pN[1] * pN[1] + pN[2] * pN[2];
+      bool good3bodyV0Hyp = false;
+      for (int ipid = 2; ipid < 4; ipid++) {
+        float massForLambdaHyp = mV0Hyps[ipid].calcMass(p2Pos, p2Neg, p2V0);
+        if (massForLambdaHyp - mV0Hyps[ipid].getMassV0Hyp() < mV0Hyps[ipid].getMargin(ptV0)) {
+          good3bodyV0Hyp = true;
+          break;
+        }
+      }
+      if (!good3bodyV0Hyp) {
+        return;
+      }
+
+      float dcaX = dxv0 - pV0[0] * tDCAXY, dcaY = dyv0 - pV0[1] * tDCAXY, dca2 = dcaX * dcaX + dcaY * dcaY;
+      float cosPAXY = prodXYv0 / rv0 * ptV0;
+      if (dca2 > EMSel.mMaxDCAXY2ToMeanVertex3bodyV0 || cosPAXY < EMSel.minCosPAXYMeanVertex3bodyV0) {
+        return;
+      }
+      float dx = v0pos[0] - collision.posX(), dy = v0pos[1] - collision.posY(), dz = v0pos[2] - collision.posZ(), prodXYZv0 = dx * pV0[0] + dy * pV0[1] + dz * pV0[2];
+      float v0CosPA = prodXYZv0 / std::sqrt((dx * dx + dy * dy + dz * dz) * p2V0);
+      if (v0CosPA < EMSel.minCosPA3bodyV0) {
+        return;
+      }
+
+      // Cut for the compatibility of V0 and 3body vertex
+      float r3body = std::hypot(pos[0], pos[1]);
+      float deltaR = std::abs(rv0 - r3body);
+      if (deltaR > EMSel.maxRDiffV03body) {
+        return;
+      }
+
+      float pt3B = std::hypot(p3B[0], p3B[1]);
+      if (pt3B < EMSel.minPt3Body) { // pt cut
+        return;
+      }
+      if (p3B[2] / pt3B > EMSel.maxTgl3Body) { // tgLambda cut
+        return;
+      }
+
+      // H3L DCA Check
+      const auto& vertexXYZ = fitter3body.getPCACandidatePos();
+      auto track3B = o2::track::TrackParCov(vertexXYZ, p3B, t2.sign());
+      o2::dataformats::DCA dca;
+      if (!track3B.propagateToDCA({{collision.posX(), collision.posY(), collision.posZ()}, {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()}}, fitter3body.getBz(), &dca, 5.) ||
+          std::abs(dca.getY()) > EMSel.maxDCAXY3Body || std::abs(dca.getZ()) > EMSel.maxDCAZ3Body) {
+        return;
+      }
+    }
 
     vtxCandidate candVtx;
     candVtx.track0Id = t0.globalIndex();
@@ -1512,16 +1662,102 @@ struct decay3bodyBuilder {
   // Event-mixing background
   void processRun3ReducedEM(ReducedCollisionsMultsCents const& collisions, aod::RedDecay3Bodys const& decay3bodys, aod::RedIUTracks const&)
   {
+    auto xAxis = registry.get<TH2>(HIST("hEventPairs"))->GetXaxis();
+    auto yAxis = registry.get<TH2>(HIST("hEventPairs"))->GetYaxis();
+
+    // fill collisions counter
+    for (const auto& collision : collisions) {
+      int bin_PosZ = xAxis->FindBin(collision.posZ());
+      int bin_Mult = yAxis->FindBin(collision.multNTracksPV());
+      registry.fill(HIST("hEventCount"), xAxis->GetBinCenter(bin_PosZ), yAxis->GetBinCenter(bin_Mult));
+      // hEventCount->Fill(bin_PosZ, bin_Mult);
+    }
     vtxCandidates.clear();
 
     auto tuple = std::make_tuple(decay3bodys);
-    BinningType binningEvent{{axisPosZ, axisCentrality}, true};
-    SameKindPair<ReducedCollisionsMultsCents, aod::RedDecay3Bodys, BinningType> pair{binningEvent, EMTrackSel.nUseMixedEvent, -1, collisions, tuple, &cache};
+    // BinningType binningEvent{{axisPosZ, axisCentrality}, true};
+    BinningType binningEvent{{EMSel.binsVtxZ, EMSel.binsMultiplicity}, true};
+    SameKindPair<ReducedCollisionsMultsCents, aod::RedDecay3Bodys, BinningType> pair{binningEvent, EMSel.nUseMixedEvent, -1, collisions, tuple, &cache};
 
     int lastRunNumber = -1;
+    initCCDBfromRunNumber(collisions.iteratorAt(0).runNumber());
 
     for (const auto& [c0, decay3bodys0, c1, decay3bodys1] : pair) {
+      if (c0.runNumber() != lastRunNumber) {
+        initCCDBfromRunNumber(c0.runNumber());
+        lastRunNumber = c0.runNumber(); // Update the last run number
+        LOG(debug) << "CCDB initialized for run " << lastRunNumber;
+      }
+      // LOG(INFO) << "Processing event mixing with collisions " << c0.globalIndex() << " and " << c1.globalIndex();
+      int bin_PosZ = xAxis->FindBin(c0.posZ());
+      int bin_Mult = yAxis->FindBin(c0.multNTracksPV());
+      registry.fill(HIST("hEventPairs"), xAxis->GetBinCenter(bin_PosZ), yAxis->GetBinCenter(bin_Mult));
       for (auto& [d3body0, d3body1] : combinations(soa::CombinationsFullIndexPolicy(decay3bodys0, decay3bodys1))) {
+
+        registry.fill(HIST("hDecay3BodyPairs_BeforeCut"), xAxis->GetBinCenter(bin_PosZ), yAxis->GetBinCenter(bin_Mult));
+
+        // // event mixing method copied from KFParticle
+        // auto trackPos1 = d3body0.template track0_as<aod::RedIUTracks>();
+        // auto trackNeg1 = d3body0.template track1_as<aod::RedIUTracks>();
+        // auto trackBach1 = d3body0.template track2_as<aod::RedIUTracks>();
+        // auto trackPos2 = d3body1.template track0_as<aod::RedIUTracks>();
+        // auto trackNeg2 = d3body1.template track1_as<aod::RedIUTracks>();
+        // auto trackBach2 = d3body1.template track2_as<aod::RedIUTracks>();
+
+        // registry.fill(HIST("QA/EM/hCombinationCounterMixing"), 0.5);
+
+        // // ---------- selections bachelor track ----------
+        // if ((trackBach1.sign() > 0 && !(trackBach2.sign() > 0)) || (trackBach1.sign() < 0 && !(trackBach2.sign() < 0)) || trackBach1.globalIndex() == trackBach2.globalIndex()) { // only combine if trackBach2 has correct sign and is not same as trackBach1
+        //   continue;
+        // }
+        // registry.fill(HIST("QA/EM/hCombinationCounterMixing"), 1.5);
+
+        // // ---------- check radius and phi of decay3bodys ----------
+        // auto trackParCovPos1 = getTrackParCov(trackPos1);
+        // auto trackParCovNeg1 = getTrackParCov(trackNeg1);
+        // auto trackParCovBach1 = getTrackParCov(trackBach1);
+        // auto trackParCovPos2 = getTrackParCov(trackPos2);
+        // auto trackParCovNeg2 = getTrackParCov(trackNeg2);
+        // auto trackParCovBach2 = getTrackParCov(trackBach2);
+        // // create KFParticle objects from tracks
+        // KFParticle kfpProton1, kfpPion1, kfpDeuteron1;
+        // if (trackBach1.sign() > 0) {
+        //   kfpProton1 = createKFParticleFromTrackParCov(trackParCovPos1, trackPos1.sign(), constants::physics::MassProton);
+        //   kfpPion1 = createKFParticleFromTrackParCov(trackParCovNeg1, trackNeg1.sign(), constants::physics::MassPionCharged);
+        // } else if (!(trackBach1.sign() > 0)) {
+        //   kfpProton1 = createKFParticleFromTrackParCov(trackParCovNeg1, trackNeg1.sign(), constants::physics::MassProton);
+        //   kfpPion1 = createKFParticleFromTrackParCov(trackParCovPos1, trackPos1.sign(), constants::physics::MassPionCharged);
+        // }
+        // kfpDeuteron1 = createKFParticleFromTrackParCov(trackParCovBach1, trackBach1.sign() * bachelorcharge, constants::physics::MassDeuteron);
+        // KFParticle kfpProton2, kfpPion2, kfpDeuteron2;
+        // if (trackBach2.sign() > 0) {
+        //   kfpProton2 = createKFParticleFromTrackParCov(trackParCovPos2, trackPos2.sign(), constants::physics::MassProton);
+        //   kfpPion2 = createKFParticleFromTrackParCov(trackParCovNeg2, trackNeg2.sign(), constants::physics::MassPionCharged);
+        // } else if (!(trackBach2.sign() > 0)) {
+        //   kfpProton2 = createKFParticleFromTrackParCov(trackParCovNeg2, trackNeg2.sign(), constants::physics::MassProton);
+        //   kfpPion2 = createKFParticleFromTrackParCov(trackParCovPos2, trackPos2.sign(), constants::physics::MassPionCharged);
+        // }
+        // kfpDeuteron2 = createKFParticleFromTrackParCov(trackParCovBach2, trackBach2.sign() * bachelorcharge, constants::physics::MassDeuteron);
+        // // fit vertices
+        // KFParticle KFHt1, KFHt2;
+        // fit3bodyVertex(kfpProton1, kfpPion1, kfpDeuteron1, KFHt1);
+        // fit3bodyVertex(kfpProton2, kfpPion2, kfpDeuteron2, KFHt2);
+
+        // // ---------- select common radius and phi region ----------
+        // auto radius1 = std::sqrt(KFHt1.GetX() * KFHt1.GetX() + KFHt1.GetY() * KFHt1.GetY());
+        // auto radius2 = std::sqrt(KFHt2.GetX() * KFHt2.GetX() + KFHt2.GetY() * KFHt2.GetY());
+        // registry.fill(HIST("QA/EM/hRadius1"), radius1);
+        // registry.fill(HIST("QA/EM/hRadius2"), radius2);
+        // registry.fill(HIST("QA/EM/hPhi1"), KFHt1.GetPhi() * (180.0 / TMath::Pi()));
+        // registry.fill(HIST("QA/EM/hPhi2"), KFHt2.GetPhi() * (180.0 / TMath::Pi()));
+        // registry.fill(HIST("QA/EM/hDeltaRadius"), std::abs(radius1 - radius2));
+        // registry.fill(HIST("QA/EM/hDeltaPhi"), std::abs(KFHt1.GetPhi() - KFHt2.GetPhi()) * (180.0 / TMath::Pi()));
+        // if (std::abs(KFHt1.GetPhi() - KFHt2.GetPhi()) * (180.0 / TMath::Pi()) > 10 || std::abs(radius1 - radius2) > 2) {
+        //   continue;
+        // }
+        // registry.fill(HIST("QA/EM/hCombinationCounterMixing"), 2.5);
+
+        // default mixing method
         auto tpos0 = d3body0.track0_as<aod::RedIUTracks>();
         auto tneg0 = d3body0.track1_as<aod::RedIUTracks>();
         auto tbach0 = d3body0.track2_as<aod::RedIUTracks>();
@@ -1529,19 +1765,91 @@ struct decay3bodyBuilder {
         auto tneg1 = d3body1.track1_as<aod::RedIUTracks>();
         auto tbach1 = d3body1.track2_as<aod::RedIUTracks>();
 
-        if (c0.runNumber() != lastRunNumber) {
-          initCCDBfromRunNumber(c0.runNumber());
-          lastRunNumber = c0.runNumber(); // Update the last run number
-          LOG(debug) << "CCDB initialized for run " << lastRunNumber;
+        // try to fit the vertex for decay3body0
+        auto Trackpos0 = getTrackParCov(tpos0);
+        auto Trackneg0 = getTrackParCov(tneg0);
+        auto Trackbach0 = getTrackParCov(tbach0);
+        int nVtx0 = fitter3body.process(Trackpos0, Trackneg0, Trackbach0);
+        if (nVtx0 == 0) {
+          continue;
+          ;
         }
+
+        if ((tbach0.sign() > 0 && !(tbach1.sign() > 0)) || (tbach0.sign() < 0 && !(tbach1.sign() < 0)) || tbach0.globalIndex() == tbach1.globalIndex()) { // only combine if tbach1 has correct sign and is not same as tbach0
+          continue;
+        }
+
+        const auto& vtx0XYZ = fitter3body.getPCACandidate();
+        float rVtx0 = std::hypot(vtx0XYZ[0], vtx0XYZ[1]);
+        registry.fill(HIST("hRadius0"), rVtx0);
+
+        std::array<float, 3> ppos0 = {0.}, pneg0 = {0.}, pbach0{0.};
+        const auto& propagatedtpos0 = fitter3body.getTrack(0);
+        const auto& propagatedtneg0 = fitter3body.getTrack(1);
+        const auto& propagatedtbach0 = fitter3body.getTrack(2);
+        propagatedtpos0.getPxPyPzGlo(ppos0);
+        propagatedtneg0.getPxPyPzGlo(pneg0);
+        propagatedtbach0.getPxPyPzGlo(pbach0);
+        for (int i = 0; i < 3; i++) {
+          pbach0[i] *= bachelorcharge;
+        }
+        std::array<float, 3> p3B0 = {ppos0[0] + pneg0[0] + pbach0[0], ppos0[1] + pneg0[1] + pbach0[1], ppos0[2] + pneg0[2] + pbach0[2]};
+        float phiVtx0 = std::atan2(p3B0[1], p3B0[0]);
+
+        // try to fit the vertex for decay3body1
+        auto Trackpos1 = getTrackParCov(tpos1);
+        auto Trackneg1 = getTrackParCov(tneg1);
+        auto Trackbach1 = getTrackParCov(tbach1);
+        int nVtx1 = fitter3body.process(Trackpos1, Trackneg1, Trackbach1);
+        if (nVtx1 == 0) {
+          continue;
+        }
+
+        const auto& vtx1XYZ = fitter3body.getPCACandidate();
+        float rVtx1 = std::hypot(vtx1XYZ[0], vtx1XYZ[1]);
+        registry.fill(HIST("hRadius1"), rVtx1);
+
+        std::array<float, 3> ppos1 = {0.}, pneg1 = {0.}, pbach1{0.};
+        const auto& propagatedtpos1 = fitter3body.getTrack(0);
+        const auto& propagatedtneg1 = fitter3body.getTrack(1);
+        const auto& propagatedtbach1 = fitter3body.getTrack(2);
+        propagatedtpos1.getPxPyPzGlo(ppos1);
+        propagatedtneg1.getPxPyPzGlo(pneg1);
+        propagatedtbach1.getPxPyPzGlo(pbach1);
+        for (int i = 0; i < 3; i++) {
+          pbach1[i] *= bachelorcharge;
+        }
+        std::array<float, 3> p3B1 = {ppos1[0] + pneg1[0] + pbach1[0], ppos1[1] + pneg1[1] + pbach1[1], ppos1[2] + pneg1[2] + pbach1[2]};
+        float phiVtx1 = std::atan2(p3B1[1], p3B1[0]);
+        registry.fill(HIST("hPhi0"), phiVtx0 * (180.0 / TMath::Pi()));
+        registry.fill(HIST("hPhi1"), phiVtx1 * (180.0 / TMath::Pi()));
+
+        // convert deltaPhi to range [-pi, pi]
+        float deltaPhi = phiVtx1 - phiVtx0;
+        if (deltaPhi < -TMath::Pi()) {
+          deltaPhi += 2 * TMath::Pi();
+        }
+        if (deltaPhi > TMath::Pi()) {
+          deltaPhi -= 2 * TMath::Pi();
+        }
+
+        registry.fill(HIST("hDeltaRadius"), rVtx1 - rVtx0);
+        registry.fill(HIST("hDeltaPhi"), deltaPhi * (180.0 / TMath::Pi()));
+        // check if radius and phi of the two vertices are compatible
+        if (std::abs(deltaPhi) * (180.0 / TMath::Pi()) > 10 || std::abs(rVtx1 - rVtx0) > 2) {
+          continue;
+        }
+
+        registry.fill(HIST("hDecay3BodyPairs_AfterCut"), xAxis->GetBinCenter(bin_PosZ), yAxis->GetBinCenter(bin_Mult));
+
         fillVtxCand(c0, tpos0, tneg0, tbach1, -1, bachelorcharge, tbach1.tofNSigmaDe());
 
-        if (c1.runNumber() != lastRunNumber) {
-          initCCDBfromRunNumber(c1.runNumber());
-          lastRunNumber = c1.runNumber(); // Update the last run number
-          LOG(debug) << "CCDB initialized for run " << lastRunNumber;
-        }
-        fillVtxCand(c1, tpos1, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
+        // if (c1.runNumber() != lastRunNumber) {
+        //   initCCDBfromRunNumber(c1.runNumber());
+        //   lastRunNumber = c1.runNumber(); // Update the last run number
+        //   LOG(debug) << "CCDB initialized for run " << lastRunNumber;
+        // }
+        // fillVtxCand(c1, tpos1, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
       }
     }
 
@@ -1554,7 +1862,83 @@ struct decay3bodyBuilder {
       fillVtx3BodyTable(candVtx);
     }
   }
-  PROCESS_SWITCH(decay3bodyBuilder, processRun3ReducedEM, "Produce event-mix background", false);
+  PROCESS_SWITCH(decay3bodyBuilder, processRun3ReducedEM, "Produce event-mixing background", false);
+
+  void processRun3Reduced3bodyMixing(ReducedCollisionsMults const& collisions, aod::RedIUTracks const&, soa::Join<aod::RedDecay3Bodys, aod::Red3BodyInfo> const& decay3bodys)
+  {
+    vtxCandidates.clear();
+
+    auto xAxis = registry.get<TH2>(HIST("hDecay3BodyXY2D"))->GetXaxis();
+    auto yAxis = registry.get<TH2>(HIST("hDecay3BodyXY2D"))->GetYaxis();
+
+    BinningTypeMixed3Body binningOnRadPhi{{EMSel.bins3BodyRadius, EMSel.bins3BodyPhi}, true};
+
+    for (const auto& decay3body : decay3bodys) {
+      int bin_Radius = xAxis->FindBin(decay3body.radius());
+      int bin_Phi = yAxis->FindBin(decay3body.phi());
+      registry.fill(HIST("hDecay3BodyXY2D"), xAxis->GetBinCenter(bin_Radius), yAxis->GetBinCenter(bin_Phi));
+      registry.fill(HIST("hDecay3BodyZ"), decay3body.posz());
+    }
+
+    int lastRunNumber = -1;
+    initCCDBfromRunNumber(collisions.iteratorAt(0).runNumber());
+
+    // Strictly upper index policy for decay3body objects binned by radius, phi and z position
+    for (auto& [decay3body0, decay3body1] : selfCombinations(binningOnRadPhi, EMSel.nUseMixedEvent, -1, decay3bodys, decay3bodys)) {
+      auto tpos0 = decay3body0.template track0_as<aod::RedIUTracks>();
+      auto tneg0 = decay3body0.template track1_as<aod::RedIUTracks>();
+      auto tbach0 = decay3body0.template track2_as<aod::RedIUTracks>();
+      auto tpos1 = decay3body1.template track0_as<aod::RedIUTracks>();
+      auto tneg1 = decay3body1.template track1_as<aod::RedIUTracks>();
+      auto tbach1 = decay3body1.template track2_as<aod::RedIUTracks>();
+
+      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 0.5);
+
+      // ---------- selections ----------
+      if ((tbach0.sign() > 0 && !(tbach1.sign() > 0)) || (tbach0.sign() < 0 && !(tbach1.sign() < 0)) || tbach0.globalIndex() == tbach1.globalIndex()) { // only combine if tbach1 has correct sign and is not same as tbach0
+        continue;
+      }
+      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 1.5);
+
+      if (decay3body0.collisionId() == decay3body1.collisionId()) { // only combine if from different event
+        continue;
+      }
+      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 2.5);
+
+      auto c0 = decay3body0.template collision_as<ReducedCollisionsMults>();
+      auto c1 = decay3body1.template collision_as<ReducedCollisionsMults>();
+
+      if (c0.runNumber() != lastRunNumber) {
+        initCCDBfromRunNumber(c0.runNumber());
+        lastRunNumber = c0.runNumber(); // Update the last run number
+        LOG(debug) << "CCDB initialized for run " << lastRunNumber;
+      }
+
+      if (EMSel.selectVtxZ3bodyMixing && std::abs(c0.posZ() - c1.posZ()) > EMSel.VtxZBin3bodyMixing) { // only combine if collision similar in VtxZ
+        continue;
+      }
+      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 3.5);
+
+      // fillVtxCand(c0, tpos0, tneg0, tbach1, -1, bachelorcharge, tbach1.tofNSigmaDe());
+      // fillVtxCand(c1, tpos1, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
+
+      // Pair the pd with pion
+      fillVtxCand(c0, tpos0, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
+      fillVtxCand(c1, tpos1, tneg0, tbach1, -1, bachelorcharge, tbach1.tofNSigmaDe());
+
+    } // end decay3body combinations loop
+
+    // Aviod break of preslice in following workflow
+    std::sort(vtxCandidates.begin(), vtxCandidates.end(), [](const vtxCandidate a, const vtxCandidate b) {
+      return a.collisionId < b.collisionId;
+    });
+
+    for (const auto& candVtx : vtxCandidates) {
+      fillVtx3BodyTable(candVtx);
+    }
+    vtxCandidates.clear();
+  }
+  PROCESS_SWITCH(decay3bodyBuilder, processRun3Reduced3bodyMixing, "Produce mixing background directly from mixed decay3bodys", false);
 
   //------------------------------------------------------------------
   void processRun3withKFParticle(ColwithEvTimes const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
