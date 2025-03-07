@@ -41,50 +41,72 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
-namespace zero_charge_events
+namespace branch
 {
-
 DECLARE_SOA_COLUMN(Dcaxy, dcaxy, std::vector<double>);
 DECLARE_SOA_COLUMN(Dcaz, dcaz, std::vector<double>);
-
 DECLARE_SOA_COLUMN(PionPt, pionPt, std::vector<double>);
 DECLARE_SOA_COLUMN(PionEta, pionEta, std::vector<double>);
 DECLARE_SOA_COLUMN(PionRapidity, pionRapidity, std::vector<double>);
-
 DECLARE_SOA_COLUMN(FourPionPt, fourPionPt, double);
 DECLARE_SOA_COLUMN(FourPionEta, fourPionEta, double);
 DECLARE_SOA_COLUMN(FourPionRapidity, fourPionRapidity, double);
 DECLARE_SOA_COLUMN(FourPionMass, fourPionMass, double);
-
 DECLARE_SOA_COLUMN(FourPionPhiPair1, fourPionPhiPair1, double);
 DECLARE_SOA_COLUMN(FourPionPhiPair2, fourPionPhiPair2, double);
 DECLARE_SOA_COLUMN(FourPionCosThetaPair1, fourPionCosThetaPair1, double);
 DECLARE_SOA_COLUMN(FourPionCosThetaPair2, fourPionCosThetaPair2, double);
-} // namespace zero_charge_events
-DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
+} // namespace branch
+DECLARE_SOA_TABLE(UDTree, "AOD", "UD0Charge",
+                  branch::Dcaxy,
+                  branch::Dcaz,
+                  branch::PionPt,
+                  branch::PionEta,
+                  branch::PionRapidity,
+                  branch::FourPionPt,
+                  branch::FourPionEta,
+                  branch::FourPionRapidity,
+                  branch::FourPionMass,
+                  branch::FourPionPhiPair1,
+                  branch::FourPionPhiPair2,
+                  branch::FourPionCosThetaPair1,
+                  branch::FourPionCosThetaPair2);
 
-                  zero_charge_events::Dcaxy,
-                  zero_charge_events::Dcaz,
+DECLARE_SOA_TABLE(MCTree, "AOD", "MC0Charge",
+                  branch::PionPt,
+                  branch::PionEta,
+                  branch::PionRapidity,
+                  branch::FourPionPt,
+                  branch::FourPionEta,
+                  branch::FourPionRapidity,
+                  branch::FourPionMass,
+                  branch::FourPionPhiPair1,
+                  branch::FourPionPhiPair2,
+                  branch::FourPionCosThetaPair1,
+                  branch::FourPionCosThetaPair2);
 
-                  zero_charge_events::PionPt,
-                  zero_charge_events::PionEta,
-                  zero_charge_events::PionRapidity,
-
-                  zero_charge_events::FourPionPt,
-                  zero_charge_events::FourPionEta,
-                  zero_charge_events::FourPionRapidity,
-                  zero_charge_events::FourPionMass,
-
-                  zero_charge_events::FourPionPhiPair1,
-                  zero_charge_events::FourPionPhiPair2,
-                  zero_charge_events::FourPionCosThetaPair1,
-                  zero_charge_events::FourPionCosThetaPair2);
+DECLARE_SOA_TABLE(MCUDTree, "AOD", "UDMC0Charge",
+                  branch::Dcaxy,
+                  branch::Dcaz,
+                  branch::PionPt,
+                  branch::PionEta,
+                  branch::PionRapidity,
+                  branch::FourPionPt,
+                  branch::FourPionEta,
+                  branch::FourPionRapidity,
+                  branch::FourPionMass,
+                  branch::FourPionPhiPair1,
+                  branch::FourPionPhiPair2,
+                  branch::FourPionCosThetaPair1,
+                  branch::FourPionCosThetaPair2);
 } // namespace o2::aod
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   SGSelector sgSelector;
-  Produces<aod::TREE> zeroChargeEvents;
+  Produces<aod::UDTree> zeroChargeEventsData;
+  Produces<aod::MCTree> zeroChargeEventsMCgen;
+  Produces<aod::MCUDTree> zeroChargeEventsMCreco;
 
   HistogramRegistry histosData{"histosData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry histosMCgen{"histosMCgen", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -96,7 +118,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   Configurable<float> ft0cCut{"ft0cCut", 50., "FT0C threshold"};
   Configurable<float> fddaCut{"fddaCut", 10000., "FDDA threshold"};
   Configurable<float> fddcCut{"fddcCut", 10000., "FDDC threshold"};
-  Configurable<float> zdcCut{"zdcCut", 10., "ZDC threshold"};
+  Configurable<float> zdcCut{"zdcCut", 1., "ZDC threshold"};
 
   Configurable<float> pvCut{"pvCut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZcut{"dcaZcut", 2, "dcaZ cut"};
@@ -625,7 +647,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       fourPiCosThetaPair1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
       fourPiCosThetaPair2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
 
-      zeroChargeEvents(
+      zeroChargeEventsData(
         pidcaXY, pidcaZ,
         piPt, piEta, piRapidity,
         p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M(),
@@ -704,6 +726,10 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     TLorentzVector motherVector, tempVector, p1, p2, p3, p4;
     TLorentzVector p1234;
 
+    std::vector<double> piPt;
+    std::vector<double> piEta;
+    std::vector<double> piRapidity;
+
     bool flag = false;
 
     for (const auto& particle : mcParts) {
@@ -712,30 +738,31 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       if (!particle.has_mothers()) {
         continue;
       }
-      for (const auto& mother : particle.mothers_as<aod::UDMcParticles>()) {
-        // LOGF(info, "Mother ID: %d", mother.pdgCode());
 
+      for (const auto& mother : particle.mothers_as<aod::UDMcParticles>()) {
         if (mother.pdgCode() == 30113) {
           motherVector.SetXYZM(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassPionCharged);
           histosMCgen.fill(HIST("MCgen_rhoPrime_pT"), motherVector.Pt());
+
           if (flag == false) {
             histosMCgen.fill(HIST("rhoPrimeCounts"), 5);
           }
           flag = true;
-
           if (particle.pdgCode() == 211) {
             histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
             histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
-            if (std::abs(tempVector.Eta()) < 0.9) {
-              piPlusvectors.push_back(tempVector);
-            }
+            piPlusvectors.push_back(tempVector);
+            piPt.push_back(tempVector.Pt());
+            piEta.push_back(tempVector.Eta());
+            piRapidity.push_back(tempVector.Rapidity());
           }
           if (particle.pdgCode() == -211) {
             histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
             histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
-            if (std::abs(tempVector.Eta()) < 0.9) {
-              piMinusvectors.push_back(tempVector);
-            }
+            piMinusvectors.push_back(tempVector);
+            piPt.push_back(tempVector.Pt());
+            piEta.push_back(tempVector.Eta());
+            piRapidity.push_back(tempVector.Rapidity());
           }
         } // End of Mother ID 30113 rho prime
       } // End of loop over mothers
@@ -792,6 +819,10 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosMCgen.fill(HIST("MCgen_phi_cosTheta_pair_1"), phiPair1, cosThetaPair1);
     histosMCgen.fill(HIST("MCgen_phi_cosTheta_pair_2"), phiPair2, cosThetaPair2);
 
+    zeroChargeEventsMCgen(piPt, piEta, piRapidity,
+                          p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M(),
+                          phiPair1, phiPair2, cosThetaPair1, cosThetaPair2);
+
   } // End of 4 Pion MC Generation Process function
   PROCESS_SWITCH(exclusiveRhoTo4Pi, processMCgen, "The Process for 4 Pion Analysis from MC Generation", false);
 
@@ -828,9 +859,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histosMCreco.fill(HIST("FT0A"), collision.totalFT0AmplitudeA());
     histosMCreco.fill(HIST("FT0C"), collision.totalFT0AmplitudeC());
     histosMCreco.fill(HIST("ZDC_A"), collision.energyCommonZNA());
-    LOGF(info, "ZDC_A: %f", collision.energyCommonZNA());
     histosMCreco.fill(HIST("ZDC_C"), collision.energyCommonZNC());
-    LOGF(info, "ZDC_C: %f", collision.energyCommonZNC());
 
     if (strictEventSelection) {
       if (collision.numContrib() != 4) {
@@ -964,6 +993,48 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       k23 = k2 + k3;
       k24 = k2 + k4;
 
+      auto phiPair1 = phiCollinsSoperFrame(k13, k24, k1234);
+      auto phiPair2 = phiCollinsSoperFrame(k14, k23, k1234);
+      auto cosThetaPair1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
+      auto cosThetaPair2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
+
+      std::vector<double> dcaxy;
+      std::vector<double> dcaz;
+
+      std::vector<double> piPt;
+      std::vector<double> piEta;
+      std::vector<double> piRapidity;
+
+      dcaxy.push_back(Pi_plus_tracks[0].dcaXY());
+      dcaxy.push_back(Pi_plus_tracks[1].dcaXY());
+      dcaxy.push_back(Pi_minus_tracks[0].dcaXY());
+      dcaxy.push_back(Pi_minus_tracks[1].dcaXY());
+
+      dcaz.push_back(Pi_plus_tracks[0].dcaZ());
+      dcaz.push_back(Pi_plus_tracks[1].dcaZ());
+      dcaz.push_back(Pi_minus_tracks[0].dcaZ());
+      dcaz.push_back(Pi_minus_tracks[1].dcaZ());
+
+      piPt.push_back(p1.Pt());
+      piPt.push_back(p2.Pt());
+      piPt.push_back(p3.Pt());
+      piPt.push_back(p4.Pt());
+
+      piEta.push_back(p1.Eta());
+      piEta.push_back(p2.Eta());
+      piEta.push_back(p3.Eta());
+      piEta.push_back(p4.Eta());
+
+      piRapidity.push_back(p1.Rapidity());
+      piRapidity.push_back(p2.Rapidity());
+      piRapidity.push_back(p3.Rapidity());
+      piRapidity.push_back(p4.Rapidity());
+
+      zeroChargeEventsMCreco(dcaxy, dcaz,
+                             piPt, piEta, piRapidity,
+                             p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M(),
+                             phiPair1, phiPair2, cosThetaPair1, cosThetaPair2);
+
       if (std::fabs(p1234.Rapidity()) < 0.5) {
         histosMCreco.fill(HIST("pT_event_0charge_WTS_PID_Pi"), p1234.Pt());
         if (p1234.Pt() < 0.15) {
@@ -974,11 +1045,6 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
           histosMCreco.fill(HIST("invMass_pair_2"), (p1 + p4).M());
           histosMCreco.fill(HIST("invMass_pair_3"), (p2 + p3).M());
           histosMCreco.fill(HIST("invMass_pair_4"), (p2 + p4).M());
-
-          auto phiPair1 = phiCollinsSoperFrame(k13, k24, k1234);
-          auto phiPair2 = phiCollinsSoperFrame(k14, k23, k1234);
-          auto cosThetaPair1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
-          auto cosThetaPair2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
 
           histosMCreco.fill(HIST("CS_phi_pair_1"), phiPair1);
           histosMCreco.fill(HIST("CS_phi_pair_2"), phiPair2);
