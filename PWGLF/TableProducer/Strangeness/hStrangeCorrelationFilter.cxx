@@ -138,8 +138,8 @@ struct HStrangeCorrelationFilter {
   Filter preFilterCascade =
     nabs(aod::cascdata::dcapostopv) > dcaPostopv&& nabs(aod::cascdata::dcanegtopv) > dcaNegtopv&& nabs(aod::cascdata::dcabachtopv) > cascadeSettingDcabachtopv&& aod::cascdata::dcaV0daughters < dcaV0dau&& aod::cascdata::dcacascdaughters < cascadeSettingDcacascdau;
 
-  //using V0LinkedTagged = soa::Join<aod::V0sLinked, aod::V0Tags>;
-  //using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
+  // using V0LinkedTagged = soa::Join<aod::V0sLinked, aod::V0Tags>;
+  // using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
   using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
   using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA>;
@@ -582,7 +582,7 @@ struct HStrangeCorrelationFilter {
     }
   }
 
-    void processV0sMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracksMC const&, soa::Filtered<V0DatasWithoutTrackXMC> const& V0s, aod::McParticles const&, aod::BCsWithTimestamps const&)
+  void processV0sMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracksMC const&, soa::Filtered<V0DatasWithoutTrackXMC> const& V0s, aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
