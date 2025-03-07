@@ -1811,7 +1811,7 @@ struct derivedlambdakzeroanalysis {
 
       } else { // we are in Pb-Pb
         float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-        if (eventSelections.minOccupancy >= 0 && collisionOccupancy <= eventSelections.minOccupancy) {
+        if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
           return false;
         }
         if (fillHists)
