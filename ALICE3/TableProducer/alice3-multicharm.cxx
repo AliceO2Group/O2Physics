@@ -425,6 +425,7 @@ struct alice3multicharm {
       return;
 
     histos.fill(HIST("hNCollisions"), 2);
+
     // group with this collision
     // n.b. cascades do not need to be grouped, being used directly in iterator-grouping
     auto tracksPiFromXiCgrouped = tracksPiFromXiC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
