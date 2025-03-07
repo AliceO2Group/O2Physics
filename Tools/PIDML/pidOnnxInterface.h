@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file pidONNXInterface.h
+/// \file pidOnnxInterface.h
 /// \brief A class that wraps PID ML ONNX model. See README.md for more detailed instructions.
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
@@ -27,15 +27,15 @@
 
 namespace pidml_pt_cuts
 {
-static constexpr int nPids = 6;
-static constexpr int nCutVars = kNDetectors;
-constexpr int pids[nPids] = {211, 321, 2212, -211, -321, -2212};
-auto pids_v = std::vector<int>{pids, pids + nPids};
-constexpr double certainties[nPids] = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
-auto certainties_v = std::vector<double>{certainties, certainties + nPids};
+static constexpr int NPids = 6;
+static constexpr int NCutVars = kNDetectors;
+constexpr int Pids[NPids] = {211, 321, 2212, -211, -321, -2212};
+auto pidsV = std::vector<int>{Pids, Pids + NPids};
+constexpr double Certainties[NPids] = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
+auto certaintiesV = std::vector<double>{Certainties, Certainties + NPids};
 
 // default values for the cuts
-constexpr double cuts[nPids][nCutVars] = {{0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}};
+constexpr double Cuts[NPids][NCutVars] = {{0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}, {0.0, 0.5, 0.8}};
 // row labels
 static const std::vector<std::string> pidLabels = {
   "211", "321", "2212", "0211", "0321", "02212"};
@@ -45,16 +45,17 @@ static const std::vector<std::string> cutVarLabels = {
 
 } // namespace pidml_pt_cuts
 
+template <typename T>
 struct PidONNXInterface {
-  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, o2::framework::LabeledArray<double> const& pLimits, std::vector<double> const& minCertainties, bool autoMode) : mNPids{pids.size()}, mPLimits{pLimits}
+  PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& Pids, o2::framework::LabeledArray<double> const& pLimits, std::vector<double> const& minCertainties, bool autoMode) : mNPids{Pids.size()}, mPLimits{pLimits}
   {
-    if (pids.size() == 0) {
+    if (Pids.size() == 0) {
       LOG(fatal) << "PID ML Interface needs at least 1 output pid to predict";
     }
     std::set<int> tmp;
-    for (auto& pid : pids) {
+    for (const auto& pid : Pids) {
       if (!tmp.insert(pid).second) {
-        LOG(fatal) << "PID ML Interface: output pids cannot repeat!";
+        LOG(fatal) << "PID ML Interface: output Pids cannot repeat!";
       }
     }
 
@@ -63,12 +64,12 @@ struct PidONNXInterface {
       fillDefaultConfiguration(minCertaintiesFilled);
     } else {
       if (minCertainties.size() != mNPids) {
-        LOG(fatal) << "PID ML Interface: min certainties vector must be of the same size as the output pids vector";
+        LOG(fatal) << "PID ML Interface: min Certainties vector must be of the same size as the output Pids vector";
       }
       minCertaintiesFilled = minCertainties;
     }
     for (std::size_t i = 0; i < mNPids; i++) {
-      mModels.emplace_back(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, pids[i], minCertaintiesFilled[i], mPLimits[i]);
+      mModels.emplace_back(localPath, ccdbPath, useCCDB, ccdbApi, timestamp, Pids[i], minCertaintiesFilled[i], mPLimits[i]);
     }
   }
   PidONNXInterface() = default;
@@ -78,8 +79,7 @@ struct PidONNXInterface {
   PidONNXInterface& operator=(const PidONNXInterface&) = delete;
   ~PidONNXInterface() = default;
 
-  template <typename T>
-  float applyModel(const T& track, int pid)
+  float applyModel(const T::iterator& track, int pid)
   {
     for (std::size_t i = 0; i < mNPids; i++) {
       if (mModels[i].mPid == pid) {
@@ -90,8 +90,7 @@ struct PidONNXInterface {
     return -1.0f;
   }
 
-  template <typename T>
-  bool applyModelBoolean(const T& track, int pid)
+  bool applyModelBoolean(const T::iterator& track, int pid)
   {
     for (std::size_t i = 0; i < mNPids; i++) {
       if (mModels[i].mPid == pid) {
@@ -106,11 +105,11 @@ struct PidONNXInterface {
   void fillDefaultConfiguration(std::vector<double>& minCertainties)
   {
     // FIXME: A more sophisticated strategy should be based on pid values as well
-    mPLimits = o2::framework::LabeledArray{pidml_pt_cuts::cuts[0], pidml_pt_cuts::nPids, pidml_pt_cuts::nCutVars, pidml_pt_cuts::pidLabels, pidml_pt_cuts::cutVarLabels};
+    mPLimits = o2::framework::LabeledArray{pidml_pt_cuts::Cuts[0], pidml_pt_cuts::NPids, pidml_pt_cuts::NCutVars, pidml_pt_cuts::pidLabels, pidml_pt_cuts::cutVarLabels};
     minCertainties = std::vector<double>(mNPids, 0.5);
   }
 
-  std::vector<PidONNXModel> mModels;
+  std::vector<PidONNXModel<T>> mModels;
   std::size_t mNPids;
   o2::framework::LabeledArray<double> mPLimits;
 };
