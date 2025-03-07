@@ -80,6 +80,7 @@ struct phiInJets {
   Configurable<bool> cfgIsKstar{"cfgIsKstar", false, "Swaps Phi for Kstar analysis"};
   Configurable<bool> cfgDataHists{"cfgDataHists", false, "Enables DataHists"};
   Configurable<bool> cfgMCRecHists{"cfgMCRecHists", false, "Enables MCRecHists"};
+  Configurable<bool> cfgMCRecMBHists{"cfgMCRecInsideHists", false, "Enables MCRec Inside Hists"};
   Configurable<bool> cfgMCRecInsideHists{"cfgMCRecInsideHists", false, "Enables MCRec Inside Hists"};
   Configurable<bool> cfgMCGenHists{"cfgMCGenHists", false, "Enables MCGenHists"};
   Configurable<bool> cfgMCGenMATCHEDHists{"cfgMCGenMATCHEDHists", false, "Enables MCGenMATCHEDHists"};
@@ -167,11 +168,12 @@ struct phiInJets {
 
       //used for Minv closure tests
       // MB
-      JEhistos.add("hMCRec_hUSS", "hMCRec_hUSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRec_hLSS", "hMCRec_hLSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRecTrue_hUSS", "hMCRecTrue_hUSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRecTrue_hLSS", "hMCRecTrue_hLSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
-
+      if (cfgMCRecMBHists){
+	JEhistos.add("hMCRec_hUSS", "hMCRec_hUSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
+	JEhistos.add("hMCRec_hLSS", "hMCRec_hLSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
+	JEhistos.add("hMCRecTrue_hUSS", "hMCRecTrue_hUSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
+	JEhistos.add("hMCRecTrue_hLSS", "hMCRecTrue_hLSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
+      }
       // INSIDE
       if (cfgMCRecInsideHists){
 	JEhistos.add("hMCRec_hUSS_INSIDE", "hMCRec_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
@@ -712,7 +714,7 @@ struct phiInJets {
         //==================
         // 1.MB REC Closure
         //==================
-	if (!cfgMCRecInsideHists) {
+	if (cfgMCRecMBHists) {
 	  if (originalTrack.sign() * originalTrack2.sign() < 0) {
 	    JEhistos.fill(HIST("hMCRec_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
 	  } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
@@ -822,7 +824,7 @@ struct phiInJets {
           //=====================
           // 4.MB True Closure
           //=====================
-	  if (!cfgMCRecInsideHists) {
+	  if (cfgMCRecMBHists) {
 	    if (originalTrack.sign() * originalTrack2.sign() < 0) {
 	      JEhistos.fill(HIST("hMCRecTrue_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
 	    } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
