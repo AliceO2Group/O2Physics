@@ -519,8 +519,7 @@ struct HfTaskD0 {
 
   template <int reconstructionType, bool applyMl, typename CandType, typename CollType>
   void processMc(CandType const& candidates,
-                 soa::Join<aod::McParticles,
-                 aod::HfCand2ProngMcGen> const& mcParticles,
+                 soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                  TracksSelQuality const&,
                  CollType const& collisions,
                  aod::McCollisions const&)
