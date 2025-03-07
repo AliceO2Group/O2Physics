@@ -70,10 +70,10 @@ DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
 DECLARE_SOA_COLUMN(Trs, trs, int);
 DECLARE_SOA_COLUMN(Trofs, trofs, int);
 DECLARE_SOA_COLUMN(Hmpr, hmpr, int);
-DECLARE_SOA_COLUMN(TFb, tfb, int);
-DECLARE_SOA_COLUMN(ITSROFb, itsROFb, int);
+DECLARE_SOA_COLUMN(Tfb, tfb, int);
+DECLARE_SOA_COLUMN(ItsRofb, itsRofb, int);
 DECLARE_SOA_COLUMN(Sbp, sbp, int);
-DECLARE_SOA_COLUMN(ZvtxFT0vPV, zVtxFT0vPV, int);
+DECLARE_SOA_COLUMN(ZvtxFT0vsPv, zvtxFT0vsPv, int);
 DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int);
 // FIT info
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
