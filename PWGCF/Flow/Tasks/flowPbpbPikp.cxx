@@ -467,6 +467,7 @@ struct FlowPbpbPikp {
 
     float weff = 1;
     int pidIndex;
+    loadCorrections(bc);
 
     for (auto const& track : tracks) {
       double pt = track.pt();
