@@ -1,0 +1,14 @@
+#0  0x00007102e93107a7 in wait4 () from /lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007102e92585bb in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007102e9d59d5e in TUnixSystem::Exec (shellcmd=<optimized out>, this=0x70ab670) at /local/workspace/DailyBuilds/DailyO2-ubuntu2404/daily-tags.ADeRTGrUtY/SOURCES/ROOT/v6-32-06-alice1/v6-32-06-alice1/core/unix/src/TUnixSystem.cxx:2157
+#3  TUnixSystem::StackTrace (this=0x70ab670) at /local/workspace/DailyBuilds/DailyO2-ubuntu2404/daily-tags.ADeRTGrUtY/SOURCES/ROOT/v6-32-06-alice1/v6-32-06-alice1/core/unix/src/TUnixSystem.cxx:2448
+#4  0x00007102ed9e9739 in FairLogger::LogFatalMessage () at /local/workspace/DailyBuilds/DailyO2-ubuntu2404/daily-tags.ADeRTGrUtY/SOURCES/FairRoot/v18.4.9-alice3/v18.4.9-alice3/fairtools/FairLogger.cxx:195
+#5  0x00007102eb643ab8 in std::function<void ()>::operator()() const (this=0x7102eb656960 <fair::Logger::fFatalCallback>) at /local/workspace/DailyBuilds/DailyO2-ubuntu2404/daily-tags.zc69QykaNB/ubuntu2404_x86-64/GCC-Toolchain/v13.2.0-alice1-3/include/c++/13.2.0/bits/std_function.h:587
+#6  fair::Logger::~Logger (this=0x7ffd23587970, __in_chrg=<optimized out>) at /local/workspace/DailyBuilds/DailyO2-ubuntu2404/daily-tags.zc69QykaNB/SOURCES/FairLogger/v1.11.1/v1.11.1/logger/Logger.cxx:276
+#7  0x00007102ee448df8 in doUnknownException (s=..., processName=processName
+entry=0x7ffd235894fc "o2-analysis-lf-flow-qc") at /home/mbianchi/alice/sw/ubuntu2404_x86-64/GCC-Toolchain/v13.2.0-alice1-3/include/c++/13.2.0/bits/allocator.h:184
+#8  0x00007102ee15ffe8 in callMain (argc=argc
+entry=8, argv=argv
+entry=0x7ffd235881c8, mainNoCatch=mainNoCatch
+entry=0x41cc00 <mainNoCatch(int, char**)>) at /home/mbianchi/alice/sw/SOURCES/O2/daily-20250221-0000/daily-20250221-0000/Framework/Core/src/runDataProcessing.cxx:217
+#9  0x0000000000419459 in main (argc=8, argv=0x7ffd235881c8) at /home/mbianchi/alice/sw/ubuntu2404_x86-64/O2/daily-20250221-0000-local1/include/Framework/runDataProcessing.h:218
