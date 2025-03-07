@@ -827,7 +827,7 @@ struct McDGCandProducer {
     // loop over McCollisions
     for (auto const& mccol : mccols) {
       int64_t mccolId = mccol.globalIndex();
-      
+
       // update UDMcCollisions and UDMcParticles
       if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
 

@@ -542,7 +542,6 @@ struct McSGCandProducer {
     }
   }
 
-
   // updating McTruth data and links to reconstructed data
   void procWithSgCand(aod::McCollisions const& mccols, aod::McParticles const& mcparts,
                       UDCCs const& sgcands, UDTCs const& udtracks)
@@ -566,7 +565,7 @@ struct McSGCandProducer {
     // advance dgcand and mccol until both are AtEnd
     int64_t mccolId = mccol.globalIndex();
     int64_t mcsgId = -1;
-    
+
     bool goon = true;
     while (goon) {
       auto globBC = mccol.bc_as<BCs>().globalBC();
@@ -666,7 +665,7 @@ struct McSGCandProducer {
         if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
           if (verboseInfoMC)
             LOGF(info, "  Saving McCollision %d", mccolId);
-          
+
           // update UDMcCollisions
           updateUDMcCollisions(mccol, globBC);
           mcColIsSaved[mccolId] = outputMcCollisions.lastIndex();
@@ -705,12 +704,12 @@ struct McSGCandProducer {
     for (auto const& mccol : mccols) {
       int64_t mccolId = mccol.globalIndex();
       uint64_t globBC = mccol.bc_as<BCs>().globalBC();
-      
+
       // update UDMcCollisions and UDMcParticles
       if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
-          if (verboseInfoMC)
-            LOGF(info, "  Saving McCollision %d", mccolId);
-        
+        if (verboseInfoMC)
+          LOGF(info, "  Saving McCollision %d", mccolId);
+
         // update UDMcCollisions
         updateUDMcCollisions(mccol, globBC);
         mcColIsSaved[mccolId] = outputMcCollisions.lastIndex();
@@ -721,8 +720,6 @@ struct McSGCandProducer {
       }
     }
   }
-
-
 
   void init(InitContext& context)
   {
