@@ -2018,6 +2018,7 @@ struct UpcTauRl {
       if (isElectronCandidate(track)) {
         countPVGTel++;
         vecTrkIdx.push_back(track.index());
+        continue;
       }
       if (isMuPionCandidate(track)) {
         countPVGTmupi++;
@@ -2025,7 +2026,7 @@ struct UpcTauRl {
       }
     } // Loop over tracks with selections
 
-    if (countPVGTel == 2 || (countPVGTel == 1 && countPVGTmupi == 1)) {
+    if ((countPVGTel == 2 && countPVGTmupi == 0) || (countPVGTel == 1 && countPVGTmupi == 1)) {
       const auto& trk1 = tracks.iteratorAt(vecTrkIdx[0]);
       const auto& trk2 = tracks.iteratorAt(vecTrkIdx[1]);
 
