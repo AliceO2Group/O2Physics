@@ -8,6 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -62,9 +64,10 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgMinOcc, int, 0, "minimum occupancy selection")
   O2_DEFINE_CONFIGURABLE(cfgMaxOcc, int, 3000, "maximum occupancy selection")
   O2_DEFINE_CONFIGURABLE(cfgCollisionFlags, uint16_t, aod::collision::CollisionFlagsRun2::Run2VertexerTracks, "Request collision flags if non-zero (0 = off, 1 = Run2VertexerTracks)")
-  O2_DEFINE_CONFIGURABLE(cfgTransientTables, bool, false, "Output transient tables for collision and track IDs")
+  O2_DEFINE_CONFIGURABLE(cfgTransientTables, bool, false, "Output transient tables for collision and track IDs to enable successive filtering tasks")
   O2_DEFINE_CONFIGURABLE(cfgTrackSelection, int, 0, "Type of track selection (0 = Run 2/3 without systematics | 1 = Run 3 with systematics)")
   O2_DEFINE_CONFIGURABLE(cfgMinMultiplicity, float, -1, "Minimum multiplicity considered for filtering (if value positive)")
+  O2_DEFINE_CONFIGURABLE(cfgMcSpecialPDGs, std::vector<int>, {}, "Special MC PDG codes to include in the MC primary particle output (additional to charged particles). Empty = charged particles only.") // needed for some neutral particles
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -90,6 +93,11 @@ struct FilterCF {
 
   Produces<aod::CFCollRefs> outputCollRefs;
   Produces<aod::CFTrackRefs> outputTrackRefs;
+  Produces<aod::CFMcParticleRefs> outputMcParticleRefs;
+
+  // persistent caches
+  std::vector<bool> mcReconstructedCache;
+  std::vector<int> mcParticleLabelsCache;
 
   template <typename TCollision>
   bool keepCollision(TCollision& collision)
@@ -182,11 +190,13 @@ struct FilterCF {
                  soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
                  aod::BCsWithTimestamps const&)
   {
-    bool* reconstructed = new bool[allParticles.size()];
-    int* mcParticleLabels = new int[allParticles.size()];
+    mcReconstructedCache.reserve(allParticles.size());
+    mcParticleLabelsCache.reserve(allParticles.size());
+    mcReconstructedCache.clear();
+    mcParticleLabelsCache.clear();
     for (int i = 0; i < allParticles.size(); i++) {
-      reconstructed[i] = false;
-      mcParticleLabels[i] = -1;
+      mcReconstructedCache.push_back(false);
+      mcParticleLabelsCache.push_back(-1);
     }
 
     // PASS 1 on collisions: check which particles are kept
@@ -202,7 +212,7 @@ struct FilterCF {
 
       for (auto& track : groupedTracks) {
         if (track.has_mcParticle()) {
-          reconstructed[track.mcParticleId()] = true;
+          mcReconstructedCache[track.mcParticleId()] = true;
         }
       }
     }
@@ -222,25 +232,29 @@ struct FilterCF {
         if (pdgparticle != nullptr) {
           sign = (pdgparticle->Charge() > 0) ? 1.0 : ((pdgparticle->Charge() < 0) ? -1.0 : 0.0);
         }
+
+        bool special = !cfgMcSpecialPDGs->empty() && std::find(cfgMcSpecialPDGs->begin(), cfgMcSpecialPDGs->end(), particle.pdgCode()) != cfgMcSpecialPDGs->end();
         bool primary = particle.isPhysicalPrimary() && sign != 0 && std::abs(particle.eta()) < cfgCutMCEta && particle.pt() > cfgCutMCPt;
         if (primary) {
           multiplicity++;
         }
-        if (reconstructed[particle.globalIndex()] || primary) {
+        if (mcReconstructedCache[particle.globalIndex()] || primary || special) {
           // keep particle
 
           // use highest bit to flag if it is reconstructed
           uint8_t flags = particle.flags() & ~aod::cfmcparticle::kReconstructed; // clear bit in case of clashes in the future
-          if (reconstructed[particle.globalIndex()]) {
+          if (mcReconstructedCache[particle.globalIndex()]) {
             flags |= aod::cfmcparticle::kReconstructed;
           }
 
           // NOTE using "outputMcCollisions.lastIndex()+1" here to allow filling of outputMcCollisions *after* the loop
           outputMcParticles(outputMcCollisions.lastIndex() + 1, truncateFloatFraction(particle.pt(), FLOAT_PRECISION), truncateFloatFraction(particle.eta(), FLOAT_PRECISION),
                             truncateFloatFraction(particle.phi(), FLOAT_PRECISION), sign, particle.pdgCode(), flags);
+          if (cfgTransientTables)
+            outputMcParticleRefs(outputMcCollisions.lastIndex() + 1, particle.globalIndex());
 
           // relabeling array
-          mcParticleLabels[particle.globalIndex()] = outputMcParticles.lastIndex();
+          mcParticleLabelsCache[particle.globalIndex()] = outputMcParticles.lastIndex();
         }
       }
       outputMcCollisions(mcCollision.posZ(), multiplicity);
@@ -261,26 +275,27 @@ struct FilterCF {
       // NOTE works only when we store all MC collisions (as we do here)
       outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
       outputMcCollisionLabels(collision.mcCollisionId());
+      if (cfgTransientTables)
+        outputCollRefs(collision.globalIndex());
 
       for (auto& track : groupedTracks) {
         int mcParticleId = track.mcParticleId();
         if (mcParticleId >= 0) {
-          mcParticleId = mcParticleLabels[track.mcParticleId()];
+          mcParticleId = mcParticleLabelsCache[track.mcParticleId()];
           if (mcParticleId < 0) {
-            LOGP(fatal, "processMC:     Track {} is referring to a MC particle which we do not store {} {} (reco flag {})", track.index(), track.mcParticleId(), mcParticleId, reconstructed[track.mcParticleId()]);
+            LOGP(fatal, "processMC:     Track {} is referring to a MC particle which we do not store {} {} (reco flag {})", track.index(), track.mcParticleId(), mcParticleId, static_cast<bool>(mcReconstructedCache[track.mcParticleId()]));
           }
         }
         outputTracks(outputCollisions.lastIndex(),
                      truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), getTrackType(track));
         outputTrackLabels(mcParticleId);
+        if (cfgTransientTables)
+          outputTrackRefs(collision.globalIndex(), track.globalIndex());
 
         yields->Fill(collision.multiplicity(), track.pt(), track.eta());
         etaphi->Fill(collision.multiplicity(), track.eta(), track.phi());
       }
     }
-
-    delete[] reconstructed;
-    delete[] mcParticleLabels;
   }
   PROCESS_SWITCH(FilterCF, processMC, "Process MC", false);
 

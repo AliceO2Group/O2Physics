@@ -34,6 +34,11 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "ReconstructionDataFormats/GlobalTrackID.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "TPDGCode.h"
+
 #include "GFWPowerArray.h"
 #include "GFW.h"
 #include "GFWCumulant.h"
@@ -52,6 +57,20 @@ using namespace o2::aod::evsel;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
+namespace o2::aod
+{
+using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
+                                aod::McCollisionLabels, o2::aod::CentFT0Cs,
+                                aod::CentFT0As, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0CVariant1s>;
+
+using SimTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra,
+                            aod::TracksDCA, aod::McTrackLabels>;
+} // namespace o2::aod
+
+using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0CVariant1s>>;
+using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>;
+using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+
 struct FlowGfwTask {
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
@@ -61,6 +80,7 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
+  O2_DEFINE_CONFIGURABLE(cfgTrackSel, bool, false, "ITS and TPC cluster selection")
   O2_DEFINE_CONFIGURABLE(cfgMinCentFT0C, float, 0.0f, "Minimum FT0C Centrality")
   O2_DEFINE_CONFIGURABLE(cfgMaxCentFT0C, float, 100.0f, "Maximum FT0C Centrality")
   O2_DEFINE_CONFIGURABLE(cfgcentEstFt0c, bool, false, "Centrality estimator based on FT0C signal")
@@ -70,6 +90,7 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgcentEstFt0cVariant1, bool, false, "A variant of FT0C")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelRun3ITSMatch, bool, false, "Track selection for ITS matches")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
@@ -80,20 +101,21 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2, "Custom DCA Z cut")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.2f, "Custom DCA XY cut")
+  O2_DEFINE_CONFIGURABLE(cfgDCAzPt, bool, false, "switch for DCAz pt dependent")
   O2_DEFINE_CONFIGURABLE(cfgNoTimeFrameBorder, bool, false, "kNoTimeFrameBorder");
   O2_DEFINE_CONFIGURABLE(cfgNoITSROFrameBorder, bool, false, "kNoITSROFrameBorder");
   O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileup, bool, false, "kNoSameBunchPileup");
   O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, false, "kIsGoodZvtxFT0vsPV");
+  O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, false, "kIsVertexITSTPC");
   O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, false, "kNoCollInTimeRangeStandard");
   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, false, "kIsGoodITSLayersAll")
   O2_DEFINE_CONFIGURABLE(cfgOccupancy, bool, false, "Bool for event selection on detector occupancy");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, false, "Use additional event cut on mult correlations");
+  O2_DEFINE_CONFIGURABLE(cfgV0AT0A5Sigma, bool, false, "V0A T0A 5 sigma cut")
   O2_DEFINE_CONFIGURABLE(cfgGlobalplusITS, bool, false, "Global and ITS tracks")
   O2_DEFINE_CONFIGURABLE(cfgGlobalonly, bool, false, "Global only tracks")
   O2_DEFINE_CONFIGURABLE(cfgITSonly, bool, false, "ITS only tracks")
   O2_DEFINE_CONFIGURABLE(cfgFineBinning, bool, false, "Manually change to fine binning")
-  O2_DEFINE_CONFIGURABLE(cfgTrackSelRun3ITSMatch, bool, false, "System check: Run3ITSMatch")
-  O2_DEFINE_CONFIGURABLE(cfgTrackSel, bool, false, "System check: track selection")
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -184,6 +206,7 @@ struct FlowGfwTask {
     kNOITSROFRAMEBORDER,
     kNOPSAMEBUNCHPILEUP,
     kISGOODZVTXFT0VSPV,
+    kISVERTEXITSTPC,
     kNOCOLLINTIMERANGESTANDART,
     kISGOODITSLAYERSALL,
     kAFTERMULTCUTS,
@@ -232,150 +255,172 @@ struct FlowGfwTask {
     ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
 
     // Add some output objects to the histogram registry
-    registry.add("hEventCount", "Number of Events;; No. of Events", {HistType::kTH1D, {{kNOOFEVENTSTEPS, -0.5, static_cast<int>(kNOOFEVENTSTEPS) - 0.5}}});
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kFILTERED + 1, "Filtered events");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kSEL8 + 1, "Sel8");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kOCCUPANCY + 1, "Occupancy");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOTIMEFRAMEBORDER + 1, "kNoTimeFrameBorder");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOITSROFRAMEBORDER + 1, "kNoITSROFrameBorder");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOPSAMEBUNCHPILEUP + 1, "kNoSameBunchPileup");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kISGOODZVTXFT0VSPV + 1, "kIsGoodZvtxFT0vsPV");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOCOLLINTIMERANGESTANDART + 1, "kNoCollInTimeRangeStandard");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kISGOODITSLAYERSALL + 1, "kIsGoodITSLayersAll");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kAFTERMULTCUTS + 1, "After Mult cuts");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kCENTRALITY + 1, "Centrality");
-    registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
-    registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
-    registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
-    registry.add("hVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
-    registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
-    registry.add("hCent", "Centrality distribution", {HistType::kTH1D, {{90, 0, 90}}});
-    registry.add("cent_vs_Nch", ";Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
+    if (doprocessData) {
+      registry.add("hEventCount", "Number of Events;; No. of Events", {HistType::kTH1D, {{kNOOFEVENTSTEPS, -0.5, static_cast<int>(kNOOFEVENTSTEPS) - 0.5}}});
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kFILTERED + 1, "Filtered events");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kSEL8 + 1, "Sel8");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kOCCUPANCY + 1, "Occupancy");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOTIMEFRAMEBORDER + 1, "kNoTimeFrameBorder");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOITSROFRAMEBORDER + 1, "kNoITSROFrameBorder");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOPSAMEBUNCHPILEUP + 1, "kNoSameBunchPileup");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kISGOODZVTXFT0VSPV + 1, "kIsGoodZvtxFT0vsPV");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kISVERTEXITSTPC + 1, "kIsVertexITSTPC");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOCOLLINTIMERANGESTANDART + 1, "kNoCollInTimeRangeStandard");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kISGOODITSLAYERSALL + 1, "kIsGoodITSLayersAll");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kAFTERMULTCUTS + 1, "After Mult cuts");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kCENTRALITY + 1, "Centrality");
+      registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
+      registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
+      registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
+      registry.add("hVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
+      registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
+      registry.add("hCent", "Centrality distribution", {HistType::kTH1D, {{90, 0, 90}}});
+      registry.add("cent_vs_Nch", ";Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
 
-    // Centrality estimators
-    registry.add("hCentEstimators", "Number of Unfiltered Events;; No. of Events", {HistType::kTH1D, {{kNoCentEstimators, -0.5, static_cast<int>(kNoCentEstimators) - 0.5}}});
-    registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0C + 1, "FT0C");
-    registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0A + 1, "FT0A");
-    registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0M + 1, "FT0M");
-    registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFV0A + 1, "FV0A");
-    registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0CVariant1 + 1, "FT0CVar1");
-    registry.add("hCentFT0C", "Uncorrected FT0C;Centrality FT0C ;Events", kTH1F, {axisCentrality});
-    registry.add("hCentFT0A", "Uncorrected FT0A;Centrality FT0A ;Events", kTH1F, {axisCentrality});
-    registry.add("hCentFT0M", "Uncorrected FT0M;Centrality FT0M ;Events", kTH1F, {axisCentrality});
-    registry.add("hCentFV0A", "Uncorrected FV0A;Centrality FV0A ;Events", kTH1F, {axisCentrality});
-    registry.add("hCentFT0CVariant1", "Uncorrected FT0CVariant1;Centrality FT0CVariant1 ;Events", kTH1F, {axisCentrality});
+      // Centrality estimators
+      registry.add("hCentEstimators", "Number of Unfiltered Events;; No. of Events", {HistType::kTH1D, {{kNoCentEstimators, -0.5, static_cast<int>(kNoCentEstimators) - 0.5}}});
+      registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0C + 1, "FT0C");
+      registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0A + 1, "FT0A");
+      registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0M + 1, "FT0M");
+      registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFV0A + 1, "FV0A");
+      registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0CVariant1 + 1, "FT0CVar1");
+      registry.add("hCentFT0C", "Uncorrected FT0C;Centrality FT0C ;Events", kTH1F, {axisCentrality});
+      registry.add("hCentFT0A", "Uncorrected FT0A;Centrality FT0A ;Events", kTH1F, {axisCentrality});
+      registry.add("hCentFT0M", "Uncorrected FT0M;Centrality FT0M ;Events", kTH1F, {axisCentrality});
+      registry.add("hCentFV0A", "Uncorrected FV0A;Centrality FV0A ;Events", kTH1F, {axisCentrality});
+      registry.add("hCentFT0CVariant1", "Uncorrected FT0CVariant1;Centrality FT0CVariant1 ;Events", kTH1F, {axisCentrality});
 
-    // Before cuts
-    registry.add("BeforeCut_globalTracks_centT0C", "before cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
-    registry.add("BeforeCut_PVTracks_centT0C", "before cut;Centrality T0C;mulplicity PV tracks", {HistType::kTH2D, {axisCentForQA, axisNchPV}});
-    registry.add("BeforeCut_globalTracks_PVTracks", "before cut;mulplicity PV tracks;mulplicity global tracks", {HistType::kTH2D, {axisNchPV, axisNch}});
-    registry.add("BeforeCut_globalTracks_multT0A", "before cut;mulplicity T0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
-    registry.add("BeforeCut_globalTracks_multV0A", "before cut;mulplicity V0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
-    registry.add("BeforeCut_multV0A_multT0A", "before cut;mulplicity T0A;mulplicity V0A", {HistType::kTH2D, {axisT0A, axisT0A}});
-    registry.add("BeforeCut_multT0C_centT0C", "before cut;Centrality T0C;mulplicity T0C", {HistType::kTH2D, {axisCentForQA, axisT0C}});
-    registry.add("BeforeCut_multT0A_centT0A", "before cut;Centrality T0C;mulplicity T0A", {HistType::kTH2D, {axisCentForQA, axisT0A}});
-    registry.add("BeforeCut_multFT0M_centFT0M", "before cut;Centrality FT0M;mulplicity FT0M", {HistType::kTH2D, {axisCentForQA, axisT0M}});
+      // Before cuts
+      registry.add("BeforeCut_globalTracks_centT0C", "before cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
+      registry.add("BeforeCut_PVTracks_centT0C", "before cut;Centrality T0C;mulplicity PV tracks", {HistType::kTH2D, {axisCentForQA, axisNchPV}});
+      registry.add("BeforeCut_globalTracks_PVTracks", "before cut;mulplicity PV tracks;mulplicity global tracks", {HistType::kTH2D, {axisNchPV, axisNch}});
+      registry.add("BeforeCut_globalTracks_multT0A", "before cut;mulplicity T0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
+      registry.add("BeforeCut_globalTracks_multV0A", "before cut;mulplicity V0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
+      registry.add("BeforeCut_multV0A_multT0A", "before cut;mulplicity T0A;mulplicity V0A", {HistType::kTH2D, {axisT0A, axisT0A}});
+      registry.add("BeforeCut_multT0C_centT0C", "before cut;Centrality T0C;mulplicity T0C", {HistType::kTH2D, {axisCentForQA, axisT0C}});
+      registry.add("BeforeCut_multT0A_centT0A", "before cut;Centrality T0C;mulplicity T0A", {HistType::kTH2D, {axisCentForQA, axisT0A}});
+      registry.add("BeforeCut_multFT0M_centFT0M", "before cut;Centrality FT0M;mulplicity FT0M", {HistType::kTH2D, {axisCentForQA, axisT0M}});
 
-    // After cuts
-    registry.add("globalTracks_centT0C_Aft", "after cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
-    registry.add("PVTracks_centT0C_Aft", "after cut;Centrality T0C;mulplicity PV tracks", {HistType::kTH2D, {axisCentForQA, axisNchPV}});
-    registry.add("globalTracks_PVTracks_Aft", "after cut;mulplicity PV tracks;mulplicity global tracks", {HistType::kTH2D, {axisNchPV, axisNch}});
-    registry.add("globalTracks_multT0A_Aft", "after cut;mulplicity T0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
-    registry.add("globalTracks_multV0A_Aft", "after cut;mulplicity V0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
-    registry.add("multV0A_multT0A_Aft", "after cut;mulplicity T0A;mulplicity V0A", {HistType::kTH2D, {axisT0A, axisT0A}});
-    registry.add("multT0C_centT0C_Aft", "after cut;Centrality T0C;mulplicity T0C", {HistType::kTH2D, {axisCentForQA, axisT0C}});
-    registry.add("multT0A_centT0A_Aft", "after cut;Centrality T0A;mulplicity T0A", {HistType::kTH2D, {axisCentForQA, axisT0A}});
-    registry.add("multFT0M_centFT0M_Aft", "after cut;Centrality FT0M;mulplicity FT0M", {HistType::kTH2D, {axisCentForQA, axisT0M}});
+      // After cuts
+      registry.add("globalTracks_centT0C_Aft", "after cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
+      registry.add("PVTracks_centT0C_Aft", "after cut;Centrality T0C;mulplicity PV tracks", {HistType::kTH2D, {axisCentForQA, axisNchPV}});
+      registry.add("globalTracks_PVTracks_Aft", "after cut;mulplicity PV tracks;mulplicity global tracks", {HistType::kTH2D, {axisNchPV, axisNch}});
+      registry.add("globalTracks_multT0A_Aft", "after cut;mulplicity T0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
+      registry.add("globalTracks_multV0A_Aft", "after cut;mulplicity V0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
+      registry.add("multV0A_multT0A_Aft", "after cut;mulplicity T0A;mulplicity V0A", {HistType::kTH2D, {axisT0A, axisT0A}});
+      registry.add("multT0C_centT0C_Aft", "after cut;Centrality T0C;mulplicity T0C", {HistType::kTH2D, {axisCentForQA, axisT0C}});
+      registry.add("multT0A_centT0A_Aft", "after cut;Centrality T0A;mulplicity T0A", {HistType::kTH2D, {axisCentForQA, axisT0A}});
+      registry.add("multFT0M_centFT0M_Aft", "after cut;Centrality FT0M;mulplicity FT0M", {HistType::kTH2D, {axisCentForQA, axisT0M}});
 
-    // FT0 plots
-    registry.add("FT0CAmp", ";FT0C amplitude;Events", kTH1F, {axisFT0CAmp});
-    registry.add("FT0AAmp", ";FT0A amplitude;Events", kTH1F, {axisFT0AAmp});
-    registry.add("FT0MAmp", ";FT0M amplitude;Events", kTH1F, {axisFT0MAmp});
+      // FT0 plots
+      registry.add("FT0CAmp", ";FT0C amplitude;Events", kTH1F, {axisFT0CAmp});
+      registry.add("FT0AAmp", ";FT0A amplitude;Events", kTH1F, {axisFT0AAmp});
+      registry.add("FT0MAmp", ";FT0M amplitude;Events", kTH1F, {axisFT0MAmp});
 
-    // ZDC plots
-    const AxisSpec axisEvent{3, 0., +3.0, ""};
-    registry.add("hEventCounterForZDC", "Event counter", kTH1F, {axisEvent});
-    registry.add("ZNAcoll", "ZNAcoll; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZN}}});
-    registry.add("ZPAcoll", "ZPAcoll; ZPA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
-    registry.add("ZNCcoll", "ZNCcoll; ZNC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZN}}});
-    registry.add("ZPCcoll", "ZPCcoll; ZPC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
-    registry.add("ZNvsFT0correl", "ZNvsFT0correl; FT0 amplitude; ZN", {HistType::kTH2F, {{{nBinsFit, 0., maxMultFT0}, {nBinsAmp, -0.5, 2. * maxZN}}}});
-    registry.add("ZDCAmp", "ZDC Amplitude; ZDC Amplitude; Events", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
-    registry.add("ZNAmp", "ZNA+ZNC Amplitude; ZN Amplitude; Events", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZN}}});
-    registry.add("ZPAmp", "ZPA+ZPC Amplitude; ZP Amplitude; Events", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
-    registry.add("ZNvsZEMcoll", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
-    registry.add("ZNvsZEMcoll05", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
-    registry.add("ZNvsZEMcoll510", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
-    registry.add("ZNvsZEMcoll1020", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
-    registry.add("ZNvsZEMcoll2030", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
-    registry.add("ZNvsZEMcollrest", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
+      // ZDC plots
+      const AxisSpec axisEvent{3, 0., +3.0, ""};
+      registry.add("hEventCounterForZDC", "Event counter", kTH1F, {axisEvent});
+      registry.add("ZNAcoll", "ZNAcoll; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZN}}});
+      registry.add("ZPAcoll", "ZPAcoll; ZPA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
+      registry.add("ZNCcoll", "ZNCcoll; ZNC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZN}}});
+      registry.add("ZPCcoll", "ZPCcoll; ZPC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
+      registry.add("ZNvsFT0correl", "ZNvsFT0correl; FT0 amplitude; ZN", {HistType::kTH2F, {{{nBinsFit, 0., maxMultFT0}, {nBinsAmp, -0.5, 2. * maxZN}}}});
+      registry.add("ZDCAmp", "ZDC Amplitude; ZDC Amplitude; Events", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
+      registry.add("ZNAmp", "ZNA+ZNC Amplitude; ZN Amplitude; Events", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZN}}});
+      registry.add("ZPAmp", "ZPA+ZPC Amplitude; ZP Amplitude; Events", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
+      registry.add("ZNvsZEMcoll", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
+      registry.add("ZNvsZEMcoll05", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
+      registry.add("ZNvsZEMcoll510", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
+      registry.add("ZNvsZEMcoll1020", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
+      registry.add("ZNvsZEMcoll2030", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
+      registry.add("ZNvsZEMcollrest", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
 
-    // Track plots
-    registry.add("Nch", "N_{ch 0-5%} vs #Events;N_{ch 0-5%};No. of Events", {HistType::kTH1D, {axisNch}});
-    registry.add("Events_per_Centrality_Bin", "Events_per_Centrality_Bin;Centrality FT0C;No. of Events", kTH1F, {axisCentrality});
-    registry.add("Tracks_per_Centrality_Bin", "Tracks_per_Centrality_Bin;Centrality FT0C;No. of Tracks", kTH1F, {axisCentrality});
-    registry.add("pt_Cen_GlobalOnly", "pt_Cen_Global;Centrality (%); p_{T} (GeV/c);", {HistType::kTH2D, {axisCentrality, axisPt}});
-    registry.add("phi_Cen_GlobalOnly", "phi_Cen_Global;Centrality (%); #phi;", {HistType::kTH2D, {axisCentrality, axisPhi}});
-    registry.add("pt_Cen_ITSOnly", "pt_Cen_ITS;Centrality (%); p_{T} (GeV/c);", {HistType::kTH2D, {axisCentrality, axisPt}});
-    registry.add("phi_Cen_ITSOnly", "phi_Cen_ITS;Centrality (%); #phi;", {HistType::kTH2D, {axisCentrality, axisPhi}});
+      // Track plots
+      registry.add("Nch", "N_{ch 0-5%} vs #Events;N_{ch 0-5%};No. of Events", {HistType::kTH1D, {axisNch}});
+      registry.add("Events_per_Centrality_Bin", "Events_per_Centrality_Bin;Centrality FT0C;No. of Events", kTH1F, {axisCentrality});
+      registry.add("Tracks_per_Centrality_Bin", "Tracks_per_Centrality_Bin;Centrality FT0C;No. of Tracks", kTH1F, {axisCentrality});
+      registry.add("pt_Cen_GlobalOnly", "pt_Cen_Global;Centrality (%); p_{T} (GeV/c);", {HistType::kTH2D, {axisCentrality, axisPt}});
+      registry.add("phi_Cen_GlobalOnly", "phi_Cen_Global;Centrality (%); #phi;", {HistType::kTH2D, {axisCentrality, axisPhi}});
+      registry.add("pt_Cen_ITSOnly", "pt_Cen_ITS;Centrality (%); p_{T} (GeV/c);", {HistType::kTH2D, {axisCentrality, axisPt}});
+      registry.add("phi_Cen_ITSOnly", "phi_Cen_ITS;Centrality (%); #phi;", {HistType::kTH2D, {axisCentrality, axisPhi}});
 
-    // Track types
-    registry.add("GlobalplusITS", "Global plus ITS;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
-    registry.add("Globalonly", "Global only;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
-    registry.add("ITSonly", "ITS only;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
+      // Track types
+      registry.add("GlobalplusITS", "Global plus ITS;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
+      registry.add("Globalonly", "Global only;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
+      registry.add("ITSonly", "ITS only;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
 
-    // Track QA
-    registry.add("hPt", "p_{T} distribution before cut", {HistType::kTH1D, {axisPtHist}});
-    registry.add("hPtRef", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
-    registry.add("pt_phi_bef", "before cut;p_{T};#phi_{modn}", {HistType::kTH2D, {axisPt, axisPhiMod}});
-    registry.add("pt_phi_aft", "after cut;p_{T};#phi_{modn}", {HistType::kTH2D, {axisPt, axisPhiMod}});
-    registry.add("hChi2prTPCcls", "#chi^{2}/cluster for the TPC track segment", {HistType::kTH1D, {{100, 0., 5.}}});
-    registry.add("hnTPCClu", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
-    registry.add("hnTPCCrossedRow", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
-    registry.add("hDCAz", "DCAz after cuts", {HistType::kTH1D, {{100, -3, 3}}});
-    registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{50, -1, 1}, {50, 0, 10}}});
+      // Track QA
+      registry.add("hPt", "p_{T} distribution before cut", {HistType::kTH1D, {axisPtHist}});
+      registry.add("hPtRef", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
+      registry.add("pt_phi_bef", "before cut;p_{T};#phi_{modn}", {HistType::kTH2D, {axisPt, axisPhiMod}});
+      registry.add("pt_phi_aft", "after cut;p_{T};#phi_{modn}", {HistType::kTH2D, {axisPt, axisPhiMod}});
+      registry.add("hChi2prTPCcls", "#chi^{2}/cluster for the TPC track segment", {HistType::kTH1D, {{100, 0., 5.}}});
+      registry.add("hnTPCClu", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
+      registry.add("hnTPCCrossedRow", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
+      registry.add("hDCAz", "DCAz after cuts", {HistType::kTH1D, {{100, -3, 3}}});
+      registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{50, -1, 1}, {50, 0, 10}}});
 
-    // Additional Output histograms
-    registry.add("c22", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisCentrality}});
-    registry.add("c24", ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile, {axisCentrality}});
-    registry.add("c26", ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisCentrality}});
-    registry.add("c28", ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisCentrality}});
-    registry.add("c22etagap", ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
-    registry.add("c32", ";Centrality  (%) ; C_{3}{2} ", {HistType::kTProfile, {axisCentrality}});
-    registry.add("c32etagap", ";Centrality  (%) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
-    registry.add("c34", ";Centrality  (%) ; C_{3}{4} ", {HistType::kTProfile, {axisCentrality}});
+      // Additional Output histograms
+      registry.add("c22", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisCentrality}});
+      registry.add("c24", ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile, {axisCentrality}});
+      registry.add("c26", ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisCentrality}});
+      registry.add("c28", ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisCentrality}});
+      registry.add("c22etagap", ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
+      registry.add("c32", ";Centrality  (%) ; C_{3}{2} ", {HistType::kTProfile, {axisCentrality}});
+      registry.add("c32etagap", ";Centrality  (%) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
+      registry.add("c34", ";Centrality  (%) ; C_{3}{4} ", {HistType::kTProfile, {axisCentrality}});
 
-    registry.add("c22Nch", ";N_{ch}(|#eta| < 0.8) ; C_{2}{2} ", {HistType::kTProfile, {axisNch}});
-    registry.add("c24Nch", ";N_{ch}(|#eta| < 0.8) ; C_{2}{4}", {HistType::kTProfile, {axisNch}});
-    registry.add("c26Nch", ";N_{ch}(|#eta| < 0.8) ; C_{2}{6}", {HistType::kTProfile, {axisNch}});
-    registry.add("c28Nch", ";N_{ch}(|#eta| < 0.8) ; C_{2}{8}", {HistType::kTProfile, {axisNch}});
-    registry.add("c22Nchetagap", ";N_ch(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
-    registry.add("c32Nch", ";N_{ch}(|#eta| < 0.8) ; C_{3}{2} ", {HistType::kTProfile, {axisNch}});
-    registry.add("c32Nchetagap", ";N_ch(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
-    registry.add("c34Nch", ";N_{ch}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
+      registry.add("c22Nch", ";N_{ch}(|#eta| < 0.8) ; C_{2}{2} ", {HistType::kTProfile, {axisNch}});
+      registry.add("c24Nch", ";N_{ch}(|#eta| < 0.8) ; C_{2}{4}", {HistType::kTProfile, {axisNch}});
+      registry.add("c26Nch", ";N_{ch}(|#eta| < 0.8) ; C_{2}{6}", {HistType::kTProfile, {axisNch}});
+      registry.add("c28Nch", ";N_{ch}(|#eta| < 0.8) ; C_{2}{8}", {HistType::kTProfile, {axisNch}});
+      registry.add("c22Nchetagap", ";N_ch(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+      registry.add("c32Nch", ";N_{ch}(|#eta| < 0.8) ; C_{3}{2} ", {HistType::kTProfile, {axisNch}});
+      registry.add("c32Nchetagap", ";N_ch(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+      registry.add("c34Nch", ";N_{ch}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
 
-    registry.add("c22Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{2} ", {HistType::kTProfile, {axisNch}});
-    registry.add("c24Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{4}", {HistType::kTProfile, {axisNch}});
-    registry.add("c26Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{6}", {HistType::kTProfile, {axisNch}});
-    registry.add("c28Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{8}", {HistType::kTProfile, {axisNch}});
-    registry.add("c22Nch05etagap", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
-    registry.add("c32Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{2} ", {HistType::kTProfile, {axisNch}});
-    registry.add("c32Nch05etagap", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
-    registry.add("c34Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
+      registry.add("c22Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{2} ", {HistType::kTProfile, {axisNch}});
+      registry.add("c24Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{4}", {HistType::kTProfile, {axisNch}});
+      registry.add("c26Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{6}", {HistType::kTProfile, {axisNch}});
+      registry.add("c28Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{8}", {HistType::kTProfile, {axisNch}});
+      registry.add("c22Nch05etagap", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+      registry.add("c32Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{2} ", {HistType::kTProfile, {axisNch}});
+      registry.add("c32Nch05etagap", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+      registry.add("c34Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
+    } // End doprocessData
 
-    // Create histograms for Reco and MC
-    const AxisSpec axisCounter{1, 0, +1, ""};
-    registry.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
-    registry.add("hPtMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
-    registry.add("hCenMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisCentrality}});
-    registry.add("hPtMCRec05", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
-    registry.add("hPtMCRec5060", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
-
-    registry.add("mcEventCounter", "Monte Carlo Truth EventCounter", kTH1F, {axisCounter});
-    registry.add("hPtMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
-    registry.add("hCenMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisCentrality}});
-    registry.add("hPtMCGen05", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
-    registry.add("hPtMCGen5060", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
+    const AxisSpec axisZpos{48, -12., 12., "Vtx_{z} (cm)"};
+    const AxisSpec axisEvent{2, 0, +2, ""};
+    // MC Histograms
+    if (doprocesspTEff) {
+      registry.add("hEventCounterMCRec", "Event counter", kTH1F, {axisEvent});
+      registry.add("zPos", ";;Entries;", kTH1F, {axisZpos});
+      registry.add("T0Ccent", ";;Entries", kTH1F, {axisCentrality});
+      registry.add("nRecColvsCent", "", kTH2F, {{6, -0.5, 5.5}, {{axisCentrality}}});
+      registry.add("Pt_all_ch", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("Pt_ch", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("hPtMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
+      registry.add("hCenMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisCentrality}});
+      registry.add("Pt_pi", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("Pt_ka", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("Pt_pr", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("Pt_sigpos", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("Pt_signeg", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("Pt_re", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("EtaVsPhi", ";;#varphi;", kTH2F,
+                   {{{axisEta}, {100, -0.1 * o2::constants::math::PI, +2.1 * o2::constants::math::PI}}});
+      registry.add("hEventCounterMCGen", "Event counter", kTH1F, {axisEvent});
+      registry.add("zPosMC", ";;Entries;", kTH1F, {axisZpos});
+      registry.add("PtMC_ch", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("hPtMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
+      registry.add("hCenMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisCentrality}});
+      registry.add("PtMC_pi", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("PtMC_ka", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("PtMC_pr", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("PtMC_sigpos", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("PtMC_signeg", "", kTH2F, {{axisCentrality}, {axisPt}});
+      registry.add("PtMC_re", "", kTH2F, {{axisCentrality}, {axisPt}});
+    }
 
     // initial array
     bootstrapArray.resize(cfgNbootstrap);
@@ -604,49 +649,57 @@ struct FlowGfwTask {
       }
       registry.fill(HIST("hEventCount"), kISGOODZVTXFT0VSPV);
     }
-    if (cfgNoCollInTimeRangeStandard) {
-      if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-        // no collisions in specified time range
+    if (cfgIsVertexITSTPC) {
+      if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+        // removes collisions without vertex match between ITS-TPC
         return false;
       }
-      registry.fill(HIST("hEventCount"), kNOCOLLINTIMERANGESTANDART);
-    }
-    if (cfgEvSelkIsGoodITSLayersAll) {
-      if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
-        // removes dead staves of ITS
-        return false;
+      registry.fill(HIST("hEventCount"), kISVERTEXITSTPC);
+      if (cfgNoCollInTimeRangeStandard) {
+        if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+          // no collisions in specified time range
+          return false;
+        }
+        registry.fill(HIST("hEventCount"), kNOCOLLINTIMERANGESTANDART);
       }
-      registry.fill(HIST("hEventCount"), kISGOODITSLAYERSALL);
+      if (cfgEvSelkIsGoodITSLayersAll) {
+        if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+          // removes dead staves of ITS
+          return false;
+        }
+        registry.fill(HIST("hEventCount"), kISGOODITSLAYERSALL);
+      }
+
+      float vtxz = -999;
+      if (collision.numContrib() > 1) {
+        vtxz = collision.posZ();
+        float zRes = std::sqrt(collision.covZZ());
+        if (zRes > 0.25 && collision.numContrib() < 20)
+          vtxz = -999;
+      }
+
+      auto multNTracksPV = collision.multNTracksPV();
+
+      if (std::abs(vtxz) > cfgCutVertex)
+        return false;
+
+      if (cfgMultCut) {
+        if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+          return false;
+        if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+          return false;
+        if (multTrk < fMultCutLow->Eval(centrality))
+          return false;
+        if (multTrk > fMultCutHigh->Eval(centrality))
+          return false;
+        registry.fill(HIST("hEventCount"), kAFTERMULTCUTS);
+      }
+
+      // V0A T0A 5 sigma cut
+      if (cfgV0AT0A5Sigma)
+        if (std::abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
+          return false;
     }
-
-    float vtxz = -999;
-    if (collision.numContrib() > 1) {
-      vtxz = collision.posZ();
-      float zRes = std::sqrt(collision.covZZ());
-      if (zRes > 0.25 && collision.numContrib() < 20)
-        vtxz = -999;
-    }
-
-    auto multNTracksPV = collision.multNTracksPV();
-
-    if (std::abs(vtxz) > cfgCutVertex)
-      return false;
-
-    if (cfgMultCut) {
-      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-        return false;
-      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-        return false;
-      if (multTrk < fMultCutLow->Eval(centrality))
-        return false;
-      if (multTrk > fMultCutHigh->Eval(centrality))
-        return false;
-      registry.fill(HIST("hEventCount"), kAFTERMULTCUTS);
-    }
-
-    // V0A T0A 5 sigma cut
-    if (std::abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
-      return false;
 
     return true;
   }
@@ -688,11 +741,19 @@ struct FlowGfwTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
+    if (cfgDCAzPt && (std::fabs(track.dcaZ()) > (0.004f + 0.013f / track.pt())))
+      return false;
 
     if (cfgTrackSel) {
       return myTrackSel.IsSelected(track);
+    } else if (cfgGlobalplusITS) {
+      return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
+    } else if (cfgGlobalonly) {
+      return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
+    } else if (cfgITSonly) {
+      return ((track.itsNCls() >= cfgCutITSclu));
     } else {
-      return (track.tpcNClsFound() >= cfgCutTPCclu);
+      return false;
     }
   }
 
@@ -705,11 +766,6 @@ struct FlowGfwTask {
                        ifnode(dcaZ > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDCAXYonly),
                               ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA)) &&
                        (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
-
-  using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0CVariant1s>>; // collisions filter
-  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>; // tracks filter
-
-  using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
   void processData(Colls::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, aod::FT0s const&, aod::Zdcs const&, BCsRun3 const&)
   {
@@ -900,30 +956,30 @@ struct FlowGfwTask {
 
       if (cfgGlobalplusITS) {
         if (withinPtRef) {
-          fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
           globalTracksNch++;
           registry.fill(HIST("GlobalplusITS"), centrality, globalTracksNch);
+          fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
         }
       }
 
       if (track.hasTPC()) {
         if (cfgGlobalonly) {
           if (withinPtRef) {
-            fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
             globalTracksNch++;
             registry.fill(HIST("Globalonly"), centrality, globalTracksNch);
             registry.fill(HIST("pt_Cen_GlobalOnly"), centrality, track.pt());
             registry.fill(HIST("phi_Cen_GlobalOnly"), centrality, track.phi());
+            fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
           }
         }
       } else {
         if (cfgITSonly) {
           if (withinPtRef) {
-            fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
             globalTracksNch++;
             registry.fill(HIST("ITSonly"), centrality, globalTracksNch);
             registry.fill(HIST("pt_Cen_ITSOnly"), centrality, track.pt());
             registry.fill(HIST("phi_Cen_ITSOnly"), centrality, track.phi());
+            fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
           }
         }
       }
@@ -1009,61 +1065,118 @@ struct FlowGfwTask {
   } // End of process
   PROCESS_SWITCH(FlowGfwTask, processData, "Process analysis for Run 3 data", false);
 
-  // Filter the Reconstructed tracks
-  Filter mytrackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
-  using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>>;
-  using MyCollisions = soa::Join<aod::Collisions, aod::CentFT0Cs>;
+  using TheFilteredSimTracks = soa::Filtered<o2::aod::SimTracks>;
 
-  void processMCReco(MyCollisions::iterator const& collision, MyTracks const& tracks, aod::McParticles const&)
+  Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
+  Preslice<TheFilteredSimTracks> perCollision = aod::track::collisionId;
+  void processpTEff(aod::McCollisions::iterator const& mccollision,
+                    soa::SmallGroups<o2::aod::SimCollisions> const& collisions,
+                    aod::McParticles const& mcParticles,
+                    TheFilteredSimTracks const& simTracks)
   {
-    registry.fill(HIST("eventCounter"), 0.5);
-    const auto centrality = collision.centFT0C();
-    registry.fill(HIST("hCenMCRec"), centrality);
-    for (const auto& track : tracks) {
-      if (track.tpcNClsCrossedRows() < 70)
+    // MC reconstructed
+    for (const auto& collision : collisions) {
+      const auto& centrality = collision.centFT0C();
+
+      if (!collision.sel8())
+        return;
+
+      if (cfgUseAdditionalEventCut && !eventSelected(o2::aod::mult::MultNTracksPV(), collision, simTracks.size(), centrality)) {
+        return;
+      }
+
+      if (!collision.has_mcCollision())
         continue;
 
-      if (track.has_mcParticle()) {
+      registry.fill(HIST("zPos"), collision.posZ());
+      registry.fill(HIST("nRecColvsCent"), collisions.size(), collision.centFT0C());
+      registry.fill(HIST("T0Ccent"), centrality);
+
+      const auto& groupedTracks = simTracks.sliceBy(perCollision, collision.globalIndex());
+      for (const auto& track : groupedTracks) {
+
+        if (!trackSelected(track))
+          continue;
+
+        if (!track.has_mcParticle())
+          continue;
+
+        const auto& particle = track.mcParticle();
+        registry.fill(HIST("hEventCounterMCRec"), 0.5);
         registry.fill(HIST("hPtMCRec"), track.pt());
-        if (centrality > 0 && centrality <= 5) {
-          registry.fill(HIST("hPtMCRec05"), track.pt());
+        registry.fill(HIST("hCenMCRec"), centrality);
+        registry.fill(HIST("Pt_all_ch"), centrality, track.pt());
+        registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+
+        if (!particle.isPhysicalPrimary())
+          continue;
+
+        registry.fill(HIST("Pt_ch"), centrality, track.pt());
+        if (particle.pdgCode() == PDG_t::kPiPlus ||
+            particle.pdgCode() == PDG_t::kPiMinus) {
+          registry.fill(HIST("Pt_pi"), centrality, track.pt());
+        } else if (particle.pdgCode() == PDG_t::kKPlus ||
+                   particle.pdgCode() == PDG_t::kKMinus) {
+          registry.fill(HIST("Pt_ka"), centrality, track.pt());
+        } else if (particle.pdgCode() == PDG_t::kProton ||
+                   particle.pdgCode() == PDG_t::kProtonBar) {
+          registry.fill(HIST("Pt_pr"), centrality, track.pt());
+        } else if (particle.pdgCode() == PDG_t::kSigmaPlus ||
+                   particle.pdgCode() == PDG_t::kSigmaBarMinus) {
+          registry.fill(HIST("Pt_sigpos"), centrality, track.pt());
+        } else if (particle.pdgCode() == PDG_t::kSigmaMinus ||
+                   particle.pdgCode() == PDG_t::kSigmaBarPlus) {
+          registry.fill(HIST("Pt_signeg"), centrality, track.pt());
+        } else {
+          registry.fill(HIST("Pt_re"), centrality, track.pt());
         }
-        if (centrality >= 50 && centrality <= 60) {
-          registry.fill(HIST("hPtMCRec5060"), track.pt());
+      }
+
+      // Generated MC
+      registry.fill(HIST("hEventCounterMCGen"), 0.5);
+      if (std::fabs(mccollision.posZ()) > cfgCutVertex)
+        continue;
+      registry.fill(HIST("zPosMC"), mccollision.posZ());
+      registry.fill(HIST("hEventCounterMCGen"), 1);
+
+      for (const auto& particle : mcParticles) {
+        if (particle.eta() < -cfgCutEta || particle.eta() > cfgCutEta) {
+          continue;
+        }
+        if (particle.pt() < cfgCutPtMin || particle.pt() > cfgCutPtMax) {
+          continue;
+        }
+        if (!particle.isPhysicalPrimary()) {
+          continue;
+        }
+        registry.fill(HIST("hEventCounterMCGen"), 1.5);
+        registry.fill(HIST("hPtMCGen"), particle.pt());
+        registry.fill(HIST("hCenMCGen"), centrality);
+        registry.fill(HIST("PtMC_ch"), centrality, particle.pt());
+        if (particle.pdgCode() == PDG_t::kPiPlus ||
+            particle.pdgCode() == PDG_t::kPiMinus) { // pion
+          registry.fill(HIST("PtMC_pi"), centrality, particle.pt());
+        } else if (particle.pdgCode() == PDG_t::kKPlus ||
+                   particle.pdgCode() == PDG_t::kKMinus) { // kaon
+          registry.fill(HIST("PtMC_ka"), centrality, particle.pt());
+        } else if (particle.pdgCode() == PDG_t::kProton ||
+                   particle.pdgCode() == PDG_t::kProtonBar) { // proton
+          registry.fill(HIST("PtMC_pr"), centrality, particle.pt());
+        } else if (particle.pdgCode() == PDG_t::kSigmaPlus ||
+                   particle.pdgCode() ==
+                     PDG_t::kSigmaBarMinus) { // positive sigma
+          registry.fill(HIST("PtMC_sigpos"), centrality, particle.pt());
+        } else if (particle.pdgCode() == PDG_t::kSigmaMinus ||
+                   particle.pdgCode() ==
+                     PDG_t::kSigmaBarPlus) { // negative sigma
+          registry.fill(HIST("PtMC_signeg"), centrality, particle.pt());
+        } else { // rest
+          registry.fill(HIST("PtMC_re"), centrality, particle.pt());
         }
       }
     }
   }
-  PROCESS_SWITCH(FlowGfwTask, processMCReco, "process reconstructed information", false);
-
-  // Filter for MCParticle simulation
-  Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPtMin) && (aod::mcparticle::pt < cfgCutPtMax);
-  using MyMcParticles = soa::Filtered<aod::McParticles>;
-  using MyMcCollisionsFT0Cs = soa::Join<o2::aod::Collisions, o2::aod::CentFT0Cs>;
-
-  void processMCGEN(aod::McCollision const&, soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>> const& collisions, MyMcParticles const& mcParticles, MyMcCollisionsFT0Cs const& mcCollisionsFT0Cs)
-  {
-    if (collisions.size() > -1) {
-      registry.fill(HIST("mcEventCounter"), 0.5);
-      for (const auto& mcCollisionsFT0C : mcCollisionsFT0Cs) {
-        registry.fill(HIST("hCenMCGen"), mcCollisionsFT0C.centFT0C());
-      }
-
-      for (const auto& mcCollisionsFT0C : mcCollisionsFT0Cs) {
-        const auto centrality = mcCollisionsFT0C.centFT0C();
-        for (const auto& mcParticle : mcParticles) {
-          registry.fill(HIST("hPtMCGen"), mcParticle.pt());
-          if (centrality > 0 && centrality <= 5) {
-            registry.fill(HIST("hPtMCGen05"), mcParticle.pt());
-          }
-          if (centrality >= 50 && centrality <= 60) {
-            registry.fill(HIST("hPtMCGen5060"), mcParticle.pt());
-          }
-        }
-      }
-    }
-  }
-  PROCESS_SWITCH(FlowGfwTask, processMCGEN, "process pure simulation information", false);
+  PROCESS_SWITCH(FlowGfwTask, processpTEff, "Process pT Eff", false);
 
 }; // End of struct
 

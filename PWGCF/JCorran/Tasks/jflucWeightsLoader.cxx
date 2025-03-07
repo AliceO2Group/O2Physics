@@ -50,7 +50,7 @@ struct JflucWeightsLoader {
 
   THnF* ph = 0;
   TFile* pf = 0;
-  THnF* pheff = 0;
+  THnD* pheff = 0;
   TFile* pfeff = 0;
   int runNumber = 0;
   int timestamp = 0;
@@ -120,7 +120,7 @@ struct JflucWeightsLoader {
         LOGF(fatal, "Efficiency correction weights file not found: %s", cfgPathEffWeights.value.substr(8).c_str());
       }
       //
-      if (!(pheff = pfeff->Get<THnF>("ccdb_object"))) {
+      if (!(pheff = pfeff->Get<THnD>("ccdb_object"))) {
         LOGF(warning, "Efficiency correction histogram not found.");
       } else {
         LOGF(info, "Loaded efficiency correction histogram locally.");

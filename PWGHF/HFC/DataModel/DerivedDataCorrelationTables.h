@@ -40,6 +40,9 @@ using HfcRedCollision = HfcRedCollisions::iterator;
 namespace hf_candidate_reduced
 {
 DECLARE_SOA_INDEX_COLUMN(HfcRedCollision, hfcRedCollision); //! ReducedCollision index
+DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                //! Prong 0 index
+DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                //! Prong 1 index
+DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                //! Prong2 index
 DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                //! Phi of the candidate
 DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                //! Eta of the candidate
 DECLARE_SOA_COLUMN(PtCand, ptCand, float);                  //! Pt of the candidate
@@ -53,7 +56,10 @@ DECLARE_SOA_TABLE(DsCandReduceds, "AOD", "DSCANDREDUCED", //! Table with Ds cand
                   aod::hf_candidate_reduced::PhiCand,
                   aod::hf_candidate_reduced::EtaCand,
                   aod::hf_candidate_reduced::PtCand,
-                  aod::hf_candidate_reduced::InvMassDs);
+                  aod::hf_candidate_reduced::InvMassDs,
+                  aod::hf_candidate_reduced::Prong0Id,
+                  aod::hf_candidate_reduced::Prong1Id,
+                  aod::hf_candidate_reduced::Prong2Id);
 
 DECLARE_SOA_TABLE(DsCandSelInfos, "AOD", "DSCANDSELINFO", //! Table with Ds candidate selection info
                   soa::Index<>,
@@ -63,7 +69,7 @@ DECLARE_SOA_TABLE(DsCandSelInfos, "AOD", "DSCANDSELINFO", //! Table with Ds cand
 
 namespace hf_assoc_track_reduced
 {
-DECLARE_SOA_COLUMN(TrackId, trackId, int);                 //! Original track index
+DECLARE_SOA_COLUMN(OriginTrackId, originTrackId, int);     //! Original track index
 DECLARE_SOA_COLUMN(NTpcCrossedRows, nTpcCrossedRows, int); //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(ItsClusterMap, itsClusterMap, int);     //! ITS cluster map, one bit per a layer, starting from the innermost
 DECLARE_SOA_COLUMN(ItsNCls, itsNCls, int);                 //! Number of ITS clusters
@@ -76,11 +82,12 @@ DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                     //! Impact parameter 
 DECLARE_SOA_TABLE(AssocTrackReds, "AOD", "ASSOCTRACKRED", //! Table with associated track info
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedCollisionId,
+                  aod::hf_assoc_track_reduced::OriginTrackId,
                   aod::hf_assoc_track_reduced::PhiAssocTrack,
                   aod::hf_assoc_track_reduced::EtaAssocTrack,
                   aod::hf_assoc_track_reduced::PtAssocTrack);
 
-DECLARE_SOA_TABLE(AssocTrackSelInfos, "AOD", "ASSOCTRACKSELINFO", //! Table with associated track info
+DECLARE_SOA_TABLE(AssocTrackSels, "AOD", "ASSOCTRACKSEL", //! Table with associated track info
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedCollisionId,
                   aod::hf_assoc_track_reduced::NTpcCrossedRows,

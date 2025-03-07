@@ -61,9 +61,8 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
 
   // Track Parameters
-  Configurable<float> minITSnCls{"minITSnCls", 3.0f, "min number of ITS clusters"};
+  Configurable<float> minITSnCls{"minITSnCls", 1.0f, "min number of ITS clusters"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80.0f, "min number of TPC crossed rows"};
-  Configurable<float> minNCrossedRowsOverFindable{"minNCrossedRowsOverFindable", 0.8f, "min number of TPC crossed rows/findable"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
   Configurable<float> etaMin{"etaMin", -0.8f, "eta min"};
@@ -94,6 +93,8 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     // Event Counters
     if (doprocessData) {
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
+      registryData.add("dcaxyDatavspt", "dcaxyDatavspt", HistType::kTH2D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {400, -2, 2, "DCA_{xy} (cm)"}});
+      registryData.add("dcazDatavspt", "dcazDatavspt", HistType::kTH2D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {400, -2, 2, "DCA_{z} (cm)"}});
       registryData.add("primPionTPC", "primPionTPC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryData.add("primPionTPC_ITS", "primPionTPC_ITS", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryData.add("secPionTPC", "secPionTPC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
@@ -104,6 +105,8 @@ struct LfITSTPCMatchingSecondaryTracksQA {
 
     if (doprocessMC) {
       registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
+      registryMC.add("dcaxyMCvspt", "dcaxyMCvspt", HistType::kTH2D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {400, -2, 2, "DCA_{xy} (cm)"}});
+      registryMC.add("dcazMCvspt", "dcazMCvspt", HistType::kTH2D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {400, -2, 2, "DCA_{z} (cm)"}});
       registryMC.add("primPionTPC_MC", "primPionTPC_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryMC.add("primPionTPC_ITS_MC", "primPionTPC_ITS_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryMC.add("secPionTPC_MC", "secPionTPC_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
@@ -126,8 +129,6 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       return false;
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
       return false;
-    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < minNCrossedRowsOverFindable)
-      return false;
     if (track.tpcChi2NCl() > maxChi2TPC)
       return false;
     if (track.eta() < etaMin || track.eta() > etaMax)
@@ -146,8 +147,6 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       return false;
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
       return false;
-    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < minNCrossedRowsOverFindable)
-      return false;
     if (track.tpcChi2NCl() > maxChi2TPC)
       return false;
     if (track.eta() < etaMin || track.eta() > etaMax)
@@ -163,8 +162,6 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     if (!track.hasTPC())
       return false;
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
-      return false;
-    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < minNCrossedRowsOverFindable)
       return false;
     if (track.tpcChi2NCl() > maxChi2TPC)
       return false;
@@ -211,15 +208,19 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   template <typename ItsTrack>
   bool passedTrackSelectionIts(const ItsTrack& track)
   {
+    /*
     if (!track.hasITS())
       return false;
     if (track.itsNCls() < minITSnCls)
       return false;
     if (track.itsChi2NCl() > maxChi2ITS)
       return false;
+    */
+
+    if (track.itsNCls() < minITSnCls)
+      return false;
 
     auto requiredItsHit = static_cast<std::vector<float>>(requiredHit);
-
     if (requireItsHits) {
       for (int i = 0; i < 7; i++) {
         if (requiredItsHit[i] > 0 && !hasHitOnITSlayer(track.itsClusterMap(), i)) {
@@ -241,6 +242,12 @@ struct LfITSTPCMatchingSecondaryTracksQA {
 
     for (const auto& track : tracks) {
 
+      // DCA distributions
+      if (passedTrackSelectionV0daughTPC(track) && passedPionSelection(track)) {
+        registryData.fill(HIST("dcaxyDatavspt"), track.pt(), track.dcaXY());
+        registryData.fill(HIST("dcazDatavspt"), track.pt(), track.dcaZ());
+      }
+
       // Primary Tracks
       if (passedTrackSelectionTpcPrimary(track) && passedPionSelection(track))
         registryData.fill(HIST("primPionTPC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
@@ -250,7 +257,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       // Secondary Tracks
       if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track))
         registryData.fill(HIST("secPionTPC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
-      if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && track.hasITS())
+      if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && passedTrackSelectionIts(track))
         registryData.fill(HIST("secPionTPC_ITS"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
     }
 
@@ -265,9 +272,9 @@ struct LfITSTPCMatchingSecondaryTracksQA {
         registryData.fill(HIST("secPionV0TPC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
       if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack))
         registryData.fill(HIST("secPionV0TPC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
-      if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && posTrack.hasITS())
+      if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && passedTrackSelectionIts(posTrack))
         registryData.fill(HIST("secPionV0TPC_ITS"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
-      if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && negTrack.hasITS())
+      if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && passedTrackSelectionIts(negTrack))
         registryData.fill(HIST("secPionV0TPC_ITS"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
     }
   }
@@ -290,6 +297,12 @@ struct LfITSTPCMatchingSecondaryTracksQA {
 
       for (const auto& track : tracksPerColl) {
 
+        // DCA distributions
+        if (passedTrackSelectionV0daughTPC(track) && passedPionSelection(track)) {
+          registryMC.fill(HIST("dcaxyMCvspt"), track.pt(), track.dcaXY());
+          registryMC.fill(HIST("dcazMCvspt"), track.pt(), track.dcaZ());
+        }
+
         // Primary Tracks
         if (passedTrackSelectionTpcPrimary(track) && passedPionSelection(track))
           registryMC.fill(HIST("primPionTPC_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
@@ -299,7 +312,7 @@ struct LfITSTPCMatchingSecondaryTracksQA {
         // Secondary Tracks
         if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track))
           registryMC.fill(HIST("secPionTPC_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
-        if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && track.hasITS())
+        if (passedTrackSelectionTpcSecondary(track) && passedPionSelection(track) && passedTrackSelectionIts(track))
           registryMC.fill(HIST("secPionTPC_ITS_MC"), track.pt(), track.eta(), TVector2::Phi_0_2pi(track.phi()));
       }
 
@@ -314,9 +327,9 @@ struct LfITSTPCMatchingSecondaryTracksQA {
           registryMC.fill(HIST("secPionV0TPC_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
         if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack))
           registryMC.fill(HIST("secPionV0TPC_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
-        if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && posTrack.hasITS())
+        if (passedTrackSelectionV0daughTPC(posTrack) && passedPionSelection(posTrack) && passedTrackSelectionIts(posTrack))
           registryMC.fill(HIST("secPionV0TPC_ITS_MC"), posTrack.pt(), posTrack.eta(), TVector2::Phi_0_2pi(posTrack.phi()));
-        if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && negTrack.hasITS())
+        if (passedTrackSelectionV0daughTPC(negTrack) && passedPionSelection(negTrack) && passedTrackSelectionIts(negTrack))
           registryMC.fill(HIST("secPionV0TPC_ITS_MC"), negTrack.pt(), negTrack.eta(), TVector2::Phi_0_2pi(negTrack.phi()));
       }
     }

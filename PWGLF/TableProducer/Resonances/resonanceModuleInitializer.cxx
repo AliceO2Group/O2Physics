@@ -139,8 +139,6 @@ struct ResonanceModuleInitializer {
       multEstimator = 1;
     } else if (cfgMultName.value == "FT0A") {
       multEstimator = 2;
-    } else if (cfgMultName.value == "FV0A") {
-      multEstimator = 99;
     }
     LOGF(info, "Mult estimator: %d, %s", multEstimator, cfgMultName.value.c_str());
 
@@ -278,7 +276,7 @@ struct ResonanceModuleInitializer {
         break;
       case 1:
         if constexpr (isMC) {
-          LOG(fatal) << "CentFV0A is not available for MC";
+          LOG(fatal) << "CentFT0C is not available for MC";
           return returnValue;
         } else {
           returnValue = ResoEvents.centFT0C();
@@ -290,14 +288,6 @@ struct ResonanceModuleInitializer {
           return returnValue;
         } else {
           returnValue = ResoEvents.centFT0A();
-          break;
-        }
-      case 99:
-        if constexpr (isMC) {
-          LOG(fatal) << "CentFV0A is not available for MC";
-          return returnValue;
-        } else {
-          returnValue = ResoEvents.centFV0A();
           break;
         }
       default:
@@ -542,7 +532,7 @@ struct ResonanceModuleInitializer {
     colCuts.fillQA(collision);
     centrality = centEst(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centrality, -999, 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz);
   }
   PROCESS_SWITCH(ResonanceModuleInitializer, processRun3, "Default process for RUN3", false);
 
@@ -555,14 +545,14 @@ struct ResonanceModuleInitializer {
   void processRun2(soa::Filtered<aod::ResoRun2CollisionCandidates>::iterator const& collision,
                    aod::BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<aod::BCsWithRun2Info>();
+    // auto bc = collision.bc_as<aod::BCsWithRun2Info>();
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
     colCuts.fillQARun2(collision);
     centrality = collision.centRun2V0M();
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centrality, -999, 0., 0., 0., 0., dBz, bc.timestamp(), -999);
+    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz);
   }
   PROCESS_SWITCH(ResonanceModuleInitializer, processRun2, "process for RUN2", false);
 
@@ -751,43 +741,32 @@ struct ResonanceDaughterInitializer {
         qaRegistry.fill(HIST("QA/hTrackEta"), track.eta());
         qaRegistry.fill(HIST("QA/hTrackPhi"), track.phi());
       }
+      uint8_t trackFlags = (track.passedITSRefit() << 0) |
+                           (track.passedTPCRefit() << 1) |
+                           (track.isGlobalTrackWoDCA() << 2) |
+                           (track.isGlobalTrack() << 3) |
+                           (track.isPrimaryTrack() << 4) |
+                           (track.isPVContributor() << 5) |
+                           (track.hasTOF() << 6) |
+                           ((track.sign() > 0) << 7); // sign +1: 1, -1: 0
       reso2trks(collision.globalIndex(),
                 track.globalIndex(),
                 track.pt(),
                 track.px(),
                 track.py(),
                 track.pz(),
-                track.eta(),
-                track.phi(),
-                track.sign(),
                 (uint8_t)track.tpcNClsCrossedRows(),
                 (uint8_t)track.tpcNClsFound(),
-                (uint8_t)track.itsNCls(),
-                track.dcaXY(),
-                track.dcaZ(),
-                track.x(),
-                track.alpha(),
-                track.hasITS(),
-                track.hasTPC(),
-                track.hasTOF(),
-                track.tpcNSigmaPi(),
-                track.tpcNSigmaKa(),
-                track.tpcNSigmaPr(),
-                track.tpcNSigmaEl(),
-                track.tofNSigmaPi(),
-                track.tofNSigmaKa(),
-                track.tofNSigmaPr(),
-                track.tofNSigmaEl(),
-                track.tpcSignal(),
-                track.passedITSRefit(),
-                track.passedTPCRefit(),
-                track.isGlobalTrackWoDCA(),
-                track.isGlobalTrack(),
-                track.isPrimaryTrack(),
-                track.isPVContributor(),
-                track.tpcCrossedRowsOverFindableCls(),
-                track.itsChi2NCl(),
-                track.tpcChi2NCl());
+                static_cast<int16_t>(track.dcaXY() * 10000),
+                static_cast<int16_t>(track.dcaZ() * 10000),
+                (int8_t)(track.tpcNSigmaPi() * 10),
+                (int8_t)(track.tpcNSigmaKa() * 10),
+                (int8_t)(track.tpcNSigmaPr() * 10),
+                (int8_t)(track.tofNSigmaPi() * 10),
+                (int8_t)(track.tofNSigmaKa() * 10),
+                (int8_t)(track.tofNSigmaPr() * 10),
+                (int8_t)(track.tpcSignal() * 10),
+                trackFlags);
       if constexpr (isMC) {
         fillMCTrack(track);
       }
@@ -903,21 +882,19 @@ struct ResonanceDaughterInitializer {
                v0.px(),
                v0.py(),
                v0.pz(),
-               v0.eta(),
-               v0.phi(),
                childIDs,
-               v0.template posTrack_as<TrackType>().tpcNSigmaPi(),
-               v0.template posTrack_as<TrackType>().tpcNSigmaKa(),
-               v0.template posTrack_as<TrackType>().tpcNSigmaPr(),
-               v0.template negTrack_as<TrackType>().tpcNSigmaPi(),
-               v0.template negTrack_as<TrackType>().tpcNSigmaKa(),
-               v0.template negTrack_as<TrackType>().tpcNSigmaPr(),
-               v0.template negTrack_as<TrackType>().tofNSigmaPi(),
-               v0.template negTrack_as<TrackType>().tofNSigmaKa(),
-               v0.template negTrack_as<TrackType>().tofNSigmaPr(),
-               v0.template posTrack_as<TrackType>().tofNSigmaPi(),
-               v0.template posTrack_as<TrackType>().tofNSigmaKa(),
-               v0.template posTrack_as<TrackType>().tofNSigmaPr(),
+               (int8_t)(v0.template posTrack_as<TrackType>().tpcNSigmaPi() * 10),
+               (int8_t)(v0.template posTrack_as<TrackType>().tpcNSigmaKa() * 10),
+               (int8_t)(v0.template posTrack_as<TrackType>().tpcNSigmaPr() * 10),
+               (int8_t)(v0.template negTrack_as<TrackType>().tpcNSigmaPi() * 10),
+               (int8_t)(v0.template negTrack_as<TrackType>().tpcNSigmaKa() * 10),
+               (int8_t)(v0.template negTrack_as<TrackType>().tpcNSigmaPr() * 10),
+               (int8_t)(v0.template negTrack_as<TrackType>().tofNSigmaPi() * 10),
+               (int8_t)(v0.template negTrack_as<TrackType>().tofNSigmaKa() * 10),
+               (int8_t)(v0.template negTrack_as<TrackType>().tofNSigmaPr() * 10),
+               (int8_t)(v0.template posTrack_as<TrackType>().tofNSigmaPi() * 10),
+               (int8_t)(v0.template posTrack_as<TrackType>().tofNSigmaKa() * 10),
+               (int8_t)(v0.template posTrack_as<TrackType>().tofNSigmaPr() * 10),
                v0.v0cosPA(),
                v0.dcaV0daughters(),
                v0.dcapostopv(),
@@ -1058,27 +1035,25 @@ struct ResonanceDaughterInitializer {
                     casc.px(),
                     casc.py(),
                     casc.pz(),
-                    casc.eta(),
-                    casc.phi(),
                     childIDs,
-                    casc.template posTrack_as<TrackType>().tpcNSigmaPi(),
-                    casc.template posTrack_as<TrackType>().tpcNSigmaKa(),
-                    casc.template posTrack_as<TrackType>().tpcNSigmaPr(),
-                    casc.template negTrack_as<TrackType>().tpcNSigmaPi(),
-                    casc.template negTrack_as<TrackType>().tpcNSigmaKa(),
-                    casc.template negTrack_as<TrackType>().tpcNSigmaPr(),
-                    casc.template bachelor_as<TrackType>().tpcNSigmaPi(),
-                    casc.template bachelor_as<TrackType>().tpcNSigmaKa(),
-                    casc.template bachelor_as<TrackType>().tpcNSigmaPr(),
-                    casc.template posTrack_as<TrackType>().tofNSigmaPi(),
-                    casc.template posTrack_as<TrackType>().tofNSigmaKa(),
-                    casc.template posTrack_as<TrackType>().tofNSigmaPr(),
-                    casc.template negTrack_as<TrackType>().tofNSigmaPi(),
-                    casc.template negTrack_as<TrackType>().tofNSigmaKa(),
-                    casc.template negTrack_as<TrackType>().tofNSigmaPr(),
-                    casc.template bachelor_as<TrackType>().tofNSigmaPi(),
-                    casc.template bachelor_as<TrackType>().tofNSigmaKa(),
-                    casc.template bachelor_as<TrackType>().tofNSigmaPr(),
+                    (int8_t)(casc.template posTrack_as<TrackType>().tpcNSigmaPi() * 10),
+                    (int8_t)(casc.template posTrack_as<TrackType>().tpcNSigmaKa() * 10),
+                    (int8_t)(casc.template posTrack_as<TrackType>().tpcNSigmaPr() * 10),
+                    (int8_t)(casc.template negTrack_as<TrackType>().tpcNSigmaPi() * 10),
+                    (int8_t)(casc.template negTrack_as<TrackType>().tpcNSigmaKa() * 10),
+                    (int8_t)(casc.template negTrack_as<TrackType>().tpcNSigmaPr() * 10),
+                    (int8_t)(casc.template bachelor_as<TrackType>().tpcNSigmaPi() * 10),
+                    (int8_t)(casc.template bachelor_as<TrackType>().tpcNSigmaKa() * 10),
+                    (int8_t)(casc.template bachelor_as<TrackType>().tpcNSigmaPr() * 10),
+                    (int8_t)(casc.template posTrack_as<TrackType>().tofNSigmaPi() * 10),
+                    (int8_t)(casc.template posTrack_as<TrackType>().tofNSigmaKa() * 10),
+                    (int8_t)(casc.template posTrack_as<TrackType>().tofNSigmaPr() * 10),
+                    (int8_t)(casc.template negTrack_as<TrackType>().tofNSigmaPi() * 10),
+                    (int8_t)(casc.template negTrack_as<TrackType>().tofNSigmaKa() * 10),
+                    (int8_t)(casc.template negTrack_as<TrackType>().tofNSigmaPr() * 10),
+                    (int8_t)(casc.template bachelor_as<TrackType>().tofNSigmaPi() * 10),
+                    (int8_t)(casc.template bachelor_as<TrackType>().tofNSigmaKa() * 10),
+                    (int8_t)(casc.template bachelor_as<TrackType>().tofNSigmaPr() * 10),
                     casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                     casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()),
                     casc.dcaV0daughters(),
