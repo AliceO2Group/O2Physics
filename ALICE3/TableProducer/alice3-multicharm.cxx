@@ -423,7 +423,7 @@ struct alice3multicharm {
     histos.fill(HIST("hNCollisions"), 1);
     if (tracks.size() < minMultiplicity)
       return;
-    
+
     histos.fill(HIST("hNCollisions"), 2);
     // group with this collision
     // n.b. cascades do not need to be grouped, being used directly in iterator-grouping
