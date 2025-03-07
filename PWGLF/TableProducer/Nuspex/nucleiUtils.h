@@ -165,4 +165,3 @@ constexpr int EvSelDefault[8][1]{
   {0},
   {0}};
 } // namespace nuclei
-                     
