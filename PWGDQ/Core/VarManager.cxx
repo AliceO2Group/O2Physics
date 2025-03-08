@@ -1511,6 +1511,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCEta"] = kMCEta;
   fgVarNamesMap["kMCY"] = kMCY;
   fgVarNamesMap["kMCParticleGeneratorId"] = kMCParticleGeneratorId;
+  fgVarNamesMap["kMCStatusCode"] = kMCStatusCode;
+  fgVarNamesMap["kIsPowhegDYMuon"] = kIsPowhegDYMuon;
   fgVarNamesMap["kNMCParticleVariables"] = kNMCParticleVariables;
   fgVarNamesMap["kMCMotherPdgCode"] = kMCMotherPdgCode;
   fgVarNamesMap["kCandidateId"] = kCandidateId;
