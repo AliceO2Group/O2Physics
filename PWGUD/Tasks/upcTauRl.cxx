@@ -106,7 +106,7 @@ DECLARE_SOA_COLUMN(TrkTOFnSigmaPr, trkTOFnSigmaPr, float[2]);
 DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
                   tau_tree::RunNumber, tau_tree::Bc, tau_tree::TotalTracks, tau_tree::NumContrib, tau_tree::GlobalNonPVtracks, tau_tree::PosX, tau_tree::PosY, tau_tree::PosZ,
                   tau_tree::RecoMode, tau_tree::OccupancyInTime, tau_tree::HadronicRate,
-                  tau_tree::Trs, tau_tree::Trofs, tau_tree::Hmpr, tau_tree::TFb, tau_tree::ITSROFb, tau_tree::Sbp, tau_tree::ZvtxFT0vPV, tau_tree::VtxITSTPC,
+                  tau_tree::Trs, tau_tree::Trofs, tau_tree::Hmpr, tau_tree::Tfb, tau_tree::ItsRofb, tau_tree::Sbp, tau_tree::ZvtxFT0vsPv, tau_tree::VtxITSTPC,
                   tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA,
                   tau_tree::TimeFT0A, tau_tree::TimeFT0C, tau_tree::TimeFV0A,
                   tau_tree::TrkPx, tau_tree::TrkPy, tau_tree::TrkPz, tau_tree::TrkSign, tau_tree::TrkDCAxy, tau_tree::TrkDCAz,
@@ -2050,7 +2050,7 @@ struct UpcTauRl {
       float tofPr[2] = {trk1.tofNSigmaPr(), trk2.tofNSigmaPr()};
 
       tauTwoTracks(collision.runNumber(), collision.globalBC(), countTracksPerCollision, collision.numContrib(), countGoodNonPVtracks, collision.posX(), collision.posY(), collision.posZ(),
-                   collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.hmpr(), collision.hmpr(),
+                   collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.trofs(), collision.hmpr(),
                    collision.tfb(), collision.itsROFb(), collision.sbp(), collision.zVtxFT0vPV(), collision.vtxITSTPC(),
                    collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(),
                    collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(),
