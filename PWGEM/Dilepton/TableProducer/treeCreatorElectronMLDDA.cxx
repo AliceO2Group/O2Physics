@@ -752,8 +752,8 @@ struct TreeCreatorElectronMLDDA {
           registry.fill(HIST("Cascade/hRxy_Omega"), cascade.mOmega(), cascade.cascradius());
           registry.fill(HIST("Cascade/hCTau_Omega"), cascade.mOmega(), ctauOmega);
           if (cascadecuts.cfg_min_mass_Omega < cascade.mOmega() && cascade.mOmega() < cascadecuts.cfg_max_mass_Omega) { // select Omega candidates
-            registry.fill(HIST("V0/hTPCdEdx_P_Ka"), neg.p(), neg.tpcSignal());
-            registry.fill(HIST("V0/hTOFbeta_P_Ka"), neg.p(), neg.beta());
+            registry.fill(HIST("V0/hTPCdEdx_P_Ka"), bachelor.p(), bachelor.tpcSignal());
+            registry.fill(HIST("V0/hTOFbeta_P_Ka"), bachelor.p(), bachelor.beta());
             if (dist01(engine) < downscaling_kaon) {
               fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
             }
