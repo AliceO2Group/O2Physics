@@ -156,7 +156,7 @@ struct PCMQC {
     fRegistry.add("V0/hEtaResolution", "#eta resolution;p_{#gamma} (GeV/c);#Delta#eta", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
     fRegistry.add("V0/hThetaResolution", "#theta resolution;p_{#gamma} (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
     fRegistry.add("V0/hPhiResolution", "#varphi resolution;p_{#gamma} (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
-    fRegistry.add("V0/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {40, -2, +2}}, false);
+    fRegistry.add("V0/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {80, -2, +2}}, false);
     fRegistry.add("V0/hNgamma", "Number of #gamma candidates per collision", kTH1F, {{101, -0.5f, 100.5f}});
 
     // v0leg info
