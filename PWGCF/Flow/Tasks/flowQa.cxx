@@ -96,6 +96,7 @@ struct FlowQa {
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
   O2_DEFINE_CONFIGURABLE(cfgUseEPcorrection, bool, false, "Use event plane efficiency correction")
+  O2_DEFINE_CONFIGURABLE(cfgUseEPEffSlopeFactor, float, 1.0f, "A factor to scale the EP efficiency slope")
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN02 {2} refP02 {-2}", "refN12 {2} refP12 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch02Gap22", "Ch12Gap22"}, "User defined GFW Name"};
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
@@ -367,19 +368,19 @@ struct FlowQa {
       hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", 7, 0.2, 3.0);
       funcEff.resize(7);
       funcEff[0] = new TF1("funcEff0", "[0]+[1]*x", 0, 3000);
-      funcEff[0]->SetParameters(0.736274, -2.26721e-05);
+      funcEff[0]->SetParameters(0.736274, -2.26721e-05 * cfgUseEPEffSlopeFactor);
       funcEff[1] = new TF1("funcEff1", "[0]+[1]*x", 0, 3000);
-      funcEff[1]->SetParameters(0.773396, -2.79496e-05);
+      funcEff[1]->SetParameters(0.773396, -2.79496e-05 * cfgUseEPEffSlopeFactor);
       funcEff[2] = new TF1("funcEff2", "[0]+[1]*x", 0, 3000);
-      funcEff[2]->SetParameters(0.792831, -2.69748e-05);
+      funcEff[2]->SetParameters(0.792831, -2.69748e-05 * cfgUseEPEffSlopeFactor);
       funcEff[3] = new TF1("funcEff3", "[0]+[1]*x", 0, 3000);
-      funcEff[3]->SetParameters(0.808402, -2.48438e-05);
+      funcEff[3]->SetParameters(0.808402, -2.48438e-05 * cfgUseEPEffSlopeFactor);
       funcEff[4] = new TF1("funcEff4", "[0]+[1]*x", 0, 3000);
-      funcEff[4]->SetParameters(0.817907, -2.31138e-05);
+      funcEff[4]->SetParameters(0.817907, -2.31138e-05 * cfgUseEPEffSlopeFactor);
       funcEff[5] = new TF1("funcEff5", "[0]+[1]*x", 0, 3000);
-      funcEff[5]->SetParameters(0.82473, -2.20517e-05);
+      funcEff[5]->SetParameters(0.82473, -2.20517e-05 * cfgUseEPEffSlopeFactor);
       funcEff[6] = new TF1("funcEff6", "[0]+[1]*x", 0, 3000);
-      funcEff[6]->SetParameters(0.829151, -2.0758e-05);
+      funcEff[6]->SetParameters(0.829151, -2.0758e-05 * cfgUseEPEffSlopeFactor);
       funcV2 = new TF1("funcV2", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
       funcV2->SetParameters(0.0186111, 0.00351907, -4.38264e-05, 1.35383e-07, -3.96266e-10);
       funcV3 = new TF1("funcV3", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
