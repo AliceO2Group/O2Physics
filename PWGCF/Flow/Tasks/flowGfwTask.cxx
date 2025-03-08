@@ -771,7 +771,7 @@ struct FlowGfwTask {
     if (tracks.size() < 1)
       return;
 
-      registry.fill(HIST("hEventCount"), kSEL8);
+    registry.fill(HIST("hEventCount"), kSEL8);
 
     // Choose centrality estimator -- Only one can be true
     auto centrality = -1;
@@ -1108,20 +1108,20 @@ struct FlowGfwTask {
           continue;
 
         registry.fill(HIST("Pt_ch"), centrality, track.pt());
-        if (particle.pdgCode() == kPiPlus ||
-            particle.pdgCode() == kPiMinus) {
+        if (particle.pdgCode() == PDG_t::kPiPlus ||
+            particle.pdgCode() == PDG_t::kPiMinus) {
           registry.fill(HIST("Pt_pi"), centrality, track.pt());
-        } else if (particle.pdgCode() == kKPlus ||
-                   particle.pdgCode() == kKMinus) {
+        } else if (particle.pdgCode() == PDG_t::kKPlus ||
+                   particle.pdgCode() == PDG_t::kKMinus) {
           registry.fill(HIST("Pt_ka"), centrality, track.pt());
-        } else if (particle.pdgCode() == kProton ||
-                   particle.pdgCode() == kProtonBar) {
+        } else if (particle.pdgCode() == PDG_t::kProton ||
+                   particle.pdgCode() == PDG_t::kProtonBar) {
           registry.fill(HIST("Pt_pr"), centrality, track.pt());
-        } else if (particle.pdgCode() == kSigmaPlus ||
-                   particle.pdgCode() == kSigmaBarMinus) {
+        } else if (particle.pdgCode() == PDG_t::kSigmaPlus ||
+                   particle.pdgCode() == PDG_t::kSigmaBarMinus) {
           registry.fill(HIST("Pt_sigpos"), centrality, track.pt());
-        } else if (particle.pdgCode() == kSigmaMinus ||
-                   particle.pdgCode() == kSigmaBarPlus) {
+        } else if (particle.pdgCode() == PDG_t::kSigmaMinus ||
+                   particle.pdgCode() == PDG_t::kSigmaBarPlus) {
           registry.fill(HIST("Pt_signeg"), centrality, track.pt());
         } else {
           registry.fill(HIST("Pt_re"), centrality, track.pt());
@@ -1149,22 +1149,22 @@ struct FlowGfwTask {
         registry.fill(HIST("hPtMCGen"), particle.pt());
         registry.fill(HIST("hCenMCGen"), centrality);
         registry.fill(HIST("PtMC_ch"), centrality, particle.pt());
-        if (particle.pdgCode() == kPiPlus ||
-            particle.pdgCode() == kPiMinus) { // pion
+        if (particle.pdgCode() == PDG_t::kPiPlus ||
+            particle.pdgCode() == PDG_t::kPiMinus) { // pion
           registry.fill(HIST("PtMC_pi"), centrality, particle.pt());
-        } else if (particle.pdgCode() == kKPlus ||
-                   particle.pdgCode() == kKMinus) { // kaon
+        } else if (particle.pdgCode() == PDG_t::kKPlus ||
+                   particle.pdgCode() == PDG_t::kKMinus) { // kaon
           registry.fill(HIST("PtMC_ka"), centrality, particle.pt());
-        } else if (particle.pdgCode() == kProton ||
-                   particle.pdgCode() == kProtonBar) { // proton
+        } else if (particle.pdgCode() == PDG_t::kProton ||
+                   particle.pdgCode() == PDG_t::kProtonBar) { // proton
           registry.fill(HIST("PtMC_pr"), centrality, particle.pt());
-        } else if (particle.pdgCode() == kSigmaPlus ||
+        } else if (particle.pdgCode() == PDG_t::kSigmaPlus ||
                    particle.pdgCode() ==
-                     kSigmaBarMinus) { // positive sigma
+                   PDG_t::kSigmaBarMinus) { // positive sigma
           registry.fill(HIST("PtMC_sigpos"), centrality, particle.pt());
-        } else if (particle.pdgCode() == kSigmaMinus ||
+        } else if (particle.pdgCode() == PDG_t::kSigmaMinus ||
                    particle.pdgCode() ==
-                     kSigmaBarPlus) { // negative sigma
+                   PDG_t::kSigmaBarPlus) { // negative sigma
           registry.fill(HIST("PtMC_signeg"), centrality, particle.pt());
         } else { // rest
           registry.fill(HIST("PtMC_re"), centrality, particle.pt());
