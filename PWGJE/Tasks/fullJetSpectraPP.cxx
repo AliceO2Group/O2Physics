@@ -255,22 +255,21 @@ struct FullJetSpectrapp {
 
       registry.add("h2_matchedjet_etaphiDet", "Det jet #eta vs jet #varphi; #eta_{jet};#varphi_{jet}", {HistType::kTH2F, {{100, -1., 1.}, {160, -1., 7.}}});
       registry.add("h2_matchedjet_etaphiPart", "Part jet #eta vs jet #varphi; #eta_{jet};#varphi_{jet}", {HistType::kTH2F, {{100, -1., 1.}, {160, -1., 7.}}});
-      registry.add("h2_matchedjet_deltaEtaCorr", "Correlation between Det Eta and Part Eta; #eta_{jet,det}; #eta_{jet,part}", {HistType::kTH2F, {{100, -1., 1.},{100, -1., 1.}}});
-      registry.add("h2_matchedjet_deltaPhiCorr", "Correlation between Det Phi and Part Phi; #varphi_{jet,det}; #varphi_{jet,part}", {HistType::kTH2F, {{160, 0., 7.},{160, 0., 7.}}});
+      registry.add("h2_matchedjet_deltaEtaCorr", "Correlation between Det Eta and Part Eta; #eta_{jet,det}; #eta_{jet,part}", {HistType::kTH2F, {{100, -1., 1.}, {100, -1., 1.}}});
+      registry.add("h2_matchedjet_deltaPhiCorr", "Correlation between Det Phi and Part Phi; #varphi_{jet,det}; #varphi_{jet,part}", {HistType::kTH2F, {{160, 0., 7.}, {160, 0., 7.}}});
 
       registry.add("h2_full_jet_energyscalePart", "Jet Energy Scale (part); p_{T,part} (GeV/c); (p_{T,det} - p_{T,part})/p_{T,part}", {HistType::kTH2F, {{400, 0., 400.}, {200, -1., 1.}}});
       registry.add("h3_full_jet_energyscalePart", "R dependence of Jet Energy Scale (Part); #it{R}_{jet};p_{T,det} (GeV/c); (p_{T,det} - p_{T,part})/p_{T,part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {400, 0., 400.}, {200, -1., 1.}}});
       registry.add("h2_full_jet_etaresolutionPart", ";p_{T,part} (GeV/c); (#eta_{jet,det} - #eta_{jet,part})/#eta_{jet,part}", {HistType::kTH2F, {{400, 0., 400.}, {100, -1., 1.}}});
       registry.add("h2_full_jet_phiresolutionPart", ";p_{T,part} (GeV/c); (#varphi_{jet,det} - #varphi_{jet,part})/#varphi_{jet,part}", {HistType::kTH2F, {{400, 0., 400.}, {160, -1., 7.}}});
-      registry.add("h2_full_jet_energyscaleChargedPart", "Jet Energy Scale (charged part); p_{T,part} (GeV/c); (p_{T,det} - p_{T,part})/p_{T,part}", {HistType::kTH2F,{{400, 0., 400.}, {200, -1.,1.}}});
-      registry.add("h2_full_jet_energyscaleNeutralPart", "Jet Energy Scale (neutral part); p_{T,part} (GeV/c); (p_{T,det} - p_{T,part})/p_{T,part}", {HistType::kTH2F,{{400, 0., 400.}, {200, -1.,1.}}});
-      registry.add("h2_full_jet_energyscaleChargedVsFullPart", "Jet Energy Scale (charged part, vs. full jet pt); p_{T,part} (GeV/c); (p_{T,det} - p_{T,part})/p_{T,part}", {HistType::kTH2F,{{400, 0., 400.}, {200, -1.,1.}}});
-      registry.add("h2_full_jet_energyscaleNeutralVsFullPart", "Jet Energy Scale (neutral part, vs. full jet pt); p_{T,part} (GeV/c); (p_{T,det} - p_{T,part})/p_{T,part}", {HistType::kTH2F,{{400, 0., 400.}, {200, -1.,1.}}});
+      registry.add("h2_full_jet_energyscaleChargedPart", "Jet Energy Scale (charged part); p_{T,part} (GeV/c); (p_{T,det} - p_{T,part})/p_{T,part}", {HistType::kTH2F, {{400, 0., 400.}, {200, -1., 1.}}});
+      registry.add("h2_full_jet_energyscaleNeutralPart", "Jet Energy Scale (neutral part); p_{T,part} (GeV/c); (p_{T,det} - p_{T,part})/p_{T,part}", {HistType::kTH2F, {{400, 0., 400.}, {200, -1., 1.}}});
+      registry.add("h2_full_jet_energyscaleChargedVsFullPart", "Jet Energy Scale (charged part, vs. full jet pt); p_{T,part} (GeV/c); (p_{T,det} - p_{T,part})/p_{T,part}", {HistType::kTH2F, {{400, 0., 400.}, {200, -1., 1.}}});
+      registry.add("h2_full_jet_energyscaleNeutralVsFullPart", "Jet Energy Scale (neutral part, vs. full jet pt); p_{T,part} (GeV/c); (p_{T,det} - p_{T,part})/p_{T,part}", {HistType::kTH2F, {{400, 0., 400.}, {200, -1., 1.}}});
       registry.add("h2_full_fakemcdjets", "Fake MCD Jets; p_{T,det} (GeV/c); NCounts", {HistType::kTH2F, {{350, 0., 350.}, {100, 0., 100.}}});
       registry.add("h2_full_fakemcpjets", "Fake MCP Jets; p_{T,part} (GeV/c); NCounts", {HistType::kTH2F, {{350, 0., 350.}, {100, 0., 100.}}});
       // Response Matrix
       registry.add("h_full_jet_ResponseMatrix", "Full Jets Response Matrix; p_{T,det} (GeV/c); p_{T,part} (GeV/c)", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}});
-
     }
 
     // Label the histograms
@@ -327,7 +326,7 @@ struct FullJetSpectrapp {
   void fillJetHistograms(T const& jet, float weight = 1.0)
   {
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
-    if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {   // for MCD jets only to remove outliers; setting pTHatMaxMCD = 1 improves purity
+    if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) { // for MCD jets only to remove outliers; setting pTHatMaxMCD = 1 improves purity
       return;
     }
 
@@ -391,7 +390,7 @@ struct FullJetSpectrapp {
   void fillMCPHistograms(T const& jet, float weight = 1.0)
   {
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
-    if (jet.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) {   // MCP outlier rejection
+    if (jet.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) { // MCP outlier rejection
       return;
     }
     float neutralEnergy = 0.0;
@@ -437,7 +436,7 @@ struct FullJetSpectrapp {
   {
     double sumtrackE = 0.0;
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
-    if (pTHat < pTHatAbsoluteMin) {   // Track outlier rejection
+    if (pTHat < pTHatAbsoluteMin) { // Track outlier rejection
       return;
     }
     for (auto const& track : tracks) {
@@ -467,10 +466,10 @@ struct FullJetSpectrapp {
   template <typename T, typename U>
   void fillMatchedHistograms(T const& jetBase, float weight = 1.0)
   {
-      float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
-      if (jetBase.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
-        return;
-      }
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+    if (jetBase.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
+      return;
+    }
 
       if (jetBase.has_matchedJetGeo()) { // geometrical jet matching only needed for pp - here,matching Base(Det.level) with Tag (Part. level) jets
         registry.fill(HIST("h_full_matchedmcdjet_tablesize"), jetBase.size(), weight);
@@ -478,7 +477,7 @@ struct FullJetSpectrapp {
         registry.fill(HIST("h2_matchedjet_etaphiDet"), jetBase.eta(), jetBase.phi(), weight);
 
         for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
-          if (jetTag.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) {   // MCP outlier rejection
+          if (jetTag.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) { // MCP outlier rejection
             continue;
           }
           auto deltaEta = jetBase.eta() - jetTag.eta();
@@ -796,12 +795,12 @@ struct FullJetSpectrapp {
           registry.fill(HIST("h2_full_fakemcpjets"), mcpjet.pt(), fakemcpjet, 1.0);
           continue;
         }
-      }// mcpjet loop
+      } // mcpjet loop
 
-        // // Fill MCD jet histograms if a valid MCP jet match was found within the EMCAL region
-        // registry.fill(HIST("h_full_matchedmcpjet_eta"), mcpjet.eta(), 1.0);
-        // registry.fill(HIST("h_full_matchedmcpjet_phi"), mcpjet.phi(), 1.0);
-        fillMatchedHistograms<typename JetTableMCDMatchedJoined::iterator, JetTableMCPMatchedJoined>(mcdjet);
+      // // Fill MCD jet histograms if a valid MCP jet match was found within the EMCAL region
+      // registry.fill(HIST("h_full_matchedmcpjet_eta"), mcpjet.eta(), 1.0);
+      // registry.fill(HIST("h_full_matchedmcpjet_phi"), mcpjet.phi(), 1.0);
+      fillMatchedHistograms<typename JetTableMCDMatchedJoined::iterator, JetTableMCPMatchedJoined>(mcdjet);
     } // mcdjet loop
   }
   PROCESS_SWITCH(FullJetSpectrapp, processJetsMCPMCDMatched, "Full Jet finder MCP matched to MCD", false);
