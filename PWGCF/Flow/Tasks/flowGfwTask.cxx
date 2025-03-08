@@ -57,16 +57,8 @@ using namespace o2::aod::evsel;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-namespace o2::aod
-{
-using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
-                                aod::McCollisionLabels, o2::aod::CentFT0Cs,
-                                aod::CentFT0As, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0CVariant1s>;
-
-using SimTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra,
-                            aod::TracksDCA, aod::McTrackLabels>;
-} // namespace o2::aod
-
+using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels, o2::aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0CVariant1s>;
+using SimTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
 using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0CVariant1s>>;
 using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
@@ -255,20 +247,21 @@ struct FlowGfwTask {
     ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
 
     // Add some output objects to the histogram registry
+    registry.add("hEventCount", "Number of Events;; No. of Events", {HistType::kTH1D, {{kNOOFEVENTSTEPS, -0.5, static_cast<int>(kNOOFEVENTSTEPS) - 0.5}}});
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kFILTERED + 1, "Filtered events");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kSEL8 + 1, "Sel8");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kOCCUPANCY + 1, "Occupancy");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOTIMEFRAMEBORDER + 1, "kNoTimeFrameBorder");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOITSROFRAMEBORDER + 1, "kNoITSROFrameBorder");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOPSAMEBUNCHPILEUP + 1, "kNoSameBunchPileup");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kISGOODZVTXFT0VSPV + 1, "kIsGoodZvtxFT0vsPV");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kISVERTEXITSTPC + 1, "kIsVertexITSTPC");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOCOLLINTIMERANGESTANDART + 1, "kNoCollInTimeRangeStandard");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kISGOODITSLAYERSALL + 1, "kIsGoodITSLayersAll");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kAFTERMULTCUTS + 1, "After Mult cuts");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kCENTRALITY + 1, "Centrality");
+
     if (doprocessData) {
-      registry.add("hEventCount", "Number of Events;; No. of Events", {HistType::kTH1D, {{kNOOFEVENTSTEPS, -0.5, static_cast<int>(kNOOFEVENTSTEPS) - 0.5}}});
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kFILTERED + 1, "Filtered events");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kSEL8 + 1, "Sel8");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kOCCUPANCY + 1, "Occupancy");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOTIMEFRAMEBORDER + 1, "kNoTimeFrameBorder");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOITSROFRAMEBORDER + 1, "kNoITSROFrameBorder");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOPSAMEBUNCHPILEUP + 1, "kNoSameBunchPileup");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kISGOODZVTXFT0VSPV + 1, "kIsGoodZvtxFT0vsPV");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kISVERTEXITSTPC + 1, "kIsVertexITSTPC");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kNOCOLLINTIMERANGESTANDART + 1, "kNoCollInTimeRangeStandard");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kISGOODITSLAYERSALL + 1, "kIsGoodITSLayersAll");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kAFTERMULTCUTS + 1, "After Mult cuts");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kCENTRALITY + 1, "Centrality");
       registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
@@ -390,7 +383,7 @@ struct FlowGfwTask {
     } // End doprocessData
 
     const AxisSpec axisZpos{48, -12., 12., "Vtx_{z} (cm)"};
-    const AxisSpec axisEvent{2, 0, +2, ""};
+    const AxisSpec axisEvent{3, 0, 3, ""};
     // MC Histograms
     if (doprocesspTEff) {
       registry.add("hEventCounterMCRec", "Event counter", kTH1F, {axisEvent});
@@ -773,9 +766,10 @@ struct FlowGfwTask {
     if (!collision.sel8())
       return;
 
-    int nTotal = tracks.size();
-    if (nTotal < 1)
+    if (tracks.size() < 1)
       return;
+
+    registry.fill(HIST("hEventCount"), kSEL8);
 
     // Choose centrality estimator -- Only one can be true
     auto centrality = -1;
@@ -815,7 +809,6 @@ struct FlowGfwTask {
     registry.fill(HIST("BeforeCut_multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
     registry.fill(HIST("BeforeCut_multT0A_centT0A"), collision.centFT0A(), collision.multFT0A());
     registry.fill(HIST("BeforeCut_multFT0M_centFT0M"), collision.centFT0M(), collision.multFT0M());
-    registry.fill(HIST("hEventCount"), kSEL8);
 
     if (cfgOccupancy) {
       int occupancy = collision.trackOccupancyInTimeRange();
@@ -893,9 +886,9 @@ struct FlowGfwTask {
     float vtxz = collision.posZ();
     float lRandom = fRndm->Rndm();
     registry.fill(HIST("hVtxZ"), vtxz);
-    registry.fill(HIST("hMult"), nTotal);
+    registry.fill(HIST("hMult"), tracks.size());
     registry.fill(HIST("hCent"), centrality);
-    registry.fill(HIST("cent_vs_Nch"), centrality, nTotal);
+    registry.fill(HIST("cent_vs_Nch"), centrality, tracks.size());
 
     fGFW->Clear();
 
@@ -1065,12 +1058,12 @@ struct FlowGfwTask {
   } // End of process
   PROCESS_SWITCH(FlowGfwTask, processData, "Process analysis for Run 3 data", false);
 
-  using TheFilteredSimTracks = soa::Filtered<o2::aod::SimTracks>;
+  using TheFilteredSimTracks = soa::Filtered<SimTracks>;
 
   Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
   Preslice<TheFilteredSimTracks> perCollision = aod::track::collisionId;
   void processpTEff(aod::McCollisions::iterator const& mccollision,
-                    soa::SmallGroups<o2::aod::SimCollisions> const& collisions,
+                    soa::SmallGroups<SimCollisions> const& collisions,
                     aod::McParticles const& mcParticles,
                     TheFilteredSimTracks const& simTracks)
   {
@@ -1137,7 +1130,7 @@ struct FlowGfwTask {
       if (std::fabs(mccollision.posZ()) > cfgCutVertex)
         continue;
       registry.fill(HIST("zPosMC"), mccollision.posZ());
-      registry.fill(HIST("hEventCounterMCGen"), 1);
+      registry.fill(HIST("hEventCounterMCGen"), 1.5);
 
       for (const auto& particle : mcParticles) {
         if (particle.eta() < -cfgCutEta || particle.eta() > cfgCutEta) {
@@ -1149,7 +1142,7 @@ struct FlowGfwTask {
         if (!particle.isPhysicalPrimary()) {
           continue;
         }
-        registry.fill(HIST("hEventCounterMCGen"), 1.5);
+        registry.fill(HIST("hEventCounterMCGen"), 2.5);
         registry.fill(HIST("hPtMCGen"), particle.pt());
         registry.fill(HIST("hCenMCGen"), centrality);
         registry.fill(HIST("PtMC_ch"), centrality, particle.pt());
