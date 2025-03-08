@@ -38,3 +38,4 @@ PYTHON_PYRIGHT_CONFIG_FILE: pyproject.toml
 PYTHON_RUFF_CONFIG_FILE: pyproject.toml
 CPP_CPPLINT_FILE_EXTENSIONS: [".C", ".c", ".c++", ".cc", ".cl", ".cpp", ".cu", ".cuh", ".cxx", ".cxx.in", ".h", ".h++", ".hh", ".h.in", ".hpp", ".hxx", ".inc", ".inl", ".macro"]
 CPP_CLANG_FORMAT_FILE_EXTENSIONS: [".C", ".c", ".c++", ".cc", ".cl", ".cpp", ".cu", ".cuh", ".cxx", ".cxx.in", ".h", ".h++", ".hh", ".h.in", ".hpp", ".hxx", ".inc", ".inl", ".macro"]
+REPOSITORY_GITLEAKS_PR_COMMITS_SCAN: true
