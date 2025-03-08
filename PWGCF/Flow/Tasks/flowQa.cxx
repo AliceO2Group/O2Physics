@@ -748,8 +748,11 @@ struct FlowQa {
         fphi = (1 + 2 * fphi);
         int pTBinForEff = hFindPtBin->FindBin(track.pt());
         if (pTBinForEff >= 1 && pTBinForEff <= 7) {
-          wEPeff = 1. / funcEff[pTBinForEff - 1]->Eval(fphi * tracks.size());
-          weff *= wEPeff;
+          wEPeff = funcEff[pTBinForEff - 1]->Eval(fphi * tracks.size());
+          if (wEPeff > 0.) {
+            wEPeff = 1. / wEPeff;
+            weff *= wEPeff;
+          }
         }
       }
       registry.fill(HIST("hPt"), track.pt());
