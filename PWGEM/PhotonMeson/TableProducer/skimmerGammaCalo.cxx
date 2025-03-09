@@ -50,6 +50,7 @@ struct skimmerGammaCalo {
   Configurable<float> minM02{"minM02", 0.0, "Minimum M02 for M02 cut"};
   Configurable<float> maxM02{"maxM02", 1.0, "Maximum M02 for M02 cut"};
   Configurable<float> minE{"minE", 0.5, "Minimum energy for energy cut"};
+  Configurable<std::vector<int>> clusterDefinitions{"clusterDefinitions", {0, 1, 2, 10, 11, 12, 13, 20, 21, 22, 30, 40, 41, 42, 43, 44, 45}, "Cluster definitions to be accepted (e.g. 13 for kV3MostSplitLowSeed)"};
   Configurable<float> maxdEta{"maxdEta", 0.1, "Set a maximum difference in eta for tracks and cluster to still count as matched"};
   Configurable<float> maxdPhi{"maxdPhi", 0.1, "Set a maximum difference in phi for tracks and cluster to still count as matched"};
   Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
@@ -59,15 +60,23 @@ struct skimmerGammaCalo {
 
   void init(o2::framework::InitContext& initContext)
   {
-    historeg.add("hCaloClusterEIn", "hCaloClusterEIn", gHistoSpec_clusterE);
-    historeg.add("hCaloClusterEOut", "hCaloClusterEOut", gHistoSpec_clusterE);
-    historeg.add("hMTEtaPhi", "hMTEtaPhi", gHistoSpec_clusterTM_dEtadPhi);
-    auto hCaloClusterFilter = historeg.add<TH1>("hCaloClusterFilter", "hCaloClusterFilter", kTH1I, {{5, 0, 5}});
+    historeg.add("DefinitionIn", "Cluster definitions before cuts;#bf{Cluster definition};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{51, -0.5, 50.5}});
+    historeg.add("DefinitionOut", "Cluster definitions after cuts;#bf{Cluster definition};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{51, -0.5, 50.5}});
+    historeg.add("EIn", "Energy of clusters before cuts", gHistoSpec_clusterE);
+    historeg.add("EOut", "Energy of clusters after cuts", gHistoSpec_clusterE);
+    historeg.add("MTEtaPhi", "Eta phi of matched tracks", gHistoSpec_clusterTM_dEtadPhi);
+    historeg.add("M02In", "Shape of cluster before cuts;#bf{#it{M}_{02}};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{200, 0, 2}});
+    historeg.add("M02Out", "Shape of cluster after cuts;#bf{#it{M}_{02}};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{200, 0, 2}});
+    historeg.add("TimeIn", "Time of cluster before cuts;#bf{#it{t} (ns)};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{200, -100, 100}});
+    historeg.add("TimeOut", "Time of cluster after cuts;#bf{#it{t} (ns)};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{200, -100, 100}});
+
+    auto hCaloClusterFilter = historeg.add<TH1>("hCaloClusterFilter", "hCaloClusterFilter", kTH1I, {{6, 0, 6}});
     hCaloClusterFilter->GetXaxis()->SetBinLabel(1, "in");
-    hCaloClusterFilter->GetXaxis()->SetBinLabel(2, "E cut");
-    hCaloClusterFilter->GetXaxis()->SetBinLabel(3, "time cut");
-    hCaloClusterFilter->GetXaxis()->SetBinLabel(4, "M02 cut");
-    hCaloClusterFilter->GetXaxis()->SetBinLabel(5, "out");
+    hCaloClusterFilter->GetXaxis()->SetBinLabel(2, "Definition cut");
+    hCaloClusterFilter->GetXaxis()->SetBinLabel(3, "E cut");
+    hCaloClusterFilter->GetXaxis()->SetBinLabel(4, "time cut");
+    hCaloClusterFilter->GetXaxis()->SetBinLabel(5, "M02 cut");
+    hCaloClusterFilter->GetXaxis()->SetBinLabel(6, "out");
 
     if (inherit_from_emevent_photon) {
       getTaskOptionValue(initContext, "create-emevent-photon", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
@@ -84,24 +93,40 @@ struct skimmerGammaCalo {
       return;
     }
     for (const auto& emccluster : emcclusters) {
-      historeg.fill(HIST("hCaloClusterEIn"), emccluster.energy());
       historeg.fill(HIST("hCaloClusterFilter"), 0);
 
+      historeg.fill(HIST("DefinitionIn"), emccluster.definition());
+      historeg.fill(HIST("EIn"), emccluster.energy());
+      historeg.fill(HIST("M02In"), emccluster.m02());
+      historeg.fill(HIST("TimeIn"), emccluster.time());
+
+      // Definition cut
+      if (!(std::find(clusterDefinitions.value.begin(), clusterDefinitions.value.end(), emccluster.definition()) != clusterDefinitions.value.end())) {
+        historeg.fill(HIST("hCaloClusterFilter"), 1);
+        continue;
+      }
+      historeg.fill(HIST("EIn"), emccluster.energy());
       // Energy cut
       if (emccluster.energy() < minE) {
-        historeg.fill(HIST("hCaloClusterFilter"), 1);
+        historeg.fill(HIST("hCaloClusterFilter"), 2);
         continue;
       }
       // timing cut
       if (emccluster.time() > maxTime || emccluster.time() < minTime) {
-        historeg.fill(HIST("hCaloClusterFilter"), 2);
+        historeg.fill(HIST("hCaloClusterFilter"), 3);
         continue;
       }
       // M02 cut
       if (emccluster.nCells() > 1 && (emccluster.m02() > maxM02 || emccluster.m02() < minM02)) {
-        historeg.fill(HIST("hCaloClusterFilter"), 3);
+        historeg.fill(HIST("hCaloClusterFilter"), 4);
         continue;
       }
+      historeg.fill(HIST("hCaloClusterFilter"), 5);
+
+      historeg.fill(HIST("DefinitionOut"), emccluster.definition());
+      historeg.fill(HIST("EOut"), emccluster.energy());
+      historeg.fill(HIST("M02Out"), emccluster.m02());
+      historeg.fill(HIST("TimeOut"), emccluster.time());
 
       // Skimmed cell table
       auto groupedCells = emcclustercells.sliceBy(CellperCluster, emccluster.globalIndex());
@@ -125,7 +150,7 @@ struct skimmerGammaCalo {
         if (std::abs(emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal()) >= maxdEta || std::abs(emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal()) >= maxdPhi) {
           continue;
         }
-        historeg.fill(HIST("hMTEtaPhi"), emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal());
+        historeg.fill(HIST("MTEtaPhi"), emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal());
         vTrackIds.emplace_back(emcmatchedtrack.trackId());
         vEta.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal());
         vPhi.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal());
@@ -134,9 +159,6 @@ struct skimmerGammaCalo {
         tableTrackEMCReco(emcmatchedtrack.emcalclusterId(), emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal(),
                           emcmatchedtrack.track_as<aod::FullTracks>().p(), emcmatchedtrack.track_as<aod::FullTracks>().pt());
       }
-
-      historeg.fill(HIST("hCaloClusterEOut"), emccluster.energy());
-      historeg.fill(HIST("hCaloClusterFilter"), 4);
 
       tableGammaEMCReco(emccluster.collisionId(), emccluster.definition(), emccluster.energy(), emccluster.eta(), emccluster.phi(), emccluster.m02(),
                         emccluster.nCells(), emccluster.time(), emccluster.isExotic(), vEta, vPhi, vP, vPt);
@@ -149,6 +171,10 @@ struct skimmerGammaCalo {
     }
     for (const auto& emccluster : emcclusters) {
 
+      // Definition cut
+      if (!(std::find(clusterDefinitions.value.begin(), clusterDefinitions.value.end(), emccluster.definition()) != clusterDefinitions.value.end())) {
+        continue;
+      }
       // Energy cut
       if (emccluster.energy() < minE) {
         continue;
