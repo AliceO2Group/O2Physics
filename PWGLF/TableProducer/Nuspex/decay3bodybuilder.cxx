@@ -1822,7 +1822,26 @@ struct decay3bodyBuilder {
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3ReducedEM, "Produce event-mixing background", false);
 
-  void processRun3Reduced3bodyMixing(ReducedCollisionsMults const&, aod::RedIUTracks const&, soa::Join<aod::RedDecay3Bodys, aod::Red3BodyInfo, aod::DCAFitterSVInfo> const& decay3bodys)
+  void processRun3Reduced3bodyMixing(ReducedCollisionsMults const&, aod::RedIUTracks const&, soa::Join<aod::RedDecay3Bodys, aod::DCAFitterSVInfo> const& decay3bodys)
+  {
+    VtxCandidates.clear();
+
+    auto xAxis = registry.get<TH2>(HIST("hDecay3BodyRadiusPhi"))->GetXaxis();
+    auto yAxis = registry.get<TH2>(HIST("hDecay3BodyRadiusPhi"))->GetYaxis();
+
+    for (const auto& decay3body : decay3bodys) {
+      int bin_Radius = xAxis->FindBin(decay3body.svRadius());
+      int bin_Phi = yAxis->FindBin(decay3body.momPhi());
+      registry.fill(HIST("hDecay3BodyRadiusPhi"), xAxis->GetBinCenter(bin_Radius), yAxis->GetBinCenter(bin_Phi));
+      registry.fill(HIST("hDecay3BodyPosZ"), decay3body.svPosZ());
+    }
+
+    Binning3BodyDCAFitter binningOnRadPhi{{dcaFitterEMSel.bins3BodyRadius, dcaFitterEMSel.bins3BodyPhiDegree}, true};
+    doMixed3Body<ReducedCollisionsMults, aod::RedIUTracks>(decay3bodys, binningOnRadPhi);
+  }
+  PROCESS_SWITCH(decay3bodyBuilder, processRun3Reduced3bodyMixing, "Produce mixing background directly from mixed decay3bodys based on DCAFitter Info", false);
+
+  void processRun3Reduced3bodyMixingKFInfo(ReducedCollisionsMults const&, aod::RedIUTracks const&, soa::Join<aod::RedDecay3Bodys, aod::Red3BodyInfo> const& decay3bodys)
   {
     VtxCandidates.clear();
 
@@ -1833,29 +1852,13 @@ struct decay3bodyBuilder {
       int bin_Radius = xAxis->FindBin(decay3body.radius());
       int bin_Phi = yAxis->FindBin(decay3body.phi());
       registry.fill(HIST("hDecay3BodyRadiusPhi"), xAxis->GetBinCenter(bin_Radius), yAxis->GetBinCenter(bin_Phi));
-      registry.fill(HIST("hDecay3BodyPosZ"), dcaFitterEMSel.cfgUseDCAFitterInfo ? decay3body.svPosZ() : decay3body.posz());
+      registry.fill(HIST("hDecay3BodyPosZ"), decay3body.posz());
     }
 
-    if (dcaFitterEMSel.cfgUseDCAFitterInfo == true) {
-      Binning3BodyDCAFitter binningOnRadPhi{{dcaFitterEMSel.bins3BodyRadius, dcaFitterEMSel.bins3BodyPhiDegree}, true};
-      doMixed3Body<ReducedCollisionsMults, aod::RedIUTracks>(decay3bodys, binningOnRadPhi);
-    } else {
-      Binning3Body binningOnRadPhi{{dcaFitterEMSel.bins3BodyRadius, dcaFitterEMSel.bins3BodyPhi}, true};
-      doMixed3Body<ReducedCollisionsMults, aod::RedIUTracks>(decay3bodys, binningOnRadPhi);
-    }
-
-    // Aviod break of preslice in following workflow
-    /*std::sort(VtxCandidates.begin(), VtxCandidates.end(), [](const VtxCandidate a, const VtxCandidate b) {
-      return a.collisionId < b.collisionId;
-    });
-
-    for (const auto& candVtx : VtxCandidates) {
-      fillVtx3BodyTable(candVtx);
-    }
-    VtxCandidates.clear();
-    */
+    Binning3Body binningOnRadPhi{{dcaFitterEMSel.bins3BodyRadius, dcaFitterEMSel.bins3BodyPhi}, true};
+    doMixed3Body<ReducedCollisionsMults, aod::RedIUTracks>(decay3bodys, binningOnRadPhi);
   }
-  PROCESS_SWITCH(decay3bodyBuilder, processRun3Reduced3bodyMixing, "Produce mixing background directly from mixed decay3bodys", false);
+  PROCESS_SWITCH(decay3bodyBuilder, processRun3Reduced3bodyMixingKFInfo, "Produce mixing background directly from mixed decay3bodys based on KF Info", false);
 
   //------------------------------------------------------------------
   void processRun3withKFParticle(ColwithEvTimes const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
