@@ -344,13 +344,13 @@ struct PidNSigma {
   {
     uint8_t TPCencoded = encodeNSigma(TPCnSigma);
     uint8_t TOFencoded = hasTOF ? encodeNSigma(TOFnSigma) : 0x0F; // If TOF is not available, set all 4 bits to 1
-    flag = (TPCencoded << 4) | TOFencoded; // Upper 4 bits = TPC, Lower 4 bits = TOF
+    flag = (TPCencoded << 4) | TOFencoded;                        // Upper 4 bits = TPC, Lower 4 bits = TOF
   }
 
   /// @brief Encode 0.2 sigma interval to 0~10 range
   static uint8_t encodeNSigma(float nSigma)
   {
-    float encoded = std::abs((nSigma - 1.5) / 0.2); // Convert to 0~10 range
+    float encoded = std::abs((nSigma - 1.5) / 0.2);   // Convert to 0~10 range
     encoded = std::min(std::max(encoded, 0.f), 10.f); // Clamp to 0~10 range
     return (uint8_t)round(encoded);
   }
