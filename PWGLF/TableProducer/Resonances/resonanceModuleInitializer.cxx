@@ -618,6 +618,7 @@ struct ResonanceModuleInitializer {
 struct ResonanceDaughterInitializer {
   SliceCache cache;
   Produces<aod::ResoTracks> reso2trks;           ///< Output table for resonance tracks
+  Produces<aod::ResoMicroTracks> reso2microtrks; ///< Output table for resonance microtracks
   Produces<aod::ResoMCTracks> reso2mctracks;     ///< Output table for MC resonance tracks
   Produces<aod::ResoV0s> reso2v0s;               ///< Output table for resonance V0s
   Produces<aod::ResoMCV0s> reso2mcv0s;           ///< Output table for MC resonance V0s
@@ -626,12 +627,15 @@ struct ResonanceDaughterInitializer {
 
   // Configurables
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "Fill QA histograms"};
+  Configurable<bool> cfgFillMicroTracks{"cfgFillMicroTracks", false, "Fill micro tracks"};
+  Configurable<bool> cfgBypassTrackFill{"cfgBypassTrackFill", true, "Bypass track fill"};
 
   // Configurables for tracks
   Configurable<float> cMaxDCArToPVcut{"cMaxDCArToPVcut", 2.0, "Track DCAr cut to PV Maximum"};
   Configurable<float> cMinDCArToPVcut{"cMinDCArToPVcut", 0.0, "Track DCAr cut to PV Minimum"};
   Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
   Configurable<float> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
+  Configurable<float> pidnSigmaPreSelectionCut{"pidnSigmaPreSelectionCut", 5.0f, "TPC and TOF PID cut (loose, improve performance)"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
 
   // Configurables for V0s
@@ -643,6 +647,16 @@ struct ResonanceDaughterInitializer {
   Configurable<double> cMinCascRadius{"cMinCascRadius", 0.0, "Minimum Cascade radius from PV"};
   Configurable<double> cMaxCascRadius{"cMaxCascRadius", 200.0, "Maximum Cascade radius from PV"};
   Configurable<double> cMinCascCosPA{"cMinCascCosPA", 0.97, "Minimum Cascade CosPA to PV"};
+
+  // Derived dataset selections
+  struct : ConfigurableGroup {
+    Configurable<bool> cfgFillPionTracks{"cfgFillPionTracks", false, "Fill pion tracks"};
+    Configurable<bool> cfgFillKaonTracks{"cfgFillKaonTracks", false, "Fill kaon tracks"};
+    Configurable<bool> cfgFillProtonTracks{"cfgFillProtonTracks", false, "Fill proton tracks"};
+    Configurable<bool> cfgFillPionMicroTracks{"cfgFillPionMicroTracks", false, "Fill pion micro tracks"};
+    Configurable<bool> cfgFillKaonMicroTracks{"cfgFillKaonMicroTracks", false, "Fill kaon micro tracks"};
+    Configurable<bool> cfgFillProtonMicroTracks{"cfgFillProtonMicroTracks", false, "Fill proton micro tracks"};
+  } FilterForDerivedTables;
 
   // Filters
   Filter dcaXYFilter = nabs(aod::track::dcaXY) < cMaxDCArToPVcut && nabs(aod::track::dcaXY) > cMinDCArToPVcut;
@@ -720,6 +734,91 @@ struct ResonanceDaughterInitializer {
       LOGF(fatal, "ResonanceDaughterInitializer not initialized, enable at least one process");
     }
   }
+  template <typename T>
+  bool filterMicroTrack(T const& track)
+  {
+    // if no selection is requested, return true
+    if (!FilterForDerivedTables.cfgFillPionMicroTracks && !FilterForDerivedTables.cfgFillKaonMicroTracks && !FilterForDerivedTables.cfgFillProtonMicroTracks)
+      return true;
+    if (FilterForDerivedTables.cfgFillPionMicroTracks) {
+      if (std::abs(track.tpcNSigmaPi()) < pidnSigmaPreSelectionCut)
+        return true;
+    }
+    if (FilterForDerivedTables.cfgFillKaonMicroTracks) {
+      if (std::abs(track.tpcNSigmaKa()) < pidnSigmaPreSelectionCut)
+        return true;
+    }
+    if (FilterForDerivedTables.cfgFillProtonMicroTracks) {
+      if (std::abs(track.tpcNSigmaPr()) < pidnSigmaPreSelectionCut)
+        return true;
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool filterTrack(T const& track)
+  {
+    // if no selection is requested, return true
+    if (!FilterForDerivedTables.cfgFillPionTracks && !FilterForDerivedTables.cfgFillKaonTracks && !FilterForDerivedTables.cfgFillProtonTracks)
+      return true;
+    if (FilterForDerivedTables.cfgFillPionTracks) {
+      if (std::abs(track.tpcNSigmaPi()) < pidnSigmaPreSelectionCut)
+        return true;
+    }
+    if (FilterForDerivedTables.cfgFillKaonTracks) {
+      if (std::abs(track.tpcNSigmaKa()) < pidnSigmaPreSelectionCut)
+        return true;
+    }
+    if (FilterForDerivedTables.cfgFillProtonTracks) {
+      if (std::abs(track.tpcNSigmaPr()) < pidnSigmaPreSelectionCut)
+        return true;
+    }
+    return false;
+  }
+
+  /**
+   * @brief Fills track data
+   *
+   * @tparam isMC Boolean indicating if it's MC
+   * @tparam TrackType Type of track
+   * @tparam CollisionType Type of collision
+   * @param collision Collision data
+   * @param tracks Track data
+   */
+  template <bool isMC, typename TrackType, typename CollisionType>
+  void fillMicroTracks(CollisionType const& collision, TrackType const& tracks)
+  {
+    // Loop over tracks
+    for (auto const& track : tracks) {
+      if (!filterMicroTrack(track))
+        continue;
+      o2::aod::resodmciroaughter::ResoMicroTrackSelFlag trackSelFlag(track.dcaXY(), track.dcaZ());
+      if (std::abs(track.dcaXY()) < (0.004 + (0.013 / track.pt()))) {
+        trackSelFlag.setDCAxy0();
+      }
+      if (std::abs(track.dcaZ()) < (0.004 + (0.013 / track.pt()))) { // TODO: check this
+        trackSelFlag.setDCAz0();
+      }
+      uint8_t trackFlags = (track.passedITSRefit() << 0) |
+                           (track.passedTPCRefit() << 1) |
+                           (track.isGlobalTrackWoDCA() << 2) |
+                           (track.isGlobalTrack() << 3) |
+                           (track.isPrimaryTrack() << 4) |
+                           (track.isPVContributor() << 5) |
+                           (track.hasTOF() << 6) |
+                           ((track.sign() > 0) << 7); // sign +1: 1, -1: 0
+      reso2microtrks(collision.globalIndex(),
+                     track.globalIndex(),
+                     track.px(),
+                     track.py(),
+                     track.pz(),
+                     static_cast<uint8_t>(o2::aod::resodmciroaughter::PidNSigma(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.hasTOF())),
+                     static_cast<uint8_t>(o2::aod::resodmciroaughter::PidNSigma(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.hasTOF())),
+                     static_cast<uint8_t>(o2::aod::resodmciroaughter::PidNSigma(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.hasTOF())),
+                     static_cast<uint8_t>(trackSelFlag),
+                     trackFlags);
+    }
+  }
 
   /**
    * @brief Fills track data
@@ -733,8 +832,13 @@ struct ResonanceDaughterInitializer {
   template <bool isMC, typename TrackType, typename CollisionType>
   void fillTracks(CollisionType const& collision, TrackType const& tracks)
   {
+    if (cfgBypassTrackFill) {
+      return;
+    }
     // Loop over tracks
     for (auto const& track : tracks) {
+      if (!filterTrack(track))
+        continue;
       if (cfgFillQA) {
         qaRegistry.fill(HIST("QA/hGoodTrackIndices"), 0);
         qaRegistry.fill(HIST("QA/hTrackPt"), track.pt());
@@ -1189,6 +1293,9 @@ struct ResonanceDaughterInitializer {
                    soa::Filtered<aod::ResoTrackCandidates> const& tracks)
   {
     fillTracks<false>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<false>(collision, tracks);
+    }
   }
   PROCESS_SWITCH(ResonanceDaughterInitializer, processData, "Process tracks for data", false);
 
@@ -1204,6 +1311,9 @@ struct ResonanceDaughterInitializer {
                  aod::McParticles const&)
   {
     fillTracks<true>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<true>(collision, tracks);
+    }
   }
   PROCESS_SWITCH(ResonanceDaughterInitializer, processMC, "Process tracks for MC", false);
 
