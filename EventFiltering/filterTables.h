@@ -84,6 +84,7 @@ DECLARE_SOA_COLUMN(HfV0Charm2P, hasHfV0Charm2P, bool);                          
 DECLARE_SOA_COLUMN(HfV0Charm3P, hasHfV0Charm3P, bool);                           //! V0 with 3-prong charm hadron
 DECLARE_SOA_COLUMN(HfCharmBarToXiBach, hasHfCharmBarToXiBach, bool);             //! Charm baryon to Xi + bachelor
 DECLARE_SOA_COLUMN(HfCharmBarToXi2Bach, hasHfCharmBarToXi2Bach, bool);           //! Charm baryon to Xi + 2 bachelors
+DECLARE_SOA_COLUMN(HfPrCharm2P, hasHfPrCharm2P, bool);                           //! Charm baryon to 2-prong + bachelors
 DECLARE_SOA_COLUMN(HfSigmaCPPK, hasHfSigmaCPPK, bool);                           //! SigmaC(2455)++K- and SigmaC(2520)++K- + c.c.
 DECLARE_SOA_COLUMN(HfSigmaC0K0, hasHfSigmaC0K0, bool);                           //! SigmaC(2455)0KS0 and SigmaC(2520)0KS0
 DECLARE_SOA_COLUMN(HfPhotonCharm2P, hasHfPhotonCharm2P, bool);                   //! photon with 2-prong charm hadron
@@ -241,6 +242,7 @@ DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
                   filtering::HfSingleNonPromptCharm2P,
                   filtering::HfSingleNonPromptCharm3P,
                   filtering::HfCharmBarToXi2Bach,
+                  filtering::HfPrCharm2P,
                   filtering::HfBtoJPsiKa,
                   filtering::HfBtoJPsiKstar,
                   filtering::HfBtoJPsiPhi,
