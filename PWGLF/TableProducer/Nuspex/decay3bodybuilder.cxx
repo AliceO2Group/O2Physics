@@ -308,27 +308,28 @@ struct decay3bodyBuilder {
   //------------------------------------------------------------------
   // Sets for DCAFitter event mixing
   struct : ConfigurableGroup {
-    Configurable<int> nUseMixedEvent{"dcaFitterEMSel.nUseMixedEvent", 5, "nUseMixedEvent"};
-    Configurable<float> mMinPt2V0{"dcaFitterEMSel.mMinPt2V0", 0.25, "mMinPt2V0"};                                                            // minimum pT^2 of V0
+    Configurable<int> nUseMixed{"dcaFitterEMSel.nUseMixed", 5, "nUseMixed"};
+    Configurable<float> mMinPt2V0{"dcaFitterEMSel.mMinPt2V0", 0.5, "mMinPt2V0"};                                                            // minimum pT^2 of V0
     Configurable<float> mMaxTgl2V0{"dcaFitterEMSel.mMaxTgl2V0", 4, "mMaxTgl2V0"};                                                            // maximum tgLambda^2 of V0
     Configurable<float> mMaxDCAXY2ToMeanVertex3bodyV0{"dcaFitterEMSel.mMaxDCAXY2ToMeanVertex3bodyV0", 0.5, "mMaxDCAXY2ToMeanVertex3bodyV0"}; // max DCA^2 of 2 body decay to mean vertex of 3 body decay in XY
     Configurable<float> minCosPAXYMeanVertex3bodyV0{"dcaFitterEMSel.minCosPAXYMeanVertex3bodyV0", 0.9, "minCosPAXYMeanVertex3bodyV0"};       // min CosPA of 2 body decay to mean vertex of 3 body decay in XY
     Configurable<float> minCosPA3bodyV0{"dcaFitterEMSel.minCosPA3bodyV0", 0.8, "minCosPA3bodyV0"};                                           // min CosPA of 3 body decay to PV
-    Configurable<float> mMaxDCAZ2V0{"dcaFitterEMSel.mMaxDCAZ2V0", 1.0, "mMaxDCAZ2V0"};                                                       // max DCA of 2 body decay to PV in Z
     Configurable<float> maxRDiffV03body{"dcaFitterEMSel.maxRDiffV03body", 3, "maxRDiffV03body"};                                             // Maximum difference between virtual V0 and 3body radius
     Configurable<float> minPt3Body = {"dcaFitterEMSel.minPt3Body", 0.01, ""};                                                                // minimum pT of 3body Vertex
     Configurable<float> maxTgl3Body = {"dcaFitterEMSel.maxTgl3Body", 2, ""};                                                                 // maximum tgLambda of 3body Vertex
     Configurable<float> maxDCAXY3Body{"dcaFitterEMSel.maxDCAXY3Body", 0.5, "DCAXY H3L to PV"};                                               // max DCA of 3 body decay to PV in XY
     Configurable<float> maxDCAZ3Body{"dcaFitterEMSel.maxDCAZ3Body", 1.0, "DCAZ H3L to PV"};                                                  // max DCA of 3 body decay to PV in Z
+    // Binning for mixing events
     ConfigurableAxis binsVtxZ{"dcaFitterEMSel.binsVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
     ConfigurableAxis binsMultiplicity{"dcaFitterEMSel.binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
     Configurable<float> maxDeltaRadiusColMixing{"dcaFitterEMSel.maxDeltaRadiusColMixing", 2., "max difference between pv z position in case of collision mixing"};
     Configurable<float> maxDeltaPhiColMixing{"dcaFitterEMSel.maxDeltaPhiColMixing", 30., "max difference between Phi of monther particle in case of collision mixing (degree)"};
+    // Configurations for mixing decay3bodys
     // Configurable<bool> cfgUseDCAFitterInfo{"dcaFitterEMSel.cfgUseDCAFitterInfo", true, ""}; // if use information from dcatFitter while mixing reduced 3bodys
     Configurable<int> cfgMix3BodyMethod{"dcaFitterEMSel.cfgMix3BodyMethod", 0, ""};         // 0: bachelor, 1: pion, 2: proton
-    ConfigurableAxis bins3BodyRadius{"dcaFitterEMSel.bins3BodyRadius", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 4.0f, 7.0f, 10.0f, 14.0f, 18.0f, 22.0f, 30.0f, 40.0f, 50.0f, 100.0f}, "Mixing bins - 3body radius"};
-    ConfigurableAxis bins3BodyPhi{"dcaFitterEMSel.bins3BodyPhi", {VARIABLE_WIDTH, -3.15, -2.65, -2.15, -1.55, -1, -0.5, 0, 0.5, 1, 1.55, 2.15, 2.65, 3.15}, "Mixing bins - 3body phi"};
-    ConfigurableAxis bins3BodyPhiDegree{"dcaFitterEMSel.bins3BodyPhiDegree", {VARIABLE_WIDTH, -180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180}, "Mixing bins - 3body phi"};
+    ConfigurableAxis bins3BodyRadius{"dcaFitterEMSel.bins3BodyRadius", {VARIABLE_WIDTH, 0.0f, 2.0f, 4.0f, 7.0f, 10.0f, 14.0f, 18.0f, 22.0f, 30.0f, 40.0f}, "Mixing bins - 3body radius"};
+    ConfigurableAxis bins3BodyPhi{"dcaFitterEMSel.bins3BodyPhi", {VARIABLE_WIDTH, -3.15, -2.15, -1, 0, 1, 2.15, 3.15}, "Mixing bins - 3body phi"};
+    ConfigurableAxis bins3BodyPhiDegree{"dcaFitterEMSel.bins3BodyPhiDegree", {VARIABLE_WIDTH, -180, -120, -60, 0, 60, 120, 180}, "Mixing bins - 3body phi"};
     ConfigurableAxis bins3BodyPosZ{"dcaFitterEMSel.bins3BodyPosZ", {VARIABLE_WIDTH, -500.0f, -200.0f, -100.0f, -70.0f, -60.0f, -50.0f, -40.0f, -35.0f, -30.0f, -25.0f, -20.0f, -15.0f, -13.0f, -10.0f, -8.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 13.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f, 60.0f, 70.0f, 100.0f, 200.0f, 500.0f}, "3body SV z position"};
     Configurable<bool> selectPVPosZ3bodyMixing{"dcaFitterEMSel.selectPVPosZ3bodyMixing", true, "Select same pvPosZ events in case of 3body mixing"};
     Configurable<float> maxDeltaPVPosZ3bodyMixing{"dcaFitterEMSel.maxDeltaPVPosZ3bodyMixing", 1., "max difference between pv z position in case of 3body mixing"};
@@ -337,6 +338,7 @@ struct decay3bodyBuilder {
   SliceCache cache;
   using BinningTypeColEM = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
   using Binning3BodyDCAFitter = ColumnBinningPolicy<aod::dcafittersvinfo::SVRadius, aod::dcafittersvinfo::MomPhi>;
+  using Binning3BodyKFInfo = ColumnBinningPolicy<aod::reduceddecay3body::Radius, aod::reduceddecay3body::Phi>;
 
   // KF event mixing
   using BinningTypeKF = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
@@ -438,8 +440,8 @@ struct decay3bodyBuilder {
       registry.add("hEventCounter", "hEventCounter", HistType::kTH1F, {{1, 0.0f, 1.0f}});
     }
 
-    if (doprocessRun3 == true || doprocessRun3Reduced || doprocessRun3ReducedEM == true || doprocessRun3Reduced3bodyMixing == true) {
-      auto hVtx3BodyCounter = registry.add<TH1>("hVtx3BodyCounter", "hVtx3BodyCounter", HistType::kTH1F, {{6, 0.0f, 6.0f}});
+    if (doprocessRun3 == true || doprocessRun3Reduced || doprocessRun3ReducedEM == true || doprocessRun3Reduced3bodyMixing == true || doprocessRun3Reduced3bodyMixingKFInfo == true) {
+      auto hVtx3BodyCounter = registry.add<TH1>("hVtx3BodyCounter", "hVtx3BodyCounter", HistType::kTH1D, {{6, 0.0f, 6.0f}});
       hVtx3BodyCounter->GetXaxis()->SetBinLabel(1, "Total");
       hVtx3BodyCounter->GetXaxis()->SetBinLabel(2, "TPCNcls");
       hVtx3BodyCounter->GetXaxis()->SetBinLabel(3, "PIDCut");
@@ -462,7 +464,7 @@ struct decay3bodyBuilder {
       registry.add("hDeltaPhi", "hDeltaPhi", HistType::kTH1F, {{360, -180.0f, 180.0f, "#Delta #phi (degree)"}});
     }
 
-    if (doprocessRun3Reduced3bodyMixing == true || doprocessRun3Reduced3bodyMixing == true) {
+    if (doprocessRun3Reduced3bodyMixing == true || doprocessRun3Reduced3bodyMixingKFInfo == true) {
       registry.add("hDecay3BodyRadiusPhi", "hDecay3BodyRadiusPhi", HistType::kTH2F, {dcaFitterEMSel.bins3BodyRadius, dcaFitterEMSel.bins3BodyPhi});
       registry.add("hDecay3BodyPosZ", "hDecay3BodyPosZ", HistType::kTH1F, {dcaFitterEMSel.bins3BodyPosZ});
       auto h3bodyCombinationCounter = registry.add<TH1>("h3bodyCombinationCounter", "h3bodyCombinationCounter", HistType::kTH1D, {{4, 0.0f, 4.0f}});
@@ -474,6 +476,7 @@ struct decay3bodyBuilder {
 
     if (doprocessRun3ReducedEM == true || doprocessRun3Reduced3bodyMixing == true || doprocessRun3Reduced3bodyMixingKFInfo == true) {
       doUpdateGRPMagField = true;
+      registry.add("h3bodyEMCutCounter", "h3bodyEMCutCounter", HistType::kTH1F, {{12, 0.0f, 12.0f}});
     }
 
     if (doprocessRun3withKFParticle == true || doprocessRun3withKFParticleStrangenessTracking == true || doprocessRun3withKFParticleReduced == true || doprocessRun3withKFParticleReducedEM == true || doprocessRun3withKFParticleReduced3bodyMixing == true) {
@@ -773,9 +776,8 @@ struct decay3bodyBuilder {
   //------------------------------------------------------------------
   // 3body candidate builder
   template <typename TCollisionTable, typename TTrackTable>
-  void fillVtxCand(TCollisionTable const& collision, TTrackTable const& t0, TTrackTable const& t1, TTrackTable const& t2, int64_t decay3bodyId, int bachelorcharge = 1, double tofNSigmaBach = -999)
+  void fillVtxCand(TCollisionTable const& collision, TTrackTable const& t0, TTrackTable const& t1, TTrackTable const& t2, int64_t decay3bodyId, int bachelorcharge = 1, double tofNSigmaBach = -999, bool saveInTable = true)
   {
-
     registry.fill(HIST("hVtx3BodyCounter"), kVtxAll);
 
     if (t0.tpcNClsFound() < mintpcNCls || t1.tpcNClsFound() < mintpcNCls || t2.tpcNClsFound() < mintpcNCls) {
@@ -854,12 +856,15 @@ struct decay3bodyBuilder {
 
     // additional cut for EM
     if (decay3bodyId == -1) {
-      auto v0Track0 = getTrackParCov(t0);
+      registry.fill(HIST("h3bodyEMCutCounter"), 0.5);
+      // Cut of Virtual not meaningful since the V0 may be based on another PV
+      /*auto v0Track0 = getTrackParCov(t0);
       auto v0Track1 = getTrackParCov(t1);
       int nV0 = fitterV0.process(v0Track0, v0Track1);
       if (nV0 == 0) {
         return;
       }
+      registry.fill(HIST("h3bodyEMCutCounter"), 1.5);
 
       std::array<float, 3> v0pos = {0.};
       const auto& v0vtxXYZ = fitterV0.getPCACandidate();
@@ -871,6 +876,7 @@ struct decay3bodyBuilder {
       if (!fitterV0.isPropagateTracksToVertexDone(cand) && !fitterV0.propagateTracksToVertex(cand)) {
         return;
       }
+      registry.fill(HIST("h3bodyEMCutCounter"), 2.5);
       const auto& trPProp = fitterV0.getTrack(0, cand);
       const auto& trNProp = fitterV0.getTrack(1, cand);
       std::array<float, 3> pP{}, pN{};
@@ -880,12 +886,14 @@ struct decay3bodyBuilder {
       // Cut for Virtual V0
       float dxv0 = v0pos[0], dyv0 = v0pos[1]; // To MeanVertex
       float pt2V0 = pV0[0] * pV0[0] + pV0[1] * pV0[1], prodXYv0 = dxv0 * pV0[0] + dyv0 * pV0[1], tDCAXY = prodXYv0 / pt2V0;
-      if (pt2V0 < dcaFitterEMSel.mMinPt2V0) { // pt cut 0.5
+      if (pt2V0 <= dcaFitterEMSel.mMinPt2V0) {
         return;
       }
+      registry.fill(HIST("h3bodyEMCutCounter"), 3.5);
       if (pV0[2] * pV0[2] / pt2V0 > dcaFitterEMSel.mMaxTgl2V0) { // tgLambda cut
         return;
       }
+      registry.fill(HIST("h3bodyEMCutCounter"), 4.5);
       float p2V0 = pt2V0 + pV0[2] * pV0[2], ptV0 = std::sqrt(pt2V0);
       // apply mass selections
       float p2Pos = pP[0] * pP[0] + pP[1] * pP[1] + pP[2] * pP[2], p2Neg = pN[0] * pN[0] + pN[1] * pN[1] + pN[2] * pN[2];
@@ -900,17 +908,20 @@ struct decay3bodyBuilder {
       if (!good3bodyV0Hyp) {
         return;
       }
+      registry.fill(HIST("h3bodyEMCutCounter"), 5.5);
 
       float dcaX = dxv0 - pV0[0] * tDCAXY, dcaY = dyv0 - pV0[1] * tDCAXY, dca2 = dcaX * dcaX + dcaY * dcaY;
       float cosPAXY = prodXYv0 / rv0 * ptV0;
       if (dca2 > dcaFitterEMSel.mMaxDCAXY2ToMeanVertex3bodyV0 || cosPAXY < dcaFitterEMSel.minCosPAXYMeanVertex3bodyV0) {
         return;
       }
+      registry.fill(HIST("h3bodyEMCutCounter"), 6.5);
       float dx = v0pos[0] - collision.posX(), dy = v0pos[1] - collision.posY(), dz = v0pos[2] - collision.posZ(), prodXYZv0 = dx * pV0[0] + dy * pV0[1] + dz * pV0[2];
       float v0CosPA = prodXYZv0 / std::sqrt((dx * dx + dy * dy + dz * dz) * p2V0);
       if (v0CosPA < dcaFitterEMSel.minCosPA3bodyV0) {
         return;
       }
+      registry.fill(HIST("h3bodyEMCutCounter"), 7.5);
 
       // Cut for the compatibility of V0 and 3body vertex
       float r3body = std::hypot(pos[0], pos[1]);
@@ -918,14 +929,17 @@ struct decay3bodyBuilder {
       if (deltaR > dcaFitterEMSel.maxRDiffV03body) {
         return;
       }
+      registry.fill(HIST("h3bodyEMCutCounter"), 8.5);*/
 
       float pt3B = std::hypot(p3B[0], p3B[1]);
       if (pt3B < dcaFitterEMSel.minPt3Body) { // pt cut
         return;
       }
+      registry.fill(HIST("h3bodyEMCutCounter"), 9.5);
       if (p3B[2] / pt3B > dcaFitterEMSel.maxTgl3Body) { // tgLambda cut
         return;
       }
+      registry.fill(HIST("h3bodyEMCutCounter"), 10.5);
 
       // H3L DCA Check
       const auto& vertexXYZ = fitter3body.getPCACandidatePos();
@@ -935,6 +949,7 @@ struct decay3bodyBuilder {
           std::abs(dca.getY()) > dcaFitterEMSel.maxDCAXY3Body || std::abs(dca.getZ()) > dcaFitterEMSel.maxDCAZ3Body) {
         return;
       }
+      registry.fill(HIST("h3bodyEMCutCounter"), 11.5);
     }
 
     VtxCandidate candVtx;
@@ -963,16 +978,20 @@ struct decay3bodyBuilder {
     candVtx.daudcatopv[1] = Track1dca;
     candVtx.daudcatopv[2] = Track2dca;
     candVtx.bachelortofNsigma = tofNSigmaBach;
-    VtxCandidates.push_back(candVtx);
+    if (saveInTable) {
+      fillVtx3BodyTable(candVtx);
+    }
+    else {
+      VtxCandidates.push_back(candVtx);
+    }
   }
   //------------------------------------------------------------------
   // event mixing
-
   template <class TCollision, class TTrack, typename TMixed3bodys, typename TBinningType>
   void doMixed3Body(TMixed3bodys decay3bodys, TBinningType binningType)
   {
     // Strictly upper index policy for decay3body objects binned by radius, phi
-    for (const auto& [decay3body0, decay3body1] : selfCombinations(binningType, dcaFitterEMSel.nUseMixedEvent, -1, decay3bodys, decay3bodys)) {
+    for (const auto& [decay3body0, decay3body1] : selfCombinations(binningType, dcaFitterEMSel.nUseMixed, -1, decay3bodys, decay3bodys)) {
       auto tpos0 = decay3body0.template track0_as<TTrack>();
       auto tneg0 = decay3body0.template track1_as<TTrack>();
       auto tbach0 = decay3body0.template track2_as<TTrack>();
@@ -1003,22 +1022,18 @@ struct decay3bodyBuilder {
 
       initCCDBfromRunNumber(c0.runNumber());
 
-      if (dcaFitterEMSel.cfgMix3BodyMethod == 0) {
+      if (dcaFitterEMSel.cfgMix3BodyMethod == 0) { // mix bachelor (deuteron)
         fillVtxCand(c0, tpos0, tneg0, tbach1, -1, bachelorcharge, tbach1.tofNSigmaDe());
         fillVtxCand(c1, tpos1, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
-      } else if ((dcaFitterEMSel.cfgMix3BodyMethod == 1 && tbach0.sign() > 0) || (dcaFitterEMSel.cfgMix3BodyMethod == 2 && tbach0.sign() < 0)) { // mix piMinus or deuteron
+      } else if ((dcaFitterEMSel.cfgMix3BodyMethod == 1 && tbach0.sign() > 0) || (dcaFitterEMSel.cfgMix3BodyMethod == 2 && tbach0.sign() < 0)) { // mix piMinus or proton
         fillVtxCand(c0, tpos0, tneg1, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
         fillVtxCand(c1, tpos1, tneg0, tbach1, -1, bachelorcharge, tbach1.tofNSigmaDe());
-      } else if ((dcaFitterEMSel.cfgMix3BodyMethod == 1 && tbach0.sign() < 0) || (dcaFitterEMSel.cfgMix3BodyMethod == 2 && tbach0.sign() > 0)) { // mix piPlus or anti-deuteron
+      } else if ((dcaFitterEMSel.cfgMix3BodyMethod == 1 && tbach0.sign() < 0) || (dcaFitterEMSel.cfgMix3BodyMethod == 2 && tbach0.sign() > 0)) { // mix piPlus or anti-proton
         fillVtxCand(c0, tpos1, tneg0, tbach0, -1, bachelorcharge, tbach0.tofNSigmaDe());
         fillVtxCand(c1, tpos0, tneg1, tbach1, -1, bachelorcharge, tbach1.tofNSigmaDe());
       }
 
-      for (const auto& candVtx : VtxCandidates) {
-        fillVtx3BodyTable(candVtx);
-      }
       VtxCandidates.clear();
-
     } // end decay3body combinations loop
   }
   //------------------------------------------------------------------
@@ -1673,10 +1688,6 @@ struct decay3bodyBuilder {
 
       fillVtxCand(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, tofNSigmaBach);
     }
-
-    for (const auto& candVtx : VtxCandidates) {
-      fillVtx3BodyTable(candVtx);
-    }
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3, "Produce DCA fitter decay3body tables", true);
 
@@ -1695,10 +1706,6 @@ struct decay3bodyBuilder {
 
       initCCDBfromRunNumber(collision.runNumber());
       fillVtxCand(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, t2.tofNSigmaDe());
-    }
-
-    for (const auto& candVtx : VtxCandidates) {
-      fillVtx3BodyTable(candVtx);
     }
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3Reduced, "Produce DCA fitter decay3body tables with reduced data", false);
@@ -1720,10 +1727,10 @@ struct decay3bodyBuilder {
 
     auto tuple = std::make_tuple(decay3bodys);
     BinningTypeColEM binningEvent{{dcaFitterEMSel.binsVtxZ, dcaFitterEMSel.binsMultiplicity}, true};
-    SameKindPair<ReducedCollisionsMultsCents, aod::RedDecay3Bodys, BinningTypeColEM> pair{binningEvent, dcaFitterEMSel.nUseMixedEvent, -1, collisions, tuple, &cache};
+    SameKindPair<ReducedCollisionsMultsCents, aod::RedDecay3Bodys, BinningTypeColEM> pair{binningEvent, dcaFitterEMSel.nUseMixed, -1, collisions, tuple, &cache};
 
     for (const auto& [c0, decay3bodys0, c1, decay3bodys1] : pair) {
-      // LOG(INFO) << "Processing event mixing with collisions " << c0.globalIndex() << " and " << c1.globalIndex();
+      // LOG(info) << "Processing event mixing with collisions " << c0.globalIndex() << " and " << c1.globalIndex();
       initCCDBfromRunNumber(c0.runNumber());
 
       int bin_PosZ = xAxis->FindBin(c0.posZ());
@@ -1816,13 +1823,9 @@ struct decay3bodyBuilder {
     }
 
     // Aviod break of preslice in following workflow
-    std::sort(VtxCandidates.begin(), VtxCandidates.end(), [](const VtxCandidate a, const VtxCandidate b) {
+    /*std::sort(VtxCandidates.begin(), VtxCandidates.end(), [](const VtxCandidate a, const VtxCandidate b) {
       return a.collisionId < b.collisionId;
-    });
-
-    for (const auto& candVtx : VtxCandidates) {
-      fillVtx3BodyTable(candVtx);
-    }
+    });*/
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3ReducedEM, "Produce event-mixing background", false);
 
@@ -1840,8 +1843,8 @@ struct decay3bodyBuilder {
       registry.fill(HIST("hDecay3BodyPosZ"), decay3body.svPosZ());
     }
 
-    Binning3BodyDCAFitter binningOnRadPhi{{dcaFitterEMSel.bins3BodyRadius, dcaFitterEMSel.bins3BodyPhiDegree}, true};
-    doMixed3Body<ReducedCollisionsMults, aod::RedIUTracks>(decay3bodys, binningOnRadPhi);
+    Binning3BodyDCAFitter binningOnRadiusPhi{{dcaFitterEMSel.bins3BodyRadius, dcaFitterEMSel.bins3BodyPhiDegree}, true};
+    doMixed3Body<ReducedCollisionsMults, aod::RedIUTracks>(decay3bodys, binningOnRadiusPhi);
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3Reduced3bodyMixing, "Produce mixing background directly from mixed decay3bodys based on DCAFitter Info", false);
 
@@ -1859,8 +1862,8 @@ struct decay3bodyBuilder {
       registry.fill(HIST("hDecay3BodyPosZ"), decay3body.posz());
     }
 
-    Binning3Body binningOnRadPhi{{dcaFitterEMSel.bins3BodyRadius, dcaFitterEMSel.bins3BodyPhi}, true};
-    doMixed3Body<ReducedCollisionsMults, aod::RedIUTracks>(decay3bodys, binningOnRadPhi);
+    Binning3BodyKFInfo binningOnRadiusPhi{{dcaFitterEMSel.bins3BodyRadius, dcaFitterEMSel.bins3BodyPhi}, true};
+    doMixed3Body<ReducedCollisionsMults, aod::RedIUTracks>(decay3bodys, binningOnRadiusPhi);
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3Reduced3bodyMixingKFInfo, "Produce mixing background directly from mixed decay3bodys based on KF Info", false);
 

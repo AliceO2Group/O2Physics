@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file Reduced3BodyTables.h
+/// \brief Definitions of tables for reduced data of 3body decayed hypertriton analysis
+/// \author Carolina Reetz <c.reetz@cern.ch>
+/// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
+
 #ifndef PWGLF_DATAMODEL_REDUCED3BODYTABLES_H_
 #define PWGLF_DATAMODEL_REDUCED3BODYTABLES_H_
 
