@@ -143,7 +143,7 @@ struct reduced3bodyCreator {
     hEventCounter->GetXaxis()->SetBinLabel(4, "reduced");
     hEventCounter->LabelsOption("v");
 
-    auto hEventCounterZorro = registry.add<TH1>("hEventCounterZorro", "hEventCounterZorro", HistType::kTH1D, {{2, -0.5, 1.5}});
+    auto hEventCounterZorro = registry.add<TH1>("hEventCounterZorro", "hEventCounterZorro", HistType::kTH1D, {{2, 0, 2}});
     hEventCounterZorro->GetXaxis()->SetBinLabel(1, "Zorro before evsel");
     hEventCounterZorro->GetXaxis()->SetBinLabel(2, "Zorro after evsel");
   }
@@ -296,6 +296,7 @@ struct reduced3bodyCreator {
 
   void process(ColwithEvTimesMultsCents const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
+    std::vector<bool> triggeredCollisions(collisions.size(), false);
 
     int lastRunNumber = -1; // RunNumber of last collision, used for zorro counting
     // Event counting
@@ -313,6 +314,7 @@ struct reduced3bodyCreator {
         isZorroSelected = zorro.isSelected(bc.globalBC());
         if (isZorroSelected) {
           registry.fill(HIST("hEventCounterZorro"), 0.5);
+          triggeredCollisions[collision.globalIndex()] = true;
         }
       }
 
@@ -349,10 +351,8 @@ struct reduced3bodyCreator {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      bool isZorroSelected = false;
       if (cfgSkimmedProcessing && cfgOnlyKeepH3L3Body) {
-        isZorroSelected = zorro.isSelected(bc.globalBC());
-        if (!isZorroSelected) {
+        if (triggeredCollisions[collision.globalIndex()] == false) {
           continue;
         }
       }

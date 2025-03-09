@@ -270,14 +270,15 @@ using ReducedDecay3BodyLinked = ReducedDecay3BodysLinked::iterator;
 DECLARE_SOA_TABLE(Red3BodyInfo, "AOD", "RED3BODYINFO", //! joinable with RedDecay3Bodys
                   reduceddecay3body::Radius, reduceddecay3body::Phi, reduceddecay3body::PosZ);
 
-namespace dcafittersvinfo {
-DECLARE_SOA_COLUMN(SVRadius, svRadius, float);                                   //! SV radius in x-y plane calculated by dcaFitter
-DECLARE_SOA_COLUMN(MomPhi, momPhi, float);                                        //! phi of mother particle calculated from dcaFitter
-DECLARE_SOA_COLUMN(SVPosZ, svPosZ, float);                                       //! z position of SV calculated by dcaFitter
+namespace dcafittersvinfo
+{
+DECLARE_SOA_COLUMN(SVRadius, svRadius, float); //! SV radius in x-y plane calculated by dcaFitter
+DECLARE_SOA_COLUMN(MomPhi, momPhi, float);     //! phi of momentum of mother particle calculated from dcaFitter
+DECLARE_SOA_COLUMN(SVPosZ, svPosZ, float);     //! z position of SV calculated by dcaFitter
 } // namespace dcafittersvinfo
 
 DECLARE_SOA_TABLE_FULL(DCAFitterSVInfo, "FitSVInfo", "AOD", "FITSVINFO", //! joinable with RedDecay3Bodys
-                  dcafittersvinfo::SVRadius, dcafittersvinfo::MomPhi, dcafittersvinfo::SVPosZ);
+                       dcafittersvinfo::SVRadius, dcafittersvinfo::MomPhi, dcafittersvinfo::SVPosZ);
 
 } // namespace o2::aod
 
