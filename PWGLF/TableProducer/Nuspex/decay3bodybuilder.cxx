@@ -462,7 +462,7 @@ struct decay3bodyBuilder {
       registry.add("hDeltaPhi", "hDeltaPhi", HistType::kTH1F, {{360, -180.0f, 180.0f, "#Delta #phi (degree)"}});
     }
 
-    if (doprocessRun3Reduced3bodyMixing == true) {
+    if (doprocessRun3Reduced3bodyMixing == true || doprocessRun3Reduced3bodyMixing == true) {
       registry.add("hDecay3BodyRadiusPhi", "hDecay3BodyRadiusPhi", HistType::kTH2F, {dcaFitterEMSel.bins3BodyRadius, dcaFitterEMSel.bins3BodyPhi});
       registry.add("hDecay3BodyPosZ", "hDecay3BodyPosZ", HistType::kTH1F, {dcaFitterEMSel.bins3BodyPosZ});
       auto h3bodyCombinationCounter = registry.add<TH1>("h3bodyCombinationCounter", "h3bodyCombinationCounter", HistType::kTH1D, {{4, 0.0f, 4.0f}});
@@ -470,6 +470,10 @@ struct decay3bodyBuilder {
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(2, "bach sign/ID");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(3, "not same collision");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(3, "collision VtxZ");
+    }
+
+    if (doprocessRun3ReducedEM == true || doprocessRun3Reduced3bodyMixing == true || doprocessRun3Reduced3bodyMixingKFInfo == true) {
+      doUpdateGRPMagField = true;
     }
 
     if (doprocessRun3withKFParticle == true || doprocessRun3withKFParticleStrangenessTracking == true || doprocessRun3withKFParticleReduced == true || doprocessRun3withKFParticleReducedEM == true || doprocessRun3withKFParticleReduced3bodyMixing == true) {
