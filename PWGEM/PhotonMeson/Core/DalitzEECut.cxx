@@ -13,6 +13,9 @@
 // Class for dilepton Cut
 //
 
+#include <utility>
+#include <set>
+
 #include "Framework/Logger.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 
@@ -78,6 +81,11 @@ void DalitzEECut::SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRow
   mMinNCrossedRowsOverFindableClustersTPC = minNCrossedRowsOverFindableClustersTPC;
   LOG(info) << "DalitzEE Cut, set min N crossed rows over findable clusters TPC: " << mMinNCrossedRowsOverFindableClustersTPC;
 }
+void DalitzEECut::SetMaxFracSharedClustersTPC(float max)
+{
+  mMaxFracSharedClustersTPC = max;
+  LOG(info) << "Dalitz EE Cut, set max fraction of shared clusters in  TPC: " << mMaxFracSharedClustersTPC;
+}
 void DalitzEECut::SetChi2PerClusterTPC(float min, float max)
 {
   mMinChi2PerClusterTPC = min;
@@ -138,6 +146,12 @@ void DalitzEECut::SetTPCNsigmaPiRange(float min, float max)
   LOG(info) << "DalitzEE Cut, set TPC n sigma Pi range: " << mMinTPCNsigmaPi << " - " << mMaxTPCNsigmaPi;
 }
 
+void DalitzEECut::SetTOFNsigmaElRange(float min, float max)
+{
+  mMinTOFNsigmaEl = min;
+  mMaxTOFNsigmaEl = max;
+  LOG(info) << "DalitzEE Cut, set TOF n sigma El range: " << mMinTOFNsigmaEl << " - " << mMaxTOFNsigmaEl;
+}
 void DalitzEECut::RequireITSibAny(bool flag)
 {
   mRequireITSibAny = flag;
@@ -148,43 +162,14 @@ void DalitzEECut::RequireITSib1st(bool flag)
   mRequireITSib1st = flag;
   LOG(info) << "DalitzEE Cut, require ITS ib 1st: " << mRequireITSib1st;
 }
+void DalitzEECut::SetChi2TOF(float min, float max)
+{
+  mMinChi2TOF = min;
+  mMaxChi2TOF = max;
+  LOG(info) << "Dielectron Cut, set chi2 TOF range: " << mMinChi2TOF << " - " << mMaxChi2TOF;
+}
 void DalitzEECut::SetPIDScheme(int scheme)
 {
   mPIDScheme = scheme;
   LOG(info) << "DalitzEE Cut, PID scheme: " << static_cast<int>(mPIDScheme);
 }
-
-// void DalitzEECut::print() const
-//{
-//   LOG(info) << "Dalitz EE Cut:";
-//   for (int i = 0; i < static_cast<int>(DalitzEECuts::kNCuts); i++) {
-//     switch (static_cast<DalitzEECuts>(i)) {
-//       case DalitzEECuts::kTrackPtRange:
-//         LOG(info) << mCutNames[i] << " in [" << mMinTrackPt << ", " << mMaxTrackPt << "]";
-//         break;
-//       case DalitzEECuts::kTrackEtaRange:
-//         LOG(info) << mCutNames[i] << " in [" << mMinTrackEta << ", " << mMaxTrackEta << "]";
-//         break;
-//       case DalitzEECuts::kTPCNCls:
-//         LOG(info) << mCutNames[i] << " > " << mMinNClustersTPC;
-//         break;
-//       case DalitzEECuts::kTPCCrossedRows:
-//         LOG(info) << mCutNames[i] << " > " << mMinNCrossedRowsTPC;
-//         break;
-//       case DalitzEECuts::kTPCCrossedRowsOverNCls:
-//         LOG(info) << mCutNames[i] << " > " << mMinNCrossedRowsOverFindableClustersTPC;
-//         break;
-//       case DalitzEECuts::kTPCChi2NDF:
-//         LOG(info) << mCutNames[i] << " < " << mMaxChi2PerClusterTPC;
-//         break;
-//       case DalitzEECuts::kDCAxy:
-//         LOG(info) << mCutNames[i] << " < " << mMaxDcaXY;
-//         break;
-//       case DalitzEECuts::kDCAz:
-//         LOG(info) << mCutNames[i] << " < " << mMaxDcaZ;
-//         break;
-//       default:
-//         LOG(fatal) << "Cut unknown!";
-//     }
-//   }
-// }

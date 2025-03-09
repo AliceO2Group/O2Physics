@@ -237,6 +237,7 @@ DECLARE_SOA_COLUMN(SigmaPz2, sigmaPz2, float);                          //! erro
 DECLARE_SOA_COLUMN(SigmaPxPy, sigmaPxPy, float);                        //! error of px x py in covariant matrix
 DECLARE_SOA_COLUMN(SigmaPyPz, sigmaPyPz, float);                        //! error of py x pz in covariant matrix
 DECLARE_SOA_COLUMN(SigmaPzPx, sigmaPzPx, float);                        //! error of pz x px in covariant matrix
+DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);          //!
 
 DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float px, float py, float pz, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz, m); }); //! energy of v0 photn, mass to be given as argument when getter is called!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
@@ -244,6 +245,31 @@ DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float {
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
 DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0radius, [](float vx, float vy) -> float { return RecoDecay::sqrtSumOfSquares(vx, vy); });
+DECLARE_SOA_DYNAMIC_COLUMN(CosPAXY, cosPAXY, [](float px, float py, float vx, float vy, float pvx, float pvy) -> float {
+  float lx = vx - pvx; // flight length X
+  float ly = vy - pvy; // flight length Y
+  float cospaXY = RecoDecay::dotProd(std::array{lx, ly}, std::array{px, py}) / (RecoDecay::sqrtSumOfSquares(lx, ly) * RecoDecay::sqrtSumOfSquares(px, py));
+  if (cospaXY < -1.) {
+    return -1.;
+  } else if (cospaXY > 1.) {
+    return 1.;
+  }
+  return cospaXY;
+});
+DECLARE_SOA_DYNAMIC_COLUMN(CosPARZ, cosPARZ, [](float px, float py, float pz, float vx, float vy, float vz, float pvx, float pvy, float pvz) -> float {
+  float lx = vx - pvx;                            // flight length X
+  float ly = vy - pvy;                            // flight length Y
+  float lz = vz - pvz;                            // flight length Z
+  float lt = RecoDecay::sqrtSumOfSquares(lx, ly); // flight length R, i.e. transverse plane.
+  float pt = RecoDecay::sqrtSumOfSquares(px, py);
+  float cospaRZ = RecoDecay::dotProd(std::array{lt, lz}, std::array{pt, pz}) / (RecoDecay::sqrtSumOfSquares(lt, lz) * RecoDecay::sqrtSumOfSquares(pt, pz));
+  if (cospaRZ < -1.) {
+    return -1.;
+  } else if (cospaRZ > 1.) {
+    return 1.;
+  }
+  return cospaRZ;
+});
 } // namespace v0photonkf
 DECLARE_SOA_TABLE(V0PhotonsKF, "AOD", "V0PHOTONKF", //!
                   o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::V0Id, v0photonkf::PosTrackId, v0photonkf::NegTrackId,
@@ -261,7 +287,9 @@ DECLARE_SOA_TABLE(V0PhotonsKF, "AOD", "V0PHOTONKF", //!
                   v0photonkf::Eta<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
                   v0photonkf::Phi<v0photonkf::Px, v0photonkf::Py>,
                   v0photonkf::P<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
-                  v0photonkf::V0Radius<v0photonkf::Vx, v0photonkf::Vy>);
+                  v0photonkf::V0Radius<v0photonkf::Vx, v0photonkf::Vy>,
+                  v0photonkf::CosPAXY<v0photonkf::Px, v0photonkf::Py, v0photonkf::Vx, v0photonkf::Vy>,
+                  v0photonkf::CosPARZ<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz, v0photonkf::Vx, v0photonkf::Vy, v0photonkf::Vz>);
 // iterators
 using V0PhotonKF = V0PhotonsKF::iterator;
 
@@ -274,14 +302,19 @@ DECLARE_SOA_TABLE(V0PhotonsKFCov, "AOD", "V0PHOTONKFCOV", //! To be joined with 
 // iterators
 using V0PhotonKFCov = V0PhotonsKFCov::iterator;
 
+DECLARE_SOA_TABLE(V0PhotonsKFPrefilterBitDerived, "AOD", "V0PHOTONKFPFBPI0", v0photonkf::PrefilterBitDerived); // To be joined with V0PhotonsKF table at analysis level.
+// iterators
+using V0PhotonKFPrefilterBitDerived = V0PhotonsKFPrefilterBitDerived::iterator;
+
 DECLARE_SOA_TABLE(EMPrimaryElectronsFromDalitz, "AOD", "EMPRIMARYELDA", //!
                   o2::soa::Index<>, emprimaryelectron::CollisionId,
                   emprimaryelectron::TrackId, emprimaryelectron::Sign,
-                  track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ,
-                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
+                  track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ, track::CYY, track::CZY, track::CZZ,
+                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
-                  track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap, track::Tgl,
+                  pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaPi,
+                  track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, track::Tgl,
 
                   // dynamic column
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
@@ -289,6 +322,7 @@ DECLARE_SOA_TABLE(EMPrimaryElectronsFromDalitz, "AOD", "EMPRIMARYELDA", //!
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                  track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
                   track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
                   emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,

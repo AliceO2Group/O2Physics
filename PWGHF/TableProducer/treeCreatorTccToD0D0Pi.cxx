@@ -77,6 +77,9 @@ DECLARE_SOA_COLUMN(MD1, mD1, float);
 DECLARE_SOA_COLUMN(MD2, mD2, float);
 DECLARE_SOA_COLUMN(DeltaMD1, deltaMD1, float);
 DECLARE_SOA_COLUMN(DeltaMD2, deltaMD2, float);
+DECLARE_SOA_COLUMN(MDD, mDD, float);
+DECLARE_SOA_COLUMN(MDPi1, mDPi1, float);
+DECLARE_SOA_COLUMN(MDPi2, mDPi2, float);
 DECLARE_SOA_COLUMN(MDDPi, mDDPi, float);
 DECLARE_SOA_COLUMN(DeltaMDDPi, deltaMDDPi, float);
 DECLARE_SOA_COLUMN(EtaD1, etaD1, float);
@@ -133,6 +136,9 @@ DECLARE_SOA_TABLE(HfCandTccLites, "AOD", "HFCANDTCCLITE",
                   full::MD2,
                   full::DeltaMD1,
                   full::DeltaMD2,
+                  full::MDD,
+                  full::MDPi1,
+                  full::MDPi2,
                   full::MDDPi,
                   full::DeltaMDDPi,
                   full::EtaD1,
@@ -178,16 +184,16 @@ struct HfTreeCreatorTccToD0D0Pi {
   Configurable<float> ptMinSoftPion{"ptMinSoftPion", 0.0, "Min pt for the soft pion"};
   Configurable<bool> usePionIsGlobalTrackWoDCA{"usePionIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for pions"};
 
-  Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
-  Configurable<float> softPiChi2Max{"softPiChi2Max", 36.f, "Soft pion max value for chi2 ITS"};
-  Configurable<int> softPiItsHitMap{"softPiItsHitMap", 127, "Soft pion ITS hitmap"};
-  Configurable<int> softPiItsHitsMin{"softPiItsHitsMin", 1, "Minimum number of ITS layers crossed by the soft pion among those in \"softPiItsHitMap\""};
+  // Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
+  // Configurable<float> softPiChi2Max{"softPiChi2Max", 36.f, "Soft pion max value for chi2 ITS"};
+  // Configurable<int> softPiItsHitMap{"softPiItsHitMap", 127, "Soft pion ITS hitmap"};
+  // Configurable<int> softPiItsHitsMin{"softPiItsHitsMin", 1, "Minimum number of ITS layers crossed by the soft pion among those in \"softPiItsHitMap\""};
   Configurable<float> softPiDcaXYMax{"softPiDcaXYMax", 0.065, "Soft pion max dcaXY (cm)"};
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
   Configurable<float> deltaMassCanMax{"deltaMassCanMax", 2, "delta candidate max mass (DDPi-D0D0) ((GeV/c2)"};
+  Configurable<float> massCanMax{"massCanMax", 4.0, "candidate max mass (DDPi) ((GeV/c2)"};
 
   HfHelper hfHelper;
-  TrackSelection softPiCuts;
 
   using TracksPid = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using TracksWPid = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;
@@ -211,37 +217,6 @@ struct HfTreeCreatorTccToD0D0Pi {
     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
-    // soft pion setting take from Sigmac analysis by mattia
-    /// apply the global-track w/o dca cuts for soft pion BEFORE ALL OTHER CUSTOM CUTS
-    if (usePionIsGlobalTrackWoDCA) {
-      LOG(info) << ">>> usePionIsGlobalTrackWoDCA==true  ==>  global-track w/o dca cuts for soft pionapplied BEFORE ALL OTHER CUSTOM CUTS <<<";
-      /// same configuration as in track selection (itsMatching==1)
-      softPiCuts = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, 0);
-      /// remove dca cuts (applied manually after the possible track-to-collision reassociation)
-      softPiCuts.SetMaxDcaXY(99999);
-      softPiCuts.SetMaxDcaZ(99999);
-    }
-    // kinematics
-    softPiCuts.SetPtRange(ptMinSoftPion, 1000.);         // pt
-    softPiCuts.SetEtaRange(-softPiEtaMax, softPiEtaMax); // eta
-    // ITS chi2
-    softPiCuts.SetMaxChi2PerClusterITS(softPiChi2Max);
-    //  ITS hitmap
-    std::set<uint8_t> setSoftPiItsHitMap; // = {};
-    for (int idItsLayer = 0; idItsLayer < 7; idItsLayer++) {
-      if (TESTBIT(softPiItsHitMap, idItsLayer)) {
-        setSoftPiItsHitMap.insert(static_cast<uint8_t>(idItsLayer));
-      }
-    }
-    LOG(info) << "### ITS hitmap for soft pion";
-    LOG(info) << "    >>> setSoftPiItsHitMap.size(): " << setSoftPiItsHitMap.size();
-    LOG(info) << "    >>> Custom ITS hitmap dfchecked: ";
-    for (std::set<uint8_t>::iterator it = setSoftPiItsHitMap.begin(); it != setSoftPiItsHitMap.end(); it++) {
-      LOG(info) << "        Layer " << static_cast<int>(*it) << " ";
-    }
-    LOG(info) << "############";
-    softPiCuts.SetRequireITSRefit();
-    softPiCuts.SetRequireHitsInITSLayers(softPiItsHitsMin, setSoftPiItsHitMap);
   }
 
   template <typename T>
@@ -266,7 +241,7 @@ struct HfTreeCreatorTccToD0D0Pi {
     return o2::hf_centrality::getCentralityColl<Coll>(collision);
   }
 
-  template <int reconstructionType, typename CollType, typename CandType, typename TrkType>
+  template <typename CollType, typename CandType, typename TrkType>
   void runCandCreatorData(CollType const& collision,
                           CandType const& candidates,
                           aod::TrackAssoc const& trackIndices,
@@ -276,7 +251,11 @@ struct HfTreeCreatorTccToD0D0Pi {
       for (auto candidateD2 = candidateD1 + 1; candidateD2 != candidates.end(); ++candidateD2) {
         for (const auto& trackId : trackIndices) {
           auto trackPion = trackId.template track_as<TrkType>();
-          if (!softPiCuts.IsSelected(trackPion)) {
+          if (usePionIsGlobalTrackWoDCA && !trackPion.isGlobalTrackWoDCA()) {
+            continue;
+          }
+          // minimum pT selection
+          if (trackPion.pt() < ptMinSoftPion) {
             continue;
           }
           if (std::abs(trackPion.dcaXY()) > softPiDcaXYMax || std::abs(trackPion.dcaZ()) > softPiDcaZMax) {
@@ -313,7 +292,7 @@ struct HfTreeCreatorTccToD0D0Pi {
             std::copy(candidateD1.mlProbD0().begin(), candidateD1.mlProbD0().end(), std::back_inserter(mlScoresD1));
             massD01 = hfHelper.invMassD0ToPiK(candidateD1);
           } else if (candidateD1.isSelD0bar()) {
-            candFlagD1 = 2;
+            candFlagD1 = (candidateD1.isSelD0()) ? 4 : 2;
             std::copy(candidateD1.mlProbD0bar().begin(), candidateD1.mlProbD0bar().end(), std::back_inserter(mlScoresD1));
             massD01 = hfHelper.invMassD0barToKPi(candidateD1);
           }
@@ -324,7 +303,7 @@ struct HfTreeCreatorTccToD0D0Pi {
             massD02 = hfHelper.invMassD0ToPiK(candidateD2);
 
           } else if (candidateD2.isSelD0bar()) {
-            candFlagD2 = 2;
+            candFlagD2 = (candidateD2.isSelD0()) ? 4 : 2;
             std::copy(candidateD2.mlProbD0bar().begin(), candidateD2.mlProbD0bar().end(), std::back_inserter(mlScoresD2));
             massD02 = hfHelper.invMassD0barToKPi(candidateD2);
           }
@@ -366,8 +345,9 @@ struct HfTreeCreatorTccToD0D0Pi {
           auto arrayMomentaDDpi = std::array{pVecD1, pVecD2, pVecSoftPion};
           const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{MassD0, MassD0, MassPiPlus});
           const auto deltaMassD0D0Pi = massD0D0Pi - (massD01 + massD02);
+          const auto massD0D0Pair = RecoDecay::m(std::array{pVecD1, pVecD2}, std::array{MassD0, MassD0});
 
-          if (deltaMassD0D0Pi > deltaMassCanMax) {
+          if (deltaMassD0D0Pi > deltaMassCanMax || massD0D0Pi > massCanMax) {
             continue;
           }
 
@@ -396,6 +376,9 @@ struct HfTreeCreatorTccToD0D0Pi {
             massD02,
             deltaMassD01,
             deltaMassD02,
+            massD0D0Pair,
+            massKpipi1,
+            massKpipi2,
             massD0D0Pi,
             deltaMassD0D0Pi,
             candidateD1.eta(),
@@ -441,7 +424,7 @@ struct HfTreeCreatorTccToD0D0Pi {
       if (candwD0ThisColl.size() <= 1)
         continue; // only loop the collision that include at least 2 D candidates
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runCandCreatorData<aod::hf_cand::VertexerType::DCAFitter>(collision, candwD0ThisColl, trackIdsThisCollision, tracks, bcs);
+      runCandCreatorData(collision, candwD0ThisColl, trackIdsThisCollision, tracks, bcs);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorTccToD0D0Pi, processDataWithMl, "Process data with DCAFitterN with the ML method and without centrality", false);
@@ -460,7 +443,7 @@ struct HfTreeCreatorTccToD0D0Pi {
       if (candwD0ThisColl.size() <= 1)
         continue; // only loop the collision that include at least 2 D candidates
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runCandCreatorData<aod::hf_cand::VertexerType::DCAFitter>(collision, candwD0ThisColl, trackIdsThisCollision, tracks, bcs);
+      runCandCreatorData(collision, candwD0ThisColl, trackIdsThisCollision, tracks, bcs);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorTccToD0D0Pi, processDataWithMlWithFT0C, "Process data with DCAFitterN with the ML method and with FT0C centrality", true);
@@ -479,7 +462,7 @@ struct HfTreeCreatorTccToD0D0Pi {
       if (candwD0ThisColl.size() <= 1)
         continue; // only loop the collision that include at least 2 D candidates
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runCandCreatorData<aod::hf_cand::VertexerType::DCAFitter>(collision, candwD0ThisColl, trackIdsThisCollision, tracks, bcs);
+      runCandCreatorData(collision, candwD0ThisColl, trackIdsThisCollision, tracks, bcs);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorTccToD0D0Pi, processDataWithMlWithFT0M, "Process data with DCAFitterN with the ML method and with FT0M centrality", false);

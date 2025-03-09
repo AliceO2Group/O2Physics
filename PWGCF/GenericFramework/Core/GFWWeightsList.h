@@ -17,6 +17,12 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTSLIST_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTSLIST_H_
 #include <map>
+#include <cstdio>
+#include <string>
+#include <vector>
+
+#include "Framework/Logger.h"
+
 #include "TObjArray.h"
 #include "GFWWeights.h"
 
@@ -31,11 +37,25 @@ class GFWWeightsList : public TNamed
   GFWWeights* getGFWWeightsByName(const char* weightName);
   void addGFWWeightsByRun(int runNumber, int nPtBins, double* ptBins, bool addData = kTRUE, bool addMC = kTRUE);
   GFWWeights* getGFWWeightsByRun(int runNumber);
+  void addPIDGFWWeightsByName(const char* weightName, int nPtBins, double* ptBins, double ptrefup, bool addData = kTRUE, bool addMC = kTRUE);
+  GFWWeights* getPIDGFWWeightsByName(const char* weightName, int pidIndex);
+  void addPIDGFWWeightsByRun(int runNumber, int nPtBins, double* ptBins, double ptrefup, bool addData = kTRUE, bool addMC = kTRUE);
+  GFWWeights* getPIDGFWWeightsByRun(int runNumber, int pidIndex);
+  void printRuns()
+  {
+    for (auto& el : runNumberPIDMap)
+      printf("%i\n", el.first);
+  }
+
   TObjArray* getList() const { return list; }
+  Long64_t Merge(TCollection* collist);
 
  private:
   TObjArray* list;
-  std::map<int, GFWWeights*> runNumerMap;
+  std::vector<std::string> species = {"_ref", "_ch", "_pi", "_ka", "_pr"}; //!
+  std::map<int, GFWWeights*> runNumberMap;
+  std::map<int, std::vector<GFWWeights*>> runNumberPIDMap;
+  void addArray(TObjArray* target, TObjArray* source);
 
   ClassDef(GFWWeightsList, 1);
 };

@@ -46,6 +46,7 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing"};
   Configurable<bool> removeCollWSplitVtx{"removeCollWSplitVtx", false, "Flag for rejecting the splitted collisions"};
   Configurable<bool> loadAccXEffFromCCDB{"loadAccXEffFromCCDB", false, "Flag for loading efficiency distributions from CCDB"};
+  Configurable<bool> separateTrackOrigins{"separateTrackOrigins", false, "Flag to enable separation of track origins (from c or b)"};
   // Configurable<bool> doMcCollisionCheck{"doMcCollisionCheck", false, "Flag for applying the collision check and selection based on MC collision info"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds (avoid the case of flag = 0, no outputMlScore)"};
   Configurable<int> nTpcCrossedRaws{"nTpcCrossedRaws", 70, "Number of crossed TPC Rows"};
@@ -55,13 +56,13 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCA_z of tracks"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
-  Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
-  Configurable<float> ptCandMax{"ptCandMax", 50., "max. cand pT"};
-  Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
-  Configurable<float> ptTrackMax{"ptTrackMax", 50., "max. track pT"};
-  Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
-  Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen. cand. rapidity"};
-  Configurable<float> ptDaughterMin{"ptDaughterMin", 0.1, "min. daughter pT"};
+  Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT (used in eff. process only)"};
+  Configurable<float> ptCandMax{"ptCandMax", 50., "max. cand pT (used in eff. process only)"};
+  Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT (used in eff. process only)"};
+  Configurable<float> ptTrackMax{"ptTrackMax", 50., "max. track pT (used in eff. process only)"};
+  Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity (used in eff. process only)"};
+  Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen. cand. rapidity (used in eff. process only)"};
+  Configurable<float> ptDaughterMin{"ptDaughterMin", 0.1, "min. daughter pT (used in eff. process only)"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle efficiency"};
@@ -83,7 +84,6 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<std::string> promptEffCcdbPath{"promptEffCcdbPath", "", "CCDB path for trigger efficiency"};
   Configurable<std::string> fdEffCcdbPath{"fdEffCcdbPath", "", "CCDB path for trigger efficiency"};
   Configurable<int64_t> timestampCcdb{"timestampCcdb", -1, "timestamp of the efficiency files used to query in CCDB"};
-  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   std::shared_ptr<TH1> mEfficiencyD = nullptr;
   std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
@@ -250,7 +250,7 @@ struct HfTaskCorrelationDsHadrons {
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
-      ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
+      ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
       mEfficiencyD = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(promptEffCcdbPath, timestampCcdb));
       if (mEfficiencyD == nullptr) {
@@ -743,7 +743,7 @@ struct HfTaskCorrelationDsHadrons {
         }
 
       } // end loop reconstructed collision
-    }   // end loop generated collisions
+    } // end loop generated collisions
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcCandEfficiency, "Process MC for calculating candidate reconstruction efficiency", false);
 
@@ -895,11 +895,13 @@ struct HfTaskCorrelationDsHadrons {
                 } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
                   registry.fill(HIST("hPtPrmMuonMcGen"), mcParticle.pt());
                 }
-                int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
-                if (trackOrigin == 1) { // charm orgin
-                  registry.fill(HIST("hPtPrmPromptPartMcGen"), mcParticle.pt());
-                } else if (trackOrigin == 2) { // beauty origin
-                  registry.fill(HIST("hPtPrmNonPromptPartMcGen"), mcParticle.pt());
+                if (separateTrackOrigins) {
+                  int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
+                  if (trackOrigin == 1) { // charm orgin
+                    registry.fill(HIST("hPtPrmPromptPartMcGen"), mcParticle.pt());
+                  } else if (trackOrigin == 2) { // beauty origin
+                    registry.fill(HIST("hPtPrmNonPromptPartMcGen"), mcParticle.pt());
+                  }
                 }
               }
             }
@@ -908,7 +910,7 @@ struct HfTaskCorrelationDsHadrons {
 
         // reconstructed track loop
         for (const auto& track : groupedTracks) {
-          if (!track.isGlobalTrackWoDCA()) {
+          if (!track.isGlobalTrackWoDCA() || track.tpcNClsCrossedRows() < nTpcCrossedRaws) {
             continue;
           }
           if (track.has_mcParticle()) {
@@ -934,11 +936,13 @@ struct HfTaskCorrelationDsHadrons {
                   registry.fill(HIST("hPtPrmMuonMcRec"), track.pt());
                 }
                 // check track origin
-                int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
-                if (trackOrigin == 1) { // charm orgin
-                  registry.fill(HIST("hPtPrmPromptPartMcRec"), track.pt());
-                } else if (trackOrigin == 2) { // beauty origin
-                  registry.fill(HIST("hPtPrmNonPromptPartMcRec"), track.pt());
+                if (separateTrackOrigins) {
+                  int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
+                  if (trackOrigin == 1) { // charm orgin
+                    registry.fill(HIST("hPtPrmPromptPartMcRec"), track.pt());
+                  } else if (trackOrigin == 2) { // beauty origin
+                    registry.fill(HIST("hPtPrmNonPromptPartMcRec"), track.pt());
+                  }
                 }
               }
             }
@@ -949,7 +953,7 @@ struct HfTaskCorrelationDsHadrons {
         }
 
       } // end loop reconstructed collision
-    }   // end loop generated collisions
+    } // end loop generated collisions
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcTrackEfficiency, "Process MC for calculating associated particle tracking efficiency", false);
 };

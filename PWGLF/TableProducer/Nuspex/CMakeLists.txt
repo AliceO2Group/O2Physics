@@ -98,3 +98,13 @@ o2physics_add_dpl_workflow(tr-he-analysis
     SOURCES trHeAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(reduced3body-creator
+    SOURCES reduced3bodyCreator.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle O2Physics::EventFilteringUtils O2::TOFBase
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(nuclei-flow-trees
+    SOURCES nucleiFlowTree.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)

@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
+/// \file hStrangeCorrelationFilter.cxx
 /// \brief This task pre-filters tracks, V0s and cascades to do h-strangeness
 ///        correlations with an analysis task.
 ///
@@ -29,18 +30,20 @@
 #include "Common/DataModel/Centrality.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "TF1.h"
+#include "string"
 
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
 
 using namespace o2;
+using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-#define bitset(var, nbit) ((var) |= (1 << (nbit)))
-#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
+#define BIT_SET(var, nbit) ((var) |= (1 << (nbit)))
+#define BIT_CHECK(var, nbit) ((var) & (1 << (nbit)))
 
-struct hstrangecorrelationfilter {
+struct HStrangeCorrelationFilter {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -55,8 +58,8 @@ struct hstrangecorrelationfilter {
   Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
 
   // Trigger particle selections in phase space
-  Configurable<float> triggerEtaMin{"triggerEtaCutMin", -0.8, "triggeretamin"};
-  Configurable<float> triggerEtaMax{"triggerEtaCutMax", 0.8, "triggeretamax"};
+  Configurable<float> triggerEtaMin{"triggerEtaMin", -0.8, "triggeretamin"};
+  Configurable<float> triggerEtaMax{"triggerEtaMax", 0.8, "triggeretamax"};
   Configurable<float> triggerPtCutMin{"triggerPtCutMin", 3, "triggerptmin"};
   Configurable<float> triggerPtCutMax{"triggerPtCutMax", 20, "triggerptmax"};
 
@@ -68,8 +71,8 @@ struct hstrangecorrelationfilter {
   Configurable<bool> triggerRequireL0{"triggerRequireL0", false, "require ITS L0 cluster for trigger"};
 
   // Associated particle selections in phase space
-  Configurable<float> assocEtaMin{"assocEtaCutMin", -0.8, "triggeretamin"};
-  Configurable<float> assocEtaMax{"assocEtaCutMax", 0.8, "triggeretamax"};
+  Configurable<float> assocEtaMin{"assocEtaMin", -0.8, "triggeretamin"};
+  Configurable<float> assocEtaMax{"assocEtaMax", 0.8, "triggeretamax"};
   Configurable<float> assocPtCutMin{"assocPtCutMin", 0.2, "assocptmin"};
   Configurable<float> assocPtCutMax{"assocPtCutMax", 10, "assocptmax"};
 
@@ -79,12 +82,12 @@ struct hstrangecorrelationfilter {
   Configurable<float> rejectSigma{"rejectSigma", 1, "n sigma for rejecting pion candidates"};
 
   // V0 selections
-  Configurable<double> v0Cospa{"v0cospa", 0.97, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> dcaV0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
-  Configurable<float> dcaNegtopv{"dcanegtopv", 0.06, "DCA Neg To PV"};
-  Configurable<float> dcaPostopv{"dcapostopv", 0.06, "DCA Pos To PV"};
-  Configurable<float> v0RadiusMin{"v0radiusmin", 0.5, "v0radius"};
-  Configurable<float> v0RadiusMax{"v0radiusmax", 200, "v0radius"};
+  Configurable<double> v0Cospa{"v0Cospa", 0.97, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> dcaV0dau{"dcaV0dau", 1.0, "DCA V0 Daughters"};
+  Configurable<float> dcaNegtopv{"dcaNegtopv", 0.06, "DCA Neg To PV"};
+  Configurable<float> dcaPostopv{"dcaPostopv", 0.06, "DCA Pos To PV"};
+  Configurable<float> v0RadiusMin{"v0RadiusMin", 0.5, "v0radius"};
+  Configurable<float> v0RadiusMax{"v0RadiusMax", 200, "v0radius"};
 
   // specific selections
   Configurable<double> lambdaCospa{"lambdaCospa", 0.995, "CosPA for lambda"}; // allows for tighter selection for Lambda
@@ -95,25 +98,25 @@ struct hstrangecorrelationfilter {
   Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
 
   // cascade selections
-  Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"};
-  Configurable<float> cascadesetting_dcacascdau{"cascadesetting_dcacascdau", 1.0, "cascadesetting_dcacascdau"};
-  Configurable<float> cascadesetting_dcabachtopv{"cascadesetting_dcabachtopv", 0.1, "cascadesetting_dcabachtopv"};
-  Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.5, "cascadesetting_cascradius"};
-  Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"};
-  Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"};
+  Configurable<double> cascadeSettingCospa{"cascadeSettingCospa", 0.95, "cascadeSettingCospa"};
+  Configurable<float> cascadeSettingDcacascdau{"cascadeSettingDcacascdau", 1.0, "cascadeSettingDcacascdau"};
+  Configurable<float> cascadeSettingDcabachtopv{"cascadeSettingDcabachtopv", 0.1, "cascadeSettingDcabachtopv"};
+  Configurable<float> cascadeSettingCascradius{"cascadeSettingCascradius", 0.5, "cascadeSettingCascradius"};
+  Configurable<float> cascadeSettingV0masswindow{"cascadeSettingV0masswindow", 0.01, "cascadeSettingV0masswindow"};
+  Configurable<float> cascadeSettingMindcav0topv{"cascadeSettingMindcav0topv", 0.01, "cascadeSettingMindcav0topv"};
 
   // invariant mass parametrizations
-  Configurable<std::vector<float>> massParsK0Mean{"massParsK0Mean", {0.495, 0.000250, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
-  Configurable<std::vector<float>> massParsK0Width{"massParsK0Width", {0.00354, 0.000609, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
+  Configurable<std::vector<float>> massParsK0Mean{"massParsK0Mean", {0.495, 0.000250, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
+  Configurable<std::vector<float>> massParsK0Width{"massParsK0Width", {0.00354, 0.000609, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
 
-  Configurable<std::vector<float>> massParsLambdaMean{"massParsLambdaMean", {1.114, 0.000314, 0.140, 11.9}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
-  Configurable<std::vector<float>> massParsLambdaWidth{"massParsLambdaWidth", {0.00127, 0.000172, 0.00261, 2.02}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
+  Configurable<std::vector<float>> massParsLambdaMean{"massParsLambdaMean", {1.114, 0.000314, 0.140, 11.9}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
+  Configurable<std::vector<float>> massParsLambdaWidth{"massParsLambdaWidth", {0.00127, 0.000172, 0.00261, 2.02}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
 
-  Configurable<std::vector<float>> massParsCascadeMean{"massParsCascadeMean", {1.32, 0.000278, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
-  Configurable<std::vector<float>> massParsCascadeWidth{"massParsCascadeWidth", {0.00189, 0.000227, 0.00370, 1.635}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
+  Configurable<std::vector<float>> massParsCascadeMean{"massParsCascadeMean", {1.32, 0.000278, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
+  Configurable<std::vector<float>> massParsCascadeWidth{"massParsCascadeWidth", {0.00189, 0.000227, 0.00370, 1.635}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
 
-  Configurable<std::vector<float>> massParsOmegaMean{"massParsOmegaMean", {1.67, 0.000298, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
-  Configurable<std::vector<float>> massParsOmegaWidth{"massParsOmegaWidth", {0.00189, 0.000325, 0.00606, 1.77}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
+  Configurable<std::vector<float>> massParsOmegaMean{"massParsOmegaMean", {1.67, 0.000298, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
+  Configurable<std::vector<float>> massParsOmegaWidth{"massParsOmegaWidth", {0.00189, 0.000325, 0.00606, 1.77}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
 
   // must include windows for background and peak
   Configurable<float> maxMassNSigma{"maxMassNSigma", 12.0f, "max mass region to be considered for further analysis"};
@@ -133,12 +136,12 @@ struct hstrangecorrelationfilter {
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcaPostopv&&
                                                          nabs(aod::v0data::dcanegtopv) > dcaNegtopv&& aod::v0data::dcaV0daughters < dcaV0dau;
   Filter preFilterCascade =
-    nabs(aod::cascdata::dcapostopv) > dcaPostopv&& nabs(aod::cascdata::dcanegtopv) > dcaNegtopv&& nabs(aod::cascdata::dcabachtopv) > cascadesetting_dcabachtopv&& aod::cascdata::dcaV0daughters < dcaV0dau&& aod::cascdata::dcacascdaughters < cascadesetting_dcacascdau;
+    nabs(aod::cascdata::dcapostopv) > dcaPostopv&& nabs(aod::cascdata::dcanegtopv) > dcaNegtopv&& nabs(aod::cascdata::dcabachtopv) > cascadeSettingDcabachtopv&& aod::cascdata::dcaV0daughters < dcaV0dau&& aod::cascdata::dcacascdaughters < cascadeSettingDcacascdau;
 
   using V0LinkedTagged = soa::Join<aod::V0sLinked, aod::V0Tags>;
   using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
-  using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
+  using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA>;
   using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::McTrackLabels>;
   // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
@@ -153,14 +156,14 @@ struct hstrangecorrelationfilter {
   Produces<aod::AssocHadrons> assocHadrons;
   Produces<aod::AssocPID> assocPID;
 
-  TF1* fK0Mean = new TF1("fK0Mean", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
-  TF1* fK0Width = new TF1("fK0Width", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
-  TF1* fLambdaMean = new TF1("fLambdaMean", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
-  TF1* fLambdaWidth = new TF1("fLambdaWidth", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
-  TF1* fXiMean = new TF1("fXiMean", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
-  TF1* fXiWidth = new TF1("fXiWidth", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
-  TF1* fOmegaMean = new TF1("fomegaMean", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
-  TF1* fOmegaWidth = new TF1("fomegaWidth", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
+  TF1* fK0Mean = new TF1("fK0Mean", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
+  TF1* fK0Width = new TF1("fK0Width", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
+  TF1* fLambdaMean = new TF1("fLambdaMean", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
+  TF1* fLambdaWidth = new TF1("fLambdaWidth", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
+  TF1* fXiMean = new TF1("fXiMean", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
+  TF1* fXiWidth = new TF1("fXiWidth", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
+  TF1* fOmegaMean = new TF1("fomegaMean", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
+  TF1* fOmegaWidth = new TF1("fomegaWidth", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
 
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
@@ -221,7 +224,7 @@ struct hstrangecorrelationfilter {
     if (track.tpcNClsShared() > triggerMaxTPCSharedClusters) {
       return false; // skip, has shared clusters
     }
-    if (!(bitcheck(track.itsClusterMap(), 0)) && triggerRequireL0) {
+    if (!(BIT_CHECK(track.itsClusterMap(), 0)) && triggerRequireL0) {
       return false; // skip, doesn't have cluster in ITS L0
     }
     return true;
@@ -309,7 +312,7 @@ struct hstrangecorrelationfilter {
       return;
     }
     // No need to correlate stuff that's in far collisions
-    if (TMath::Abs(collision.posZ()) > 10.0) {
+    if (std::abs(collision.posZ()) > 10.0) {
       return;
     }
     if (zorroMask.value != "") {
@@ -343,7 +346,7 @@ struct hstrangecorrelationfilter {
       return;
     }
     // No need to correlate stuff that's in far collisions
-    if (TMath::Abs(collision.posZ()) > 10.0) {
+    if (std::abs(collision.posZ()) > 10.0) {
       return;
     }
     if (zorroMask.value != "") {
@@ -383,7 +386,7 @@ struct hstrangecorrelationfilter {
       return;
     }
     // No need to correlate stuff that's in far collisions
-    if (TMath::Abs(collision.posZ()) > 10.0) {
+    if (std::abs(collision.posZ()) > 10.0) {
       return;
     }
     if (zorroMask.value != "") {
@@ -410,7 +413,7 @@ struct hstrangecorrelationfilter {
       return;
     }
     // No need to correlate stuff that's in far collisions
-    if (TMath::Abs(collision.posZ()) > 10.0) {
+    if (std::abs(collision.posZ()) > 10.0) {
       return;
     }
     if (zorroMask.value != "") {
@@ -437,7 +440,7 @@ struct hstrangecorrelationfilter {
       return;
     }
     // No need to correlate stuff that's in far collisions
-    if (TMath::Abs(collision.posZ()) > 10.0) {
+    if (std::abs(collision.posZ()) > 10.0) {
       return;
     }
     if (zorroMask.value != "") {
@@ -463,7 +466,7 @@ struct hstrangecorrelationfilter {
       return;
     }
     // No need to correlate stuff that's in far collisions
-    if (TMath::Abs(collision.posZ()) > 10.0) {
+    if (std::abs(collision.posZ()) > 10.0) {
       return;
     }
     if (zorroMask.value != "") {
@@ -490,7 +493,7 @@ struct hstrangecorrelationfilter {
       return;
     }
     // No need to correlate stuff that's in far collisions
-    if (TMath::Abs(collision.posZ()) > 10.0) {
+    if (std::abs(collision.posZ()) > 10.0) {
       return;
     }
     if (zorroMask.value != "") {
@@ -508,6 +511,9 @@ struct hstrangecorrelationfilter {
       if (v0.v0radius() < v0RadiusMin || v0.v0radius() > v0RadiusMax || v0.eta() > assocEtaMax || v0.eta() < assocEtaMin || v0.v0cosPA() < v0Cospa) {
         continue;
       }
+      if (v0.pt() > assocPtCutMax || v0.pt() < assocPtCutMin) {
+        continue;
+      }
       // check dE/dx compatibility
       int compatibleK0Short = 0;
       int compatibleLambda = 0;
@@ -522,32 +528,32 @@ struct hstrangecorrelationfilter {
       if (posdau.tpcNClsCrossedRows() < minTPCNCrossedRows)
         continue;
 
-      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose)
-        bitset(compatibleK0Short, 0);
-      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma)
-        bitset(compatibleK0Short, 1);
-      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight)
-        bitset(compatibleK0Short, 2);
+      if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose)
+        BIT_SET(compatibleK0Short, 0);
+      if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma)
+        BIT_SET(compatibleK0Short, 1);
+      if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight)
+        BIT_SET(compatibleK0Short, 2);
 
-      if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose)
+      if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose)
         if (v0.v0cosPA() > lambdaCospa)
-          bitset(compatibleLambda, 0);
-      if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma)
+          BIT_SET(compatibleLambda, 0);
+      if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma)
         if (v0.v0cosPA() > lambdaCospa)
-          bitset(compatibleLambda, 1);
-      if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight)
+          BIT_SET(compatibleLambda, 1);
+      if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight)
         if (v0.v0cosPA() > lambdaCospa)
-          bitset(compatibleLambda, 2);
+          BIT_SET(compatibleLambda, 2);
 
-      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose)
+      if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose)
         if (v0.v0cosPA() > lambdaCospa)
-          bitset(compatibleAntiLambda, 0);
-      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma)
+          BIT_SET(compatibleAntiLambda, 0);
+      if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma)
         if (v0.v0cosPA() > lambdaCospa)
-          bitset(compatibleAntiLambda, 1);
-      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaTight)
+          BIT_SET(compatibleAntiLambda, 1);
+      if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaTight)
         if (v0.v0cosPA() > lambdaCospa)
-          bitset(compatibleAntiLambda, 2);
+          BIT_SET(compatibleAntiLambda, 2);
 
       // simplified handling: calculate NSigma in mass here
       float massNSigmaK0Short = (v0.mK0Short() - fK0Mean->Eval(v0.pt())) / (fK0Width->Eval(v0.pt()) + 1e-6);
@@ -581,7 +587,7 @@ struct hstrangecorrelationfilter {
       return;
     }
     // No need to correlate stuff that's in far collisions
-    if (TMath::Abs(collision.posZ()) > 10.0) {
+    if (std::abs(collision.posZ()) > 10.0) {
       return;
     }
     if (zorroMask.value != "") {
@@ -595,6 +601,12 @@ struct hstrangecorrelationfilter {
     /// _________________________________________________
     /// Step 3: Populate table with associated Cascades
     for (auto const& casc : Cascades) {
+      if (casc.eta() > assocEtaMax || casc.eta() < assocEtaMin) {
+        continue;
+      }
+      if (casc.pt() > assocPtCutMax || casc.pt() < assocPtCutMin) {
+        continue;
+      }
       auto bachTrackCast = casc.bachelor_as<DauTracks>();
       auto posTrackCast = casc.posTrack_as<DauTracks>();
       auto negTrackCast = casc.negTrack_as<DauTracks>();
@@ -614,33 +626,33 @@ struct hstrangecorrelationfilter {
       int compatibleOmegaMinus = 0;
       int compatibleOmegaPlus = 0;
 
-      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() < 0)
-        bitset(compatibleXiMinus, 0);
-      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() < 0)
-        bitset(compatibleXiMinus, 1);
-      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() < 0)
-        bitset(compatibleXiMinus, 2);
+      if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() < 0)
+        BIT_SET(compatibleXiMinus, 0);
+      if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() < 0)
+        BIT_SET(compatibleXiMinus, 1);
+      if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() < 0)
+        BIT_SET(compatibleXiMinus, 2);
 
-      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() > 0)
-        bitset(compatibleXiPlus, 0);
-      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() > 0)
-        bitset(compatibleXiPlus, 1);
-      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() > 0)
-        bitset(compatibleXiPlus, 2);
+      if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() > 0)
+        BIT_SET(compatibleXiPlus, 0);
+      if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() > 0)
+        BIT_SET(compatibleXiPlus, 1);
+      if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() > 0)
+        BIT_SET(compatibleXiPlus, 2);
 
-      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaLoose && casc.sign() < 0)
-        bitset(compatibleOmegaMinus, 0);
-      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() < 0)
-        bitset(compatibleOmegaMinus, 1);
-      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaTight && casc.sign() < 0)
-        bitset(compatibleOmegaMinus, 2);
+      if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaLoose && casc.sign() < 0)
+        BIT_SET(compatibleOmegaMinus, 0);
+      if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() < 0)
+        BIT_SET(compatibleOmegaMinus, 1);
+      if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaTight && casc.sign() < 0)
+        BIT_SET(compatibleOmegaMinus, 2);
 
-      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaLoose && casc.sign() > 0)
-        bitset(compatibleOmegaPlus, 0);
-      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() > 0)
-        bitset(compatibleOmegaPlus, 1);
-      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaTight && casc.sign() > 0)
-        bitset(compatibleOmegaPlus, 2);
+      if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaLoose && casc.sign() > 0)
+        BIT_SET(compatibleOmegaPlus, 0);
+      if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() > 0)
+        BIT_SET(compatibleOmegaPlus, 1);
+      if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaTight && casc.sign() > 0)
+        BIT_SET(compatibleOmegaPlus, 2);
 
       float massNSigmaXi = (casc.mXi() - fXiMean->Eval(casc.pt())) / (fXiWidth->Eval(casc.pt()) + 1e-6);
       float massNSigmaOmega = (casc.mOmega() - fOmegaMean->Eval(casc.pt())) / (fOmegaWidth->Eval(casc.pt()) + 1e-6);
@@ -669,18 +681,18 @@ struct hstrangecorrelationfilter {
     }
   }
 
-  PROCESS_SWITCH(hstrangecorrelationfilter, processTriggers, "Produce trigger tables", true);
-  PROCESS_SWITCH(hstrangecorrelationfilter, processTriggersMC, "Produce trigger tables for MC", false);
-  PROCESS_SWITCH(hstrangecorrelationfilter, processV0s, "Produce associated V0 tables", true);
-  PROCESS_SWITCH(hstrangecorrelationfilter, processAssocPions, "Produce associated Pion tables", false);
-  PROCESS_SWITCH(hstrangecorrelationfilter, processAssocPionsMC, "Produce associated Pion tables for MC", false);
-  PROCESS_SWITCH(hstrangecorrelationfilter, processCascades, "Produce associated cascade tables", true);
-  PROCESS_SWITCH(hstrangecorrelationfilter, processAssocHadrons, "Produce associated Hadron tables", true);
-  PROCESS_SWITCH(hstrangecorrelationfilter, processAssocHadronsMC, "Produce associated Hadron tables for MC", false);
+  PROCESS_SWITCH(HStrangeCorrelationFilter, processTriggers, "Produce trigger tables", true);
+  PROCESS_SWITCH(HStrangeCorrelationFilter, processTriggersMC, "Produce trigger tables for MC", false);
+  PROCESS_SWITCH(HStrangeCorrelationFilter, processV0s, "Produce associated V0 tables", true);
+  PROCESS_SWITCH(HStrangeCorrelationFilter, processAssocPions, "Produce associated Pion tables", false);
+  PROCESS_SWITCH(HStrangeCorrelationFilter, processAssocPionsMC, "Produce associated Pion tables for MC", false);
+  PROCESS_SWITCH(HStrangeCorrelationFilter, processCascades, "Produce associated cascade tables", true);
+  PROCESS_SWITCH(HStrangeCorrelationFilter, processAssocHadrons, "Produce associated Hadron tables", true);
+  PROCESS_SWITCH(HStrangeCorrelationFilter, processAssocHadronsMC, "Produce associated Hadron tables for MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<hstrangecorrelationfilter>(cfgc)};
+    adaptAnalysisTask<HStrangeCorrelationFilter>(cfgc)};
 }

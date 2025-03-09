@@ -59,8 +59,6 @@ DECLARE_SOA_COLUMN(TnTpcCluster, tnTpcCluster, int);
 DECLARE_SOA_COLUMN(TnItsCluster, tnItsCluster, int);
 DECLARE_SOA_COLUMN(TTpcChi2NCl, tTpcChi2NCl, float);
 DECLARE_SOA_COLUMN(TItsChi2NCl, tItsChi2NCl, float);
-DECLARE_SOA_COLUMN(TPassedTpcRefit, tPassedTpcRefit, bool);
-DECLARE_SOA_COLUMN(TPassedItsRefit, tPassedItsRefit, bool);
 DECLARE_SOA_COLUMN(TRigidity, tRigidity, float);
 DECLARE_SOA_COLUMN(TItsClusterSize, tItsClusterSize, float);
 } // namespace h3_data
@@ -70,8 +68,7 @@ DECLARE_SOA_TABLE(H3Data, "AOD", "h3_data", h3_data::TPt, h3_data::TEta,
                   h3_data::TDcaZ, h3_data::TSigmaYX, h3_data::TSigmaXYZ,
                   h3_data::TSigmaZ, h3_data::TnTpcCluster,
                   h3_data::TnItsCluster, h3_data::TTpcChi2NCl,
-                  h3_data::TItsChi2NCl, h3_data::TPassedTpcRefit,
-                  h3_data::TPassedItsRefit, h3_data::TRigidity,
+                  h3_data::TItsChi2NCl, h3_data::TRigidity,
                   h3_data::TItsClusterSize);
 namespace he_data
 {
@@ -92,8 +89,6 @@ DECLARE_SOA_COLUMN(TnTpcCluster, tnTpcCluster, int);
 DECLARE_SOA_COLUMN(TnItsCluster, tnItsCluster, int);
 DECLARE_SOA_COLUMN(TTpcChi2NCl, tTpcChi2NCl, float);
 DECLARE_SOA_COLUMN(TItsChi2NCl, tItsChi2NCl, float);
-DECLARE_SOA_COLUMN(TPassedTpcRefit, tPassedTpcRefit, bool);
-DECLARE_SOA_COLUMN(TPassedItsRefit, tPassedItsRefit, bool);
 DECLARE_SOA_COLUMN(TRigidity, tRigidity, float);
 DECLARE_SOA_COLUMN(TItsClusterSize, tItsClusterSize, float);
 } // namespace he_data
@@ -103,8 +98,7 @@ DECLARE_SOA_TABLE(HeData, "AOD", "he_data", he_data::TPt, he_data::TEta,
                   he_data::TDcaZ, he_data::TSigmaYX, he_data::TSigmaXYZ,
                   he_data::TSigmaZ, he_data::TnTpcCluster,
                   he_data::TnItsCluster, he_data::TTpcChi2NCl,
-                  he_data::TItsChi2NCl, he_data::TPassedTpcRefit,
-                  he_data::TPassedItsRefit, he_data::TRigidity,
+                  he_data::TItsChi2NCl, he_data::TRigidity,
                   he_data::TItsClusterSize);
 } // namespace o2::aod
 namespace
@@ -162,196 +156,16 @@ class Particle
   }
 };
 
-struct trHeAnalysis {
-  Produces<o2::aod::H3Data> H3Data;
-  Produces<o2::aod::HeData> HeData;
+struct TrHeAnalysis {
+  Produces<o2::aod::H3Data> h3Data;
+  Produces<o2::aod::HeData> heData;
   HistogramRegistry histos{
     "Histos",
     {},
     OutputObjHandlingPolicy::AnalysisObject};
   std::vector<Particle> particles;
-  Configurable<bool> enableTr{"enableTr", true,
-                              "Flag to enable triton analysis."};
-  Configurable<bool> enableHe{"enableHe", true,
-                              "Flag to enable helium-3 analysis."};
-
-  ConfigurableAxis binsPt{"binsPt",
-                          {VARIABLE_WIDTH,
-                           0.0,
-                           0.05,
-                           0.1,
-                           0.15,
-                           0.2,
-                           0.25,
-                           0.3,
-                           0.35,
-                           0.4,
-                           0.425,
-                           0.45,
-                           0.475,
-                           0.5,
-                           0.5125,
-                           0.525,
-                           0.5375,
-                           0.55,
-                           0.5625,
-                           0.575,
-                           0.5875,
-                           0.6,
-                           0.6125,
-                           0.625,
-                           0.6375,
-                           0.65,
-                           0.6625,
-                           0.675,
-                           0.6875,
-                           0.7,
-                           0.7125,
-                           0.725,
-                           0.7375,
-                           0.75,
-                           0.7625,
-                           0.775,
-                           0.7875,
-                           0.8,
-                           0.8125,
-                           0.825,
-                           0.8375,
-                           0.85,
-                           0.8625,
-                           0.875,
-                           0.8875,
-                           0.9,
-                           0.9125,
-                           0.925,
-                           0.9375,
-                           0.95,
-                           0.9625,
-                           0.975,
-                           0.9875,
-                           1.0,
-                           1.0125,
-                           1.025,
-                           1.0375,
-                           1.05,
-                           1.0625,
-                           1.075,
-                           1.0875,
-                           1.1,
-                           1.1125,
-                           1.125,
-                           1.1375,
-                           1.15,
-                           1.1625,
-                           1.175,
-                           1.1875,
-                           1.2,
-                           1.2125,
-                           1.225,
-                           1.2375,
-                           1.25,
-                           1.2625,
-                           1.275,
-                           1.2875,
-                           1.3,
-                           1.3125,
-                           1.325,
-                           1.3375,
-                           1.35,
-                           1.3625,
-                           1.375,
-                           1.3875,
-                           1.4,
-                           1.4125,
-                           1.425,
-                           1.4375,
-                           1.45,
-                           1.4625,
-                           1.475,
-                           1.4875,
-                           1.5,
-                           1.5125,
-                           1.525,
-                           1.5375,
-                           1.55,
-                           1.5625,
-                           1.575,
-                           1.5875,
-                           1.6,
-                           1.6125,
-                           1.625,
-                           1.6375,
-                           1.65,
-                           1.6625,
-                           1.675,
-                           1.6875,
-                           1.7,
-                           1.7125,
-                           1.725,
-                           1.7375,
-                           1.75,
-                           1.7625,
-                           1.775,
-                           1.7875,
-                           1.8,
-                           1.8125,
-                           1.825,
-                           1.8375,
-                           1.85,
-                           1.8625,
-                           1.875,
-                           1.8875,
-                           1.9,
-                           1.9125,
-                           1.925,
-                           1.9375,
-                           1.95,
-                           1.9625,
-                           1.975,
-                           1.9875,
-                           2.0,
-                           2.0625,
-                           2.125,
-                           2.1875,
-                           2.25,
-                           2.3125,
-                           2.375,
-                           2.4375,
-                           2.5,
-                           2.625,
-                           2.75,
-                           2.875,
-                           3.0,
-                           3.25,
-                           3.5,
-                           3.75,
-                           4.0,
-                           4.5,
-                           5.0,
-                           6.0,
-                           7.0,
-                           8.0},
-                          ""};
-  ConfigurableAxis binsPtHe{"binsPtHe",
-                            {VARIABLE_WIDTH, 1.0, 1.25, 1.50, 1.75, 2.0, 2.25,
-                             2.50, 2.75, 3.0, 3.25, 3.50, 3.75, 4.0, 4.50, 5.0,
-                             6.0, 7.0, 8.0},
-                            ""};
-  ConfigurableAxis binsPtZHe{"binsPtZHe",
-                             {VARIABLE_WIDTH, 0.5, 0.625, 0.75, 0.875, 1.0,
-                              1.125, 1.25, 1.375, 1.5, 1.625, 1.75, 1.875, 2.0,
-                              2.25, 2.5, 3.0, 3.5, 4.0},
-                             ""};
-  ConfigurableAxis binsPtTr{"binsPtTr",
-                            {VARIABLE_WIDTH, 1.0, 1.25, 1.50, 1.75, 2.0, 2.25,
-                             2.50, 2.75, 3.0, 3.25, 3.50, 3.75, 4.0, 4.50, 5.0,
-                             6.0, 7.0, 8.0},
-                            ""};
-  ConfigurableAxis binsPtZTr{"binsPtZTr",
-                             {VARIABLE_WIDTH, 0.5, 0.625, 0.75, 0.875, 1.0,
-                              1.125, 1.25, 1.375, 1.5, 1.625, 1.75, 1.875, 2.0,
-                              2.25, 2.5, 3.0, 3.5, 4.0},
-                             ""};
+  Configurable<bool> enableTr{"enableTr", true, "Flag to enable triton analysis."};
+  Configurable<bool> enableHe{"enableHe", true, "Flag to enable helium-3 analysis."};
   ConfigurableAxis binsDeDx{"binsDeDx", {600, 0.f, 3000.f}, ""};
   ConfigurableAxis binsBeta{"binsBeta", {120, 0.0, 1.2}, ""};
   ConfigurableAxis binsDca{"binsDca", {400, -1.f, 1.f}, ""};
@@ -361,86 +175,55 @@ struct trHeAnalysis {
   ConfigurableAxis binsMassHe{"binsMassHe", {300, -3., 3.f}, ""};
   // Set the event selection cuts
   struct : ConfigurableGroup {
-    Configurable<bool> useSel8{"useSel8", true,
-                               "Use Sel8 for run3 Event Selection"};
-    Configurable<bool> tvxTrigger{
-      "tvxTrigger", false, "Use TVX for Event Selection (default w/ Sel8)"};
-    Configurable<bool> removeTFBorder{
-      "removeTFBorder", false, "Remove TimeFrame border (default w/ Sel8)"};
-    Configurable<bool> removeITSROFBorder{
-      "removeITSROFBorder", false,
-      "Remove ITS Read-Out Frame border (default w/ Sel8)"};
+    Configurable<bool> useSel8{"useSel8", true, "Use Sel8 for run3 Event Selection"};
+    Configurable<bool> tvxTrigger{"tvxTrigger", false, "Use TVX for Event Selection (default w/ Sel8)"};
+    Configurable<bool> removeTfBorder{"removeTfBorder", false, "Remove TimeFrame border (default w/ Sel8)"};
+    Configurable<bool> removeItsRofBorder{"removeItsRofBorder", false, "Remove ITS Read-Out Frame border (default w/ Sel8)"};
   } evselOptions;
 
-  Configurable<bool> cfgTPCPidMethod{
-    "cfgTPCPidMethod", false,
-    "Using own or built in bethe parametrization"}; // false for built in
-                                                    // method
+  Configurable<bool> cfgTPCPidMethod{"cfgTPCPidMethod", false, "Using own or built in bethe parametrization"}; // false for built in
+
   // Set the multiplity event limits
-  Configurable<float> cfgLowMultCut{
-    "cfgLowMultCut", 0.0f, "Accepted multiplicity percentage lower limit"};
-  Configurable<float> cfgHighMultCut{
-    "cfgHighMultCut", 100.0f,
-    "Accepted multiplicity percentage higher limit"};
+  Configurable<float> cfgLowMultCut{"cfgLowMultCut", 0.0f, "Accepted multiplicity percentage lower limit"};
+  Configurable<float> cfgHighMultCut{"cfgHighMultCut", 100.0f, "Accepted multiplicity percentage higher limit"};
 
   // Set the z-vertex event cut limits
-  Configurable<float> cfgHighCutVertex{"cfgHighCutVertex", 10.0f,
-                                       "Accepted z-vertex upper limit"};
-  Configurable<float> cfgLowCutVertex{"cfgLowCutVertex", -10.0f,
-                                      "Accepted z-vertex lower limit"};
+  Configurable<float> cfgHighCutVertex{"cfgHighCutVertex", 10.0f, "Accepted z-vertex upper limit"};
+  Configurable<float> cfgLowCutVertex{"cfgLowCutVertex", -10.0f, "Accepted z-vertex lower limit"};
 
   // Set the quality cuts for tracks
-  Configurable<bool> rejectFakeTracks{
-    "rejectFakeTracks", false, "Flag to reject ITS-TPC fake tracks (for MC)"};
-  Configurable<float> cfgCutITSClusters{"cfgCutITSClusters", -1.f,
-                                        "Minimum number of ITS clusters"};
-  Configurable<float> cfgCutTPCXRows{"cfgCutTPCXRows", -1.f,
-                                     "Minimum number of crossed TPC rows"};
-  Configurable<float> cfgCutTPCClusters{"cfgCutTPCClusters", 40.f,
-                                        "Minimum number of found TPC clusters"};
-  Configurable<int> nITSLayer{"nITSLayer", 0, "ITS Layer (0-6)"};
-  Configurable<float> cfgCutTPCcrRowToFindableCl{
-    "cfgCutTPCcrRowToFindableCl", 0.8f,
-    "Minimum ratio of crossed rows to findable cluster in TPC"};
-  Configurable<float> cfgCutmaxChi2TPC{"cfgCutmaxChi2TPC", 4.f,
-                                       "Maximum chi2 per cluster for TPC"};
-  Configurable<float> cfgCutmaxChi2ITS{"cfgCutmaxChi2ITS", 36.f,
-                                       "Maximum chi2 per cluster for ITS"};
-
+  Configurable<bool> rejectFakeTracks{"rejectFakeTracks", false, "Flag to reject ITS-TPC fake tracks (for MC)"};
+  Configurable<float> cfgCutItsClusters{"cfgCutItsClusters", -1.f, "Minimum number of ITS clusters"};
+  Configurable<float> cfgCutTpcXRows{"cfgCutTpcXRows", -1.f, "Minimum number of crossed TPC rows"};
+  Configurable<float> cfgCutTpcClusters{"cfgCutTpcClusters", 40.f, "Minimum number of found TPC clusters"};
+  Configurable<int> nItsLayer{"nItsLayer", 0, "ITS Layer (0-6)"};
+  Configurable<float> cfgCutTpcCrRowToFindableCl{"cfgCutTpcCrRowToFindableCl", 0.8f, "Minimum ratio of crossed rows to findable cluster in TPC"};
+  Configurable<float> cfgCutMaxChi2TpcH3{"cfgCutMaxChi2TpcH3", 4.f, "Maximum chi2 per cluster for TPC"};
+  Configurable<float> cfgCutMaxChi2ItsH3{"cfgCutMaxChi2ItsH3", 36.f, "Maximum chi2 per cluster for ITS"};
+  Configurable<float> cfgCutMaxChi2TpcHe{"cfgCutMaxChi2TpcHe", 4.f, "Maximum chi2 per cluster for TPC"};
+  Configurable<float> cfgCutMaxChi2ItsHe{"cfgCutMaxChi2ItsHe", 36.f, "Maximum chi2 per cluster for ITS"};
+  Configurable<bool> cfgCutTpcRefit{"cfgCutTpcRefit", 1, "TPC refit "};
+  Configurable<bool> cfgCutItsRefit{"cfgCutItsRefit", 1, "ITS refit"};
+  Configurable<float> cfgCutMaxItsClusterSizeHe{"cfgCutMaxItsClusterSizeHe", 4.f, "Maximum ITS Cluster Size for He "};
+  Configurable<float> cfgCutMinItsClusterSizeHe{"cfgCutMinItsClusterSizeHe", 1.f, "Minimum ITS Cluster Size for He"};
+  Configurable<float> cfgCutMaxItsClusterSizeH3{"cfgCutMaxItsClusterSizeH3", 4.f, "Maximum ITS Cluster Size for Tr"};
+  Configurable<float> cfgCutMinItsClusterSizeH3{"cfgCutMinItsClusterSizeH3", 1.f, "Minimum ITS Cluster Size for Tr"};
   // Set the kinematic and PID cuts for tracks
   struct : ConfigurableGroup {
-    Configurable<float> pCut{
-      "pCut", 0.3f, "Value of the p selection for spectra (default 0.3)"};
-    Configurable<float> etaCut{
-      "etaCut", 0.8f, "Value of the eta selection for spectra (default 0.8)"};
-    Configurable<float> yLowCut{
-      "yLowCut", -1.0f,
-      "Value of the low rapidity selection for spectra (default -1.0)"};
-    Configurable<float> yHighCut{
-      "yHighCut", 1.0f,
-      "Value of the high rapidity selection for spectra (default 1.0)"};
+    Configurable<float> pCut{"pCut", 0.3f, "Value of the p selection for spectra (default 0.3)"};
+    Configurable<float> etaCut{"etaCut", 0.8f, "Value of the eta selection for spectra (default 0.8)"};
+    Configurable<float> yLowCut{"yLowCut", -1.0f, "Value of the low rapidity selection for spectra (default -1.0)"};
+    Configurable<float> yHighCut{"yHighCut", 1.0f, "Value of the high rapidity selection for spectra (default 1.0)"};
   } kinemOptions;
 
   struct : ConfigurableGroup {
-    Configurable<float> nsigmaTPCTr{"nsigmaTPCTr", 5.f,
-                                    "Value of the Nsigma TPC cut for tritons"};
-    Configurable<float> nsigmaTPCHe{"nsigmaTPCHe", 5.f,
-                                    "Value of the Nsigma TPC cut for helium-3"};
+    Configurable<float> nsigmaTPCTr{"nsigmaTPCTr", 5.f, "Value of the Nsigma TPC cut for tritons"};
+    Configurable<float> nsigmaTPCHe{"nsigmaTPCHe", 5.f, "Value of the Nsigma TPC cut for helium-3"};
   } nsigmaTPCvar;
-  Configurable<LabeledArray<float>> cfgBetheBlochParams{
-    "cfgBetheBlochParams",
-    {betheBlochDefault[0], nParticles, nBetheParams, particleNames,
-     betheBlochParNames},
-    "TPC Bethe-Bloch parameterisation for light nuclei"};
+  Configurable<LabeledArray<float>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
 
   void init(o2::framework::InitContext&)
   {
-    const AxisSpec pAxis{binsPt, "#it{p} (GeV/#it{c})"};
-    const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec ptHeAxis{binsPtHe, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec ptZHeAxis{binsPtZHe, "#it{p}_{T}/z (GeV/#it{c})"};
-    const AxisSpec ptTrAxis{binsPtTr, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec ptZTrAxis{binsPtZTr, "#it{p}_{T}/z (GeV/#it{c})"};
     const AxisSpec dedxAxis{binsDeDx, "d#it{E}/d#it{x} A.U."};
     const AxisSpec betaAxis{binsBeta, "TOF #beta"};
     const AxisSpec dcaxyAxis{binsDca, "DCAxy (cm)"};
@@ -490,17 +273,20 @@ struct trHeAnalysis {
     h->GetXaxis()->SetBinLabel(6, "Sel8 cut");
     h->GetXaxis()->SetBinLabel(7, "Z-vert Cut");
     histos.add<TH1>("histogram/cuts", "cuts", HistType::kTH1D,
-                    {{9, -0.5, 8.5}});
-    auto h_cuts = histos.get<TH1>(HIST("histogram/cuts"));
-    h_cuts->GetXaxis()->SetBinLabel(1, "total");
-    h_cuts->GetXaxis()->SetBinLabel(2, "p cut");
-    h_cuts->GetXaxis()->SetBinLabel(3, "eta cut");
-    h_cuts->GetXaxis()->SetBinLabel(4, "TPC cluster");
-    h_cuts->GetXaxis()->SetBinLabel(5, "ITS clsuter");
-    h_cuts->GetXaxis()->SetBinLabel(6, "TPC crossed rows");
-    h_cuts->GetXaxis()->SetBinLabel(7, "max chi2 ITS");
-    h_cuts->GetXaxis()->SetBinLabel(8, "max chi2 TPC");
-    h_cuts->GetXaxis()->SetBinLabel(9, "crossed rows over findable cluster");
+                    {{12, -0.5, 11.5}});
+    auto hCuts = histos.get<TH1>(HIST("histogram/cuts"));
+    hCuts->GetXaxis()->SetBinLabel(1, "total");
+    hCuts->GetXaxis()->SetBinLabel(2, "p cut");
+    hCuts->GetXaxis()->SetBinLabel(3, "eta cut");
+    hCuts->GetXaxis()->SetBinLabel(4, "TPC cluster");
+    hCuts->GetXaxis()->SetBinLabel(5, "ITS clsuter");
+    hCuts->GetXaxis()->SetBinLabel(6, "TPC crossed rows");
+    hCuts->GetXaxis()->SetBinLabel(7, "max chi2 ITS");
+    hCuts->GetXaxis()->SetBinLabel(8, "max chi2 TPC");
+    hCuts->GetXaxis()->SetBinLabel(9, "crossed rows over findable cluster");
+    hCuts->GetXaxis()->SetBinLabel(10, "TPC refit");
+    hCuts->GetXaxis()->SetBinLabel(11, "ITS refit");
+    hCuts->GetXaxis()->SetBinLabel(12, "ITS cluster size");
     for (int i = 0; i < nParticles; i++) {
       particles.push_back(Particle(particleNames.at(i), particlePdgCodes.at(i),
                                    particleMasses.at(i), particleCharge.at(i),
@@ -541,33 +327,37 @@ struct trHeAnalysis {
           histos.fill(HIST("histogram/cuts"), 1);
           continue;
         }
-        if (std::abs(track.eta()) >= kinemOptions.etaCut) {
+        if (std::abs(track.eta()) > kinemOptions.etaCut) {
           histos.fill(HIST("histogram/cuts"), 2);
           continue;
         }
-        if (track.tpcNClsFound() < cfgCutTPCClusters) {
+        if (track.tpcNClsFound() < cfgCutTpcClusters) {
           histos.fill(HIST("histogram/cuts"), 3);
           continue;
         }
-        if (track.itsNCls() < cfgCutITSClusters) {
+        if (track.itsNCls() < cfgCutItsClusters) {
           histos.fill(HIST("histogram/cuts"), 4);
           continue;
         }
-        if (track.tpcNClsCrossedRows() < cfgCutTPCXRows) {
+        if (track.tpcNClsCrossedRows() < cfgCutTpcXRows) {
           histos.fill(HIST("histogram/cuts"), 5);
           continue;
         }
-        if (track.itsChi2NCl() > cfgCutmaxChi2ITS) {
-          histos.fill(HIST("histogram/cuts"), 6);
-          continue;
-        }
-        if (track.tpcChi2NCl() > cfgCutmaxChi2TPC) {
-          histos.fill(HIST("histogram/cuts"), 7);
-          continue;
-        }
-        if (track.tpcCrossedRowsOverFindableCls() <= cfgCutTPCcrRowToFindableCl) {
+        if (track.tpcCrossedRowsOverFindableCls() <= cfgCutTpcCrRowToFindableCl) {
           histos.fill(HIST("histogram/cuts"), 8);
           continue;
+        }
+        if (cfgCutTpcRefit) {
+          if (!track.passedTPCRefit()) {
+            histos.fill(HIST("histogram/cuts"), 9);
+            continue;
+          }
+        }
+        if (cfgCutItsRefit) {
+          if (!track.passedITSRefit()) {
+            histos.fill(HIST("histogram/cuts"), 10);
+            continue;
+          }
         }
         histos.fill(HIST("histogram/pT"), track.pt());
         histos.fill(HIST("histogram/p"), track.p());
@@ -579,71 +369,93 @@ struct trHeAnalysis {
         if (enableTr && trRapCut) {
           if (std::abs(getTPCnSigma(track, particles.at(0))) <
               nsigmaTPCvar.nsigmaTPCTr) {
+            if (track.itsChi2NCl() > cfgCutMaxChi2ItsH3) {
+              histos.fill(HIST("histogram/cuts"), 6);
+              continue;
+            }
+            if (track.tpcChi2NCl() > cfgCutMaxChi2TpcH3) {
+              histos.fill(HIST("histogram/cuts"), 7);
+              continue;
+            }
+            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeH3 ||
+                getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeH3) {
+              histos.fill(HIST("histogram/cuts"), 12);
+              continue;
+            }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
                         track.tpcInnerParam() / (1.f * track.sign()),
                         track.tpcSignal());
             histos.fill(HIST("histogram/H3/H3-TOFbetaVsP"),
                         track.p() / (1.f * track.sign()), track.beta());
-            float TPt = track.pt();
-            float TEta = track.eta();
-            float TPhi = track.phi();
-            int8_t TCharge = track.sign();
-            float TH3DeDx = track.tpcSignal();
-            float TnSigmaTpc = track.tpcNSigmaTr();
-            float TTofSignalH3 = track.mass();
-            float TDcaXY = track.dcaXY();
-            float TDcaZ = track.dcaZ();
-            float TSigmaYX = track.sigmaY();
-            float TSigmaXYZ = track.sigmaSnp();
-            float TSigmaZ = track.sigmaZ();
-            int TnTpcCluster = track.tpcNClsFound();
-            int TnItsCluster = track.itsNCls();
-            float TTpcChi2NCl = track.tpcChi2NCl();
-            float TItsChi2NCl = track.itsChi2NCl();
-            bool TPassedTpcRefit = track.passedTPCRefit();
-            bool TPassedItsRefit = track.passedITSRefit();
-            float TRigidity = track.tpcInnerParam();
-            float TItsClusterSize =
+            float tPt = track.pt();
+            float tEta = track.eta();
+            float tPhi = track.phi();
+            int8_t tCharge = track.sign();
+            float tH3DeDx = track.tpcSignal();
+            float tnSigmaTpc = track.tpcNSigmaTr();
+            float tTofSignalH3 = track.mass();
+            float tDcaXY = track.dcaXY();
+            float tDcaZ = track.dcaZ();
+            float tSigmaYX = track.sigmaY();
+            float tSigmaXYZ = track.sigmaSnp();
+            float tSigmaZ = track.sigmaZ();
+            int tnTpcCluster = track.tpcNClsFound();
+            int tnItsCluster = track.itsNCls();
+            float tTpcChi2NCl = track.tpcChi2NCl();
+            float tItsChi2NCl = track.itsChi2NCl();
+            float tRigidity = track.tpcInnerParam();
+            float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
-            H3Data(TPt, TEta, TPhi, TCharge, TH3DeDx, TnSigmaTpc, TTofSignalH3,
-                   TDcaXY, TDcaZ, TSigmaYX, TSigmaXYZ, TSigmaZ, TnTpcCluster,
-                   TnItsCluster, TTpcChi2NCl, TItsChi2NCl, TPassedTpcRefit,
-                   TPassedItsRefit, TRigidity, TItsClusterSize);
+            h3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
+                   tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
+                   tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
+                   tItsClusterSize);
           }
         }
         if (enableHe && heRapCut) {
           if (std::abs(getTPCnSigma(track, particles.at(1))) <
               nsigmaTPCvar.nsigmaTPCHe) {
+            if (track.itsChi2NCl() > cfgCutMaxChi2ItsHe) {
+              histos.fill(HIST("histogram/cuts"), 6);
+              continue;
+            }
+            if (track.tpcChi2NCl() > cfgCutMaxChi2TpcHe) {
+              histos.fill(HIST("histogram/cuts"), 7);
+              continue;
+            }
+            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe ||
+                getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeHe) {
+              histos.fill(HIST("histogram/cuts"), 12);
+              continue;
+            }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
                         track.tpcInnerParam() / (2.f * track.sign()),
                         track.tpcSignal());
             histos.fill(HIST("histogram/He/He-TOFbetaVsP"),
                         track.p() / (2.f * track.sign()), track.beta());
-            float TPt = track.pt();
-            float TEta = track.eta();
-            float TPhi = track.phi();
-            int8_t TCharge = track.sign();
-            float THeDeDx = track.tpcSignal();
-            float TnSigmaTpc = track.tpcNSigmaHe();
-            float TTofSignalHe = track.mass();
-            float TDcaXY = track.dcaXY();
-            float TDcaZ = track.dcaZ();
-            float TSigmaYX = track.sigmaY();
-            float TSigmaXYZ = track.sigmaSnp();
-            float TSigmaZ = track.sigmaZ();
-            int TnTpcCluster = track.tpcNClsFound();
-            int TnItsCluster = track.itsNCls();
-            float TTpcChi2NCl = track.tpcChi2NCl();
-            float TItsChi2NCl = track.itsChi2NCl();
-            bool TPassedTpcRefit = track.passedTPCRefit();
-            bool TPassedItsRefit = track.passedITSRefit();
-            float TRigidity = track.tpcInnerParam();
-            float TItsClusterSize =
+            float tPt = track.pt();
+            float tEta = track.eta();
+            float tPhi = track.phi();
+            int8_t tCharge = 2.f * track.sign();
+            float tHeDeDx = track.tpcSignal();
+            float tnSigmaTpc = track.tpcNSigmaHe();
+            float tTofSignalHe = track.mass();
+            float tDcaXY = track.dcaXY();
+            float tDcaZ = track.dcaZ();
+            float tSigmaYX = track.sigmaY();
+            float tSigmaXYZ = track.sigmaSnp();
+            float tSigmaZ = track.sigmaZ();
+            int tnTpcCluster = track.tpcNClsFound();
+            int tnItsCluster = track.itsNCls();
+            float tTpcChi2NCl = track.tpcChi2NCl();
+            float tItsChi2NCl = track.itsChi2NCl();
+            float tRigidity = track.tpcInnerParam();
+            float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
-            HeData(TPt, TEta, TPhi, TCharge, THeDeDx, TnSigmaTpc, TTofSignalHe,
-                   TDcaXY, TDcaZ, TSigmaYX, TSigmaXYZ, TSigmaZ, TnTpcCluster,
-                   TnItsCluster, TTpcChi2NCl, TItsChi2NCl, TPassedTpcRefit,
-                   TPassedItsRefit, TRigidity, TItsClusterSize);
+            heData(tPt, tEta, tPhi, tCharge, tHeDeDx, tnSigmaTpc, tTofSignalHe,
+                   tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
+                   tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
+                   tItsClusterSize);
           }
         }
       }
@@ -665,33 +477,37 @@ struct trHeAnalysis {
           histos.fill(HIST("histogram/cuts"), 1);
           continue;
         }
-        if (std::abs(track.eta()) < kinemOptions.etaCut) {
+        if (std::abs(track.eta()) > kinemOptions.etaCut) {
           histos.fill(HIST("histogram/cuts"), 2);
           continue;
         }
-        if (track.tpcNClsFound() < cfgCutTPCClusters) {
+        if (track.tpcNClsFound() < cfgCutTpcClusters) {
           histos.fill(HIST("histogram/cuts"), 3);
           continue;
         }
-        if (track.itsNCls() < cfgCutITSClusters) {
+        if (track.itsNCls() < cfgCutItsClusters) {
           histos.fill(HIST("histogram/cuts"), 4);
           continue;
         }
-        if (track.tpcNClsCrossedRows() < cfgCutTPCXRows) {
+        if (track.tpcNClsCrossedRows() < cfgCutTpcXRows) {
           histos.fill(HIST("histogram/cuts"), 5);
           continue;
         }
-        if (track.itsChi2NCl() > cfgCutmaxChi2ITS) {
-          histos.fill(HIST("histogram/cuts"), 6);
-          continue;
-        }
-        if (track.tpcChi2NCl() > cfgCutmaxChi2TPC) {
-          histos.fill(HIST("histogram/cuts"), 7);
-          continue;
-        }
-        if (track.tpcCrossedRowsOverFindableCls() <= cfgCutTPCcrRowToFindableCl) {
+        if (track.tpcCrossedRowsOverFindableCls() <= cfgCutTpcCrRowToFindableCl) {
           histos.fill(HIST("histogram/cuts"), 8);
           continue;
+        }
+        if (cfgCutTpcRefit) {
+          if (!track.passedTPCRefit()) {
+            histos.fill(HIST("histogram/cuts"), 9);
+            continue;
+          }
+        }
+        if (cfgCutItsRefit) {
+          if (!track.passedITSRefit()) {
+            histos.fill(HIST("histogram/cuts"), 10);
+            continue;
+          }
         }
         histos.fill(HIST("histogram/pT"), track.pt());
         histos.fill(HIST("histogram/p"), track.p());
@@ -702,70 +518,92 @@ struct trHeAnalysis {
                     track.p() / (1.f * track.sign()), track.beta());
         if (enableTr && trRapCut) {
           if (std::abs(track.tpcNSigmaTr()) < nsigmaTPCvar.nsigmaTPCTr) {
+            if (track.itsChi2NCl() > cfgCutMaxChi2ItsH3) {
+              histos.fill(HIST("histogram/cuts"), 6);
+              continue;
+            }
+            if (track.tpcChi2NCl() > cfgCutMaxChi2TpcH3) {
+              histos.fill(HIST("histogram/cuts"), 7);
+              continue;
+            }
+            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeH3 ||
+                getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeH3) {
+              histos.fill(HIST("histogram/cuts"), 12);
+              continue;
+            }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
                         track.tpcInnerParam() / (1.f * track.sign()),
                         track.tpcSignal());
             histos.fill(HIST("histogram/H3/H3-TOFbetaVsP"),
                         track.p() / (1.f * track.sign()), track.beta());
-            float TPt = track.pt();
-            float TEta = track.eta();
-            float TPhi = track.phi();
-            int8_t TCharge = track.sign();
-            float TH3DeDx = track.tpcSignal();
-            float TnSigmaTpc = track.tpcNSigmaTr();
-            float TTofSignalH3 = track.mass();
-            float TDcaXY = track.dcaXY();
-            float TDcaZ = track.dcaZ();
-            float TSigmaYX = track.sigmaY();
-            float TSigmaXYZ = track.sigmaSnp();
-            float TSigmaZ = track.sigmaZ();
-            int TnTpcCluster = track.tpcNClsFound();
-            int TnItsCluster = track.itsNCls();
-            float TTpcChi2NCl = track.tpcChi2NCl();
-            float TItsChi2NCl = track.itsChi2NCl();
-            bool TPassedTpcRefit = track.passedTPCRefit();
-            bool TPassedItsRefit = track.passedITSRefit();
-            float TRigidity = track.tpcInnerParam();
-            float TItsClusterSize =
+            float tPt = track.pt();
+            float tEta = track.eta();
+            float tPhi = track.phi();
+            int8_t tCharge = track.sign();
+            float tH3DeDx = track.tpcSignal();
+            float tnSigmaTpc = track.tpcNSigmaTr();
+            float tTofSignalH3 = track.mass();
+            float tDcaXY = track.dcaXY();
+            float tDcaZ = track.dcaZ();
+            float tSigmaYX = track.sigmaY();
+            float tSigmaXYZ = track.sigmaSnp();
+            float tSigmaZ = track.sigmaZ();
+            int tnTpcCluster = track.tpcNClsFound();
+            int tnItsCluster = track.itsNCls();
+            float tTpcChi2NCl = track.tpcChi2NCl();
+            float tItsChi2NCl = track.itsChi2NCl();
+            float tRigidity = track.tpcInnerParam();
+            float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
-            H3Data(TPt, TEta, TPhi, TCharge, TH3DeDx, TnSigmaTpc, TTofSignalH3,
-                   TDcaXY, TDcaZ, TSigmaYX, TSigmaXYZ, TSigmaZ, TnTpcCluster,
-                   TnItsCluster, TTpcChi2NCl, TItsChi2NCl, TPassedTpcRefit,
-                   TPassedItsRefit, TRigidity, TItsClusterSize);
+            h3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
+                   tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
+                   tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
+                   tItsClusterSize);
           }
         }
         if (enableHe && heRapCut) {
           if (std::abs(track.tpcNSigmaHe()) < nsigmaTPCvar.nsigmaTPCHe) {
+            if (track.itsChi2NCl() > cfgCutMaxChi2ItsHe) {
+              histos.fill(HIST("histogram/cuts"), 6);
+              continue;
+            }
+            if (track.tpcChi2NCl() > cfgCutMaxChi2TpcHe) {
+              histos.fill(HIST("histogram/cuts"), 7);
+              continue;
+            }
+            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe ||
+                getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeHe) {
+              histos.fill(HIST("histogram/cuts"), 12);
+              continue;
+            }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
                         track.tpcInnerParam() / (2.f * track.sign()),
                         track.tpcSignal());
             histos.fill(HIST("histogram/He/He-TOFbetaVsP"),
                         track.p() / (2.f * track.sign()), track.beta());
-            float TPt = track.pt();
-            float TEta = track.eta();
-            float TPhi = track.phi();
-            int8_t TCharge = track.sign();
-            float THeDeDx = track.tpcSignal();
-            float TnSigmaTpc = track.tpcNSigmaHe();
-            float TTofSignalHe = track.mass();
-            float TDcaXY = track.dcaXY();
-            float TDcaZ = track.dcaZ();
-            float TSigmaYX = track.sigmaY();
-            float TSigmaXYZ = track.sigmaSnp();
-            float TSigmaZ = track.sigmaZ();
-            int TnTpcCluster = track.tpcNClsFound();
-            int TnItsCluster = track.itsNCls();
-            float TTpcChi2NCl = track.tpcChi2NCl();
-            float TItsChi2NCl = track.itsChi2NCl();
-            bool TPassedTpcRefit = track.passedTPCRefit();
-            bool TPassedItsRefit = track.passedITSRefit();
-            float TRigidity = track.tpcInnerParam();
-            float TItsClusterSize =
+            float tPt = track.pt();
+            float tEta = track.eta();
+            float tPhi = track.phi();
+            int8_t tCharge = 2.f * track.sign();
+            float tHeDeDx = track.tpcSignal();
+            float tnSigmaTpc = track.tpcNSigmaHe();
+            float tTofSignalHe = track.mass();
+            float tDcaXY = track.dcaXY();
+            float tDcaZ = track.dcaZ();
+            float tSigmaYX = track.sigmaY();
+            float tSigmaXYZ = track.sigmaSnp();
+            float tSigmaZ = track.sigmaZ();
+            int tnTpcCluster = track.tpcNClsFound();
+            int tnItsCluster = track.itsNCls();
+            float tTpcChi2NCl = track.tpcChi2NCl();
+            float tItsChi2NCl = track.itsChi2NCl();
+            float tRigidity = track.tpcInnerParam();
+            float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
-            HeData(TPt, TEta, TPhi, TCharge, THeDeDx, TnSigmaTpc, TTofSignalHe,
-                   TDcaXY, TDcaZ, TSigmaYX, TSigmaXYZ, TSigmaZ, TnTpcCluster,
-                   TnItsCluster, TTpcChi2NCl, TItsChi2NCl, TPassedTpcRefit,
-                   TPassedItsRefit, TRigidity, TItsClusterSize);
+            heData(tPt, tEta, tPhi, tCharge, tHeDeDx, tnSigmaTpc, tTofSignalHe,
+                   tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
+                   tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
+                   tItsClusterSize);
           }
         }
       }
@@ -806,6 +644,6 @@ struct trHeAnalysis {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<trHeAnalysis>(cfgc),
+    adaptAnalysisTask<TrHeAnalysis>(cfgc),
   };
 }

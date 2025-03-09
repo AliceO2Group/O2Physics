@@ -83,10 +83,40 @@ enum eWeights { wPHI = 0,
                 wETA = 2,
                 eWeights_N };
 
-enum eDiffWeights {
+enum eDiffWeights { // TBI 20250215 this is now obsolete, superseeded with more general implementation, see enums eDiffWeightCategory, eDiffPhiWeights, etc.
   wPHIPT = 0,
   wPHIETA,
   eDiffWeights_N
+};
+
+enum eDiffWeightCategory {
+  eDWPhi = 0, // corresponds to eDiffPhiWeights structure, here the fundamental 0-th axis never to be projected out is "phi"
+  eDWPt,      // corresponds to eDiffPtWeights structure, here the fundamental 0-th axis never to be projected out is "pt"
+  eDWEta,     // corresponds to eDiffEtaWeights structure, here the fundamental 0-th axis never to be projected out is "eta"
+  // ...
+  eDiffWeightCategory_N
+};
+
+enum eDiffPhiWeights {
+  wPhiPhiAxis = 0, // this is the main axis in this category, the only axis which shall never be projected out. If I project out all remaining axes, I shall recover the standard integrated phi weights
+  wPhiPtAxis,
+  wPhiEtaAxis,
+  wPhiChargeAxis,
+  wPhiCentralityAxis,
+  wPhiVertex_zAxis,
+  eDiffPhiWeights_N
+};
+
+enum eDiffPtWeights {
+  wPtPtAxis = 0,
+  // ... TBI 20250222 add all other axes on which differential pt weight could have non-trivial dependence, in the same spirit I did it above for phi weights in enum eDiffPhiWeights
+  eDiffPtWeights_N
+};
+
+enum eDiffEtaWeights {
+  wEtaEtaAxis = 0,
+  // ... TBI 20250222 add all other axes on which differential eta weight could have non-trivial dependence, in the same spirit I did it above for phi weights in enum eDiffPhiWeights
+  eDiffEtaWeights_N
 };
 
 enum eVnPsin { eVn = 0,
@@ -179,7 +209,7 @@ enum eParticleHistograms {
   etpcFractionSharedCls,
   etpcChi2NCl, // TBI 20250110 this one shall resemble aodTrack->GetTPCchi2()/aodTrack->GetTPCNcls(), but cross-check with the experts. Particles with tpcChi2NCl > 4. I reject now by default.
                //              See what I documented in AliPhysics below // task->SetParticleCuts("TPCChi2perNDF",4.,-44); // VAL
-
+               // 20250123 in some Run 2 analysis, 2.5 was used as a default. Check that value as a part of systematics
   // from o2::aod::TracksDCA
   edcaXY,
   edcaZ,
@@ -306,7 +336,11 @@ enum eQAEventHistograms2D {
   // ...
   // Specific (everything is hardwired):
   eMultNTracksPV_vs_MultNTracksGlobal,  // Run 3 multiplicity
+  eCentFT0C_vs_CentFT0CVariant1,        // Run 3 centrality
+  eCentFT0C_vs_CentFT0M,                // Run 3 centrality
+  eCentFT0C_vs_CentFV0A,                // Run 3 centrality
   eCentFT0C_vs_CentNTPV,                // Run 3 centrality
+  eCentFT0C_vs_CentNGlobal,             // Run 3 centrality
   eCentFT0M_vs_CentNTPV,                // Run 3 centrality
   eCentRun2V0M_vs_CentRun2SPDTracklets, // Run 2 centrality (do not use in Run 1 converted, because there is no centrality information)
   eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange,
@@ -322,7 +356,7 @@ enum eQAParticleHistograms2D {
 enum eQAParticleEventHistograms2D {
   // In this category I do correlation <some-particle-property> vs. some-event-property.
   // The < ... > goes over all particles in that event.
-  // All < ... > over particles are calculated with helper TProfile
+  // All < ... > over particles are calculated with helper TProfile fQAParticleEventProEbyE
   // For instance: <nITScls> vs. current run duration
   eCurrentRunDuration_vs_itsNClsEbyE,
   eCurrentRunDuration_vs_itsNClsNegEtaEbyE,
@@ -348,7 +382,27 @@ enum eQAParticleEventProEbyE {
   ePt0005EbyE,        // <pt> in a given event for  0.0 < pt < 0.5
   ePt0510EbyE,        // <pt> in a given event for  0.5 < pt < 1.0
   ePt1050EbyE,        // <pt> in a given event for  1.0 < pt < 5.0
+  eMeanPhi,           // <phi> in an event TBI 20250214 I need to unify naming convention for <> with previous enums in above in the series, but okay...
+  eMeanPt,            // <pt> in an event
+  eMeanEta,           // <eta> in an event
   eQAParticleEventProEbyE_N
+};
+
+enum eQACorrelationsVsHistograms2D {
+  // In this category I correlate <2> vs. some-event-property.
+  // For instance: <2> vs. ref. mult
+  //               <2> vs. <pT>, where <pT> is calculated from all particles in that event (so in this sense, it's an event property as well)
+  // Remark 1: If I would ever need the same thingie for <4>, <6>, etc., just introduce new dimension in 2D histogram
+  // Remark 2: All < ... > over particles are calculated with helper TProfile fQAParticleEventProEbyE
+  eCorrelations_vs_Multiplicity = 0,
+  eCorrelations_vs_ReferenceMultiplicity,
+  eCorrelations_vs_Centrality,
+  // ...
+  eCorrelations_vs_MeanPhi,
+  eCorrelations_vs_MeanPt,
+  eCorrelations_vs_MeanEta,
+  // ...
+  eQACorrelationsVsHistograms2D_N
 };
 
 enum eReferenceMultiplicityEstimators {
@@ -367,9 +421,11 @@ enum eReferenceMultiplicityEstimators {
 enum eCentralityEstimators {
   // Run 3:
   eCentFT0C = 0,
+  eCentFT0CVariant1,
   eCentFT0M,
   eCentFV0A,
   eCentNTPV,
+  eCentNGlobal,
   // Run 2:
   eCentRun2V0M,
   eCentRun2SPDTracklets,
