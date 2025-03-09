@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file decay3bodybuilder.cxx
 /// \brief Builder task for 3-body decay reconstruction (p + pion + bachelor)
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 /// \author Carolina Reetz <c.reetz@cern.ch> (KFParticle specific part)
@@ -86,7 +87,7 @@ namespace
 const float pidCutsLambda[o2::vertexing::SVertexHypothesis::NPIDParams] = {0., 20, 0., 5.0, 0.0, 1.09004e-03, 2.62291e-04, 8.93179e-03, 2.83121}; // Lambda
 } // namespace
 
-struct vtxCandidate {
+struct VtxCandidate {
   int track0Id;
   int track1Id;
   int track2Id;
@@ -166,7 +167,7 @@ struct decay3bodyBuilder {
   Produces<aod::KFVtx3BodyDatasLite> kfvtx3bodydatalite;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-  std::vector<vtxCandidate> vtxCandidates;
+  std::vector<VtxCandidate> VtxCandidates;
 
   std::unordered_map<int, float> ccdbCache;                                          // Maps runNumber -> d_bz
   std::unordered_map<int, std::shared_ptr<o2::parameters::GRPMagField>> grpMagCache; // Maps runNumber -> grpmap
@@ -179,13 +180,13 @@ struct decay3bodyBuilder {
   // Configurables
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
 
-  enum hyp3body { kH3L = 0,
+  enum Hyp3Body { kH3L = 0,
                   kH4L,
                   kHe4L,
                   kHe5L,
                   kNHyp3body };
 
-  enum vtxstep { kVtxAll = 0,
+  enum VtxStep { kVtxAll = 0,
                  kVtxTPCNcls,
                  kVtxPIDCut,
                  kVtxhasSV,
@@ -219,7 +220,7 @@ struct decay3bodyBuilder {
   HistogramRegistry registry{"registry", {}};
 
   // hypothesis
-  Configurable<int> motherhyp{"motherhyp", 0, "hypothesis of the 3body decayed particle"};       // corresponds to hyp3body
+  Configurable<int> motherhyp{"motherhyp", 0, "hypothesis of the 3body decayed particle"};       // corresponds to Hyp3Body
   int bachelorcharge = 1;                                                                        // to be updated in Init base on the hypothesis
   o2::aod::pidtofgeneric::TofPidNewCollision<TrackExtPIDIUwithEvTimes::iterator> bachelorTOFPID; // to be updated in Init base on the hypothesis
 
@@ -367,21 +368,21 @@ struct decay3bodyBuilder {
     maxSnp = 0.85f;  // could be changed later
     maxStep = 2.00f; // could be changed later
 
-    // set hypothesis corresponds to hyp3body, tpcpid to be implemented
+    // set hypothesis corresponds to Hyp3Body, tpcpid to be implemented
     switch (motherhyp) {
-      case hyp3body::kH3L:
+      case Hyp3Body::kH3L:
         bachelorcharge = 1;
         bachelorTOFPID.SetPidType(o2::track::PID::Deuteron);
         break;
-      case hyp3body::kH4L:
+      case Hyp3Body::kH4L:
         bachelorcharge = 1;
         bachelorTOFPID.SetPidType(o2::track::PID::Triton);
         break;
-      case hyp3body::kHe4L:
+      case Hyp3Body::kHe4L:
         bachelorcharge = 2;
         bachelorTOFPID.SetPidType(o2::track::PID::Helium3);
         break;
-      case hyp3body::kHe5L:
+      case Hyp3Body::kHe5L:
         bachelorcharge = 2;
         bachelorTOFPID.SetPidType(o2::track::PID::Alpha);
         break;
@@ -840,7 +841,7 @@ struct decay3bodyBuilder {
     }
     registry.fill(HIST("hVtx3BodyCounter"), kVtxDcaDau);
 
-    float VtxcosPA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, std::array{pos[0], pos[1], pos[2]}, std::array{p3B[0], p3B[1], p3B[2]});
+    float VtxcosPA = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{pos[0], pos[1], pos[2]}, std::array{p3B[0], p3B[1], p3B[2]});
     if (VtxcosPA < minCosPA3body) {
       return;
     }
@@ -932,7 +933,7 @@ struct decay3bodyBuilder {
       }
     }
 
-    vtxCandidate candVtx;
+    VtxCandidate candVtx;
     candVtx.track0Id = t0.globalIndex();
     candVtx.track1Id = t1.globalIndex();
     candVtx.track2Id = t2.globalIndex();
@@ -958,7 +959,7 @@ struct decay3bodyBuilder {
     candVtx.daudcatopv[1] = Track1dca;
     candVtx.daudcatopv[2] = Track2dca;
     candVtx.bachelortofNsigma = tofNSigmaBach;
-    vtxCandidates.push_back(candVtx);
+    VtxCandidates.push_back(candVtx);
   }
   //------------------------------------------------------------------
   // event mixing
@@ -967,7 +968,7 @@ struct decay3bodyBuilder {
   void doMixed3Body(TMixed3bodys decay3bodys, TBinningType binningType)
   {
     // Strictly upper index policy for decay3body objects binned by radius, phi
-    for (auto& [decay3body0, decay3body1] : selfCombinations(binningType, dcaFitterEMSel.nUseMixedEvent, -1, decay3bodys, decay3bodys)) {
+    for (const auto& [decay3body0, decay3body1] : selfCombinations(binningType, dcaFitterEMSel.nUseMixedEvent, -1, decay3bodys, decay3bodys)) {
       auto tpos0 = decay3body0.template track0_as<TTrack>();
       auto tneg0 = decay3body0.template track1_as<TTrack>();
       auto tbach0 = decay3body0.template track2_as<TTrack>();
@@ -1009,16 +1010,16 @@ struct decay3bodyBuilder {
         fillVtxCand(c1, tpos0, tneg1, tbach1, -1, bachelorcharge, tbach1.tofNSigmaDe());
       }
 
-      for (const auto& candVtx : vtxCandidates) {
+      for (const auto& candVtx : VtxCandidates) {
         fillVtx3BodyTable(candVtx);
       }
-      vtxCandidates.clear();
+      VtxCandidates.clear();
 
     } // end decay3body combinations loop
   }
   //------------------------------------------------------------------
   // fill the StoredVtx3BodyDatas table
-  void fillVtx3BodyTable(vtxCandidate const& candVtx)
+  void fillVtx3BodyTable(VtxCandidate const& candVtx)
   {
     vtx3bodydata(
       candVtx.track0Id, candVtx.track1Id, candVtx.track2Id, candVtx.collisionId, candVtx.decay3bodyId,
@@ -1647,7 +1648,7 @@ struct decay3bodyBuilder {
   //------------------------------------------------------------------
   void processRun3(ColwithEvTimes const& collisions, aod::Decay3Bodys const& decay3bodys, TrackExtPIDIUwithEvTimes const&, aod::BCsWithTimestamps const&)
   {
-    vtxCandidates.clear();
+    VtxCandidates.clear();
 
     registry.fill(HIST("hEventCounter"), 0.5, collisions.size());
 
@@ -1669,7 +1670,7 @@ struct decay3bodyBuilder {
       fillVtxCand(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, tofNSigmaBach);
     }
 
-    for (const auto& candVtx : vtxCandidates) {
+    for (const auto& candVtx : VtxCandidates) {
       fillVtx3BodyTable(candVtx);
     }
   }
@@ -1678,7 +1679,7 @@ struct decay3bodyBuilder {
   //------------------------------------------------------------------
   void processRun3Reduced(aod::RedCollisions const& collisions, aod::RedDecay3Bodys const& decay3bodys, aod::RedIUTracks const&)
   {
-    vtxCandidates.clear();
+    VtxCandidates.clear();
 
     registry.fill(HIST("hEventCounter"), 0.5, collisions.size());
 
@@ -1692,7 +1693,7 @@ struct decay3bodyBuilder {
       fillVtxCand(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge, t2.tofNSigmaDe());
     }
 
-    for (const auto& candVtx : vtxCandidates) {
+    for (const auto& candVtx : VtxCandidates) {
       fillVtx3BodyTable(candVtx);
     }
   }
@@ -1711,7 +1712,7 @@ struct decay3bodyBuilder {
       int bin_Mult = yAxis->FindBin(collision.multNTracksPV());
       registry.fill(HIST("hEventCount"), xAxis->GetBinCenter(bin_PosZ), yAxis->GetBinCenter(bin_Mult));
     }
-    vtxCandidates.clear();
+    VtxCandidates.clear();
 
     auto tuple = std::make_tuple(decay3bodys);
     BinningTypeColEM binningEvent{{dcaFitterEMSel.binsVtxZ, dcaFitterEMSel.binsMultiplicity}, true};
@@ -1725,7 +1726,7 @@ struct decay3bodyBuilder {
       int bin_Mult = yAxis->FindBin(c0.multNTracksPV());
       registry.fill(HIST("hEventPairs"), xAxis->GetBinCenter(bin_PosZ), yAxis->GetBinCenter(bin_Mult));
 
-      for (auto& [d3body0, d3body1] : combinations(soa::CombinationsFullIndexPolicy(decay3bodys0, decay3bodys1))) {
+      for (const auto& [d3body0, d3body1] : combinations(soa::CombinationsFullIndexPolicy(decay3bodys0, decay3bodys1))) {
 
         registry.fill(HIST("hDecay3BodyPairsBeforeCut"), xAxis->GetBinCenter(bin_PosZ), yAxis->GetBinCenter(bin_Mult));
 
@@ -1792,20 +1793,14 @@ struct decay3bodyBuilder {
         }
         std::array<float, 3> p3B1 = {ppos1[0] + pneg1[0] + pbach1[0], ppos1[1] + pneg1[1] + pbach1[1], ppos1[2] + pneg1[2] + pbach1[2]};
         float phiVtx1 = std::atan2(p3B1[1], p3B1[0]);
-        registry.fill(HIST("hPhi0"), phiVtx0 * (180.0 / TMath::Pi()));
-        registry.fill(HIST("hPhi1"), phiVtx1 * (180.0 / TMath::Pi()));
+        registry.fill(HIST("hPhi0"), phiVtx0 * o2::constants::math::Rad2Deg);
+        registry.fill(HIST("hPhi1"), phiVtx1 * o2::constants::math::Rad2Deg);
         // convert deltaPhi to range [-pi, pi]
-        float deltaPhi = phiVtx1 - phiVtx0;
-        if (deltaPhi < -TMath::Pi()) {
-          deltaPhi += 2 * TMath::Pi();
-        }
-        if (deltaPhi > TMath::Pi()) {
-          deltaPhi -= 2 * TMath::Pi();
-        }
+        float deltaPhi = RecoDecay::ConstrainAngle(phiVtx1 - phiVtx0, -o2::constants::math::PI);
         // check if radius and phi of the two vertices are compatible
         registry.fill(HIST("hDeltaRadius"), rVtx1 - rVtx0);
-        registry.fill(HIST("hDeltaPhi"), deltaPhi * (180.0 / TMath::Pi()));
-        if (std::abs(deltaPhi) * (180.0 / TMath::Pi()) > dcaFitterEMSel.maxDeltaPhiColMixing || std::abs(rVtx1 - rVtx0) > dcaFitterEMSel.maxDeltaRadiusColMixing) {
+        registry.fill(HIST("hDeltaPhi"), deltaPhi * o2::constants::math::Rad2Deg);
+        if (std::abs(deltaPhi) * o2::constants::math::Rad2Deg > dcaFitterEMSel.maxDeltaPhiColMixing || std::abs(rVtx1 - rVtx0) > dcaFitterEMSel.maxDeltaRadiusColMixing) {
           continue;
         }
         registry.fill(HIST("hDecay3BodyPairsAfterCut"), xAxis->GetBinCenter(bin_PosZ), yAxis->GetBinCenter(bin_Mult));
@@ -1817,11 +1812,11 @@ struct decay3bodyBuilder {
     }
 
     // Aviod break of preslice in following workflow
-    std::sort(vtxCandidates.begin(), vtxCandidates.end(), [](const vtxCandidate a, const vtxCandidate b) {
+    std::sort(VtxCandidates.begin(), VtxCandidates.end(), [](const VtxCandidate a, const VtxCandidate b) {
       return a.collisionId < b.collisionId;
     });
 
-    for (const auto& candVtx : vtxCandidates) {
+    for (const auto& candVtx : VtxCandidates) {
       fillVtx3BodyTable(candVtx);
     }
   }
@@ -1829,7 +1824,7 @@ struct decay3bodyBuilder {
 
   void processRun3Reduced3bodyMixing(ReducedCollisionsMults const&, aod::RedIUTracks const&, soa::Join<aod::RedDecay3Bodys, aod::Red3BodyInfo, aod::DCAFitterSVInfo> const& decay3bodys)
   {
-    vtxCandidates.clear();
+    VtxCandidates.clear();
 
     auto xAxis = registry.get<TH2>(HIST("hDecay3BodyRadiusPhi"))->GetXaxis();
     auto yAxis = registry.get<TH2>(HIST("hDecay3BodyRadiusPhi"))->GetYaxis();
@@ -1850,14 +1845,14 @@ struct decay3bodyBuilder {
     }
 
     // Aviod break of preslice in following workflow
-    /*std::sort(vtxCandidates.begin(), vtxCandidates.end(), [](const vtxCandidate a, const vtxCandidate b) {
+    /*std::sort(VtxCandidates.begin(), VtxCandidates.end(), [](const VtxCandidate a, const VtxCandidate b) {
       return a.collisionId < b.collisionId;
     });
 
-    for (const auto& candVtx : vtxCandidates) {
+    for (const auto& candVtx : VtxCandidates) {
       fillVtx3BodyTable(candVtx);
     }
-    vtxCandidates.clear();
+    VtxCandidates.clear();
     */
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3Reduced3bodyMixing, "Produce mixing background directly from mixed decay3bodys", false);
@@ -2167,7 +2162,7 @@ struct decay3bodyBuilder {
 
 // build link from decay3body -> vtx3body
 struct decay3bodyDataLinkBuilder {
-  Produces<aod::Decay3BodyDataLink> vtxdataLink;
+  Produces<aod::Decay3BodyDataLink> VtxDataLink;
 
   void init(InitContext const&) {}
 
@@ -2184,7 +2179,7 @@ struct decay3bodyDataLinkBuilder {
       }
     }
     for (int ii = 0; ii < decay3bodytable.size(); ii++) {
-      vtxdataLink(lIndices[ii]);
+      VtxDataLink(lIndices[ii]);
     }
   }
 
