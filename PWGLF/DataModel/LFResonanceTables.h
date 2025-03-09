@@ -23,6 +23,7 @@
 #define PWGLF_DATAMODEL_LFRESONANCETABLES_H_
 
 #include <cmath>
+#include <algorithm>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
