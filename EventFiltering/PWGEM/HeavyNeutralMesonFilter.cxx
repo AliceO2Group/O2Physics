@@ -16,6 +16,8 @@
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt
 ///
 
+#include <vector>
+
 #include "PWGEM/PhotonMeson/Utils/HNMUtilities.h"
 
 using namespace o2;
