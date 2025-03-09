@@ -45,47 +45,54 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   using FemtoFullParticles = soa::Join<aod::FDCascParticles, aod::FDExtParticles>;
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
-  ConfigurableAxis confChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};               // o2-linter: disable=name/configurable
-  ConfigurableAxis confChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"}; // o2-linter: disable=name/configurable
-  Configurable<float> confCascInvMassLowLimit{"ConfCascInvMassLowLimit", 1.315, "Lower limit of the Casc invariant mass"};                                      // o2-linter: disable=name/configurable
-  Configurable<float> confCascInvMassUpLimit{"ConfCascInvMassUpLimit", 1.325, "Upper limit of the Casc invariant mass"};                                        // o2-linter: disable=name/configurable
-  Configurable<float> confCascTranRad{"ConfCascTranRad", 0.5, "Cascade transverse radius"};                                                                     // o2-linter: disable=name/configurable
+  ConfigurableAxis confChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
+  ConfigurableAxis confChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
+  Configurable<float> confCascInvMassLowLimit{"ConfCascInvMassLowLimit", 1.315, "Lower limit of the Casc invariant mass"};
+  Configurable<float> confCascInvMassUpLimit{"ConfCascInvMassUpLimit", 1.325, "Upper limit of the Casc invariant mass"};
+  Configurable<float> confCascTranRad{"ConfCascTranRad", 0.5, "Cascade transverse radius"};
 
-  Configurable<float> confNSigmaTPCPion{"NSigmaTPCPion", 4, "NSigmaTPCPion"};       // o2-linter: disable=name/configurable
-  Configurable<float> confNSigmaTPCProton{"NSigmaTPCProton", 4, "NSigmaTPCProton"}; // o2-linter: disable=name/configurable
+  Configurable<float> confNSigmaTPCPion{"NSigmaTPCPion", 4, "NSigmaTPCPion"};
+  Configurable<float> confNSigmaTPCProton{"NSigmaTPCProton", 4, "NSigmaTPCProton"};
 
   /// applying narrow cut
-  Configurable<float> confZVertexCut{"ConfZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"}; // o2-linter: disable=name/configurable
-  Configurable<float> confEta{"ConfEta", 0.8, "Eta cut for the global track"};                    // o2-linter: disable=name/configurable
+  Configurable<float> confZVertexCut{"ConfZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"};
+  Configurable<float> confEta{"ConfEta", 0.8, "Eta cut for the global track"};
 
   // configurations for correlation part
-  Configurable<int> confTrackChoicePartOne{"ConfTrackChoicePartOne", 0, "0:Proton, 1:Pion, 2:Kaon"};                                                             // o2-linter: disable=name/configurable
-  Configurable<int> confTrkPDGCodePartOne{"ConfTrkPDGCodePartOne", 2212, "Particle 1 (Track) - PDG code"};                                                       // o2-linter: disable=name/configurable
-  Configurable<int> confCascType1{"ConfCascType1", 0, "select one of the V0s (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade combination"};   // o2-linter: disable=name/configurable
-  Configurable<int> confCascType2{"ConfCascType2", 0, "select one of the V0s (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for cascade-cascade combination"}; // o2-linter: disable=name/configurable
-  Configurable<int> confChargePart1{"ConfChargePart1", 1, "sign of particle 1"};                                                                                 // o2-linter: disable=name/configurable
-  Configurable<float> confHPtPart1{"ConfHPtPart1", 4.0f, "higher limit for pt of particle 1"};                                                                   // o2-linter: disable=name/configurable
-  Configurable<float> confLPtPart1{"ConfLPtPart1", 0.5f, "lower limit for pt of particle 1"};                                                                    // o2-linter: disable=name/configurable
-  Configurable<float> confHPtPart2{"ConfHPtPart2", 4.0f, "higher limit for pt of particle 2"};                                                                   // o2-linter: disable=name/configurable
-  Configurable<float> confLPtPart2{"ConfLPtPart2", 0.3f, "lower limit for pt of particle 2"};                                                                    // o2-linter: disable=name/configurable
-  Configurable<float> confmom{"Confmom", 0.75, "momentum threshold for particle identification using TOF"};                                                      // o2-linter: disable=name/configurable
-  Configurable<float> confNsigmaTPCParticle{"ConfNsigmaTPCParticle", 3.0, "TPC Sigma for particle momentum < Confmom"};                                          // o2-linter: disable=name/configurable
-  Configurable<float> confNsigmaCombinedParticle{"ConfNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > Confmom"};             // o2-linter: disable=name/configurable
+  Configurable<int> confTrackChoicePartOne{"ConfTrackChoicePartOne", 0, "0:Proton, 1:Pion, 2:Kaon"};
+  Configurable<int> confTrkPDGCodePartOne{"ConfTrkPDGCodePartOne", 2212, "Particle 1 (Track) - PDG code"};
+  Configurable<int> confCascType1{"ConfCascType1", 0, "select one of the V0s (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade combination"};
+  Configurable<int> confCascType2{"ConfCascType2", 0, "select one of the V0s (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for cascade-cascade combination"};
+  Configurable<bool> confIsCPR{"ConfIsCPR", false, "Close Pair Rejection"};
+  Configurable<float> confCPRdeltaPhiCutMax{"ConfCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
+  Configurable<float> confCPRdeltaPhiCutMin{"ConfCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
+  Configurable<float> confCPRdeltaEtaCutMax{"ConfCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
+  Configurable<float> confCPRdeltaEtaCutMin{"ConfCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
+  Configurable<bool> confCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
+  Configurable<float> confCPRChosenRadii{"ConfCPRChosenRadii", 0.0, "Delta Eta cut for Close Pair Rejection"};
+  Configurable<int> confChargePart1{"ConfChargePart1", 1, "sign of particle 1"};
+  Configurable<float> confHPtPart1{"ConfHPtPart1", 4.0f, "higher limit for pt of particle 1"};
+  Configurable<float> confLPtPart1{"ConfLPtPart1", 0.5f, "lower limit for pt of particle 1"};
+  Configurable<float> confHPtPart2{"ConfHPtPart2", 4.0f, "higher limit for pt of particle 2"};
+  Configurable<float> confLPtPart2{"ConfLPtPart2", 0.3f, "lower limit for pt of particle 2"};
+  Configurable<float> confmom{"Confmom", 0.75, "momentum threshold for particle identification using TOF"};
+  Configurable<float> confNsigmaTPCParticle{"ConfNsigmaTPCParticle", 3.0, "TPC Sigma for particle momentum < Confmom"};
+  Configurable<float> confNsigmaCombinedParticle{"ConfNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > Confmom"};
 
-  ConfigurableAxis confkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};                                                                                                                                                      // o2-linter: disable=name/configurable
-  ConfigurableAxis confMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};                                                                              // o2-linter: disable=name/configurable
-  ConfigurableAxis confkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};                                                                                                                                                                // o2-linter: disable=name/configurable
-  ConfigurableAxis confmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};                                                                                                                                                               // o2-linter: disable=name/configurable
-  ConfigurableAxis confmultBins3D{"ConfMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};      // o2-linter: disable=name/configurable
-  ConfigurableAxis confmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"}; // o2-linter: disable=name/configurable
-  Configurable<int> confEtaBins{"ConfEtaBins", 29, "Number of eta bins in deta dphi"};                                                                                                                                                   // o2-linter: disable=name/configurable
-  Configurable<int> confPhiBins{"ConfPhiBins", 29, "Number of phi bins in deta dphi"};                                                                                                                                                   // o2-linter: disable=name/configurable
-  Configurable<bool> confIsMC{"ConfIsMC", false, "Enable additional Histograms in the case of a MonteCarlo Run"};                                                                                                                        // o2-linter: disable=name/configurable
-  Configurable<bool> confUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};                                                                // o2-linter: disable=name/configurable
+  ConfigurableAxis confkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
+  ConfigurableAxis confMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis confkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
+  ConfigurableAxis confmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
+  ConfigurableAxis confmultBins3D{"ConfMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
+  ConfigurableAxis confmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
+  Configurable<int> confEtaBins{"ConfEtaBins", 29, "Number of eta bins in deta dphi"};
+  Configurable<int> confPhiBins{"ConfPhiBins", 29, "Number of phi bins in deta dphi"};
+  Configurable<bool> confIsMC{"ConfIsMC", false, "Enable additional Histograms in the case of a MonteCarlo Run"};
+  Configurable<bool> confUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
   Configurable<bool> confUseCent{"confUseCent", false, "Use centrality in place of multiplicity"};
-  ConfigurableAxis confVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"}; // o2-linter: disable=name/configurable
-  ConfigurableAxis confTrkTempFitVarpTBins{"ConfTrkTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};                       // o2-linter: disable=name/configurable
-  ConfigurableAxis confTrkTempFitVarBins{"ConfTrkDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};        // o2-linter: disable=name/configurable
+  ConfigurableAxis confVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis confTrkTempFitVarpTBins{"ConfTrkTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
+  ConfigurableAxis confTrkTempFitVarBins{"ConfTrkDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < confZVertexCut);
   using FilteredFDCollisions = soa::Filtered<o2::aod::FdCollisions>;
@@ -119,6 +126,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kCascade> pairCleaner;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kCascade> pairCleanerCasc;
+  FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kCascade> pairCloseRejection;
 
   HistogramRegistry rXiQA{"xi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -216,6 +224,9 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
     sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confmultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confmultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     pairCleaner.init(&qaRegistry);
+    if (confIsCPR.value) {
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
+    }
   }
 
   void processCascades(const FilteredFDCollision& col, const FemtoFullParticles& parts)
@@ -351,6 +362,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   /// cascade - cascade
   void processSameEventCasc(const FilteredFDCollision& col, const FemtoFullParticles& parts)
   {
+    const auto& magFieldTesla = col.magField();
+
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
     eventHisto.fillQA(col);
@@ -388,6 +401,11 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
       // track cleaning
       if (!pairCleanerCasc.isCleanPair(p1, p2, parts)) {
         return;
+      }
+      if (confIsCPR.value) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+          return;
+        }
       }
       const auto& posChild1 = parts.iteratorAt(p1.index() - 3);
       const auto& negChild1 = parts.iteratorAt(p1.index() - 2);
@@ -498,6 +516,11 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
         // track cleaning
         if (!pairCleanerCasc.isCleanPair(p1, p2, parts)) {
           continue;
+        }
+        if (confIsCPR.value) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+            continue;
+          }
         }
 
         mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
