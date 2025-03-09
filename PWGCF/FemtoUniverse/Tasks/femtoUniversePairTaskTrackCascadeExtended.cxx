@@ -45,6 +45,9 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   using FemtoFullParticles = soa::Join<aod::FDCascParticles, aod::FDExtParticles>;
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
+  using FemtoRecoParticles = soa::Join<aod::FDCascParticles, aod::FDExtParticles, aod::FDMCLabels>;
+  Preslice<FemtoRecoParticles> perColReco = aod::femtouniverseparticle::fdCollisionId;
+
   ConfigurableAxis confChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
   ConfigurableAxis confChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   Configurable<float> confCascInvMassLowLimit{"ConfCascInvMassLowLimit", 1.315, "Lower limit of the Casc invariant mass"};
@@ -101,10 +104,12 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   /// Partition for particle 1 (track)
   Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < confHPtPart1) && (aod::femtouniverseparticle::pt > confLPtPart1);
   Partition<FemtoFullParticles> partsOneMCgen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < confHPtPart1) && (aod::femtouniverseparticle::pt > confLPtPart1);
+  Partition<FemtoRecoParticles> partsOneMCreco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < confHPtPart1) && (aod::femtouniverseparticle::pt > confLPtPart1);
 
   /// Partition for particle 2 (cascade)
   Partition<FemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < confHPtPart2) && (aod::femtouniverseparticle::pt > confLPtPart2);
   Partition<FemtoFullParticles> partsTwoMCgen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < confHPtPart2) && (aod::femtouniverseparticle::pt > confLPtPart2);
+  Partition<FemtoRecoParticles> partsTwoMCreco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < confHPtPart2) && (aod::femtouniverseparticle::pt > confLPtPart2);
 
   /// Partition for cascades
   Partition<FemtoFullParticles> cascs = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade));
@@ -131,6 +136,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   HistogramRegistry rXiQA{"xi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryMCgen{"MCgenHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry registryMCreco{"MCrecoHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   // Table to select cascade daughters
   // Charges: = +--, +--, +-+, +-+
@@ -213,6 +220,32 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
     qaRegistry.add("Tracks_pos/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Tracks_neg/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Tracks_neg/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
+
+    // MC gen
+    registryMCgen.add("plus/MCgenCasc", "MC gen cascades;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCgen.add("minus/MCgenCasc", "MC gen cascades;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+
+    registryMCgen.add("plus/MCgenAllPt", "MC gen all;#it{p}_{T} (GeV/c); #eta", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCgen.add("minus/MCgenAllPt", "MC gen all;#it{p}_{T} (GeV/c); #eta", {HistType::kTH1F, {{500, 0, 5}}});
+
+    registryMCgen.add("plus/MCgenPr", "MC gen protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCgen.add("minus/MCgenPr", "MC gen protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+
+    registryMCgen.add("plus/MCgenPrPt", "MC gen protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCgen.add("minus/MCgenPrPt", "MC gen protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+
+    // MC reco
+    registryMCreco.add("plus/MCrecoCascade", "MC reco Cascades;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCreco.add("minus/MCrecoCascade", "MC reco Cascades;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+
+    registryMCreco.add("plus/MCrecoAllPt", "MC reco all;#it{p}_{T} (GeV/c); #eta", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCreco.add("minus/MCrecoAllPt", "MC reco all;#it{p}_{T} (GeV/c); #eta", {HistType::kTH1F, {{500, 0, 5}}});
+
+    registryMCreco.add("plus/MCrecoPr", "MC reco protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+    registryMCreco.add("minus/MCrecoPr", "MC reco protons;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
+
+    registryMCreco.add("plus/MCrecoPrPt", "MC reco protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+    registryMCreco.add("minus/MCrecoPrPt", "MC reco protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
     trackHistoPartOnePos.init(&qaRegistry, confTrkTempFitVarpTBins, confTrkTempFitVarBins, confIsMC, confTrkPDGCodePartOne);
     trackHistoPartOneNeg.init(&qaRegistry, confTrkTempFitVarpTBins, confTrkTempFitVarBins, confIsMC, confTrkPDGCodePartOne);
@@ -597,6 +630,95 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMixedEventMCgen, "Enable processing mixed event MC truth for track - cascade", false);
+
+  /// This function fills MC truth particles from derived MC table
+  void processMCgen(aod::FDCascParticles const& parts)
+  {
+    for (const auto& part : parts) {
+      if (part.partType() != uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
+        continue;
+
+      int pdgCode = static_cast<int>(part.pidCut());
+      const auto& pdgParticle = pdgMC->GetParticle(pdgCode);
+      if (!pdgParticle) {
+        continue;
+      }
+
+      if ((confCascType1 == 0 && pdgCode == 3334) || (confCascType1 == 1 && pdgCode == 3312)) {
+        registryMCgen.fill(HIST("plus/MCgenCasc"), part.pt(), part.eta());
+        continue;
+      } else if ((confCascType1 == 0 && pdgCode == -3334) || (confCascType1 == 1 && pdgCode == -3312)) {
+        registryMCgen.fill(HIST("minus/MCgenCasc"), part.pt(), part.eta());
+        continue;
+      }
+
+      if (pdgParticle->Charge() > 0.0) {
+        registryMCgen.fill(HIST("plus/MCgenAllPt"), part.pt());
+      }
+      if (pdgCode == 2212) {
+        registryMCgen.fill(HIST("plus/MCgenPr"), part.pt(), part.eta());
+        registryMCgen.fill(HIST("plus/MCgenPrPt"), part.pt());
+      }
+
+      if (pdgParticle->Charge() < 0.0) {
+        registryMCgen.fill(HIST("minus/MCgenAllPt"), part.pt());
+      }
+      if (pdgCode == -2212) {
+        registryMCgen.fill(HIST("minus/MCgenPr"), part.pt(), part.eta());
+        registryMCgen.fill(HIST("minus/MCgenPrPt"), part.pt());
+      }
+    }
+  }
+
+  PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMCgen, "Process MC truth data for cascades", false);
+
+  void processMCReco(FemtoRecoParticles const& parts, aod::FdMCParticles const& mcparts)
+  {
+    for (const auto& part : parts) {
+      auto mcPartId = part.fdMCParticleId();
+      if (mcPartId == -1)
+        continue; // no MC particle
+      const auto& mcpart = mcparts.iteratorAt(mcPartId);
+      //
+      if (part.partType() == aod::femtouniverseparticle::ParticleType::kCascade) {
+        if ((confCascType1 == 0 && mcpart.pdgMCTruth() == 3334) || (confCascType1 == 1 && mcpart.pdgMCTruth() == 3312)) {
+          const auto& posChild = parts.iteratorAt(part.index() - 3);
+          const auto& negChild = parts.iteratorAt(part.index() - 2);
+          const auto& bachelor = parts.iteratorAt(part.index() - 1);
+          /// Daughters that do not pass this condition are not selected
+          if (isParticleTPC(posChild, CascChildTable[confCascType1][0]) && isParticleTPC(negChild, CascChildTable[confCascType1][1]) && isParticleTPC(bachelor, CascChildTable[confCascType1][2])) {
+            registryMCreco.fill(HIST("plus/MCrecoCascade"), mcpart.pt(), mcpart.eta());
+          }
+        } else if ((confCascType1 == 0 && mcpart.pdgMCTruth() == -3334) || (confCascType1 == 1 && mcpart.pdgMCTruth() == -3312)) {
+          /// Daughters that do not pass this condition are not selected
+          const auto& posChild = parts.iteratorAt(part.index() - 3);
+          const auto& negChild = parts.iteratorAt(part.index() - 2);
+          const auto& bachelor = parts.iteratorAt(part.index() - 1);
+          if (isParticleTPC(posChild, CascChildTable[confCascType1 + 2][0]) && isParticleTPC(negChild, CascChildTable[confCascType1 + 2][1]) && isParticleTPC(bachelor, CascChildTable[confCascType1 + 2][2])) {
+            registryMCreco.fill(HIST("minus/MCrecoCascade"), mcpart.pt(), mcpart.eta());
+          }
+        }
+      } else if (part.partType() == aod::femtouniverseparticle::ParticleType::kTrack) {
+        if (part.sign() > 0) {
+          registryMCreco.fill(HIST("plus/MCrecoAllPt"), mcpart.pt());
+          if (mcpart.pdgMCTruth() == 2212 && isNSigmaCombined(part.p(), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()))) {
+            registryMCreco.fill(HIST("plus/MCrecoPr"), mcpart.pt(), mcpart.eta());
+            registryMCreco.fill(HIST("plus/MCrecoPrPt"), mcpart.pt());
+          }
+        }
+
+        if (part.sign() < 0) {
+          registryMCreco.fill(HIST("minus/MCrecoAllPt"), mcpart.pt());
+          if (mcpart.pdgMCTruth() == -2212 && isNSigmaCombined(part.p(), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()))) {
+            registryMCreco.fill(HIST("minus/MCrecoPr"), mcpart.pt(), mcpart.eta());
+            registryMCreco.fill(HIST("minus/MCrecoPrPt"), mcpart.pt());
+          }
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMCReco, "Process MC reco data for cascades", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
