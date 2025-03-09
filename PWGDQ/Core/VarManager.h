@@ -236,6 +236,7 @@ class VarManager : public TObject
     kMultDimuons,
     kMultAntiMuons,
     kMultMuons,
+    kMultSingleMuons,
     kMultNTracksHasITS,
     kMultNTracksHasTPC,
     kMultNTracksHasTOF,
@@ -691,6 +692,7 @@ class VarManager : public TObject
     kM0111POI,
     kCORR2REF,
     kCORR2REFbydimuons,
+    kCORR2REFbysinglemu,
     kCORR2REFetagap,
     kCORR2POI,
     kCORR2POICORR4POI,
@@ -702,6 +704,7 @@ class VarManager : public TObject
     kCORR2CORR4REF,
     kCORR4REF,
     kCORR4REFbydimuons,
+    kCORR4REFbysinglemu,
     kCORR4POI,
     kM11REFoverMp,
     kM01POIoverMp,
@@ -713,19 +716,27 @@ class VarManager : public TObject
     kM0111POIplus,
     kM01POIminus,
     kM0111POIminus,
+    kM01POIsingle,
+    kM0111POIsingle,
     kM01POIoverMpminus,
     kM01POIoverMpplus,
+    kM01POIoverMpsingle,
     kM01POIoverMpmoins,
     kM0111POIoverMpminus,
     kM0111POIoverMpplus,
+    kM0111POIoverMpsingle,
     kCORR2POIplus,
     kCORR2POIminus,
+    kCORR2POIsingle,
     kCORR4POIplus,
     kCORR4POIminus,
+    kCORR4POIsingle,
     kM11REFoverMpplus,
     kM1111REFoverMpplus,
     kM11REFoverMpminus,
     kM1111REFoverMpminus,
+    kM11REFoverMpsingle,
+    kM1111REFoverMpsingle,
     kM01POIME,
     kMultDimuonsME,
     kM0111POIME,
@@ -2186,6 +2197,30 @@ void VarManager::FillTrack(T const& track, float* values)
 
     if constexpr ((fillMap & MuonRealign) > 0) {
       values[kMuonChi2] = track.chi2();
+    }
+
+    if (fgUsedVars[kM11REFoverMpsingle]) {
+      float m = o2::constants::physics::MassMuon;
+      ROOT::Math::PtEtaPhiMVector v(track.pt(), track.eta(), track.phi(), m);
+      complex<double> Q21(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
+      complex<double> Q42(values[kQ42XA], values[kQ42YA]);
+      complex<double> Q23(values[kQ23XA], values[kQ23YA]);
+      complex<double> P2(TMath::Cos(2 * v.Phi()), TMath::Sin(2 * v.Phi()));
+      values[kM11REFoverMpsingle] = values[kMultSingleMuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM11REF] / values[kMultSingleMuons] : 0;
+      values[kM1111REFoverMpsingle] = values[kMultSingleMuons] > 0 && !(std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) || std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF])) ? values[kM1111REF] / values[kMultSingleMuons] : 0;
+      values[kCORR2REFbysinglemu] = std::isnan(values[kM11REFoverMpsingle]) || std::isinf(values[kM11REFoverMpsingle]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REFoverMpsingle]) || std::isinf(values[kM1111REFoverMpsingle]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR2REF];
+      values[kCORR4REFbysinglemu] = std::isnan(values[kM1111REFoverMpsingle]) || std::isinf(values[kM1111REFoverMpsingle]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) || std::isnan(values[kM11REFoverMpsingle]) || std::isinf(values[kM11REFoverMpsingle]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR4REF];
+      values[kCORR2POIsingle] = (P2 * conj(Q21)).real() / values[kM01POI];
+      values[kM01POIsingle] = values[kMultSingleMuons] * values[kS11A];
+      values[kM0111POIsingle] = values[kMultSingleMuons] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
+      values[kCORR2POIsingle] = (P2 * conj(Q21)).real() / values[kM01POIsingle];
+      values[kCORR4POIsingle] = (P2 * Q21 * conj(Q21) * conj(Q21) - P2 * Q21 * conj(Q42) - 2. * values[kS12A] * P2 * conj(Q21) + 2. * P2 * conj(Q23)).real() / values[kM0111POIsingle];
+      values[kM01POIsingle] = std::isnan(values[kM01POIsingle]) || std::isinf(values[kM01POIsingle]) || std::isnan(values[kM0111POIsingle]) || std::isinf(values[kM0111POIsingle]) || std::isnan(values[kCORR2POIsingle]) || std::isinf(values[kCORR2POIsingle]) || std::isnan(values[kCORR4POIsingle]) || std::isinf(values[kCORR4POIsingle]) ? 0 : values[kM01POIsingle];
+      values[kM0111POIsingle] = std::isnan(values[kM0111POIsingle]) || std::isinf(values[kM0111POIsingle]) || std::isnan(values[kCORR2POIsingle]) || std::isinf(values[kCORR2POIsingle]) || std::isnan(values[kCORR4POIsingle]) || std::isinf(values[kCORR4POIsingle]) ? 0 : values[kM0111POIsingle];
+      values[kCORR2POIsingle] = std::isnan(values[kM01POIsingle]) || std::isinf(values[kM01POIsingle]) || std::isnan(values[kM0111POIsingle]) || std::isinf(values[kM0111POIsingle]) || std::isnan(values[kCORR2POIsingle]) || std::isinf(values[kCORR2POIsingle]) || std::isnan(values[kCORR4POIsingle]) || std::isinf(values[kCORR4POIsingle]) ? 0 : values[kCORR2POIsingle];
+      values[kCORR4POIsingle] = std::isnan(values[kM01POIsingle]) || std::isinf(values[kM01POIsingle]) || std::isnan(values[kM0111POIsingle]) || std::isinf(values[kM0111POIsingle]) || std::isnan(values[kCORR2POIsingle]) || std::isinf(values[kCORR2POIsingle]) || std::isnan(values[kCORR4POIsingle]) || std::isinf(values[kCORR4POIsingle]) ? 0 : values[kCORR4POIsingle];
+      values[kM01POIoverMpsingle] = values[kMultSingleMuons] > 0 && !(std::isnan(values[kM0111POIsingle]) || std::isinf(values[kM0111POIsingle]) || std::isnan(values[kCORR4POIsingle]) || std::isinf(values[kCORR4POIsingle]) || std::isnan(values[kM01POIsingle]) || std::isinf(values[kM01POIsingle]) || std::isnan(values[kCORR2POIsingle]) || std::isinf(values[kCORR2POIsingle])) ? values[kM01POIsingle] / values[kMultSingleMuons] : 0;
+      values[kM0111POIoverMpsingle] = values[kMultSingleMuons] > 0 && !(std::isnan(values[kM0111POIsingle]) || std::isinf(values[kM0111POIsingle]) || std::isnan(values[kCORR4POIsingle]) || std::isinf(values[kCORR4POIsingle]) || std::isnan(values[kM01POIsingle]) || std::isinf(values[kM01POIsingle]) || std::isnan(values[kCORR2POIsingle]) || std::isinf(values[kCORR2POIsingle])) ? values[kM0111POIsingle] / values[kMultSingleMuons] : 0;
     }
   }
 
