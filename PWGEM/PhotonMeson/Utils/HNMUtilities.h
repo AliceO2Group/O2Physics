@@ -162,7 +162,7 @@ void reconstructHeavyNeutralMesons(Track const& tracks, std::vector<GammaGammaPa
     for (const auto& negTrack : tracks) {
       if (!negTrack.isGlobalTrack() || negTrack.sign() > 0)
         continue;
-      for (auto iGG = 0; iGG < vGGs.size(); iGG++) {
+      for (size_t iGG = 0; iGG < vGGs.size(); iGG++) {
         HeavyNeutralMeson heavyNeutralMeson(&vGGs.at(iGG), posTrack.energy(constants::physics::MassPiPlus) + negTrack.energy(constants::physics::MassPiMinus), posTrack.px() + negTrack.px(), posTrack.py() + negTrack.py(), posTrack.pz() + negTrack.pz());
         vHNMs.push_back(heavyNeutralMeson);
       }
