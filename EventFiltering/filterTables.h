@@ -71,25 +71,25 @@ DECLARE_SOA_COLUMN(LMeeHMR, hasLMeeHMR, bool); //! dielectron trigger for high m
 DECLARE_SOA_COLUMN(ElectronMuon, hasElectronMuon, bool); //! dimuon trigger with low pT on muons
 
 // heavy flavours
-DECLARE_SOA_COLUMN(HfHighPt2P, hasHfHighPt2P, bool);                                         //! high-pT 2-prong charm hadron
-DECLARE_SOA_COLUMN(HfHighPt3P, hasHfHighPt3P, bool);                                         //! high-pT 3-prong charm hadron
-DECLARE_SOA_COLUMN(HfBeauty3P, hasHfBeauty3P, bool);                                         //! 3-prong beauty hadron
-DECLARE_SOA_COLUMN(HfBeauty4P, hasHfBeauty4P, bool);                                         //! 4-prong beauty hadron
-DECLARE_SOA_COLUMN(HfFemto2P, hasHfFemto2P, bool);                                           //! 2-prong charm-hadron - N pair
-DECLARE_SOA_COLUMN(HfFemto3P, hasHfFemto3P, bool);                                           //! 3-prong charm-hadron - N pair
-DECLARE_SOA_COLUMN(HfDoubleCharm2P, hasHfDoubleCharm2P, bool);                               //! at least two 2-prong charm-hadron candidates
-DECLARE_SOA_COLUMN(HfDoubleCharm3P, hasHfDoubleCharm3P, bool);                               //! at least two 3-prong charm-hadron candidates
-DECLARE_SOA_COLUMN(HfDoubleCharmMix, hasHfDoubleCharmMix, bool);                             //! at least one 2-prong and one 3-prong charm-hadron candidates
-DECLARE_SOA_COLUMN(HfV0Charm2P, hasHfV0Charm2P, bool);                                       //! V0 with 2-prong charm hadron
-DECLARE_SOA_COLUMN(HfV0Charm3P, hasHfV0Charm3P, bool);                                       //! V0 with 3-prong charm hadron
-DECLARE_SOA_COLUMN(HfCharmBarToXiBach, hasHfCharmBarToXiBach, bool);                         //! Charm baryon to Xi + bachelor
+DECLARE_SOA_COLUMN(HfHighPt2P, hasHfHighPt2P, bool);                             //! high-pT 2-prong charm hadron
+DECLARE_SOA_COLUMN(HfHighPt3P, hasHfHighPt3P, bool);                             //! high-pT 3-prong charm hadron
+DECLARE_SOA_COLUMN(HfBeauty3P, hasHfBeauty3P, bool);                             //! 3-prong beauty hadron
+DECLARE_SOA_COLUMN(HfBeauty4P, hasHfBeauty4P, bool);                             //! 4-prong beauty hadron
+DECLARE_SOA_COLUMN(HfFemto2P, hasHfFemto2P, bool);                               //! 2-prong charm-hadron - N pair
+DECLARE_SOA_COLUMN(HfFemto3P, hasHfFemto3P, bool);                               //! 3-prong charm-hadron - N pair
+DECLARE_SOA_COLUMN(HfDoubleCharm2P, hasHfDoubleCharm2P, bool);                   //! at least two 2-prong charm-hadron candidates
+DECLARE_SOA_COLUMN(HfDoubleCharm3P, hasHfDoubleCharm3P, bool);                   //! at least two 3-prong charm-hadron candidates
+DECLARE_SOA_COLUMN(HfDoubleCharmMix, hasHfDoubleCharmMix, bool);                 //! at least one 2-prong and one 3-prong charm-hadron candidates
+DECLARE_SOA_COLUMN(HfV0Charm2P, hasHfV0Charm2P, bool);                           //! V0 with 2-prong charm hadron
+DECLARE_SOA_COLUMN(HfV0Charm3P, hasHfV0Charm3P, bool);                           //! V0 with 3-prong charm hadron
+DECLARE_SOA_COLUMN(HfCharmBarToXiBach, hasHfCharmBarToXiBach, bool);             //! Charm baryon to Xi + bachelor
 DECLARE_SOA_COLUMN(HfCharmBarToXi2Bach, hasHfCharmBarToXi2Bach, bool);           //! Charm baryon to Xi + 2 bachelors
-DECLARE_SOA_COLUMN(HfSigmaCPPK, hasHfSigmaCPPK, bool);                                       //! SigmaC(2455)++K- and SigmaC(2520)++K- + c.c.
-DECLARE_SOA_COLUMN(HfSigmaC0K0, hasHfSigmaC0K0, bool);                                       //! SigmaC(2455)0KS0 and SigmaC(2520)0KS0
-DECLARE_SOA_COLUMN(HfPhotonCharm2P, hasHfPhotonCharm2P, bool);                               //! photon with 2-prong charm hadron
-DECLARE_SOA_COLUMN(HfPhotonCharm3P, hasHfPhotonCharm3P, bool);                               //! photon with 3-prong charm hadron
-DECLARE_SOA_COLUMN(HfSingleCharm2P, hasHfSingleCharm2P, bool);                               //! 2-prong charm hadron (for efficiency studies)
-DECLARE_SOA_COLUMN(HfSingleCharm3P, hasHfSingleCharm3P, bool);                               //! 3-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfSigmaCPPK, hasHfSigmaCPPK, bool);                           //! SigmaC(2455)++K- and SigmaC(2520)++K- + c.c.
+DECLARE_SOA_COLUMN(HfSigmaC0K0, hasHfSigmaC0K0, bool);                           //! SigmaC(2455)0KS0 and SigmaC(2520)0KS0
+DECLARE_SOA_COLUMN(HfPhotonCharm2P, hasHfPhotonCharm2P, bool);                   //! photon with 2-prong charm hadron
+DECLARE_SOA_COLUMN(HfPhotonCharm3P, hasHfPhotonCharm3P, bool);                   //! photon with 3-prong charm hadron
+DECLARE_SOA_COLUMN(HfSingleCharm2P, hasHfSingleCharm2P, bool);                   //! 2-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfSingleCharm3P, hasHfSingleCharm3P, bool);                   //! 3-prong charm hadron (for efficiency studies)
 DECLARE_SOA_COLUMN(HfSingleNonPromptCharm2P, hasHfSingleNonPromptCharm2P, bool); //! 2-prong charm hadron (for efficiency studies)
 DECLARE_SOA_COLUMN(HfSingleNonPromptCharm3P, hasHfSingleNonPromptCharm3P, bool); //! 3-prong charm hadron (for efficiency studies)
 DECLARE_SOA_COLUMN(HfBtoJPsiKa, hasHfBtoJPsiKa, bool);                           //! B+ -> JPsi(->mumu)K+
@@ -178,8 +178,8 @@ DECLARE_SOA_COLUMN(PCMandEE, hasPCMandEE, bool); //! PCM and ee
 // heavy meson filters
 DECLARE_SOA_COLUMN(PCMOmegaMeson, hasPCMOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
 DECLARE_SOA_COLUMN(EMCOmegaMeson, hasEMCOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(PCMEtaPrimeMeson, hasPCMEtaPrimeMeson, bool);       //! Eta' meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(EMCEtaPrimeMeson, hasEMCEtaPrimeMeson, bool);       //! Eta' meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(PCMEtaPrimeMeson, hasPCMEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(EMCEtaPrimeMeson, hasEMCEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
 } // namespace filtering
 
 namespace decision
