@@ -324,7 +324,7 @@ struct decay3bodyBuilder {
     ConfigurableAxis binsMultiplicity{"dcaFitterEMSel.binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
     Configurable<float> maxDeltaRadiusColMixing{"dcaFitterEMSel.maxDeltaRadiusColMixing", 2., "max difference between pv z position in case of collision mixing"};
     Configurable<float> maxDeltaPhiColMixing{"dcaFitterEMSel.maxDeltaPhiColMixing", 30., "max difference between Phi of monther particle in case of collision mixing (degree)"};
-    Configurable<bool> cfgUseDCAFitterInfo{"dcaFitterEMSel.cfgUseDCAFitterInfo", true, ""}; // if use information from dcatFitter while mixing reduced 3bodys
+    // Configurable<bool> cfgUseDCAFitterInfo{"dcaFitterEMSel.cfgUseDCAFitterInfo", true, ""}; // if use information from dcatFitter while mixing reduced 3bodys
     Configurable<int> cfgMix3BodyMethod{"dcaFitterEMSel.cfgMix3BodyMethod", 0, ""};         // 0: bachelor, 1: pion, 2: proton
     ConfigurableAxis bins3BodyRadius{"dcaFitterEMSel.bins3BodyRadius", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 4.0f, 7.0f, 10.0f, 14.0f, 18.0f, 22.0f, 30.0f, 40.0f, 50.0f, 100.0f}, "Mixing bins - 3body radius"};
     ConfigurableAxis bins3BodyPhi{"dcaFitterEMSel.bins3BodyPhi", {VARIABLE_WIDTH, -3.15, -2.65, -2.15, -1.55, -1, -0.5, 0, 0.5, 1, 1.55, 2.15, 2.65, 3.15}, "Mixing bins - 3body phi"};
@@ -1796,7 +1796,7 @@ struct decay3bodyBuilder {
         registry.fill(HIST("hPhi0"), phiVtx0 * o2::constants::math::Rad2Deg);
         registry.fill(HIST("hPhi1"), phiVtx1 * o2::constants::math::Rad2Deg);
         // convert deltaPhi to range [-pi, pi]
-        float deltaPhi = RecoDecay::ConstrainAngle(phiVtx1 - phiVtx0, -o2::constants::math::PI);
+        float deltaPhi = RecoDecay::constrainAngle(phiVtx1 - phiVtx0, -o2::constants::math::PI);
         // check if radius and phi of the two vertices are compatible
         registry.fill(HIST("hDeltaRadius"), rVtx1 - rVtx0);
         registry.fill(HIST("hDeltaPhi"), deltaPhi * o2::constants::math::Rad2Deg);
