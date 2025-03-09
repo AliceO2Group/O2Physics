@@ -56,6 +56,14 @@ struct HfCandidateSelectorD0 {
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // AND logic for TOF+TPC PID (as in Run2)
   Configurable<bool> usePidTpcAndTof{"usePidTpcAndTof", false, "Use AND logic for TPC and TOF PID"};
+  // ITS quality track cuts
+  Configurable<int> itsNClustersFoundMin{"itsNClustersFoundMin", 0, "Minimum number of found ITS clusters"};
+  Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 1e10f, "Maximum its fit chi2 per ITS cluster"};
+  // TPC quality track cuts
+  Configurable<int> tpcNClustersFoundMin{"tpcNClustersFoundMin", 0, "Minimum number of found TPC clusters"};
+  Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 0, "Minimum number of crossed rows in TPC"};
+  Configurable<float> tpcNCrossedRowsOverFindableClustersMin{"tpcNCrossedRowsOverFindableClustersMin", 0., "Minimum ratio crossed rows / findable clusters"};
+  Configurable<float> tpcChi2PerClusterMax{"tpcChi2PerClusterMax", 1e10f, "Maximum TPC fit chi2 per TPC cluster"};
   // selecting only background candidates
   Configurable<bool> keepOnlySidebandCandidates{"keepOnlySidebandCandidates", false, "Select only sideband candidates, for studying background cut variable distributions"};
   Configurable<double> distanceFromD0MassForSidebands{"distanceFromD0MassForSidebands", 0.15, "Minimum distance from nominal D0 mass value for sideband region"};
@@ -129,6 +137,23 @@ struct HfCandidateSelectorD0 {
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
     }
+  }
+
+  /// Single track quality cuts
+  /// \param track is track
+  /// \return true if track passes all cuts
+  template <typename T>
+  bool isSelectedCandidateProng(const T& trackPos, const T& trackNeg)
+  {
+    if (!isSelectedTrackTpcQuality(trackPos, tpcNClustersFoundMin.value, tpcNCrossedRowsMin.value, tpcNCrossedRowsOverFindableClustersMin.value, tpcChi2PerClusterMax.value) ||
+        !isSelectedTrackTpcQuality(trackNeg, tpcNClustersFoundMin.value, tpcNCrossedRowsMin.value, tpcNCrossedRowsOverFindableClustersMin.value, tpcChi2PerClusterMax.value)) {
+      return false;
+    }
+    if (!isSelectedTrackItsQuality(trackPos, itsNClustersFoundMin.value, itsChi2PerClusterMax.value) ||
+        !isSelectedTrackItsQuality(trackNeg, itsNClustersFoundMin.value, itsChi2PerClusterMax.value)) {
+      return false;
+    }
+    return true;
   }
 
   /// Conjugate-independent topological cuts
@@ -296,6 +321,15 @@ struct HfCandidateSelectorD0 {
       auto ptCand = candidate.pt();
       auto trackPos = candidate.template prong0_as<TracksSel>(); // positive daughter
       auto trackNeg = candidate.template prong1_as<TracksSel>(); // negative daughter
+
+      // implement track quality selection for D0 daughters
+      if (!isSelectedCandidateProng(trackPos, trackNeg)) {
+        hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+        if (applyMl) {
+          hfMlD0Candidate(outputMlD0, outputMlD0bar);
+        }
+        continue;
+      }
 
       // conjugate-independent topological selection
       if (!selectionTopol<reconstructionType>(candidate)) {
