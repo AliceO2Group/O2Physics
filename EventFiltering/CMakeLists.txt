@@ -102,6 +102,11 @@ o2physics_add_dpl_workflow(em-photon-filter-qc
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::PWGEMPhotonMesonCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(heavy-neutral-meson-filter
+    SOURCES PWGEM/HeavyNeutralMesonFilter.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lf-f1proton-filter
     SOURCES PWGLF/filterf1proton.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
