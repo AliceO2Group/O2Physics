@@ -590,7 +590,7 @@ struct CentralityTable {
               estimator.mCalibrationStored = true;
               estimator.isSane();
             } else {
-              LOGF(error, "Calibration information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
+              LOGF(info, "Calibration information from %s for run %d not available, will fill this estimator with invalid values and continue (no crash).", estimator.name.c_str(), bc.runNumber());
             }
           };
 
