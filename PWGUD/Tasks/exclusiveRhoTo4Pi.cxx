@@ -57,7 +57,7 @@ DECLARE_SOA_COLUMN(FourPionPhiPair2, fourPionPhiPair2, double);
 DECLARE_SOA_COLUMN(FourPionCosThetaPair1, fourPionCosThetaPair1, double);
 DECLARE_SOA_COLUMN(FourPionCosThetaPair2, fourPionCosThetaPair2, double);
 } // namespace branch
-DECLARE_SOA_TABLE(UDTree, "AOD", "UD0Charge",
+DECLARE_SOA_TABLE(UDTree0c, "AOD", "UD0Charge",
                   branch::Dcaxy,
                   branch::Dcaz,
                   branch::PionPt,
@@ -71,6 +71,17 @@ DECLARE_SOA_TABLE(UDTree, "AOD", "UD0Charge",
                   branch::FourPionPhiPair2,
                   branch::FourPionCosThetaPair1,
                   branch::FourPionCosThetaPair2);
+
+DECLARE_SOA_TABLE(UDTreen0c, "AOD", "UDn0Charge",
+                  branch::Dcaxy,
+                  branch::Dcaz,
+                  branch::PionPt,
+                  branch::PionEta,
+                  branch::PionRapidity,
+                  branch::FourPionPt,
+                  branch::FourPionEta,
+                  branch::FourPionRapidity,
+                  branch::FourPionMass);
 
 DECLARE_SOA_TABLE(MCTree, "AOD", "MC0Charge",
                   branch::PionPt,
@@ -104,7 +115,8 @@ DECLARE_SOA_TABLE(MCUDTree, "AOD", "UDMC0Charge",
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   SGSelector sgSelector;
-  Produces<aod::UDTree> zeroChargeEventsData;
+  Produces<aod::UDTree0c> zeroChargeEventsData;
+  Produces<aod::UDTreen0c> nonzeroChargeEventsData;
   Produces<aod::MCTree> zeroChargeEventsMCgen;
   Produces<aod::MCUDTree> zeroChargeEventsMCreco;
 
@@ -687,13 +699,33 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     // Selecting Events with net charge != 0 for estimation of background
     if (numPionMinusTRacks != 2 && numPiPlusTracks != 2) {
 
+      std::vector<double> pidcaXY;
+      std::vector<double> pidcaZ;
+      std::vector<double> piPt;
+      std::vector<double> piEta;
+      std::vector<double> piRapidity;
       TLorentzVector p1, p2, p3, p4, p1234;
+      TLorentzVector tempVec;
       p1.SetXYZM(WTS_PID_Pi_tracks[0].px(), WTS_PID_Pi_tracks[0].py(), WTS_PID_Pi_tracks[0].pz(), o2::constants::physics::MassPionCharged);
       p2.SetXYZM(WTS_PID_Pi_tracks[1].px(), WTS_PID_Pi_tracks[1].py(), WTS_PID_Pi_tracks[1].pz(), o2::constants::physics::MassPionCharged);
       p3.SetXYZM(WTS_PID_Pi_tracks[2].px(), WTS_PID_Pi_tracks[2].py(), WTS_PID_Pi_tracks[2].pz(), o2::constants::physics::MassPionCharged);
       p4.SetXYZM(WTS_PID_Pi_tracks[3].px(), WTS_PID_Pi_tracks[3].py(), WTS_PID_Pi_tracks[3].pz(), o2::constants::physics::MassPionCharged);
 
       p1234 = p1 + p2 + p3 + p4;
+
+      for (int i = 0; i < 4; i++) {
+        tempVec.SetXYZM(WTS_PID_Pi_tracks[i].px(), WTS_PID_Pi_tracks[i].py(), WTS_PID_Pi_tracks[i].pz(), o2::constants::physics::MassPionCharged);
+        pidcaXY.push_back(WTS_PID_Pi_tracks[i].dcaXY());
+        pidcaZ.push_back(WTS_PID_Pi_tracks[i].dcaZ());
+        piPt.push_back(tempVec.Pt());
+        piEta.push_back(tempVec.Eta());
+        piRapidity.push_back(tempVec.Rapidity());
+      }
+
+      nonzeroChargeEventsData(
+        pidcaXY, pidcaZ,
+        piPt, piEta, piRapidity,
+        p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M());
 
       if (std::fabs(p1234.Rapidity()) < 0.5) {
         histosData.fill(HIST("pT_event_non0charge_WTS_PID_Pi"), p1234.Pt());
