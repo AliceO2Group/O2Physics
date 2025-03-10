@@ -473,6 +473,7 @@ struct McDGCandProducer {
   Produces<aod::UDMcTrackLabels> outputMcTrackLabels;
 
   // save all McTruth, even if the collisions is not reconstructed
+  Configurable<std::vector<int>> generatorIds{"generatorIds", std::vector<int>{-1}, "MC generatorIds to process"};
   Configurable<bool> saveAllMcCollisions{"saveAllMcCollisions", true, "save all McCollisions"};
 
   using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
@@ -686,6 +687,7 @@ struct McDGCandProducer {
 
     // loop over McCollisions and UDCCs simultaneously
     auto mccol = mccols.iteratorAt(0);
+    auto mcOfInterest = std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) != generatorIds->end();
     auto lastmccol = mccols.iteratorAt(mccols.size() - 1);
     auto mccolAtEnd = false;
 
@@ -729,7 +731,9 @@ struct McDGCandProducer {
 
         // If the dgcand has an associated McCollision then the McCollision and all associated
         // McParticles are saved
-        if (mcdgId >= 0) {
+        // but only consider generated events of interest
+        if (mcdgId >= 0 && mcOfInterest) {
+
           if (mcColIsSaved.find(mcdgId) == mcColIsSaved.end()) {
             // update UDMcCollisions
             LOGF(debug, "  writing mcCollision %d to UDMcCollisions", mcdgId);
@@ -789,7 +793,8 @@ struct McDGCandProducer {
         // this is case 2.
 
         // update UDMcCollisions and UDMcParticles
-        if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
+        // but only consider generated events of interest
+        if (mcOfInterest && mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
 
           // update UDMcCollisions
           LOGF(debug, "  writing mcCollision %d to UDMcCollisions", mccolId);
@@ -804,6 +809,7 @@ struct McDGCandProducer {
         // advance mccol
         if (mccol != lastmccol) {
           mccol++;
+          mcOfInterest = std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) != generatorIds->end();
           mccolId = mccol.globalIndex();
         } else {
           mccolAtEnd = true;
@@ -826,8 +832,11 @@ struct McDGCandProducer {
 
     // loop over McCollisions
     for (auto const& mccol : mccols) {
-      int64_t mccolId = mccol.globalIndex();
+      // only consider generated events of interest
+      if (std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) == generatorIds->end())
+        continue;
 
+      int64_t mccolId = mccol.globalIndex();
       // update UDMcCollisions and UDMcParticles
       if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
 
