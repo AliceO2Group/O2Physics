@@ -19,6 +19,8 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <memory>
 #include <algorithm>
 
 #include <TRandom3.h>

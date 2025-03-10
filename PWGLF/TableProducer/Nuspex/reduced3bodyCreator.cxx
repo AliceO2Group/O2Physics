@@ -18,6 +18,7 @@
 #include <array>
 #include <cstdlib>
 #include <string>
+#include <vector>
 #include <algorithm>
 
 #include "Framework/runDataProcessing.h"
