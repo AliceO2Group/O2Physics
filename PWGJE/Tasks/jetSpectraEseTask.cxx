@@ -71,6 +71,7 @@ struct JetSpectraEseTask {
   Configurable<double> leadingTrackPtCut{"leadingTrackPtCut", 5.0, "leading jet pT cut"};
   Configurable<double> jetAreaFractionMin{"jetAreaFractionMin", 0.56, "used to make a cut on the jet areas"};
   Configurable<bool> fjetAreaCut{"fjetAreaCut", true, "Flag for jet area cut"};
+  Configurable<bool> cfgCentVariant{"cfgCentVariant", false, "Flag for centrality variant 1"};
 
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
@@ -292,13 +293,14 @@ struct JetSpectraEseTask {
       return;
     registry.fill(HIST("hEventCounter"), counter++);
 
-    if (cfgEvSelOccupancy && !isOccupancyWithin(collision))
+    if (cfgEvSelOccupancy && !isOccupancyAccepted(collision))
       return;
     registry.fill(HIST("hEventCounter"), counter++);
 
-    if (cfgSelCentrality && !isCentralitySelected(collision.centrality()))
+    auto centrality = cfgCentVariant ? collision.centralityVariant1() : collision.centrality();
+    if (cfgSelCentrality && !isCentralitySelected(centrality))
       return;
-    registry.fill(HIST("hCentralitySel"), collision.centrality());
+    registry.fill(HIST("hCentralitySel"), centrality);
 
     const auto psi{procEP<PsiFillerEse>(collision)};
     const auto qPerc{collision.qPERCFT0C()};
@@ -317,8 +319,8 @@ struct JetSpectraEseTask {
     }
 
     registry.fill(HIST("hEventCounter"), counter++);
-    registry.fill(HIST("hRho"), collision.centrality(), collision.rho());
-    registry.fill(HIST("hCentralityAnalyzed"), collision.centrality());
+    registry.fill(HIST("hRho"), centrality, collision.rho());
+    registry.fill(HIST("hCentralityAnalyzed"), centrality);
     for (auto const& jet : jets) {
       if (fjetAreaCut && !isJetAreaAccepted(jet))
         continue;
@@ -331,19 +333,19 @@ struct JetSpectraEseTask {
       registry.fill(HIST("hJetArea"), jet.area());
 
       float dPhi{RecoDecay::constrainAngle(jet.phi() - psi.psi2, -o2::constants::math::PI)};
-      registry.fill(HIST("hCentJetPtdPhiq2"), collision.centrality(), jet.pt() - (collision.rho() * jet.area()), dPhi, qPerc[0]);
+      registry.fill(HIST("hCentJetPtdPhiq2"), centrality, jet.pt() - (collision.rho() * jet.area()), dPhi, qPerc[0]);
 
       if (cfgrhoPhi) {
         auto rhoLocal = evalRho(rhoFit.get(), jetR, jet.phi(), collision.rho());
-        registry.fill(HIST("hRhoPhi"), collision.centrality(), rhoLocal);
-        registry.fill(HIST("hCentJetPtdPhiq2RhoPhi"), collision.centrality(), jet.pt() - (rhoLocal * jet.area()), dPhi, qPerc[0]);
-        registry.fill(HIST("hCentPhi"), collision.centrality(), rhoFit->Eval(jet.phi()));
-        registry.fill(HIST("hdPhiRhoPhi"), dPhi, rhoFit->Eval(jet.phi()));
+        registry.fill(HIST("hRhoPhi"), centrality, rhoLocal);
+        registry.fill(HIST("hCentJetPtdPhiq2RhoPhi"), centrality, jet.pt() - (rhoLocal * jet.area()), dPhi, qPerc[0]);
+        registry.fill(HIST("hCentPhi"), centrality, rhoFit->Eval(jet.phi()));
+        registry.fill(HIST("hdPhiRhoPhi"), dPhi, rhoLocal);
       }
     }
     registry.fill(HIST("hEventCounter"), counter++);
 
-    if (collision.centrality() < 30 || collision.centrality() > 50)
+    if (centrality < 30 || centrality > 50)
       return;
     registry.fill(HIST("hEventCounter"), counter++);
   }
@@ -357,7 +359,7 @@ struct JetSpectraEseTask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
 
-    if (cfgEvSelOccupancy && !isOccupancyWithin(collision))
+    if (cfgEvSelOccupancy && !isOccupancyAccepted(collision))
       return;
 
     [[maybe_unused]] const auto psi{procEP<PsiFillerEP>(collision)};
@@ -442,7 +444,7 @@ struct JetSpectraEseTask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
     registry.fill(HIST("hMCDetEventCounter"), counter++);
-    if (cfgEvSelOccupancy && !isOccupancyWithin(collision))
+    if (cfgEvSelOccupancy && !isOccupancyAccepted(collision))
       return;
     registry.fill(HIST("hMCDetEventCounter"), counter++);
     registry.fill(HIST("hDetCentralitySel"), collision.centrality());
@@ -487,7 +489,7 @@ struct JetSpectraEseTask {
         return;
       registry.fill(HIST("hMCDMatchedEventCounter"), secCount++);
 
-      if (cfgEvSelOccupancy && !isOccupancyWithin(collision))
+      if (cfgEvSelOccupancy && !isOccupancyAccepted(collision))
         return;
       registry.fill(HIST("hMCDMatchedEventCounter"), secCount++);
 
@@ -656,7 +658,7 @@ struct JetSpectraEseTask {
   }
 
   template <typename col>
-  bool isOccupancyWithin(const col& collision)
+  bool isOccupancyAccepted(const col& collision)
   {
     auto occupancy{collision.trackOccupancyInTimeRange()};
     if (occupancy < cfgCutOccupancy->at(0) || occupancy > cfgCutOccupancy->at(1))
@@ -691,10 +693,12 @@ struct JetSpectraEseTask {
     int nTrk{0};
     if (jets.size() > 0) {
       for (const auto& track : tracks) {
-        registry.fill(HIST("hTrackCounter"), 0.5);
+        if constexpr (fillHist)
+          registry.fill(HIST("hTrackCounter"), 0.5);
         if (jetderiveddatautilities::selectTrack(track, trackSelection) && (std::fabs(track.eta() - leadingJetEta) > jetR) && track.pt() >= 0.2 && track.pt() <= 5) {
           nTrk++;
-          registry.fill(HIST("hTrackCounter"), 1.5);
+          if constexpr (fillHist)
+            registry.fill(HIST("hTrackCounter"), 1.5);
         }
       }
     }
@@ -705,9 +709,10 @@ struct JetSpectraEseTask {
     for (const auto& track : tracks) {
       if (jetderiveddatautilities::selectTrack(track, trackSelection) && (std::fabs(track.eta() - leadingJetEta) > jetR) && track.pt() >= 0.2 && track.pt() <= 5) {
         hPhiPt->Fill(track.phi(), track.pt());
-        registry.fill(HIST("hTrackCounter"), 2.5);
-        if constexpr (fillHist)
+        if constexpr (fillHist) {
+          registry.fill(HIST("hTrackCounter"), 2.5);
           registry.fill(HIST("hPhiPtsum"), track.phi(), track.pt());
+        }
       }
     }
     auto modulationFit = std::unique_ptr<TF1>(new TF1("fit_rholoc", "[0] * (1. + 2. * ([1] * std::cos(2. * (x - [2])) + [3] * std::cos(3. * (x - [4]))))", 0, o2::constants::math::TwoPI));
@@ -769,7 +774,7 @@ struct JetSpectraEseTask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
-    if (cfgEvSelOccupancy && !isOccupancyWithin(collision))
+    if (cfgEvSelOccupancy && !isOccupancyAccepted(collision))
       return;
 
     const auto psi{procEP<PsiFillerEse>(collision)};
