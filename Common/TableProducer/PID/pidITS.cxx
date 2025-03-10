@@ -80,19 +80,19 @@ struct itsPid {
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
       LOG(fatal) << "Not implemented yet";
     } else {
-      const char* key = metadataInfo.isMC() ? "MC" : "Data";
-      o2::aod::ITSResponse::setParameters(itsParams->get(key, "RespITSPar1"),
-                                          itsParams->get(key, "RespITSPar2"),
-                                          itsParams->get(key, "RespITSPar3"),
-                                          itsParams->get(key, "RespITSPar1_Z2"),
-                                          itsParams->get(key, "RespITSPar2_Z2"),
-                                          itsParams->get(key, "RespITSPar3_Z2"),
-                                          itsParams->get(key, "ResolutionPar1"),
-                                          itsParams->get(key, "ResolutionPar2"),
-                                          itsParams->get(key, "ResolutionPar3"),
-                                          itsParams->get(key, "ResolutionPar1_Z2"),
-                                          itsParams->get(key, "ResolutionPar2_Z2"),
-                                          itsParams->get(key, "ResolutionPar3_Z2"));
+      const char* dataType = metadataInfo.isMC() ? "MC" : "Data";
+      o2::aod::ITSResponse::setParameters(itsParams->get(dataType, "RespITSPar1"),
+                                          itsParams->get(dataType, "RespITSPar2"),
+                                          itsParams->get(dataType, "RespITSPar3"),
+                                          itsParams->get(dataType, "RespITSPar1_Z2"),
+                                          itsParams->get(dataType, "RespITSPar2_Z2"),
+                                          itsParams->get(dataType, "RespITSPar3_Z2"),
+                                          itsParams->get(dataType, "ResolutionPar1"),
+                                          itsParams->get(dataType, "ResolutionPar2"),
+                                          itsParams->get(dataType, "ResolutionPar3"),
+                                          itsParams->get(dataType, "ResolutionPar1_Z2"),
+                                          itsParams->get(dataType, "ResolutionPar2_Z2"),
+                                          itsParams->get(dataType, "ResolutionPar3_Z2"));
     }
   }
 
