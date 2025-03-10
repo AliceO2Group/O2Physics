@@ -144,12 +144,10 @@ struct FemtoUniversePairTaskTrackPhi {
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> trackHistoPartTrack;
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> hMCTruth1;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> hTrackDCA;
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kPhi, 2> trackHistoPartPhi;
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> hMCTruth2;
 
   /// Histogramming for Event
   FemtoUniverseEventHisto eventHisto;
@@ -375,8 +373,6 @@ struct FemtoUniversePairTaskTrackPhi {
   void init(InitContext&)
   {
     if (ConfIsMC) {
-      hMCTruth1.init(&qaRegistry, ConfBinsTempFitVarpT, ConfBinsTempFitVarPDG, false, ConfTrackPDGCode, false);
-      hMCTruth2.init(&qaRegistry, ConfBinsTempFitVarpT, ConfBinsTempFitVarPDG, false, 333, false);
       hTrackDCA.init(&registryDCA, ConfBinsTempFitVarpT, ConfBinsTempFitVarDCA, true, ConfTrackPDGCode, true);
 
       registryMCpT.add("MCReco/C_phi_pT", "; #it{p_T} (GeV/#it{c}); Counts", kTH1F, {{100, 0, 10}});

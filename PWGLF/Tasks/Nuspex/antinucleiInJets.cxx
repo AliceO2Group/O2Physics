@@ -998,7 +998,7 @@ struct AntinucleiInJets {
   }
   PROCESS_SWITCH(AntinucleiInJets, processJetsMCgen, "process jets mc gen", false);
 
-  void processJetsMCrec(SimCollisions const& collisions, MCTracks const& mcTracks)
+  void processJetsMCrec(SimCollisions const& collisions, MCTracks const& mcTracks, McParticles const&)
   {
     for (const auto& collision : collisions) {
 

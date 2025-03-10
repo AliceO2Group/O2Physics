@@ -70,15 +70,16 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
   Configurable<float> minpt{"minpt", 0.05, "min pt for track"};
   Configurable<float> maxeta{"maxeta", 2.0, "max eta acceptance"};
-  Configurable<float> dca_xy_max{"dca_xy_max", 0.05, "max DCAxy in cm"};
-  Configurable<float> dca_z_max{"dca_z_max", 0.05, "max DCAz in cm"};
+  Configurable<float> dca_xy_max{"dca_xy_max", 1, "max DCAxy in cm"};
+  Configurable<float> dca_z_max{"dca_z_max", 1, "max DCAz in cm"};
+  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 2, "max DCA 3D in sigma"};
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", +3.5, "max. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 0.0, "max. TPC n sigma for pion exclusion"};
   Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", 0.0, "min. TPC n sigma for pion exclusion"};
   Configurable<float> minTOFNsigmaEl{"minTOFNsigmaEl", -3.5, "min. TOF n sigma for electron inclusion"};
   Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", +3.5, "max. TOF n sigma for electron inclusion"};
-  Configurable<float> maxMee{"maxMee", 0.03, "max. mee to store dalitz ee pairs"};
+  Configurable<float> maxMee{"maxMee", 0.04, "max. mee to store dalitz ee pairs"};
   Configurable<bool> fillLS{"fillLS", true, "flag to fill LS histograms for QA"};
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
@@ -227,6 +228,18 @@ struct skimmerPrimaryElectronFromDalitzEE {
       return false;
     }
 
+    float dca_3d = 999.f;
+    float det = track.cYY() * track.cZZ() - track.cZY() * track.cZY();
+    if (det < 0) {
+      dca_3d = 999.f;
+    } else {
+      float chi2 = (track.dcaXY() * track.dcaXY() * track.cZZ() + track.dcaZ() * track.dcaZ() * track.cYY() - 2. * track.dcaXY() * track.dcaZ() * track.cZY()) / det;
+      dca_3d = std::sqrt(std::fabs(chi2) / 2.);
+    }
+    if (dca_3d > dca_3d_sigma_max) {
+      return false;
+    }
+
     if (track.pt() < minpt || std::fabs(track.eta()) > maxeta) {
       return false;
     }
@@ -255,7 +268,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::make_pair(collision.globalIndex(), track.globalIndex())) == stored_trackIds.end()) {
       emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
                          track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(),
-                         track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
+                         track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
                          track.tpcChi2NCl(), track.tpcInnerParam(),
                          track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
                          track.beta(), track.tofNSigmaEl(), track.tofNSigmaPi(),

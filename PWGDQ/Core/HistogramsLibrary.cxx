@@ -838,6 +838,26 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "tpcNSigmaKa_tofNSigmaKa", "", false, 200, -10., 10., VarManager::kTPCnSigmaKa, 200, -10., 10., VarManager::kTOFnSigmaKa);
       hm->AddHistogram(histClass, "tpcNSigmaPi_tofNSigmaPi", "", false, 200, -10., 10., VarManager::kTPCnSigmaPi, 200, -10., 10., VarManager::kTOFnSigmaPi);
     }
+    if (subGroupStr.Contains("singlemucumulant")) {
+      double PtBinEdges[67]; // 0-30GeV/c
+      for (int i = 0; i < 67; i++) {
+        if (i <= 39) {
+          PtBinEdges[i] = i / 10.;
+        } else {
+          PtBinEdges[i] = (i - 40) * 1. + 4.;
+        }
+      }
+
+      double CentBinEdges[19]; // 0-90%
+      for (int i = 0; i < 19; i++) {
+        CentBinEdges[i] = i * 5;
+      }
+
+      hm->AddHistogram(histClass, "Pt_centrFT0C_Corr2REFsingle", "", true, 66, PtBinEdges, VarManager::kPt, 18, CentBinEdges, VarManager::kCentFT0C, 0, nullptr, VarManager::kCORR2REFbysinglemu, "", "", "", VarManager::kNothing, VarManager::kM11REFoverMpsingle);
+      hm->AddHistogram(histClass, "Pt_centrFT0C_Corr4REFsingle", "", true, 66, PtBinEdges, VarManager::kPt, 18, CentBinEdges, VarManager::kCentFT0C, 0, nullptr, VarManager::kCORR4REFbysinglemu, "", "", "", VarManager::kNothing, VarManager::kM1111REFoverMpsingle);
+      hm->AddHistogram(histClass, "Pt_centrFT0C_Corr2POIsingle", "", true, 66, PtBinEdges, VarManager::kPt, 18, CentBinEdges, VarManager::kCentFT0C, 0, nullptr, VarManager::kCORR2POIsingle, "", "", "", VarManager::kNothing, VarManager::kM01POIoverMpsingle);
+      hm->AddHistogram(histClass, "Pt_centrFT0C_Corr4POIsingle", "", true, 66, PtBinEdges, VarManager::kPt, 18, CentBinEdges, VarManager::kCentFT0C, 0, nullptr, VarManager::kCORR4POIsingle, "", "", "", VarManager::kNothing, VarManager::kM0111POIoverMpsingle);
+    }
   }
 
   if (!groupStr.CompareTo("mctruth_triple")) {
@@ -1121,8 +1141,26 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V24ME", "Mass_Pt_CentFT0C_V24ME", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV24ME, VarManager::kWV24ME);
       }
       if (subGroupStr.Contains("cumulantme1")) {
-        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V22ME", "Mass_Pt_CentFT0C_V22ME", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV22ME, VarManager::kWV22ME);
-        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V24ME", "Mass_Pt_CentFT0C_V24ME", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV24ME, VarManager::kWV24ME);
+        double MassBinEdges[251]; // 0-5GeV/c2
+        for (int i = 0; i < 251; i++) {
+          MassBinEdges[i] = i * 0.02;
+        }
+
+        double PtBinEdges[67]; // 0-30GeV/c
+        for (int i = 0; i < 67; i++) {
+          if (i <= 39) {
+            PtBinEdges[i] = i / 10.;
+          } else {
+            PtBinEdges[i] = (i - 40) * 1. + 4.;
+          }
+        }
+
+        double CentBinEdges[19]; // 0-90%
+        for (int i = 0; i < 19; i++) {
+          CentBinEdges[i] = i * 5;
+        }
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V22ME", "Mass_Pt_CentFT0C_V22ME", true, 250, MassBinEdges, VarManager::kMass, 66, PtBinEdges, VarManager::kPt, 18, CentBinEdges, VarManager::kCentFT0C, "", "", "", VarManager::kV22ME, VarManager::kWV22ME);
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V24ME", "Mass_Pt_CentFT0C_V24ME", true, 250, MassBinEdges, VarManager::kMass, 66, PtBinEdges, VarManager::kPt, 18, CentBinEdges, VarManager::kCentFT0C, "", "", "", VarManager::kV24ME, VarManager::kWV24ME);
       }
       if (subGroupStr.Contains("cumulantme2")) {
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M11REFoverMpME", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 9, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM11REFoverMpME);

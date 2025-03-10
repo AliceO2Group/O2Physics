@@ -56,62 +56,6 @@
 #include <TPDGCode.h>
 #include <TF1.h>
 
-namespace o2::aod
-{
-
-namespace gen_ebyecolltable
-{
-DECLARE_SOA_COLUMN(CentralityGen, centralityGen, float);
-DECLARE_SOA_COLUMN(NetProtNoGen, netProtNoGen, float);   //! net proton no. in an event
-DECLARE_SOA_COLUMN(ProtNoGen, protNoGen, float);         //! proton no. in an event
-DECLARE_SOA_COLUMN(AntiProtNoGen, antiProtNoGen, float); //! antiproton no. in an event
-} // namespace gen_ebyecolltable
-
-DECLARE_SOA_TABLE(ProtGenCollEbyeTables, "AOD", "PROTGENCOLLEBYETABLE",
-                  gen_ebyecolltable::CentralityGen,
-                  gen_ebyecolltable::NetProtNoGen,
-                  gen_ebyecolltable::ProtNoGen,
-                  gen_ebyecolltable::AntiProtNoGen);
-using ProtGenCollEbyeTable = ProtGenCollEbyeTables::iterator;
-
-namespace rec_ebyecolltable
-{
-DECLARE_SOA_COLUMN(CentralityRec, centralityRec, float);
-DECLARE_SOA_COLUMN(NetProtNoRec, netProtNoRec, float);   //! net proton no. in an event
-DECLARE_SOA_COLUMN(ProtNoRec, protNoRec, float);         //! proton no. in an event
-DECLARE_SOA_COLUMN(AntiProtNoRec, antiProtNoRec, float); //! antiproton no. in an event
-} // namespace rec_ebyecolltable
-
-DECLARE_SOA_TABLE(ProtRecCollEbyeTables, "AOD", "PROTRECCOLLEBYETABLE",
-                  rec_ebyecolltable::CentralityRec,
-                  rec_ebyecolltable::NetProtNoRec,
-                  rec_ebyecolltable::ProtNoRec,
-                  rec_ebyecolltable::AntiProtNoRec);
-using ProtRecCollEbyeTable = ProtRecCollEbyeTables::iterator;
-
-DECLARE_SOA_TABLE(RecCollTables, "AOD", "RECCOLLTABLE",
-                  o2::soa::Index<>,
-                  rec_ebyecolltable::CentralityRec);
-using RecCollTable = RecCollTables::iterator;
-
-namespace rec_ebyetracktable
-{
-DECLARE_SOA_INDEX_COLUMN(RecCollTable, recCollTable);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Charge, charge, int);
-} // namespace rec_ebyetracktable
-
-DECLARE_SOA_TABLE(ProtRecCompleteEbyeTables, "AOD", "PROTRECCOMPLETEEBYETABLE",
-                  o2::soa::Index<>,
-                  rec_ebyetracktable::RecCollTableId,
-                  rec_ebyetracktable::Pt,
-                  rec_ebyetracktable::Eta,
-                  rec_ebyetracktable::Charge);
-using ProtRecCompleteEbyeTable = ProtRecCompleteEbyeTables::iterator;
-
-} // namespace o2::aod
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -991,8 +935,6 @@ struct NetprotonCumulantsMc {
     }
   }
 
-  Produces<aod::ProtGenCollEbyeTables> genEbyeCollisions; //! MC Gen table creation
-
   void processMCGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     histos.fill(HIST("hMC"), 0.5);
@@ -1085,7 +1027,6 @@ struct NetprotonCumulantsMc {
     histos.fill(HIST("hgenProfileTotalProton"), cent, (nProt + nAntiprot));
     histos.fill(HIST("hgenProfileProton"), cent, nProt);
     histos.fill(HIST("hgenProfileAntiproton"), cent, nAntiprot);
-    genEbyeCollisions(cent, netProt, nProt, nAntiprot);
 
     // Profiles for generated level cumulants
     //-------------------------------------------------------------------------------------------
@@ -1119,10 +1060,6 @@ struct NetprotonCumulantsMc {
   }
   PROCESS_SWITCH(NetprotonCumulantsMc, processMCGen, "Process Generated", true);
 
-  Produces<aod::ProtRecCollEbyeTables> recEbyeCollisions;             //! MC Rec table creation
-  Produces<aod::RecCollTables> recCollisions;                         //! MC Rec table creation
-  Produces<aod::ProtRecCompleteEbyeTables> recEbyeCompleteCollisions; //! MC Rec table creation with tracks
-
   void processMCRec(MyMCRecCollision const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
     if (!collision.has_mcCollision()) {
@@ -1147,7 +1084,6 @@ struct NetprotonCumulantsMc {
     histos.fill(HIST("hCentrec"), cent);
     histos.fill(HIST("hMC"), 5.5);
     histos.fill(HIST("hZvtx_after_sel"), collision.posZ());
-    recCollisions(cent);
 
     float nProt = 0.0;
     float nAntiprot = 0.0;
@@ -1207,7 +1143,6 @@ struct NetprotonCumulantsMc {
           trackSelected = selectionPIDold(track);
 
         if (trackSelected) {
-          recEbyeCompleteCollisions(recCollisions.lastIndex(), particle.pt(), particle.eta(), track.sign());
           // filling nSigma distribution
           histos.fill(HIST("h2DnsigmaTpcVsPt"), track.pt(), track.tpcNSigmaPr());
           histos.fill(HIST("h2DnsigmaTofVsPt"), track.pt(), track.tofNSigmaPr());
@@ -1271,7 +1206,6 @@ struct NetprotonCumulantsMc {
     histos.fill(HIST("hCorrProfileTotalProton"), cent, (powerEffProt[1] + powerEffAntiprot[1]));
     histos.fill(HIST("hCorrProfileProton"), cent, powerEffProt[1]);
     histos.fill(HIST("hCorrProfileAntiproton"), cent, powerEffAntiprot[1]);
-    recEbyeCollisions(cent, netProt, nProt, nAntiprot);
 
     // Calculating q_{r,s} as required
     for (int i = 1; i < 7; i++) {
@@ -2091,7 +2025,6 @@ struct NetprotonCumulantsMc {
     // variables
     auto cent = coll.centFT0M();
     histos.fill(HIST("hCentrec"), cent);
-    recCollisions(cent);
 
     float nProt = 0.0;
     float nAntiprot = 0.0;
@@ -2143,7 +2076,6 @@ struct NetprotonCumulantsMc {
         trackSelected = selectionPIDold(track);
 
       if (trackSelected) {
-        recEbyeCompleteCollisions(recCollisions.lastIndex(), track.pt(), track.eta(), track.sign());
         // filling nSigma distribution
         histos.fill(HIST("h2DnsigmaTpcVsPt"), track.pt(), track.tpcNSigmaPr());
         histos.fill(HIST("h2DnsigmaTofVsPt"), track.pt(), track.tofNSigmaPr());
@@ -2200,7 +2132,6 @@ struct NetprotonCumulantsMc {
     histos.fill(HIST("hCorrProfileTotalProton"), cent, (powerEffProt[1] + powerEffAntiprot[1]));
     histos.fill(HIST("hCorrProfileProton"), cent, powerEffProt[1]);
     histos.fill(HIST("hCorrProfileAntiproton"), cent, powerEffAntiprot[1]);
-    recEbyeCollisions(cent, netProt, nProt, nAntiprot);
 
     // Calculating q_{r,s} as required
     for (int i = 1; i < 7; i++) {

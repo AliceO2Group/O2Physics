@@ -61,10 +61,10 @@ struct FlowEfficiencyCasc {
   O2_DEFINE_CONFIGURABLE(cfgcasc_dcav0dau, float, 1.0f, "maximum DCA among V0 daughters")
   O2_DEFINE_CONFIGURABLE(cfgcasc_mlambdawindow, float, 0.04f, "Invariant mass window of lambda")
   // track quality and type selections
-  O2_DEFINE_CONFIGURABLE(cfgtpcclusters, int, 70, "minimum number of TPC clusters requirement")
-  O2_DEFINE_CONFIGURABLE(cfgitsclusters, int, 1, "minimum number of ITS clusters requirement")
-  O2_DEFINE_CONFIGURABLE(cfgtpcclufindable, int, 1, "minimum number of findable TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgtpccrossoverfindable, int, 1, "minimum number of Ratio crossed rows over findable clusters")
+  O2_DEFINE_CONFIGURABLE(cfgtpcclusters, int, 0, "minimum number of TPC clusters requirement")
+  O2_DEFINE_CONFIGURABLE(cfgitsclusters, int, 0, "minimum number of ITS clusters requirement")
+  O2_DEFINE_CONFIGURABLE(cfgtpcclufindable, int, 0, "minimum number of findable TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgtpccrossoverfindable, int, 0, "minimum number of Ratio crossed rows over findable clusters")
   O2_DEFINE_CONFIGURABLE(cfgcheckDauTPC, bool, true, "check daughter tracks TPC or not")
   O2_DEFINE_CONFIGURABLE(cfgcheckDauTOF, bool, false, "check daughter tracks TOF or not")
   O2_DEFINE_CONFIGURABLE(cfgCasc_rapidity, float, 0.5, "rapidity")
@@ -114,6 +114,7 @@ struct FlowEfficiencyCasc {
     for (const auto& casc : Cascades) {
       if (!casc.has_cascMCCore())
         continue;
+      auto cascMC = casc.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
       auto negdau = casc.negTrackExtra_as<DaughterTracks>();
       auto posdau = casc.posTrackExtra_as<DaughterTracks>();
       auto bachelor = casc.bachTrackExtra_as<DaughterTracks>();
@@ -148,26 +149,32 @@ struct FlowEfficiencyCasc {
       if (std::fabs(casc.mLambda() - o2::constants::physics::MassLambda0) > cfgcasc_mlambdawindow)
         continue;
       // Omega and antiOmega
-      if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
-          (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-        registry.fill(HIST("h2DRecOmega"), casc.pt(), rectracknum);
-      } else if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
-                 (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-        registry.fill(HIST("h2DRecOmega"), casc.pt(), rectracknum);
+      int pdgCode{cascMC.pdgCode()};
+      if (std::abs(pdgCode) == kOmegaMinus && std::abs(cascMC.pdgCodeV0()) == kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == kKPlus) {
+        if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
+            (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
+          registry.fill(HIST("h2DRecOmega"), casc.pt(), rectracknum);
+        } else if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
+                   (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
+          registry.fill(HIST("h2DRecOmega"), casc.pt(), rectracknum);
+        }
       }
       // Xi and antiXi
-      if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
-          (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-        registry.fill(HIST("h2DRecXi"), casc.pt(), rectracknum);
-      } else if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
-                 (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-        registry.fill(HIST("h2DRecXi"), casc.pt(), rectracknum);
+      if (std::abs(pdgCode) == kXiMinus && std::abs(cascMC.pdgCodeV0()) == kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == kPiPlus) {
+        if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
+            (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
+          registry.fill(HIST("h2DRecXi"), casc.pt(), rectracknum);
+        } else if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
+                   (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
+          registry.fill(HIST("h2DRecXi"), casc.pt(), rectracknum);
+        }
       }
     }
 
     for (const auto& v0 : V0s) {
       if (!v0.has_v0MCCore())
         continue;
+      auto v0MC = v0.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
       auto v0negdau = v0.negTrackExtra_as<DaughterTracks>();
       auto v0posdau = v0.posTrackExtra_as<DaughterTracks>();
 
@@ -198,18 +205,23 @@ struct FlowEfficiencyCasc {
       if (std::fabs(v0.dcanegtopv()) < cfgv0_dcadautopv)
         continue;
 
+      int pdgCode{v0MC.pdgCode()};
       // K0short
-      if (v0.qtarm() / std::fabs(v0.alpha()) > cfgv0_ArmPodocut && std::fabs(v0.y()) < 0.5 && std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < cfgv0_mk0swindow &&
-          (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-        registry.fill(HIST("h2DRecK0s"), v0.pt(), rectracknum);
+      if (std::abs(pdgCode) == kK0Short && v0MC.pdgCodePositive() == kPiPlus && v0MC.pdgCodeNegative() == kPiMinus) {
+        if (v0.qtarm() / std::fabs(v0.alpha()) > cfgv0_ArmPodocut && std::fabs(v0.y()) < 0.5 && std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < cfgv0_mk0swindow &&
+            (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
+          registry.fill(HIST("h2DRecK0s"), v0.pt(), rectracknum);
+        }
       }
       // Lambda and antiLambda
       if (std::fabs(v0.y()) < 0.5 && std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
           (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-        registry.fill(HIST("h2DRecLambda"), v0.pt(), rectracknum);
+        if (std::abs(pdgCode) == kLambda0 && v0MC.pdgCodePositive() == kProton && v0MC.pdgCodeNegative() == kPiMinus)
+          registry.fill(HIST("h2DRecLambda"), v0.pt(), rectracknum);
       } else if (std::fabs(v0.y()) < 0.5 && std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
                  (!cfgcheckDauTPC || (std::fabs(v0negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-        registry.fill(HIST("h2DRecLambda"), v0.pt(), rectracknum);
+        if (std::abs(pdgCode) == kLambda0 && v0MC.pdgCodePositive() == kPiPlus && v0MC.pdgCodeNegative() == kProtonBar)
+          registry.fill(HIST("h2DRecLambda"), v0.pt(), rectracknum);
       }
     }
   }

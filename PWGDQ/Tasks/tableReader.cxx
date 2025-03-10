@@ -305,6 +305,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorMultExtra, "Run event selection on DQ skimmed events with Q vector from GFW and MultPV", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorCentrMultExtra, "Run event selection on DQ skimmed events with Q vector from CFW and MultPV", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorExtraRef, "Run event selection on DQ skimmed events with Q vector and subscribing to reference flow table", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorMultExtraRef, "Run event selection on DQ skimmed events with Q vector and subscribing to reference flow table with MultPV", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", false);
   // TODO: Add process functions subscribing to Framework Collision
 };
@@ -463,6 +464,8 @@ struct AnalysisMuonSelection {
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fMuonCuts;
 
+  Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
+
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processDummy")) {
@@ -506,6 +509,26 @@ struct AnalysisMuonSelection {
     uint32_t filterMap = 0;
     int iCut = 0;
 
+    // First loop to get muon multiplicity for single muon cumulants
+    if constexpr (static_cast<bool>(TEventFillMap & VarManager::ObjTypes::ReducedEventQvector)) {
+      int multMuon = 0;
+      for (auto& muon : muons) {
+        filterMap = 0;
+        VarManager::FillTrack<TMuonFillMap>(muon);
+
+        iCut = 0;
+        for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, iCut++) {
+          if ((*cut).IsSelected(VarManager::fgValues)) {
+            filterMap |= (static_cast<uint32_t>(1) << iCut);
+          }
+        }
+        if (static_cast<int>(filterMap) > 0) {
+          multMuon++;
+        }
+      }
+      VarManager::fgValues[VarManager::kMultSingleMuons] = multMuon;
+    }
+
     for (auto& muon : muons) {
       filterMap = 0;
       VarManager::FillTrack<TMuonFillMap>(muon);
@@ -530,12 +553,18 @@ struct AnalysisMuonSelection {
   {
     runMuonSelection<gkEventFillMap, gkMuonFillMap>(event, muons);
   }
+  void processVnSingleMuonCumulantSkimmed(soa::Filtered<MyEventsVtxCovSelectedQvectorExtraWithRefFlow>::iterator const& event, MyMuonTracks const& muons)
+  {
+    VarManager::FillEvent<gkEventFillMapWithCovQvectorExtraWithRefFlow>(event, VarManager::fgValues);
+    runMuonSelection<gkEventFillMapWithCovQvectorExtraWithRefFlow, gkMuonFillMap>(event, muons);
+  }
   void processDummy(MyEvents&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisMuonSelection, processSkimmed, "Run muon selection on DQ skimmed muons", false);
+  PROCESS_SWITCH(AnalysisMuonSelection, processVnSingleMuonCumulantSkimmed, "Run muon selection for single muon cumulant correlators", false);
   PROCESS_SWITCH(AnalysisMuonSelection, processDummy, "Dummy function", false);
 };
 
