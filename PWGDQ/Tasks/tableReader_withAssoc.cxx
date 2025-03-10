@@ -218,9 +218,19 @@ struct AnalysisEventSelection {
 
   void init(o2::framework::InitContext& context)
   {
-    if (context.mOptions.get<bool>("processDummy")) {
+    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc");
+    bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
+
+    if (isDummyEnabled) {
+      if (isAnyProcessEnabled) {
+        LOG(fatal) << "You have enabled both the dummy process and at least one normal process function! Check your config!";
+      }
       return;
     }
+    if (!isAnyProcessEnabled) {
+      return;
+    }
+
     VarManager::SetDefaultVarNames();
 
     fEventCut = new AnalysisCompositeCut(true);
@@ -1129,6 +1139,7 @@ struct AnalysisSameEventPairing {
     Configurable<string> track{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
     Configurable<string> muon{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
     Configurable<string> pair{"cfgPairCuts", "", "Comma separated list of pair cuts"};
+    Configurable<bool> event{"cfgRemoveCollSplittingCandidates", false, "If true, remove collision splitting candidates as determined by the event selection task upstream"};
     // TODO: Add pair cuts via JSON
   } fConfigCuts;
 
@@ -1190,8 +1201,7 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
-
-    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov");
+    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra");
     fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed");
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMixingMuonSkimmed");
     fEnableMuonMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmed");
@@ -1529,6 +1539,9 @@ struct AnalysisSameEventPairing {
 
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (fConfigCuts.event && event.isEventSelected_bit(2)) {
         continue;
       }
       uint8_t evSel = event.isEventSelected_raw();
@@ -1967,6 +1980,13 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
+  void processBarrelOnlySkimmedNoCovWithMultExtra(MyEventsMultExtraSelected const& events,
+                                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                                  MyBarrelTracksWithAmbiguities const& barrelTracks)
+  {
+    runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMapWithMultExtra, gkTrackFillMap>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+  }
+
   void processBarrelOnlyWithCollSkimmed(MyEventsVtxCovSelected const& events,
                                         soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                                         MyBarrelTracksWithCovWithAmbiguitiesWithColl const& barrelTracks)
@@ -2015,6 +2035,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmed, "Run barrel only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithCollSkimmed, "Run barrel only pairing, with skimmed tracks and with collision information", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedNoCov, "Run barrel only pairing (no covariances), with skimmed tracks and with collision information", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedNoCovWithMultExtra, "Run barrel only pairing (no covariances), with skimmed tracks, with collision information, with MultsExtra", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmed, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmedMultExtra, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingAllSkimmed, "Run all types of mixed pairing, with skimmed tracks/muons", false);
