@@ -592,7 +592,7 @@ struct strangederivedbuilder {
       }
 
       strangeMCColl(mccollision.posX(), mccollision.posY(), mccollision.posZ(),
-                    mccollision.impactParameter(), mccollision.eventPlaneAngle());
+                    mccollision.impactParameter(), mccollision.eventPlaneAngle(), mccollision.getGeneratorId());
       strangeMCMults(mccollision.multMCFT0A(), mccollision.multMCFT0C(),
                      mccollision.multMCNParticlesEta05(),
                      mccollision.multMCNParticlesEta08(),
