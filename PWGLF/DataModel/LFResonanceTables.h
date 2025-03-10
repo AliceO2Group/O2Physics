@@ -23,6 +23,7 @@
 #define PWGLF_DATAMODEL_LFRESONANCETABLES_H_
 
 #include <cmath>
+#include <algorithm>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
@@ -330,6 +331,148 @@ DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,
                            });
 
 } // namespace resodaughter
+
+namespace resodmciroaughter
+{
+// micro track for primary pion
+
+/// @brief Save TPC & TOF nSigma info with 8-bit variable
+struct PidNSigma {
+  uint8_t flag;
+
+  /// @brief Constructor: Convert TPC & TOF values and save
+  PidNSigma(float TPCnSigma, float TOFnSigma, bool hasTOF)
+  {
+    uint8_t TPCencoded = encodeNSigma(TPCnSigma);
+    uint8_t TOFencoded = hasTOF ? encodeNSigma(TOFnSigma) : 0x0F; // If TOF is not available, set all 4 bits to 1
+    flag = (TPCencoded << 4) | TOFencoded;                        // Upper 4 bits = TPC, Lower 4 bits = TOF
+  }
+
+  /// @brief Encode 0.2 sigma interval to 0~10 range
+  static uint8_t encodeNSigma(float nSigma)
+  {
+    float encoded = std::abs((nSigma - 1.5) / 0.2);   // Convert to 0~10 range
+    encoded = std::min(std::max(encoded, 0.f), 10.f); // Clamp to 0~10 range
+    return (uint8_t)round(encoded);
+  }
+
+  /// @brief Decode 0~10 value to original 1.5~3.5 sigma range
+  static float decodeNSigma(uint8_t encoded)
+  {
+    encoded = std::min(encoded, (uint8_t)10); // Safety check, should not be needed if encode is used properly
+    return (encoded * 0.2) + 1.5;
+  }
+
+  /// @brief Check if TOF info is available
+  bool hasTOF() const
+  {
+    return (flag & 0x0F) != 0x0F; // Check if lower 4 bits are not all 1
+  }
+
+  /// @brief Restore TPC nSigma value
+  static float getTPCnSigma(uint8_t encoded)
+  {
+    return decodeNSigma((encoded >> 4) & 0x0F); // Extract upper 4 bits
+  }
+
+  /// @brief Restore TOF nSigma value (if not available, return NAN)
+  static float getTOFnSigma(uint8_t encoded)
+  {
+    uint8_t TOFencoded = encoded & 0x0F; // Extract lower 4 bits
+    return (TOFencoded == 0x0F) ? NAN : decodeNSigma(TOFencoded);
+  }
+
+  /// @brief Operator to convert to uint8_t (automatic conversion support)
+  operator uint8_t() const
+  {
+    return flag;
+  }
+};
+
+DECLARE_SOA_COLUMN(PidNSigmaPiFlag, pidNSigmaPiFlag, uint8_t);        //! Pid flag for the track as Pion
+DECLARE_SOA_COLUMN(PidNSigmaKaFlag, pidNSigmaKaFlag, uint8_t);        //! Pid flag for the track as Kaon
+DECLARE_SOA_COLUMN(PidNSigmaPrFlag, pidNSigmaPrFlag, uint8_t);        //! Pid flag for the track as Proton
+DECLARE_SOA_COLUMN(TrackSelectionFlags, trackSelectionFlags, int8_t); //! Track selection flags
+DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,
+                           [](uint8_t pidNSigmaFlags) -> bool {
+                             return (pidNSigmaFlags & 0x0F) != 0x0F;
+                           });
+
+/// @brief DCAxy & DCAz selection flag
+struct ResoMicroTrackSelFlag {
+  uint8_t flag; // Flag for DCAxy & DCAz selection (8-bit variable)
+
+  /// @brief Default constructor
+  ResoMicroTrackSelFlag()
+  {
+    flag = 0x00;
+  }
+
+  /// @brief Constructor: Convert DCAxy/DCAz and save (default 1~15 values)
+  ResoMicroTrackSelFlag(float DCAxy, float DCAz)
+  {
+    uint8_t DCAxyEncoded = encodeDCA(DCAxy);
+    uint8_t DCAzEncoded = encodeDCA(DCAz);
+    flag = (DCAxyEncoded << 4) | DCAzEncoded; // Upper 4 bits = DCAxy, Lower 4 bits = DCAz
+  }
+
+  /// @brief Convert DCA to 1~15 steps (0 value is not used)
+  static uint8_t encodeDCA(float DCA)
+  {
+    for (uint8_t i = 1; i < 15; i++) {
+      if (DCA < i * 0.1f)
+        return i;
+    }
+    return 15;
+  }
+
+  /// @brief Operator to convert to `uint8_t` (for SOA storage)
+  operator uint8_t() const
+  {
+    return flag;
+  }
+
+  /// @brief Get DCAxy value
+  uint8_t getDCAxyFlag() const
+  {
+    return (flag >> 4) & 0x0F; // Extract upper 4 bits
+  }
+
+  /// @brief Get DCAz value
+  uint8_t getDCAzFlag() const
+  {
+    return flag & 0x0F; // Extract lower 4 bits
+  }
+
+  /// @brief Apply DCAxy tight cut (0 value)
+  void setDCAxy0()
+  {
+    flag &= 0x0F; // Set DCAxy to 0 (delete upper 4 bits)
+  }
+
+  /// @brief Apply DCAz tight cut (0 value)
+  void setDCAz0()
+  {
+    flag &= 0xF0; // Set DCAz to 0 (delete lower 4 bits)
+  }
+  /// @brief Decode DCAxy
+  static float decodeDCAxy(uint8_t flag_saved)
+  {
+    uint8_t DCAxyFlag = (flag_saved >> 4) & 0x0F;      // Extract upper 4 bits
+    return (DCAxyFlag == 0) ? 0.0f : DCAxyFlag * 0.1f; // Tight cut(0) is 0.0, otherwise flag * 0.1 cm
+  }
+
+  /// @brief Decode DCAz
+  static float decodeDCAz(uint8_t flag_saved)
+  {
+    uint8_t DCAzFlag = flag_saved & 0x0F;            // Extract lower 4 bits
+    return (DCAzFlag == 0) ? 0.0f : DCAzFlag * 0.1f; // Tight cut(0) is 0.0, otherwise flag * 0.1 cm
+  }
+};
+
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
+} // namespace resodmciroaughter
+
 DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionId,
@@ -372,6 +515,32 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   resodaughter::HasTOF<resodaughter::TrackFlags>,
                   resodaughter::Sign<resodaughter::TrackFlags>);
 using ResoTrack = ResoTracks::iterator;
+
+DECLARE_SOA_TABLE(ResoMicroTracks, "AOD", "RESOMICROTRACK",
+                  o2::soa::Index<>,
+                  resodaughter::ResoCollisionId,
+                  resodaughter::TrackId,
+                  resodaughter::Px,
+                  resodaughter::Py,
+                  resodaughter::Pz,
+                  resodmciroaughter::PidNSigmaPiFlag,
+                  resodmciroaughter::PidNSigmaKaFlag,
+                  resodmciroaughter::PidNSigmaPrFlag,
+                  resodmciroaughter::TrackSelectionFlags,
+                  resodaughter::TrackFlags,
+                  // Dynamic columns
+                  resodmciroaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
+                  resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::PassedITSRefit<resodaughter::TrackFlags>,
+                  resodaughter::PassedTPCRefit<resodaughter::TrackFlags>,
+                  resodaughter::IsGlobalTrackWoDCA<resodaughter::TrackFlags>,
+                  resodaughter::IsGlobalTrack<resodaughter::TrackFlags>,
+                  resodaughter::IsPrimaryTrack<resodaughter::TrackFlags>,
+                  resodaughter::IsPVContributor<resodaughter::TrackFlags>,
+                  resodmciroaughter::HasTOF<resodmciroaughter::PidNSigmaPiFlag>,
+                  resodaughter::Sign<resodaughter::TrackFlags>);
+using ResoMicroTrack = ResoMicroTracks::iterator;
 
 // For DF mixing study
 DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDF",
