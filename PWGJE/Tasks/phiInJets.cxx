@@ -20,7 +20,7 @@
 #include <TLorentzVector.h>
 #include <TVector2.h>
 #include <algorithm>
-#include "Framework/Logger.h"
+#include <iostream>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
