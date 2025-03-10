@@ -488,7 +488,7 @@ struct f0980pbpbanalysis {
     histos.fill(HIST("QA/Vz"), collision.posZ(), 1.0);
 
     fillHistograms<false>(collision, tracks, 2); // second order
-  };
+  }
   PROCESS_SWITCH(f0980pbpbanalysis, processData, "Process Event for data", true);
 };
 
