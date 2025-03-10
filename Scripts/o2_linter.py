@@ -163,6 +163,7 @@ class TestSpec(ABC):
     suffixes: "list[str]" = []  # suffixes of files to test
     per_line = True  # Test lines separately one by one.
     n_issues = 0  # issue counter
+    n_disabled = 0  # counter of disabled issues
 
     def file_matches(self, path: str) -> bool:
         """Test whether the path matches the pattern for files to test."""
@@ -175,7 +176,10 @@ class TestSpec(ABC):
                 return False
             line = line[(line.index(prefix) + len(prefix)) :]  # Strip away part before prefix.
         if self.name in line:
-            return True
+            self.n_disabled += 1
+            # Look for a comment with a reason for disabling.
+            if re.search(r" \([\w\s]{3,}\)", line):
+                return True
         return False
 
     def test_line(self, line: str) -> bool:
@@ -225,7 +229,7 @@ class TestIOStream(TestSpec):
     """Detect included iostream."""
 
     name = "include-iostream"
-    message = "Including iostream is discouraged. Use O2 logging instead."
+    message = "Do not include iostream. Use O2 logging instead."
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
@@ -238,7 +242,7 @@ class TestUsingStd(TestSpec):
     """Detect importing names from the std namespace."""
 
     name = "import-std-name"
-    message = "Importing names from the std namespace is not allowed in headers."
+    message = "Do not import names from the std namespace in headers."
     suffixes = [".h"]
 
     def test_line(self, line: str) -> bool:
@@ -251,7 +255,7 @@ class TestUsingDirectives(TestSpec):
     """Detect using directives in headers."""
 
     name = "using-directive"
-    message = "Using directives are not allowed in headers."
+    message = "Do not put using directives at global scope in headers."
     suffixes = [".h"]
 
     def test_line(self, line: str) -> bool:
@@ -308,7 +312,7 @@ class TestROOT(TestSpec):
     """Detect unnecessary use of ROOT entities."""
 
     name = "root-entity"
-    message = "Consider replacing ROOT entities with equivalents from standard C++ or from O2."
+    message = "Replace ROOT entities with equivalents from standard C++ or from O2."
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -329,14 +333,14 @@ class TestPi(TestSpec):
     """Detect use of external pi."""
 
     name = "external-pi"
-    message = "Consider using the PI constant (and its multiples and fractions) defined in o2::constants::math."
+    message = "Use the PI constant (and its multiples and fractions) defined in o2::constants::math."
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
         return super().file_matches(path) and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
-        pattern = r"M_PI|TMath::(Two)?Pi"
+        pattern = r"[^\w]M_PI|TMath::(Two)?Pi"
         if is_comment_cpp(line):
             return True
         line = remove_comment_cpp(line)
@@ -347,7 +351,7 @@ class TestTwoPiAddSubtract(TestSpec):
     """Detect adding/subtracting of 2 pi."""
 
     name = "two-pi-add-subtract"
-    message = "Consider using RecoDecay::constrainAngle to restrict angle to a given range."
+    message = "Use RecoDecay::constrainAngle to restrict angle to a given range."
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
@@ -366,14 +370,14 @@ class TestPiMultipleFraction(TestSpec):
     """Detect multiples/fractions of pi for existing equivalent constants."""
 
     name = "pi-multiple-fraction"
-    message = "Consider using multiples/fractions of PI defined in o2::constants::math."
+    message = "Use multiples/fractions of PI defined in o2::constants::math."
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
         pattern_pi = r"(M_PI|TMath::(Two)?Pi\(\)|(((o2::)?constants::)?math::)?(Two)?PI)"
         pattern_multiple = r"(2(\.0*f?)?|0\.2?5f?) \* "  # * 2, 0.25, 0.5
         pattern_fraction = r" / ((2|3|4)([ ,;\)]|\.0*f?))"  # / 2, 3, 4
-        pattern = rf"{pattern_multiple}{pattern_pi}|{pattern_pi}{pattern_fraction}"
+        pattern = rf"{pattern_multiple}{pattern_pi}[^\w]|{pattern_pi}{pattern_fraction}"
         if is_comment_cpp(line):
             return True
         line = remove_comment_cpp(line)
@@ -385,8 +389,8 @@ class TestPdgDatabase(TestSpec):
 
     name = "pdg/database"
     message = (
-        "Direct use of TDatabasePDG is not allowed. "
-        "Use o2::constants::physics::Mass... or Service<o2::framework::O2DatabasePDG>."
+        "Do not use TDatabasePDG directly. "
+        "Use o2::constants::physics::Mass... or Service<o2::framework::O2DatabasePDG> instead."
     )
     suffixes = [".h", ".cxx"]
 
@@ -413,7 +417,7 @@ class TestPdgCode(TestSpec):
         line = remove_comment_cpp(line)
         if re.search(r"->(GetParticle|Mass)\([+-]?[0-9]+\)", line):
             return False
-        match = re.search(r"[Pp][Dd][Gg][\w]* ={1,2} [+-]?([0-9]+);", line)
+        match = re.search(r"[Pp][Dd][Gg].* !?={1,2} [+-]?([0-9]+)", line)
         if match:
             code = match.group(1)
             if code not in ("0", "1", "999"):
@@ -425,9 +429,7 @@ class TestPdgMass(TestSpec):
     """Detect unnecessary call of Mass() for a known PDG code."""
 
     name = "pdg/known-mass"
-    message = (
-        "Consider using o2::constants::physics::Mass... instead of calling a database method for a known PDG code."
-    )
+    message = "Use o2::constants::physics::Mass... instead of calling a database method for a known PDG code."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -446,7 +448,7 @@ class TestLogging(TestSpec):
     """Detect non-O2 logging."""
 
     name = "logging"
-    message = "Consider using O2 logging (LOG, LOGF, LOGP)."
+    message = "Use O2 logging (LOG, LOGF, LOGP)."
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -694,6 +696,8 @@ class TestNameFunctionVariable(TestSpec):
             "namespace",
             "struct",
             "class",
+            "explicit",
+            "concept",
         ):
             return True
         if len(words) > 2 and words[1] in ("typename", "class", "struct"):
@@ -792,6 +796,8 @@ class TestNameConstant(TestSpec):
             constant_name = constant_name[: constant_name.index("[")]
         if "::" in constant_name:  # Remove the class prefix for methods.
             constant_name = constant_name.split("::")[-1]
+        if "#" in constant_name:  # Remove "#" for strings in macros.
+            constant_name = constant_name[: constant_name.index("#")]
         # The actual test comes here.
         if constant_name.startswith("k") and len(constant_name) > 1:  # exception for special constants
             constant_name = constant_name[1:]  # test the name without "k"
@@ -822,6 +828,10 @@ class TestNameColumn(TestSpec):
         # return True
         if column_type_name[0] == "_":  # probably a macro variable
             return True
+        if "#" in column_type_name:  # Remove "#" for strings in macros.
+            column_type_name = column_type_name[: column_type_name.index("#")]
+        if "#" in column_getter_name:  # Remove "#" for strings in macros.
+            column_getter_name = column_getter_name[: column_getter_name.index("#")]
         # The actual test comes here.
         if not is_upper_camel_case(column_type_name):
             return False
@@ -858,6 +868,8 @@ class TestNameTable(TestSpec):
             # print(f"Got versioned table \"{table_type_name}\", version {table_version}")
         if table_type_name[0] == "_":  # probably a macro variable
             return True
+        if "#" in table_type_name:  # Remove "#" for strings in macros.
+            table_type_name = table_type_name[: table_type_name.index("#")]
         # The actual test comes here.
         return is_upper_camel_case(table_type_name)
 
@@ -888,16 +900,16 @@ class TestNameType(TestSpec):
     """Test names of defined types."""
 
     name = "name/type"
-    message = "Use UpperCamelCase for names of defined types."
+    message = "Use UpperCamelCase for names of defined types (including concepts)."
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
-        if not (match := re.match(r"using (\w+) = ", line)):
+        if not (match := re.match(r"(using|concept) (\w+) = ", line)):
             return True
         # Extract type name.
-        type_name = match.group(1)
+        type_name = match.group(2)
         # The actual test comes here.
         return is_upper_camel_case(type_name)
 
@@ -1193,8 +1205,13 @@ class TestNameFileWorkflow(TestSpec):
     def test_file(self, path: str, content) -> bool:
         file_name = os.path.basename(path).rstrip(".cxx")
         base_struct_name = f"{file_name[0].upper()}{file_name[1:]}"  # expected base of struct names
-        if "PWGHF/" in path:
-            base_struct_name = "Hf" + base_struct_name
+        if match := re.search("PWG([A-Z]{2})/", path):
+            name_pwg = match.group(1)
+            prefix_pwg = name_pwg.capitalize()
+            if name_pwg in ("HF"):
+                base_struct_name = rf"{prefix_pwg}{base_struct_name}"  # mandatory PWG prefix
+            else:
+                base_struct_name = rf"({prefix_pwg})?{base_struct_name}"  # optional PWG prefix
         # print(f"For file {file_name} expecting to find {base_struct_name}.")
         struct_names = []  # actual struct names in the file
         for line in content:
@@ -1204,13 +1221,13 @@ class TestNameFileWorkflow(TestSpec):
                 continue
             # Extract struct name.
             words = line.split()
-            if not words[1].isalnum():  # "struct : ..."
+            if not words[1].isidentifier():  # "struct : ..."
                 continue
             struct_name = words[1]
             struct_names.append(struct_name)
         # print(f"Found structs: {struct_names}.")
         for struct_name in struct_names:
-            if struct_name.startswith(base_struct_name):
+            if re.match(base_struct_name, struct_name):
                 return True
         return False
 
@@ -1486,9 +1503,12 @@ def main():
     # Report results per test.
     print("\nResults per test")
     len_max = max(len(name) for name in test_names)
-    print(f"test{' ' * (len_max - len('test'))}\tissues\tbad files")
+    print(f"test{' ' * (len_max - len('test'))}\tissues\tdisabled\tbad files")
     for test in tests:
-        print(f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{n_files_bad[test.name]}")
+        print(
+            f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}"
+            f"\t\t{n_files_bad[test.name]}"
+        )
 
     # Report global result.
     title_result = "O2 linter result"
@@ -1501,8 +1521,8 @@ def main():
     else:
         msg_result = "Issues have been found."
         msg_disable = (
-            f'You can disable a test for a line by adding a comment with "{prefix_disable}"'
-            " followed by the name of the test."
+            f'Exceptionally, you can disable a test for a line by adding a comment with "{prefix_disable}"'
+            " followed by the name of the test and parentheses with a reason for the exception."
         )
         if github_mode:
             print(f"::error title={title_result}::{msg_result}")
