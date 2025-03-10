@@ -366,6 +366,7 @@ struct McSGCandProducer {
   Produces<aod::UDMcTrackLabels> outputMcTrackLabels;
 
   // save all McTruth, even if the collisions is not reconstructed
+  Configurable<std::vector<int>> generatorIds{"generatorIds", std::vector<int>{-1}, "MC generatorIds to process"};
   Configurable<bool> saveAllMcCollisions{"saveAllMcCollisions", true, "save all McCollisions"};
 
   using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
@@ -555,6 +556,7 @@ struct McSGCandProducer {
 
     // loop over McCollisions and UDCCs simultaneously
     auto mccol = mccols.iteratorAt(0);
+    auto mcOfInterest = std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) != generatorIds->end();
     auto lastmccol = mccols.iteratorAt(mccols.size() - 1);
     auto mccolAtEnd = false;
 
@@ -598,7 +600,8 @@ struct McSGCandProducer {
 
         // If the sgcand has an associated McCollision then the McCollision and all associated
         // McParticles are saved
-        if (mcsgId >= 0) {
+        // but only consider generated events of interest
+        if (mcsgId >= 0 && mcOfInterest) {
           if (mcColIsSaved.find(mcsgId) == mcColIsSaved.end()) {
             if (verboseInfoMC)
               LOGF(info, "  Saving McCollision %d", mcsgId);
@@ -661,7 +664,8 @@ struct McSGCandProducer {
           LOGF(info, "Doing case 2");
 
         // update UDMcCollisions and UDMcParticles
-        if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
+        // but only consider generated events of interest
+        if (mcOfInterest && mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
           if (verboseInfoMC)
             LOGF(info, "  Saving McCollision %d", mccolId);
           // update UDMcCollisions
@@ -676,6 +680,7 @@ struct McSGCandProducer {
         // advance mccol
         if (mccol != lastmccol) {
           mccol++;
+          mcOfInterest = std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) != generatorIds->end();
           mccolId = mccol.globalIndex();
         } else {
           mccolAtEnd = true;
