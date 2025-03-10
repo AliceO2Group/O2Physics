@@ -31,11 +31,15 @@
 #include "EMCALBase/Geometry.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/filterTables.h"
 
-namespace o2::aod::pwgem::photonmeson::utils::hnmutilities
+using namespace o2::aod::pwgem::photonmeson;
+
+// -------> Struct to store photons from EMC clusters or V0s
+namespace o2::aod::pwgem::photonmeson::hnmutilities
 {
 struct Photon {
   Photon(float px, float py, float pz, bool isFromConversion) : px(px), py(py), pz(pz), pt(std::sqrt(px * px + py * py)), isFromConversion(isFromConversion)
@@ -64,21 +68,7 @@ struct Photon {
   bool isFromConversion;
 };
 
-namespace ReconstructionType
-{
-enum ReconstructionType {
-  kPCM = 0,
-  kPCMEMC = 1,
-  kEMC = 2
-};
-} // namespace ReconstructionType
-
-enum MassCorrectionType {
-  kNoHNMMassCorrection = 0,
-  kSubDeltaPi0 = 1,
-  kSubLambda = 2
-};
-
+// -------> Struct to store gamma gamma pairs (pi0 or eta meson candidates)
 struct GammaGammaPair {
   GammaGammaPair(Photon p1, Photon p2) : p1(p1), p2(p2)
   {
@@ -96,6 +86,13 @@ struct GammaGammaPair {
   float pT() const { return vGG.Pt(); }
 };
 
+// -------> Enum to specify how the heavy neutral meson mass should be corrected based on the PDG mass of its light neutral meson decay daughter
+enum MassCorrectionType {
+  kNoHNMMassCorrection = 0,
+  kSubDeltaPi0 = 1,
+  kSubLambda = 2
+};
+
 struct HeavyNeutralMeson {
   HeavyNeutralMeson(GammaGammaPair* gg, float eTracks, float pxTracks, float pyTracks, float pzTracks) : gg(gg)
   {
@@ -109,11 +106,13 @@ struct HeavyNeutralMeson {
   {
     float massHNM = vHeavyNeutralMeson.M();
     switch (massCorrectionType) {
-      case kSubDeltaPi0:
+      case kNoHNMMassCorrection: // No mass correction
+        break;
+      case kSubDeltaPi0: // Subtract the mass difference of the reconstructed light neutral meson mass to the PDG mass
         massHNM -= gg->m();
         massHNM += (gg->isPi0 ? constants::physics::MassPi0 : 0.547862);
         break;
-      case kSubLambda:
+      case kSubLambda: // Subtract an opening angle dependent mass correction (see https://arxiv.org/abs/2502.19956 for details)
         LOGF(warning, "SubLambdaMassCorrection not yet implemented!");
         break;
       default:
@@ -124,7 +123,7 @@ struct HeavyNeutralMeson {
   float pT() const { return vHeavyNeutralMeson.Pt(); }
 };
 
-/// \brief Process light neutral meson candidates (pi0 or eta), calculate invariant mass and pT and fill histograms
+/// \brief Reconstruct light neutral mesons from EMC clusters and V0s and fill them into the vGGs vector
 template <typename C, typename V>
 void reconstructGGs(C clusters, V v0s, std::vector<GammaGammaPair>& vGGs)
 {
@@ -141,17 +140,18 @@ void reconstructGGs(C clusters, V v0s, std::vector<GammaGammaPair>& vGGs)
     for (unsigned int ig2 = ig1 + 1; ig2 < vPhotons.size(); ++ig2) {
       GammaGammaPair lightMeson(vPhotons[ig1], vPhotons[ig2]); // build lightMeson from photons
       if (vPhotons[ig1].isFromConversion && vPhotons[ig2].isFromConversion)
-        lightMeson.setReconstructionType(ReconstructionType::kPCM);
+        lightMeson.setReconstructionType(photonpair::kPCMPCM);
       else if (!vPhotons[ig1].isFromConversion && !vPhotons[ig2].isFromConversion)
-        lightMeson.setReconstructionType(ReconstructionType::kEMC);
+        lightMeson.setReconstructionType(photonpair::kEMCEMC);
       else
-        lightMeson.setReconstructionType(ReconstructionType::kPCMEMC);
+        lightMeson.setReconstructionType(photonpair::kPCMEMC);
 
       vGGs.push_back(lightMeson);
     }
   }
 }
 
+/// \brief Reconstruct heavy neutral mesons from tracks and GG candidates and fill them into the vHNMs vector
 template <typename Track>
 void reconstructHeavyNeutralMesons(Track const& tracks, std::vector<GammaGammaPair>& vGGs, std::vector<HeavyNeutralMeson>& vHNMs)
 {
@@ -170,6 +170,6 @@ void reconstructHeavyNeutralMesons(Track const& tracks, std::vector<GammaGammaPa
   }
 }
 
-} // namespace o2::aod::pwgem::photonmeson::utils::hnmutilities
+} // namespace o2::aod::pwgem::photonmeson::hnmutilities
 
 #endif // PWGEM_PHOTONMESON_UTILS_HNMUTILITIES_H_
