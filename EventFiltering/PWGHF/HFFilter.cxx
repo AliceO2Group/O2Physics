@@ -109,9 +109,10 @@ struct HfFilter { // Main struct for HF triggers
 
   // parameters for resonance triggers
   Configurable<LabeledArray<float>> cutsGammaK0sLambda{"cutsGammaK0sLambda", {cutsV0s[0], 1, 6, labelsEmpty, labelsColumnsV0s}, "Selections for V0s (gamma, K0s, Lambda) for D+V0 triggers"};
-  Configurable<LabeledArray<float>> cutsPtDeltaMassCharmReso{"cutsPtDeltaMassCharmReso", {cutsCharmReso[0], 3, 12, labelsRowsDeltaMassCharmReso, labelsColumnsDeltaMassCharmReso}, "pt (GeV/c) and invariant-mass delta (GeV/c2) for charm hadron resonances"};
+  Configurable<LabeledArray<float>> cutsPtDeltaMassCharmReso{"cutsPtDeltaMassCharmReso", {cutsCharmReso[0], 3, 13, labelsRowsDeltaMassCharmReso, labelsColumnsDeltaMassCharmReso}, "pt (GeV/c) and invariant-mass delta (GeV/c2) for charm hadron resonances"};
   Configurable<bool> keepAlsoWrongDmesLambdaPairs{"keepAlsoWrongDmesLambdaPairs", true, "flat go keep also wrong sign D+Lambda pairs"};
   Configurable<bool> keepAlsoWrongDmesProtonPairs{"keepAlsoWrongDmesProtonPairs", true, "flat go keep also wrong sign D0p pairs"};
+  Configurable<bool> keepAlsoWrongDstarMesProtonPairs{"keepAlsoWrongDstarMesProtonPairs", true, "flat go keep also wrong sign D*0p pairs"};
 
   // parameters for charm baryons to Xi bachelor
   Configurable<LabeledArray<float>> cutsXiCascades{"cutsXiCascades", {cutsCascades[0], 1, 8, labelsEmpty, labelsColumnsCascades}, "Selections for cascades (Xi) for Xi+bachelor triggers"};
@@ -172,7 +173,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmProtonKstarDistr{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmDeuteronKstarDistr{};
   std::array<std::shared_ptr<TH2>, nTotBeautyParts> hMassVsPtB{};
-  std::array<std::shared_ptr<TH2>, kNCharmParticles + 21> hMassVsPtC{}; // +9 for resonances (D*+, D*0, Ds*+, Ds1+, Ds2*+, Xic+* right sign, Xic+* wrong sign, Xic0* right sign, Xic0* wrong sign) +2 for SigmaC (SigmaC++, SigmaC0) +2 for SigmaCK pairs (SigmaC++K-, SigmaC0K0s) +3 for charm baryons (Xi+Pi, Xi+Ka, Xi+Pi+Pi) + JPsi + 3 for charm baryons (D0+p, D0+pWrongSign. D*0p)
+  std::array<std::shared_ptr<TH2>, kNCharmParticles + 22> hMassVsPtC{}; // +9 for resonances (D*+, D*0, Ds*+, Ds1+, Ds2*+, Xic+* right sign, Xic+* wrong sign, Xic0* right sign, Xic0* wrong sign) +2 for SigmaC (SigmaC++, SigmaC0) +2 for SigmaCK pairs (SigmaC++K-, SigmaC0K0s) +3 for charm baryons (Xi+Pi, Xi+Ka, Xi+Pi+Pi) + JPsi + 4 for charm baryons (D0+p, D0+pWrongSign, D*0p, D*0+pWrongSign)
   std::array<std::shared_ptr<TH2>, 4> hPrDePID;                         // proton TPC, proton TOF, deuteron TPC, deuteron TOF
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreBkg{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
@@ -285,6 +286,7 @@ struct HfFilter { // Main struct for HF triggers
       hMassVsPtC[kNCharmParticles + 20] = registry.add<TH2>("fMassVsPtCharmBaryonToD0PWrongSign", "#it{M} vs. #it{p}_{T} distribution of triggered D^{0}#p wrong sign candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ptAxis, massAxisC[kNCharmParticles + 20]});
       // ThetaC
       hMassVsPtC[kNCharmParticles + 21] = registry.add<TH2>("fMassVsPtCharmBaryonToDstarP", "#it{M} vs. #it{p}_{T} distribution of triggered D^{*0}#p candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ptAxis, massAxisC[kNCharmParticles + 21]});
+      hMassVsPtC[kNCharmParticles + 22] = registry.add<TH2>("fMassVsPtCharmBaryonToDstarPWrongSign", "#it{M} vs. #it{p}_{T} distribution of triggered D^{*0}#p wrong sign candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {ptAxis, massAxisC[kNCharmParticles + 22]});
 
       for (int iBeautyPart{0}; iBeautyPart < kNBeautyParticles; ++iBeautyPart) {
         hMassVsPtB[iBeautyPart] = registry.add<TH2>(Form("fMassVsPt%s", beautyParticleNames[iBeautyPart].data()), Form("#it{M} vs. #it{p}_{T} distribution of triggered %s candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", beautyParticleNames[iBeautyPart].data()), HistType::kTH2D, {ptAxis, massAxisB[iBeautyPart]});
@@ -981,14 +983,41 @@ struct HfFilter { // Main struct for HF triggers
                         }
                         auto pVecReso2Prong = RecoDecay::pVec(pVecDStarCand, pVecProton);
                         auto ptCand = RecoDecay::pt(pVecReso2Prong);
-                        if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 11u)) {
-                          // build D*p candidate
-                          auto massDStarP = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecBachelor, pVecProton}, std::array{massDausD0[0], massDausD0[1], massPi, massProton});
-                          auto massDiffLcReso = massDStarP - massDStarCand;
-                          if (cutsPtDeltaMassCharmReso->get(0u, 11u) < massDiffLcReso && massDiffLcReso < cutsPtDeltaMassCharmReso->get(1u, 11u)) {
-                            if (activateQA) {
-                              hMassVsPtC[kNCharmParticles + 21]->Fill(ptCand, massDiffLcReso);
+                        if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 12u)) {
+                          // build D*0p candidate with the possibility of storing also the other sign hyp.
+                          float massThetacCand{-999.}, massThetacBarCand{-999.};
+                          float massDiffThetacCand{-999.}, massDiffThetacBarCand{-999.};
+                          bool isRightSignThetaC{false}, isRightSignThetaCBar{false};
+                          if (TESTBIT(selD0InMass, 1)) { // Correct hyp: ThetaC -> pD*- -> D0bar\pi-   (Equivalent to trackBachelor.sign() < 0)
+                            massThetacCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecBachelor, pVecProton}, std::array{massDausD0[0], massDausD0[1], massPi, massProton});
+                            massDiffThetacCand = massThetacCand - massDStarCand;
+                            isRightSignThetaC = trackProton.sign() > 0; // right sign if proton
+                          }
+                          if (TESTBIT(selD0InMass, 0)) { // Correct hyp: ThetaCbar -> pD*+ -> pD0\pi+  (Equivalent to trackBachelor.sign() > 0)
+                            massThetacBarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecBachelor, pVecProton}, std::array{massDausD0[0], massDausD0[1], massPi, massProton});
+                            massDiffThetacBarCand = massThetacBarCand - massDStarCand;
+                            isRightSignThetaCBar = trackProton.sign() < 0; // right sign if antiproton
+                          }
+                          bool isGoodThetac = (cutsPtDeltaMassCharmReso->get(0u, 12u) < massDiffThetacCand && massDiffThetacCand < cutsPtDeltaMassCharmReso->get(1u, 12u));
+                          bool isGoodThetacBar = (cutsPtDeltaMassCharmReso->get(0u, 12u) < massDiffThetacBarCand && massDiffThetacBarCand < cutsPtDeltaMassCharmReso->get(1u, 12u));
+
+                          if (activateQA) {
+                            if (isGoodThetac) {
+                              if (isRightSignThetaC) {
+                                hMassVsPtC[kNCharmParticles + 21]->Fill(ptCand, massDiffThetacCand);
+                              } else if (!isRightSignThetaC && keepAlsoWrongDmesProtonPairs) {
+                                hMassVsPtC[kNCharmParticles + 22]->Fill(ptCand, massDiffThetacBarCand);
+                              }
                             }
+                            if (isGoodThetacBar) {
+                              if (isRightSignThetaCBar) {
+                                hMassVsPtC[kNCharmParticles + 21]->Fill(ptCand, massDiffThetacCand);
+                              } else if (!isRightSignThetaCBar && keepAlsoWrongDmesProtonPairs) {
+                                hMassVsPtC[kNCharmParticles + 22]->Fill(ptCand, massDiffThetacBarCand);
+                              }
+                            }
+                          }
+                          if ((isGoodThetac && (isRightSignThetaC || keepAlsoWrongDstarMesProtonPairs)) || (isGoodThetacBar && (isRightSignThetaCBar || keepAlsoWrongDstarMesProtonPairs))) {
                             keepEvent[kPrCharm2P] = true;
                             break;
                           }
@@ -1040,8 +1069,8 @@ struct HfFilter { // Main struct for HF triggers
                 }
               }
             } // end proton loop
-          } // end Lc resonances via D0-proton decays
-        }
+          }
+        } // end Lc resonances via D0-proton decays
 
       } // end loop over 2-prong candidates
 
