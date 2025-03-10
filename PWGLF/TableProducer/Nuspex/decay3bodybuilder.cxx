@@ -476,12 +476,12 @@ struct decay3bodyBuilder {
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(1, "total");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(2, "bach sign/ID");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(3, "not same collision");
-      h3bodyCombinationCounter->GetXaxis()->SetBinLabel(3, "collision VtxZ");
+      h3bodyCombinationCounter->GetXaxis()->SetBinLabel(4, "collision VtxZ");
     }
 
     if (doprocessRun3ReducedEM == true || doprocessRun3Reduced3bodyMixing == true || doprocessRun3Reduced3bodyMixingKFInfo == true) {
       doUpdateGRPMagField = true;
-      registry.add("h3bodyEMCutCounter", "h3bodyEMCutCounter", HistType::kTH1F, {{13, 0.0f, 13.0f}});
+      registry.add("h3bodyEMCutCounter", "h3bodyEMCutCounter", HistType::kTH1D, {{13, 0.0f, 13.0f}});
     }
 
     if (doprocessRun3withKFParticle == true || doprocessRun3withKFParticleStrangenessTracking == true || doprocessRun3withKFParticleReduced == true || doprocessRun3withKFParticleReducedEM == true || doprocessRun3withKFParticleReduced3bodyMixing == true) {
