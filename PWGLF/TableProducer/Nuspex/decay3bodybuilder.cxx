@@ -52,6 +52,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
 
 #ifndef HomogeneousField
 #define HomogeneousField
@@ -309,16 +310,16 @@ struct decay3bodyBuilder {
   // Sets for DCAFitter event mixing
   struct : ConfigurableGroup {
     Configurable<int> nUseMixed{"dcaFitterEMSel.nUseMixed", 5, "nUseMixed"};
-    Configurable<float> mMinPt2V0{"dcaFitterEMSel.mMinPt2V0", 0.5, "mMinPt2V0"};                                                            // minimum pT^2 of V0
-    Configurable<float> mMaxTgl2V0{"dcaFitterEMSel.mMaxTgl2V0", 4, "mMaxTgl2V0"};                                                            // maximum tgLambda^2 of V0
+    Configurable<float> mMinPt2V0{"dcaFitterEMSel.mMinPt2V0", 0.5, "mMinPt2V0"};                                                           // minimum pT^2 of V0
+    Configurable<float> mMaxTgl2V0{"dcaFitterEMSel.mMaxTgl2V0", 4, "mMaxTgl2V0"};                                                          // maximum tgLambda^2 of V0
     Configurable<float> mMaxDCAXY2ToMeanVertex3bodyV0{"dcaFitterEMSel.mMaxDCAXY2ToMeanVertex3bodyV0", 4, "mMaxDCAXY2ToMeanVertex3bodyV0"}; // max DCA^2 of 2 body decay to mean vertex of 3 body decay in XY
-    Configurable<float> minCosPAXYMeanVertex3bodyV0{"dcaFitterEMSel.minCosPAXYMeanVertex3bodyV0", 0.9, "minCosPAXYMeanVertex3bodyV0"};       // min CosPA of 2 body decay to mean vertex of 3 body decay in XY
-    Configurable<float> minCosPA3bodyV0{"dcaFitterEMSel.minCosPA3bodyV0", 0.8, "minCosPA3bodyV0"};                                           // min CosPA of 3 body decay to PV
-    Configurable<float> maxRDiffV03body{"dcaFitterEMSel.maxRDiffV03body", 3, "maxRDiffV03body"};                                             // Maximum difference between virtual V0 and 3body radius
-    Configurable<float> minPt3Body = {"dcaFitterEMSel.minPt3Body", 0.01, ""};                                                                // minimum pT of 3body Vertex
-    Configurable<float> maxTgl3Body = {"dcaFitterEMSel.maxTgl3Body", 2, ""};                                                                 // maximum tgLambda of 3body Vertex
-    Configurable<float> maxDCAXY3Body{"dcaFitterEMSel.maxDCAXY3Body", 0.5, "DCAXY H3L to PV"};                                               // max DCA of 3 body decay to PV in XY
-    Configurable<float> maxDCAZ3Body{"dcaFitterEMSel.maxDCAZ3Body", 1.0, "DCAZ H3L to PV"};                                                  // max DCA of 3 body decay to PV in Z
+    Configurable<float> minCosPAXYMeanVertex3bodyV0{"dcaFitterEMSel.minCosPAXYMeanVertex3bodyV0", 0.9, "minCosPAXYMeanVertex3bodyV0"};     // min CosPA of 2 body decay to mean vertex of 3 body decay in XY
+    Configurable<float> minCosPA3bodyV0{"dcaFitterEMSel.minCosPA3bodyV0", 0.8, "minCosPA3bodyV0"};                                         // min CosPA of 3 body decay to PV
+    Configurable<float> maxRDiffV03body{"dcaFitterEMSel.maxRDiffV03body", 3, "maxRDiffV03body"};                                           // Maximum difference between virtual V0 and 3body radius
+    Configurable<float> minPt3Body = {"dcaFitterEMSel.minPt3Body", 0.01, ""};                                                              // minimum pT of 3body Vertex
+    Configurable<float> maxTgl3Body = {"dcaFitterEMSel.maxTgl3Body", 2, ""};                                                               // maximum tgLambda of 3body Vertex
+    Configurable<float> maxDCAXY3Body{"dcaFitterEMSel.maxDCAXY3Body", 0.5, "DCAXY H3L to PV"};                                             // max DCA of 3 body decay to PV in XY
+    Configurable<float> maxDCAZ3Body{"dcaFitterEMSel.maxDCAZ3Body", 1.0, "DCAZ H3L to PV"};                                                // max DCA of 3 body decay to PV in Z
     // Binning for mixing events
     ConfigurableAxis binsVtxZ{"dcaFitterEMSel.binsVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
     ConfigurableAxis binsMultiplicity{"dcaFitterEMSel.binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
@@ -326,7 +327,7 @@ struct decay3bodyBuilder {
     Configurable<float> maxDeltaPhiColMixing{"dcaFitterEMSel.maxDeltaPhiColMixing", 30., "max difference between Phi of monther particle in case of collision mixing (degree)"};
     // Configurations for mixing decay3bodys
     // Configurable<bool> cfgUseDCAFitterInfo{"dcaFitterEMSel.cfgUseDCAFitterInfo", true, ""}; // if use information from dcatFitter while mixing reduced 3bodys
-    Configurable<int> cfgMix3BodyMethod{"dcaFitterEMSel.cfgMix3BodyMethod", 0, ""};         // 0: bachelor, 1: pion, 2: proton
+    Configurable<int> cfgMix3BodyMethod{"dcaFitterEMSel.cfgMix3BodyMethod", 0, ""}; // 0: bachelor, 1: pion, 2: proton
     ConfigurableAxis bins3BodyRadius{"dcaFitterEMSel.bins3BodyRadius", {VARIABLE_WIDTH, 0.0f, 2.0f, 4.0f, 7.0f, 10.0f, 14.0f, 18.0f, 22.0f, 30.0f, 40.0f}, "Mixing bins - 3body radius"};
     ConfigurableAxis bins3BodyPhi{"dcaFitterEMSel.bins3BodyPhi", {VARIABLE_WIDTH, -3.15, -2.15, -1, 0, 1, 2.15, 3.15}, "Mixing bins - 3body phi"};
     ConfigurableAxis bins3BodyPhiDegree{"dcaFitterEMSel.bins3BodyPhiDegree", {VARIABLE_WIDTH, -180, -120, -60, 0, 60, 120, 180}, "Mixing bins - 3body phi"};
@@ -360,6 +361,7 @@ struct decay3bodyBuilder {
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
   std::array<o2::vertexing::SVertexHypothesis, 2> mV0Hyps; // 0 - Lambda, 1 - AntiLambda
   bool doUpdateGRPMagField = false;                        // if initialize magnetic field for each bc
+  o2::dataformats::VertexBase mMeanVertex{{0., 0., 0.}, {0.1 * 0.1, 0., 0.1 * 0.1, 0., 0., 6. * 6.}};
 
   void init(InitContext&)
   {
@@ -476,7 +478,7 @@ struct decay3bodyBuilder {
 
     if (doprocessRun3ReducedEM == true || doprocessRun3Reduced3bodyMixing == true || doprocessRun3Reduced3bodyMixingKFInfo == true) {
       doUpdateGRPMagField = true;
-      registry.add("h3bodyEMCutCounter", "h3bodyEMCutCounter", HistType::kTH1F, {{12, 0.0f, 12.0f}});
+      registry.add("h3bodyEMCutCounter", "h3bodyEMCutCounter", HistType::kTH1F, {{13, 0.0f, 13.0f}});
     }
 
     if (doprocessRun3withKFParticle == true || doprocessRun3withKFParticleStrangenessTracking == true || doprocessRun3withKFParticleReduced == true || doprocessRun3withKFParticleReducedEM == true || doprocessRun3withKFParticleReduced3bodyMixing == true) {
@@ -870,7 +872,6 @@ struct decay3bodyBuilder {
       for (int i = 0; i < 3; i++) {
         v0pos[i] = v0vtxXYZ[i];
       }
-      float rv0 = std::hypot(v0pos[0], v0pos[1]);
       const int cand = 0;
       if (!fitterV0.isPropagateTracksToVertexDone(cand) && !fitterV0.propagateTracksToVertex(cand)) {
         return;
@@ -884,7 +885,8 @@ struct decay3bodyBuilder {
       trNProp.getPxPyPzGlo(pN);
       std::array<float, 3> pV0 = {pP[0] + pN[0], pP[1] + pN[1], pP[2] + pN[2]};
       // Cut for Virtual V0
-      float dxv0 = v0pos[0], dyv0 = v0pos[1]; // To MeanVertex
+      float dxv0 = v0pos[0] - mMeanVertex.getX(), dyv0 = v0pos[1] - mMeanVertex.getY(), r2v0 = dxv0 * dxv0 + dyv0 * dyv0;
+      float rv0 = std::sqrt(r2v0);
       float pt2V0 = pV0[0] * pV0[0] + pV0[1] * pV0[1], prodXYv0 = dxv0 * pV0[0] + dyv0 * pV0[1], tDCAXY = prodXYv0 / pt2V0;
       if (pt2V0 <= dcaFitterEMSel.mMinPt2V0) {
         return;
@@ -913,17 +915,22 @@ struct decay3bodyBuilder {
 
       float dcaX = dxv0 - pV0[0] * tDCAXY, dcaY = dyv0 - pV0[1] * tDCAXY, dca2 = dcaX * dcaX + dcaY * dcaY;
       float cosPAXY = prodXYv0 / rv0 * ptV0;
-      if (dca2 > dcaFitterEMSel.mMaxDCAXY2ToMeanVertex3bodyV0 || cosPAXY < dcaFitterEMSel.minCosPAXYMeanVertex3bodyV0) {
+      if (dca2 > dcaFitterEMSel.mMaxDCAXY2ToMeanVertex3bodyV0) {
         return;
       }
       registry.fill(HIST("h3bodyEMCutCounter"), 6.5);
+      // FIXME: To be implemented
+      /*if (cosPAXY < dcaFitterEMSel.minCosPAXYMeanVertex3bodyV0) {
+        return;
+      }*/
+      registry.fill(HIST("h3bodyEMCutCounter"), 7.5);
       // CosPA Cut of Virtual V0 not meaningful since the V0 may be based on another PV
       float dx = v0pos[0] - collision.posX(), dy = v0pos[1] - collision.posY(), dz = v0pos[2] - collision.posZ(), prodXYZv0 = dx * pV0[0] + dy * pV0[1] + dz * pV0[2];
       float v0CosPA = prodXYZv0 / std::sqrt((dx * dx + dy * dy + dz * dz) * p2V0);
       if (v0CosPA < dcaFitterEMSel.minCosPA3bodyV0) {
         return;
       }
-      registry.fill(HIST("h3bodyEMCutCounter"), 7.5);
+      registry.fill(HIST("h3bodyEMCutCounter"), 8.5);
 
       // Cut for the compatibility of V0 and 3body vertex
       float r3body = std::hypot(pos[0], pos[1]);
@@ -931,17 +938,17 @@ struct decay3bodyBuilder {
       if (deltaR > dcaFitterEMSel.maxRDiffV03body) {
         return;
       }
-      registry.fill(HIST("h3bodyEMCutCounter"), 8.5);
+      registry.fill(HIST("h3bodyEMCutCounter"), 9.5);
 
       float pt3B = std::hypot(p3B[0], p3B[1]);
       if (pt3B < dcaFitterEMSel.minPt3Body) { // pt cut
         return;
       }
-      registry.fill(HIST("h3bodyEMCutCounter"), 9.5);
+      registry.fill(HIST("h3bodyEMCutCounter"), 10.5);
       if (p3B[2] / pt3B > dcaFitterEMSel.maxTgl3Body) { // tgLambda cut
         return;
       }
-      registry.fill(HIST("h3bodyEMCutCounter"), 10.5);
+      registry.fill(HIST("h3bodyEMCutCounter"), 11.5);
 
       // H3L DCA Check
       const auto& vertexXYZ = fitter3body.getPCACandidatePos();
@@ -951,7 +958,7 @@ struct decay3bodyBuilder {
           std::abs(dca.getY()) > dcaFitterEMSel.maxDCAXY3Body || std::abs(dca.getZ()) > dcaFitterEMSel.maxDCAZ3Body) {
         return;
       }
-      registry.fill(HIST("h3bodyEMCutCounter"), 11.5);
+      registry.fill(HIST("h3bodyEMCutCounter"), 12.5);
     }
 
     VtxCandidate candVtx;
@@ -982,8 +989,7 @@ struct decay3bodyBuilder {
     candVtx.bachelortofNsigma = tofNSigmaBach;
     if (saveInTable) {
       fillVtx3BodyTable(candVtx);
-    }
-    else {
+    } else {
       VtxCandidates.push_back(candVtx);
     }
   }
