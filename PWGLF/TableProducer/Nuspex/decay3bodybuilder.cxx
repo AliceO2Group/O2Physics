@@ -481,7 +481,7 @@ struct decay3bodyBuilder {
 
     if (doprocessRun3ReducedEM == true || doprocessRun3Reduced3bodyMixing == true || doprocessRun3Reduced3bodyMixingKFInfo == true) {
       doUpdateGRPMagField = true;
-      registry.add("h3bodyEMCutCounter", "h3bodyEMCutCounter", HistType::kTH1D, {{13, 0.0f, 13.0f}});
+      registry.add("h3bodyEMCutCounter", "h3bodyEMCutCounter", HistType::kTH1D, {{14, 0.0f, 14.0f}});
     }
 
     if (doprocessRun3withKFParticle == true || doprocessRun3withKFParticleStrangenessTracking == true || doprocessRun3withKFParticleReduced == true || doprocessRun3withKFParticleReducedEM == true || doprocessRun3withKFParticleReduced3bodyMixing == true) {
@@ -935,23 +935,28 @@ struct decay3bodyBuilder {
       }
       registry.fill(HIST("h3bodyEMCutCounter"), 8.5);
 
-      // Cut for the compatibility of V0 and 3body vertex
       float r3body = std::hypot(pos[0], pos[1]);
+      if (r3body < 0.5) {
+        return;
+      }
+      registry.fill(HIST("h3bodyEMCutCounter"), 9.5);
+
+      // Cut for the compatibility of V0 and 3body vertex
       float deltaR = std::abs(rv0 - r3body);
       if (deltaR > dcaFitterEMSel.maxRDiffV03body) {
         return;
       }
-      registry.fill(HIST("h3bodyEMCutCounter"), 9.5);
+      registry.fill(HIST("h3bodyEMCutCounter"), 10.5);
 
       float pt3B = std::hypot(p3B[0], p3B[1]);
       if (pt3B < dcaFitterEMSel.minPt3Body) { // pt cut
         return;
       }
-      registry.fill(HIST("h3bodyEMCutCounter"), 10.5);
+      registry.fill(HIST("h3bodyEMCutCounter"), 11.5);
       if (p3B[2] / pt3B > dcaFitterEMSel.maxTgl3Body) { // tgLambda cut
         return;
       }
-      registry.fill(HIST("h3bodyEMCutCounter"), 11.5);
+      registry.fill(HIST("h3bodyEMCutCounter"), 12.5);
 
       // H3L DCA Check
       const auto& vertexXYZ = fitter3body.getPCACandidatePos();
@@ -961,7 +966,7 @@ struct decay3bodyBuilder {
           std::abs(dca.getY()) > dcaFitterEMSel.maxDCAXY3Body || std::abs(dca.getZ()) > dcaFitterEMSel.maxDCAZ3Body) {
         return;
       }
-      registry.fill(HIST("h3bodyEMCutCounter"), 12.5);
+      registry.fill(HIST("h3bodyEMCutCounter"), 13.5);
     }
 
     VtxCandidate candVtx;
