@@ -328,6 +328,7 @@ struct decay3bodyBuilder {
     // Configurations for mixing decay3bodys
     // Configurable<bool> cfgUseDCAFitterInfo{"dcaFitterEMSel.cfgUseDCAFitterInfo", true, ""}; // if use information from dcatFitter while mixing reduced 3bodys
     Configurable<int> cfgMix3BodyMethod{"dcaFitterEMSel.cfgMix3BodyMethod", 0, ""}; // 0: bachelor, 1: pion, 2: proton
+    Configurable<bool> cfgApplyV0Cut{"dcaFitterEMSel.cfgApplyV0Cut", true, "if apply V0 cut while performing event-mixing"};
     ConfigurableAxis bins3BodyRadius{"dcaFitterEMSel.bins3BodyRadius", {VARIABLE_WIDTH, 0.0f, 2.0f, 4.0f, 7.0f, 10.0f, 14.0f, 18.0f, 22.0f, 30.0f, 40.0f}, "Mixing bins - 3body radius"};
     ConfigurableAxis bins3BodyPhi{"dcaFitterEMSel.bins3BodyPhi", {VARIABLE_WIDTH, -3.15, -2.15, -1, 0, 1, 2.15, 3.15}, "Mixing bins - 3body phi"};
     ConfigurableAxis bins3BodyPhiDegree{"dcaFitterEMSel.bins3BodyPhiDegree", {VARIABLE_WIDTH, -180, -120, -60, 0, 60, 120, 180}, "Mixing bins - 3body phi"};
@@ -888,11 +889,11 @@ struct decay3bodyBuilder {
       float dxv0 = v0pos[0] - mMeanVertex.getX(), dyv0 = v0pos[1] - mMeanVertex.getY(), r2v0 = dxv0 * dxv0 + dyv0 * dyv0;
       float rv0 = std::sqrt(r2v0);
       float pt2V0 = pV0[0] * pV0[0] + pV0[1] * pV0[1], prodXYv0 = dxv0 * pV0[0] + dyv0 * pV0[1], tDCAXY = prodXYv0 / pt2V0;
-      if (pt2V0 <= dcaFitterEMSel.mMinPt2V0) {
+      if (dcaFitterEMSel.cfgApplyV0Cut && pt2V0 <= dcaFitterEMSel.mMinPt2V0) {
         return;
       }
       registry.fill(HIST("h3bodyEMCutCounter"), 3.5);
-      if (pV0[2] * pV0[2] / pt2V0 > dcaFitterEMSel.mMaxTgl2V0) { // tgLambda cut
+      if (dcaFitterEMSel.cfgApplyV0Cut && pV0[2] * pV0[2] / pt2V0 > dcaFitterEMSel.mMaxTgl2V0) { // tgLambda cut
         return;
       }
       registry.fill(HIST("h3bodyEMCutCounter"), 4.5);
@@ -908,26 +909,26 @@ struct decay3bodyBuilder {
           break;
         }
       }
-      if (!good3bodyV0Hyp) {
+      if (dcaFitterEMSel.cfgApplyV0Cut && !good3bodyV0Hyp) {
         return;
       }
       registry.fill(HIST("h3bodyEMCutCounter"), 5.5);
 
       float dcaX = dxv0 - pV0[0] * tDCAXY, dcaY = dyv0 - pV0[1] * tDCAXY, dca2 = dcaX * dcaX + dcaY * dcaY;
       float cosPAXY = prodXYv0 / rv0 * ptV0;
-      if (dca2 > dcaFitterEMSel.mMaxDCAXY2ToMeanVertex3bodyV0) {
+      if (dcaFitterEMSel.cfgApplyV0Cut && dca2 > dcaFitterEMSel.mMaxDCAXY2ToMeanVertex3bodyV0) {
         return;
       }
       registry.fill(HIST("h3bodyEMCutCounter"), 6.5);
-      // FIXME: To be implemented
-      /*if (cosPAXY < dcaFitterEMSel.minCosPAXYMeanVertex3bodyV0) {
+      // FIXME: V0 cosPA cut to be investigated
+      if (dcaFitterEMSel.cfgApplyV0Cut && cosPAXY < dcaFitterEMSel.minCosPAXYMeanVertex3bodyV0) {
         return;
-      }*/
+      }
       registry.fill(HIST("h3bodyEMCutCounter"), 7.5);
-      // CosPA Cut of Virtual V0 not meaningful since the V0 may be based on another PV
+      // Check: CosPA Cut of Virtual V0 may not be used since the V0 may be based on another PV
       float dx = v0pos[0] - collision.posX(), dy = v0pos[1] - collision.posY(), dz = v0pos[2] - collision.posZ(), prodXYZv0 = dx * pV0[0] + dy * pV0[1] + dz * pV0[2];
       float v0CosPA = prodXYZv0 / std::sqrt((dx * dx + dy * dy + dz * dz) * p2V0);
-      if (v0CosPA < dcaFitterEMSel.minCosPA3bodyV0) {
+      if (dcaFitterEMSel.cfgApplyV0Cut && v0CosPA < dcaFitterEMSel.minCosPA3bodyV0) {
         return;
       }
       registry.fill(HIST("h3bodyEMCutCounter"), 8.5);
