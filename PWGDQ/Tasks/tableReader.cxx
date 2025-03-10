@@ -109,6 +109,7 @@ using MyEventsQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExt
 using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
 using MyEventsHashSelectedQvectorExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventVtxCov, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra, aod::ReducedEventsRefFlow>;
 using MyEventsHashSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvectorCentr>;
+using MyEventsVtxCovQvectorMultExtraWithRefFlow = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra, aod::ReducedEventsRefFlow, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID>;
 using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID>;
@@ -134,6 +135,7 @@ constexpr static uint32_t gkEventFillMapWithQvectorCentr = VarManager::ObjTypes:
 constexpr static uint32_t gkEventFillMapWithQvectorCentrMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::CollisionQvect | VarManager::ObjTypes::ReducedEventMultExtra;
 constexpr static uint32_t gkEventFillMapWithCovQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector;
 constexpr static uint32_t gkEventFillMapWithCovQvectorExtraWithRefFlow = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector | VarManager::ObjTypes::ReducedEventQvectorExtra | VarManager::ObjTypes::ReducedEventRefFlow;
+constexpr static uint32_t gkEventFillMapWithCovQvectorMultExtraWithRefFlow = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector | VarManager::ObjTypes::ReducedEventQvectorExtra | VarManager::ObjTypes::ReducedEventRefFlow | VarManager::ObjTypes::ReducedEventMultExtra;
 constexpr static uint32_t gkEventFillMapWithCovQvectorCentr = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::CollisionQvect;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
@@ -287,6 +289,10 @@ struct AnalysisEventSelection {
   {
     runEventSelection<gkEventFillMapWithCovQvectorExtraWithRefFlow>(event);
   }
+  void processSkimmedQVectorMultExtraRef(MyEventsVtxCovQvectorMultExtraWithRefFlow::iterator const& event)
+  {
+    runEventSelection<gkEventFillMapWithCovQvectorMultExtraWithRefFlow>(event);
+  }
   void processDummy(MyEvents&)
   {
     // do nothing
@@ -299,6 +305,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorMultExtra, "Run event selection on DQ skimmed events with Q vector from GFW and MultPV", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorCentrMultExtra, "Run event selection on DQ skimmed events with Q vector from CFW and MultPV", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorExtraRef, "Run event selection on DQ skimmed events with Q vector and subscribing to reference flow table", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorMultExtraRef, "Run event selection on DQ skimmed events with Q vector and subscribing to reference flow table with MultPV", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", false);
   // TODO: Add process functions subscribing to Framework Collision
 };
@@ -457,6 +464,8 @@ struct AnalysisMuonSelection {
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fMuonCuts;
 
+  Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
+
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processDummy")) {
@@ -500,6 +509,26 @@ struct AnalysisMuonSelection {
     uint32_t filterMap = 0;
     int iCut = 0;
 
+    // First loop to get muon multiplicity for single muon cumulants
+    if constexpr (static_cast<bool>(TEventFillMap & VarManager::ObjTypes::ReducedEventQvector)) {
+      int multMuon = 0;
+      for (auto& muon : muons) {
+        filterMap = 0;
+        VarManager::FillTrack<TMuonFillMap>(muon);
+
+        iCut = 0;
+        for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, iCut++) {
+          if ((*cut).IsSelected(VarManager::fgValues)) {
+            filterMap |= (static_cast<uint32_t>(1) << iCut);
+          }
+        }
+        if (static_cast<int>(filterMap) > 0) {
+          multMuon++;
+        }
+      }
+      VarManager::fgValues[VarManager::kMultSingleMuons] = multMuon;
+    }
+
     for (auto& muon : muons) {
       filterMap = 0;
       VarManager::FillTrack<TMuonFillMap>(muon);
@@ -524,12 +553,18 @@ struct AnalysisMuonSelection {
   {
     runMuonSelection<gkEventFillMap, gkMuonFillMap>(event, muons);
   }
+  void processVnSingleMuonCumulantSkimmed(soa::Filtered<MyEventsVtxCovSelectedQvectorExtraWithRefFlow>::iterator const& event, MyMuonTracks const& muons)
+  {
+    VarManager::FillEvent<gkEventFillMapWithCovQvectorExtraWithRefFlow>(event, VarManager::fgValues);
+    runMuonSelection<gkEventFillMapWithCovQvectorExtraWithRefFlow, gkMuonFillMap>(event, muons);
+  }
   void processDummy(MyEvents&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisMuonSelection, processSkimmed, "Run muon selection on DQ skimmed muons", false);
+  PROCESS_SWITCH(AnalysisMuonSelection, processVnSingleMuonCumulantSkimmed, "Run muon selection for single muon cumulant correlators", false);
   PROCESS_SWITCH(AnalysisMuonSelection, processDummy, "Dummy function", false);
 };
 

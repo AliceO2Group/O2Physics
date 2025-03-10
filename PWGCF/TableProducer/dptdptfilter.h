@@ -26,6 +26,7 @@
 #include <fstream>
 #include <locale>
 #include <sstream>
+#include <ranges>
 #include <functional>
 #include <map>
 
@@ -223,9 +224,9 @@ static constexpr o2::aod::track::TrackSelectionFlags::flagtype TrackSelectionDCA
   o2::aod::track::TrackSelectionFlags::kDCAz | o2::aod::track::TrackSelectionFlags::kDCAxy;
 
 int tracktype = 1;
-std::function<float(float)> maxDcaZPtDep{}; // max dca in z axis as function of pT
-
-std::vector<TrackSelection*> trackFilters = {};
+std::vector<TrackSelection*> trackFilters = {};              // the vector of track selectors
+std::vector<std::function<float(float)>> maxDcaZPtDeps = {}; // max dca in z axis as function of pT for each track selector
+TrackSelection* extraTrackFilter = nullptr;
 bool dca2Dcut = false;
 float sharedTpcClusters = 1.0; ///< max fraction of shared TPC clusters
 float maxDCAz = 1e6f;
@@ -256,6 +257,18 @@ inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdat
 
 inline void initializeTrackSelection(TrackSelectionTuneCfg& tune)
 {
+  auto addTrackFilter = [](auto filter, std::function<float(float)> dcaZCutFunc = {}) {
+    trackFilters.push_back(filter);
+    maxDcaZPtDeps.push_back(dcaZCutFunc);
+  };
+  auto highQualityTpcTrack = []() {
+    TrackSelection* tpcTrack = new TrackSelection(getGlobalTrackSelection());
+    tpcTrack->ResetITSRequirements();
+    tpcTrack->SetRequireITSRefit(false);
+    tpcTrack->SetMinNClustersTPC(120);
+    sharedTpcClusters = 0.2;
+    return tpcTrack;
+  };
   switch (tracktype) {
     case 1: { /* Run2 global track */
       TrackSelection* globalRun2 = new TrackSelection(getGlobalTrackSelection());
@@ -264,8 +277,8 @@ inline void initializeTrackSelection(TrackSelectionTuneCfg& tune)
       TrackSelection* globalSDDRun2 = new TrackSelection(getGlobalTrackSelectionSDD());
       globalSDDRun2->SetTrackType(o2::aod::track::Run2Track); // Run 2 track asked by default
       globalSDDRun2->SetMaxChi2PerClusterTPC(2.5f);
-      trackFilters.push_back(globalRun2);
-      trackFilters.push_back(globalSDDRun2);
+      addTrackFilter(globalRun2);
+      addTrackFilter(globalSDDRun2);
     } break;
     case 3: { /* Run3 track */
       TrackSelection* globalRun3 = new TrackSelection(getGlobalTrackSelection());
@@ -277,8 +290,8 @@ inline void initializeTrackSelection(TrackSelectionTuneCfg& tune)
       globalSDDRun3->ResetITSRequirements();
       globalSDDRun3->SetRequireNoHitsInITSLayers({0, 1, 2});
       globalSDDRun3->SetRequireHitsInITSLayers(1, {3});
-      trackFilters.push_back(globalRun3);
-      trackFilters.push_back(globalSDDRun3);
+      addTrackFilter(globalRun3);
+      addTrackFilter(globalSDDRun3);
     } break;
     case 5: { /* Run2 TPC only track */
       TrackSelection* tpcOnly = new TrackSelection;
@@ -290,7 +303,7 @@ inline void initializeTrackSelection(TrackSelectionTuneCfg& tune)
       tpcOnly->SetMaxDcaXY(2.4f);
       maxDCAxy = 2.4;
       dca2Dcut = true;
-      trackFilters.push_back(tpcOnly);
+      addTrackFilter(tpcOnly);
     } break;
     case 7: { /* Run3 TPC only track */
       TrackSelection* tpcOnly = new TrackSelection;
@@ -302,47 +315,72 @@ inline void initializeTrackSelection(TrackSelectionTuneCfg& tune)
       tpcOnly->SetMaxDcaXY(2.4f);
       maxDCAxy = 2.4;
       dca2Dcut = true;
-      trackFilters.push_back(tpcOnly);
+      addTrackFilter(tpcOnly);
+    } break;
+    case 10: { /* Run3 track primary vertex contributor */
+      TrackSelection* globalRun3 = new TrackSelection(getGlobalTrackSelection());
+      globalRun3->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+      globalRun3->ResetITSRequirements();
+      globalRun3->SetRequireHitsInITSLayers(1, {0, 1, 2});
+      TrackSelection* globalSDDRun3 = new TrackSelection(getGlobalTrackSelection());
+      globalSDDRun3->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+      globalSDDRun3->ResetITSRequirements();
+      globalSDDRun3->SetRequireNoHitsInITSLayers({0, 1, 2});
+      globalSDDRun3->SetRequireHitsInITSLayers(1, {3});
+      addTrackFilter(globalRun3);
+      addTrackFilter(globalSDDRun3);
     } break;
     case 30: { /* Run 3 default global track: kAny on 3 IB layers of ITS */
-      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
     } break;
     case 31: { /* Run 3 global track: kTwo on 3 IB layers of ITS */
-      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
     } break;
     case 32: { /* Run 3 global track: kAny on all 7 layers of ITS */
-      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
     } break;
     case 33: { /* Run 3 global track: kAll on all 7 layers of ITS */
-      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
     } break;
     case 40: { /* Run 3 global track: kAny on 3 IB layers of ITS, tighter DCAxy */
-      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
     } break;
     case 41: { /* Run 3 global track: kTwo on 3 IB layers of ITS, tighter DCAxy */
-      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
     } break;
     case 42: { /* Run 3 global track: kAny on all 7 layers of ITS, tighter DCAxy */
-      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
     } break;
     case 43: { /* Run 3 global track: kAll on all 7 layers of ITS, tighter DCAxy */
-      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
     } break;
     case 50: { /* Run 3 global track: kAny on 3 IB layers of ITS, tighter DCAxy, tighter pT dep DCAz */
-      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
-      maxDcaZPtDep = [](float pt) { return 0.004f + 0.013f / pt; };
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)), [](float pt) { return 0.004f + 0.013f / pt; });
     } break;
     case 51: { /* Run 3 global track: kTwo on 3 IB layers of ITS, tighter DCAxy, tighter pT dep DCAz */
-      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
-      maxDcaZPtDep = [](float pt) { return 0.004f + 0.013f / pt; };
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)), [](float pt) { return 0.004f + 0.013f / pt; });
     } break;
     case 52: { /* Run 3 global track: kAny on all 7 layers of ITS, tighter DCAxy, tighter pT dep DCAz */
-      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
-      maxDcaZPtDep = [](float pt) { return 0.004f + 0.013f / pt; };
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)), [](float pt) { return 0.004f + 0.013f / pt; });
     } break;
     case 53: { /* Run 3 global track: kAll on all 7 layers of ITS, tighter DCAxy, tighter pT dep DCAz */
-      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
-      maxDcaZPtDep = [](float pt) { return 0.004f + 0.013f / pt; };
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)), [](float pt) { return 0.004f + 0.013f / pt; });
+    } break;
+    case 60: { /* Run 3 global track: kAny on 3 IB layers of ITS, tighter DCAxy, tighter pT dep DCAz, plus TPC+TOF only tracks */
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)), [](float pt) { return 0.004f + 0.013f / pt; });
+      extraTrackFilter = highQualityTpcTrack();
+    } break;
+    case 61: { /* Run 3 global track: kTwo on 3 IB layers of ITS, tighter DCAxy, tighter pT dep DCAz, plus TPC+TOF only tracks */
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)), [](float pt) { return 0.004f + 0.013f / pt; });
+      extraTrackFilter = highQualityTpcTrack();
+    } break;
+    case 62: { /* Run 3 global track: kAny on all 7 layers of ITS, tighter DCAxy, tighter pT dep DCAz, plus TPC+TOF only tracks */
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)), [](float pt) { return 0.004f + 0.013f / pt; });
+      extraTrackFilter = highQualityTpcTrack();
+    } break;
+    case 63: { /* Run 3 global track: kAll on all 7 layers of ITS, tighter DCAxy, tighter pT dep DCAz, plus TPC+TOF only tracks */
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)), [](float pt) { return 0.004f + 0.013f / pt; });
+      extraTrackFilter = highQualityTpcTrack();
     } break;
     default:
       break;
@@ -368,7 +406,9 @@ inline void initializeTrackSelection(TrackSelectionTuneCfg& tune)
       }
     }
     if (tune.mUseDCAz) {
-      maxDcaZPtDep = [&tune](float) { return tune.mDCAz; };
+      for (auto dcaZCut : maxDcaZPtDeps) { // o2-linter: disable=const-ref-in-for-loop
+        dcaZCut = [&tune](float) { return tune.mDCAz; };
+      }
     }
     if (tune.mUseFractionTpcSharedClusters) {
       sharedTpcClusters = tune.mFractionTpcSharedClusters;
@@ -1154,7 +1194,7 @@ struct TpcExcludeTrack {
   {
     method = kNOEXCLUSION;
   }
-  explicit TpcExcludeTrack(TpcExclusionMethod m)
+  explicit TpcExcludeTrack(TpcExclusionMethod m) // o2-linter: disable=name/function-variable
   {
     switch (m) {
       case kNOEXCLUSION:
@@ -1252,9 +1292,11 @@ inline bool matchTrackType(TrackObject const& track)
            (!track.hasTPC() || ((track.trackCutFlag() & TrackSelectionTPC) == TrackSelectionTPC)) &&
            ((track.trackCutFlag() & TrackSelectionDCA) == TrackSelectionDCA);
   } else {
-    for (auto const& filter : trackFilters) {
+    for (size_t i = 0; i < trackFilters.size(); ++i) {
+      auto const& filter = trackFilters[i];
+      auto const& maxDcaZPtDep = maxDcaZPtDeps[i];
       if (filter->IsSelected(track)) {
-        /* additional track cuts if needed */
+        /* additional more stringent track cuts if needed */
         auto checkDca2Dcut = [&](auto const& track) {
           if (dca2Dcut) {
             if (track.dcaXY() * track.dcaXY() / maxDCAxy / maxDCAxy + track.dcaZ() * track.dcaZ() / maxDCAz / maxDCAz > 1) {
@@ -1276,16 +1318,39 @@ inline bool matchTrackType(TrackObject const& track)
         }
         /* 2D DCA xy-o-z cut */
         if (!checkDca2Dcut(track)) {
-          return false;
+          continue;
         }
         /* shared fraction of TPC clusters */
         if (!(track.tpcFractionSharedCls() < sharedTpcClusters)) {
-          return false;
+          continue;
+        }
+        /* primary vertex contributor */
+        if (tracktype == 10) {
+          if (!track.isPVContributor()) {
+            continue;
+          }
         }
         return true;
       }
     }
-    return false;
+    /* check extra less stringent selections */
+    if (extraTrackFilter != nullptr) {
+      if (extraTrackFilter->IsSelected(track)) {
+        /* shared fraction of TPC clusters */
+        if (!(track.tpcFractionSharedCls() < sharedTpcClusters)) {
+          return false;
+        }
+        /* we require TOF */
+        if (!(track.hasTOF())) {
+          return false;
+        }
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
   }
 }
 
