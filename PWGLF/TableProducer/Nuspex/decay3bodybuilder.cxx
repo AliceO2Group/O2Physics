@@ -311,7 +311,7 @@ struct decay3bodyBuilder {
     Configurable<int> nUseMixed{"dcaFitterEMSel.nUseMixed", 5, "nUseMixed"};
     Configurable<float> mMinPt2V0{"dcaFitterEMSel.mMinPt2V0", 0.5, "mMinPt2V0"};                                                            // minimum pT^2 of V0
     Configurable<float> mMaxTgl2V0{"dcaFitterEMSel.mMaxTgl2V0", 4, "mMaxTgl2V0"};                                                            // maximum tgLambda^2 of V0
-    Configurable<float> mMaxDCAXY2ToMeanVertex3bodyV0{"dcaFitterEMSel.mMaxDCAXY2ToMeanVertex3bodyV0", 0.5, "mMaxDCAXY2ToMeanVertex3bodyV0"}; // max DCA^2 of 2 body decay to mean vertex of 3 body decay in XY
+    Configurable<float> mMaxDCAXY2ToMeanVertex3bodyV0{"dcaFitterEMSel.mMaxDCAXY2ToMeanVertex3bodyV0", 4, "mMaxDCAXY2ToMeanVertex3bodyV0"}; // max DCA^2 of 2 body decay to mean vertex of 3 body decay in XY
     Configurable<float> minCosPAXYMeanVertex3bodyV0{"dcaFitterEMSel.minCosPAXYMeanVertex3bodyV0", 0.9, "minCosPAXYMeanVertex3bodyV0"};       // min CosPA of 2 body decay to mean vertex of 3 body decay in XY
     Configurable<float> minCosPA3bodyV0{"dcaFitterEMSel.minCosPA3bodyV0", 0.8, "minCosPA3bodyV0"};                                           // min CosPA of 3 body decay to PV
     Configurable<float> maxRDiffV03body{"dcaFitterEMSel.maxRDiffV03body", 3, "maxRDiffV03body"};                                             // Maximum difference between virtual V0 and 3body radius
@@ -857,8 +857,7 @@ struct decay3bodyBuilder {
     // additional cut for EM
     if (decay3bodyId == -1) {
       registry.fill(HIST("h3bodyEMCutCounter"), 0.5);
-      // Cut of Virtual not meaningful since the V0 may be based on another PV
-      /*auto v0Track0 = getTrackParCov(t0);
+      auto v0Track0 = getTrackParCov(t0);
       auto v0Track1 = getTrackParCov(t1);
       int nV0 = fitterV0.process(v0Track0, v0Track1);
       if (nV0 == 0) {
@@ -877,6 +876,7 @@ struct decay3bodyBuilder {
         return;
       }
       registry.fill(HIST("h3bodyEMCutCounter"), 2.5);
+
       const auto& trPProp = fitterV0.getTrack(0, cand);
       const auto& trNProp = fitterV0.getTrack(1, cand);
       std::array<float, 3> pP{}, pN{};
@@ -894,6 +894,7 @@ struct decay3bodyBuilder {
         return;
       }
       registry.fill(HIST("h3bodyEMCutCounter"), 4.5);
+
       float p2V0 = pt2V0 + pV0[2] * pV0[2], ptV0 = std::sqrt(pt2V0);
       // apply mass selections
       float p2Pos = pP[0] * pP[0] + pP[1] * pP[1] + pP[2] * pP[2], p2Neg = pN[0] * pN[0] + pN[1] * pN[1] + pN[2] * pN[2];
@@ -916,6 +917,7 @@ struct decay3bodyBuilder {
         return;
       }
       registry.fill(HIST("h3bodyEMCutCounter"), 6.5);
+      // CosPA Cut of Virtual V0 not meaningful since the V0 may be based on another PV
       float dx = v0pos[0] - collision.posX(), dy = v0pos[1] - collision.posY(), dz = v0pos[2] - collision.posZ(), prodXYZv0 = dx * pV0[0] + dy * pV0[1] + dz * pV0[2];
       float v0CosPA = prodXYZv0 / std::sqrt((dx * dx + dy * dy + dz * dz) * p2V0);
       if (v0CosPA < dcaFitterEMSel.minCosPA3bodyV0) {
@@ -929,7 +931,7 @@ struct decay3bodyBuilder {
       if (deltaR > dcaFitterEMSel.maxRDiffV03body) {
         return;
       }
-      registry.fill(HIST("h3bodyEMCutCounter"), 8.5);*/
+      registry.fill(HIST("h3bodyEMCutCounter"), 8.5);
 
       float pt3B = std::hypot(p3B[0], p3B[1]);
       if (pt3B < dcaFitterEMSel.minPt3Body) { // pt cut
