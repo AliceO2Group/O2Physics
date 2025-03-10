@@ -20,6 +20,7 @@
 #include <TLorentzVector.h>
 #include <TVector2.h>
 #include <algorithm>
+
 #include <iostream>
 
 #include "Framework/ASoA.h"
@@ -80,6 +81,8 @@ struct phiInJets {
   Configurable<bool> cfgIsKstar{"cfgIsKstar", false, "Swaps Phi for Kstar analysis"};
   Configurable<bool> cfgDataHists{"cfgDataHists", false, "Enables DataHists"};
   Configurable<bool> cfgMCRecHists{"cfgMCRecHists", false, "Enables MCRecHists"};
+  Configurable<bool> cfgMCRecMBHists{"cfgMCRecMBHists", false, "Enables MCRec MB Hists"};
+  Configurable<bool> cfgMCRecInsideHists{"cfgMCRecInsideHists", false, "Enables MCRec Inside Hists"};
   Configurable<bool> cfgMCGenHists{"cfgMCGenHists", false, "Enables MCGenHists"};
   Configurable<bool> cfgMCGenMATCHEDHists{"cfgMCGenMATCHEDHists", false, "Enables MCGenMATCHEDHists"};
   Configurable<bool> cfgMCRecMATCHEDHists{"cfgMCRecMATCHEDHists", false, "Enables MCRecMATCHEDHists"};
@@ -164,36 +167,24 @@ struct phiInJets {
       JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta", "hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta", kTH2F, {PtAxis, axisEta});
       JEhistos.add("JetVsPhi_REC", "JetVsPhi_REC", kTH2F, {{4000, 0., 200.}, {200, 0, 20.0}});
 
-      JEhistos.add("hMCRecTrue_hUSS", "hMCRecTrue_hUSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRecTrue_hLSS", "hMCRecTrue_hLSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
-
-      JEhistos.add("hMCRec_hUSS", "hMCRec_hUSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRec_hUSS_1D", "hMCRec_hUSS_1D", kTH1F, {MinvAxis});
-      JEhistos.add("hMCRec_hUSS_1D_2_3", "hMCRec_hUSS_1D_2_3", kTH1F, {MinvAxis});
-
-      JEhistos.add("hMCRec_hLSS", "hMCRec_hLSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRec_hLSS_1D", "hMCRec_hLSS_1D", kTH1F, {MinvAxis});
-      JEhistos.add("hMCRec_hLSS_1D_2_3", "hMCRec_hLSS_1D_2_3", kTH1F, {MinvAxis});
-
-      JEhistos.add("hMCRec_hUSS_INSIDE", "hMCRec_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRec_hUSS_INSIDE_1D", "hMCRec_hUSS_INSIDE_1D", kTH1F, {MinvAxis});
-      JEhistos.add("hMCRec_hUSS_INSIDE_1D_2_3", "hMCRec_hUSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
-
-      JEhistos.add("hMCRec_hLSS_INSIDE", "hMCRec_hLSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRec_hLSS_INSIDE_1D", "hMCRec_hLSS_INSIDE_1D", kTH1F, {MinvAxis});
-      JEhistos.add("hMCRec_hLSS_INSIDE_1D_2_3", "hMCRec_hLSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
-
-      JEhistos.add("hMCRecTrue_hUSS_INSIDE", "hMCRecTrue_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRecTrue_hUSS_INSIDE_1D", "hMCRecTrue_hUSS_INSIDE_1D", kTH1F, {MinvAxis});
-      JEhistos.add("hMCRecTrue_hUSS_INSIDE_1D_2_3", "hMCRecTrue_hUSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
-
-      JEhistos.add("hMCRecTrue_hLSS_INSIDE", "hMCRecTrue_hLSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRecTrue_hLSS_INSIDE_1D", "hMCRecTrue_hLSS_INSIDE_1D", kTH1F, {MinvAxis});
-      JEhistos.add("hMCRecTrue_hLSS_INSIDE_1D_2_3", "hMCRecTrue_hLSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
-
-      JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE", "hMCRec_nonmatch_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
-      JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_1D", "hMCRec_nonmatch_hUSS_INSIDE_1D", kTH1F, {MinvAxis});
-      JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3", "hMCRec_nonmatch_hUSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
+      // used for Minv closure tests
+      //  MB
+      if (cfgMCRecMBHists) {
+        JEhistos.add("hMCRec_hUSS", "hMCRec_hUSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
+        JEhistos.add("hMCRec_hLSS", "hMCRec_hLSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
+        JEhistos.add("hMCRecTrue_hUSS", "hMCRecTrue_hUSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
+        JEhistos.add("hMCRecTrue_hLSS", "hMCRecTrue_hLSS", kTH3F, {dRAxis, PtAxis, MinvAxis});
+      }
+      // INSIDE
+      if (cfgMCRecInsideHists) {
+        JEhistos.add("hMCRec_hUSS_INSIDE", "hMCRec_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
+        JEhistos.add("hMCRec_hLSS_INSIDE", "hMCRec_hLSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
+        JEhistos.add("hMCRecTrue_hUSS_INSIDE", "hMCRecTrue_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
+        JEhistos.add("hMCRecTrue_hLSS_INSIDE", "hMCRecTrue_hLSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
+        JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE", "hMCRec_nonmatch_hUSS_INSIDE", kTH3F, {dRAxis, PtAxis, MinvAxis});
+        JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_1D", "hMCRec_nonmatch_hUSS_INSIDE_1D", kTH1F, {MinvAxis});
+        JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3", "hMCRec_nonmatch_hUSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
+      }
     }
 
     if (cfgMCGenHists) {
@@ -723,10 +714,12 @@ struct phiInJets {
         //==================
         // 1.MB REC Closure
         //==================
-        if (originalTrack.sign() * originalTrack2.sign() < 0) {
-          JEhistos.fill(HIST("hMCRec_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
-        } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
-          JEhistos.fill(HIST("hMCRec_hLSS"), 1.0, lResonance.Pt(), lResonance.M());
+        if (cfgMCRecMBHists) {
+          if (originalTrack.sign() * originalTrack2.sign() < 0) {
+            JEhistos.fill(HIST("hMCRec_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
+          } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
+            JEhistos.fill(HIST("hMCRec_hLSS"), 1.0, lResonance.Pt(), lResonance.M());
+          }
         }
         //============================================
         // 2.Check if particle is inside a jet or not
@@ -766,14 +759,15 @@ struct phiInJets {
         //======================
         // 3.INSIDE REC Closure
         //======================
-        if (jetFlag) {
-          if (originalTrack.sign() * originalTrack2.sign() < 0) {
-            JEhistos.fill(HIST("hMCRec_hUSS_INSIDE"), 1.0, lResonance.Pt(), lResonance.M());
-          } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
-            JEhistos.fill(HIST("hMCRec_hLSS_INSIDE"), 1.0, lResonance.Pt(), lResonance.M());
+        if (cfgMCRecInsideHists) {
+          if (jetFlag) {
+            if (originalTrack.sign() * originalTrack2.sign() < 0) {
+              JEhistos.fill(HIST("hMCRec_hUSS_INSIDE"), 1.0, lResonance.Pt(), lResonance.M());
+            } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
+              JEhistos.fill(HIST("hMCRec_hLSS_INSIDE"), 1.0, lResonance.Pt(), lResonance.M());
+            }
           }
         }
-
         // check PID
         if (track.has_mcParticle() && track2.has_mcParticle()) {
           auto part1 = track.mcParticle();
@@ -830,48 +824,52 @@ struct phiInJets {
           //=====================
           // 4.MB True Closure
           //=====================
-          if (originalTrack.sign() * originalTrack2.sign() < 0) {
-            JEhistos.fill(HIST("hMCRecTrue_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
-          } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
-            JEhistos.fill(HIST("hMCRecTrue_hLSS"), 1.0, lResonance.Pt(), lResonance.M());
+          if (cfgMCRecMBHists) {
+            if (originalTrack.sign() * originalTrack2.sign() < 0) {
+              JEhistos.fill(HIST("hMCRecTrue_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
+            } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
+              JEhistos.fill(HIST("hMCRecTrue_hLSS"), 1.0, lResonance.Pt(), lResonance.M());
+            }
           }
-
           //===========================
           // 5.INSIDE REC True Closure
           //===========================
-          if (jetFlag) {
-            if (originalTrack.sign() * originalTrack2.sign() < 0) {
-              JEhistos.fill(HIST("hMCRecTrue_hUSS_INSIDE"), 1.0, lResonance.Pt(), lResonance.M());
-            } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
-              JEhistos.fill(HIST("hMCRecTrue_hLSS_INSIDE"), 1.0, lResonance.Pt(), lResonance.M());
+          if (cfgMCRecInsideHists) {
+            if (jetFlag) {
+              if (originalTrack.sign() * originalTrack2.sign() < 0) {
+                JEhistos.fill(HIST("hMCRecTrue_hUSS_INSIDE"), 1.0, lResonance.Pt(), lResonance.M());
+              } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
+                JEhistos.fill(HIST("hMCRecTrue_hLSS_INSIDE"), 1.0, lResonance.Pt(), lResonance.M());
+              }
             }
           }
-
           if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
             RealPhiCand++;
 
           // Now we do jets
-          if (cfgSingleJet)
-            if (goodjets > 1)
-              jetpt = DistinguishJetsMC(mcd_pt, mcd_phi, mcd_eta, lResonance);
+          if (cfgMCRecInsideHists) {
+            if (cfgSingleJet)
+              if (goodjets > 1)
+                jetpt = DistinguishJetsMC(mcd_pt, mcd_phi, mcd_eta, lResonance);
 
-          if (jetFlag) {
-            if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
-              RealPhiCandInJet++;
-            JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta"), lResonance.Pt(), lResonance.Eta());
-            JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D"), lResonance.M());
-            if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-              JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3"), lResonance.M());
-            JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE"), jetpt, lResonance.Pt(), lResonance.M());
-          }
+            if (jetFlag) {
+              if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
+                RealPhiCandInJet++;
+              JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta"), lResonance.Pt(), lResonance.Eta());
+              JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D"), lResonance.M());
+              if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+                JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3"), lResonance.M());
+              JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE"), jetpt, lResonance.Pt(), lResonance.M());
+            }
 
-          if (hasJets) {
-            JEhistos.fill(HIST("ptJEHistogramPhi_JetTrigger"), lResonance.Pt());
-            auto triggerjet = std::min_element(mcd_pt.begin(), mcd_pt.end());
-            double triggerjet_pt = *triggerjet;
-            JEhistos.fill(HIST("JetVsPhi_REC"), triggerjet_pt, lResonance.Pt());
+            if (hasJets) {
+              JEhistos.fill(HIST("ptJEHistogramPhi_JetTrigger"), lResonance.Pt());
+              auto triggerjet = std::min_element(mcd_pt.begin(), mcd_pt.end());
+              double triggerjet_pt = *triggerjet;
+              JEhistos.fill(HIST("JetVsPhi_REC"), triggerjet_pt, lResonance.Pt());
+            }
+            JEhistos.fill(HIST("minvJEHistogramPhi"), lResonance.M());
           }
-          JEhistos.fill(HIST("minvJEHistogramPhi"), lResonance.M());
         } // mcpart check
       } // tracks2
     } // tracks1
