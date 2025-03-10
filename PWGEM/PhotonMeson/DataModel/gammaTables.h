@@ -175,7 +175,7 @@ DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
                   track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
-                  track::X, track::Y, track::Z, track::Tgl,
+                  track::X, track::Y, track::Z, track::Tgl, track::C1Pt21Pt2,
 
                   // dynamic column
                   v0leg::P<v0leg::Px, v0leg::Py, v0leg::Pz>,
@@ -284,7 +284,7 @@ using V0PhotonKFPrefilterBitDerived = V0PhotonsKFPrefilterBitDerived::iterator;
 DECLARE_SOA_TABLE(EMPrimaryElectronsFromDalitz, "AOD", "EMPRIMARYELDA", //!
                   o2::soa::Index<>, emprimaryelectron::CollisionId,
                   emprimaryelectron::TrackId, emprimaryelectron::Sign,
-                  track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ, track::CYY, track::CZY, track::CZZ,
+                  track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ, track::CYY, track::CZY, track::CZZ, track::C1Pt21Pt2,
                   track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,

@@ -166,6 +166,7 @@ struct PhotonConversionBuilder {
       {"V0/hPCA_diffX", "PCA vs. trackiu X - R_{xy};distance btween 2 legs (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{500, 0.0f, 5.f}, {100, -50.0, 50.0f}}}},
       {"V0Leg/hPt", "pT of leg at SV;p_{T,e} (GeV/c)", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"V0Leg/hEtaPhi", "#eta vs. #varphi of leg at SV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, 2 * M_PI}, {200, -1, +1}}}},
+      {"V0Leg/hRelDeltaPt", "pT resolution;p_{T} (GeV/c);#Deltap_{T}/p_{T}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, 0, 1}}}},
       {"V0Leg/hDCAxyz", "DCA xy vs. z to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -50.f, 50.f}, {200, -50.f, +50.f}}}},
       {"V0Leg/hdEdx_Pin", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0.f, 200.f}}}},
       {"V0Leg/hTPCNsigmaEl", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5.f, +5.f}}}},
@@ -368,7 +369,7 @@ struct PhotonConversionBuilder {
            track.tpcChi2NCl(), track.tpcInnerParam(), track.tpcSignal(),
            track.tpcNSigmaEl(), track.tpcNSigmaPi(),
            track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(),
-           shiftedtrack.getX(), shiftedtrack.getY(), shiftedtrack.getZ(), shiftedtrack.getTgl());
+           shiftedtrack.getX(), shiftedtrack.getY(), shiftedtrack.getZ(), shiftedtrack.getTgl(), shiftedtrack.getSigma1Pt2());
   }
 
   template <bool isMC, class TBCs, class TCollisions, class TTracks, typename TV0>
@@ -647,8 +648,10 @@ struct PhotonConversionBuilder {
         registry.fill(HIST("V0Leg/hdEdx_Pin"), leg.tpcInnerParam(), leg.tpcSignal());
         registry.fill(HIST("V0Leg/hTPCNsigmaEl"), leg.tpcInnerParam(), leg.tpcNSigmaEl());
       } // end of leg loop
-      registry.fill(HIST("V0Leg/hXZ"), pTrack.getZ(), pTrack.getX());
-      registry.fill(HIST("V0Leg/hXZ"), nTrack.getZ(), nTrack.getX());
+      for (auto& leg : {pTrack, nTrack}) {
+        registry.fill(HIST("V0Leg/hXZ"), leg.getZ(), leg.getX());
+        registry.fill(HIST("V0Leg/hRelDeltaPt"), leg.getPt(), leg.getPt() * std::sqrt(leg.getSigma1Pt2()));
+      } // end of leg loop
       registry.fill(HIST("V0Leg/hDCAxyz"), posdcaXY, posdcaZ);
       registry.fill(HIST("V0Leg/hDCAxyz"), eledcaXY, eledcaZ);
 
