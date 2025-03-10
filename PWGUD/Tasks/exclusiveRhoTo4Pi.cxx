@@ -45,6 +45,17 @@ namespace branch
 {
 DECLARE_SOA_COLUMN(Dcaxy, dcaxy, std::vector<double>);
 DECLARE_SOA_COLUMN(Dcaz, dcaz, std::vector<double>);
+DECLARE_SOA_COLUMN(TpcNsigmaKa, tpcNsigmaKa, std::vector<double>);
+DECLARE_SOA_COLUMN(TpcNsigmaPr, tpcNsigmaPr, std::vector<double>);
+DECLARE_SOA_COLUMN(TpcNsigmaMu, tpcNsigmaMu, std::vector<double>);
+DECLARE_SOA_COLUMN(TpcNsigmaEl, tpcNsigmaEl, std::vector<double>);
+DECLARE_SOA_COLUMN(TofNsigmaKa, tofNsigmaKa, std::vector<double>);
+DECLARE_SOA_COLUMN(TofNsigmaPr, tofNsigmaPr, std::vector<double>);
+DECLARE_SOA_COLUMN(TofNsigmaMu, tofNsigmaMu, std::vector<double>);
+DECLARE_SOA_COLUMN(TofNsigmaEl, tofNsigmaEl, std::vector<double>);
+DECLARE_SOA_COLUMN(TpcChi2, tpcChi2, std::vector<double>);
+DECLARE_SOA_COLUMN(TpcNClsFindable, tpcNClsFindable, std::vector<double>);
+DECLARE_SOA_COLUMN(ItsChi2, itsChi2, std::vector<double>);
 DECLARE_SOA_COLUMN(PionPt, pionPt, std::vector<double>);
 DECLARE_SOA_COLUMN(PionEta, pionEta, std::vector<double>);
 DECLARE_SOA_COLUMN(PionRapidity, pionRapidity, std::vector<double>);
@@ -60,6 +71,17 @@ DECLARE_SOA_COLUMN(FourPionCosThetaPair2, fourPionCosThetaPair2, double);
 DECLARE_SOA_TABLE(UDTree0c, "AOD", "UD0Charge",
                   branch::Dcaxy,
                   branch::Dcaz,
+                  branch::TpcNsigmaKa,
+                  branch::TpcNsigmaPr,
+                  branch::TpcNsigmaMu,
+                  branch::TpcNsigmaEl,
+                  branch::TofNsigmaKa,
+                  branch::TofNsigmaPr,
+                  branch::TofNsigmaMu,
+                  branch::TofNsigmaEl,
+                  branch::TpcChi2,
+                  branch::TpcNClsFindable,
+                  branch::ItsChi2,
                   branch::PionPt,
                   branch::PionEta,
                   branch::PionRapidity,
@@ -75,6 +97,17 @@ DECLARE_SOA_TABLE(UDTree0c, "AOD", "UD0Charge",
 DECLARE_SOA_TABLE(UDTreen0c, "AOD", "UDn0Charge",
                   branch::Dcaxy,
                   branch::Dcaz,
+                  branch::TpcNsigmaKa,
+                  branch::TpcNsigmaPr,
+                  branch::TpcNsigmaMu,
+                  branch::TpcNsigmaEl,
+                  branch::TofNsigmaKa,
+                  branch::TofNsigmaPr,
+                  branch::TofNsigmaMu,
+                  branch::TofNsigmaEl,
+                  branch::TpcChi2,
+                  branch::TpcNClsFindable,
+                  branch::ItsChi2,
                   branch::PionPt,
                   branch::PionEta,
                   branch::PionRapidity,
@@ -99,6 +132,17 @@ DECLARE_SOA_TABLE(MCTree, "AOD", "MC0Charge",
 DECLARE_SOA_TABLE(MCUDTree, "AOD", "UDMC0Charge",
                   branch::Dcaxy,
                   branch::Dcaz,
+                  branch::TpcNsigmaKa,
+                  branch::TpcNsigmaPr,
+                  branch::TpcNsigmaMu,
+                  branch::TpcNsigmaEl,
+                  branch::TofNsigmaKa,
+                  branch::TofNsigmaPr,
+                  branch::TofNsigmaMu,
+                  branch::TofNsigmaEl,
+                  branch::TpcChi2,
+                  branch::TpcNClsFindable,
+                  branch::ItsChi2,
                   branch::PionPt,
                   branch::PionEta,
                   branch::PionRapidity,
@@ -586,6 +630,20 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     std::vector<double> pidcaXY;
     std::vector<double> pidcaZ;
 
+    std::vector<double> tpcNsigKa;
+    std::vector<double> tpcNsigPr;
+    std::vector<double> tpcNsigEl;
+    std::vector<double> tpcNsigMu;
+
+    std::vector<double> tofNsigKa;
+    std::vector<double> tofNsigPr;
+    std::vector<double> tofNsigEl;
+    std::vector<double> tofNsigMu;
+
+    std::vector<double> tpcchi2;
+    std::vector<double> itschi2;
+    std::vector<double> tpcNFindableCls;
+
     std::vector<double> piPt;
     std::vector<double> piEta;
     std::vector<double> piRapidity;
@@ -615,6 +673,61 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       pidcaZ.push_back(Pi_plus_tracks[1].dcaZ());
       pidcaZ.push_back(Pi_minus_tracks[0].dcaZ());
       pidcaZ.push_back(Pi_minus_tracks[1].dcaZ());
+
+      tpcNsigKa.push_back(Pi_plus_tracks[0].tpcNSigmaKa());
+      tpcNsigKa.push_back(Pi_plus_tracks[1].tpcNSigmaKa());
+      tpcNsigKa.push_back(Pi_minus_tracks[0].tpcNSigmaKa());
+      tpcNsigKa.push_back(Pi_minus_tracks[1].tpcNSigmaKa());
+
+      tpcNsigPr.push_back(Pi_plus_tracks[0].tpcNSigmaPr());
+      tpcNsigPr.push_back(Pi_plus_tracks[1].tpcNSigmaPr());
+      tpcNsigPr.push_back(Pi_minus_tracks[0].tpcNSigmaPr());
+      tpcNsigPr.push_back(Pi_minus_tracks[1].tpcNSigmaPr());
+
+      tpcNsigEl.push_back(Pi_plus_tracks[0].tpcNSigmaEl());
+      tpcNsigEl.push_back(Pi_plus_tracks[1].tpcNSigmaEl());
+      tpcNsigEl.push_back(Pi_minus_tracks[0].tpcNSigmaEl());
+      tpcNsigEl.push_back(Pi_minus_tracks[1].tpcNSigmaEl());
+
+      tpcNsigMu.push_back(Pi_plus_tracks[0].tpcNSigmaMu());
+      tpcNsigMu.push_back(Pi_plus_tracks[1].tpcNSigmaMu());
+      tpcNsigMu.push_back(Pi_minus_tracks[0].tpcNSigmaMu());
+      tpcNsigMu.push_back(Pi_minus_tracks[1].tpcNSigmaMu());
+
+      tofNsigKa.push_back(Pi_plus_tracks[0].tofNSigmaKa());
+      tofNsigKa.push_back(Pi_plus_tracks[1].tofNSigmaKa());
+      tofNsigKa.push_back(Pi_minus_tracks[0].tofNSigmaKa());
+      tofNsigKa.push_back(Pi_minus_tracks[1].tofNSigmaKa());
+
+      tofNsigPr.push_back(Pi_plus_tracks[0].tofNSigmaPr());
+      tofNsigPr.push_back(Pi_plus_tracks[1].tofNSigmaPr());
+      tofNsigPr.push_back(Pi_minus_tracks[0].tofNSigmaPr());
+      tofNsigPr.push_back(Pi_minus_tracks[1].tofNSigmaPr());
+
+      tofNsigEl.push_back(Pi_plus_tracks[0].tofNSigmaEl());
+      tofNsigEl.push_back(Pi_plus_tracks[1].tofNSigmaEl());
+      tofNsigEl.push_back(Pi_minus_tracks[0].tofNSigmaEl());
+      tofNsigEl.push_back(Pi_minus_tracks[1].tofNSigmaEl());
+
+      tofNsigMu.push_back(Pi_plus_tracks[0].tofNSigmaMu());
+      tofNsigMu.push_back(Pi_plus_tracks[1].tofNSigmaMu());
+      tofNsigMu.push_back(Pi_minus_tracks[0].tofNSigmaMu());
+      tofNsigMu.push_back(Pi_minus_tracks[1].tofNSigmaMu());
+
+      tpcchi2.push_back(Pi_plus_tracks[0].tpcChi2NCl());
+      tpcchi2.push_back(Pi_plus_tracks[1].tpcChi2NCl());
+      tpcchi2.push_back(Pi_minus_tracks[0].tpcChi2NCl());
+      tpcchi2.push_back(Pi_minus_tracks[1].tpcChi2NCl());
+
+      tpcNFindableCls.push_back(Pi_plus_tracks[0].tpcNClsFindable());
+      tpcNFindableCls.push_back(Pi_plus_tracks[1].tpcNClsFindable());
+      tpcNFindableCls.push_back(Pi_minus_tracks[0].tpcNClsFindable());
+      tpcNFindableCls.push_back(Pi_minus_tracks[1].tpcNClsFindable());
+
+      itschi2.push_back(Pi_plus_tracks[0].itsChi2NCl());
+      itschi2.push_back(Pi_plus_tracks[1].itsChi2NCl());
+      itschi2.push_back(Pi_minus_tracks[0].itsChi2NCl());
+      itschi2.push_back(Pi_minus_tracks[1].itsChi2NCl());
 
       piPt.push_back(p1.Pt());
       piPt.push_back(p2.Pt());
@@ -661,6 +774,9 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
 
       zeroChargeEventsData(
         pidcaXY, pidcaZ,
+        tpcNsigKa, tpcNsigPr, tpcNsigEl, tpcNsigMu,
+        tofNsigKa, tofNsigPr, tofNsigEl, tofNsigMu,
+        tpcchi2, tpcNFindableCls, itschi2,
         piPt, piEta, piRapidity,
         p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M(),
         fourPiPhiPair1, fourPiPhiPair2, fourPiCosThetaPair1, fourPiCosThetaPair2);
@@ -701,6 +817,17 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
 
       std::vector<double> pidcaXY;
       std::vector<double> pidcaZ;
+      std::vector<double> tpcNsigKa;
+      std::vector<double> tpcNsigPr;
+      std::vector<double> tpcNsigEl;
+      std::vector<double> tpcNsigMu;
+      std::vector<double> tofNsigKa;
+      std::vector<double> tofNsigPr;
+      std::vector<double> tofNsigEl;
+      std::vector<double> tofNsigMu;
+      std::vector<double> tpcchi2;
+      std::vector<double> itschi2;
+      std::vector<double> tpcNFindableCls;
       std::vector<double> piPt;
       std::vector<double> piEta;
       std::vector<double> piRapidity;
@@ -717,6 +844,17 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
         tempVec.SetXYZM(WTS_PID_Pi_tracks[i].px(), WTS_PID_Pi_tracks[i].py(), WTS_PID_Pi_tracks[i].pz(), o2::constants::physics::MassPionCharged);
         pidcaXY.push_back(WTS_PID_Pi_tracks[i].dcaXY());
         pidcaZ.push_back(WTS_PID_Pi_tracks[i].dcaZ());
+        tpcNsigKa.push_back(WTS_PID_Pi_tracks[i].tpcNSigmaKa());
+        tpcNsigPr.push_back(WTS_PID_Pi_tracks[i].tpcNSigmaPr());
+        tpcNsigEl.push_back(WTS_PID_Pi_tracks[i].tpcNSigmaEl());
+        tpcNsigMu.push_back(WTS_PID_Pi_tracks[i].tpcNSigmaMu());
+        tofNsigKa.push_back(WTS_PID_Pi_tracks[i].tofNSigmaKa());
+        tofNsigPr.push_back(WTS_PID_Pi_tracks[i].tofNSigmaPr());
+        tofNsigEl.push_back(WTS_PID_Pi_tracks[i].tofNSigmaEl());
+        tofNsigMu.push_back(WTS_PID_Pi_tracks[i].tofNSigmaMu());
+        tpcchi2.push_back(WTS_PID_Pi_tracks[i].tpcChi2NCl());
+        itschi2.push_back(WTS_PID_Pi_tracks[i].itsChi2NCl());
+        tpcNFindableCls.push_back(WTS_PID_Pi_tracks[i].tpcNClsFindable());
         piPt.push_back(tempVec.Pt());
         piEta.push_back(tempVec.Eta());
         piRapidity.push_back(tempVec.Rapidity());
@@ -724,6 +862,9 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
 
       nonzeroChargeEventsData(
         pidcaXY, pidcaZ,
+        tpcNsigKa, tpcNsigPr, tpcNsigMu, tpcNsigEl,
+        tofNsigKa, tofNsigPr, tofNsigMu, tofNsigEl,
+        tpcchi2, tpcNFindableCls, itschi2,
         piPt, piEta, piRapidity,
         p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M());
 
@@ -1033,6 +1174,18 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       std::vector<double> dcaxy;
       std::vector<double> dcaz;
 
+      std::vector<double> tpcNsigKa;
+      std::vector<double> tpcNsigPr;
+      std::vector<double> tpcNsigEl;
+      std::vector<double> tpcNsigMu;
+      std::vector<double> tofNsigKa;
+      std::vector<double> tofNsigPr;
+      std::vector<double> tofNsigEl;
+      std::vector<double> tofNsigMu;
+      std::vector<double> tpcchi2;
+      std::vector<double> itschi2;
+      std::vector<double> tpcNFindableCls;
+
       std::vector<double> piPt;
       std::vector<double> piEta;
       std::vector<double> piRapidity;
@@ -1046,6 +1199,61 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       dcaz.push_back(Pi_plus_tracks[1].dcaZ());
       dcaz.push_back(Pi_minus_tracks[0].dcaZ());
       dcaz.push_back(Pi_minus_tracks[1].dcaZ());
+
+      tpcNsigKa.push_back(Pi_plus_tracks[0].tpcNSigmaKa());
+      tpcNsigKa.push_back(Pi_plus_tracks[1].tpcNSigmaKa());
+      tpcNsigKa.push_back(Pi_minus_tracks[0].tpcNSigmaKa());
+      tpcNsigKa.push_back(Pi_minus_tracks[1].tpcNSigmaKa());
+
+      tpcNsigPr.push_back(Pi_plus_tracks[0].tpcNSigmaPr());
+      tpcNsigPr.push_back(Pi_plus_tracks[1].tpcNSigmaPr());
+      tpcNsigPr.push_back(Pi_minus_tracks[0].tpcNSigmaPr());
+      tpcNsigPr.push_back(Pi_minus_tracks[1].tpcNSigmaPr());
+
+      tpcNsigEl.push_back(Pi_plus_tracks[0].tpcNSigmaEl());
+      tpcNsigEl.push_back(Pi_plus_tracks[1].tpcNSigmaEl());
+      tpcNsigEl.push_back(Pi_minus_tracks[0].tpcNSigmaEl());
+      tpcNsigEl.push_back(Pi_minus_tracks[1].tpcNSigmaEl());
+
+      tpcNsigMu.push_back(Pi_plus_tracks[0].tpcNSigmaMu());
+      tpcNsigMu.push_back(Pi_plus_tracks[1].tpcNSigmaMu());
+      tpcNsigMu.push_back(Pi_minus_tracks[0].tpcNSigmaMu());
+      tpcNsigMu.push_back(Pi_minus_tracks[1].tpcNSigmaMu());
+
+      tofNsigKa.push_back(Pi_plus_tracks[0].tofNSigmaKa());
+      tofNsigKa.push_back(Pi_plus_tracks[1].tofNSigmaKa());
+      tofNsigKa.push_back(Pi_minus_tracks[0].tofNSigmaKa());
+      tofNsigKa.push_back(Pi_minus_tracks[1].tofNSigmaKa());
+
+      tofNsigPr.push_back(Pi_plus_tracks[0].tofNSigmaPr());
+      tofNsigPr.push_back(Pi_plus_tracks[1].tofNSigmaPr());
+      tofNsigPr.push_back(Pi_minus_tracks[0].tofNSigmaPr());
+      tofNsigPr.push_back(Pi_minus_tracks[1].tofNSigmaPr());
+
+      tofNsigEl.push_back(Pi_plus_tracks[0].tofNSigmaEl());
+      tofNsigEl.push_back(Pi_plus_tracks[1].tofNSigmaEl());
+      tofNsigEl.push_back(Pi_minus_tracks[0].tofNSigmaEl());
+      tofNsigEl.push_back(Pi_minus_tracks[1].tofNSigmaEl());
+
+      tofNsigMu.push_back(Pi_plus_tracks[0].tofNSigmaMu());
+      tofNsigMu.push_back(Pi_plus_tracks[1].tofNSigmaMu());
+      tofNsigMu.push_back(Pi_minus_tracks[0].tofNSigmaMu());
+      tofNsigMu.push_back(Pi_minus_tracks[1].tofNSigmaMu());
+
+      tpcchi2.push_back(Pi_plus_tracks[0].tpcChi2NCl());
+      tpcchi2.push_back(Pi_plus_tracks[1].tpcChi2NCl());
+      tpcchi2.push_back(Pi_minus_tracks[0].tpcChi2NCl());
+      tpcchi2.push_back(Pi_minus_tracks[1].tpcChi2NCl());
+
+      tpcNFindableCls.push_back(Pi_plus_tracks[0].tpcNClsFindable());
+      tpcNFindableCls.push_back(Pi_plus_tracks[1].tpcNClsFindable());
+      tpcNFindableCls.push_back(Pi_minus_tracks[0].tpcNClsFindable());
+      tpcNFindableCls.push_back(Pi_minus_tracks[1].tpcNClsFindable());
+
+      itschi2.push_back(Pi_plus_tracks[0].itsChi2NCl());
+      itschi2.push_back(Pi_plus_tracks[1].itsChi2NCl());
+      itschi2.push_back(Pi_minus_tracks[0].itsChi2NCl());
+      itschi2.push_back(Pi_minus_tracks[1].itsChi2NCl());
 
       piPt.push_back(p1.Pt());
       piPt.push_back(p2.Pt());
@@ -1063,6 +1271,9 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       piRapidity.push_back(p4.Rapidity());
 
       zeroChargeEventsMCreco(dcaxy, dcaz,
+                             tpcNsigKa, tpcNsigPr, tpcNsigMu, tpcNsigEl,
+                             tofNsigKa, tofNsigPr, tofNsigMu, tofNsigEl,
+                             tpcchi2, tpcNFindableCls, itschi2,
                              piPt, piEta, piRapidity,
                              p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M(),
                              phiPair1, phiPair2, cosThetaPair1, cosThetaPair2);
