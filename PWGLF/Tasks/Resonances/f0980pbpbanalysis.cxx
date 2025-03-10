@@ -264,8 +264,7 @@ struct f0980pbpbanalysis {
       if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
         return 0;
       }
-    }
-    else if (cfgSelectType == 1) {
+    } else if (cfgSelectType == 1) {
       if (cfgUSETOF) {
         if (track.hasTOF()) {
           if (std::fabs(track.tofNSigmaPi()) > cMaxTOFnSigmaPion) {
@@ -284,8 +283,7 @@ struct f0980pbpbanalysis {
           return 0;
         }
       }
-    }
-    else if (cfgSelectType == 2) {
+    } else if (cfgSelectType == 2) {
       if (cfgUSETOF) {
         if (track.hasTOF()) {
           if (std::fabs(track.tofNSigmaKa()) > 3) {
@@ -308,20 +306,20 @@ struct f0980pbpbanalysis {
     return 1;
   }
 
-  template<typename TrackType>
+  template <typename TrackType>
   float getTpcNSigma(const TrackType track)
   {
-    if (cfgSelectType == 2){
+    if (cfgSelectType == 2) {
       return track.tpcNSigmaKa();
     } else {
       return track.tpcNSigmaPi();
     }
   }
 
-  template<typename TrackType>
+  template <typename TrackType>
   float getTofNSigma(const TrackType track)
   {
-    if (cfgSelectType == 2){
+    if (cfgSelectType == 2) {
       return track.tofNSigmaKa();
     } else {
       return track.tofNSigmaPi();
@@ -344,7 +342,6 @@ struct f0980pbpbanalysis {
     histos.fill(HIST("QA/EPResAB"), centrality, std::cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefA)));
     histos.fill(HIST("QA/EPResAC"), centrality, std::cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefB)));
     histos.fill(HIST("QA/EPResBC"), centrality, std::cos(static_cast<float>(nmode) * (eventPlaneRefA - eventPlaneRefB)));
-    
 
     TLorentzVector pion1, pion2, pion2Rot, reco, recoRot;
     for (const auto& trk1 : dTracks) {
