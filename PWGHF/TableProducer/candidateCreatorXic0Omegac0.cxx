@@ -2216,7 +2216,8 @@ struct HfCandidateCreatorXic0Omegac0Mc {
             rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else {
             if (rejectOriginNone && origin == RecoDecay::OriginType::None) {
-              continue;}
+              continue;
+            }
             rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
 
@@ -2260,7 +2261,8 @@ struct HfCandidateCreatorXic0Omegac0Mc {
             rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else {
             if (rejectOriginNone && origin == RecoDecay::OriginType::None) {
-              continue;}
+              continue;
+            }
             rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
 
@@ -2304,7 +2306,8 @@ struct HfCandidateCreatorXic0Omegac0Mc {
             rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else {
             if (rejectOriginNone && origin == RecoDecay::OriginType::None) {
-              continue;}
+              continue;
+            }
             rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
 
@@ -2348,7 +2351,8 @@ struct HfCandidateCreatorXic0Omegac0Mc {
             rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else {
             if (rejectOriginNone && origin == RecoDecay::OriginType::None) {
-              continue;}
+              continue;
+            }
             rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
         }
