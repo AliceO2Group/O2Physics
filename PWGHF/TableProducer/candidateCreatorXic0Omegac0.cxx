@@ -2215,7 +2215,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           if (origin == RecoDecay::OriginType::NonPrompt) {
             rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else {
-            if (rejectOriginNone && origin == RecoDecay::OriginType::None)
+            if (rejectOriginNone && (origin == RecoDecay::OriginType::None))
               continue;
             rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
@@ -2259,7 +2259,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           if (origin == RecoDecay::OriginType::NonPrompt) {
             rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else {
-            if (rejectOriginNone && origin == RecoDecay::OriginType::None)
+            if (rejectOriginNone && (origin == RecoDecay::OriginType::None))
               continue;
             rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
@@ -2303,7 +2303,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           if (origin == RecoDecay::OriginType::NonPrompt) {
             rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else {
-            if (rejectOriginNone && origin == RecoDecay::OriginType::None)
+            if (rejectOriginNone && (origin == RecoDecay::OriginType::None))
               continue;
             rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
@@ -2347,7 +2347,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           if (origin == RecoDecay::OriginType::NonPrompt) {
             rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else {
-            if (rejectOriginNone && origin == RecoDecay::OriginType::None)
+            if (rejectOriginNone && (origin == RecoDecay::OriginType::None))
               continue;
             rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
