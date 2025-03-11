@@ -249,6 +249,8 @@ class VarManager : public TObject
     kTrackOccupancyInTimeRange,
     kFT0COccupancyInTimeRange,
     kNoCollInTimeRangeStandard,
+    kNoCollInRofStandard,
+    kNoHighMultCollInPrevRof,
     kMultAllTracksTPCOnly,
     kMultAllTracksITSTPC,
     kNTPCpileupContribA,
@@ -1472,6 +1474,12 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kNoCollInTimeRangeStandard]) {
       values[kNoCollInTimeRangeStandard] = event.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
     }
+    if (fgUsedVars[kNoCollInRofStandard]) {
+      values[kNoCollInRofStandard] = event.selection_bit(o2::aod::evsel::kNoCollInRofStandard);
+    }
+    if (fgUsedVars[kNoHighMultCollInPrevRof]) {
+      values[kNoHighMultCollInPrevRof] = event.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof);
+    }
     if (fgUsedVars[kIsNoTFBorder]) {
       values[kIsNoTFBorder] = event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
     }
@@ -1650,6 +1658,12 @@ void VarManager::FillEvent(T const& event, float* values)
     }
     if (fgUsedVars[kNoCollInTimeRangeStandard]) {
       values[kNoCollInTimeRangeStandard] = (event.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) > 0);
+    }
+    if (fgUsedVars[kNoCollInRofStandard]) {
+      values[kNoCollInRofStandard] = event.selection_bit(o2::aod::evsel::kNoCollInRofStandard);
+    }
+    if (fgUsedVars[kNoHighMultCollInPrevRof]) {
+      values[kNoHighMultCollInPrevRof] = event.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof);
     }
     if (fgUsedVars[kIsNoSameBunch]) {
       values[kIsNoSameBunch] = (event.selection_bit(o2::aod::evsel::kNoSameBunchPileup) > 0);

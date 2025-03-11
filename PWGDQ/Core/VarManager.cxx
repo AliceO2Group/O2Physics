@@ -374,6 +374,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kFT0COccupancyInTimeRange] = "";
   fgVariableNames[kNoCollInTimeRangeStandard] = "track occupancy in TPC drift standart time";
   fgVariableUnits[kNoCollInTimeRangeStandard] = "";
+  fgVariableNames[kNoCollInRofStandard] = "no other collisions in this RF with per-collision multiplicity above threshold";
+  fgVariableUnits[kNoCollInRofStandard] = "";
+  fgVariableNames[kNoHighMultCollInPrevRof] = "FT0C amplitude in previous ITS ROF is above threshold";
+  fgVariableUnits[kNoHighMultCollInPrevRof] = "";
   fgVariableNames[kMultAllTracksITSTPC] = "# ITS-TPC tracks";
   fgVariableUnits[kMultAllTracksITSTPC] = "";
   fgVariableNames[kMultAllTracksTPCOnly] = "# TPC only tracks";
@@ -1165,6 +1169,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTrackOccupancyInTimeRange"] = kTrackOccupancyInTimeRange;
   fgVarNamesMap["kFT0COccupancyInTimeRange"] = kFT0COccupancyInTimeRange;
   fgVarNamesMap["kNoCollInTimeRangeStandard"] = kNoCollInTimeRangeStandard;
+  fgVarNamesMap["kNoCollInRofStandard"] = kNoCollInRofStandard;
+  fgVarNamesMap["kNoHighMultCollInPrevRof"] = kNoHighMultCollInPrevRof;
   fgVarNamesMap["kMultAllTracksTPCOnly"] = kMultAllTracksTPCOnly;
   fgVarNamesMap["kMultAllTracksITSTPC"] = kMultAllTracksITSTPC;
   fgVarNamesMap["kNTPCpileupContribA"] = kNTPCpileupContribA;
