@@ -54,7 +54,6 @@
 // For charged kstarpp analysis
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -232,11 +231,11 @@ struct chargedkstaranalysis {
 
     // for MC production
     if (doprocessMCTrue) {
-        // DEBUG HISTOGRAMS
-        histos1.add("hK892pmCounter", "Generated MC resonances", kTH1F, {k892pmCountAxis});
-        histos1.add("k892pmPtGen", "pT distribution of True MC charged K*(892)", kTH1F, {ptAxis});
-        // histos.add("hDaughterCounter", "Generated MC resonance daughters", kTH1F, {daughterCountAxis});
-     }
+      // DEBUG HISTOGRAMS
+      histos1.add("hK892pmCounter", "Generated MC resonances", kTH1F, {k892pmCountAxis});
+      histos1.add("k892pmPtGen", "pT distribution of True MC charged K*(892)", kTH1F, {ptAxis});
+      // histos.add("hDaughterCounter", "Generated MC resonance daughters", kTH1F, {daughterCountAxis});
+    }
   }
   double massPi = o2::constants::physics::MassPionCharged;
   double massK0s = o2::constants::physics::MassK0Short;
@@ -471,7 +470,7 @@ struct chargedkstaranalysis {
 
   void processMCTrue(aod::ResoMCParents& resoParents)
   {
-    for (auto& part : resoParents) {  // loop over all pre-filtered MC particles
+    for (auto& part : resoParents) {       // loop over all pre-filtered MC particles
       if (std::abs(part.pdgCode()) != 323) // K*892(pm)
         continue;
       if (std::abs(part.y()) > 0.5) // rapidity cut
@@ -493,10 +492,7 @@ struct chargedkstaranalysis {
     }
   }
   PROCESS_SWITCH(chargedkstaranalysis, processMCTrue, "Process Event for MC", false);
-
-
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
