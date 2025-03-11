@@ -1095,7 +1095,7 @@ struct KaonIsospinFluctuations {
       } else if (track.hasTOF() && track.beta() > 0.0 && selPionTOF(track)) {
         IdMethod = kTOFidentified;
         return true;
-      } 
+      }
       return false;
     }
     return false;
