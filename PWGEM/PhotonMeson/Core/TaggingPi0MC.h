@@ -534,9 +534,9 @@ struct TaggingPi0MC {
           if (!cut1.template IsSelected<TSubInfos1>(g1) || !cut2.template IsSelected<TSubInfos2>(g2)) {
             continue;
           }
-          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          // ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+          // ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+          // ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           // if (pi0id > 0) {
           //   auto pi0mc = mcparticles.iteratorAt(pi0id);
           //   o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0, collision.weight());
