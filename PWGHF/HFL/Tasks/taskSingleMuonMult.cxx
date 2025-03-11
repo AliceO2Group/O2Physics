@@ -41,6 +41,7 @@
 #include "TableHelper.h"
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
+#include "CommonConstants/MathConstants.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -65,6 +66,9 @@ struct HfTaskSingleMuonMult {
   Configurable<bool> reduceOrphMft{"reduceOrphMft", true, "reduce orphan MFT tracks"};
 
   o2::framework::HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  static constexpr std::string_view kTrackType[] = {"TrackType0","TrackType1","TrackType2","TrackType3","TrackType4"};
+  uint8_t globalMuonTrack = o2::aod::fwdtrack::GlobalMuonTrack;
+
   void init(InitContext&)
   {
     AxisSpec axisCent = {101, -0.5, 100.5, "centrality"};
@@ -165,9 +169,10 @@ struct HfTaskSingleMuonMult {
     const auto cent = collision.centFT0M();
     registry.fill(HIST("hCentrality"), cent);
 
-    float nCh = 0.;
-    float nMu = 0.;
-    float nMu0 = 0., nMu1 = 0, nMu2 = 0, nMu3 = 0, nMu4 = 0;
+    int nCh = 0.;
+    int nMu = 0.;
+    const int nTypes = 5; 
+    int nMuTrackType[nTypes] = {0}; 
 
     std::vector<typename std::decay_t<decltype(tracks)>::iterator> chTracks;
     for (const auto& track : tracks) {
@@ -176,9 +181,9 @@ struct HfTaskSingleMuonMult {
       }
     }
     nCh = chTracks.size();
-    if (nCh < 1)
+    if (nCh < 1) {
       return;
-
+    }
     registry.fill(HIST("hEventSize"), nCh);
 
     for (int isize = 0; isize < nCh; isize++) {
@@ -191,6 +196,7 @@ struct HfTaskSingleMuonMult {
       const auto pt(muon.pt()), eta(muon.eta()), theta(90 - ((std::atan(muon.tgl())) * (180. / constants::math::PI))), pDca(muon.pDca()), rAbs(muon.rAtAbsorberEnd()), chi2(muon.chi2MatchMCHMFT());
       const auto dcaXY(RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY()));
       const auto muTrackType(muon.trackType());
+
       registry.fill(HIST("hMuBeforeMatchMFT"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, muTrackType);
 
       // histograms before the acceptance cuts
@@ -201,7 +207,7 @@ struct HfTaskSingleMuonMult {
       if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
         auto dpt(muonType3.pt() - pt);
-        if (muTrackType == 0) {
+        if (muTrackType == globalMuonTrack) {
           registry.fill(HIST("hMuDeltaPtBeforeAccCuts"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, dpt);
         }
       }
@@ -240,57 +246,35 @@ struct HfTaskSingleMuonMult {
       registry.fill(HIST("hMuAfterAccCuts"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, muTrackType);
       registry.fill(HIST("h3DCAAfterAccCuts"), muon.fwdDcaX(), muon.fwdDcaY(), muTrackType);
       nMu++;
-      if (muTrackType == 0) {
-        nMu0++;
-      }
-      if (muTrackType == 1) {
-        nMu1++;
-      }
-      if (muTrackType == 2) {
-        nMu2++;
-      }
-      if (muTrackType == 3) {
-        nMu3++;
-      }
-      if (muTrackType == 4) {
-        nMu4++;
-      }
+      nMuTrackType[muTrackType]++;
 
       if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
         auto dpt(muonType3.pt() - pt);
 
-        if (muTrackType == 0) {
+        if (muTrackType == globalMuonTrack) {
           registry.fill(HIST("hMuDeltaPtAfterAccCuts"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, dpt);
         }
       }
     }
 
     registry.fill(HIST("h3MultNchNmu"), cent, nCh, nMu);
-    if (nMu0 > 0)
-      registry.fill(HIST("h3MultNchNmu_TrackType0"), cent, nCh, nMu0);
-    if (nMu1 > 0)
-      registry.fill(HIST("h3MultNchNmu_TrackType1"), cent, nCh, nMu1);
-    if (nMu2 > 0)
-      registry.fill(HIST("h3MultNchNmu_TrackType2"), cent, nCh, nMu2);
-    if (nMu3 > 0)
-      registry.fill(HIST("h3MultNchNmu_TrackType3"), cent, nCh, nMu3);
-    if (nMu4 > 0)
-      registry.fill(HIST("h3MultNchNmu_TrackType4"), cent, nCh, nMu4);
+
+    static_for<0, 4>([&](auto i) {
+                constexpr int kIndex = i.value;
+                if(nMuTrackType[kIndex] > 0) registry.fill(HIST("h3MultNchNmu_") + HIST(kTrackType[kIndex]) , cent, nCh, nMuTrackType[kIndex]);
+                });
     chTracks.clear();
   }
-
-  void processMuon(MyCollisions::iterator const& collision,
+  void process(MyCollisions::iterator const& collision,
                    MyTracks const& tracks,
                    MyMuons const& muons)
   {
     runMuonSel(collision, tracks, muons);
   }
-  PROCESS_SWITCH(HfTaskSingleMuonMult, processMuon, "run muon selection with real data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfTaskSingleMuonMult>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskSingleMuonMult>(cfgc)};
 }
