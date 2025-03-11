@@ -838,7 +838,7 @@ struct KaonIsospinFluctuations {
       return selIdCircularCut<pidMode>(track, nSigmaSquaredRad);
     } else if (pidCutType == kEllipsoidalCut) {
       return selIdEllipsoidalCut<pidMode>(track, nSigmaTPC, nSigmaTOF);
-    } 
+    }
     return false;
   }
 
