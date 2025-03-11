@@ -1820,7 +1820,8 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   Produces<aod::HfToOmegaKMCGen> rowMCMatchGenToOmegaK;
 
   // Configuration
-  Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+  Configurable<bool> rejectBackground{"rejectBackground", false, "Reject particles from background events"};
+  Configurable<bool> rejectOriginNone{"rejectOriginNone", true, "Reject mismatching particles"};
 
   using MyTracksWMc = soa::Join<TracksIU, McTrackLabels>;
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
@@ -2133,7 +2134,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       }
       hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask);
-      if (rejectionMask != 0) {
+      if (rejectionMask != 0 && !rejectOriginNone) {
         /// at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
           if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
@@ -2214,6 +2215,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           if (origin == RecoDecay::OriginType::NonPrompt) {
             rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else {
+            if(rejectOriginNone && origin == RecoDecay::OriginType::None) continue;
             rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
 
@@ -2256,6 +2258,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           if (origin == RecoDecay::OriginType::NonPrompt) {
             rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else {
+            if(rejectOriginNone && origin == RecoDecay::OriginType::None) continue;
             rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
 
@@ -2298,6 +2301,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           if (origin == RecoDecay::OriginType::NonPrompt) {
             rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else {
+            if(rejectOriginNone && origin == RecoDecay::OriginType::None) continue;
             rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
 
@@ -2340,6 +2344,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           if (origin == RecoDecay::OriginType::NonPrompt) {
             rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else {
+            if(rejectOriginNone && origin == RecoDecay::OriginType::None) continue;
             rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
         }
