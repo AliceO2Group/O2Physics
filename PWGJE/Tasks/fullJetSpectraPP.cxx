@@ -557,7 +557,7 @@ struct FullJetSpectrapp {
   }
   PROCESS_SWITCH(FullJetSpectrapp, processJetsData, "Full Jets Data", false);
 
-  void processJetsMCD(soa::Filtered<soa::Join<EMCCollisions, aod::JMcCollisionLbs>>::iterator const& collision, JetTableMCDJoined const& jets, aod::JMcCollisions const&, aod::JetTracks const&, aod::JetClusters const&)
+  void processJetsMCD(soa::Filtered<soa::Join<EMCCollisions, aod::JMcCollisionLbs>>::iterator const& collision, JetTableMCDJoined const& jets, aod::JetTracks const&, aod::JetClusters const&)
   {
     registry.fill(HIST("h_collisions_unweighted"), 1.0); // total events
     bool eventAccepted = false;
@@ -661,7 +661,7 @@ struct FullJetSpectrapp {
   }
   PROCESS_SWITCH(FullJetSpectrapp, processJetsMCDWeighted, "Full Jets at Detector Level on weighted events", false);
 
-  void processJetsMCP(typename JetTableMCPJoined::iterator const& jet, aod::JetParticles const&, aod::JetMcCollisions const&)
+  void processJetsMCP(typename JetTableMCPJoined::iterator const& jet, aod::JetParticles const&)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
