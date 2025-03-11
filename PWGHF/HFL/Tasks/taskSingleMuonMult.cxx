@@ -66,7 +66,7 @@ struct HfTaskSingleMuonMult {
   Configurable<bool> reduceOrphMft{"reduceOrphMft", true, "reduce orphan MFT tracks"};
 
   o2::framework::HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  static constexpr std::string_view kTrackType[] = {"TrackType0","TrackType1","TrackType2","TrackType3","TrackType4"};
+  static constexpr std::string_view kTrackType[] = {"TrackType0", "TrackType1", "TrackType2", "TrackType3", "TrackType4"};
   uint8_t globalMuonTrack = o2::aod::fwdtrack::GlobalMuonTrack;
 
   void init(InitContext&)
@@ -171,8 +171,8 @@ struct HfTaskSingleMuonMult {
 
     int nCh = 0.;
     int nMu = 0.;
-    const int nTypes = 5; 
-    int nMuTrackType[nTypes] = {0}; 
+    const int nTypes = 5;
+    int nMuTrackType[nTypes] = {0};
 
     std::vector<typename std::decay_t<decltype(tracks)>::iterator> chTracks;
     for (const auto& track : tracks) {
@@ -261,14 +261,15 @@ struct HfTaskSingleMuonMult {
     registry.fill(HIST("h3MultNchNmu"), cent, nCh, nMu);
 
     static_for<0, 4>([&](auto i) {
-                constexpr int kIndex = i.value;
-                if(nMuTrackType[kIndex] > 0) registry.fill(HIST("h3MultNchNmu_") + HIST(kTrackType[kIndex]) , cent, nCh, nMuTrackType[kIndex]);
-                });
+      constexpr int kIndex = i.value;
+      if (nMuTrackType[kIndex] > 0)
+        registry.fill(HIST("h3MultNchNmu_") + HIST(kTrackType[kIndex]), cent, nCh, nMuTrackType[kIndex]);
+    });
     chTracks.clear();
   }
   void process(MyCollisions::iterator const& collision,
-                   MyTracks const& tracks,
-                   MyMuons const& muons)
+               MyTracks const& tracks,
+               MyMuons const& muons)
   {
     runMuonSel(collision, tracks, muons);
   }
