@@ -111,6 +111,12 @@ void DalitzEECut::SetMeanClusterSizeITS(float min, float max)
   mMaxMeanClusterSizeITS = max;
   LOG(info) << "DalitzEE Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
 }
+void DalitzEECut::SetTrackDca3DRange(float min, float max)
+{
+  mMinDca3D = min;
+  mMaxDca3D = max;
+  LOG(info) << "DalitzEE Cut, set DCA 3D range in sigma: " << mMinDca3D << " - " << mMaxDca3D;
+}
 void DalitzEECut::SetMaxDcaXY(float maxDcaXY)
 {
   mMaxDcaXY = maxDcaXY;
