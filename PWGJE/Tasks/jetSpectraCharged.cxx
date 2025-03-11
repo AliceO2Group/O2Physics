@@ -83,6 +83,7 @@ struct JetSpectraCharged {
   Configurable<bool> checkGeoPtMatched{"checkGeoPtMatched", false, "0: turn off geometry and pT matching, 1: do geometry and pT matching"};
   Configurable<int> acceptSplitCollisions{"acceptSplitCollisions", 0, "0: only look at mcCollisions that are not split; 1: accept split mcCollisions, 2: accept split mcCollisions but only look at the first reco collision associated with it"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events; jet-level rejection can also be applied at the jet finder level for jets only, here rejection is applied for collision and track process functions for the first time, and on jets in case it was set to false at the jet finder level"};
+  Configurable<bool> checkLeadConstituentMinPtForMcpJets{"checkLeadConstituentMinPtForMcpJets", false, "flag to choose whether particle level jets should have their lead track pt above leadingConstituentPtMin to be accepted; off by default, as leadingConstituentPtMin cut is only applied on MCD jets for the Pb-Pb analysis using pp MC anchored to Pb-Pb for the response matrix"};
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
@@ -238,9 +239,8 @@ struct JetSpectraCharged {
   Preslice<ChargedMCDMatchedJets> mcdjetsPerJCollision = o2::aod::jet::collisionId;
 
   template <typename TTracks, typename TJets>
-  bool isAcceptedJet(TJets const& jet)
+  bool isAcceptedJet(TJets const& jet, bool mcLevelIsParticleLevel = false)
   {
-
     if (jetAreaFractionMin > -98.0) {
       if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
@@ -260,7 +260,7 @@ struct JetSpectraCharged {
       for (const auto& constituent : jet.template tracks_as<TTracks>()) {
         double pt = constituent.pt();
 
-        if (checkConstituentMinPt && pt >= leadingConstituentPtMin) {
+        if ((!checkLeadConstituentMinPtForMcpJets && mcLevelIsParticleLevel) || (checkConstituentMinPt && pt >= leadingConstituentPtMin)) { // if the jet is mcp level and checkLeadConstituentMinPtForMcpJets is true, then the pt of the leading track of that jet does not need to be below the defined leadingConstituentPtMin cut
           isMinLeadingConstituent = true;
         }
         if (checkConstituentMaxPt && pt > leadingConstituentPtMax) {
@@ -659,6 +659,8 @@ struct JetSpectraCharged {
                                 soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& jets,
                                 aod::JetParticles const&)
   {
+    bool mcLevelIsParticleLevel = true;
+
     registry.fill(HIST("h_mcColl_counts_areasub"), 0.5);
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
@@ -718,7 +720,7 @@ struct JetSpectraCharged {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      if (!isAcceptedJet<aod::JetParticles>(jet)) {
+      if (!isAcceptedJet<aod::JetParticles>(jet, mcLevelIsParticleLevel)) {
         continue;
       }
       fillMCPAreaSubHistograms(jet, mccollision.rho());
@@ -731,6 +733,8 @@ struct JetSpectraCharged {
                          soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& jets,
                          aod::JetParticles const&)
   {
+    bool mcLevelIsParticleLevel = true;
+
     registry.fill(HIST("h_mcColl_counts"), 0.5);
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
@@ -773,7 +777,7 @@ struct JetSpectraCharged {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      if (!isAcceptedJet<aod::JetParticles>(jet)) {
+      if (!isAcceptedJet<aod::JetParticles>(jet, mcLevelIsParticleLevel)) {
         continue;
       }
       fillMCPHistograms(jet);
@@ -786,6 +790,8 @@ struct JetSpectraCharged {
                                  soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights> const& jets,
                                  aod::JetParticles const&)
   {
+    bool mcLevelIsParticleLevel = true;
+
     registry.fill(HIST("h_mcColl_counts"), 0.5);
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
@@ -812,7 +818,7 @@ struct JetSpectraCharged {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      if (!isAcceptedJet<aod::JetParticles>(jet)) {
+      if (!isAcceptedJet<aod::JetParticles>(jet, mcLevelIsParticleLevel)) {
         continue;
       }
       float jetweight = jet.eventWeight();
