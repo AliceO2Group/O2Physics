@@ -15,6 +15,7 @@
 /// \brief  QC of synthetic flow exercise
 
 #include <CCDB/BasicCCDBManager.h>
+#include <vector>
 #include <string>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -23,6 +24,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
@@ -35,6 +37,9 @@
 #include "GFW.h"
 #include "GFWCumulant.h"
 #include "GFWWeights.h"
+#include "FlowContainer.h"
+#include <TProfile.h>
+#include <TRandom3.h>
 #include <TPDGCode.h>
 
 using namespace o2;
@@ -51,14 +56,24 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgCutPtRefMin, float, 0.2f, "Minimal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtRefMax, float, 3.0f, "Maximal pT for ref tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 10.0f, "Maximal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgFlowAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgFlowEfficiency, std::string, "", "CCDB path to efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgCentVsIPTruth, std::string, "", "CCDB path to centrality vs IP truth")
+  O2_DEFINE_CONFIGURABLE(cfgFlowCumulantEnabled, bool, false, "switch of calculating flow")
+  O2_DEFINE_CONFIGURABLE(cfgFlowCumulantNbootstrap, int, 30, "Number of subsamples")
 
   ConfigurableAxis axisB{"axisB", {100, 0.0f, 20.0f}, ""};
+  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "X axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {100, 0.0f, constants::math::TwoPI}, ""};
   ConfigurableAxis axisNch{"axisNch", {300, 0.0f, 3000.0f}, "Nch in |eta|<0.8"};
 
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f}, "pt axis"};
+
+  // Cent vs IP
+  TH1D* mCentVsIPTruth = nullptr;
+  bool centVsIPTruthLoaded = false;
 
   // Corrections
   TH1D* mEfficiency = nullptr;
@@ -71,6 +86,14 @@ struct FlowMc {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
+  OutputObj<FlowContainer> fFCTrue{FlowContainer("FlowContainerTrue")};
+  OutputObj<FlowContainer> fFCReco{FlowContainer("FlowContainerReco")};
+  GFW* fGFWTrue = new GFW();
+  GFW* fGFWReco = new GFW();
+  TAxis* fPtAxis;
+  std::vector<GFW::CorrConfig> corrconfigsTruth;
+  std::vector<GFW::CorrConfig> corrconfigsReco;
+  TRandom3* fRndm = new TRandom3(0);
 
   void init(InitContext&)
   {
@@ -103,14 +126,60 @@ struct FlowMc {
     histos.add<TH2>("hEPVsPhi", "hEPVsPhi;Event Plane Angle; #varphi", HistType::kTH2D, {axisPhi, axisPhi});
     histos.add<TH2>("hPtNchGenerated", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
     histos.add<TH2>("hPtNchGlobal", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH1>("hPtMCGen", "Monte Carlo Truth; pT (GeV/c);", {HistType::kTH1D, {axisPt}});
+    histos.add<TH1>("hPtMCGlobal", "Monte Carlo Global; pT (GeV/c);", {HistType::kTH1D, {axisPt}});
+
+    o2::framework::AxisSpec axis = axisPt;
+    int nPtBins = axis.binEdges.size() - 1;
+    double* ptBins = &(axis.binEdges)[0];
+    fPtAxis = new TAxis(nPtBins, ptBins);
 
     if (cfgOutputNUAWeights) {
-      o2::framework::AxisSpec axis = axisPt;
-      int nPtBins = axis.binEdges.size() - 1;
-      double* ptBins = &(axis.binEdges)[0];
-
       fWeights->setPtBins(nPtBins, ptBins);
       fWeights->init(true, false);
+    }
+
+    if (cfgFlowCumulantEnabled) {
+      TObjArray* oba = new TObjArray();
+      oba->Add(new TNamed("ChFull22", "ChFull22"));
+      for (auto i = 0; i < fPtAxis->GetNbins(); i++)
+        oba->Add(new TNamed(Form("ChFull22_pt_%i", i + 1), "ChFull22_pTDiff"));
+      oba->Add(new TNamed("Ch10Gap22", "Ch10Gap22"));
+      for (auto i = 0; i < fPtAxis->GetNbins(); i++)
+        oba->Add(new TNamed(Form("Ch10Gap22_pt_%i", i + 1), "Ch10Gap22_pTDiff"));
+      fFCTrue->SetName("FlowContainerTrue");
+      fFCTrue->SetXAxis(fPtAxis);
+      fFCTrue->Initialize(oba, axisCentrality, cfgFlowCumulantNbootstrap);
+      fFCReco->SetName("FlowContainerReco");
+      fFCReco->SetXAxis(fPtAxis);
+      fFCReco->Initialize(oba, axisCentrality, cfgFlowCumulantNbootstrap);
+      delete oba;
+
+      fGFWTrue->AddRegion("full", -0.8, 0.8, 1, 1);
+      fGFWTrue->AddRegion("refN10", -0.8, -0.5, 1, 1);
+      fGFWTrue->AddRegion("refP10", 0.5, 0.8, 1, 1);
+      fGFWTrue->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
+      fGFWTrue->AddRegion("poifull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2);
+      fGFWTrue->AddRegion("olN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 4);
+      fGFWTrue->AddRegion("olfull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 4);
+      corrconfigsTruth.push_back(fGFWTrue->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
+      corrconfigsTruth.push_back(fGFWTrue->GetCorrelatorConfig("poifull full | olfull {2 -2}", "ChFull22", kTRUE));
+      corrconfigsTruth.push_back(fGFWTrue->GetCorrelatorConfig("refN10 {2} refP10 {-2}", "Ch10Gap22", kFALSE));
+      corrconfigsTruth.push_back(fGFWTrue->GetCorrelatorConfig("poiN10 refN10 | olN10 {2} refP10 {-2}", "Ch10Gap22", kTRUE));
+      fGFWTrue->CreateRegions();
+
+      fGFWReco->AddRegion("full", -0.8, 0.8, 1, 1);
+      fGFWReco->AddRegion("refN10", -0.8, -0.5, 1, 1);
+      fGFWReco->AddRegion("refP10", 0.5, 0.8, 1, 1);
+      fGFWReco->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
+      fGFWReco->AddRegion("poifull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2);
+      fGFWReco->AddRegion("olN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 4);
+      fGFWReco->AddRegion("olfull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 4);
+      corrconfigsReco.push_back(fGFWReco->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
+      corrconfigsReco.push_back(fGFWReco->GetCorrelatorConfig("poifull full | olfull {2 -2}", "ChFull22", kTRUE));
+      corrconfigsReco.push_back(fGFWReco->GetCorrelatorConfig("refN10 {2} refP10 {-2}", "Ch10Gap22", kFALSE));
+      corrconfigsReco.push_back(fGFWReco->GetCorrelatorConfig("poiN10 refN10 | olN10 {2} refP10 {-2}", "Ch10Gap22", kTRUE));
+      fGFWReco->CreateRegions();
     }
   }
 
@@ -152,6 +221,54 @@ struct FlowMc {
     return true;
   }
 
+  void fillFC(GFW* fGFW, bool isMCTruth, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
+  {
+    double dnx, val;
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (!corrconf.pTDif) {
+      if (dnx == 0)
+        return;
+      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (std::fabs(val) < 1) {
+        if (isMCTruth)
+          fFCTrue->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+        else
+          fFCReco->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+      }
+      return;
+    }
+    for (auto i = 1; i <= fPtAxis->GetNbins(); i++) {
+      dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
+      if (dnx == 0)
+        continue;
+      val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
+      if (std::fabs(val) < 1) {
+        if (isMCTruth)
+          fFCTrue->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
+        else
+          fFCReco->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
+      }
+    }
+    return;
+  }
+
+  void loadCentVsIPTruth(uint64_t timestamp)
+  {
+    if (centVsIPTruthLoaded)
+      return;
+    if (cfgCentVsIPTruth.value.empty() == false) {
+      mCentVsIPTruth = ccdb->getForTimeStamp<TH1D>(cfgCentVsIPTruth, timestamp);
+      if (mCentVsIPTruth)
+        LOGF(info, "Loaded CentVsIPTruth weights from %s (%p)", cfgCentVsIPTruth.value.c_str(), (void*)mCentVsIPTruth);
+      else
+        LOGF(fatal, "Failed to load CentVsIPTruth weights from %s", cfgCentVsIPTruth.value.c_str());
+
+      centVsIPTruthLoaded = true;
+    } else {
+      LOGF(fatal, "when calculate flow, Cent Vs IP distribution must be provided");
+    }
+  }
+
   using RecoTracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
 
   void process(aod::McCollision const& mcCollision, aod::BCsWithTimestamps const&, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& mcParticles, RecoTracks const&)
@@ -160,11 +277,12 @@ struct FlowMc {
     float imp = mcCollision.impactParameter();
     float evPhi = mcCollision.eventPlaneAngle();
     float vtxz = mcCollision.posZ();
-    if (evPhi < 0)
-      evPhi += constants::math::TwoPI;
+    evPhi = RecoDecay::constrainAngle(evPhi);
 
     int64_t nCh = 0;
     int64_t nChGlobal = 0;
+    float centrality = 0;
+    float lRandom = fRndm->Rndm();
     float weff = 1.;
     float wacc = 1.;
     auto bc = mcCollision.bc_as<aod::BCsWithTimestamps>();
@@ -174,6 +292,12 @@ struct FlowMc {
       // event within range
       histos.fill(HIST("hImpactParameter"), imp);
       histos.fill(HIST("hEventPlaneAngle"), evPhi);
+      if (cfgFlowCumulantEnabled) {
+        loadCentVsIPTruth(bc.timestamp());
+        centrality = mCentVsIPTruth->GetBinContent(mCentVsIPTruth->GetXaxis()->FindBin(imp));
+        fGFWTrue->Clear();
+        fGFWReco->Clear();
+      }
 
       for (auto const& mcParticle : mcParticles) {
         int pdgCode = std::abs(mcParticle.pdgCode());
@@ -204,13 +328,11 @@ struct FlowMc {
           continue;
 
         float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
-        if (deltaPhi < 0)
-          deltaPhi += constants::math::TwoPI;
-        if (deltaPhi > constants::math::TwoPI)
-          deltaPhi -= constants::math::TwoPI;
+        deltaPhi = RecoDecay::constrainAngle(deltaPhi);
         histos.fill(HIST("hPtVsPhiGenerated"), deltaPhi, mcParticle.pt());
         histos.fill(HIST("hBVsPtVsPhiGenerated"), imp, deltaPhi, mcParticle.pt());
         histos.fill(HIST("hPtNchGenerated"), mcParticle.pt(), nChGlobal);
+        histos.fill(HIST("hPtMCGen"), mcParticle.pt());
 
         nCh++;
 
@@ -241,10 +363,30 @@ struct FlowMc {
         }
 
         bool withinPtRef = (cfgCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtRefMax); // within RF pT range
+        bool withinPtPOI = (cfgCutPtPOIMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtPOIMax); // within POI pT range
         if (cfgOutputNUAWeights && withinPtRef)
           fWeights->fill(mcParticle.phi(), mcParticle.eta(), vtxz, mcParticle.pt(), 0, 0);
         if (!setCurrentParticleWeights(weff, wacc, mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), vtxz))
           continue;
+
+        if (cfgFlowCumulantEnabled) {
+          if (withinPtRef)
+            fGFWTrue->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 1);
+          if (withinPtPOI)
+            fGFWTrue->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 2);
+          if (withinPtPOI && withinPtRef)
+            fGFWTrue->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 4);
+
+          if (validGlobal) {
+            if (withinPtRef)
+              fGFWReco->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 1);
+            if (withinPtPOI)
+              fGFWReco->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 2);
+            if (withinPtPOI && withinPtRef)
+              fGFWReco->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 4);
+          }
+        }
+
         if (withinPtRef) {
           histos.fill(HIST("hEPVsPhiMC"), evPhi, mcParticle.phi());
         }
@@ -260,6 +402,7 @@ struct FlowMc {
           histos.fill(HIST("hPtVsPhiGlobal"), deltaPhi, mcParticle.pt(), wacc * weff);
           histos.fill(HIST("hBVsPtVsPhiGlobal"), imp, deltaPhi, mcParticle.pt(), wacc * weff);
           histos.fill(HIST("hPtNchGlobal"), mcParticle.pt(), nChGlobal);
+          histos.fill(HIST("hPtMCGlobal"), mcParticle.pt());
         }
         // if any track present, fill
         if (validTrack)
@@ -271,79 +414,18 @@ struct FlowMc {
         if (validITSABTrack)
           histos.fill(HIST("hBVsPtVsPhiITSABTrack"), imp, deltaPhi, mcParticle.pt(), wacc * weff);
       }
+
+      if (cfgFlowCumulantEnabled) {
+        for (uint l_ind = 0; l_ind < corrconfigsTruth.size(); l_ind++) {
+          fillFC(fGFWTrue, true, corrconfigsTruth.at(l_ind), centrality, lRandom);
+        }
+        for (uint l_ind = 0; l_ind < corrconfigsReco.size(); l_ind++) {
+          fillFC(fGFWReco, false, corrconfigsReco.at(l_ind), centrality, lRandom);
+        }
+      }
     }
     histos.fill(HIST("hNchVsImpactParameter"), imp, nCh);
   }
-
-  using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
-
-  void processCascade(aod::McParticle const& mcParticle, soa::SmallGroups<LabeledCascades> const& cascades, RecoTracks const&, aod::McCollisions const&)
-  {
-    auto mcCollision = mcParticle.mcCollision();
-    float imp = mcCollision.impactParameter();
-
-    int pdgCode = std::abs(mcParticle.pdgCode());
-    if (pdgCode != PDG_t::kXiMinus && pdgCode != PDG_t::kOmegaMinus)
-      return;
-
-    if (!mcParticle.isPhysicalPrimary())
-      return;
-    if (std::fabs(mcParticle.eta()) > 0.8)
-      return;
-
-    float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
-    if (deltaPhi < 0)
-      deltaPhi += constants::math::TwoPI;
-    if (deltaPhi > constants::math::TwoPI)
-      deltaPhi -= constants::math::TwoPI;
-    if (pdgCode == PDG_t::kXiMinus)
-      histos.fill(HIST("hBVsPtVsPhiGeneratedXi"), imp, deltaPhi, mcParticle.pt());
-    if (pdgCode == PDG_t::kOmegaMinus)
-      histos.fill(HIST("hBVsPtVsPhiGeneratedOmega"), imp, deltaPhi, mcParticle.pt());
-
-    if (cascades.size() > 0) {
-      if (pdgCode == PDG_t::kXiMinus)
-        histos.fill(HIST("hBVsPtVsPhiGlobalXi"), imp, deltaPhi, mcParticle.pt());
-      if (pdgCode == PDG_t::kOmegaMinus)
-        histos.fill(HIST("hBVsPtVsPhiGlobalOmega"), imp, deltaPhi, mcParticle.pt());
-    }
-  }
-  PROCESS_SWITCH(FlowMc, processCascade, "Process cascades", true);
-
-  using LabeledV0s = soa::Join<aod::V0Datas, aod::McV0Labels>;
-
-  void processV0s(aod::McParticle const& mcParticle, soa::SmallGroups<LabeledV0s> const& v0s, RecoTracks const&, aod::McCollisions const&)
-  {
-    auto mcCollision = mcParticle.mcCollision();
-    float imp = mcCollision.impactParameter();
-
-    int pdgCode = std::abs(mcParticle.pdgCode());
-    if (pdgCode != PDG_t::kK0Short && pdgCode != PDG_t::kLambda0)
-      return;
-
-    if (!mcParticle.isPhysicalPrimary())
-      return;
-    if (std::fabs(mcParticle.eta()) > 0.8)
-      return;
-
-    float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
-    if (deltaPhi < 0)
-      deltaPhi += constants::math::TwoPI;
-    if (deltaPhi > constants::math::TwoPI)
-      deltaPhi -= constants::math::TwoPI;
-    if (pdgCode == PDG_t::kK0Short)
-      histos.fill(HIST("hBVsPtVsPhiGeneratedK0Short"), imp, deltaPhi, mcParticle.pt());
-    if (pdgCode == PDG_t::kLambda0)
-      histos.fill(HIST("hBVsPtVsPhiGeneratedLambda"), imp, deltaPhi, mcParticle.pt());
-
-    if (v0s.size() > 0) {
-      if (pdgCode == PDG_t::kK0Short)
-        histos.fill(HIST("hBVsPtVsPhiGlobalK0Short"), imp, deltaPhi, mcParticle.pt());
-      if (pdgCode == PDG_t::kLambda0)
-        histos.fill(HIST("hBVsPtVsPhiGlobalLambda"), imp, deltaPhi, mcParticle.pt());
-    }
-  }
-  PROCESS_SWITCH(FlowMc, processV0s, "Process V0s", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

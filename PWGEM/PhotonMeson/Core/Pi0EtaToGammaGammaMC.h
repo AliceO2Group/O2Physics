@@ -62,7 +62,7 @@ using MyCollision = MyCollisions::iterator;
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts>;
 using MyMCCollision = MyMCCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
+using MyV0Photons = soa::Filtered<soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds, aod::V0PhotonsKFPrefilterBitDerived>>;
 using MyV0Photon = MyV0Photons::iterator;
 
 using MyEMCClusters = soa::Join<aod::SkimEMCClusters, aod::EMEMCClusterMCLabels, aod::EMCEMEventIds>;
@@ -74,7 +74,7 @@ using MyPHOSCluster = MyEMCClusters::iterator;
 using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 using MyMCV0Leg = MyMCV0Legs::iterator;
 
-using MyMCElectrons = soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronMCLabels>;
+using MyMCElectrons = soa::Filtered<soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBitDerived, aod::EMPrimaryElectronMCLabels>>;
 using MyMCElectron = MyMCElectrons::iterator;
 
 template <PairType pairtype, typename... Types>
@@ -91,6 +91,7 @@ struct Pi0EtaToGammaGammaMC {
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
   Configurable<float> maxY_rec{"maxY_rec", 0.9, "maximum rapidity for reconstructed particles"};
   Configurable<std::string> fd_k0s_to_pi0{"fd_k0s_pi0", "1.0", "feed down correction to pi0"};
+  Configurable<bool> cfgRequireTrueAssociation{"cfgRequireTrueAssociation", false, "flag to require true mc collision association"};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -118,8 +119,9 @@ struct Pi0EtaToGammaGammaMC {
     Configurable<bool> cfg_require_v0_with_itstpc{"cfg_require_v0_with_itstpc", false, "flag to select V0s with ITS-TPC matched tracks"};
     Configurable<bool> cfg_require_v0_with_itsonly{"cfg_require_v0_with_itsonly", false, "flag to select V0s with ITSonly tracks"};
     Configurable<bool> cfg_require_v0_with_tpconly{"cfg_require_v0_with_tpconly", false, "flag to select V0s with TPConly tracks"};
-    Configurable<bool> cfg_require_v0_on_wwire_ib{"cfg_require_v0_on_wwire_ib", false, "flag to select V0s on W wires ITSib"};
     Configurable<float> cfg_min_pt_v0{"cfg_min_pt_v0", 0.1, "min pT for v0 photons at PV"};
+    Configurable<float> cfg_max_pt_v0{"cfg_max_pt_v0", 1e+10, "max pT for v0 photons at PV"};
+    Configurable<float> cfg_min_eta_v0{"cfg_min_eta_v0", -0.8, "min eta for v0 photons at PV"};
     Configurable<float> cfg_max_eta_v0{"cfg_max_eta_v0", 0.8, "max eta for v0 photons at PV"};
     Configurable<float> cfg_min_v0radius{"cfg_min_v0radius", 4.0, "min v0 radius"};
     Configurable<float> cfg_max_v0radius{"cfg_max_v0radius", 90.0, "max v0 radius"};
@@ -130,11 +132,13 @@ struct Pi0EtaToGammaGammaMC {
     Configurable<float> cfg_max_chi2kf{"cfg_max_chi2kf", 1e+10, "max chi2/ndf with KF"};
     Configurable<bool> cfg_require_v0_with_correct_xz{"cfg_require_v0_with_correct_xz", true, "flag to select V0s with correct xz"};
     Configurable<bool> cfg_reject_v0_on_itsib{"cfg_reject_v0_on_itsib", true, "flag to reject V0s on ITSib"};
+    Configurable<bool> cfg_apply_cuts_from_prefilter_derived{"cfg_apply_cuts_from_prefilter_derived", false, "flag to apply prefilter to V0"};
 
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 10, "min ncluster tpc"};
     Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 40, "min ncrossed rows"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
+    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -3.0, "min. TPC n sigma for electron"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron"};
     Configurable<bool> cfg_disable_itsonly_track{"cfg_disable_itsonly_track", false, "flag to disable ITSonly tracks"};
@@ -147,7 +151,6 @@ struct Pi0EtaToGammaGammaMC {
     Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
     Configurable<float> cfg_max_mass{"cfg_max_mass", 0.1, "max mass"};
     Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", true, "flag to apply phiv cut"};
-    Configurable<bool> cfg_apply_pf{"cfg_apply_pf", false, "flag to apply phiv prefilter"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
     Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};
@@ -158,16 +161,21 @@ struct Pi0EtaToGammaGammaMC {
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 5, "min ncluster its"};
     Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 70, "min ncrossed rows"};
+    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
-    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
+    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.05, "max dca XY for single track in cm"};
+    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.05, "max dca Z for single track in cm"};
+    Configurable<float> cfg_max_dca3dsigma_track{"cfg_max_dca3dsigma_track", 1.5, "max DCA 3D in sigma"};
+    Configurable<bool> cfg_apply_cuts_from_prefilter_derived{"cfg_apply_cuts_from_prefilter_derived", false, "flag to apply prefilter to electron"};
 
-    Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DalitzEECut::PIDSchemes::kTPConly), "pid scheme [kTPConly : 0]"};
+    Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DalitzEECut::PIDSchemes::kTOFif), "pid scheme [kTOFif : 0, kTPConly : 1]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron inclusion"};
-    Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -3.0, "min. TPC n sigma for pion exclusion"};
-    Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +3.0, "max. TPC n sigma for pion exclusion"};
+    Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -0.0, "min. TPC n sigma for pion exclusion"};
+    Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +0.0, "max. TPC n sigma for pion exclusion"};
+    Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -3.0, "min. TOF n sigma for electron inclusion"};
+    Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +3.0, "max. TOF n sigma for electron inclusion"};
   } dileptoncuts;
 
   EMCPhotonCut fEMCCut;
@@ -213,8 +221,6 @@ struct Pi0EtaToGammaGammaMC {
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
     if constexpr (pairtype == PairType::kPCMDalitzEE) {
       o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "ee#gamma");
-    } else if constexpr (pairtype == PairType::kPCMDalitzMuMu) {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "#mu#mu#gamma");
     } else {
       o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "#gamma#gamma");
     }
@@ -302,8 +308,8 @@ struct Pi0EtaToGammaGammaMC {
     fV0PhotonCut = V0PhotonCut("fV0PhotonCut", "fV0PhotonCut");
 
     // for v0
-    fV0PhotonCut.SetV0PtRange(pcmcuts.cfg_min_pt_v0, 1e10f);
-    fV0PhotonCut.SetV0EtaRange(-pcmcuts.cfg_max_eta_v0, +pcmcuts.cfg_max_eta_v0);
+    fV0PhotonCut.SetV0PtRange(pcmcuts.cfg_min_pt_v0, pcmcuts.cfg_max_pt_v0);
+    fV0PhotonCut.SetV0EtaRange(pcmcuts.cfg_min_eta_v0, pcmcuts.cfg_max_eta_v0);
     fV0PhotonCut.SetMinCosPA(pcmcuts.cfg_min_cospa);
     fV0PhotonCut.SetMaxPCA(pcmcuts.cfg_max_pca);
     fV0PhotonCut.SetMaxChi2KF(pcmcuts.cfg_max_chi2kf);
@@ -314,43 +320,21 @@ struct Pi0EtaToGammaGammaMC {
     // for track
     fV0PhotonCut.SetTrackPtRange(pcmcuts.cfg_min_pt_v0 * 0.4, 1e+10f);
     fV0PhotonCut.SetTrackEtaRange(-pcmcuts.cfg_max_eta_v0, +pcmcuts.cfg_max_eta_v0);
+    fV0PhotonCut.SetMinNClustersTPC(pcmcuts.cfg_min_ncluster_tpc);
     fV0PhotonCut.SetMinNCrossedRowsTPC(pcmcuts.cfg_min_ncrossedrows);
     fV0PhotonCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    fV0PhotonCut.SetMaxFracSharedClustersTPC(pcmcuts.cfg_max_frac_shared_clusters_tpc);
     fV0PhotonCut.SetChi2PerClusterTPC(0.0, pcmcuts.cfg_max_chi2tpc);
     fV0PhotonCut.SetTPCNsigmaElRange(pcmcuts.cfg_min_TPCNsigmaEl, pcmcuts.cfg_max_TPCNsigmaEl);
     fV0PhotonCut.SetChi2PerClusterITS(-1e+10, pcmcuts.cfg_max_chi2its);
-    fV0PhotonCut.SetDisableITSonly(pcmcuts.cfg_disable_itsonly_track);
-    fV0PhotonCut.SetDisableTPConly(pcmcuts.cfg_disable_tpconly_track);
-
-    if (pcmcuts.cfg_reject_v0_on_itsib) {
-      fV0PhotonCut.SetNClustersITS(2, 4);
-    } else {
-      fV0PhotonCut.SetNClustersITS(0, 7);
-    }
+    fV0PhotonCut.SetNClustersITS(0, 7);
     fV0PhotonCut.SetMeanClusterSizeITSob(0.0, 16.0);
     fV0PhotonCut.SetIsWithinBeamPipe(pcmcuts.cfg_require_v0_with_correct_xz);
-
-    if (pcmcuts.cfg_require_v0_with_itstpc) {
-      fV0PhotonCut.SetRequireITSTPC(true);
-      fV0PhotonCut.SetMaxPCA(1.0);
-      fV0PhotonCut.SetRxyRange(4, 40);
-    }
-    if (pcmcuts.cfg_require_v0_with_itsonly) {
-      fV0PhotonCut.SetRequireITSonly(true);
-      fV0PhotonCut.SetMaxPCA(1.0);
-      fV0PhotonCut.SetRxyRange(4, 24);
-    }
-    if (pcmcuts.cfg_require_v0_with_tpconly) {
-      fV0PhotonCut.SetRequireTPConly(true);
-      fV0PhotonCut.SetMaxPCA(3.0);
-      fV0PhotonCut.SetRxyRange(36, 90);
-    }
-    if (pcmcuts.cfg_require_v0_on_wwire_ib) {
-      fV0PhotonCut.SetMaxPCA(0.3);
-      fV0PhotonCut.SetOnWwireIB(true);
-      fV0PhotonCut.SetOnWwireOB(false);
-      fV0PhotonCut.SetRxyRange(7, 14);
-    }
+    fV0PhotonCut.SetDisableITSonly(pcmcuts.cfg_disable_itsonly_track);
+    fV0PhotonCut.SetDisableTPConly(pcmcuts.cfg_disable_tpconly_track);
+    fV0PhotonCut.SetRequireITSTPC(pcmcuts.cfg_require_v0_with_itstpc);
+    fV0PhotonCut.SetRequireITSonly(pcmcuts.cfg_require_v0_with_itsonly);
+    fV0PhotonCut.SetRequireTPConly(pcmcuts.cfg_require_v0_with_tpconly);
   }
 
   void DefineDileptonCut()
@@ -370,16 +354,19 @@ struct Pi0EtaToGammaGammaMC {
     fDileptonCut.SetMinNClustersTPC(dileptoncuts.cfg_min_ncluster_tpc);
     fDileptonCut.SetMinNCrossedRowsTPC(dileptoncuts.cfg_min_ncrossedrows);
     fDileptonCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    fDileptonCut.SetMaxFracSharedClustersTPC(dileptoncuts.cfg_max_frac_shared_clusters_tpc);
     fDileptonCut.SetChi2PerClusterTPC(0.0, dileptoncuts.cfg_max_chi2tpc);
     fDileptonCut.SetChi2PerClusterITS(0.0, dileptoncuts.cfg_max_chi2its);
     fDileptonCut.SetNClustersITS(dileptoncuts.cfg_min_ncluster_its, 7);
     fDileptonCut.SetMaxDcaXY(dileptoncuts.cfg_max_dcaxy);
     fDileptonCut.SetMaxDcaZ(dileptoncuts.cfg_max_dcaz);
+    fDileptonCut.SetTrackDca3DRange(0.f, dileptoncuts.cfg_max_dca3dsigma_track); // in sigma
 
     // for eID
     fDileptonCut.SetPIDScheme(dileptoncuts.cfg_pid_scheme);
     fDileptonCut.SetTPCNsigmaElRange(dileptoncuts.cfg_min_TPCNsigmaEl, dileptoncuts.cfg_max_TPCNsigmaEl);
     fDileptonCut.SetTPCNsigmaPiRange(dileptoncuts.cfg_min_TPCNsigmaPi, dileptoncuts.cfg_max_TPCNsigmaPi);
+    fDileptonCut.SetTOFNsigmaElRange(dileptoncuts.cfg_min_TOFNsigmaEl, dileptoncuts.cfg_max_TOFNsigmaEl);
   }
 
   void DefineEMCCut()
@@ -421,10 +408,6 @@ struct Pi0EtaToGammaGammaMC {
   Preslice<MyMCElectrons> perCollision_electron = aod::emprimaryelectron::emeventId;
   Partition<MyMCElectrons> positrons = o2::aod::emprimaryelectron::sign > int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt&& nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
   Partition<MyMCElectrons> electrons = o2::aod::emprimaryelectron::sign < int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt && nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
-
-  // Preslice<MyMCMuons> perCollision_muon = aod::emprimarymuon::emeventId;
-  // Partition<MyMCMuons> muons_pos = o2::aod::emprimarymuon::sign > int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt&& nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaMu) < o2::aod::pidtpc::tpcNSigmaMu&& o2::aod::pidtpc::tpcNSigmaMu < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaMu);
-  // Partition<MyMCMuons> muons_neg = o2::aod::emprimarymuon::sign < int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt && nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaMu) < o2::aod::pidtpc::tpcNSigmaMu && o2::aod::pidtpc::tpcNSigmaMu < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaMu);
 
   template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2, typename TMCCollisions, typename TMCParticles>
   void runTruePairing(TCollisions const& collisions,
@@ -535,9 +518,15 @@ struct Pi0EtaToGammaGammaMC {
 
           if (pi0id > 0) {
             auto pi0mc = mcparticles.iteratorAt(pi0id);
+            if (cfgRequireTrueAssociation && (pi0mc.emmceventId() != collision.emmceventId())) {
+              continue;
+            }
             o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0, collision.weight());
           } else if (etaid > 0) {
             auto etamc = mcparticles.iteratorAt(etaid);
+            if (cfgRequireTrueAssociation && (etamc.emmceventId() != collision.emmceventId())) {
+              continue;
+            }
             o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0, collision.weight());
           }
         } // end of pairing loop
@@ -595,9 +584,15 @@ struct Pi0EtaToGammaGammaMC {
             }
             if (pi0id > 0) {
               auto pi0mc = mcparticles.iteratorAt(pi0id);
+              if (cfgRequireTrueAssociation && (pi0mc.emmceventId() != collision.emmceventId())) {
+                continue;
+              }
               o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0, collision.weight());
             } else if (etaid > 0) {
               auto etamc = mcparticles.iteratorAt(etaid);
+              if (cfgRequireTrueAssociation && (etamc.emmceventId() != collision.emmceventId())) {
+                continue;
+              }
               o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0, collision.weight());
             }
           } // end of dielectron loop
@@ -696,6 +691,9 @@ struct Pi0EtaToGammaGammaMC {
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
+
+  Filter prefilter_pcm = ifnode(pcmcuts.cfg_apply_cuts_from_prefilter_derived.node(), o2::aod::v0photonkf::pfbderived == static_cast<uint16_t>(0), true);
+  Filter prefilter_primaryelectron = ifnode(dileptoncuts.cfg_apply_cuts_from_prefilter_derived.node(), o2::aod::emprimaryelectron::pfbderived == static_cast<uint16_t>(0), true);
 
   void processAnalysis(FilteredMyCollisions const& collisions, MyMCCollisions const& mccollisions, aod::EMMCParticles const& mcparticles, Types const&... args)
   {

@@ -65,7 +65,7 @@ struct AssociateMCInfoPhoton {
 
   void init(o2::framework::InitContext&)
   {
-    auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{6, 0.5f, 6.5f}});
+    auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1F, {{6, 0.5f, 6.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "has mc collision");
 
@@ -113,7 +113,7 @@ struct AssociateMCInfoPhoton {
   std::vector<uint16_t> genEta;   // primary, pt, y
 
   template <uint8_t system, typename TTracks, typename TFwdTracks, typename TPCMs, typename TPCMLegs, typename TPHOSs, typename TEMCs, typename TEMPrimaryElectrons>
-  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcParticles, TTracks const& o2tracks, TFwdTracks const&, TPCMs const& v0photons, TPCMLegs const& /*v0legs*/, TPHOSs const& /*phosclusters*/, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons)
+  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcParticles, TTracks const& o2tracks, TFwdTracks const&, TPCMs const& v0photons, TPCMLegs const&, TPHOSs const&, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons)
   {
     // temporary variables used for the indexing of the skimmed MC stack
     std::map<uint64_t, int> fNewLabels;
@@ -180,6 +180,7 @@ struct AssociateMCInfoPhoton {
         binnedGenPt(genGamma, genPi0, genEta);
       }
 
+      // LOGF(info, "collision.globalIndex() = %d , mceventlabels.lastIndex() = %d", collision.globalIndex(), mceventlabels.lastIndex());
       mceventlabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
 
       for (const auto& mcParticle : groupedMcParticles) { // store necessary information for denominator of efficiency
@@ -447,80 +448,90 @@ struct AssociateMCInfoPhoton {
     fEventLabels.clear();
     fCounters[0] = 0;
     fCounters[1] = 0;
-  } //  end of skimmingMC
+  } // end of skimmingMC
 
   void processMC_PCM(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs)
   {
     skimmingMC<kPCM>(collisions, bcs, mccollisions, mcParticles, o2tracks, nullptr, v0photons, v0legs, nullptr, nullptr, nullptr);
   }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM, "create em mc event table for PCM", false);
+
   void processMC_PCM_Electron(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::EMPrimaryElectronsFromDalitz const& emprimaryelectrons)
   {
     const uint8_t sysflag = kPCM | kElectron;
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcParticles, o2tracks, nullptr, v0photons, v0legs, nullptr, nullptr, emprimaryelectrons);
   }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_Electron, "create em mc event table for PCM, Electron", false);
+
   void processMC_Electron(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, TracksMC const& o2tracks, aod::EMPrimaryElectronsFromDalitz const& emprimaryelectrons)
   {
     const uint8_t sysflag = kElectron;
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcParticles, o2tracks, nullptr, nullptr, nullptr, nullptr, nullptr, emprimaryelectrons);
   }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_Electron, "create em mc event table for Electron", false);
+
   void processMC_PHOS(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, aod::PHOSClusters const& phosclusters)
   {
     skimmingMC<kPHOS>(collisions, bcs, mccollisions, mcParticles, nullptr, nullptr, nullptr, nullptr, phosclusters, nullptr, nullptr);
   }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PHOS, "create em mc event table for PHOS", false);
+
   void processMC_EMC(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, MyEMCClusters const& emcclusters)
   {
     skimmingMC<kEMC>(collisions, bcs, mccollisions, mcParticles, nullptr, nullptr, nullptr, nullptr, nullptr, emcclusters, nullptr);
   }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_EMC, "create em mc event table for EMCal", false);
+
   void processMC_PCM_PHOS(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS;
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcParticles, o2tracks, nullptr, v0photons, v0legs, phosclusters, nullptr, nullptr);
   }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_PHOS, "create em mc event table for PCM, PHOS", false);
+
   void processMC_PCM_PHOS_Electron(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters, aod::EMPrimaryElectronsFromDalitz const& emprimaryelectrons)
   {
     const uint8_t sysflag = kPCM | kPHOS | kElectron;
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcParticles, o2tracks, nullptr, v0photons, v0legs, phosclusters, nullptr, emprimaryelectrons);
   }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_PHOS_Electron, "create em mc event table for PCM, PHOS, Electron", false);
+
   void processMC_PCM_EMC(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, MyEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPCM | kEMC;
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcParticles, o2tracks, nullptr, v0photons, v0legs, nullptr, emcclusters, nullptr);
   }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_EMC, "create em mc event table for PCM, EMCal", false);
+
   void processMC_PCM_EMC_Electron(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, MyEMCClusters const& emcclusters, aod::EMPrimaryElectronsFromDalitz const& emprimaryelectrons)
   {
     const uint8_t sysflag = kPCM | kEMC | kElectron;
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcParticles, o2tracks, nullptr, v0photons, v0legs, nullptr, emcclusters, emprimaryelectrons);
   }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_EMC_Electron, "create em mc event table for PCM, EMCal, Electron", false);
+
   void processMC_PHOS_EMC(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, aod::PHOSClusters const& phosclusters, MyEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPHOS | kEMC;
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcParticles, nullptr, nullptr, nullptr, nullptr, phosclusters, emcclusters, nullptr);
   }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PHOS_EMC, "create em mc event table for PHOS, EMCal", false);
+
   void processMC_PCM_PHOS_EMC(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters, MyEMCClusters const& emcclusters)
   {
     const uint8_t sysflag = kPCM | kPHOS | kEMC;
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcParticles, o2tracks, nullptr, v0photons, v0legs, phosclusters, emcclusters, nullptr);
   }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_PHOS_EMC, "create em mc event table for PCM, PHOS, EMCal", false);
+
   void processMC_PCM_PHOS_EMC_Electron(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::PHOSClusters const& phosclusters, MyEMCClusters const& emcclusters, aod::EMPrimaryElectronsFromDalitz const& emprimaryelectrons)
   {
     const uint8_t sysflag = kPCM | kPHOS | kEMC | kElectron;
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcParticles, o2tracks, nullptr, v0photons, v0legs, phosclusters, emcclusters, emprimaryelectrons);
   }
+  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_PHOS_EMC_Electron, "create em mc event table for PCM, PHOS, EMCal, Electron", false);
 
   void processDummy(MyCollisionsMC const&) {}
-
-  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM, "create em mc event table for PCM", false);
-  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_Electron, "create em mc event table for PCM, Electron", false);
-  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_Electron, "create em mc event table for Electron", false);
-  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PHOS, "create em mc event table for PHOS", false);
-  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_EMC, "create em mc event table for EMCal", false);
-  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_PHOS, "create em mc event table for PCM, PHOS", false);
-  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_PHOS_Electron, "create em mc event table for PCM, PHOS, Electron", false);
-  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_EMC, "create em mc event table for PCM, EMCal", false);
-  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_EMC_Electron, "create em mc event table for PCM, EMCal, Electron", false);
-  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PHOS_EMC, "create em mc event table for PHOS, EMCal", false);
-  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_PHOS_EMC, "create em mc event table for PCM, PHOS, EMCal", false);
-  PROCESS_SWITCH(AssociateMCInfoPhoton, processMC_PCM_PHOS_EMC_Electron, "create em mc event table for PCM, PHOS, EMCal, Electron", false);
   PROCESS_SWITCH(AssociateMCInfoPhoton, processDummy, "processDummy", true);
 };
 

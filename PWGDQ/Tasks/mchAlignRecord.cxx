@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <vector>
 #include <iostream>
+#include <memory>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -117,8 +118,8 @@ struct mchAlignRecordTask {
   Configurable<double> fAllowedVarZ{"variation-z", 2.0, "Allowed variation for z axis in cm"};
   Configurable<double> cfgSigmaX{"cfgSigmaX", 1000., "Sigma cut along X"};
   Configurable<double> cfgSigmaY{"cfgSigmaY", 1000., "Sigma cut along Y"};
-  Configurable<double> cfgChamberResolutionX{"cfgChamberResolutionX", 0.04, "Chamber resolution along X configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
-  Configurable<double> cfgChamberResolutionY{"cfgChamberResolutionY", 0.04, "Chamber resolution along Y configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
+  Configurable<double> cfgChamberResolutionX{"cfgChamberResolutionX", 0.4, "Chamber resolution along X configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
+  Configurable<double> cfgChamberResolutionY{"cfgChamberResolutionY", 0.4, "Chamber resolution along Y configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
   Configurable<double> cfgSigmaCutImprove{"cfgSigmaCutImprove", 6., "Sigma cut for track improvement"};
   struct : ConfigurableGroup {
     Configurable<std::vector<int>> cfgDetElem{"cfgDetElem",
@@ -128,6 +129,8 @@ struct mchAlignRecordTask {
                                               {},
                                               "List of param mask for d.o.f to be fixed"};
   } fFixDetElem;
+
+  Preslice<aod::FwdTrkCl> perMuon = aod::fwdtrkcl::fwdtrackId;
 
   void init(InitContext& ic)
   {
@@ -335,13 +338,9 @@ struct mchAlignRecordTask {
         continue;
       }
 
+      auto clustersSliced = clusters.sliceBy(perMuon, track.globalIndex()); // Slice clusters by muon id
       // Loop over attached clusters
-      for (auto const& cluster : clusters) {
-
-        if (cluster.template fwdtrack_as<TTracks>() != track) {
-          continue;
-        }
-
+      for (auto const& cluster : clustersSliced) {
         clIndex += 1;
 
         mch::Cluster* mch_cluster = new mch::Cluster();
