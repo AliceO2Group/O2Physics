@@ -1667,7 +1667,7 @@ struct QAProcessCent {
   }
 };
 
-struct pidcme { // o2-linter: disable=name/workflow-file o2-linter: disable=name/struct  do not want to change woflow name for use
+struct pidcme { // o2-linter: disable=name/workflow-file(keep hyperloop workflow name for use)  o2-linter: disable=name/struct(keep hyperloop workflow name for use)
   HistogramRegistry histosQA{"histosmain", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2}, "Modulation of interest"};
