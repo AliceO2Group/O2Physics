@@ -1095,8 +1095,8 @@ struct KaonIsospinFluctuations {
       } else if (track.hasTOF() && track.beta() > 0.0 && selPionTOF(track)) {
         IdMethod = kTOFidentified;
         return true;
-      } else
-        return false;
+      } 
+      return false;
     }
     return false;
   }
@@ -1114,8 +1114,8 @@ struct KaonIsospinFluctuations {
       } else if (track.hasTOF() && track.beta() > 0.0 && selKaonTOF(track)) {
         IdMethod = kTOFidentified;
         return true;
-      } else
-        return false;
+      }
+      return false;
     }
     return false;
   }
@@ -1133,8 +1133,8 @@ struct KaonIsospinFluctuations {
       } else if (track.hasTOF() && track.beta() > 0.0 && selProtonTOF(track)) {
         IdMethod = kTOFidentified;
         return true;
-      } else
-        return false;
+      }
+      return false;
     }
     return false;
   }
@@ -1152,8 +1152,8 @@ struct KaonIsospinFluctuations {
       } else if (track.hasTOF() && track.beta() > 0.0 && selDeuteronTOF(track)) {
         IdMethod = kTOFidentified;
         return true;
-      } else
-        return false;
+      }
+      return false;
     }
     return false;
   }
@@ -1171,8 +1171,8 @@ struct KaonIsospinFluctuations {
       } else if (track.hasTOF() && track.beta() > 0.0 && selElectronTOF(track)) {
         IdMethod = kTOFidentified;
         return true;
-      } else
-        return false;
+      }
+      return false;
     }
     return false;
   }
