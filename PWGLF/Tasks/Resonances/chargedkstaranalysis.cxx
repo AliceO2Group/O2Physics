@@ -124,6 +124,9 @@ struct chargedkstaranalysis {
   Configurable<float> cInvMassEnd{"cInvMassEnd", 1.5, "Invariant mass end"};
   Configurable<int> cInvMassBins{"cInvMassBins", 900, "Invariant mass binning"};
 
+  // Rapidity Cut
+  Configurable<double> confRapidity{"confRapidity", 0.5, "Rapidity cut"};
+
   // Event mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
   ConfigurableAxis cfgvtxbins{"cfgvtxbins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
@@ -140,6 +143,13 @@ struct chargedkstaranalysis {
                                    "Value of the TOF Nsigma cut"};
   Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the Combined Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
+
+  // For rotational background
+  Configurable<bool> fillRotation{"fillRotation", true, "fill rotation"};
+  Configurable<float> confMinRot{"confMinRot", 5.0 * TMath::Pi() / 6.0, "Minimum of rotation"};
+  Configurable<float> confMaxRot{"confMaxRot", 7.0 * TMath::Pi() / 6.0, "Maximum of rotation"};
+  Configurable<int> nBkgRotations{"nBkgRotations", 9, "Number of rotated copies (background) per each original candidate"};
+
   void init(InitContext const&)
   {
     AxisSpec dcaxyAxisQA = {cDCABinsQA, 0.0, 3.0, "DCA_{#it{xy}} (cm)"};
@@ -208,9 +218,14 @@ struct chargedkstaranalysis {
     histos1.add("chargekstarMassPtMultPtUnlikeSign",
                 "Invariant mass of CKS meson Unlike Sign", kTHnSparseF,
                 {invMassAxis, ptAxis, centAxis}, true);
+    histos1.add("hSparseChargeKstarSameEventRotational", "hSparseChargeKstarSameEventRotational", HistType::kTHnSparseF, {invMassAxis, ptAxis, centAxis}, true);
+
     histos1.add("chargekstarMassPtMultPtMixedEvent",
                 "Invariant mass of CKS meson MixedEvent Sign", kTHnSparseF,
                 {invMassAxis, ptAxis, centAxis}, true);
+    if (fillRotation) {
+      histos1.add("hRotation", "hRotation", kTH1F, {{360, 0.0, 2.0 * TMath::Pi()}});
+    }
   }
   double massPi = o2::constants::physics::MassPionCharged;
   double massK0s = o2::constants::physics::MassK0Short;
@@ -230,7 +245,7 @@ struct chargedkstaranalysis {
     // auto multiplicity = collision.cent();
     auto multiplicity = collision.cent();
     histos1.fill(HIST("QAbefore/collMult"), multiplicity);
-    TLorentzVector lDecayDaughter, lDecayV0, lResonance;
+    TLorentzVector lDecayDaughter, lDecayV0, lResonance, pionrot, chargekstarrot;
 
     for (const auto& track : dTracks) { // loop over all dTracks1 to find the bachelor pion
       auto trackId = track.index();
@@ -296,7 +311,7 @@ struct chargedkstaranalysis {
         histos1.fill(HIST("QAafter/hGoodTracksV0s"), 2.5);
 
         // Checking whether the mid-rapidity condition is met
-        if (std::abs(lResonance.Rapidity()) > 0.5)
+        if (std::abs(lResonance.Rapidity()) > confRapidity)
           continue;
         if constexpr (!IsMix) {
           histos1.fill(HIST("chargedkstarinvmassUlikeSign"), lResonance.M());
@@ -309,6 +324,29 @@ struct chargedkstaranalysis {
           // Reconstructed K*(892)pm 3d mass, pt, multiplicity histogram
           histos1.fill(HIST("chargekstarMassPtMultPtMixedEvent"),
                        lResonance.M(), lResonance.Pt(), multiplicity);
+        }
+
+        if constexpr (!IsMix) {
+          if (fillRotation) {
+            for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
+              auto rotangle = TMath::Pi();
+              if (nBkgRotations > 1) {
+                auto anglestart = confMinRot;
+                auto angleend = confMaxRot;
+                auto anglestep = (angleend - anglestart) / (1.0 * (nBkgRotations - 1));
+                rotangle = anglestart + nrotbkg * anglestep;
+              }
+              histos1.fill(HIST("hRotation"), rotangle);
+              auto rotpionPx = lDecayDaughter.Px() * std::cos(rotangle) - lDecayDaughter.Py() * std::sin(rotangle);
+              auto rotpionPy = lDecayDaughter.Px() * std::sin(rotangle) + lDecayDaughter.Py() * std::cos(rotangle);
+              pionrot.SetXYZM(rotpionPx, rotpionPy, lDecayDaughter.Pz(), massPi);
+              chargekstarrot = pionrot + lDecayV0;
+              if (TMath::Abs(chargekstarrot.Rapidity()) > confRapidity) {
+                continue;
+              }
+              histos1.fill(HIST("hSparseChargeKstarSameEventRotational"), chargekstarrot.M(), chargekstarrot.Pt(), multiplicity);
+            }
+          }
         }
       }
     }
