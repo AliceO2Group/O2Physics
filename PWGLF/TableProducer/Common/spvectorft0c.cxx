@@ -25,6 +25,9 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <vector>
+#include <string>
+#include <cstdio>
 
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
@@ -50,7 +53,6 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "Common/DataModel/FT0Corrected.h"
