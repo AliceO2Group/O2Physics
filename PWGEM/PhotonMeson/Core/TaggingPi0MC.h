@@ -14,8 +14,8 @@
 // This code loops over photons and makes pairs for neutral mesons analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
-#ifndef PWGEM_PHOTONMESON_CORE_PI0ETATOGAMMAGAMMAMC_H_
-#define PWGEM_PHOTONMESON_CORE_PI0ETATOGAMMAGAMMAMC_H_
+#ifndef PWGEM_PHOTONMESON_CORE_TAGGINGPI0MC_H_
+#define PWGEM_PHOTONMESON_CORE_TAGGINGPI0MC_H_
 
 #include <string>
 #include <map>
@@ -62,7 +62,7 @@ using MyCollision = MyCollisions::iterator;
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts>;
 using MyMCCollision = MyMCCollisions::iterator;
 
-using MyV0Photons = soa::Filtered<soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds, aod::V0PhotonsKFPrefilterBitDerived>>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 using MyEMCClusters = soa::Join<aod::SkimEMCClusters, aod::EMEMCClusterMCLabels, aod::EMCEMEventIds>;
@@ -74,11 +74,11 @@ using MyPHOSCluster = MyEMCClusters::iterator;
 using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 using MyMCV0Leg = MyMCV0Legs::iterator;
 
-using MyMCElectrons = soa::Filtered<soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBitDerived, aod::EMPrimaryElectronMCLabels>>;
+using MyMCElectrons = soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronMCLabels>;
 using MyMCElectron = MyMCElectrons::iterator;
 
 template <PairType pairtype, typename... Types>
-struct Pi0EtaToGammaGammaMC {
+struct TaggingPi0MC {
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -89,9 +89,8 @@ struct Pi0EtaToGammaGammaMC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
-  Configurable<float> maxY_rec{"maxY_rec", 0.9, "maximum rapidity for reconstructed particles"};
-  Configurable<std::string> fd_k0s_to_pi0{"fd_k0s_pi0", "1.0", "feed down correction to pi0"};
   Configurable<bool> cfgRequireTrueAssociation{"cfgRequireTrueAssociation", false, "flag to require true mc collision association"};
+  ConfigurableAxis ConfPtBins{"ConfPtBins", {100, 0, 10}, "pT bins for output histograms"};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -132,7 +131,6 @@ struct Pi0EtaToGammaGammaMC {
     Configurable<float> cfg_max_chi2kf{"cfg_max_chi2kf", 1e+10, "max chi2/ndf with KF"};
     Configurable<bool> cfg_require_v0_with_correct_xz{"cfg_require_v0_with_correct_xz", true, "flag to select V0s with correct xz"};
     Configurable<bool> cfg_reject_v0_on_itsib{"cfg_reject_v0_on_itsib", true, "flag to reject V0s on ITSib"};
-    Configurable<bool> cfg_apply_cuts_from_prefilter_derived{"cfg_apply_cuts_from_prefilter_derived", false, "flag to apply prefilter to V0"};
 
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 10, "min ncluster tpc"};
     Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 40, "min ncrossed rows"};
@@ -167,7 +165,6 @@ struct Pi0EtaToGammaGammaMC {
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.05, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.05, "max dca Z for single track in cm"};
     Configurable<float> cfg_max_dca3dsigma_track{"cfg_max_dca3dsigma_track", 1.5, "max DCA 3D in sigma"};
-    Configurable<bool> cfg_apply_cuts_from_prefilter_derived{"cfg_apply_cuts_from_prefilter_derived", false, "flag to apply prefilter to electron"};
 
     Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DalitzEECut::PIDSchemes::kTOFif), "pid scheme [kTOFif : 0, kTPConly : 1]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
@@ -195,17 +192,12 @@ struct Pi0EtaToGammaGammaMC {
     Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
   } emccuts;
 
-  Configurable<float> maxY_gen{"maxY_gen", 0.9, "maximum rapidity for generated particles"}; // for PCM and dielectron
-  Configurable<float> maxRgen{"maxRgen", 90.f, "maximum radius for generated particles"};
-  Configurable<float> margin_z_mc{"margin_z_mc", 7.0, "margin for z cut in cm for MC"};
-
   PHOSPhotonCut fPHOSCut;
   struct : ConfigurableGroup {
     std::string prefix = "phoscut_group";
     Configurable<float> cfg_min_Ecluster{"cfg_min_Ecluster", 0.3, "Minimum cluster energy for PHOS in GeV"};
   } phoscuts;
 
-  TF1* f1fd_k0s_to_pi0;
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_types[2] = {"before/", "after/"};
   static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
@@ -219,20 +211,12 @@ struct Pi0EtaToGammaGammaMC {
   void init(InitContext&)
   {
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
-    if constexpr (pairtype == PairType::kPCMDalitzEE) {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "ee#gamma");
-    } else {
-      o2::aod::pwgem::photonmeson::utils::nmhistogram::addNMHistograms(&fRegistry, true, "#gamma#gamma");
-    }
+    addHistogrms();
     DefineEMEventCut();
     DefinePCMCut();
     DefineDileptonCut();
     DefineEMCCut();
     DefinePHOSCut();
-
-    f1fd_k0s_to_pi0 = new TF1("f1fd_k0s_to_pi0", TString(fd_k0s_to_pi0), 0.f, 100.f);
-
-    fRegistry.add("Event/hNrecPerMCCollision", "Nrec per mc collision;N_{rec} collisions per MC collision", kTH1F, {{21, -0.5f, 20.5f}}, false);
 
     mRunNumber = 0;
     d_bz = 0;
@@ -282,10 +266,31 @@ struct Pi0EtaToGammaGammaMC {
     mRunNumber = collision.runNumber();
   }
 
-  ~Pi0EtaToGammaGammaMC()
+  ~TaggingPi0MC() {}
+
+  void addHistogrms()
   {
-    delete f1fd_k0s_to_pi0;
-    f1fd_k0s_to_pi0 = 0x0;
+    TString mggTitle = "ee#gamma";
+    if constexpr (pairtype == PairType::kPCMDalitzEE) {
+      mggTitle = "ee#gamma";
+    } else {
+      mggTitle = "#gamma#gamma";
+    }
+
+    const AxisSpec axis_m{200, 0, 0.4, Form("m_{%s} (GeV/c^{2})", mggTitle.Data())};
+    const AxisSpec axis_pt{ConfPtBins, "p_{T,#gamma} (GeV/c)"};
+
+    fRegistry.add("Photon/candidate/hPt", "photon candidates;p_{T,#gamma} (GeV/c)", kTH1D, {axis_pt}, true);                                             // for purity
+    fRegistry.add("Photon/candidate/hEtaPhi", "#varphi vs. #eta;#varphi_{#gamma} (rad.);#eta_{#gamma}", kTH2D, {{90, 0, 2 * M_PI}, {40, -1, +1}}, true); // for purity
+    fRegistry.add("Photon/primary/hPt", "photon;p_{T,#gamma} (GeV/c)", kTH1D, {axis_pt}, true);                                                          // for purity
+    fRegistry.add("Photon/primary/hEtaPhi", "#varphi vs. #eta;#varphi_{#gamma} (rad.);#eta_{#gamma}", kTH2D, {{90, 0, 2 * M_PI}, {40, -1, +1}}, true);   // for purity
+    fRegistry.addClone("Photon/primary/", "Photon/fromWD/");                                                                                             // only for completeness
+    fRegistry.addClone("Photon/primary/", "Photon/fromHS/");                                                                                             // only for completeness
+    fRegistry.addClone("Photon/primary/", "Photon/fromPi0/");                                                                                            // for conditional acceptance, denominator
+
+    fRegistry.add("Pair/primary/hMvsPt", "mass vs. p_{T,#gamma} from #pi^{0}", kTH2D, {axis_m, axis_pt}, true); // for conditional acceptance, numerator
+    fRegistry.addClone("Pair/primary/", "Pair/fromWD/");                                                        // only for completeness
+    fRegistry.addClone("Pair/primary/", "Pair/fromHS/");                                                        // only for completeness
   }
 
   void DefineEMEventCut()
@@ -318,8 +323,6 @@ struct Pi0EtaToGammaGammaMC {
     fV0PhotonCut.RejectITSib(pcmcuts.cfg_reject_v0_on_itsib);
 
     // for track
-    fV0PhotonCut.SetTrackPtRange(pcmcuts.cfg_min_pt_v0 * 0.4, 1e+10f);
-    fV0PhotonCut.SetTrackEtaRange(-pcmcuts.cfg_max_eta_v0, +pcmcuts.cfg_max_eta_v0);
     fV0PhotonCut.SetMinNClustersTPC(pcmcuts.cfg_min_ncluster_tpc);
     fV0PhotonCut.SetMinNCrossedRowsTPC(pcmcuts.cfg_min_ncrossedrows);
     fV0PhotonCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
@@ -412,19 +415,15 @@ struct Pi0EtaToGammaGammaMC {
   template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2, typename TMCCollisions, typename TMCParticles>
   void runTruePairing(TCollisions const& collisions,
                       TPhotons1 const& photons1, TPhotons2 const& photons2,
-                      TSubInfos1 const& /*subinfos1*/, TSubInfos2 const& /*subinfos2*/,
+                      TSubInfos1 const&, TSubInfos2 const&,
                       TPreslice1 const& perCollision1, TPreslice2 const& perCollision2,
                       TCut1 const& cut1, TCut2 const& cut2,
-                      TMCCollisions const& mccollisions, TMCParticles const& mcparticles)
+                      TMCCollisions const&, TMCParticles const& mcparticles)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       initCCDB(collision);
 
-      if ((pairtype == PairType::kPHOSPHOS || pairtype == PairType::kPCMPHOS) && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
-        continue;
-      }
-
-      if (eventcuts.onlyKeepWeightedEvents && std::fabs(collision.weight() - 1.) < 1E-10) {
+      if (eventcuts.onlyKeepWeightedEvents && std::fabs(collision.weight() - 1.f) < 1e-10) {
         continue;
       }
 
@@ -441,120 +440,54 @@ struct Pi0EtaToGammaGammaMC {
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0, collision.weight()); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0, collision.weight());  // accepted
 
-      int photonid1 = -1, photonid2 = -1, pi0id = -1, etaid = -1;
-      if constexpr (pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) { // same kinds pairing
-        auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
-        auto photons2_per_collision = photons2.sliceBy(perCollision2, collision.globalIndex());
-
-        for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_per_collision, photons2_per_collision))) {
-          if (!cut1.template IsSelected<TSubInfos1>(g1) || !cut2.template IsSelected<TSubInfos2>(g2)) {
-            continue;
-          }
-
-          if constexpr (pairtype == PairType::kPCMPCM) { // check 2 legs
-            auto pos1 = g1.template posTrack_as<TSubInfos1>();
-            auto ele1 = g1.template negTrack_as<TSubInfos1>();
-            auto pos2 = g2.template posTrack_as<TSubInfos2>();
-            auto ele2 = g2.template negTrack_as<TSubInfos2>();
-
-            auto pos1mc = pos1.template emmcparticle_as<TMCParticles>();
-            auto ele1mc = ele1.template emmcparticle_as<TMCParticles>();
-            auto pos2mc = pos2.template emmcparticle_as<TMCParticles>();
-            auto ele2mc = ele2.template emmcparticle_as<TMCParticles>();
-
-            photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
-            photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles);
-          } else if constexpr (pairtype == PairType::kEMCEMC) {
-            auto cluster1mcparticle = mcparticles.iteratorAt(g1.emmcparticleId());
-            auto cluster2mcparticle = mcparticles.iteratorAt(g2.emmcparticleId());
-
-            photonid1 = FindMotherInChain(cluster1mcparticle, mcparticles, std::vector<int>{111, 221});
-            photonid2 = FindMotherInChain(cluster2mcparticle, mcparticles, std::vector<int>{111, 221});
-          } else {
-            photonid1 = -1;
-            photonid2 = -1;
-          }
-
-          if (photonid1 < 0 || photonid2 < 0) {
-            continue;
-          }
-          auto g1mc = mcparticles.iteratorAt(photonid1);
-          auto g2mc = mcparticles.iteratorAt(photonid2);
-
-          if constexpr (pairtype == PairType::kPCMPCM) {
-            if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY_gen, margin_z_mc, mcparticles) || !IsConversionPointInAcceptance(g2mc, maxRgen, maxY_gen, margin_z_mc, mcparticles)) {
-              continue;
-            }
-          }
-
-          pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
-          etaid = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 221, mcparticles);
-
-          if (g1mc.globalIndex() != g2mc.globalIndex() && pi0id < 0 && etaid < 0) { // for same gamma no pi0/eta will be found, but we still want to fill the FromSameGamma hist
-            continue;
-          }
-
-          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          if (std::fabs(v12.Rapidity()) > maxY_rec) {
-            continue;
-          }
-
-          if (pairtype == PairType::kEMCEMC) {
-            float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
-            if (openingAngle < emccuts.minOpenAngle) {
-              continue;
-            }
-          }
-
-          if (g1mc.globalIndex() == g2mc.globalIndex()) {
-            if (getMotherPDGCode(g1mc, mcparticles) == 111)
-              fRegistry.fill(HIST("Pair/Pi0/hs_FromSameGamma"), v12.M(), v12.Pt(), collision.weight());
-            else if (getMotherPDGCode(g1mc, mcparticles) == 221)
-              fRegistry.fill(HIST("Pair/Eta/hs_FromSameGamma"), v12.M(), v12.Pt(), collision.weight());
-            continue;
-          }
-
-          if (pi0id > 0) {
-            auto pi0mc = mcparticles.iteratorAt(pi0id);
-            if (cfgRequireTrueAssociation && (pi0mc.emmceventId() != collision.emmceventId())) {
-              continue;
-            }
-            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0, collision.weight());
-          } else if (etaid > 0) {
-            auto etamc = mcparticles.iteratorAt(etaid);
-            if (cfgRequireTrueAssociation && (etamc.emmceventId() != collision.emmceventId())) {
-              continue;
-            }
-            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0, collision.weight());
-          }
-        } // end of pairing loop
-      } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
+      if constexpr (pairtype == PairType::kPCMDalitzEE) {
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto positrons_per_collision = positrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
         auto electrons_per_collision = electrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
 
-        for (auto& g1 : photons1_per_collision) {
+        for (const auto& g1 : photons1_per_collision) {
           if (!cut1.template IsSelected<TSubInfos1>(g1)) {
             continue;
           }
+
+          ROOT::Math::PtEtaPhiMVector v_gamma(g1.pt(), g1.eta(), g1.phi(), 0.f);
+          fRegistry.fill(HIST("Photon/candidate/hPt"), v_gamma.Pt(), collision.weight());
+          fRegistry.fill(HIST("Photon/candidate/hEtaPhi"), v_gamma.Phi() > 0 ? v_gamma.Phi() : v_gamma.Phi() + 2 * M_PI, v_gamma.Eta(), collision.weight());
+
           auto pos1 = g1.template posTrack_as<TSubInfos1>();
           auto ele1 = g1.template negTrack_as<TSubInfos1>();
           auto pos1mc = pos1.template emmcparticle_as<TMCParticles>();
           auto ele1mc = ele1.template emmcparticle_as<TMCParticles>();
-          photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
+          int photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
           if (photonid1 < 0) {
             continue;
           }
           auto g1mc = mcparticles.iteratorAt(photonid1);
-          if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY_gen, margin_z_mc, mcparticles)) {
+
+          if (cfgRequireTrueAssociation && (g1mc.emmceventId() != collision.emmceventId())) {
             continue;
           }
-          ROOT::Math::PtEtaPhiMVector v_gamma(g1.pt(), g1.eta(), g1.phi(), 0.f);
 
-          for (auto& [pos2, ele2] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) { // ULS
-            if (pos2.trackId() == ele2.trackId()) {                                                                                // this is protection against pairing identical 2 tracks.
+          if (g1mc.isPhysicalPrimary() || g1mc.producedByGenerator()) {
+            fRegistry.fill(HIST("Photon/primary/hPt"), v_gamma.Pt(), collision.weight());
+            fRegistry.fill(HIST("Photon/primary/hEtaPhi"), v_gamma.Phi() > 0 ? v_gamma.Phi() : v_gamma.Phi() + 2 * M_PI, v_gamma.Eta(), collision.weight());
+            if (g1mc.has_mothers()) {
+              auto mp = g1mc.template mothers_first_as<TMCParticles>();
+              if (std::abs(mp.pdgCode()) == 111) {
+                fRegistry.fill(HIST("Photon/fromPi0/hPt"), v_gamma.Pt(), collision.weight());
+                fRegistry.fill(HIST("Photon/fromPi0/hEtaPhi"), v_gamma.Phi() > 0 ? v_gamma.Phi() : v_gamma.Phi() + 2 * M_PI, v_gamma.Eta(), collision.weight());
+              }
+            }
+          } else if (IsFromWD(g1mc.template emmcevent_as<TMCCollisions>(), g1mc, mcparticles) > 0) {
+            fRegistry.fill(HIST("Photon/fromWD/hPt"), v_gamma.Pt(), collision.weight());
+            fRegistry.fill(HIST("Photon/fromWD/hEtaPhi"), v_gamma.Phi() > 0 ? v_gamma.Phi() : v_gamma.Phi() + 2 * M_PI, v_gamma.Eta(), collision.weight());
+          } else {
+            fRegistry.fill(HIST("Photon/fromHS/hPt"), v_gamma.Pt(), collision.weight());
+            fRegistry.fill(HIST("Photon/fromHS/hEtaPhi"), v_gamma.Phi() > 0 ? v_gamma.Phi() : v_gamma.Phi() + 2 * M_PI, v_gamma.Eta(), collision.weight());
+          }
+
+          for (const auto& [pos2, ele2] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) { // ULS
+            if (pos2.trackId() == ele2.trackId()) {                                                                                      // this is protection against pairing identical 2 tracks.
               continue;
             }
             if (pos1.trackId() == pos2.trackId() || ele1.trackId() == ele2.trackId()) {
@@ -571,119 +504,45 @@ struct Pi0EtaToGammaGammaMC {
 
             auto pos2mc = mcparticles.iteratorAt(pos2.emmcparticleId());
             auto ele2mc = mcparticles.iteratorAt(ele2.emmcparticleId());
-            pi0id = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 111, mcparticles);
-            etaid = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 221, mcparticles);
-            if (pi0id < 0 && etaid < 0) {
+            int pi0id = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 111, mcparticles);
+            if (pi0id < 0) {
+              continue;
+            }
+            auto pi0mc = mcparticles.iteratorAt(pi0id);
+            if (cfgRequireTrueAssociation && (pi0mc.emmceventId() != collision.emmceventId())) {
               continue;
             }
             ROOT::Math::PtEtaPhiMVector v_pos(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ele(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector veeg = v_gamma + v_pos + v_ele;
-            if (std::fabs(veeg.Rapidity()) > maxY_rec) {
-              continue;
+
+            if (pi0mc.isPhysicalPrimary() || pi0mc.producedByGenerator()) {
+              fRegistry.fill(HIST("Pair/primary/hMvsPt"), veeg.M(), v_gamma.Pt(), collision.weight());
+            } else if (IsFromWD(pi0mc.template emmcevent_as<TMCCollisions>(), pi0mc, mcparticles) > 0) {
+              fRegistry.fill(HIST("Pair/fromWD/hMvsPt"), veeg.M(), v_gamma.Pt(), collision.weight());
+            } else {
+              fRegistry.fill(HIST("Pair/fromHS/hMvsPt"), veeg.M(), v_gamma.Pt(), collision.weight());
             }
-            if (pi0id > 0) {
-              auto pi0mc = mcparticles.iteratorAt(pi0id);
-              if (cfgRequireTrueAssociation && (pi0mc.emmceventId() != collision.emmceventId())) {
-                continue;
-              }
-              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0, collision.weight());
-            } else if (etaid > 0) {
-              auto etamc = mcparticles.iteratorAt(etaid);
-              if (cfgRequireTrueAssociation && (etamc.emmceventId() != collision.emmceventId())) {
-                continue;
-              }
-              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0, collision.weight());
-            }
+
           } // end of dielectron loop
         } // end of pcm loop
-      } else { // PCM-EMC, PCM-PHOS. Nightmare. don't run these pairs.
+      } else { // PCM-EMC, PCM-PHOS. Not supported.
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto photons2_per_collision = photons2.sliceBy(perCollision2, collision.globalIndex());
 
-        for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_per_collision, photons2_per_collision))) {
+        for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_per_collision, photons2_per_collision))) {
           if (!cut1.template IsSelected<TSubInfos1>(g1) || !cut2.template IsSelected<TSubInfos2>(g2)) {
             continue;
           }
-          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          if (std::fabs(v12.Rapidity()) > maxY_rec) {
-            continue;
-          }
+          // ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+          // ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+          // ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           // if (pi0id > 0) {
           //   auto pi0mc = mcparticles.iteratorAt(pi0id);
           //   o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0, collision.weight());
-          // } else if (etaid > 0) {
-          //   auto etamc = mcparticles.iteratorAt(etaid);
-          //   o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0, collision.weight());
           // }
         } // end of pairing loop
       } // end of pairing in same event
-    } // end of collision loop
-  }
-
-  template <int par_id, typename TBinnedData>
-  void fillBinnedData(TBinnedData const& binned_data, const float weight = 1.f)
-  {
-    int xbin = 0, ybin = 0, zbin = 0;
-    auto hPtY = fRegistry.get<TH2>(HIST("Generated/") + HIST(parnames[par_id]) + HIST("hPtY")); // 2D
-    auto hPt = fRegistry.get<TH1>(HIST("Generated/") + HIST(parnames[par_id]) + HIST("hPt"));   // 1D
-
-    for (int ibin = 0; ibin < hPtY->GetNcells(); ibin++) {
-      int nentry = binned_data[ibin];
-      hPtY->GetBinXYZ(ibin, xbin, ybin, zbin);
-      float pt = hPtY->GetXaxis()->GetBinCenter(xbin);
-      float y = hPtY->GetYaxis()->GetBinCenter(ybin);
-      if (y > maxY_gen) {
-        continue;
-      }
-
-      for (int j = 0; j < nentry; j++) {
-        hPtY->Fill(pt, y, weight);
-        hPt->Fill(pt, weight);
-      }
-    }
-  }
-
-  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
-  PresliceUnsorted<MyCollisions> rec_perMcCollision = aod::emmceventlabel::emmceventId;
-
-  template <typename TCollisions, typename TMCCollisions, typename TMCParticles>
-  void runGenInfo(TCollisions const& collisions, TMCCollisions const& mccollisions, TMCParticles const& /*mcparticles*/)
-  {
-    // loop over mc stack and fill histograms for pure MC truth signals
-    // all MC tracks which belong to the MC event corresponding to the current reconstructed event
-
-    for (auto& mccollision : mccollisions) {
-      auto collision_per_mccoll = collisions.sliceBy(rec_perMcCollision, mccollision.globalIndex());
-      int nrec_per_mc = collision_per_mccoll.size();
-      fRegistry.fill(HIST("Event/hNrecPerMCCollision"), nrec_per_mc);
-    }
-
-    for (auto& collision : collisions) {
-      if ((pairtype == kPHOSPHOS || pairtype == kPCMPHOS) && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
-        continue; // I don't know why this is necessary in simulation.
-      }
-
-      if (eventcuts.onlyKeepWeightedEvents && std::fabs(collision.weight() - 1.) < 1E-10) {
-        continue;
-      }
-
-      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
-        continue;
-      }
-
-      if (!fEMEventCut.IsSelected(collision)) {
-        continue;
-      }
-
-      auto mccollision = collision.template emmcevent_as<TMCCollisions>();
-      auto binned_data_pi0_gen = mccollision.generatedPi0();
-      auto binned_data_eta_gen = mccollision.generatedEta();
-      fillBinnedData<0>(binned_data_pi0_gen, collision.weight());
-      fillBinnedData<1>(binned_data_eta_gen, collision.weight());
     } // end of collision loop
   }
 
@@ -692,33 +551,15 @@ struct Pi0EtaToGammaGammaMC {
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
-  Filter prefilter_pcm = ifnode(pcmcuts.cfg_apply_cuts_from_prefilter_derived.node(), o2::aod::v0photonkf::pfbderived == static_cast<uint16_t>(0), true);
-  Filter prefilter_primaryelectron = ifnode(dileptoncuts.cfg_apply_cuts_from_prefilter_derived.node(), o2::aod::emprimaryelectron::pfbderived == static_cast<uint16_t>(0), true);
-
   void processAnalysis(FilteredMyCollisions const& collisions, MyMCCollisions const& mccollisions, aod::EMMCParticles const& mcparticles, Types const&... args)
   {
-    if constexpr (pairtype == PairType::kPCMPCM) {
-      auto v0photons = std::get<0>(std::tie(args...));
-      auto v0legs = std::get<1>(std::tie(args...));
-      runTruePairing(collisions, v0photons, v0photons, v0legs, v0legs, perCollision_pcm, perCollision_pcm, fV0PhotonCut, fV0PhotonCut, mccollisions, mcparticles);
-      runGenInfo(collisions, mccollisions, mcparticles);
-    } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
+    if constexpr (pairtype == PairType::kPCMDalitzEE) {
       auto v0photons = std::get<0>(std::tie(args...));
       auto v0legs = std::get<1>(std::tie(args...));
       auto emprimaryelectrons = std::get<2>(std::tie(args...));
       // LOGF(info, "electrons.size() = %d, positrons.size() = %d", electrons.size(), positrons.size());
       runTruePairing(collisions, v0photons, emprimaryelectrons, v0legs, emprimaryelectrons, perCollision_pcm, perCollision_electron, fV0PhotonCut, fDileptonCut, mccollisions, mcparticles);
-      runGenInfo(collisions, mccollisions, mcparticles);
-    } else if constexpr (pairtype == PairType::kEMCEMC) {
-      auto emcclusters = std::get<0>(std::tie(args...));
-      runTruePairing(collisions, emcclusters, emcclusters, nullptr, nullptr, perCollision_emc, perCollision_emc, fEMCCut, fEMCCut, mccollisions, mcparticles);
-      runGenInfo(collisions, mccollisions, mcparticles);
     }
-
-    // else if constexpr (pairtype == PairType::kPHOSPHOS) {
-    //   auto phosclusters = std::get<0>(std::tie(args...));
-    //   runPairing(collisions, phosclusters, phosclusters, nullptr, nullptr, perCollision_phos, perCollision_phos, fPHOSCut, fPHOSCut, nullptr, nullptr);
-    // }
     // else if constexpr (pairtype == PairType::kPCMEMC) {
     //   auto v0photons = std::get<0>(std::tie(args...));
     //   auto v0legs = std::get<1>(std::tie(args...));
@@ -732,9 +573,9 @@ struct Pi0EtaToGammaGammaMC {
     //   runPairing(collisions, v0photons, phosclusters, v0legs, nullptr, perCollision_pcm, perCollision_phos, fV0PhotonCut, fPHOSCut, nullptr, nullptr);
     // }
   }
-  PROCESS_SWITCH(Pi0EtaToGammaGammaMC, processAnalysis, "process pair analysis", false);
+  PROCESS_SWITCH(TaggingPi0MC, processAnalysis, "process pair analysis", false);
 
   void processDummy(MyCollisions const&) {}
-  PROCESS_SWITCH(Pi0EtaToGammaGammaMC, processDummy, "Dummy function", true);
+  PROCESS_SWITCH(TaggingPi0MC, processDummy, "Dummy function", true);
 };
-#endif // PWGEM_PHOTONMESON_CORE_PI0ETATOGAMMAGAMMAMC_H_
+#endif // PWGEM_PHOTONMESON_CORE_TAGGINGPI0MC_H_
