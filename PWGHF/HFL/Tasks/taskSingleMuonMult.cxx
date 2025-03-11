@@ -53,7 +53,7 @@ using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
 using MyMcMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
 using MFTTracksExtra = soa::Join<aod::MFTTracks>;
 
-struct TaskSingleMuonMult {
+struct HfTaskSingleMuonMult {
   Configurable<float> etaMin{"etaMin", -3.6, "eta minimum value"};
   Configurable<float> etaMax{"etaMax", -2.5, "eta maximum value"};
   Configurable<float> pDcaMin{"pDcaMin", 324., "p*DCA maximum value for small Rabs"};
@@ -286,11 +286,11 @@ struct TaskSingleMuonMult {
   {
     runMuonSel(collision, tracks, muons);
   }
-  PROCESS_SWITCH(TaskSingleMuonMult, processMuon, "run muon selection with real data", true);
+  PROCESS_SWITCH(HfTaskSingleMuonMult, processMuon, "run muon selection with real data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TaskSingleMuonMult>(cfgc)};
+    adaptAnalysisTask<HfTaskSingleMuonMult>(cfgc)};
 }
