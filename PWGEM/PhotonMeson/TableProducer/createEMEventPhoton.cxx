@@ -229,17 +229,17 @@ struct CreateEMEventPhoton {
   }
   PROCESS_SWITCH(CreateEMEventPhoton, processEventJJMC, "process event info", false);
 
-  void procesEeventCent(MyCollisionsCent const& collisions, MyBCs const& bcs)
+  void processEvent_Cent(MyCollisionsCent const& collisions, MyBCs const& bcs)
   {
     skimEvent<false, EMEventType::kEventCent>(collisions, bcs);
   }
-  PROCESS_SWITCH(CreateEMEventPhoton, procesEeventCent, "process event info", false);
+  PROCESS_SWITCH(CreateEMEventPhoton, processEvent_Cent, "process event info", false);
 
-  void processEventCent_Qvec(MyCollisionsCentQvec const& collisions, MyBCs const& bcs)
+  void processEvent_Cent_Qvec(MyCollisionsCentQvec const& collisions, MyBCs const& bcs)
   {
     skimEvent<false, EMEventType::kEventCent_Qvec>(collisions, bcs);
   }
-  PROCESS_SWITCH(CreateEMEventPhoton, processEventCent_Qvec, "process event info", false);
+  PROCESS_SWITCH(CreateEMEventPhoton, processEvent_Cent_Qvec, "process event info", false);
 
   void processEventMC_Cent(MyCollisionsMCCent const& collisions, MyBCs const& bcs)
   {

@@ -150,7 +150,7 @@ struct PCMQCMC {
       fRegistry.add("Generated/hXY", "conversion point in XY MC;V_{x} (cm);V_{y} (cm)", kTH2F, {{800, -100.0f, 100.0f}, {800, -100.0f, 100.0f}}, true);
       fRegistry.add("Generated/hRZ", "conversion point in RZ MC;V_{z} (cm);R_{xy} (cm)", kTH2F, {{400, -100.0f, 100.0f}, {400, 0.f, 100.0f}}, true);
       fRegistry.add("Generated/hRPhi", "conversion point of #varphi vs. R_{xy} MC;#varphi (rad.);R_{xy} (cm);N_{e}", kTH2F, {{360, 0.0f, 2 * M_PI}, {400, 0, 100}}, true);
-      fRegistry.add("Generated/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {40, -2, +2}}, true);
+      fRegistry.add("Generated/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {80, -2, +2}}, true);
     }
 
     // event info
@@ -180,7 +180,8 @@ struct PCMQCMC {
     // v0 info
     fRegistry.add("V0/primary/hPt", "pT;p_{T,#gamma} (GeV/c)", kTH1F, {{2000, 0.0f, 20}}, false);
     fRegistry.add("V0/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {200, -1.0f, 1.0f}}, false);
-    fRegistry.add("V0/primary/hRadius", "V0Radius; radius in Z (cm);radius in XY (cm)", kTH2F, {{200, -100, 100}, {200, 0.0f, 100.0f}}, false);
+    fRegistry.add("V0/primary/hXY", "conversion point in XY;V_{x} (cm);V_{y} (cm)", kTH2F, {{400, -100.0f, 100.0f}, {400, -100.0f, 100.0f}}, false);
+    fRegistry.add("V0/primary/hRZ", "conversion point in RZ;Z (cm);R_{xy} (cm)", kTH2F, {{200, -100, 100}, {200, 0.0f, 100.0f}}, false);
     fRegistry.add("V0/primary/hCosPA", "V0CosPA;cosine pointing angle in 3D", kTH1F, {{100, 0.99f, 1.0f}}, false);
     fRegistry.add("V0/primary/hCosPAXY", "V0CosPA;cosine pointing angle in XY", kTH1F, {{100, 0.99f, 1.0f}}, false);
     fRegistry.add("V0/primary/hCosPARZ", "V0CosPA;cosine pointing angle in RZ", kTH1F, {{100, 0.99f, 1.0f}}, false);
@@ -189,7 +190,6 @@ struct PCMQCMC {
     fRegistry.add("V0/primary/hDCAz_Pt", "DCA_{z} to PV vs. p_{T};DCA_{z} (cm);p_{T} (GeV/c)", kTH2F, {{200, -5.f, +5.f}, {2000, 0.0f, 20}}, false);
     fRegistry.add("V0/primary/hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}}, false);
     fRegistry.add("V0/primary/hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", kTH2F, {{200, 0.0f, 100.0f}, {100, 0.0f, 0.1f}}, false);
-    fRegistry.add("V0/primary/hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", kTH2F, {{400, -100.0f, 100.0f}, {400, -100.0f, 100.0f}}, false);
     fRegistry.add("V0/primary/hKFChi2vsM", "KF chi2 vs. m_{ee};m_{ee} (GeV/c^{2});KF chi2/NDF", kTH2F, {{100, 0.0f, 0.1f}, {100, 0.f, 100.0f}}, false);
     fRegistry.add("V0/primary/hKFChi2vsR", "KF chi2 vs. conversion point in XY;R_{xy} (cm);KF chi2/NDF", kTH2F, {{200, 0.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
     fRegistry.add("V0/primary/hKFChi2vsX", "KF chi2 vs. conversion point in X;X (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
@@ -207,15 +207,16 @@ struct PCMQCMC {
     fRegistry.add("V0/primary/hPtGen_DeltaPtOverPtGen", "photon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
     fRegistry.add("V0/primary/hPtGen_DeltaEta", "photon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
     fRegistry.add("V0/primary/hPtGen_DeltaPhi", "photon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
-    fRegistry.add("V0/primary/hXY_Photon_MC", "X vs. Y of true photon conversion point.;X (cm);Y (cm)", kTH2F, {{400, -100.0f, +100}, {400, -100, +100}}, true);
-    fRegistry.add("V0/primary/hRZ_Photon_MC", "R vs. Z of true photon conversion point;Z (cm);R_{xy} (cm)", kTH2F, {{200, -100.0f, +100}, {200, 0, 100}}, true);
-    fRegistry.add("V0/primary/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {40, -2, +2}}, false);
+    fRegistry.add("V0/primary/hXY_MC", "X vs. Y of true photon conversion point.;X (cm);Y (cm)", kTH2F, {{400, -100.0f, +100}, {400, -100, +100}}, true);
+    fRegistry.add("V0/primary/hRZ_MC", "R vs. Z of true photon conversion point;Z (cm);R_{xy} (cm)", kTH2F, {{200, -100.0f, +100}, {200, 0, 100}}, true);
+    fRegistry.add("V0/primary/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {80, -2, +2}}, false);
     fRegistry.addClone("V0/primary/", "V0/fromWD/"); // from weak decay
     fRegistry.addClone("V0/primary/", "V0/fromHS/"); // from hadronic shower in detector materials
 
     // v0leg info
     fRegistry.add("V0Leg/primary/hPt", "pT;p_{T,e} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
     fRegistry.add("V0Leg/primary/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{1000, -50, 50}}, false);
+    fRegistry.add("V0Leg/primary/hRelDeltaPt", "pT resolution;p_{T} (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0, 10}, {200, 0, 0.2}}, false);
     fRegistry.add("V0Leg/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("V0Leg/primary/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -50.0f, 50.0f}, {200, -50.0f, 50.0f}}, false);
     fRegistry.add("V0Leg/primary/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
@@ -334,21 +335,21 @@ struct PCMQCMC {
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0MvsMultNTracksPV"), collision.multFT0A() + collision.multFT0C(), collision.multNTracksPV());
   }
 
-  template <int mctype, typename TCollision, typename TV0, typename TMCV0, typename TMCLeg>
-  void fillV0Info(TCollision const& collision, TV0 const& v0, TMCV0 const& mcphoton, TMCLeg const& mcleg)
+  template <int mctype, typename TV0, typename TMCV0, typename TMCLeg>
+  void fillV0Info(TV0 const& v0, TMCV0 const& mcphoton, TMCLeg const& mcleg)
   {
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPt"), v0.pt());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hEtaPhi"), v0.phi(), v0.eta());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRadius"), v0.vz(), v0.v0radius());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hXY"), v0.vx(), v0.vy());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRZ"), v0.vz(), v0.v0radius());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hCosPA"), v0.cospa());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hCosPAXY"), v0.cosPAXY(collision.posX(), collision.posY()));
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hCosPARZ"), v0.cosPARZ(collision.posX(), collision.posY(), collision.posZ()));
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hCosPAXY"), v0.cospaXY());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hCosPARZ"), v0.cospaRZ());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPCA"), v0.pca());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hDCAxyz"), v0.dcaXYtopv(), v0.dcaZtopv());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hDCAz_Pt"), v0.dcaZtopv(), v0.pt());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hAPplot"), v0.alpha(), v0.qtarm());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hMassGamma"), v0.v0radius(), v0.mGamma());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hGammaRxy"), v0.vx(), v0.vy());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsM"), v0.mGamma(), v0.chiSquareNDF());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsR"), v0.v0radius(), v0.chiSquareNDF());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsX"), v0.vx(), v0.chiSquareNDF());
@@ -365,8 +366,8 @@ struct PCMQCMC {
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hConvPoint_diffX"), mcleg.vx(), v0.vx() - mcleg.vx());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hConvPoint_diffY"), mcleg.vy(), v0.vy() - mcleg.vy());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hConvPoint_diffZ"), mcleg.vz(), v0.vz() - mcleg.vz());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hXY_Photon_MC"), mcleg.vx(), mcleg.vy());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRZ_Photon_MC"), mcleg.vz(), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)));
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hXY_MC"), mcleg.vx(), mcleg.vy());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRZ_MC"), mcleg.vz(), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)));
 
     float phi_cp = atan2(v0.vy(), v0.vx());
     o2::math_utils::bringTo02Pi(phi_cp);
@@ -380,6 +381,7 @@ struct PCMQCMC {
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hPt"), leg.pt());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hQoverPt"), leg.sign() / leg.pt());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hEtaPhi"), leg.phi(), leg.eta());
+    fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hRelDeltaPt"), leg.pt(), std::sqrt(leg.c1Pt21Pt2()) * leg.pt());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hDCAxyz"), leg.dcaXY(), leg.dcaZ());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hNclsITS"), leg.itsNCls());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hNclsTPC"), leg.tpcNClsFound());
@@ -451,19 +453,19 @@ struct PCMQCMC {
         }
 
         if (mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator()) {
-          fillV0Info<0>(collision, v0, mcphoton, elemc);
+          fillV0Info<0>(v0, mcphoton, elemc);
           for (auto& leg : {pos, ele}) {
             fillV0LegInfo<0>(leg);
           }
           ng_primary++;
         } else if (IsFromWD(mcphoton.template emmcevent_as<aod::EMMCEvents>(), mcphoton, mcparticles) > 0) {
-          fillV0Info<1>(collision, v0, mcphoton, elemc);
+          fillV0Info<1>(v0, mcphoton, elemc);
           for (auto& leg : {pos, ele}) {
             fillV0LegInfo<1>(leg);
           }
           ng_wd++;
         } else {
-          fillV0Info<2>(collision, v0, mcphoton, elemc);
+          fillV0Info<2>(v0, mcphoton, elemc);
           for (auto& leg : {pos, ele}) {
             fillV0LegInfo<2>(leg);
           }
