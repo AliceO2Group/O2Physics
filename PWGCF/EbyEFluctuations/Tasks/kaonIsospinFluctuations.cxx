@@ -838,8 +838,8 @@ struct KaonIsospinFluctuations {
       return selIdCircularCut<pidMode>(track, nSigmaSquaredRad);
     } else if (pidCutType == kEllipsoidalCut) {
       return selIdEllipsoidalCut<pidMode>(track, nSigmaTPC, nSigmaTOF);
-    } else
-      return false;
+    } 
+    return false;
   }
 
   template <typename T>
@@ -1097,8 +1097,8 @@ struct KaonIsospinFluctuations {
         return true;
       } else
         return false;
-    } else
-      return false;
+    }
+    return false;
   }
 
   // Kaon
@@ -1116,8 +1116,8 @@ struct KaonIsospinFluctuations {
         return true;
       } else
         return false;
-    } else
-      return false;
+    }
+    return false;
   }
 
   // Proton
@@ -1135,8 +1135,8 @@ struct KaonIsospinFluctuations {
         return true;
       } else
         return false;
-    } else
-      return false;
+    }
+    return false;
   }
 
   // Deuteron
@@ -1154,8 +1154,8 @@ struct KaonIsospinFluctuations {
         return true;
       } else
         return false;
-    } else
-      return false;
+    }
+    return false;
   }
 
   // Electron
