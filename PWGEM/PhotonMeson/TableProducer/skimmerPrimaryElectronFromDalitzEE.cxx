@@ -268,7 +268,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::make_pair(collision.globalIndex(), track.globalIndex())) == stored_trackIds.end()) {
       emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
-                         track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(), track.c1Pt21Pt2(),
+                         track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(),
                          track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
                          track.tpcChi2NCl(), track.tpcInnerParam(),
                          track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
