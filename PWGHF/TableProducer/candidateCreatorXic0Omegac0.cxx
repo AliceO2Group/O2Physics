@@ -1820,7 +1820,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   Produces<aod::HfToOmegaKMCGen> rowMCMatchGenToOmegaK;
 
   // Configuration
-  Configurable<bool> rejectBackground{"rejectBackground", false, "Reject particles from background events"};
+  Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
   Configurable<bool> rejectOriginNone{"rejectOriginNone", false, "Reject mismatching particles"};
 
   using MyTracksWMc = soa::Join<TracksIU, McTrackLabels>;
@@ -2134,7 +2134,10 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       }
       hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask);
-      if (rejectionMask != 0 && !rejectOriginNone) {
+      if (rejectionMask != 0) {
+        if (rejectOriginNone) {
+          continue;
+        }
         /// at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
           if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
