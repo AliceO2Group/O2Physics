@@ -20,6 +20,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -413,7 +414,7 @@ struct MixedEventsPartitionedTracks {
 
       // Example of using tracks from mixed events -- iterate over all track pairs from the two partitions from two collisions
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(leftPhi1, leftPhi2))) {
-        if (t1.phi() >= (float)philow || t2.phi() >= (float)philow) {
+        if (t1.phi() >= static_cast<float>(philow) || t2.phi() >= static_cast<float>(philow)) {
           LOGF(info, "WRONG Mixed event left tracks pair: (%d, %d) from events (%d, %d), phi: (%.3f. %.3f) < %.3f", t1.index(), t2.index(), c1.index(), c2.index(), t1.phi(), t2.phi(), (float)philow);
         }
       }
