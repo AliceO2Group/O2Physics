@@ -96,6 +96,7 @@ struct TaskPi0FlowEMC {
   Configurable<float> cfgRotAngle{"cfgRotAngle", std::move(const_cast<float&>(o2::constants::math::PIHalf)), "Angle used for the rotation method"};
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
   Configurable<bool> cfgDoM02{"cfgDoM02", false, "Flag to enable flow vs M02 for single photons"};
+  Configurable<bool> cfgDoReverseScaling{"cfgDoReverseScaling", false, "Flag to reverse the scaling that is possibly applied during NonLin"};
 
   // configurable axis
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {400, 0.0, 0.8}, ""};
@@ -938,6 +939,15 @@ struct TaskPi0FlowEMC {
 
         ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+        if (cfgDoReverseScaling) {
+          // Convert to PxPyPzEVector to modify energy
+          ROOT::Math::PxPyPzEVector v1_mod(v1);
+          v1_mod.SetE(v1_mod.E() * 1.0505);
+          v1 = ROOT::Math::PtEtaPhiMVector(v1_mod);
+          ROOT::Math::PxPyPzEVector v2_mod(v2);
+          v2_mod.SetE(v2_mod.E() * 1.0505);
+          v2 = ROOT::Math::PtEtaPhiMVector(v2_mod);
+        }
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
         float dTheta = v1.Theta() - v2.Theta();
         float dPhi = v1.Phi() - v2.Phi();
@@ -1036,6 +1046,16 @@ struct TaskPi0FlowEMC {
         }
         ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+
+        if (cfgDoReverseScaling) {
+          // Convert to PxPyPzEVector to modify energy
+          ROOT::Math::PxPyPzEVector v1_mod(v1);
+          v1_mod.SetE(v1_mod.E() * 1.0505);
+          v1 = ROOT::Math::PtEtaPhiMVector(v1_mod);
+          ROOT::Math::PxPyPzEVector v2_mod(v2);
+          v2_mod.SetE(v2_mod.E() * 1.0505);
+          v2 = ROOT::Math::PtEtaPhiMVector(v2_mod);
+        }
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float dTheta = v1.Theta() - v2.Theta();
@@ -1253,6 +1273,15 @@ struct TaskPi0FlowEMC {
 
         ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+        if (cfgDoReverseScaling) {
+          // Convert to PxPyPzEVector to modify energy
+          ROOT::Math::PxPyPzEVector v1_mod(v1);
+          v1_mod.SetE(v1_mod.E() * 1.0505);
+          v1 = ROOT::Math::PtEtaPhiMVector(v1_mod);
+          ROOT::Math::PxPyPzEVector v2_mod(v2);
+          v2_mod.SetE(v2_mod.E() * 1.0505);
+          v2 = ROOT::Math::PtEtaPhiMVector(v2_mod);
+        }
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
         float dTheta = v1.Theta() - v2.Theta();
         float dPhi = v1.Phi() - v2.Phi();
