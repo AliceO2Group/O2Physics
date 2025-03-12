@@ -191,7 +191,7 @@ void FastTracker::AddTPC(float phiResMean, float zResMean)
 float FastTracker::Dist(float z, float r)
 {
   // porting of DetektorK::Dist
-  // see here: 
+  // see here:
   // https://github.com/AliceO2Group/DelphesO2/blob/master/src/DetectorK/DetectorK.cxx#L743
   int index = 1;
   int nSteps = 301;
@@ -214,7 +214,7 @@ float FastTracker::Dist(float z, float r)
 float FastTracker::OneEventHitDensity(float multiplicity, float radius)
 {
   // porting of DetektorK::OneEventHitDensity
-  // see here: 
+  // see here:
   // https://github.com/AliceO2Group/DelphesO2/blob/master/src/DetectorK/DetectorK.cxx#L694
   float den = multiplicity / (o2::constants::math::TwoPI * radius * radius);
   float tg = o2::math_utils::tan(2. * o2::math_utils::atan(-avgRapidity));
@@ -225,7 +225,7 @@ float FastTracker::OneEventHitDensity(float multiplicity, float radius)
 float FastTracker::IntegratedHitDensity(float multiplicity, float radius)
 {
   // porting of DetektorK::IntegratedHitDensity
-  // see here: 
+  // see here:
   // https://github.com/AliceO2Group/DelphesO2/blob/master/src/DetectorK/DetectorK.cxx#L712
   float zdcHz = luminosity * 1.e24 * crossSectionMinB;
   float den = zdcHz * integrationTime / 1000. * multiplicity * Dist(0., radius) / (o2::constants::math::TwoPI * radius);
@@ -237,7 +237,7 @@ float FastTracker::IntegratedHitDensity(float multiplicity, float radius)
 float FastTracker::UpcHitDensity(float radius)
 {
   // porting of DetektorK::UpcHitDensity
-  // see here: 
+  // see here:
   // https://github.com/AliceO2Group/DelphesO2/blob/master/src/DetectorK/DetectorK.cxx#L727
   float mUPCelectrons = 0;
   mUPCelectrons = lhcUPCScale * 5456 / (radius * radius) / dNdEtaMinB;
@@ -251,7 +251,7 @@ float FastTracker::UpcHitDensity(float radius)
 float FastTracker::HitDensity(float radius)
 {
   // porting of DetektorK::HitDensity
-  // see here: 
+  // see here:
   // https://github.com/AliceO2Group/DelphesO2/blob/master/src/DetectorK/DetectorK.cxx#L663
   float arealDensity = 0.;
   if (radius > maxRadiusSlowDet) {
@@ -273,7 +273,7 @@ float FastTracker::HitDensity(float radius)
 float FastTracker::ProbGoodChiSqHit(float radius, float searchRadiusRPhi, float searchRadiusZ)
 {
   // porting of DetektorK::ProbGoodChiSqHit
-  // see here: 
+  // see here:
   // https://github.com/AliceO2Group/DelphesO2/blob/master/src/DetectorK/DetectorK.cxx#L629
   float sx, goodHit;
   sx = o2::constants::math::TwoPI * searchRadiusRPhi * searchRadiusZ * HitDensity(radius);
@@ -472,21 +472,21 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       goodHitProbability[0] *= goodHitProbability[il];
     }
   }
-  
+
   // backpropagate to original radius
   float finalX = 1e+3;
   inwardTrack.getXatLabR(initialRadius, finalX, magneticField);
   if (finalX > 999)
     return -3; // failed to find intercept
-  
+
   if (!inwardTrack.propagateTo(finalX, magneticField)) {
     return -4; // failed to propagate
   }
-  
+
   // only attempt to continue if intercepts are at least four
   if (nIntercepts < 4)
     return nIntercepts;
-  
+
   // generate efficiency
   if (applyEffCorrection) {
     dNdEtaCent = nch;
@@ -495,7 +495,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       float iGoodHit = goodHitProbability[i];
       if (iGoodHit <= 0)
         continue;
-      
+
       eff *= iGoodHit;
     }
 

@@ -66,8 +66,8 @@ class FastTracker
   int crossSectionMinB;
   int dNdEtaCent;
   int dNdEtaMinB;
-  float magneticField;       // in kiloGauss (5 = 0.5T, etc)
-  float covMatFactor;        // covmat off-diagonal factor to use for covmat fix (negative: no factor)
+  float magneticField; // in kiloGauss (5 = 0.5T, etc)
+  float covMatFactor;  // covmat off-diagonal factor to use for covmat fix (negative: no factor)
   float sigmaD;
   float luminosity;
   float otherBackground;
@@ -84,7 +84,6 @@ class FastTracker
   int nSiliconPoints; // silicon-based space points added to track
   int nGasPoints;     // tpc-based space points added to track
   std::vector<float> goodHitProbability;
-
 
   ClassDef(FastTracker, 1);
 };
