@@ -1569,9 +1569,6 @@ struct SGResonanceAnalyzer {
         auto McPart = track.udMcParticle();
         auto pPart = sqrt(McPart.px() * McPart.px() + McPart.py() * McPart.py() + McPart.pz() * McPart.pz());
         auto pDiff = pTrack - pPart;
-        if (std::abs(McPart.pdgCode()) == 321) {
-          //	  std::cout<< McPart.pdgCode()<<" ============----------------- "<< McPart.globalIndex()<<std::endl;
-        }
         registry.get<TH2>(HIST("Reco/pDiff"))->Fill(pDiff, track.isPVContributor(), 1.);
         if (verbosity > 0) {
           LOGF(info, "  PID: %d Generated: %d Process: %d PV contributor: %d dP: %f", McPart.pdgCode(), McPart.producedByGenerator(), McPart.getProcess(), track.isPVContributor(), pDiff);
