@@ -901,7 +901,8 @@ struct UpcTauRl {
     return true;
   }
 
-  void resetLooseCounters(){
+  void resetLooseCounters()
+  {
     isElectronOutElectron = false;
     isElectronNotTOF = false;
     isMupionOutPion = false;
@@ -2119,7 +2120,6 @@ struct UpcTauRl {
         histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(6);
       if (isMupionNotTOF)
         histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(7);
-
     }
   }
 
