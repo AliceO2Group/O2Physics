@@ -86,6 +86,7 @@ struct lambdalambda {
   Configurable<float> cfgCentSel{"cfgCentSel", 100., "Centrality selection"};
   Configurable<int> cfgCentEst{"cfgCentEst", 1, "Centrality estimator, 1: FT0C, 2: FT0M"};
 
+  Configurable<bool> cfgEvtSel{"cfgEvtSel", true, "event selection flag"};
   Configurable<bool> cfgPVSel{"cfgPVSel", false, "Additional PV selection flag for syst"};
   Configurable<float> cfgPV{"cfgPV", 8.0, "Additional PV selection range for syst"};
   Configurable<bool> cfgAddEvtSelPileup{"cfgAddEvtSelPileup", false, "flag for additional pileup selection"};
@@ -120,7 +121,8 @@ struct lambdalambda {
   Configurable<float> cfgV0V0Radius{"cfgV0V0Radius", 1.0, "maximum radius of v0v0"};
   Configurable<float> cfgV0V0CPA{"cfgV0V0CPA", 0.6, "minimum CPA of v0v0"};
   Configurable<float> cfgV0V0Distance{"cfgV0V0Distance", 1, "minimum distance of v0v0"};
-  Configurable<float> cfgV0V0DCA{"cfgV0V0DCA", 1.0, "maximum DCA of v0v0"};
+  Configurable<float> cfgV0V0DCAR{"cfgV0V0DCAR", 1.0, "maximum DCA of v0v0 R"};
+  Configurable<float> cfgV0V0DCAZ{"cfgV0V0DCAZ", 1.0, "maximum DCA of v0v0 Z"};
 
   Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag to apply efficiency correction"};
   Configurable<std::string> cfgEffCorPath{"cfgEffCorPath", "", "path for pseudo efficiency correction"};
@@ -284,7 +286,9 @@ struct lambdalambda {
   template <typename V01, typename V02>
   bool isSelectedV0V0(V01 const& v01, V02 const& v02)
   {
-    if (getDCAofV0V0(v01, v02) > cfgV0V0DCA)
+    if (std::sqrt(getDCAofV0V0(v01, v02).perp2()) > cfgV0V0DCAR)
+      return false;
+    if (getDCAofV0V0(v01, v02).z() > cfgV0V0DCAZ)
       return false;
     if (getCPA(v01, v02) < cfgV0V0CPA)
       return false;
@@ -297,7 +301,7 @@ struct lambdalambda {
   }
 
   template <typename V01, typename V02>
-  float getDCAofV0V0(V01 const& v01, V02 const& v02)
+  ROOT::Math::XYZVector getDCAofV0V0(V01 const& v01, V02 const& v02)
   {
     ROOT::Math::XYZVector v01pos, v02pos, v01mom, v02mom;
     v01pos.SetXYZ(v01.x(), v01.y(), v01.z());
@@ -307,9 +311,8 @@ struct lambdalambda {
 
     ROOT::Math::XYZVector posdiff = v02pos - v01pos;
     ROOT::Math::XYZVector cross = v01mom.Cross(v02mom);
-    if (std::sqrt(cross.Mag2()) < 1e-6)
-      return 999.;
-    return std::abs(posdiff.Dot(cross)) / std::sqrt(cross.Mag2());
+    ROOT::Math::XYZVector dcaVec = (posdiff.Dot(cross) / cross.Mag2()) * cross;
+    return dcaVec;
   }
 
   template <typename V01, typename V02>
@@ -487,7 +490,7 @@ struct lambdalambda {
       centrality = collision.centFT0M();
     }
     histos.fill(HIST("hEventstat"), 0.5);
-    if (!eventSelected(collision)) {
+    if (!eventSelected(collision) && cfgEvtSel) {
       return;
     }
     histos.fill(HIST("hEventstat"), 1.5);
