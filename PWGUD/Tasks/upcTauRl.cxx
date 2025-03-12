@@ -119,7 +119,7 @@ struct UpcTauRl {
   Produces<o2::aod::TauTwoTracks> tauTwoTracks;
 
   // Global varialbes
-  bool isMC = false;
+  bool isMC{false};
   Service<o2::framework::O2DatabasePDG> pdg;
   SGSelector sgSelector;
 
@@ -252,6 +252,7 @@ struct UpcTauRl {
     ConfigurableAxis zzAxisFITamplitude{"zzAxisFITamplitude", {1000, 0., 1000.}, "FIT amplitude"};
 
     AxisSpec zzAxisChannels{CH_ENUM_COUNTER, -0.5, +CH_ENUM_COUNTER - 0.5, "Channels (-)"};
+    AxisSpec zzAxisSelections{10, -0.5, 9.5, "Selections (-)"};
   } confAxis;
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
@@ -632,6 +633,14 @@ struct UpcTauRl {
       histos.add("Tracks/Truth/hPionEta", ";Pion #eta (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisEta});
     }
 
+    histos.add("ProcessDataDG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    histos.add("ProcessDataSG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    histos.add("ProcessMCrecDG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    histos.add("ProcessMCrecSG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    histos.add("ProcessMCgen/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    histos.add("OutputTable/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    histos.add("OutputTable/hRejections", ";Rejections (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+
   } // end init
 
   // run (always called before process :( )
@@ -849,30 +858,55 @@ struct UpcTauRl {
     return true;
   }
 
+  bool isElectronOutElectron{false};
+  bool isElectronNotTOF{false};
+
   template <typename T>
   bool isElectronCandidate(T const& electronCandidate)
   // Loose criterium to find electron-like particle
   // Requiring TOF to avoid double-counting pions/electrons and for better timing
   {
-    if (electronCandidate.tpcNSigmaEl() < -2.0 || electronCandidate.tpcNSigmaEl() > 4.0)
+    if (electronCandidate.tpcNSigmaEl() < -2.0 || electronCandidate.tpcNSigmaEl() > 4.0) {
+      isElectronOutElectron = true;
       return false;
-    if (!electronCandidate.hasTOF())
+    }
+    if (!electronCandidate.hasTOF()) {
+      isElectronNotTOF = true;
       return false;
+    }
     return true;
   }
+
+  bool isMupionOutMuon{false};
+  bool isMupionOutPion{false};
+  bool isMupionNotTOF{false};
 
   template <typename T>
   bool isMuPionCandidate(T const& muPionCandidate)
   // Loose criterium to find muon/pion-like particle
   // Requiring TOF for better timing
   {
-    if (muPionCandidate.tpcNSigmaMu() < -5.0 || muPionCandidate.tpcNSigmaMu() > 5.0)
+    if (muPionCandidate.tpcNSigmaMu() < -5.0 || muPionCandidate.tpcNSigmaMu() > 5.0) {
+      isMupionOutMuon = true;
       return false;
-    if (muPionCandidate.tpcNSigmaPi() < -5.0 || muPionCandidate.tpcNSigmaPi() > 5.0)
+    }
+    if (muPionCandidate.tpcNSigmaPi() < -5.0 || muPionCandidate.tpcNSigmaPi() > 5.0) {
+      isMupionOutPion = true;
       return false;
-    if (!muPionCandidate.hasTOF())
+    }
+    if (!muPionCandidate.hasTOF()) {
+      isMupionNotTOF = true;
       return false;
+    }
     return true;
+  }
+
+  void resetLooseCounters(){
+    isElectronOutElectron = false;
+    isElectronNotTOF = false;
+    isMupionOutPion = false;
+    isMupionOutMuon = false;
+    isMupionNotTOF = false;
   }
 
   template <typename T>
@@ -2000,20 +2034,28 @@ struct UpcTauRl {
   void outputTauEventCandidates(C const& collision, Ts const& tracks)
   {
 
-    int countTracksPerCollision = 0;
-    int countGoodNonPVtracks = 0;
-    int countPVGTel = 0;
-    int countPVGTmupi = 0;
+    histos.get<TH1>(HIST("OutputTable/hSelections"))->Fill(0);
+
+    int countTracksPerCollision{0};
+    int countBadPVtracks{0};
+    int countGoodNonPVtracks{0};
+    int countPVGT{0};
+    int countPVGTel{0};
+    int countPVGTmupi{0};
+    resetLooseCounters();
     std::vector<int> vecTrkIdx;
     // Loop over tracks with selections
     for (const auto& track : tracks) {
       countTracksPerCollision++;
-      if (!isGlobalTrackReinstatement(track))
+      if (!isGlobalTrackReinstatement(track)) {
+        countBadPVtracks++;
         continue;
+      }
       if (!track.isPVContributor()) {
         countGoodNonPVtracks++;
         continue;
       }
+      countPVGT++;
       // alternative selection
       if (isElectronCandidate(track)) {
         countPVGTel++;
@@ -2027,6 +2069,9 @@ struct UpcTauRl {
     } // Loop over tracks with selections
 
     if ((countPVGTel == 2 && countPVGTmupi == 0) || (countPVGTel == 1 && countPVGTmupi == 1)) {
+
+      histos.get<TH1>(HIST("OutputTable/hSelections"))->Fill(1);
+
       const auto& trk1 = tracks.iteratorAt(vecTrkIdx[0]);
       const auto& trk2 = tracks.iteratorAt(vecTrkIdx[1]);
 
@@ -2057,24 +2102,47 @@ struct UpcTauRl {
                    px, py, pz, sign, dcaxy, dcaz,
                    tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr,
                    tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr);
+    } else {
+      if (countPVGT != 2)
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(0);
+      if (countPVGTel != 1 && countPVGTel != 2)
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(1);
+      if (countPVGTmupi != 0 && countPVGTmupi != 1)
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(2);
+      if (isElectronOutElectron)
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(3);
+      if (isElectronNotTOF)
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(4);
+      if (isMupionOutPion)
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(5);
+      if (isMupionOutMuon)
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(6);
+      if (isMupionNotTOF)
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(7);
+
     }
   }
 
   void processDataDG(FullUDCollision const& reconstructedCollision,
                      FullUDTracks const& reconstructedBarrelTracks)
   {
+    histos.get<TH1>(HIST("ProcessDataDG/hSelections"))->Fill(0);
 
     if (!isGoodROFtime(reconstructedCollision))
       return;
+    histos.get<TH1>(HIST("ProcessDataDG/hSelections"))->Fill(1);
 
     if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
       return;
+    histos.get<TH1>(HIST("ProcessDataDG/hSelections"))->Fill(2);
 
     if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
       return;
+    histos.get<TH1>(HIST("ProcessDataDG/hSelections"))->Fill(3);
 
     if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
       return;
+    histos.get<TH1>(HIST("ProcessDataDG/hSelections"))->Fill(4);
 
     if (doMainHistos) {
       fillHistograms(reconstructedBarrelTracks);
@@ -2092,6 +2160,7 @@ struct UpcTauRl {
   void processDataSG(FullSGUDCollision const& reconstructedCollision,
                      FullUDTracks const& reconstructedBarrelTracks)
   {
+    histos.get<TH1>(HIST("ProcessDataSG/hSelections"))->Fill(0);
 
     int gapSide = reconstructedCollision.gapSide();
     int trueGapSide = sgSelector.trueGap(reconstructedCollision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
@@ -2101,18 +2170,23 @@ struct UpcTauRl {
 
     if (!isGoodROFtime(reconstructedCollision))
       return;
+    histos.get<TH1>(HIST("ProcessDataSG/hSelections"))->Fill(1);
 
     if (gapSide != cutSample.whichGapSide)
       return;
+    histos.get<TH1>(HIST("ProcessDataSG/hSelections"))->Fill(2);
 
     if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
       return;
+    histos.get<TH1>(HIST("ProcessDataSG/hSelections"))->Fill(3);
 
     if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
       return;
+    histos.get<TH1>(HIST("ProcessDataSG/hSelections"))->Fill(4);
 
     if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
       return;
+    histos.get<TH1>(HIST("ProcessDataSG/hSelections"))->Fill(5);
 
     if (doMainHistos) {
       histos.fill(HIST("Events/UDtableGapSide"), gapSide);
@@ -2133,19 +2207,24 @@ struct UpcTauRl {
                       FullMCUDTracks const& reconstructedBarrelTracks,
                       aod::UDMcParticles const&)
   {
+    histos.get<TH1>(HIST("ProcessMCrecDG/hSelections"))->Fill(0);
     isMC = true;
 
     if (!isGoodROFtime(reconstructedCollision))
       return;
+    histos.get<TH1>(HIST("ProcessMCrecDG/hSelections"))->Fill(1);
 
     if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
       return;
+    histos.get<TH1>(HIST("ProcessMCrecDG/hSelections"))->Fill(2);
 
     if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
       return;
+    histos.get<TH1>(HIST("ProcessMCrecDG/hSelections"))->Fill(3);
 
     if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
       return;
+    histos.get<TH1>(HIST("ProcessMCrecDG/hSelections"))->Fill(4);
 
     if (cutSample.applyAcceptanceSelection) {
       for (const auto& track : reconstructedBarrelTracks) {
@@ -2155,6 +2234,7 @@ struct UpcTauRl {
           return;
       }
     }
+    histos.get<TH1>(HIST("ProcessMCrecDG/hSelections"))->Fill(5);
 
     if (doMainHistos) {
       fillHistograms(reconstructedBarrelTracks);
@@ -2175,24 +2255,30 @@ struct UpcTauRl {
                       FullMCUDTracks const& reconstructedBarrelTracks,
                       aod::UDMcParticles const&)
   {
+    histos.get<TH1>(HIST("ProcessMCrecSG/hSelections"))->Fill(0);
     isMC = true;
 
     int gapSide = reconstructedCollision.gapSide();
 
     if (gapSide != cutSample.whichGapSide)
       return;
+    histos.get<TH1>(HIST("ProcessMCrecSG/hSelections"))->Fill(1);
 
     if (!isGoodROFtime(reconstructedCollision))
       return;
+    histos.get<TH1>(HIST("ProcessMCrecSG/hSelections"))->Fill(2);
 
     if (!isGoodFITtime(reconstructedCollision, cutSample.cutFITtime))
       return;
+    histos.get<TH1>(HIST("ProcessMCrecSG/hSelections"))->Fill(3);
 
     if (cutSample.useNumContribs && (reconstructedCollision.numContrib() != cutSample.cutNumContribs))
       return;
+    histos.get<TH1>(HIST("ProcessMCrecSG/hSelections"))->Fill(4);
 
     if (cutSample.useRecoFlag && (reconstructedCollision.flags() != cutSample.cutRecoFlag))
       return;
+    histos.get<TH1>(HIST("ProcessMCrecSG/hSelections"))->Fill(5);
 
     if (cutSample.applyAcceptanceSelection) {
       for (const auto& track : reconstructedBarrelTracks) {
@@ -2202,6 +2288,7 @@ struct UpcTauRl {
           return;
       }
     }
+    histos.get<TH1>(HIST("ProcessMCrecSG/hSelections"))->Fill(6);
 
     if (doMainHistos) {
       histos.fill(HIST("Events/UDtableGapSide"), gapSide);
@@ -2222,6 +2309,7 @@ struct UpcTauRl {
   void processMCgen(aod::UDMcCollision const& /*generatedCollision*/,
                     aod::UDMcParticles const& particles)
   {
+    histos.get<TH1>(HIST("ProcessMCgen/hSelections"))->Fill(0);
     isMC = true;
 
     if (cutSample.applyAcceptanceSelection) {
@@ -2233,6 +2321,7 @@ struct UpcTauRl {
           return;
       }
     }
+    histos.get<TH1>(HIST("ProcessMCgen/hSelections"))->Fill(1);
 
     if (doTruthHistos) {
       fillTruthHistograms(particles);
