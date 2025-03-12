@@ -44,6 +44,9 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(TrackOcc, trackOcc, float);
 DECLARE_SOA_COLUMN(Ft0Occ, ft0Occ, float);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
+DECLARE_SOA_COLUMN(BcGlobalIndex, bcGlobalIndex, int);
+DECLARE_SOA_COLUMN(BcTimeFrameId, bcTimeFrameId, int);
+DECLARE_SOA_COLUMN(BcBcInTimeFrame, bcBcInTimeFrame, int);
 } // namespace tpcskims
 DECLARE_SOA_TABLE(SkimmedTPCV0Tree, "AOD", "TPCSKIMV0TREE",
                   o2::aod::track::TPCSignal,
@@ -97,6 +100,9 @@ DECLARE_SOA_TABLE(SkimmedTPCV0TreeWithTrkQA, "AOD", "TPCSKIMV0WQA",
                   tpcskims::TrackOcc,
                   tpcskims::Ft0Occ,
                   tpcskims::HadronicRate,
+                  tpcskims::BcGlobalIndex,
+                  tpcskims::BcTimeFrameId,
+                  tpcskims::BcBcInTimeFrame,
                   o2::aod::trackqa::TPCClusterByteMask,
                   o2::aod::trackqa::TPCdEdxMax0R,
                   o2::aod::trackqa::TPCdEdxMax1R,
@@ -148,6 +154,9 @@ DECLARE_SOA_TABLE(SkimmedTPCTOFTreeWithTrkQA, "AOD", "TPCTOFSKIMWQA",
                   tpcskims::TrackOcc,
                   tpcskims::Ft0Occ,
                   tpcskims::HadronicRate,
+                  tpcskims::BcGlobalIndex,
+                  tpcskims::BcTimeFrameId,
+                  tpcskims::BcBcInTimeFrame,
                   o2::aod::trackqa::TPCClusterByteMask,
                   o2::aod::trackqa::TPCdEdxMax0R,
                   o2::aod::trackqa::TPCdEdxMax1R,
