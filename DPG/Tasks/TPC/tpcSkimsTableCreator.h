@@ -128,7 +128,7 @@ DECLARE_SOA_TABLE(SkimmedTPCTOFTree, "AOD", "TPCTOFSKIMTREE",
                   tpcskims::Ft0Occ,
                   tpcskims::HadronicRate);
 
-DECLARE_SOA_TABLE(SkimmedTPCTOFTreeWithTrkQA, "AOD", "TPCTOFSKIMWQA",                  
+DECLARE_SOA_TABLE(SkimmedTPCTOFTreeWithTrkQA, "AOD", "TPCTOFSKIMWQA",
                   o2::aod::track::TPCSignal,
                   tpcskims::InvDeDxExpTPC,
                   o2::aod::track::TPCInnerParam,
