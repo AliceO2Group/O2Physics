@@ -428,9 +428,6 @@ bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const
   const float dcav0topv = cascade.dcav0topv(col.posX(), col.posY(), col.posZ());
   const float invMassLambda = cascade.mLambda();
   const float invMass = isCascOmega ? cascade.mOmega() : cascade.mXi();
-  const float nSigmaPIDMaxPos = posDaughTrack.getSigmaPIDMax();
-  const float nSigmaPIDMaxNeg = negDaughTrack.getSigmaPIDMax();
-  const float nSigmaPIDMaxBach = bachTrackSel.getSigmaPIDMax();
 
   if (invMassLambda < fV0InvMassLowLimit || invMassLambda > fV0InvMassUpLimit) {
     return false;
@@ -496,19 +493,10 @@ bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const
     return false;
   }
 
-  if (posTrack.hasTOF() && ((cascade.sign() == 1 && posTrack.tofNSigmaPr() > nSigmaPIDMaxPos) || (cascade.sign() == -1 && posTrack.tofNSigmaKa() > nSigmaPIDMaxPos))) {
-    return false;
-  }
   if (!posDaughTrack.isSelectedMinimal(posTrack)) {
     return false;
   }
-  if (negTrack.hasTOF() && ((cascade.sign() == 1 && negTrack.tofNSigmaKa() > nSigmaPIDMaxNeg) || (cascade.sign() == -1 && negTrack.tofNSigmaPr() > nSigmaPIDMaxNeg))) {
-    return false;
-  }
   if (!negDaughTrack.isSelectedMinimal(negTrack)) {
-    return false;
-  }
-  if (bachTrack.hasTOF() && ((isCascOmega && bachTrack.tofNSigmaKa() > nSigmaPIDMaxBach) || (!isCascOmega && bachTrack.tofNSigmaPi() > nSigmaPIDMaxBach))) {
     return false;
   }
   if (!bachTrackSel.isSelectedMinimal(bachTrack)) {
