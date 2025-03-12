@@ -57,6 +57,7 @@ class DalitzEECut : public TNamed
     kTPCChi2NDF,
     kTPCNsigmaEl,
     kTPCNsigmaPi,
+    kDCA3Dsigma,
     kDCAxy,
     kDCAz,
     kITSNCls,
@@ -123,6 +124,9 @@ class DalitzEECut : public TNamed
       return false;
     }
     if (!IsSelectedTrack(track, DalitzEECuts::kTrackEtaRange)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DalitzEECuts::kDCA3Dsigma)) {
       return false;
     }
     if (!IsSelectedTrack(track, DalitzEECuts::kDCAxy)) {
@@ -242,6 +246,9 @@ class DalitzEECut : public TNamed
       case DalitzEECuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
+      case DalitzEECuts::kDCA3Dsigma:
+        return mMinDca3D <= dca3DinSigma(track) && dca3DinSigma(track) <= mMaxDca3D; // in sigma for single leg
+
       case DalitzEECuts::kDCAxy:
         return std::fabs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
@@ -288,8 +295,9 @@ class DalitzEECut : public TNamed
   void RequireITSibAny(bool flag);
   void RequireITSib1st(bool flag);
 
-  void SetMaxDcaXY(float maxDcaXY); // in cm
-  void SetMaxDcaZ(float maxDcaZ);   // in cm
+  void SetTrackDca3DRange(float min, float max); // in sigma
+  void SetMaxDcaXY(float maxDcaXY);              // in cm
+  void SetMaxDcaZ(float maxDcaZ);                // in cm
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void ApplyPrefilter(bool flag);
   void ApplyPhiV(bool flag);
@@ -324,6 +332,8 @@ class DalitzEECut : public TNamed
   bool mRequireITSibAny{true};
   bool mRequireITSib1st{false};
 
+  float mMinDca3D{0.0f};                        // min dca in 3D in units of sigma
+  float mMaxDca3D{1e+10};                       // max dca in 3D in units of sigma
   float mMaxDcaXY{1.0f};                        // max dca in xy plane
   float mMaxDcaZ{1.0f};                         // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
