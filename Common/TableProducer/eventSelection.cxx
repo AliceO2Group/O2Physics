@@ -341,7 +341,7 @@ struct BcSelectionTask {
     }
 
     // bc loop
-    for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop (use bc as non-const iterator for checks in neighbouring bcs)
+    for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop (use bc as nonconst iterator)
       // store rct flags
       uint32_t rct = lastRCT;
       int64_t thisTF = (bc.globalBC() - bcSOR) / nBCsPerTF;
