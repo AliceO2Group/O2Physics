@@ -227,17 +227,17 @@ struct SingleTrackQC {
       fRegistry.add("Track/positive/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
       fRegistry.add("Track/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {200, 0., 400}}, false);
       fRegistry.add("Track/positive/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{200, 0, 10}, {200, 0., 400}}, false);
-      fRegistry.add("Track/positive/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
-      fRegistry.add("Track/positive/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
-      fRegistry.add("Track/positive/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
+      fRegistry.add("Track/positive/hNclsTPC", "number of TPC clusters;TPC N_{cls}", kTH1F, {{161, -0.5, 160.5}}, false);
+      fRegistry.add("Track/positive/hNcrTPC", "number of TPC crossed rows;TPC N_{CR}", kTH1F, {{161, -0.5, 160.5}}, false);
+      fRegistry.add("Track/positive/hChi2TPC", "chi2/number of TPC clusters;TPC #chi^{2}/N_{CR}", kTH1F, {{100, 0, 10}}, false);
       fRegistry.add("Track/positive/hDeltaPin", "p_{in} vs. p_{pv};p_{pv} (GeV/c);(p_{in} - p_{pv})/p_{pv}", kTH2F, {{1000, 0, 10}, {200, -1, +1}}, false);
-      fRegistry.add("Track/positive/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
-      fRegistry.add("Track/positive/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
+      fRegistry.add("Track/positive/hTPCNcr2Nf", "TPC Ncr/Nfindable;TPC N_{CR}/N_{cls}^{findable}", kTH1F, {{200, 0, 2}}, false);
+      fRegistry.add("Track/positive/hTPCNcls2Nf", "TPC Ncls/Nfindable;TPC N_{cls}/N_{cls}^{findable}", kTH1F, {{200, 0, 2}}, false);
       fRegistry.add("Track/positive/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
-      fRegistry.add("Track/positive/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
-      fRegistry.add("Track/positive/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
+      fRegistry.add("Track/positive/hNclsITS", "number of ITS clusters;ITS N_{cls}", kTH1F, {{8, -0.5, 7.5}}, false);
+      fRegistry.add("Track/positive/hChi2ITS", "chi2/number of ITS clusters;ITS #chi^{2}/N_{cls}", kTH1F, {{100, 0, 10}}, false);
       fRegistry.add("Track/positive/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
-      fRegistry.add("Track/positive/hChi2TOF", "TOF Chi2;p_{pv} (GeV/c);chi2", kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
+      fRegistry.add("Track/positive/hChi2TOF", "TOF Chi2;p_{pv} (GeV/c);TOF #chi^{2}", kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
 
       fRegistry.add("Track/positive/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
       fRegistry.add("Track/positive/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -696,7 +696,7 @@ struct SingleTrackQC {
   SliceCache cache;
   Preslice<MyElectrons> perCollision_electron = aod::emprimaryelectron::emeventId;
   Filter trackFilter_electron = dielectroncuts.cfg_min_pt_track < o2::aod::track::pt && dielectroncuts.cfg_min_eta_track < o2::aod::track::eta && o2::aod::track::eta < dielectroncuts.cfg_max_eta_track && dielectroncuts.cfg_min_phi_track < o2::aod::track::phi && o2::aod::track::phi < dielectroncuts.cfg_max_phi_track && o2::aod::track::tpcChi2NCl < dielectroncuts.cfg_max_chi2tpc && o2::aod::track::itsChi2NCl < dielectroncuts.cfg_max_chi2its && nabs(o2::aod::track::dcaXY) < dielectroncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dielectroncuts.cfg_max_dcaz;
-  Filter pidFilter_electron = (dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl) && (o2::aod::pidtpc::tpcNSigmaPi < dielectroncuts.cfg_min_TPCNsigmaPi || dielectroncuts.cfg_max_TPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
+  Filter pidFilter_electron = dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl;
   Filter ttcaFilter_electron = ifnode(dielectroncuts.enableTTCA.node(), o2::aod::emprimaryelectron::isAssociatedToMPC == true || o2::aod::emprimaryelectron::isAssociatedToMPC == false, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
 
   Preslice<MyMuons> perCollision_muon = aod::emprimarymuon::emeventId;
@@ -706,7 +706,7 @@ struct SingleTrackQC {
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   // Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
-  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin < o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
+  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   void processQC(FilteredMyCollisions const& collisions, Types const&... args)
@@ -786,6 +786,27 @@ struct SingleTrackQC {
       }
       if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 12.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 13.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 14.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 15.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 16.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 17.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 18.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 19.0);
       }
       if (!fEMEventCut.IsSelected(collision)) {
         continue;

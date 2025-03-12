@@ -101,11 +101,11 @@ struct PhotonIsolationQA {
   Preslice<selectedMCClusters> ClustersPerCol = aod::emcalcluster::collisionId;
   Preslice<aod::EMCALClusterCells> CellsPerCluster = aod::emcalclustercell::emcalclusterId;
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
   void init(o2::framework::InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     mGeometry = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);

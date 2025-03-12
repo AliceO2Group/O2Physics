@@ -123,6 +123,7 @@ DECLARE_SOA_COLUMN(Sign, sign, int16_t);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(MassLambda, masslambda, float);
 DECLARE_SOA_COLUMN(MassXi, massxi, float);
 DECLARE_SOA_COLUMN(MassOmega, massomega, float);
 DECLARE_SOA_COLUMN(V2CEP, v2CEP, float);
@@ -166,7 +167,7 @@ DECLARE_SOA_TABLE(CascTraining, "AOD", "CascTraining", o2::soa::Index<>,
                   mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::BachBaryonCosPA, mycascades::BachBaryonDCAxyToPV, mycascades::McPdgCode);
 
 DECLARE_SOA_TABLE(CascAnalysis, "AOD", "CascAnalysis", o2::soa::Index<>,
-                  cascadesflow::CentFT0C, cascadesflow::IsNoCollInTimeRange, cascadesflow::IsNoCollInRof, cascadesflow::HasEventPlane, cascadesflow::HasSpectatorPlane, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Eta, cascadesflow::Phi, cascadesflow::MassXi, cascadesflow::MassOmega, cascadesflow::V2CSP, cascadesflow::V2CEP, cascadesflow::V1SPzdcA, cascadesflow::V1SPzdcC, cascadesflow::PsiT0C, cascadesflow::BDTResponseXi, cascadesflow::BDTResponseOmega, cascadesflow::CosThetaStarLambdaFromOmega, cascadesflow::CosThetaStarLambdaFromXi, cascadesflow::CosThetaStarProton, mycascades::McPdgCode);
+                  cascadesflow::CentFT0C, cascadesflow::IsNoCollInTimeRange, cascadesflow::IsNoCollInRof, cascadesflow::HasEventPlane, cascadesflow::HasSpectatorPlane, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Eta, cascadesflow::Phi, cascadesflow::MassLambda, cascadesflow::MassXi, cascadesflow::MassOmega, cascadesflow::V2CSP, cascadesflow::V2CEP, cascadesflow::V1SPzdcA, cascadesflow::V1SPzdcC, cascadesflow::PsiT0C, cascadesflow::BDTResponseXi, cascadesflow::BDTResponseOmega, cascadesflow::CosThetaStarLambdaFromOmega, cascadesflow::CosThetaStarLambdaFromXi, cascadesflow::CosThetaStarProton, mycascades::McPdgCode);
 
 namespace myMCcascades
 {

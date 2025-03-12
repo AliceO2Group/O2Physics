@@ -763,7 +763,7 @@ struct HfTaskD0 {
         unsigned maxNumContrib = 0;
         float cent{-1.f};
         float occ{-1.f};
-        if constexpr (std::is_same_v<CollType, CollisionsCent>) {
+        if constexpr (std::is_same_v<CollType, CollisionsWithMcLabelsCent>) {
           const auto& recoCollsPerMcCollCent = collisions.sliceBy(colPerMcCollisionCent, particle.mcCollision().globalIndex());
           for (const auto& recCol : recoCollsPerMcCollCent) {
             maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;

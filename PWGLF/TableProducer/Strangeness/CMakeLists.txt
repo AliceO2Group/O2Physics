@@ -61,7 +61,6 @@ o2physics_add_dpl_workflow(double-casc-tree-creator
     PUBLIC_LINK_LIBRARIES O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
-
 o2physics_add_dpl_workflow(lambdakzerobuilder
     SOURCES lambdakzerobuilder.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::MLCore
@@ -109,7 +108,7 @@ o2physics_add_dpl_workflow(strangederivedbuilder
 
 o2physics_add_dpl_workflow(strangenessbuilder
     SOURCES strangenessbuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase KFParticle::KFParticle
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(v0-selector
@@ -138,7 +137,17 @@ o2physics_add_dpl_workflow(lambdakzeromlselection
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(cascademlselection
+    SOURCES cascademlselection.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(sigma0builder
     SOURCES sigma0builder.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdajetpolarizationbuilder
+    SOURCES lambdaJetpolarizationbuilder.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

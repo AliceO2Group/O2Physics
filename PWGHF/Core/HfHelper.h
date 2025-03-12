@@ -17,8 +17,10 @@
 #ifndef PWGHF_CORE_HFHELPER_H_
 #define PWGHF_CORE_HFHELPER_H_
 
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
+#include <vector>
+
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector4D.h"
 #include <TPDGCode.h>
 
 #include "CommonConstants/PhysicsConstants.h"

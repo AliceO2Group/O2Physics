@@ -148,6 +148,7 @@ DECLARE_SOA_TABLE(HfRedBpMcCheck, "AOD", "HFREDBPMCCHECK", //! Table with MC dec
                   hf_cand_bplus_lite::Pt,
                   hf_cand_bplus_lite::MlScoreSig,
                   hf_bplus_mc::PdgCodeBeautyMother,
+                  hf_bplus_mc::PdgCodeCharmMother,
                   hf_bplus_mc::PdgCodeProng0,
                   hf_bplus_mc::PdgCodeProng1,
                   hf_bplus_mc::PdgCodeProng2);
@@ -640,6 +641,7 @@ struct HfTaskBplusReduced {
             ptCandBplus,
             candidateMlScoreSig,
             candidate.pdgCodeBeautyMother(),
+            candidate.pdgCodeCharmMother(),
             candidate.pdgCodeProng0(),
             candidate.pdgCodeProng1(),
             candidate.pdgCodeProng2());

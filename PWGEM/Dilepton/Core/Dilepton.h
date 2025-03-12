@@ -1103,7 +1103,7 @@ struct Dilepton {
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   // Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
-  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin < o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
+  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   SliceCache cache;
@@ -1575,6 +1575,15 @@ struct Dilepton {
       }
       if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 16.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 17.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 18.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 19.0);
       }
       if (!fEMEventCut.IsSelected(collision)) {
         continue;

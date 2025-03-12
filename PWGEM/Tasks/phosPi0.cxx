@@ -63,6 +63,11 @@ struct PhosPi0 {
   Configurable<int> nMixedEvents{"nMixedEvents", 10, "number of events to mix"};
   Configurable<bool> fillQC{"fillQC", true, "Fill QC histos"};
   Configurable<float> minOccE{"minOccE", 0.5, "Min. cluster energy of occupancy plots"};
+  Configurable<float> nonlinA{"nonlinA", 1., "nonlinsrity param A (scale)"};
+  Configurable<float> nonlinB{"nonlinB", 0., "nonlinsrity param B (a+b*exp(-e/c))"};
+  Configurable<float> nonlinC{"nonlinC", 1., "nonlinsrity param C (a+b*exp(-e/c))"};
+  Configurable<int> tofEffParam{"tofEffParam", 0, "parameterization of TOF cut efficiency"};
+  Configurable<float> timeOffset{"timeOffset", 0., "time offset to compensate imperfection of time calibration"};
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using SelCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
@@ -81,20 +86,22 @@ struct PhosPi0 {
   {
    public:
     Photon() = default;
-    Photon(double x, double y, double z, double ee, int m, bool isDispOK, bool isCPVOK, int mcLabel) : px(x), py(y), pz(z), e(ee), mod(m), mPID(isDispOK << 1 | isCPVOK << 2), label(mcLabel) {}
+    Photon(double x, double y, double z, double ee, double t, int m, bool isDispOK, bool isCPVOK, int mcLabel) : px(x), py(y), pz(z), e(ee), time(t), mod(m), mPID(isDispOK << 1 | isCPVOK << 2), label(mcLabel) {}
     ~Photon() = default;
 
     bool isCPVOK() const { return (mPID >> 2) & 1; }
     bool isDispOK() const { return (mPID >> 1) & 1; }
+    double pt() const { return std::sqrt(px * px + py * py); }
 
    public:
-    double px = 0.; // px
-    double py = 0.; // py
-    double pz = 0.; // pz
-    double e = 0.;  // energy
-    int mod = 0;    // module
-    int mPID = 0;   // store PID bits
-    int label = -1; // label of MC particle
+    double px = 0.;   // px
+    double py = 0.;   // py
+    double pz = 0.;   // pz
+    double e = 0.;    // energy
+    double time = 0.; // time
+    int mod = 0;      // module
+    int mPID = 0;     // store PID bits
+    int label = -1;   // label of MC particle
   };
 
   int mRunNumber = 0;    // Current run number
@@ -110,11 +117,13 @@ struct PhosPi0 {
   TH3 *hReMod, *hMiMod;
   TH2 *hReAll, *hReDisp, *hReCPV, *hReBoth, *hSignalAll, *hPi0SignalAll, *hPi0SignalCPV, *hPi0SignalDisp,
     *hPi0SignalBoth, *hMiAll, *hMiDisp, *hMiCPV, *hMiBoth;
+  TH2 *hReOneAll, *hReOneDisp, *hReOneCPV, *hReOneBoth, *hMiOneAll, *hMiOneDisp, *hMiOneCPV, *hMiOneBoth;
+  TH2 *hReTime12, *hReTime30, *hReTime50, *hReTime100;
 
-  std::vector<double> pt = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2,
-                            1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0,
-                            6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10., 11., 12., 13., 14., 15., 16., 18., 20., 22., 24., 26., 28.,
-                            30., 34., 38., 42., 46., 50., 55., 60., 70., 80., 90., 100., 110., 120., 150.};
+  std::vector<double> pt = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1,
+                            1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.5, 4.6, 4.8, 5.0,
+                            5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 22., 24., 26., 28.,
+                            30., 34., 38., 42., 46., 50., 55., 60., 70., 75., 80., 85., 90., 95., 100., 110., 120., 130., 140., 150., 160., 180., 200.};
 
   /// \brief Create output histograms
   void init(InitContext const&)
@@ -194,6 +203,31 @@ struct PhosPi0 {
     hReBoth = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggReBoth", "inv mass for centrality",
                                                               HistType::kTH2F, {mggAxis, ptAxis}))
                 .get();
+    hReOneAll = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggReOneAll", "inv mass for centrality",
+                                                                HistType::kTH2F, {mggAxis, ptAxis}))
+                  .get();
+    hReOneCPV = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggReOneCPV", "inv mass for centrality",
+                                                                HistType::kTH2F, {mggAxis, ptAxis}))
+                  .get();
+    hReOneDisp = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggReOneDisp", "inv mass for centrality",
+                                                                 HistType::kTH2F, {mggAxis, ptAxis}))
+                   .get();
+    hReOneBoth = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggReOneBoth", "inv mass for centrality",
+                                                                 HistType::kTH2F, {mggAxis, ptAxis}))
+                   .get();
+
+    hReTime12 = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggReTime12", "inv mass for centrality",
+                                                                HistType::kTH2F, {mggAxis, ptAxis}))
+                  .get();
+    hReTime30 = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggReTime30", "inv mass for centrality",
+                                                                HistType::kTH2F, {mggAxis, ptAxis}))
+                  .get();
+    hReTime50 = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggReTime50", "inv mass for centrality",
+                                                                HistType::kTH2F, {mggAxis, ptAxis}))
+                  .get();
+    hReTime100 = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggReTime100", "inv mass for centrality",
+                                                                 HistType::kTH2F, {mggAxis, ptAxis}))
+                   .get();
 
     if (isMC) {
       hSignalAll = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggSignal", "inv mass for correlated pairs",
@@ -228,6 +262,18 @@ struct PhosPi0 {
     hMiBoth = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiBoth", "inv mass for centrality",
                                                               HistType::kTH2F, {mggAxis, ptAxis}))
                 .get();
+    hMiOneAll = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiOneAll", "inv mass for centrality",
+                                                                HistType::kTH2F, {mggAxis, ptAxis}))
+                  .get();
+    hMiOneCPV = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiOneCPV", "inv mass for centrality",
+                                                                HistType::kTH2F, {mggAxis, ptAxis}))
+                  .get();
+    hMiOneDisp = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiOneDisp", "inv mass for centrality",
+                                                                 HistType::kTH2F, {mggAxis, ptAxis}))
+                   .get();
+    hMiOneBoth = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiOneBoth", "inv mass for centrality",
+                                                                 HistType::kTH2F, {mggAxis, ptAxis}))
+                   .get();
     if (isMC) {
       mHistManager.add("hMCPi0SpAll", "pi0 spectrum inclusive", HistType::kTH1F, {ptAxis});
       mHistManager.add("hMCPi0SpPrim", "pi0 spectrum Primary", HistType::kTH1F, {ptAxis});
@@ -395,7 +441,7 @@ struct PhosPi0 {
         if (mcPart->begin().mcCollisionId() != mPrevMCColId) {
           mPrevMCColId = mcPart->begin().mcCollisionId(); // to avoid scanning full MC table each BC
           for (const auto& part : *mcPart) {
-            if (part.mcCollision().bcId() != cluMcBCId) {
+            if (part.mcCollision().bcId() != col.bcId()) {
               continue;
             }
             if (part.pdgCode() == 111) {
@@ -462,7 +508,11 @@ struct PhosPi0 {
           mcLabel = mcList[0];
         }
       }
-      Photon ph1(clu.px(), clu.py(), clu.pz(), clu.e(), clu.mod(), testLambda(clu.e(), clu.m02(), clu.m20()), clu.trackdist() > cpvCut, mcLabel);
+      double enCorr = 1;
+      if constexpr (isMC) { // correct MC energy
+        enCorr = nonlinearity(clu.e());
+      }
+      Photon ph1(clu.px() * enCorr, clu.py() * enCorr, clu.pz() * enCorr, clu.e() * enCorr, clu.time(), clu.mod(), testLambda(clu.e(), clu.m02(), clu.m20()), clu.trackdist() > cpvCut, mcLabel);
       // Mix with other photons added to stack
       for (const auto& ph2 : mCurEvent) {
         double m = std::pow(ph1.e + ph2.e, 2) - std::pow(ph1.px + ph2.px, 2) -
@@ -473,35 +523,89 @@ struct PhosPi0 {
         double pt = std::sqrt(std::pow(ph1.px + ph2.px, 2) +
                               std::pow(ph1.py + ph2.py, 2));
         int modComb = moduleCombination(ph1.mod, ph2.mod);
-        hReMod->Fill(m, pt, modComb);
-        hReAll->Fill(m, pt);
+        double w = 1.;
+        if constexpr (isMC) { // correct MC energy
+          w = tofCutEff(ph1.e) * tofCutEff(ph2.e);
+        }
+        hReMod->Fill(m, pt, modComb, w);
+        hReAll->Fill(m, pt, w);
+        hReOneAll->Fill(m, ph1.pt(), w);
+        hReOneAll->Fill(m, ph2.pt(), w);
+        if (ph1.isCPVOK()) {
+          hReOneCPV->Fill(m, ph1.pt(), w);
+        }
+        if (ph2.isCPVOK()) {
+          hReOneCPV->Fill(m, ph2.pt(), w);
+        }
+        if (ph1.isDispOK()) {
+          hReOneDisp->Fill(m, ph1.pt(), w);
+          if (ph1.isCPVOK()) {
+            hReOneBoth->Fill(m, ph1.pt(), w);
+          }
+        }
+        if (ph2.isDispOK()) {
+          hReOneDisp->Fill(m, ph2.pt(), w);
+          if (ph2.isCPVOK()) {
+            hReOneBoth->Fill(m, ph2.pt(), w);
+          }
+        }
+        // Test time eff
+        if (std::abs(ph1.time - timeOffset) < 12.5e-9) { // strict cut on first photon
+          if (std::abs(ph2.time - timeOffset) < 100.e-9) {
+            hReTime100->Fill(m, ph2.pt());
+            if (std::abs(ph2.time - timeOffset) < 50.e-9) {
+              hReTime50->Fill(m, ph2.pt());
+              if (std::abs(ph2.time - timeOffset) < 30.e-9) {
+                hReTime30->Fill(m, ph2.pt());
+                if (std::abs(ph2.time - timeOffset) < 12.5e-9) {
+                  hReTime12->Fill(m, ph2.pt());
+                }
+              }
+            }
+          }
+        }
+        if (std::abs(ph2.time - timeOffset) < 12.5e-9) { // strict cut on first photon
+          if (std::abs(ph1.time - timeOffset) < 100.e-9) {
+            hReTime100->Fill(m, ph1.pt());
+            if (std::abs(ph1.time - timeOffset) < 50.e-9) {
+              hReTime50->Fill(m, ph1.pt());
+              if (std::abs(ph1.time - timeOffset) < 30.e-9) {
+                hReTime30->Fill(m, ph1.pt());
+                if (std::abs(ph1.time - timeOffset) < 12.5e-9) {
+                  hReTime12->Fill(m, ph1.pt());
+                }
+              }
+            }
+          }
+        }
+
         bool isPi0 = false;
         if constexpr (isMC) { // test parent
           int cp = commonParentPDG(ph1.label, ph2.label, mcPart);
           if (cp != 0) {
-            hSignalAll->Fill(m, pt);
+            hSignalAll->Fill(m, pt, w);
             if (cp == 111) {
               isPi0 = true;
-              hPi0SignalAll->Fill(m, pt);
+              hPi0SignalAll->Fill(m, pt, w);
             }
           }
         }
 
         if (ph1.isCPVOK() && ph2.isCPVOK()) {
-          hReCPV->Fill(m, pt);
+          hReCPV->Fill(m, pt, w);
           if (isPi0) {
-            hPi0SignalCPV->Fill(m, pt);
+            hPi0SignalCPV->Fill(m, pt, w);
           }
         }
         if (ph1.isDispOK() && ph2.isDispOK()) {
-          hReDisp->Fill(m, pt);
+          hReDisp->Fill(m, pt, w);
           if (isPi0) {
-            hPi0SignalDisp->Fill(m, pt);
+            hPi0SignalDisp->Fill(m, pt, w);
           }
           if (ph1.isCPVOK() && ph2.isCPVOK()) {
-            hReBoth->Fill(m, pt);
+            hReBoth->Fill(m, pt, w);
             if (isPi0) {
-              hPi0SignalBoth->Fill(m, pt);
+              hPi0SignalBoth->Fill(m, pt, w);
             }
           }
         }
@@ -523,15 +627,39 @@ struct PhosPi0 {
           double pt = std::sqrt(std::pow(ph1.px + ph2.px, 2) +
                                 std::pow(ph1.py + ph2.py, 2));
           int modComb = moduleCombination(ph1.mod, ph2.mod);
-          hMiMod->Fill(m, pt, modComb);
-          hMiAll->Fill(m, pt);
+          double w = 1.;
+          if constexpr (isMC) { // correct MC energy
+            w = tofCutEff(ph1.e) * tofCutEff(ph2.e);
+          }
+          hMiMod->Fill(m, pt, modComb, w);
+          hMiAll->Fill(m, pt, w);
+          hMiOneAll->Fill(m, ph1.pt(), w);
+          hMiOneAll->Fill(m, ph2.pt(), w);
+          if (ph1.isCPVOK()) {
+            hMiOneCPV->Fill(m, ph1.pt(), w);
+          }
+          if (ph2.isCPVOK()) {
+            hMiOneCPV->Fill(m, ph2.pt(), w);
+          }
+          if (ph1.isDispOK()) {
+            hMiOneDisp->Fill(m, ph1.pt(), w);
+            if (ph1.isCPVOK()) {
+              hMiOneBoth->Fill(m, ph1.pt(), w);
+            }
+          }
+          if (ph2.isDispOK()) {
+            hMiOneDisp->Fill(m, ph2.pt(), w);
+            if (ph2.isCPVOK()) {
+              hMiOneBoth->Fill(m, ph2.pt(), w);
+            }
+          }
           if (ph1.isCPVOK() && ph2.isCPVOK()) {
-            hMiCPV->Fill(m, pt);
+            hMiCPV->Fill(m, pt, w);
           }
           if (ph1.isDispOK() && ph2.isDispOK()) {
-            hMiDisp->Fill(m, pt);
+            hMiDisp->Fill(m, pt, w);
             if (ph1.isCPVOK() && ph2.isCPVOK()) {
-              hMiBoth->Fill(m, pt);
+              hMiBoth->Fill(m, pt, w);
             }
           }
         }
@@ -597,7 +725,12 @@ struct PhosPi0 {
       }
 
       int mcLabel = -1;
-      Photon ph1(clu.px(), clu.py(), clu.pz(), clu.e(), clu.mod(), testLambda(clu.e(), clu.m02(), clu.m20()), clu.trackdist() > cpvCut, mcLabel);
+      double enCorr = 1;
+      if (isMC) { // correct MC energy
+        enCorr = nonlinearity(clu.e());
+      }
+      Photon ph1(clu.px() * enCorr, clu.py() * enCorr, clu.pz() * enCorr, clu.e() * enCorr, clu.time(), clu.mod(), testLambda(clu.e(), clu.m02(), clu.m20()), clu.trackdist() > cpvCut, mcLabel);
+
       // Mix with other photons added to stack
       for (const auto& ph2 : mCurEvent) {
         double m = std::pow(ph1.e + ph2.e, 2) - std::pow(ph1.px + ph2.px, 2) -
@@ -736,6 +869,43 @@ struct PhosPi0 {
       iparent1 = parent1.mothersIds()[0];
     }
     return 0; // nothing found
+  }
+  double nonlinearity(double e)
+  {
+    return nonlinA + nonlinB * std::exp(-e / nonlinC);
+  }
+  double tofCutEff(double en)
+  {
+    if (tofEffParam == 0) {
+      return 1.;
+    }
+    if (tofEffParam == 1) { // Run2 100 ns
+      // parameterization 01.08.2020
+      if (en > 1.1)
+        en = 1.1;
+      if (en < 0.11)
+        en = 0.11;
+      return std::exp((-1.15295e+05 + 2.26754e+05 * en - 1.26063e+05 * en * en + en * en * en) /
+                      (1. - 3.16443e+05 * en + 3.68044e+06 * en * en + en * en * en));
+    }
+    if (tofEffParam == 2) { // Run2 30 ns
+      if (en > 1.6)
+        en = 1.6;
+      return 1. / (1. + std::exp((4.83230e+01 - 8.89758e+01 * en + 1.10897e+03 * en * en - 5.73755e+03 * en * en * en -
+                                  1.43777e+03 * en * en * en * en) /
+                                 (1. - 1.23667e+02 * en + 1.07255e+03 * en * en + 5.87221e+02 * en * en * en)));
+    }
+    if (tofEffParam == 2) { // Run2 12.5 ns
+      if (en < 4.6) {
+        return std::exp(3.64952e-03 *
+                        (-5.80032e+01 - 1.53442e+02 * en + 1.30994e+02 * en * en + -3.53094e+01 * en * en * en + en * en * en * en) /
+                        (-7.75638e-02 + 8.64761e-01 * en + 1.22320e+00 * en * en - 1.00177e+00 * en * en * en + en * en * en * en));
+      } else {
+        return 0.63922783 * (1. - 1.63273e-01 * std::tanh((en - 7.94528e+00) / 1.28997e+00)) *
+               (-4.39257e+00 * en + 2.25503e+00 * en * en + en * en * en) / (2.37160e+00 * en - 6.93786e-01 * en * en + en * en * en);
+      }
+    }
+    return 1.;
   }
 };
 

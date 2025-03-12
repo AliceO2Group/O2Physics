@@ -152,14 +152,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! absolute p
   DECLARE_JETMATCHING_TABLE(_jet_type_##MCParticleLevel, _jet_type_##MCDetectorLevel, _shortname_ "JETP2D")                                           \
   DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCDetectorLevel, _shortname_ "DJETMW")                                         \
   DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCParticleLevel, _jet_type_##MCParticleLevel, _shortname_ "PETMPW")                                         \
-  DECLARE_JET_TABLES(JCollision, _jet_type_##EventWiseSubtracted, _subtracted_track_type_, _hfcand_type_, _shortname_ "JETEWS")                       \
+  DECLARE_JET_TABLES(JCollision, _jet_type_##EventWiseSubtracted, _subtracted_track_type_, _hfcand_type_, _shortname_ "EWSJET")                       \
   DECLARE_JETMATCHING_TABLE(_jet_type_, _jet_type_##EventWiseSubtracted, _shortname_ "JET2EWS")                                                       \
-  DECLARE_JETMATCHING_TABLE(_jet_type_##EventWiseSubtracted, _jet_type_, _shortname_ "JETEWS2")                                                       \
-  DECLARE_JET_TABLES(JCollision, _jet_type_##MCDetectorLevelEventWiseSubtracted, _subtracted_track_type_, _hfcand_type_, _shortname_ "DJETEWS")       \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##EventWiseSubtracted, _jet_type_, _shortname_ "EWSJET2")                                                       \
+  DECLARE_JET_TABLES(JCollision, _jet_type_##MCDetectorLevelEventWiseSubtracted, _subtracted_track_type_, _hfcand_type_, _shortname_ "DEWSJET")       \
   DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCDetectorLevelEventWiseSubtracted, _jet_type_##MCDetectorLevelEventWiseSubtracted, _shortname_ "DJETEWSW") \
   DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCDetectorLevelEventWiseSubtracted, _shortname_ "DJET2DEWS")                     \
-  DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevelEventWiseSubtracted, _jet_type_##MCDetectorLevel, _shortname_ "JETDEWS2D")                     \
-  DECLARE_JET_TABLES(JMcCollision, _jet_type_##MCParticleLevelEventWiseSubtracted, _subtracted_track_type_, _hfparticle_type_, _shortname_ "PJETEWS")
+  DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevelEventWiseSubtracted, _jet_type_##MCDetectorLevel, _shortname_ "DEWSJET2D")                     \
+  DECLARE_JET_TABLES(JMcCollision, _jet_type_##MCParticleLevelEventWiseSubtracted, _subtracted_track_type_, _hfparticle_type_, _shortname_ "PEWSJET")
 
 #define STRINGIFY(x) #x
 
@@ -179,6 +179,7 @@ DECLARE_JET_TABLES_LEVELS(Charged, JTrackSub, HfD0Bases, HfD0PBases, "C");
 DECLARE_JET_TABLES_LEVELS(Full, JTrackSub, HfD0Bases, HfD0PBases, "F");
 DECLARE_JET_TABLES_LEVELS(Neutral, JTrackSub, HfD0Bases, HfD0PBases, "N");
 DECLARE_JET_TABLES_LEVELS(D0Charged, JTrackD0Sub, HfD0Bases, HfD0PBases, "D0");
+DECLARE_JET_TABLES_LEVELS(DplusCharged, JTrackDplusSub, HfDplusBases, HfDplusPBases, "DP");
 DECLARE_JET_TABLES_LEVELS(LcCharged, JTrackLcSub, HfLcBases, HfLcPBases, "Lc");
 DECLARE_JET_TABLES_LEVELS(BplusCharged, JTrackBplusSub, HfBplusBases, HfBplusPBases, "BP");
 DECLARE_JET_TABLES_LEVELS(V0Charged, JTrackSub, V0Cores, JV0Mcs, "V0");
@@ -196,15 +197,15 @@ DECLARE_JET_DUPLICATE_TABLES_LEVELS(Charged, JTrackSub, HfD0Bases, HfD0PBases, "
 #undef STRINGIFY
 #undef DECLARE_JET_DUPLICATE_TABLES_LEVELS
 
-using JetCollisions = JCollisions;
+using JetCollisions = o2::soa::Join<JCollisions, JCollisionMcInfos>;
 using JetCollision = JetCollisions::iterator;
 using JetCollisionsMCD = o2::soa::Join<JetCollisions, JMcCollisionLbs>;
 using JetCollisionMCD = o2::soa::Join<JetCollisions, JMcCollisionLbs>::iterator;
 using JetTracks = JTracks;
 using JetTracksMCD = o2::soa::Join<JetTracks, JMcTrackLbs>;
 using JetTracksSub = JTrackSubs;
-using JetClusters = JClusters;
-using JetClustersMCD = o2::soa::Join<JClusters, JMcClusterLbs>;
+using JetClusters = o2::soa::Join<JClusters, JClustersCorrectedEnergies, JClusterTracks>;
+using JetClustersMCD = o2::soa::Join<JClusters, JClustersCorrectedEnergies, JClusterTracks, JMcClusterLbs>;
 
 using JetMcCollisions = JMcCollisions;
 using JetMcCollision = JetMcCollisions::iterator;
@@ -218,6 +219,14 @@ using JetTracksSubD0 = JTrackD0Subs;
 using JetParticlesSubD0 = JMcParticleD0Subs;
 using McCollisionsD0 = o2::soa::Join<HfD0McCollBases, JD0McCollisionIds>;
 using CandidatesD0MCP = o2::soa::Join<HfD0PBases, JD0PIds>;
+
+using CollisionsDplus = o2::soa::Join<HfDplusCollBases, JDplusCollisionIds>;
+using CandidatesDplusData = o2::soa::Join<HfDplusBases, HfDplusPars, HfDplusParEs, HfDplusSels, HfDplusMls, JDplusIds>;
+using CandidatesDplusMCD = o2::soa::Join<HfDplusBases, HfDplusPars, HfDplusParEs, HfDplusSels, HfDplusMls, HfDplusMcs, JDplusIds>;
+using JetTracksSubDplus = JTrackDplusSubs;
+using JetParticlesSubDplus = JMcParticleDplusSubs;
+using McCollisionsDplus = o2::soa::Join<HfDplusMcCollBases, JDplusMcCollisionIds>;
+using CandidatesDplusMCP = o2::soa::Join<HfDplusPBases, JDplusPIds>;
 
 using CollisionsLc = o2::soa::Join<HfLcCollBases, JLcCollisionIds>;
 using CandidatesLcData = o2::soa::Join<HfLcBases, HfLcPars, HfLcParEs, HfLcSels, HfLcMls, JLcIds>;

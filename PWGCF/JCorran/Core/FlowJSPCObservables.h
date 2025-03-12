@@ -18,27 +18,23 @@
 // O2 headers. //
 #include "Framework/HistogramRegistry.h"
 
-using namespace o2;
-using namespace o2::framework;
-using namespace std;
-
 const int maxNrComb = 12;
 class FlowJSPCObservables
 {
  public:
   FlowJSPCObservables() = default;
 
-  Int_t harmonicArray[maxNrComb][8] = {{0}};
+  int harmonicArray[maxNrComb][8] = {{0}};
 
-  void SetSPCObservables(Int_t index)
+  void setSPCObservables(int index)
   {
-    // Int_t *harmonicArray = (Int_t*)malloc(sizeof(Int_t)*maxNrComb*8);
+    // int *harmonicArray = (int*)malloc(sizeof(int)*maxNrComb*8);
 
     // Switch to set up correct symmetry plane combinations
     switch (index) {
       case 0: {
         LOGF(info, "Computing three harmonic SPC");
-        Int_t harmonicArray01[maxNrComb][8] = {
+        int harmonicArray01[maxNrComb][8] = {
           {3, 6, -3, -3, 0, 0, 0, 0},
           {3, 4, -2, -2, 0, 0, 0, 0},
           {3, 8, -4, -4, 0, 0, 0, 0},
@@ -52,11 +48,11 @@ class FlowJSPCObservables
           {0, 2, -3, -3, 4, 0, 0, 0},
           {0, 3, 3, -2, -2, -2, 0, 0}};
 
-        memcpy(harmonicArray, harmonicArray01, sizeof(Int_t) * maxNrComb * 8);
+        memcpy(harmonicArray, harmonicArray01, sizeof(int) * maxNrComb * 8);
       } break;
       case 1: {
         LOGF(info, "Computing four harmonic SPC");
-        Int_t harmonicArray02[maxNrComb][8] = {
+        int harmonicArray02[maxNrComb][8] = {
           {4, 6, -2, -2, -2, 0, 0, 0},
           {4, 2, -3, -4, 5, 0, 0, 0},
           {4, 2, -3, -3, 4, 0, 0, 0},
@@ -69,11 +65,11 @@ class FlowJSPCObservables
           {0, 0, 0, 0, 0, 0, 0, 0},
           {0, 0, 0, 0, 0, 0, 0, 0},
           {0, 0, 0, 0, 0, 0, 0, 0}};
-        memcpy(harmonicArray, harmonicArray02, sizeof(Int_t) * maxNrComb * 8);
+        memcpy(harmonicArray, harmonicArray02, sizeof(int) * maxNrComb * 8);
       } break;
       case 3: {
         LOGF(info, "Computing five and six harmonic SPC");
-        Int_t harmonicArray03[maxNrComb][8] = {
+        int harmonicArray03[maxNrComb][8] = {
           {5, 3, 3, -2, -2, -2, 0, 0},
           {5, 2, 2, -3, 4, -5, 0, 0},
           {5, 2, 3, 3, -4, -4, 0, 0},
@@ -86,11 +82,10 @@ class FlowJSPCObservables
           {6, 2, 2, 2, 3, -4, -5, 0},
           {6, 2, 2, 3, 3, -4, -6, 0},
           {0, 0, 0, 0, 0, 0, 0, 0}};
-        memcpy(harmonicArray, harmonicArray03, sizeof(Int_t) * maxNrComb * 8);
+        memcpy(harmonicArray, harmonicArray03, sizeof(int) * maxNrComb * 8);
       } break;
       default:
-        std::cout << "ERROR: Invalid configuration index. Skipping this element."
-                  << std::endl;
+        LOGF(error, "ERROR: Invalid configuration index. Skipping this element.");
     }
   }
 

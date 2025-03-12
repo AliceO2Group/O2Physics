@@ -17,6 +17,8 @@
 ///
 /// \note based on taskD0.cxx, taskLc.cxx
 
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"

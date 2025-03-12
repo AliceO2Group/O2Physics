@@ -722,7 +722,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       double deltaDcaXYmean = dcaXYMeanData - dcaXYMeanMC;
 
       // double d0rpn =d0rpmc+dd0rpn-dd0mrpn;
-      double trackParDcaXYTuned = trackParDcaXYMC + deltaDcaXYTuned - deltaDcaXYmean;
+      double trackParDcaXYTuned = trackParDcaXYMC + deltaDcaXYTuned + deltaDcaXYmean;
 
       if (debugInfo) {
         LOG(info) << dcaZResMC << ", " << dcaZResData << ", diff(DcaZ - DcaZMC): " << deltaDcaZ << ", diff upgraded: " << deltaDcaZTuned << ", DcaZ Data : " << trackParDcaZTuned;

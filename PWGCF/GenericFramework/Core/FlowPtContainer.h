@@ -122,11 +122,11 @@ class FlowPtContainer : public TNamed
   bool fUseGap;              //!
   void mergeBSLists(TList* source, TList* target);
   TH1* raiseHistToPower(TH1* inh, double p);
-  std::vector<double> sumP;             //!
-  std::vector<double> corrNum;          //!
-  std::vector<double> corrDen;          //!
-  std::vector<double> cmVal;            //!
-  std::vector<double> cmDen;            //!
+  std::vector<double> sumP;              //!
+  std::vector<double> corrNum;           //!
+  std::vector<double> corrDen;           //!
+  std::vector<double> cmVal;             //!
+  std::vector<double> cmDen;             //!
   std::vector<std::complex<double>> arr; //!
   std::vector<double> warr;              //!
   template <typename T>

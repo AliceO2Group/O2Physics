@@ -95,7 +95,7 @@ struct EMEventSelection {
       return false;
     }
 
-    if (!(cfgFT0COccupancyMin < collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < cfgFT0COccupancyMax)) {
+    if (!(cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < cfgFT0COccupancyMax)) {
       return false;
     }
 

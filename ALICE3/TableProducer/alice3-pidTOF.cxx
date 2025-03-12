@@ -123,7 +123,7 @@ struct ALICE3pidTOFTask {
     if (!track.hasTOF()) {
       return -999.f;
     }
-    return ((track.trackTime() - track.collision().collisionTime()) * 1000.f - o2::pid::tof::ExpTimes<Trks::iterator, id>::ComputeExpectedTime(track.tofExpMom() / o2::pid::tof::kCSPEED,
+    return ((track.trackTime() - track.collision().collisionTime()) * 1000.f - o2::pid::tof::ExpTimes<Trks::iterator, id>::ComputeExpectedTime(track.tofExpMom() * o2::constants::physics::invLightSpeedCm2PS,
                                                                                                                                                track.length())) /
            sigma<id>(track);
   }
@@ -294,7 +294,7 @@ struct ALICE3pidTOFTaskQA {
       //
       // histos.fill(HIST("event/tofsignal"), t.p(), t.tofSignal());
       histos.fill(HIST("event/tofsignal"), t.p(), tofSignal);
-      histos.fill(HIST("event/pexp"), t.p(), t.tofExpMom() / o2::pid::tof::kCSPEED);
+      histos.fill(HIST("event/pexp"), t.p(), t.tofExpMom() * o2::constants::physics::invLightSpeedCm2PS);
       histos.fill(HIST("event/eta"), t.eta());
       histos.fill(HIST("event/length"), t.length());
       histos.fill(HIST("event/pt"), t.pt());

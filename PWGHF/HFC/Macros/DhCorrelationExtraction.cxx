@@ -16,6 +16,9 @@
 
 #include "DhCorrelationExtraction.h"
 
+#include <cstdio>
+#include <iostream>
+
 DhCorrelationExtraction::DhCorrelationExtraction() : // default constructor
                                                      fFileMass(0x0),
                                                      fFileSE(0x0),

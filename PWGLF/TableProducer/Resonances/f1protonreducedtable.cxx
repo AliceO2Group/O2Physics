@@ -46,6 +46,7 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
+#include "Common/DataModel/PIDResponseITS.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -243,6 +244,15 @@ struct f1protonreducedtable {
       return false;
     }
     if (ConfTrkITSRefit && !track.hasITS()) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T>
+  bool selectionGlobalTrack(const T& candidate)
+  {
+    if (!(candidate.isGlobalTrack() && candidate.isPVContributor())) {
       return false;
     }
     return true;
@@ -493,6 +503,7 @@ struct f1protonreducedtable {
 
   void processF1ProtonReducedTable(EventCandidates::iterator const& collision, aod::BCsWithTimestamps const&, PrimaryTrackCandidates const& tracks, ResoV0s const& V0s)
   {
+    o2::aod::ITSResponse itsResponse;
     bool keepEventF1Proton = false;
     int numberF1 = 0;
     // keep track of indices
@@ -586,8 +597,12 @@ struct f1protonreducedtable {
       if (zorroSelected) {
         hProcessedEvents->Fill(1.5);
         for (auto& track : tracks) {
-          if (!isSelectedTrack(track))
+          if (!isSelectedTrack(track)) {
             continue;
+          }
+          if (!selectionGlobalTrack(track)) {
+            continue;
+          }
           qaRegistry.fill(HIST("hDCAxy"), track.dcaXY());
           qaRegistry.fill(HIST("hDCAz"), track.dcaZ());
           qaRegistry.fill(HIST("hEta"), track.eta());
@@ -616,7 +631,7 @@ struct f1protonreducedtable {
               nTPCSigmaN[0] = updatePID(track, bgScalingPion, BBAntipion);
           }
 
-          if ((track.sign() > 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaP[0])) || (track.sign() < 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaN[0]))) {
+          if ((track.sign() > 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaP[0]) && (itsResponse.nSigmaITS<o2::track::PID::Pion>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Pion>(track) < 3.0)) || (track.sign() < 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaN[0]) && (itsResponse.nSigmaITS<o2::track::PID::Pion>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Pion>(track) < 3.0))) {
             ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massPi);
             pions.push_back(temp);
             PionIndex.push_back(track.globalIndex());
@@ -637,7 +652,7 @@ struct f1protonreducedtable {
             PionTOFHit.push_back(PionTOF);
           }
 
-          if ((track.pt() > cMinKaonPt && track.sign() > 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaP[1])) || (track.pt() > cMinKaonPt && track.sign() < 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaN[1]))) {
+          if ((track.pt() > cMinKaonPt && track.sign() > 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaP[1]) && (itsResponse.nSigmaITS<o2::track::PID::Kaon>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track) < 3.0)) || (track.pt() > cMinKaonPt && track.sign() < 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaN[1]) && (itsResponse.nSigmaITS<o2::track::PID::Kaon>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track) < 3.0))) {
             ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massKa);
             kaons.push_back(temp);
             KaonIndex.push_back(track.globalIndex());
@@ -660,7 +675,7 @@ struct f1protonreducedtable {
             KaonTOFHit.push_back(KaonTOF);
           }
 
-          if ((track.pt() < cMaxProtonPt && track.sign() > 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaP[2])) || (track.pt() < cMaxProtonPt && track.sign() < 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaN[2]))) {
+          if ((track.pt() < cMaxProtonPt && track.sign() > 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaP[2]) && (itsResponse.nSigmaITS<o2::track::PID::Proton>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track) < 3.0)) || (track.pt() < cMaxProtonPt && track.sign() < 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaN[2]) && (itsResponse.nSigmaITS<o2::track::PID::Proton>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track) < 3.0))) {
             ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massPr);
             protons.push_back(temp);
             ProtonIndex.push_back(track.globalIndex());

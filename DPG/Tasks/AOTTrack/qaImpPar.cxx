@@ -704,7 +704,7 @@ struct QaImpactPar {
       histograms.fill(HIST("Reco/h4ImpPar"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
       histograms.fill(HIST("Reco/h4ImpParZ"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
       if (addTrackIUinfo) {
-        histograms.fill(HIST("Reco/h4ClusterSizeIU"), p, clusterSizeInLayer0, trackIuPosX, trackIuPosY, trackIuPosZ);
+        histograms.fill(HIST("Reco/h4ClusterSizeIU"), p, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
         histograms.fill(HIST("Reco/h4ImpParIU"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ);
         histograms.fill(HIST("Reco/h4ImpParZIU"), p, impParZ, trackIuPosX, trackIuPosY, trackIuPosZ);
       }

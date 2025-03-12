@@ -145,6 +145,14 @@ class strangenessBuilderHelper
     fitter.setUseAbsDCA(true);
     fitter.setWeightedFinalPCA(false);
 
+    v0selections.minCrossedRows = -1;
+    v0selections.dcanegtopv = -1.0f;
+    v0selections.dcapostopv = -1.0f;
+    v0selections.v0cospa = -2;
+    v0selections.dcav0dau = 1e+6;
+    v0selections.v0radius = 0.0f;
+    v0selections.maxDaughterEta = 2.0;
+
     // LUT has to be loaded later
     lut = nullptr;
     fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrLUT);
@@ -154,22 +162,47 @@ class strangenessBuilderHelper
   };
 
   template <typename TTrack>
-  bool buildV0Candidate(o2::aod::Collision const& collision,
+  bool buildV0Candidate(int collisionIndex,
+                        float pvX, float pvY, float pvZ,
                         TTrack const& positiveTrack,
                         TTrack const& negativeTrack,
                         bool useCollinearFit = false,
                         bool calculateCovariance = false)
   {
+    // verify track quality
+    if (positiveTrack.tpcNClsCrossedRows() < v0selections.minCrossedRows) {
+      return false;
+    }
+    if (negativeTrack.tpcNClsCrossedRows() < v0selections.minCrossedRows) {
+      return false;
+    }
+
+    // verify eta
+    if (std::fabs(positiveTrack.eta()) > v0selections.maxDaughterEta) {
+      return false;
+    }
+    if (std::fabs(negativeTrack.eta()) > v0selections.maxDaughterEta) {
+      return false;
+    }
+
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
     gpu::gpustd::array<float, 2> dcaInfo;
 
     auto posTrackPar = getTrackPar(positiveTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.positiveDCAxy = dcaInfo[0];
 
+    if (std::fabs(v0.positiveDCAxy) < v0selections.dcanegtopv) {
+      return false;
+    }
+
     auto negTrackPar = getTrackPar(negativeTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, negTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.negativeDCAxy = dcaInfo[0];
+
+    if (std::fabs(v0.negativeDCAxy) < v0selections.dcanegtopv) {
+      return false;
+    }
 
     o2::track::TrackParCov positiveTrackParam = getTrackParCov(positiveTrack);
     o2::track::TrackParCov negativeTrackParam = getTrackParCov(negativeTrack);
@@ -185,6 +218,7 @@ class strangenessBuilderHelper
     if (nCand == 0) {
       return false;
     }
+    fitter.setCollinear(false); // proper cleaning: when exiting this loop, always reset to not collinear
 
     v0.positiveTrackX = fitter.getTrack(0).getX();
     v0.negativeTrackX = fitter.getTrack(1).getX();
@@ -201,18 +235,31 @@ class strangenessBuilderHelper
       v0.position[i] = vtx[i];
     }
 
-    v0.daughterDCA = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    v0.pointingAngle = TMath::ACos(RecoDecay::cpa(
-      std::array{collision.posX(), collision.posY(), collision.posZ()},
-      std::array{v0.position[0], v0.position[1], v0.position[2]},
-      std::array{v0.positiveMomentum[0] + v0.negativeMomentum[0], v0.positiveMomentum[1] + v0.negativeMomentum[1], v0.positiveMomentum[2] + v0.negativeMomentum[2]}));
+    if (std::hypot(v0.position[0], v0.position[1]) < v0selections.v0radius) {
+      return false;
+    }
 
+    v0.daughterDCA = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+
+    if (v0.daughterDCA > v0selections.dcav0dau) {
+      return false;
+    }
+
+    double cosPA = RecoDecay::cpa(
+      std::array{pvX, pvY, pvZ},
+      std::array{v0.position[0], v0.position[1], v0.position[2]},
+      std::array{v0.positiveMomentum[0] + v0.negativeMomentum[0], v0.positiveMomentum[1] + v0.negativeMomentum[1], v0.positiveMomentum[2] + v0.negativeMomentum[2]});
+    if (cosPA < v0selections.v0cospa) {
+      return false;
+    }
+
+    v0.pointingAngle = TMath::ACos(cosPA);
     v0.dcaXY = CalculateDCAStraightToPV(
       v0.position[0], v0.position[1], v0.position[2],
       v0.positiveMomentum[0] + v0.negativeMomentum[0],
       v0.positiveMomentum[1] + v0.negativeMomentum[1],
       v0.positiveMomentum[2] + v0.negativeMomentum[2],
-      collision.posX(), collision.posY(), collision.posZ());
+      pvX, pvY, pvZ);
 
     // Calculate masses
     v0.massGamma = RecoDecay::m(std::array{
@@ -253,13 +300,17 @@ class strangenessBuilderHelper
       }
     }
 
+    // set collision Id correctly
+    v0.collisionId = collisionIndex;
+
     // information validated, V0 built successfully. Signal OK
     return true;
   }
 
   // cascade builder creating a cascade from plain tracks
   template <typename TTrack>
-  bool buildCascadeCandidate(o2::aod::Collision const& collision,
+  bool buildCascadeCandidate(int collisionIndex,
+                             float pvX, float pvY, float pvZ,
                              TTrack const& positiveTrack,
                              TTrack const& negativeTrack,
                              TTrack const& bachelorTrack,
@@ -267,10 +318,10 @@ class strangenessBuilderHelper
                              bool useCascadeMomentumAtPV = false,
                              bool processCovariances = false)
   {
-    if (!buildV0Candidate(collision, positiveTrack, negativeTrack, false, processCovariances)) {
+    if (!buildV0Candidate(collisionIndex, pvX, pvY, pvZ, positiveTrack, negativeTrack, false, processCovariances)) {
       return false;
     }
-    if (!buildCascadeCandidate(collision, v0, positiveTrack, negativeTrack, bachelorTrack, calculateBachelorBaryonVariables, useCascadeMomentumAtPV, processCovariances)) {
+    if (!buildCascadeCandidate(collisionIndex, pvX, pvY, pvZ, v0, positiveTrack, negativeTrack, bachelorTrack, calculateBachelorBaryonVariables, useCascadeMomentumAtPV, processCovariances)) {
       return false;
     }
     return true;
@@ -280,7 +331,8 @@ class strangenessBuilderHelper
   // the DCAfitter again for the V0 contained in the cascade
   // if generating from scratch, prefer the other variant
   template <typename TTrack>
-  bool buildCascadeCandidate(o2::aod::Collision const& collision,
+  bool buildCascadeCandidate(int collisionIndex,
+                             float pvX, float pvY, float pvZ,
                              v0candidate const& v0input,
                              TTrack const& positiveTrack,
                              TTrack const& negativeTrack,
@@ -289,13 +341,43 @@ class strangenessBuilderHelper
                              bool useCascadeMomentumAtPV = false,
                              bool processCovariances = false)
   {
+    // verify track quality
+    if (positiveTrack.tpcNClsCrossedRows() < cascadeselections.minCrossedRows) {
+      return false;
+    }
+    if (negativeTrack.tpcNClsCrossedRows() < cascadeselections.minCrossedRows) {
+      return false;
+    }
+    if (bachelorTrack.tpcNClsCrossedRows() < cascadeselections.minCrossedRows) {
+      return false;
+    }
+
+    // verify eta
+    if (std::fabs(positiveTrack.eta()) > cascadeselections.maxDaughterEta) {
+      return false;
+    }
+    if (std::fabs(negativeTrack.eta()) > cascadeselections.maxDaughterEta) {
+      return false;
+    }
+    if (std::fabs(bachelorTrack.eta()) > cascadeselections.maxDaughterEta) {
+      return false;
+    }
+
+    // verify lambda mass
+    if (bachelorTrack.sign() < 0 && std::fabs(v0input.massLambda - 1.116) > cascadeselections.lambdaMassWindow) {
+      return false;
+    }
+    if (bachelorTrack.sign() > 0 && std::fabs(v0input.massAntiLambda - 1.116) > cascadeselections.lambdaMassWindow) {
+      return false;
+    }
+
     if (calculateBachelorBaryonVariables) {
       // Calculates properties of the V0 comprised of bachelor and baryon in the cascade
       // baryon: distinguished via bachelor charge
       if (bachelorTrack.sign() < 0) {
-        processBachBaryonVariables(collision, bachelorTrack, positiveTrack);
+        processBachBaryonVariables(pvX, pvY, pvZ, bachelorTrack, positiveTrack);
       } else {
-        processBachBaryonVariables(collision, bachelorTrack, negativeTrack);
+        processBachBaryonVariables(pvX, pvY, pvZ, bachelorTrack, negativeTrack);
       }
     }
 
@@ -307,8 +389,12 @@ class strangenessBuilderHelper
     gpu::gpustd::array<float, 2> dcaInfo;
 
     auto bachTrackPar = getTrackPar(bachelorTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     cascade.bachelorDCAxy = dcaInfo[0];
+
+    if (std::fabs(cascade.bachelorDCAxy) < cascadeselections.dcabachtopv) {
+      return false;
+    }
 
     // Do actual minimization
     auto lBachelorTrack = getTrackParCov(bachelorTrack);
@@ -343,6 +429,9 @@ class strangenessBuilderHelper
 
     // DCA between cascade daughters
     cascade.cascadeDaughterDCA = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+    if (cascade.cascadeDaughterDCA > cascadeselections.dcacascdau) {
+      return false;
+    }
 
     lBachelorTrack.getPxPyPzGlo(cascade.bachelorMomentum);
     // get decay vertex coordinates
@@ -350,13 +439,20 @@ class strangenessBuilderHelper
     for (int i = 0; i < 3; i++) {
       cascade.cascadePosition[i] = vtx[i];
     }
+    if (std::hypot(cascade.cascadePosition[0], cascade.cascadePosition[1]) < cascadeselections.cascradius) {
+      return false;
+    }
 
-    cascade.pointingAngle = TMath::ACos(RecoDecay::cpa(
-      std::array{collision.posX(), collision.posY(), collision.posZ()},
+    double cosPA = RecoDecay::cpa(
+      std::array{pvX, pvY, pvZ},
       std::array{cascade.cascadePosition[0], cascade.cascadePosition[1], cascade.cascadePosition[2]},
       std::array{v0input.positiveMomentum[0] + v0input.negativeMomentum[0] + cascade.bachelorMomentum[0],
-                 v0input.positiveMomentum[0] + v0input.negativeMomentum[1] + cascade.bachelorMomentum[1],
-                 v0input.positiveMomentum[2] + v0input.negativeMomentum[2] + cascade.bachelorMomentum[2]}));
+                 v0input.positiveMomentum[1] + v0input.negativeMomentum[1] + cascade.bachelorMomentum[1],
+                 v0input.positiveMomentum[2] + v0input.negativeMomentum[2] + cascade.bachelorMomentum[2]});
+    if (cosPA < cascadeselections.casccospa) {
+      return false;
+    }
+    cascade.pointingAngle = TMath::ACos(cosPA);
 
     // Calculate DCAxy of the cascade (with bending)
     auto lCascadeTrack = fitter.createParentTrackParCov();
@@ -365,7 +461,7 @@ class strangenessBuilderHelper
     dcaInfo[0] = 999;
     dcaInfo[1] = 999;
 
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, lCascadeTrack, 2.f, fitter.getMatCorrType(), &dcaInfo);
     cascade.cascadeDCAxy = dcaInfo[0];
     cascade.cascadeDCAz = dcaInfo[1];
 
@@ -379,6 +475,7 @@ class strangenessBuilderHelper
 
     // Populate information
     // cascadecandidate.v0Id = v0index.globalIndex();
+    cascade.collisionId = collisionIndex;
     cascade.positiveTrack = positiveTrack.globalIndex();
     cascade.negativeTrack = negativeTrack.globalIndex();
     cascade.bachelorTrack = bachelorTrack.globalIndex();
@@ -441,7 +538,8 @@ class strangenessBuilderHelper
   }
 
   template <typename TTrack>
-  bool buildCascadeCandidateWithKF(o2::aod::Collision const& collision,
+  bool buildCascadeCandidateWithKF(int collisionIndex,
+                                   float pvX, float pvY, float pvZ,
                                    TTrack const& positiveTrack,
                                    TTrack const& negativeTrack,
                                    TTrack const& bachelorTrack,
@@ -458,13 +556,34 @@ class strangenessBuilderHelper
     // dispenses prior V0 generation, uses constrained (re-)fit based on bachelor charge
     //*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*
 
+    if (positiveTrack.tpcNClsCrossedRows() < cascadeselections.minCrossedRows) {
+      return false;
+    }
+    if (negativeTrack.tpcNClsCrossedRows() < cascadeselections.minCrossedRows) {
+      return false;
+    }
+    if (bachelorTrack.tpcNClsCrossedRows() < cascadeselections.minCrossedRows) {
+      return false;
+    }
+
+    // verify eta
+    if (std::fabs(positiveTrack.eta()) > cascadeselections.maxDaughterEta) {
+      return false;
+    }
+    if (std::fabs(negativeTrack.eta()) > cascadeselections.maxDaughterEta) {
+      return false;
+    }
+    if (std::fabs(bachelorTrack.eta()) > cascadeselections.maxDaughterEta) {
+      return false;
+    }
+
     if (calculateBachelorBaryonVariables) {
       // Calculates properties of the V0 comprised of bachelor and baryon in the cascade
       // baryon: distinguished via bachelor charge
       if (bachelorTrack.sign() < 0) {
-        processBachBaryonVariables(collision, bachelorTrack, positiveTrack);
+        processBachBaryonVariables(pvX, pvY, pvZ, bachelorTrack, positiveTrack);
       } else {
-        processBachBaryonVariables(collision, bachelorTrack, negativeTrack);
+        processBachBaryonVariables(pvX, pvY, pvZ, bachelorTrack, negativeTrack);
       }
     }
 
@@ -476,14 +595,18 @@ class strangenessBuilderHelper
     gpu::gpustd::array<float, 2> dcaInfo;
 
     auto bachTrackPar = getTrackPar(bachelorTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     cascade.bachelorDCAxy = dcaInfo[0];
     o2::track::TrackParCov posTrackParCovForDCA = getTrackParCov(positiveTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackParCovForDCA, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, posTrackParCovForDCA, 2.f, fitter.getMatCorrType(), &dcaInfo);
     cascade.positiveDCAxy = dcaInfo[0];
     o2::track::TrackParCov negTrackParCovForDCA = getTrackParCov(negativeTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackParCovForDCA, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, negTrackParCovForDCA, 2.f, fitter.getMatCorrType(), &dcaInfo);
     cascade.negativeDCAxy = dcaInfo[0];
+
+    if (std::fabs(cascade.bachelorDCAxy) < cascadeselections.dcabachtopv) {
+      return false;
+    }
 
     o2::track::TrackParCov lBachelorTrack = getTrackParCov(bachelorTrack);
     o2::track::TrackParCov posTrackParCov = getTrackParCov(positiveTrack);
@@ -559,11 +682,6 @@ class strangenessBuilderHelper
       if (nCandCascade == 0)
         return false;
 
-      // save classical DCA daughters
-      // cascadecandidate.dcacascdau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-      // if (cascadecandidate.dcacascdau > dcacascdau)
-      //   return false;
-
       v0TrackParCov = fitter.getTrack(0);
       lBachelorTrack = fitter.getTrack(1);
     }
@@ -606,6 +724,9 @@ class strangenessBuilderHelper
 
     // get DCA of daughters at vertex
     cascade.cascadeDaughterDCA = kfpBachPion.GetDistanceFromParticle(kfpV0);
+    if (cascade.cascadeDaughterDCA > cascadeselections.dcacascdau) {
+      return false;
+    }
 
     //__________________________________________
     //*>~<* step 5 : propagate cascade to primary vertex with material corrections if asked
@@ -618,7 +739,7 @@ class strangenessBuilderHelper
     }
     dcaInfo[0] = 999;
     dcaInfo[1] = 999;
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, lCascadeTrack, 2.f, fitter.getMatCorrType(), &dcaInfo);
     cascade.cascadeDCAxy = dcaInfo[0];
     cascade.cascadeDCAz = dcaInfo[1];
 
@@ -626,6 +747,7 @@ class strangenessBuilderHelper
     //*>~<* step 6 : acquire all parameters for analysis
 
     // basic indices
+    cascade.collisionId = collisionIndex;
     cascade.v0Id = -1;
     cascade.positiveTrack = positiveTrack.globalIndex();
     cascade.negativeTrack = negativeTrack.globalIndex();
@@ -672,12 +794,19 @@ class strangenessBuilderHelper
       cascade.cascadeMomentum[1] = KFOmega.GetPy();
       cascade.cascadeMomentum[2] = KFOmega.GetPz();
     }
+    if (std::hypot(cascade.cascadePosition[0], cascade.cascadePosition[1]) < cascadeselections.cascradius) {
+      return false;
+    }
 
     // KF-aware cosPA
-    cascade.pointingAngle = TMath::ACos(RecoDecay::cpa(
-      std::array{collision.posX(), collision.posY(), collision.posZ()},
+    double cosPA = RecoDecay::cpa(
+      std::array{pvX, pvY, pvZ},
       std::array{cascade.cascadePosition[0], cascade.cascadePosition[1], cascade.cascadePosition[2]},
-      std::array{cascade.cascadeMomentum[0], cascade.cascadeMomentum[1], cascade.cascadeMomentum[2]}));
+      std::array{cascade.cascadeMomentum[0], cascade.cascadeMomentum[1], cascade.cascadeMomentum[2]});
+    if (cosPA < cascadeselections.casccospa) {
+      return false;
+    }
+    cascade.pointingAngle = TMath::ACos(cosPA);
 
     // Calculate masses a priori
     float MLambda, SigmaLambda, MXi, SigmaXi, MOmega, SigmaOmega;
@@ -720,6 +849,28 @@ class strangenessBuilderHelper
   v0candidate v0;           // storage for V0 candidate properties
   cascadeCandidate cascade; // storage for cascade candidate properties
 
+  // v0 candidate criteria
+  struct {
+    int minCrossedRows;
+    float dcanegtopv;
+    float dcapostopv;
+    double v0cospa;
+    float dcav0dau;
+    float v0radius;
+    float maxDaughterEta;
+  } v0selections;
+
+  // cascade candidate criteria
+  struct {
+    int minCrossedRows;
+    float dcabachtopv;
+    float cascradius;
+    float casccospa;
+    float dcacascdau;
+    float lambdaMassWindow;
+    float maxDaughterEta;
+  } cascadeselections;
+
  private:
   // internal helper to calculate DCAxy of a straight line to a given PV analytically
   float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
@@ -727,8 +878,8 @@ class strangenessBuilderHelper
     return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
   }
 
-  template <typename TCollision, typename TTrack>
-  void processBachBaryonVariables(TCollision const& collision, TTrack const& track1, TTrack const& track2)
+  template <typename TTrack>
+  void processBachBaryonVariables(float pvX, float pvY, float pvZ, TTrack const& track1, TTrack const& track2)
   {
     cascade.bachBaryonCosPA = 0;        // would ordinarily accept all
     cascade.bachBaryonDCAxyToPV = 1e+3; // would ordinarily accept all
@@ -756,7 +907,7 @@ class strangenessBuilderHelper
     dcaInfo[1] = 999;
 
     // bachelor-baryon DCAxy to PV
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, wrongV0, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, wrongV0, 2.f, fitter.getMatCorrType(), &dcaInfo);
     cascade.bachBaryonDCAxyToPV = dcaInfo[0];
 
     const auto& vtx = fitter.getPCACandidate();
@@ -771,7 +922,7 @@ class strangenessBuilderHelper
 
     // bachelor-baryon CosPA
     cascade.bachBaryonCosPA = RecoDecay::cpa(
-      std::array{collision.posX(), collision.posY(), collision.posZ()},
+      std::array{pvX, pvY, pvZ},
       std::array{vtx[0], vtx[1], vtx[2]},
       std::array{tr1p[0] + tr2p[0], tr1p[1] + tr2p[1], tr1p[2] + tr2p[2]});
 

@@ -143,7 +143,9 @@ struct HfCorrelatorDsHadrons {
   Produces<aod::TrackRecoInfo> entryTrackRecoInfo;
   Produces<aod::HfcRedCollisions> collReduced;
   Produces<aod::DsCandReduceds> candReduced;
+  Produces<aod::DsCandSelInfos> candSelInfo;
   Produces<aod::AssocTrackReds> assocTrackReduced;
+  Produces<aod::AssocTrackSels> assocTrackSelInfo;
 
   Configurable<bool> fillHistoData{"fillHistoData", true, "Flag for filling histograms in data processes"};
   Configurable<bool> fillHistoMcRec{"fillHistoMcRec", true, "Flag for filling histograms in MC Rec processes"};
@@ -432,7 +434,7 @@ struct HfCorrelatorDsHadrons {
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         }
       } // end track loop
-    }   // end candidate loop
+    } // end candidate loop
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processData, "Process data", true);
 
@@ -691,7 +693,7 @@ struct HfCorrelatorDsHadrons {
           } // end loop generated particles
         } // end loop generated Ds
       } // end loop reconstructed collision
-    }   // end loop generated collision
+    } // end loop generated collision
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcGen, "Process MC Gen mode", false);
 
@@ -705,49 +707,24 @@ struct HfCorrelatorDsHadrons {
       auto candsDsThisColl = candidates.sliceBy(candsDsPerCollision, thisCollId);
       auto tracksThisColl = tracks.sliceBy(trackIndicesPerCollision, thisCollId);
 
-      // Ds fill histograms and Ds candidates information stored
-      for (const auto& candidate : candsDsThisColl) {
-        // candidate selected
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          candReduced(hfcReducedCollisionIndex, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToKKPi(candidate));
-        } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          candReduced(hfcReducedCollisionIndex, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToPiKK(candidate));
-        }
-      }
-
-      // tracks information
-      for (const auto& track : tracksThisColl) {
-        if (!track.isGlobalTrackWoDCA()) {
-          continue;
-        }
-        assocTrackReduced(hfcReducedCollisionIndex, track.phi(), track.eta(), track.pt());
-      }
-
-      collReduced(collision.multFT0M(), collision.posZ());
-      hfcReducedCollisionIndex++;
-    }
-  }
-  PROCESS_SWITCH(HfCorrelatorDsHadrons, processDerivedDataDs, "Process derived data Ds", false);
-
-  void processDerivedDataDsLastIndex(SelCollisionsWithDs const& collisions,
-                                     CandDsData const& candidates,
-                                     MyTracksData const& tracks)
-  {
-
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      auto candsDsThisColl = candidates.sliceBy(candsDsPerCollision, thisCollId);
-      auto tracksThisColl = tracks.sliceBy(trackIndicesPerCollision, thisCollId);
-
       int indexHfcReducedCollision = collReduced.lastIndex() + 1;
 
       // Ds fill histograms and Ds candidates information stored
       for (const auto& candidate : candsDsThisColl) {
+        std::vector<float> outputMl = {-1., -1., -1.};
         // candidate selected
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToKKPi(candidate));
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+            outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
+          }
+          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToKKPi(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
+          candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[2]);
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToPiKK(candidate));
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+            outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
+          }
+          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToPiKK(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
+          candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[2]);
         }
       }
 
@@ -756,13 +733,14 @@ struct HfCorrelatorDsHadrons {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
-        assocTrackReduced(indexHfcReducedCollision, track.phi(), track.eta(), track.pt());
+        assocTrackReduced(indexHfcReducedCollision, track.globalIndex(), track.phi(), track.eta(), track.pt());
+        assocTrackSelInfo(indexHfcReducedCollision, track.tpcNClsCrossedRows(), track.itsClusterMap(), track.itsNCls(), track.dcaXY(), track.dcaZ());
       }
 
       collReduced(collision.multFT0M(), collision.posZ());
     }
   }
-  PROCESS_SWITCH(HfCorrelatorDsHadrons, processDerivedDataDsLastIndex, "Process derived data Ds w lastIndex", false);
+  PROCESS_SWITCH(HfCorrelatorDsHadrons, processDerivedDataDs, "Process derived data Ds", false);
 
   // Event Mixing
   void processDataME(SelCollisionsWithDs const& collisions,
