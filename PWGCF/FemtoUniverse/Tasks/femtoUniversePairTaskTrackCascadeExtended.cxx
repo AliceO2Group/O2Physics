@@ -80,7 +80,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   Configurable<float> confLPtPart2{"ConfLPtPart2", 0.3f, "lower limit for pt of particle 2"};
   Configurable<float> confmom{"Confmom", 0.75, "momentum threshold for particle identification using TOF"};
   Configurable<float> confNsigmaTPCParticle{"ConfNsigmaTPCParticle", 3.0, "TPC Sigma for particle momentum < Confmom"};
-  Configurable<float> confNsigmaTOFParticle{"ConfNsigmaTOFParticle", 3.0, "TOF Sigma for particle momentum > Confmom"};   
+  Configurable<float> confNsigmaTOFParticle{"ConfNsigmaTOFParticle", 3.0, "TOF Sigma for particle momentum > Confmom"};
   Configurable<float> confNsigmaCombinedParticle{"ConfNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > Confmom"};
 
   ConfigurableAxis confkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
