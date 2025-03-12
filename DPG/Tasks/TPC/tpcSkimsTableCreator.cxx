@@ -317,7 +317,7 @@ struct TreeWriterTpcV0 {
       int64_t trackQAIndex = trackQA.globalIndex();
       labelTrack2TrackQA[trackId] = trackQAIndex;
     }
-    for (const auto& collision : collisions){
+    for (const auto& collision : collisions) {
       auto tracks = myTracks.sliceBy(perCollisionTracks, collision.globalIndex());
       auto v0s = myV0s.sliceBy(perCollisionV0s, collision.globalIndex());
 
@@ -339,14 +339,14 @@ struct TreeWriterTpcV0 {
         aod::TracksQA_002::iterator negTrackQA;
         bool existPosTrkQA;
         bool existNegTrkQA;
-        if (labelTrack2TrackQA[posTrack.globalIndex()] != -1){
+        if (labelTrack2TrackQA[posTrack.globalIndex()] != -1) {
           posTrackQA = tracksQA.iteratorAt(labelTrack2TrackQA[posTrack.globalIndex()]);
           existPosTrkQA = true;
         } else {
           posTrackQA = tracksQA.iteratorAt(0);
           existPosTrkQA = false;
         }
-        if (labelTrack2TrackQA[negTrack.globalIndex()] != -1){
+        if (labelTrack2TrackQA[negTrack.globalIndex()] != -1) {
           negTrackQA = tracksQA.iteratorAt(labelTrack2TrackQA[negTrack.globalIndex()]);
           existNegTrkQA = true;
         } else {
@@ -575,10 +575,10 @@ struct TreeWriterTPCTOF {
                              existTrkQA ? trackQA.tpcdEdxMax1R() : -999,
                              existTrkQA ? trackQA.tpcdEdxMax2R() : -999,
                              existTrkQA ? trackQA.tpcdEdxMax3R() : -999,
-                             existTrkQA ? trackQA.tpcdEdxTot0R():-999,
-                             existTrkQA ? trackQA.tpcdEdxTot1R():-999,
-                             existTrkQA ? trackQA.tpcdEdxTot2R():-999,
-                             existTrkQA ? trackQA.tpcdEdxTot3R():-999);
+                             existTrkQA ? trackQA.tpcdEdxTot0R() : -999,
+                             existTrkQA ? trackQA.tpcdEdxTot1R() : -999,
+                             existTrkQA ? trackQA.tpcdEdxTot2R() : -999,
+                             existTrkQA ? trackQA.tpcdEdxTot3R() : -999);
     }
   };
 
@@ -661,7 +661,7 @@ struct TreeWriterTPCTOF {
       int64_t trackQAIndex = trackQA.globalIndex();
       labelTrack2TrackQA[trackId] = trackQAIndex;
     }
-    for (const auto& collision : collisions){
+    for (const auto& collision : collisions) {
       auto tracks = myTracks.sliceBy(perCollisionTracks, collision.globalIndex());
       /// Check event selection
       if (!isEventSelected(collision, tracks)) {
@@ -684,7 +684,7 @@ struct TreeWriterTPCTOF {
         // get the corresponding trackQA using labelTracks2TracKQA and get variables of interest
         aod::TracksQA_002::iterator trackQA;
         bool existTrkQA;
-        if (labelTrack2TrackQA[trk.globalIndex()] != -1){
+        if (labelTrack2TrackQA[trk.globalIndex()] != -1) {
           trackQA = tracksQA.iteratorAt(labelTrack2TrackQA[trk.globalIndex()]);
           existTrkQA = true;
         } else {
@@ -695,7 +695,7 @@ struct TreeWriterTPCTOF {
         if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
           fillSkimmedTPCTOFTableWithTrkQA(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate);
         } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
-          fillSkimmedTPCTOFTableWithTrkQA(trk, trackQA,  existTrkQA, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate);
+          fillSkimmedTPCTOFTableWithTrkQA(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate);
         }
         /// Fill tree for deuterons
         if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
@@ -724,8 +724,7 @@ struct TreeWriterTPCTOF {
       } /// Loop tracks
     }
   } /// process
-  PROCESS_SWITCH(TreeWriterTPCTOF, processWithTrQA, "Samples for PID with TrackQA info", false); 
-  
+  PROCESS_SWITCH(TreeWriterTPCTOF, processWithTrQA, "Samples for PID with TrackQA info", false);
 };    /// struct TreeWriterTPCTOF
 
 
