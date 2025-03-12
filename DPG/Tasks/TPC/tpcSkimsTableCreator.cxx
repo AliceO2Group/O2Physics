@@ -678,7 +678,7 @@ struct TreeWriterTPCTOF {
               ((trackSelection == 2) && trk.isGlobalTrackWoPtEta()) ||
               ((trackSelection == 3) && trk.isGlobalTrackWoDCA()) ||
               ((trackSelection == 4) && trk.isQualityTrack()) ||
-              ((trackSelection == 5) && trk.isInAcceptanceTrack()))){
+              ((trackSelection == 5) && trk.isInAcceptanceTrack()))) {
           continue;
         }
         // get the corresponding trackQA using labelTracks2TracKQA and get variables of interest
