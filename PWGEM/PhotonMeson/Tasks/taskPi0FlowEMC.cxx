@@ -941,12 +941,12 @@ struct TaskPi0FlowEMC {
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
         if (cfgDoReverseScaling) {
           // Convert to PxPyPzEVector to modify energy
-          ROOT::Math::PxPyPzEVector v1_mod(v1);
-          v1_mod.SetE(v1_mod.E() * 1.0505);
-          v1 = ROOT::Math::PtEtaPhiMVector(v1_mod);
-          ROOT::Math::PxPyPzEVector v2_mod(v2);
-          v2_mod.SetE(v2_mod.E() * 1.0505);
-          v2 = ROOT::Math::PtEtaPhiMVector(v2_mod);
+          ROOT::Math::PxPyPzEVector v1Mod(v1);
+          v1Mod.SetE(v1Mod.E() * 1.0505);
+          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod);
+          ROOT::Math::PxPyPzEVector v2Mod(v2);
+          v2Mod.SetE(v2Mod.E() * 1.0505);
+          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod);
         }
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
         float dTheta = v1.Theta() - v2.Theta();
@@ -1049,12 +1049,12 @@ struct TaskPi0FlowEMC {
 
         if (cfgDoReverseScaling) {
           // Convert to PxPyPzEVector to modify energy
-          ROOT::Math::PxPyPzEVector v1_mod(v1);
-          v1_mod.SetE(v1_mod.E() * 1.0505);
-          v1 = ROOT::Math::PtEtaPhiMVector(v1_mod);
-          ROOT::Math::PxPyPzEVector v2_mod(v2);
-          v2_mod.SetE(v2_mod.E() * 1.0505);
-          v2 = ROOT::Math::PtEtaPhiMVector(v2_mod);
+          ROOT::Math::PxPyPzEVector v1Mod(v1);
+          v1Mod.SetE(v1Mod.E() * 1.0505);
+          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod);
+          ROOT::Math::PxPyPzEVector v2Mod(v2);
+          v2Mod.SetE(v2Mod.E() * 1.0505);
+          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod);
         }
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
@@ -1275,12 +1275,12 @@ struct TaskPi0FlowEMC {
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
         if (cfgDoReverseScaling) {
           // Convert to PxPyPzEVector to modify energy
-          ROOT::Math::PxPyPzEVector v1_mod(v1);
-          v1_mod.SetE(v1_mod.E() * 1.0505);
-          v1 = ROOT::Math::PtEtaPhiMVector(v1_mod);
-          ROOT::Math::PxPyPzEVector v2_mod(v2);
-          v2_mod.SetE(v2_mod.E() * 1.0505);
-          v2 = ROOT::Math::PtEtaPhiMVector(v2_mod);
+          ROOT::Math::PxPyPzEVector v1Mod(v1);
+          v1Mod.SetE(v1Mod.E() * 1.0505);
+          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod);
+          ROOT::Math::PxPyPzEVector v2Mod(v2);
+          v2Mod.SetE(v2Mod.E() * 1.0505);
+          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod);
         }
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
         float dTheta = v1.Theta() - v2.Theta();
