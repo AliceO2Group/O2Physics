@@ -60,7 +60,7 @@ class FastTracker
   bool applyZacceptance;     // check z acceptance or not
   bool applyMSCorrection;    // Apply correction for multiple scattering
   bool applyElossCorrection; // Apply correction for eloss (requires MS correction)
-  int applyEffCorrection;    // 0: off, 1, 2
+  bool applyEffCorrection;   // Apply correction for hit efficiency
   int verboseLevel;          // 0: not verbose, >0 more verbose
   int integrationTime;
   int crossSectionMinB;
