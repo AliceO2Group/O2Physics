@@ -130,7 +130,7 @@ struct TreeWriterTpcV0 {
     }
   };
 
-/// Funktion to fill skimmed tables
+  /// Function to fill skimmed tables
   template <typename T, typename TQA, typename C, typename V0>
   void fillSkimmedV0TableWithTrQA(V0 const& v0, T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate)
   {
@@ -177,15 +177,15 @@ struct TreeWriterTpcV0 {
                           trackocc,
                           ft0occ,
                           hadronicRate,
-                          existTrkQA ? trackQA.tpcClusterByteMask():-999,
-                          existTrkQA ? trackQA.tpcdEdxMax0R():-999,
-                          existTrkQA ? trackQA.tpcdEdxMax1R():-999,
-                          existTrkQA ? trackQA.tpcdEdxMax2R():-999,
-                          existTrkQA ? trackQA.tpcdEdxMax3R():-999,
-                          existTrkQA ? trackQA.tpcdEdxTot0R():-999,
-                          existTrkQA ? trackQA.tpcdEdxTot1R():-999,
-                          existTrkQA ? trackQA.tpcdEdxTot2R():-999,
-                          existTrkQA ? trackQA.tpcdEdxTot3R():-999);
+                          existTrkQA ? trackQA.tpcClusterByteMask() : -999,
+                          existTrkQA ? trackQA.tpcdEdxMax0R() : -999,
+                          existTrkQA ? trackQA.tpcdEdxMax1R() : -999,
+                          existTrkQA ? trackQA.tpcdEdxMax2R() : -999,
+                          existTrkQA ? trackQA.tpcdEdxMax3R() : -999,
+                          existTrkQA ? trackQA.tpcdEdxTot0R() : -999,
+                          existTrkQA ? trackQA.tpcdEdxTot1R() : -999,
+                          existTrkQA ? trackQA.tpcdEdxTot2R() : -999,
+                          existTrkQA ? trackQA.tpcdEdxTot3R() : -999);
     }
   };
 
@@ -315,9 +315,9 @@ struct TreeWriterTpcV0 {
     for (const auto& trackQA : tracksQA) {
       int64_t trackId = trackQA.trackId();
       int64_t trackQAIndex = trackQA.globalIndex();
-      labelTrack2TrackQA[trackId]=trackQAIndex;
+      labelTrack2TrackQA[trackId] = trackQAIndex;
     }
-    for (const auto & collision : collisions){
+    for (const auto& collision : collisions){
       auto tracks = myTracks.sliceBy(perCollisionTracks, collision.globalIndex());
       auto v0s = myV0s.sliceBy(perCollisionV0s, collision.globalIndex());
 
@@ -335,21 +335,21 @@ struct TreeWriterTpcV0 {
         auto posTrack = v0.posTrack_as<Trks>();
         auto negTrack = v0.negTrack_as<Trks>();
 
-        aod::TracksQA_002::iterator  posTrackQA;
-        aod::TracksQA_002::iterator  negTrackQA;
+        aod::TracksQA_002::iterator posTrackQA;
+        aod::TracksQA_002::iterator negTrackQA;
         bool existPosTrkQA;
         bool existNegTrkQA;
-        if (labelTrack2TrackQA[posTrack.globalIndex()]!=-1){
+        if (labelTrack2TrackQA[posTrack.globalIndex()] != -1){
           posTrackQA = tracksQA.iteratorAt(labelTrack2TrackQA[posTrack.globalIndex()]);
           existPosTrkQA = true;
-        } else{
+        } else {
           posTrackQA = tracksQA.iteratorAt(0);
           existPosTrkQA = false;
         }
-        if (labelTrack2TrackQA[negTrack.globalIndex()]!=-1){
+        if (labelTrack2TrackQA[negTrack.globalIndex()] != -1){
           negTrackQA = tracksQA.iteratorAt(labelTrack2TrackQA[negTrack.globalIndex()]);
           existNegTrkQA = true;
-        } else{
+        } else {
           negTrackQA = tracksQA.iteratorAt(0);
           existNegTrkQA = false;
         }
@@ -570,11 +570,11 @@ struct TreeWriterTPCTOF {
                              trackocc,
                              ft0occ,
                              hadronicRate,
-                             existTrkQA ? trackQA.tpcClusterByteMask():-999,
-                             existTrkQA ? trackQA.tpcdEdxMax0R():-999,
-                             existTrkQA ? trackQA.tpcdEdxMax1R():-999,
-                             existTrkQA ? trackQA.tpcdEdxMax2R():-999,
-                             existTrkQA ? trackQA.tpcdEdxMax3R():-999,
+                             existTrkQA ? trackQA.tpcClusterByteMask() : -999,
+                             existTrkQA ? trackQA.tpcdEdxMax0R() : -999,
+                             existTrkQA ? trackQA.tpcdEdxMax1R() : -999,
+                             existTrkQA ? trackQA.tpcdEdxMax2R() : -999,
+                             existTrkQA ? trackQA.tpcdEdxMax3R() : -999,
                              existTrkQA ? trackQA.tpcdEdxTot0R():-999,
                              existTrkQA ? trackQA.tpcdEdxTot1R():-999,
                              existTrkQA ? trackQA.tpcdEdxTot2R():-999,
@@ -650,7 +650,6 @@ struct TreeWriterTPCTOF {
     } /// Loop tracks
   }   /// process
   PROCESS_SWITCH(TreeWriterTPCTOF, processStandard, "Standard Samples for PID", true);
-  
   Preslice<Trks> perCollisionTracks = aod::track::collisionId;
   void processWithTrQA(Colls const& collisions, Trks const& myTracks, aod::BCsWithTimestamps const&, aod::TracksQA_002 const& tracksQA)
   {
@@ -660,9 +659,9 @@ struct TreeWriterTPCTOF {
     for (const auto& trackQA : tracksQA) {
       int64_t trackId = trackQA.trackId();
       int64_t trackQAIndex = trackQA.globalIndex();
-      labelTrack2TrackQA[trackId]=trackQAIndex;
+      labelTrack2TrackQA[trackId] = trackQAIndex;
     }
-    for (const auto & collision : collisions){
+    for (const auto& collision : collisions){
       auto tracks = myTracks.sliceBy(perCollisionTracks, collision.globalIndex());
       /// Check event selection
       if (!isEventSelected(collision, tracks)) {
@@ -673,22 +672,22 @@ struct TreeWriterTPCTOF {
       float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3;
 
       rowTPCTOFTreeWithTrkQA.reserve(tracks.size());
-      for (auto const& trk : tracks) {         
+      for (auto const& trk : tracks) {
         if (!((trackSelection == 0) ||
              ((trackSelection == 1) && trk.isGlobalTrack()) ||
              ((trackSelection == 2) && trk.isGlobalTrackWoPtEta()) ||
              ((trackSelection == 3) && trk.isGlobalTrackWoDCA()) ||
              ((trackSelection == 4) && trk.isQualityTrack()) ||
              ((trackSelection == 5) && trk.isInAcceptanceTrack()) )){
-               continue;
+          continue;
         }
         // get the corresponding trackQA using labelTracks2TracKQA and get variables of interest
         aod::TracksQA_002::iterator trackQA;
         bool existTrkQA;
-        if (labelTrack2TrackQA[trk.globalIndex()]!=-1){
+        if (labelTrack2TrackQA[trk.globalIndex()] != -1){
           trackQA = tracksQA.iteratorAt(labelTrack2TrackQA[trk.globalIndex()]);
           existTrkQA = true;
-        } else{
+        } else {
           trackQA = tracksQA.iteratorAt(0);
           existTrkQA = false;
         }
