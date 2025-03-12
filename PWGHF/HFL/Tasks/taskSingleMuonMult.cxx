@@ -47,6 +47,7 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::fwdtrack;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>;
 using MyTracks = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksIU, aod::TracksDCA, aod::TrackSelection>;
@@ -65,9 +66,8 @@ struct HfTaskSingleMuonMult {
   Configurable<float> zVtx{"zVtx", 10., "Z edge of primary vertex [cm]"};
   Configurable<bool> reduceOrphMft{"reduceOrphMft", true, "reduce orphan MFT tracks"};
 
-  o2::framework::HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registry{"registry"};
   static constexpr std::string_view kTrackType[] = {"TrackType0", "TrackType1", "TrackType2", "TrackType3", "TrackType4"};
-  uint8_t globalMuonTrack = o2::aod::fwdtrack::GlobalMuonTrack;
 
   void init(InitContext&)
   {
@@ -169,9 +169,9 @@ struct HfTaskSingleMuonMult {
     const auto cent = collision.centFT0M();
     registry.fill(HIST("hCentrality"), cent);
 
-    int nCh = 0.;
-    int nMu = 0.;
-    const int nTypes = 5;
+    std::size_t nCh{0u};
+    int nMu{0};
+    constexpr std::size_t nTypes{5};
     int nMuTrackType[nTypes] = {0};
 
     std::vector<typename std::decay_t<decltype(tracks)>::iterator> chTracks;
@@ -186,7 +186,7 @@ struct HfTaskSingleMuonMult {
     }
     registry.fill(HIST("hEventSize"), nCh);
 
-    for (int isize = 0; isize < nCh; isize++) {
+    for (std::size_t isize{0u}; isize < nCh; isize++) {
       auto chTrack = chTracks[isize];
       registry.fill(HIST("hTHnTrk"), cent, nCh, chTrack.pt(), chTrack.eta(), chTrack.sign());
     }
@@ -207,7 +207,7 @@ struct HfTaskSingleMuonMult {
       if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
         auto dpt(muonType3.pt() - pt);
-        if (muTrackType == globalMuonTrack) {
+        if (muTrackType == ForwardTrackTypeEnum::GlobalMuonTrack) {
           registry.fill(HIST("hMuDeltaPtBeforeAccCuts"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, dpt);
         }
       }
@@ -252,7 +252,7 @@ struct HfTaskSingleMuonMult {
         auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
         auto dpt(muonType3.pt() - pt);
 
-        if (muTrackType == globalMuonTrack) {
+        if (muTrackType == ForwardTrackTypeEnum::GlobalMuonTrack) {
           registry.fill(HIST("hMuDeltaPtAfterAccCuts"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, dpt);
         }
       }
@@ -262,11 +262,13 @@ struct HfTaskSingleMuonMult {
 
     static_for<0, 4>([&](auto i) {
       constexpr int kIndex = i.value;
-      if (nMuTrackType[kIndex] > 0)
+      if (nMuTrackType[kIndex] > 0) {
         registry.fill(HIST("h3MultNchNmu_") + HIST(kTrackType[kIndex]), cent, nCh, nMuTrackType[kIndex]);
+      }
     });
     chTracks.clear();
   }
+
   void process(MyCollisions::iterator const& collision,
                MyTracks const& tracks,
                MyMuons const& muons)
