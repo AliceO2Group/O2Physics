@@ -19,7 +19,7 @@
 #include "tpcSkimsTableCreator.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
-#include <vector> 
+#include <vector>
 /// ROOT
 #include "TRandom3.h"
 /// O2
@@ -37,7 +37,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/DataModel/OccupancyTables.h" 
+#include "Common/DataModel/OccupancyTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -337,8 +337,6 @@ struct TreeWriterTpcV0 {
       const int bcGlobalIndex = bc.globalIndex();
       const int bcTimeFrameId = bc.tfId();
       const int bcBcInTimeFrame = bc.bcInTF();
-
-
       rowTPCTreeWithTrkQA.reserve(tracks.size());
       /// Loop over v0 candidates
       for (const auto& v0 : v0s) {
@@ -665,8 +663,6 @@ struct TreeWriterTPCTOF {
   }   /// process
   PROCESS_SWITCH(TreeWriterTPCTOF, processStandard, "Standard Samples for PID", true);
   Preslice<Trks> perCollisionTracks = aod::track::collisionId;
-  //void processWithTrQA(Colls const& collisions, Trks const& myTracks, aod::BCsWithTimestamps const&, MyBCTable const& BCs, aod::TracksQA_002 const& tracksQA)
- 
   void processWithTrQA(Colls const& collisions, Trks const& myTracks, MyBCTable const& BCs, aod::TracksQA_002 const& tracksQA)
   {
     std::vector<int64_t> labelTrack2TrackQA;
@@ -683,17 +679,12 @@ struct TreeWriterTPCTOF {
       if (!isEventSelected(collision, tracks)) {
         continue;
       }
-      //auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       auto bc = collision.bc_as<MyBCTable>();
       const int runnumber = bc.runNumber();
       float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3;
       const int bcGlobalIndex = bc.globalIndex();
       const int bcTimeFrameId = bc.tfId();
       const int bcBcInTimeFrame = bc.bcInTF();
-
-      //auto bcE= collision.bc_as<MyBCTable>();
-      //std::cout<<"extra::" <<bc.globalIndex() << "  " << bc.tfId()<< "  "<< bc.bcInTF()<< std::endl;
-
       rowTPCTOFTreeWithTrkQA.reserve(tracks.size());
       for (auto const& trk : tracks) {
         if (!((trackSelection == 0) ||
