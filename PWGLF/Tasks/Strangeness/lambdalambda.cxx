@@ -139,7 +139,8 @@ struct lambdalambda {
   ConfigurableAxis RadiusAxis{"RadiusAxis", {100, 0, 5}, "radius of v0v0"};
   ConfigurableAxis CPAAxis{"CPAAxis", {102, -1.02, 1.02}, "CPA of v0v0"};
   ConfigurableAxis DistanceAxis{"DistanceAxis", {100, 0, 10}, "distance of v0v0"};
-  ConfigurableAxis DCAAxis{"DCAAxis", {100, 0, 5}, "DCA of v0v0"};
+  ConfigurableAxis DCARAxis{"DCARAxis", {100, 0, 2}, "DCA of v0v0R"};
+  ConfigurableAxis DCAZAxis{"DCAZAxis", {100, -2, 2}, "DCA of v0v0Z"};
 
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
@@ -163,12 +164,14 @@ struct lambdalambda {
     histos.add("Radius_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, RadiusAxis, combAxis}});
     histos.add("CPA_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, CPAAxis, combAxis}});
     histos.add("Distance_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DistanceAxis, combAxis}});
-    histos.add("DCA_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCAAxis, combAxis}});
+    histos.add("DCAR_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCARAxis, combAxis}});
+    histos.add("DCAZ_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCAZAxis, combAxis}});
 
     histos.add("Radius_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, RadiusAxis, combAxis}});
     histos.add("CPA_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, CPAAxis, combAxis}});
     histos.add("Distance_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DistanceAxis, combAxis}});
-    histos.add("DCA_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCAAxis, combAxis}});
+    histos.add("DCAR_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCARAxis, combAxis}});
+    histos.add("DCAZ_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCAZAxis, combAxis}});
 
     histos.add("h_InvMass_same", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
     histos.add("h_InvMass_mixed", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
@@ -442,13 +445,15 @@ struct lambdalambda {
         histos.fill(HIST("Radius_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02), V01Tag + V02Tag);
         histos.fill(HIST("CPA_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02), V01Tag + V02Tag);
         histos.fill(HIST("Distance_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getDistance(v01, v02), V01Tag + V02Tag);
-        histos.fill(HIST("DCA_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02), V01Tag + V02Tag);
+        histos.fill(HIST("DCAR_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), std::sqrt(getDCAofV0V0(v01, v02).perp2()), V01Tag + V02Tag);
+        histos.fill(HIST("DCAZ_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02).z(), V01Tag + V02Tag);
 
         if (isSelectedV0V0(v01, v02)) {
           histos.fill(HIST("Radius_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02), V01Tag + V02Tag);
           histos.fill(HIST("CPA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02), V01Tag + V02Tag);
           histos.fill(HIST("Distance_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDistance(v01, v02), V01Tag + V02Tag);
-          histos.fill(HIST("DCA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02), V01Tag + V02Tag);
+          histos.fill(HIST("DCAR_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), std::sqrt(getDCAofV0V0(v01, v02).perp2()), V01Tag + V02Tag);
+          histos.fill(HIST("DCAZ_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02).z(), V01Tag + V02Tag);
           IsSelected = true;
         }
 
