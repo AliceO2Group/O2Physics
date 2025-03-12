@@ -178,7 +178,7 @@ struct AntinucleiInJets {
       registryData.add("antiproton_ue_tof", "antiproton_ue_tof", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
       registryData.add("antiproton_dca_jet", "antiproton_dca_jet", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {200, -0.5, 0.5, "DCA_{xy} (cm)"}});
       registryData.add("antiproton_dca_ue", "antiproton_dca_ue", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {200, -0.5, 0.5, "DCA_{xy} (cm)"}});
-      
+
       // antideuterons
       registryData.add("antideuteron_jet_tpc", "antideuteron_jet_tpc", HistType::kTH2F, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
       registryData.add("antideuteron_jet_tof", "antideuteron_jet_tof", HistType::kTH2F, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
@@ -1188,7 +1188,7 @@ void processSystematicsData(SelectedCollisions::iterator const& collision, FullN
   float tpcNcrossedRowsSyst[nSystematics] = {100, 85, 80, 110, 95, 90, 105, 95, 100, 105};
   float dcaxySyst[nSystematics] = {0.05, 0.07, 0.10, 0.03, 0.06, 0.15, 0.08, 0.04, 0.09, 0.10};
   float dcazSyst[nSystematics] = {0.1, 0.15, 0.3, 0.075, 0.12, 0.18, 0.2, 0.1, 0.15, 0.2};
-  
+
   // event selection
   if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
     return;
@@ -1219,7 +1219,7 @@ void processSystematicsData(SelectedCollisions::iterator const& collision, FullN
   auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
 
   // loop over reconstructed jets
-  for (auto& jet : jets) { 
+  for (auto& jet : jets) {
 
     // jet must be fully contained in the acceptance
     if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
@@ -1239,7 +1239,7 @@ void processSystematicsData(SelectedCollisions::iterator const& collision, FullN
       for(int i = 0; i < nSystematics; i++) {
         // get corresponding track and apply track selection criteria
         auto const& track = tracks.iteratorAt(particle.user_index());
-        
+
         // variables
         double nsigmaTPCPr = track.tpcNSigmaPr();
         double nsigmaTOFPr = track.tofNSigmaPr();
@@ -1289,7 +1289,7 @@ void processSystematicsData(SelectedCollisions::iterator const& collision, FullN
           passedItsPidProt = true;
         if (pt > ptMaxItsPidDeut)
           passedItsPidDeut = true;
-        
+
         // antimatter
         if (track.sign() < 0) {
           if (passedItsPidProt) {
