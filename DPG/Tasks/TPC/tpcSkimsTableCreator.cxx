@@ -674,11 +674,11 @@ struct TreeWriterTPCTOF {
       rowTPCTOFTreeWithTrkQA.reserve(tracks.size());
       for (auto const& trk : tracks) {
         if (!((trackSelection == 0) ||
-             ((trackSelection == 1) && trk.isGlobalTrack()) ||
-             ((trackSelection == 2) && trk.isGlobalTrackWoPtEta()) ||
-             ((trackSelection == 3) && trk.isGlobalTrackWoDCA()) ||
-             ((trackSelection == 4) && trk.isQualityTrack()) ||
-             ((trackSelection == 5) && trk.isInAcceptanceTrack()) )){
+              ((trackSelection == 1) && trk.isGlobalTrack()) ||
+              ((trackSelection == 2) && trk.isGlobalTrackWoPtEta()) ||
+              ((trackSelection == 3) && trk.isGlobalTrackWoDCA()) ||
+              ((trackSelection == 4) && trk.isQualityTrack()) ||
+              ((trackSelection == 5) && trk.isInAcceptanceTrack()) )){
           continue;
         }
         // get the corresponding trackQA using labelTracks2TracKQA and get variables of interest
@@ -726,12 +726,6 @@ struct TreeWriterTPCTOF {
   } /// process
   PROCESS_SWITCH(TreeWriterTPCTOF, processWithTrQA, "Samples for PID with TrackQA info", false);
 };    /// struct TreeWriterTPCTOF
-
-
-
-
-
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{adaptAnalysisTask<TreeWriterTPCTOF>(cfgc)};
