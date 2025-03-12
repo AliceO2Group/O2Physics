@@ -13,6 +13,7 @@
 /// \author
 /// \since
 
+#include <vector>
 #include <Framework/AnalysisDataModel.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -20,7 +21,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
-#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -419,7 +419,7 @@ struct MixedEventsPartitionedTracks {
         }
       }
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(rightPhi1, rightPhi2))) {
-        if (t1.phi() < (float)phiup || t2.phi() < (float)phiup) {
+        if (t1.phi() < static_cast<float>(phiup) || t2.phi() < static_cast<float>(phiup)) {
           LOGF(info, "WRONG Mixed event right tracks pair: (%d, %d) from events (%d, %d), phi: (%.3f. %.3f) >= %.3f", t1.index(), t2.index(), c1.index(), c2.index(), t1.phi(), t2.phi(), (float)phiup);
         }
       }

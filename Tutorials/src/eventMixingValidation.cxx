@@ -13,6 +13,7 @@
 /// \author
 /// \since
 
+#include <vector>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/SliceCache.h>
 #include "Framework/runDataProcessing.h"
@@ -21,7 +22,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
-#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
