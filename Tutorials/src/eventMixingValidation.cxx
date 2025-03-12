@@ -13,6 +13,7 @@
 /// \author
 /// \since
 
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/SliceCache.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -28,6 +29,7 @@ using namespace o2::soa;
 
 struct MixedEventsEmptyTables {
   SliceCache cache;
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   // Dummy filter to enforce empty tables
   Filter trackFilter = (aod::track::x > -0.8f) && (aod::track::x < -0.8f);
   using myTracks = soa::Filtered<aod::Tracks>;
@@ -63,6 +65,7 @@ struct MixedEventsEmptyTables {
 
 struct MixedEventsJoinedTracks {
   SliceCache cache;
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
@@ -94,6 +97,7 @@ struct MixedEventsJoinedTracks {
 
 // It should not compile
 // struct MixedEventsBadSubscription {
+//  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 //  std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
 //  std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
 //  using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
