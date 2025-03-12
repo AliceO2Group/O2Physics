@@ -180,7 +180,7 @@ struct TreeWriterTpcV0 {
                           trackocc,
                           ft0occ,
                           hadronicRate,
-                          bcGlobalIndex, 
+                          bcGlobalIndex,
                           bcTimeFrameId,
                           bcBcInTimeFrame,
                           existTrkQA ? trackQA.tpcClusterByteMask() : -999,
