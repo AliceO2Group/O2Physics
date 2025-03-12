@@ -434,7 +434,7 @@ inline void initializeTrackSelection(TrackSelectionTuneCfg& tune)
       }
     }
     if (tune.mUseDCAz) {
-      for (auto dcaZCut : maxDcaZPtDeps) { // o2-linter: disable=const-ref-in-for-loop
+      for (auto dcaZCut : maxDcaZPtDeps) { // o2-linter: disable=const-ref-in-for-loop (the loop variable is not constant)
         dcaZCut = [&tune](float) { return tune.mDCAz; };
       }
     }
