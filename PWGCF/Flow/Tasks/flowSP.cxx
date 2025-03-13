@@ -1079,7 +1079,7 @@ struct FlowSP {
   {
     // LOGF(info, "Size of mccollisions: %i", mcCollisions.size());
 
-    for (auto mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       float centrality = -1;
       bool colSelected = true;
 
