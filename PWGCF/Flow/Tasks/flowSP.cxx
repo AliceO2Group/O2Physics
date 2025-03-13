@@ -1051,14 +1051,12 @@ struct FlowSP {
         registry.fill(HIST("trackMCReco/before/hPt_negative"), track.pt());
       }
 
-      if (!mcParticle.isPhysicalPrimary()) 
+      if (!mcParticle.isPhysicalPrimary()) {
         registry.fill(HIST("trackMCReco/before/hIsPhysicalPrimary"), 0);
-      else 
+        continue; 
+      } else {
         registry.fill(HIST("trackMCReco/before/hIsPhysicalPrimary"), 1);
-
-      if (!mcParticle.isPhysicalPrimary()){
-        continue;
-      } 
+      }
 
       if (!trackSelected(track, field))
         continue;
