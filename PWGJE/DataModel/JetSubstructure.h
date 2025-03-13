@@ -36,6 +36,16 @@ DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);   //!
 DECLARE_SOA_COLUMN(EventWeight, eventWeight, float); //!
 } // namespace jetcollision
 
+namespace jetmccollision
+{
+DECLARE_SOA_COLUMN(PosZ, posZ, float);               //!
+DECLARE_SOA_COLUMN(Accepted, accepted, uint64_t);    //!
+DECLARE_SOA_COLUMN(Attempted, attempted, uint64_t);  //!
+DECLARE_SOA_COLUMN(XsectGen, xsectGen, float);       //!
+DECLARE_SOA_COLUMN(XsectErr, xsectErr, float);       //!
+DECLARE_SOA_COLUMN(EventWeight, eventWeight, float); //!
+} // namespace jetmccollision
+
 namespace jetsubstructure
 {                                                                   //!
 DECLARE_SOA_COLUMN(EnergyMother, energyMother, std::vector<float>); //!
@@ -153,6 +163,20 @@ DECLARE_SOA_COLUMN(JetPerpConeRho, jetPerpConeRho, float);   //!
 DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int); //!
 } // namespace jetoutput
 
+#define MCCOLL_TABLE_DEF(_jet_type_, _jet_description_, _name_)                                  \
+  namespace _name_##mccollisionoutput                                                            \
+  {                                                                                              \
+    DECLARE_SOA_DYNAMIC_COLUMN(Dummy##_jet_type_, dummy##_jet_type_, []() -> int { return 0; }); \
+  }                                                                                              \
+  DECLARE_SOA_TABLE(_jet_type_##MCCOs, "AOD", _jet_description_ "MCCO",                          \
+                    jetmccollision::PosZ,                                                        \
+                    jetmccollision::Accepted,                                                    \
+                    jetmccollision::Attempted,                                                   \
+                    jetmccollision::XsectGen,                                                    \
+                    jetmccollision::XsectErr,                                                    \
+                    jetmccollision::EventWeight,                                                 \
+                    _name_##mccollisionoutput::Dummy##_jet_type_<>);
+
 // Defines the jet substrcuture table definition
 #define JETSUBSTRUCTURE_TABLE_DEF(_jet_type_, _jet_description_, _name_, _cand_type_, _cand_description_)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        \
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  \
@@ -217,6 +241,7 @@ DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int); //!
   JETPAIRMATCHING_TABLE_DEF(_jet_type_full_##EventWiseSubtracted, _jet_type_full_, _jet_description_ "EWSSP2")                                                                                                                                                                                                                                                           \
   JETSUBSTRUCTURE_TABLE_DEF(_jet_type_##MCDJet, _jet_description_ "MCDJET", _jet_type_##mcdjet, _cand_type_mcd_, _cand_description_mcd_)                                                                                                                                                                                                                                 \
   JETSUBSTRUCTURE_TABLE_DEF(_jet_type_##MCPJet, _jet_description_ "MCPJET", _jet_type_##mcpjet, _hfparticle_type_, _hfparticle_description_)                                                                                                                                                                                                                             \
+  MCCOLL_TABLE_DEF(_jet_type_##MCPJet, _jet_description_ "MCPJET", _jet_type_##mcpjet)                                                                                                                                                                                                                                                                                   \
   JETMATCHING_TABLE_DEF(_jet_type_##MCDJet, _jet_type_##MCPJet, _jet_description_ "MCPJET", _jet_type_##mcdjet, _jet_description_ "MCDJET")                                                                                                                                                                                                                              \
   JETMATCHING_TABLE_DEF(_jet_type_##MCPJet, _jet_type_##MCDJet, _jet_description_ "MCDJET", _jet_type_##mcpjet, _jet_description_ "MCPJET")                                                                                                                                                                                                                              \
   JETSPLITTING_TABLE_DEF(_jet_type_full_##MCDetectorLevel, _jet_description_ "D", _jet_full_description_##mcdetectorlevel, _track_type_mcd_, _cand_type_mcd_)                                                                                                                                                                                                            \

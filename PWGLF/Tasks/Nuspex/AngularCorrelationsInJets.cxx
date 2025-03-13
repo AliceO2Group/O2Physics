@@ -155,8 +155,8 @@ struct AngularCorrelationsInJets {
                                     aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa, aod::McTrackLabels>;
   using McTracksRun3 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA,
                                  aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa, aod::McTrackLabels>;
-  using JetMcTracks = soa::Join<aod::JetTracks, aod::JTrackPIs, aod::JMcTrackLbs>;
-  using JetTracksRun3 = soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>;
+  using JetMcTracks = soa::Join<aod::JetTracks, aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs>;
+  using JetTracksRun3 = soa::Join<aod::JetTracks, aod::JTracks, aod::JTrackExtras, aod::JTrackPIs>;
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
   using McCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
 
