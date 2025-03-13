@@ -41,12 +41,14 @@ using namespace o2::framework::expressions;
 
 struct JetShapeTask {
   HistogramRegistry registry{"registry",
-                             {{"tpcPi", "tpcPi", {HistType::kTH2F, {{1000, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tofPi", "tofPi", {HistType::kTH2F, {{1000, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tpcPr", "tpcPr", {HistType::kTH2F, {{1000, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tofPr", "tofPr", {HistType::kTH2F, {{1000, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tpcDedx", "tpcDedx", {HistType::kTH2F, {{1000, 0, 5}, {1000, 0, 1000}}}},
-                              {"tofBeta", "tofBeta", {HistType::kTH2F, {{1000, 0, 5}, {900, 0.2, 1.1}}}},
+                             {{"tpcTofPi", "tpcTofPi", {HistType::kTH3F, {{401, -10.025f, 10.025f}, {401, -10.025f, 10.025f}, {100, 0, 5}}}},
+                              {"tpcPi", "tpcPi", {HistType::kTH2F, {{500, 0, 5}, {401, -10.025f, 10.025f}}}},
+                              {"tofPi", "tofPi", {HistType::kTH2F, {{500, 0, 5}, {401, -10.025f, 10.025f}}}},
+                              {"tpcTofPr", "tpcTofPr", {HistType::kTH3F, {{401, -10.025f, 10.025f}, {401, -10.025f, 10.025f}, {100, 0, 5}}}},
+                              {"tpcPr", "tpcPr", {HistType::kTH2F, {{500, 0, 5}, {401, -10.025f, 10.025f}}}},
+                              {"tofPr", "tofPr", {HistType::kTH2F, {{500, 0, 5}, {401, -10.025f, 10.025f}}}},
+                              {"tpcDedx", "tpcDedx", {HistType::kTH2F, {{500, 0, 5}, {1000, 0, 1000}}}},
+                              {"tofBeta", "tofBeta", {HistType::kTH2F, {{500, 0, 5}, {450, 0.2, 1.1}}}},
                               {"tofMass", "tofMass", {HistType::kTH1F, {{3000, 0, 3}}}},
                               {"jetPt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
                               {"jetEta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
@@ -254,8 +256,10 @@ struct JetShapeTask {
         registry.fill(HIST("tofMass"), track.mass());
 
         // for calculate purity
+        registry.fill(HIST("tpcTofPi"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
         registry.fill(HIST("tpcPi"), track.pt(), track.tpcNSigmaPi());
         registry.fill(HIST("tofPi"), track.pt(), track.tofNSigmaPi());
+        registry.fill(HIST("tpcTofPr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
         registry.fill(HIST("tpcPr"), track.pt(), track.tpcNSigmaPr());
         registry.fill(HIST("tofPr"), track.pt(), track.tofNSigmaPr());
 
