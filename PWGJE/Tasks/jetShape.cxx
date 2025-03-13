@@ -54,7 +54,7 @@ struct JetShapeTask {
                               {"jetEta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"jetPhi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
                               {"area", "area", {HistType::kTH1F, {{200, 0, 4}}}},
-                              {"rho", "rho", {HistType::kTH1F, {{200, -1, 119}}}},
+                              {"rho", "rho", {HistType::kTH1F, {{300, 0, 300}}}},
                               {"ptCorr", "Corrected jet pT; p_{T}^{corr} (GeV/c); Counts", {HistType::kTH1F, {{200, 0, 200}}}},
                               {"ptCorrVsDistance", "ptcorr_vs_distance", {HistType::kTH2F, {{70, 0, 0.7}, {100, 0, 100}}}},
                               {"distanceVsTrackpt", "trackpt_vs_distance", {HistType::kTH2F, {{70, 0, 0.7}, {100, 0, 100}}}},
