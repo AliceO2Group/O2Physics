@@ -81,7 +81,7 @@ struct ThreeParticleCorrelations {
   SliceCache cache;
   ConfigurableAxis confCentBins{"confCentBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "ME Centrality binning"};
   ConfigurableAxis confZvtxBins{"confZvtxBins", {VARIABLE_WIDTH, -7.0f, -5.0f, -3.0f, -1.0f, 0.0f, 1.0f, 3.0f, 5.0f, 7.0f}, "ME Zvtx binning"};
-  
+
   using BinningType = ColumnBinningPolicy<aod::cent::CentFT0C, aod::collision::PosZ>;
   using BinningTypeMC = ColumnBinningPolicy<aod::mccollisionprop::BestCollisionCentFT0C, aod::mccollision::PosZ>;
   BinningType collBinning{{confCentBins, confZvtxBins}, true};
@@ -315,7 +315,7 @@ struct ThreeParticleCorrelations {
 
     auto tracksTuple = std::make_tuple(v0s, tracks);
     Pair<MyFilteredCollisions, MyFilteredV0s, MyFilteredTracks, BinningType> pairData{collBinning, 5, -1, collisions, tracksTuple, &cache};
-    
+
     // Start of the Mixed-Event correlations
     for (const auto& [coll_1, v0_1, coll_2, track_2] : pairData) {
 
@@ -367,22 +367,22 @@ struct ThreeParticleCorrelations {
     Partition<MyFilteredMCParticles> mcTriggers = (aod::mcparticle::pdgCode == static_cast<int>(kLambda0) || aod::mcparticle::pdgCode == static_cast<int>(kLambda0Bar)) && aod::mcparticle::pt > 0.6f && aod::mcparticle::pt < 12.0f && nabs(aod::mcparticle::eta) < 0.72f;
     Partition<MyFilteredMCParticles> mcAssociates = (((aod::mcparticle::pdgCode == static_cast<int>(kPiPlus) || aod::mcparticle::pdgCode == static_cast<int>(kPiMinus)) && aod::mcparticle::pt > 0.3f && aod::mcparticle::pt < 2.3f) ||
                                                      ((aod::mcparticle::pdgCode == static_cast<int>(kKPlus) || aod::mcparticle::pdgCode == static_cast<int>(kKMinus)) && aod::mcparticle::pt > 0.5f && aod::mcparticle::pt < 2.5f) ||
-						     ((aod::mcparticle::pdgCode == static_cast<int>(kProton) || aod::mcparticle::pdgCode == static_cast<int>(kProtonBar)) && aod::mcparticle::pt > 0.5f));
+                                                     ((aod::mcparticle::pdgCode == static_cast<int>(kProton) || aod::mcparticle::pdgCode == static_cast<int>(kProtonBar)) && aod::mcparticle::pt > 0.5f));
     mcTriggers.bindTable(particles);
     mcAssociates.bindTable(particles);
-    
+
     // Start of the MC Same-Event correlations
-    for (const auto& trigger : mcTriggers) { 
+    for (const auto& trigger : mcTriggers) {
       if (trigger.isPhysicalPrimary()) {
-	
+
         if (trigger.pdgCode() > 0) {
           triggSign = 1;
         } else if (trigger.pdgCode() < 0) {
           triggSign = -1;
         }
-	rQARegistry.fill(HIST("hNLambdas"), triggSign, trigger.pt(), collision.bestCollisionCentFT0C());
+        rQARegistry.fill(HIST("hNLambdas"), triggSign, trigger.pt(), collision.bestCollisionCentFT0C());
 
-	for (const auto& associate : mcAssociates) {
+        for (const auto& associate : mcAssociates) {
           if (associate.isPhysicalPrimary()) {
 
             if (associate.pdgCode() > 0) {
@@ -401,8 +401,8 @@ struct ThreeParticleCorrelations {
             } else if (std::abs(associate.pdgCode()) == kProton) {
               rSECorrRegistry.fill(HIST("hSameLambdaProton_MC"), deltaPhi, deltaEta, collision.bestCollisionCentFT0C(), collision.posZ(), triggSign, assocSign);
             }
-	  }
-	}
+          }
+        }
       }
     }
     // End of the MC Same-Event Correlations
@@ -413,7 +413,7 @@ struct ThreeParticleCorrelations {
 
     auto particlesTuple = std::make_tuple(particles);
     SameKindPair<MyFilteredMCGenCollisions, MyFilteredMCParticles, BinningTypeMC> pairMC{collBinningMC, 5, -1, collisions, particlesTuple, &cache};
-    
+
     // Start of the MC Mixed-events Correlations
     for (const auto& [coll_1, v0_1, coll_2, track_2] : pairMC) {
       Partition<MyFilteredMCParticles> mcTriggers = (aod::mcparticle::pdgCode == static_cast<int>(kLambda0) || aod::mcparticle::pdgCode == static_cast<int>(kLambda0Bar)) && aod::mcparticle::pt > 0.6f && aod::mcparticle::pt < 12.0f && nabs(aod::mcparticle::eta) < 0.72f;
@@ -458,7 +458,7 @@ struct ThreeParticleCorrelations {
 
     Partition<MyFilteredMCParticles> mcParticles = aod::mcparticle::pt > 0.2f && aod::mcparticle::pt < 3.0f;
     mcParticles.bindTable(particles);
-    
+
     // Start of the Monte-Carlo generated QA
     for (const auto& particle : mcParticles) {
       if (particle.isPhysicalPrimary()) {
