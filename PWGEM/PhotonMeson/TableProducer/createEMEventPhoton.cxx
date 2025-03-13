@@ -251,7 +251,7 @@ struct CreateEMEventPhoton {
     fillEventWeights(collisions, mcCollisions, bcs, jets);
   }
   PROCESS_SWITCH(CreateEMEventPhoton, processEventJJMC, "process event info", false);
-  
+
   void processEvent_Cent(MyCollisionsCent const& collisions, MyBCs const& bcs)
   {
     skimEvent<false, EMEventType::kEventCent>(collisions, bcs);
