@@ -154,7 +154,7 @@ TH2F* fhAmbiguityDegree = nullptr;
 TH2F* fhCompatibleCollisionsZVtxRms = nullptr;
 
 TH2S* fhTruePIDMismatch = nullptr;
-TH1S* fhTruePIDCorrect  = nullptr;
+TH1S* fhTruePIDCorrect = nullptr;
 
 TH2F* fhTrueNSigmaTPC[kIdBfNoOfSpecies] = {nullptr};
 TH2F* fhTrueNSigmaTOF[kIdBfNoOfSpecies] = {nullptr};
@@ -966,8 +966,8 @@ struct IdentifiedBfFilterTracks {
       /* create the true data histograms */
 
       fhTruePIDMismatch = new TH2S("fHistTruePIDMismatch", "Mismatched Generated and Reconstructed PID;Generated Species;Reconstructed Species", kIdBfNoOfSpecies, 0, kIdBfNoOfSpecies, kIdBfNoOfSpecies, 0, kIdBfNoOfSpecies);
-      fhTruePIDCorrect  = new TH1S("fHistTruePIDCorrect", "Correct PID between Generated and Reconstructed PID;Species", kIdBfNoOfSpecies, 0, kIdBfNoOfSpecies);
- 
+      fhTruePIDCorrect = new TH1S("fHistTruePIDCorrect", "Correct PID between Generated and Reconstructed PID;Species", kIdBfNoOfSpecies, 0, kIdBfNoOfSpecies);
+
       fhTruePB = new TH1F("fTrueHistPB", "p distribution before (truth);p (GeV/c);dN/dp (c/GeV)", 100, 0.0, 15.0);
       fhTrueCharge = new TH1F("fTrueHistCharge", "Charge distribution before (truth);charge;count", 3, -1.0, 1.0);
 
@@ -1025,16 +1025,16 @@ struct IdentifiedBfFilterTracks {
                                      79, -39.5, 39.5);
       }
 
-      for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp){
+      for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
         fhTrueNSigmaTPC[sp] = new TH2F(TString::Format("fhTrueNSigmaTPC_%s", speciesName[sp]).Data(),
-                                TString::Format("N #sigma from TPC vs P for generated %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                                48, -6, 6,
-                                ptbins, ptlow, ptup);
+                                       TString::Format("N #sigma from TPC vs P for generated %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                       48, -6, 6,
+                                       ptbins, ptlow, ptup);
 
         fhTrueNSigmaTOF[sp] = new TH2F(TString::Format("fhTrueNSigmaTOF_%s", speciesName[sp]).Data(),
-                            TString::Format("N #sigma from TOF vs P for generated %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                            48, -6, 6,
-                            ptbins, ptlow, ptup);
+                                       TString::Format("N #sigma from TOF vs P for generated %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                       48, -6, 6,
+                                       ptbins, ptlow, ptup);
       }
 
       /* add the hstograms to the output list */
@@ -1363,19 +1363,18 @@ inline void IdentifiedBfFilterTracks::identifyPIDMismatch(ParticleObject const& 
       realPID = kWrongSpecies;
       break;
   }
-  if(!(realPID < 0)){
-    if(realPID == trkId){
+  if (!(realPID < 0)) {
+    if (realPID == trkId) {
       fhTruePIDCorrect->Fill(realPID);
-    } else{
+    } else {
       fhTruePIDMismatch->Fill(realPID, trkId);
     }
 
     fhTrueNSigmaTPC[realPID]->Fill(tpcNSigma[realPID], tpcInnerParam);
     fhTrueNSigmaTOF[realPID]->Fill(tofNSigma[realPID], tpcInnerParam);
 
-  //fill histo based on realTPC and tpcNSigma value for center align
+    // fill histo based on realTPC and tpcNSigma value for center align
   }
-
 }
 
 template <typename TrackObject>
@@ -1434,30 +1433,30 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
   float nsigmas[kIdBfNoOfSpecies];
 
   if (loadfromccdb) {
-    for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++){
+    for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
       actualTPCNSigma[iSp] = actualTPCNSigma[iSp] - fhNSigmaCorrection[iSp]->GetBinContent(fhNSigmaCorrection[iSp]->FindBin(track.tpcInnerParam()));
-    } 
+    }
   }
 
   if (track.tpcInnerParam() < tofCut && !reqTOF && !onlyTOF) {
 
-    for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++){
+    for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
       nsigmas[iSp] = actualTPCNSigma[iSp];
     }
   } else {
     /* introduce require TOF flag */
     if (track.hasTOF() && !onlyTOF) {
-      //TODO: Add an output that tells if TOF was used for PID and at what momentum
-      for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++){
+      // TODO: Add an output that tells if TOF was used for PID and at what momentum
+      for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
         nsigmas[iSp] = sqrtf(actualTPCNSigma[iSp] * actualTPCNSigma[iSp] + actualTOFNSigma[iSp] * actualTOFNSigma[iSp]);
       }
     } else if (!reqTOF || !onlyTOF) {
-      for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++){
+      for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
         nsigmas[iSp] = actualTPCNSigma[iSp];
       }
 
     } else if (track.hasTOF() && onlyTOF) {
-      for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++){
+      for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
         nsigmas[iSp] = actualTOFNSigma[iSp];
       }
     } else {
@@ -1507,7 +1506,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
       fhNSigmaTPCIdTrks[spMinNSigma]->Fill(actualTPCNSigma[spMinNSigma], track.tpcInnerParam());
 
       if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
-        identifyPIDMismatch(track.template mcParticle_as<aod::McParticles>(),spMinNSigma, actualTPCNSigma, actualTOFNSigma, track.tpcInnerParam());
+        identifyPIDMismatch(track.template mcParticle_as<aod::McParticles>(), spMinNSigma, actualTPCNSigma, actualTOFNSigma, track.tpcInnerParam());
       }
       return spMinNSigma;
     }
