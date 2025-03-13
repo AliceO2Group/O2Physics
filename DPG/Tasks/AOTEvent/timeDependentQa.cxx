@@ -301,7 +301,7 @@ struct TimeDependentQaTask {
       histos.add("C/globalPV/hSecondsDeDx", "", kTH1D, {axisSeconds});
 
       // phi holes vs time
-      const AxisSpec axisPhi{64, 0, TMath::TwoPi(), "#varphi"}; // o2-linter: disable=external-pi
+      const AxisSpec axisPhi{64, 0, TMath::TwoPi(), "#varphi"}; // o2-linter: disable=external-pi (temporary fix)
       const AxisSpec axisEta{10, -0.8, 0.8, "#eta"};
       if (confFillPhiVsTimeHist == 2) {
         histos.add("hSecondsITSlayer0vsPhi", "", kTH2F, {axisSeconds, axisPhi});
