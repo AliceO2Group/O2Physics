@@ -281,7 +281,7 @@ struct FlowSP {
       if (doprocessMCReco) {
         registry.add("trackMCReco/after/hIsPhysicalPrimary", "", {HistType::kTH1D, {{2,0,2}}});
         registry.add("trackMCReco/hTrackSize_unFiltered", "", {HistType::kTH1D, {{100,0,20000}}});
-        registry.add("trackMCReco/hTrackSize_Filtered", "", {HistType::kTH1D, {{100,0,2000}}});
+        registry.add("trackMCReco/hTrackSize_Filtered", "", {HistType::kTH1D, {{100,0,20000}}});
         registry.get<TH1>(HIST("trackMCReco/after/hIsPhysicalPrimary"))->GetXaxis()->SetBinLabel(1, "Secondary");
         registry.get<TH1>(HIST("trackMCReco/after/hIsPhysicalPrimary"))->GetXaxis()->SetBinLabel(2, "Primary");
 
@@ -1036,7 +1036,7 @@ struct FlowSP {
 
     // LOGF(info, "Size of tracks: %i", tracks.size());
     registry.fill(HIST("trackMCReco/hTrackSize_unFiltered"), tracks.size());
-    registry.fill(HIST("trackMCReco/hTrackSize_Filtered"), tracks.size());
+    registry.fill(HIST("trackMCReco/hTrackSize_Filtered"), Filteredtracks.size());
 
     for (const auto& track : filteredTracks) {
       auto mcParticle = track.mcParticle();
