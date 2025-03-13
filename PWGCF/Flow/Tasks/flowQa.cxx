@@ -371,7 +371,7 @@ struct FlowQa {
       funcEff.resize(pTEffBins.size() - 1);
       std::vector<double> f1p0 = {0.713412, 0.73259, 0.749925, 0.760693, 0.767321, 0.772874, 0.777889, 0.782172, 0.792831, 0.808402, 0.817907, 0.82473, 0.829151};
       std::vector<double> f1p1 = {-2.15831e-05, -2.19538e-05, -2.2958e-05, -2.55123e-05, -2.75207e-05, -2.81486e-05, -2.839e-05, -2.83713e-05, -2.69748e-05, -2.48438e-05, -2.31138e-05, -2.20517e-05, -2.0758e-05};
-      for (int ifunc = 0; ifunc < pTEffBins.size() - 1; ifunc++) {
+      for (uint ifunc = 0; ifunc < pTEffBins.size() - 1; ifunc++) {
         funcEff[ifunc] = new TF1(Form("funcEff%i", ifunc), "[0]+[1]*x", 0, 3000);
         funcEff[ifunc]->SetParameters(f1p0[ifunc], f1p1[ifunc] * cfgTrackDensityCorrSlopeFactor);
       }
