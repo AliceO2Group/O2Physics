@@ -232,10 +232,6 @@ struct ResonancesGfwFlow {
     int nK0sPtMassBins = nPtBins * cfgNK0MassBins;
     int nLambdasPtMassBins = nPtBins * cfgNLambdaMassBins;
 
-    std::cout << "Phi mix bins  === " << nPhisPtMassBins << std::endl;
-    std::cout << "K0 mix bins  === " << nK0sPtMassBins << std::endl;
-    std::cout << "Lambda mix bins  === " << nLambdasPtMassBins << std::endl;
-
     //********** Defining the regions  **********
     // reference particles
     fGFW->AddRegion("refN08", -0.8, -0.4, 1, 1);
