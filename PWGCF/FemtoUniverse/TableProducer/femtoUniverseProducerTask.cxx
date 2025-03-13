@@ -729,8 +729,10 @@ struct FemtoUniverseProducerTask {
     auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
     if (!motherparticlesMC.empty()) {
       auto motherparticleMC = motherparticlesMC.front();
-      outputDebugPartsMC(motherparticleMC.pdgCode());
-
+      if (particle.isPhysicalPrimary())
+        outputDebugPartsMC(0);
+      else
+        outputDebugPartsMC(motherparticleMC.pdgCode());
     } else {
       outputDebugPartsMC(9999);
     }
