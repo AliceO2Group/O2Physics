@@ -93,7 +93,6 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, false, "Use kTVXinTRD (reject TRD triggered events)");
   O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "Selects collisions with at least one ITS-TPC track");
   O2_DEFINE_CONFIGURABLE(cfgIsGoodITSLayersAll, bool, true, "Cut time intervals with dead ITS staves");
-  O2_DEFINE_CONFIGURABLE(cfgEvSelsMCReco, bool, true, "Apply event selections in MC Reco");
   // harmonics for v coefficients
   O2_DEFINE_CONFIGURABLE(cfgHarm, int, 1, "Flow harmonic n for ux and uy: (Cos(n*phi), Sin(n*phi))");
   O2_DEFINE_CONFIGURABLE(cfgHarmMixed, int, 2, "Flow harmonic n for ux and uy in mixed harmonics (MH): (Cos(n*phi), Sin(n*phi))");
@@ -192,17 +191,7 @@ struct FlowSP {
     nEventSelections
   };
 
-  // enum TrackSelections {
-  //   trackSel_FilteredTracks,
-  //   trackSel_NCls,
-  //   trackSel_FshCls,
-  //   trackSel_TPCBoundary,
-  //   trackSel_ZeroCharge,
-  //   trackSel_ParticleWeights,
-  //   nTrackSelections
-  // };
-
-    enum TrackSelectionsUnFiltered {
+  enum TrackSelectionsUnFiltered {
     trackSel_Eta,
     trackSel_Pt,
     trackSel_DCAxy,
@@ -437,7 +426,6 @@ struct FlowSP {
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_DCAxy + 1, "DCAxy");
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_DCAz + 1, "DCAz");
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_GlobalTracks + 1, "GlobalTracks" );
-    // registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_FilteredTracks + 1, "Filtered Track");
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_NCls + 1, "nClusters TPC");
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_FshCls + 1, "Frac. sh. Cls TPC");
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_TPCBoundary + 1, "TPC Boundary");
