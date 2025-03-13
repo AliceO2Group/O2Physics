@@ -232,9 +232,9 @@ struct ResonancesGfwFlow {
     int nK0sPtMassBins = nPtBins * cfgNK0MassBins;
     int nLambdasPtMassBins = nPtBins * cfgNLambdaMassBins;
 
-    std::cout<<"Phi mix bins  === "<<nPhisPtMassBins<<std::endl;
-    std::cout<<"K0 mix bins  === "<<nK0sPtMassBins<<std::endl;
-    std::cout<<"Lambda mix bins  === "<<nLambdasPtMassBins<<std::endl;
+    std::cout << "Phi mix bins  === " << nPhisPtMassBins << std::endl;
+    std::cout << "K0 mix bins  === " << nK0sPtMassBins << std::endl;
+    std::cout << "Lambda mix bins  === " << nLambdasPtMassBins << std::endl;
 
     //********** Defining the regions  **********
     // reference particles
@@ -257,7 +257,7 @@ struct ResonancesGfwFlow {
     fGFW->AddRegion("poiNantilam", -0.8, -0.4, 1 + nLambdasPtMassBins, 16);
     fGFW->AddRegion("olNantilam", -0.8, -0.4, 1 + nLambdasPtMassBins, 256);
 
-    //********** Defining the correlations  **********
+    //********** Defining the correlations  ************
     // reference particles
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Phi08Gap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ks08Gap22", kFALSE));
@@ -608,7 +608,7 @@ struct ResonancesGfwFlow {
     int nTot = tracks.size();
     if (nTot < 1)
       return;
-    
+
     if (!collision.sel8() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
       return;
 
