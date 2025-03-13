@@ -481,6 +481,19 @@ struct NonPromptCascadeTask {
         continue;
       }
       auto particle = mcParticles.iteratorAt(c.mcParticleId);
+      auto hf = isFromHF(particle);
+      int motherDecayDaughters{0};
+      if (hf[0] || hf[1]) {
+        auto mom = particle.template mothers_as<aod::McParticles>()[0];
+        auto daughters = mom.template daughters_as<aod::McParticles>();
+        motherDecayDaughters = daughters.size();
+        for (const auto& d : daughters) {
+          if (std::abs(d.pdgCode()) == 11 || std::abs(d.pdgCode()) == 13) {
+            motherDecayDaughters *= -1;
+            break;
+          }
+        }
+      }
       auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
       auto recCollision = collisions.iteratorAt(c.collisionID);
 
@@ -493,7 +506,7 @@ struct NonPromptCascadeTask {
                                 c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma, c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                 c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
                                 particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(),
-                                mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == recCollision.mcCollisionId());
+                                mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == recCollision.mcCollisionId(), motherDecayDaughters);
     }
   }
 
