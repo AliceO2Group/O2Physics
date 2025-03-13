@@ -51,11 +51,11 @@ const AxisSpec axisSparseDcaR{100, -1., 1., "DCA_{r}, cm"};
 const AxisSpec axisSparseDcaZ{100, -1., 1., "DCA_{z}, cm"};
 
 struct TimeDependentQaTask {
-  Configurable<float> confTimeBinWidthInSec{"TimeBinWidthInSec", 0.25, "Width of time bins in seconds"};                                                                         // o2-linter: disable=name/configurable
-  Configurable<int> confTakeVerticesWithUPCsettings{"ConsiderVerticesWithUPCsettings", 0, "Take vertices: 0 - all , 1 - only without UPC settings, 2 - only with UPC settings"}; // o2-linter: disable=name/configurable
-  Configurable<int> confFillPhiVsTimeHist{"FlagFillPhiVsTimeHist", 2, "0 - don't fill , 1 - fill only for global/7cls/TRD/TOF tracks, 2 - fill also layer-by-layer"};            // o2-linter: disable=name/configurable
-  Configurable<int> confFillEtaPhiVsTimeHist{"FlagFillEtaPhiVsTimeHist", 0, "0 - don't fill , 1 - fill"};                                                                        // o2-linter: disable=name/configurable
-  Configurable<float> confCutOnNtpcClsForSharedFractAndDeDxCalc{"CutOnNtpcClsForSharedFractAndDeDxCalc", 70, ""};                                                                // o2-linter: disable=name/configurable
+  Configurable<float> confTimeBinWidthInSec{"TimeBinWidthInSec", 0.25, "Width of time bins in seconds"};                                                                         // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<int> confTakeVerticesWithUPCsettings{"ConsiderVerticesWithUPCsettings", 0, "Take vertices: 0 - all , 1 - only without UPC settings, 2 - only with UPC settings"}; // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<int> confFillPhiVsTimeHist{"FlagFillPhiVsTimeHist", 2, "0 - don't fill , 1 - fill only for global/7cls/TRD/TOF tracks, 2 - fill also layer-by-layer"};            // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<int> confFillEtaPhiVsTimeHist{"FlagFillEtaPhiVsTimeHist", 0, "0 - don't fill , 1 - fill"};                                                                        // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confCutOnNtpcClsForSharedFractAndDeDxCalc{"CutOnNtpcClsForSharedFractAndDeDxCalc", 70, ""};                                                                // o2-linter: disable=name/configurable (temporary fix)
 
   enum EvSelBitsToMonitor {
     enCollisionsAll,
@@ -159,6 +159,15 @@ struct TimeDependentQaTask {
       double timeInterval = nTimeBins * confTimeBinWidthInSec;
 
       const AxisSpec axisSeconds{nTimeBins, 0, timeInterval, "seconds"};
+      histos.add("hSecondsBCsTVX", "", kTH1D, {axisSeconds});
+      // histos.add("hSecondsBCsTFborder", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsBCsTVXandTFborder", "", kTH1D, {axisSeconds});
+
+      histos.add("hSecondsCollisionsBeforeAllCuts", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsCollisionsNoVzInTVX", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsCollisionsNoVzNoTFborder", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsCollisionsNoVzInTVXandNoTFborder", "", kTH1D, {axisSeconds});
+
       histos.add("hSecondsCollisions", "", kTH1D, {axisSeconds});
       histos.add("hSecondsIR", "", kTH1D, {axisSeconds});
       histos.add("hSecondsVz", "", kTH1D, {axisSeconds});
@@ -313,27 +322,52 @@ struct TimeDependentQaTask {
         histos.add("hSecondsITSglobalVsEtaPhi", "", kTH3F, {axisSeconds, axisEta, axisPhi});
     }
 
-    // ### collision loop
-    for (const auto& col : cols) {
-      if (std::fabs(col.posZ()) > 10)
-        continue;
-
-      auto bc = col.foundBC_as<BCsRun3>();
+    // count TVX triggers per DF
+    for (const auto& bc : bcs) {
+      // auto bc = col.foundBC_as<BCsRun3>();
       int64_t ts = bc.timestamp();
       double secFromSOR = ts / 1000. - minSec;
+      if (bc.selection_bit(kIsTriggerTVX)) {
+        histos.fill(HIST("hSecondsBCsTVX"), secFromSOR);
+      }
+      // if (bc.selection_bit(kNoTimeFrameBorder)) {
+      //   histos.fill(HIST("hSecondsBCsTFborder"), secFromSOR);
+      // }
+      if (bc.selection_bit(kIsTriggerTVX) && bc.selection_bit(kNoTimeFrameBorder)) {
+        histos.fill(HIST("hSecondsBCsTVXandTFborder"), secFromSOR);
+      }
+    }
 
-      // check if a vertex is found in the UPC mode ITS ROF, flags from: https://github.com/AliceO2Group/AliceO2/blob/dev/DataFormats/Reconstruction/include/ReconstructionDataFormats/Vertex.h
+    // ### collision loop
+    for (const auto& col : cols) {
+      // check if a vertex is found in the UPC mode ITS ROF
+      // flags from: https://github.com/AliceO2Group/AliceO2/blob/dev/DataFormats/Reconstruction/include/ReconstructionDataFormats/Vertex.h
       ushort flags = col.flags();
       bool isVertexUPC = flags & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode; // is vertex with UPC settings
-      histos.fill(HIST("hSecondsUPCverticesBeforeSel8"), secFromSOR, isVertexUPC ? 1 : 0);
-
-      if (confTakeVerticesWithUPCsettings > 0) {
-        if (confTakeVerticesWithUPCsettings == 1 && isVertexUPC) // reject vertices with UPC settings
+      if (confTakeVerticesWithUPCsettings > 0) {                                                       // otherwise analyse all collisions
+        if (confTakeVerticesWithUPCsettings == 1 && isVertexUPC)                                       // reject vertices with UPC settings
           continue;
         if (confTakeVerticesWithUPCsettings == 2 && !isVertexUPC) // we want to select vertices with UPC settings --> reject vertices reconstructed with "normal" settings
           continue;
         // LOGP(info, "flags={} nTracks = {}", flags, tracks.size());
       }
+
+      auto bc = col.foundBC_as<BCsRun3>();
+      int64_t ts = bc.timestamp();
+      double secFromSOR = ts / 1000. - minSec;
+
+      histos.fill(HIST("hSecondsCollisionsBeforeAllCuts"), secFromSOR);
+      if (col.selection_bit(kIsTriggerTVX))
+        histos.fill(HIST("hSecondsCollisionsNoVzInTVX"), secFromSOR);
+      if (col.selection_bit(kNoTimeFrameBorder))
+        histos.fill(HIST("hSecondsCollisionsNoVzNoTFborder"), secFromSOR);
+      if (col.selection_bit(kIsTriggerTVX) && col.selection_bit(kNoTimeFrameBorder))
+        histos.fill(HIST("hSecondsCollisionsNoVzInTVXandNoTFborder"), secFromSOR);
+
+      if (std::fabs(col.posZ()) > 10)
+        continue;
+
+      histos.fill(HIST("hSecondsUPCverticesBeforeSel8"), secFromSOR, isVertexUPC ? 1 : 0);
 
       histos.fill(HIST("hSecondsEventSelBits"), secFromSOR, enCollisionsAll);
       histos.fill(HIST("hSecondsEventSelBits"), secFromSOR, enIsTriggerTVX, col.selection_bit(kIsTriggerTVX));
