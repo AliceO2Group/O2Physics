@@ -1035,7 +1035,7 @@ struct FlowSP {
 
     // LOGF(info, "Size of tracks: %i", tracks.size());
     registry.fill(HIST("trackMCReco/hTrackSize_unFiltered"), tracks.size());
-    registry.fill(HIST("trackMCReco/hTrackSize_Filtered"), Filteredtracks.size());
+    registry.fill(HIST("trackMCReco/hTrackSize_Filtered"), filteredTracks.size());
 
     for (const auto& track : filteredTracks) {
       auto mcParticle = track.mcParticle();
