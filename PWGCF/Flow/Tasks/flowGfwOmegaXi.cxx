@@ -574,15 +574,14 @@ struct FlowGfwOmegaXi {
   }
 
   template <typename TrackObject>
-  bool setCurrentLocalDensityWeights(float& weight_loc, TrackObject track, float locDensity, int ispecies)
+  bool setCurrentLocalDensityWeights(float& weight_loc, TrackObject track, double locDensity, int ispecies)
   {
     auto cfgLocDenPara = (std::vector<std::vector<double>>){cfgLocDenParaK0s, cfgLocDenParaLambda, cfgLocDenParaXi, cfgLocDenParaOmega};
-    int particlePtbins[4] = {nV0PtBins, nV0PtBins, nXiPtBins, nXiPtBins};
-    if (cfgLocDenPara[ispecies - 1].size() != 2 * particlePtbins[ispecies - 1]) {
+    if (track.pt() < 0.9 || track.pt() > 10) {
       weight_loc = 1.0;
       return true;
     }
-    int ptbin = fPtAxis->FindBin(track.pt());
+    int ptbin = fXiPtAxis->FindBin(track.pt());
     double paraA = cfgLocDenPara[ispecies - 1][2 * ptbin - 2];
     double paraB = cfgLocDenPara[ispecies - 1][2 * ptbin - 1];
     double density = locDensity * 200 / (2 * cfgDeltaPhiLocDen + 1);
@@ -698,8 +697,8 @@ struct FlowGfwOmegaXi {
       int ptbin = fPtAxis->FindBin(track.pt()) - 1;
       if ((track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax)) {
         fGFW->Fill(track.eta(), ptbin, track.phi(), wacc * weff, 1); //(eta, ptbin, phi, wacc*weff, bitmask)
-        hLocalDensity->Fill(track.phi());
-        hLocalDensity->Fill(RecoDecay::constrainAngle(track.phi(), -constants::math::TwoPI));
+        hLocalDensity->Fill(track.phi(), wacc * weff);
+        hLocalDensity->Fill(RecoDecay::constrainAngle(track.phi(), -constants::math::TwoPI), wacc * weff);
       }
       if ((track.pt() > cfgCutPtPOIMin) && (track.pt() < cfgCutPtPOIMax)) {
         fGFW->Fill(track.eta(), ptbin, track.phi(), wacc * weff, 32);
@@ -784,7 +783,7 @@ struct FlowGfwOmegaXi {
         int phibin = -999;
         phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(v0.phi(), -constants::math::PI));
         if (phibin > -900) {
-          int density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+          double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
           setCurrentLocalDensityWeights(wloc, v0, density, 1);
         }
 
@@ -800,7 +799,7 @@ struct FlowGfwOmegaXi {
         int phibin = -999;
         phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(v0.phi(), -constants::math::PI));
         if (phibin > -900) {
-          int density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+          double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
           setCurrentLocalDensityWeights(wloc, v0, density, 2);
         }
 
@@ -886,7 +885,7 @@ struct FlowGfwOmegaXi {
         int phibin = -999;
         phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(casc.phi(), -constants::math::PI));
         if (phibin > -900) {
-          int density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+          double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
           setCurrentLocalDensityWeights(wloc, casc, density, 4);
         }
 
@@ -902,7 +901,7 @@ struct FlowGfwOmegaXi {
         int phibin = -999;
         phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(casc.phi(), -constants::math::PI));
         if (phibin > -900) {
-          int density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+          double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
           setCurrentLocalDensityWeights(wloc, casc, density, 3);
         }
 
