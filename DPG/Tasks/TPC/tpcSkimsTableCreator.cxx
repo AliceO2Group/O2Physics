@@ -663,7 +663,7 @@ struct TreeWriterTPCTOF {
   }   /// process
   PROCESS_SWITCH(TreeWriterTPCTOF, processStandard, "Standard Samples for PID", true);
   Preslice<Trks> perCollisionTracks = aod::track::collisionId;
-  void processWithTrQA(Colls const& collisions, Trks const& myTracks, MyBCTable const& BCs, aod::TracksQA_002 const& tracksQA)
+  void processWithTrQA(Colls const& collisions, Trks const& myTracks, MyBCTable const&, aod::TracksQA_002 const& tracksQA)
   {
     std::vector<int64_t> labelTrack2TrackQA;
     labelTrack2TrackQA.clear();
