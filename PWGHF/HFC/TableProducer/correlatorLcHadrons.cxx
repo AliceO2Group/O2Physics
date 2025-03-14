@@ -145,7 +145,7 @@ struct HfCorrelatorLcHadronsSelection {
         continue;
       }
       double yL = RecoDecay::y(particle.pVector(), MassLambdaCPlus);
-      if (std::abs(yL) > yCandGenMax || particle.pt() < ptCandMin) {
+      if (std::abs(yL) > yCandMax || particle.pt() < ptCandMin) {
         isLcFound = false;
         continue;
       }
