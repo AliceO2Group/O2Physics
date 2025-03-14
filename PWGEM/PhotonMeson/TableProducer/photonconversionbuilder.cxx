@@ -369,7 +369,7 @@ struct PhotonConversionBuilder {
            track.tpcChi2NCl(), track.tpcInnerParam(), track.tpcSignal(),
            track.tpcNSigmaEl(), track.tpcNSigmaPi(),
            track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(),
-           shiftedtrack.getX(), shiftedtrack.getY(), shiftedtrack.getZ(), shiftedtrack.getTgl(), shiftedtrack.getSigma1Pt2());
+           shiftedtrack.getX(), shiftedtrack.getY(), shiftedtrack.getZ(), shiftedtrack.getTgl());
   }
 
   template <bool isMC, class TBCs, class TCollisions, class TTracks, typename TV0>

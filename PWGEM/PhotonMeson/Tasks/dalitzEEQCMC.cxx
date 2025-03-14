@@ -159,9 +159,8 @@ struct DalitzEEQCMC {
     // track info
     fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
     fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
-    fRegistry.add("Track/hRelDeltaPt", "pT resolution;p_{T} (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0, 10}, {200, 0, 0.2}}, false);
     fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -2.0f, 2.0f}}, false);
-    fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
+    fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -0.1f, 0.1f}, {200, -0.1f, 0.1f}}, false);
     fRegistry.add("Track/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
     fRegistry.add("Track/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
     fRegistry.add("Track/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
@@ -213,7 +212,7 @@ struct DalitzEEQCMC {
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       mRunNumber = collision.runNumber();
@@ -307,7 +306,7 @@ struct DalitzEEQCMC {
   template <typename T>
   bool isInAcceptance(T const& t1)
   {
-    if ((mctrackcuts.min_mcPt < t1.pt() && t1.pt() < mctrackcuts.max_mcPt) && abs(t1.eta()) < mctrackcuts.max_mcEta) {
+    if ((mctrackcuts.min_mcPt < t1.pt() && t1.pt() < mctrackcuts.max_mcPt) && std::fabs(t1.eta()) < mctrackcuts.max_mcEta) {
       return true;
     } else {
       return false;
@@ -335,7 +334,7 @@ struct DalitzEEQCMC {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-    if (abs(v12.Rapidity()) > maxY) {
+    if (std::fabs(v12.Rapidity()) > maxY) {
       return false;
     }
     float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
@@ -348,7 +347,7 @@ struct DalitzEEQCMC {
 
       if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
         if ((t1mc.isPhysicalPrimary() || t1mc.producedByGenerator()) && (t2mc.isPhysicalPrimary() || t2mc.producedByGenerator())) {
-          switch (abs(mcmother.pdgCode())) {
+          switch (std::abs(mcmother.pdgCode())) {
             case 111:
               fRegistry.fill(HIST("Pair/sm/Pi0/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Pi0/hMvsPhiV"), phiv, v12.M());
@@ -377,7 +376,7 @@ struct DalitzEEQCMC {
               break;
           }
         } else if (!(t1mc.isPhysicalPrimary() || t1mc.producedByGenerator()) && !(t2mc.isPhysicalPrimary() || t2mc.producedByGenerator())) {
-          switch (abs(mcmother.pdgCode())) {
+          switch (std::abs(mcmother.pdgCode())) {
             case 22:
               fRegistry.fill(HIST("Pair/sm/Photon/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Photon/hMvsPhiV"), phiv, v12.M());
@@ -421,7 +420,6 @@ struct DalitzEEQCMC {
   {
     fRegistry.fill(HIST("Track/hPt"), track.pt());
     fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / track.pt());
-    fRegistry.fill(HIST("Track/hRelDeltaPt"), track.pt(), std::sqrt(track.c1Pt21Pt2()) * track.pt());
     fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
     fRegistry.fill(HIST("Track/hDCAxyz"), track.dcaXY(), track.dcaZ());
     fRegistry.fill(HIST("Track/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
@@ -542,7 +540,7 @@ struct DalitzEEQCMC {
         ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-        if (abs(v12.Rapidity()) > maxY) {
+        if (std::fabs(v12.Rapidity()) > maxY) {
           continue;
         }
 
@@ -550,7 +548,7 @@ struct DalitzEEQCMC {
           auto mcmother = mcparticles.iteratorAt(mother_id);
           if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
 
-            switch (abs(mcmother.pdgCode())) {
+            switch (std::abs(mcmother.pdgCode())) {
               case 111:
                 fRegistry.fill(HIST("Generated/sm/Pi0/hMvsPt"), v12.M(), v12.Pt());
                 break;
