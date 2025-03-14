@@ -13,10 +13,9 @@
 /// \brief Provides a sparse with usefull two particle correlation info
 /// \author Thor Jensen (thor.kjaersgaard.jensen@cern.ch) and Debojit Sarkar (debojit.sarkar@cern.ch)
 
+#include <CCDB/BasicCCDBManager.h>
 #include "TRandom3.h"
 #include <vector>
-
-#include <CCDB/BasicCCDBManager.h>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
