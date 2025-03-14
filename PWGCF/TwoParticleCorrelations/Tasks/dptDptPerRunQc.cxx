@@ -64,6 +64,8 @@ struct DptDptPerRunQc {
   ctpRateFetcher mRateFetcher;
   HistogramRegistry mHistos{"PerRunQaHistograms", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  Configurable<std::string> cfgInteractionRateSource{"cfgInteractionRateSource", "ZNC hadronic", "The shource for the interaction rate measure.PbPb:ZNC hadronic;pp:T0VTX.Default:ZNC hadronic"};
+
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     using namespace perrunqctask;
@@ -99,9 +101,9 @@ struct DptDptPerRunQc {
         gCurrentCollisionOrbitBefore = nullptr;
         gCurrentCollisionOrbitAfter = nullptr;
       }
+      LOGF(info, "Run number: %d, SOR: %lld, EOR: %lld, prev SOR: %lld, prev EOR: %lld, SOR seconds: %f", mRunNumber, tsSOR, tsEOR, mSOR, runDuration.second, mMinSeconds);
     }
     gCurrentHadronicRate = gHadronicRate[mRunNumber];
-    LOGF(info, "Getting out");
   }
 
   void init(o2::framework::InitContext&)
@@ -125,7 +127,7 @@ struct DptDptPerRunQc {
       return;
     }
 
-    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "T0VTX") * 1.e-3; //
+    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, cfgInteractionRateSource) * 1.e-3; //
     double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
     gCurrentHadronicRate->Fill(seconds, hadronicRate);
     gCurrentCollisionOrbitAfter->Fill(orbit);
