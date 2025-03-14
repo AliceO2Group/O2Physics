@@ -8,9 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// \Single Gap Event Analyzer
-// \author Sandeep Dudi, sandeep.dudi3@gmail.com
-// \since  May 2024
+//
+/// \file sginclusivePhiKstarSD.cxx
+/// \brief Single Gap Event Analyzer for phi and Kstar
+/// \author Sandeep Dudi, sandeep.dudi3@gmail.com
+/// \since  May 2024
 
 #include <cstdlib>
 #include <vector>
@@ -363,8 +365,8 @@ struct SGResonanceAnalyzer {
     double massOfLead208 = 193.6823;
     double momentumBeam = std::sqrt(halfSqrtSnn * halfSqrtSnn * 208 * 208 - massOfLead208 * massOfLead208);
 
-    TLorentzVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
-    TLorentzVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
+    ROOT::Math::PxPyPzEVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
+    ROOT::Math::PxPyPzEVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
 
     ROOT::Math::PxPyPzMVector v1 = ROOT::Math::PxPyPzMVector(pair1.Px(), pair1.Py(), pair1.Pz(), pair1.M());
     ROOT::Math::PxPyPzMVector v2 = ROOT::Math::PxPyPzMVector(pair2.Px(), pair2.Py(), pair2.Pz(), pair2.M());
@@ -450,10 +452,8 @@ struct SGResonanceAnalyzer {
     double massOfLead208 = 193.6823;
     double momentumBeam = std::sqrt(halfSqrtSnn * halfSqrtSnn * 208 * 208 - massOfLead208 * massOfLead208);
 
-    TLorentzVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
-    TLorentzVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
-    // TVector3 boost = v12.BoostToCM();
-    // fourpion.Boost(boost);
+    ROOT::Math::PxPyPzEVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
+    ROOT::Math::PxPyPzEVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
 
     ROOT::Math::PxPyPzMVector v1 = ROOT::Math::PxPyPzMVector(pair1.Px(), pair1.Py(), pair1.Pz(), pair1.M());
     ROOT::Math::PxPyPzMVector v2 = ROOT::Math::PxPyPzMVector(pair2.Px(), pair2.Py(), pair2.Pz(), pair2.M());
@@ -474,12 +474,11 @@ struct SGResonanceAnalyzer {
     return phi;
   }
 
-  using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
-  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
+  using UDtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDZdcsReduced>; //
   using UDCollisionFull = UDCollisionsFull::iterator;
 
-  void process(UDCollisionFull const& collision, udtracksfull const& tracks)
+  void process(UDCollisionFull const& collision, UDtracksfull const& tracks)
   {
     TLorentzVector v0;
     TLorentzVector v1;
@@ -1081,13 +1080,13 @@ struct SGResonanceAnalyzer {
 
   using UDCollisionsFull1 = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; //
   SliceCache cache;
-  Partition<udtracksfull> posTracks = aod::udtrack::sign > 0;
-  Partition<udtracksfull> negTracks = aod::udtrack::sign < 0;
+  Partition<UDtracksfull> posTracks = aod::udtrack::sign > 0;
+  Partition<UDtracksfull> negTracks = aod::udtrack::sign < 0;
 
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {10, 0, 100}, "multiplicity percentile for bin"};
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
-  void mixprocess(UDCollisionsFull1 const& collisions, udtracksfull const& /*track*/)
+  void mixprocess(UDCollisionsFull1 const& collisions, UDtracksfull const& /*track*/)
   {
     TLorentzVector v0;
     TLorentzVector v1;
