@@ -67,6 +67,8 @@ struct HfTaskD0 {
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
 
+  HfHelper hfHelper;
+
   using D0Candidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
   using D0CandidatesMc = soa::Join<D0Candidates, aod::HfCand2ProngMcRec>;
   using D0CandidatesKF = soa::Join<D0Candidates, aod::HfCand2ProngKF>;
@@ -113,8 +115,6 @@ struct HfTaskD0 {
   ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for centrality"};
   ConfigurableAxis thnConfigAxisMinItsNCls{"thnConfigAxisMinItsNCls", {5, 3, 8}, "axis for minimum ITS NCls of candidate prongs"};
   ConfigurableAxis thnConfigAxisMinTpcNCrossedRows{"thnConfigAxisMinTpcNCrossedRows", {10, 70, 180}, "axis for minimum TPC NCls crossed rows of candidate prongs"};
-
-  HfHelper hfHelper;
 
   HistogramRegistry registry{
     "registry",
