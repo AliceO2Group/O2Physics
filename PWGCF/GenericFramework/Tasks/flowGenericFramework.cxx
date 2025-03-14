@@ -386,7 +386,7 @@ struct FlowGenericFramework {
     if (!cfgRunByRun && cfg.correctionsLoaded)
       return;
     if (!cfgAcceptance.value.empty()) {
-      std::string runstr = (cfgRunByRun) ? "RBR/" : "";
+      std::string runstr = (cfgRunByRun) ? "RunByRun/" : "";
       cfg.mAcceptance.clear();
       if (cfgUsePID) {
         cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr + "ref/", timestamp));
