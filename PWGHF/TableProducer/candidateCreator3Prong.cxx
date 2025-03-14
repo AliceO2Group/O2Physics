@@ -999,6 +999,9 @@ struct HfCandidateCreator3ProngExpressions {
         }
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::XicToPKPi);
+          if (arrayDaughters[0].has_mcParticle()) {
+            swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
+          }
         }
       }
 
