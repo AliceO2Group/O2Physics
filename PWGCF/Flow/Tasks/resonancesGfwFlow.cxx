@@ -114,9 +114,9 @@ struct ResonancesGfwFlow {
   O2_DEFINE_CONFIGURABLE(cfgUseMCCLambda, bool, false, "Use mass cross check for lambda")
   O2_DEFINE_CONFIGURABLE(cfgUseMCCK0, bool, false, "Use mass cross check for K0")
 
-  O2_DEFINE_CONFIGURABLE(cfgNPhiMassBins, int, 70, "Invasriant mass bins for phi")
-  O2_DEFINE_CONFIGURABLE(cfgNK0MassBins, int, 120, "Invasriant mass bins for K0")
-  O2_DEFINE_CONFIGURABLE(cfgNLambdaMassBins, int, 70, "Invasriant mass bins for lambda")
+  O2_DEFINE_CONFIGURABLE(cfgNPhiMassBins, double, 70, "Invasriant mass bins for phi")
+  O2_DEFINE_CONFIGURABLE(cfgNK0MassBins, double, 70, "Invasriant mass bins for K0")
+  O2_DEFINE_CONFIGURABLE(cfgNLambdaMassBins, double, 70, "Invasriant mass bins for lambda")
 
   // Defining configurable axis
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
@@ -127,14 +127,14 @@ struct ResonancesGfwFlow {
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
   ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
-  ConfigurableAxis axisPhiMass{"axisPhiMass", {70, 0.99, 1.06}, "axis for invariant mass distibution for Phi"};
-  ConfigurableAxis axisK0Mass{"axisK0Mass", {120, 0.44, 0.56}, "axis for invariant mass distibution for K0"};
-  ConfigurableAxis axisLambdaMass{"axisLambdaMass", {70, 1.08, 1.15}, "axis for invariant mass distibution for Lambda"};
+  ConfigurableAxis axisPhiMass{"axisPhiMass", {cfgNPhiMassBins, 0.99, 1.06}, "axis for invariant mass distibution for Phi"};
+  ConfigurableAxis axisK0Mass{"axisK0Mass", {cfgNK0MassBins, cfgMassK0Min, cfgMassK0Max}, "axis for invariant mass distibution for K0"};
+  ConfigurableAxis axisLambdaMass{"axisLambdaMass", {cfgNLambdaMassBins, cfgMassLambdaMin, cfgMassLambdaMax}, "axis for invariant mass distibution for Lambda"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {10000, 0, 1000}, "axis for TPC signal"};
   ConfigurableAxis axisTOFsignal{"axisTOFsignal", {10000, 0, 1000}, "axis for TOF signal"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax);
+  Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
   using AodTracksWithoutBayes = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
@@ -225,8 +225,8 @@ struct ResonancesGfwFlow {
     fPtAxis = new TAxis(nPtBins, ptBins);
 
     fPhiMassAxis = new TAxis(cfgNPhiMassBins, 0.99, 1.06);
-    fK0MassAxis = new TAxis(cfgNK0MassBins, 0.44, 0.56);
-    fLambdaMassAxis = new TAxis(cfgNLambdaMassBins, 1.08, 1.15);
+    fK0MassAxis = new TAxis(cfgNK0MassBins, cfgMassK0Min, cfgMassK0Max);
+    fLambdaMassAxis = new TAxis(cfgNLambdaMassBins, cfgMassLambdaMin, cfgMassLambdaMax);
 
     int nPhisPtMassBins = nPtBins * cfgNPhiMassBins;
     int nK0sPtMassBins = nPtBins * cfgNK0MassBins;
@@ -253,7 +253,7 @@ struct ResonancesGfwFlow {
     fGFW->AddRegion("poiNantilam", -0.8, -0.4, 1 + nLambdasPtMassBins, 16);
     fGFW->AddRegion("olNantilam", -0.8, -0.4, 1 + nLambdasPtMassBins, 256);
 
-    //********** Defining the correlations  **********
+    //********** Defining the correlations  ************
     // reference particles
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Phi08Gap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ks08Gap22", kFALSE));
@@ -569,9 +569,9 @@ struct ResonancesGfwFlow {
       return false;
 
     // Mass cross check
-    if (cfgUseMCCK0 && std::abs(massK0Short - 1.11568) < 0.005)
+    if (cfgUseMCCK0 && std::abs(massLambda - 1.11568) < 0.005)
       return false;
-    if (cfgUseMCCK0 && std::abs(massK0Short - 1.11568) < 0.005)
+    if (cfgUseMCCK0 && std::abs(massLambda - 1.11568) < 0.005)
       return false;
 
     bool withinPtPOI = (cfgCutPtPOIMin < candidate.pt()) && (candidate.pt() < cfgCutPtPOIMax); // within POI pT range
@@ -601,6 +601,10 @@ struct ResonancesGfwFlow {
 
   void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracksWithoutBayes const& tracks, aod::V0Datas const& V0s)
   {
+    int nTot = tracks.size();
+    if (nTot < 1)
+      return;
+
     if (!collision.sel8() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
       return;
 
@@ -609,7 +613,6 @@ struct ResonancesGfwFlow {
       return;
 
     const auto cent = collision.centFT0C();
-    int nTot = tracks.size();
     float vtxz = collision.posZ();
 
     histos.fill(HIST("hVtxZ"), vtxz);
@@ -620,6 +623,8 @@ struct ResonancesGfwFlow {
     float weff = 1, wacc = 1;
 
     for (auto const& track : tracks) {
+      if (!selectionTrack(track))
+        continue;
       double pt = track.pt();
       bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);
 
