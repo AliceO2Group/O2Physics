@@ -145,7 +145,6 @@ struct FillPIDcolums {
   Configurable<bool> cfgOpenPlotCheckITSOnlytrackInfo{"cfgOpenPlotCheckITSOnlytrackInfo", true, "plot checks if track NclsTPC is 0 for assure it has p info or not"};
   Configurable<bool> cfgOpenTrackingInfoCheck{"cfgOpenTrackingInfoCheck", true, "plot track infomation check"};
 
-
   Configurable<std::vector<float>> cfgPtCutLower{"cfgPtCutLower", {0.15, 0.15, 0.15}, "Pt lower limit  for pi k p respectively"};
   Configurable<std::vector<float>> cfgPtCutUpper{"cfgPtCutUpper", {99., 99., 99.}, "Pt upper limit  for pi k p respectively"};
   Configurable<std::vector<float>> cfgnSigmaCutTPCUpper{"cfgnSigmaCutTPCUpper", {3, 3, 3}, "TPC nsigma cut upper limit  for pi k p respectively at low pt and for the TPCOnly case"};
@@ -489,9 +488,9 @@ struct FillPIDcolums {
     AxisSpec axisDCAxy{cfgaxisDCAxy, "#it{DCA_{xy}}"};
     AxisSpec axisITSNcls = {10, -1.5, 8.5, "ITSNcls"};
     AxisSpec axisTPCNcls = {160, 0, 160, "TPCNcls"};
-    AxisSpec axisP {50,-5,5, "#it{p}"};
+    AxisSpec axisP{50, -5, 5, "#it{p}"};
     AxisSpec axisChi2Ncls = {cfgaxisChi2Ncls, "#chi^{2}/Ncls"};
-    
+
     if (!cfgQuietMode) {
       // ITSOnly track check
       if (cfgOpenPlotCheckITSOnlytrackInfo) {
@@ -583,7 +582,7 @@ struct FillPIDcolums {
         if (cfgOpenPlotnSigmaTOFITSPt) {
           histosQA.add(Form("QA/PID/histnSigma_Origin_TOF_ITS_Pt_Pi"), "", {HistType::kTH3F, {axisnSigmaTOF, axisnSigmaITS, axisPtPID}});
           histosQA.add(Form("QA/PID/histnSigma_Origin_TOF_ITS_Pt_Ka"), "", {HistType::kTH3F, {axisnSigmaTOF, axisnSigmaITS, axisPtPID}});
-          histosQA.add(Form("QA/PID/histnSigma_Origin_TOF_ITS_Pt_Pr"), "", {HistType::kTH3F, {axisnSigmaTOF, axisnSigmaITS, axisPtPID}});  
+          histosQA.add(Form("QA/PID/histnSigma_Origin_TOF_ITS_Pt_Pr"), "", {HistType::kTH3F, {axisnSigmaTOF, axisnSigmaITS, axisPtPID}});
         }
         if (cfgOpenPlotnSigmaTOFTPCPt) {
           histosQA.add(Form("QA/PID/histnSigma_Origin_TOF_TPC_Pt_Pi"), "", {HistType::kTH3F, {axisnSigmaTOF, axisnSigmaTPC, axisPtPID}});
@@ -593,7 +592,7 @@ struct FillPIDcolums {
         if (cfgOpenPlotnSigmaITSTPCPt) {
           histosQA.add(Form("QA/PID/histnSigma_Origin_ITS_TPC_Pt_Pi"), "", {HistType::kTH3F, {axisnSigmaITS, axisnSigmaTPC, axisPtPID}});
           histosQA.add(Form("QA/PID/histnSigma_Origin_ITS_TPC_Pt_Ka"), "", {HistType::kTH3F, {axisnSigmaITS, axisnSigmaTPC, axisPtPID}});
-          histosQA.add(Form("QA/PID/histnSigma_Origin_ITS_TPC_Pt_Pr"), "", {HistType::kTH3F, {axisnSigmaITS, axisnSigmaTPC, axisPtPID}});  
+          histosQA.add(Form("QA/PID/histnSigma_Origin_ITS_TPC_Pt_Pr"), "", {HistType::kTH3F, {axisnSigmaITS, axisnSigmaTPC, axisPtPID}});
         }
         histosQA.add(Form("QA/PID/histnSigma_Origin_TPC_Pi"), "", {HistType::kTH1F, {axisnSigmaTPC}});
         histosQA.add(Form("QA/PID/histnSigma_Origin_TPC_Ka"), "", {HistType::kTH1F, {axisnSigmaTPC}});
@@ -613,7 +612,7 @@ struct FillPIDcolums {
         histosQA.add(Form("QA/PID/histnSigma_Origin_ITS_Pt_Pi"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaITS}});
         histosQA.add(Form("QA/PID/histnSigma_Origin_ITS_Pt_Ka"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaITS}});
         histosQA.add(Form("QA/PID/histnSigma_Origin_ITS_Pt_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigmaITS}});
-      } 
+      }
       // TH3D NSigmaTPC,NSigmaTOF,NSigmaITS combo vs pt(if necessary for whole centrality)
       if (cfgOpenPlotnSigmaTOFITSPt) {
         histosQA.add(Form("QA/PID/histnSigma_TOF_ITS_Pt_Pi"), "", {HistType::kTH3F, {axisnSigmaTOF, axisnSigmaITS, axisPtPID}});
@@ -869,7 +868,7 @@ struct FillPIDcolums {
                                         aod::pidits::ITSNSigmaPr>(tracks);
     int8_t pidFlag;
     for (const auto& track : tracksWithITSPid) {
-      //Fill the original plots first
+      // Fill the original plots first
       if (!cfgQuietMode) {
         if (cfgOpenTrackingInfoCheck) {
           histosQA.fill(HIST("QA/PID/histDCAz_total_origin"), track.dcaZ());
@@ -919,7 +918,6 @@ struct FillPIDcolums {
           histosQA.fill(HIST("QA/PID/histnSigma_Origin_ITS_Pt_Ka"), track.pt(), track.itsNSigmaKa());
           histosQA.fill(HIST("QA/PID/histnSigma_Origin_ITS_Pt_Pr"), track.pt(), track.itsNSigmaPr());
         }
-
       }
       int currentPtBinPi = -1, currentPtBinKa = -1, currentPtBinPr = -1;
       if (cfgOpenPtRangedTOFnSigmacutPi || cfgOpenPtRangedTPCnSigmacutPi || cfgOpenPtRangedITSnSigmacutPi) {
@@ -976,7 +974,7 @@ struct FillPIDcolums {
       } else {
         if (!cfgQuietMode) {
           histosQA.fill(HIST("QA/PID/histdEdxTPC_All"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
-          if(cfgOpenTrackingInfoCheck){
+          if (cfgOpenTrackingInfoCheck) {
             histosQA.fill(HIST("QA/PID/histDCAz_total"), track.dcaZ());
             histosQA.fill(HIST("QA/PID/histDCAxy_total"), track.dcaXY());
             histosQA.fill(HIST("QA/PID/histITSNcls_total"), track.itsNCls());
@@ -985,7 +983,7 @@ struct FillPIDcolums {
             histosQA.fill(HIST("QA/PID/histITSChi2Ncls_total"), track.itsChi2NCl());
           }
         }
-        pidFlag = selectionPidtpctof(track,nSigmaTOFCutPtUpper, nSigmaTOFCutPtLower, nSigmaTPCCutPtUpper, nSigmaTPCCutPtLower);
+        pidFlag = selectionPidtpctof(track, nSigmaTOFCutPtUpper, nSigmaTOFCutPtLower, nSigmaTPCCutPtUpper, nSigmaTPCCutPtLower);
         if (!(pidFlag == 0 || pidFlag == -1)) {
           // First fill ITS uncut plots
           if ((pidFlag == 1) || (pidFlag == 7) || (pidFlag == 8) || (pidFlag == 10)) {
@@ -1007,7 +1005,7 @@ struct FillPIDcolums {
               histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_Pi"), track.pt(), track.tofNSigmaPi());
               histosQA.fill(HIST("QA/PID/histnSigma_ITS_Pi"), track.itsNSigmaPi());
               histosQA.fill(HIST("QA/PID/histnSigma_ITS_Pt_Pi"), track.pt(), track.itsNSigmaPi());
-              if(cfgOpenTrackingInfoCheck){
+              if (cfgOpenTrackingInfoCheck) {
                 histosQA.fill(HIST("QA/PID/histDCAz_Pi"), track.dcaZ());
                 histosQA.fill(HIST("QA/PID/histDCAxy_Pi"), track.dcaXY());
                 histosQA.fill(HIST("QA/PID/histITSNcls_Pi"), track.itsNCls());
@@ -1069,7 +1067,7 @@ struct FillPIDcolums {
               histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_Ka"), track.pt(), track.tofNSigmaKa());
               histosQA.fill(HIST("QA/PID/histnSigma_ITS_Ka"), track.itsNSigmaKa());
               histosQA.fill(HIST("QA/PID/histnSigma_ITS_Pt_Ka"), track.pt(), track.itsNSigmaKa());
-              if(cfgOpenTrackingInfoCheck){
+              if (cfgOpenTrackingInfoCheck) {
                 histosQA.fill(HIST("QA/PID/histDCAz_Ka"), track.dcaZ());
                 histosQA.fill(HIST("QA/PID/histDCAxy_Ka"), track.dcaXY());
                 histosQA.fill(HIST("QA/PID/histITSNcls_Ka"), track.itsNCls());
@@ -1131,7 +1129,7 @@ struct FillPIDcolums {
               histosQA.fill(HIST("QA/PID/histnSigma_TOF_Pt_Pr"), track.pt(), track.tofNSigmaPr());
               histosQA.fill(HIST("QA/PID/histnSigma_ITS_Pr"), track.itsNSigmaPr());
               histosQA.fill(HIST("QA/PID/histnSigma_ITS_Pt_Pr"), track.pt(), track.itsNSigmaPr());
-              if(cfgOpenTrackingInfoCheck){
+              if (cfgOpenTrackingInfoCheck) {
                 histosQA.fill(HIST("QA/PID/histDCAz_Pr"), track.dcaZ());
                 histosQA.fill(HIST("QA/PID/histDCAxy_Pr"), track.dcaXY());
                 histosQA.fill(HIST("QA/PID/histITSNcls_Pr"), track.itsNCls());
@@ -1926,7 +1924,7 @@ struct QAProcessCent {
   }
 };
 
-struct pidcme {// o2-linter: disable=name/struct(keep the saving dir name for offline analysis)
+struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for offline analysis)
   HistogramRegistry histosQA{"histosmain", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2}, "Modulation of interest"};
@@ -3434,3 +3432,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<pidcme>(cfgc),
   };
 }
+ 
