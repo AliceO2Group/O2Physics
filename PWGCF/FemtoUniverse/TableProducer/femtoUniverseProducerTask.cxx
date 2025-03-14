@@ -469,10 +469,10 @@ struct FemtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackD0DataML || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMCV0 || doprocessTrackD0MC || doprocessTruthAndFullMCCasc || doprocessFullMCCent || doprocessTrackCentRun3DataMC || doprocessTruthAndFullMCCentRun3) == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackD0DataML || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMCV0 || doprocessTrackD0MC || doprocessTruthAndFullMCCasc || doprocessFullMCCent || doprocessTrackCentRun3DataMC || doprocessTruthAndFullMCCentRun3 || doprocessTruthAndFullMCCentRun3V0) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackD0DataML || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMCV0 || doprocessTrackD0MC || doprocessTruthAndFullMCCasc || doprocessFullMCCent || doprocessTrackCentRun3DataMC || doprocessTruthAndFullMCCentRun3) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackD0DataML || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMCV0 || doprocessTrackD0MC || doprocessTruthAndFullMCCasc || doprocessFullMCCent || doprocessTrackCentRun3DataMC || doprocessTruthAndFullMCCentRun3 || doprocessTruthAndFullMCCentRun3V0) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
@@ -2299,6 +2299,47 @@ struct FemtoUniverseProducerTask {
     processTruthAndFullMC(mccols, mcParticles, collisions, tracks, fullV0s, bcs, perCollisionV0s);
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTruthAndFullMCV0, "Provide both MC truth and reco for tracks and V0s", false);
+
+  void processTruthAndFullMCCentRun3V0(
+    aod::McCollisions const& mccols,
+    aod::McParticles const& mcParticles,
+    aod::FemtoFullCollisionCentRun3MCs const& collisions,
+    soa::Filtered<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> const& tracks,
+    soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
+    aod::BCsWithTimestamps const&)
+  {
+
+    // recos
+    std::set<int> recoMcIds;
+    for (const auto& col : collisions) {
+      auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
+      auto groupedV0Parts = fullV0s.sliceBy(perCollisionV0s, col.globalIndex());
+      getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+      const auto colcheck = fillCollisionsCentRun3<false>(col);
+      if (colcheck) {
+        fillTracks<true>(groupedTracks);
+        fillV0<true>(col, groupedV0Parts, groupedTracks);
+      }
+      for (const auto& track : groupedTracks) {
+        if (trackCuts.isSelectedMinimal(track))
+          recoMcIds.insert(track.mcParticleId());
+      }
+    }
+
+    // truth
+    for (const auto& mccol : mccols) {
+      auto groupedCollisions = collisions.sliceBy(recoCollsPerMCCollCentPbPb, mccol.globalIndex());
+      for (const auto& col : groupedCollisions) {
+        const auto colcheck = fillMCTruthCollisionsCentRun3(col); // fills the reco collisions for mc collision
+        if (colcheck) {
+          auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
+          outputCollExtra(1.0, 1.0);
+          fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(FemtoUniverseProducerTask, processTruthAndFullMCCentRun3V0, "Provide both MC truth and reco for tracks and V0s with centrality", false);
 
   Preslice<soa::Join<o2::aod::CascDatas, aod::McCascLabels>> perCollisionCascs = aod::track::collisionId;
   void processTruthAndFullMCCasc(
