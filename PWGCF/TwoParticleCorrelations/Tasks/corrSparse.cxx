@@ -244,10 +244,10 @@ struct CorrSparse {
 
     float dPhiStar = phi1 - phi2 - charge1 * fbSign * std::asin(0.075 * radius / pt1) + charge2 * fbSign * std::asin(0.075 * radius / pt2);
 
-    if (dPhiStar > TMath::Pi())
-      dPhiStar = 2.0 * TMath::Pi() - dPhiStar;
-    if (dPhiStar < -TMath::Pi())
-      dPhiStar = -2.0 * TMath::Pi() - dPhiStar;
+    if (dPhiStar > constants::math::PI)
+      dPhiStar = constants::math::TwoPI - dPhiStar;
+    if (dPhiStar < -constants::math::PI)
+      dPhiStar = -constants::math::TwoPI - dPhiStar;
 
     return dPhiStar;
   }
