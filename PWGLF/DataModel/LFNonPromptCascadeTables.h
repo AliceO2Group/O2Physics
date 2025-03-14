@@ -366,7 +366,8 @@ DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
                   NPCascadeTable::DCAyMC,
                   NPCascadeTable::DCAzMC,
                   NPCascadeTable::IsFromBeauty,
-                  NPCascadeTable::IsFromCharm)
+                  NPCascadeTable::IsFromCharm,
+                  NPCascadeTable::MotherDecayDaughters)
 
 } // namespace o2::aod
 
