@@ -285,16 +285,16 @@ struct CorrSparse {
 
         if (std::abs(deltaEta) < cfgMergingCut) {
 
-          Double_t dPhiStarHigh = getDPhiStar(track1, track2, cfgRadiusHigh, magneticField);
-          Double_t dPhiStarLow = getDPhiStar(track1, track2, cfgRadiusLow, magneticField);
+          double dPhiStarHigh = getDPhiStar(track1, track2, cfgRadiusHigh, magneticField);
+          double dPhiStarLow = getDPhiStar(track1, track2, cfgRadiusLow, magneticField);
 
-          const Double_t kLimit = 3.0 * cfgMergingCut;
+          const double kLimit = 3.0 * cfgMergingCut;
 
-          Bool_t bIsBelow = kFALSE;
+          bool bIsBelow = kFALSE;
 
           if (std::abs(dPhiStarLow) < kLimit || std::abs(dPhiStarHigh) < kLimit || dPhiStarLow * dPhiStarHigh < 0) {
-            for (Double_t rad(cfgRadiusLow); rad < cfgRadiusHigh; rad += 0.01) {
-              Double_t dPhiStar = getDPhiStar(track1, track2, rad, magneticField);
+            for (double rad(cfgRadiusLow); rad < cfgRadiusHigh; rad += 0.01) {
+              double dPhiStar = getDPhiStar(track1, track2, rad, magneticField);
               if (std::abs(dPhiStar) < kLimit) {
                 bIsBelow = kTRUE;
                 break;
