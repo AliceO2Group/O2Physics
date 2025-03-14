@@ -1183,6 +1183,7 @@ struct FemtoUniverseProducerTask {
       childIDs[0] = rowInPrimaryTrackTablePos; // pos
       childIDs[1] = 0;                         // neg
       childIDs[2] = 0;                         // bachelor
+      float hasTOF = posTrackCasc.hasTOF() ? 1 : 0;
       outputCascParts(outputCollision.lastIndex(),
                       casc.positivept(),
                       casc.positiveeta(),
@@ -1190,7 +1191,7 @@ struct FemtoUniverseProducerTask {
                       aod::femtouniverseparticle::ParticleType::kV0Child,
                       0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosCuts),
                       0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosPID),
-                      0.,
+                      hasTOF,
                       childIDs,
                       0,
                       0,
@@ -1214,6 +1215,7 @@ struct FemtoUniverseProducerTask {
       childIDs[0] = 0;                         // pos
       childIDs[1] = rowInPrimaryTrackTableNeg; // neg
       childIDs[2] = 0;                         // bachelor
+      hasTOF = negTrackCasc.hasTOF() ? 1 : 0;
       outputCascParts(outputCollision.lastIndex(),
                       casc.negativept(),
                       casc.negativeeta(),
@@ -1221,7 +1223,7 @@ struct FemtoUniverseProducerTask {
                       aod::femtouniverseparticle::ParticleType::kV0Child,
                       0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegCuts),
                       0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegPID),
-                      0.,
+                      hasTOF,
                       childIDs,
                       0,
                       0,
@@ -1246,6 +1248,7 @@ struct FemtoUniverseProducerTask {
       childIDs[0] = 0;                          // pos
       childIDs[1] = 0;                          // neg
       childIDs[2] = rowInPrimaryTrackTableBach; // bachelor
+      hasTOF = bachTrackCasc.hasTOF() ? 1 : 0;
       outputCascParts(outputCollision.lastIndex(),
                       casc.bachelorpt(),
                       casc.bacheloreta(),
@@ -1253,7 +1256,7 @@ struct FemtoUniverseProducerTask {
                       aod::femtouniverseparticle::ParticleType::kCascadeBachelor,
                       0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegCuts),
                       0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegPID),
-                      0.,
+                      hasTOF,
                       childIDs,
                       0,
                       0,

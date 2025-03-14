@@ -80,6 +80,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   Configurable<float> confLPtPart2{"ConfLPtPart2", 0.3f, "lower limit for pt of particle 2"};
   Configurable<float> confmom{"Confmom", 0.75, "momentum threshold for particle identification using TOF"};
   Configurable<float> confNsigmaTPCParticle{"ConfNsigmaTPCParticle", 3.0, "TPC Sigma for particle momentum < Confmom"};
+  Configurable<float> confNsigmaTOFParticle{"ConfNsigmaTOFParticle", 3.0, "TOF Sigma for particle momentum > Confmom"};
   Configurable<float> confNsigmaCombinedParticle{"ConfNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > Confmom"};
 
   ConfigurableAxis confkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
@@ -160,6 +161,20 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
     }
   }
 
+  bool isNSigmaTOF(float mom, float nsigmaTOFParticle, float hasTOF)
+  {
+    // Cut only on tracks, that have TOF signal
+    if (mom > confmom && hasTOF == 1) {
+      if (std::abs(nsigmaTOFParticle) < confNsigmaTOFParticle) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return true;
+    }
+  }
+
   bool isNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle)
   {
     if (mom <= confmom) {
@@ -175,6 +190,14 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
     const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
 
     return isNSigmaTPC(tpcNSigmas[id]);
+  }
+
+  template <typename T>
+  bool isParticleTOF(const T& part, int id)
+  {
+    const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStoreKa())};
+
+    return isNSigmaTOF(part.p(), tofNSigmas[id], part.tempFitVar());
   }
 
   template <typename T>
@@ -344,6 +367,9 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
       const auto& bachelor = parts.iteratorAt(part.index() - 1);
       /// Child particles must pass this condition to be selected
       if (!isParticleTPC(posChild, CascChildTable[confCascType1][0]) || !isParticleTPC(negChild, CascChildTable[confCascType1][1]) || !isParticleTPC(bachelor, CascChildTable[confCascType1][2]))
+        continue;
+
+      if (!isParticleTOF(posChild, CascChildTable[confCascType1][0]) || !isParticleTOF(negChild, CascChildTable[confCascType1][1]) || !isParticleTOF(bachelor, CascChildTable[confCascType1][2]))
         continue;
 
       posChildHistos.fillQA<false, true>(posChild);
