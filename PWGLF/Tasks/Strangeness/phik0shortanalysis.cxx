@@ -161,7 +161,7 @@ struct Phik0shortanalysis {
   Configurable<float> cfgYAcceptanceSmear{"cfgYAcceptanceSmear", 0.8f, "Rapidity acceptance for smearing matrix study"};
   Configurable<float> cfgFCutOnDeltaY{"cfgFCutOnDeltaY", 0.5f, "First upper bound on Deltay selection"};    // To be removed
   Configurable<float> cfgSCutOnDeltaY{"cfgSCutOnDeltaY", 0.1f, "Second upper bound on Deltay selection"};   // To be removed
-  Configurable<std::vector<float>> cfgDeltaYAcceptanceBins{"cfgYAcceptanceBins", {1.0f, 0.8f, 0.6f, 0.5f, 0.3f, 0.2f}, "Rapidity acceptance bins"};
+  Configurable<std::vector<float>> cfgDeltaYAcceptanceBins{"cfgDeltaYAcceptanceBins", {1.0f, 0.8f, 0.6f, 0.5f, 0.3f, 0.2f}, "Rapidity acceptance bins"};
 
   // Configurable for RecMC
   Configurable<bool> cfgiskNoITSROFrameBorder{"cfgiskNoITSROFrameBorder", false, "kNoITSROFrameBorder request on RecMC collisions"};
