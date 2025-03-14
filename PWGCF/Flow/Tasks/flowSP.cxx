@@ -253,7 +253,7 @@ struct FlowSP {
         registry.add("QA/after/hCentFT0M", "; Cent FT0M (%); ", {HistType::kTH1D, {axisCent}});
         registry.add("QA/after/hCentFV0A", "; Cent FV0A (%); ", {HistType::kTH1D, {axisCent}});
         registry.add("QA/after/hCentNGlobal", "; Cent NGlobal (%); ", {HistType::kTH1D, {axisCent}});
-        
+
         registry.add("QA/after/pt_phi", "", {HistType::kTH2D, {axisPt, axisPhiMod}});
         registry.add("QA/after/hPt_inclusive", "", {HistType::kTH1D, {axisPt}});
         registry.add("QA/after/hPt_positive", "", {HistType::kTH1D, {axisPt}});
@@ -470,7 +470,7 @@ struct FlowSP {
         fMultCutHigh->SetParameters(2610.98, -83.3983, 1.0893, -0.00735094, 2.26929e-05);
     }
 
-    if(cfgManualEventParameters){ 
+    if (cfgManualEventParameters) {
       fMultPVCutLow->SetParameters((cfgMultPv.value)[0], (cfgMultPv.value)[1], (cfgMultPv.value)[2], (cfgMultPv.value)[3], (cfgMultPv.value)[4]);
       fMultPVCutHigh->SetParameters((cfgMultPv.value)[5], (cfgMultPv.value)[6], (cfgMultPv.value)[7], (cfgMultPv.value)[8], (cfgMultPv.value)[9]);
       fMultCutLow->SetParameters((cfgMult.value)[0], (cfgMult.value)[1], (cfgMult.value)[2], (cfgMult.value)[3], (cfgMult.value)[4]);
