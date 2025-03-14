@@ -47,7 +47,7 @@ using namespace o2::constants::physics;
 struct SGResonanceAnalyzer {
   SGSelector sgSelector;
   Service<o2::framework::O2DatabasePDG> pdg;
-  Configurable<int> verbosity{"Verbosity", 0, "Determines level of verbosity"};
+  Configurable<int> verbosity{"verbosity", 0, "Determines level of verbosity"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -355,9 +355,9 @@ struct SGResonanceAnalyzer {
   }
 
   //_____________________________________________________________________________
-  double cosThetaCollinsSoperFrame(ROOT::Math::PtEtaPhiMVector pair1,
-                                   ROOT::Math::PtEtaPhiMVector pair2,
-                                   ROOT::Math::PtEtaPhiMVector fourpion)
+  double cosThetaCollinsSoperFrame(TLorentzVector pair1,
+                                   TLorentzVector pair2,
+                                   TLorentzVector fourpion)
   {
     double halfSqrtSnn = 2680.;
     double massOfLead208 = 193.6823;
@@ -366,10 +366,9 @@ struct SGResonanceAnalyzer {
     TLorentzVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
     TLorentzVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
 
-    //  TVector3 beta = (-1. / fourpion.E()) * fourpion.Vect();
-    ROOT::Math::PtEtaPhiMVector v1 = pair1;
-    ROOT::Math::PtEtaPhiMVector v2 = pair2;
-    ROOT::Math::PtEtaPhiMVector v12 = fourpion;
+    ROOT::Math::PxPyPzMVector v1 = ROOT::Math::PxPyPzMVector(pair1.Px(), pair1.Py(), pair1.Pz(), pair1.M());
+    ROOT::Math::PxPyPzMVector v2 = ROOT::Math::PxPyPzMVector(pair2.Px(), pair2.Py(), pair2.Pz(), pair2.M());
+    ROOT::Math::PxPyPzMVector v12 = ROOT::Math::PxPyPzMVector(fourpion.Px(), fourpion.Py(), fourpion.Pz(), fourpion.M());
 
     // Boost to center of mass frame
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
@@ -377,12 +376,11 @@ struct SGResonanceAnalyzer {
     ROOT::Math::XYZVectorF v2Cm{(boostv12(v2).Vect()).Unit()};
     ROOT::Math::XYZVectorF beam1Cm{(boostv12(pProjCM).Vect()).Unit()};
     ROOT::Math::XYZVectorF beam2Cm{(boostv12(pTargCM).Vect()).Unit()};
-
     // Axes
-    ROOT::Math::XYZVectorF zaxis_CS{((beam1Cm.Unit() - beam2Cm.Unit()).Unit())};
+    ROOT::Math::XYZVectorF zaxisCs{((beam1Cm.Unit() - beam2Cm.Unit()).Unit())};
 
-    double cosThetaCS = zaxis_CS.Dot((v1Cm));
-    return cosThetaCS;
+    double cosThetaCs = zaxisCs.Dot((v1Cm));
+    return cosThetaCs;
   }
 
   template <typename T>
@@ -445,7 +443,7 @@ struct SGResonanceAnalyzer {
   }
 
   //------------------------------------------------------------------------------------------------------
-  double phiCollinsSoperFrame(ROOT::Math::PtEtaPhiMVector pair1, ROOT::Math::PtEtaPhiMVector pair2, ROOT::Math::PtEtaPhiMVector fourpion)
+  double phiCollinsSoperFrame(TLorentzVector pair1, TLorentzVector pair2, TLorentzVector fourpion)
   {
     // Half of the energy per pair of the colliding nucleons.
     double halfSqrtSnn = 2680.;
@@ -454,9 +452,13 @@ struct SGResonanceAnalyzer {
 
     TLorentzVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
     TLorentzVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
-    ROOT::Math::PtEtaPhiMVector v1 = pair1;
-    ROOT::Math::PtEtaPhiMVector v2 = pair2;
-    ROOT::Math::PtEtaPhiMVector v12 = fourpion;
+    // TVector3 boost = v12.BoostToCM();
+    // fourpion.Boost(boost);
+
+    ROOT::Math::PxPyPzMVector v1 = ROOT::Math::PxPyPzMVector(pair1.Px(), pair1.Py(), pair1.Pz(), pair1.M());
+    ROOT::Math::PxPyPzMVector v2 = ROOT::Math::PxPyPzMVector(pair2.Px(), pair2.Py(), pair2.Pz(), pair2.M());
+    ROOT::Math::PxPyPzMVector v12 = ROOT::Math::PxPyPzMVector(fourpion.Px(), fourpion.Py(), fourpion.Pz(), fourpion.M());
+
     // Boost to center of mass frame
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
     ROOT::Math::XYZVectorF v1Cm{(boostv12(v1).Vect()).Unit()};
@@ -468,7 +470,7 @@ struct SGResonanceAnalyzer {
     ROOT::Math::XYZVectorF yaxisCs{(beam1Cm.Cross(beam2Cm)).Unit()};
     ROOT::Math::XYZVectorF xaxisCs{(yaxisCs.Cross(zaxisCs)).Unit()};
 
-    double phi = TMath::ATan2(yaxisCs.Dot(v1Cm), xaxisCs.Dot(v1Cm));
+    double phi = std::atan2(yaxisCs.Dot(v1Cm), xaxisCs.Dot(v1Cm));
     return phi;
   }
 
@@ -482,22 +484,21 @@ struct SGResonanceAnalyzer {
     TLorentzVector v0;
     TLorentzVector v1;
     TLorentzVector v01;
-    TLorentzVector v0_1;
     int gapSide = collision.gapSide();
     float fitCut[5] = {fv0Cut, ft0aCut, ft0cCut, fddaCut, fddcCut};
     std::vector<float> parameters = {pvCut, dcazCut, dcaxyCut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, ptCut};
     int truegapSide = sgSelector.trueGap(collision, fitCut[0], fitCut[1], fitCut[2], zdcCut);
 
-    ROOT::Math::PtEtaPhiMVector phiv;
-    ROOT::Math::PtEtaPhiMVector phiv1;
+    TLorentzVector phiv;
+    TLorentzVector phiv1;
 
-    std::vector<ROOT::Math::PtEtaPhiMVector> onlyPionTracksp;
+    std::vector<TLorentzVector> onlyPionTracksp;
     std::vector<decltype(tracks.begin())> rawPionTracksp;
 
-    std::vector<ROOT::Math::PtEtaPhiMVector> onlyPionTrackspm;
+    std::vector<TLorentzVector> onlyPionTrackspm;
     std::vector<decltype(tracks.begin())> rawPionTrackspm;
 
-    std::vector<ROOT::Math::PtEtaPhiMVector> onlyPionTracksn;
+    std::vector<TLorentzVector> onlyPionTracksn;
     std::vector<decltype(tracks.begin())> rawPionTracksn;
 
     registry.fill(HIST("GapSide"), gapSide);
@@ -534,16 +535,15 @@ struct SGResonanceAnalyzer {
       if (!trackselector(track1, parameters))
         continue;
       v0.SetXYZM(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PtEtaPhiMVector vv1(v0.Pt(), v0.Eta(), v0.Phi(), o2::constants::physics::MassPionCharged);
       if (selectionPIDPion1(track1)) {
-        onlyPionTrackspm.push_back(vv1);
+        onlyPionTrackspm.push_back(v0);
         rawPionTrackspm.push_back(track1);
         if (track1.sign() == 1) {
-          onlyPionTracksp.push_back(vv1);
+          onlyPionTracksp.push_back(v0);
           rawPionTracksp.push_back(track1);
         }
         if (track1.sign() == -1) {
-          onlyPionTracksn.push_back(vv1);
+          onlyPionTracksn.push_back(v0);
           rawPionTracksn.push_back(track1);
         }
       }
@@ -950,7 +950,7 @@ struct SGResonanceAnalyzer {
       if (t0.globalIndex() == t1.globalIndex())
         continue;
       if (rho && selectionPIDProton(t0, useTof, nsigmaTpcCut, nsigmaTofCut) && selectionPIDPion1(t1)) {
-        v0.SetXYZM(t0.px(), t0.py(), t0.pz(), pdg->Mass(2212));
+        v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassProton);
         v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
         v01 = v0 + v1;
         // Opposite sign pairs
@@ -1037,13 +1037,12 @@ struct SGResonanceAnalyzer {
     }
     if (fourpion) {
       if (gapSide == 2 && mult2 == 4) {
-
-        ROOT::Math::PtEtaPhiMVector pair1, pair2, pair3, pair4;
+        TLorentzVector pair1, pair2, pair3, pair4;
         if (onlyPionTracksp.size() == 2 && onlyPionTracksn.size() == 2) {
-          ROOT::Math::PtEtaPhiMVector k1 = onlyPionTracksp.at(0);
-          ROOT::Math::PtEtaPhiMVector k2 = onlyPionTracksp.at(1);
-          ROOT::Math::PtEtaPhiMVector k3 = onlyPionTracksn.at(0);
-          ROOT::Math::PtEtaPhiMVector k4 = onlyPionTracksn.at(1);
+          TLorentzVector k1 = onlyPionTracksp.at(0);
+          TLorentzVector k2 = onlyPionTracksp.at(1);
+          TLorentzVector k3 = onlyPionTracksn.at(0);
+          TLorentzVector k4 = onlyPionTracksn.at(1);
           phiv = k1 + k2 + k3 + k4;
           pair1 = k1 + k3;
           pair2 = k2 + k4;
@@ -1068,10 +1067,10 @@ struct SGResonanceAnalyzer {
         if (onlyPionTracksp.size() != 2 && onlyPionTracksn.size() != 2) {
           if (onlyPionTracksp.size() + onlyPionTracksn.size() != 4)
             return;
-          ROOT::Math::PtEtaPhiMVector l1 = onlyPionTrackspm.at(0);
-          ROOT::Math::PtEtaPhiMVector l2 = onlyPionTrackspm.at(1);
-          ROOT::Math::PtEtaPhiMVector l3 = onlyPionTrackspm.at(2);
-          ROOT::Math::PtEtaPhiMVector l4 = onlyPionTrackspm.at(3);
+          TLorentzVector l1 = onlyPionTrackspm.at(0);
+          TLorentzVector l2 = onlyPionTrackspm.at(1);
+          TLorentzVector l3 = onlyPionTrackspm.at(2);
+          TLorentzVector l4 = onlyPionTrackspm.at(3);
           phiv1 = l1 + l2 + l3 + l4;
           registry.fill(HIST("os_pppp_pT_2_ls"), phiv1.M(), phiv1.Pt(), phiv1.Rapidity());
         }
@@ -1191,8 +1190,8 @@ struct SGResonanceAnalyzer {
         LOGF(info, "Number of McParts %d", partSlice.size());
       }
       for (const auto& [tr1, tr2] : combinations(partSlice, partSlice)) {
-        if ((tr1.pdgCode() == 321 && tr2.pdgCode() == -211) || (tr1.pdgCode() == -321 && tr2.pdgCode() == 211) || (tr1.pdgCode() == 211 && tr2.pdgCode() == -321) || (tr1.pdgCode() == -211 && tr2.pdgCode() == 321)) {
-          if (std::abs(tr1.pdgCode()) == 321) {
+        if ((tr1.pdgCode() == kKPlus && tr2.pdgCode() == kPiMinus) || (tr1.pdgCode() == kKMinus && tr2.pdgCode() == kPiPlus) || (tr1.pdgCode() == kPiPlus && tr2.pdgCode() == kKMinus) || (tr1.pdgCode() == kPiMinus && tr2.pdgCode() == kKPlus)) {
+          if (std::abs(tr1.pdgCode()) == kKPlus) {
             v0.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), o2::constants::physics::MassKaonCharged);
             v1.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), o2::constants::physics::MassPionCharged);
           } else {
@@ -1211,14 +1210,14 @@ struct SGResonanceAnalyzer {
           bool flag1 = false;
           if (tr1.has_mothers() && tr2.has_mothers()) {
             for (const auto& mother : tr1.mothers_as<aod::UDMcParticles>()) {
-              if (std::abs(mother.pdgCode()) == 313) {
-                vkstar.SetXYZM(mother.px(), mother.py(), mother.pz(), pdg->Mass(313));
+              if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kK0Star892) {
+                vkstar.SetXYZM(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassK0Star892);
                 registry.get<TH3>(HIST("MC/accMPtRap_kstar_G"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
                 flag = true;
               }
             }
             for (const auto& mother1 : tr2.mothers_as<aod::UDMcParticles>()) {
-              if (std::abs(mother1.pdgCode()) == 313) {
+              if (std::abs(mother1.pdgCode()) == o2::constants::physics::Pdg::kK0Star892) {
                 flag1 = true;
               }
             }
@@ -1235,7 +1234,7 @@ struct SGResonanceAnalyzer {
             }
           }
         }
-        if (std::abs(tr1.pdgCode()) != 321 || std::abs(tr2.pdgCode()) != 321)
+        if (std::abs(tr1.pdgCode()) != kKPlus || std::abs(tr2.pdgCode()) != kKPlus)
           continue;
         v0.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), o2::constants::physics::MassKaonCharged);
         v1.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), o2::constants::physics::MassKaonCharged);
@@ -1253,14 +1252,14 @@ struct SGResonanceAnalyzer {
         bool flag1 = false;
         if (tr1.has_mothers() && tr2.has_mothers()) {
           for (const auto& mother : tr1.mothers_as<aod::UDMcParticles>()) {
-            if (std::abs(mother.pdgCode()) == 333) {
-              vphi.SetXYZM(mother.px(), mother.py(), mother.pz(), pdg->Mass(333));
+            if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kPhi) {
+              vphi.SetXYZM(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassPhi);
               registry.get<TH3>(HIST("MC/accMPtRap_phi_G"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
               flag = true;
             }
           }
           for (const auto& mother1 : tr2.mothers_as<aod::UDMcParticles>()) {
-            if (std::abs(mother1.pdgCode()) == 333) {
+            if (std::abs(mother1.pdgCode()) == o2::constants::physics::Pdg::kPhi) {
               flag1 = true;
             }
           }
@@ -1318,8 +1317,8 @@ struct SGResonanceAnalyzer {
     std::vector<float> parameters = {pvCut, dcazCut, dcaxyCut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, ptCut};
     int truegapSide = sgSelector.trueGap(collision, fitCut[0], fitCut[1], fitCut[2], zdcCut);
     registry.get<TH1>(HIST("Reco/Stat"))->Fill(4.0, 1.);
-    Partition<TCs> PVContributors = aod::udtrack::isPVContributor == true;
-    PVContributors.bindTable(tracks);
+    Partition<TCs> pvContributors = aod::udtrack::isPVContributor == true;
+    pvContributors.bindTable(tracks);
     if (std::abs(collision.posZ()) > vzCut)
       return;
     if (std::abs(collision.occupancyInTime()) > occCut)
@@ -1327,16 +1326,16 @@ struct SGResonanceAnalyzer {
     registry.get<TH1>(HIST("Reco/Stat"))->Fill(truegapSide, 1.);
     if (truegapSide != gapsideMC)
       return;
-    registry.get<TH1>(HIST("Reco/nPVContributors"))->Fill(PVContributors.size(), 1.);
+    registry.get<TH1>(HIST("Reco/nPVContributors"))->Fill(pvContributors.size(), 1.);
     TLorentzVector vphi;
     TLorentzVector vkstar;
     TLorentzVector v0;
     TLorentzVector vr0;
     TLorentzVector vr1;
     TLorentzVector vr01;
-    TLorentzVector vr0_g;
-    TLorentzVector vr1_g;
-    TLorentzVector vr01_g;
+    TLorentzVector vr0g;
+    TLorentzVector vr1g;
+    TLorentzVector vr01g;
     int t1 = 0;
     if (qa) {
       if (truegapSide == 0) {
@@ -1357,7 +1356,7 @@ struct SGResonanceAnalyzer {
     for (const auto& tr1 : tracks) {
       if (!tr1.has_udMcParticle())
         continue;
-      auto McPart_1 = tr1.udMcParticle();
+      auto mcPart1 = tr1.udMcParticle();
       registry.get<TH1>(HIST("Reco/tr_dcaz_1"))->Fill(tr1.dcaZ(), 1.);
       registry.get<TH1>(HIST("Reco/tr_dcaxy_1"))->Fill(tr1.dcaXY(), 1.);
       registry.get<TH1>(HIST("Reco/tr_chi2ncl_1"))->Fill(tr1.tpcChi2NCl(), 1.);
@@ -1411,42 +1410,42 @@ struct SGResonanceAnalyzer {
           if (!selectionPIDKaon1(tr2))
             continue;
           vr1.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), o2::constants::physics::MassKaonCharged);
-          auto McPart_2 = tr2.udMcParticle();
-          if (std::abs(McPart_2.globalIndex() - McPart_1.globalIndex()) != 1)
+          auto mcPart2 = tr2.udMcParticle();
+          if (std::abs(mcPart2.globalIndex() - mcPart1.globalIndex()) != 1)
             continue;
-          if (std::abs(McPart_1.pdgCode()) != 321 || std::abs(McPart_2.pdgCode()) != 321)
+          if (std::abs(mcPart1.pdgCode()) != kKPlus || std::abs(mcPart2.pdgCode()) != kKPlus)
             continue;
-          if (McPart_1.pdgCode() == McPart_2.pdgCode())
+          if (mcPart1.pdgCode() == mcPart2.pdgCode())
             continue;
-          if (!McPart_1.isPhysicalPrimary() || !McPart_2.isPhysicalPrimary())
+          if (!mcPart1.isPhysicalPrimary() || !mcPart2.isPhysicalPrimary())
             continue;
           bool flag = false;
           bool flag1 = false;
-          if (McPart_1.has_mothers() && McPart_2.has_mothers()) {
-            for (const auto& mother : McPart_1.mothers_as<aod::UDMcParticles>()) {
-              if (std::abs(mother.pdgCode()) == 333) {
-                vphi.SetXYZM(mother.px(), mother.py(), mother.pz(), pdg->Mass(333));
+          if (mcPart1.has_mothers() && mcPart2.has_mothers()) {
+            for (const auto& mother : mcPart1.mothers_as<aod::UDMcParticles>()) {
+              if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kPhi) {
+                vphi.SetXYZM(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassPhi);
                 registry.get<TH3>(HIST("MC/accMPtRap_phi_T"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
                 flag = true;
               }
             }
-            for (const auto& mother1 : McPart_1.mothers_as<aod::UDMcParticles>()) {
-              if (std::abs(mother1.pdgCode()) == 333) {
+            for (const auto& mother1 : mcPart1.mothers_as<aod::UDMcParticles>()) {
+              if (std::abs(mother1.pdgCode()) == o2::constants::physics::Pdg::kPhi) {
                 flag1 = true;
               }
             }
           }
           if (flag && flag1) {
-            vr0_g.SetXYZM(McPart_1.px(), McPart_1.py(), McPart_1.pz(), o2::constants::physics::MassKaonCharged);
-            vr1_g.SetXYZM(McPart_2.px(), McPart_2.py(), McPart_2.pz(), o2::constants::physics::MassKaonCharged);
-            vr01_g = vr0_g + vr1_g;
+            vr0g.SetXYZM(mcPart1.px(), mcPart1.py(), mcPart1.pz(), o2::constants::physics::MassKaonCharged);
+            vr1g.SetXYZM(mcPart2.px(), mcPart2.py(), mcPart2.pz(), o2::constants::physics::MassKaonCharged);
+            vr01g = vr0g + vr1g;
             vr01 = vr0 + vr1;
             registry.get<TH1>(HIST("Reco/selRap"))->Fill(vr01.Rapidity(), 1.);
             registry.get<TH2>(HIST("Reco/selMPt"))->Fill(vr01.M(), vr01.Pt(), 1.);
             registry.get<TH3>(HIST("Reco/selMPtRap"))->Fill(vr01.M(), vr01.Pt(), vr01.Rapidity(), 1.);
             registry.get<TH1>(HIST("Reco/selPt"))->Fill(vr01.Pt(), 1.);
             registry.get<TH1>(HIST("Reco/selM"))->Fill(vr01.M(), 1.);
-            registry.get<TH3>(HIST("Reco/selMPtRap_gen"))->Fill(vr01_g.M(), vr01_g.Pt(), vr01_g.Rapidity(), 1.);
+            registry.get<TH3>(HIST("Reco/selMPtRap_gen"))->Fill(vr01g.M(), vr01g.Pt(), vr01g.Rapidity(), 1.);
           }
         }
       }
@@ -1459,13 +1458,13 @@ struct SGResonanceAnalyzer {
         continue;
       //  if (tr1.index() == tr2.index())
       // continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
-      auto McPart_1 = tr1.udMcParticle();
-      auto McPart_2 = tr2.udMcParticle();
-      if (std::abs(McPart_1.pdgCode()) != 211 || std::abs(McPart_2.pdgCode()) != 321)
+      auto mcPart1 = tr1.udMcParticle();
+      auto mcPart2 = tr2.udMcParticle();
+      if (std::abs(mcPart1.pdgCode()) != kPiPlus || std::abs(mcPart2.pdgCode()) != kKPlus)
         continue;
-      if (!McPart_1.isPhysicalPrimary() || !McPart_2.isPhysicalPrimary())
+      if (!mcPart1.isPhysicalPrimary() || !mcPart2.isPhysicalPrimary())
         continue;
-      if (std::abs(McPart_2.globalIndex() - McPart_1.globalIndex()) != 1)
+      if (std::abs(mcPart2.globalIndex() - mcPart1.globalIndex()) != 1)
         continue;
 
       if (tr1.sign() * tr2.sign() > 0)
@@ -1473,9 +1472,9 @@ struct SGResonanceAnalyzer {
 
       vr0.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), o2::constants::physics::MassPionCharged);
       vr1.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), o2::constants::physics::MassKaonCharged);
-      vr0_g.SetXYZM(McPart_1.px(), McPart_1.py(), McPart_1.pz(), o2::constants::physics::MassPionCharged);
-      vr1_g.SetXYZM(McPart_2.px(), McPart_2.py(), McPart_2.pz(), o2::constants::physics::MassKaonCharged);
-      vr01_g = vr0_g + vr1_g;
+      vr0g.SetXYZM(mcPart1.px(), mcPart1.py(), mcPart1.pz(), o2::constants::physics::MassPionCharged);
+      vr1g.SetXYZM(mcPart2.px(), mcPart2.py(), mcPart2.pz(), o2::constants::physics::MassKaonCharged);
+      vr01g = vr0g + vr1g;
       vr01 = vr0 + vr1;
       if (!trackselector(tr1, parameters) || !trackselector(tr2, parameters)) {
         registry.get<TH1>(HIST("Reco/selM_k"))->Fill(vr01.M(), 1.);
@@ -1483,16 +1482,16 @@ struct SGResonanceAnalyzer {
       if (trackselector(tr1, parameters) && trackselector(tr2, parameters)) {
         bool flag = false;
         bool flag1 = false;
-        if (McPart_1.has_mothers() && McPart_2.has_mothers()) {
-          for (const auto& mother : McPart_1.mothers_as<aod::UDMcParticles>()) {
-            if (std::abs(mother.pdgCode()) == 313) {
-              vkstar.SetXYZM(mother.px(), mother.py(), mother.pz(), pdg->Mass(313));
+        if (mcPart1.has_mothers() && mcPart2.has_mothers()) {
+          for (const auto& mother : mcPart1.mothers_as<aod::UDMcParticles>()) {
+            if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kK0Star892) {
+              vkstar.SetXYZM(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassK0Star892);
               registry.get<TH3>(HIST("MC/accMPtRap_kstar_T"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
               flag = true;
             }
           }
-          for (const auto& mother1 : McPart_1.mothers_as<aod::UDMcParticles>()) {
-            if (std::abs(mother1.pdgCode()) == 313) {
+          for (const auto& mother1 : mcPart2.mothers_as<aod::UDMcParticles>()) {
+            if (std::abs(mother1.pdgCode()) == o2::constants::physics::Pdg::kK0Star892) {
               flag1 = true;
             }
           }
@@ -1504,7 +1503,7 @@ struct SGResonanceAnalyzer {
           registry.get<TH3>(HIST("Reco/selMPtRap_k"))->Fill(vr01.M(), vr01.Pt(), vr01.Rapidity(), 1.);
           registry.get<TH1>(HIST("Reco/selPt_k"))->Fill(vr01.Pt(), 1.);
           // registry.get<TH1>(HIST("Reco/selM_k"))->Fill(vr01_g.M(), 1.);
-          registry.get<TH3>(HIST("Reco/selMPtRap_k_gen"))->Fill(vr01_g.M(), vr01_g.Pt(), vr01_g.Rapidity(), 1.);
+          registry.get<TH3>(HIST("Reco/selMPtRap_k_gen"))->Fill(vr01g.M(), vr01g.Pt(), vr01g.Rapidity(), 1.);
         }
       }
     }
@@ -1524,12 +1523,12 @@ struct SGResonanceAnalyzer {
       // is there an associated McParticle?
       if (track.has_udMcParticle()) {
         auto pTrack = std::sqrt(track.px() * track.px() + track.py() * track.py() + track.pz() * track.pz());
-        auto McPart = track.udMcParticle();
-        auto pPart = std::sqrt(McPart.px() * McPart.px() + McPart.py() * McPart.py() + McPart.pz() * McPart.pz());
+        auto mcPart = track.udMcParticle();
+        auto pPart = std::sqrt(mcPart.px() * mcPart.px() + mcPart.py() * mcPart.py() + mcPart.pz() * mcPart.pz());
         auto pDiff = pTrack - pPart;
         registry.get<TH2>(HIST("Reco/pDiff"))->Fill(pDiff, track.isPVContributor(), 1.);
         if (verbosity > 0) {
-          LOGF(info, "  PID: %d Generated: %d Process: %d PV contributor: %d dP: %f", McPart.pdgCode(), McPart.producedByGenerator(), McPart.getProcess(), track.isPVContributor(), pDiff);
+          LOGF(info, "  PID: %d Generated: %d Process: %d PV contributor: %d dP: %f", mcPart.pdgCode(), mcPart.producedByGenerator(), mcPart.getProcess(), track.isPVContributor(), pDiff);
         }
       } else {
         registry.get<TH2>(HIST("Reco/pDiff"))->Fill(-5.9, -1, 1.);
