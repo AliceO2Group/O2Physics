@@ -69,6 +69,7 @@ struct HfTaskD0 {
 
   HfHelper hfHelper;
 
+  SliceCache cache;
   using D0Candidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
   using D0CandidatesMc = soa::Join<D0Candidates, aod::HfCand2ProngMcRec>;
   using D0CandidatesKF = soa::Join<D0Candidates, aod::HfCand2ProngKF>;
@@ -86,7 +87,6 @@ struct HfTaskD0 {
   using TracksSelQuality = soa::Join<aod::TracksExtra, aod::TracksWMc>;
   PresliceUnsorted<CollisionsWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<CollisionsWithMcLabelsCent> colPerMcCollisionCent = aod::mccollisionlabel::mcCollisionId;
-  SliceCache cache;
 
   Partition<D0Candidates> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<D0CandidatesKF> selectedD0CandidatesKF = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
