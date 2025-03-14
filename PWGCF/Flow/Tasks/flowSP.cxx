@@ -85,6 +85,9 @@ struct FlowSP {
   // Additional event selections
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, true, "Bool to enable Additional Event Cut");
   O2_DEFINE_CONFIGURABLE(cfgnSigmaMultCuts, int, 1, "Sigma cut on Additional event cut: 1 (default), 2 or 3 sigma available");
+  O2_DEFINE_CONFIGURABLE(cfgManualEventParameters, bool, false, "Use manual event parameters for the pile up fits. Needed for Cent estimaters other than FT0C");
+  O2_DEFINE_CONFIGURABLE(cfgMultPv, std::vector<double>, {}, "Multiplicity cuts for PV first 5 parameters cutLOW last 5 cutHIGH");
+  O2_DEFINE_CONFIGURABLE(cfgMult, std::vector<double>, {}, "Multiplicity cuts for T0C first 5 parameters cutLOW last 5 cutHIGH");
   O2_DEFINE_CONFIGURABLE(cfgMaxOccupancy, int, 10000, "Maximum occupancy of selected events");
   O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
   O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
@@ -246,13 +249,19 @@ struct FlowSP {
 
     if (doprocessData || doprocessMCReco || doprocessMCGen) {
       if (cfgFillQAHistos) {
-        registry.add("QA/after/hCent", "", {HistType::kTH1D, {axisCent}});
+        registry.add("QA/after/hCentFT0C", " ; Cent FT0C (%); ", {HistType::kTH1D, {axisCent}});
+        registry.add("QA/after/hCentFT0M", "; Cent FT0M (%); ", {HistType::kTH1D, {axisCent}});
+        registry.add("QA/after/hCentFV0A", "; Cent FV0A (%); ", {HistType::kTH1D, {axisCent}});
+        registry.add("QA/after/hCentNGlobal", "; Cent NGlobal (%); ", {HistType::kTH1D, {axisCent}});
+        
         registry.add("QA/after/pt_phi", "", {HistType::kTH2D, {axisPt, axisPhiMod}});
         registry.add("QA/after/hPt_inclusive", "", {HistType::kTH1D, {axisPt}});
         registry.add("QA/after/hPt_positive", "", {HistType::kTH1D, {axisPt}});
         registry.add("QA/after/hPt_negative", "", {HistType::kTH1D, {axisPt}});
         registry.add("QA/after/globalTracks_centT0C", "", {HistType::kTH2D, {axisCent, axisNch}});
+        registry.add("QA/after/globalTracks_centNGlobal", "", {HistType::kTH2D, {axisCent, axisNch}});
         registry.add("QA/after/PVTracks_centT0C", "", {HistType::kTH2D, {axisCent, axisMultpv}});
+        registry.add("QA/after/PVTracks_centNGlobal", "", {HistType::kTH2D, {axisCent, axisMultpv}});
         registry.add("QA/after/globalTracks_PVTracks", "", {HistType::kTH2D, {axisMultpv, axisNch}});
         registry.add("QA/after/globalTracks_multT0A", "", {HistType::kTH2D, {axisT0a, axisNch}});
         registry.add("QA/after/globalTracks_multV0A", "", {HistType::kTH2D, {axisV0a, axisNch}});
@@ -284,8 +293,6 @@ struct FlowSP {
         registry.add("trackMCReco/hTrackSize_Filtered", "", {HistType::kTH1D, {{100, 0, 20000}}});
         registry.get<TH1>(HIST("trackMCReco/after/hIsPhysicalPrimary"))->GetXaxis()->SetBinLabel(1, "Secondary");
         registry.get<TH1>(HIST("trackMCReco/after/hIsPhysicalPrimary"))->GetXaxis()->SetBinLabel(2, "Primary");
-
-        // registry.add("trackMCReco/after/hPrimary_cent", "", {HistType::kTH1D, {{2,0,2}}});
 
         registry.add("trackMCReco/after/hPt_inclusive", "", {HistType::kTH1D, {axisPt}});
         registry.add("trackMCReco/after/hPt_positive", "", {HistType::kTH1D, {axisPt}});
@@ -463,6 +470,13 @@ struct FlowSP {
         fMultCutHigh->SetParameters(2610.98, -83.3983, 1.0893, -0.00735094, 2.26929e-05);
     }
 
+    if(cfgManualEventParameters){ 
+      fMultPVCutLow->SetParameters((cfgMultPv.value)[0], (cfgMultPv.value)[1], (cfgMultPv.value)[2], (cfgMultPv.value)[3], (cfgMultPv.value)[4]);
+      fMultPVCutHigh->SetParameters((cfgMultPv.value)[5], (cfgMultPv.value)[6], (cfgMultPv.value)[7], (cfgMultPv.value)[8], (cfgMultPv.value)[9]);
+      fMultCutLow->SetParameters((cfgMult.value)[0], (cfgMult.value)[1], (cfgMult.value)[2], (cfgMult.value)[3], (cfgMult.value)[4]);
+      fMultCutHigh->SetParameters((cfgMult.value)[5], (cfgMult.value)[6], (cfgMult.value)[7], (cfgMult.value)[8], (cfgMult.value)[9]);
+    }
+
     if (cfgUseAdditionalTrackCut) {
       fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
       fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
@@ -612,13 +626,13 @@ struct FlowSP {
 
       if (vtxz > 10 || vtxz < -10)
         return 0;
-      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+      if (multNTracksPV < fMultPVCutLow->Eval(collision.centFT0C()))
         return 0;
-      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+      if (multNTracksPV > fMultPVCutHigh->Eval(collision.centFT0C()))
         return 0;
-      if (multTrk < fMultCutLow->Eval(centrality))
+      if (multTrk < fMultCutLow->Eval(collision.centFT0C()))
         return 0;
-      if (multTrk > fMultCutHigh->Eval(centrality))
+      if (multTrk > fMultCutHigh->Eval(collision.centFT0C()))
         return 0;
 
       registry.fill(HIST("hEventCount"), evSel_MultCuts);
@@ -700,7 +714,10 @@ struct FlowSP {
   {
     static constexpr std::string_view Time[] = {"before", "after"};
 
-    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCent"), collision.centFT0C());
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFT0C"), collision.centFT0C());
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentNGlobal"), collision.centNGlobal());
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFT0M"), collision.centFT0M());
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFV0A"), collision.centFV0A());
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_centT0C"), collision.centFT0C(), tracks.size());
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
@@ -1139,8 +1156,6 @@ struct FlowSP {
 
           if (std::fabs(charge) < 1)
             continue;
-
-          LOGF(info, "Charge: %i \t pdgCode %d", charge, pdgCode);
 
           bool pos = (charge > 0) ? true : false;
 
