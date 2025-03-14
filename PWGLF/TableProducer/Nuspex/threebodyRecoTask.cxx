@@ -99,7 +99,7 @@ struct ThreebodyRecoTask {
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   //------------------------------------------------------------------
-  Preslice<aod::Vtx3BodyDatas> perCollisionVtx3BodyDatas = o2::aod::vtx3body::collisionId;
+  PresliceUnsorted<aod::Vtx3BodyDatas> perCollisionVtx3BodyDatas = o2::aod::vtx3body::collisionId;
 
   // Configuration to enable like-sign analysis
   Configurable<bool> cfgLikeSignAnalysis{"cfgLikeSignAnalysis", false, "Enable like-sign analysis"};

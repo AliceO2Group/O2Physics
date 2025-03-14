@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(decay3bodybuilder
     SOURCES decay3bodybuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter KFParticle::KFParticle O2Physics::AnalysisCore O2::TOFBase O2Physics::EventFilteringUtils
+    PUBLIC_LINK_LIBRARIES O2::DCAFitter KFParticle::KFParticle O2Physics::AnalysisCore O2::TOFBase O2Physics::EventFilteringUtils O2::DetectorsVertexing
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hyhefour-builder
