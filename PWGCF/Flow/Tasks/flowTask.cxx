@@ -97,6 +97,7 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
+  O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrUse, bool, false, "Use track density efficiency correction")
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN02 {2} refP02 {-2}", "refN12 {2} refP12 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch02Gap22", "Ch12Gap22"}, "User defined GFW Name"};
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
@@ -146,6 +147,13 @@ struct FlowTask {
   std::unordered_map<int, TH2*> gHadronicRate;
   ctpRateFetcher mRateFetcher;
   TH2* gCurrentHadronicRate;
+
+  // phi-EP correction
+  std::vector<TF1*> funcEff;
+  TH1D* hFindPtBin;
+  TF1* funcV2;
+  TF1* funcV3;
+  TF1* funcV4;
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
@@ -417,6 +425,24 @@ struct FlowTask {
       fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
       fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
       fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
+    }
+
+    if (cfgTrackDensityCorrUse) {
+      std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
+      hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
+      funcEff.resize(pTEffBins.size() - 1);
+      std::vector<double> f1p0 = {0.713412, 0.73259, 0.749925, 0.760693, 0.767321, 0.772874, 0.777889, 0.782172, 0.792831, 0.808402, 0.817907, 0.82473, 0.829151};
+      std::vector<double> f1p1 = {-2.15831e-05, -2.19538e-05, -2.2958e-05, -2.55123e-05, -2.75207e-05, -2.81486e-05, -2.839e-05, -2.83713e-05, -2.69748e-05, -2.48438e-05, -2.31138e-05, -2.20517e-05, -2.0758e-05};
+      for (uint ifunc = 0; ifunc < pTEffBins.size() - 1; ifunc++) {
+        funcEff[ifunc] = new TF1(Form("funcEff%i", ifunc), "[0]+[1]*x", 0, 3000);
+        funcEff[ifunc]->SetParameters(f1p0[ifunc], f1p1[ifunc]);
+      }
+      funcV2 = new TF1("funcV2", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV2->SetParameters(0.0186111, 0.00351907, -4.38264e-05, 1.35383e-07, -3.96266e-10);
+      funcV3 = new TF1("funcV3", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV3->SetParameters(0.0174056, 0.000703329, -1.45044e-05, 1.91991e-07, -1.62137e-09);
+      funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
 
     myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
@@ -734,6 +760,34 @@ struct FlowTask {
     if (cfgUseNch)
       independent = static_cast<float>(tracks.size());
 
+    double psi2Est = 0, psi3Est = 0, psi4Est = 0;
+    float wEPeff = 1;
+    double v2 = 0, v3 = 0, v4 = 0;
+    // be cautious, this only works for Pb-Pb
+    // esimate the Event plane and vn for this event
+    if (cfgTrackDensityCorrUse) {
+      double q2x = 0, q2y = 0;
+      double q3x = 0, q3y = 0;
+      double q4x = 0, q4y = 0;
+      for (const auto& track : tracks) {
+        bool withinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT rang
+        if (withinPtRef) {
+          q2x += std::cos(2 * track.phi());
+          q2y += std::sin(2 * track.phi());
+          q3x += std::cos(3 * track.phi());
+          q3y += std::sin(3 * track.phi());
+          q4x += std::cos(4 * track.phi());
+          q4y += std::sin(4 * track.phi());
+        }
+      }
+      psi2Est = std::atan2(q2y, q2x) / 2.;
+      psi3Est = std::atan2(q3y, q3x) / 3.;
+      psi4Est = std::atan2(q4y, q4x) / 4.;
+      v2 = funcV2->Eval(cent);
+      v3 = funcV3->Eval(cent);
+      v4 = funcV4->Eval(cent);
+    }
+
     for (const auto& track : tracks) {
       if (!trackSelected(track))
         continue;
@@ -749,6 +803,18 @@ struct FlowTask {
       }
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         continue;
+      if (cfgTrackDensityCorrUse && withinPtRef) {
+        double fphi = v2 * std::cos(2 * (track.phi() - psi2Est)) + v3 * std::cos(3 * (track.phi() - psi3Est)) + v4 * std::cos(4 * (track.phi() - psi4Est));
+        fphi = (1 + 2 * fphi);
+        int pTBinForEff = hFindPtBin->FindBin(track.pt());
+        if (pTBinForEff >= 1 && pTBinForEff <= hFindPtBin->GetNbinsX()) {
+          wEPeff = funcEff[pTBinForEff - 1]->Eval(fphi * tracks.size());
+          if (wEPeff > 0.) {
+            wEPeff = 1. / wEPeff;
+            weff *= wEPeff;
+          }
+        }
+      }
       registry.fill(HIST("hPt"), track.pt());
       if (withinPtRef) {
         registry.fill(HIST("hPhi"), track.phi());
