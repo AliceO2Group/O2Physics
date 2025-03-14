@@ -835,8 +835,8 @@ struct Phik0shortanalysis {
   }
 
   // Fill Phi invariant mass vs Pion nSigmaTPC/TOF histogram
- template <bool isMC, typename T>
- void fillInvMassNSigma(const T& Pi, const std::vector<ROOT::Math::PxPyPzMVector>& listPhi, float multiplicity, const std::vector<float>& weights)
+  template <bool isMC, typename T>
+  void fillInvMassNSigma(const T& Pi, const std::vector<ROOT::Math::PxPyPzMVector>& listPhi, float multiplicity, const std::vector<float>& weights)
   {
     float nSigmaTOFPi = (Pi.hasTOF() ? Pi.tofNSigmaPi() : -999);
 
