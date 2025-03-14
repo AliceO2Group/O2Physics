@@ -103,6 +103,7 @@ DECLARE_SOA_COLUMN(DCAxMC, dcaXmc, float);
 DECLARE_SOA_COLUMN(DCAyMC, dcaYmc, float);
 DECLARE_SOA_COLUMN(DCAzMC, dcaZmc, float);
 DECLARE_SOA_COLUMN(MCcollisionMatch, mcCollisionMatch, bool);
+DECLARE_SOA_COLUMN(MotherDecayDaughters, motherDecayDaughters, int8_t);
 
 } // namespace NPCascadeTable
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
@@ -282,7 +283,8 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::DCAxMC,
                   NPCascadeTable::DCAyMC,
                   NPCascadeTable::DCAzMC,
-                  NPCascadeTable::MCcollisionMatch)
+                  NPCascadeTable::MCcollisionMatch,
+                  NPCascadeTable::MotherDecayDaughters)
 
 DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::MatchingChi2,
@@ -351,7 +353,8 @@ DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::DCAxMC,
                   NPCascadeTable::DCAyMC,
                   NPCascadeTable::DCAzMC,
-                  NPCascadeTable::MCcollisionMatch)
+                  NPCascadeTable::MCcollisionMatch,
+                  NPCascadeTable::MotherDecayDaughters)
 
 DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
                   NPCascadeTable::gPt,
@@ -363,7 +366,8 @@ DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
                   NPCascadeTable::DCAyMC,
                   NPCascadeTable::DCAzMC,
                   NPCascadeTable::IsFromBeauty,
-                  NPCascadeTable::IsFromCharm)
+                  NPCascadeTable::IsFromCharm,
+                  NPCascadeTable::MotherDecayDaughters)
 
 } // namespace o2::aod
 
