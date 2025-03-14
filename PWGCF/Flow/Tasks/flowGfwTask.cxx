@@ -57,8 +57,8 @@ using namespace o2::aod::evsel;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels, o2::aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0CVariant1s>;
-using SimTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels, o2::aod::CentFT0Cs>;
+using MyTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
 using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0CVariant1s>>;
 using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
@@ -89,7 +89,7 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
-  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 3000, "High cut on TPC occupancy")
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2, "Custom DCA Z cut")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.2f, "Custom DCA XY cut")
@@ -239,6 +239,21 @@ struct FlowGfwTask {
   TF1* fMultMultPVCut = nullptr;
   TF1* fT0AV0AMean = nullptr;
   TF1* fT0AV0ASigma = nullptr;
+
+  bool isStable(int pdg)
+  {
+    if (std::abs(pdg) == PDG_t::kPiPlus)
+      return true;
+    if (std::abs(pdg) == PDG_t::kKPlus)
+      return true;
+    if (std::abs(pdg) == PDG_t::kProton)
+      return true;
+    if (std::abs(pdg) == PDG_t::kElectron)
+      return true;
+    if (std::abs(pdg) == PDG_t::kMuonMinus)
+      return true;
+    return false;
+  }
 
   void init(InitContext const&) // Initialization
   {
@@ -392,8 +407,9 @@ struct FlowGfwTask {
       registry.add("nRecColvsCent", "", kTH2F, {{6, -0.5, 5.5}, {{axisCentrality}}});
       registry.add("Pt_all_ch", "", kTH2F, {{axisCentrality}, {axisPt}});
       registry.add("Pt_ch", "", kTH2F, {{axisCentrality}, {axisPt}});
-      registry.add("hPtMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
-      registry.add("hCenMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisCentrality}});
+      registry.add("hPtMCRec", "Monte Carlo Reco; pT (GeV/c)", {HistType::kTH1D, {axisPt}});
+      registry.add("hCenMCRec", "Monte Carlo Reco; Centrality (%)", {HistType::kTH1D, {axisCentrality}});
+      registry.add("hPtNchMCRec", "Reco production; pT (GeV/c); Multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
       registry.add("Pt_pi", "", kTH2F, {{axisCentrality}, {axisPt}});
       registry.add("Pt_ka", "", kTH2F, {{axisCentrality}, {axisPt}});
       registry.add("Pt_pr", "", kTH2F, {{axisCentrality}, {axisPt}});
@@ -405,8 +421,9 @@ struct FlowGfwTask {
       registry.add("hEventCounterMCGen", "Event counter", kTH1F, {axisEvent});
       registry.add("zPosMC", ";;Entries;", kTH1F, {axisZpos});
       registry.add("PtMC_ch", "", kTH2F, {{axisCentrality}, {axisPt}});
-      registry.add("hPtMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
-      registry.add("hCenMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisCentrality}});
+      registry.add("hPtMCGen", "Monte Carlo Truth; pT (GeV/c)", {HistType::kTH1D, {axisPt}});
+      registry.add("hCenMCGen", "Monte Carlo Truth; Centrality (%)", {HistType::kTH1D, {axisCentrality}});
+      registry.add("hPtNchMCGen", "Truth production; pT (GeV/c); multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
       registry.add("PtMC_pi", "", kTH2F, {{axisCentrality}, {axisPt}});
       registry.add("PtMC_ka", "", kTH2F, {{axisCentrality}, {axisPt}});
       registry.add("PtMC_pr", "", kTH2F, {{axisCentrality}, {axisPt}});
@@ -740,7 +757,7 @@ struct FlowGfwTask {
     if (cfgTrackSel) {
       return myTrackSel.IsSelected(track);
     } else if (cfgGlobalplusITS) {
-      return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
+      return ((track.tpcNClsFound() >= cfgCutTPCclu) || (track.itsNCls() >= cfgCutITSclu));
     } else if (cfgGlobalonly) {
       return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
     } else if (cfgITSonly) {
@@ -1058,14 +1075,15 @@ struct FlowGfwTask {
   } // End of process
   PROCESS_SWITCH(FlowGfwTask, processData, "Process analysis for Run 3 data", false);
 
-  using TheFilteredSimTracks = soa::Filtered<SimTracks>;
+  using TheFilteredMyTracks = soa::Filtered<MyTracks>;
+  using TheFilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
-  Preslice<TheFilteredSimTracks> perCollision = aod::track::collisionId;
+  Preslice<TheFilteredMyTracks> perCollision = aod::track::collisionId;
   void processpTEff(aod::McCollisions::iterator const& mccollision,
-                    soa::SmallGroups<SimCollisions> const& collisions,
+                    soa::SmallGroups<MyCollisions> const& collisions,
                     aod::McParticles const& mcParticles,
-                    TheFilteredSimTracks const& simTracks)
+                    TheFilteredMyTracks const& tracks)
   {
     // MC reconstructed
     for (const auto& collision : collisions) {
@@ -1074,7 +1092,10 @@ struct FlowGfwTask {
       if (!collision.sel8())
         return;
 
-      if (cfgUseAdditionalEventCut && !eventSelected(o2::aod::mult::MultNTracksPV(), collision, simTracks.size(), centrality)) {
+      if (tracks.size() < 1)
+        return;
+
+      if (cfgUseAdditionalEventCut && !eventSelected(o2::aod::mult::MultNTracksPV(), collision, tracks.size(), centrality)) {
         return;
       }
 
@@ -1085,7 +1106,7 @@ struct FlowGfwTask {
       registry.fill(HIST("nRecColvsCent"), collisions.size(), collision.centFT0C());
       registry.fill(HIST("T0Ccent"), centrality);
 
-      const auto& groupedTracks = simTracks.sliceBy(perCollision, collision.globalIndex());
+      const auto& groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& track : groupedTracks) {
 
         if (!trackSelected(track))
@@ -1095,9 +1116,14 @@ struct FlowGfwTask {
           continue;
 
         const auto& particle = track.mcParticle();
-        registry.fill(HIST("hEventCounterMCRec"), 0.5);
-        registry.fill(HIST("hPtMCRec"), track.pt());
-        registry.fill(HIST("hCenMCRec"), centrality);
+
+        if (isStable(particle.pdgCode())) {
+          registry.fill(HIST("hEventCounterMCRec"), 0.5);
+          registry.fill(HIST("hPtMCRec"), track.pt());
+          registry.fill(HIST("hCenMCRec"), centrality);
+          registry.fill(HIST("hPtNchMCRec"), track.pt(), track.size());
+        }
+
         registry.fill(HIST("Pt_all_ch"), centrality, track.pt());
         registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
 
@@ -1105,20 +1131,20 @@ struct FlowGfwTask {
           continue;
 
         registry.fill(HIST("Pt_ch"), centrality, track.pt());
-        if (particle.pdgCode() == PDG_t::kPiPlus ||
-            particle.pdgCode() == PDG_t::kPiMinus) {
+        if (particle.pdgCode() == kPiPlus ||
+            particle.pdgCode() == kPiMinus) {
           registry.fill(HIST("Pt_pi"), centrality, track.pt());
-        } else if (particle.pdgCode() == PDG_t::kKPlus ||
-                   particle.pdgCode() == PDG_t::kKMinus) {
+        } else if (particle.pdgCode() == kKPlus ||
+                   particle.pdgCode() == kKMinus) {
           registry.fill(HIST("Pt_ka"), centrality, track.pt());
-        } else if (particle.pdgCode() == PDG_t::kProton ||
-                   particle.pdgCode() == PDG_t::kProtonBar) {
+        } else if (particle.pdgCode() == kProton ||
+                   particle.pdgCode() == kProtonBar) {
           registry.fill(HIST("Pt_pr"), centrality, track.pt());
-        } else if (particle.pdgCode() == PDG_t::kSigmaPlus ||
-                   particle.pdgCode() == PDG_t::kSigmaBarMinus) {
+        } else if (particle.pdgCode() == kSigmaPlus ||
+                   particle.pdgCode() == kSigmaBarMinus) {
           registry.fill(HIST("Pt_sigpos"), centrality, track.pt());
-        } else if (particle.pdgCode() == PDG_t::kSigmaMinus ||
-                   particle.pdgCode() == PDG_t::kSigmaBarPlus) {
+        } else if (particle.pdgCode() == kSigmaMinus ||
+                   particle.pdgCode() == kSigmaBarPlus) {
           registry.fill(HIST("Pt_signeg"), centrality, track.pt());
         } else {
           registry.fill(HIST("Pt_re"), centrality, track.pt());
@@ -1132,6 +1158,12 @@ struct FlowGfwTask {
       registry.fill(HIST("zPosMC"), mccollision.posZ());
       registry.fill(HIST("hEventCounterMCGen"), 1.5);
 
+      std::vector<int> numberOfTracks;
+      for (auto const& collision : collisions) {
+        auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+        numberOfTracks.emplace_back(groupedTracks.size());
+      }
+
       for (const auto& particle : mcParticles) {
         if (particle.eta() < -cfgCutEta || particle.eta() > cfgCutEta) {
           continue;
@@ -1139,29 +1171,38 @@ struct FlowGfwTask {
         if (particle.pt() < cfgCutPtMin || particle.pt() > cfgCutPtMax) {
           continue;
         }
+
         if (!particle.isPhysicalPrimary()) {
           continue;
         }
-        registry.fill(HIST("hEventCounterMCGen"), 2.5);
-        registry.fill(HIST("hPtMCGen"), particle.pt());
-        registry.fill(HIST("hCenMCGen"), centrality);
+
+        if (isStable(particle.pdgCode())) {
+          registry.fill(HIST("hEventCounterMCGen"), 2.5);
+          registry.fill(HIST("hPtMCGen"), particle.pt());
+          registry.fill(HIST("hCenMCGen"), centrality);
+
+          if (collisions.size() > 0) {
+            registry.fill(HIST("hPtNchMCGen"), particle.pt(), numberOfTracks[0]);
+          }
+        }
+
         registry.fill(HIST("PtMC_ch"), centrality, particle.pt());
-        if (particle.pdgCode() == PDG_t::kPiPlus ||
-            particle.pdgCode() == PDG_t::kPiMinus) { // pion
+        if (particle.pdgCode() == kPiPlus ||
+            particle.pdgCode() == kPiMinus) { // pion
           registry.fill(HIST("PtMC_pi"), centrality, particle.pt());
-        } else if (particle.pdgCode() == PDG_t::kKPlus ||
-                   particle.pdgCode() == PDG_t::kKMinus) { // kaon
+        } else if (particle.pdgCode() == kKPlus ||
+                   particle.pdgCode() == kKMinus) { // kaon
           registry.fill(HIST("PtMC_ka"), centrality, particle.pt());
-        } else if (particle.pdgCode() == PDG_t::kProton ||
-                   particle.pdgCode() == PDG_t::kProtonBar) { // proton
+        } else if (particle.pdgCode() == kProton ||
+                   particle.pdgCode() == kProtonBar) { // proton
           registry.fill(HIST("PtMC_pr"), centrality, particle.pt());
-        } else if (particle.pdgCode() == PDG_t::kSigmaPlus ||
+        } else if (particle.pdgCode() == kSigmaPlus ||
                    particle.pdgCode() ==
-                     PDG_t::kSigmaBarMinus) { // positive sigma
+                     kSigmaBarMinus) { // positive sigma
           registry.fill(HIST("PtMC_sigpos"), centrality, particle.pt());
-        } else if (particle.pdgCode() == PDG_t::kSigmaMinus ||
+        } else if (particle.pdgCode() == kSigmaMinus ||
                    particle.pdgCode() ==
-                     PDG_t::kSigmaBarPlus) { // negative sigma
+                     kSigmaBarPlus) { // negative sigma
           registry.fill(HIST("PtMC_signeg"), centrality, particle.pt());
         } else { // rest
           registry.fill(HIST("PtMC_re"), centrality, particle.pt());
