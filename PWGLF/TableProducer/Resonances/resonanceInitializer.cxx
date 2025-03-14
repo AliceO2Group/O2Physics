@@ -58,13 +58,18 @@ struct ResonanceInitializer {
   Service<o2::framework::O2DatabasePDG> pdg;
 
   Produces<aod::ResoCollisions> resoCollisions;
+  Produces<aod::ResoCollisionColls> resoCollisionColls;
   Produces<aod::ResoMCCollisions> resoMCCollisions;
   Produces<aod::ResoSpheroCollisions> resoSpheroCollisions;
   Produces<aod::ResoEvtPlCollisions> resoEvtPlCollisions;
   Produces<aod::ResoTracks> reso2trks;
+  Produces<aod::ResoTrackTracks> resoTrackTracks;
   Produces<aod::ResoMicroTracks> reso2microtrks;
+  Produces<aod::ResoMicroTrackTracks> resoMicroTrackTracks;
   Produces<aod::ResoV0s> reso2v0s;
+  Produces<aod::ResoV0V0s> resoV0V0s;
   Produces<aod::ResoCascades> reso2cascades;
+  Produces<aod::ResoCascadeCascades> resoCascadeCascades;
   Produces<aod::ResoMCTracks> reso2mctracks;
   Produces<aod::ResoMCParents> reso2mcparents;
   Produces<aod::ResoMCV0s> reso2mcv0s;
@@ -79,7 +84,9 @@ struct ResonanceInitializer {
 
   Configurable<bool> cfgFatalWhenNull{"cfgFatalWhenNull", true, "Fatal when null on ccdb access"};
   Configurable<bool> cfgFillMicroTracks{"cfgFillMicroTracks", false, "Fill micro tracks"};
-  Configurable<bool> cfgBypassTrackFill{"cfgBypassTrackFill", true, "Bypass track fill"};
+  Configurable<bool> cfgBypassTrackFill{"cfgBypassTrackFill", false, "Bypass track fill"};
+  Configurable<bool> cfgBypassCollIndexFill{"cfgBypassCollIndexFill", false, "Bypass collision index fill"};
+  Configurable<bool> cfgBypassTrackIndexFill{"cfgBypassTrackIndexFill", false, "Bypass track index fill"};
 
   // Configurables
   Configurable<double> dBzInput{"dBzInput", -999, "bz field, -999 is automatic"};
@@ -656,7 +663,6 @@ struct ResonanceInitializer {
                            (track.hasTOF() << 6) |
                            ((track.sign() > 0) << 7); // sign +1: 1, -1: 0
       reso2microtrks(resoCollisions.lastIndex(),
-                     track.globalIndex(),
                      track.px(),
                      track.py(),
                      track.pz(),
@@ -665,6 +671,9 @@ struct ResonanceInitializer {
                      static_cast<uint8_t>(o2::aod::resodmciroaughter::PidNSigma(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.hasTOF())),
                      static_cast<uint8_t>(trackSelFlag),
                      trackFlags);
+      if (!cfgBypassTrackIndexFill) {
+        resoMicroTrackTracks(track.globalIndex());
+      }
     }
   }
   // Filter for all tracks
@@ -688,7 +697,6 @@ struct ResonanceInitializer {
                            (track.hasTOF() << 6) |
                            ((track.sign() > 0) << 7); // sign +1: 1, -1: 0
       reso2trks(resoCollisions.lastIndex(),
-                track.globalIndex(),
                 track.pt(),
                 track.px(),
                 track.py(),
@@ -705,6 +713,9 @@ struct ResonanceInitializer {
                 static_cast<int8_t>(std::round(track.tofNSigmaPr() * 10)),
                 static_cast<int8_t>(std::round(track.tpcSignal() * 10)),
                 trackFlags);
+      if (!cfgBypassTrackIndexFill) {
+        resoTrackTracks(track.globalIndex());
+      }
       if constexpr (isMC) {
         fillMCTrack(track);
       }
@@ -724,7 +735,6 @@ struct ResonanceInitializer {
       if (!filterV0(collision, v0))
         continue;
       reso2v0s(resoCollisions.lastIndex(),
-               v0.globalIndex(),
                v0.pt(),
                v0.px(),
                v0.py(),
@@ -751,6 +761,9 @@ struct ResonanceInitializer {
                v0.mAntiLambda(),
                v0.mK0Short(),
                v0.v0radius(), v0.x(), v0.y(), v0.z());
+      if (!cfgBypassTrackIndexFill) {
+        resoV0V0s(v0.globalIndex());
+      }
       if constexpr (isMC) {
         fillMCV0(v0);
       }
@@ -771,7 +784,6 @@ struct ResonanceInitializer {
       if (!filterCasc(casc))
         continue;
       reso2cascades(resoCollisions.lastIndex(),
-                    casc.globalIndex(),
                     casc.pt(),
                     casc.px(),
                     casc.py(),
@@ -809,6 +821,9 @@ struct ResonanceInitializer {
                     casc.mLambda(),
                     casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
+      if (!cfgBypassTrackIndexFill) {
+        resoCascadeCascades(casc.globalIndex());
+      }
       if constexpr (isMC) {
         fillMCCascade(casc);
       }
@@ -1274,9 +1289,12 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
     if (cfgFillMicroTracks) {
@@ -1295,9 +1313,12 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
     if (cfgFillMicroTracks) {
@@ -1317,9 +1338,12 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId));
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId));
     fillTracks<false>(collision, tracks);
     if (cfgFillMicroTracks) {
       fillMicroTracks<false>(collision, tracks);
@@ -1339,9 +1363,12 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
     if (cfgFillMicroTracks) {
@@ -1362,9 +1389,12 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
     if (cfgFillMicroTracks) {
@@ -1387,9 +1417,12 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     fillTracks<false>(collision, tracks);
     if (cfgFillMicroTracks) {
       fillMicroTracks<false>(collision, tracks);
@@ -1411,9 +1444,12 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
     if (cfgFillMicroTracks) {
@@ -1433,9 +1469,12 @@ struct ResonanceInitializer {
     initCCDB(bc);
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     auto mccollision = collision.mcCollision_as<aod::McCollisions>();
     float impactpar = mccollision.impactParameter();
     fillMCCollision<false>(collision, mcParticles, impactpar);
@@ -1460,9 +1499,12 @@ struct ResonanceInitializer {
     initCCDB(bc);
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId));
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId));
     fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
@@ -1484,9 +1526,12 @@ struct ResonanceInitializer {
     // auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
@@ -1509,9 +1554,12 @@ struct ResonanceInitializer {
     initCCDB(bc);
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
@@ -1535,9 +1583,12 @@ struct ResonanceInitializer {
     // auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
@@ -1563,9 +1614,12 @@ struct ResonanceInitializer {
     initCCDB(bc);
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
@@ -1591,9 +1645,12 @@ struct ResonanceInitializer {
     // auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
-    resoSpheroCollisions(collision.globalIndex(), computeSpherocity(tracks, trackSphMin, trackSphDef));
-    resoEvtPlCollisions(collision.globalIndex(), 0, 0, 0, 0);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks

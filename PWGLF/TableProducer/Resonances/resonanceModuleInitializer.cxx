@@ -66,6 +66,7 @@ struct ResonanceModuleInitializer {
   EventPlaneHelper helperEP;                 ///< Helper for event plane calculations
 
   Produces<aod::ResoCollisions> resoCollisions;             ///< Output table for resonance collisions
+  Produces<aod::ResoCollisionColls> resoCollisionColls;     ///< Output table for collision references
   Produces<aod::ResoMCCollisions> resoMCCollisions;         ///< Output table for MC resonance collisions
   Produces<aod::ResoSpheroCollisions> resoSpheroCollisions; ///< Output table for spherocity
   Produces<aod::ResoEvtPlCollisions> resoEvtPlCollisions;   ///< Output table for event plane
@@ -78,6 +79,7 @@ struct ResonanceModuleInitializer {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   Configurable<bool> cfgFatalWhenNull{"cfgFatalWhenNull", true, "Fatal when null on ccdb access"};
+  Configurable<bool> cfgBypassCollIndexFill{"cfgBypassCollIndexFill", false, "Bypass collision index fill"};
 
   // Configurables
   Configurable<double> dBzInput{"dBzInput", -999, "bz field, -999 is automatic"};
@@ -532,7 +534,10 @@ struct ResonanceModuleInitializer {
     colCuts.fillQA(collision);
     centrality = centEst(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
   }
   PROCESS_SWITCH(ResonanceModuleInitializer, processRun3, "Default process for RUN3", false);
 
@@ -552,7 +557,10 @@ struct ResonanceModuleInitializer {
     colCuts.fillQARun2(collision);
     centrality = collision.centRun2V0M();
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz);
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
   }
   PROCESS_SWITCH(ResonanceModuleInitializer, processRun2, "process for RUN2", false);
 
@@ -589,10 +597,10 @@ struct ResonanceModuleInitializer {
    * @param collision Collision data
    * @param tracks Track data
    */
-  void processSpherocity(soa::Filtered<aod::ResoCollisionCandidates>::iterator const& collision, aod::ResoTrackCandidates const& tracks)
+  void processSpherocity(soa::Filtered<aod::ResoCollisionCandidates>::iterator const& /*collision*/, aod::ResoTrackCandidates const& tracks)
   {
     float spherocity = computeSpherocity(tracks, cfgTrackSphMin, cfgTrackSphDef);
-    resoSpheroCollisions(collision.globalIndex(), spherocity);
+    resoSpheroCollisions(spherocity);
   }
   PROCESS_SWITCH(ResonanceModuleInitializer, processSpherocity, "process Spherocity", false);
 
@@ -604,7 +612,7 @@ struct ResonanceModuleInitializer {
    */
   void processEventPlane(soa::Filtered<soa::Join<aod::ResoCollisionCandidates, aod::Qvectors>>::iterator const& collision)
   {
-    resoEvtPlCollisions(collision.globalIndex(), getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId));
+    resoEvtPlCollisions(getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId));
   }
   PROCESS_SWITCH(ResonanceModuleInitializer, processEventPlane, "process Event Plane", false);
 };
@@ -617,18 +625,23 @@ struct ResonanceModuleInitializer {
  */
 struct ResonanceDaughterInitializer {
   SliceCache cache;
-  Produces<aod::ResoTracks> reso2trks;           ///< Output table for resonance tracks
-  Produces<aod::ResoMicroTracks> reso2microtrks; ///< Output table for resonance microtracks
-  Produces<aod::ResoMCTracks> reso2mctracks;     ///< Output table for MC resonance tracks
-  Produces<aod::ResoV0s> reso2v0s;               ///< Output table for resonance V0s
-  Produces<aod::ResoMCV0s> reso2mcv0s;           ///< Output table for MC resonance V0s
-  Produces<aod::ResoCascades> reso2cascades;     ///< Output table for resonance cascades
-  Produces<aod::ResoMCCascades> reso2mccascades; ///< Output table for MC resonance cascades
+  Produces<aod::ResoTracks> reso2trks;                      ///< Output table for resonance tracks
+  Produces<aod::ResoTrackTracks> resoTrackTracks;           ///< Output table for resonance track tracks
+  Produces<aod::ResoMicroTracks> reso2microtrks;            ///< Output table for resonance microtracks
+  Produces<aod::ResoMicroTrackTracks> resoMicroTrackTracks; ///< Output table for resonance microtrack tracks
+  Produces<aod::ResoMCTracks> reso2mctracks;                ///< Output table for MC resonance tracks
+  Produces<aod::ResoV0s> reso2v0s;                          ///< Output table for resonance V0s
+  Produces<aod::ResoV0V0s> resoV0V0s;                       ///< Output table for resonance V0-V0s
+  Produces<aod::ResoMCV0s> reso2mcv0s;                      ///< Output table for MC resonance V0s
+  Produces<aod::ResoCascades> reso2cascades;                ///< Output table for resonance cascades
+  Produces<aod::ResoCascadeCascades> resoCascadeCascades;   ///< Output table for resonance cascade-cascades
+  Produces<aod::ResoMCCascades> reso2mccascades;            ///< Output table for MC resonance cascades
 
   // Configurables
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "Fill QA histograms"};
   Configurable<bool> cfgFillMicroTracks{"cfgFillMicroTracks", false, "Fill micro tracks"};
   Configurable<bool> cfgBypassTrackFill{"cfgBypassTrackFill", true, "Bypass track fill"};
+  Configurable<bool> cfgBypassTrackIndexFill{"cfgBypassTrackIndexFill", false, "Bypass track index fill"};
 
   // Configurables for tracks
   Configurable<float> cMaxDCArToPVcut{"cMaxDCArToPVcut", 2.0, "Track DCAr cut to PV Maximum"};
@@ -808,7 +821,6 @@ struct ResonanceDaughterInitializer {
                            (track.hasTOF() << 6) |
                            ((track.sign() > 0) << 7); // sign +1: 1, -1: 0
       reso2microtrks(collision.globalIndex(),
-                     track.globalIndex(),
                      track.px(),
                      track.py(),
                      track.pz(),
@@ -817,6 +829,9 @@ struct ResonanceDaughterInitializer {
                      static_cast<uint8_t>(o2::aod::resodmciroaughter::PidNSigma(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.hasTOF())),
                      static_cast<uint8_t>(trackSelFlag),
                      trackFlags);
+      if (!cfgBypassTrackIndexFill) {
+        resoMicroTrackTracks(track.globalIndex());
+      }
     }
   }
 
@@ -854,7 +869,6 @@ struct ResonanceDaughterInitializer {
                            (track.hasTOF() << 6) |
                            ((track.sign() > 0) << 7); // sign +1: 1, -1: 0
       reso2trks(collision.globalIndex(),
-                track.globalIndex(),
                 track.pt(),
                 track.px(),
                 track.py(),
@@ -871,6 +885,9 @@ struct ResonanceDaughterInitializer {
                 (int8_t)(track.tofNSigmaPr() * 10),
                 (int8_t)(track.tpcSignal() * 10),
                 trackFlags);
+      if (!cfgBypassTrackIndexFill) {
+        resoTrackTracks(track.globalIndex());
+      }
       if constexpr (isMC) {
         fillMCTrack(track);
       }
@@ -981,7 +998,6 @@ struct ResonanceDaughterInitializer {
       childIDs[0] = v0.posTrackId();
       childIDs[1] = v0.negTrackId();
       reso2v0s(collision.globalIndex(),
-               v0.globalIndex(),
                v0.pt(),
                v0.px(),
                v0.py(),
@@ -1008,6 +1024,9 @@ struct ResonanceDaughterInitializer {
                v0.mAntiLambda(),
                v0.mK0Short(),
                v0.v0radius(), v0.x(), v0.y(), v0.z());
+      if (!cfgBypassTrackIndexFill) {
+        resoV0V0s(v0.globalIndex());
+      }
       if constexpr (isMC) {
         fillMCV0(v0);
       }
@@ -1134,7 +1153,6 @@ struct ResonanceDaughterInitializer {
       childIDs[1] = casc.negTrackId();
       childIDs[2] = casc.bachelorId();
       reso2cascades(collision.globalIndex(),
-                    casc.globalIndex(),
                     casc.pt(),
                     casc.px(),
                     casc.py(),
@@ -1172,6 +1190,9 @@ struct ResonanceDaughterInitializer {
                     casc.mLambda(),
                     casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
+      if (!cfgBypassTrackIndexFill) {
+        resoCascadeCascades(casc.globalIndex());
+      }
       if constexpr (isMC) {
         fillMCCascade(casc);
       }

@@ -172,7 +172,7 @@ struct ResonanceCombine {
     }
   }
 
-  void process(soa::Join<aod::ResoCollisions, aod::Qvectors>::iterator const& collision, soa::Join<aod::ResoTracks, aod::Reso2TracksPIDExt> const& resotracks)
+  void process(soa::Join<aod::ResoCollisions, aod::ResoCollisionColls, aod::Qvectors>::iterator const& collision, soa::Join<aod::ResoTracks, aod::ResoTrackTracks, aod::Reso2TracksPIDExt> const& resotracks)
   {
     histos.fill(HIST("hVertexZ"), collision.posZ());
     // Both resoCollisions and Qvectors have the same cent column, so we have to use "_as" to access it
