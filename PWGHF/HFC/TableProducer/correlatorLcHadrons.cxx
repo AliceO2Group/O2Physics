@@ -145,7 +145,7 @@ struct HfCorrelatorLcHadronsSelection {
         continue;
       }
       double yL = RecoDecay::y(particle.pVector(), MassLambdaCPlus);
-      if (std::abs(yL) > yCandMax || particle.pt() < ptCandMin) {
+      if (std::abs(yL) > yCandGenMax || particle.pt() < ptCandMin) {
         isLcFound = false;
         continue;
       }
@@ -775,7 +775,7 @@ struct HfCorrelatorLcHadrons {
         continue;
       }
       double yL = RecoDecay::y(particle.pVector(), MassLambdaCPlus);
-      if (std::abs(yL) > yCandMax || particle.pt() < ptCandMin) {
+      if (std::abs(yL) > yCandGenMax || particle.pt() < ptCandMin) {
         continue;
       }
       registry.fill(HIST("hLcBin"), poolBin);
