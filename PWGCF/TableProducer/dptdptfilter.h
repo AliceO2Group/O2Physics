@@ -228,7 +228,9 @@ std::vector<TrackSelection*> trackFilters = {};              // the vector of tr
 std::vector<std::function<float(float)>> maxDcaZPtDeps = {}; // max dca in z axis as function of pT for each track selector
 TrackSelection* extraTrackFilter = nullptr;
 bool dca2Dcut = false;
-float sharedTpcClusters = 1.0; ///< max fraction of shared TPC clusters
+/// TODO: to incorporate our own track selectio object
+float sharedTpcClusters = 1.0;      ///< max fraction of shared TPC clusters
+float sharedTpcClustersExtra = 1.0; ///< max fraction of shared TPC clusters for the extra track filter
 float maxDCAz = 1e6f;
 float maxDCAxy = 1e6f;
 
@@ -263,11 +265,21 @@ inline void initializeTrackSelection(TrackSelectionTuneCfg& tune)
   };
   auto highQualityTpcTrack = []() {
     TrackSelection* tpcTrack = new TrackSelection(getGlobalTrackSelection());
+    tpcTrack->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
     tpcTrack->ResetITSRequirements();
     tpcTrack->SetRequireITSRefit(false);
     tpcTrack->SetMinNClustersTPC(120);
-    sharedTpcClusters = 0.2;
+    sharedTpcClustersExtra = 0.2;
     return tpcTrack;
+  };
+  auto itsOnlyTrack = []() {
+    TrackSelection* itsTrack = new TrackSelection();
+    itsTrack->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+    itsTrack->SetRequireITSRefit(true);
+    itsTrack->SetRequireHitsInITSLayers(2, {0, 1, 2});
+    itsTrack->SetMaxChi2PerClusterITS(36.0f);
+    itsTrack->SetMaxDcaXYPtDep([](float pt) { return 0.004f + 0.013f / pt; });
+    return itsTrack;
   };
   switch (tracktype) {
     case 1: { /* Run2 global track */
@@ -382,6 +394,22 @@ inline void initializeTrackSelection(TrackSelectionTuneCfg& tune)
       addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)), [](float pt) { return 0.004f + 0.013f / pt; });
       extraTrackFilter = highQualityTpcTrack();
     } break;
+    case 70: { /* Run 3 global track: kAny on 3 IB layers of ITS, tighter DCAxy, tighter pT dep DCAz, plus ITS only tracks */
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)), [](float pt) { return 0.004f + 0.013f / pt; });
+      addTrackFilter(itsOnlyTrack(), [](float pt) { return 0.004f + 0.013f / pt; });
+    } break;
+    case 71: { /* Run 3 global track: kTwo on 3 IB layers of ITS, tighter DCAxy, tighter pT dep DCAz, plus ITS only tracks */
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)), [](float pt) { return 0.004f + 0.013f / pt; });
+      addTrackFilter(itsOnlyTrack(), [](float pt) { return 0.004f + 0.013f / pt; });
+    } break;
+    case 72: { /* Run 3 global track: kAny on all 7 layers of ITS, tighter DCAxy, tighter pT dep DCAz, plus ITS only tracks */
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)), [](float pt) { return 0.004f + 0.013f / pt; });
+      addTrackFilter(itsOnlyTrack(), [](float pt) { return 0.004f + 0.013f / pt; });
+    } break;
+    case 73: { /* Run 3 global track: kAll on all 7 layers of ITS, tighter DCAxy, tighter pT dep DCAz, plus ITS only tracks */
+      addTrackFilter(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)), [](float pt) { return 0.004f + 0.013f / pt; });
+      addTrackFilter(itsOnlyTrack(), [](float pt) { return 0.004f + 0.013f / pt; });
+    } break;
     default:
       break;
   }
@@ -406,12 +434,13 @@ inline void initializeTrackSelection(TrackSelectionTuneCfg& tune)
       }
     }
     if (tune.mUseDCAz) {
-      for (auto dcaZCut : maxDcaZPtDeps) { // o2-linter: disable=const-ref-in-for-loop
+      for (auto dcaZCut : maxDcaZPtDeps) { // o2-linter: disable=const-ref-in-for-loop (the loop variable is not constant)
         dcaZCut = [&tune](float) { return tune.mDCAz; };
       }
     }
     if (tune.mUseFractionTpcSharedClusters) {
       sharedTpcClusters = tune.mFractionTpcSharedClusters;
+      sharedTpcClustersExtra = tune.mFractionTpcSharedClusters;
     }
   }
 }
@@ -1337,7 +1366,7 @@ inline bool matchTrackType(TrackObject const& track)
     if (extraTrackFilter != nullptr) {
       if (extraTrackFilter->IsSelected(track)) {
         /* shared fraction of TPC clusters */
-        if (!(track.tpcFractionSharedCls() < sharedTpcClusters)) {
+        if (!(track.tpcFractionSharedCls() < sharedTpcClustersExtra)) {
           return false;
         }
         /* we require TOF */

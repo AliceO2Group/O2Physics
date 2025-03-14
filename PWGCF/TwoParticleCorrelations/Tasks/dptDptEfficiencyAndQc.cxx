@@ -596,7 +596,7 @@ struct QAExtraDataCollectingEngine {
     AxisSpec phiAxis = {phibins, 0.0f, constants::math::TwoPI, "#varphi"};
     AxisSpec deltaPhiAxis = {phibins, 0.0f, constants::math::TwoPI, "#Delta#varphi"};
     AxisSpec etaAxis = {etabins, etalow, etaup, "#eta"};
-    AxisSpec deltaEtaAxis = {2 * etabins - 1, etalow - etaup, etaup - etalow, "#DeltaEta"};
+    AxisSpec deltaEtaAxis = {2 * etabins - 1, etalow - etaup, etaup - etalow, "#Delta#eta"};
 
     /* the reconstructed and generated levels histograms */
     std::string recogen = (kindOfData == kReco) ? "Reco" : "Gen";
