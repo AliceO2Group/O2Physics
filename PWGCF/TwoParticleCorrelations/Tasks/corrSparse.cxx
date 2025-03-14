@@ -264,7 +264,7 @@ struct CorrSparse {
     for (auto const& track1 : tracks1) {
 
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist"), Nch, posZ, track1.pt());
+        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt());
       }
 
       for (auto const& track2 : tracks2) {
@@ -283,7 +283,7 @@ struct CorrSparse {
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -PIHalf);
         float deltaEta = track1.eta() - track2.eta();
 
-        if (TMath::Abs(deltaEta) < cfgMergingCut) {
+        if (std::abs(deltaEta) < cfgMergingCut) {
 
           Double_t dPhiStarHigh = getDPhiStar(track1, track2, cfgRadiusHigh, magneticField);
           Double_t dPhiStarLow = getDPhiStar(track1, track2, cfgRadiusLow, magneticField);
@@ -292,10 +292,10 @@ struct CorrSparse {
 
           Bool_t bIsBelow = kFALSE;
 
-          if (TMath::Abs(dPhiStarLow) < kLimit || TMath::Abs(dPhiStarHigh) < kLimit || dPhiStarLow * dPhiStarHigh < 0) {
+          if (std::abs(dPhiStarLow) < kLimit || std::abs(dPhiStarHigh) < kLimit || dPhiStarLow * dPhiStarHigh < 0) {
             for (Double_t rad(cfgRadiusLow); rad < cfgRadiusHigh; rad += 0.01) {
               Double_t dPhiStar = getDPhiStar(track1, track2, rad, magneticField);
-              if (TMath::Abs(dPhiStar) < kLimit) {
+              if (std::abs(dPhiStar) < kLimit) {
                 bIsBelow = kTRUE;
                 break;
               }
