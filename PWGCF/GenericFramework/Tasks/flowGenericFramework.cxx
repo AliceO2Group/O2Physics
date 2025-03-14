@@ -386,7 +386,7 @@ struct FlowGenericFramework {
     if (!cfgRunByRun && cfg.correctionsLoaded)
       return;
     if (!cfgAcceptance.value.empty()) {
-      std::string runstr = (cfgRunByRun) ? "RBR/" : "";
+      std::string runstr = (cfgRunByRun) ? "RunByRun/" : "";
       cfg.mAcceptance.clear();
       if (cfgUsePID) {
         cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr + "ref/", timestamp));
@@ -601,20 +601,20 @@ struct FlowGenericFramework {
           th3sList[run][hNUAch + pid_index]->Fill(track.phi(), track.eta(), vtxz); // charged and id'ed particle weights
       } else {
         if (withinPtRef && !pid_index)
-          registry.fill(HIST("hPhiEtaVtxz_ref"), track.phi(), track.eta(), vtxz); // pt-subset of charged particles for ref flow
+          registry.fill(HIST("phi_eta_vtxz_ref"), track.phi(), track.eta(), vtxz); // pt-subset of charged particles for ref flow
         if (withinPtPOI) {
           switch (pid_index) {
             case 0:
-              registry.fill(HIST("hPhiEtaVtxz_ch"), track.phi(), track.eta(), vtxz); // charged particle weights
+              registry.fill(HIST("phi_eta_vtxz_ch"), track.phi(), track.eta(), vtxz); // charged particle weights
               break;
             case 1:
-              registry.fill(HIST("hPhiEtaVtxz_pi"), track.phi(), track.eta(), vtxz); // pion weights
+              registry.fill(HIST("phi_eta_vtxz_pi"), track.phi(), track.eta(), vtxz); // pion weights
               break;
             case 2:
-              registry.fill(HIST("hPhiEtaVtxz_ka"), track.phi(), track.eta(), vtxz); // kaon weights
+              registry.fill(HIST("phi_eta_vtxz_ka"), track.phi(), track.eta(), vtxz); // kaon weights
               break;
             case 3:
-              registry.fill(HIST("hPhiEtaVtxz_pr"), track.phi(), track.eta(), vtxz); // proton weights
+              registry.fill(HIST("phi_eta_vtxz_pr"), track.phi(), track.eta(), vtxz); // proton weights
               break;
           }
         }
@@ -623,7 +623,7 @@ struct FlowGenericFramework {
       if (cfgRunByRun)
         th3sList[run][hNUAref]->Fill(track.phi(), track.eta(), vtxz);
       else
-        registry.fill(HIST("hPhiEtaVtxz_ref"), track.phi(), track.eta(), vtxz);
+        registry.fill(HIST("phi_eta_vtxz_ref"), track.phi(), track.eta(), vtxz);
     }
     return;
   }
