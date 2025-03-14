@@ -114,7 +114,7 @@ struct PCMQCMC {
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_types[2] = {"before/", "after/"};
-  static constexpr std::string_view mcphoton_types[3] = {"primary/", "fromWD/", "fromHS/"};
+  static constexpr std::string_view mcphoton_types[5] = {"primary/", "fromWD/", "fromHS/", "fromPi0Dalitz/", "fromEtaDalitz"};
 
   void init(InitContext&)
   {
@@ -200,7 +200,7 @@ struct PCMQCMC {
     fRegistry.add("V0/primary/hEtaResolution", "#eta resolution;p_{#gamma} (GeV/c);#Delta#eta", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
     fRegistry.add("V0/primary/hThetaResolution", "#theta resolution;p_{#gamma} (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
     fRegistry.add("V0/primary/hPhiResolution", "#varphi resolution;p_{#gamma} (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
-    fRegistry.add("V0/primary/hNgamma", "Number of true #gamma per collision", kTH1F, {{101, -0.5f, 100.5f}});
+    fRegistry.add("V0/primary/hNgamma", "Number of true #gamma per collision;N_{#gamma} per event;Number of events", kTH1F, {{101, -0.5f, 100.5f}});
     fRegistry.add("V0/primary/hConvPoint_diffX", "conversion point diff X MC;X_{MC} (cm);X_{rec} - X_{MC} (cm)", kTH2F, {{200, -100, +100}, {100, -50.0f, 50.0f}}, true);
     fRegistry.add("V0/primary/hConvPoint_diffY", "conversion point diff Y MC;Y_{MC} (cm);Y_{rec} - Y_{MC} (cm)", kTH2F, {{200, -100, +100}, {100, -50.0f, 50.0f}}, true);
     fRegistry.add("V0/primary/hConvPoint_diffZ", "conversion point diff Z MC;Z_{MC} (cm);Z_{rec} - Z_{MC} (cm)", kTH2F, {{200, -100, +100}, {100, -50.0f, 50.0f}}, true);
@@ -210,13 +210,14 @@ struct PCMQCMC {
     fRegistry.add("V0/primary/hXY_MC", "X vs. Y of true photon conversion point.;X (cm);Y (cm)", kTH2F, {{400, -100.0f, +100}, {400, -100, +100}}, true);
     fRegistry.add("V0/primary/hRZ_MC", "R vs. Z of true photon conversion point;Z (cm);R_{xy} (cm)", kTH2F, {{200, -100.0f, +100}, {200, 0, 100}}, true);
     fRegistry.add("V0/primary/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {80, -2, +2}}, false);
-    fRegistry.addClone("V0/primary/", "V0/fromWD/"); // from weak decay
-    fRegistry.addClone("V0/primary/", "V0/fromHS/"); // from hadronic shower in detector materials
+    fRegistry.addClone("V0/primary/", "V0/fromWD/");        // from weak decay
+    fRegistry.addClone("V0/primary/", "V0/fromHS/");        // from hadronic shower in detector materials
+    fRegistry.addClone("V0/primary/", "V0/fromPi0Dalitz/"); // misidentified dielectron from pi0 dalitz decay
+    fRegistry.addClone("V0/primary/", "V0/fromEtaDalitz/"); // misidentified dielectron from eta dalitz decay
 
     // v0leg info
     fRegistry.add("V0Leg/primary/hPt", "pT;p_{T,e} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
     fRegistry.add("V0Leg/primary/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{1000, -50, 50}}, false);
-    fRegistry.add("V0Leg/primary/hRelDeltaPt", "pT resolution;p_{T} (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0, 10}, {200, 0, 0.2}}, false);
     fRegistry.add("V0Leg/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("V0Leg/primary/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -50.0f, 50.0f}, {200, -50.0f, 50.0f}}, false);
     fRegistry.add("V0Leg/primary/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
@@ -381,7 +382,6 @@ struct PCMQCMC {
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hPt"), leg.pt());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hQoverPt"), leg.sign() / leg.pt());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hEtaPhi"), leg.phi(), leg.eta());
-    fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hRelDeltaPt"), leg.pt(), std::sqrt(leg.c1Pt21Pt2()) * leg.pt());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hDCAxyz"), leg.dcaXY(), leg.dcaZ());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hNclsITS"), leg.itsNCls());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hNclsTPC"), leg.tpcNClsFound());
@@ -430,7 +430,7 @@ struct PCMQCMC {
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
 
       auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.globalIndex());
-      int ng_primary = 0, ng_wd = 0, ng_hs = 0;
+      int ng_primary = 0, ng_wd = 0, ng_hs = 0, nee_pi0 = 0, nee_eta = 0;
       for (auto& v0 : V0Photons_coll) {
         auto pos = v0.posTrack_as<MyMCV0Legs>();
         auto ele = v0.negTrack_as<MyMCV0Legs>();
@@ -443,39 +443,65 @@ struct PCMQCMC {
           continue;
         }
         int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
-        if (photonid < 0) {
-          continue;
-        }
-        auto mcphoton = mcparticles.iteratorAt(photonid);
-
-        if (cfgRequireTrueAssociation && (mcphoton.emmceventId() != collision.emmceventId())) {
+        int pi0id = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 111, mcparticles); // pi0 dalitz decay
+        int etaid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 221, mcparticles); // eta dalitz decay
+        if (photonid < 0 && pi0id < 0 && etaid < 0) {
           continue;
         }
 
-        if (mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator()) {
-          fillV0Info<0>(v0, mcphoton, elemc);
-          for (auto& leg : {pos, ele}) {
-            fillV0LegInfo<0>(leg);
+        if (photonid > 0) {
+          auto mcphoton = mcparticles.iteratorAt(photonid);
+          if (cfgRequireTrueAssociation && (mcphoton.emmceventId() != collision.emmceventId())) {
+            continue;
           }
-          ng_primary++;
-        } else if (IsFromWD(mcphoton.template emmcevent_as<aod::EMMCEvents>(), mcphoton, mcparticles) > 0) {
-          fillV0Info<1>(v0, mcphoton, elemc);
-          for (auto& leg : {pos, ele}) {
-            fillV0LegInfo<1>(leg);
+
+          if (mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator()) {
+            fillV0Info<0>(v0, mcphoton, elemc);
+            for (auto& leg : {pos, ele}) {
+              fillV0LegInfo<0>(leg);
+            }
+            ng_primary++;
+          } else if (IsFromWD(mcphoton.template emmcevent_as<aod::EMMCEvents>(), mcphoton, mcparticles) > 0) {
+            fillV0Info<1>(v0, mcphoton, elemc);
+            for (auto& leg : {pos, ele}) {
+              fillV0LegInfo<1>(leg);
+            }
+            ng_wd++;
+          } else {
+            fillV0Info<2>(v0, mcphoton, elemc);
+            for (auto& leg : {pos, ele}) {
+              fillV0LegInfo<2>(leg);
+            }
+            ng_hs++;
+            // LOGF(info, "mcphoton.vx() = %f, mcphoton.vy() = %f, mcphoton.vz() = %f, mother_pdg = %d", mcphoton.vx(), mcphoton.vy(), mcphoton.vz(), mother_pdg);
           }
-          ng_wd++;
-        } else {
-          fillV0Info<2>(v0, mcphoton, elemc);
-          for (auto& leg : {pos, ele}) {
-            fillV0LegInfo<2>(leg);
+        } else if (pi0id > 0) {
+          auto mcpi0 = mcparticles.iteratorAt(photonid);
+          if (cfgRequireTrueAssociation && (mcpi0.emmceventId() != collision.emmceventId())) {
+            continue;
           }
-          ng_hs++;
-          // LOGF(info, "mcphoton.vx() = %f, mcphoton.vy() = %f, mcphoton.vz() = %f, mother_pdg = %d", mcphoton.vx(), mcphoton.vy(), mcphoton.vz(), mother_pdg);
+          fillV0Info<3>(v0, mcpi0, elemc);
+          for (auto& leg : {pos, ele}) {
+            fillV0LegInfo<3>(leg);
+          }
+          nee_pi0++;
+        } else if (etaid > 0) {
+          auto mceta = mcparticles.iteratorAt(photonid);
+          if (cfgRequireTrueAssociation && (mceta.emmceventId() != collision.emmceventId())) {
+            continue;
+          }
+          fillV0Info<4>(v0, mceta, elemc);
+          for (auto& leg : {pos, ele}) {
+            fillV0LegInfo<4>(leg);
+          }
+          nee_eta++;
         }
       } // end of v0 loop
       fRegistry.fill(HIST("V0/primary/hNgamma"), ng_primary);
       fRegistry.fill(HIST("V0/fromWD/hNgamma"), ng_wd);
       fRegistry.fill(HIST("V0/fromHS/hNgamma"), ng_hs);
+      fRegistry.fill(HIST("V0/fromPi0Dalitz/hNgamma"), nee_pi0);
+      fRegistry.fill(HIST("V0/fromEtaDalitz/hNgamma"), nee_eta);
     } // end of collision loop
   } // end of process
 
