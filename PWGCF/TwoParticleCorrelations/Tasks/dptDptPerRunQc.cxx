@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <memory>
 #include <vector>
+#include <string>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/ctpRateFetcher.h"
