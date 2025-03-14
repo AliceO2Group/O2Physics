@@ -370,6 +370,8 @@ struct DptDptFilter {
   struct : ConfigurableGroup {
     std::string prefix = "cfgEventSelection";
     Configurable<std::string> itsDeadMaps{"itsDeadMaps", "", "Level of inactive chips: nocheck(empty), goodIts3, goodIts0123, goodItsAll. Default empty"};
+    Configurable<int64_t> minOrbit{"minOrbit", -1, "Lowest orbit to track"};
+    Configurable<int64_t> maxOrbit{"maxOrbit", INT64_MAX, "Highest orbit to track"};
     struct : ConfigurableGroup {
       std::string prefix = "cfgOccupancySelection";
       Configurable<std::string> cfgOccupancyEstimation{"cfgOccupancyEstimation", "None", "Occupancy estimation: None, Tracks, FT0C. Default None"};
@@ -520,22 +522,22 @@ struct DptDptFilter {
   template <typename CollisionObject, typename TracksObject>
   void processReconstructed(CollisionObject const& collision, TracksObject const& ftracks, float centormult);
 
-  void processWithCent(aod::CollisionEvSelCent const& collision, DptDptFullTracks const& ftracks);
+  void processWithCent(aod::CollisionEvSelCent const& collision, DptDptFullTracks const& ftracks, const aod::BCsWithTimestamps&);
   PROCESS_SWITCH(DptDptFilter, processWithCent, "Process reco with centrality", false);
 
-  void processWithRun2Cent(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracks const& ftracks);
+  void processWithRun2Cent(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracks const& ftracks, const aod::BCsWithTimestamps&);
   PROCESS_SWITCH(DptDptFilter, processWithRun2Cent, "Process reco with Run !/2 centrality", false);
 
-  void processWithoutCent(aod::CollisionEvSel const& collision, DptDptFullTracks const& ftracks);
+  void processWithoutCent(aod::CollisionEvSel const& collision, DptDptFullTracks const& ftracks, const aod::BCsWithTimestamps&);
   PROCESS_SWITCH(DptDptFilter, processWithoutCent, "Process reco without centrality", false);
 
-  void processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&);
+  void processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&, const aod::BCsWithTimestamps&);
   PROCESS_SWITCH(DptDptFilter, processWithCentDetectorLevel, "Process MC detector level with centrality", false);
 
-  void processWithRun2CentDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&);
+  void processWithRun2CentDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&, const aod::BCsWithTimestamps&);
   PROCESS_SWITCH(DptDptFilter, processWithRun2CentDetectorLevel, "Process MC detector level with centrality", false);
 
-  void processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&);
+  void processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&, const aod::BCsWithTimestamps&);
   PROCESS_SWITCH(DptDptFilter, processWithoutCentDetectorLevel, "Process MC detector level without centrality", false);
 
   template <typename CollisionObject, typename ParticlesList>
@@ -582,13 +584,16 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
   LOGF(DPTDPTFILTERLOGCOLLISIONS, "DptDptFilterTask::processReconstructed(). New collision with %d tracks", ftracks.size());
 
   float mult = extractMultiplicity(collision, fCentMultEstimator);
+  static const int32_t nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 
   fhCentMultB->Fill(tentativecentmult);
   fhMultB->Fill(mult);
   fhVertexZB->Fill(collision.posZ());
   uint8_t acceptedevent = uint8_t(false);
   float centormult = tentativecentmult;
-  if (isEventSelected(collision, centormult)) {
+  int64_t orbit = collision.template bc_as<aod::BCsWithTimestamps>().globalBC() / nBCsPerOrbit;
+  bool withinOrbitOfInterest = (cfgEventSelection.minOrbit <= orbit) && (orbit < cfgEventSelection.maxOrbit);
+  if (withinOrbitOfInterest && isEventSelected(collision, centormult)) {
     acceptedevent = true;
     fhCentMultA->Fill(centormult);
     fhMultA->Fill(mult);
@@ -612,32 +617,32 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
   }
 }
 
-void DptDptFilter::processWithCent(aod::CollisionEvSelCent const& collision, DptDptFullTracks const& ftracks)
+void DptDptFilter::processWithCent(aod::CollisionEvSelCent const& collision, DptDptFullTracks const& ftracks, aod::BCsWithTimestamps const&)
 {
   processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
-void DptDptFilter::processWithRun2Cent(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracks const& ftracks)
+void DptDptFilter::processWithRun2Cent(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracks const& ftracks, aod::BCsWithTimestamps const&)
 {
   processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
-void DptDptFilter::processWithoutCent(aod::CollisionEvSel const& collision, DptDptFullTracks const& ftracks)
+void DptDptFilter::processWithoutCent(aod::CollisionEvSel const& collision, DptDptFullTracks const& ftracks, aod::BCsWithTimestamps const&)
 {
   processReconstructed(collision, ftracks, 50.0);
 }
 
-void DptDptFilter::processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
+void DptDptFilter::processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
 {
   processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
-void DptDptFilter::processWithRun2CentDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
+void DptDptFilter::processWithRun2CentDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
 {
   processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
-void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
+void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
 {
   processReconstructed(collision, ftracks, 50.0);
 }
@@ -853,9 +858,20 @@ struct DptDptFilterTracks {
     getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbdate", cfgCCDBDate, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbperiod", cfgCCDBPeriod, false);
 
+    /* create the output list which will own the task histograms */
+    TList* fOutputList = new TList();
+    fOutputList->SetOwner(true);
+    fOutput.setObject(fOutputList);
+
     /* the track types and combinations */
     tracktype = cfgTrackType.value;
-    initializeTrackSelection(cfgTuneTrackSelection.value);
+
+    /* incorporate configuration parameters to the output */
+    fOutputList->Add(new TParameter<int>("TrackType", cfgTrackType, 'f'));
+    fOutputList->Add(new TParameter<int>("TrackOneCharge", 1, 'f'));
+    fOutputList->Add(new TParameter<int>("TrackTwoCharge", -1, 'f'));
+
+    DptDptTrackSelection::initializeTrackSelection(cfgTuneTrackSelection.value, fOutputList);
     traceDCAOutliers = cfgTraceDCAOutliers;
     traceOutOfSpeciesParticles = cfgTraceOutOfSpeciesParticles;
     recoIdMethod = cfgRecoIdMethod;
@@ -896,16 +912,6 @@ struct DptDptFilterTracks {
     insertInPIDselector(cfgPionPIDSelection, 2);
     insertInPIDselector(cfgKaonPIDSelection, 3);
     insertInPIDselector(cfgProtonPIDSelection, 4);
-
-    /* create the output list which will own the task histograms */
-    TList* fOutputList = new TList();
-    fOutputList->SetOwner(true);
-    fOutput.setObject(fOutputList);
-
-    /* incorporate configuration parameters to the output */
-    fOutputList->Add(new TParameter<int>("TrackType", cfgTrackType, 'f'));
-    fOutputList->Add(new TParameter<int>("TrackOneCharge", 1, 'f'));
-    fOutputList->Add(new TParameter<int>("TrackTwoCharge", -1, 'f'));
 
     if ((fDataType == kData) || (fDataType == kDataNoEvtSel) || (fDataType == kMC)) {
       /* create the reconstructed data histograms */
@@ -1424,15 +1430,25 @@ struct DptDptFilterTracks {
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterGenerated, "Generated particles filtering", true)
 
-  void filterGeneratedNotReconstructedWithPID(soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles,
-                                              soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevel const& tracks)
+  void filterGeneratedNotReconstructed(soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles,
+                                       soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevel const& tracks)
   {
     particleReconstructed.resize(particles.size());
     filterTracksSpecial(collisions, tracks);
     filterParticlesSpecial(gencollisions, particles);
     particleReconstructed.clear();
   }
-  PROCESS_SWITCH(DptDptFilterTracks, filterGeneratedNotReconstructedWithPID, "Generated particles filtering", false)
+  PROCESS_SWITCH(DptDptFilterTracks, filterGeneratedNotReconstructed, "Generated particles filtering selecting not reconstructed using PID", false)
+
+  void filterGeneratedNotReconstructedWithoutPID(soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles,
+                                                 soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksDetLevel const& tracks)
+  {
+    particleReconstructed.resize(particles.size());
+    filterTracksSpecial(collisions, tracks);
+    filterParticlesSpecial(gencollisions, particles);
+    particleReconstructed.clear();
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterGeneratedNotReconstructedWithoutPID, "Generated particles filtering selecting not reconstructed inclusive", false)
 };
 
 template <StrongDebugging outdebug, typename TrackObject>
