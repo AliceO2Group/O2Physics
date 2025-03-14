@@ -62,10 +62,10 @@ class FastTracker
   bool applyElossCorrection; // Apply correction for eloss (requires MS correction)
   bool applyEffCorrection;   // Apply correction for hit efficiency
   int verboseLevel;          // 0: not verbose, >0 more verbose
-  int integrationTime;
   int crossSectionMinB;
   int dNdEtaCent;
   int dNdEtaMinB;
+  float integrationTime;
   float magneticField; // in kiloGauss (5 = 0.5T, etc)
   float covMatFactor;  // covmat off-diagonal factor to use for covmat fix (negative: no factor)
   float sigmaD;
