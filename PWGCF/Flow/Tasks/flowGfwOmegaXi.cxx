@@ -111,7 +111,11 @@ struct FlowGfwOmegaXi {
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, true, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
-  O2_DEFINE_CONFIGURABLE(cfgLocDenPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to local density efficiency object")
+
+  O2_DEFINE_CONFIGURABLE(cfgLocDenParaXi, std::vector<double>, (std::vector<double>{-0.000986187, -3.86861, -0.000912481, -3.29206, -0.000859271, -2.89389, -0.000817039, -2.61201, -0.000788792, -2.39079, -0.000780182, -2.19276, -0.000750457, -2.07205, -0.000720279, -1.96865, -0.00073247, -1.85642, -0.000695091, -1.82625, -0.000693332, -1.72679, -0.000681225, -1.74305, -0.000652818, -1.92608, -0.000618892, -2.31985}), "Local density efficiency function parameter for Xi, exp(Ax + B)")
+  O2_DEFINE_CONFIGURABLE(cfgLocDenParaOmega, std::vector<double>, (std::vector<double>{-0.000444324, -6.0424, -0.000566208, -5.42168, -0.000580338, -4.96967, -0.000721054, -4.41994, -0.000626394, -4.27934, -0.000652167, -3.9543, -0.000592327, -3.79053, -0.000544721, -3.73292, -0.000613419, -3.43849, -0.000402506, -3.47687, -0.000602687, -3.24491, -0.000460848, -3.056, -0.00039428, -2.35188, -0.00041908, -2.03642}), "Local density efficiency function parameter for Omega, exp(Ax + B)")
+  O2_DEFINE_CONFIGURABLE(cfgLocDenParaK0s, std::vector<double>, (std::vector<double>{-0.00043057, -3.2435, -0.000385085, -2.97687, -0.000350298, -2.81502, -0.000326159, -2.71091, -0.000299563, -2.65448, -0.000294284, -2.60865, -0.000277938, -2.589, -0.000277091, -2.56983, -0.000272783, -2.56825, -0.000252706, -2.58996, -0.000247834, -2.63158, -0.00024379, -2.76976, -0.000286468, -2.92484, -0.000310149, -3.27746}), "Local density efficiency function parameter for K0s, exp(Ax + B)")
+  O2_DEFINE_CONFIGURABLE(cfgLocDenParaLambda, std::vector<double>, (std::vector<double>{-0.000510948, -4.4846, -0.000460629, -4.14465, -0.000433729, -3.94173, -0.000412751, -3.81839, -0.000411211, -3.72502, -0.000401511, -3.68426, -0.000407461, -3.67005, -0.000379371, -3.71153, -0.000392828, -3.73214, -0.000403996, -3.80717, -0.000403376, -3.90917, -0.000354624, -4.34629, -0.000477606, -4.66307, -0.000541139, -4.61364}), "Local density efficiency function parameter for Lambda, exp(Ax + B)")
 
   ConfigurableAxis cfgaxisVertex{"cfgaxisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis cfgaxisPhi{"cfgaxisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -152,12 +156,10 @@ struct FlowGfwOmegaXi {
   std::vector<GFW::CorrConfig> corrconfigs;
   std::vector<std::string> cfgAcceptance = cfgAcceptancePath;
   std::vector<std::string> cfgEfficiency = cfgEfficiencyPath;
-  std::vector<std::string> cfgLocDen = cfgLocDenPath;
   std::vector<float> cfgNSigma = cfgNSigmatpctof;
 
   std::vector<GFWWeights*> mAcceptance;
   std::vector<TH1D*> mEfficiency;
-  std::vector<TH2D*> mLocDen;
   bool correctionsLoaded = false;
 
   TF1* fMultPVCutLow = nullptr;
@@ -550,15 +552,6 @@ struct FlowGfwOmegaXi {
       else
         LOGF(fatal, "Could not load efficiency histogram");
     }
-    if (cfgLocDen.size() == 5) {
-      for (int i = 0; i <= 4; i++) {
-        mLocDen.push_back(ccdb->getForTimeStamp<TH2D>(cfgLocDen[i], timestamp));
-      }
-      if (cfgLocDen.size() == 5)
-        LOGF(info, "Loaded local density efficiency histogram");
-      else
-        LOGF(fatal, "Could not load local density efficiency histogram");
-    }
     correctionsLoaded = true;
   }
 
@@ -581,17 +574,18 @@ struct FlowGfwOmegaXi {
   }
 
   template <typename TrackObject>
-  bool setCurrentLocalDensityWeights(float& weight_loc, TrackObject track, float locDensity, int ispecies)
+  bool setCurrentLocalDensityWeights(float& weight_loc, TrackObject track, double locDensity, int ispecies)
   {
-    float eff = 1.;
-    if (mLocDen.size() == 5) {
-      int ptbin = mLocDen[ispecies]->GetXaxis()->FindBin(track.pt());
-      float density = locDensity * 200 / (2 * cfgDeltaPhiLocDen + 1);
-      int densitybin = mLocDen[ispecies]->GetYaxis()->FindBin(density);
-      eff = mLocDen[ispecies]->GetBinContent(ptbin, densitybin);
-    } else {
-      eff = 1.0;
+    auto cfgLocDenPara = (std::vector<std::vector<double>>){cfgLocDenParaK0s, cfgLocDenParaLambda, cfgLocDenParaXi, cfgLocDenParaOmega};
+    if (track.pt() < 0.9 || track.pt() > 10) {
+      weight_loc = 1.0;
+      return true;
     }
+    int ptbin = fXiPtAxis->FindBin(track.pt());
+    double paraA = cfgLocDenPara[ispecies - 1][2 * ptbin - 2];
+    double paraB = cfgLocDenPara[ispecies - 1][2 * ptbin - 1];
+    double density = locDensity * 200 / (2 * cfgDeltaPhiLocDen + 1);
+    double eff = std::exp(paraA * density + paraB);
     weight_loc = 1 / eff;
     return true;
   }
@@ -683,7 +677,7 @@ struct FlowGfwOmegaXi {
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
     registry.fill(HIST("hMult"), nTot);
-    registry.fill(HIST("hCent"), collision.centFT0C());
+    registry.fill(HIST("hCent"), cent);
     for (int i = 0; i < 4; i++) {
       registry.fill(HIST("hEventCount"), 1.5, i + 0.5);
     }
@@ -703,8 +697,8 @@ struct FlowGfwOmegaXi {
       int ptbin = fPtAxis->FindBin(track.pt()) - 1;
       if ((track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax)) {
         fGFW->Fill(track.eta(), ptbin, track.phi(), wacc * weff, 1); //(eta, ptbin, phi, wacc*weff, bitmask)
-        hLocalDensity->Fill(track.phi());
-        hLocalDensity->Fill(RecoDecay::constrainAngle(track.phi(), -constants::math::TwoPI));
+        hLocalDensity->Fill(track.phi(), wacc * weff);
+        hLocalDensity->Fill(RecoDecay::constrainAngle(track.phi(), -constants::math::TwoPI), wacc * weff);
       }
       if ((track.pt() > cfgCutPtPOIMin) && (track.pt() < cfgCutPtPOIMax)) {
         fGFW->Fill(track.eta(), ptbin, track.phi(), wacc * weff, 32);
@@ -789,7 +783,7 @@ struct FlowGfwOmegaXi {
         int phibin = -999;
         phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(v0.phi(), -constants::math::PI));
         if (phibin > -900) {
-          int density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+          double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
           setCurrentLocalDensityWeights(wloc, v0, density, 1);
         }
 
@@ -805,7 +799,7 @@ struct FlowGfwOmegaXi {
         int phibin = -999;
         phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(v0.phi(), -constants::math::PI));
         if (phibin > -900) {
-          int density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+          double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
           setCurrentLocalDensityWeights(wloc, v0, density, 2);
         }
 
@@ -891,7 +885,7 @@ struct FlowGfwOmegaXi {
         int phibin = -999;
         phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(casc.phi(), -constants::math::PI));
         if (phibin > -900) {
-          int density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+          double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
           setCurrentLocalDensityWeights(wloc, casc, density, 4);
         }
 
@@ -907,7 +901,7 @@ struct FlowGfwOmegaXi {
         int phibin = -999;
         phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(casc.phi(), -constants::math::PI));
         if (phibin > -900) {
-          int density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+          double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
           setCurrentLocalDensityWeights(wloc, casc, density, 3);
         }
 
