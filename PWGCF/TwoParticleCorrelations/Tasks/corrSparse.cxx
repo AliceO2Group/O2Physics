@@ -14,9 +14,9 @@
 /// \author Thor Jensen (thor.kjaersgaard.jensen@cern.ch) and Debojit Sarkar (debojit.sarkar@cern.ch)
 
 #include <vector>
+#include "TRandom3.h"
 #include <CCDB/BasicCCDBManager.h>
 
-#include "TRandom3.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -357,9 +357,7 @@ struct CorrSparse {
 
         fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, tracks1.size(), getMagneticField(bc.timestamp()));
       }
-    }
-
-    else {
+    } else {
       MixedBinning binningOnVtxAndMult{{vtxMix, multMix}, true}; // true is for 'ignore overflows' (true by default)
       auto tracksTuple = std::make_tuple(tracks, tracks);
       SameKindPair<AodCollisions, AodTracks, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
