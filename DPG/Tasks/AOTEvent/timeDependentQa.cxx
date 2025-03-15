@@ -28,7 +28,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
 #include "TPCCalibration/TPCMShapeCorrection.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
 #include "DataFormatsITSMFT/ROFRecord.h"
@@ -110,12 +109,12 @@ struct TimeDependentQaTask {
   ctpRateFetcher mRateFetcher;
 
   // RCT flag combinations: checkers (based on presentation https://indico.cern.ch/event/1513866/#18-how-to-use-the-rct-flags-at)
-  RCTFlagsChecker rctCheckerCBT{"CBT"};                         // o2-linter: disable=name/configurable (temporary fix)
-  RCTFlagsChecker rctCheckerCBT_hadronPID{"CBT_hadronPID"};     // o2-linter: disable=name/configurable (temporary fix)
-  RCTFlagsChecker rctCheckerCBT_electronPID{"CBT_electronPID"}; // o2-linter: disable=name/configurable (temporary fix)
-  RCTFlagsChecker rctCheckerCBT_calo{"CBT_calo"};               // o2-linter: disable=name/configurable (temporary fix)
-  RCTFlagsChecker rctCheckerCBT_muon{"CBT_muon"};               // o2-linter: disable=name/configurable (temporary fix)
-  RCTFlagsChecker rctCheckerCBT_muon_glo{"CBT_muon_glo"};       // o2-linter: disable=name/configurable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT{"CBT"};                         // o2-linter: disable=name/function-variable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_hadronPID{"CBT_hadronPID"};     // o2-linter: disable=name/function-variable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_electronPID{"CBT_electronPID"}; // o2-linter: disable=name/function-variable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_calo{"CBT_calo"};               // o2-linter: disable=name/function-variable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_muon{"CBT_muon"};               // o2-linter: disable=name/function-variable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_muon_glo{"CBT_muon_glo"};       // o2-linter: disable=name/function-variable (temporary fix)
 
   TAxis* axRctFlags;
 
