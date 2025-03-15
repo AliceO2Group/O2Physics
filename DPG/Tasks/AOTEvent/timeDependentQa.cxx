@@ -110,12 +110,12 @@ struct TimeDependentQaTask {
   ctpRateFetcher mRateFetcher;
 
   // RCT flag combinations: checkers (based on presentation https://indico.cern.ch/event/1513866/#18-how-to-use-the-rct-flags-at)
-  RCTFlagsChecker rctCheckerCBT{"CBT"};
-  RCTFlagsChecker rctCheckerCBT_hadronPID{"CBT_hadronPID"};
-  RCTFlagsChecker rctCheckerCBT_electronPID{"CBT_electronPID"};
-  RCTFlagsChecker rctCheckerCBT_calo{"CBT_calo"};
-  RCTFlagsChecker rctCheckerCBT_muon{"CBT_muon"};
-  RCTFlagsChecker rctCheckerCBT_muon_glo{"CBT_muon_glo"};
+  RCTFlagsChecker rctCheckerCBT{"CBT"};                         // o2-linter: disable=name/configurable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_hadronPID{"CBT_hadronPID"};     // o2-linter: disable=name/configurable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_electronPID{"CBT_electronPID"}; // o2-linter: disable=name/configurable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_calo{"CBT_calo"};               // o2-linter: disable=name/configurable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_muon{"CBT_muon"};               // o2-linter: disable=name/configurable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_muon_glo{"CBT_muon_glo"};       // o2-linter: disable=name/configurable (temporary fix)
 
   TAxis* axRctFlags;
 
