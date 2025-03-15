@@ -17,6 +17,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
+#include <array>
 #include <unordered_map>
 #include <string>
 #include <memory>
@@ -778,10 +779,10 @@ struct FlowCumulantsUpc {
     for (const auto& track : tracks) {
       if (!trackSelected(track))
         continue;
-      TVector3 momentum(track.px(), track.py(), track.pz());
-      double pt = momentum.Perp();
-      double phi = RecoDecay::constrainAngle(momentum.Phi());
-      double eta = momentum.PseudoRapidity();
+      auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
+      double pt = RecoDecay::pt(momentum);
+      double phi = RecoDecay::phi(momentum);
+      double eta = RecoDecay::eta(momentum);
       bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < pt) && (pt < cfgCutPtRefMax); // within RF pT range
       if (cfgOutputNUAWeights) {
