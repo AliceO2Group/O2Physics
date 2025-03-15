@@ -106,6 +106,14 @@ constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | Va
 // constexpr static uint32_t gkTrackFillMapWithAmbi = VarManager::ObjTypes::Track | VarManager::ObjTypes::AmbiTrack;
 constexpr static uint32_t gkMFTFillMap = VarManager::ObjTypes::TrackMFT;
 
+template <typename TMap>
+void PrintBitMap(TMap map, int nbits)
+{
+  for (int i = 0; i < nbits; i++) {
+    cout << ((map & (TMap(1) << i)) > 0 ? "1" : "0");
+  }
+}
+
 struct TableMakerMC {
 
   Produces<ReducedMCEvents> eventMC;
@@ -457,6 +465,36 @@ struct TableMakerMC {
         }
         i++;
       }
+
+      /*if ((std::abs(mctrack.pdgCode())>400 && std::abs(mctrack.pdgCode())<599) ||
+          (std::abs(mctrack.pdgCode())>4000 && std::abs(mctrack.pdgCode())<5999) ||
+          (mcflags > 0)) {
+        cout << ">>>>>>>>>>>>>>>>>>>>>>> track idx / pdg / process / status code / HEPMC status / primary : "
+             << mctrack.globalIndex() << " / " << mctrack.pdgCode() << " / "
+             << mctrack.getProcess() << " / " << mctrack.getGenStatusCode() << " / " << mctrack.getHepMCStatusCode() << " / " << mctrack.isPhysicalPrimary() << endl;
+        cout << ">>>>>>>>>>>>>>>>>>>>>>> track bitmap: ";
+        PrintBitMap(mcflags, 16);
+        cout << endl;
+        if (mctrack.has_mothers()) {
+          for (auto& m : mctrack.mothersIds()) {
+            if (m < mcTracks.size()) { // protect against bad mother indices
+              auto aMother = mcTracks.rawIteratorAt(m);
+              cout << "<<<<<< mother idx / pdg: " << m << " / " << aMother.pdgCode() << endl;
+            }
+          }
+        }
+
+        if (mctrack.has_daughters()) {
+          for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
+
+            if (d < mcTracks.size()) { // protect against bad daughter indices
+              auto aDaughter = mcTracks.rawIteratorAt(d);
+              cout << "<<<<<< daughter idx / pdg: " << d << " / " << aDaughter.pdgCode() << endl;
+            }
+          }
+        }
+      }*/
+
       // if no MC signals were matched, continue
       if (mcflags == 0) {
         continue;

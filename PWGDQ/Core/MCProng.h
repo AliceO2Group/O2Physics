@@ -72,6 +72,7 @@ class MCProng
     kProducedInTransport, // Produced during transport through the detector (e.g. GEANT)
     kProducedByGenerator, // Produced by generator (if not, then produced by GEANT)
     kFromBackgroundEvent, // Produced in the underlying event
+    kHEPMCFinalState,     // HEPMC code 11
     kNSources
   };
 

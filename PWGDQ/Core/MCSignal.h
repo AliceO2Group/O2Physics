@@ -216,41 +216,50 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
     currentMCParticle = track;
     for (int j = 0; j < fProngs[i].fNGenerations; j++) {
       // check whether sources are required for this generation
-      if (!fProngs[i].fSourceBits[j]) {
-        continue;
+      bool hasSources = false;
+      if (fProngs[i].fSourceBits[j]) {
+        hasSources = true;
       }
       // check each source
       uint64_t sourcesDecision = 0;
-      // Check kPhysicalPrimary
-      if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kPhysicalPrimary)) {
-        if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kPhysicalPrimary)) != currentMCParticle.isPhysicalPrimary()) {
-          sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kPhysicalPrimary);
+      if (hasSources) {
+        // Check kPhysicalPrimary
+        if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kPhysicalPrimary)) {
+          if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kPhysicalPrimary)) != currentMCParticle.isPhysicalPrimary()) {
+            sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kPhysicalPrimary);
+          }
         }
-      }
-      // Check kProducedInTransport
-      if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kProducedInTransport)) {
-        if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kProducedInTransport)) != (!currentMCParticle.producedByGenerator())) {
-          sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kProducedInTransport);
+        // Check kProducedInTransport
+        if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kProducedInTransport)) {
+          if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kProducedInTransport)) != (!currentMCParticle.producedByGenerator())) {
+            sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kProducedInTransport);
+          }
         }
-      }
-      // Check kProducedByGenerator
-      if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kProducedByGenerator)) {
-        if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kProducedByGenerator)) != currentMCParticle.producedByGenerator()) {
-          sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kProducedByGenerator);
+        // Check kProducedByGenerator
+        if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kProducedByGenerator)) {
+          if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kProducedByGenerator)) != currentMCParticle.producedByGenerator()) {
+            sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kProducedByGenerator);
+          }
         }
-      }
-      // Check kFromBackgroundEvent
-      if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kFromBackgroundEvent)) {
-        if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kFromBackgroundEvent)) != currentMCParticle.fromBackgroundEvent()) {
-          sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kFromBackgroundEvent);
+        // Check kFromBackgroundEvent
+        if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kFromBackgroundEvent)) {
+          if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kFromBackgroundEvent)) != currentMCParticle.fromBackgroundEvent()) {
+            sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kFromBackgroundEvent);
+          }
         }
-      }
+        // Check HEPMC code 11 (final state)
+        if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kHEPMCFinalState)) {
+          if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kHEPMCFinalState)) != (currentMCParticle.getHepMCStatusCode() == 11)) {
+            sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kHEPMCFinalState);
+          }
+        }
+      } // end if(hasSources)
       // no source bit is fulfilled
-      if (!sourcesDecision) {
+      if (hasSources && !sourcesDecision) {
         return false;
       }
       // if fUseANDonSourceBitMap is on, request all bits
-      if (fProngs[i].fUseANDonSourceBitMap[j] && (sourcesDecision != fProngs[i].fSourceBits[j])) {
+      if (hasSources && (fProngs[i].fUseANDonSourceBitMap[j] && (sourcesDecision != fProngs[i].fSourceBits[j]))) {
         return false;
       }
 
@@ -280,8 +289,8 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
           }
         }
       }
-    }
-  }
+    } // end loop over generations
+  } // end if(checkSources)
 
   if (fProngs[i].fPDGInHistory.size() == 0) {
     return true;
@@ -299,40 +308,41 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
       // Note: Currently no need to check generation InTime, so disable if case and always check BackInTime (direction of mothers)
       //       The option to check for daughter in decay chain is still implemented but commented out.
 
-      // if (!fProngs[i].fCheckGenerationsInTime) { // check generation back in time
-      while (currentMCParticle.has_mothers()) {
-        auto mother = currentMCParticle.template mothers_first_as<P>();
-        if (!fProngs[i].fExcludePDGInHistory[k] && fProngs[i].ComparePDG(mother.pdgCode(), fProngs[i].fPDGInHistory[k], true, fProngs[i].fExcludePDGInHistory[k])) {
-          pdgInHistory.emplace_back(mother.pdgCode());
-          break;
+      if (!fProngs[i].fCheckGenerationsInTime) { // check generation back in time
+        while (currentMCParticle.has_mothers()) {
+          auto mother = currentMCParticle.template mothers_first_as<P>();
+          if (!fProngs[i].fExcludePDGInHistory[k] && fProngs[i].ComparePDG(mother.pdgCode(), fProngs[i].fPDGInHistory[k], true, fProngs[i].fExcludePDGInHistory[k])) {
+            pdgInHistory.emplace_back(mother.pdgCode());
+            break;
+          }
+          if (fProngs[i].fExcludePDGInHistory[k] && !fProngs[i].ComparePDG(mother.pdgCode(), fProngs[i].fPDGInHistory[k], true, fProngs[i].fExcludePDGInHistory[k])) {
+            return false;
+          }
+          ith++;
+          currentMCParticle = mother;
+          if (ith > 10) { // need error message. Given pdg code was not found within 10 generations of the particles decay chain.
+            break;
+          }
         }
-        if (fProngs[i].fExcludePDGInHistory[k] && !fProngs[i].ComparePDG(mother.pdgCode(), fProngs[i].fPDGInHistory[k], true, fProngs[i].fExcludePDGInHistory[k])) {
+      } /*else { // check generation in time
+        if (!currentMCParticle.has_daughters()) {
           return false;
         }
-        ith++;
-        currentMCParticle = mother;
-        if (ith > 10) { // need error message. Given pdg code was not found within 10 generations of the particles decay chain.
-          break;
+        const auto& daughtersSlice = currentMCParticle.template daughters_as<P>();
+        for (auto& d : daughtersSlice) {
+          if (!fProngs[i].fExcludePDGInHistory[k] && fProngs[i].ComparePDG(d.pdgCode(), fProngs[i].fPDGInHistory[k], true, fProngs[i].fExcludePDGInHistory[k])) {
+            pdgInHistory.emplace_back(d.pdgCode());
+            break;
+          }
+          if (fProngs[i].fExcludePDGInHistory[k] && !fProngs[i].ComparePDG(d.pdgCode(), fProngs[i].fPDGInHistory[k], true, fProngs[i].fExcludePDGInHistory[k])) {
+            return false;
+          }
+          ith++;
+          if (ith > 10) { // need error message. Given pdg code was not found within 10 generations of the particles decay chain.
+            break;
+          }
         }
-      }
-      // } else { // check generation in time
-      //   if (!currentMCParticle.has_daughters())
-      //     return false;
-      //   const auto& daughtersSlice = currentMCParticle.template daughters_as<P>();
-      //   for (auto& d : daughtersSlice) {
-      //     if (!fProngs[i].fExcludePDGInHistory[k] && fProngs[i].ComparePDG(d.pdgCode(), fProngs[i].fPDGInHistory[k], true, fProngs[i].fExcludePDGInHistory[k])) {
-      //       pdgInHistory.emplace_back(d.pdgCode());
-      //       break;
-      //     }
-      //     if (fProngs[i].fExcludePDGInHistory[k] && !fProngs[i].ComparePDG(d.pdgCode(), fProngs[i].fPDGInHistory[k], true, fProngs[i].fExcludePDGInHistory[k])) {
-      //       return false;
-      //     }
-      //     ith++;
-      //     if (ith > 10) { // need error message. Given pdg code was not found within 10 generations of the particles decay chain.
-      //       break;
-      //     }
-      //   }
-      // }
+      }*/
     }
     if (pdgInHistory.size() != nIncludedPDG) { // vector has as many entries as mothers (daughters) defined for prong
       return false;
