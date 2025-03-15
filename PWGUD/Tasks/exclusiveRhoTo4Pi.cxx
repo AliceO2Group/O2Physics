@@ -946,7 +946,7 @@ struct exclusiveRhoTo4Pi { // "o2-linter: disable=name/workflow-file" (unable), 
       }
 
       for (const auto& mother : particle.mothers_as<aod::UDMcParticles>()) {
-        if (mother.pdgCode() == 30313) { // "o2-linter: pdg/explicit-code" (unable)
+        if (mother.pdgCode() == 30313) { // "o2-linter: disable=pdg/explicit-code" (unable)
           motherVector.SetXYZM(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassPionCharged);
           histosMCgen.fill(HIST("MCgen_rhoPrime_pT"), motherVector.Pt());
 
@@ -954,7 +954,7 @@ struct exclusiveRhoTo4Pi { // "o2-linter: disable=name/workflow-file" (unable), 
             histosMCgen.fill(HIST("rhoPrimeCounts"), 5);
           }
           flag = true;
-          if (particle.pdgCode() == 211) { // "o2-linter: pdg/explicit-code" (unable)
+          if (particle.pdgCode() == 211) { // "o2-linter: disable=pdg/explicit-code" (unable)
             histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
             histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
             piPlusvectors.push_back(tempVector);
@@ -962,7 +962,7 @@ struct exclusiveRhoTo4Pi { // "o2-linter: disable=name/workflow-file" (unable), 
             piEta.push_back(tempVector.Eta());
             piRapidity.push_back(tempVector.Rapidity());
           }
-          if (particle.pdgCode() == -211) { // "o2-linter: pdg/explicit-code" (unable)
+          if (particle.pdgCode() == -211) { // "o2-linter: disable=pdg/explicit-code" (unable)
             histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
             histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
             piMinusvectors.push_back(tempVector);
