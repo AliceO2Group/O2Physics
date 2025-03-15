@@ -59,14 +59,11 @@ struct HfTaskDirectedFlowCharmHadrons {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indices of BDT scores to be stored. Two indexes max."};
 
-  ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, ""};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0}, ""};
-  ConfigurableAxis thnConfigAxisEta{"thnConfigAxisEta", {VARIABLE_WIDTH, -0.8, -0.4, 0, 0.4, 0.8}, ""};
-  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, ""};
-  ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {8000, -2.0, 2.0}, ""};
-  ConfigurableAxis thnConfigAxisSign{"thnConfigAxisSign", {2, -2.0, 2.0}, ""};
-  ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
+  HfHelper hfHelper;
+  EventPlaneHelper epHelper;
+  SliceCache cache;
+  HfEventSelection hfEvSel; // event selection and monitoring
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   using CandDplusDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
@@ -86,11 +83,14 @@ struct HfTaskDirectedFlowCharmHadrons {
   Partition<CandD0DataWMl> selectedD0ToPiKWMl = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
   Partition<CandD0DataWMl> selectedD0ToKPiWMl = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
 
-  SliceCache cache;
-  HfHelper hfHelper;
-  EventPlaneHelper epHelper;
-  HfEventSelection hfEvSel; // event selection and monitoring
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, ""};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0}, ""};
+  ConfigurableAxis thnConfigAxisEta{"thnConfigAxisEta", {VARIABLE_WIDTH, -0.8, -0.4, 0, 0.4, 0.8}, ""};
+  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, ""};
+  ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {8000, -2.0, 2.0}, ""};
+  ConfigurableAxis thnConfigAxisSign{"thnConfigAxisSign", {2, -2.0, 2.0}, ""};
+  ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -206,15 +206,15 @@ struct HfTaskDirectedFlowCharmHadrons {
     auto qxZDCC = collision.qxZDCC(); // extracting q vectors of ZDC
     auto qyZDCC = collision.qyZDCC();
 
-    auto QxtQxp = qxZDCC * qxZDCA;
-    auto QytQyp = qyZDCC * qyZDCA;
-    auto Qxytp = QxtQxp + QytQyp;
-    auto QxpQyt = qxZDCA * qyZDCC;
-    auto QxtQyp = qxZDCC * qyZDCA;
+    auto qxtQxp = qxZDCC * qxZDCA;
+    auto qytQyp = qyZDCC * qyZDCA;
+    auto qxytp = qxtQxp + qytQyp;
+    auto qxpQyt = qxZDCA * qyZDCC;
+    auto qxtQyp = qxZDCC * qyZDCA;
 
     // correlations in the denominators for SP calculation
     if (direct) {
-      registry.fill(HIST("hpQxytpvscent"), cent, Qxytp);
+      registry.fill(HIST("hpQxytpvscent"), cent, qxytp);
       if (correction) {
         registry.fill(HIST("hpQxpvscent"), cent, qxZDCA);
         registry.fill(HIST("hpQxtvscent"), cent, qxZDCC);
@@ -222,10 +222,10 @@ struct HfTaskDirectedFlowCharmHadrons {
         registry.fill(HIST("hpQytvscent"), cent, qyZDCC);
       }
     } else {
-      registry.fill(HIST("hpQxtQxpvscent"), cent, QxtQxp);
-      registry.fill(HIST("hpQytQypvscent"), cent, QytQyp);
-      registry.fill(HIST("hpQxpQytvscent"), cent, QxpQyt);
-      registry.fill(HIST("hpQxtQypvscent"), cent, QxtQyp);
+      registry.fill(HIST("hpQxtQxpvscent"), cent, qxtQxp);
+      registry.fill(HIST("hpQytQypvscent"), cent, qytQyp);
+      registry.fill(HIST("hpQxpQytvscent"), cent, qxpQyt);
+      registry.fill(HIST("hpQxtQypvscent"), cent, qxtQyp);
       registry.fill(HIST("hpQxpvscent"), cent, qxZDCA);
       registry.fill(HIST("hpQxtvscent"), cent, qxZDCC);
       registry.fill(HIST("hpQypvscent"), cent, qyZDCA);
