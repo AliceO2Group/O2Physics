@@ -27,17 +27,18 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "TPCCalibration/TPCMShapeCorrection.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
 #include "DataFormatsITSMFT/ROFRecord.h"
 #include "ReconstructionDataFormats/Vertex.h"
-#include "Common/DataModel/Multiplicity.h"
 
 #include "TTree.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::evsel;
+using namespace o2::aod::rctsel;
 
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
@@ -58,7 +59,7 @@ struct TimeDependentQaTask {
   Configurable<float> confCutOnNtpcClsForSharedFractAndDeDxCalc{"CutOnNtpcClsForSharedFractAndDeDxCalc", 70, ""};                                                                // o2-linter: disable=name/configurable (temporary fix)
 
   enum EvSelBitsToMonitor {
-    enCollisionsAll,
+    enCollisionsAll = 0,
     enIsTriggerTVX,
     enNoTimeFrameBorder,
     enNoITSROFrameBorder,
@@ -86,6 +87,16 @@ struct TimeDependentQaTask {
     enNumEvSelBits, // counter
   };
 
+  enum RctCombFlagsToMonitor {
+    enCBT = kNRCTSelectionFlags,
+    enCBT_hadronPID,
+    enCBT_electronPID,
+    enCBT_calo,
+    enCBT_muon,
+    enCBT_muon_glo,
+    enNumRctFlagsTotal, // counter
+  };
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   o2::tpc::TPCMShapeCorrection mshape; // object for simple access
@@ -96,6 +107,16 @@ struct TimeDependentQaTask {
   int64_t bcSOR = 0;      // global bc of the start of the first orbit, setting 0 for unanchored MC
   int64_t nBCsPerTF = -1; // duration of TF in bcs
   ctpRateFetcher mRateFetcher;
+
+  // RCT flag combinations: checkers (based on presentation https://indico.cern.ch/event/1513866/#18-how-to-use-the-rct-flags-at)
+  RCTFlagsChecker rctCheckerCBT{"CBT"};                         // o2-linter: disable=name/function-variable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_hadronPID{"CBT_hadronPID"};     // o2-linter: disable=name/function-variable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_electronPID{"CBT_electronPID"}; // o2-linter: disable=name/function-variable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_calo{"CBT_calo"};               // o2-linter: disable=name/function-variable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_muon{"CBT_muon"};               // o2-linter: disable=name/function-variable (temporary fix)
+  RCTFlagsChecker rctCheckerCBT_muon_glo{"CBT_muon_glo"};       // o2-linter: disable=name/function-variable (temporary fix)
+
+  TAxis* axRctFlags;
 
   void init(InitContext&)
   {
@@ -122,10 +143,6 @@ struct TimeDependentQaTask {
     histos.add("C/global/hDcaZafterCuts", "", kTH1F, {axisDcaZ});
     histos.add("C/globalPV/hDcaRafterCuts", "", kTH1F, {axisDcaR});
     histos.add("C/globalPV/hDcaZafterCuts", "", kTH1F, {axisDcaZ});
-
-    const AxisSpec axisBCinTF{150000, 0, 150000, "bc in TF"};
-    histos.add("hNcolVsBcInTF", ";bc in TF; n collisions", kTH1F, {axisBCinTF});
-    histos.add("hNcolVsBcInTFantiBorderCut", ";bc in TF; n collisions", kTH1F, {axisBCinTF});
   }
 
   void processRun3(
@@ -160,13 +177,12 @@ struct TimeDependentQaTask {
 
       const AxisSpec axisSeconds{nTimeBins, 0, timeInterval, "seconds"};
       histos.add("hSecondsBCsTVX", "", kTH1D, {axisSeconds});
-      // histos.add("hSecondsBCsTFborder", "", kTH1D, {axisSeconds});
-      histos.add("hSecondsBCsTVXandTFborder", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsBCsTVXandTFborderCuts", "", kTH1D, {axisSeconds});
 
       histos.add("hSecondsCollisionsBeforeAllCuts", "", kTH1D, {axisSeconds});
-      histos.add("hSecondsCollisionsNoVzInTVX", "", kTH1D, {axisSeconds});
-      histos.add("hSecondsCollisionsNoVzNoTFborder", "", kTH1D, {axisSeconds});
-      histos.add("hSecondsCollisionsNoVzInTVXandNoTFborder", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsCollisionsTVXNoVzCut", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsCollisionsTFborderCutNoVzCut", "", kTH1D, {axisSeconds});
+      histos.add("hSecondsCollisionsTVXTFborderCutNoVzCut", "", kTH1D, {axisSeconds});
 
       histos.add("hSecondsCollisions", "", kTH1D, {axisSeconds});
       histos.add("hSecondsIR", "", kTH1D, {axisSeconds});
@@ -218,13 +234,48 @@ struct TimeDependentQaTask {
       axSelBits->SetBinLabel(1 + enIsLowOccupStdCut4000, "isLowOccupStdCut4000");
       axSelBits->SetBinLabel(1 + enIsLowOccupStdAlsoInPrevRofCut2000noDeadStaves, "isLowOccupStdAlsoInPrevRofCut2000noDeadStaves");
 
+      // ### QA RCT flags
+      int nRctFlagsTotal = enNumRctFlagsTotal;
+      histos.add("hSecondsRCTflags", "", kTH2F, {axisSeconds, {nRctFlagsTotal + 1, -0.5, nRctFlagsTotal + 1 - 0.5, "Monitoring of RCT flags"}});
+      axRctFlags = reinterpret_cast<TAxis*>(histos.get<TH2>(HIST("hSecondsRCTflags"))->GetYaxis());
+      axRctFlags->SetBinLabel(1, "NcollisionsSel8");
+      axRctFlags->SetBinLabel(2 + kCPVBad, "CPVBad");
+      axRctFlags->SetBinLabel(2 + kEMCBad, "EMCBad");
+      axRctFlags->SetBinLabel(2 + kEMCLimAccMCRepr, "EMCLimAccMCRepr");
+      axRctFlags->SetBinLabel(2 + kFDDBad, "FDDBad");
+      axRctFlags->SetBinLabel(2 + kFT0Bad, "FT0Bad");
+      axRctFlags->SetBinLabel(2 + kFV0Bad, "FV0Bad");
+      axRctFlags->SetBinLabel(2 + kHMPBad, "HMPBad");
+      axRctFlags->SetBinLabel(2 + kITSBad, "ITSBad");
+      axRctFlags->SetBinLabel(2 + kITSLimAccMCRepr, "ITSLimAccMCRepr");
+      axRctFlags->SetBinLabel(2 + kMCHBad, "MCHBad");
+      axRctFlags->SetBinLabel(2 + kMCHLimAccMCRepr, "MCHLimAccMCRepr");
+      axRctFlags->SetBinLabel(2 + kMFTBad, "MFTBad");
+      axRctFlags->SetBinLabel(2 + kMFTLimAccMCRepr, "MFTLimAccMCRepr");
+      axRctFlags->SetBinLabel(2 + kMIDBad, "MIDBad");
+      axRctFlags->SetBinLabel(2 + kMIDLimAccMCRepr, "MIDLimAccMCRepr");
+      axRctFlags->SetBinLabel(2 + kPHSBad, "PHSBad");
+      axRctFlags->SetBinLabel(2 + kTOFBad, "TOFBad");
+      axRctFlags->SetBinLabel(2 + kTOFLimAccMCRepr, "TOFLimAccMCRepr");
+      axRctFlags->SetBinLabel(2 + kTPCBadTracking, "TPCBadTracking");
+      axRctFlags->SetBinLabel(2 + kTPCBadPID, "TPCBadPID");
+      axRctFlags->SetBinLabel(2 + kTPCLimAccMCRepr, "TPCLimAccMCRepr");
+      axRctFlags->SetBinLabel(2 + kTRDBad, "TRDBad");
+      axRctFlags->SetBinLabel(2 + kZDCBad, "ZDCBad");
+      // combined flags
+      axRctFlags->SetBinLabel(2 + enCBT, "CBT");
+      axRctFlags->SetBinLabel(2 + enCBT_hadronPID, "CBT_hadronPID");
+      axRctFlags->SetBinLabel(2 + enCBT_electronPID, "CBT_electronPID");
+      axRctFlags->SetBinLabel(2 + enCBT_calo, "CBT_calo");
+      axRctFlags->SetBinLabel(2 + enCBT_muon, "CBT_muon");
+      axRctFlags->SetBinLabel(2 + enCBT_muon_glo, "CBT_muon_glo");
+
+      // QA for all tracks
       // const AxisSpec axisChi2ITS{40, 0., 20., "chi2/ndof"};
       // const AxisSpec axisChi2TPC{40, 0., 20., "chi2/ndof"};
       const AxisSpec axisNclsITS{5, 3.5, 8.5, "n ITS cls"};
       const AxisSpec axisNclsTPC{40, -0.5, 159.5, "n TPC cls"};
       const AxisSpec axisFraction{20, 0, 1., "Fraction shared cls Tpc"};
-
-      // QA for all tracks
       histos.add("allTracks/hSecondsTracks", "", kTH1D, {axisSeconds});
       histos.add("allTracks/hSecondsQoverPtSumDcaR", "", kTH2D, {axisSeconds, axisSparseQoverPt});
       histos.add("allTracks/hSecondsQoverPtSumDcaZ", "", kTH2D, {axisSeconds, axisSparseQoverPt});
@@ -329,12 +380,9 @@ struct TimeDependentQaTask {
       double secFromSOR = ts / 1000. - minSec;
       if (bc.selection_bit(kIsTriggerTVX)) {
         histos.fill(HIST("hSecondsBCsTVX"), secFromSOR);
-      }
-      // if (bc.selection_bit(kNoTimeFrameBorder)) {
-      //   histos.fill(HIST("hSecondsBCsTFborder"), secFromSOR);
-      // }
-      if (bc.selection_bit(kIsTriggerTVX) && bc.selection_bit(kNoTimeFrameBorder)) {
-        histos.fill(HIST("hSecondsBCsTVXandTFborder"), secFromSOR);
+        if (bc.selection_bit(kNoTimeFrameBorder)) {
+          histos.fill(HIST("hSecondsBCsTVXandTFborderCuts"), secFromSOR);
+        }
       }
     }
 
@@ -358,11 +406,11 @@ struct TimeDependentQaTask {
 
       histos.fill(HIST("hSecondsCollisionsBeforeAllCuts"), secFromSOR);
       if (col.selection_bit(kIsTriggerTVX))
-        histos.fill(HIST("hSecondsCollisionsNoVzInTVX"), secFromSOR);
+        histos.fill(HIST("hSecondsCollisionsTVXNoVzCut"), secFromSOR);
       if (col.selection_bit(kNoTimeFrameBorder))
-        histos.fill(HIST("hSecondsCollisionsNoVzNoTFborder"), secFromSOR);
+        histos.fill(HIST("hSecondsCollisionsTFborderCutNoVzCut"), secFromSOR);
       if (col.selection_bit(kIsTriggerTVX) && col.selection_bit(kNoTimeFrameBorder))
-        histos.fill(HIST("hSecondsCollisionsNoVzInTVXandNoTFborder"), secFromSOR);
+        histos.fill(HIST("hSecondsCollisionsTVXTFborderCutNoVzCut"), secFromSOR);
 
       if (std::fabs(col.posZ()) > 10)
         continue;
@@ -373,14 +421,6 @@ struct TimeDependentQaTask {
       histos.fill(HIST("hSecondsEventSelBits"), secFromSOR, enIsTriggerTVX, col.selection_bit(kIsTriggerTVX));
       histos.fill(HIST("hSecondsEventSelBits"), secFromSOR, enNoTimeFrameBorder, col.selection_bit(kNoTimeFrameBorder));
       histos.fill(HIST("hSecondsEventSelBits"), secFromSOR, enNoITSROFrameBorder, col.selection_bit(kNoITSROFrameBorder));
-
-      // for QA:
-      uint64_t globalBC = bc.globalBC();
-      int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
-
-      histos.fill(HIST("hNcolVsBcInTF"), bcInTF);
-      if (!col.selection_bit(kNoTimeFrameBorder))
-        histos.fill(HIST("hNcolVsBcInTFantiBorderCut"), bcInTF);
 
       // sel8 selection:
       if (!col.sel8())
@@ -434,6 +474,22 @@ struct TimeDependentQaTask {
       bool isLowOccupStdAlsoInPrevRofCut2000noDeadStaves = isLowOccupStdCut2000 && col.selection_bit(kNoHighMultCollInPrevRof) && col.selection_bit(kIsGoodITSLayersAll);
       histos.fill(HIST("hSecondsEventSelBits"), secFromSOR, enIsLowOccupStdAlsoInPrevRofCut2000noDeadStaves, isLowOccupStdAlsoInPrevRofCut2000noDeadStaves);
 
+      // check RCT flags
+      histos.fill(HIST("hSecondsRCTflags"), secFromSOR, 0); // n collisions sel8
+      for (int iFlag = 0; iFlag < kNRCTSelectionFlags; iFlag++) {
+        histos.fill(HIST("hSecondsRCTflags"), secFromSOR, 1 + iFlag, col.rct_bit(iFlag));
+        LOGP(debug, "i = {}, bitValue = {}, binLabel={}, binCenter={}", iFlag, col.rct_bit(iFlag), axRctFlags->GetBinLabel(2 + iFlag), axRctFlags->GetBinCenter(2 + iFlag));
+      }
+      LOGP(debug, "CBT_hadronPID = {}, kFT0Bad = {}, kITSBad = {}, kTPCBadTracking = {}, kTPCBadPID = {}, kTOFBad = {}, 1 + enCBT_hadronPID = {}, binLabel={}, binCenter={}", rctCheckerCBT_hadronPID(col),
+           col.rct_bit(kFT0Bad), col.rct_bit(kITSBad), col.rct_bit(kTPCBadTracking), col.rct_bit(kTPCBadPID), col.rct_bit(kTOFBad), 1 + enCBT_hadronPID, axRctFlags->GetBinLabel(2 + enCBT_hadronPID), axRctFlags->GetBinCenter(2 + enCBT_hadronPID));
+      histos.fill(HIST("hSecondsRCTflags"), secFromSOR, 1 + enCBT, rctCheckerCBT(col));
+      histos.fill(HIST("hSecondsRCTflags"), secFromSOR, 1 + enCBT_hadronPID, rctCheckerCBT_hadronPID(col));
+      histos.fill(HIST("hSecondsRCTflags"), secFromSOR, 1 + enCBT_electronPID, rctCheckerCBT_electronPID(col));
+      histos.fill(HIST("hSecondsRCTflags"), secFromSOR, 1 + enCBT_calo, rctCheckerCBT_calo(col));
+      histos.fill(HIST("hSecondsRCTflags"), secFromSOR, 1 + enCBT_muon, rctCheckerCBT_muon(col));
+      histos.fill(HIST("hSecondsRCTflags"), secFromSOR, 1 + enCBT_muon_glo, rctCheckerCBT_muon_glo(col));
+
+      // check hadronic rate
       double hadronicRate = mRateFetcher.fetch(ccdb.service, ts, runNumber, "ZNC hadronic") * 1.e-3; // kHz
       histos.fill(HIST("hSecondsIR"), secFromSOR, hadronicRate);
 
