@@ -369,8 +369,9 @@ struct FlowQa {
       std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
       hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
       funcEff.resize(pTEffBins.size() - 1);
-      std::vector<double> f1p0 = {0.713412, 0.73259, 0.749925, 0.760693, 0.767321, 0.772874, 0.777889, 0.782172, 0.792831, 0.808402, 0.817907, 0.82473, 0.829151};
-      std::vector<double> f1p1 = {-2.15831e-05, -2.19538e-05, -2.2958e-05, -2.55123e-05, -2.75207e-05, -2.81486e-05, -2.839e-05, -2.83713e-05, -2.69748e-05, -2.48438e-05, -2.31138e-05, -2.20517e-05, -2.0758e-05};
+      // LHC24g3 Eff
+      std::vector<double> f1p0 = {0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135};
+      std::vector<double> f1p1 = {-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05};
       for (uint ifunc = 0; ifunc < pTEffBins.size() - 1; ifunc++) {
         funcEff[ifunc] = new TF1(Form("funcEff%i", ifunc), "[0]+[1]*x", 0, 3000);
         funcEff[ifunc]->SetParameters(f1p0[ifunc], f1p1[ifunc] * cfgTrackDensityCorrSlopeFactor);
