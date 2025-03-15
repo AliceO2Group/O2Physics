@@ -2038,7 +2038,7 @@ struct UpcTauRl {
     histos.get<TH1>(HIST("OutputTable/hSelections"))->Fill(0);
 
     int countTracksPerCollision{0};
-    int countBadPVtracks{0};
+    // int countBadPVtracks{0};
     int countGoodNonPVtracks{0};
     int countPVGT{0};
     int countPVGTel{0};
@@ -2049,7 +2049,7 @@ struct UpcTauRl {
     for (const auto& track : tracks) {
       countTracksPerCollision++;
       if (!isGlobalTrackReinstatement(track)) {
-        countBadPVtracks++;
+        // countBadPVtracks++;
         continue;
       }
       if (!track.isPVContributor()) {
