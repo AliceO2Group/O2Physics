@@ -31,7 +31,7 @@ o2physics_add_dpl_workflow(create-pcm
 
 o2physics_add_dpl_workflow(create-emevent-photon
                     SOURCES createEMEventPhoton.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGJECore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(associate-mc-info-photon

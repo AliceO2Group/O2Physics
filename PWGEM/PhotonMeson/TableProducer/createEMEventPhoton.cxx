@@ -30,6 +30,8 @@
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
+#include "PWGJE/DataModel/Jet.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -70,6 +72,8 @@ struct CreateEMEventPhoton {
   Configurable<bool> applyEveSelAtSkimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
   Configurable<bool> needEMCTrigger{"needEMCTrigger", false, "flag to only save events which have kTVXinEMC trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> needPHSTrigger{"needPHSTrigger", false, "flag to only save events which have kTVXinPHOS trigger bit. To reduce PbPb derived data size"};
+  Configurable<bool> enableJJHistograms{"enableJJHistograms", false, "flag to fill JJ QA histograms for outlier rejection"};
+  Configurable<float> maxpTJetOverpTHard{"maxpTJetOverpTHard", 2., "set weight to 0 for JJ events with larger pTJet/pTHard"};
 
   HistogramRegistry registry{"registry"};
   void init(o2::framework::InitContext&)
@@ -77,6 +81,10 @@ struct CreateEMEventPhoton {
     auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{7, 0.5f, 7.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
+
+    if (enableJJHistograms) {
+      auto hJJ_pTHardVsJetpT = registry.add<TH2>("hJJ_pTHardVsJetpT", "hJJ_pTHardVsJetpT;#bf{#it{p}_{T}^{hard}};#bf{#it{p}_{T}^{leading jet}}", kTH2F, {{500, 0, 1000}, {500, 0, 1000}});
+    }
   }
 
   int mRunNumber;
@@ -132,7 +140,7 @@ struct CreateEMEventPhoton {
         }
       }
 
-      const auto& bc = collision.template foundBC_as<TBCs>();
+      auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
       if (applyEveSelAtSkimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
@@ -192,7 +200,11 @@ struct CreateEMEventPhoton {
 
   } // end of skimEvent
 
-  void fillEventWeights(MyCollisionsMC const& collisions, aod::McCollisions const&, MyBCs const&)
+  Preslice<aod::FullMCParticleLevelJets> perCollision_jet = aod::jet::mcCollisionId;
+
+  using MyJJCollisions = soa::Join<aod::McCollisions, aod::HepMCXSections>;
+
+  void fillEventWeights(MyCollisionsMC const& collisions, MyJJCollisions const&, MyBCs const&, aod::FullMCParticleLevelJets const& jets)
   {
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
@@ -205,8 +217,19 @@ struct CreateEMEventPhoton {
       if (applyEveSelAtSkimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-      auto mcCollision = collision.mcCollision();
-      eventWeights(mcCollision.weight());
+      auto mcCollision = collision.mcCollision_as<MyJJCollisions>();
+
+      // Outlier rejection: Set weight to 0 for events with large pTJet/pTHard
+      // ----------------------------------------------------------------------
+      auto jetsInThisCollision = jets.sliceBy(perCollision_jet, mcCollision.globalIndex());
+      float collisionWeight = mcCollision.weight();
+      for (const auto& jet : jetsInThisCollision) {
+        if (jet.pt() > maxpTJetOverpTHard * mcCollision.ptHard())
+          collisionWeight = 0.f;
+        registry.fill(HIST("hJJ_pTHardVsJetpT"), mcCollision.ptHard(), jet.pt());
+      }
+
+      eventWeights(collisionWeight);
     }
   }
 
@@ -222,10 +245,10 @@ struct CreateEMEventPhoton {
   }
   PROCESS_SWITCH(CreateEMEventPhoton, processEventMC, "process event info", false);
 
-  void processEventJJMC(MyCollisionsMC const& collisions, aod::McCollisions const& mcCollisions, MyBCs const& bcs)
+  void processEventJJMC(MyCollisionsMC const& collisions, MyJJCollisions const& mcCollisions, MyBCs const& bcs, aod::FullMCParticleLevelJets const& jets)
   {
     skimEvent<true, EMEventType::kEvent_JJ>(collisions, bcs);
-    fillEventWeights(collisions, mcCollisions, bcs);
+    fillEventWeights(collisions, mcCollisions, bcs, jets);
   }
   PROCESS_SWITCH(CreateEMEventPhoton, processEventJJMC, "process event info", false);
 
