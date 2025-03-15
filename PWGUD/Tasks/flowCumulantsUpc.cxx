@@ -449,12 +449,14 @@ struct FlowCumulantsUpc {
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
-    if (dnx == 0)
+    if (dnx == 0) {
       return;
+    }
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (std::fabs(val) < 1)
+      if (std::fabs(val) < 1) {
         registry.fill(tarName, cent, val, dnx);
+      }
       return;
     }
     return;
@@ -465,34 +467,41 @@ struct FlowCumulantsUpc {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
     if (!corrconf.pTDif) {
-      if (dnx == 0)
+      if (dnx == 0) {
         return;
+      }
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (std::fabs(val) < 1)
+      if (std::fabs(val) < 1) {
         fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+      }
       return;
     }
     for (auto i = 1; i <= fPtAxis->GetNbins(); i++) {
       dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
-      if (dnx == 0)
+      if (dnx == 0) {
         continue;
+      }
       val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
-      if (std::fabs(val) < 1)
+      if (std::fabs(val) < 1) {
         fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
+      }
     }
     return;
   }
 
   void loadCorrections(uint64_t timestamp, int runNumber)
   {
-    if (correctionsLoaded)
+    if (correctionsLoaded) {
       return;
+    }
     if (!cfgAcceptanceListEnabled && cfgAcceptance.value.empty() == false) {
       mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance, timestamp);
-      if (mAcceptance)
+      if (mAcceptance) {
         LOGF(info, "Loaded acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
-      else
+      }
+      else {
         LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
+      }
     }
     if (cfgAcceptanceListEnabled && cfgAcceptanceList.value.empty() == false) {
       mAcceptanceList = ccdb->getForTimeStamp<TObjArray>(cfgAcceptanceList, timestamp);
@@ -544,46 +553,54 @@ struct FlowCumulantsUpc {
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return 0;
     }
-    if (cfgEvSelkNoSameBunchPileup)
+    if (cfgEvSelkNoSameBunchPileup) {
       registry.fill(HIST("hEventCountSpecific"), 1.5);
+    }
     if (cfgEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       // use this cut at low multiplicities with caution
       return 0;
     }
-    if (cfgEvSelkIsGoodZvtxFT0vsPV)
+    if (cfgEvSelkIsGoodZvtxFT0vsPV) {
       registry.fill(HIST("hEventCountSpecific"), 2.5);
+    }
     if (cfgEvSelkNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       // no collisions in specified time range
       return 0;
     }
-    if (cfgEvSelkNoCollInTimeRangeStandard)
+    if (cfgEvSelkNoCollInTimeRangeStandard) {
       registry.fill(HIST("hEventCountSpecific"), 3.5);
+    }
     if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       // from Jan 9 2025 AOT meeting
       // cut time intervals with dead ITS staves
       return 0;
     }
-    if (cfgEvSelkIsGoodITSLayersAll)
+    if (cfgEvSelkIsGoodITSLayersAll) {
       registry.fill(HIST("hEventCountSpecific"), 4.5);
+    }
     if (cfgEvSelkNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       // no other collisions in this Readout Frame with per-collision multiplicity above threshold
       return 0;
     }
-    if (cfgEvSelkNoCollInRofStandard)
+    if (cfgEvSelkNoCollInRofStandard) {
       registry.fill(HIST("hEventCountSpecific"), 5.5);
+    }
     if (cfgEvSelkNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       // veto an event if FT0C amplitude in previous ITS ROF is above threshold
       return 0;
     }
-    if (cfgEvSelkNoHighMultCollInPrevRof)
+    if (cfgEvSelkNoHighMultCollInPrevRof) {
       registry.fill(HIST("hEventCountSpecific"), 6.5);
+    }
     auto multNTracksPV = collision.multNTracksPV();
     auto occupancy = collision.trackOccupancyInTimeRange();
-    if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh))
+    if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)) {
       return 0;
-    if (cfgEvSelOccupancy)
+    }
+    if (cfgEvSelOccupancy) {
       registry.fill(HIST("hEventCountSpecific"), 7.5);
+    }
 
     if (cfgEvSelMultCorrelation) {
       if (multNTracksPV < fMultPVCutLow->Eval(centrality))
@@ -595,14 +612,17 @@ struct FlowCumulantsUpc {
       if (multTrk > fMultCutHigh->Eval(centrality))
         return 0;
     }
-    if (cfgEvSelMultCorrelation)
+    if (cfgEvSelMultCorrelation) {
       registry.fill(HIST("hEventCountSpecific"), 8.5);
+    }
 
     // V0A T0A 5 sigma cut
-    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A())))
+    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))) {
       return 0;
-    if (cfgEvSelV0AT0ACut)
+    }
+    if (cfgEvSelV0AT0ACut) {
       registry.fill(HIST("hEventCountSpecific"), 9.5);
+    }
 
     return 1;
   }
@@ -612,26 +632,35 @@ struct FlowCumulantsUpc {
   {
     registry.fill(HIST("hEventCountTentative"), 0.5);
     // Regradless of the event selection, fill the event counter histograms
-    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       registry.fill(HIST("hEventCountTentative"), 1.5);
-    if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+    }
+    if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       registry.fill(HIST("hEventCountTentative"), 2.5);
-    if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
+    }
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       registry.fill(HIST("hEventCountTentative"), 3.5);
-    if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+    }
+    if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       registry.fill(HIST("hEventCountTentative"), 4.5);
-    if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard))
+    }
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       registry.fill(HIST("hEventCountTentative"), 5.5);
-    if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof))
+    }
+    if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       registry.fill(HIST("hEventCountTentative"), 6.5);
+    }
     auto multNTracksPV = collision.multNTracksPV();
     auto occupancy = collision.trackOccupancyInTimeRange();
-    if (!(occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh))
+    if (!(occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)) {
       registry.fill(HIST("hEventCountTentative"), 7.5);
-    if (!((multNTracksPV < fMultPVCutLow->Eval(centrality)) || (multNTracksPV > fMultPVCutHigh->Eval(centrality)) || (multTrk < fMultCutLow->Eval(centrality)) || (multTrk > fMultCutHigh->Eval(centrality))))
+    }
+    if (!((multNTracksPV < fMultPVCutLow->Eval(centrality)) || (multNTracksPV > fMultPVCutHigh->Eval(centrality)) || (multTrk < fMultCutLow->Eval(centrality)) || (multTrk > fMultCutHigh->Eval(centrality)))) {
       registry.fill(HIST("hEventCountTentative"), 8.5);
-    if (!(std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A())))
+    }
+    if (!(std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))) {
       registry.fill(HIST("hEventCountTentative"), 9.5);
+    }
   }
 
   template <typename TTrack>
@@ -682,13 +711,15 @@ struct FlowCumulantsUpc {
   {
 
     int gapSide = collision.gapSide();
-    if (gapSide < 0 || gapSide > 2)
+    if (gapSide < 0 || gapSide > 2) {
       return;
+    }
 
     int trueGapSide = sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
     gapSide = trueGapSide;
-    if (gapSide == 2)
+    if (gapSide == 2) {
       return;
+    }
 
     // registry.fill(HIST("hEventCount"), 0.5);
     // if (!cfgUseSmallMemory && tracks.size() >= 1) {
@@ -773,8 +804,9 @@ struct FlowCumulantsUpc {
     float weff = 1, wacc = 1;
     double nTracksCorrected = 0;
     float independent = cent;
-    if (cfgUseNch)
+    if (cfgUseNch) {
       independent = static_cast<float>(tracks.size());
+    }
 
     for (const auto& track : tracks) {
       if (!trackSelected(track))
@@ -787,14 +819,16 @@ struct FlowCumulantsUpc {
       bool withinPtRef = (cfgCutPtRefMin < pt) && (pt < cfgCutPtRefMax); // within RF pT range
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
-          if (withinPtRef)
+          if (withinPtRef) {
             fWeights->fill(phi, eta, vtxz, pt, cent, 0);
+          }
         } else {
           fWeights->fill(phi, eta, vtxz, pt, cent, 0);
         }
       }
-      if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz))
+      if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz)) {
         continue;
+      }
       registry.fill(HIST("hPt"), track.pt());
       if (withinPtRef) {
         registry.fill(HIST("hPhi"), phi);
@@ -810,12 +844,15 @@ struct FlowCumulantsUpc {
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
         nTracksCorrected += weff;
       }
-      if (withinPtRef)
+      if (withinPtRef) {
         fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
-      if (withinPtPOI)
+      }
+      if (withinPtPOI) {
         fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 2);
-      if (withinPtPOI && withinPtRef)
+      }
+      if (withinPtPOI && withinPtRef) {
         fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 4);
+      }
     }
     registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
 
