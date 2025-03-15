@@ -205,8 +205,20 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "All beauty hadrons", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("allBeautyHadronsFS")) {
+    MCProng prong(1, {503}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kHEPMCFinalState);
+    signal = new MCSignal(name, "All beauty hadrons", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("allOpenBeautyHadrons")) {
     MCProng prong(1, {502}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "All open beauty hadrons", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("allOpenBeautyHadronsFS")) {
+    MCProng prong(1, {502}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kHEPMCFinalState);
     signal = new MCSignal(name, "All open beauty hadrons", {prong}, {-1});
     return signal;
   }
@@ -236,8 +248,20 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Everything from beauty", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("everythingFromBeautyFS")) {
+    MCProng prong(2, {0, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(1, MCProng::kHEPMCFinalState);
+    signal = new MCSignal(name, "Everything from beauty", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("everythingFromEverythingFromBeauty")) {
     MCProng prong(3, {0, 0, 503}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Everything from everything from beauty", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("everythingFromEverythingFromBeautyFS")) {
+    MCProng prong(3, {0, 0, 503}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    prong.SetSourceBit(2, MCProng::kHEPMCFinalState);
     signal = new MCSignal(name, "Everything from everything from beauty", {prong}, {-1});
     return signal;
   }
@@ -1245,6 +1269,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 
   if (!nameStr.compare("Bplus")) {
     MCProng prong(1, {521}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "B+", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("BplusFS")) {
+    MCProng prong(1, {521}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kHEPMCFinalState);
     signal = new MCSignal(name, "B+", {prong}, {-1});
     return signal;
   }
