@@ -86,6 +86,7 @@ struct lambdalambda {
   Configurable<float> cfgCentSel{"cfgCentSel", 100., "Centrality selection"};
   Configurable<int> cfgCentEst{"cfgCentEst", 1, "Centrality estimator, 1: FT0C, 2: FT0M"};
 
+  Configurable<bool> cfgEvtSel{"cfgEvtSel", true, "event selection flag"};
   Configurable<bool> cfgPVSel{"cfgPVSel", false, "Additional PV selection flag for syst"};
   Configurable<float> cfgPV{"cfgPV", 8.0, "Additional PV selection range for syst"};
   Configurable<bool> cfgAddEvtSelPileup{"cfgAddEvtSelPileup", false, "flag for additional pileup selection"};
@@ -120,7 +121,8 @@ struct lambdalambda {
   Configurable<float> cfgV0V0Radius{"cfgV0V0Radius", 1.0, "maximum radius of v0v0"};
   Configurable<float> cfgV0V0CPA{"cfgV0V0CPA", 0.6, "minimum CPA of v0v0"};
   Configurable<float> cfgV0V0Distance{"cfgV0V0Distance", 1, "minimum distance of v0v0"};
-  Configurable<float> cfgV0V0DCA{"cfgV0V0DCA", 1.0, "maximum DCA of v0v0"};
+  Configurable<float> cfgV0V0DCAR{"cfgV0V0DCAR", 1.0, "maximum DCA of v0v0 R"};
+  Configurable<float> cfgV0V0DCAZ{"cfgV0V0DCAZ", 1.0, "maximum DCA of v0v0 Z"};
 
   Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag to apply efficiency correction"};
   Configurable<std::string> cfgEffCorPath{"cfgEffCorPath", "", "path for pseudo efficiency correction"};
@@ -137,7 +139,8 @@ struct lambdalambda {
   ConfigurableAxis RadiusAxis{"RadiusAxis", {100, 0, 5}, "radius of v0v0"};
   ConfigurableAxis CPAAxis{"CPAAxis", {102, -1.02, 1.02}, "CPA of v0v0"};
   ConfigurableAxis DistanceAxis{"DistanceAxis", {100, 0, 10}, "distance of v0v0"};
-  ConfigurableAxis DCAAxis{"DCAAxis", {100, 0, 5}, "DCA of v0v0"};
+  ConfigurableAxis DCARAxis{"DCARAxis", {100, 0, 2}, "DCA of v0v0R"};
+  ConfigurableAxis DCAZAxis{"DCAZAxis", {100, -2, 2}, "DCA of v0v0Z"};
 
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
@@ -161,12 +164,14 @@ struct lambdalambda {
     histos.add("Radius_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, RadiusAxis, combAxis}});
     histos.add("CPA_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, CPAAxis, combAxis}});
     histos.add("Distance_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DistanceAxis, combAxis}});
-    histos.add("DCA_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCAAxis, combAxis}});
+    histos.add("DCAR_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCARAxis, combAxis}});
+    histos.add("DCAZ_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCAZAxis, combAxis}});
 
     histos.add("Radius_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, RadiusAxis, combAxis}});
     histos.add("CPA_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, CPAAxis, combAxis}});
     histos.add("Distance_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DistanceAxis, combAxis}});
-    histos.add("DCA_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCAAxis, combAxis}});
+    histos.add("DCAR_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCARAxis, combAxis}});
+    histos.add("DCAZ_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCAZAxis, combAxis}});
 
     histos.add("h_InvMass_same", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
     histos.add("h_InvMass_mixed", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
@@ -284,7 +289,9 @@ struct lambdalambda {
   template <typename V01, typename V02>
   bool isSelectedV0V0(V01 const& v01, V02 const& v02)
   {
-    if (getDCAofV0V0(v01, v02) > cfgV0V0DCA)
+    if (std::sqrt(getDCAofV0V0(v01, v02).perp2()) > cfgV0V0DCAR)
+      return false;
+    if (getDCAofV0V0(v01, v02).z() > cfgV0V0DCAZ)
       return false;
     if (getCPA(v01, v02) < cfgV0V0CPA)
       return false;
@@ -297,7 +304,7 @@ struct lambdalambda {
   }
 
   template <typename V01, typename V02>
-  float getDCAofV0V0(V01 const& v01, V02 const& v02)
+  ROOT::Math::XYZVector getDCAofV0V0(V01 const& v01, V02 const& v02)
   {
     ROOT::Math::XYZVector v01pos, v02pos, v01mom, v02mom;
     v01pos.SetXYZ(v01.x(), v01.y(), v01.z());
@@ -307,9 +314,8 @@ struct lambdalambda {
 
     ROOT::Math::XYZVector posdiff = v02pos - v01pos;
     ROOT::Math::XYZVector cross = v01mom.Cross(v02mom);
-    if (std::sqrt(cross.Mag2()) < 1e-6)
-      return 999.;
-    return std::abs(posdiff.Dot(cross)) / std::sqrt(cross.Mag2());
+    ROOT::Math::XYZVector dcaVec = (posdiff.Dot(cross) / cross.Mag2()) * cross;
+    return dcaVec;
   }
 
   template <typename V01, typename V02>
@@ -439,13 +445,15 @@ struct lambdalambda {
         histos.fill(HIST("Radius_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02), V01Tag + V02Tag);
         histos.fill(HIST("CPA_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02), V01Tag + V02Tag);
         histos.fill(HIST("Distance_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getDistance(v01, v02), V01Tag + V02Tag);
-        histos.fill(HIST("DCA_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02), V01Tag + V02Tag);
+        histos.fill(HIST("DCAR_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), std::sqrt(getDCAofV0V0(v01, v02).perp2()), V01Tag + V02Tag);
+        histos.fill(HIST("DCAZ_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02).z(), V01Tag + V02Tag);
 
         if (isSelectedV0V0(v01, v02)) {
           histos.fill(HIST("Radius_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02), V01Tag + V02Tag);
           histos.fill(HIST("CPA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02), V01Tag + V02Tag);
           histos.fill(HIST("Distance_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDistance(v01, v02), V01Tag + V02Tag);
-          histos.fill(HIST("DCA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02), V01Tag + V02Tag);
+          histos.fill(HIST("DCAR_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), std::sqrt(getDCAofV0V0(v01, v02).perp2()), V01Tag + V02Tag);
+          histos.fill(HIST("DCAZ_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02).z(), V01Tag + V02Tag);
           IsSelected = true;
         }
 
@@ -487,7 +495,7 @@ struct lambdalambda {
       centrality = collision.centFT0M();
     }
     histos.fill(HIST("hEventstat"), 0.5);
-    if (!eventSelected(collision)) {
+    if (!eventSelected(collision) && cfgEvtSel) {
       return;
     }
     histos.fill(HIST("hEventstat"), 1.5);
