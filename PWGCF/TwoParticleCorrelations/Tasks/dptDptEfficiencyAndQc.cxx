@@ -610,13 +610,13 @@ struct QAExtraDataCollectingEngine {
                                                        HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH2F, {etaAxis, etaAxis});
         /* first resize them to the actual configured size */
         fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][isp][jsp].resize(cfgPtBinsOfInterest->size());
-        for (size_t ipt = 0; ipt < cfgPtBinsOfInterest->size(); ++ipt) {
+        for (uint ipt = 0; ipt < cfgPtBinsOfInterest->size(); ++ipt) {
           /* first resize them to the actual configured size */
           fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][isp][jsp][ipt].resize(cfgPtBinsOfInterest->size(), nullptr);
-          for (size_t jpt = 0; jpt < cfgPtBinsOfInterest->size(); ++jpt) {
-            fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][isp][jsp][ipt][jpt] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsPhiPhiPt%02d%02d_%s%s", int(ipt), int(jpt), tnames[isp].c_str(), tnames[jsp].c_str()),
+          for (uint jpt = 0; jpt < cfgPtBinsOfInterest->size(); ++jpt) {
+            fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][isp][jsp][ipt][jpt] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsPhiPhiPt%02d%02d_%s%s", ipt, jpt, tnames[isp].c_str(), tnames[jsp].c_str()),
                                                                                                HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH3F, {phiSectorAxis, phiSectorAxis, deltaPhiInSectorAxis});
-            fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][isp][jsp][ipt][jpt] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsEtaEtaPt%02d%02d_%s%s", int(ipt), int(jpt), tnames[isp].c_str(), tnames[jsp].c_str()),
+            fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][isp][jsp][ipt][jpt] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsEtaEtaPt%02d%02d_%s%s", ipt, jpt, tnames[isp].c_str(), tnames[jsp].c_str()),
                                                                                                HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH3F, {etaAxis, etaAxis, deltaPhiInSectorAxis});
           }
         }
@@ -656,13 +656,13 @@ struct QAExtraDataCollectingEngine {
         if (ptBinIx2 < 0) {
           continue;
         }
-        if (int(track1.phi() / kTpcPhiSectorWidth) == int(track2.phi() / kTpcPhiSectorWidth)) {
+        fhPhiPhiA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.phi(), track2.phi());
+        fhEtaEtaA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta());
+        if (static_cast<int>(track1.phi() / kTpcPhiSectorWidth) == static_cast<int>(track2.phi() / kTpcPhiSectorWidth)) {
           /* only if, for sure, both tracks are within the same sector */
           float inTpcSectorPhi2 = std::fmod(track2.phi(), kTpcPhiSectorWidth);
           float deltaPhi = inTpcSectorPhi1 - inTpcSectorPhi2;
 
-          fhPhiPhiA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.phi(), track2.phi());
-          fhEtaEtaA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta());
           fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()][ptBinIx1][ptBinIx2]->Fill(track1.phi(), track2.phi(), deltaPhi);
           fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()][ptBinIx1][ptBinIx2]->Fill(track1.eta(), track2.eta(), deltaPhi);
         }
