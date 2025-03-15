@@ -3154,7 +3154,7 @@ struct AnalysisDileptonTrack {
     bool isBarrel = context.mOptions.get<bool>("processBarrelSkimmed");
     bool isBarrelAsymmetric = context.mOptions.get<bool>("processDstarToD0Pi");
     bool isMuon = context.mOptions.get<bool>("processMuonSkimmed");
-    bool isMCGen = context.mOptions.get<bool>("processMCGen");
+    bool isMCGen = context.mOptions.get<bool>("processMCGen") || context.mOptions.get<bool>("processMCGenWithEventSelection");
     bool isDummy = context.mOptions.get<bool>("processDummy");
 
     if (isDummy) {
@@ -3399,6 +3399,7 @@ struct AnalysisDileptonTrack {
     if (isMCGen) {
       for (auto& sig : fGenMCSignals) {
         DefineHistograms(fHistMan, Form("MCTruthGen_%s", sig->GetName()), "");
+        DefineHistograms(fHistMan, Form("MCTruthGenSel_%s", sig->GetName()), "");
       }
     }
 
@@ -3716,17 +3717,70 @@ struct AnalysisDileptonTrack {
     // loop over mc stack and fill histograms for pure MC truth signals
     // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
     // auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
-    for (auto& track : mcTracks) {
-      VarManager::FillTrackMC(mcTracks, track);
+    for (auto& mctrack : mcTracks) {
+
+      /*if ((std::abs(mctrack.pdgCode())>400 && std::abs(mctrack.pdgCode())<599) ||
+          (std::abs(mctrack.pdgCode())>4000 && std::abs(mctrack.pdgCode())<5999) ||
+          std::abs(mctrack.pdgCode())>5999) {
+        cout << ">>>>>>>>>>>>>>>>>>>>>>> track idx / pdg: " << mctrack.globalIndex() << " / " << mctrack.pdgCode() << endl;
+        if (mctrack.has_mothers()) {
+          for (auto& m : mctrack.mothersIds()) {
+            if (m < mcTracks.size()) { // protect against bad mother indices
+              auto aMother = mcTracks.rawIteratorAt(m);
+              cout << "<<<<<< mother idx / pdg: " << m << " / " << aMother.pdgCode() << endl;
+            }
+          }
+        }
+
+        if (mctrack.has_daughters()) {
+          for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
+            if (d < mcTracks.size()) { // protect against bad daughter indices
+              auto aDaughter = mcTracks.rawIteratorAt(d);
+              cout << "<<<<<< daughter idx / pdg: " << d << " / " << aDaughter.pdgCode() << endl;
+            }
+          }
+        }
+      }*/
+
+      VarManager::FillTrackMC(mcTracks, mctrack);
       // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
       // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
       // TODO:  Use the mcReducedFlags to select signals
       for (auto& sig : fGenMCSignals) {
-        if (sig->CheckSignal(true, track)) {
+        if (sig->CheckSignal(true, mctrack)) {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
         }
       }
     }
+  }
+
+  PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+
+  void processMCGenWithEventSelection(soa::Filtered<MyEventsVtxCovSelected> const& events,
+                                      ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
+  {
+    for (auto& event : events) {
+      if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (!event.has_reducedMCevent()) {
+        continue;
+      }
+
+      auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedMCeventId());
+      groupedMCTracks.bindInternalIndicesTo(&mcTracks);
+      for (auto& track : groupedMCTracks) {
+
+        VarManager::FillTrackMC(mcTracks, track);
+
+        auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
+        for (auto& sig : fGenMCSignals) {
+          if (sig->CheckSignal(true, track_raw)) {
+            fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
+          }
+        }
+      }
+    } // end loop over reconstructed events
   }
 
   void processDummy(MyEvents&)
@@ -3738,6 +3792,7 @@ struct AnalysisDileptonTrack {
   PROCESS_SWITCH(AnalysisDileptonTrack, processDstarToD0Pi, "Run barrel pairing of D0 daughters with pion candidate, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMuonSkimmed, "Run muon dilepton-track pairing, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMCGen, "Loop over MC particle stack and fill generator level histograms", false);
+  PROCESS_SWITCH(AnalysisDileptonTrack, processMCGenWithEventSelection, "Loop over MC particle stack and fill generator level histograms", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processDummy, "Dummy function", false);
 };
 
