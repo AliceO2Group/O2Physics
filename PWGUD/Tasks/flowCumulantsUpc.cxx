@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file   flowTask.cxx
+/// \file   flowCumulantsUpc.cxx
 /// \author Mingrui Zhao (mingrui.zhao@mail.labz0.org, mingrui.zhao@cern.ch)
 /// \since  Mar/2025
 /// \brief  jira: , task to measure flow observables with cumulant method
@@ -114,11 +114,11 @@ struct FlowCumulantsUpc {
 
   // Added UPC Cuts
   SGSelector sgSelector;
-  Configurable<float> FV0_cut{"FV0", 50., "FV0A threshold"};
-  Configurable<float> FT0A_cut{"FT0A", 150., "FT0A threshold"};
-  Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
-  Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
-  Configurable<float> gap_Side{"gap", 2, "gap selection"};
+  Configurable<float> cfgCutFV0{"cfgCutFV0", 50., "FV0A threshold"};
+  Configurable<float> cfgCutFT0A{"cfgCutFT0A", 150., "FT0A threshold"};
+  Configurable<float> cfgCutFT0C{"cfgCutFT0C", 50., "FT0C threshold"};
+  Configurable<float> cfgCutZDC{"cfgCutZDC", 10., "ZDC threshold"};
+  Configurable<float> cfgGapSideSelection{"cfgGapSideSelection", 2, "gap selection"};
 
   // Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex) && (aod::cent::centFT0C > cfgCentFT0CMin) && (aod::cent::centFT0C < cfgCentFT0CMax);
   // Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
@@ -162,8 +162,8 @@ struct FlowCumulantsUpc {
   // using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   // using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   //
-  using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
-  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
+  using UdTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
+  using UdTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
 
   // Track selection
@@ -637,14 +637,14 @@ struct FlowCumulantsUpc {
   {
     // UPC selection
     if (!track.isPVContributor()) {
-	return false;
+      return false;
     }
-    if (!(std::abs(track.dcaZ()) < 2.)) {
-	return false;
+    if (!(std::fabs(track.dcaZ()) < 2.)) {
+      return false;
     }
-    double dcaLimit = 0.0105 + 0.035 / pow(track.pt(), 1.1);
-    if (!(std::abs(track.dcaXY()) < dcaLimit)) {
-	return false;
+    double dcaLimit = 0.0105 + 0.035 / std::pow(track.pt(), 1.1);
+    if (!(std::fabs(track.dcaXY()) < dcaLimit)) {
+      return false;
     }
     return true;
 
@@ -676,14 +676,14 @@ struct FlowCumulantsUpc {
   }
 
   // void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
-  void process(UDCollisionsFull::iterator const& collision, aod::BCsWithTimestamps const&, udtracksfull const& tracks)
+  void process(UDCollisionsFull::iterator const& collision, aod::BCsWithTimestamps const&, UdTracksFull const& tracks)
   {
 
     int gapSide = collision.gapSide();
     if (gapSide < 0 || gapSide > 2) return;
 
-    int truegapSide = sgSelector.trueGap(collision, FV0_cut, FT0A_cut, FT0C_cut, ZDC_cut);
-    gapSide = truegapSide;
+    int trueGapSide = sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
+    gapSide = trueGapSide;
     if (gapSide == 2) return;
 
     // registry.fill(HIST("hEventCount"), 0.5);
@@ -778,8 +778,8 @@ struct FlowCumulantsUpc {
       TVector3 momentum(track.px(), track.py(), track.pz());
       double pt = momentum.Perp();
       double phi = momentum.Phi();
-      if (phi < 0) phi += 2*TMath::Pi();
-      if (phi > 2*TMath::Pi()) phi -= 2*TMath::Pi();
+      if (phi < 0) phi += 2*o2::constants::math::PI;
+      if (phi > 2*o2::constants::math::PI) phi -= 2*o2::constants::math::PI;
       double eta = momentum.PseudoRapidity();
       bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < pt) && (pt < cfgCutPtRefMax); // within RF pT range
