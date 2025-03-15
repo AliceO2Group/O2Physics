@@ -680,11 +680,13 @@ struct FlowCumulantsUpc {
   {
 
     int gapSide = collision.gapSide();
-    if (gapSide < 0 || gapSide > 2) return;
+    if (gapSide < 0 || gapSide > 2)
+      return;
 
     int trueGapSide = sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
     gapSide = trueGapSide;
-    if (gapSide == 2) return;
+    if (gapSide == 2)
+      return;
 
     // registry.fill(HIST("hEventCount"), 0.5);
     // if (!cfgUseSmallMemory && tracks.size() >= 1) {
@@ -770,7 +772,7 @@ struct FlowCumulantsUpc {
     double nTracksCorrected = 0;
     float independent = cent;
     if (cfgUseNch)
-       independent = static_cast<float>(tracks.size());
+      independent = static_cast<float>(tracks.size());
 
     for (const auto& track : tracks) {
       if (!trackSelected(track))
