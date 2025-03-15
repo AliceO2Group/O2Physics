@@ -778,8 +778,10 @@ struct FlowCumulantsUpc {
       TVector3 momentum(track.px(), track.py(), track.pz());
       double pt = momentum.Perp();
       double phi = momentum.Phi();
-      if (phi < 0) phi += 2*o2::constants::math::PI;
-      if (phi > 2*o2::constants::math::PI) phi -= 2*o2::constants::math::PI;
+      if (phi < 0)
+        phi += 2 * o2::constants::math::PI;
+      if (phi > 2 * o2::constants::math::PI)
+        phi -= 2 * o2::constants::math::PI;
       double eta = momentum.PseudoRapidity();
       bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < pt) && (pt < cfgCutPtRefMax); // within RF pT range
