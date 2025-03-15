@@ -891,7 +891,7 @@ struct Phik0shortanalysis {
     }
   }
 
-  void processQAPurity(SelCollisions::iterator const& collision, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
+  void processPhiPurityData(SelCollisions::iterator const& collision, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
   {
     // Check if the event selection is passed
     if (!acceptEventQA<false>(collision, true))
@@ -1017,9 +1017,9 @@ struct Phik0shortanalysis {
     dataEventHist.fill(HIST("hEventSelection"), 5, weight); // at least a Phi in the event
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processQAPurity, "Process for QA and Phi Purities", true);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiPurityData, "Process function for Phi Purities in Data", true);
 
-  void processSEPhiK0S(soa::Filtered<SelCollisions>::iterator const& collision, FullTracks const&, FullV0s const& V0s, V0DauTracks const&)
+  void processPhiK0SData(soa::Filtered<SelCollisions>::iterator const& collision, FullTracks const&, FullV0s const& V0s, V0DauTracks const&)
   {
     if (!collision.isInelGt0())
       return;
@@ -1108,9 +1108,9 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processSEPhiK0S, "Process Same Event for Phi-K0S Analysis", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiK0SData, "Process function for Phi-K0S Correlations in Data", false);
 
-  void processSEPhiPion(soa::Filtered<SelCollisions>::iterator const& collision, FullTracks const& fullTracks)
+  void processPhiPionData(soa::Filtered<SelCollisions>::iterator const& collision, FullTracks const& fullTracks)
   {
     if (!collision.isInelGt0())
       return;
@@ -1195,9 +1195,9 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processSEPhiPion, "Process Same Event for Phi-Pion Analysis", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiPionData, "Process function for Phi-Pion Correlations in Data", false);
 
-  void processRecMCPhiQA(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const&)
+  void processPhiMCReco(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const&)
   {
     if (!acceptEventQA<true>(collision, true))
       return;
@@ -1355,9 +1355,9 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processRecMCPhiQA, "Process for ReCMCQA and Phi in RecMC", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiMCReco, "Process function for Phi in MCReco (to be removed)", false);
 
-  void processRecMCPhiK0S(SimCollisions const& collisions, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const& mcParticles)
+  void processPhiK0SMCReco(SimCollisions const& collisions, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
       if (!acceptEventQA<true>(collision, false))
@@ -1425,9 +1425,9 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processRecMCPhiK0S, "Process RecMC for Phi-K0S Analysis", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiK0SMCReco, "Process function for Phi-K0S Correlations Efficiency correction in MCReco", false);
 
-  void processRecMCPhiPion(SimCollisions const& collisions, FullMCTracks const& fullMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
+  void processPhiPionMCReco(SimCollisions const& collisions, FullMCTracks const& fullMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
       if (!acceptEventQA<true>(collision, false))
@@ -1531,9 +1531,9 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processRecMCPhiPion, "Process RecMC for Phi-Pion Analysis", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiPionMCReco, "Process function for Phi-Pion Correlations Efficiency correction in MCReco", false);
 
-  void processRecMCClosurePhiQA(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const&)
+  void processPhiPurityMCClosure(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const&)
   {
     if (!acceptEventQA<true>(collision, true))
       return;
@@ -1660,9 +1660,9 @@ struct Phik0shortanalysis {
     mcEventHist.fill(HIST("hRecMCEventSelection"), 8, weight); // at least a Phi in the event
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processRecMCClosurePhiQA, "Process for ReCMCQA and Phi in RecMCClosure", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiPurityMCClosure, "Process function for Phi Purities in MCClosure", false);
 
-  void processRecMCClosurePhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const&)
+  void processPhiK0SMCClosure(SimCollisions::iterator const& collision, FullMCTracks const&, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const&)
   {
     if (!acceptEventQA<true>(collision, false))
       return;
@@ -1786,9 +1786,9 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processRecMCClosurePhiK0S, "Process RecMC for MCClosure Phi-K0S Analysis", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiK0SMCClosure, "Process function for Phi-K0S Correlations in MCClosure", false);
 
-  void processRecMCClosurePhiPion(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, MCCollisions const&, aod::McParticles const&)
+  void processPhiPionMCClosure(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, MCCollisions const&, aod::McParticles const&)
   {
     if (!acceptEventQA<true>(collision, false))
       return;
@@ -1908,9 +1908,9 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processRecMCClosurePhiPion, "Process RecMC for MCClosure Phi-Pion Analysis", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiPionMCClosure, "Process function for Phi-Pion Correlations in MCClosure", false);
 
-  void processGenMCPhiQA(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
+  void processPhiMCGen(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
   {
     mcEventHist.fill(HIST("hGenMCEventSelection"), 0); // all collisions
     if (std::abs(mcCollision.posZ()) > cutZVertex)
@@ -2033,9 +2033,9 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processGenMCPhiQA, "Process for ReCMCQA and Phi in RecMC", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiMCGen, "Process function for Phi in MCGen", false);
 
-  void processGenMCPhiK0S(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
+  void processPhiK0SMCGen(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
   {
     if (std::abs(mcCollision.posZ()) > cutZVertex)
       return;
@@ -2110,9 +2110,9 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processGenMCPhiK0S, "Process GenMC for Phi-K0S Analysis", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiK0SMCGen, "Process function for Phi-K0S Correlations Efficiency correction in MCGen", false);
 
-  void processGenMCPhiPion(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
+  void processPhiPionMCGen(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
   {
     if (std::abs(mcCollision.posZ()) > cutZVertex)
       return;
@@ -2187,7 +2187,7 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processGenMCPhiPion, "Process GenMC for Phi-Pion Analysis", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiPionMCGen, "Process function for Phi-Pion Correlations Efficiency correction in MCGen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
