@@ -3770,7 +3770,7 @@ struct AnalysisDileptonTrack {
       auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedMCeventId());
       groupedMCTracks.bindInternalIndicesTo(&mcTracks);
       for (auto& track : groupedMCTracks) {
-    
+
         VarManager::FillTrackMC(mcTracks, track);
 
         auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
@@ -3780,9 +3780,8 @@ struct AnalysisDileptonTrack {
           }
         }
       }
-    }  // end loop over reconstructed events
+    } // end loop over reconstructed events
   }
-
 
   void processDummy(MyEvents&)
   {

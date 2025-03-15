@@ -253,7 +253,7 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
             sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kHEPMCFinalState);
           }
         }
-      }  // end if(hasSources)
+      } // end if(hasSources)
       // no source bit is fulfilled
       if (hasSources && !sourcesDecision) {
         return false;
@@ -289,8 +289,8 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
           }
         }
       }
-    }  // end loop over generations
-  }  // end if(checkSources)
+    } // end loop over generations
+  } // end if(checkSources)
 
   if (fProngs[i].fPDGInHistory.size() == 0) {
     return true;

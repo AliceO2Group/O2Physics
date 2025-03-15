@@ -465,11 +465,11 @@ struct TableMakerMC {
         }
         i++;
       }
-      
-      /*if ((std::abs(mctrack.pdgCode())>400 && std::abs(mctrack.pdgCode())<599) || 
+
+      /*if ((std::abs(mctrack.pdgCode())>400 && std::abs(mctrack.pdgCode())<599) ||
           (std::abs(mctrack.pdgCode())>4000 && std::abs(mctrack.pdgCode())<5999) ||
           (mcflags > 0)) {
-        cout << ">>>>>>>>>>>>>>>>>>>>>>> track idx / pdg / process / status code / HEPMC status / primary : " 
+        cout << ">>>>>>>>>>>>>>>>>>>>>>> track idx / pdg / process / status code / HEPMC status / primary : "
              << mctrack.globalIndex() << " / " << mctrack.pdgCode() << " / "
              << mctrack.getProcess() << " / " << mctrack.getGenStatusCode() << " / " << mctrack.getHepMCStatusCode() << " / " << mctrack.isPhysicalPrimary() << endl;
         cout << ">>>>>>>>>>>>>>>>>>>>>>> track bitmap: ";
@@ -479,17 +479,17 @@ struct TableMakerMC {
           for (auto& m : mctrack.mothersIds()) {
             if (m < mcTracks.size()) { // protect against bad mother indices
               auto aMother = mcTracks.rawIteratorAt(m);
-              cout << "<<<<<< mother idx / pdg: " << m << " / " << aMother.pdgCode() << endl;  
+              cout << "<<<<<< mother idx / pdg: " << m << " / " << aMother.pdgCode() << endl;
             }
           }
         }
 
         if (mctrack.has_daughters()) {
           for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
-          
+
             if (d < mcTracks.size()) { // protect against bad daughter indices
               auto aDaughter = mcTracks.rawIteratorAt(d);
-              cout << "<<<<<< daughter idx / pdg: " << d << " / " << aDaughter.pdgCode() << endl;  
+              cout << "<<<<<< daughter idx / pdg: " << d << " / " << aDaughter.pdgCode() << endl;
             }
           }
         }
