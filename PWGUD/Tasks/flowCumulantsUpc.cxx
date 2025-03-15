@@ -498,8 +498,7 @@ struct FlowCumulantsUpc {
       mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance, timestamp);
       if (mAcceptance) {
         LOGF(info, "Loaded acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
-      }
-      else {
+      } else {
         LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
       }
     }
