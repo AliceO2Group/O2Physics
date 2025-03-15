@@ -722,6 +722,21 @@ struct FemtoUniverseProducerTask {
   }
 
   template <typename ParticleType>
+  void fillDebugParticleMC(ParticleType const& particle)
+  {
+    auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
+    if (!motherparticlesMC.empty()) {
+      auto motherparticleMC = motherparticlesMC.front();
+      if (particle.isPhysicalPrimary())
+        outputDebugPartsMC(0);
+      else
+        outputDebugPartsMC(motherparticleMC.pdgCode());
+    } else {
+      outputDebugPartsMC(9999);
+    }
+  }
+
+  template <typename ParticleType>
   void fillMCParticle(ParticleType const& particle, o2::aod::femtouniverseparticle::ParticleType fdparttype)
   {
     if (particle.has_mcParticle()) {
@@ -746,9 +761,11 @@ struct FemtoUniverseProducerTask {
       }
 
       outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
+      fillDebugParticleMC(particleMC);
       outputPartsMCLabels(outputPartsMC.lastIndex());
     } else {
       outputPartsMCLabels(-1);
+      outputDebugPartsMC(9999);
     }
   }
 
@@ -1782,6 +1799,7 @@ struct FemtoUniverseProducerTask {
       // aligned, so that they can be joined in the task.
       if constexpr (transientLabels) {
         outputPartsMCLabels(-1);
+        outputDebugPartsMC(9999);
       }
     }
     if constexpr (resolveDaughs) {
@@ -1834,6 +1852,7 @@ struct FemtoUniverseProducerTask {
         // aligned, so that they can be joined in the task.
         if constexpr (transientLabels) {
           outputPartsMCLabels(-1);
+          outputDebugPartsMC(9999);
         }
       }
     }
@@ -1928,6 +1947,7 @@ struct FemtoUniverseProducerTask {
       // aligned, so that they can be joined in the task.
       if constexpr (transientLabels) {
         outputPartsMCLabels(-1);
+        outputDebugPartsMC(9999);
       }
     }
     if constexpr (resolveDaughs) {
@@ -1963,6 +1983,7 @@ struct FemtoUniverseProducerTask {
         // aligned, so that they can be joined in the task.
         if constexpr (transientLabels) {
           outputPartsMCLabels(-1);
+          outputDebugPartsMC(9999);
         }
       }
     }
