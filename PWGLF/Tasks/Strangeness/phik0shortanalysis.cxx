@@ -302,15 +302,15 @@ struct Phik0shortanalysis {
     // Phi invariant mass for computing purities and normalisation
     dataPhiHist.add("h3PhipurData", "Invariant mass of Phi for Purity (no K0S/Pi) in Data", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
 
-    dataPhiHist.add("h4PhipurK0SData", "Invariant mass of Phi for Purity (K0S) in Data", kTHnSparseF, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+    dataPhiHist.add("h4PhipurK0SData", "Invariant mass of Phi for Purity (K0S) in Data", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
     dataPhiHist.get<THnSparse>(HIST("h4PhipurK0SData"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-    for (int i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
+    for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       dataPhiHist.get<THnSparse>(HIST("h4PhipurK0SData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
     }
 
-    dataPhiHist.add("h4PhipurPiData", "Invariant mass of Phi for Purity (Pi) in Data", kTHnSparseF, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+    dataPhiHist.add("h4PhipurPiData", "Invariant mass of Phi for Purity (Pi) in Data", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
     dataPhiHist.get<THnSparse>(HIST("h4PhipurPiData"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-    for (int i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
+    for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       dataPhiHist.get<THnSparse>(HIST("h4PhipurPiData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
     }
 
@@ -323,15 +323,15 @@ struct Phik0shortanalysis {
     // MCPhi invariant mass for computing purities
     closureMCPhiHist.add("h3PhipurMCClosure", "Invariant mass of Phi for Purity (no K0S/Pi)", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
 
-    closureMCPhiHist.add("h4PhipurK0SMCClosure", "Invariant mass of Phi for Purity (K0S) in MCClosure", kTHnSparseF, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+    closureMCPhiHist.add("h4PhipurK0SMCClosure", "Invariant mass of Phi for Purity (K0S) in MCClosure", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
     closureMCPhiHist.get<THnSparse>(HIST("h4PhipurK0SMCClosure"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-    for (int i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
+    for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       closureMCPhiHist.get<THnSparse>(HIST("h4PhipurK0SMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
     }
 
-    closureMCPhiHist.add("h4PhipurPiMCClosure", "Invariant mass of Phi for Purity (Pi) in MCClosure", kTHnSparseF, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+    closureMCPhiHist.add("h4PhipurPiMCClosure", "Invariant mass of Phi for Purity (Pi) in MCClosure", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
     closureMCPhiHist.get<THnSparse>(HIST("h4PhipurPiMCClosure"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-    for (int i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
+    for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       closureMCPhiHist.get<THnSparse>(HIST("h4PhipurPiMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
     }
 
@@ -342,7 +342,7 @@ struct Phik0shortanalysis {
     dataK0SHist.add("hNSigmaNegPionFromK0S", "hNSigmaNegPionFromK0Short", kTH2F, {{100, 0.0, 5.0, "#it{p} (GeV/#it{c})"}, {100, -10.0f, 10.0f}});
 
     // 2D mass of Phi and K0S for Data
-    dataPhiK0SHist.add("h5PhiK0SData", "2D Invariant mass of Phi and K0Short for Data", kTHnSparseF, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedptK0SAxis, massK0SAxis, sigmassPhiAxis});
+    dataPhiK0SHist.add("h5PhiK0SData", "2D Invariant mass of Phi and K0Short for Data", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedptK0SAxis, massK0SAxis, sigmassPhiAxis});
     dataPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SData"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
     for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       dataPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
@@ -357,27 +357,27 @@ struct Phik0shortanalysis {
     dataK0SHist.add("h3K0SRapidityData", "K0Short rapidity for Data", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
 
     // RecMC K0S coupled to Phi
-    mcPhiK0SHist.add("h4PhiK0SMCReco", "K0S coupled to Phi in MCReco", kTHnSparseF, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedptK0SAxis, massK0SAxis});
+    mcPhiK0SHist.add("h4PhiK0SMCReco", "K0S coupled to Phi in MCReco", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedptK0SAxis, massK0SAxis});
     mcPhiK0SHist.get<THnSparse>(HIST("h4PhiK0SMCReco"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
     for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       mcPhiK0SHist.get<THnSparse>(HIST("h4PhiK0SMCReco"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
     }
 
     // GenMC K0S coupled to Phi
-    mcPhiK0SHist.add("h3PhiK0SMCGen", "K0S coupled toPhi in MCGen", kTH3F, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedptK0SAxis});
+    mcPhiK0SHist.add("h3PhiK0SMCGen", "K0S coupled toPhi in MCGen", kTH3F, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedptK0SAxis});
     mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGen"))->GetXaxis()->SetBinLabel(1, "Inclusive");
     for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGen"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
     }
 
-    mcPhiK0SHist.add("h3PhiK0SMCGenAssocReco", "K0S coupled toPhi in MCGen Associated MCReco Collision", kTH3F, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedptK0SAxis});
+    mcPhiK0SHist.add("h3PhiK0SMCGenAssocReco", "K0S coupled toPhi in MCGen Associated MCReco Collision", kTH3F, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedptK0SAxis});
     mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGenAssocReco"))->GetXaxis()->SetBinLabel(1, "Inclusive");
     for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGenAssocReco"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
     }
 
     // 2D mass of Phi and K0S for Closure Test
-    closureMCPhiK0SHist.add("h5PhiK0SMCClosure", "2D Invariant mass of Phi and K0Short for MC Closure Test", kTHnSparseF, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedptK0SAxis, massK0SAxis, sigmassPhiAxis});
+    closureMCPhiK0SHist.add("h5PhiK0SMCClosure", "2D Invariant mass of Phi and K0Short for MC Closure Test", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedptK0SAxis, massK0SAxis, sigmassPhiAxis});
     closureMCPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SMCClosure"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
     for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       closureMCPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
@@ -389,7 +389,7 @@ struct Phik0shortanalysis {
     closureMCPhiK0SHist.add("h3ClosureMCPhiK0SSESCutNew", "Invariant mass of K0Short for Deltay < SecondCut for Closure Test", kTH3F, {binnedmultAxis, binnedptK0SAxis, massK0SAxis});
 
     // Phi mass vs Pion NSigma dE/dx for Data
-    dataPhiPionHist.add("h6PhiPiData", "Phi Invariant mass vs Pion nSigma TPC/TOF for Data", kTHnSparseF, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
+    dataPhiPionHist.add("h6PhiPiData", "Phi Invariant mass vs Pion nSigma TPC/TOF for Data", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
     dataPhiPionHist.get<THnSparse>(HIST("h6PhiPiData"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
     for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       dataPhiPionHist.get<THnSparse>(HIST("h6PhiPiData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
@@ -421,33 +421,33 @@ struct Phik0shortanalysis {
     mcPionHist.add("h3RecMCDCAxySecMaterialPi", "Dcaxy distribution vs pt for Secondary Pions from Material", kTH2F, {binnedptPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
 
     // RecMC Pion coupled to Phi with TPC
-    mcPhiPionHist.add("h4PhiPiTPCMCReco", "Pion coupled to Phi in MCReco (TPC)", kTHnSparseF, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}});
+    mcPhiPionHist.add("h4PhiPiTPCMCReco", "Pion coupled to Phi in MCReco (TPC)", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}});
     mcPhiPionHist.get<THnSparse>(HIST("h4PhiPiTPCMCReco"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
     for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       mcPhiPionHist.get<THnSparse>(HIST("h4PhiPiTPCMCReco"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
     }
 
     // RecMC Pion coupled to Phi with TPC and TOF
-    mcPhiPionHist.add("h5PhiPiTPCTOFMCReco", "Pion coupled to Phi in MCReco (TPC and TOF)", kTHnSparseF, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
+    mcPhiPionHist.add("h5PhiPiTPCTOFMCReco", "Pion coupled to Phi in MCReco (TPC and TOF)", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
     mcPhiPionHist.get<THnSparse>(HIST("h5PhiPiTPCTOFMCReco"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
     for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       mcPhiPionHist.get<THnSparse>(HIST("h5PhiPiTPCTOFMCReco"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
     }
 
-    mcPhiPionHist.add("h3PhiPiMCGen", "Pion coupled to Phi in MCGen", kTH3F, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedptPiAxis});
+    mcPhiPionHist.add("h3PhiPiMCGen", "Pion coupled to Phi in MCGen", kTH3F, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedptPiAxis});
     mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGen"))->GetXaxis()->SetBinLabel(1, "Inclusive");
     for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGen"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
     }
 
-    mcPhiPionHist.add("h3PhiPiMCGenAssocReco", "Pion coupled to Phi in MCGen Associated Reco Collision", kTH3F, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedptPiAxis});
+    mcPhiPionHist.add("h3PhiPiMCGenAssocReco", "Pion coupled to Phi in MCGen Associated Reco Collision", kTH3F, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedptPiAxis});
     mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGenAssocReco"))->GetXaxis()->SetBinLabel(1, "Inclusive");
     for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGenAssocReco"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
     }
 
     // Phi mass vs Pion NSigma dE/dx for Closure Test
-    closureMCPhiPionHist.add("h6PhiPiMCClosure", "Phi Invariant mass vs Pion nSigma TPC/TOF for MC Closure Test", kTHnSparseF, {{cfgDeltaYAcceptanceBins->size(), -0.5f, cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f}, binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
+    closureMCPhiPionHist.add("h6PhiPiMCClosure", "Phi Invariant mass vs Pion nSigma TPC/TOF for MC Closure Test", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size()), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
     closureMCPhiPionHist.get<THnSparse>(HIST("h6PhiPiMCClosure"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
     for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
       closureMCPhiPionHist.get<THnSparse>(HIST("h6PhiPiMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
@@ -1229,7 +1229,7 @@ struct Phik0shortanalysis {
       if (!track1.has_mcParticle())
         continue;
       auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
-      if (mcTrack1.pdgCode() != 321 || !mcTrack1.isPhysicalPrimary())
+      if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
         continue;
 
       // Loop over all negative tracks
@@ -1244,14 +1244,14 @@ struct Phik0shortanalysis {
         if (!track2.has_mcParticle())
           continue;
         auto mcTrack2 = track2.mcParticle_as<aod::McParticles>();
-        if (mcTrack2.pdgCode() != -321 || !mcTrack2.isPhysicalPrimary())
+        if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
           continue;
 
         bool isMCMotherPhi = false;
         auto mcMotherPhi = mcTrack1.mothers_as<aod::McParticles>()[0];
         for (const auto& MotherOfmcTrack1 : mcTrack1.mothers_as<aod::McParticles>()) {
           for (const auto& MotherOfmcTrack2 : mcTrack2.mothers_as<aod::McParticles>()) {
-            if (MotherOfmcTrack1 == MotherOfmcTrack2 && MotherOfmcTrack1.pdgCode() == 333) {
+            if (MotherOfmcTrack1 == MotherOfmcTrack2 && MotherOfmcTrack1.pdgCode() == o2::constants::physics::Pdg::kPhi) {
               mcMotherPhi = MotherOfmcTrack1;
               isMCMotherPhi = true;
             }
@@ -1286,7 +1286,7 @@ struct Phik0shortanalysis {
           }
 
           auto v0mcparticle = v0.mcParticle();
-          if (v0mcparticle.pdgCode() != 310 || !v0mcparticle.isPhysicalPrimary())
+          if (v0mcparticle.pdgCode() != PDG_t::kK0Short || !v0mcparticle.isPhysicalPrimary())
             continue;
 
           const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
@@ -1326,7 +1326,7 @@ struct Phik0shortanalysis {
             continue;
 
           auto mcTrack = track.mcParticle_as<aod::McParticles>();
-          if (std::abs(mcTrack.pdgCode()) != 211 || !mcTrack.isPhysicalPrimary())
+          if (std::abs(mcTrack.pdgCode()) != PDG_t::kPiPlus || !mcTrack.isPhysicalPrimary())
             continue;
 
           if (!selectionPion<true, true>(track, false))
@@ -1381,7 +1381,7 @@ struct Phik0shortanalysis {
           continue;
 
         auto v0mcparticle = v0.mcParticle();
-        if (v0mcparticle.pdgCode() != 310 || !v0mcparticle.isPhysicalPrimary())
+        if (v0mcparticle.pdgCode() != PDG_t::kK0Short || !v0mcparticle.isPhysicalPrimary())
           continue;
 
         const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
@@ -1402,7 +1402,7 @@ struct Phik0shortanalysis {
         std::vector<int> counts(cfgDeltaYAcceptanceBins->size() + 1, 0);
 
         for (const auto& mcParticle : mcParticlesThisColl) {
-          if (mcParticle.pdgCode() != 333)
+          if (mcParticle.pdgCode() != o2::constants::physics::Pdg::kPhi)
             continue;
           if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
             continue;
@@ -1455,7 +1455,7 @@ struct Phik0shortanalysis {
           continue;
 
         auto mcTrack = track.mcParticle_as<aod::McParticles>();
-        if (std::abs(mcTrack.pdgCode()) != 211)
+        if (std::abs(mcTrack.pdgCode()) != PDG_t::kPiPlus)
           continue;
 
         if (std::abs(mcTrack.y()) > cfgYAcceptance)
@@ -1480,7 +1480,7 @@ struct Phik0shortanalysis {
         std::vector<int> countsTPC(cfgDeltaYAcceptanceBins->size() + 1, 0);
 
         for (const auto& mcParticle : mcParticlesThisColl) {
-          if (mcParticle.pdgCode() != 333)
+          if (mcParticle.pdgCode() != o2::constants::physics::Pdg::kPhi)
             continue;
           if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
             continue;
@@ -1508,7 +1508,7 @@ struct Phik0shortanalysis {
         std::vector<int> countsTPCTOF(cfgDeltaYAcceptanceBins->size() + 1, 0);
 
         for (const auto& mcParticle : mcParticlesThisColl) {
-          if (mcParticle.pdgCode() != 333)
+          if (mcParticle.pdgCode() != o2::constants::physics::Pdg::kPhi)
             continue;
           if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
             continue;
@@ -1595,7 +1595,7 @@ struct Phik0shortanalysis {
             if (!v0.has_mcParticle())
               continue;
             auto v0mcparticle = v0.mcParticle();
-            if (v0mcparticle.pdgCode() != 310 || !v0mcparticle.isPhysicalPrimary())
+            if (v0mcparticle.pdgCode() != PDG_t::kK0Short || !v0mcparticle.isPhysicalPrimary())
               continue;
           }
 
@@ -1631,7 +1631,7 @@ struct Phik0shortanalysis {
             if (!track.has_mcParticle())
               continue;
             auto mcTrack = track.mcParticle_as<aod::McParticles>();
-            if (std::abs(mcTrack.pdgCode()) != 211 || !mcTrack.isPhysicalPrimary())
+            if (std::abs(mcTrack.pdgCode()) != PDG_t::kPiPlus || !mcTrack.isPhysicalPrimary())
               continue;
           }
 
@@ -1683,7 +1683,7 @@ struct Phik0shortanalysis {
         if (!v0.has_mcParticle())
           continue;
         auto v0mcparticle = v0.mcParticle();
-        if (v0mcparticle.pdgCode() != 310 || !v0mcparticle.isPhysicalPrimary())
+        if (v0mcparticle.pdgCode() != PDG_t::kK0Short || !v0mcparticle.isPhysicalPrimary())
           continue;
       }
 
@@ -1721,13 +1721,13 @@ struct Phik0shortanalysis {
             if (!track1.has_mcParticle())
               continue;
             auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
-            if (mcTrack1.pdgCode() != 321 || !mcTrack1.isPhysicalPrimary())
+            if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
               continue;
 
             if (!track2.has_mcParticle())
               continue;
             auto mcTrack2 = track2.mcParticle_as<aod::McParticles>();
-            if (mcTrack2.pdgCode() != -321 || !mcTrack2.isPhysicalPrimary())
+            if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
               continue;
 
             bool isMCMotherPhi = false;
@@ -1737,7 +1737,7 @@ struct Phik0shortanalysis {
                   continue;
                 if (motherOfMcTrack1.globalIndex() != motherOfMcTrack2.globalIndex())
                   continue;
-                if (motherOfMcTrack1.pdgCode() != 333)
+                if (motherOfMcTrack1.pdgCode() != o2::constants::physics::Pdg::kPhi)
                   continue;
                 isMCMotherPhi = true;
               }
@@ -1809,7 +1809,7 @@ struct Phik0shortanalysis {
         if (!track.has_mcParticle())
           continue;
         auto mcTrack = track.mcParticle_as<aod::McParticles>();
-        if (std::abs(mcTrack.pdgCode()) != 211 || !mcTrack.isPhysicalPrimary())
+        if (std::abs(mcTrack.pdgCode()) != PDG_t::kPiPlus || !mcTrack.isPhysicalPrimary())
           continue;
       }
 
@@ -1843,13 +1843,13 @@ struct Phik0shortanalysis {
             if (!track1.has_mcParticle())
               continue;
             auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
-            if (mcTrack1.pdgCode() != 321 || !mcTrack1.isPhysicalPrimary())
+            if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
               continue;
 
             if (!track2.has_mcParticle())
               continue;
             auto mcTrack2 = track2.mcParticle_as<aod::McParticles>();
-            if (mcTrack2.pdgCode() != -321 || !mcTrack2.isPhysicalPrimary())
+            if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
               continue;
 
             bool isMCMotherPhi = false;
@@ -1859,7 +1859,7 @@ struct Phik0shortanalysis {
                   continue;
                 if (motherOfMcTrack1.globalIndex() != motherOfMcTrack2.globalIndex())
                   continue;
-                if (motherOfMcTrack1.pdgCode() != 333)
+                if (motherOfMcTrack1.pdgCode() != o2::constants::physics::Pdg::kPhi)
                   continue;
                 isMCMotherPhi = true;
               }
@@ -1935,16 +1935,16 @@ struct Phik0shortanalysis {
     bool isCountedPhi = false;
 
     for (const auto& mcParticle1 : mcParticles) {
-      if (mcParticle1.pdgCode() != 333)
+      if (mcParticle1.pdgCode() != o2::constants::physics::Pdg::kPhi)
         continue;
       auto kDaughters = mcParticle1.daughters_as<aod::McParticles>();
       if (kDaughters.size() != 2)
         continue;
       bool isPosKaon = false, isNegKaon = false;
       for (const auto& kDaughter : kDaughters) {
-        if (kDaughter.pdgCode() == 321)
+        if (kDaughter.pdgCode() == PDG_t::kKPlus)
           isPosKaon = true;
-        if (kDaughter.pdgCode() == -321)
+        if (kDaughter.pdgCode() == PDG_t::kKMinus)
           isNegKaon = true;
       }
       if (!isPosKaon || !isNegKaon)
@@ -1966,7 +1966,7 @@ struct Phik0shortanalysis {
       std::array<bool, 3> isCountedK0S = {false, false, false};
 
       for (const auto& mcParticle2 : mcParticles) {
-        if (mcParticle2.pdgCode() != 310)
+        if (mcParticle2.pdgCode() != PDG_t::kK0Short)
           continue;
         if (!mcParticle2.isPhysicalPrimary())
           continue;
@@ -2000,7 +2000,7 @@ struct Phik0shortanalysis {
       std::array<bool, 3> isCountedPi = {false, false, false};
 
       for (const auto& mcParticle2 : mcParticles) {
-        if (std::abs(mcParticle2.pdgCode()) != 211)
+        if (std::abs(mcParticle2.pdgCode()) != PDG_t::kPiPlus)
           continue;
         if (!mcParticle2.isPhysicalPrimary())
           continue;
@@ -2054,7 +2054,7 @@ struct Phik0shortanalysis {
     mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), genmultiplicity);
 
     for (const auto& mcParticle1 : mcParticles) {
-      if (mcParticle1.pdgCode() != 310)
+      if (mcParticle1.pdgCode() != PDG_t::kK0Short)
         continue;
       if (!mcParticle1.isPhysicalPrimary() || mcParticle1.pt() < v0Configs.v0SettingMinPt)
         continue;
@@ -2071,7 +2071,7 @@ struct Phik0shortanalysis {
       std::vector<int> counts(cfgDeltaYAcceptanceBins->size() + 1, 0);
 
       for (const auto& mcParticle2 : mcParticles) {
-        if (mcParticle2.pdgCode() != 333)
+        if (mcParticle2.pdgCode() != o2::constants::physics::Pdg::kPhi)
           continue;
         if (cfgisGenMCForClosure) {
           auto kDaughters = mcParticle2.daughters_as<aod::McParticles>();
@@ -2079,9 +2079,9 @@ struct Phik0shortanalysis {
             continue;
           bool isPosKaon = false, isNegKaon = false;
           for (const auto& kDaughter : kDaughters) {
-            if (kDaughter.pdgCode() == 321)
+            if (kDaughter.pdgCode() == PDG_t::kKPlus)
               isPosKaon = true;
-            if (kDaughter.pdgCode() == -321)
+            if (kDaughter.pdgCode() == PDG_t::kKMinus)
               isNegKaon = true;
           }
           if (!isPosKaon || !isNegKaon)
@@ -2131,7 +2131,7 @@ struct Phik0shortanalysis {
     mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), genmultiplicity);
 
     for (const auto& mcParticle1 : mcParticles) {
-      if (std::abs(mcParticle1.pdgCode()) != 211)
+      if (std::abs(mcParticle1.pdgCode()) != PDG_t::kPiPlus)
         continue;
       if (!mcParticle1.isPhysicalPrimary() || mcParticle1.pt() < trackConfigs.cMinPionPtcut)
         continue;
@@ -2148,7 +2148,7 @@ struct Phik0shortanalysis {
       std::vector<int> counts(cfgDeltaYAcceptanceBins->size() + 1, 0);
 
       for (const auto& mcParticle2 : mcParticles) {
-        if (mcParticle2.pdgCode() != 333)
+        if (mcParticle2.pdgCode() != o2::constants::physics::Pdg::kPhi)
           continue;
         if (cfgisGenMCForClosure) {
           auto kDaughters = mcParticle2.daughters_as<aod::McParticles>();
@@ -2156,9 +2156,9 @@ struct Phik0shortanalysis {
             continue;
           bool isPosKaon = false, isNegKaon = false;
           for (const auto& kDaughter : kDaughters) {
-            if (kDaughter.pdgCode() == 321)
+            if (kDaughter.pdgCode() == PDG_t::kKPlus)
               isPosKaon = true;
-            if (kDaughter.pdgCode() == -321)
+            if (kDaughter.pdgCode() == PDG_t::kKMinus)
               isNegKaon = true;
           }
           if (!isPosKaon || !isNegKaon)
