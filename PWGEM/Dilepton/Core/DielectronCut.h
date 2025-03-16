@@ -374,10 +374,10 @@ class DielectronCut : public TNamed
         return mMinDca3D <= dca3DinSigma(track) && dca3DinSigma(track) <= mMaxDca3D; // in sigma for single leg
 
       case DielectronCuts::kDCAxy:
-        return abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
+        return std::fabs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
       case DielectronCuts::kDCAz:
-        return abs(track.dcaZ()) <= mMaxDcaZ;
+        return std::fabs(track.dcaZ()) <= mMaxDcaZ;
 
       case DielectronCuts::kITSNCls:
         return mMinNClustersITS <= track.itsNCls() && track.itsNCls() <= mMaxNClustersITS;
