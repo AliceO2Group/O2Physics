@@ -27,6 +27,7 @@
 #include <tuple>
 #include <utility>
 #include <array>
+#include <algorithm>
 
 #include "TString.h"
 #include "Math/Vector4D.h"

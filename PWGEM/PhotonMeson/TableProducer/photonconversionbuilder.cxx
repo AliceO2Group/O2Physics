@@ -91,6 +91,7 @@ struct PhotonConversionBuilder {
   Configurable<int> mincrossedrows{"mincrossedrows", 40, "min crossed rows"};
   Configurable<bool> moveTPCTracks{"moveTPCTracks", true, "Move TPC-only tracks under the collision assumption"};
   Configurable<bool> disableITSonlyTracks{"disableITSonlyTracks", false, "disable ITSonly tracks in V0 legs"};
+  Configurable<bool> disableTPConlyTracks{"disableTPConlyTracks", false, "disable TPConly tracks in V0 legs"};
 
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max chi2/NclsTPC"}; // default 4.0 + 1.0
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max chi2/NclsITS"}; // default 5.0 + 1.0
@@ -171,7 +172,7 @@ struct PhotonConversionBuilder {
       {"V0Leg/hXZ", "track iu x vs. z;z (cm);x (cm)", {HistType::kTH2F, {{200, -100.f, 100.f}, {200, 0.f, 100.f}}}},
     }};
 
-  void init(InitContext& initContext)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -272,6 +273,10 @@ struct PhotonConversionBuilder {
     }
 
     if (disableITSonlyTracks && isITSonlyTrack(track)) {
+      return false;
+    }
+
+    if (disableTPConlyTracks && isTPConlyTrack(track)) {
       return false;
     }
 
