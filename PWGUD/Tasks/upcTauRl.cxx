@@ -17,11 +17,12 @@
 //
 
 // C++ headers
+#include <algorithm>
+#include <cassert>
+#include <random>
 #include <set>
 #include <utility>
-#include <algorithm>
 #include <vector>
-#include <random>
 
 // O2 headers
 #include "Framework/AnalysisTask.h"
@@ -2038,7 +2039,7 @@ struct UpcTauRl {
     histos.get<TH1>(HIST("OutputTable/hSelections"))->Fill(0);
 
     int countTracksPerCollision{0};
-    // int countBadPVtracks{0};
+    [[maybe_unused]] int countBadPVtracks{0};
     int countGoodNonPVtracks{0};
     int countPVGT{0};
     int countPVGTel{0};
@@ -2049,7 +2050,7 @@ struct UpcTauRl {
     for (const auto& track : tracks) {
       countTracksPerCollision++;
       if (!isGlobalTrackReinstatement(track)) {
-        // countBadPVtracks++;
+        [[maybe_unused]] countBadPVtracks++;
         continue;
       }
       if (!track.isPVContributor()) {
