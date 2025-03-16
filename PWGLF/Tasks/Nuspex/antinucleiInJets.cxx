@@ -469,7 +469,7 @@ struct AntinucleiInJets {
 
     // loop over reconstructed jets
     bool isAtLeastOneJetSelected = false;
-    for (const auto& jet : jets) { 
+    for (const auto& jet : jets) {
 
       // jet must be fully contained in the acceptance
       if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
@@ -695,7 +695,7 @@ struct AntinucleiInJets {
     // loop over reconstructed jets
     int njetsInAcc(0);
     int njetsHighPt(0);
-    for (const auto& jet : jets) { 
+    for (const auto& jet : jets) {
 
       // jet must be fully contained in the acceptance
       if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
@@ -1182,7 +1182,6 @@ struct AntinucleiInJets {
     }
   }
   PROCESS_SWITCH(AntinucleiInJets, processJetsMCrec, "process jets MC rec", false);
-
 
   // Process Systematics
   void processSystematicsData(SelectedCollisions::iterator const& collision, FullNucleiTracks const& tracks)
