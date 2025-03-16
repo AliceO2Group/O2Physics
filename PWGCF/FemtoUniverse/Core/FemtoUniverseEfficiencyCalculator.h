@@ -80,7 +80,7 @@ class EfficiencyCalculator
     shouldApplyCorrections = config->confEfficiencyApplyCorrections;
 
     if (config->confEfficiencyApplyCorrections && !config->confEfficiencyCCDBTimestamps.value.empty()) {
-      for (auto idx = 0; idx < config->confEfficiencyCCDBTimestamps.value.size(); idx++) {
+      for (auto idx = 0UL; idx < config->confEfficiencyCCDBTimestamps.value.size(); idx++) {
         auto timestamp = 0L;
         try {
           timestamp = std::max(0L, std::stol(config->confEfficiencyCCDBTimestamps.value[idx]));
@@ -89,7 +89,7 @@ class EfficiencyCalculator
           continue;
         }
 
-        hLoaded[idx] = timestamp > 0 ? loadHistFromCCDB(timestamp) : nullptr;
+        hLoaded[idx] = timestamp > 0 ? loadEfficiencyFromCCDB(timestamp) : nullptr;
       }
     }
   }

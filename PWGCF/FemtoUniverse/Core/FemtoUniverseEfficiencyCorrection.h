@@ -77,7 +77,7 @@ class EfficiencyCorrection
     shouldApplyCorrection = config->confEffCorApply;
 
     if (shouldApplyCorrection && !config->confEffCorCCDBTimestamps.value.empty()) {
-      for (auto idx = 0; idx < config->confEffCorCCDBTimestamps.value.size(); idx++) {
+      for (auto idx = 0UL; idx < config->confEffCorCCDBTimestamps.value.size(); idx++) {
         auto timestamp = 0L;
         try {
           timestamp = std::max(0L, std::stol(config->confEffCorCCDBTimestamps.value[idx]));
