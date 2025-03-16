@@ -82,18 +82,13 @@ class EfficiencyCalculator
       for (auto idx = 0; idx < config->confEfficiencyCCDBTimestamps.value.size(); idx++) {
         auto timestamp = 0L;
         try {
-          timestamp = std::min(0L, std::stol(config->confEfficiencyCCDBTimestamps.value[idx]));
+          timestamp = std::max(0L, std::stol(config->confEfficiencyCCDBTimestamps.value[idx]));
         } catch (const std::exception&) {
           LOGF(error, notify("Could not parse CCDB timestamp \"%s\""), config->confEfficiencyCCDBTimestamps.value[idx]);
           continue;
         }
 
-        if (timestamp > 0) {
-          hLoaded[idx] = loadEfficiencyFromCCDB(timestamp);
-          LOGF(info, notify("Successfully loaded %ld for particle %d"), timestamp, idx + 1);
-        } else {
-          hLoaded[idx] = nullptr;
-        }
+        hLoaded[idx] = timestamp > 0 ? loadHistFromCCDB(timestamp) : nullptr;
       }
     }
   }
@@ -151,6 +146,7 @@ class EfficiencyCalculator
       LOGF(warn, notify("Histogram \"%s/%ld\" has been loaded, but it is empty"), config->confCCDBPath.value, timestamp);
     }
 
+    LOGF(info, notify("Successfully loaded %ld"), timestamp);
     return hEff;
   }
 
