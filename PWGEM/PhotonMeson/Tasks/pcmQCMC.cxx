@@ -204,9 +204,9 @@ struct PCMQCMC {
     fRegistry.add("V0/primary/hConvPoint_diffX", "conversion point diff X MC;X_{MC} (cm);X_{rec} - X_{MC} (cm)", kTH2F, {{200, -100, +100}, {100, -50.0f, 50.0f}}, true);
     fRegistry.add("V0/primary/hConvPoint_diffY", "conversion point diff Y MC;Y_{MC} (cm);Y_{rec} - Y_{MC} (cm)", kTH2F, {{200, -100, +100}, {100, -50.0f, 50.0f}}, true);
     fRegistry.add("V0/primary/hConvPoint_diffZ", "conversion point diff Z MC;Z_{MC} (cm);Z_{rec} - Z_{MC} (cm)", kTH2F, {{200, -100, +100}, {100, -50.0f, 50.0f}}, true);
-    fRegistry.add("V0/primary/hPtGen_DeltaPtOverPtGen", "photon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
-    fRegistry.add("V0/primary/hPtGen_DeltaEta", "photon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
-    fRegistry.add("V0/primary/hPtGen_DeltaPhi", "photon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
+    fRegistry.add("V0/primary/hPtGen_DeltaPtOverPtGen", "photon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {200, -1.0f, 1.0f}}, true);
+    fRegistry.add("V0/primary/hPtGen_DeltaEta", "photon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
+    fRegistry.add("V0/primary/hPtGen_DeltaPhi", "photon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
     fRegistry.add("V0/primary/hXY_MC", "X vs. Y of true photon conversion point.;X (cm);Y (cm)", kTH2F, {{400, -100.0f, +100}, {400, -100, +100}}, true);
     fRegistry.add("V0/primary/hRZ_MC", "R vs. Z of true photon conversion point;Z (cm);R_{xy} (cm)", kTH2F, {{200, -100.0f, +100}, {200, 0, 100}}, true);
     fRegistry.add("V0/primary/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {80, -2, +2}}, false);
@@ -214,6 +214,9 @@ struct PCMQCMC {
     fRegistry.addClone("V0/primary/", "V0/fromHS/");        // from hadronic shower in detector materials
     fRegistry.addClone("V0/primary/", "V0/fromPi0Dalitz/"); // misidentified dielectron from pi0 dalitz decay
     fRegistry.addClone("V0/primary/", "V0/fromEtaDalitz/"); // misidentified dielectron from eta dalitz decay
+
+    fRegistry.addClone("V0/primary/hPt", "V0/candidate/hPt");         // only for purity
+    fRegistry.addClone("V0/primary/hEtaPhi", "V0/candidate/hEtaPhi"); // only for purity
 
     // v0leg info
     fRegistry.add("V0Leg/primary/hPt", "pT;p_{T,e} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
@@ -236,13 +239,16 @@ struct PCMQCMC {
     fRegistry.add("V0Leg/primary/hXY", "X vs. Y;X (cm);Y (cm)", kTH2F, {{100, 0, 100}, {40, -20, 20}}, false);
     fRegistry.add("V0Leg/primary/hZX", "Z vs. X;Z (cm);X (cm)", kTH2F, {{200, -100, 100}, {100, 0, 100}}, false);
     fRegistry.add("V0Leg/primary/hZY", "Z vs. Y;Z (cm);Y (cm)", kTH2F, {{200, -100, 100}, {40, -20, 20}}, false);
-    fRegistry.add("V0Leg/primary/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
-    fRegistry.add("V0Leg/primary/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
-    fRegistry.add("V0Leg/primary/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
+    fRegistry.add("V0Leg/primary/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {200, -1.0f, 1.0f}}, true);
+    fRegistry.add("V0Leg/primary/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
+    fRegistry.add("V0Leg/primary/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
     fRegistry.addClone("V0Leg/primary/", "V0Leg/fromWD/");        // from weak decay
     fRegistry.addClone("V0Leg/primary/", "V0Leg/fromHS/");        // from hadronic shower in detector materials
     fRegistry.addClone("V0Leg/primary/", "V0Leg/fromPi0Dalitz/"); // misidentified dielectron from pi0 dalitz decay
     fRegistry.addClone("V0Leg/primary/", "V0Leg/fromEtaDalitz/"); // misidentified dielectron from eta dalitz decay
+
+    fRegistry.addClone("V0Leg/primary/hPt", "V0Leg/candidate/hPt");         // only for purity
+    fRegistry.addClone("V0Leg/primary/hEtaPhi", "V0Leg/candidate/hEtaPhi"); // only for purity
   }
 
   void DefineEMEventCut()
@@ -278,8 +284,6 @@ struct PCMQCMC {
     fV0PhotonCut.RejectITSib(pcmcuts.cfg_reject_v0_on_itsib);
 
     // for track
-    fV0PhotonCut.SetTrackPtRange(pcmcuts.cfg_min_pt_v0 * 0.4, 1e+10f);
-    fV0PhotonCut.SetTrackEtaRange(pcmcuts.cfg_min_eta_v0, pcmcuts.cfg_max_eta_v0);
     fV0PhotonCut.SetMinNClustersTPC(pcmcuts.cfg_min_ncluster_tpc);
     fV0PhotonCut.SetMinNCrossedRowsTPC(pcmcuts.cfg_min_ncrossedrows);
     fV0PhotonCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
@@ -444,6 +448,14 @@ struct PCMQCMC {
         if (!fV0PhotonCut.IsSelected<MyMCV0Legs>(v0)) {
           continue;
         }
+
+        fRegistry.fill(HIST("V0/candidate/hPt"), v0.pt());
+        fRegistry.fill(HIST("V0/candidate/hEtaPhi"), v0.phi(), v0.eta());
+        for (auto& leg : {pos, ele}) {
+          fRegistry.fill(HIST("V0Leg/candidate/hPt"), leg.pt());
+          fRegistry.fill(HIST("V0Leg/candidate/hEtaPhi"), leg.phi(), leg.eta());
+        }
+
         int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
         int pi0id = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 111, mcparticles); // pi0 dalitz decay
         int etaid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 221, mcparticles); // eta dalitz decay
