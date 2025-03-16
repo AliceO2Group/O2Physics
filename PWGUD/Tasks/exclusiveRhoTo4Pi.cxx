@@ -188,8 +188,11 @@ DECLARE_SOA_TABLE(MCUDTree, "AOD", "UDMC0Charge",
 } // namespace o2::aod
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct exclusiveRhoTo4Pi { // "o2-linter: disable=name/workflow-file" (unable),  o2-linter: disable=name/struct (UNable)
+struct ExclusiveRhoTo4Pi {
   SGSelector sgSelector;
+  int kPiPlus = 211;
+  int kPiMinus = -211;
+  int kRhoPrime1700 = 30113;
   Produces<aod::UDTree0c> zeroChargeEventsData;
   Produces<aod::UDTreen0c> nonzeroChargeEventsData;
   Produces<aod::MCTree> zeroChargeEventsMCgen;
@@ -921,7 +924,7 @@ struct exclusiveRhoTo4Pi { // "o2-linter: disable=name/workflow-file" (unable), 
     } // End of Analysis for non 0 charge events
 
   } // End of 4 Pion Analysis Process function for Data
-  PROCESS_SWITCH(exclusiveRhoTo4Pi, processData, "The Process for 4 Pion Analysis from data", true);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processData, "The Process for 4 Pion Analysis from data", true);
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   // Begin of MC Generation function-----------------------------------------------------------------------------------------------------------------------------------------------
@@ -946,7 +949,7 @@ struct exclusiveRhoTo4Pi { // "o2-linter: disable=name/workflow-file" (unable), 
       }
 
       for (const auto& mother : particle.mothers_as<aod::UDMcParticles>()) {
-        if (mother.pdgCode() == 30313) { // "o2-linter: disable=pdg/explicit-code" (unable)
+        if (mother.pdgCode() == kRhoPrime1700) {
           motherVector.SetXYZM(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassPionCharged);
           histosMCgen.fill(HIST("MCgen_rhoPrime_pT"), motherVector.Pt());
 
@@ -954,7 +957,7 @@ struct exclusiveRhoTo4Pi { // "o2-linter: disable=name/workflow-file" (unable), 
             histosMCgen.fill(HIST("rhoPrimeCounts"), 5);
           }
           flag = true;
-          if (particle.pdgCode() == 211) { // "o2-linter: disable=pdg/explicit-code" (unable)
+          if (particle.pdgCode() == kPiPlus) {
             histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
             histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
             piPlusvectors.push_back(tempVector);
@@ -962,7 +965,7 @@ struct exclusiveRhoTo4Pi { // "o2-linter: disable=name/workflow-file" (unable), 
             piEta.push_back(tempVector.Eta());
             piRapidity.push_back(tempVector.Rapidity());
           }
-          if (particle.pdgCode() == -211) { // "o2-linter: disable=pdg/explicit-code" (unable)
+          if (particle.pdgCode() == kPiMinus) {
             histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
             histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
             piMinusvectors.push_back(tempVector);
@@ -1030,7 +1033,7 @@ struct exclusiveRhoTo4Pi { // "o2-linter: disable=name/workflow-file" (unable), 
                           phiPair1, phiPair2, cosThetaPair1, cosThetaPair2);
 
   } // End of 4 Pion MC Generation Process function
-  PROCESS_SWITCH(exclusiveRhoTo4Pi, processMCgen, "The Process for 4 Pion Analysis from MC Generation", false);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCgen, "The Process for 4 Pion Analysis from MC Generation", false);
 
   using CollisionStuff = soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>;
   using CollisionTotal = CollisionStuff::iterator;
@@ -1374,7 +1377,7 @@ struct exclusiveRhoTo4Pi { // "o2-linter: disable=name/workflow-file" (unable), 
     } // End of Analysis for non 0 charge events
 
   } // End of 4 Pion Analysis Process function for MC Reconstruction
-  PROCESS_SWITCH(exclusiveRhoTo4Pi, processMCrec, "The Process for 4 Pion Analysis from MC Reconstruction", false);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCrec, "The Process for 4 Pion Analysis from MC Reconstruction", false);
 
 }; // End of Struct exclusiveRhoTo4Pi
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1382,5 +1385,5 @@ struct exclusiveRhoTo4Pi { // "o2-linter: disable=name/workflow-file" (unable), 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<exclusiveRhoTo4Pi>(cfgc)};
+    adaptAnalysisTask<ExclusiveRhoTo4Pi>(cfgc)};
 }
