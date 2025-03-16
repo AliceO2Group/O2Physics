@@ -943,10 +943,10 @@ struct TaskPi0FlowEMC {
           // Convert to PxPyPzEVector to modify energy
           ROOT::Math::PxPyPzEVector v1Mod(v1);
           v1Mod.SetE(v1Mod.E() * 1.0505);
-          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod);
+          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod.Pt(), v1Mod.Eta(), v1Mod.Phi(), 0.);
           ROOT::Math::PxPyPzEVector v2Mod(v2);
           v2Mod.SetE(v2Mod.E() * 1.0505);
-          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod);
+          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod.Pt(), v2Mod.Eta(), v2Mod.Phi(), 0.);
         }
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
         float dTheta = v1.Theta() - v2.Theta();
@@ -1051,10 +1051,10 @@ struct TaskPi0FlowEMC {
           // Convert to PxPyPzEVector to modify energy
           ROOT::Math::PxPyPzEVector v1Mod(v1);
           v1Mod.SetE(v1Mod.E() * 1.0505);
-          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod);
+          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod.Pt(), v1Mod.Eta(), v1Mod.Phi(), 0.);
           ROOT::Math::PxPyPzEVector v2Mod(v2);
           v2Mod.SetE(v2Mod.E() * 1.0505);
-          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod);
+          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod.Pt(), v2Mod.Eta(), v2Mod.Phi(), 0.);
         }
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
@@ -1277,10 +1277,10 @@ struct TaskPi0FlowEMC {
           // Convert to PxPyPzEVector to modify energy
           ROOT::Math::PxPyPzEVector v1Mod(v1);
           v1Mod.SetE(v1Mod.E() * 1.0505);
-          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod);
+          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod.Pt(), v1Mod.Eta(), v1Mod.Phi(), 0.);
           ROOT::Math::PxPyPzEVector v2Mod(v2);
           v2Mod.SetE(v2Mod.E() * 1.0505);
-          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod);
+          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod.Pt(), v2Mod.Eta(), v2Mod.Phi(), 0.);
         }
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
         float dTheta = v1.Theta() - v2.Theta();
