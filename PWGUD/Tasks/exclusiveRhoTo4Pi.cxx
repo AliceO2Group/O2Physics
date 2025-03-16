@@ -32,6 +32,7 @@
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
 #include "Math/GenVector/Boost.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace std;
 using namespace o2;
@@ -43,32 +44,49 @@ namespace o2::aod
 {
 namespace branch
 {
+DECLARE_SOA_COLUMN(Fv0signal, fv0signal, double);
+DECLARE_SOA_COLUMN(Ft0asignal, ft0asignal, double);
+DECLARE_SOA_COLUMN(Ft0csignal, ft0csignal, double);
+DECLARE_SOA_COLUMN(Fddasignal, fddasignal, double);
+DECLARE_SOA_COLUMN(Fddcsignal, fddcsignal, double);
+
 DECLARE_SOA_COLUMN(Dcaxy, dcaxy, std::vector<double>);
 DECLARE_SOA_COLUMN(Dcaz, dcaz, std::vector<double>);
+
 DECLARE_SOA_COLUMN(TpcNsigmaKa, tpcNsigmaKa, std::vector<double>);
 DECLARE_SOA_COLUMN(TpcNsigmaPr, tpcNsigmaPr, std::vector<double>);
 DECLARE_SOA_COLUMN(TpcNsigmaMu, tpcNsigmaMu, std::vector<double>);
 DECLARE_SOA_COLUMN(TpcNsigmaEl, tpcNsigmaEl, std::vector<double>);
+
 DECLARE_SOA_COLUMN(TofNsigmaKa, tofNsigmaKa, std::vector<double>);
 DECLARE_SOA_COLUMN(TofNsigmaPr, tofNsigmaPr, std::vector<double>);
 DECLARE_SOA_COLUMN(TofNsigmaMu, tofNsigmaMu, std::vector<double>);
 DECLARE_SOA_COLUMN(TofNsigmaEl, tofNsigmaEl, std::vector<double>);
+
 DECLARE_SOA_COLUMN(TpcChi2, tpcChi2, std::vector<double>);
 DECLARE_SOA_COLUMN(TpcNClsFindable, tpcNClsFindable, std::vector<double>);
 DECLARE_SOA_COLUMN(ItsChi2, itsChi2, std::vector<double>);
+
 DECLARE_SOA_COLUMN(PionPt, pionPt, std::vector<double>);
 DECLARE_SOA_COLUMN(PionEta, pionEta, std::vector<double>);
 DECLARE_SOA_COLUMN(PionRapidity, pionRapidity, std::vector<double>);
+
 DECLARE_SOA_COLUMN(FourPionPt, fourPionPt, double);
 DECLARE_SOA_COLUMN(FourPionEta, fourPionEta, double);
 DECLARE_SOA_COLUMN(FourPionRapidity, fourPionRapidity, double);
 DECLARE_SOA_COLUMN(FourPionMass, fourPionMass, double);
+DECLARE_SOA_COLUMN(FourPionPhi, fourPionPhi, double);
 DECLARE_SOA_COLUMN(FourPionPhiPair1, fourPionPhiPair1, double);
 DECLARE_SOA_COLUMN(FourPionPhiPair2, fourPionPhiPair2, double);
 DECLARE_SOA_COLUMN(FourPionCosThetaPair1, fourPionCosThetaPair1, double);
 DECLARE_SOA_COLUMN(FourPionCosThetaPair2, fourPionCosThetaPair2, double);
 } // namespace branch
 DECLARE_SOA_TABLE(UDTree0c, "AOD", "UD0Charge",
+                  branch::Fv0signal,
+                  branch::Ft0asignal,
+                  branch::Ft0csignal,
+                  branch::Fddasignal,
+                  branch::Fddcsignal,
                   branch::Dcaxy,
                   branch::Dcaz,
                   branch::TpcNsigmaKa,
@@ -89,12 +107,18 @@ DECLARE_SOA_TABLE(UDTree0c, "AOD", "UD0Charge",
                   branch::FourPionEta,
                   branch::FourPionRapidity,
                   branch::FourPionMass,
+                  branch::FourPionPhi,
                   branch::FourPionPhiPair1,
                   branch::FourPionPhiPair2,
                   branch::FourPionCosThetaPair1,
                   branch::FourPionCosThetaPair2);
 
 DECLARE_SOA_TABLE(UDTreen0c, "AOD", "UDn0Charge",
+                  branch::Fv0signal,
+                  branch::Ft0asignal,
+                  branch::Ft0csignal,
+                  branch::Fddasignal,
+                  branch::Fddcsignal,
                   branch::Dcaxy,
                   branch::Dcaz,
                   branch::TpcNsigmaKa,
@@ -114,7 +138,8 @@ DECLARE_SOA_TABLE(UDTreen0c, "AOD", "UDn0Charge",
                   branch::FourPionPt,
                   branch::FourPionEta,
                   branch::FourPionRapidity,
-                  branch::FourPionMass);
+                  branch::FourPionMass,
+                  branch::FourPionPhi);
 
 DECLARE_SOA_TABLE(MCTree, "AOD", "MC0Charge",
                   branch::PionPt,
@@ -130,6 +155,11 @@ DECLARE_SOA_TABLE(MCTree, "AOD", "MC0Charge",
                   branch::FourPionCosThetaPair2);
 
 DECLARE_SOA_TABLE(MCUDTree, "AOD", "UDMC0Charge",
+                  branch::Fv0signal,
+                  branch::Ft0asignal,
+                  branch::Ft0csignal,
+                  branch::Fddasignal,
+                  branch::Fddcsignal,
                   branch::Dcaxy,
                   branch::Dcaz,
                   branch::TpcNsigmaKa,
@@ -150,6 +180,7 @@ DECLARE_SOA_TABLE(MCUDTree, "AOD", "UDMC0Charge",
                   branch::FourPionEta,
                   branch::FourPionRapidity,
                   branch::FourPionMass,
+                  branch::FourPionPhi,
                   branch::FourPionPhiPair1,
                   branch::FourPionPhiPair2,
                   branch::FourPionCosThetaPair1,
@@ -157,8 +188,11 @@ DECLARE_SOA_TABLE(MCUDTree, "AOD", "UDMC0Charge",
 } // namespace o2::aod
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
+struct ExclusiveRhoTo4Pi {
   SGSelector sgSelector;
+  int kPiPlus = 211;
+  int kPiMinus = -211;
+  int kRhoPrime1700 = 30113;
   Produces<aod::UDTree0c> zeroChargeEventsData;
   Produces<aod::UDTreen0c> nonzeroChargeEventsData;
   Produces<aod::MCTree> zeroChargeEventsMCgen;
@@ -773,12 +807,13 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       fourPiCosThetaPair2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
 
       zeroChargeEventsData(
+        collision.totalFV0AmplitudeA(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
         pidcaXY, pidcaZ,
         tpcNsigKa, tpcNsigPr, tpcNsigEl, tpcNsigMu,
         tofNsigKa, tofNsigPr, tofNsigEl, tofNsigMu,
         tpcchi2, tpcNFindableCls, itschi2,
         piPt, piEta, piRapidity,
-        p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M(),
+        p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M(), p1234.Phi(),
         fourPiPhiPair1, fourPiPhiPair2, fourPiCosThetaPair1, fourPiCosThetaPair2);
 
       if (std::fabs(p1234.Rapidity()) < 0.5) {
@@ -861,12 +896,13 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       }
 
       nonzeroChargeEventsData(
+        collision.totalFV0AmplitudeA(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
         pidcaXY, pidcaZ,
         tpcNsigKa, tpcNsigPr, tpcNsigMu, tpcNsigEl,
         tofNsigKa, tofNsigPr, tofNsigMu, tofNsigEl,
         tpcchi2, tpcNFindableCls, itschi2,
         piPt, piEta, piRapidity,
-        p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M());
+        p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M(), p1234.Phi());
 
       if (std::fabs(p1234.Rapidity()) < 0.5) {
         histosData.fill(HIST("pT_event_non0charge_WTS_PID_Pi"), p1234.Pt());
@@ -888,7 +924,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     } // End of Analysis for non 0 charge events
 
   } // End of 4 Pion Analysis Process function for Data
-  PROCESS_SWITCH(exclusiveRhoTo4Pi, processData, "The Process for 4 Pion Analysis from data", true);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processData, "The Process for 4 Pion Analysis from data", true);
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   // Begin of MC Generation function-----------------------------------------------------------------------------------------------------------------------------------------------
@@ -913,7 +949,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       }
 
       for (const auto& mother : particle.mothers_as<aod::UDMcParticles>()) {
-        if (mother.pdgCode() == 30113) {
+        if (mother.pdgCode() == kRhoPrime1700) {
           motherVector.SetXYZM(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassPionCharged);
           histosMCgen.fill(HIST("MCgen_rhoPrime_pT"), motherVector.Pt());
 
@@ -921,7 +957,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
             histosMCgen.fill(HIST("rhoPrimeCounts"), 5);
           }
           flag = true;
-          if (particle.pdgCode() == 211) {
+          if (particle.pdgCode() == kPiPlus) {
             histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
             histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
             piPlusvectors.push_back(tempVector);
@@ -929,7 +965,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
             piEta.push_back(tempVector.Eta());
             piRapidity.push_back(tempVector.Rapidity());
           }
-          if (particle.pdgCode() == -211) {
+          if (particle.pdgCode() == kPiMinus) {
             histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
             histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
             piMinusvectors.push_back(tempVector);
@@ -997,7 +1033,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
                           phiPair1, phiPair2, cosThetaPair1, cosThetaPair2);
 
   } // End of 4 Pion MC Generation Process function
-  PROCESS_SWITCH(exclusiveRhoTo4Pi, processMCgen, "The Process for 4 Pion Analysis from MC Generation", false);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCgen, "The Process for 4 Pion Analysis from MC Generation", false);
 
   using CollisionStuff = soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>;
   using CollisionTotal = CollisionStuff::iterator;
@@ -1270,13 +1306,15 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       piRapidity.push_back(p3.Rapidity());
       piRapidity.push_back(p4.Rapidity());
 
-      zeroChargeEventsMCreco(dcaxy, dcaz,
-                             tpcNsigKa, tpcNsigPr, tpcNsigMu, tpcNsigEl,
-                             tofNsigKa, tofNsigPr, tofNsigMu, tofNsigEl,
-                             tpcchi2, tpcNFindableCls, itschi2,
-                             piPt, piEta, piRapidity,
-                             p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M(),
-                             phiPair1, phiPair2, cosThetaPair1, cosThetaPair2);
+      zeroChargeEventsMCreco(
+        collision.totalFV0AmplitudeA(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
+        dcaxy, dcaz,
+        tpcNsigKa, tpcNsigPr, tpcNsigMu, tpcNsigEl,
+        tofNsigKa, tofNsigPr, tofNsigMu, tofNsigEl,
+        tpcchi2, tpcNFindableCls, itschi2,
+        piPt, piEta, piRapidity,
+        p1234.Pt(), p1234.Eta(), p1234.Rapidity(), p1234.M(), p1234.Phi(),
+        phiPair1, phiPair2, cosThetaPair1, cosThetaPair2);
 
       if (std::fabs(p1234.Rapidity()) < 0.5) {
         histosMCreco.fill(HIST("pT_event_0charge_WTS_PID_Pi"), p1234.Pt());
@@ -1339,7 +1377,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     } // End of Analysis for non 0 charge events
 
   } // End of 4 Pion Analysis Process function for MC Reconstruction
-  PROCESS_SWITCH(exclusiveRhoTo4Pi, processMCrec, "The Process for 4 Pion Analysis from MC Reconstruction", false);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCrec, "The Process for 4 Pion Analysis from MC Reconstruction", false);
 
 }; // End of Struct exclusiveRhoTo4Pi
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1347,5 +1385,5 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<exclusiveRhoTo4Pi>(cfgc)};
+    adaptAnalysisTask<ExclusiveRhoTo4Pi>(cfgc)};
 }
