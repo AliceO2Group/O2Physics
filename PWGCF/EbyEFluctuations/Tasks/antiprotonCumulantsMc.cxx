@@ -990,6 +990,11 @@ struct AntiprotonCumulantsMc {
     float nAntiprot = 0.0;
 
     for (const auto& mcParticle : mcParticles) {
+      if (!mcParticle.has_mcCollision())
+        continue;
+      if (!(mcParticle.mcCollision().globalIndex() == mcCollision.globalIndex()))
+        continue;
+
       if (mcParticle.isPhysicalPrimary()) {
         if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < 5.0f) && (std::abs(mcParticle.eta()) < cfgCutEta)) {
           histos.fill(HIST("hgenPtAll"), mcParticle.pt());
@@ -1096,6 +1101,13 @@ struct AntiprotonCumulantsMc {
 
     // Start of the Monte-Carlo reconstructed tracks
     for (const auto& track : tracks) {
+      if (!track.has_collision()) {
+        continue;
+      }
+      if (!(track.collision().globalIndex() == collision.globalIndex())) {
+        continue;
+      }
+
       if (!track.has_mcParticle()) //! check if track has corresponding MC particle
       {
         continue;
@@ -1106,6 +1118,9 @@ struct AntiprotonCumulantsMc {
       }
 
       auto particle = track.mcParticle();
+      if (!particle.has_mcCollision())
+        continue;
+
       if ((particle.pt() < cfgCutPtLower) || (particle.pt() > 5.0f) || (std::abs(particle.eta()) > cfgCutEta)) {
         continue;
       }
@@ -2037,6 +2052,12 @@ struct AntiprotonCumulantsMc {
 
     // Start of the Monte-Carlo reconstructed tracks
     for (const auto& track : inputTracks) {
+      if (!track.has_collision()) {
+        continue;
+      }
+      if (!(track.collision().globalIndex() == coll.globalIndex())) {
+        continue;
+      }
       if (!track.isPVContributor()) //! track check as used in data
       {
         continue;
