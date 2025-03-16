@@ -79,7 +79,6 @@ struct JetSpectraEseTask {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum pT acceptance for tracks"};
   Configurable<float> trackPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks"};
-  
 
   Configurable<float> jetEtaMin{"jetEtaMin", -0.7, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 0.7, "maximum jet pseudorapidity"};
@@ -229,7 +228,6 @@ struct JetSpectraEseTask {
       registry.get<TH1>(HIST("mcp/hEventCounter"))->GetXaxis()->SetBinLabel(2, "Collision size < 1");
       registry.get<TH1>(HIST("mcp/hEventCounter"))->GetXaxis()->SetBinLabel(3, "MCD size != 1");
       registry.get<TH1>(HIST("mcp/hEventCounter"))->GetXaxis()->SetBinLabel(4, "Occupancy cut");
-
     }
     if (doprocessMCDetectorLevel) {
       LOGF(info, "JetSpectraEseTask::init() - MC Detector level");
@@ -244,7 +242,6 @@ struct JetSpectraEseTask {
       registry.get<TH1>(HIST("mcd/hEventCounter"))->GetXaxis()->SetBinLabel(1, "Input event");
       registry.get<TH1>(HIST("mcd/hEventCounter"))->GetXaxis()->SetBinLabel(2, "Collision size < 1");
       registry.get<TH1>(HIST("mcd/hEventCounter"))->GetXaxis()->SetBinLabel(3, "Occupancy cut");
-
     }
     if (doprocessMCChargedMatched) {
       LOGF(info, "JetSpectraEseTask::init() - MC Charged Matched");
@@ -255,18 +252,14 @@ struct JetSpectraEseTask {
       registry.add("mcm/hMCEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
       registry.add("mcm/hMCDMatchedEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
       registry.add("mcm/hCentralityAnalyzed", ";Centrality;entries", {HistType::kTH1F, {{centAxis}}});
-      
 
       registry.add("mcm/hMatchedJetsPtDelta", "#it{p}_{T,jet part}; det - part", {HistType::kTH2F, {{jetPtAxis}, {100, -20., 20.0}}});
       registry.add("mcm/hGenMatchedJetsPtDeltadPt", "#it{p}_{T,jet part}; det - part / part", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {200, -20., 20.0}}});
       registry.add("mcm/hRecoMatchedJetsPtDeltadPt", "#it{p}_{T,jet det}; det - part / det", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {200, -20., 20.0}}});
       registry.add("mcm/hMatchedJetsEtaDelta", "#eta_{jet part}; det - part", {HistType::kTH2F, {{etaAxis}, {200, -0.8, 0.8}}});
       registry.add("mcm/hMatchedJetsPhiDelta", "#phi_{jet part}; det - part", {HistType::kTH2F, {{phiAxis}, {200, -10.0, 10.}}});
-      
+
       registry.add("mcm/hRespMcDMcPMatch", ";Centrality,#it{p}_{T, jet det}; #it{p}_{T, jet part}", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {jetPtAxis}}});
-
-
-
 
       registry.get<TH1>(HIST("mcm/hMCEventCounter"))->GetXaxis()->SetBinLabel(1, "Input event");
       registry.get<TH1>(HIST("mcm/hMCEventCounter"))->GetXaxis()->SetBinLabel(2, "Collision size < 1");
@@ -427,9 +420,9 @@ struct JetSpectraEseTask {
     registry.fill(HIST("mcp/hEventCounter"), counter++);
     auto centrality{-1};
     bool fOccupancy = true;
-    for (const auto& col : collisions) { 
-      if (cfgisPbPb) 
-        centrality = col.centrality(); 
+    for (const auto& col : collisions) {
+      if (cfgisPbPb)
+        centrality = col.centrality();
       if (cfgEvSelOccupancy && !isOccupancyAccepted(col))
         fOccupancy = false;
     }
@@ -439,7 +432,7 @@ struct JetSpectraEseTask {
     registry.fill(HIST("mcp/hEventCounter"), counter++);
 
     registry.fill(HIST("mcp/hCentralitySel"), centrality);
-    
+
     jetLoop<JetType::MCP>(jets, centrality, mcCollision.rho());
   }
   PROCESS_SWITCH(JetSpectraEseTask, processMCParticleLevel, "jets on particle level MC", false);
@@ -463,7 +456,6 @@ struct JetSpectraEseTask {
     registry.fill(HIST("mcd/hCentralitySel"), centrality);
 
     jetLoop<JetType::MCD>(mcdjets, centrality, collision.rho());
-
   }
   PROCESS_SWITCH(JetSpectraEseTask, processMCDetectorLevel, "jets on detector level", false);
 
@@ -503,20 +495,19 @@ struct JetSpectraEseTask {
       registry.fill(HIST("mcm/hMCDMatchedEventCounter"), secCount++);
 
       auto centrality = cfgisPbPb ? collision.centrality() : -1;
-      if (cfgisPbPb) if (centrality < centRange->at(0) || centrality > centRange->at(1))
-        registry.fill(HIST("mcm/hMCDMatchedEventCounter"), secCount++);
-
+      if (cfgisPbPb)
+        if (centrality < centRange->at(0) || centrality > centRange->at(1))
+          registry.fill(HIST("mcm/hMCDMatchedEventCounter"), secCount++);
 
       registry.fill(HIST("mcm/hCentralityAnalyzed"), centrality);
 
       jetLoop<JetType::MCM>(
-        mcdjets.sliceBy(mcdjetsPerJCollision, collision.globalIndex()), 
-        centrality, 
+        mcdjets.sliceBy(mcdjetsPerJCollision, collision.globalIndex()),
+        centrality,
         collision.rho(),
         [](const auto& jet) { return jet.template matchedJetGeo_as<JetMCPTable>(); },
-        mcCol.rho()
-      );
-      
+        mcCol.rho());
+
       registry.fill(HIST("mcm/hMCDMatchedEventCounter"), secCount++);
     }
     registry.fill(HIST("mcm/hMCEventCounter"), counter++);
@@ -874,20 +865,27 @@ struct JetSpectraEseTask {
   }
 
   static constexpr std::string_view LevelJets[] = {"mcd/", "mcp/", "mcm/"};
-  enum JetType { MCP=0, MCD=1, MCM=2 };
+  enum JetType { MCP = 0,
+                 MCD = 1,
+                 MCM = 2 };
   template <JetType jetLvl, typename Jets, typename matchJet = std::nullptr_t>
-  void jetLoop(const Jets& jets, const float& centrality, const float& rho, matchJet matchjet = nullptr, const float& rho2=0) {
+  void jetLoop(const Jets& jets, const float& centrality, const float& rho, matchJet matchjet = nullptr, const float& rho2 = 0)
+  {
 
     for (const auto& jet : jets) {
       auto pt = jet.pt();
-      if (cfgbkgSubMC) { pt = jet.pt() - (rho * jet.area()); }
+      if (cfgbkgSubMC) {
+        pt = jet.pt() - (rho * jet.area());
+      }
       // registry.fill(HIST(levelJets[jetLvl]) + HIST("hJetSparse"), centrality, jet.pt(), jet.eta(), jet.phi());
       registry.fill(HIST(LevelJets[jetLvl]) + HIST("hJetSparse"), centrality, pt, jet.eta(), jet.phi()); /* detector level mcm*/
-      
+
       if constexpr (jetLvl == MCM && !std::is_same_v<matchJet, std::nullptr_t>) {
         for (const auto& matchedJet : matchjet(jet)) {
           auto matchedpt = matchedJet.pt();
-          if (cfgbkgSubMC) { matchedpt = matchedJet.pt() - (rho2 * matchedJet.area()); }
+          if (cfgbkgSubMC) {
+            matchedpt = matchedJet.pt() - (rho2 * matchedJet.area());
+          }
           registry.fill(HIST("mcm/hPartSparseMatch"), centrality, matchedpt, matchedJet.eta(), matchedJet.phi());
 
           registry.fill(HIST("mcm/hMatchedJetsPtDelta"), matchedJet.pt(), jet.pt() - matchedJet.pt());
@@ -901,6 +899,5 @@ struct JetSpectraEseTask {
       }
     }
   }
-
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetSpectraEseTask>(cfgc)}; }
