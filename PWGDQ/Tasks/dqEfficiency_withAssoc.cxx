@@ -3727,8 +3727,8 @@ struct AnalysisDileptonTrack {
     // auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
     for (auto& mctrack : mcTracks) {
 
-      if ((std::abs(mctrack.pdgCode())>400 && std::abs(mctrack.pdgCode())<599) ||
-          (std::abs(mctrack.pdgCode())>4000 && std::abs(mctrack.pdgCode())<5999) ||
+      if ((std::abs(mctrack.pdgCode()) > 400 && std::abs(mctrack.pdgCode()) < 599) ||
+          (std::abs(mctrack.pdgCode()) > 4000 && std::abs(mctrack.pdgCode()) < 5999) ||
           mctrack.mcReducedFlags() > 0) {
         /*cout << ">>>>>>>>>>>>>>>>>>>>>>> track idx / pdg / selections: " << mctrack.globalIndex() << " / " << mctrack.pdgCode() << " / ";
         PrintBitMap(mctrack.mcReducedFlags(), 16);
@@ -3823,7 +3823,7 @@ struct AnalysisDileptonTrack {
           continue;
         }
 
-        fHistMan->FillHistClass("MCTruthGenSelAccepted", VarManager::fgValues);    
+        fHistMan->FillHistClass("MCTruthGenSelAccepted", VarManager::fgValues);
       }*/
     } // end loop over reconstructed events
   }
