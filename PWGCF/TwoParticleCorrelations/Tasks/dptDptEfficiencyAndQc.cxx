@@ -15,6 +15,7 @@
 
 #include <TH2F.h>
 #include <TProfile2D.h>
+#include <THnSparse.h>
 #include <TPDGCode.h>
 #include <CCDB/BasicCCDBManager.h>
 #include <vector>
@@ -92,6 +93,9 @@ float minNSigma = -4.05f;
 float maxNSigma = 4.05f;
 float widthNSigmaBin = 0.1f;
 int noOfNSigmaBins = static_cast<int>((maxNSigma - minNSigma) / widthNSigmaBin);
+
+/* the pT bins of interest for the relative separation within TPC sectors data collection */
+std::vector<int> ptBinsOfInterest{1, 2, 3};
 
 /* the PID selector object to help with the configuration and the id of the selected particles */
 o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
@@ -584,9 +588,8 @@ struct QAExtraDataCollectingEngine {
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhPhiPhiA{2, {nsp, {nsp, nullptr}}};
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhEtaEtaA{2, {nsp, {nsp, nullptr}}};
   TAxis ptAxis{analysis::dptdptfilter::ptbins, analysis::dptdptfilter::ptlow, analysis::dptdptfilter::ptup};
-  Configurable<std::vector<int>> cfgPtBinsOfInterest{"cfgPtBinsOfInterest", {1, 2, 3}, "The pt bins of interest"};
-  std::vector<std::vector<std::vector<std::vector<std::vector<std::shared_ptr<TH3>>>>>> fhInSectorDeltaPhiVsPhiPhiPerPtBinA{2, {nsp, {nsp, {cfgPtBinsOfInterest->size(), {cfgPtBinsOfInterest->size(), nullptr}}}}};
-  std::vector<std::vector<std::vector<std::vector<std::vector<std::shared_ptr<TH3>>>>>> fhInSectorDeltaPhiVsEtaEtaPerPtBinA{2, {nsp, {nsp, {cfgPtBinsOfInterest->size(), {cfgPtBinsOfInterest->size(), nullptr}}}}};
+  std::vector<std::vector<std::vector<std::shared_ptr<THnSparse>>>> fhInSectorDeltaPhiVsPhiPhiPerPtBinA{2, {nsp, {nsp, nullptr}}};
+  std::vector<std::vector<std::vector<std::shared_ptr<THnSparse>>>> fhInSectorDeltaPhiVsEtaEtaPerPtBinA{2, {nsp, {nsp, nullptr}}};
 
   template <efficiencyandqatask::KindOfData kindOfData>
   void init(HistogramRegistry& registry, const char* dirname)
@@ -595,10 +598,11 @@ struct QAExtraDataCollectingEngine {
     using namespace analysis::dptdptfilter;
 
     AxisSpec phiAxis = {phibins, 0.0f, constants::math::TwoPI, "#varphi"};
-    AxisSpec phiSectorAxis = {144, 0.0f, kTpcPhiSectorWidth, "#varphi (mod(2#pi/18)) (rad)"};
+    AxisSpec phiSectorAxis = {72, 0.0f, kTpcPhiSectorWidth, "#varphi (mod(2#pi/18)) (rad)"};
     AxisSpec deltaPhiAxis = {phibins, 0.0f, constants::math::TwoPI, "#Delta#varphi (rad)"};
-    AxisSpec deltaPhiInSectorAxis = {288, -kTpcPhiSectorWidth, kTpcPhiSectorWidth, "#Delta#varphi (rad)"};
+    AxisSpec deltaPhiInSectorAxis = {144, -kTpcPhiSectorWidth, kTpcPhiSectorWidth, "#Delta#varphi (rad)"};
     AxisSpec etaAxis = {etabins, etalow, etaup, "#eta"};
+    AxisSpec ptOfInterestAxis = {static_cast<int>(ptBinsOfInterest.size()), 0.5f, static_cast<float>(ptBinsOfInterest.size()) + 0.5f, "#it{p}_{T} (GeV/#it{c})"};
 
     /* the reconstructed and generated levels histograms */
     std::string recogen = (kindOfData == kReco) ? "Reco" : "Gen";
@@ -609,17 +613,11 @@ struct QAExtraDataCollectingEngine {
         fhEtaEtaA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("EtaEta_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
                                                        HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH2F, {etaAxis, etaAxis});
         /* first resize them to the actual configured size */
-        fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][isp][jsp].resize(cfgPtBinsOfInterest->size());
-        for (uint ipt = 0; ipt < cfgPtBinsOfInterest->size(); ++ipt) {
-          /* first resize them to the actual configured size */
-          fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][isp][jsp][ipt].resize(cfgPtBinsOfInterest->size(), nullptr);
-          for (uint jpt = 0; jpt < cfgPtBinsOfInterest->size(); ++jpt) {
-            fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][isp][jsp][ipt][jpt] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsPhiPhiPt%02d%02d_%s%s", ipt, jpt, tnames[isp].c_str(), tnames[jsp].c_str()),
-                                                                                               HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH3F, {phiSectorAxis, phiSectorAxis, deltaPhiInSectorAxis});
-            fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][isp][jsp][ipt][jpt] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsEtaEtaPt%02d%02d_%s%s", ipt, jpt, tnames[isp].c_str(), tnames[jsp].c_str()),
-                                                                                               HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH3F, {etaAxis, etaAxis, deltaPhiInSectorAxis});
-          }
-        }
+        fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][isp][jsp] = ADDHISTOGRAM(THnSparse, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsPhiPhiPt_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+                                                                                 HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTHnSparseF, {phiSectorAxis, phiSectorAxis, deltaPhiInSectorAxis, ptOfInterestAxis, ptOfInterestAxis});
+        // TODO: after checking the consumed execution memory
+        //        fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][isp][jsp] = ADDHISTOGRAM(THnSparse, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsEtaEtaPt_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+        //                                                                                 HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTHnSparseF, {etaAxis, etaAxis, deltaPhiInSectorAxis, ptOfInterestAxis, ptOfInterestAxis});
       }
     }
   }
@@ -632,39 +630,39 @@ struct QAExtraDataCollectingEngine {
 
     /* we should only receive accepted tracks */
     for (auto const& track1 : tracks1) {
-      auto indexForPt = [&](auto const& track) {
+      auto binForPt = [&](auto const& track) {
         int ptBin = ptAxis.FindFixBin(track.pt());
-        if (std::find(cfgPtBinsOfInterest->begin(), cfgPtBinsOfInterest->end(), ptBin) != cfgPtBinsOfInterest->end()) {
+        if (std::find(ptBinsOfInterest.begin(), ptBinsOfInterest.end(), ptBin) != ptBinsOfInterest.end()) {
           /* of interest */
-          return ptBin - 1;
+          return ptBin;
         } else {
           return -1;
         }
       };
-      int ptBinIx1 = indexForPt(track1);
-      if (ptBinIx1 < 0) {
-        continue;
-      }
-      float inTpcSectorPhi1 = std::fmod(track1.phi(), kTpcPhiSectorWidth);
-      for (auto const& track2 : tracks2) {
-        /* checking the same track id condition */
-        if (track1 == track2) {
-          /* exclude autocorrelations */
-          continue;
-        }
-        int ptBinIx2 = indexForPt(track2);
-        if (ptBinIx2 < 0) {
-          continue;
-        }
-        fhPhiPhiA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.phi(), track2.phi());
-        fhEtaEtaA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta());
-        if (static_cast<int>(track1.phi() / kTpcPhiSectorWidth) == static_cast<int>(track2.phi() / kTpcPhiSectorWidth)) {
-          /* only if, for sure, both tracks are within the same sector */
-          float inTpcSectorPhi2 = std::fmod(track2.phi(), kTpcPhiSectorWidth);
-          float deltaPhi = inTpcSectorPhi1 - inTpcSectorPhi2;
+      int ptBin1 = binForPt(track1);
+      if (ptBin1 > 0) {
+        float inTpcSectorPhi1 = std::fmod(track1.phi(), kTpcPhiSectorWidth);
+        for (auto const& track2 : tracks2) {
+          /* checking the same track id condition */
+          if (track1 == track2) {
+            /* exclude autocorrelations */
+            continue;
+          }
+          int ptBin2 = binForPt(track2);
+          if (ptBin2 > 0) {
+            fhPhiPhiA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.phi(), track2.phi());
+            fhEtaEtaA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta());
+            if (static_cast<int>(track1.phi() / kTpcPhiSectorWidth) == static_cast<int>(track2.phi() / kTpcPhiSectorWidth)) {
+              /* only if, for sure, both tracks are within the same sector */
+              float inTpcSectorPhi2 = std::fmod(track2.phi(), kTpcPhiSectorWidth);
+              float deltaPhi = inTpcSectorPhi1 - inTpcSectorPhi2;
+              double values[] = {inTpcSectorPhi1, inTpcSectorPhi2, deltaPhi, static_cast<float>(ptBin1), static_cast<float>(ptBin2)};
 
-          fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()][ptBinIx1][ptBinIx2]->Fill(track1.phi(), track2.phi(), deltaPhi);
-          fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()][ptBinIx1][ptBinIx2]->Fill(track1.eta(), track2.eta(), deltaPhi);
+              fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(values);
+              // TODO: after checking the consumed execution memory
+              // fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta(), deltaPhi);
+            }
+          }
         }
       }
     }
@@ -999,6 +997,7 @@ struct DptDptEfficiencyAndQc {
   Configurable<float> cfgMinNSigma{"cfgMinNSigma", -4.05f, "nsigma axes lowest value. Default: -4.05"};
   Configurable<float> cfgMaxNSigma{"cfgMaxNSigma", 4.05f, "nsigma axes highest value. Default: 4.05"};
   Configurable<float> cfgWidthNSigmaBin{"cfgWidthNSigmaBin", 0.1, "nsigma axes bin width. Deafault: 0.1"};
+  Configurable<std::vector<int>> cfgPtBinsOfInterest{"cfgPtBinsOfInterest", {1, 2, 3}, "The pt bins of interest"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -1099,6 +1098,9 @@ struct DptDptEfficiencyAndQc {
       maxNSigma = cfgMaxNSigma.value;
       widthNSigmaBin = cfgWidthNSigmaBin.value;
       noOfNSigmaBins = static_cast<int>((maxNSigma - minNSigma) / widthNSigmaBin);
+
+      /* configure the pT bins of interest */
+      ptBinsOfInterest = cfgPtBinsOfInterest.value;
 
       bool doBasicAnalysis = doprocessDetectorLevelNotStored || doprocessReconstructedNotStored || doprocessGeneratorLevelNotStored;
       bool doExtraAnalysis = doprocessExtraDetectorLevelNotStored || doprocessExtraReconstructedNotStored || doprocessExtraGeneratorLevelNotStored;
