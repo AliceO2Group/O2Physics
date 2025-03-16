@@ -21,8 +21,9 @@
 
 #include "Framework/Configurable.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
-#include "FemtoUniverseParticleHisto.h"
+#include "TH1.h"
+#include "TH2.h"
+#include "TH3.h"
 
 namespace o2::analysis::femto_universe::efficiency_correction
 {
@@ -47,11 +48,11 @@ consteval auto getHistDim() -> int
     return -1;
 }
 
-struct EffCorConfigurableGroup : ConfigurableGroup {
-  Configurable<bool> confEffCorApply{"confEffCorApply", false, "[Efficiency Correction] Should apply efficiency corrections"};
-  Configurable<std::string> confEffCorCCDBUrl{"confEffCorCCDBUrl", "http://alice-ccdb.cern.ch", "[Efficiency Correction] CCDB URL to use"};
-  Configurable<std::string> confEffCorCCDBPath{"confEffCorCCDBPath", "", "[Efficiency Correction] CCDB path to histograms"};
-  Configurable<std::vector<std::string>> confEffCorCCDBTimestamps{"confEffCorCCDBTimestamps", {}, "[Efficiency Correction] Timestamps of histograms in CCDB (0 can be used as a placeholder, e.g. when running subwagons)"};
+struct EffCorConfigurableGroup : framework::ConfigurableGroup {
+  framework::Configurable<bool> confEffCorApply{"confEffCorApply", false, "[Efficiency Correction] Should apply efficiency corrections"};
+  framework::Configurable<std::string> confEffCorCCDBUrl{"confEffCorCCDBUrl", "http://alice-ccdb.cern.ch", "[Efficiency Correction] CCDB URL to use"};
+  framework::Configurable<std::string> confEffCorCCDBPath{"confEffCorCCDBPath", "", "[Efficiency Correction] CCDB path to histograms"};
+  framework::Configurable<std::vector<std::string>> confEffCorCCDBTimestamps{"confEffCorCCDBTimestamps", {}, "[Efficiency Correction] Timestamps of histograms in CCDB (0 can be used as a placeholder, e.g. when running subwagons)"};
 };
 
 template <typename HistType>
