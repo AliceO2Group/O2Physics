@@ -992,7 +992,7 @@ struct NetprotonCumulantsMc {
     for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.has_mcCollision())
         continue;
-      if (!mcParticle.mcCollision().globalIndex() == mcCollision.globalIndex())
+      if (!(mcParticle.mcCollision().globalIndex() == mcCollision.globalIndex()))
         continue;
 
       if (mcParticle.isPhysicalPrimary()) {
