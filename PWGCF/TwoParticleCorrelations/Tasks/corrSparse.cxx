@@ -264,7 +264,7 @@ struct CorrSparse {
     for (auto const& track1 : tracks1) {
 
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt());
+        registry.fill(HIST("Trig_hist"), Nch, posZ, track1.pt());
       }
 
       for (auto const& track2 : tracks2) {
