@@ -19,6 +19,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <algorithm>
 
 #include "Framework/Configurable.h"
 #include "CCDB/BasicCCDBManager.h"

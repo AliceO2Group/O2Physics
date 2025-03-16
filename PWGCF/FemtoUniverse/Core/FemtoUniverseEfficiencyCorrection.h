@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #include "Framework/Configurable.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -150,4 +151,4 @@ class EfficiencyCorrection
 
 } // namespace o2::analysis::femto_universe::efficiency_correction
 
-#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCALCULATOR_H_
+#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCORRECTION_H_
