@@ -40,7 +40,7 @@ using namespace o2::soa;
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::Mults>;
 using MyCollisionsCent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsCentQvec = soa::Join<MyCollisionsCent, MyQvectors>;
 
@@ -69,7 +69,6 @@ struct CreateEMEventPhoton {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<double> dBzInput{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<bool> applyEveSelAtSkimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
   Configurable<bool> needEMCTrigger{"needEMCTrigger", false, "flag to only save events which have kTVXinEMC trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> needPHSTrigger{"needPHSTrigger", false, "flag to only save events which have kTVXinPHOS trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> enableJJHistograms{"enableJJHistograms", false, "flag to fill JJ QA histograms for outlier rejection"};
@@ -143,7 +142,7 @@ struct CreateEMEventPhoton {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
-      if (applyEveSelAtSkimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      if (!collision.isSelected()) {
         continue;
       }
       if (needEMCTrigger && !collision.alias_bit(kTVXinEMC)) {
@@ -210,13 +209,13 @@ struct CreateEMEventPhoton {
       if (!collision.has_mcCollision()) {
         continue;
       }
+      if (!collision.isSelected()) {
+        continue;
+      }
 
       auto bc = collision.template foundBC_as<MyBCs>();
       initCCDB(bc);
 
-      if (applyEveSelAtSkimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-        continue;
-      }
       auto mcCollision = collision.mcCollision_as<MyJJCollisions>();
 
       // Outlier rejection: Set weight to 0 for events with large pTJet/pTHard

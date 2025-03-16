@@ -239,8 +239,10 @@ struct PCMQCMC {
     fRegistry.add("V0Leg/primary/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
     fRegistry.add("V0Leg/primary/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
     fRegistry.add("V0Leg/primary/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
-    fRegistry.addClone("V0Leg/primary/", "V0Leg/fromWD/"); // from weak decay
-    fRegistry.addClone("V0Leg/primary/", "V0Leg/fromHS/"); // from hadronic shower in detector materials
+    fRegistry.addClone("V0Leg/primary/", "V0Leg/fromWD/");        // from weak decay
+    fRegistry.addClone("V0Leg/primary/", "V0Leg/fromHS/");        // from hadronic shower in detector materials
+    fRegistry.addClone("V0Leg/primary/", "V0Leg/fromPi0Dalitz/"); // misidentified dielectron from pi0 dalitz decay
+    fRegistry.addClone("V0Leg/primary/", "V0Leg/fromEtaDalitz/"); // misidentified dielectron from eta dalitz decay
   }
 
   void DefineEMEventCut()

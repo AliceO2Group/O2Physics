@@ -27,6 +27,7 @@
 #include <tuple>
 #include <utility>
 #include <array>
+#include <algorithm>
 
 #include "TString.h"
 #include "Math/Vector4D.h"
@@ -85,6 +86,7 @@ struct TaggingPi0 {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
+  Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 198, "difference in global BC required in mixed events"};
 
   Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -306,6 +308,7 @@ struct TaggingPi0 {
     used_photonIds.shrink_to_fit();
     used_dileptonIds.clear();
     used_dileptonIds.shrink_to_fit();
+    map_mixed_eventId_to_globalBC.clear();
   }
 
   void addHistogrms()
@@ -324,6 +327,7 @@ struct TaggingPi0 {
     fRegistry.add("Photon/hEtaPhi", "#varphi vs. #eta;#varphi_{#gamma} (rad.);#eta_{#gamma}", kTH2D, {{90, 0, 2 * M_PI}, {40, -1, +1}}, true);
     fRegistry.add("Pair/same/hMvsPt", "mass vs. p_{T,#gamma}", kTH2D, {axis_m, axis_pt}, true);
     fRegistry.addClone("Pair/same/", "Pair/mix/");
+    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{10001, -0.5, 10000.5}}, true);
   }
 
   void DefineEMEventCut()
@@ -450,6 +454,7 @@ struct TaggingPi0 {
   MyEMH* emh2 = nullptr;
   std::vector<std::pair<int, int>> used_photonIds;              // <ndf, trackId>
   std::vector<std::tuple<int, int, int, int>> used_dileptonIds; // <ndf, trackId>
+  std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2>
   void runPairing(TCollisions const& collisions,
@@ -622,6 +627,13 @@ struct TaggingPi0 {
           continue;
         }
 
+        auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+        uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+        fRegistry.fill(HIST("Pair/mix/hDiffBC"), diffBC);
+        if (diffBC < ndiff_bc_mix) {
+          continue;
+        }
+
         auto photons2_from_event_pool = emh2->GetTracksPerCollision(mix_dfId_collisionId);
         // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), nll = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons2_from_event_pool.size());
 
@@ -641,6 +653,7 @@ struct TaggingPi0 {
       if (ndiphoton > 0) {
         emh1->AddCollisionIdAtLast(key_bin, key_df_collision);
         emh2->AddCollisionIdAtLast(key_bin, key_df_collision);
+        map_mixed_eventId_to_globalBC[key_df_collision] = collision.globalBC();
       }
 
     } // end of collision loop

@@ -89,6 +89,7 @@ struct TaggingPi0MC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
+  Configurable<std::string> fd_k0s_to_pi0{"fd_k0s_pi0", "1.0", "feed down correction to pi0"};
   Configurable<bool> cfgRequireTrueAssociation{"cfgRequireTrueAssociation", false, "flag to require true mc collision association"};
   ConfigurableAxis ConfPtBins{"ConfPtBins", {100, 0, 10}, "pT bins for output histograms"};
 
@@ -207,6 +208,7 @@ struct TaggingPi0MC {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber;
   float d_bz;
+  TF1* f1fd_k0s_to_pi0;
 
   void init(InitContext&)
   {
@@ -220,6 +222,7 @@ struct TaggingPi0MC {
 
     mRunNumber = 0;
     d_bz = 0;
+    f1fd_k0s_to_pi0 = new TF1("f1fd_k0s_to_pi0", TString(fd_k0s_to_pi0), 0.f, 100.f);
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
@@ -266,7 +269,11 @@ struct TaggingPi0MC {
     mRunNumber = collision.runNumber();
   }
 
-  ~TaggingPi0MC() {}
+  ~TaggingPi0MC()
+  {
+    delete f1fd_k0s_to_pi0;
+    f1fd_k0s_to_pi0 = 0x0;
+  }
 
   void addHistogrms()
   {
@@ -479,8 +486,14 @@ struct TaggingPi0MC {
               }
             }
           } else if (IsFromWD(g1mc.template emmcevent_as<TMCCollisions>(), g1mc, mcparticles) > 0) {
-            fRegistry.fill(HIST("Photon/fromWD/hPt"), v_gamma.Pt(), collision.weight());
-            fRegistry.fill(HIST("Photon/fromWD/hEtaPhi"), v_gamma.Phi() > 0 ? v_gamma.Phi() : v_gamma.Phi() + 2 * M_PI, v_gamma.Eta(), collision.weight());
+            int motherid_strhad = IsFromWD(g1mc.template emmcevent_as<TMCCollisions>(), g1mc, mcparticles);
+            auto str_had = mcparticles.iteratorAt(motherid_strhad);
+            float weight = 1.f;
+            if (std::abs(str_had.pdgCode()) == 310 && f1fd_k0s_to_pi0 != nullptr) {
+              weight = f1fd_k0s_to_pi0->Eval(str_had.pt());
+            }
+            fRegistry.fill(HIST("Photon/fromWD/hPt"), v_gamma.Pt(), collision.weight() * weight);
+            fRegistry.fill(HIST("Photon/fromWD/hEtaPhi"), v_gamma.Phi() > 0 ? v_gamma.Phi() : v_gamma.Phi() + 2 * M_PI, v_gamma.Eta(), collision.weight() * weight);
           } else {
             fRegistry.fill(HIST("Photon/fromHS/hPt"), v_gamma.Pt(), collision.weight());
             fRegistry.fill(HIST("Photon/fromHS/hEtaPhi"), v_gamma.Phi() > 0 ? v_gamma.Phi() : v_gamma.Phi() + 2 * M_PI, v_gamma.Eta(), collision.weight());
@@ -519,7 +532,13 @@ struct TaggingPi0MC {
             if (pi0mc.isPhysicalPrimary() || pi0mc.producedByGenerator()) {
               fRegistry.fill(HIST("Pair/primary/hMvsPt"), veeg.M(), v_gamma.Pt(), collision.weight());
             } else if (IsFromWD(pi0mc.template emmcevent_as<TMCCollisions>(), pi0mc, mcparticles) > 0) {
-              fRegistry.fill(HIST("Pair/fromWD/hMvsPt"), veeg.M(), v_gamma.Pt(), collision.weight());
+              int motherid_strhad = IsFromWD(pi0mc.template emmcevent_as<TMCCollisions>(), pi0mc, mcparticles);
+              auto str_had = mcparticles.iteratorAt(motherid_strhad);
+              float weight = 1.f;
+              if (std::abs(str_had.pdgCode()) == 310 && f1fd_k0s_to_pi0 != nullptr) {
+                weight = f1fd_k0s_to_pi0->Eval(str_had.pt());
+              }
+              fRegistry.fill(HIST("Pair/fromWD/hMvsPt"), veeg.M(), v_gamma.Pt(), collision.weight() * weight);
             } else {
               fRegistry.fill(HIST("Pair/fromHS/hMvsPt"), veeg.M(), v_gamma.Pt(), collision.weight());
             }
