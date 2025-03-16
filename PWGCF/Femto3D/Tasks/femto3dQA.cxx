@@ -68,6 +68,7 @@ struct QAHistograms {
   Configurable<float> _itsChi2NCl{"itsChi2NCl", 100.0, "upper limit for chi2 value of a fit over ITS clasters for a track"};
   Configurable<int> _particlePDG{"particlePDG", 2212, "PDG code of a particle to perform PID for (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> _tpcNSigma{"tpcNSigma", std::vector<float>{-4.0f, 4.0f}, "Nsigma range in TPC before the TOF is used"};
+  Configurable<std::vector<float>> _itsNSigma{"itsNSigma", std::vector<float>{-10.0f, 10.0f}, "Nsigma range in ITS to use along with TPC"};
   Configurable<float> _PIDtrshld{"PIDtrshld", 10.0, "value of momentum from which the PID is done with TOF (before that only TPC is used)"};
   Configurable<std::vector<float>> _tofNSigma{"tofNSigma", std::vector<float>{-4.0f, 4.0f}, "Nsigma range in TOF"};
   Configurable<std::vector<float>> _tpcNSigmaResidual{"tpcNSigmaResidual", std::vector<float>{-5.0f, 5.0f}, "residual TPC Nsigma cut to use with the TOF"};
@@ -245,7 +246,7 @@ struct QAHistograms {
         registry.fill(HIST("TOFSignal_nocuts"), track.p(), track.beta());
       }
 
-      if (!TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld ? o2::aod::singletrackselector::TPCselection(track, TPCcuts) : o2::aod::singletrackselector::TOFselection(track, TOFcuts, _tpcNSigmaResidual.value))) {
+      if (!TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld ? o2::aod::singletrackselector::TPCselection<true>(track, TPCcuts, _itsNSigma.value) : o2::aod::singletrackselector::TOFselection(track, TOFcuts, _tpcNSigmaResidual.value))) {
         registry.fill(HIST("eta"), track.eta());
         registry.fill(HIST("phi"), track.phi());
         registry.fill(HIST("px"), track.px());

@@ -910,7 +910,7 @@ struct HfTaskCorrelationDsHadrons {
 
         // reconstructed track loop
         for (const auto& track : groupedTracks) {
-          if (!track.isGlobalTrackWoDCA()) {
+          if (!track.isGlobalTrackWoDCA() || track.tpcNClsCrossedRows() < nTpcCrossedRaws) {
             continue;
           }
           if (track.has_mcParticle()) {

@@ -154,17 +154,17 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
   o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "Users/m/mpuccio/EventFiltering/OTS/Chunked/", "ccdb path for ZORRO objects"};
   o2::framework::ConfigurableAxis th2ConfigAxisCent{"th2ConfigAxisCent", {100, 0., 100.}, ""};
-  o2::framework::ConfigurableAxis th2ConfigAxisOccupancy{"th2ConfigAxisOccupancy", {14, 0, 140000}, ""};
+  o2::framework::ConfigurableAxis th2ConfigAxisOccupancy{"th2ConfigAxisOccupancy", {14, 0, 14000}, ""};
 
   // histogram names
-  static constexpr char nameHistCollisions[] = "hCollisions";
-  static constexpr char nameHistSelCollisionsCent[] = "hSelCollisionsCent";
-  static constexpr char nameHistPosZBeforeEvSel[] = "hPosZBeforeEvSel";
-  static constexpr char nameHistPosZAfterEvSel[] = "hPosZAfterEvSel";
-  static constexpr char nameHistPosXAfterEvSel[] = "hPosXAfterEvSel";
-  static constexpr char nameHistPosYAfterEvSel[] = "hPosYAfterEvSel";
-  static constexpr char nameHistNumPvContributorsAfterSel[] = "hNumPvContributorsAfterSel";
-  static constexpr char nameHistCollisionsCentOcc[] = "hCollisionsCentOcc";
+  static constexpr char NameHistCollisions[] = "hCollisions";
+  static constexpr char NameHistSelCollisionsCent[] = "hSelCollisionsCent";
+  static constexpr char NameHistPosZBeforeEvSel[] = "hPosZBeforeEvSel";
+  static constexpr char NameHistPosZAfterEvSel[] = "hPosZAfterEvSel";
+  static constexpr char NameHistPosXAfterEvSel[] = "hPosXAfterEvSel";
+  static constexpr char NameHistPosYAfterEvSel[] = "hPosYAfterEvSel";
+  static constexpr char NameHistNumPvContributorsAfterSel[] = "hNumPvContributorsAfterSel";
+  static constexpr char NameHistCollisionsCentOcc[] = "hCollisionsCentOcc";
 
   std::shared_ptr<TH1> hCollisions, hSelCollisionsCent, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
   std::shared_ptr<TH2> hCollisionsCentOcc;
@@ -178,18 +178,18 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param registry reference to the histogram registry
   void addHistograms(o2::framework::HistogramRegistry& registry)
   {
-    hCollisions = registry.add<TH1>(nameHistCollisions, "HF event counter;;# of accepted collisions", {o2::framework::HistType::kTH1D, {axisEvents}});
-    hSelCollisionsCent = registry.add<TH1>(nameHistSelCollisionsCent, "HF event counter;T0M;# of accepted collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
-    hPosZBeforeEvSel = registry.add<TH1>(nameHistPosZBeforeEvSel, "all events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
-    hPosZAfterEvSel = registry.add<TH1>(nameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
-    hPosXAfterEvSel = registry.add<TH1>(nameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
-    hPosYAfterEvSel = registry.add<TH1>(nameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
-    hNumPvContributorsAfterSel = registry.add<TH1>(nameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
+    hCollisions = registry.add<TH1>(NameHistCollisions, "HF event counter;;# of accepted collisions", {o2::framework::HistType::kTH1D, {axisEvents}});
+    hSelCollisionsCent = registry.add<TH1>(NameHistSelCollisionsCent, "HF event counter;T0M;# of accepted collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
+    hPosZBeforeEvSel = registry.add<TH1>(NameHistPosZBeforeEvSel, "all events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
+    hPosZAfterEvSel = registry.add<TH1>(NameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
+    hPosXAfterEvSel = registry.add<TH1>(NameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hPosYAfterEvSel = registry.add<TH1>(NameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hNumPvContributorsAfterSel = registry.add<TH1>(NameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
     setEventRejectionLabels(hCollisions, softwareTrigger);
 
     const o2::framework::AxisSpec th2AxisCent{th2ConfigAxisCent, "Centrality"};
     const o2::framework::AxisSpec th2AxisOccupancy{th2ConfigAxisOccupancy, "Occupancy"};
-    hCollisionsCentOcc = registry.add<TH2>(nameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
+    hCollisionsCentOcc = registry.add<TH2>(NameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
 
     // we initialise the summary object
     if (softwareTrigger.value != "") {
@@ -343,23 +343,23 @@ struct HfEventSelectionMc {
   float centralityMax{100.f};       // Maximum centrality
 
   // histogram names
-  static constexpr char nameHistGenCollisionsCent[] = "hGenCollisionsCent";
+  static constexpr char NameHistGenCollisionsCent[] = "hGenCollisionsCent";
   std::shared_ptr<TH1> hGenCollisionsCent;
-  static constexpr char nameHistRecCollisionsCentMc[] = "hRecCollisionsCentMc";
+  static constexpr char NameHistRecCollisionsCentMc[] = "hRecCollisionsCentMc";
   std::shared_ptr<TH1> hRecCollisionsCentMc;
-  static constexpr char nameHistNSplitVertices[] = "hNSplitVertices";
+  static constexpr char NameHistNSplitVertices[] = "hNSplitVertices";
   std::shared_ptr<TH1> hNSplitVertices;
-  static constexpr char nameHistParticles[] = "hParticles";
+  static constexpr char NameHistParticles[] = "hParticles";
   std::shared_ptr<TH1> hParticles;
 
   /// \brief Adds collision monitoring histograms in the histogram registry.
   /// \param registry reference to the histogram registry
   void addHistograms(o2::framework::HistogramRegistry& registry)
   {
-    hGenCollisionsCent = registry.add<TH1>(nameHistGenCollisionsCent, "HF event counter;T0M;# of generated collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
-    hRecCollisionsCentMc = registry.add<TH1>(nameHistRecCollisionsCentMc, "HF event counter;T0M;# of reconstructed collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
-    hNSplitVertices = registry.add<TH1>(nameHistNSplitVertices, "HF split vertices counter;;# of reconstructed collisions per mc collision", {o2::framework::HistType::kTH1D, {{4, 1., 5.}}});
-    hParticles = registry.add<TH1>(nameHistParticles, "HF particle counter;;# of accepted particles", {o2::framework::HistType::kTH1D, {axisEvents}});
+    hGenCollisionsCent = registry.add<TH1>(NameHistGenCollisionsCent, "HF event counter;T0M;# of generated collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
+    hRecCollisionsCentMc = registry.add<TH1>(NameHistRecCollisionsCentMc, "HF event counter;T0M;# of reconstructed collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
+    hNSplitVertices = registry.add<TH1>(NameHistNSplitVertices, "HF split vertices counter;;# of reconstructed collisions per mc collision", {o2::framework::HistType::kTH1D, {{4, 1., 5.}}});
+    hParticles = registry.add<TH1>(NameHistParticles, "HF particle counter;;# of accepted particles", {o2::framework::HistType::kTH1D, {axisEvents}});
     // Puts labels on the collision monitoring histogram.
     setEventRejectionLabels(hParticles);
   }

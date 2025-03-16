@@ -84,7 +84,9 @@ struct FlowRunbyRun {
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "NUA weights are filled in ref pt bins")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptanceList, std::string, "", "CCDB path to acceptance lsit object")
+  O2_DEFINE_CONFIGURABLE(cfgAcceptanceListEnabled, bool, false, "switch of acceptance list")
   O2_DEFINE_CONFIGURABLE(cfgDynamicRunNumber, bool, false, "Add runNumber during runtime")
   O2_DEFINE_CONFIGURABLE(cfgGetInteractionRate, bool, false, "Get interaction rate from CCDB")
   O2_DEFINE_CONFIGURABLE(cfgUseInteractionRateCut, bool, false, "Use events with low interaction rate")
@@ -286,8 +288,14 @@ struct FlowRunbyRun {
   {
     if (correctionsLoaded)
       return;
-
-    if (cfgAcceptanceList.value.empty() == false) {
+    if (!cfgAcceptanceListEnabled && cfgAcceptance.value.empty() == false) {
+      mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance, timestamp);
+      if (mAcceptance)
+        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
+      else
+        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
+    }
+    if (cfgAcceptanceListEnabled && cfgAcceptanceList.value.empty() == false) {
       mAcceptanceList = ccdb->getForTimeStamp<TObjArray>(cfgAcceptanceList, timestamp);
       if (mAcceptanceList == nullptr) {
         LOGF(fatal, "Could not load acceptance weights list from %s", cfgAcceptanceList.value.c_str());
@@ -328,20 +336,6 @@ struct FlowRunbyRun {
     return true;
   }
 
-  void initEventCount(std::shared_ptr<TH1> hEventCountSpecific)
-  {
-    hEventCountSpecific->GetXaxis()->SetBinLabel(1, "after sel8");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(4, "kNoCollInTimeRangeStandard");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(5, "kIsGoodITSLayersAll");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(6, "kNoCollInRofStandard");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(7, "kNoHighMultCollInPrevRof");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(8, "occupancy");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(9, "MultCorrelation");
-    hEventCountSpecific->GetXaxis()->SetBinLabel(10, "cfgEvSelV0AT0ACut");
-  }
-
   void createOutputObjectsForRun(int runNumber)
   {
     std::vector<std::shared_ptr<TH1>> histos(kCount_TH1Names);
@@ -352,7 +346,16 @@ struct FlowRunbyRun {
     histos[hMult] = registry.add<TH1>(Form("%d/hMult", runNumber), "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     histos[hCent] = registry.add<TH1>(Form("%d/hCent", runNumber), "", {HistType::kTH1D, {{90, 0, 90}}});
     histos[hEventCountSpecific] = registry.add<TH1>(Form("%d/hEventCountSpecific", runNumber), "", {HistType::kTH1D, {{10, 0, 10}}});
-    initEventCount(histos[hEventCountSpecific]);
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(1, "after sel8");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(4, "kNoCollInTimeRangeStandard");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(5, "kIsGoodITSLayersAll");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(6, "kNoCollInRofStandard");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(7, "kNoHighMultCollInPrevRof");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(8, "occupancy");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(9, "MultCorrelation");
+    histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(10, "cfgEvSelV0AT0ACut");
     th1sList.insert(std::make_pair(runNumber, histos));
 
     std::vector<std::shared_ptr<TProfile>> profiles(kCount_TProfileNames);
@@ -479,17 +482,6 @@ struct FlowRunbyRun {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     const auto cent = collision.centFT0C();
     int runNumber = bc.runNumber();
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, runNumber))
-      return;
-    if (cfgGetInteractionRate) {
-      initHadronicRate(bc);
-      double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
-      double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
-      if (cfgUseInteractionRateCut && (hadronicRate < cfgCutMinIR || hadronicRate > cfgCutMaxIR)) // cut on hadronic rate
-        return;
-      gCurrentHadronicRate->Fill(seconds, hadronicRate);
-    }
-    float lRandom = fRndm->Rndm();
     if (runNumber != lastRunNumer) {
       lastRunNumer = runNumber;
       if (cfgDynamicRunNumber && std::find(runNumbers.begin(), runNumbers.end(), runNumber) == runNumbers.end()) {
@@ -503,6 +495,18 @@ struct FlowRunbyRun {
         return;
       }
     }
+
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, runNumber))
+      return;
+    if (cfgGetInteractionRate) {
+      initHadronicRate(bc);
+      double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
+      double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
+      if (cfgUseInteractionRateCut && (hadronicRate < cfgCutMinIR || hadronicRate > cfgCutMaxIR)) // cut on hadronic rate
+        return;
+      gCurrentHadronicRate->Fill(seconds, hadronicRate);
+    }
+    float lRandom = fRndm->Rndm();
 
     th1sList[runNumber][hVtxZ]->Fill(collision.posZ());
     th1sList[runNumber][hMult]->Fill(tracks.size());

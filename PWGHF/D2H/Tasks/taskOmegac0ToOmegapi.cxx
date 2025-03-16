@@ -33,27 +33,15 @@ using namespace o2::framework::expressions;
 
 /// Omegac0 analysis task
 
-struct HfTaskOmegac0 {
-  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
-  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
-  Configurable<int> selectionFlagOmegac0{"selectionFlagOmegac0", 1, "Selection Flag for Omegac0 candidates"};
-
+struct HfTaskOmegac0ToOmegapi {
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
-
-  // ThnSparse for ML outputScores and Vars
-  ConfigurableAxis thnConfigAxisPromptScore{"thnConfigAxisPromptScore", {50, 0, 1}, "Prompt score bins"};
-  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 2.4, 3.1}, "Cand. inv-mass bins"};
-  ConfigurableAxis thnConfigAxisPtB{"thnConfigAxisPtB", {1000, 0, 100}, "Cand. beauty mother pTB bins"};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0, 20}, "Cand. pT bins"};
-  ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity bins"};
-  ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin type"};
-  ConfigurableAxis thnConfigAxisCandType{"thnConfigAxisCandType", {6, -0.5, 5.5}, "Omegac0 type"};
-  ConfigurableAxis thnConfigAxisGenPtD{"thnConfigAxisGenPtD", {500, 0, 50}, "Gen Pt D"};
-  ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
-  ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
+  Configurable<bool> selectionFlagOmegac0{"selectionFlagOmegac0", false, "Selection Flag for Omegac0 candidates"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
 
   HfHelper hfHelper;
+  SliceCache cache;
   using MyTracksWMc = soa::Join<aod::Tracks, aod::TracksIU, aod::McTrackLabels>;
 
   using Omegac0Candidates = soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi>;
@@ -67,11 +55,20 @@ struct HfTaskOmegac0 {
   using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
   using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
   PresliceUnsorted<CollisionsWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
-  SliceCache cache;
 
-  Partition<Omegac0CandidatesKF> selectedOmegac0CandidatesKF = aod::hf_sel_toomegapi::resultSelections >= selectionFlagOmegac0;
-  Partition<Omegac0CandidatesMlKF> selectedOmegac0CandidatesMlKF = aod::hf_sel_toomegapi::resultSelections >= selectionFlagOmegac0;
+  Partition<Omegac0CandidatesKF> selectedOmegac0CandidatesKF = aod::hf_sel_toomegapi::resultSelections && !selectionFlagOmegac0;
+  Partition<Omegac0CandidatesMlKF> selectedOmegac0CandidatesMlKF = aod::hf_sel_toomegapi::resultSelections && !selectionFlagOmegac0;
 
+  // ThnSparse for ML outputScores and Vars
+  ConfigurableAxis thnConfigAxisPromptScore{"thnConfigAxisPromptScore", {50, 0, 1}, "Prompt score bins"};
+  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 2.4, 3.1}, "Cand. inv-mass bins"};
+  ConfigurableAxis thnConfigAxisPtB{"thnConfigAxisPtB", {1000, 0, 100}, "Cand. beauty mother pTB bins"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0, 20}, "Cand. pT bins"};
+  ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity bins"};
+  ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin type"};
+  ConfigurableAxis thnConfigAxisGenPtD{"thnConfigAxisGenPtD", {500, 0, 50}, "Gen Pt D"};
+  ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
+  ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
   HistogramRegistry registry{
     "registry",
     {}};
@@ -147,15 +144,15 @@ struct HfTaskOmegac0 {
   {
     processData<false>(selectedOmegac0CandidatesKF, collisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0, processDataWithKFParticle, "process taskOmegac0 with KFParticle", false);
-  // TODO: add processKFParticleCent
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticle, "process HfTaskOmegac0ToOmegapi with KFParticle", false);
+  // TODO: add processKFParticle
 
   void processDataWithKFParticleMl(Omegac0CandidatesMlKF const&, Collisions const& collisions)
   {
     processData<true>(selectedOmegac0CandidatesMlKF, collisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0, processDataWithKFParticleMl, "process taskOmegac0 with KFParticle and ML selections", false);
-  // TODO: add processKFParticleMlCent
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticleMl, "process HfTaskOmegac0ToOmegapi with KFParticle and ML selections", false);
+  // TODO: add processKFParticleMl
 
   template <bool applyMl, typename CandType, typename CollType>
   void processMc(const CandType& candidates,
@@ -178,7 +175,7 @@ struct HfTaskOmegac0 {
       massOmegac0 = candidate.invMassCharmBaryon();
       auto ptCandidate = candidate.ptCharmBaryon();
       auto rapidityCandidate = candidate.kfRapOmegac();
-      if (candidate.resultSelections() >= selectionFlagOmegac0)
+      if (candidate.resultSelections() && !selectionFlagOmegac0)
         if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi)) {
           if constexpr (applyMl) {
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.mlProbOmegac()[0], massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), numPvContributors);
@@ -223,8 +220,8 @@ struct HfTaskOmegac0 {
   {
     processMc<false>(omegaC0CandidatesMcKF, mcParticles, tracks, collisions, mcCollisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0, processMcWithKFParticle, "Process MC with KFParticle", false);
-  // TODO: add the processMcWithKFParticleCent
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcWithKFParticle, "Process MC with KFParticle", false);
+  // TODO: add the processMcWithKFParticle
 
   void processMcWithKFParticleMl(Omegac0CandidatesMlMcKF const& omegac0CandidatesMlMcKF,
                                  soa::Join<aod::McParticles, aod::HfToOmegaPiMCGen> const& mcParticles,
@@ -234,11 +231,11 @@ struct HfTaskOmegac0 {
   {
     processMc<true>(omegac0CandidatesMlMcKF, mcParticles, tracks, collisions, mcCollisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
-  // TODO: add the processMcWithKFParticleMlCent
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
+  // TODO: add the processMcWithKFParticleMl
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskOmegac0>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskOmegac0ToOmegapi>(cfgc)};
 }

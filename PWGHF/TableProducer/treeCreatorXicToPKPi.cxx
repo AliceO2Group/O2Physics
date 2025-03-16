@@ -75,7 +75,7 @@ DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
-DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
+DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int);
 
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
@@ -265,7 +265,7 @@ struct HfTreeCreatorXicToPKPi {
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
-    int8_t candSwapped = -1;
+    int candSwapped = 0;
     if constexpr (doMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
