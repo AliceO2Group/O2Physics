@@ -127,6 +127,7 @@ struct DalitzEEQCMC {
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
+  static constexpr std::string_view track_types[2] = {"primary/", "secondary/"};
 
   ~DalitzEEQCMC() {}
 
@@ -157,33 +158,37 @@ struct DalitzEEQCMC {
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Phi/");
 
     // track info
-    fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
-    fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
-    fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -2.0f, 2.0f}}, false);
-    fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -0.1f, 0.1f}, {200, -0.1f, 0.1f}}, false);
-    fRegistry.add("Track/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
-    fRegistry.add("Track/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
-    fRegistry.add("Track/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
-    fRegistry.add("Track/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
-    fRegistry.add("Track/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
-    fRegistry.add("Track/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
-    fRegistry.add("Track/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
-    fRegistry.add("Track/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
-    fRegistry.add("Track/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
+    fRegistry.add("Track/primary/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
+    fRegistry.add("Track/primary/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
+    fRegistry.add("Track/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -2.0f, 2.0f}}, false);
+    fRegistry.add("Track/primary/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -0.1f, 0.1f}, {200, -0.1f, 0.1f}}, false);
+    fRegistry.add("Track/primary/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
+    fRegistry.add("Track/primary/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
+    fRegistry.add("Track/primary/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
+    fRegistry.add("Track/primary/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
+    fRegistry.add("Track/primary/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
+    fRegistry.add("Track/primary/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/primary/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
+    fRegistry.add("Track/primary/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
+    fRegistry.add("Track/primary/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
 
-    fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
-    fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/primary/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
+    fRegistry.add("Track/primary/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/primary/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
 
-    fRegistry.add("Track/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
-    fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
-    fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
-    fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH1F, {{32, 0, 16}}, false);
+    fRegistry.add("Track/primary/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
+    fRegistry.add("Track/primary/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/primary/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
+    fRegistry.add("Track/primary/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH1F, {{32, 0, 16}}, false);
 
-    fRegistry.add("Track/hChi2TOF", "chi2 of TOF", kTH1F, {{100, 0, 10}}, false);
-    fRegistry.add("Track/hTOFbeta", "TOF beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
-    fRegistry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/primary/hChi2TOF", "chi2 of TOF", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/primary/hTOFbeta", "TOF beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
+    fRegistry.add("Track/primary/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/primary/hTOFNsigmaPi", "TOF n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/primary/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {200, -1.0f, 1.0f}}, true);
+    fRegistry.add("Track/primary/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
+    fRegistry.add("Track/primary/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
+    fRegistry.addClone("Track/primary/", "Track/secondary/");
   }
 
   void init(InitContext&)
@@ -351,26 +356,74 @@ struct DalitzEEQCMC {
             case 111:
               fRegistry.fill(HIST("Pair/sm/Pi0/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Pi0/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<0>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<0>(t2);
+              }
               break;
             case 221:
               fRegistry.fill(HIST("Pair/sm/Eta/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Eta/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<0>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<0>(t2);
+              }
               break;
             case 331:
               fRegistry.fill(HIST("Pair/sm/EtaPrime/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/EtaPrime/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<0>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<0>(t2);
+              }
               break;
             case 113:
               fRegistry.fill(HIST("Pair/sm/Rho/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Rho/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<0>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<0>(t2);
+              }
               break;
             case 223:
               fRegistry.fill(HIST("Pair/sm/Omega/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Omega/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<0>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<0>(t2);
+              }
               break;
             case 333:
               fRegistry.fill(HIST("Pair/sm/Phi/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Phi/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<0>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<0>(t2);
+              }
               break;
             default:
               break;
@@ -380,6 +433,14 @@ struct DalitzEEQCMC {
             case 22:
               fRegistry.fill(HIST("Pair/sm/Photon/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Photon/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<1>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<1>(t2);
+              }
               break;
             default:
               break;
@@ -387,60 +448,39 @@ struct DalitzEEQCMC {
         } // end of primary/secondary selection
       } // end of primary selection for same mother
     }
-
-    // fill track info that belong to true pairs.
-    if (t1.sign() > 0) {
-      if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
-        used_trackIds.emplace_back(t1.globalIndex());
-        fillTrackInfo(t1);
-      }
-    } else {
-      if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
-        used_trackIds.emplace_back(t1.globalIndex());
-        fillTrackInfo(t1);
-      }
-    }
-    if (t2.sign() > 0) {
-      if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
-        used_trackIds.emplace_back(t1.globalIndex());
-        fillTrackInfo(t2);
-      }
-    } else {
-      if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
-        used_trackIds.emplace_back(t2.globalIndex());
-        fillTrackInfo(t2);
-      }
-    }
-
     return true;
   }
 
-  template <typename TTrack>
+  template <int tracktype, typename TTrack>
   void fillTrackInfo(TTrack const& track)
   {
-    fRegistry.fill(HIST("Track/hPt"), track.pt());
-    fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / track.pt());
-    fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
-    fRegistry.fill(HIST("Track/hDCAxyz"), track.dcaXY(), track.dcaZ());
-    fRegistry.fill(HIST("Track/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
-    fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), track.pt(), sqrt(track.cYY()) * 1e+4); // convert cm to um
-    fRegistry.fill(HIST("Track/hDCAzRes_Pt"), track.pt(), sqrt(track.cZZ()) * 1e+4);  // convert cm to um
-    fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
-    fRegistry.fill(HIST("Track/hNclsTPC"), track.tpcNClsFound());
-    fRegistry.fill(HIST("Track/hNcrTPC"), track.tpcNClsCrossedRows());
-    fRegistry.fill(HIST("Track/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
-    fRegistry.fill(HIST("Track/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
-    fRegistry.fill(HIST("Track/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
-    fRegistry.fill(HIST("Track/hChi2TPC"), track.tpcChi2NCl());
-    fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
-    fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
-    fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
-    fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
-    fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-    fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
-    fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
-    fRegistry.fill(HIST("Track/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
-    fRegistry.fill(HIST("Track/hTOFbeta"), track.p(), track.beta());
+    auto mctrack = track.template emmcparticle_as<aod::EMMCParticles>();
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hPt"), track.pt());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hQoverPt"), track.sign() / track.pt());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hEtaPhi"), track.phi(), track.eta());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hDCAxyz"), track.dcaXY(), track.dcaZ());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hDCAxyzSigma"), track.dcaXY() / std::sqrt(track.cYY()), track.dcaZ() / std::sqrt(track.cZZ()));
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4); // convert cm to um
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);  // convert cm to um
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hNclsITS"), track.itsNCls());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hNclsTPC"), track.tpcNClsFound());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hNcrTPC"), track.tpcNClsCrossedRows());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hChi2TPC"), track.tpcChi2NCl());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hChi2ITS"), track.itsChi2NCl());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hITSClusterMap"), track.itsClusterMap());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTOFbeta"), track.p(), track.beta());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
   }
 
   std::vector<int> used_trackIds;

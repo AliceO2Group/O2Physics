@@ -286,27 +286,13 @@ struct DalitzEEQC {
       fRegistry.fill(HIST("Pair/same/hMvsPhiV"), phiv, v12.M());
     }
 
-    if (t1.sign() > 0) {
-      if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
-        used_trackIds.emplace_back(t1.globalIndex());
-        fillTrackInfo(t1);
-      }
-    } else {
-      if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
-        used_trackIds.emplace_back(t1.globalIndex());
-        fillTrackInfo(t1);
-      }
+    if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+      used_trackIds.emplace_back(t1.globalIndex());
+      fillTrackInfo(t1);
     }
-    if (t2.sign() > 0) {
-      if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
-        used_trackIds.emplace_back(t2.globalIndex());
-        fillTrackInfo(t2);
-      }
-    } else {
-      if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
-        used_trackIds.emplace_back(t2.globalIndex());
-        fillTrackInfo(t2);
-      }
+    if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+      used_trackIds.emplace_back(t2.globalIndex());
+      fillTrackInfo(t2);
     }
     return true;
   }
@@ -318,9 +304,9 @@ struct DalitzEEQC {
     fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / track.pt());
     fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
     fRegistry.fill(HIST("Track/hDCAxyz"), track.dcaXY(), track.dcaZ());
-    fRegistry.fill(HIST("Track/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
-    fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), track.pt(), sqrt(track.cYY()) * 1e+4); // convert cm to um
-    fRegistry.fill(HIST("Track/hDCAzRes_Pt"), track.pt(), sqrt(track.cZZ()) * 1e+4);  // convert cm to um
+    fRegistry.fill(HIST("Track/hDCAxyzSigma"), track.dcaXY() / std::sqrt(track.cYY()), track.dcaZ() / std::sqrt(track.cZZ()));
+    fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4); // convert cm to um
+    fRegistry.fill(HIST("Track/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);  // convert cm to um
     fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
     fRegistry.fill(HIST("Track/hNclsTPC"), track.tpcNClsFound());
     fRegistry.fill(HIST("Track/hNcrTPC"), track.tpcNClsCrossedRows());
