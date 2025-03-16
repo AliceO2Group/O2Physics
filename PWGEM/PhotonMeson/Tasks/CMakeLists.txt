@@ -94,16 +94,6 @@ o2physics_add_dpl_workflow(pi0eta-to-gammagamma-mc-emcemc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(tagging-pi0
-                    SOURCES TaggingPi0.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(tagging-pi0-mc
-                    SOURCES TaggingPi0MC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(tag-and-probe
                     SOURCES TagAndProbe.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore

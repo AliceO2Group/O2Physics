@@ -61,7 +61,7 @@ using namespace o2::constants::physics;
 using namespace o2::pwgem::photonmeson;
 using std::array;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
 using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 
@@ -81,18 +81,17 @@ struct PhotonConversionBuilder {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  Configurable<bool> inherit_from_emevent_photon{"inherit_from_emevent_photon", false, "flag to inherit task options from emevent-photon"};
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
-  Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
 
   // single track cuts
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 40, "min crossed rows"};
   Configurable<bool> moveTPCTracks{"moveTPCTracks", true, "Move TPC-only tracks under the collision assumption"};
   Configurable<bool> disableITSonlyTracks{"disableITSonlyTracks", false, "disable ITSonly tracks in V0 legs"};
+  Configurable<bool> disableTPConlyTracks{"disableTPConlyTracks", false, "disable TPConly tracks in V0 legs"};
 
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max chi2/NclsTPC"}; // default 4.0 + 1.0
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max chi2/NclsITS"}; // default 5.0 + 1.0
@@ -173,7 +172,7 @@ struct PhotonConversionBuilder {
       {"V0Leg/hXZ", "track iu x vs. z;z (cm);x (cm)", {HistType::kTH2F, {{200, -100.f, 100.f}, {200, 0.f, 100.f}}}},
     }};
 
-  void init(InitContext& initContext)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -184,10 +183,6 @@ struct PhotonConversionBuilder {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-
-    if (inherit_from_emevent_photon) {
-      getTaskOptionValue(initContext, "create-emevent-photon", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true);
-    }
 
     if (useMatCorrType == 1) {
       LOGF(info, "TGeo correction requested, loading geometry");
@@ -278,6 +273,10 @@ struct PhotonConversionBuilder {
     }
 
     if (disableITSonlyTracks && isITSonlyTrack(track)) {
+      return false;
+    }
+
+    if (disableTPConlyTracks && isTPConlyTrack(track)) {
       return false;
     }
 
@@ -690,10 +689,8 @@ struct PhotonConversionBuilder {
         }
       }
 
-      if constexpr (enableFilter) {
-        if (!collision.isSelected()) {
-          continue;
-        }
+      if (!collision.isSelected()) {
+        continue;
       }
 
       if constexpr (isTriggerAnalysis) {
@@ -707,10 +704,6 @@ struct PhotonConversionBuilder {
       const auto& bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       registry.fill(HIST("hCollisionCounter"), 1);
-
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-        continue;
-      }
 
       updateCCDB(bc); // delay update until is needed
 
@@ -836,13 +829,13 @@ struct PhotonConversionBuilder {
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processMC, "process reconstructed info for MC", false);
 
-  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEvSels, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     build<false, false, true>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec_OnlyIfDielectron, "process reconstructed info for data", false);
 
-  void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEvSels, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     build<false, true, true>(collisions, v0s, tracks, bcs);
   }
