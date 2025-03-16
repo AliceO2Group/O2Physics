@@ -1117,6 +1117,8 @@ struct NetprotonCumulantsMc {
       }
 
       auto particle = track.mcParticle();
+      if (!particle.has_mcCollision())
+        continue;
       if ((particle.pt() < cfgCutPtLower) || (particle.pt() > 5.0f) || (std::abs(particle.eta()) > cfgCutEta)) {
         continue;
       }
