@@ -2281,7 +2281,8 @@ struct LFNucleiBATask {
           break;
       }
 
-      float nITSTr, nITSHe;
+      float nITSTr = 99.f;
+      float nITSHe = 99.f;
       if (!IsFilteredData) {
         nITSTr = track.itsNSigmaTr();
         nITSHe = track.itsNSigmaHe();
