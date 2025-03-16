@@ -469,14 +469,15 @@ struct AntinucleiInJets {
 
     // loop over reconstructed jets
     bool isAtLeastOneJetSelected = false;
-    for (auto& jet : jets) { 
+    for (const auto& jet : jets) { 
 
       // jet must be fully contained in the acceptance
       if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
         continue;
 
       // jet pt must be larger than threshold
-      fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
+      auto jetForSub = jet;
+      fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
       if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
         continue;
       isAtLeastOneJetSelected = true;
@@ -694,7 +695,7 @@ struct AntinucleiInJets {
     // loop over reconstructed jets
     int njetsInAcc(0);
     int njetsHighPt(0);
-    for (auto& jet : jets) { 
+    for (const auto& jet : jets) { 
 
       // jet must be fully contained in the acceptance
       if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
@@ -704,7 +705,8 @@ struct AntinucleiInJets {
       double ptJetBeforeSub = jet.pt();
 
       // jet pt must be larger than threshold
-      fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
+      auto jetForSub = jet;
+      fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
       double ptJetAfterSub = jet.pt();
       registryQC.fill(HIST("jetPtDifference"), ptJetAfterSub - ptJetBeforeSub);
 
@@ -947,14 +949,15 @@ struct AntinucleiInJets {
       auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
 
       // loop over jets
-      for (auto& jet : jets) { 
+      for (const auto& jet : jets) { 
 
         // jet must be fully contained in the acceptance
         if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
           continue;
 
         // jet pt must be larger than threshold
-        fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
+        auto jetForSub = jet;
+        fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
         if (jetMinusBkg.pt() < minJetPt)
           continue;
 
@@ -1037,7 +1040,7 @@ struct AntinucleiInJets {
       auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
 
       // loop over reconstructed jets
-      for (auto& jet : jets) { 
+      for (const auto& jet : jets) { 
 
         // get jet constituents
         std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
@@ -1062,7 +1065,8 @@ struct AntinucleiInJets {
         registryMC.fill(HIST("detectorResponseMatrix"), jetPtGen, jetPtGen - jet.pt()); // maybe it should be filled after bkg sub
 
         // jet pt must be larger than threshold
-        fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
+        auto jetForSub = jet;
+        fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
         if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
           continue;
 
@@ -1219,14 +1223,15 @@ void processSystematicsData(SelectedCollisions::iterator const& collision, FullN
   auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
 
   // loop over reconstructed jets
-  for (auto& jet : jets) {
+  for (const auto& jet : jets) {
 
     // jet must be fully contained in the acceptance
     if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
       continue;
 
     // jet pt must be larger than threshold
-    fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
+    auto jetForSub = jet;
+    fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
     if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
       continue;
 
