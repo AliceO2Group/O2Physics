@@ -1743,7 +1743,7 @@ struct DndetaMFTPbPb {
                           cgen, occgen);
         } else {
           qaregistry.fill(HIST("Tracks/hPtEtaEffGen"), particle.pt(),
-                          particle.eta(), 
+                          particle.eta(),
                           occgen);
         }
         // MC rec
