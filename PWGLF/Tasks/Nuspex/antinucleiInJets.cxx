@@ -253,7 +253,7 @@ struct AntinucleiInJets {
     }
 
     // systematic uncertainties
-    if(doprocessSystematicsData) {
+    if (doprocessSystematicsData) {
       registryData.add("antiproton_tpc_syst", "antiproton_tpc_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {10, 0, 10, "systematic uncertainty"}});
       registryData.add("antiproton_tof_syst", "antiproton_tof_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {10, 0, 10, "systematic uncertainty"}});
       registryData.add("antideuteron_tpc_syst", "antideuteron_tpc_syst", HistType::kTHnSparseF, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {10, 0, 10, "systematic uncertainty"}});
@@ -262,7 +262,7 @@ struct AntinucleiInJets {
 
     if (doprocessSystematicsEfficiency) {
       registryMC.add("antiproton_incl_gen_syst", "antiproton_incl_gen_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {10, 0, 10, "systematic uncertainty"}});
-      registryMC.add("antideuteron_incl_gen_syst", "antideuteron_incl_gen_syst", HistType::kTHnSparseF, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {10, 0, 10, "systematic uncertainty"}});      
+      registryMC.add("antideuteron_incl_gen_syst", "antideuteron_incl_gen_syst", HistType::kTHnSparseF, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {10, 0, 10, "systematic uncertainty"}});
       registryMC.add("antiproton_incl_prim_syst", "antiproton_incl_prim_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {10, 0, 10, "systematic uncertainty"}});
       registryMC.add("antiproton_incl_rec_tpc_syst", "antiproton_incl_rec_tpc_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {10, 0, 10, "systematic uncertainty"}});
       registryMC.add("antiproton_incl_rec_tof_syst", "antiproton_incl_rec_tof_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {10, 0, 10, "systematic uncertainty"}});
@@ -1332,7 +1332,7 @@ struct AntinucleiInJets {
     float tpcNcrossedRowsSyst[nSystematics] = {100, 85, 80, 110, 95, 90, 105, 95, 100, 105};
     float dcaxySyst[nSystematics] = {0.05, 0.07, 0.10, 0.03, 0.06, 0.15, 0.08, 0.04, 0.09, 0.10};
     float dcazSyst[nSystematics] = {0.1, 0.15, 0.3, 0.075, 0.12, 0.18, 0.2, 0.1, 0.15, 0.2};
-  
+
     for (const auto& collision : collisions) {
 
       if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
@@ -1362,9 +1362,9 @@ struct AntinucleiInJets {
 
       // Reconstructed Tracks
       for (auto const& track : mcTracks) {
-        
+
         // Get MC Particle
-        if (!track.has_mcParticle()) 
+        if (!track.has_mcParticle())
           continue;
         const auto particle = track.mcParticle();
 
@@ -1376,7 +1376,7 @@ struct AntinucleiInJets {
         double dcaxy = track.dcaXY();
         double dcaz = track.dcaZ();
 
-        for(int i = 0; i < nSystematics; i++) {
+        for (int i = 0; i < nSystematics; i++) {
 
           // Track Selection
           if (requirePvContributor && !(track.isPVContributor()))
