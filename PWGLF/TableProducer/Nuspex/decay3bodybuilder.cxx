@@ -290,9 +290,14 @@ struct decay3bodyBuilder {
     Configurable<int> nEvtMixing{"kfparticleConfigurations.nEvtMixing", 5, "Number of events to mix"};
     ConfigurableAxis binsVtxZ{"kfparticleConfigurations.binsVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
     ConfigurableAxis binsMultiplicity{"kfparticleConfigurations.binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
-    ConfigurableAxis bins3BodyRadius{"kfparticleConfigurations.bins3BodyRadius", {VARIABLE_WIDTH, 0.0f, 0.5f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f, 30.0f, 40.0f, 50.0f, 100.0f}, "Mixing bins - 3body radius"};
-    ConfigurableAxis bins3BodyPhi{"kfparticleConfigurations.bins3BodyPhi", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f, 120.0f, 130.0f, 140.0f, 150.0f, 160.0f, 170.0f, 180.0f, 190.0f, 200.0f, 210.0f, 220.0f, 230.0f, 240.0f, 250.0f, 260.0f, 270.0f, 280.0f, 290.0f, 300.0f, 310.0f, 320.0f, 330.0f, 340.0f, 350.0f, 360.0f}, "Mixing bins - 3body phi"};
-    ConfigurableAxis bins3BodyPosZ{"kfparticleConfigurations.bins3BodyPosZ", {VARIABLE_WIDTH, -500.0f, -200.0f, -100.0f, -70.0f, -60.0f, -50.0f, -40.0f, -35.0f, -30.0f, -25.0f, -20.0f, -15.0f, -13.0f, -10.0f, -8.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 13.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f, 60.0f, 70.0f, 100.0f, 200.0f, 500.0f}, "Mixing bins - 3body z position"};
+    // 3body mixing
+    Configurable<bool> mixDeuteron{"kfparticleConfigurations.mixDeuteron", true, "Mix V0 from one event with bachelor from another"};
+    Configurable<bool> mixProton{"kfparticleConfigurations.mixProton", false, "Mix pion and bachelor from one event with proton from another"};
+    Configurable<bool> applySVertexerV0Cuts{"kfparticleConfigurations.applySVertexerV0Cuts", false, "Apply virtual V0 cuts applied in SVertexer in case of proton mixing"};
+    ConfigurableAxis bins3BodyRadius{"kfparticleConfigurations.bins3BodyRadius", {VARIABLE_WIDTH, 0.0f, 0.5f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f, 6.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f, 30.0f, 1000.0}, "Mixing bins - 3body radius"};
+    // ConfigurableAxis bins3BodyPhi{"kfparticleConfigurations.bins3BodyPhi", {VARIABLE_WIDTH, -180.0f*TMath::Pi()/180, -170.0f*TMath::Pi()/180, -160.0f*TMath::Pi()/180, -150.0f*TMath::Pi()/180, -140.0f*TMath::Pi()/180, -130.0f*TMath::Pi()/180, -120.0f*TMath::Pi()/180, -110.0f*TMath::Pi()/180, -100.0f*TMath::Pi()/180, -90.0f*TMath::Pi()/180, -80.0f*TMath::Pi()/180, -70.0f*TMath::Pi()/180, -60.0f*TMath::Pi()/180, -50.0f*TMath::Pi()/180, -40.0f*TMath::Pi()/180, -30.0f*TMath::Pi()/180, -20.0f*TMath::Pi()/180, -10.0f*TMath::Pi()/180, 0.0f, 10.0f*TMath::Pi()/180, 20.0f*TMath::Pi()/180, 30.0f*TMath::Pi()/180, 40.0f*TMath::Pi()/180, 50.0f*TMath::Pi()/180, 60.0f*TMath::Pi()/180, 70.0f*TMath::Pi()/180, 80.0f*TMath::Pi()/180, 90.0f*TMath::Pi()/180, 100.0f*TMath::Pi()/180, 110.0f*TMath::Pi()/180, 120.0f*TMath::Pi()/180, 130.0f*TMath::Pi()/180, 140.0f*TMath::Pi()/180, 150.0f*TMath::Pi()/180, 160.0f*TMath::Pi()/180, 170.0f*TMath::Pi()/180, 180.0f*TMath::Pi()/180}, "Mixing bins - 3body phi"};
+    ConfigurableAxis bins3BodyPhi{"kfparticleConfigurations.bins3BodyPhi", {VARIABLE_WIDTH, -180.0f*TMath::Pi()/180, -160.0f*TMath::Pi()/180, -140.0f*TMath::Pi()/180, -120.0f*TMath::Pi()/180, -100.0f*TMath::Pi()/180, -80.0f*TMath::Pi()/180, -60.0f*TMath::Pi()/180, -40.0f*TMath::Pi()/180, -20.0f*TMath::Pi()/180, 0.0f, 20.0f*TMath::Pi()/180, 40.0f*TMath::Pi()/180, 60.0f*TMath::Pi()/180, 80.0f*TMath::Pi()/180, 100.0f*TMath::Pi()/180, 120.0f*TMath::Pi()/180, 140.0f*TMath::Pi()/180, 160.0f*TMath::Pi()/180, 180.0f*TMath::Pi()/180}, "Mixing bins - 3body phi"};
+    ConfigurableAxis bins3BodyPosZ{"kfparticleConfigurations.bins3BodyPosZ", {VARIABLE_WIDTH, -300.0f, -42.0f, -13.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 13.0f, 42.0f, 300.0f}, "Mixing bins - 3body z position"};
     Configurable<bool> selectVtxZ3bodyMixing{"kfparticleConfigurations.selectVtxZ3bodyMixing", true, "Select same VtxZ events in case of 3body mixing"};
     Configurable<float> VtxZBin3bodyMixing{"kfparticleConfigurations.VtxZBin3bodyMixing", 1., "Bin width for event vtx z position in case of 3body mixing"};
   } kfparticleConfigurations;
@@ -324,7 +329,8 @@ struct decay3bodyBuilder {
   using BinningTypeKF = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
 
   // 3body mixing
-  using Binning3Body = ColumnBinningPolicy<aod::reduceddecay3body::Radius, aod::reduceddecay3body::Phi, aod::reduceddecay3body::PosZ>;
+  // using Binning3Body = ColumnBinningPolicy<aod::reduceddecay3body::Radius, aod::reduceddecay3body::Phi, aod::reduceddecay3body::PosZ>;
+  using Binning3Body = ColumnBinningPolicy<aod::reduceddecay3body::Radius, aod::reduceddecay3body::Phi>;
 
   // Filters and slices
   Preslice<aod::Decay3Bodys> perCollision = o2::aod::decay3body::collisionId;
@@ -509,8 +515,18 @@ struct decay3bodyBuilder {
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(1, "total");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(2, "bach sign/ID");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(3, "not same collision");
-      h3bodyCombinationCounter->GetXaxis()->SetBinLabel(3, "collision VtxZ");
+      h3bodyCombinationCounter->GetXaxis()->SetBinLabel(4, "collision VtxZ");
       h3bodyCombinationCounter->LabelsOption("v");
+      // registry.add("QA/EM/h3bodyBinCounts", "h3bodyBinCounts", HistType::kTH3D, {{16, 0, 16, "bins radius"}, {36, 0, 36, "bins phi"}, {12, 0, 12, "bins pos Z"}});
+      registry.add("QA/EM/h3bodyBinCounts", "h3bodyBinCounts", HistType::kTH2D, {{16, 0, 16, "bins radius"}, {18, 0, 18, "bins phi"}});
+
+      AxisSpec radiusAxis = {kfparticleConfigurations.bins3BodyRadius, "Radius (cm)"};
+      AxisSpec phiAxis = {kfparticleConfigurations.bins3BodyPhi, "#phi (degree)"};
+      AxisSpec posZAxis = {kfparticleConfigurations.bins3BodyPosZ, "position in z (cm)"};
+
+      registry.add("QA/EM/hRadius", "hRadius", HistType::kTH1F, {radiusAxis});
+      registry.add("QA/EM/hPhi", "hPhi", HistType::kTH1F, {phiAxis});
+      registry.add("QA/EM/hPosZ", "hPosZ", HistType::kTH1F, {posZAxis});
     }
   }
 
@@ -998,11 +1014,6 @@ struct decay3bodyBuilder {
     gROOT->SetBatch(true);
     gRandom->SetSeed(42);
 
-    bool isEventMixing = false;
-    if (decay3bodyID == -1) {
-      isEventMixing = true;
-    }
-
     // initialise KF primary vertex
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
     KFParticle kfpv(kfpVertex);
@@ -1245,6 +1256,26 @@ struct decay3bodyBuilder {
       KFV0 = KFV0Mass;
     }
     registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxV0MassConst);
+
+    // apply virtual V0 cuts used in SVertexer in case of 3body mixing with proton track
+    if (kfparticleConfigurations.mixProton && kfparticleConfigurations.applySVertexerV0Cuts) {
+      // V0 radius
+      if (std::sqrt(KFV0.GetX()*KFV0.GetX() + KFV0.GetY()*KFV0.GetY()) <= 0.5) {
+        return;
+      }
+      // pT
+      if (KFV0.GetPt() <= 0.01) {
+        return;
+      }
+      // pz/pT
+      if (KFV0.GetPz()/KFV0.GetPt() >= 2) {
+        return;
+      }
+      // cos(PA)
+      if (cpaXYFromKF(KFV0, kfpv) <= 0.9 || cpaFromKF(KFV0, kfpv) <= 0.8) {
+        return;
+      }
+    }
 
     // -------- STEP 3: fit three body vertex --------
     // Create KFParticle object from deuteron track
@@ -1828,10 +1859,86 @@ struct decay3bodyBuilder {
 
   void processRun3withKFParticleReduced3bodyMixing(ReducedCollisionsMults const& collisions, aod::RedIUTracks const&, soa::Join<aod::RedDecay3Bodys, aod::Red3BodyInfo> const& decay3bodys)
   {
-    Binning3Body binningOnRadPhiPosZ{{kfparticleConfigurations.bins3BodyRadius, kfparticleConfigurations.bins3BodyPhi, kfparticleConfigurations.bins3BodyPosZ}, true};
+    for (const auto& collision : collisions) {
+      initCCDBfromRunNumber(collision.runNumber());
+    }
+
+    // Define a 3D array to count 3bodies per bin (radius, phi, posZ)
+    // std::vector<std::vector<std::vector<int>>> bin3bodyCounts(16, std::vector<std::vector<int>>(36, std::vector<int>(12, 0)));
+    std::vector<std::vector<int>> bin3bodyCounts(16, std::vector<int>(36, 0));
+
+    // Function to find bin index (returns -1 if out of range)
+    auto findBin = [](float value, const std::vector<float>& binEdges) -> int {
+      for (size_t i = 0; i < binEdges.size() - 1; ++i) {
+          if (value > binEdges[i] && value <= binEdges[i + 1]) {
+              return i;
+          }
+      }
+      return -1; // Out of range
+    };
+
+    int counter = 0;
+    // Loop over all collisions to count them in bins
+    for (auto& decay3body : decay3bodys) {
+      counter++;
+      float radius = decay3body.radius();
+      float phi = decay3body.phi();
+      float posZ = decay3body.posz();
+
+      registry.fill(HIST("QA/EM/hRadius"), radius);
+      registry.fill(HIST("QA/EM/hPhi"), phi);
+      registry.fill(HIST("QA/EM/hPosZ"), posZ);
+
+      // float degToRad = TMath::Pi()/180;
+
+      // Determine bin indices
+      int radiusBin = findBin(radius, {0.0f, 0.5f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f, 6.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f, 30.0f, 1000.0});
+      int phiBin = findBin(phi, {-180.0f*TMath::Pi()/180, -160.0f*TMath::Pi()/180, -140.0f*TMath::Pi()/180, -120.0f*TMath::Pi()/180, -100.0f*TMath::Pi()/180, -80.0f*TMath::Pi()/180, -60.0f*TMath::Pi()/180, -40.0f*TMath::Pi()/180, -20.0f*TMath::Pi()/180, 0.0f, 20.0f*TMath::Pi()/180, 40.0f*TMath::Pi()/180, 60.0f*TMath::Pi()/180, 80.0f*TMath::Pi()/180, 100.0f*TMath::Pi()/180, 120.0f*TMath::Pi()/180, 140.0f*TMath::Pi()/180, 160.0f*TMath::Pi()/180, 180.0f*TMath::Pi()/180});
+      // int phiBin = findBin(phi, {-180.0f*TMath::Pi()/180, -170.0f*TMath::Pi()/180, -160.0f*TMath::Pi()/180, -150.0f*TMath::Pi()/180, -140.0f*TMath::Pi()/180, -130.0f*TMath::Pi()/180, -120.0f*TMath::Pi()/180, -110.0f*TMath::Pi()/180, -100.0f*TMath::Pi()/180, -90.0f*TMath::Pi()/180, -80.0f*TMath::Pi()/180, -70.0f*TMath::Pi()/180, -60.0f*TMath::Pi()/180, -50.0f*TMath::Pi()/180, -40.0f*TMath::Pi()/180, -30.0f*TMath::Pi()/180, -20.0f*TMath::Pi()/180, -10.0f*TMath::Pi()/180, 0.0f, 10.0f*TMath::Pi()/180, 20.0f*TMath::Pi()/180, 30.0f*TMath::Pi()/180, 40.0f*TMath::Pi()/180, 50.0f*TMath::Pi()/180, 60.0f*TMath::Pi()/180, 70.0f*TMath::Pi()/180, 80.0f*TMath::Pi()/180, 90.0f*TMath::Pi()/180, 100.0f*TMath::Pi()/180, 110.0f*TMath::Pi()/180, 120.0f*TMath::Pi()/180, 130.0f*TMath::Pi()/180, 140.0f*TMath::Pi()/180, 150.0f*TMath::Pi()/180, 160.0f*TMath::Pi()/180, 170.0f*TMath::Pi()/180, 180.0f*TMath::Pi()/180});
+      // int posZBin = findBin(posZ, {-300.0f, -42.0f, -13.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 13.0f, 42.0f, 300.0f});
+      if (radiusBin >= 0 && phiBin >= 0) { // && posZBin >= 0) {
+        bin3bodyCounts[radiusBin][phiBin]++; //[posZBin]++;
+      }
+    }
+    LOG(info) << "3body counter: " << counter;
+    // // Print out the number of 3-body decays per bin
+    // LOG(info) << "3body count per bin (radius, phi, posZ):";
+    // for (size_t i = 0; i < bin3bodyCounts.size(); ++i) {
+    //   for (size_t j = 0; j < bin3bodyCounts[i].size(); ++j) {
+    //     for (size_t k = 0; k < bin3bodyCounts[i][j].size(); ++k) {
+    //       LOG(info) << "Bin (" << i << ", " << j << ", " << k << "): " << bin3bodyCounts[i][j][k] << " 3bodies";
+    //     }
+    //   }
+    // }
+    // // Fill 3D histogram with numbers per bin
+    // for (size_t i = 0; i < bin3bodyCounts.size(); ++i) {
+    //   for (size_t j = 0; j < bin3bodyCounts[i].size(); ++j) {
+    //     for (size_t k = 0; k < bin3bodyCounts[i][j].size(); ++k) {
+    //       registry.fill(HIST("QA/EM/h3bodyBinCounts"), i, j, k, bin3bodyCounts[i][j][k]);
+    //     }
+    //   }
+    // }
+    // LOG(info) << "Integral of h3bodyBinCounts: " << registry.get<TH3>(HIST("QA/EM/h3bodyBinCounts"))->Integral();
+    // Print out the number of 3-body decays per bin
+    LOG(info) << "3body count per bin (radius, phi, posZ):";
+    for (size_t i = 0; i < bin3bodyCounts.size(); ++i) {
+      for (size_t j = 0; j < bin3bodyCounts[i].size(); ++j) {
+        LOG(info) << "Bin (" << i << ", " << j << "): " << bin3bodyCounts[i][j] << " 3bodies";
+      }
+    }
+    // Fill 3D histogram with numbers per bin
+    for (size_t i = 0; i < bin3bodyCounts.size(); ++i) {
+      for (size_t j = 0; j < bin3bodyCounts[i].size(); ++j) {
+        registry.fill(HIST("QA/EM/h3bodyBinCounts"), i, j, bin3bodyCounts[i][j]);
+      }
+    }
+    LOG(info) << "Integral of h3bodyBinCounts: " << registry.get<TH2>(HIST("QA/EM/h3bodyBinCounts"))->Integral();
+
+    // Binning3Body binningOnRadPhiPosZ{{kfparticleConfigurations.bins3BodyRadius, kfparticleConfigurations.bins3BodyPhi, kfparticleConfigurations.bins3BodyPosZ}, true};
+    Binning3Body binningOnRadPhi{{kfparticleConfigurations.bins3BodyRadius, kfparticleConfigurations.bins3BodyPhi}, true};
 
     // Strictly upper index policy for decay3body objects binned by radius, phi and z position
-    for (auto& [decay3body1, decay3body2] : selfCombinations(binningOnRadPhiPosZ, kfparticleConfigurations.nEvtMixing, -1, decay3bodys, decay3bodys)) {
+    for (auto& [decay3body1, decay3body2] : selfPairCombinations(binningOnRadPhi, kfparticleConfigurations.nEvtMixing, -1, decay3bodys)) {
       auto trackPos1 = decay3body1.template track0_as<aod::RedIUTracks>();
       auto trackNeg1 = decay3body1.template track1_as<aod::RedIUTracks>();
       auto trackBach1 = decay3body1.template track2_as<aod::RedIUTracks>();
@@ -1860,7 +1967,19 @@ struct decay3bodyBuilder {
       registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 3.5);
 
       // ---------- do candidate analysis ----------
-      buildVtx3BodyDataTableKFParticle(collision1, trackPos1, trackNeg1, trackBach2, -1 /*vtx3bodyID*/, bachelorcharge, trackBach2.tofNSigmaDe());
+      bool isMatter1 = false;
+      if (trackBach1.sign() > 0) {
+        isMatter1 = true;
+      }
+      if (kfparticleConfigurations.mixDeuteron == true) {
+        buildVtx3BodyDataTableKFParticle(collision1, trackPos1, trackNeg1, trackBach2, -1 /*vtx3bodyID*/, bachelorcharge, trackBach2.tofNSigmaDe());
+      } else if (kfparticleConfigurations.mixProton == true) {
+        if (isMatter1 == true) {
+          buildVtx3BodyDataTableKFParticle(collision1, trackPos2, trackNeg1, trackBach1, -1 /*vtx3bodyID*/, bachelorcharge, trackBach1.tofNSigmaDe());
+        } else if (isMatter1 == false) {
+          buildVtx3BodyDataTableKFParticle(collision1, trackPos1, trackNeg2, trackBach1, -1 /*vtx3bodyID*/, bachelorcharge, trackBach1.tofNSigmaDe());
+        }
+      }
     } // end decay3body combinations loop
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3withKFParticleReduced3bodyMixing, "Produce KFParticle mixed decay3body tables from derived decay3body data", false);
@@ -1923,7 +2042,7 @@ struct kfdecay3bodyDataLinkBuilder {
       kfvtxdataLink(lIndices[ii]);
     }
   }
-
+  
   void processStandard(aod::Decay3Bodys const& decay3bodytable, aod::KFVtx3BodyDatas const& vtxdatatable)
   {
     buildDataLink(decay3bodytable, vtxdatatable); // build Decay3Body -> KFDecay3BodyData link table
