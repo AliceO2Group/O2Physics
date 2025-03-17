@@ -16,6 +16,7 @@
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <string>
 #include <vector>
 
@@ -53,6 +54,8 @@ static const float cutsTable[NPart][NCuts]{
 } // namespace
 
 struct FemtoUniversePairTaskTrackTrackExtended {
+  Service<o2::framework::O2DatabasePDG> pdgMC;
+
   /// Particle selection part
 
   /// Table for both particles
@@ -97,7 +100,6 @@ struct FemtoUniversePairTaskTrackTrackExtended {
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsOneMCTruth =
     aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
-    aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(trackonefilter.confPDGCodePartOne) &&
     aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 &&
     aod::femtouniverseparticle::pt > trackonefilter.confPtLowPart1;
 
@@ -122,7 +124,6 @@ struct FemtoUniversePairTaskTrackTrackExtended {
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsTwoMCTruth =
     aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
-    aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(tracktwofilter.confPDGCodePartTwo) &&
     aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 &&
     aod::femtouniverseparticle::pt > tracktwofilter.confPtLowPart2;
 
@@ -177,7 +178,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   HistogramRegistry mixQaRegistry{"mixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   EfficiencyConfigurableGroup effConfGroup;
-  EfficiencyCalculator efficiencyCalculator{&effConfGroup};
+  EfficiencyCalculator<TH1> efficiencyCalculator{&effConfGroup};
 
   /// @brief Counter for particle swapping
   int fNeventsProcessed = 0;
@@ -313,9 +314,15 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     return false;
   }
 
+  /// @returns 1 if positive, -1 if negative, 0 if zero
+  auto sign(auto number) -> int8_t
+  {
+    return (number > 0) - (number < 0);
+  }
+
   void init(InitContext&)
   {
-    if (effConfGroup.confEfficiencyDoMCTruth) {
+    if (twotracksconfigs.confIsMC) {
       hMCTruth1.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, trackonefilter.confPDGCodePartOne, false);
       if (!confIsSame) {
         hMCTruth2.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, tracktwofilter.confPDGCodePartTwo, false);
@@ -351,6 +358,38 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   {
     mixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multNtr()}));
     eventHisto.fillQA(col);
+  }
+
+  template <uint8_t N>
+    requires isOneOrTwo<N>
+  auto doMCTruth(FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, N> hist, auto parts) -> void
+  {
+    auto expectedPDG = 0;
+    auto expectedCharge = 0.0l;
+
+    if constexpr (N == ParticleNo::ONE) {
+      expectedPDG = trackonefilter.confPDGCodePartOne;
+      expectedCharge = trackonefilter.confChargePart1;
+    } else if constexpr (N == ParticleNo::TWO) {
+      expectedPDG = tracktwofilter.confPDGCodePartTwo;
+      expectedCharge = tracktwofilter.confChargePart2;
+    }
+
+    for (const auto& particle : parts) {
+      auto pdgCode = static_cast<int>(particle.pidCut());
+      if (pdgCode != expectedPDG) {
+        continue;
+      }
+
+      const auto& pdgParticle = pdgMC->GetParticle(pdgCode);
+      if (!pdgParticle) {
+        continue;
+      }
+
+      if (sign(pdgParticle->Charge()) == sign(expectedCharge)) {
+        hist.template fillQA<false, false>(particle);
+      }
+    }
   }
 
   /// This function processes the same event and takes care of all the histogramming
@@ -466,9 +505,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           continue;
         }
 
-        float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1);
+        float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1.pt());
         if (!confIsSame) {
-          weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2);
+          weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2.pt());
         }
 
         if (swpart)
@@ -527,9 +566,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           continue;
         }
 
-        float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1);
+        float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1.pt());
         if (!confIsSame) {
-          weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2);
+          weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2.pt());
         }
 
         sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
@@ -563,11 +602,11 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     fillCollision(col);
 
     auto groupMCTruth1 = partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    efficiencyCalculator.doMCTruth<1>(hMCTruth1, groupMCTruth1);
+    doMCTruth<1>(hMCTruth1, groupMCTruth1);
 
     if (!confIsSame) {
       auto groupMCTruth2 = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      efficiencyCalculator.doMCTruth<2>(hMCTruth2, groupMCTruth2);
+      doMCTruth<2>(hMCTruth2, groupMCTruth2);
     }
 
     auto groupMCReco1 = partsOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -635,9 +674,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         }
       }
 
-      float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1);
+      float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1.pt());
       if (!confIsSame) {
-        weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2);
+        weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2.pt());
       }
 
       if (swpart)

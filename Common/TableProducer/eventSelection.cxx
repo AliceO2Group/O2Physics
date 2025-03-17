@@ -59,15 +59,17 @@ struct BcSelectionTask {
   Produces<aod::BcSels> bcsel;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to 294 for apass2/apass3 in LHC22o-t"};                                                         // o2-linter: disable=name/configurable
-  Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"}; // o2-linter: disable=name/configurable
-  Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};       // o2-linter: disable=name/configurable
-  Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"}; // o2-linter: disable=name/configurable
-  Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};       // o2-linter: disable=name/configurable
-  Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};                           // o2-linter: disable=name/configurable
+  Configurable<int> confTriggerBcShift{"triggerBcShift", 0, "set either custom shift or 999 for apass2/apass3 in LHC22o-t"};                                       // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};       // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};       // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};                           // o2-linter: disable=name/configurable (temporary fix)
   Configurable<std::vector<int>> maxInactiveChipsPerLayer{"maxInactiveChipsPerLayer", {8, 8, 8, 111, 111, 195, 195}, "Maximum allowed number of inactive ITS chips per layer"};
 
   int lastRun = -1;
+  int64_t lastTF = -1;
+  uint32_t lastRCT = 0;
   uint64_t sorTimestamp = 0;             // default SOR timestamp
   uint64_t eorTimestamp = 1;             // default EOR timestamp
   int64_t bcSOR = -1;                    // global bc of the start of run
@@ -262,7 +264,7 @@ struct BcSelectionTask {
 
     int run = bcs.iteratorAt(0).runNumber();
 
-    if (run != lastRun && run >= 500000) {
+    if (run != lastRun) {
       lastRun = run;
       auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
       // first bc of the first orbit
@@ -339,13 +341,19 @@ struct BcSelectionTask {
     }
 
     // bc loop
-    for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop
+    for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop (use bc as nonconst iterator)
       // store rct flags
-      auto itrct = mapRCT->upper_bound(bc.timestamp());
-      if (itrct != mapRCT->begin())
-        itrct--;
-      uint32_t rct = itrct->second;
-      LOGP(debug, "sor={} eor={} ts={} rct={}", sorTimestamp, eorTimestamp, bc.timestamp(), rct);
+      uint32_t rct = lastRCT;
+      int64_t thisTF = (bc.globalBC() - bcSOR) / nBCsPerTF;
+      if (mapRCT != nullptr && thisTF != lastTF) { // skip for unanchored runs; do it once per TF
+        auto itrct = mapRCT->upper_bound(bc.timestamp());
+        if (itrct != mapRCT->begin())
+          itrct--;
+        rct = itrct->second;
+        LOGP(debug, "sor={} eor={} ts={} rct={}", sorTimestamp, eorTimestamp, bc.timestamp(), rct);
+        lastRCT = rct;
+        lastTF = thisTF;
+      }
 
       uint32_t alias{0};
       // workaround for pp2022 (trigger info is shifted by -294 bcs)
@@ -542,15 +550,14 @@ struct EventSelectionTask {
   Configurable<int> confSigmaBCforHighPtTracks{"confSigmaBCforHighPtTracks", 4, "Custom sigma (in bcs) for collisions with high-pt tracks"};
 
   // configurables for occupancy-based event selection
-  Configurable<float> confTimeIntervalForOccupancyCalculationMin{"TimeIntervalForOccupancyCalculationMin", -40, "Min time diff window for TPC occupancy calculation, us"};                      // o2-linter: disable=name/configurable
-  Configurable<float> confTimeIntervalForOccupancyCalculationMax{"TimeIntervalForOccupancyCalculationMax", 100, "Max time diff window for TPC occupancy calculation, us"};                      // o2-linter: disable=name/configurable
-  Configurable<float> confTimeRangeVetoOnCollStandard{"TimeRangeVetoOnCollStandard", 10.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};                            // o2-linter: disable=name/configurable
-  Configurable<float> confTimeRangeVetoOnCollNarrow{"TimeRangeVetoOnCollNarrow", 2.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};                                 // o2-linter: disable=name/configurable
-  Configurable<int> confFT0CamplCutVetoOnCollInTimeRange{"FT0CamplPerCollCutVetoOnCollInTimeRange", 8000, "Max allowed FT0C amplitude for each nearby collision in +/- time range"};            // o2-linter: disable=name/configurable
-  Configurable<float> confEpsilonDistanceForVzDependentVetoTPC{"EpsilonDistanceForVzDependentVetoTPC", 2.5, "Epsilon for vZ-dependent veto on drifting TPC tracks from nearby collisions, cm"}; // o2-linter: disable=name/configurable
-  Configurable<float> confFT0CamplCutVetoOnCollInROF{"FT0CamplPerCollCutVetoOnCollInROF", 5000, "Max allowed FT0C amplitude for each nearby collision inside this ITS ROF"};                    // o2-linter: disable=name/configurable
-  Configurable<float> confEpsilonVzDiffVetoInROF{"EpsilonVzDiffVetoInROF", 0.3, "Minumum distance to nearby collisions along z inside this ITS ROF, cm"};                                       // o2-linter: disable=name/configurable
-  Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};                                 // o2-linter: disable=name/configurable
+  Configurable<float> confTimeIntervalForOccupancyCalculationMin{"TimeIntervalForOccupancyCalculationMin", -40, "Min time diff window for TPC occupancy calculation, us"};           // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confTimeIntervalForOccupancyCalculationMax{"TimeIntervalForOccupancyCalculationMax", 100, "Max time diff window for TPC occupancy calculation, us"};           // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confTimeRangeVetoOnCollStandard{"TimeRangeVetoOnCollStandard", 10.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};                 // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confTimeRangeVetoOnCollNarrow{"TimeRangeVetoOnCollNarrow", 2.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};                      // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<int> confFT0CamplCutVetoOnCollInTimeRange{"FT0CamplPerCollCutVetoOnCollInTimeRange", 8000, "Max allowed FT0C amplitude for each nearby collision in +/- time range"}; // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confFT0CamplCutVetoOnCollInROF{"FT0CamplPerCollCutVetoOnCollInROF", 5000, "Max allowed FT0C amplitude for each nearby collision inside this ITS ROF"};         // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confEpsilonVzDiffVetoInROF{"EpsilonVzDiffVetoInROF", 0.3, "Minumum distance to nearby collisions along z inside this ITS ROF, cm"};                            // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};                      // o2-linter: disable=name/configurable (temporary fix)
 
   Partition<FullTracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
 
@@ -726,7 +733,7 @@ struct EventSelectionTask {
       }
     }
 
-    evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0, 0, 0);
+    evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0, 0);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
@@ -780,9 +787,8 @@ struct EventSelectionTask {
         int32_t foundFV0 = bc.foundFV0Id();
         int32_t foundFDD = bc.foundFDDId();
         int32_t foundZDC = bc.foundZDCId();
-        int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
         uint32_t rct = 0;
-        evsel(bc.alias_raw(), bc.selection_raw(), rct, kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF, -1, -1);
+        evsel(bc.alias_raw(), bc.selection_raw(), rct, kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, -1, -1);
       }
       return;
     }
@@ -1041,10 +1047,9 @@ struct EventSelectionTask {
     std::vector<int> vNumTracksITS567inFullTimeWin(cols.size(), 0); // counter of tracks in full time window for occupancy studies (excluding given event)
     std::vector<float> vSumAmpFT0CinFullTimeWin(cols.size(), 0);    // sum of FT0C of tracks in full time window for occupancy studies (excluding given event)
 
-    std::vector<bool> vNoCollInTimeRangeStrict(cols.size(), 0);      // no collisions in a specified time range
-    std::vector<bool> vNoCollInTimeRangeNarrow(cols.size(), 0);      // no collisions in a specified time range (narrow)
-    std::vector<bool> vNoHighMultCollInTimeRange(cols.size(), 0);    // no high-mult collisions in a specified time range
-    std::vector<bool> vNoCollInVzDependentTimeRange(cols.size(), 0); // no collisions in a vZ-dependent time range
+    std::vector<bool> vNoCollInTimeRangeStrict(cols.size(), 0);   // no collisions in a specified time range
+    std::vector<bool> vNoCollInTimeRangeNarrow(cols.size(), 0);   // no collisions in a specified time range (narrow)
+    std::vector<bool> vNoHighMultCollInTimeRange(cols.size(), 0); // no high-mult collisions in a specified time range
 
     std::vector<bool> vNoCollInSameRofStrict(cols.size(), 0);      // to veto events with other collisions in the same ITS ROF
     std::vector<bool> vNoCollInSameRofStandard(cols.size(), 0);    // to veto events with other collisions in the same ITS ROF, with per-collision multiplicity above threshold
@@ -1097,7 +1102,6 @@ struct EventSelectionTask {
       int nITS567tracksForVetoNarrow = 0;      // to veto events with nearby collisions (narrower range)
       int nITS567tracksForVetoStrict = 0;      // to veto events with nearby collisions
       int nCollsWithFT0CAboveVetoStandard = 0; // to veto events with per-collision multiplicity above threshold
-      int nITS567tracksForVetoVzDependent = 0; // to veto events with nearby collisions, vZ-dependent time cut
       for (uint32_t iCol = 0; iCol < vAssocToThisCol.size(); iCol++) {
         int thisColIndex = vAssocToThisCol[iCol];
         float dt = vCollsTimeDeltaWrtGivenColl[iCol] / 1e3; // ns -> us
@@ -1137,21 +1141,6 @@ struct EventSelectionTask {
           if (vAmpFT0CperColl[thisColIndex] > confFT0CamplCutVetoOnCollInTimeRange)
             nCollsWithFT0CAboveVetoStandard++;
         }
-
-        // vZ-dependent time cut to avoid collinear tracks from other collisions (experimental)
-        if (std::fabs(dt) < 8 + std::fabs(vZ) / driftV) {
-          if (dt < 0) {
-            // check distance between given vZ and (moving in two directions) vZ of drifting tracks from past collisions
-            if ((std::fabs(vCollVz[thisColIndex] - std::fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC) ||
-                (std::fabs(vCollVz[thisColIndex] + std::fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC))
-              nITS567tracksForVetoVzDependent += vTracksITS567perColl[thisColIndex];
-          } else { // dt>0
-            // check distance between drifted vZ of given collision (in two directions) and vZ of future collisions
-            if ((std::fabs(vZ - dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC) ||
-                (std::fabs(vZ + dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC))
-              nITS567tracksForVetoVzDependent += vTracksITS567perColl[thisColIndex];
-          }
-        }
       }
       vNumTracksITS567inFullTimeWin[colIndex] = nITS567tracksInFullTimeWindow; // occupancy by a sum of number of ITS tracks (without a current collision)
       vSumAmpFT0CinFullTimeWin[colIndex] = sumAmpFT0CInFullTimeWindow;         // occupancy by a sum of FT0C amplitudes (without a current collision)
@@ -1159,7 +1148,6 @@ struct EventSelectionTask {
       vNoCollInTimeRangeNarrow[colIndex] = (nITS567tracksForVetoNarrow == 0);
       vNoCollInTimeRangeStrict[colIndex] = (nITS567tracksForVetoStrict == 0);
       vNoHighMultCollInTimeRange[colIndex] = (nCollsWithFT0CAboveVetoStandard == 0);
-      vNoCollInVzDependentTimeRange[colIndex] = (nITS567tracksForVetoVzDependent == 0); // experimental
     }
 
     for (const auto& col : cols) {
@@ -1189,7 +1177,6 @@ struct EventSelectionTask {
       selection |= vNoCollInTimeRangeNarrow[colIndex] ? BIT(kNoCollInTimeRangeNarrow) : 0;
       selection |= vNoCollInTimeRangeStrict[colIndex] ? BIT(kNoCollInTimeRangeStrict) : 0;
       selection |= vNoHighMultCollInTimeRange[colIndex] ? BIT(kNoCollInTimeRangeStandard) : 0;
-      selection |= vNoCollInVzDependentTimeRange[colIndex] ? BIT(kNoCollInTimeRangeVzDependent) : 0;
 
       // selection bits based on ITS in-ROF occupancy
       selection |= vNoCollInSameRofStrict[colIndex] ? BIT(kNoCollInRofStrict) : 0;
@@ -1216,9 +1203,7 @@ struct EventSelectionTask {
         histos.get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
       }
 
-      int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
-
-      evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF,
+      evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC,
             vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
     }
   }

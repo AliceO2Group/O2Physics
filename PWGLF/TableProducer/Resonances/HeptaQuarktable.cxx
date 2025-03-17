@@ -107,8 +107,8 @@ struct heptaquarktable {
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPt);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr>>;
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0Cs>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>>;
 
   HistogramRegistry histos{
     "histos",
@@ -124,9 +124,11 @@ struct heptaquarktable {
   double massPi = o2::constants::physics::MassPionCharged;
   double massKa = o2::constants::physics::MassKPlus;
 
+  float centrality;
+
   void init(o2::framework::InitContext&)
   {
-    histos.add("hEventstat", "", {HistType::kTH1F, {{2, 0, 2}}});
+    histos.add("hEventstat", "", {HistType::kTH1F, {{3, 0, 3}}});
   }
 
   template <typename T>
@@ -230,6 +232,7 @@ struct heptaquarktable {
     int numberLambda = 0;
     auto currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    centrality = collision.centFT0M();
 
     std::vector<int> HQId = {};
 
@@ -242,10 +245,18 @@ struct heptaquarktable {
     std::vector<float> HQd1TPC = {};
     std::vector<float> HQd2TPC = {};
 
+    std::vector<int> HQd1TOFHit = {};
+    std::vector<int> HQd2TOFHit = {};
+
+    std::vector<float> HQd1TOF = {};
+    std::vector<float> HQd2TOF = {};
+
     std::vector<ROOT::Math::PtEtaPhiMVector> hqresonance, hqresonanced1, hqresonanced2;
 
+    histos.fill(HIST("hEventstat"), 0.5);
     if (!(collision.sel8() && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)))
       return;
+    histos.fill(HIST("hEventstat"), 1.5);
 
     auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -308,6 +319,26 @@ struct heptaquarktable {
 
         HQd1TPC.push_back(track1.tpcNSigmaKa());
         HQd2TPC.push_back(track2.tpcNSigmaKa());
+
+        auto d1TOFHit = -1;
+        auto d2TOFHit = -1;
+        auto d1TOF = -999.0;
+        auto d2TOF = -999.0;
+
+        if (track1.hasTOF()) {
+          d1TOFHit = 1;
+          d1TOF = track1.tofNSigmaKa();
+        }
+        if (track2.hasTOF()) {
+          d2TOFHit = 1;
+          d2TOF = track2.tofNSigmaKa();
+        }
+
+        HQd1TOFHit.push_back(d1TOFHit);
+        HQd2TOFHit.push_back(d2TOFHit);
+
+        HQd1TOF.push_back(d1TOF);
+        HQd2TOF.push_back(d2TOF);
       }
     }
     for (auto& v0 : V0s) {
@@ -363,19 +394,42 @@ struct heptaquarktable {
       HQd1Charge.push_back(postrack_v0.sign());
       HQd2Charge.push_back(negtrack_v0.sign());
 
-      HQd1TPC.push_back(postrack_v0.tpcNSigmaKa());
-      HQd2TPC.push_back(negtrack_v0.tpcNSigmaKa());
+      if (LambdaTag) {
+        HQd1TPC.push_back(postrack_v0.tpcNSigmaPr());
+        HQd2TPC.push_back(negtrack_v0.tpcNSigmaPi());
+      } else if (aLambdaTag) {
+        HQd1TPC.push_back(postrack_v0.tpcNSigmaPi());
+        HQd2TPC.push_back(negtrack_v0.tpcNSigmaPr());
+      }
+
+      auto d1TOFHit = -1;
+      auto d2TOFHit = -1;
+      auto d1TOF = -999.0;
+      auto d2TOF = -999.0;
+
+      if (postrack_v0.hasTOF()) {
+        d1TOFHit = 1;
+        d1TOF = postrack_v0.tofNSigmaPr();
+      }
+      if (negtrack_v0.hasTOF()) {
+        d2TOFHit = 1;
+        d2TOF = negtrack_v0.tofNSigmaPr();
+      } ////// TOF with PV assumption to be corrected
+      HQd1TOFHit.push_back(d1TOFHit);
+      HQd2TOFHit.push_back(d2TOFHit);
+
+      HQd1TOF.push_back(d1TOF);
+      HQd2TOF.push_back(d2TOF);
     } // select collision
     if (numberPhi < 2 || numberLambda < 1)
       return;
 
     keepEventDoubleHQ = true;
 
-    histos.fill(HIST("hEventstat"), 0.5);
     if (keepEventDoubleHQ && numberPhi > 1 && numberLambda > 0 && (hqresonance.size() == hqresonanced1.size()) && (hqresonance.size() == hqresonanced2.size())) {
-      histos.fill(HIST("hEventstat"), 1.5);
+      histos.fill(HIST("hEventstat"), 2.5);
       /////////// Fill collision table///////////////
-      redHQEvents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), numberPhi, numberLambda);
+      redHQEvents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), centrality, numberPhi, numberLambda);
       auto indexEvent = redHQEvents.lastIndex();
       //// Fill track table for HQ//////////////////
       for (auto if1 = hqresonance.begin(); if1 != hqresonance.end(); ++if1) {
@@ -387,8 +441,8 @@ struct heptaquarktable {
                 HQd1dummy.Px(), HQd1dummy.Py(), HQd1dummy.Pz(), HQd2dummy.Px(), HQd2dummy.Py(), HQd2dummy.Pz(),
                 HQVectorDummy.M(),
                 HQd1Index.at(i5), HQd2Index.at(i5),
-                HQd1Charge.at(i5), HQd2Charge.at(i5),
-                HQd1TPC.at(i5), HQd2TPC.at(i5));
+                HQd1Charge.at(i5), HQd2Charge.at(i5), HQd1TPC.at(i5), HQd2TPC.at(i5),
+                HQd1TOFHit.at(i5), HQd2TOFHit.at(i5), HQd1TOF.at(i5), HQd2TOF.at(i5));
       }
     }
   } // process

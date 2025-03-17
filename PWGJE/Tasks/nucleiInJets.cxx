@@ -22,6 +22,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -31,6 +32,10 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonConstants/PhysicsConstants.h"
+
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+
 #include "ReconstructionDataFormats/Track.h"
 
 #include "PWGLF/DataModel/LFParticleIdentification.h"
@@ -38,6 +43,7 @@
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedDataSelector.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -140,6 +146,9 @@ struct nucleiInJets {
 
   ConfigurableAxis binsPtZHe{"binsPtZHe", {VARIABLE_WIDTH, 0.5, 0.625, 0.75, 0.875, 1.0, 1.125, 1.25, 1.375, 1.5, 1.625, 1.75, 1.875, 2.0, 2.25, 2.5, 3.0, 3.5, 4.0}, ""};
 
+  Configurable<bool> applySkim{"applySkim", false, "Apply skimming"};
+  Configurable<std::string> cfgSkim{"cfgSkim", "fHighFt0Mult", "Configurable for skimming"};
+
   static constexpr float gMassProton = 0.93827208f;
   static constexpr float gMassDeuteron = 1.87561f;
   static constexpr float gMassTriton = 2.80892f;
@@ -170,6 +179,11 @@ struct nucleiInJets {
   SliceCache cache;
   HistogramRegistry jetHist{"jetHist", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   void init(o2::framework::InitContext&)
   {
     const AxisSpec PtAxis = {100, 0, 10.0};
@@ -187,6 +201,15 @@ struct nucleiInJets {
     const AxisSpec massDeAxis{binsMassDe, ""};
     const AxisSpec massTrAxis{binsMassTr, ""};
     const AxisSpec massHeAxis{binsMassHe, ""};
+
+    if (applySkim) {
+      jetHist.add("hNEvents", "hNEvents", {HistType::kTH1D, {{6, 0.f, 6.f}}});
+      jetHist.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
+      jetHist.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "Skimmed");
+      jetHist.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "|Vz|<10");
+      jetHist.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "Sel8+|Vz|<10");
+      jetHist.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "nJets>0");
+    }
 
     // jet property
     jetHist.add("jet/h1JetPt", "jet_{p_{T}}", kTH1F, {PtJetAxis});
@@ -508,6 +531,14 @@ struct nucleiInJets {
     }
   }
 
+  template <typename BCType>
+  void initCCDB(const BCType& bc)
+  {
+    if (applySkim) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgSkim.value);
+      zorro.populateHistRegistry(jetHist, bc.runNumber());
+    }
+  }
   std::array<float, 2> getPerpendicuarPhi(float jetPhi)
   {
     std::array<float, 2> PerpendicularConeAxisPhi = {-999.0f, -999.0f};
@@ -932,13 +963,28 @@ struct nucleiInJets {
     ////////////////////////////////////////
   }
 
-  void processJetTracksData(aod::JetCollision const& collision, chargedJetstrack const& chargedjets, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
+  void processJetTracksData(soa::Join<aod::JetCollisions, aod::JCollisionBCs>::iterator const& collision, chargedJetstrack const& chargedjets, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&,
+                            TrackCandidatesLfPid const&, aod::JBCs const&)
   {
+    auto bc = collision.bc_as<aod::JBCs>();
+    initCCDB(bc);
+
+    if (applySkim) {
+      jetHist.fill(HIST("hNEvents"), 0.5);
+      bool zorroSelected = zorro.isSelected(bc.globalBC());
+      if (!zorroSelected) {
+        return;
+      }
+      jetHist.fill(HIST("hNEvents"), 1.5);
+    }
 
     if (fabs(collision.posZ()) > 10)
       return;
+
+    jetHist.fill(HIST("hNEvents"), 2.5);
     if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel8")))
       return;
+    jetHist.fill(HIST("hNEvents"), 3.5);
 
     int nJets = 0;
     std::vector<float> leadingJetWithPtEtaPhi(3);
@@ -959,13 +1005,16 @@ struct nucleiInJets {
     jetHist.fill(HIST("jet/nJetsPerEvent"), nJets);
     jetHist.fill(HIST("vertexZ"), collision.posZ());
 
-    if (nJets > 0)
+    if (nJets > 0) {
       jetHist.fill(HIST("jet/vertexZ"), collision.posZ());
-    else
+      jetHist.fill(HIST("hNEvents"), 4.5);
+    } else {
       jetHist.fill(HIST("jetOut/vertexZ"), collision.posZ());
+    }
 
     if (isWithJetEvents && nJets == 0)
       return;
+
     jetHist.fill(HIST("jet/h1JetEvents"), 0.5);
 
     for (auto& track : tracks) {
@@ -1299,7 +1348,7 @@ struct nucleiInJets {
   } // process
 
   PROCESS_SWITCH(nucleiInJets, processJetTracksData, "nuclei in Jets data", true);
-  PROCESS_SWITCH(nucleiInJets, processMCRec, "nuclei in Jets for detectorlevel Jets", true);
+  PROCESS_SWITCH(nucleiInJets, processMCRec, "nuclei in Jets for detectorlevel Jets", false);
   PROCESS_SWITCH(nucleiInJets, processMCGen, "nuclei in Jets MC particlelevel Jets", false);
   PROCESS_SWITCH(nucleiInJets, processRecMatched, "nuclei in Jets rec matched", false);
   PROCESS_SWITCH(nucleiInJets, processGenMatched, "nuclei in Jets gen matched", false);

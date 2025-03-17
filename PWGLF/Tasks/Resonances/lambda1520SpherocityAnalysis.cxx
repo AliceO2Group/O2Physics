@@ -15,6 +15,7 @@
 
 #include <TLorentzVector.h>
 #include <TRandom.h>
+#include <vector>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -515,7 +516,7 @@ struct lambdaAnalysis {
     }
   }
 
-  using resoCols = aod::ResoCollisions;
+  using resoCols = soa::Join<aod::ResoCollisions, aod::ResoSpheroCollisions>;
   using resoTracks = aod::ResoTracks;
 
   void processData(resoCols::iterator const& collision, resoTracks const& tracks)
