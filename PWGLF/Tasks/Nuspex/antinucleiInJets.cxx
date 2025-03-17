@@ -196,12 +196,6 @@ struct AntinucleiInJets {
       // helium-3
       registryData.add("helium3_jet_tpc", "helium3_jet_tpc", HistType::kTH2F, {{nbins, min * 3, max * 3, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
       registryData.add("helium3_ue_tpc", "helium3_ue_tpc", HistType::kTH2F, {{nbins, min * 3, max * 3, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
-
-      // systematic variations
-      registryData.add("antiproton_tpc_syst", "antiproton_tpc_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {10, 0, 10, "systematic uncertainty"}});
-      registryData.add("antiproton_tof_syst", "antiproton_tof_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {10, 0, 10, "systematic uncertainty"}});
-      registryData.add("antideuteron_tpc_syst", "antideuteron_tpc_syst", HistType::kTHnSparseF, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {10, 0, 10, "systematic uncertainty"}});
-      registryData.add("antideuteron_tof_syst", "antideuteron_tof_syst", HistType::kTHnSparseF, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {10, 0, 10, "systematic uncertainty"}});
     }
 
     // monte carlo histograms
@@ -256,6 +250,24 @@ struct AntinucleiInJets {
 
       // detector response matrix
       registryMC.add("detectorResponseMatrix", "detectorResponseMatrix", HistType::kTH2F, {{1000, 0.0, 100.0, "#it{p}_{T}^{gen} (GeV/#it{c})"}, {2000, -20.0, 20.0, "#it{p}_{T}^{gen} - #it{p}_{T}^{rec} (GeV/#it{c})"}});
+    }
+
+    // systematic uncertainties
+    if (doprocessSystematicsData) {
+      registryData.add("antiproton_tpc_syst", "antiproton_tpc_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {10, 0, 10, "systematic uncertainty"}});
+      registryData.add("antiproton_tof_syst", "antiproton_tof_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {10, 0, 10, "systematic uncertainty"}});
+      registryData.add("antideuteron_tpc_syst", "antideuteron_tpc_syst", HistType::kTHnSparseF, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {10, 0, 10, "systematic uncertainty"}});
+      registryData.add("antideuteron_tof_syst", "antideuteron_tof_syst", HistType::kTHnSparseF, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {10, 0, 10, "systematic uncertainty"}});
+    }
+
+    if (doprocessSystematicsEfficiency) {
+      registryMC.add("antiproton_incl_gen_syst", "antiproton_incl_gen_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {10, 0, 10, "systematic uncertainty"}});
+      registryMC.add("antideuteron_incl_gen_syst", "antideuteron_incl_gen_syst", HistType::kTHnSparseF, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {10, 0, 10, "systematic uncertainty"}});
+      registryMC.add("antiproton_incl_prim_syst", "antiproton_incl_prim_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {10, 0, 10, "systematic uncertainty"}});
+      registryMC.add("antiproton_incl_rec_tpc_syst", "antiproton_incl_rec_tpc_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {10, 0, 10, "systematic uncertainty"}});
+      registryMC.add("antiproton_incl_rec_tof_syst", "antiproton_incl_rec_tof_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {10, 0, 10, "systematic uncertainty"}});
+      registryMC.add("antideuteron_incl_rec_tpc_syst", "antideuteron_incl_rec_tpc_syst", HistType::kTHnSparseF, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {10, 0, 10, "systematic uncertainty"}});
+      registryMC.add("antideuteron_incl_rec_tof_syst", "antideuteron_incl_rec_tof_syst", HistType::kTHnSparseF, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {10, 0, 10, "systematic uncertainty"}});
     }
   }
 
@@ -1312,6 +1324,130 @@ struct AntinucleiInJets {
     }
   }
   PROCESS_SWITCH(AntinucleiInJets, processSystematicsData, "Process Systematics", false);
+
+  void processSystematicsEfficiency(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McParticles const& mcParticles)
+  {
+    const int nSystematics = 10;
+    int itsNclustersSyst[nSystematics] = {5, 6, 5, 4, 5, 3, 5, 6, 3, 4};
+    float tpcNcrossedRowsSyst[nSystematics] = {100, 85, 80, 110, 95, 90, 105, 95, 100, 105};
+    float dcaxySyst[nSystematics] = {0.05, 0.07, 0.10, 0.03, 0.06, 0.15, 0.08, 0.04, 0.09, 0.10};
+    float dcazSyst[nSystematics] = {0.1, 0.15, 0.3, 0.075, 0.12, 0.18, 0.2, 0.1, 0.15, 0.2};
+
+    for (const auto& collision : collisions) {
+
+      if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
+        continue;
+
+      // generated
+      for (const auto& particle : mcParticles) {
+
+        if (!particle.isPhysicalPrimary())
+          continue;
+
+        if (particle.eta() < minEta || particle.eta() > maxEta)
+          continue;
+
+        switch (particle.pdgCode()) {
+          case kProtonBar:
+            registryMC.fill(HIST("antiproton_incl_gen_syst"), particle.pt());
+            break;
+          case -o2::constants::physics::Pdg::kDeuteron:
+            registryMC.fill(HIST("antideuteron_incl_gen_syst"), particle.pt());
+            break;
+        }
+      }
+
+      // ITS pid using cluster size
+      o2::aod::ITSResponse itsResponse;
+
+      // Reconstructed Tracks
+      for (auto const& track : mcTracks) {
+
+        // Get MC Particle
+        if (!track.has_mcParticle())
+          continue;
+        const auto particle = track.mcParticle();
+
+        // Variables
+        double nsigmaTPCPr = track.tpcNSigmaPr();
+        double nsigmaTOFPr = track.tofNSigmaPr();
+        double nsigmaTPCDe = track.tpcNSigmaDe();
+        double nsigmaTOFDe = track.tofNSigmaDe();
+        double dcaxy = track.dcaXY();
+        double dcaz = track.dcaZ();
+
+        for (int i = 0; i < nSystematics; i++) {
+
+          // Track Selection
+          if (requirePvContributor && !(track.isPVContributor()))
+            continue;
+          if (!track.hasITS())
+            continue;
+          if (track.itsNCls() < itsNclustersSyst[i])
+            continue;
+          if (!track.hasTPC())
+            continue;
+          if (track.tpcNClsCrossedRows() < tpcNcrossedRowsSyst[i])
+            continue;
+          if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < minTpcNcrossedRowsOverFindable)
+            continue;
+          if (track.tpcChi2NCl() > maxChiSquareTpc)
+            continue;
+          if (track.itsChi2NCl() > maxChiSquareIts)
+            continue;
+          if (track.eta() < minEta || track.eta() > maxEta)
+            continue;
+          if (track.pt() < minPt)
+            continue;
+          if (std::fabs(dcaxy) > dcaxySyst[i])
+            continue;
+          if (std::fabs(dcaz) > dcazSyst[i])
+            continue;
+
+          // particle identification using the ITS cluster size
+          bool passedItsPidProt(false), passedItsPidDeut(false);
+          if (itsResponse.nSigmaITS<o2::track::PID::Proton>(track) > nSigmaItsMin && itsResponse.nSigmaITS<o2::track::PID::Proton>(track) < nSigmaItsMax) {
+            passedItsPidProt = true;
+          }
+          if (itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track) > nSigmaItsMin && itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track) < nSigmaItsMax) {
+            passedItsPidDeut = true;
+          }
+          if (!applyItsPid) {
+            passedItsPidProt = true;
+            passedItsPidDeut = true;
+          }
+          if (track.pt() > ptMaxItsPidProt)
+            passedItsPidProt = true;
+          if (track.pt() > ptMaxItsPidDeut)
+            passedItsPidDeut = true;
+          if (!particle.isPhysicalPrimary())
+            continue;
+
+          if (particle.pdgCode() == kProtonBar)
+            registryMC.fill(HIST("antiproton_incl_prim_syst"), track.pt(), i);
+
+          // antiprotons
+          if (particle.pdgCode() == kProtonBar && passedItsPidProt) {
+            if (nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc) {
+              registryMC.fill(HIST("antiproton_incl_rec_tpc_syst"), track.pt(), i);
+              if (track.hasTOF() && nsigmaTOFPr > minNsigmaTof && nsigmaTOFPr < maxNsigmaTof)
+                registryMC.fill(HIST("antiproton_incl_rec_tof_syst"), track.pt(), i);
+            }
+          }
+
+          // antideuterons
+          if (particle.pdgCode() == -o2::constants::physics::Pdg::kDeuteron && passedItsPidDeut) {
+            if (nsigmaTPCDe > minNsigmaTpc && nsigmaTPCDe < maxNsigmaTpc) {
+              registryMC.fill(HIST("antideuteron_incl_rec_tpc_syst"), track.pt(), i);
+              if (track.hasTOF() && nsigmaTOFDe > minNsigmaTof && nsigmaTOFDe < maxNsigmaTof)
+                registryMC.fill(HIST("antideuteron_incl_rec_tof_syst"), track.pt(), i);
+            }
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(AntinucleiInJets, processSystematicsEfficiency, "process efficiency for systematics", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
