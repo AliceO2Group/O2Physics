@@ -588,6 +588,7 @@ struct QAExtraDataCollectingEngine {
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhPhiPhiA{2, {nsp, {nsp, nullptr}}};
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhEtaEtaA{2, {nsp, {nsp, nullptr}}};
   TAxis ptAxis{analysis::dptdptfilter::ptbins, analysis::dptdptfilter::ptlow, analysis::dptdptfilter::ptup};
+  std::vector<int> ptOfInterestBinMap{analysis::dptdptfilter::ptbins + 1, -1};
   std::vector<std::vector<std::vector<std::shared_ptr<THnSparse>>>> fhInSectorDeltaPhiVsPhiPhiPerPtBinA{2, {nsp, {nsp, nullptr}}};
   std::vector<std::vector<std::vector<std::shared_ptr<THnSparse>>>> fhInSectorDeltaPhiVsEtaEtaPerPtBinA{2, {nsp, {nsp, nullptr}}};
 
@@ -604,6 +605,15 @@ struct QAExtraDataCollectingEngine {
     AxisSpec etaAxis = {etabins, etalow, etaup, "#eta"};
     AxisSpec ptOfInterestAxis = {static_cast<int>(ptBinsOfInterest.size()), 0.5f, static_cast<float>(ptBinsOfInterest.size()) + 0.5f, "#it{p}_{T} (GeV/#it{c})"};
 
+    /* the mapping between pT bins of interest and internal representation, and histogram title to keep track of them offline */
+    std::string hPtRangesOfInterestTitle;
+    for (size_t ix = 0; ix < ptBinsOfInterest.size(); ++ix) {
+      TString ptRange = TString::Format("%s%.2f-%.2f", ix == 0 ? "" : ",", ptAxis.GetBinLowEdge(ptBinsOfInterest[ix]), ptAxis.GetBinUpEdge(ptBinsOfInterest[ix]));
+      /* remember our internal axis starts in 0.5 value, i.e. its first central value is 1 */
+      ptOfInterestBinMap[ptBinsOfInterest[ix]] = ix + 1;
+      hPtRangesOfInterestTitle += ptRange.Data();
+    }
+
     /* the reconstructed and generated levels histograms */
     std::string recogen = (kindOfData == kReco) ? "Reco" : "Gen";
     for (uint isp = 0; isp < nsp; ++isp) {
@@ -614,10 +624,11 @@ struct QAExtraDataCollectingEngine {
                                                        HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH2F, {etaAxis, etaAxis});
         /* first resize them to the actual configured size */
         fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][isp][jsp] = ADDHISTOGRAM(THnSparse, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsPhiPhiPt_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
-                                                                                 HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTHnSparseF, {phiSectorAxis, phiSectorAxis, deltaPhiInSectorAxis, ptOfInterestAxis, ptOfInterestAxis});
-        // TODO: after checking the consumed execution memory
-        //        fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][isp][jsp] = ADDHISTOGRAM(THnSparse, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsEtaEtaPt_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
-        //                                                                                 HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTHnSparseF, {etaAxis, etaAxis, deltaPhiInSectorAxis, ptOfInterestAxis, ptOfInterestAxis});
+                                                                                 HTITLESTRING("%s%s pairs, #it{p}_{T}: %s", tnames[isp].c_str(), tnames[jsp].c_str(), hPtRangesOfInterestTitle.c_str()),
+                                                                                 kTHnSparseF, {phiSectorAxis, phiSectorAxis, deltaPhiInSectorAxis, ptOfInterestAxis, ptOfInterestAxis});
+        fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][isp][jsp] = ADDHISTOGRAM(THnSparse, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsEtaEtaPt_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+                                                                                 HTITLESTRING("%s%s pairs, #it{p}_{T}: %s", tnames[isp].c_str(), tnames[jsp].c_str(), hPtRangesOfInterestTitle.c_str()),
+                                                                                 kTHnSparseF, {etaAxis, etaAxis, deltaPhiInSectorAxis, ptOfInterestAxis, ptOfInterestAxis});
       }
     }
   }
@@ -631,13 +642,7 @@ struct QAExtraDataCollectingEngine {
     /* we should only receive accepted tracks */
     for (auto const& track1 : tracks1) {
       auto binForPt = [&](auto const& track) {
-        int ptBin = ptAxis.FindFixBin(track.pt());
-        if (std::find(ptBinsOfInterest.begin(), ptBinsOfInterest.end(), ptBin) != ptBinsOfInterest.end()) {
-          /* of interest */
-          return ptBin;
-        } else {
-          return -1;
-        }
+        return ptOfInterestBinMap[ptAxis.FindFixBin(track.pt())];
       };
       int ptBin1 = binForPt(track1);
       if (ptBin1 > 0) {
@@ -657,10 +662,9 @@ struct QAExtraDataCollectingEngine {
               float inTpcSectorPhi2 = std::fmod(track2.phi(), kTpcPhiSectorWidth);
               float deltaPhi = inTpcSectorPhi1 - inTpcSectorPhi2;
               double values[] = {inTpcSectorPhi1, inTpcSectorPhi2, deltaPhi, static_cast<float>(ptBin1), static_cast<float>(ptBin2)};
-
               fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(values);
-              // TODO: after checking the consumed execution memory
-              // fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta(), deltaPhi);
+              values[0] = track1.eta(), values[1] = track2.eta();
+              fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(values);
             }
           }
         }
@@ -1014,6 +1018,7 @@ struct DptDptEfficiencyAndQc {
         !doprocessGeneratorLevelNotStored &&
         !doprocessExtraGeneratorLevelNotStored &&
         !doprocessReconstructedNotStored &&
+        !doprocessExtraReconstructedNotStored &&
         !doprocessReconstructedNotStoredPID &&
         !doprocessReconstructedNotStoredPIDExtra) {
       return;
