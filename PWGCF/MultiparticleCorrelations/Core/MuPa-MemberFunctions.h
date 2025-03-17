@@ -100,6 +100,8 @@ void BookBaseList()
 
   fBasePro->GetXaxis()->SetBinLabel(eWhichSpecificCuts, Form("WhichSpecificCuts = %s", tc.fWhichSpecificCuts.Data()));
 
+  fBasePro->GetXaxis()->SetBinLabel(eSkipTheseRuns, Form("SkipTheseRuns = %s", tc.fSkipTheseRuns.Data()));
+
   fBaseList->Add(fBasePro);
 
   if (tc.fVerbose) {
@@ -222,6 +224,7 @@ void DefaultConfiguration()
   tc.fSequentialBailout = cf_tc.cfSequentialBailout;
   tc.fUseSpecificCuts = cf_tc.cfUseSpecificCuts;
   tc.fWhichSpecificCuts = cf_tc.cfWhichSpecificCuts;
+  tc.fSkipTheseRuns = cf_tc.cfSkipTheseRuns;
 
   // *) Event histograms (for QA see below):
   eh.fEventHistogramsName[eNumberOfEvents] = "NumberOfEvents";
@@ -481,7 +484,7 @@ void DefaultConfiguration()
   // ...
 
   // *) Toy NUA:
-  auto lApplyNUAPDF = (vector<int>)cf_nua.cfApplyNUAPDF;
+  auto lApplyNUAPDF = (std::vector<int>)cf_nua.cfApplyNUAPDF;
   if (lApplyNUAPDF.size() != eNUAPDF_N) {
     LOGF(info, "\033[1;31m lApplyNUAPDF.size() = %d\033[0m", lApplyNUAPDF.size());
     LOGF(info, "\033[1;31m eNUAPDF_N = %d\033[0m", static_cast<int>(eNUAPDF_N));
@@ -494,7 +497,7 @@ void DefaultConfiguration()
   // **) Execute the lines below, only if toy NUA (either default or custom) is requested for at least one kine variable:
   if (nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF]) {
 
-    auto lUseDefaultNUAPDF = (vector<int>)cf_nua.cfUseDefaultNUAPDF;
+    auto lUseDefaultNUAPDF = (std::vector<int>)cf_nua.cfUseDefaultNUAPDF;
     if (lUseDefaultNUAPDF.size() != eNUAPDF_N) {
       LOGF(info, "\033[1;31m lUseDefaultNUAPDF.size() = %d\033[0m", lUseDefaultNUAPDF.size());
       LOGF(info, "\033[1;31m eNUAPDF_N = %d\033[0m", static_cast<int>(eNUAPDF_N));
@@ -515,7 +518,7 @@ void DefaultConfiguration()
       nua.fFileWithCustomNUA = TString(cf_nua.cfFileWithCustomNUA);
 
       // *) histogram names with custom NUA distributions in that file + get those histograms immediately here:
-      auto lCustomNUAPDFHistNames = (vector<string>)cf_nua.cfCustomNUAPDFHistNames;
+      auto lCustomNUAPDFHistNames = (std::vector<std::string>)cf_nua.cfCustomNUAPDFHistNames;
       // TBI 20241115 For some reason, the default values of configurable "cfCustomNUAPDFHistNames" are not correctly propagated in the local variables, but I can circumvent that with JSON settings for the time being
       if (lCustomNUAPDFHistNames.size() != eNUAPDF_N) {
         LOGF(info, "\033[1;31m lCustomNUAPDFHistNames.size() = %d\033[0m", lCustomNUAPDFHistNames.size());
@@ -686,6 +689,28 @@ void DefaultConfiguration()
   for (int t = 0; t < eQACorrelationsVsHistograms2D_N; t++) {
     if (qa.fQACorrelationsVsHistogramsName2D[t].EqualTo("")) {
       LOGF(fatal, "\033[1;31m%s at line %d : qa.fQACorrelationsVsHistogramsName2D[%d] is not set, check corresponding enum eQACorrelationsVsHistograms2D \033[0m", __FUNCTION__, __LINE__, t);
+    }
+  }
+
+  // **) Names of QA 2D "correlations vs. IR vs. " profiles:
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_CurrentRunDuration] = TString::Format("%s_vs_%s", "CorrVsIR", eh.fEventHistogramsName[eCurrentRunDuration].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_Multiplicity] = TString::Format("%s_vs_%s", "CorrVsIR", eh.fEventHistogramsName[eMultiplicity].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity] = TString::Format("%s_vs_%s", "CorrVsIR", eh.fEventHistogramsName[eReferenceMultiplicity].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_Centrality] = TString::Format("%s_vs_%s", "CorrVsIR", eh.fEventHistogramsName[eCentrality].Data()).Data();
+  // ...
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_MeanPhi] = TString::Format("%s_vs_Mean%s", "CorrVsIR", ph.fParticleHistogramsName[ePhi].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi] = TString::Format("%s_vs_SigmaMean%s", "CorrVsIR", ph.fParticleHistogramsName[ePhi].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_MeanPt] = TString::Format("%s_vs_Mean%s", "CorrVsIR", ph.fParticleHistogramsName[ePt].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPt] = TString::Format("%s_vs_SigmaMean%s", "CorrVsIR", ph.fParticleHistogramsName[ePt].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_MeanEta] = TString::Format("%s_vs_Mean%s", "CorrVsIR", ph.fParticleHistogramsName[eEta].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_SigmaMeanEta] = TString::Format("%s_vs_SigmaMean%s", "CorrVsIR", ph.fParticleHistogramsName[eEta].Data()).Data();
+
+  // ...
+
+  // ***) Quick insanity check that all names are set:
+  for (int t = 0; t < eQACorrelationsVsInteractionRateVsProfiles2D_N; t++) {
+    if (qa.fQACorrelationsVsInteractionRateVsProfilesName2D[t].EqualTo("")) {
+      LOGF(fatal, "\033[1;31m%s at line %d : qa.fQACorrelationsVsInteractionRateVsProfilesName2D[%d] is not set, check corresponding enum eQACorrelationsVsInteractionRateVsProfiles2D \033[0m", __FUNCTION__, __LINE__, t);
     }
   }
 
@@ -1102,6 +1127,51 @@ void DefaultBooking()
     LOGF(fatal, "\033[1;31m%s at line %d : wrong setting for min and max harmonics: min = %d, max = %d \033[0m", __FUNCTION__, __LINE__, qa.fQACorrelationsVsHistogramsMinMaxHarmonic[eMin], qa.fQACorrelationsVsHistogramsMinMaxHarmonic[eMax]);
   }
 
+  // **) QA 2D "correlations vs. IR vs. " profiles:
+  qa.fFillQACorrelationsVsInteractionRateVsProfiles2D = cf_qa.cfFillQACorrelationsVsInteractionRateVsProfiles2D;
+
+  // *) If you do not want particular 2D correlations vs. IR vs. " profile to be booked, use configurable array cfBookQACorrelationsVsInteractionRateVsProfiles2D, where you can specify flags 1 (book) or 0 (do not book).
+  // Ordering of the flags in that array is interpreted through ordering of enums in enum eQACorrelationsVsInteractionRateVsProfiles2D.
+  auto lBookQACorrelationsVsInteractionRateVsProfiles2D = cf_qa.cfBookQACorrelationsVsInteractionRateVsProfiles2D.value; // this is now the local version of that string array from configurable
+  if (lBookQACorrelationsVsInteractionRateVsProfiles2D.size() != eQACorrelationsVsInteractionRateVsProfiles2D_N) {
+    LOGF(info, "\033[1;31m lBookQACorrelationsVsInteractionRateVsProfiles2D.size() = %d\033[0m", lBookQACorrelationsVsInteractionRateVsProfiles2D.size());
+    LOGF(info, "\033[1;31m eQACorrelationsVsInteractionRateVsProfiles2D_N = %d\033[0m", static_cast<int>(eQACorrelationsVsInteractionRateVsProfiles2D_N));
+    LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookQACorrelationsVsInteractionRateVsProfiles2D, and number of entries in enum eCorrelationsVsInteractionRateVsProfiles2D \n \033[0m", __FUNCTION__, __LINE__);
+  }
+
+  // *) Insanity check on the content and ordering of QA 2D "correlations vs. IR vs. " profiles in the initialization in configurable cfBookQACorrelationsVsInteractionRateVsProfiles2D:
+  // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
+  for (int name = 0; name < eQACorrelationsVsInteractionRateVsProfiles2D_N; name++) {
+    // TBI 20240518 I could implement even a strickter EqualTo instead of EndsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
+    if (!TString(lBookQACorrelationsVsInteractionRateVsProfiles2D[name]).EndsWith(qa.fQACorrelationsVsInteractionRateVsProfilesName2D[name].Data())) {
+      LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookQACorrelationsVsInteractionRateVsProfiles2D => name = %d, lBookQACorrelationsVsInteractionRateVsProfiles2D[name] = \"%s\", qa.fCorrelationsVsInteractionRateVsProfilesName2D[name] = \"%s\" \n Check if you are using an up to date tag. \033[0m", __FUNCTION__, __LINE__, name, TString(lBookQACorrelationsVsInteractionRateVsProfiles2D[name]).Data(), qa.fQACorrelationsVsInteractionRateVsProfilesName2D[name].Data());
+    }
+  }
+
+  // I append "&& qa.fFillQACorrelationsVsInteractionRateVsProfiles2D" below, to switch off booking of all 2D "correlations vs. IR vs. " profiles with one common flag:
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_CurrentRunDuration] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_CurrentRunDuration]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_Multiplicity] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_Multiplicity]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_Centrality] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_Centrality]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  // .....
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPhi] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPhi]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPt] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPt]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPt] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPt]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanEta] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanEta]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanEta] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanEta]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+
+  // .....
+
+  // *) min and max harmonics for which this series of histograms will be booked:
+  auto lQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic = cf_qa.cfQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic.value;
+  qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMin] = lQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMin];
+  qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMax] = lQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMax];
+  // **) insanity check:
+  if (!(qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMin] < qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMax])) {
+    LOGF(fatal, "\033[1;31m%s at line %d : wrong setting for min and max harmonics: min = %d, max = %d \033[0m", __FUNCTION__, __LINE__, qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMin], qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMax]);
+  }
+
   // ...
 
   if (tc.fVerbose) {
@@ -1352,37 +1422,46 @@ void InitializeFixedLengthBins(eAsFunctionOf AFO)
   }
 
   // Common local vector for all fixed-length bins:
-  vector<float> lFixedLength_bins;
+  std::vector<float> lFixedLength_bins;
 
   switch (AFO) {
-    case AFO_MULTIPLICITY:
+    case AFO_MULTIPLICITY: {
       lFixedLength_bins = cf_res.cfFixedLength_mult_bins.value;
       break;
-    case AFO_CENTRALITY:
+    }
+    case AFO_CENTRALITY: {
       lFixedLength_bins = cf_res.cfFixedLength_cent_bins.value;
       break;
-    case AFO_PT:
+    }
+    case AFO_PT: {
       lFixedLength_bins = cf_res.cfFixedLength_pt_bins.value;
       break;
-    case AFO_ETA:
+    }
+    case AFO_ETA: {
       lFixedLength_bins = cf_res.cfFixedLength_eta_bins.value;
       break;
-    case AFO_OCCUPANCY:
+    }
+    case AFO_OCCUPANCY: {
       lFixedLength_bins = cf_res.cfFixedLength_occu_bins.value;
       break;
-    case AFO_INTERACTIONRATE:
+    }
+    case AFO_INTERACTIONRATE: {
       lFixedLength_bins = cf_res.cfFixedLength_ir_bins.value;
       break;
-    case AFO_CURRENTRUNDURATION:
+    }
+    case AFO_CURRENTRUNDURATION: {
       lFixedLength_bins = cf_res.cfFixedLength_crd_bins.value;
       break;
-    case AFO_VZ:
+    }
+    case AFO_VZ: {
       lFixedLength_bins = cf_res.cfFixedLength_vz_bins.value;
       break;
+    }
     // ...
-    default:
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This enum AFO = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO));
       break;
+    }
   } // switch(AFO)
 
   // From this point onward, the code is the same for any AFO variable:
@@ -1415,37 +1494,46 @@ void InitializeVariableLengthBins(eAsFunctionOf AFO)
   }
 
   // Common local vector for all variable-length bins:
-  vector<float> lVariableLength_bins;
+  std::vector<float> lVariableLength_bins;
 
   switch (AFO) {
-    case AFO_MULTIPLICITY:
+    case AFO_MULTIPLICITY: {
       lVariableLength_bins = cf_res.cfVariableLength_mult_bins.value;
       break;
-    case AFO_CENTRALITY:
+    }
+    case AFO_CENTRALITY: {
       lVariableLength_bins = cf_res.cfVariableLength_cent_bins.value;
       break;
-    case AFO_PT:
+    }
+    case AFO_PT: {
       lVariableLength_bins = cf_res.cfVariableLength_pt_bins.value;
       break;
-    case AFO_ETA:
+    }
+    case AFO_ETA: {
       lVariableLength_bins = cf_res.cfVariableLength_eta_bins.value;
       break;
-    case AFO_OCCUPANCY:
+    }
+    case AFO_OCCUPANCY: {
       lVariableLength_bins = cf_res.cfVariableLength_occu_bins.value;
       break;
-    case AFO_INTERACTIONRATE:
+    }
+    case AFO_INTERACTIONRATE: {
       lVariableLength_bins = cf_res.cfVariableLength_ir_bins.value;
       break;
-    case AFO_CURRENTRUNDURATION:
+    }
+    case AFO_CURRENTRUNDURATION: {
       lVariableLength_bins = cf_res.cfVariableLength_crd_bins.value;
       break;
-    case AFO_VZ:
+    }
+    case AFO_VZ: {
       lVariableLength_bins = cf_res.cfVariableLength_vz_bins.value;
       break;
+    }
     // ...
-    default:
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This enum AFO = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO));
       break;
+    }
   } // switch(AFO)
 
   // From this point onward, the code is the same for any AFO variable:
@@ -1523,7 +1611,7 @@ void DefaultCuts()
 
   // *) Use or do not use a cut enumerated in eEventHistograms + eEventCuts.
   //    Default cuts are set in configurable cfUseEventCuts
-  auto lUseEventCuts = (vector<string>)cf_ec.cfUseEventCuts;
+  auto lUseEventCuts = (std::vector<std::string>)cf_ec.cfUseEventCuts;
   if (lUseEventCuts.size() != eEventCuts_N) {
     LOGF(info, "\033[1;31m lUseEventCuts.size() = %d\033[0m", lUseEventCuts.size());
     LOGF(info, "\033[1;31m eEventCuts_N = %d\033[0m", static_cast<int>(eEventCuts_N));
@@ -1613,6 +1701,10 @@ void DefaultCuts()
   auto lMultiplicity = (std::vector<float>)cf_ec.cfMultiplicity;
   ec.fdEventCuts[eMultiplicity][eMin] = lMultiplicity[eMin];
   ec.fdEventCuts[eMultiplicity][eMax] = lMultiplicity[eMax];
+  // If I have requested fFixedNumberOfRandomlySelectedTracks, then I do not care about events with smaller number of particles:
+  if (tc.fFixedNumberOfRandomlySelectedTracks > 0) {
+    ec.fdEventCuts[eMultiplicity][eMin] = tc.fFixedNumberOfRandomlySelectedTracks;
+  }
 
   auto lReferenceMultiplicity = (std::vector<float>)cf_ec.cfReferenceMultiplicity;
   ec.fdEventCuts[eReferenceMultiplicity][eMin] = lReferenceMultiplicity[eMin];
@@ -1682,7 +1774,7 @@ void DefaultCuts()
 
   // *) Use or do not use a cut enumerated in eParticleHistograms + eParticleCuts.
   //    Default cuts are set in configurable cfUseParticleCuts
-  auto lUseParticleCuts = (std::vector<string>)cf_pc.cfUseParticleCuts;
+  auto lUseParticleCuts = (std::vector<std::string>)cf_pc.cfUseParticleCuts;
   if (lUseParticleCuts.size() != eParticleCuts_N) {
     LOGF(info, "\033[1;31m lUseParticleCuts.size() = %d\033[0m", lUseParticleCuts.size());
     LOGF(info, "\033[1;31m eParticleCuts_N = %d\033[0m", static_cast<int>(eParticleCuts_N));
@@ -1847,6 +1939,8 @@ void SpecificCuts(TString whichSpecificCuts)
     specificCuts = eLHC24as;
   } else if (whichSpecificCuts.EqualTo("LHC15o")) {
     specificCuts = eLHC15o;
+  } else if (whichSpecificCuts.EqualTo("Test")) {
+    specificCuts = eTestCuts;
   } else {
     LOGF(fatal, "\033[1;31m%s at line %d : whichSpecificCuts = %s is not supported \033[0m", __FUNCTION__, __LINE__, whichSpecificCuts.Data());
   }
@@ -1860,7 +1954,7 @@ void SpecificCuts(TString whichSpecificCuts)
   //    Remark #3: Most up-to-date documentation of each cut is in enum file.
   switch (specificCuts) {
 
-    case eLHC23zzh:
+    case eLHC23zzh: {
 
       // In this branch I implement default cuts and settings for PbPb Run 3 datasets collected in 2023.
       // If I change some cut here, keep in sync. with other branches (e.g. for 2024 data).
@@ -1917,9 +2011,10 @@ void SpecificCuts(TString whichSpecificCuts)
       pc.fUseParticleCuts[eisPVContributor] = true;
 
       break;
+    }
 
     case eLHC24ar:
-    case eLHC24as:
+    case eLHC24as: {
 
       // In this branch I implement default cuts and settings for PbPb Run 3 datasets collected in 2024:
       // If I change some cut here, keep in sync. with other branches (e.g. for 2023 data).
@@ -1979,8 +2074,9 @@ void SpecificCuts(TString whichSpecificCuts)
       pc.fUseParticleCuts[eisPVContributor] = true;
 
       break;
+    }
 
-    case eLHC15o:
+    case eLHC15o: {
 
       // In this branch I implement default cuts and settings for Run 2 datasets:
 
@@ -2030,13 +2126,67 @@ void SpecificCuts(TString whichSpecificCuts)
       // ...
 
       break;
+    }
 
       // ...
 
-    default:
+    case eTestCuts: {
+
+      // In this branch I implement default cuts and settings for minimal subscription, "processTest": "true in JSON
+
+      // Event cuts:
+      // ec.fUseEventCuts[eSel7] = true; // TBI 20250115 ehen i procees in "Rec" some converted Run 2 MC, it removes 99% of events, see enum
+      ec.fUseEventCuts[eSel8] = false;
+      ec.fUseEventCuts[eNoSameBunchPileup] = false;
+      ec.fUseEventCuts[eIsGoodZvtxFT0vsPV] = false;
+      ec.fUseEventCuts[eIsVertexITSTPC] = false;
+      ec.fUseEventCuts[eNoCollInTimeRangeStrict] = false;
+      ec.fUseEventCuts[eNoCollInRofStrict] = false;
+      ec.fUseEventCuts[eNoHighMultCollInPrevRof] = false;
+      ec.fUseEventCuts[eNoCollInTimeRangeStandard] = false;
+      ec.fUseEventCuts[eNoCollInRofStrict] = false;
+      ec.fUseEventCuts[eNoCollInRofStandard] = false;
+      ec.fUseEventCuts[eNoCollInRofStandard] = false;
+      ec.fUseEventCuts[eIsGoodITSLayer3] = false;
+      ec.fUseEventCuts[eIsGoodITSLayer0123] = false;
+      ec.fUseEventCuts[eIsGoodITSLayersAll] = false;
+
+      // ec.fUseEventCuts[eTrigger] = true;
+      // ec.fsEventCuts[eTrigger] = "kINT7"; // TBI 20250115 cannot be used when i procees in "Rec" some converted Run 2 MC, see enum
+
+      // ...
+
+      // Particle cuts:
+      pc.fUseParticleCuts[eisInAcceptanceTrack] = false; // see enum
+      pc.fUseParticleCuts[etrackCutFlagFb1] = false;     // only for Run 3
+      pc.fUseParticleCuts[etrackCutFlagFb2] = false;     // only for Run 3
+      pc.fUseParticleCuts[eisPVContributor] = false;     // only for Run 3
+
+      // ...
+
+      // The rest:
+      mupa.fCalculateCorrelationsAsFunctionOf[AFO_OCCUPANCY] = false;
+      mupa.fCalculateCorrelationsAsFunctionOf[AFO_INTERACTIONRATE] = false;
+      mupa.fCalculateCorrelationsAsFunctionOf[AFO_CURRENTRUNDURATION] = false;
+
+      t0.fCalculateTest0AsFunctionOf[AFO_OCCUPANCY] = false;
+      t0.fCalculateTest0AsFunctionOf[AFO_INTERACTIONRATE] = false;
+      t0.fCalculateTest0AsFunctionOf[AFO_CURRENTRUNDURATION] = false;
+
+      es.fCalculateEtaSeparationsAsFunctionOf[AFO_OCCUPANCY] = false;
+      es.fCalculateEtaSeparationsAsFunctionOf[AFO_INTERACTIONRATE] = false;
+      es.fCalculateEtaSeparationsAsFunctionOf[AFO_CURRENTRUNDURATION] = false;
+
+      // ...
+
+      break;
+    }
+
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : specificCuts = %d is not supported yet \033[0m", __FUNCTION__, __LINE__, static_cast<int>(specificCuts));
       break;
-  } // switch((specificCuts))
+    }
+  } // switch (specificCuts)
 
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
@@ -2186,9 +2336,14 @@ void InsanityChecksBeforeBooking()
     }
   }
 
-  // **) Enforce that if fixed number of randomly selected tracks is used in the analysis, that Fisher-Yates algorithm is enabled:
+  // **) Enforce that if the fixed number of randomly selected tracks is used in the analysis, that Fisher-Yates algorithm is enabled:
   if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && !tc.fUseFisherYates) {
-    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m : Did you forget to enable Fisher-Yates algorithm?", __FUNCTION__, __LINE__);
+  }
+
+  // **) Enforce that if the fixed number of randomly selected tracks is used that Toy NUA is disabled:
+  if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && (nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF])) {
+    LOGF(fatal, "\033[1;31m%s at line %d : Not supported at the moment: use FixedNumberOfRandomlySelectedTracks + Toy NUA enabled.\nI cannot in an easy way ensure that ParticleCuts behave exactly the same in the Main and Banishment loops, because e.g. I call consequtively for same partcile gRandom->Uniform(...) in ParticleCuts, and that can't work.\033[0m", __FUNCTION__, __LINE__);
   }
 
   // **) When it comes to DCAxy cut, ensure that either flat or pt-dependent cut is used, but not both:
@@ -2627,6 +2782,8 @@ void BookAndNestAllLists()
   //  **) QA event histograms;
   //  **) QA particle histograms;
   //  **) QA particle event histograms;
+  //  **) QA "correlations vs." histograms:
+  //  **) QA "correlations vs. IR vs. " profiles;
   // *) Control event histograms;
   // *) Control particle histograms;
   // *) Correlations;
@@ -2650,7 +2807,7 @@ void BookAndNestAllLists()
   qa.fQAList->SetOwner(true);
   fBaseList->Add(qa.fQAList);
 
-  //  **) QA event histograms;
+  //  **) QA event histograms:
   if (qa.fFillQAEventHistograms2D) {
     qa.fQAEventList = new TList();
     qa.fQAEventList->SetName("QAEvent");
@@ -2658,7 +2815,7 @@ void BookAndNestAllLists()
     qa.fQAList->Add(qa.fQAEventList); // yes, this one is nested within base QA TList
   }
 
-  //  **) QA particle histograms;
+  //  **) QA particle histograms:
   if (qa.fFillQAParticleHistograms2D) {
     qa.fQAParticleList = new TList();
     qa.fQAParticleList->SetName("QAParticle");
@@ -2666,7 +2823,7 @@ void BookAndNestAllLists()
     qa.fQAList->Add(qa.fQAParticleList); // yes, this one is nested within base QA TList
   }
 
-  //  **) QA particle event histograms;
+  //  **) QA particle event histograms:
   if (qa.fFillQAParticleEventHistograms2D) {
     qa.fQAParticleEventList = new TList();
     qa.fQAParticleEventList->SetName("QAParticleEvent");
@@ -2674,12 +2831,20 @@ void BookAndNestAllLists()
     qa.fQAList->Add(qa.fQAParticleEventList); // yes, this one is nested within base QA TList
   }
 
-  //  **) QA "correlations vs." histograms;
+  //  **) QA "correlations vs." histograms:
   if (qa.fFillQACorrelationsVsHistograms2D) {
     qa.fQACorrelationsVsList = new TList();
     qa.fQACorrelationsVsList->SetName("QACorrelationsVs");
     qa.fQACorrelationsVsList->SetOwner(true);
     qa.fQAList->Add(qa.fQACorrelationsVsList); // yes, this one is nested within base QA TList
+  }
+
+  //  **) QA "correlations vs. IR vs. " profiles:
+  if (qa.fFillQACorrelationsVsInteractionRateVsProfiles2D) {
+    qa.fQACorrelationsVsInteractionRateVsList = new TList();
+    qa.fQACorrelationsVsInteractionRateVsList->SetName("QACorrelationsVsInteractionRateVsList");
+    qa.fQACorrelationsVsInteractionRateVsList->SetOwner(true);
+    qa.fQAList->Add(qa.fQACorrelationsVsInteractionRateVsList); // yes, this one is nested within base QA TList
   }
 
   // *) Event cuts:
@@ -2785,7 +2950,8 @@ void BookQAHistograms()
   // c) Book specific QA 2D event histograms;
   // d) Book specific QA 2D particle histograms;
   // e) Book specific QA 2D particle event histograms;
-  // f) Book specific QA 2D "correlations vs." histograms.
+  // f) Book specific QA 2D "correlations vs." histograms;
+  // g) Book specific QA 2D "correlations vs. IR vs. " profiles.
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -2804,7 +2970,7 @@ void BookQAHistograms()
   }
 
   // a) Book the profile holding flags:
-  qa.fQAHistogramsPro = new TProfile("fQAHistogramsPro", "flags for QA histograms", 6, 0., 6.);
+  qa.fQAHistogramsPro = new TProfile("fQAHistogramsPro", "flags for QA histograms", 7, 0., 7.);
   qa.fQAHistogramsPro->SetStats(false);
   qa.fQAHistogramsPro->SetLineColor(eColor);
   qa.fQAHistogramsPro->SetFillColor(eFillColor);
@@ -2818,8 +2984,10 @@ void BookQAHistograms()
   qa.fQAHistogramsPro->Fill(3.5, static_cast<int>(qa.fFillQAParticleEventHistograms2D));
   qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(5, "fFillQACorrelationsVsHistograms2D");
   qa.fQAHistogramsPro->Fill(4.5, static_cast<int>(qa.fFillQACorrelationsVsHistograms2D));
-  qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(6, "fRebin");
-  qa.fQAHistogramsPro->Fill(5.5, static_cast<int>(qa.fRebin));
+  qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(6, "fFillQACorrelationsVsInteractionRateVsProfiles2D");
+  qa.fQAHistogramsPro->Fill(5.5, static_cast<int>(qa.fFillQACorrelationsVsInteractionRateVsProfiles2D));
+  qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(7, "fRebin");
+  qa.fQAHistogramsPro->Fill(6.5, static_cast<int>(qa.fRebin));
 
   // ...
 
@@ -3148,6 +3316,7 @@ void BookQAHistograms()
           continue;
         }
 
+        // valgrind --tool=massif => ~9.8 MiB (Last check: 20250315)
         qa.fQAEventHistograms2D[t][rs][ba] = new TH2F(
           TString::Format("fQAEventHistograms2D[%s][%s][%s]", qa.fEventHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
           TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
@@ -3212,6 +3381,7 @@ void BookQAHistograms()
 
       for (int ba = 0; ba < 2; ba++) // before/after cuts
       {
+        // valgrind --tool=massif => ~30.6 MiB (Last check: 20250315)
         qa.fQAParticleHistograms2D[t][rs][ba] = new TH2F(
           TString::Format("fQAParticleHistograms2D[%s][%s][%s]", qa.fParticleHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
           TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
@@ -3372,6 +3542,7 @@ void BookQAHistograms()
           continue;
         }
 
+        // valgrind --tool=massif => ~70.2 MiB (Last check: 20250315)
         qa.fQAParticleEventHistograms2D[t][rs][ba] = new TH2F(
           TString::Format("fQAParticleEventHistograms2D[%s][%s][%s]", qa.fQAParticleEventHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
           TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
@@ -3502,6 +3673,7 @@ void BookQAHistograms()
           continue;
         }
 
+        // valgrind --tool=massif => ~58.7 MiB (Last check: 20250315)
         qa.fQACorrelationsVsHistograms2D[t][h][rs] = new TH2F(
           TString::Format("fQACorrelationsVsHistograms2D[%s][%d][%s]", qa.fQACorrelationsVsHistogramsName2D[t].Data(), h, gc.srs[rs].Data()),
           TString::Format("%s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
@@ -3518,6 +3690,133 @@ void BookQAHistograms()
     } // for (int h = 0; h < gMaxHarmonic; h++) {
 
   } // for(int t=0;t<eQACorrelationsVsHistograms2D_N;t++) // type, see enum eCorrelationsVsHistograms2D
+
+  // g) Book specific QA 2D "correlations vs. IR vs. " profiles:
+
+  // Binning of 2D"correlations vs. IR vs. " profiles:
+  // Remark: I use the same binning for x axis (it's interaction rate) for all 2D QA profiles in this category, therefore here implementation in shorter.
+  int nBins_x_CorrelationsVsInteractionRateVs = static_cast<int>(eh.fEventHistogramsBins[eInteractionRate][0] / qa.fRebin);
+  double min_x_CorrelationsVsInteractionRateVs = eh.fEventHistogramsBins[eInteractionRate][1];
+  double max_x_CorrelationsVsInteractionRateVs = eh.fEventHistogramsBins[eInteractionRate][2];
+  TString title_x_CorrelationsVsInteractionRateVs = "interaction rate";
+  int nBins_y_CorrelationsVsInteractionRateVs[eQACorrelationsVsInteractionRateVsProfiles2D_N] = {0};
+  double min_y_CorrelationsVsInteractionRateVs[eQACorrelationsVsInteractionRateVsProfiles2D_N] = {0.};
+  double max_y_CorrelationsVsInteractionRateVs[eQACorrelationsVsInteractionRateVsProfiles2D_N] = {0.};
+  TString title_y_CorrelationsVsInteractionRateVs[eQACorrelationsVsInteractionRateVsProfiles2D_N] = {""};
+
+  // *) "eCorrelationsVsInteractionRate_vs_CurrentRunDuration":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_CurrentRunDuration] = static_cast<int>(eh.fEventHistogramsBins[eCurrentRunDuration][0] / qa.fRebin);
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_CurrentRunDuration] = eh.fEventHistogramsBins[eCurrentRunDuration][1];
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_CurrentRunDuration] = eh.fEventHistogramsBins[eCurrentRunDuration][2];
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_CurrentRunDuration] = FancyFormatting(eh.fEventHistogramsName[eCurrentRunDuration].Data());
+
+  // *) "eCorrelationsVsInteractionRate_vs_Multiplicity":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Multiplicity] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Multiplicity] = eh.fEventHistogramsBins[eMultiplicity][1];
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Multiplicity] = eh.fEventHistogramsBins[eMultiplicity][2];
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Multiplicity] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
+
+  // *) "eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
+
+  // *) "eCorrelationsVsInteractionRate_vs_Centrality":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][1];
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][2];
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
+
+  // .....
+
+  // *) "eCorrelationsVsInteractionRate_vs_MeanPhi":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPhi] = 200;
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPhi] = 0.;
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPhi] = o2::constants::math::TwoPI;
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPhi] = FancyFormatting(ph.fParticleHistogramsName[ePhi].Data());
+
+  // *) "eCorrelationsVsInteractionRate_vs_SigmaMeanPhi":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi] = 200;
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi] = 0.;
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi] = 1.0;
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi] = TString::Format("#sigma_{%s}", FancyFormatting(ph.fParticleHistogramsName[ePhi].Data()));
+
+  // *) "eCorrelationsVsInteractionRate_vs_MeanPt":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPt] = 200;
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPt] = 0.0;
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPt] = 2.0;
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPt] = FancyFormatting(ph.fParticleHistogramsName[ePt].Data());
+
+  // *) "eCorrelationsVsInteractionRate_vs_SigmaMeanPt":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPt] = 200;
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPt] = 0.;
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPt] = 1.0;
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPt] = TString::Format("#sigma_{%s}", FancyFormatting(ph.fParticleHistogramsName[ePt].Data()));
+
+  // *) "eCorrelationsVsInteractionRate_vs_MeanEta":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanEta] = 600;
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanEta] = -0.5;
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanEta] = 0.5;
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanEta] = FancyFormatting(ph.fParticleHistogramsName[eEta].Data());
+
+  // *) "eCorrelationsVsInteractionRate_vs_SigmaMeanEta":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanEta] = 200;
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanEta] = 0.;
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanEta] = 1.0;
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanEta] = TString::Format("#sigma_{%s}", FancyFormatting(ph.fParticleHistogramsName[eEta].Data()));
+
+  // .....
+
+  // *) Quick insanity check on title_x_CorrelationsVsInteractionRateVs and title_y_CorrelationsVsInteractionRateVs:
+  if (title_x_CorrelationsVsInteractionRateVs.EqualTo("")) {
+    LOGF(fatal, "\033[1;31m%s at line %d : title_x_CorrelationsVsInteractionRateVs is not set, check corresponding enum \033[0m", __FUNCTION__, __LINE__);
+  }
+  for (int t = 0; t < eQACorrelationsVsInteractionRateVsProfiles2D_N; t++) {
+    if (title_y_CorrelationsVsInteractionRateVs[t].EqualTo("")) {
+      LOGF(fatal, "\033[1;31m%s at line %d : title_y_CorrelationsVsInteractionRateVs[%d] is not set, check corresponding enum  \033[0m", __FUNCTION__, __LINE__, t);
+    }
+  }
+
+  // Okay, let's book 'em all:
+  for (int t = 0; t < eQACorrelationsVsInteractionRateVsProfiles2D_N; t++) // type, see enum eQACorrelationsVsInteractionRateVsProfiles2D
+  {
+    if (!qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[t]) {
+      continue;
+    }
+
+    for (int h = 0; h < gMaxHarmonic; h++) {
+
+      if (h + 1 < qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMin] || h + 1 >= qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMax]) {
+        continue;
+      }
+
+      for (int rs = 0; rs < 2; rs++) // reco/sim
+      {
+
+        if (Skip(rs)) {
+          continue;
+        }
+
+        // TBI 20250317 documet here the output of profiling using valgrind --tool=massif
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs] = new TProfile2D(
+          TString::Format("fQACorrVsIRVsProfiles2D[%s][%d][%s]", qa.fQACorrelationsVsInteractionRateVsProfilesName2D[t].Data(), h, gc.srs[rs].Data()),
+          TString::Format("%s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          nBins_x_CorrelationsVsInteractionRateVs, min_x_CorrelationsVsInteractionRateVs, max_x_CorrelationsVsInteractionRateVs, nBins_y_CorrelationsVsInteractionRateVs[t], min_y_CorrelationsVsInteractionRateVs[t], max_y_CorrelationsVsInteractionRateVs[t]);
+
+        TString tmp = qa.fQACorrVsIRVsProfiles2D[t][h][rs]->GetTitle(); // translating e.g. "544114, reconstructed" into "<<2>> (harmonic = 2), 544114, reconstructed"
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs]->SetTitle(TString::Format("#LT#LT2#GT#GT (harmonic = %d), %s", h + 1, tmp.Data()));
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs]->GetXaxis()->SetTitle(title_x_CorrelationsVsInteractionRateVs.Data());
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs]->GetYaxis()->SetTitle(title_y_CorrelationsVsInteractionRateVs[t].Data());
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs]->SetLineColor(ec.fBeforeAfterColor[eAfter]);
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs]->SetFillColor(ec.fBeforeAfterColor[eAfter] - 10);
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs]->SetOption("col");
+        qa.fQACorrelationsVsInteractionRateVsList->Add(qa.fQACorrVsIRVsProfiles2D[t][h][rs]);
+      } // for(int rs=0;rs<2;rs++) // reco/sim
+
+    } // for (int h = 0; h < gMaxHarmonic; h++) {
+
+  } // for(int t=0;t<eQACorrelationsVsInteractionRateVsProfiles2D_N;t++) // type, see enum eCorrelationsVsInteractionRateVsProfiles2D
 
   // ...
 
@@ -3651,7 +3950,7 @@ void BookEventCutsHistograms()
         continue;
       }
 
-      ec.fEventCutCounterHist[rs][cc] = new TH1I(TString::Format("fEventCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.scc_long[cc].Data()), eEventCuts_N, 0.5, static_cast<double>(eEventCuts_N) + 0.5); // I cast in double the last argument, because that's what this particular TH1I constructor expects. And yes, +0.5, because eEventCuts kicks off from 0
+      ec.fEventCutCounterHist[rs][cc] = new TH1F(TString::Format("fEventCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.scc_long[cc].Data()), eEventCuts_N, 0.5, static_cast<double>(eEventCuts_N) + 0.5); // I cast in double the last argument, because that's what this particular TH1I constructor expects. And yes, +0.5, because eEventCuts kicks off from 0
       ec.fEventCutCounterHist[rs][cc]->SetStats(false);
       ec.fEventCutCounterHist[rs][cc]->SetLineColor(eColor);
       ec.fEventCutCounterHist[rs][cc]->SetFillColor(eFillColor);
@@ -4705,7 +5004,7 @@ void BookInternalValidationHistograms()
 
   // b) Book and fill container vn amplitudes:
   iv.fInternalValidationVnPsin[eVn] = new TArrayD(gMaxHarmonic);
-  auto lInternalValidationAmplitudes = (vector<float>)cf_iv.cfInternalValidationAmplitudes; // this is now the local version of that array from configurable
+  auto lInternalValidationAmplitudes = (std::vector<float>)cf_iv.cfInternalValidationAmplitudes; // this is now the local version of that array from configurable
   if (lInternalValidationAmplitudes.size() < 1) {
     LOGF(fatal, "\033[1;31m%s at line %d : set at least one vn amplitude in array cfInternalValidationAmplitudes\n \033[0m", __FUNCTION__, __LINE__);
   }
@@ -4718,7 +5017,7 @@ void BookInternalValidationHistograms()
 
   // c) Book and fill container for Psin planes:
   iv.fInternalValidationVnPsin[ePsin] = new TArrayD(gMaxHarmonic);
-  auto lInternalValidationPlanes = (vector<float>)cf_iv.cfInternalValidationPlanes;
+  auto lInternalValidationPlanes = (std::vector<float>)cf_iv.cfInternalValidationPlanes;
   if (lInternalValidationPlanes.size() < 1) {
     LOGF(fatal, "\033[1;31m%s at line : %d set at least one Psi plane in array cfInternalValidationPlanes\n \033[0m", __FUNCTION__, __LINE__);
   }
@@ -4733,7 +5032,7 @@ void BookInternalValidationHistograms()
   }
 
   // d) Handle multiplicity for internal validation:
-  auto lMultRangeInternalValidation = (vector<int>)cf_iv.cfMultRangeInternalValidation;
+  auto lMultRangeInternalValidation = (std::vector<int>)cf_iv.cfMultRangeInternalValidation;
   iv.fMultRangeInternalValidation[eMin] = lMultRangeInternalValidation[eMin];
   iv.fMultRangeInternalValidation[eMax] = lMultRangeInternalValidation[eMax];
   if (iv.fMultRangeInternalValidation[eMin] >= iv.fMultRangeInternalValidation[eMax]) {
@@ -5507,6 +5806,17 @@ void Preprocess(T1 const& collision, T2 const& bcs)
     CheckCurrentRunNumber<rs>(collision, bcs);
   }
 
+  // *) Check whether this run shall be skipped later from further processing in Steer():
+  if (!tc.fSkipTheseRuns.EqualTo("")) {
+    // If tc.fSkipTheseRuns is not empty, that means it holds comma-separated list of runs to be skipped. Let's check it out...
+    SkipThisRun(); // I set inside the data member tc.fSkipRun , which serves then as a switch later all over the place
+    if (tc.fSkipRun) {
+      return; // yes, I bail out immediately from Preprocess, so that I do not waste time on fetching weights for this run
+    }
+    // TBI 20250316 Same comment here: At the moment I can access run number info only in process(...), but not in init(...)
+    // Once I can access run number info in init(...), this function shall be called in init(...), not in process(...)
+  } // if (!tc.fSkipTheseRuns.EqualTo(""))
+
   // *) Fetch the weights for this particular run number. Do it only once.
   //    TBI 20231012 If eventualy I can access programatically run number in init(...) at run time, this shall go there.
   if (!pw.fParticleWeightsAreFetched) {
@@ -5591,8 +5901,12 @@ void DetermineRunNumber(T1 const& collision, T2 const&)
       LOGF(fatal, "\033[1;31m%s at line %d : tc.fRunTime[eDurationInSec] = %d is not positive\033[0m", __FUNCTION__, __LINE__, tc.fRunTime[eDurationInSec]);
     }
 
+  } else if constexpr (rs == eTest) {
+    LOGF(warning, "\033[1;33m%s at line %d : RunNumber cannot be determined for eTest mode, due to minimal subscription. Setting run number manually to some dummy value. If you do not like this, extend subscription to more tables.\033[0m", __FUNCTION__, __LINE__);
+    tc.fRunNumber = "123456";
   } else {
-    // b) Determine run number for the rest. TBI 20241126 differentiate this support as well, e.g. for eRecSim and eSim.
+    // b) Determine run number for the rest.
+    //    TBI 20241126 differentiate this support as well, e.g. for eRecSim and eSim.
     LOGF(fatal, "\033[1;31m%s at line %d : bc.runNumber() is not validated yet for this case\033[0m", __FUNCTION__, __LINE__);
   }
   tc.fRunNumberIsDetermined = true;
@@ -5750,6 +6064,24 @@ void PropagateRunNumber()
     } // for (int h = 0; h < gMaxHarmonic; h++)
   } // for (int t = 0; t < eQACorrelationsVsHistograms2D_N; t++) // type, see enum eCorrelationsVsHistograms2D
 
+  // *) "correlations vs. IR vs. " profiles 2D:
+  for (int t = 0; t < eQACorrelationsVsInteractionRateVsProfiles2D_N; t++) // type, see enum eCorrelationsVsInteractionRateVsProfiles2D
+  {
+    for (int h = 0; h < gMaxHarmonic; h++) {
+      for (int rs = 0; rs < 2; rs++) // reco/sim
+      {
+        if (!qa.fQACorrVsIRVsProfiles2D[t][h][rs]) {
+          continue;
+        }
+        histTitle = qa.fQACorrVsIRVsProfiles2D[t][h][rs]->GetTitle();
+        if (histTitle.Contains("__RUN_NUMBER__")) {
+          histTitle.ReplaceAll("__RUN_NUMBER__", tc.fRunNumber.Data()); // it replaces in-place
+          qa.fQACorrVsIRVsProfiles2D[t][h][rs]->SetTitle(histTitle.Data());
+        }
+      } // for(int rs=0;rs<2;rs++) // reco/sim
+    } // for (int h = 0; h < gMaxHarmonic; h++)
+  } // for (int t = 0; t < eQACorrelationsVsInteractionRateVsProfiles2D_N; t++) // type, see enum eCorrelationsVsInteractionRateVsProfiles2D
+
   // *) particle cuts:
   for (int rs = 0; rs < 2; rs++) // reco/sim
   {
@@ -5879,6 +6211,8 @@ void CheckCurrentRunNumber(T1 const& collision, T2 const&)
       LOGF(fatal, "tc.fRunTime[eDurationInSec] = %d, durationInSec = %d", tc.fRunTime[eDurationInSec], durationInSec);
     }
 
+  } else if constexpr (rs == eTest) {
+    LOGF(warning, "\033[1;33m%s at line %d : RunNumber cannot be checked in eTest mode, due to minimal subscription. Simply skipping this check. If you do not like this, extend subscription to more tables.\033[0m", __FUNCTION__, __LINE__);
   } else {
     // b) The rest:
 
@@ -6144,7 +6478,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
   // d) Event cuts on simulated (Run 3 specific);
   // e) Event cuts on reconstructed, and corresponding MC truth simulated (Run 1 and 2 specific); // In case there is some corner case between Run 1 and Run 2, simply branch further this one
   // f) Event cuts on simulated (Run 1 and 2 specific); // In case there is some corner case between Run 1 and Run 2, simply branch further this one
-  // *) Event cuts on Test case.
+  // *) Event cuts for Test case.
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -6720,9 +7054,9 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     //   *) Vertex_z:
     if (ec.fUseEventCuts[eVertex_z]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eSim, eVertex_z, eCutCounterBinning);
+        EventCut(eRec, eVertex_z, eCutCounterBinning);
       } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eSim, eVertex_z, cutModus)) {
+        if (!EventCut(eRec, eVertex_z, cutModus)) {
           return false;
         }
       }
@@ -6768,29 +7102,34 @@ bool EventCut(int rs, int eventCut, eCutModus cutModus)
 
   // *) Do the thing:
   switch (cutModus) {
-    case eCut:
+    case eCut: {
       if (tc.fVerboseEventCut) {
         LOGF(info, "\033[1;31mEvent didn't survive the cut: %s\033[0m", ec.fEventCutName[eventCut].Data());
       }
       return false;
       break;
-    case eCutCounterBinning:
+    }
+    case eCutCounterBinning: {
       ec.fEventCutCounterMap[rs]->Add(ec.fEventCutCounterBinNumber[rs], eventCut);
       ec.fEventCutCounterMapInverse[rs]->Add(eventCut, ec.fEventCutCounterBinNumber[rs]);
       ec.fEventCutCounterBinNumber[rs]++; // yes
       return true;
       break;
-    case eCutCounterAbsolute:
+    }
+    case eCutCounterAbsolute: {
       ec.fEventCutCounterHist[rs][eAbsolute]->Fill(ec.fEventCutCounterMapInverse[rs]->GetValue(eventCut));
       return true; // yes, so that I can proceed with another cut in EventCuts
       break;
-    case eCutCounterSequential:
+    }
+    case eCutCounterSequential: {
       ec.fEventCutCounterHist[rs][eSequential]->Fill(ec.fEventCutCounterMapInverse[rs]->GetValue(eventCut));
       return false; // yes, so that I bail out from EventCuts
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This cutModus = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(cutModus));
       break;
+    }
   } // switch(cutModus)
 
   return false; // obsolete, but it suppresses the warning...
@@ -6953,9 +7292,9 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
         if (wTwo > 0.0) {
           twoC /= wTwo;
         } else {
-          LOGF(fatal, "In function \033[1;31m%s at line %d, wTwo = %f <=0. ebye.fSelectedTracks = %d\033[0m", __FUNCTION__, __LINE__, wTwo, ebye.fSelectedTracks);
+          LOGF(fatal, "In function \033[1;31m%s at line %d : wTwo = %f <=0. ebye.fSelectedTracks = %d.\nDid you forget to enable fCalculateQvectors = true?\033[0m", __FUNCTION__, __LINE__, wTwo, ebye.fSelectedTracks);
         }
-        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Multiplicity][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Multiplicity][h - 1][eRec]->Fill(twoC, ebye.fMultiplicity);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Multiplicity][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Multiplicity][h - 1][eRec]->Fill(twoC, ebye.fMultiplicity); // Remark: I have exceptionally divided above already twoC /= wTwo , since I do not use here any particular weight
         !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_ReferenceMultiplicity][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_ReferenceMultiplicity][h - 1][eRec]->Fill(twoC, ebye.fReferenceMultiplicity);
         !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Centrality][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Centrality][h - 1][eRec]->Fill(twoC, ebye.fCentrality);
         // .....
@@ -6969,6 +7308,49 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
       ResetQ();
 
     } // if (qa.fFillQACorrelationsVsHistograms2D && qa.fQAParticleEventProEbyE[eRec][ba] && ba == eAfter) {
+
+    if (qa.fFillQACorrelationsVsInteractionRateVsProfiles2D && qa.fQAParticleEventProEbyE[eRec][ba] && ba == eAfter) { // fill only for eAfter, because I do not calculate Q-vectors before cuts
+
+      // Calculate quickly 2-p correlation in harmonic h for this event: TBI 20250114 shall I add this also to some EbyE variable? There is no really much of a code bloat for the time being...
+
+      // Flush 'n' fill the generic Q-vectors:
+      ResetQ();
+      int lMaxCorrelator = 2; // used only here locally
+      for (int h = 0; h < gMaxHarmonic * lMaxCorrelator + 1; h++) {
+        for (int wp = 0; wp < lMaxCorrelator + 1; wp++) // weight power
+        {
+          qv.fQ[h][wp] = qv.fQvector[h][wp];
+        }
+      }
+
+      for (int h = 1; h <= gMaxHarmonic; h++) {
+        TComplex two = Two(h, -h);
+        double twoC = two.Re(); // cos
+        // double twoS = two.Im(); // sin
+        double wTwo = Two(0, 0).Re(); // Weight is 'number of combinations' by default TBI
+                                      // 20220809 add support for other weights
+        if (!(wTwo > 0.0)) {
+          LOGF(fatal, "In function \033[1;31m%s at line %d : wTwo = %f <=0. ebye.fSelectedTracks = %d.\nDid you forget to enable fCalculateQvectors = true?\033[0m", __FUNCTION__, __LINE__, wTwo, ebye.fSelectedTracks);
+        }
+
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_CurrentRunDuration][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_CurrentRunDuration][h - 1][eRec]->Fill(ebye.fInteractionRate, ebye.fCurrentRunDuration, twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_Multiplicity][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_Multiplicity][h - 1][eRec]->Fill(ebye.fInteractionRate, ebye.fMultiplicity, twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity][h - 1][eRec]->Fill(ebye.fInteractionRate, ebye.fReferenceMultiplicity, twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_Centrality][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_Centrality][h - 1][eRec]->Fill(ebye.fInteractionRate, ebye.fCentrality, twoC / wTwo, wTwo);
+        // .....
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPhi][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPhi][h - 1][eRec]->Fill(ebye.fInteractionRate, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanPhi), twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi][h - 1][eRec]->Fill(ebye.fInteractionRate, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinError(eMeanPhi), twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPt][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPt][h - 1][eRec]->Fill(ebye.fInteractionRate, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanPt), twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPt][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPt][h - 1][eRec]->Fill(ebye.fInteractionRate, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinError(eMeanPt), twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanEta][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanEta][h - 1][eRec]->Fill(ebye.fInteractionRate, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanEta), twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanEta][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanEta][h - 1][eRec]->Fill(ebye.fInteractionRate, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinError(eMeanEta), twoC / wTwo, wTwo);
+        // .....
+      }
+
+      // Flush the generic Q-vectors:
+      ResetQ();
+
+    } // if (qa.fFillQACorrelationsVsInteractionRateVsProfiles2D && qa.fQAParticleEventProEbyE[eRec][ba] && ba == eAfter) {
 
     // ... and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1) ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
     if constexpr (rs == eRecAndSim || rs == eRecAndSim_Run2 || rs == eRecAndSim_Run1) {
@@ -7130,6 +7512,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     // TBI 20240223 for the time being, eTest fills only eRec histos:
     // A few example histograms, just to check if I access corresponding tables:
     if (eh.fFillEventHistograms) {
+      !eh.fEventHistograms[eNumberOfEvents][eRec][ba] ? true : eh.fEventHistograms[eNumberOfEvents][eRec][ba]->Fill(0.5);
       !eh.fEventHistograms[eVertex_z][eRec][ba] ? true : eh.fEventHistograms[eVertex_z][eRec][ba]->Fill(collision.posZ());
       !eh.fEventHistograms[eTotalMultiplicity][eRec][ba] ? true : eh.fEventHistograms[eTotalMultiplicity][eRec][ba]->Fill(tracks.size());
       !eh.fEventHistograms[eCentrality][eRec][ba] ? true : eh.fEventHistograms[eCentrality][eRec][ba]->Fill(ebye.fCentrality);
@@ -8107,29 +8490,34 @@ bool ParticleCut(int rs, int particleCut, eCutModus cutModus)
   // Remark: Remember that as a second argument I cannot use enum eParticleCuts, because here in one go I take both enum eParticleCuts and enum eParticleHistograms .
 
   switch (cutModus) {
-    case eCut:
+    case eCut: {
       if (tc.fVerboseForEachParticle) {
         LOGF(info, "\033[1;31mParticle didn't pass the cut: %s\033[0m", pc.fParticleCutName[particleCut].Data());
       }
       return false;
       break;
-    case eCutCounterBinning:
+    }
+    case eCutCounterBinning: {
       pc.fParticleCutCounterMap[rs]->Add(pc.fParticleCutCounterBinNumber[rs], particleCut);
       pc.fParticleCutCounterMapInverse[rs]->Add(particleCut, pc.fParticleCutCounterBinNumber[rs]);
       pc.fParticleCutCounterBinNumber[rs]++; // yes
       return true;
       break;
-    case eCutCounterAbsolute:
+    }
+    case eCutCounterAbsolute: {
       pc.fParticleCutCounterHist[rs][eAbsolute]->Fill(pc.fParticleCutCounterMapInverse[rs]->GetValue(particleCut));
       return true; // yes, so that I can proceed with another cut in ParticleCuts
       break;
-    case eCutCounterSequential:
+    }
+    case eCutCounterSequential: {
       pc.fParticleCutCounterHist[rs][eSequential]->Fill(pc.fParticleCutCounterMapInverse[rs]->GetValue(particleCut));
       return false; // yes, so that I bail out from ParticleCuts
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This cutModus = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(cutModus));
       break;
+    }
   } // switch(cutModus)
 
   return false; // obsolete, but it suppresses the warning...
@@ -8235,7 +8623,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
     if (qa.fFillQAParticleHistograms2D) {
       !qa.fQAParticleHistograms2D[ePt_vs_dcaXY][eRec][ba] ? true : qa.fQAParticleHistograms2D[ePt_vs_dcaXY][eRec][ba]->Fill(track.pt(), track.dcaXY(), weight);
     }
-    if ((qa.fFillQAParticleEventHistograms2D || qa.fFillQACorrelationsVsHistograms2D) && qa.fQAParticleEventProEbyE[eRec][ba]) {
+    if ((qa.fFillQAParticleEventHistograms2D || qa.fFillQACorrelationsVsHistograms2D || qa.fFillQACorrelationsVsInteractionRateVsProfiles2D) && qa.fQAParticleEventProEbyE[eRec][ba]) {
       // Here I only fill the helper profile to get average of requested particle variable for current event:
       qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eitsNClsEbyE) - 0.5, track.itsNCls(), weight);
 
@@ -8777,17 +9165,20 @@ void CalculateKineCorrelations(eAsFunctionOf AFO_variable)
   // int nBins = -1; // TBI 20241111 temporarily commented out just to suppress warnings
 
   switch (AFO_variable) {
-    case AFO_PT:
+    case AFO_PT: {
       qvKine = PTq;
       // nBins = res.fResultsPro[AFO_PT]->GetNbinsX(); // TBI 20241111 temporarily commented out just to suppress warnings
       break;
-    case AFO_ETA:
+    }
+    case AFO_ETA: {
       qvKine = ETAq;
       // nBins = res.fResultsPro[AFO_ETA]->GetNbinsX(); // TBI 20241111 temporarily commented out just to suppress warnings
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This AFO_variable = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
       break;
+    }
   } // switch(AFO_variable)
 
   // *) Insanity checks on above settings:
@@ -9058,17 +9449,20 @@ void CalculateKineTest0(eAsFunctionOf AFO_variable)
   int nBins = -1;
 
   switch (AFO_variable) {
-    case AFO_PT:
+    case AFO_PT: {
       qvKine = PTq;
       nBins = res.fResultsPro[AFO_PT]->GetNbinsX();
       break;
-    case AFO_ETA:
+    }
+    case AFO_ETA: {
       qvKine = ETAq;
       nBins = res.fResultsPro[AFO_ETA]->GetNbinsX();
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This AFO_variable = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
       break;
+    }
   } // switch(AFO_variable)
 
   // *) Insanity checks on above settings:
@@ -9348,16 +9742,19 @@ void CalculateKineEtaSeparations(eAsFunctionOf AFO_variable)
   int nBins = -1;
 
   switch (AFO_variable) {
-    case AFO_PT:
+    case AFO_PT: {
       qvKine = PTq;
       nBins = res.fResultsPro[AFO_PT]->GetNbinsX();
       break;
-    case AFO_ETA:
+    }
+    case AFO_ETA: {
       LOGF(fatal, "\033[1;31m%s at line %d : It doesn't make sense (i.e. AFO_ETA cannot be used here). \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
       break; // obsolete, but it supresses the warning
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This AFO_variable = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
       break;
+    }
   } // switch(AFO_variable)
 
   // *) Insanity checks on above settings:
@@ -10118,7 +10515,7 @@ void SetWeightsHist(TH1D* const hist, eWeights whichWeight)
 
   // Finally:
   hist->SetDirectory(0);
-  pw.fWeightsHist[whichWeight] = reinterpret_cast<TH1D*>(hist->Clone());
+  pw.fWeightsHist[whichWeight] = reinterpret_cast<TH1D*>(hist);
 
   if (!pw.fWeightsHist[whichWeight]) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -10163,7 +10560,7 @@ void SetDiffWeightsHist(TH1D* const hist, eDiffWeights whichDiffWeight, int bin)
 
   // Finally:
   hist->SetDirectory(0);
-  pw.fDiffWeightsHist[whichDiffWeight][bin] = reinterpret_cast<TH1D*>(hist->Clone());
+  pw.fDiffWeightsHist[whichDiffWeight][bin] = reinterpret_cast<TH1D*>(hist);
 
   if (!pw.fDiffWeightsHist[whichDiffWeight][bin]) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -10208,7 +10605,7 @@ void SetDiffWeightsSparse(THnSparseF* const sparse, eDiffWeightCategory dwc)
 
   // Finally:
   // sparse->SetDirectory(0); I cannot use this for sparse
-  pw.fDiffWeightsSparse[dwc] = reinterpret_cast<THnSparseF*>(sparse->Clone());
+  pw.fDiffWeightsSparse[dwc] = reinterpret_cast<THnSparseF*>(sparse);
 
   if (!pw.fDiffWeightsSparse[dwc]) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -10265,7 +10662,7 @@ void SetCentralityWeightsHist(TH1D* const hist)
 
   // Finally:
   hist->SetDirectory(0);
-  cw.fCentralityWeightsHist = reinterpret_cast<TH1D*>(hist->Clone());
+  cw.fCentralityWeightsHist = reinterpret_cast<TH1D*>(hist);
 
   if (!cw.fCentralityWeightsHist) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -10338,7 +10735,8 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
   // d) Handle the AliEn case;
   // e) Handle the CCDB case;
   // f) Handle the local case;
-  // g) The final touch on histogram with weights.
+  // g) The final touch on histogram with weights;
+  // h) Clone histogram and delete baseList (realising back the memory).
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -10555,7 +10953,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
       AFO = AFO_ETA;
       lVariableName = FancyFormatting("Eta");
     } else {
-      LOGF(fatal, "\033[1;31m%s at line %d : name = %s is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<string>(variable));
+      LOGF(fatal, "\033[1;31m%s at line %d : name = %s is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<std::string>(variable));
     }
 
     // Get min and max value for bin, stored locally:
@@ -10585,11 +10983,16 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
   // TBI 20241021 if I need to split hist title across two lines, use this technique:
   // hist->SetTitle(Form("#splitline{#scale[0.6]{%s}}{#scale[0.4]{%s}}",hist->GetTitle(),filePath));
 
+  // h) Clone histogram and delete baseList (realising back the memory):
+  //    Remark: Yes, I have to clone here.
+  TH1D* histClone = reinterpret_cast<TH1D*>(hist->Clone());
+  delete baseList; // release back the memory
+
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
   }
 
-  return hist;
+  return histClone;
 
 } // TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const char* variable, int bin = -1)
 
@@ -10623,7 +11026,8 @@ THnSparseF* GetSparseHistogramWithWeights(const char* filePath, const char* runN
   // d) Handle the AliEn case;
   // e) Handle the CCDB case;
   // f) Handle the local case;
-  // g) The final touch on histogram with weights.
+  // g) The final touch on sparse histogram with weights;
+  // h) Clone histogram and delete baseList (realising back the memory).
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -10830,7 +11234,7 @@ THnSparseF* GetSparseHistogramWithWeights(const char* filePath, const char* runN
         AFO = AFO_ETA;
         lVariableName = FancyFormatting("Eta");
       } else {
-        LOGF(fatal, "\033[1;31m%s at line %d : name = %s is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<string>(variable));
+        LOGF(fatal, "\033[1;31m%s at line %d : name = %s is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<std::string>(variable));
       }
 
       // Get min and max value for bin, stored locally:
@@ -10859,11 +11263,16 @@ THnSparseF* GetSparseHistogramWithWeights(const char* filePath, const char* runN
   // TBI 20241021 if I need to split hist title across two lines, use this technique:
   // hist->SetTitle(Form("#splitline{#scale[0.6]{%s}}{#scale[0.4]{%s}}",hist->GetTitle(),filePath));
 
+  // h) Clone histogram and delete baseList (realising back the memory):
+  //    Remark: Yes, I have to clone here.
+  THnSparseF* sparseHistClone = reinterpret_cast<THnSparseF*>(sparseHist->Clone());
+  delete baseList; // release back the memory
+
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
   }
 
-  return sparseHist;
+  return sparseHistClone;
 
 } // THnSparseF* GetSparseHistogramWithWeights(const char* filePath, const char* runNumber, const char* whichCategory, const char* whichDimensions)
 
@@ -10884,7 +11293,8 @@ TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNum
   // d) Handle the AliEn case;
   // e) Handle the CCDB case;
   // f) Handle the local case;
-  // g) The final touch on histogram with centrality weights.
+  // g) The final touch on histogram with centrality weights;
+  // h) Clone histogram and delete baseList (realising back the memory).
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -11079,7 +11489,12 @@ TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNum
     ExitFunction(__FUNCTION__);
   }
 
-  return hist;
+  // h) Clone histogram and delete baseList (realising back the memory):
+  //    Remark: Yes, I have to clone here.
+  TH1D* histClone = reinterpret_cast<TH1D*>(hist->Clone());
+  delete baseList; // release back the memory
+
+  return histClone;
 
 } // TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNumber)
 
@@ -11318,7 +11733,8 @@ void GetHistogramWithCustomNUA(const char* filePath, eNUAPDF variable)
   // d) Handle the AliEn case;
   // e) Handle the CCDB case;
   // f) Handle the local case;
-  // g) The final touch.
+  // g) The final touch;
+  // h) Clone histogram and delete baseList (realising back the memory).
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -11428,9 +11844,14 @@ void GetHistogramWithCustomNUA(const char* filePath, eNUAPDF variable)
     LOGF(info, "\033[1;31m nua.fCustomNUAPDFHistNames[variable]->Data() = %s\033[0m", nua.fCustomNUAPDFHistNames[variable]->Data());
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
+
+  // h) Clone histogram and delete baseList (realising back the memory).
+  //    TBI 20250315 here I did it a bit differently than e.g. in GetHistogramWithWeights or in GetSparseHistogramWithWeights .
+  //                 If it's failing here, redo it in exactly the same way as I did it there.
   hist->SetDirectory(0);
   nua.fCustomNUAPDF[variable] = reinterpret_cast<TH1D*>(hist->Clone());
   nua.fCustomNUAPDF[variable]->SetTitle(Form("%s", filePath));
+  delete baseList;
 
   // TBI 20240501 if additional cosmetics is needed, it can be implemented here
 
@@ -12138,20 +12559,23 @@ bool MaxNumberOfEvents(eBeforeAfter ba)
 
   // *) Okay, do the thing:
   switch (ba) {
-    case eBefore:
+    case eBefore: {
       if (eh.fEventHistograms[eNumberOfEvents][rs][eBefore] && eh.fEventHistograms[eNumberOfEvents][rs][eBefore]->GetBinContent(1) == ec.fdEventCuts[eNumberOfEvents][eMax]) {
         reachedMaxNumberOfEvents = true;
       }
       break;
-    case eAfter:
+    }
+    case eAfter: {
       if (eh.fEventHistograms[eNumberOfEvents][rs][eAfter] && eh.fEventHistograms[eNumberOfEvents][rs][eAfter]->GetBinContent(1) == ec.fdEventCuts[eSelectedEvents][eMax]) {
         reachedMaxNumberOfEvents = true;
       }
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : enum ba = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(ba));
       break;
-  }
+    }
+  } // switch (ba)
 
   // *) Hasta la vista:
   if (tc.fVerbose) {
@@ -12174,24 +12598,27 @@ void PrintEventCounter(eBeforeAfter ba)
 
   // *) Print or die:
   switch (ba) {
-    case eBefore:
+    case eBefore: {
       if (!tc.fPlainPrintout) {
         LOGF(info, "\033[1;32m%s : processing event %d ....\033[0m", __FUNCTION__, eh.fEventCounter[eTotal]);
       } else {
         LOGF(info, "%s : processing event %d ....", __FUNCTION__, eh.fEventCounter[eTotal]);
       }
       break;
-    case eAfter:
+    }
+    case eAfter: {
       if (!tc.fPlainPrintout) {
         LOGF(info, "\033[1;32m%s : event passed all cuts %d/%d\033[0m", __FUNCTION__, eh.fEventCounter[eProcessed], eh.fEventCounter[eTotal]);
       } else {
         LOGF(info, "%s : event passed all cuts %d/%d", __FUNCTION__, eh.fEventCounter[eProcessed], eh.fEventCounter[eTotal]);
       }
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : enum ba = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(ba));
       break;
-  }
+    }
+  } // switch (ba)
 
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
@@ -12216,12 +12643,13 @@ void EventCounterForDryRun(eEventCounterForDryRun eVar)
   }
 
   switch (eVar) {
-    case eFill:
+    case eFill: {
       // Fill event counter:
       !eh.fEventHistograms[eNumberOfEvents][eRec][eAfter] ? true : eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]->Fill(0.5);
       !eh.fEventHistograms[eNumberOfEvents][eSim][eAfter] ? true : eh.fEventHistograms[eNumberOfEvents][eSim][eAfter]->Fill(0.5);
       break;
-    case ePrint:
+    }
+    case ePrint: {
       // Print current status of event counter:
       // Remark: if I am processing RecSim, the counter is corresponding to Rec.
       if (eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]) {
@@ -12230,9 +12658,11 @@ void EventCounterForDryRun(eEventCounterForDryRun eVar)
         LOGF(info, "Processing event %d (dry run) ....", static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eSim][eAfter]->GetBinContent(1)));
       }
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : enum eVar = %d is not supported yet in eEventCounter. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(eVar));
       break;
+    }
   } // switch(eVar)
 
   if (tc.fVerbose) {
@@ -12547,17 +12977,20 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
   eqvectorKine qvKine = eqvectorKine_N; // which component of q-vector
   TString kineVarName = "";
   switch (AFO_variable) {
-    case AFO_PT:
+    case AFO_PT: {
       qvKine = PTq;
       kineVarName = "pt";
       break;
-    case AFO_ETA:
+    }
+    case AFO_ETA: {
       qvKine = ETAq;
       kineVarName = "eta";
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This AFO_variable = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
       break;
+    }
   } // switch(AFO_variable)
 
   // *) Insanity checks on above settings:
@@ -13258,7 +13691,7 @@ void BanishmentLoopOverParticles(T const& tracks)
 
   // *) Quick insanity checks (mandatory!):
   if (lSelectedTracks != ebye.fSelectedTracks) {
-    LOGF(fatal, "\033[1;31m%s at line %d : lSelectedTracks != ebye.fSelectedTracks , lSelectedTracks = %d, ebye.fSelectedTracks = %d \033[0m", __FUNCTION__, __LINE__, lSelectedTracks, ebye.fSelectedTracks);
+    LOGF(fatal, "\033[1;31m%s at line %d : lSelectedTracks != ebye.fSelectedTracks , lSelectedTracks = %d, ebye.fSelectedTracks = %d\nDid you accidentally enable Toy NUA? \033[0m", __FUNCTION__, __LINE__, lSelectedTracks, ebye.fSelectedTracks);
   }
 
   if (tc.fVerbose) {
@@ -13683,19 +14116,22 @@ void Fillqvector(const double& dPhi, const double& kineVarValue, eqvectorKine ki
   eWeights AFO_weight = eWeights_N;             // this local variable determines the enum "eWeights" which corresponds to enum "eqvectorKine"
   eDiffWeights AFO_diffWeight = eDiffWeights_N; // this local variable determines the enum "eDiffWeights" which corresponds to enum "eqvectorKine"
   switch (kineVarChoice) {
-    case PTq:
+    case PTq: {
       AFO_var = AFO_PT;
       AFO_weight = wPT;
       AFO_diffWeight = wPHIPT;
       break;
-    case ETAq:
+    }
+    case ETAq: {
       AFO_var = AFO_ETA;
       AFO_weight = wETA;
       AFO_diffWeight = wPHIETA;
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : this kineVarChoice = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(kineVarChoice));
       break;
+    }
   } // switch(kineVarChoice)
 
   // *) Insanity checks on above settings:
@@ -13868,6 +14304,40 @@ void CalculateEverything()
   }
 
 } // void CalculateEverything()
+
+//============================================================
+
+void SkipThisRun()
+{
+  // Skip or not the current run from furher processing.
+
+  // a) Insanity checks;
+  // b) Do the check.
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+  // a) Insanity checks:
+  if (tc.fRunNumber.EqualTo("")) {
+    LOGF(fatal, "\033[1;31m%s at line %d : tc.fRunNumber is empty. In case you are running something on-the-fly, empty the string fSkipTheseRuns .\033[0m", __FUNCTION__, __LINE__);
+  }
+
+  // TBI 20250516 Shall I implement some insanity check on fSkipTheseRuns? I commented in configurable that the format is comma-separated list of runs,
+  //              but I am nowhere really enforcing that...
+
+  // b) Do the check:
+  if (tc.fSkipTheseRuns.Contains(tc.fRunNumber.Data())) {
+    // TBI 20250316 I think this check is safe enough. If not, tokenize fSkipTheseRuns with respect to "," etc.
+    tc.fSkipRun = true;
+  } else {
+    tc.fSkipRun = false;
+  }
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
+} // void SkipThisRun()
 
 //============================================================
 
@@ -14060,6 +14530,12 @@ void Steer(T1 const& collision, T2 const& bcs, T3 const& tracks)
 
   // *) Do all thingies before starting to process data from this collision (e.g. cut on number of events (both total and selected), fetch the run number, etc.):
   Preprocess<rs>(collision, bcs);
+
+  // *) It was explicitly requested, skip this particular run:
+  if (tc.fSkipRun) {
+    LOGF(info, "\033[1;33mPer exlicit request via configurable cfSkipTheseRuns, skipping run %s from further processing.\033[0m", tc.fRunNumber.Data());
+    return;
+  }
 
   // *) Determine collision reference multiplicity:
   DetermineReferenceMultiplicity<rs>(collision);
