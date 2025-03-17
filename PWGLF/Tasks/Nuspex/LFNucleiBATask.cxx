@@ -57,6 +57,7 @@ struct LFNucleiBATask {
   HistogramRegistry spectraGen{"spectraGen", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry debugHistos{"debugHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry evtimeHistos{"evtimeHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry evLossHistos{"evLossHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Enable particle for analysis
   Configurable<bool> enablePr{"enablePr", true, "Flag to enable proton analysis."};
@@ -267,6 +268,19 @@ struct LFNucleiBATask {
 
     if (doprocessData == true && doprocessMCReco == true) {
       LOG(fatal) << "Can't enable processData and processMCReco in the same time, pick one!";
+    }
+    if (doprocessEvSgLossMC) {
+      evLossHistos.add<TH1>("evLoss/hEvent", "Event loss histograms; ; counts", HistType::kTH1F, {{3, 0., 3.}});
+      evLossHistos.get<TH1>(HIST("evLoss/hEvent"))->GetXaxis()->SetBinLabel(1, "All Gen.");
+      evLossHistos.get<TH1>(HIST("evLoss/hEvent"))->GetXaxis()->SetBinLabel(2, "TVX (reco.)");
+      evLossHistos.get<TH1>(HIST("evLoss/hEvent"))->GetXaxis()->SetBinLabel(3, "Sel8 (reco.)");
+
+      evLossHistos.add<TH1>("evLoss/pt/hDeuteronTriggeredTVX", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{100, 0., 5.}});
+      evLossHistos.add<TH1>("evLoss/pt/hDeuteronTriggeredSel8", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{100, 0., 5.}});
+      evLossHistos.add<TH1>("evLoss/pt/hDeuteronGen", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{100, 0., 5.}});
+      evLossHistos.add<TH1>("evLoss/pt/hAntiDeuteronTriggeredTVX", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{100, 0., 5.}});
+      evLossHistos.add<TH1>("evLoss/pt/hAntiDeuteronTriggeredSel8", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{100, 0., 5.}});
+      evLossHistos.add<TH1>("evLoss/pt/hAntiDeuteronGen", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{100, 0., 5.}});
     }
     spectraGen.add<TH1>("LfEv/pT_nocut", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
     spectraGen.add<TH1>("LfEv/pT_TVXtrigger", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
@@ -2267,10 +2281,12 @@ struct LFNucleiBATask {
           break;
       }
 
-      float nITSTr, nITSHe;
-      nITSTr = track.itsNSigmaTr();
-      nITSHe = track.itsNSigmaHe();
-
+      float nITSTr = 99.f;
+      float nITSHe = 99.f;
+      if (!IsFilteredData) {
+        nITSTr = track.itsNSigmaTr();
+        nITSHe = track.itsNSigmaHe();
+      }
       heP = track.p();
       antiheP = track.p();
       heTPCmomentum = track.tpcInnerParam();
@@ -6131,6 +6147,63 @@ struct LFNucleiBATask {
     }
   } // Close processMCGen
   PROCESS_SWITCH(LFNucleiBATask, processMCGen, "process MC Generated", true);
+  void processEvSgLossMC(aod::McCollision const& mcCollision,
+                         aod::McParticles const& mcParticles,
+                         const soa::SmallGroups<EventCandidatesMC>& recoColls)
+  {
+    if (std::abs(mcCollision.posZ()) < cfgHighCutVertex) {
+      evLossHistos.fill(HIST("evLoss/hEvent"), 0.5);
+    }
+
+    bool isSel8Event = false;
+    bool isTvxEvent = false;
+
+    // Check if there is an event reconstructed for a generated event
+    for (const auto& recoColl : recoColls) {
+      if (std::abs(recoColl.posZ()) > cfgHighCutVertex)
+        continue;
+      if (recoColl.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        isTvxEvent = true;
+      }
+      if (recoColl.sel8()) {
+        isSel8Event = true;
+      }
+    }
+
+    if (isTvxEvent) {
+      evLossHistos.fill(HIST("evLoss/hEvent"), 1.5);
+    }
+    if (isSel8Event) {
+      evLossHistos.fill(HIST("evLoss/hEvent"), 2.5);
+    }
+
+    // Loop over all the Generated level particles
+    for (const auto& mcPart : mcParticles) {
+      if (!mcPart.isPhysicalPrimary())
+        continue;
+      if (std::abs(mcPart.y()) >= 0.5)
+        continue;
+      if (mcPart.pdgCode() == PDGDeuteron) {
+        evLossHistos.fill(HIST("evLoss/pt/hDeuteronGen"), mcPart.pt());
+        if (isTvxEvent) {
+          evLossHistos.fill(HIST("evLoss/pt/hDeuteronTriggeredTVX"), mcPart.pt());
+        }
+        if (isSel8Event) {
+          evLossHistos.fill(HIST("evLoss/pt/hDeuteronTriggeredSel8"), mcPart.pt());
+        }
+      }
+      if (mcPart.pdgCode() == -PDGDeuteron) {
+        evLossHistos.fill(HIST("evLoss/pt/hAntiDeuteronGen"), mcPart.pt());
+        if (isTvxEvent) {
+          evLossHistos.fill(HIST("evLoss/pt/hAntiDeuteronTriggeredTVX"), mcPart.pt());
+        }
+        if (isSel8Event) {
+          evLossHistos.fill(HIST("evLoss/pt/hAntiDeuteronTriggeredSel8"), mcPart.pt());
+        }
+      }
+    } // MC particles
+  }
+  PROCESS_SWITCH(LFNucleiBATask, processEvSgLossMC, "process MC Sig Event", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
