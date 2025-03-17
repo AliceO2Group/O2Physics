@@ -15,6 +15,7 @@
 
 #include <cmath>
 #include <vector>
+#include <string>
 #include <TPDGCode.h>
 #include <TString.h>
 #include "Framework/StaticFor.h"
