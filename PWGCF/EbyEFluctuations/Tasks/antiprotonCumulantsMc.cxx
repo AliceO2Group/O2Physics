@@ -117,7 +117,7 @@ struct AntiprotonCumulantsMc {
 
   // Filter command for rec (data)***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (aod::track::itsChi2NCl < cfgCutItsChi2NCl) && (aod::track::dcaZ < cfgCutDCAz) && (aod::track::dcaXY < cfgCutDCAxy);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (aod::track::itsChi2NCl < cfgCutItsChi2NCl) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
 
   // filtering collisions and tracks for real data***********
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>>;
@@ -946,7 +946,7 @@ struct AntiprotonCumulantsMc {
     int nchInel = 0;
     for (const auto& mcParticle : mcParticles) {
       auto pdgcode = std::abs(mcParticle.pdgCode());
-      if (mcParticle.isPhysicalPrimary() && (pdgcode == 211 || pdgcode == 321 || pdgcode == 2212 || pdgcode == 11 || pdgcode == 13)) {
+      if (mcParticle.isPhysicalPrimary() && (pdgcode == PDG_t::kPiPlus || pdgcode == PDG_t::kKPlus || pdgcode == PDG_t::kProton || pdgcode == PDG_t::kElectron || pdgcode == PDG_t::kMuonMinus)) {
         if (std::abs(mcParticle.eta()) < 1.0) {
           nchInel = nchInel + 1;
         }
@@ -992,8 +992,6 @@ struct AntiprotonCumulantsMc {
     for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.has_mcCollision())
         continue;
-      if (!(mcParticle.mcCollision().globalIndex() == mcCollision.globalIndex()))
-        continue;
 
       if (mcParticle.isPhysicalPrimary()) {
         if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < 5.0f) && (std::abs(mcParticle.eta()) < cfgCutEta)) {
@@ -1001,8 +999,8 @@ struct AntiprotonCumulantsMc {
           histos.fill(HIST("hgenEtaAll"), mcParticle.eta());
           histos.fill(HIST("hgenPhiAll"), mcParticle.phi());
 
-          if (std::abs(mcParticle.pdgCode()) == 2212 /*&& std::abs(mcParticle.y()) < 0.5*/) {
-            if (mcParticle.pdgCode() == 2212) {
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton /*&& std::abs(mcParticle.y()) < 0.5*/) {
+            if (mcParticle.pdgCode() == PDG_t::kProton) {
               histos.fill(HIST("hgenPtProton"), mcParticle.pt()); //! hist for p gen
               histos.fill(HIST("hgenPtDistProtonVsCentrality"), mcParticle.pt(), cent);
               histos.fill(HIST("hgen2DEtaVsPtProton"), mcParticle.pt(), mcParticle.eta());
@@ -1011,7 +1009,7 @@ struct AntiprotonCumulantsMc {
               if (mcParticle.pt() < cfgCutPtUpper)
                 nProt = nProt + 1.0;
             }
-            if (mcParticle.pdgCode() == -2212) {
+            if (mcParticle.pdgCode() == PDG_t::kProtonBar) {
               histos.fill(HIST("hgenPtAntiproton"), mcParticle.pt()); //! hist for anti-p gen
               histos.fill(HIST("hgenPtDistAntiprotonVsCentrality"), mcParticle.pt(), cent);
               histos.fill(HIST("hgen2DEtaVsPtAntiproton"), mcParticle.pt(), mcParticle.eta());
@@ -1104,9 +1102,6 @@ struct AntiprotonCumulantsMc {
       if (!track.has_collision()) {
         continue;
       }
-      if (!(track.collision().globalIndex() == collision.globalIndex())) {
-        continue;
-      }
 
       if (!track.has_mcParticle()) //! check if track has corresponding MC particle
       {
@@ -1181,7 +1176,7 @@ struct AntiprotonCumulantsMc {
                 }
               }
             }
-            if (particle.pdgCode() == 2212) {
+            if (particle.pdgCode() == PDG_t::kProton) {
               histos.fill(HIST("hrecTruePtProton"), particle.pt()); //! hist for p purity
             }
           }
@@ -1203,7 +1198,7 @@ struct AntiprotonCumulantsMc {
                 }
               }
             }
-            if (particle.pdgCode() == -2212) {
+            if (particle.pdgCode() == PDG_t::kProtonBar) {
               histos.fill(HIST("hrecTruePtAntiproton"), particle.pt()); //! hist for anti-p purity
             }
           }
@@ -2055,9 +2050,7 @@ struct AntiprotonCumulantsMc {
       if (!track.has_collision()) {
         continue;
       }
-      if (!(track.collision().globalIndex() == coll.globalIndex())) {
-        continue;
-      }
+
       if (!track.isPVContributor()) //! track check as used in data
       {
         continue;
