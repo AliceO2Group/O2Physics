@@ -17,7 +17,6 @@
 #include <cstdlib>
 #include <vector>
 #include <TString.h>
-#include <TLorentzVector.h>
 #include <TMath.h>
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
