@@ -84,8 +84,6 @@ struct MeanPtFlucId {
   Configurable<bool> cfgNoSameBunchPileup{"cfgNoSameBunchPileup", true, "kNoSameBunchPileup"};
   Configurable<bool> cfgIsVertexITSTPC{"cfgIsVertexITSTPC", true, "kIsVertexITSTPC"};
   Configurable<bool> cfgRejTrk{"cfgRejTrk", true, "Rejected Tracks"};
-  Configurable<bool> cfgSelOld{"cfgSelOld", true, " Non-circular Cuts"};
-  Configurable<bool> cfgSelNew{"cfgSelNew", false, "Circular Cuts"};
   ConfigurableAxis multTPCBins{"multTPCBins", {150, 0, 150}, "TPC Multiplicity bins"};
   ConfigurableAxis multFT0MBins{"multFT0MBins", {1000, 0, 5000}, "Forward Multiplicity bins"};
   ConfigurableAxis multFT0MMCBins{"multFT0MMCBins", {250, 0, 250}, "Forward Multiplicity bins"};
@@ -99,7 +97,7 @@ struct MeanPtFlucId {
   Configurable<std::vector<double>> rapBins{"rapBins", {-0.6, -0.55, -0.5, -0.45, -0.4, -0.35, -0.3, -0.25, -0.2, -0.15, -0.1, -0.05, 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6}, "#rap bins"};
 
   Configurable<std::string> cfgUrlCCDB{"cfgUrlCCDB", "http://ccdb-test.cern.ch:8080", "url of ccdb"};
-  Configurable<std::string> cfgPathCCDB{"cfgPathCCDB", "Users/t/tgahlaut/", "Path for ccdb-object"};
+  Configurable<std::string> cfgPathCCDB{"cfgPathCCDB", "Users/t/tgahlaut/weightCorr/", "Path for ccdb-object"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -251,7 +249,7 @@ struct MeanPtFlucId {
     hist.add("QA/after/h2_NTPC_Cent", "N_{TPC} vs FT0C(%)", kTH2D, {{axisCentFT0C}, {axisMultTPC}});
     hist.add("QA/after/h2_NTPC_NFT0M", "N_{TPC} vs N_{FT0M}", kTH2D, {{axisMultFT0M}, {axisMultTPC}});
     hist.add("QA/after/h2_NTPC_NFT0C", "N_{TPC} vs N_{FT0C}", kTH2D, {{axisMultFT0M}, {axisMultTPC}});
-
+ 
     hist.add("QA/after/p_NTPC_NFT0M", "N_{TPC} vs N_{FT0M} (Profile)", kTProfile, {axisMultFT0M});
     hist.add("QA/after/p_NTPC_NFT0C", "N_{TPC} vs N_{FT0C} (Profile)", kTProfile, {axisMultFT0M});
     hist.add("QA/after/p_NTPC_Cent", "N_{TPC} vs FT0C(%) (Profile)", kTProfile, {axisCentFT0C});
@@ -414,7 +412,7 @@ struct MeanPtFlucId {
     hist.add("Gen/Charged/h_threepart_Mult_skew", "Threepart vs N_{TPC} ", partMCHist);
     hist.add("Gen/Charged/h_threepart_Mult_kurto", "Threepart vs N_{TPC} ", partMCHist);
     hist.add("Gen/Charged/h_fourpart_Mult_kurto", "Fourpart vs N_{TPC} ", partMCHist);
-    hist.add("Gen/Charged/p_twopart_MultFT0M", "Twopart vs N_{TPC} ", kTProfile, {axisMultFT0M});
+    hist.add("Gen/Charged/p_twopart_MultFT0M", "Twopart vs N_{TPC} ",kTProfile, {axisMultFT0M});
     hist.add("Gen/Charged/p_mean_pT_MultFT0M", " <p_{T}> vs N_{TPC} ", kTProfile, {axisMultFT0M});
 
     hist.addClone("Gen/Charged/", "Gen/Pion/");
@@ -629,6 +627,7 @@ struct MeanPtFlucId {
     return false;
   }
 
+
   // Fill hist before selection cuts:
   template <typename T, typename U>
   void fillBeforeQAHistos(T const& col, U const& tracks)
@@ -732,6 +731,7 @@ struct MeanPtFlucId {
     Q4 += pt * pt * pt * pt * weight;
   }
 
+
   template <typename T1, typename T2>
   float getCorrectedWeight(T1 hWeightPt, T1 hPurePt, T2 hWeightPtY, T2 hWeightPtEta, double pt, double rap, double eta, bool cfgWeightPt, bool cfgWeightPtY, bool cfgWeightPtEta, bool cfgPurity)
   {
@@ -745,13 +745,13 @@ struct MeanPtFlucId {
 
     if (cfgWeightPt) {
       float weightPt = hWeightPt->GetBinContent(hWeightPt->FindBin(pt));
-      weight = purity / weightPt;
+        weight = purity / weightPt;
     } else if (cfgWeightPtY) {
       float weightPtY = hWeightPtY->GetBinContent(hWeightPtY->FindBin(rap, pt));
-      weight = purity / weightPtY;
+        weight = purity / weightPtY;
     } else if (cfgWeightPtEta) {
       float weightPtEta = hWeightPtEta->GetBinContent(hWeightPtEta->FindBin(eta, pt));
-      weight = purity / weightPtEta;
+        weight = purity / weightPtEta;
     } else {
       weight = 1.0;
     }
@@ -779,7 +779,7 @@ struct MeanPtFlucId {
       hist.fill(HIST(Dire[Mode]) + HIST("h2_Pt_Eta_weighted"), eta, pt, weight);
 
     hist.fill(HIST(Dire[Mode]) + HIST("h_Pt_weighted"), pt, weight);
-    hist.fill(HIST(Dire[Mode]) + HIST("h_Pt2_weighted"), pt * pt, weight);
+    hist.fill(HIST(Dire[Mode]) + HIST("h_Pt2_weighted"), pt*pt, weight);
 
     hist.fill(HIST(Dire[Mode]) + HIST("h_Pt"), pt);
     hist.fill(HIST(Dire[Mode]) + HIST("h_Pt2"), pt * pt);
@@ -865,6 +865,7 @@ struct MeanPtFlucId {
     hist.fill(HIST(Dire[Mode]) + HIST("h_Q2"), nTPC, Q2, nFT0M);
     hist.fill(HIST(Dire[Mode]) + HIST("h_Q3"), nTPC, Q3, nFT0M);
     hist.fill(HIST(Dire[Mode]) + HIST("h_Q4"), nTPC, Q4, nFT0M);
+    
 
     if (N > 1) {
       double meanPt = Q1 / NW;
@@ -884,6 +885,7 @@ struct MeanPtFlucId {
       hist.fill(HIST(Dire[Mode]) + HIST("p_CheckNCh"), nTPC, checkNDenoVar);
       hist.fill(HIST(Dire[Mode]) + HIST("h_CheckNCh"), nTPC, checkNDenoVar, nFT0M);
       hist.fill(HIST(Dire[Mode]) + HIST("p_twopart_MultFT0M"), nFT0M, twopart);
+
 
       if (N > 2) {
         double nTriplet = (NW * (NW - 1) * (NW - 2));
@@ -905,11 +907,10 @@ struct MeanPtFlucId {
   }
 
   template <int Mode>
-  void FillMeanPtCorr(std::vector<double> ptVal, std::vector<float> weightVal, int N, int nFT0M, bool cfgWeight)
-  {
-    for (int i = 0; i < N; i++) {
+  void fillMeanPtCorr(std::vector<double> ptVal, std::vector<float> weightVal, int N, int nFT0M, bool cfgWeight){
+    for(int i = 0; i < N; i++){
       float w = 1.0;
-      if (cfgWeight) {
+      if(cfgWeight){
         w = weightVal[i];
       }
       double pt = ptVal[i];
@@ -946,13 +947,16 @@ struct MeanPtFlucId {
     std::vector<double> ptValCh, ptValPi, ptValKa, ptValPr;
     std::vector<float> weightValCh, weightValPi, weightValKa, weightValPr;
 
+
+
+
     if constexpr (DataFlag) {
       nTPC = col.multNTracksHasTPC();
       nFT0M = col.multFT0M();
       nFT0C = col.multFT0C();
 
-      fillAfterQAHistos(col);
-      for (const auto& track : tracks) {
+    fillAfterQAHistos(col);
+    for (const auto& track : tracks) {
         if (!selTrack(track)) {
           continue;
         }
@@ -991,10 +995,12 @@ struct MeanPtFlucId {
           if (selKa(track)) {
             fillIdParticleQAHistos<QA_Kaon>(track, rapKa, nSigmaTPCKa, nSigmaTOFKa, nFT0M, hWeightPtKa, hPurePtKa, hWeightPtRapKa, hWeightPtEtaKa, cfgWeightPtId, cfgWeightPtYId, cfgWeightPtEtaId, cfgPurityId, nKa, nKaW, q1Ka, q2Ka, q3Ka, q4Ka, wghtKa);
           }
+        
 
           if (selPr(track)) {
             fillIdParticleQAHistos<QA_Proton>(track, rapPr, nSigmaTPCPr, nSigmaTOFPr, nFT0M, hWeightPtPr, hPurePtPr, hWeightPtRapPr, hWeightPtEtaPr, cfgWeightPtId, cfgWeightPtYId, cfgWeightPtEtaId, cfgPurityId, nPr, nPrW, q1Pr, q2Pr, q3Pr, q4Pr, wghtPr);
           }
+          
         }
       }
     } else if constexpr (RecoFlag) {
@@ -1044,7 +1050,7 @@ struct MeanPtFlucId {
           fillChargedQAHistos(track, nFT0M);
 
           hist.fill(HIST("QA/after/h_Pt_weighted"), ptCh, wghtCh);
-          hist.fill(HIST("QA/after/h_Pt2_weighted"), ptCh * ptCh, wghtCh);
+          hist.fill(HIST("QA/after/h_Pt2_weighted"), ptCh*ptCh, wghtCh);
 
           fillBeforePIDQAHistos(track);
 
@@ -1169,6 +1175,7 @@ struct MeanPtFlucId {
       if (nSim > 0 && nTPC > 0)
         hist.fill(HIST("Gen/h2_NTPC_NSim"), nSim, nTPC);
 
+
       hist.fill(HIST("Gen/h_NTPC"), nTPC);
       hist.fill(HIST("Gen/h_NFT0C"), nFT0CSim);
       hist.fill(HIST("Gen/h2_NTPC_NFT0C"), nFT0CSim, nTPC);
@@ -1186,21 +1193,21 @@ struct MeanPtFlucId {
       fillAnalysisHistos<Gen_Pion>(nTPC, nFT0M, nPiSim, nPiSim1, q1PiSim, q2PiSim, q3PiSim, q4PiSim);
       fillAnalysisHistos<Gen_Kaon>(nTPC, nFT0M, nKaSim, nKaSim1, q1KaSim, q2KaSim, q3KaSim, q4KaSim);
       fillAnalysisHistos<Gen_Proton>(nTPC, nFT0M, nPrSim, nPrSim1, q1PrSim, q2PrSim, q3PrSim, q4PrSim);
-
-      FillMeanPtCorr<Gen_Charged>(ptValChSim, {}, nChSim, nFT0M, false);
-      FillMeanPtCorr<Gen_Pion>(ptValPiSim, {}, nPiSim, nFT0M, false);
-      FillMeanPtCorr<Gen_Kaon>(ptValKaSim, {}, nKaSim, nFT0M, false);
-      FillMeanPtCorr<Gen_Proton>(ptValPrSim, {}, nPrSim, nFT0M, false);
+      
+      fillMeanPtCorr<Gen_Charged>(ptValChSim, {}, nChSim, nFT0M, false);
+      fillMeanPtCorr<Gen_Pion>(ptValPiSim, {}, nPiSim, nFT0M, false);
+      fillMeanPtCorr<Gen_Kaon>(ptValKaSim, {}, nKaSim, nFT0M, false);
+      fillMeanPtCorr<Gen_Proton>(ptValPrSim, {}, nPrSim, nFT0M, false);
 
       ptValChSim.clear();
       ptValPiSim.clear();
       ptValKaSim.clear();
       ptValPrSim.clear();
     }
-    FillMeanPtCorr<QA_Charged>(ptValCh, weightValCh, nCh, nFT0M, true);
-    FillMeanPtCorr<QA_Pion>(ptValPi, weightValPi, nPi, nFT0M, true);
-    FillMeanPtCorr<QA_Kaon>(ptValKa, weightValKa, nKa, nFT0M, true);
-    FillMeanPtCorr<QA_Proton>(ptValPr, weightValPr, nPr, nFT0M, true);
+    fillMeanPtCorr<QA_Charged>(ptValCh, weightValCh, nCh, nFT0M, true);
+    fillMeanPtCorr<QA_Pion>(ptValPi, weightValPi, nPi, nFT0M, true);
+    fillMeanPtCorr<QA_Kaon>(ptValKa, weightValKa, nKa, nFT0M, true);
+    fillMeanPtCorr<QA_Proton>(ptValPr, weightValPr, nPr, nFT0M, true);
 
     fillAnalysisHistos<Analysis_Charged>(nTPC, nFT0M, nCh, nChW, q1Ch, q2Ch, q3Ch, q4Ch);
     fillAnalysisHistos<Analysis_Pion>(nTPC, nFT0M, nPi, nPiW, q1Pi, q2Pi, q3Pi, q4Pi);
@@ -1215,6 +1222,7 @@ struct MeanPtFlucId {
     weightValPi.clear();
     weightValKa.clear();
     weightValPr.clear();
+
   }
 
   void processRun3(MyRun3Collisions::iterator const& col, MyAllTracks const& tracks)
