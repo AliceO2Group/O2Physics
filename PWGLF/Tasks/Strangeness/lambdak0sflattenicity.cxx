@@ -101,10 +101,14 @@ struct Lambdak0sflattenicity {
 
   // Configurable for histograms
   Configurable<int> nBinsVz{"nBinsVz", 100, "N bins in Vz"};
-  Configurable<int> nBinsK0sMass{"nBinsK0sMass", 200, "N bins in K0sMass"};
-  Configurable<int> nBinsLambdaMass{"nBinsLambdaMass", 200,
+  Configurable<int> nBinsK0sMass{"nBinsK0sMass", 400, "N bins in K0sMass"};
+  Configurable<int> nBinsLambdaMass{"nBinsLambdaMass", 400,
                                     "N bins in LambdaMass"};
-  Configurable<int> nBinsXiMass{"nBinsXiMass", 200, "N bins in XiMass"};
+  Configurable<int> nBinsXiMass{"nBinsXiMass", 400, "N bins in XiMass"};
+
+  Configurable<float> kK0sEPshiftfromMass{"kK0sEPshiftfromMass", 0.1, "distance of K0s Inv mass histogram start and end points from PDG mass"};
+  Configurable<float> kLambdaEPshiftfromMass{"kLambdaEPshiftfromMass", 0.05, "distance of Lambda Inv mass histogram start and end points from PDG mass"};
+  Configurable<float> kXiEPshiftfromMass{"kXiEPshiftfromMass", 0.05, "distance of Xi Inv mass histogram start and end points from PDG mass"};
 
   Configurable<int> nBinspT{"nBinspT", 250, "N bins in pT"};
   Configurable<int> nBinsFlattenicity{"nBinsFlattenicity", 100, "N bins in Flattenicity"};
@@ -215,13 +219,13 @@ struct Lambdak0sflattenicity {
   void init(InitContext const&)
   {
     // Axes
-    AxisSpec k0sMassAxis = {nBinsK0sMass, 0.45f, 0.55f,
+    AxisSpec k0sMassAxis = {nBinsK0sMass, 0.49f - kK0sEPshiftfromMass, 0.49f + kK0sEPshiftfromMass,
                             "#it{M}_{#pi^{+}#pi^{-}} [GeV/#it{c}^{2}]"};
-    AxisSpec lambdaMassAxis = {nBinsLambdaMass, 1.015f, 1.215f,
+    AxisSpec lambdaMassAxis = {nBinsLambdaMass, 1.115f - kLambdaEPshiftfromMass, 1.115f + kLambdaEPshiftfromMass,
                                "#it{M}_{p#pi^{-}} [GeV/#it{c}^{2}]"};
-    AxisSpec antilambdaMassAxis = {nBinsLambdaMass, 1.015f, 1.215f,
+    AxisSpec antilambdaMassAxis = {nBinsLambdaMass, 1.115f - kLambdaEPshiftfromMass, 1.115f + kLambdaEPshiftfromMass,
                                    "#it{M}_{#pi^{+}#bar{p}} [GeV/#it{c}^{2}]"};
-    AxisSpec xiMassAxis = {nBinsXiMass, 1.3f, 1.34f,
+    AxisSpec xiMassAxis = {nBinsXiMass, 1.32f - kXiEPshiftfromMass, 1.32f + kXiEPshiftfromMass,
                            "#it{M}_{#Lambda#pi} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {nBinsVz, -15., 15., "vrtx_{Z} [cm]"};
     AxisSpec ptAxis = {nBinspT, 0.0f, 25.0f, "#it{p}_{T} (GeV/#it{c})"};
