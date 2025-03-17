@@ -1561,13 +1561,11 @@ struct Derivedupcanalysis {
     const bool isPhysPrim = casc.isPhysicalPrimary();
 
     const bool isPositiveProton = (pdgPos == PDG_t::kProton);
-    const bool isBachelorPositiveProton = (pdgBach == PDG_t::kProton);
 
     const bool isPositivePion = (pdgPos == PDG_t::kPiPlus);
     const bool isBachelorPositivePion = (pdgBach == PDG_t::kPiPlus);
 
     const bool isNegativeProton = (pdgNeg == kProtonBar);
-    const bool isBachelorNegativeProton = (pdgBach == kProtonBar);
 
     const bool isNegativePion = (pdgNeg == PDG_t::kPiMinus);
     const bool isBachelorNegativePion = (pdgBach == PDG_t::kPiMinus);
