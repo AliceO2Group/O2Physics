@@ -709,6 +709,7 @@ struct FlowCumulantsUpc {
   void process(UDCollisionsFull::iterator const& collision, aod::BCsWithTimestamps const&, UdTracksFull const& tracks)
   {
 
+    registry.fill(HIST("hEventCount"), 0.5);
     int gapSide = collision.gapSide();
     if (gapSide < 0 || gapSide > 2) {
       return;
@@ -720,7 +721,6 @@ struct FlowCumulantsUpc {
       return;
     }
 
-    // registry.fill(HIST("hEventCount"), 0.5);
     // if (!cfgUseSmallMemory && tracks.size() >= 1) {
     //   registry.fill(HIST("BeforeSel8_globalTracks_centT0C"), collision.centFT0C(), tracks.size());
     // }
@@ -728,7 +728,7 @@ struct FlowCumulantsUpc {
     //   return;
     // if (tracks.size() < 1)
     //   return;
-    // registry.fill(HIST("hEventCount"), 1.5);
+    registry.fill(HIST("hEventCount"), 1.5);
     // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     // int currentRunNumber = bc.runNumber();
     // for (const auto& ExcludedRun : cfgRunRemoveList.value) {
@@ -770,7 +770,7 @@ struct FlowCumulantsUpc {
     // registry.fill(HIST("hEventCount"), 3.5);
     float lRandom = fRndm->Rndm();
     float vtxz = collision.posZ();
-    // registry.fill(HIST("hVtxZ"), vtxz);
+    registry.fill(HIST("hVtxZ"), vtxz);
     registry.fill(HIST("hMult"), tracks.size());
     registry.fill(HIST("hCent"), cent);
     // fGFW->Clear();
