@@ -33,11 +33,11 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseEfficiencyCalculator.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseEfficiencyCorrection.h"
 
 using namespace o2;
 using namespace o2::analysis::femto_universe;
-using namespace o2::analysis::femto_universe::efficiency;
+using namespace o2::analysis::femto_universe::efficiency_correction;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -177,8 +177,8 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry mixQaRegistry{"mixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  EfficiencyConfigurableGroup effConfGroup;
-  EfficiencyCalculator<TH1> efficiencyCalculator{&effConfGroup};
+  EffCorConfigurableGroup effCorConfGroup;
+  EfficiencyCorrection<TH1> effCorrection{&effCorConfGroup};
 
   /// @brief Counter for particle swapping
   int fNeventsProcessed = 0;
@@ -328,7 +328,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         hMCTruth2.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, tracktwofilter.confPDGCodePartTwo, false);
       }
     }
-    efficiencyCalculator.init();
+    effCorrection.init();
 
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, trackonefilter.confPDGCodePartOne, true); // last true = isDebug
@@ -505,9 +505,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           continue;
         }
 
-        float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1.pt());
+        float weight = effCorrection.getWeight(ParticleNo::ONE, p1.pt());
         if (!confIsSame) {
-          weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2.pt());
+          weight *= effCorrection.getWeight(ParticleNo::TWO, p2.pt());
         }
 
         if (swpart)
@@ -566,9 +566,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           continue;
         }
 
-        float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1.pt());
+        float weight = effCorrection.getWeight(ParticleNo::ONE, p1.pt());
         if (!confIsSame) {
-          weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2.pt());
+          weight *= effCorrection.getWeight(ParticleNo::TWO, p2.pt());
         }
 
         sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
@@ -674,9 +674,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         }
       }
 
-      float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1.pt());
+      float weight = effCorrection.getWeight(ParticleNo::ONE, p1.pt());
       if (!confIsSame) {
-        weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2.pt());
+        weight *= effCorrection.getWeight(ParticleNo::TWO, p2.pt());
       }
 
       if (swpart)
