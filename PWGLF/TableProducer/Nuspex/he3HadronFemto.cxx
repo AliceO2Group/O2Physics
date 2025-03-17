@@ -138,6 +138,9 @@ struct he3HadCandidate {
   uint32_t itsClSizeHe3 = 0u;
   uint32_t itsClSizeHad = 0u;
 
+  uint8_t NClsITSHe3 = 0u;
+  uint8_t NClsITSHad = 0u;
+
   bool isBkgUS = false; // unlike sign
   bool isBkgEM = false; // event mixing
 
@@ -174,6 +177,7 @@ struct he3hadronfemto {
   Configurable<float> setting_cutInvMass{"setting_cutInvMass", 0.0f, "Invariant mass upper limit"};
   Configurable<float> setting_cutPtMinhe3Had{"setting_cutPtMinhe3Had", 0.0f, "Minimum PT cut on he3Had4"};
   Configurable<float> setting_cutClSizeItsHe3{"setting_cutClSizeItsHe3", 4.0f, "Minimum ITS cluster size for He3"};
+  Configurable<float> setting_cutNCls{"setting_cutNCls", 5.0f, "Minimum ITS Ncluster for tracks"};
   Configurable<float> setting_cutNsigmaTPC{"setting_cutNsigmaTPC", 3.0f, "Value of the TPC Nsigma cut"};
   Configurable<float> setting_cutNsigmaITS{"setting_cutNsigmaITS", -1.5f, "Value of the TPC Nsigma cut"};
   Configurable<float> setting_cutPtMinTOFHad{"setting_cutPtMinTOFHad", 0.4f, "Minimum pT to apply the TOF cut on hadrons"};
@@ -239,6 +243,8 @@ struct he3hadronfemto {
       {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
       {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
       {"hDCAzHe3", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+      {"hNClsHe3ITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
+      {"hNClsHadITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
       {"hhe3HadtInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
       {"hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
       {"hHadronPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
@@ -377,7 +383,7 @@ struct he3hadronfemto {
     if (std::abs(candidate.eta()) > setting_cutEta) {
       return false;
     }
-    if (candidate.itsNCls() < 5 ||
+    if (candidate.itsNCls() < setting_cutNCls ||
         candidate.tpcNClsFound() < 90 ||
         candidate.tpcNClsCrossedRows() < 70 ||
         candidate.tpcNClsCrossedRows() < 0.8 * candidate.tpcNClsFindable() ||
@@ -578,6 +584,9 @@ struct he3hadronfemto {
     he3Hadcand.itsClSizeHe3 = trackHe3.itsClusterSizes();
     he3Hadcand.itsClSizeHad = trackHad.itsClusterSizes();
 
+    he3Hadcand.NClsITSHe3 = trackHe3.itsNCls();
+    he3Hadcand.NClsITSHad = trackHad.itsNCls();
+
     he3Hadcand.sharedClustersHe3 = trackHe3.tpcNClsShared();
     he3Hadcand.sharedClustersHad = trackHad.tpcNClsShared();
 
@@ -750,6 +759,8 @@ struct he3hadronfemto {
     m_qaRegistry.fill(HIST("hhe3HadtInvMass"), he3Hadcand.invMass);
     m_qaRegistry.fill(HIST("hDCAxyHe3"), he3Hadcand.DCAxyHe3);
     m_qaRegistry.fill(HIST("hDCAzHe3"), he3Hadcand.DCAzHe3);
+    m_qaRegistry.fill(HIST("hNClsHe3ITS"), he3Hadcand.NClsITSHe3);
+    m_qaRegistry.fill(HIST("hNClsHadITS"), he3Hadcand.NClsITSHad);
   }
 
   // ==================================================================================================================
