@@ -45,7 +45,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-struct SGResonanceAnalyzer {
+struct SginclusivePhiKstarSD {
   SGSelector sgSelector;
   Service<o2::framework::O2DatabasePDG> pdg;
   Configurable<int> verbosity{"verbosity", 0, "Determines level of verbosity"};
@@ -154,7 +154,7 @@ struct SGResonanceAnalyzer {
       registry.add("os_pk_ls_pT_1", "pion-kaon like sign", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
       registry.add("os_pk_ls_pT_2", "pion-kaon like sign", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
 
-      registry.add("hRotation", "hRotation", kTH1F, {{360, 0.0, 2.0 * o2::constants::math::PI}});
+      registry.add("hRotation", "hRotation", kTH1F, {{360, 0.0, o2::constants::math::TwoPI}});
     }
     // qa plots
     if (qa) {
@@ -1075,7 +1075,7 @@ struct SGResonanceAnalyzer {
       }
     }
   }
-  PROCESS_SWITCH(SGResonanceAnalyzer, process, "Process unlike event", false);
+  PROCESS_SWITCH(SginclusivePhiKstarSD, process, "Process unlike event", false);
 
   using UDCollisionsFull1 = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; //
   SliceCache cache;
@@ -1149,7 +1149,7 @@ struct SGResonanceAnalyzer {
       }
     }
   }
-  PROCESS_SWITCH(SGResonanceAnalyzer, mixprocess, "Process Mixed event", false);
+  PROCESS_SWITCH(SginclusivePhiKstarSD, mixprocess, "Process Mixed event", false);
 
   // define abbreviations  , aod::UDCollisions_001,
   using CCs = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDMcCollsLabels, aod::UDZdcsReduced>;
@@ -1303,7 +1303,7 @@ struct SGResonanceAnalyzer {
       }
     }
   }
-  PROCESS_SWITCH(SGResonanceAnalyzer, processMCTruth, "Process MC truth", true);
+  PROCESS_SWITCH(SginclusivePhiKstarSD, processMCTruth, "Process MC truth", true);
   // ...............................................................................................................
   void processReco(CC const& collision, TCs const& tracks, aod::UDMcCollisions const& /*mccollisions*/, aod::UDMcParticles const& /*McParts*/)
   {
@@ -1539,11 +1539,11 @@ struct SGResonanceAnalyzer {
       LOGF(info, "");
     }
   }
-  PROCESS_SWITCH(SGResonanceAnalyzer, processReco, "Process reconstructed data", true);
+  PROCESS_SWITCH(SginclusivePhiKstarSD, processReco, "Process reconstructed data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SGResonanceAnalyzer>(cfgc)};
+    adaptAnalysisTask<SginclusivePhiKstarSD>(cfgc)};
 }
