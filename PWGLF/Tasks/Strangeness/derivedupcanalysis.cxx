@@ -1527,21 +1527,21 @@ struct Derivedupcanalysis {
     const bool isNegativePion = (pdgNeg == PDG_t::kPiMinus) || (doTreatPiToMuon && pdgNeg == PDG_t::kMuonMinus);
 
     switch (pdgV0) {
-      case 310: // K0Short
+      case PDG_t::kK0Short: // K0Short
         if (isPositivePion && isNegativePion) {
           bitMap.set(selConsiderK0Short);
           if (isPhysPrim)
             bitMap.set(selPhysPrimK0Short);
         }
         break;
-      case 3122: // Lambda
+      case PDG_t::kLambda0: // Lambda
         if (isPositiveProton && isNegativePion) {
           bitMap.set(selConsiderLambda);
           if (isPhysPrim)
             bitMap.set(selPhysPrimLambda);
         }
         break;
-      case -3122: // AntiLambda
+      case PDG_t::kLambda0Bar: // AntiLambda
         if (isPositivePion && isNegativeProton) {
           bitMap.set(selConsiderAntiLambda);
           if (isPhysPrim)
@@ -1576,28 +1576,28 @@ struct Derivedupcanalysis {
     const bool isBachelorNegativeKaon = (pdgBach == PDG_t::kKMinus);
 
     switch (pdgCasc) {
-      case 3312: // Xi
+      case PDG_t::kXiMinus: // Xi
         if (isPositiveProton && isNegativePion && isBachelorNegativePion) {
           bitMap.set(selConsiderXi);
           if (isPhysPrim)
             bitMap.set(selPhysPrimXi);
         }
         break;
-      case -3312: // Anti-Xi
+      case PDG_t::kXiPlusBar: // Anti-Xi
         if (isNegativeProton && isPositivePion && isBachelorPositivePion) {
           bitMap.set(selConsiderAntiXi);
           if (isPhysPrim)
             bitMap.set(selPhysPrimAntiXi);
         }
         break;
-      case 3334: // Omega
+      case PDG_t::kOmegaMinus: // Omega
         if (isPositiveProton && isNegativePion && isBachelorNegativeKaon) {
           bitMap.set(selConsiderOmega);
           if (isPhysPrim)
             bitMap.set(selPhysPrimOmega);
         }
         break;
-      case -3334: // Anti-Omega
+      case PDG_t::kOmegaPlusBar: // Anti-Omega
         if (isNegativeProton && isPositivePion && isBachelorPositiveKaon) {
           bitMap.set(selConsiderAntiOmega);
           if (isPhysPrim)
@@ -1919,9 +1919,9 @@ struct Derivedupcanalysis {
       // Kinematics (|y| < rapidityCut)
       float pTmc = v0MC.ptMC();
       float ymc = 1e3;
-      if (v0MC.pdgCode() == 310)
+      if (v0MC.pdgCode() == PDG_t::kK0Short)
         ymc = v0MC.rapidityMC(0);
-      else if (std::abs(v0MC.pdgCode()) == 3122)
+      else if (std::abs(v0MC.pdgCode()) == PDG_t::kLambda0)
         ymc = v0MC.rapidityMC(1);
       if (std::abs(ymc) > rapidityCut)
         continue;
@@ -1946,13 +1946,13 @@ struct Derivedupcanalysis {
       }
 
       // Fill histograms
-      if (v0MC.pdgCode() == 310) {
+      if (v0MC.pdgCode() == PDG_t::kK0Short) {
         histos.fill(HIST(kParticlenames[0]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
       }
-      if (v0MC.pdgCode() == 3122) {
+      if (v0MC.pdgCode() == PDG_t::kLambda0) {
         histos.fill(HIST(kParticlenames[1]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
       }
-      if (v0MC.pdgCode() == -3122) {
+      if (v0MC.pdgCode() == PDG_t::kLambda0Bar) {
         histos.fill(HIST(kParticlenames[2]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
       }
     } // V0 end
@@ -1965,9 +1965,9 @@ struct Derivedupcanalysis {
       // Kinematics (|y| < rapidityCut)
       float pTmc = cascMC.ptMC();
       float ymc = 1e3;
-      if (std::abs(cascMC.pdgCode()) == 3312)
+      if (std::abs(cascMC.pdgCode()) == PDG_t::kXiMinus)
         ymc = RecoDecay::y(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}, o2::constants::physics::MassXiMinus);
-      else if (std::abs(cascMC.pdgCode()) == 3334)
+      else if (std::abs(cascMC.pdgCode()) == PDG_t::kOmegaMinus)
         ymc = RecoDecay::y(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}, o2::constants::physics::MassOmegaMinus);
       if (std::abs(ymc) > rapidityCut)
         continue;
@@ -1986,16 +1986,16 @@ struct Derivedupcanalysis {
       }
 
       // Fill histograms
-      if (cascMC.pdgCode() == 3312) {
+      if (cascMC.pdgCode() == PDG_t::kXiMinus) {
         histos.fill(HIST(kParticlenames[3]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
       }
-      if (cascMC.pdgCode() == -3312) {
+      if (cascMC.pdgCode() == PDG_t::kXiPlusBar) {
         histos.fill(HIST(kParticlenames[4]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
       }
-      if (cascMC.pdgCode() == 3334) {
+      if (cascMC.pdgCode() == PDG_t::kOmegaMinus) {
         histos.fill(HIST(kParticlenames[5]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
       }
-      if (cascMC.pdgCode() == -3334) {
+      if (cascMC.pdgCode() == PDG_t::kOmegaPlusBar) {
         histos.fill(HIST(kParticlenames[6]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
       }
     } // Cascade end
