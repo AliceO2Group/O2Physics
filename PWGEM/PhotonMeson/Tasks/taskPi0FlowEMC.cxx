@@ -97,13 +97,14 @@ struct TaskPi0FlowEMC {
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
   Configurable<bool> cfgDoM02{"cfgDoM02", false, "Flag to enable flow vs M02 for single photons"};
   Configurable<bool> cfgDoReverseScaling{"cfgDoReverseScaling", false, "Flag to reverse the scaling that is possibly applied during NonLin"};
+  Configurable<bool> cfgDoPlaneQA{"cfgDoPlaneQA", false, "Flag to enable QA plots comparing in and out of plane"};
 
   // configurable axis
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {400, 0.0, 0.8}, ""};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 20.}, ""};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {20, 0., 100.}, ""};
   ConfigurableAxis thnConfigAxisCosNPhi{"thnConfigAxisCosNPhi", {100, -1., 1.}, ""};
-  ConfigurableAxis thnConfigAxisCosDeltaPhi{"thnConfigAxisCosDeltaPhi", {100, -1., 1.}, ""};
+  ConfigurableAxis thnConfigAxisCosDeltaPhi{"thnConfigAxisCosDeltaPhi", {8, -1., 1.}, ""};
   ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {100, -5., 5.}, ""};
   ConfigurableAxis thnConfigAxisM02{"thnConfigAxisM02", {200, 0., 5.}, ""};
 
@@ -303,6 +304,9 @@ struct TaskPi0FlowEMC {
     registry.add("hSparseBkgRotFlow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
     registry.add("hSparseBkgMixFlow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
     registry.add("h3DMixingCount", "THn Event Mixing QA", HistType::kTH3D, {thnAxisMixingVtx, thnAxisMixingCent, thnAxisMixingEP});
+    if (cfgDoPlaneQA.value) {
+      registry.add("hSparsePi0FlowPlane", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisCosDeltaPhi});
+    }
     auto hClusterCuts = registry.add<TH1>("hClusterCuts", "hClusterCuts;;Counts", kTH1D, {{6, 0.5, 6.5}}, false);
     hClusterCuts->GetXaxis()->SetBinLabel(1, "in");
     hClusterCuts->GetXaxis()->SetBinLabel(2, "opening angle");
@@ -848,6 +852,12 @@ struct TaskPi0FlowEMC {
 
     if (correctionConfig.cfgApplySPresolution.value) {
       scalprodCand = scalprodCand / h1SPResolution->GetBinContent(h1SPResolution->FindBin(cent + epsilon));
+    }
+
+    if (cfgDoPlaneQA.value && histType == 0) {
+      float epAngle = epHelper.GetEventPlane(xQVec, yQVec, harmonic);
+      float cosDeltaPhi = std::cos(harmonic * getDeltaPsiInRange(phiCand, epAngle));
+      registry.fill(HIST("hSparsePi0FlowPlane"), massCand, ptCand, cent, cosDeltaPhi);
     }
 
     fillThn<histType>(massCand, ptCand, cent, scalprodCand);
