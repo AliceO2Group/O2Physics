@@ -18,12 +18,14 @@
 #include <array>
 #include <cstdlib>
 #include <string>
+#include <vector>
 #include <algorithm>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -76,11 +78,13 @@ struct reduced3bodyCreator {
   Produces<aod::RedDecay3Bodys> reducedDecay3Bodys;
   Produces<aod::Red3BodyInfo> reduced3BodyInfo;
   Produces<aod::StoredRedIUTracks> reducedFullTracksPIDIU;
+  Produces<aod::DCAFitterSVInfo> dcaFitterSVInfo;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
+  o2::vertexing::DCAFitterN<3> fitter3body;
   o2::aod::pidtofgeneric::TofPidNewCollision<TrackExtPIDIUwithEvTimes::iterator> bachelorTOFPID;
 
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
@@ -102,6 +106,7 @@ struct reduced3bodyCreator {
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
   // Flag for trigger
   Configurable<bool> cfgOnlyKeepH3L3Body{"cfgOnlyKeepH3L3Body", false, "Flag to keep only H3L3Body trigger"};
+  Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction for DCAFitter"};
 
   int mRunNumber;
   float d_bz;
@@ -120,6 +125,16 @@ struct reduced3bodyCreator {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    fitter3body.setPropagateToPCA(true);
+    fitter3body.setMaxR(200.); //->maxRIni3body
+    fitter3body.setMinParamChange(1e-3);
+    fitter3body.setMinRelChi2Change(0.9);
+    fitter3body.setMaxDZIni(1e9);
+    fitter3body.setMaxChi2(1e9);
+    fitter3body.setUseAbsDCA(true);
+    int mat{static_cast<int>(cfgMaterialCorrection)};
+    fitter3body.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
+
     registry.add("hAllSelEventsVtxZ", "hAllSelEventsVtxZ", HistType::kTH1F, {{500, -15.0f, 15.0f, "PV Z (cm)"}});
 
     auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", HistType::kTH1D, {{4, 0.0f, 4.0f}});
@@ -129,7 +144,7 @@ struct reduced3bodyCreator {
     hEventCounter->GetXaxis()->SetBinLabel(4, "reduced");
     hEventCounter->LabelsOption("v");
 
-    auto hEventCounterZorro = registry.add<TH1>("hEventCounterZorro", "hEventCounterZorro", HistType::kTH1D, {{2, -0.5, 1.5}});
+    auto hEventCounterZorro = registry.add<TH1>("hEventCounterZorro", "hEventCounterZorro", HistType::kTH1D, {{2, 0, 2}});
     hEventCounterZorro->GetXaxis()->SetBinLabel(1, "Zorro before evsel");
     hEventCounterZorro->GetXaxis()->SetBinLabel(2, "Zorro after evsel");
   }
@@ -233,6 +248,7 @@ struct reduced3bodyCreator {
       }
     }
 
+    fitter3body.setBz(d_bz);
     bachelorTOFPID.SetParams(mRespParamsV2);
   }
 
@@ -281,6 +297,7 @@ struct reduced3bodyCreator {
 
   void process(ColwithEvTimesMultsCents const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
+    std::vector<bool> triggeredCollisions(collisions.size(), false);
 
     int lastRunNumber = -1; // RunNumber of last collision, used for zorro counting
     // Event counting
@@ -298,6 +315,7 @@ struct reduced3bodyCreator {
         isZorroSelected = zorro.isSelected(bc.globalBC());
         if (isZorroSelected) {
           registry.fill(HIST("hEventCounterZorro"), 0.5);
+          triggeredCollisions[collision.globalIndex()] = true;
         }
       }
 
@@ -334,10 +352,8 @@ struct reduced3bodyCreator {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      bool isZorroSelected = false;
       if (cfgSkimmedProcessing && cfgOnlyKeepH3L3Body) {
-        isZorroSelected = zorro.isSelected(bc.globalBC());
-        if (!isZorroSelected) {
+        if (triggeredCollisions[collision.globalIndex()] == false) {
           continue;
         }
       }
@@ -404,6 +420,29 @@ struct reduced3bodyCreator {
       KFHt.GetPhi(phi, sigma);
       // fill 3body info table
       reduced3BodyInfo(radius, phi, KFHt.GetZ());
+
+      // -------- save dcaFitter secondary vertex info table --------
+      auto Track0 = getTrackParCov(daughter0);
+      auto Track1 = getTrackParCov(daughter1);
+      auto Track2 = getTrackParCov(daughter2);
+      int n3bodyVtx = fitter3body.process(Track0, Track1, Track2);
+      if (n3bodyVtx == 0) { // discard this pair
+        dcaFitterSVInfo(-999, -999, -999);
+      } else {
+        const auto& vtxXYZ = fitter3body.getPCACandidate();
+
+        std::array<float, 3> p0 = {0.}, p1 = {0.}, p2{0.};
+        const auto& propagatedTrack0 = fitter3body.getTrack(0);
+        const auto& propagatedTrack1 = fitter3body.getTrack(1);
+        const auto& propagatedTrack2 = fitter3body.getTrack(2);
+        propagatedTrack0.getPxPyPzGlo(p0);
+        propagatedTrack1.getPxPyPzGlo(p1);
+        propagatedTrack2.getPxPyPzGlo(p2);
+        std::array<float, 3> p3B = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
+        float phiVtx = std::atan2(p3B[1], p3B[0]);
+        float rVtx = std::hypot(vtxXYZ[0], vtxXYZ[1]);
+        dcaFitterSVInfo(rVtx, phiVtx, vtxXYZ[2]);
+      }
     } // end decay3body loop
 
     registry.fill(HIST("hEventCounter"), 3.5, reducedCollisions.lastIndex() + 1);

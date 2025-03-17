@@ -159,6 +159,7 @@ struct lnnRecoTask {
   Configurable<float> nSigmaCutMinTPC{"nSigmaCutMinTPC", -5, "triton dEdx cut (n sigma)"};
   Configurable<float> nSigmaCutMaxTPC{"nSigmaCutMaxTPC", 5, "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
+  Configurable<float> nTPCClusMinPi{"nTPCClusMinPi", 60, "pion NTPC clusters cut"};
   Configurable<float> ptMinTOF{"ptMinTOF", 0.8, "minimum pt for TOF cut"};
   Configurable<float> TrTOFMass2Cut{"TrTOFMass2Cut", 5.5, "minimum Triton mass square to TOF"};
   Configurable<float> BetaTrTOF{"BetaTrTOF", 0.4, "minimum beta TOF cut"};
@@ -350,7 +351,8 @@ struct lnnRecoTask {
       auto posTrack = v0.posTrack_as<TracksFull>();
       auto negTrack = v0.negTrack_as<TracksFull>();
 
-      if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax) {
+      /// remove tracks wo TPC information, too much bkg for Lnn analysis
+      if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax || !posTrack.hasTPC() || !negTrack.hasTPC()) {
         continue;
       }
 
@@ -369,8 +371,8 @@ struct lnnRecoTask {
       hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
 
       // ITS only tracks do not have TPC information. TPCnSigma: only lower cut to allow for triton reconstruction
-      bool is3H = posTrack.hasTPC() && nSigmaTPCpos > nSigmaCutMinTPC && nSigmaTPCpos < nSigmaCutMaxTPC;
-      bool isAnti3H = negTrack.hasTPC() && nSigmaTPCneg > nSigmaCutMinTPC && nSigmaTPCneg < nSigmaCutMaxTPC;
+      bool is3H = nSigmaTPCpos > nSigmaCutMinTPC && nSigmaTPCpos < nSigmaCutMaxTPC;
+      bool isAnti3H = nSigmaTPCneg > nSigmaCutMinTPC && nSigmaTPCneg < nSigmaCutMaxTPC;
 
       if (!is3H && !isAnti3H) // discard if both tracks are not 3H candidates
         continue;
@@ -392,13 +394,15 @@ struct lnnRecoTask {
         continue;
       }
       auto& h3track = lnnCand.isMatter ? posTrack : negTrack;
+      auto& pitrack = lnnCand.isMatter ? negTrack : posTrack;
       auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
 
       if (h3Rigidity < TPCRigidityMin3H ||
           h3track.tpcNClsFound() < nTPCClusMin3H ||
           h3track.tpcChi2NCl() < Chi2nClusTPCMin ||
           h3track.tpcChi2NCl() > Chi2nClusTPCMax ||
-          h3track.itsChi2NCl() > Chi2nClusITS) {
+          h3track.itsChi2NCl() > Chi2nClusITS ||
+          pitrack.tpcNClsFound() < nTPCClusMinPi) {
         continue;
       }
 

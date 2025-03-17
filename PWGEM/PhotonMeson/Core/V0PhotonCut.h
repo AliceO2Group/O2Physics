@@ -70,7 +70,6 @@ class V0PhotonCut : public TNamed
     kRequireTPConly,
     kRequireTPCTRD,
     kRequireTPCTOF,
-    kRequireTPCTRDTOF,
     kNCuts
   };
 
@@ -150,6 +149,9 @@ class V0PhotonCut : public TNamed
       if (mDisableITSonly && isITSonlyTrack(track)) {
         return false;
       }
+      if (mDisableTPConly && isTPConlyTrack(track)) {
+        return false;
+      }
 
       if (mRejectITSib) {
         auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
@@ -193,9 +195,6 @@ class V0PhotonCut : public TNamed
         return false;
       }
       if (mRequireTPCTOF && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPCTOF)) {
-        return false;
-      }
-      if (mRequireTPCTRDTOF && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPCTRDTOF)) {
         return false;
       }
     }
@@ -426,9 +425,6 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kRequireTPCTOF:
         return isTPCTOFTrack(track);
 
-      case V0PhotonCuts::kRequireTPCTRDTOF:
-        return isTPCTRDTOFTrack(track);
-
       default:
         return false;
     }
@@ -474,8 +470,8 @@ class V0PhotonCut : public TNamed
   void SetRequireTPConly(bool flag);
   void SetRequireTPCTRD(bool flag);
   void SetRequireTPCTOF(bool flag);
-  void SetRequireTPCTRDTOF(bool flag);
   void SetDisableITSonly(bool flag);
+  void SetDisableTPConly(bool flag);
 
  private:
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement;
@@ -525,8 +521,8 @@ class V0PhotonCut : public TNamed
   bool mRequireTPConly{false};
   bool mRequireTPCTRD{false};
   bool mRequireTPCTOF{false};
-  bool mRequireTPCTRDTOF{false};
   bool mDisableITSonly{false};
+  bool mDisableTPConly{false};
 
   ClassDef(V0PhotonCut, 1);
 };

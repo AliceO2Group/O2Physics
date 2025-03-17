@@ -31,7 +31,7 @@
 using namespace rapidjson;
 
 template <typename ValueType>
-void readArray(const Value& jsonArray, vector<ValueType>& output)
+void readArray(const Value& jsonArray, std::vector<ValueType>& output)
 {
   for (auto it = jsonArray.Begin(); it != jsonArray.End(); it++) {
     auto value = it->template Get<ValueType>();
