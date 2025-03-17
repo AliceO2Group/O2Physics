@@ -61,14 +61,17 @@ struct TaskConfiguration {
   UInt_t fRandomSeed = 0;                        // argument for TRandom3 constructor. By default it is 0 (seed is guaranteed to be unique in time and space)
   bool fUseFisherYates = false;                  // algorithm used to randomize particle indices, set via configurable
   TArrayI* fRandomIndices = NULL;                // array to store random indices obtained from Fisher-Yates algorithm
-  int fFixedNumberOfRandomlySelectedTracks = -1; // use a fixed number of randomly selected particles in each event. It is set and applied, if > 0. Set to <=0 to ignore.
-  bool fUseStopwatch = false;                    // do some basing profiling with TStopwatch for where the execution time is going
-  TStopwatch* fTimer[eTimer_N] = {NULL};         // stopwatch, global (overal execution time) and local
-  float fFloatingPointPrecision = 1.e-6;         // two floats are the same if TMath::Abs(f1 - f2) < fFloatingPointPrecision (there is configurable for it)
-  int fSequentialBailout = 0;                    // if fSequentialBailout > 0, then each fSequentialBailout events the function BailOut() is called. Can be used for real analysis and for IV.
-  bool fUseSpecificCuts = false;                 // apply after DefaultCuts() also hardwired analysis-specific cuts, determined via tc.fWhichSpecificCuts
-  TString fWhichSpecificCuts = "";               // determine which set of analysis-specific cuts will be applied after DefaultCuts(). Use in combination with tc.fUseSpecificCuts
-} tc;                                            // "tc" labels an instance of this group of variables.
+  int fFixedNumberOfRandomlySelectedTracks = -1; // use a fixed number of randomly selected particles in each event, applies to all centralities. It is set and applied if > 0. Set to <=0 to ignore.
+
+  bool fUseStopwatch = false;            // do some basing profiling with TStopwatch for where the execution time is going
+  TStopwatch* fTimer[eTimer_N] = {NULL}; // stopwatch, global (overal execution time) and local
+  float fFloatingPointPrecision = 1.e-6; // two floats are the same if TMath::Abs(f1 - f2) < fFloatingPointPrecision (there is configurable for it)
+  int fSequentialBailout = 0;            // if fSequentialBailout > 0, then each fSequentialBailout events the function BailOut() is called. Can be used for real analysis and for IV.
+  bool fUseSpecificCuts = false;         // apply after DefaultCuts() also hardwired analysis-specific cuts, determined via tc.fWhichSpecificCuts
+  TString fWhichSpecificCuts = "";       // determine which set of analysis-specific cuts will be applied after DefaultCuts(). Use in combination with tc.fUseSpecificCuts
+  TString fSkipTheseRuns = "";           // comma-separated list of runs which will be skipped during analysis in hl (a.k.a. "bad runs")
+  bool fSkipRun = false;                 // based on the content of fWhichSpecificCuts, skip or not the current run
+} tc;                                    // "tc" labels an instance of this group of variables.
 
 // *) Event-by-event quantities:
 struct EventByEventQuantities {
@@ -119,13 +122,21 @@ struct QualityAssurance {
   TProfile* fQAParticleEventProEbyE[2][2] = {{NULL}};                                      // helper profile to calculate <some-particle-property> event-by-event
                                                                                            // [reco, sim][before, after]. Type dimension is bin.
 
-  TList* fQACorrelationsVsList = NULL;                                                                //!<! base list to hold all QA particle event output object
+  TList* fQACorrelationsVsList = NULL;                                                                //!<! base list to hold all QA "CorrelationsVs" output object
   TH2F* fQACorrelationsVsHistograms2D[eQACorrelationsVsHistograms2D_N][gMaxHarmonic][2] = {{{NULL}}}; //! [ type - see enum eQACorrelationsVsHistograms2D ][reco,sim]. I do not have here support for [before, after], because I do not fill Q-vectors before cuts
   bool fFillQACorrelationsVsHistograms2D = true;                                                      // if false, all 2D histograms in this category are not filled. If true, the ones for which fBookQACorrelationsVsHistograms2D[...] is true, are filled
   bool fBookQACorrelationsVsHistograms2D[eQACorrelationsVsHistograms2D_N] = {true};                   // book or not this 2D histogram, see configurable cfBookQACorrelationsVsHistograms2D
   float fQACorrelationsVsHistogramsBins2D[eQACorrelationsVsHistograms2D_N][2][3] = {{{0.}}};          // [type - see enum][x,y][nBins,min,max]
   TString fQACorrelationsVsHistogramsName2D[eQACorrelationsVsHistograms2D_N] = {""};                  // name of fQACorrelationsVsHistograms2D, determined programatically from other 1D names, to ease bookkeeping
   int fQACorrelationsVsHistogramsMinMaxHarmonic[2];                                                   // book only for MinMaxHarmonic[0] <= harmonics < MinMaxHarmonic[1]
+
+  TList* fQACorrelationsVsInteractionRateVsList = NULL;                                                                    //!<! base list to hold all QA "CorrelationsVsInteractionRateVs" output object
+  TProfile2D* fQACorrVsIRVsProfiles2D[eQACorrelationsVsInteractionRateVsProfiles2D_N][gMaxHarmonic][2] = {{{NULL}}};       //! [ type - see enum eQACorrelationsVsInteractionRateVsProfiles2D_N ][reco,sim]. I do not have here support for [before, after], because I do not fill Q-vectors before cuts
+  bool fFillQACorrelationsVsInteractionRateVsProfiles2D = true;                                                            // if false, all 2D profiles in this category are not filled. If true, the ones for which fBookQACorrelationsVsInteractionRateVsProfiles2D[...] is true, are filled
+  bool fBookQACorrelationsVsInteractionRateVsProfiles2D[eQACorrelationsVsInteractionRateVsProfiles2D_N] = {true};          // book or not this 2D profile, see configurable cfBookQACorrelationsVsInteractionRateVsProfiles2D
+  float fQACorrelationsVsInteractionRateVsProfilesBins2D[eQACorrelationsVsInteractionRateVsProfiles2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
+  TString fQACorrelationsVsInteractionRateVsProfilesName2D[eQACorrelationsVsInteractionRateVsProfiles2D_N] = {""};         // name of fQACorrelationsVsInteractionRateVsProfiles2D, determined programatically from other 1D names, to ease bookkeeping
+  int fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[2];                                                         // book only for MinMaxHarmonic[0] <= harmonics < MinMaxHarmonic[1]
 
   float fReferenceMultiplicity[eReferenceMultiplicityEstimators_N] = {0.};                // used mostly in QA correlation plots
   TString fReferenceMultiplicityEstimatorName[eReferenceMultiplicityEstimators_N] = {""}; // TBI 20241123 add comment
@@ -167,7 +178,7 @@ struct EventCuts {
   int fEventCutCounterBinNumber[2] = {1, 1};               // bin counter for set bin labels in fEventCutCounterHist
   float fdEventCuts[eEventCuts_N][2] = {{0.}};             // event cuts defined via [min,max)
   TString fsEventCuts[eEventCuts_N] = {""};                // event cuts defined via string
-  TH1I* fEventCutCounterHist[2][eCutCounter_N] = {{NULL}}; //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each event cut triggered
+  TH1F* fEventCutCounterHist[2][eCutCounter_N] = {{NULL}}; //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each event cut triggered
   int fBeforeAfterColor[2] = {kRed, kGreen};               // color code before and after cuts
 } ec;                                                      // "ec" is a common label for objects in this struct
 
@@ -302,15 +313,15 @@ struct NestedLoops {
 
 // *) Toy NUA (can be applied both in real data analysis and in analysis 'on-the-fly', e.g. when running internal validation):
 struct NUA {
-  TList* fNUAList = NULL;                              // list to hold all NUA objects
-  TProfile* fNUAFlagsPro = NULL;                       // profile to hold all flags for NUA objects
-  bool fApplyNUAPDF[eNUAPDF_N] = {false};              // apply NUA to particular kine variable (see the corresponding enum eNUAPDF)
-  bool fUseDefaultNUAPDF[eNUAPDF_N] = {true};          // by default, use simple hardcoded expressions for NUA acceptance profile
-  TF1* fDefaultNUAPDF[eNUAPDF_N] = {NULL};             // default distributions used as pdfs to simulate NUA on-the-fly
-  TH1D* fCustomNUAPDF[eNUAPDF_N] = {NULL};             // custom, user-supplied distributions used to simulate NUA
-  TString* fCustomNUAPDFHistNames[eNUAPDF_N] = {NULL}; // these are the names of histograms holding custom NUA in an external file. There is a configurable for this one.
-  TString fFileWithCustomNUA = "";                     // path to external ROOT file which holds all histograms with custom NUA
-  Double_t fMaxValuePDF[eNUAPDF_N] = {0.};             // see algorithm used in Accept(...). I implemented it as a data member, so that it is not calculated again and again at each particle call
+  TList* fNUAList = NULL;                                 // list to hold all NUA objects
+  TProfile* fNUAFlagsPro = NULL;                          // profile to hold all flags for NUA objects
+  bool fApplyNUAPDF[eNUAPDF_N] = {false};                 // apply NUA to particular kine variable (see the corresponding enum eNUAPDF)
+  bool fUseDefaultNUAPDF[eNUAPDF_N] = {true, true, true}; // by default, use simple hardcoded expressions for NUA acceptance profile
+  TF1* fDefaultNUAPDF[eNUAPDF_N] = {NULL};                // default distributions used as pdfs to simulate NUA on-the-fly
+  TH1D* fCustomNUAPDF[eNUAPDF_N] = {NULL};                // custom, user-supplied distributions used to simulate NUA
+  TString* fCustomNUAPDFHistNames[eNUAPDF_N] = {NULL};    // these are the names of histograms holding custom NUA in an external file. There is a configurable for this one.
+  TString fFileWithCustomNUA = "";                        // path to external ROOT file which holds all histograms with custom NUA
+  Double_t fMaxValuePDF[eNUAPDF_N] = {0.};                // see algorithm used in Accept(...). I implemented it as a data member, so that it is not calculated again and again at each particle call
 } nua;
 
 // *) Internal validation:

@@ -64,6 +64,7 @@ using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, 
 #include <TSystem.h>
 #include <TFile.h>
 #include <TH1D.h>
+#include <TProfile2D.h>
 #include <TGrid.h>
 #include <Riostream.h>
 #include <TRandom3.h>
@@ -274,6 +275,8 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // J) Process data with minimum subscription to the tables, for testing purposes:
+  //    Remark: To keep this branch as simple as possible, I do not subscribe to centrality table. Therefore, when running with "processTest": "true" in JSON,
+  //            I have to remove "| o2-analysis-centrality-table $JsonFile \" from workflow (yes, remove, not comment out!)
   void processTest(aod::Collision const& collision, aod::BCs const& bcs, aod::Tracks const& tracks)
   {
     Steer<eTest>(collision, bcs, tracks);
