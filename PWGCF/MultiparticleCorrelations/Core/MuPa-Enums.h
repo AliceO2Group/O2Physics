@@ -33,6 +33,7 @@ enum eConfiguration {
   eSequentialBailout,
   eUseSpecificCuts,
   eWhichSpecificCuts,
+  eSkipTheseRuns,
   eConfiguration_N
 };
 
@@ -63,7 +64,7 @@ enum eRecSim { eRec = 0,
                eRec_Run1, // converted Run 1 data
                eSim_Run1,
                eRecAndSim_Run1,
-               eTest };
+               eTest }; // remember that as of 20250315 I can use "cfWhichSpecificCuts": "Test" in JSON, to configure quickly all cuts for this case
 
 enum eBeforeAfter { eBefore = 0, // use this one for cuts
                     eAfter = 1 };
@@ -405,6 +406,27 @@ enum eQACorrelationsVsHistograms2D {
   eQACorrelationsVsHistograms2D_N
 };
 
+enum eQACorrelationsVsInteractionRateVsProfiles2D_N {
+  // In this category I fill <2> in 2D profile spanned by IR vs. some-other-observable (IR is always x axis)
+  // For instance: <2> is filled in TProfile2D spanned by IR vs. CurrentRunDuration (crd)
+  //               <2> is filled in TProfile2D spanned by IR vs. <pT>, where <pT> is calculated from all particles in that event
+  // Remark 1: If I would ever need the same thingie for <4>, <6>, etc., just introduce new dimension in 2D profile
+  // Remark 2: All < ... > over particles are calculated with helper TProfile fQAParticleEventProEbyE
+  eCorrelationsVsInteractionRate_vs_CurrentRunDuration = 0,
+  eCorrelationsVsInteractionRate_vs_Multiplicity,
+  eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity,
+  eCorrelationsVsInteractionRate_vs_Centrality,
+  // ...
+  eCorrelationsVsInteractionRate_vs_MeanPhi,
+  eCorrelationsVsInteractionRate_vs_SigmaMeanPhi,
+  eCorrelationsVsInteractionRate_vs_MeanPt,
+  eCorrelationsVsInteractionRate_vs_SigmaMeanPt,
+  eCorrelationsVsInteractionRate_vs_MeanEta,
+  eCorrelationsVsInteractionRate_vs_SigmaMeanEta,
+  // ...
+  eQACorrelationsVsInteractionRateVsProfiles2D_N
+};
+
 enum eReferenceMultiplicityEstimators {
   // Run 3:
   eMultTPC = 0,
@@ -453,6 +475,8 @@ enum eSpecificCuts {
   eLHC15o,
   // Run 1:
   // ...
+  // Cuts for minimal subscription, "processTest": "true in JSON
+  eTestCuts,
   eSpecificCuts_N
 };
 
