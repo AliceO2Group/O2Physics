@@ -193,7 +193,7 @@ struct HfTaskSingleMuonMult {
 
     // muons
     for (const auto& muon : muons) {
-      const auto pt(muon.pt()), eta(muon.eta()), theta(90 - ((std::atan(muon.tgl())) * (180. / constants::math::PI))), pDca(muon.pDca()), rAbs(muon.rAtAbsorberEnd()), chi2(muon.chi2MatchMCHMFT());
+      const auto pt(muon.pt()), eta(muon.eta()), theta(90.0f - ((std::atan(muon.tgl())) * (180.0f / static_cast<float>(constants::math::PI)))), pDca(muon.pDca()), rAbs(muon.rAtAbsorberEnd()), chi2(muon.chi2MatchMCHMFT());
       const auto dcaXY(RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY()));
       const auto muTrackType(muon.trackType());
 
@@ -263,7 +263,7 @@ struct HfTaskSingleMuonMult {
     static_for<0, 4>([&](auto i) {
       constexpr int kIndex = i.value;
       if (nMuTrackType[kIndex] > 0) {
-        registry.fill(HIST("h3MultNchNmu_") + HIST(kTrackType[kIndex]), cent, nCh, nMuTrackType[kIndex]);
+        registry.fill(std::string(HIST("h3MultNchNmu_")) + std::string(HIST(kTrackType[kIndex])), cent, nCh, nMuTrackType[kIndex]);
       }
     });
     chTracks.clear();
