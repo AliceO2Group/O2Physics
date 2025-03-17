@@ -194,7 +194,7 @@ struct HfTaskSingleMuonMult {
 
     // muons
     for (const auto& muon : muons) {
-      const auto pt(muon.pt()), eta(muon.eta()), theta(90.0f - ((std::atan(muon.tgl())) * (180.0f / static_cast<float>(constants::math::PI)))), pDca(muon.pDca()), rAbs(muon.rAtAbsorberEnd()), chi2(muon.chi2MatchMCHMFT());
+      const auto pt{muon.pt()}, eta{muon.eta()}, theta{90.0f - ((std::atan(muon.tgl())) * constants::math::Rad2Deg)}, pDca{muon.pDca()}, rAbs{muon.rAtAbsorberEnd()}, chi2{muon.chi2MatchMCHMFT()};
       const auto dcaXY(RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY()));
       const auto muTrackType(muon.trackType());
 
