@@ -2198,14 +2198,15 @@ struct TauTau13topo {
     // remove combinatoric
     bool flagVcalPV[4] = {false, false, false, false};
 
-    bool trkIsGood[4] = {false, false, false, false};
+    // bool trkIsGood[4] = {false, false, false, false};
     bool trkIsTOFGood[4] = {false, false, false, false};
 
     // second loop to calculate 1 by 1 each combinatorial variable
     counterTmp = 0;
     int tmpTrkCheck = -1;
     for (const auto& trk : PVContributors) {
-      trkIsGood[counterTmp] = isGoodTrackCheck(trk);
+      // trkIsGood[counterTmp] =
+      isGoodTrackCheck(trk);
       trkIsTOFGood[counterTmp] = isGoodTOFTrackCheck(trk);
       tmpTrkCheck = trackCheck(trk); // check detectors associated to track
       registry.get<TH1>(HIST("global/hTrkCheck"))->Fill(tmpTrkCheck);
