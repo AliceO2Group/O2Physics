@@ -992,8 +992,6 @@ struct AntiprotonCumulantsMc {
     for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.has_mcCollision())
         continue;
-      if (!(mcParticle.mcCollision().globalIndex() == mcCollision.globalIndex()))
-        continue;
 
       if (mcParticle.isPhysicalPrimary()) {
         if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < 5.0f) && (std::abs(mcParticle.eta()) < cfgCutEta)) {
@@ -1102,9 +1100,6 @@ struct AntiprotonCumulantsMc {
     // Start of the Monte-Carlo reconstructed tracks
     for (const auto& track : tracks) {
       if (!track.has_collision()) {
-        continue;
-      }
-      if (!(track.collision().globalIndex() == collision.globalIndex())) {
         continue;
       }
 
@@ -2055,9 +2050,7 @@ struct AntiprotonCumulantsMc {
       if (!track.has_collision()) {
         continue;
       }
-      if (!(track.collision().globalIndex() == coll.globalIndex())) {
-        continue;
-      }
+
       if (!track.isPVContributor()) //! track check as used in data
       {
         continue;

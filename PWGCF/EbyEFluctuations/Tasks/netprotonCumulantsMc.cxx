@@ -992,8 +992,6 @@ struct NetprotonCumulantsMc {
     for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.has_mcCollision())
         continue;
-      if (!(mcParticle.mcCollision().globalIndex() == mcCollision.globalIndex()))
-        continue;
 
       if (mcParticle.isPhysicalPrimary()) {
         if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < 5.0f) && (std::abs(mcParticle.eta()) < cfgCutEta)) {
@@ -1104,9 +1102,7 @@ struct NetprotonCumulantsMc {
       if (!track.has_collision()) {
         continue;
       }
-      if (!(track.collision().globalIndex() == collision.globalIndex())) {
-        continue;
-      }
+
       if (!track.has_mcParticle()) //! check if track has corresponding MC particle
       {
         continue;
@@ -2053,9 +2049,7 @@ struct NetprotonCumulantsMc {
       if (!track.has_collision()) {
         continue;
       }
-      if (!(track.collision().globalIndex() == coll.globalIndex())) {
-        continue;
-      }
+
       if (!track.isPVContributor()) //! track check as used in data
       {
         continue;
