@@ -773,7 +773,7 @@ struct FlowCumulantsUpc {
     registry.fill(HIST("hVtxZ"), vtxz);
     registry.fill(HIST("hMult"), tracks.size());
     registry.fill(HIST("hCent"), cent);
-    // fGFW->Clear();
+    fGFW->Clear();
     // if (cfgGetInteractionRate) {
     //   initHadronicRate(bc);
     //   double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
