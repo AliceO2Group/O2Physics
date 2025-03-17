@@ -1521,10 +1521,10 @@ struct Derivedupcanalysis {
     const int pdgV0 = v0.pdgCode();
     const bool isPhysPrim = v0.isPhysicalPrimary();
 
-    const bool isPositiveProton = (pdgPos == 2212);
-    const bool isPositivePion = (pdgPos == 211) || (doTreatPiToMuon && pdgPos == -13);
-    const bool isNegativeProton = (pdgNeg == -2212);
-    const bool isNegativePion = (pdgNeg == -211) || (doTreatPiToMuon && pdgNeg == 13);
+    const bool isPositiveProton = (pdgPos == PDG_t::kProton);
+    const bool isPositivePion = (pdgPos == PDG_t::kPiPlus) || (doTreatPiToMuon && pdgPos == PDG_t::kMuonPlus);
+    const bool isNegativeProton = (pdgNeg == kProtonBar);
+    const bool isNegativePion = (pdgNeg == PDG_t::kPiMinus) || (doTreatPiToMuon && pdgNeg == PDG_t::kMuonMinus);
 
     switch (pdgV0) {
       case 310: // K0Short
@@ -1560,20 +1560,20 @@ struct Derivedupcanalysis {
     const int pdgCasc = casc.pdgCode();
     const bool isPhysPrim = casc.isPhysicalPrimary();
 
-    const bool isPositiveProton = (pdgPos == 2212);
-    const bool isBachelorPositiveProton = (pdgBach == 2212);
+    const bool isPositiveProton = (pdgPos == PDG_t::kProton);
+    const bool isBachelorPositiveProton = (pdgBach == PDG_t::kProton);
 
-    const bool isPositivePion = (pdgPos == 211);
-    const bool isBachelorPositivePion = (pdgBach == 211);
+    const bool isPositivePion = (pdgPos == PDG_t::kPiPlus);
+    const bool isBachelorPositivePion = (pdgBach == PDG_t::kPiPlus);
 
-    const bool isNegativeProton = (pdgNeg == -2212);
-    const bool isBachelorNegativeProton = (pdgBach == -2212);
+    const bool isNegativeProton = (pdgNeg == kProtonBar);
+    const bool isBachelorNegativeProton = (pdgBach == kProtonBar);
 
-    const bool isNegativePion = (pdgNeg == -211);
-    const bool isBachelorNegativePion = (pdgBach == -211);
+    const bool isNegativePion = (pdgNeg == PDG_t::kPiMinus);
+    const bool isBachelorNegativePion = (pdgBach == PDG_t::kPiMinus);
 
-    const bool isBachelorPositiveKaon = (pdgBach == 321);
-    const bool isBachelorNegativeKaon = (pdgBach == -321);
+    const bool isBachelorPositiveKaon = (pdgBach == PDG_t::kKPlus);
+    const bool isBachelorNegativeKaon = (pdgBach == PDG_t::kKMinus);
 
     switch (pdgCasc) {
       case 3312: // Xi
