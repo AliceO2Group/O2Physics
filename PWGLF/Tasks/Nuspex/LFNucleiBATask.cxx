@@ -2287,7 +2287,6 @@ struct LFNucleiBATask {
         nITSTr = track.itsNSigmaTr();
         nITSHe = track.itsNSigmaHe();
       }
-
       heP = track.p();
       antiheP = track.p();
       heTPCmomentum = track.tpcInnerParam();
