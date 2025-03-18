@@ -89,22 +89,22 @@ struct IdentifiedBfCorrelationsTask {
     //============================================================================================
     /* histograms */
     TH1F* fhVertexZA;                                                             //!<! the z vertex distribution for the current multiplicity/centrality class
-    std::vector<TH1F*> fhN1VsPt{nch, nullptr};                                   //!<! weighted single particle distribution vs \f$p_T\f$, for the different species
-    std::vector<TH2F*> fhN1VsEtaPhi{nch, nullptr};                               //!<! weighted single particle distribution vs \f$\eta,\;\phi\f$, for the different species
-    std::vector<TH2F*> fhSum1PtVsEtaPhi{nch, nullptr};                           //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
-    std::vector<TH3F*> fhN1VsZEtaPhiPt{nch, nullptr};                            //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
-    std::vector<TH3F*> fhN1VsZEtaPhiPtPrimary{nch, nullptr};                     //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
-    std::vector<TH3F*> fhN1VsZEtaPhiPtSecondary{nch, nullptr};                     //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
-    std::vector<TH3F*> fhSum1PtVsZEtaPhiPt{nch, nullptr};                        //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
-    std::vector<TH3*> fhNuaNueVsZEtaPhiPt{nch, nullptr};                         //!<! NUA+NUE correction vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the differents species
-    std::vector<TH2*> fhPtAvgVsEtaPhi{nch, nullptr};                             //!<! average \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
-    std::vector<std::vector<TH2F*>> fhN2VsPtPt{nch, {nch, nullptr}};             //!<! weighted two particle distribution vs \f${p_T}_1, {p_T}_2\f$ for the different species combinations
-    std::vector<std::vector<TH2F*>> fhN2VsDEtaDPhi{nch, {nch, nullptr}};         //!<! two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
-    std::vector<std::vector<TH2F*>> fhN2ContVsDEtaDPhi{nch, {nch, nullptr}};     //!<! two-particle distribution continuous vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
-    std::vector<std::vector<TH2F*>> fhSum2PtPtVsDEtaDPhi{nch, {nch, nullptr}};   //!<! two-particle  \f$\sum {p_T}_1 {p_T}_2\f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
-    std::vector<std::vector<TH2F*>> fhSum2DptDptVsDEtaDPhi{nch, {nch, nullptr}}; //!<! two-particle  \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
-    std::vector<std::vector<TH2F*>> fhSupN1N1VsDEtaDPhi{nch, {nch, nullptr}};    //!<! suppressed n1n1 two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
-    std::vector<std::vector<TH2F*>> fhSupPt1Pt1VsDEtaDPhi{nch, {nch, nullptr}};  //!<! suppressed \f${p_T}_1 {p_T}_2\f$ two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<TH1F*> fhN1VsPt{nch, nullptr};                                    //!<! weighted single particle distribution vs \f$p_T\f$, for the different species
+    std::vector<TH2F*> fhN1VsEtaPhi{nch, nullptr};                                //!<! weighted single particle distribution vs \f$\eta,\;\phi\f$, for the different species
+    std::vector<TH2F*> fhSum1PtVsEtaPhi{nch, nullptr};                            //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
+    std::vector<TH3F*> fhN1VsZEtaPhiPt{nch, nullptr};                             //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhN1VsZEtaPhiPtPrimary{nch, nullptr};                      //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhN1VsZEtaPhiPtSecondary{nch, nullptr};                    //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhSum1PtVsZEtaPhiPt{nch, nullptr};                         //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3*> fhNuaNueVsZEtaPhiPt{nch, nullptr};                          //!<! NUA+NUE correction vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the differents species
+    std::vector<TH2*> fhPtAvgVsEtaPhi{nch, nullptr};                              //!<! average \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
+    std::vector<std::vector<TH2F*>> fhN2VsPtPt{nch, {nch, nullptr}};              //!<! weighted two particle distribution vs \f${p_T}_1, {p_T}_2\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhN2VsDEtaDPhi{nch, {nch, nullptr}};          //!<! two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhN2ContVsDEtaDPhi{nch, {nch, nullptr}};      //!<! two-particle distribution continuous vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhSum2PtPtVsDEtaDPhi{nch, {nch, nullptr}};    //!<! two-particle  \f$\sum {p_T}_1 {p_T}_2\f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhSum2DptDptVsDEtaDPhi{nch, {nch, nullptr}};  //!<! two-particle  \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhSupN1N1VsDEtaDPhi{nch, {nch, nullptr}};     //!<! suppressed n1n1 two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhSupPt1Pt1VsDEtaDPhi{nch, {nch, nullptr}};   //!<! suppressed \f${p_T}_1 {p_T}_2\f$ two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
     /* versus centrality/multiplicity  profiles */
     std::vector<TProfile*> fhN1VsC{nch, nullptr};                               //!<! weighted single particle distribution vs event centrality/multiplicity, track 1 and 2
     std::vector<TProfile*> fhSum1PtVsC{nch, nullptr};                           //!<! accumulated sum of weighted \f$p_T\f$ vs event centrality/multiplicity, track 1 and 2
@@ -140,7 +140,7 @@ struct IdentifiedBfCorrelationsTask {
     {
       using namespace correlationstask;
       using namespace o2::analysis::identifiedbffilter;
-      phi = RecoDecay::constrainAngle(phi,philow, phiup);
+      phi = RecoDecay::constrainAngle(phi, philow, phiup);
       return phi;
     }
 
@@ -264,17 +264,15 @@ struct IdentifiedBfCorrelationsTask {
       return ptavg;
     }
 
-
     /// \brief checks whether MC track is a physical primary or secondary
     /// \param track passed MC track converted to MCParticle
     template <typename TrackObject>
     void trackPrimaryCheck(TrackObject const& track, float zvtx, float corr)
     {
       if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
-        if(isPrimaryCheck(track.template mcParticle_as<aod::McParticles>())){
+        if (isPrimaryCheck(track.template mcParticle_as<aod::McParticles>())) {
           fhN1VsZEtaPhiPtPrimary[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
-        }
-        else{
+        } else {
           fhN1VsZEtaPhiPtSecondary[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
         }
       }
@@ -287,7 +285,6 @@ struct IdentifiedBfCorrelationsTask {
     {
       return particle.isPhysicalPrimary();
     }
-
 
     /// \brief fills the singles histograms in singles execution mode
     /// \param passedtracks filtered table with the tracks associated to the passed index
@@ -392,7 +389,7 @@ struct IdentifiedBfCorrelationsTask {
           int globalbin = getDEtaDPhiGlobalIndex(track1, track2);
           float deltaeta = track1.eta() - track2.eta();
           float deltaphi = track1.phi() - track2.phi();
-          deltaphi = RecoDecay::constrainAngle(deltaphi,deltaphilow,deltaphiup);
+          deltaphi = RecoDecay::constrainAngle(deltaphi, deltaphilow, deltaphiup);
           if ((fUseConversionCuts && fPairCuts.conversionCuts(track1, track2)) || (fUseTwoTrackCut && fPairCuts.twoTrackCut(track1, track2, bfield))) {
             /* suppress the pair */
             fhSupN1N1VsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, corr);
@@ -508,19 +505,19 @@ struct IdentifiedBfCorrelationsTask {
         for (uint i = 0; i < nch; ++i) {
           /* histograms for each track, one and two */
           fhN1VsPt[i] = new TH1F(TString::Format("n1_%s_vsPt", tname[i].c_str()).Data(),
-                                  TString::Format("#LT n_{1} #GT;p_{t,%s} (GeV/c);#LT n_{1} #GT", tname[i].c_str()).Data(),
-                                  ptbins, ptlow, ptup);
+                                 TString::Format("#LT n_{1} #GT;p_{t,%s} (GeV/c);#LT n_{1} #GT", tname[i].c_str()).Data(),
+                                 ptbins, ptlow, ptup);
           /* we don't want the Sumw2 structure being created here */
           bool defSumw2 = TH1::GetDefaultSumw2();
           if constexpr (smallsingles) {
             fhN1VsEtaPhi[i] = new TH2F(TString::Format("n1_%s_vsEtaPhi", tname[i].c_str()).Data(),
-                                        TString::Format("#LT n_{1} #GT;#eta_{%s};#varphi_{%s} (radian);#LT n_{1} #GT", tname[i].c_str(), tname[i].c_str()).Data(),
-                                        etabins, etalow, etaup, phibins, philow, phiup);
+                                       TString::Format("#LT n_{1} #GT;#eta_{%s};#varphi_{%s} (radian);#LT n_{1} #GT", tname[i].c_str(), tname[i].c_str()).Data(),
+                                       etabins, etalow, etaup, phibins, philow, phiup);
             fhSum1PtVsEtaPhi[i] = new TH2F(TString::Format("sumPt_%s_vsEtaPhi", tname[i].c_str()).Data(),
-                                            TString::Format("#LT #Sigma p_{t,%s} #GT;#eta_{%s};#varphi_{%s} (radian);#LT #Sigma p_{t,%s} #GT (GeV/c)",
-                                                            tname[i].c_str(), tname[i].c_str(), tname[i].c_str(), tname[i].c_str())
-                                              .Data(),
-                                            etabins, etalow, etaup, phibins, philow, phiup);
+                                           TString::Format("#LT #Sigma p_{t,%s} #GT;#eta_{%s};#varphi_{%s} (radian);#LT #Sigma p_{t,%s} #GT (GeV/c)",
+                                                           tname[i].c_str(), tname[i].c_str(), tname[i].c_str(), tname[i].c_str())
+                                             .Data(),
+                                           etabins, etalow, etaup, phibins, philow, phiup);
           } else {
             TH1::SetDefaultSumw2(false);
             fhN1VsZEtaPhiPt[i] = new TH3F(
@@ -539,7 +536,7 @@ struct IdentifiedBfCorrelationsTask {
               ptbins,
               ptlow,
               ptup);
-              
+
             fhN1VsZEtaPhiPtPrimary[i] = new TH3F(
               TString::Format("n1_%s_Primary_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
               TString::Format("#LT n_{1} Primary #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
@@ -630,24 +627,24 @@ struct IdentifiedBfCorrelationsTask {
         for (uint i = 0; i < nch; ++i) {
           /* histograms for each track species */
           fhN1VsEtaPhi[i] = new TH2F(TString::Format("n1_%s_vsEtaPhi", tname[i].c_str()).Data(),
-                                      TString::Format("#LT n_{1} #GT;#eta_{%s};#varphi_{%s} (radian);#LT n_{1} #GT", tname[i].c_str(), tname[i].c_str()).Data(),
-                                      etabins, etalow, etaup, phibins, philow, phiup);
+                                     TString::Format("#LT n_{1} #GT;#eta_{%s};#varphi_{%s} (radian);#LT n_{1} #GT", tname[i].c_str(), tname[i].c_str()).Data(),
+                                     etabins, etalow, etaup, phibins, philow, phiup);
           fhSum1PtVsEtaPhi[i] = new TH2F(TString::Format("sumPt_%s_vsEtaPhi", tname[i].c_str()).Data(),
-                                          TString::Format("#LT #Sigma p_{t,%s} #GT;#eta_{%s};#varphi_{%s} (radian);#LT #Sigma p_{t,%s} #GT (GeV/c)",
-                                                          tname[i].c_str(), tname[i].c_str(), tname[i].c_str(), tname[i].c_str())
-                                            .Data(),
-                                          etabins, etalow, etaup, phibins, philow, phiup);
+                                         TString::Format("#LT #Sigma p_{t,%s} #GT;#eta_{%s};#varphi_{%s} (radian);#LT #Sigma p_{t,%s} #GT (GeV/c)",
+                                                         tname[i].c_str(), tname[i].c_str(), tname[i].c_str(), tname[i].c_str())
+                                           .Data(),
+                                         etabins, etalow, etaup, phibins, philow, phiup);
           fhN1VsC[i] = new TProfile(TString::Format("n1_%s_vsM", tname[i].c_str()).Data(),
-                                     TString::Format("#LT n_{1} #GT (weighted);Centrality/Multiplicity (%%);#LT n_{1} #GT").Data(),
-                                     100, 0.0, 100.0);
+                                    TString::Format("#LT n_{1} #GT (weighted);Centrality/Multiplicity (%%);#LT n_{1} #GT").Data(),
+                                    100, 0.0, 100.0);
           fhSum1PtVsC[i] = new TProfile(TString::Format("sumPt_%s_vsM", tname[i].c_str()),
-                                         TString::Format("#LT #Sigma p_{t,%s} #GT (weighted);Centrality/Multiplicity (%%);#LT #Sigma p_{t,%s} #GT (GeV/c)", tname[i].c_str(), tname[i].c_str()).Data(),
-                                         100, 0.0, 100.0);
+                                        TString::Format("#LT #Sigma p_{t,%s} #GT (weighted);Centrality/Multiplicity (%%);#LT #Sigma p_{t,%s} #GT (GeV/c)", tname[i].c_str(), tname[i].c_str()).Data(),
+                                        100, 0.0, 100.0);
           fhN1NWVsC[i] = new TProfile(TString::Format("n1Nw_%s_vsM", tname[i].c_str()).Data(),
-                                       TString::Format("#LT n_{1} #GT;Centrality/Multiplicity (%%);#LT n_{1} #GT").Data(),
-                                       100, 0.0, 100.0);
+                                      TString::Format("#LT n_{1} #GT;Centrality/Multiplicity (%%);#LT n_{1} #GT").Data(),
+                                      100, 0.0, 100.0);
           fhSum1PtNWVsC[i] = new TProfile(TString::Format("sumPtNw_%s_vsM", tname[i].c_str()).Data(),
-                                           TString::Format("#LT #Sigma p_{t,%s} #GT;Centrality/Multiplicity (%%);#LT #Sigma p_{t,%s} #GT (GeV/c)", tname[i].c_str(), tname[i].c_str()).Data(), 100, 0.0, 100.0);
+                                          TString::Format("#LT #Sigma p_{t,%s} #GT;Centrality/Multiplicity (%%);#LT #Sigma p_{t,%s} #GT (GeV/c)", tname[i].c_str(), tname[i].c_str()).Data(), 100, 0.0, 100.0);
           fhNuaNueVsZEtaPhiPt[i] = nullptr;
           fhPtAvgVsEtaPhi[i] = nullptr;
           fOutputList->Add(fhN1VsEtaPhi[i]);
@@ -666,22 +663,22 @@ struct IdentifiedBfCorrelationsTask {
             // const char* pname = chargePairsNames[i][j].c_str();
             const char* pname = speciesPairNames[i][j].c_str();
             fhN2VsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
-                                             deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
+                                            deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
             fhN2ContVsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12cont_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
-                                                 deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
+                                                deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
             fhSum2PtPtVsDEtaDPhi[i][j] = new TH2F(TString::Format("sumPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma p_{t,1}p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma p_{t,1}p_{t,2} #GT (GeV^{2})", pname),
-                                                   deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
-            fhSum2DptDptVsDEtaDPhi[i][j] = new TH2F(TString::Format("sumDptDpt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (GeV^{2})", pname),
-                                                     deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
-            fhSupN1N1VsDEtaDPhi[i][j] = new TH2F(TString::Format("suppn1n1_12_vsDEtaDPhi_%s", pname), TString::Format("Suppressed #LT n_{1} #GT#LT n_{1} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{1} #GT#LT n_{1} #GT", pname),
                                                   deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
-            fhSupPt1Pt1VsDEtaDPhi[i][j] = new TH2F(TString::Format("suppPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("Suppressed #LT p_{t,1} #GT#LT p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT p_{t,1} #GT#LT p_{t,2} #GT (GeV^{2})", pname),
+            fhSum2DptDptVsDEtaDPhi[i][j] = new TH2F(TString::Format("sumDptDpt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (GeV^{2})", pname),
                                                     deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
+            fhSupN1N1VsDEtaDPhi[i][j] = new TH2F(TString::Format("suppn1n1_12_vsDEtaDPhi_%s", pname), TString::Format("Suppressed #LT n_{1} #GT#LT n_{1} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{1} #GT#LT n_{1} #GT", pname),
+                                                 deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
+            fhSupPt1Pt1VsDEtaDPhi[i][j] = new TH2F(TString::Format("suppPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("Suppressed #LT p_{t,1} #GT#LT p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT p_{t,1} #GT#LT p_{t,2} #GT (GeV^{2})", pname),
+                                                   deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
             /* we return it back to previuos state */
             TH1::SetDefaultSumw2(defSumw2);
 
             fhN2VsPtPt[i][j] = new TH2F(TString::Format("n2_12_vsPtVsPt_%s", pname), TString::Format("#LT n_{2} #GT (%s);p_{t,1} (GeV/c);p_{t,2} (GeV/c);#LT n_{2} #GT", pname),
-                                         ptbins, ptlow, ptup, ptbins, ptlow, ptup);
+                                        ptbins, ptlow, ptup, ptbins, ptlow, ptup);
 
             fhN2VsC[i][j] = new TProfile(TString::Format("n2_12_vsM_%s", pname), TString::Format("#LT n_{2} #GT (%s) (weighted);Centrality/Multiplicity (%%);#LT n_{2} #GT", pname), 100, 0.0, 100.0);
             fhSum2PtPtVsC[i][j] = new TProfile(TString::Format("sumPtPt_12_vsM_%s", pname), TString::Format("#LT #Sigma p_{t,1}p_{t,2} #GT (%s) (weighted);Centrality/Multiplicity (%%);#LT #Sigma p_{t,1}p_{t,2} #GT (GeV^{2})", pname), 100, 0.0, 100.0);

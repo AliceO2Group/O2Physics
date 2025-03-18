@@ -1409,7 +1409,6 @@ void fillNSigmaHistos(TrackObject const& track)
   fhNSigmaCombo[kIdBfProton]->Fill(sqrtf(track.tofNSigmaPr() * track.tofNSigmaPr() + actualTPCNSigmaPr * actualTPCNSigmaPr), track.tpcInnerParam());
 }
 
-
 /// \brief Identifies the passed track with TPC and TOF data
 /// \param track the track of interest
 /// \return the internal track id, -1 if not accepted
