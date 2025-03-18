@@ -1302,32 +1302,26 @@ struct HfFilter { // Main struct for HF triggers
           bool isProton = helper.isSelectedTrack4Femto(track, trackParFourth, activateQA, hPrDePID[0], hPrDePID[1], kProtonForFemto);
           bool isDeuteron = helper.isSelectedTrack4Femto(track, trackParFourth, activateQA, hPrDePID[2], hPrDePID[3], kDeuteronForFemto);
 
-          if (isProton && track.collisionId() == thisCollId) {
+          if (track.collisionId() == thisCollId) {
             for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto3P]; ++iHypo) {
-              if (isCharmTagged[iHypo] && enableFemtoChannels->get(0u, iHypo + 1)) {
-                float relativeMomentum = helper.computeRelativeMomentum(pVecFourth, pVec3Prong, massCharmHypos[iHypo]);
-                if (applyOptimisation) {
-                  optimisationTreeFemto(thisCollId, charmParticleID[iHypo], pt3Prong, scores[iHypo][0], scores[iHypo][1], scores[iHypo][2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.tpcNSigmaDe(), track.tofNSigmaDe());
-                }
-                if (relativeMomentum < femtoMaxRelativeMomentum) {
-                  keepEvent[kFemto3P] = true;
-                  if (activateQA) {
-                    hCharmProtonKstarDistr[iHypo + 1]->Fill(relativeMomentum);
+              if (isCharmTagged[iHypo]) {
+                bool isProtonCharm3ProngFemto = isProton && enableFemtoChannels->get(0u, iHypo + 1);
+                bool isDeuteronCharm3ProngFemto = isDeuteron && enableFemtoChannels->get(1u, iHypo + 1);
+                if (isProtonCharm3ProngFemto || isDeuteronCharm3ProngFemto) {
+                  float relativeMomentum = helper.computeRelativeMomentum(pVecFourth, pVec3Prong, massCharmHypos[iHypo]);
+                  if (applyOptimisation) {
+                    optimisationTreeFemto(thisCollId, charmParticleID[iHypo], pt3Prong, scores[iHypo][0], scores[iHypo][1], scores[iHypo][2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.tpcNSigmaDe(), track.tofNSigmaDe());
                   }
-                }
-              }
-            }
-          } else if (isDeuteron && track.collisionId() == thisCollId) {
-            for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto3P]; ++iHypo) {
-              if (isCharmTagged[iHypo] && enableFemtoChannels->get(1u, iHypo + 1)) {
-                float relativeMomentum = helper.computeRelativeMomentum(pVecFourth, pVec3Prong, massCharmHypos[iHypo]);
-                if (applyOptimisation) {
-                  optimisationTreeFemto(thisCollId, charmParticleID[iHypo], pt3Prong, scores[iHypo][0], scores[iHypo][1], scores[iHypo][2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.tpcNSigmaDe(), track.tofNSigmaDe());
-                }
-                if (relativeMomentum < femtoMaxRelativeMomentum) {
-                  keepEvent[kFemto3P] = true;
-                  if (activateQA) {
-                    hCharmDeuteronKstarDistr[iHypo + 1]->Fill(relativeMomentum);
+                  if (relativeMomentum < femtoMaxRelativeMomentum) {
+                    keepEvent[kFemto3P] = true;
+                    if (activateQA) {
+                      if (isProtonCharm3ProngFemto) {
+                        hCharmProtonKstarDistr[iHypo + 1]->Fill(relativeMomentum);
+                      }
+                      if (isDeuteronCharm3ProngFemto) {
+                        hCharmDeuteronKstarDistr[iHypo + 1]->Fill(relativeMomentum);
+                      }
+                    }
                   }
                 }
               }
