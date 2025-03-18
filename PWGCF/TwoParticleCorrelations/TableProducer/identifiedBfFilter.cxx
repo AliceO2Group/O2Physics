@@ -1409,6 +1409,11 @@ void fillNSigmaHistos(TrackObject const& track)
   fhNSigmaCombo[kIdBfProton]->Fill(sqrtf(track.tofNSigmaPr() * track.tofNSigmaPr() + actualTPCNSigmaPr * actualTPCNSigmaPr), track.tpcInnerParam());
 }
 
+
+/// \brief Identifies the passed track with TPC and TOF data
+/// \param track the track of interest
+/// \return the internal track id, -1 if not accepted
+
 template <typename TrackObject>
 inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject const& track)
 {
@@ -1518,10 +1523,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
 /// \brief Accepts or not the passed track
 /// \param track the track of interest
 /// \return the internal track id, -1 if not accepted
-/// TODO: the PID implementation
-/// For the time being we keep the convention
-/// - positive track pid even
-/// - negative track pid odd
+
 template <typename TrackObject>
 inline int8_t IdentifiedBfFilterTracks::acceptTrack(TrackObject const& track)
 {

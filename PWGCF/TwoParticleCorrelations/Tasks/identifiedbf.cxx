@@ -89,6 +89,8 @@ struct IdentifiedBfCorrelationsTask {
     std::vector<TH2F*> fhN1_vsEtaPhi{nch, nullptr};                               //!<! weighted single particle distribution vs \f$\eta,\;\phi\f$, for the different species
     std::vector<TH2F*> fhSum1Pt_vsEtaPhi{nch, nullptr};                           //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
     std::vector<TH3F*> fhN1_vsZEtaPhiPt{nch, nullptr};                            //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhN1_vsZEtaPhiPtPrimary{nch, nullptr};                     //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhN1_vsZEtaPhiPtSecondary{nch, nullptr};                     //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhSum1Pt_vsZEtaPhiPt{nch, nullptr};                        //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3*> fhNuaNue_vsZEtaPhiPt{nch, nullptr};                         //!<! NUA+NUE correction vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the differents species
     std::vector<TH2*> fhPtAvg_vsEtaPhi{nch, nullptr};                             //!<! average \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
@@ -261,6 +263,31 @@ struct IdentifiedBfCorrelationsTask {
       return ptavg;
     }
 
+
+    /// \brief checks whether MC track is a physical primary or secondary
+    /// \param track passed MC track converted to MCParticle
+    template <typename TrackObject>
+    void trackPrimaryCheck(TrackObject const& track, float zvtx, float corr)
+    {
+      if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
+        if(isPrimaryCheck(track.template mcParticle_as<aod::McParticles>())){
+          fhN1_vsZEtaPhiPtPrimary[track.trackacceptedid()]->Fill(zvtx, GetEtaPhiIndex(track) + 0.5, track.pt(), corr);
+        }
+        else{
+          fhN1_vsZEtaPhiPtSecondary[track.trackacceptedid()]->Fill(zvtx, GetEtaPhiIndex(track) + 0.5, track.pt(), corr);
+        }
+      }
+    }
+
+    /// \brief checks whether MC track is a physical primary or secondary
+    /// \param particle passed MC track converted to MCParticle
+    template <typename ParticleObject>
+    bool isPrimaryCheck(ParticleObject const& particle)
+    {
+      return particle.isPhysicalPrimary();
+    }
+
+
     /// \brief fills the singles histograms in singles execution mode
     /// \param passedtracks filtered table with the tracks associated to the passed index
     /// \param tix index, in the singles histogram bank, for the passed filetered track table
@@ -277,6 +304,7 @@ struct IdentifiedBfCorrelationsTask {
         } else {
           fhN1_vsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, GetEtaPhiIndex(track) + 0.5, track.pt(), corr);
           fhSum1Pt_vsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, GetEtaPhiIndex(track) + 0.5, track.pt(), track.pt() * corr);
+          trackPrimaryCheck(track, zvtx, corr);
         }
         index++;
       }
@@ -515,6 +543,41 @@ struct IdentifiedBfCorrelationsTask {
               ptbins,
               ptlow,
               ptup);
+              
+            fhN1_vsZEtaPhiPtPrimary[i] = new TH3F(
+              TString::Format("n1_%s_Primary_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
+              TString::Format("#LT n_{1} Primary #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
+                              tname[i].c_str(),
+                              tname[i].c_str(),
+                              tname[i].c_str())
+                .Data(),
+              zvtxbins,
+              zvtxlow,
+              zvtxup,
+              etabins * phibins,
+              0.0,
+              static_cast<double>(etabins * phibins),
+              ptbins,
+              ptlow,
+              ptup);
+
+            fhN1_vsZEtaPhiPtSecondary[i] = new TH3F(
+              TString::Format("n1_%s_Secondary_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
+              TString::Format("#LT n_{1} Secondary #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
+                              tname[i].c_str(),
+                              tname[i].c_str(),
+                              tname[i].c_str())
+                .Data(),
+              zvtxbins,
+              zvtxlow,
+              zvtxup,
+              etabins * phibins,
+              0.0,
+              static_cast<double>(etabins * phibins),
+              ptbins,
+              ptlow,
+              ptup);
+
             fhSum1Pt_vsZEtaPhiPt[i] = new TH3F(
               TString::Format("sumPt1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
               TString::Format(
@@ -546,6 +609,10 @@ struct IdentifiedBfCorrelationsTask {
           } else {
             fhN1_vsZEtaPhiPt[i]->SetBit(TH1::kIsNotW);
             fhN1_vsZEtaPhiPt[i]->Sumw2(false);
+            fhN1_vsZEtaPhiPtPrimary[i]->SetBit(TH1::kIsNotW);
+            fhN1_vsZEtaPhiPtPrimary[i]->Sumw2(false);
+            fhN1_vsZEtaPhiPtSecondary[i]->SetBit(TH1::kIsNotW);
+            fhN1_vsZEtaPhiPtSecondary[i]->Sumw2(false);
             fhSum1Pt_vsZEtaPhiPt[i]->SetBit(TH1::kIsNotW);
             fhSum1Pt_vsZEtaPhiPt[i]->Sumw2(false);
           }
@@ -558,6 +625,8 @@ struct IdentifiedBfCorrelationsTask {
             fOutputList->Add(fhSum1Pt_vsEtaPhi[i]);
           } else {
             fOutputList->Add(fhN1_vsZEtaPhiPt[i]);
+            fOutputList->Add(fhN1_vsZEtaPhiPtPrimary[i]);
+            fOutputList->Add(fhN1_vsZEtaPhiPtSecondary[i]);
             fOutputList->Add(fhSum1Pt_vsZEtaPhiPt[i]);
           }
         }
@@ -1059,13 +1128,13 @@ struct IdentifiedBfCorrelationsTask {
   Filter onlyacceptedcollisions = (aod::identifiedbffilter::collisionaccepted == uint8_t(true));
   Filter onlyacceptedtracks = (aod::identifiedbffilter::trackacceptedid >= int8_t(0));
 
-  void processRecLevel(soa::Filtered<aod::IdentifiedBfCFAcceptedCollisions>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::ScannedTracks>& tracks)
+  void processRecLevel(soa::Filtered<aod::IdentifiedBfCFAcceptedCollisions>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::ScannedTracks>& tracks, aod::McParticles const&)
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
   PROCESS_SWITCH(IdentifiedBfCorrelationsTask, processRecLevel, "Process reco level correlations", false);
 
-  void processRecLevelCheck(aod::Collisions const& collisions, aod::Tracks& tracks)
+  void processRecLevelCheck(aod::Collisions const& collisions, aod::Tracks& tracks, aod::McParticles const&)
   {
     int nAssignedTracks = 0;
     int nNotAssignedTracks = 0;
@@ -1122,13 +1191,27 @@ struct IdentifiedBfCorrelationsTask {
   void processRecLevelNotStored(
     soa::Filtered<soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo>>::iterator const& collision,
     aod::BCsWithTimestamps const&,
-    soa::Filtered<soa::Join<aod::Tracks, aod::IdentifiedBfCFTracksInfo>>& tracks)
+    soa::Filtered<soa::Join<aod::Tracks, aod::IdentifiedBfCFTracksInfo>>& tracks,
+    aod::McParticles const&)
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
   PROCESS_SWITCH(IdentifiedBfCorrelationsTask,
                  processRecLevelNotStored,
                  "Process reco level correlations for not stored derived data",
+                 true);
+
+  void processDetLevelNotStored(
+    soa::Filtered<soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo>>::iterator const& collision,
+    aod::BCsWithTimestamps const&,
+    soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::IdentifiedBfCFTracksInfo>>& tracks,
+    aod::McParticles const&)
+  {
+    processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
+  }
+  PROCESS_SWITCH(IdentifiedBfCorrelationsTask,
+                 processDetLevelNotStored,
+                 "Process detecotr level correlations for not stored derived data",
                  true);
 
   void processGenLevel(
