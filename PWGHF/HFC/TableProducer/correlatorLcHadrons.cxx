@@ -944,7 +944,7 @@ struct HfCorrelatorLcHadrons {
       bool isLcNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
       auto mcParticleProng0 = candidate.template prong0_as<TracksWithMc>().template mcParticle_as<aod::McParticles>();
       auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
-      
+
       if (isLcSignal) {
         if (candidate.isSelLcToPKPi() >= selectionFlagLc && (!rejectReflectionLc || pdgCodeProng0 == kProton)) {
           if (isLcPrompt) {
