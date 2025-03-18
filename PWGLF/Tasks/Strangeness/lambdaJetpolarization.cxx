@@ -50,6 +50,7 @@ struct LfMyV0s {
     registry.add("hMassLambda", "hMassLambda", {HistType::kTH1F, {{200, 0.9f, 1.2f}}});
     registry.add("V0pTInLab", "V0pTInLab", kTH1F, {axisPT});
     registry.add("hMassVsPtLambda", "hMassVsPtLambda", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 1.016f, 1.216f}}});
+    registry.add("hMassVsPtAntiLambda", "hMassVsPtAntiLambda", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 1.016f, 1.216f}}});
 
     registry.add("V0pxInLab", "V0pxInLab", kTH1F, {axisPx});
     registry.add("V0pyInLab", "V0pyInLab", kTH1F, {axisPy});
@@ -84,13 +85,16 @@ struct LfMyV0s {
     registry.add("V0protonpyInJetV0frame", "V0protonpyInJetV0frame", kTH1F, {axisPy});
     registry.add("V0protonpzInJetV0frame", "V0protonpzInJetV0frame", kTH1F, {axisPz});
     registry.add("V0protonphiInJetV0frame", "V0protonphiInJetV0frame", kTH1F, {axisPhi});
+    registry.add("V0antiprotonphiInJetV0frame", "V0antiprotonphiInJetV0frame", kTH1F, {axisPhi});
 
     registry.add("V0LambdapxInJetV0frame", "V0LambdapxInJetV0frame", kTH1F, {axisPx});
     registry.add("V0LambdapyInJetV0frame", "V0LambdapyInJetV0frame", kTH1F, {axisPy});
     registry.add("V0LambdapzInJetV0frame", "V0LambdapzInJetV0frame", kTH1F, {axisPz});
 
     registry.add("hLambdamassandSinPhi", "hLambdamassandSinPhi", kTH2F, {{200, 0.9, 1.2}, {200, -1, 1}});
+    registry.add("hAntiLambdamassandSinPhi", "hAntiLambdamassandSinPhi", kTH2F, {{200, 0.9, 1.2}, {200, -1, 1}});
     registry.add("profile", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registry.add("profileAntiV0", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
   }
   double massPr = o2::constants::physics::MassProton;
   double massLambda = o2::constants::physics::MassLambda;
@@ -264,6 +268,54 @@ struct LfMyV0s {
     }
   }
   PROCESS_SWITCH(LfMyV0s, processLeadingJetV0Analysis, "processLeadingJetV0Analysis", true);
+
+  void processLeadingJetAntiV0Analysis(aod::MyTableAnti const& myv0s, aod::MyTableLeadingJet const& myleadingJets)
+  {
+    for (auto& LeadingJet : myleadingJets) {
+      int V0Numbers = 0;
+      double protonsinPhiInJetV0frame = 0;
+      for (auto& candidate : myv0s) {
+        if (candidate.mycollisionv0() == LeadingJet.mycollisionleadingjet()) {
+          V0Numbers = V0Numbers + 1;
+          double PLambda = sqrt(candidate.v0px() * candidate.v0px() + candidate.v0py() * candidate.v0py() + candidate.v0pz() * candidate.v0pz());
+          double ELambda = sqrt(candidate.v0Lambdamass() * candidate.v0Lambdamass() + PLambda * PLambda);
+          double protonE = sqrt(massPr * massPr + candidate.v0protonpx() * candidate.v0protonpx() + candidate.v0protonpy() * candidate.v0protonpy() + candidate.v0protonpz() * candidate.v0protonpz());
+
+          TMatrixD pLabV0(4, 1);
+          pLabV0(0, 0) = ELambda;
+          pLabV0(1, 0) = candidate.v0px();
+          pLabV0(2, 0) = candidate.v0py();
+          pLabV0(3, 0) = candidate.v0pz();
+
+          TMatrixD lambdaInJet(4, 1);
+          lambdaInJet = MyTMatrixTranslationToJet(LeadingJet.leadingjetpx(), LeadingJet.leadingjetpy(), LeadingJet.leadingjetpz(), candidate.v0px(), candidate.v0py(), candidate.v0pz()) * pLabV0;
+
+          TMatrixD lambdaInJetV0(4, 1);
+          lambdaInJetV0 = LorentzTransInV0frame(ELambda, lambdaInJet(1, 0), lambdaInJet(2, 0), lambdaInJet(3, 0)) * MyTMatrixTranslationToJet(LeadingJet.leadingjetpx(), LeadingJet.leadingjetpy(), LeadingJet.leadingjetpz(), candidate.v0px(), candidate.v0py(), candidate.v0pz()) * pLabV0;
+
+          TMatrixD pLabproton(4, 1);
+          pLabproton(0, 0) = protonE;
+          pLabproton(1, 0) = candidate.v0protonpx();
+          pLabproton(2, 0) = candidate.v0protonpy();
+          pLabproton(3, 0) = candidate.v0protonpz();
+          TMatrixD protonInJetV0(4, 1);
+          protonInJetV0 = LorentzTransInV0frame(ELambda, lambdaInJet(1, 0), lambdaInJet(2, 0), lambdaInJet(3, 0)) * MyTMatrixTranslationToJet(LeadingJet.leadingjetpx(), LeadingJet.leadingjetpy(), LeadingJet.leadingjetpz(), candidate.v0px(), candidate.v0py(), candidate.v0pz()) * pLabproton;
+          protonsinPhiInJetV0frame = protonsinPhiInJetV0frame + protonInJetV0(2, 0) / sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0));
+        }
+      }
+      for (auto& candidate : myv0s) {
+        if (candidate.mycollisionv0() == LeadingJet.mycollisionleadingjet()) {
+          registry.fill(HIST("V0antiprotonphiInJetV0frame"), protonsinPhiInJetV0frame / V0Numbers);
+          registry.fill(HIST("hAntiLambdamassandSinPhi"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame / V0Numbers);
+          registry.fill(HIST("profileAntiV0"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame / V0Numbers);
+        }
+      }
+    }
+    for (auto& candidate : myv0s) {
+      registry.fill(HIST("hMassVsPtAntiLambda"), candidate.v0pt(), candidate.v0Lambdamass());
+    }
+  }
+  PROCESS_SWITCH(LfMyV0s, processLeadingJetAntiV0Analysis, "processLeadingJetAntiV0Analysis", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

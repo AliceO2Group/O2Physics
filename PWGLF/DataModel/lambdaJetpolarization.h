@@ -67,6 +67,10 @@ DECLARE_SOA_TABLE(MyTable, "AOD", "MYTABLE", o2::soa::Index<>,
                   myTable::MyCollisionId, myTable::MyCollisionV0, myTable::V0px, myTable::V0py, myTable::V0pz, myTable::V0pT, myTable::V0Lambdamass,
                   myTable::V0protonpx, myTable::V0protonpy, myTable::V0protonpz);
 
+DECLARE_SOA_TABLE(MyTableAnti, "AOD", "MYTABLEAnti", o2::soa::Index<>,
+                  myTable::MyCollisionId, myTable::MyCollisionV0, myTable::V0px, myTable::V0py, myTable::V0pz, myTable::V0pT, myTable::V0Lambdamass,
+                  myTable::V0protonpx, myTable::V0protonpy, myTable::V0protonpz);
+
 DECLARE_SOA_TABLE(MyTableJet, "AOD", "MYTABLEJet", o2::soa::Index<>,
                   myTable::MyCollisionId, myTable::MyCollisionJet, myTable::Jetpx, myTable::Jetpy, myTable::Jetpz, myTable::JetpT);
 
