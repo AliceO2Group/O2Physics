@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <TPDGCode.h>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -422,8 +423,8 @@ struct cascqaanalysis {
           // c x tau
           float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
           float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
-          float ctauXi = pdgDB->Mass(3312) * cascpos / (cascptotmom + 1e-13);
-          float ctauOmega = pdgDB->Mass(3334) * cascpos / (cascptotmom + 1e-13);
+          float ctauXi = o2::constants::physics::MassXiMinus * cascpos / (cascptotmom + 1e-13);
+          float ctauOmega = o2::constants::physics::MassOmegaMinus * cascpos / (cascptotmom + 1e-13);
 
           mycascades(collision.posZ(),
                      collision.centFT0M(), collision.centFV0A(),
@@ -438,7 +439,7 @@ struct cascqaanalysis {
                      posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
                      posdau.tpcNClsCrossedRows(), negdau.tpcNClsCrossedRows(), bachelor.tpcNClsCrossedRows(),
                      posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF(),
-                     posdau.pt(), negdau.pt(), bachelor.pt(), -1, -1, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), evFlag);
+                     posdau.pt(), negdau.pt(), bachelor.pt(), -1, -1, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), evFlag, 1e3, 1e3);
         }
       }
     }
@@ -520,15 +521,19 @@ struct cascqaanalysis {
         registry.fill(HIST("hCandidateCounter"), 1.5); // passed topo cuts
         nCandSel++;
         // Check mc association
-        float lPDG = -1;
+        float lPDG = 1e3;
+        float genPt = 1e3;
+        float genY = 1e3;
         float isPrimary = -1;
         if (casc.has_mcParticle()) {
           registry.fill(HIST("hCandidateCounter"), 2.5); // has associated MC particle
           auto cascmc = casc.mcParticle();
-          if (TMath::Abs(cascmc.pdgCode()) == 3312 || TMath::Abs(cascmc.pdgCode()) == 3334) {
+          if (TMath::Abs(cascmc.pdgCode()) == PDG_t::kXiMinus || TMath::Abs(cascmc.pdgCode()) == PDG_t::kOmegaMinus) {
             registry.fill(HIST("hCandidateCounter"), 3.5); // associated with Xi or Omega
             lPDG = cascmc.pdgCode();
             isPrimary = cascmc.isPhysicalPrimary() ? 1 : 0;
+            genPt = cascmc.pt();
+            genY = cascmc.y();
           }
         }
         if (fRand->Rndm() < lEventScale) {
@@ -564,8 +569,8 @@ struct cascqaanalysis {
           // c x tau
           float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
           float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
-          float ctauXi = pdgDB->Mass(3312) * cascpos / (cascptotmom + 1e-13);
-          float ctauOmega = pdgDB->Mass(3334) * cascpos / (cascptotmom + 1e-13);
+          float ctauXi = o2::constants::physics::MassXiMinus * cascpos / (cascptotmom + 1e-13);
+          float ctauOmega = o2::constants::physics::MassOmegaMinus * cascpos / (cascptotmom + 1e-13);
 
           mycascades(collision.posZ(),
                      mcCollision.centFT0M(), 0, // mcCollision.centFV0A() to be added
@@ -580,7 +585,7 @@ struct cascqaanalysis {
                      posdau.tpcNClsFound(), negdau.tpcNClsFound(), bachelor.tpcNClsFound(),
                      posdau.tpcNClsCrossedRows(), negdau.tpcNClsCrossedRows(), bachelor.tpcNClsCrossedRows(),
                      posdau.hasTOF(), negdau.hasTOF(), bachelor.hasTOF(),
-                     posdau.pt(), negdau.pt(), bachelor.pt(), lPDG, isPrimary, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), evFlag);
+                     posdau.pt(), negdau.pt(), bachelor.pt(), lPDG, isPrimary, casc.bachBaryonCosPA(), casc.bachBaryonDCAxyToPV(), evFlag, genPt, genY);
         }
       }
     }
@@ -707,9 +712,9 @@ struct cascqaanalysis {
 
     for (const auto& mcParticle : mcParticles) {
       float sign = 0;
-      if (mcParticle.pdgCode() == -3312 || mcParticle.pdgCode() == -3334) {
+      if (mcParticle.pdgCode() == PDG_t::kXiPlusBar || mcParticle.pdgCode() == PDG_t::kOmegaPlusBar) {
         sign = 1;
-      } else if (mcParticle.pdgCode() == 3312 || mcParticle.pdgCode() == 3334) {
+      } else if (mcParticle.pdgCode() == PDG_t::kXiMinus || mcParticle.pdgCode() == PDG_t::kOmegaMinus) {
         sign = -1;
       } else {
         continue;
@@ -813,8 +818,8 @@ struct myCascades {
         registry.fill(HIST("hBachBaryonCosPA"), candidate.bachBaryonCosPA());
         registry.fill(HIST("hBachBaryonDCAxyToPV"), candidate.bachBaryonDCAxyToPV());
 
-        if (TMath::Abs(candidate.mcPdgCode()) == 3312 || TMath::Abs(candidate.mcPdgCode()) == 3334) {
-          registry.fill(HIST("hPDGcode"), TMath::Abs(candidate.mcPdgCode()) == 3312 ? 0 : 1); // 0 if Xi, 1 if Omega
+        if (TMath::Abs(candidate.mcPdgCode()) == PDG_t::kXiMinus || TMath::Abs(candidate.mcPdgCode()) == PDG_t::kOmegaMinus) {
+          registry.fill(HIST("hPDGcode"), TMath::Abs(candidate.mcPdgCode()) == PDG_t::kXiMinus ? 0 : 1); // 0 if Xi, 1 if Omega
         } else {
           registry.fill(HIST("hPDGcode"), -1); // -1 if unknown
         }
