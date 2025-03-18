@@ -20,7 +20,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "Math/Vector4D.h" // similiar to TLorentzVector (which is now legacy apparently)
-#include <random>
+#include "random"
 
 #include "Common/DataModel/PIDResponse.h"
 
@@ -31,7 +31,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using FullUDSgCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::SGCollisions>::iterator;
+using FullUDSgCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::SGCollisions, aod::UDCollisionSelExtras_002>::iterator;
 using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
 
 namespace o2::aod
@@ -87,6 +87,9 @@ DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
 DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
 DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
 
+DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, int);
+DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
+
 } // namespace fourpi
 
 DECLARE_SOA_TABLE(SYSTEMTREE, "AOD", "SystemTree", fourpi::RunNumber, fourpi::M, fourpi::Pt, fourpi::Eta, fourpi::Phi,
@@ -94,7 +97,7 @@ DECLARE_SOA_TABLE(SYSTEMTREE, "AOD", "SystemTree", fourpi::RunNumber, fourpi::M,
                   fourpi::TotalFDDAmplitudeA, fourpi::TotalFDDAmplitudeC, fourpi::TimeFT0A, fourpi::TimeFT0C, fourpi::TimeFV0A, fourpi::TimeFDDA, fourpi::TimeFDDC,
                   fourpi::NumContrib, fourpi::Sign, fourpi::TrackPt, fourpi::TrackEta, fourpi::TrackPhi,
                   fourpi::TPCNSigmaEl, fourpi::TPCNSigmaPi, fourpi::TPCNSigmaKa, fourpi::TPCNSigmaPr, fourpi::TrackID, fourpi::IsReconstructedWithUPC,
-                  fourpi::TimeZNA, fourpi::TimeZNC, fourpi::EnergyCommonZNA, fourpi::EnergyCommonZNC);
+                  fourpi::TimeZNA, fourpi::TimeZNC, fourpi::EnergyCommonZNA, fourpi::EnergyCommonZNC, fourpi::OccupancyInTime, fourpi::HadronicRate);
 } // namespace o2::aod
 
 struct upcRhoPrimeAnalysis {
@@ -314,7 +317,8 @@ struct upcRhoPrimeAnalysis {
                  collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.timeFV0A(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
                  collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
                  collision.numContrib(), vSign, vTrackPt, vTrackEta, vTrackPhi, vTpcNSigmaEl, vTpcNSigmaPi, vTpcNSigmaKa, vTpcNSigmaPr, vTrackID, isReconstructedWithUPC,
-                 collision.timeZNA(), collision.timeZNC(), collision.energyCommonZNA(), collision.energyCommonZNC());
+                 collision.timeZNA(), collision.timeZNC(), collision.energyCommonZNA(), collision.energyCommonZNC(),
+                 collision.occupancyInTime(), collision.hadronicRate());
 
       // registry.fill(HIST("4pi/hM"), mass);
       // registry.fill(HIST("4pi/hPt"), pT);
