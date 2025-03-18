@@ -522,15 +522,19 @@ struct DndetaMFTPbPb {
                       "; p_{T} (GeV/c); #eta; occupancy",
                       {HistType::kTHnSparseF,
                        {ptAxis, etaAxis, occupancyAxis}}});
-      qaregistry.add({"Tracks/hPtEtaEffRec",
+      qaregistry.add({"Tracks/hPtEtaEffPrim",
                       "; p_{T} (GeV/c); #eta; occupancy",
                       {HistType::kTHnSparseF,
                        {ptAxis, etaAxis, occupancyAxis}}});
-      qaregistry.add({"Tracks/hPtEtaEffDuplicates",
+      qaregistry.add({"Tracks/hPtEtaEffSec",
                       "; p_{T} (GeV/c); #eta; occupancy",
                       {HistType::kTHnSparseF,
                        {ptAxis, etaAxis, occupancyAxis}}});
-      qaregistry.add({"Tracks/hPtEtaEffGenDuplicates",
+      qaregistry.add({"Tracks/hPtEtaEffGenDupl",
+                      "; p_{T} (GeV/c); #eta; occupancy",
+                      {HistType::kTHnSparseF,
+                       {ptAxis, etaAxis, occupancyAxis}}});
+      qaregistry.add({"Tracks/hPtEtaEffDupl",
                       "; p_{T} (GeV/c); #eta; occupancy",
                       {HistType::kTHnSparseF,
                        {ptAxis, etaAxis, occupancyAxis}}});
@@ -547,19 +551,25 @@ struct DndetaMFTPbPb {
          {HistType::kTHnSparseF,
           {ptAxis, etaAxis, centralityAxis, occupancyAxis}}});
       qaregistry.add(
-        {"Tracks/Centrality/hPtEtaEffRec",
+        {"Tracks/Centrality/hPtEtaEffPrim",
          "; p_{T} (GeV/c); #eta; centrality; "
          "occupancy",
          {HistType::kTHnSparseF,
           {ptAxis, etaAxis, centralityAxis, occupancyAxis}}});
       qaregistry.add(
-        {"Tracks/Centrality/hPtEtaEffDuplicates",
+        {"Tracks/Centrality/hPtEtaEffSec",
          "; p_{T} (GeV/c); #eta; Z_{vtx} (cm); centrality; "
          "occupancy",
          {HistType::kTHnSparseF,
           {ptAxis, etaAxis, centralityAxis, occupancyAxis}}});
       qaregistry.add(
-        {"Tracks/Centrality/hPtEtaEffGenDuplicates",
+        {"Tracks/Centrality/hPtEtaEffGenDupl",
+         "; p_{T} (GeV/c); #eta; centrality; "
+         "occupancy",
+         {HistType::kTHnSparseF,
+          {ptAxis, etaAxis, centralityAxis, occupancyAxis}}});
+      qaregistry.add(
+        {"Tracks/Centrality/hPtEtaEffDupl",
          "; p_{T} (GeV/c); #eta; centrality; "
          "occupancy",
          {HistType::kTHnSparseF,
@@ -1702,31 +1712,6 @@ struct DndetaMFTPbPb {
       auto occrec = getOccupancy(collision, eventCuts.occupancyEstimator);
       auto mcCollision = collision.mcCollision();
 
-      float cgen = -1;
-      if constexpr (has_reco_cent<C>) {
-        float crec_min = 105.f;
-        for (const auto& collision : collisions) {
-          if (isGoodEvent<false>(collision)) {
-            float c = getRecoCent(collision);
-            if (c < crec_min) {
-              crec_min = c;
-            }
-          }
-        }
-        if (cgen < 0)
-          cgen = crec_min;
-      }
-
-      float occgen = -1.;
-      for (const auto& collision : collisions) {
-        if (isGoodEvent<false>(collision)) {
-          float o = getOccupancy(collision, eventCuts.occupancyEstimator);
-          if (o > occgen) {
-            occgen = o;
-          }
-        }
-      }
-
       auto partsPerCol = primariesI->sliceByCached(
         aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
       partsPerCol.bindExternalIndices(&tracks);
@@ -1738,68 +1723,73 @@ struct DndetaMFTPbPb {
 
         // MC gen
         if constexpr (has_reco_cent<C>) {
-          qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffGen"),
-                          particle.pt(), particle.eta(),
-                          cgen, occgen);
+          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
+            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffGen"), particle.pt(), particle.eta(), crec, occrec);
+            }
+          }
         } else {
-          qaregistry.fill(HIST("Tracks/hPtEtaEffGen"), particle.pt(),
-                          particle.eta(),
-                          occgen);
+          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
+            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              qaregistry.fill(HIST("Tracks/hPtEtaEffGen"), particle.pt(), particle.eta(), occrec);
+            }
+          }
         }
         // MC rec
         if (particle.has_mfttracks()) {
           auto iscounted = false;
           auto ncnt = 0;
-          auto relatedTracks =
-            particle.template mfttracks_as<MFTTracksLabeled>();
+          auto relatedTracks = particle.template mfttracks_as<MFTTracksLabeled>();
           for (auto const& track : relatedTracks) {
-            if (!isTrackSelected(track)) {
-              continue;
-            }
             ++ncnt;
             if constexpr (has_reco_cent<C>) {
-              if (!iscounted) { // primaries
-                qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffRec"),
-                                particle.pt(), particle.eta(),
-                                crec, occrec);
-                iscounted = true;
+              if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
+                if (!iscounted) { // primaries
+                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                    qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffPrim"), particle.pt(), particle.eta(), crec, occrec);
+                  }
+                  iscounted = true;
+                }
               }
-              if (ncnt > 1) { // duplicates
-                qaregistry.fill(
-                  HIST("Tracks/Centrality/hPtEtaEffDuplicates"),
-                  particle.pt(), particle.eta(),
-                  crec, occrec);
+              if (ncnt > 1) { // secondaries
+                if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
+                  qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffSec"), particle.pt(), particle.eta(), crec, occrec);
+                }
               }
             } else {
-              if (!iscounted) { // primaries
-                qaregistry.fill(HIST("Tracks/hPtEtaEffRec"),
-                                particle.pt(), particle.eta(),
-                                occrec);
-                iscounted = true;
+              if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
+                if (!iscounted) { // primaries
+                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                    qaregistry.fill(HIST("Tracks/hPtEtaEffPrim"), particle.pt(), particle.eta(), occrec);
+                  }
+                  iscounted = true;
+                }
               }
-              if (ncnt > 1) { // duplicates
-                qaregistry.fill(HIST("Tracks/hPtEtaEffDuplicates"),
-                                particle.pt(), particle.eta(),
-                                occrec);
+              if (ncnt > 1) { // secondaries
+                if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
+                  qaregistry.fill(HIST("Tracks/hPtEtaEffSec"), particle.pt(), particle.eta(), occrec);
+                }
               }
             }
           }
+
           if constexpr (has_reco_cent<C>) {
-            qaregistry.fill(HIST("Tracks/Centrality/NmftTrkPerPart"), ncnt,
-                            crec, occrec);
+            qaregistry.fill(HIST("Tracks/Centrality/NmftTrkPerPart"), ncnt, crec, occrec);
           } else {
             qaregistry.fill(HIST("Tracks/NmftTrkPerPart"), ncnt, occrec);
           }
-          if (relatedTracks.size() > 1) {
+
+          if (relatedTracks.size() > 1) { // duplicates
             if constexpr (has_reco_cent<C>) {
-              qaregistry.fill(
-                HIST("Tracks/Centrality/hPtEtaEffGenDuplicates"),
-                particle.pt(), particle.eta(),
-                crec, occrec);
+              qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffGenDupl"), particle.pt(), particle.eta(), crec, occrec);
+              for (auto const& track : relatedTracks) {
+                qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffDupl"), track.pt(), track.eta(), crec, occrec);
+              }
             } else {
-              qaregistry.fill(HIST("Tracks/hPtEtaEffGenDuplicates"),
-                              particle.pt(), particle.eta(),
-                              occrec);
+              qaregistry.fill(HIST("Tracks/hPtEtaEffGenDupl"), particle.pt(), particle.eta(), occrec);
+              for (auto const& track : relatedTracks) {
+                qaregistry.fill(HIST("Tracks/hPtEtaEffDupl"), track.pt(), track.eta(), occrec);
+              }
             }
           }
         }
