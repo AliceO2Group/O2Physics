@@ -101,10 +101,14 @@ struct Lambdak0sflattenicity {
 
   // Configurable for histograms
   Configurable<int> nBinsVz{"nBinsVz", 100, "N bins in Vz"};
-  Configurable<int> nBinsK0sMass{"nBinsK0sMass", 200, "N bins in K0sMass"};
-  Configurable<int> nBinsLambdaMass{"nBinsLambdaMass", 200,
+  Configurable<int> nBinsK0sMass{"nBinsK0sMass", 400, "N bins in K0sMass"};
+  Configurable<int> nBinsLambdaMass{"nBinsLambdaMass", 400,
                                     "N bins in LambdaMass"};
-  Configurable<int> nBinsXiMass{"nBinsXiMass", 200, "N bins in XiMass"};
+  Configurable<int> nBinsXiMass{"nBinsXiMass", 400, "N bins in XiMass"};
+
+  Configurable<float> kK0sEPshiftfromMass{"kK0sEPshiftfromMass", 0.1, "distance of K0s Inv mass histogram start and end points from PDG mass"};
+  Configurable<float> kLambdaEPshiftfromMass{"kLambdaEPshiftfromMass", 0.05, "distance of Lambda Inv mass histogram start and end points from PDG mass"};
+  Configurable<float> kXiEPshiftfromMass{"kXiEPshiftfromMass", 0.05, "distance of Xi Inv mass histogram start and end points from PDG mass"};
 
   Configurable<int> nBinspT{"nBinspT", 250, "N bins in pT"};
   Configurable<int> nBinsFlattenicity{"nBinsFlattenicity", 100, "N bins in Flattenicity"};
@@ -215,13 +219,13 @@ struct Lambdak0sflattenicity {
   void init(InitContext const&)
   {
     // Axes
-    AxisSpec k0sMassAxis = {nBinsK0sMass, 0.45f, 0.55f,
+    AxisSpec k0sMassAxis = {nBinsK0sMass, 0.49f - kK0sEPshiftfromMass, 0.49f + kK0sEPshiftfromMass,
                             "#it{M}_{#pi^{+}#pi^{-}} [GeV/#it{c}^{2}]"};
-    AxisSpec lambdaMassAxis = {nBinsLambdaMass, 1.015f, 1.215f,
+    AxisSpec lambdaMassAxis = {nBinsLambdaMass, 1.115f - kLambdaEPshiftfromMass, 1.115f + kLambdaEPshiftfromMass,
                                "#it{M}_{p#pi^{-}} [GeV/#it{c}^{2}]"};
-    AxisSpec antilambdaMassAxis = {nBinsLambdaMass, 1.015f, 1.215f,
+    AxisSpec antilambdaMassAxis = {nBinsLambdaMass, 1.115f - kLambdaEPshiftfromMass, 1.115f + kLambdaEPshiftfromMass,
                                    "#it{M}_{#pi^{+}#bar{p}} [GeV/#it{c}^{2}]"};
-    AxisSpec xiMassAxis = {nBinsXiMass, 1.3f, 1.34f,
+    AxisSpec xiMassAxis = {nBinsXiMass, 1.32f - kXiEPshiftfromMass, 1.32f + kXiEPshiftfromMass,
                            "#it{M}_{#Lambda#pi} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {nBinsVz, -15., 15., "vrtx_{Z} [cm]"};
     AxisSpec ptAxis = {nBinspT, 0.0f, 25.0f, "#it{p}_{T} (GeV/#it{c})"};
@@ -1524,7 +1528,7 @@ struct Lambdak0sflattenicity {
         auto v0mcParticle = v0.mcParticle();
         // Cut on dynamic columns for K0s
 
-        if (v0mcParticle.pdgCode() == 310 && v0.v0cosPA() >= v0settingCosPAK0s &&
+        if (v0mcParticle.pdgCode() == PDG_t::kK0Short && v0.v0cosPA() >= v0settingCosPAK0s &&
             v0.v0radius() >= v0settingRadiusK0s &&
             std::abs(posDaughterTrack.tpcNSigmaPi()) <= nSigmaTPCPion &&
             std::abs(negDaughterTrack.tpcNSigmaPi()) <= nSigmaTPCPion &&
@@ -1557,7 +1561,7 @@ struct Lambdak0sflattenicity {
         }
 
         // Cut on dynamic columns for Lambda
-        if (v0mcParticle.pdgCode() == 3122 &&
+        if (v0mcParticle.pdgCode() == PDG_t::kLambda0 &&
             v0.v0cosPA() >= v0settingCosPALambda &&
             v0.v0radius() >= v0settingRadiusLambda &&
             std::abs(posDaughterTrack.tpcNSigmaPr()) <= nSigmaTPCProton &&
@@ -1587,7 +1591,7 @@ struct Lambdak0sflattenicity {
         }
 
         // Cut on dynamic columns for AntiLambda
-        if (v0mcParticle.pdgCode() == -3122 &&
+        if (v0mcParticle.pdgCode() == PDG_t::kLambda0Bar &&
             v0.v0cosPA() >= v0settingCosPALambda &&
             v0.v0radius() >= v0settingRadiusLambda &&
             std::abs(posDaughterTrack.tpcNSigmaPi()) <= nSigmaTPCPion &&
@@ -1633,13 +1637,13 @@ struct Lambdak0sflattenicity {
           continue;
         }
 
-        if (mcParticle.pdgCode() == 310) {
+        if (mcParticle.pdgCode() == PDG_t::kK0Short) {
           rKzeroShort.fill(HIST("Generated_MCRecoCollCheck_INEL_K0Short"), mcParticle.pt(), flattenicity); // K0s
         }
-        if (mcParticle.pdgCode() == 3122) {
+        if (mcParticle.pdgCode() == PDG_t::kLambda0) {
           rLambda.fill(HIST("Generated_MCRecoCollCheck_INEL_Lambda"), mcParticle.pt(), flattenicity); // Lambda
         }
-        if (mcParticle.pdgCode() == -3122) {
+        if (mcParticle.pdgCode() == PDG_t::kLambda0Bar) {
           rAntiLambda.fill(HIST("Generated_MCRecoCollCheck_INEL_AntiLambda"), mcParticle.pt(), flattenicity); // AntiLambda
         }
       }
@@ -1700,25 +1704,25 @@ struct Lambdak0sflattenicity {
         continue;
       }
 
-      if (mcParticle.pdgCode() == 310) {
+      if (mcParticle.pdgCode() == PDG_t::kK0Short) {
         rKzeroShort.fill(HIST("pGen_MCGenColl_INEL_K0Short"), mcParticle.pt(), flattenicity); // K0s
         if (isINELgt0true) {
           rKzeroShort.fill(HIST("pGen_MCGenColl_INELgt0_K0Short"), mcParticle.pt(), flattenicity); // K0s
         }
       }
-      if (mcParticle.pdgCode() == 3122) {
+      if (mcParticle.pdgCode() == PDG_t::kLambda0) {
         rLambda.fill(HIST("pGen_MCGenColl_INEL_Lambda"), mcParticle.pt(), flattenicity); // Lambda
         if (isINELgt0true) {
           rLambda.fill(HIST("pGen_MCGenColl_INELgt0_Lambda"), mcParticle.pt(), flattenicity); // Lambda
         }
       }
-      if (mcParticle.pdgCode() == -3122) {
+      if (mcParticle.pdgCode() == PDG_t::kLambda0Bar) {
         rAntiLambda.fill(HIST("pGen_MCGenColl_INEL_AntiLambda"), mcParticle.pt(), flattenicity); // AntiLambda
         if (isINELgt0true) {
           rAntiLambda.fill(HIST("pGen_MCGenColl_INELgt0_AntiLambda"), mcParticle.pt(), flattenicity); // AntiLambda
         }
       }
-      if (std::abs(mcParticle.pdgCode()) == 3312) {
+      if (std::abs(mcParticle.pdgCode()) == PDG_t::kXiPlusBar) {
         rXi.fill(HIST("pGen_MCGenColl_INEL_Xi"), mcParticle.pt(), flattenicity); // Xi
         if (isINELgt0true) {
           rXi.fill(HIST("pGen_MCGenColl_INELgt0_Xi"), mcParticle.pt(), flattenicity); // Xi
@@ -1765,25 +1769,25 @@ struct Lambdak0sflattenicity {
           continue;
         }
 
-        if (mcParticle.pdgCode() == 310) {
+        if (mcParticle.pdgCode() == PDG_t::kK0Short) {
           rKzeroShort.fill(HIST("Generated_MCRecoColl_INEL_K0Short"), mcParticle.pt(), flattenicity); // K0s
           if (recoCollIndexINELgt0 > 0) {
             rKzeroShort.fill(HIST("Generated_MCRecoColl_INELgt0_K0Short"), mcParticle.pt(), flattenicity); // K0s
           }
         }
-        if (mcParticle.pdgCode() == 3122) {
+        if (mcParticle.pdgCode() == PDG_t::kLambda0) {
           rLambda.fill(HIST("Generated_MCRecoColl_INEL_Lambda"), mcParticle.pt(), flattenicity); // Lambda
           if (recoCollIndexINELgt0 > 0) {
             rLambda.fill(HIST("Generated_MCRecoColl_INELgt0_Lambda"), mcParticle.pt(), flattenicity); // Lambda
           }
         }
-        if (mcParticle.pdgCode() == -3122) {
+        if (mcParticle.pdgCode() == PDG_t::kLambda0Bar) {
           rAntiLambda.fill(HIST("Generated_MCRecoColl_INEL_AntiLambda"), mcParticle.pt(), flattenicity); // AntiLambda
           if (recoCollIndexINELgt0 > 0) {
             rAntiLambda.fill(HIST("Generated_MCRecoColl_INELgt0_AntiLambda"), mcParticle.pt(), flattenicity); // AntiLambda
           }
         }
-        if (std::abs(mcParticle.pdgCode()) == 3312) {
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kXiPlusBar) {
           rXi.fill(HIST("Generated_MCRecoColl_INEL_Xi"), mcParticle.pt(), flattenicity); // Xi
           if (recoCollIndexINELgt0 > 0) {
             rXi.fill(HIST("Generated_MCRecoColl_INELgt0_Xi"), mcParticle.pt(), flattenicity); // Xi
@@ -1823,25 +1827,25 @@ struct Lambdak0sflattenicity {
         continue;
       }
 
-      if (mcParticle.pdgCode() == 310) {
+      if (mcParticle.pdgCode() == PDG_t::kK0Short) {
         rKzeroShort.fill(HIST("pGen_MCGenRecoColl_INEL_K0Short"), mcParticle.pt(), flattenicity); // K0s
         if (recoCollIndexINELgt0 > 0) {
           rKzeroShort.fill(HIST("pGen_MCGenRecoColl_INELgt0_K0Short"), mcParticle.pt(), flattenicity); // K0s
         }
       }
-      if (mcParticle.pdgCode() == 3122) {
+      if (mcParticle.pdgCode() == PDG_t::kLambda0) {
         rLambda.fill(HIST("pGen_MCGenRecoColl_INEL_Lambda"), mcParticle.pt(), flattenicity); // Lambda
         if (recoCollIndexINELgt0 > 0) {
           rLambda.fill(HIST("pGen_MCGenRecoColl_INELgt0_Lambda"), mcParticle.pt(), flattenicity); // Lambda
         }
       }
-      if (mcParticle.pdgCode() == -3122) {
+      if (mcParticle.pdgCode() == PDG_t::kLambda0Bar) {
         rAntiLambda.fill(HIST("pGen_MCGenRecoColl_INEL_AntiLambda"), mcParticle.pt(), flattenicity); // AntiLambda
         if (recoCollIndexINELgt0 > 0) {
           rAntiLambda.fill(HIST("pGen_MCGenRecoColl_INELgt0_AntiLambda"), mcParticle.pt(), flattenicity); // AntiLambda
         }
       }
-      if (std::abs(mcParticle.pdgCode()) == 3312) {
+      if (std::abs(mcParticle.pdgCode()) == PDG_t::kXiPlusBar) {
         rXi.fill(HIST("pGen_MCGenRecoColl_INEL_Xi"), mcParticle.pt(), flattenicity); // Xi
         if (recoCollIndexINELgt0 > 0) {
           rXi.fill(HIST("pGen_MCGenRecoColl_INELgt0_Xi"), mcParticle.pt(), flattenicity); // Xi
@@ -1853,8 +1857,8 @@ struct Lambdak0sflattenicity {
   // Cascade Analysis Starts here
   using DauTracks = soa::Join<aod::TracksIU, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa>;
   using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
-  float ctauxiPDG = 4.91;     // from PDG
-  float ctauomegaPDG = 2.461; // from PDG
+  // float ctauxiPDG = 4.91;     // from PDG
+  // float ctauomegaPDG = 2.461; // from PDG
 
   void processDataRun3Cascade(soa::Join<aod::Collisions, aod::EvSels,
                                         aod::PVMults>::iterator const& collision,
@@ -1902,7 +1906,7 @@ struct Lambdak0sflattenicity {
           casc.dcapostopv() > v0settingDCApostopv && casc.dcanegtopv() > v0settingDCAnegtopv && casc.dcabachtopv() > v0settingDCAbactopv && casc.dcaV0daughters() < v0settingDCAv0dau && dcav0pv > cascsettingDCAv0toPV &&
           casc.dcacascdaughters() < cascsettingDCAv0bach && casc.bachBaryonDCAxyToPV() < cascsettingDCAxybaryonbach && cosPAcasc > cascsettingCosPAcascPV && cosPAv0 > cascsettingCosPAv0PV &&
           casc.cascradius() > cascsettingcascradius && casc.v0radius() > cascsettingv0radius &&
-          std::abs(casc.yXi()) < cascsettingRapidity && ctauXi < ctauxiPDG * cascsettingproplifetime &&
+          std::abs(casc.yXi()) < cascsettingRapidity && ctauXi < 4.91 * cascsettingproplifetime &&
           std::abs(casc.mLambda() - pdgmassLambda) < cascsettingMassRejectionLambdaXi && std::abs(casc.mOmega() - pdgmassOmega) > cascsettingMassRejectioOmegaXi) {
 
         rXi.fill(HIST("hMassXiSelected"), massXi);
@@ -1969,7 +1973,7 @@ struct Lambdak0sflattenicity {
             casc.dcapostopv() > v0settingDCApostopv && casc.dcanegtopv() > v0settingDCAnegtopv && casc.dcabachtopv() > v0settingDCAbactopv && casc.dcaV0daughters() < v0settingDCAv0dau && dcav0pv > cascsettingDCAv0toPV &&
             casc.dcacascdaughters() < cascsettingDCAv0bach && casc.bachBaryonDCAxyToPV() < cascsettingDCAxybaryonbach && cosPAcasc > cascsettingCosPAcascPV && cosPAv0 > cascsettingCosPAv0PV &&
             casc.cascradius() > cascsettingcascradius && casc.v0radius() > cascsettingv0radius &&
-            std::abs(casc.yXi()) < cascsettingRapidity && ctauXi < ctauxiPDG * cascsettingproplifetime &&
+            std::abs(casc.yXi()) < cascsettingRapidity && ctauXi < 4.91 * cascsettingproplifetime &&
             std::abs(casc.mLambda() - pdgmassLambda) < cascsettingMassRejectionLambdaXi && std::abs(casc.mOmega() - pdgmassOmega) > cascsettingMassRejectioOmegaXi) {
 
           rXi.fill(HIST("hMassXiSelected"), massXi);
@@ -1988,7 +1992,7 @@ struct Lambdak0sflattenicity {
       rEventSelection.fill(HIST("hFlattenicity_Corr_Gen_vs_Rec"), flattenicityMCGen, flattenicity);
 
       for (const auto& mcParticle : particlesInCollision) {
-        if (mcParticle.isPhysicalPrimary() && std::abs(mcParticle.y()) < 0.5f && std::abs(mcParticle.pdgCode()) == 3312) {
+        if (mcParticle.isPhysicalPrimary() && std::abs(mcParticle.y()) < 0.5f && std::abs(mcParticle.pdgCode()) == PDG_t::kXiPlusBar) {
           rXi.fill(HIST("Generated_MCRecoCollCheck_INEL_Xi"), mcParticle.pt(), flattenicity); // K0s
         }
       }
