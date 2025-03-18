@@ -527,7 +527,7 @@ struct strangederivedbuilder {
                             collision.multFV0C() * static_cast<float>(fillTruncationOptions.fillRawFV0C),
                             collision.multFDDA() * static_cast<float>(fillTruncationOptions.fillRawFDDA),
                             collision.multFDDC() * static_cast<float>(fillTruncationOptions.fillRawFDDC),
-                            bc.spdClustersL0() * static_cast<float>(fillTruncationOptions.fillRawSPDclsL0Run2), 
+                            bc.spdClustersL0() * static_cast<float>(fillTruncationOptions.fillRawSPDclsL0Run2),
                             bc.spdClustersL1() * static_cast<float>(fillTruncationOptions.fillRawSPDclsL1Run2),
                             collision.multNTracksPVeta1() * static_cast<int>(fillTruncationOptions.fillRawNTracksEta1),
                             collision.multTracklets() * static_cast<int>(fillTruncationOptions.fillRawTrackletsRun2),
