@@ -61,11 +61,6 @@ struct JetMatchingMc {
   {
   }
 
-  void processDummy(aod::JetMcCollisions const&)
-  {
-  }
-  PROCESS_SWITCH(JetMatchingMc, processDummy, "Dummy process", true);
-
   void processJets(aod::JetMcCollisions const& mcCollisions, aod::JetCollisionsMCD const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
                    aod::JetTracksMCD const& tracks,
@@ -74,7 +69,6 @@ struct JetMatchingMc {
                    CandidatesBase const& candidatesBase,
                    CandidatesTag const& candidatesTag)
   {
-
     // initialise objects used to store the matching index arrays (array in case a mcCollision is split) before filling the matching tables
     std::vector<std::vector<int>> jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF;
     std::vector<std::vector<int>> jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF;
@@ -95,7 +89,7 @@ struct JetMatchingMc {
         const auto jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, jetsBaseIsMc ? mcCollision.globalIndex() : collision.globalIndex());
         const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, jetsTagIsMc ? mcCollision.globalIndex() : collision.globalIndex());
 
-        jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidatesBase, candidatesTag, tracks, clusters, particles, particles, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
+        jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidatesBase, tracks, clusters, candidatesTag, particles, particles, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
       }
     }
     for (auto i = 0; i < jetsBase.size(); ++i) {
@@ -105,13 +99,5 @@ struct JetMatchingMc {
       jetsTagtoBaseMatchingTable(jetsTagtoBaseMatchingGeo[i], jetsTagtoBaseMatchingPt[i], jetsTagtoBaseMatchingHF[i]); // is (and needs to) be filled in order
     }
   }
-  PROCESS_SWITCH(JetMatchingMc, processJets, "Perform jet matching", false);
+  PROCESS_SWITCH(JetMatchingMc, processJets, "Perform jet matching", true);
 };
-
-/*using BplusChargedJetMatching = JetMatchingMc<soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>,
-                                              soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents>,
-                                              aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCParticleLevelJets,
-                                              aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets,
-                                              aod::CandidatesBplusMCD,
-                                              aod::CandidatesBplusMCP,
-                                              aod::JDummys>>;*/

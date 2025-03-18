@@ -17,6 +17,10 @@
 //    and the MC truth particles corresponding to the reconstructed tracks selected by the specified track cuts on reconstructed data.
 
 #include <iostream>
+#include <string>
+#include <map>
+#include <memory>
+#include <vector>
 #include "TList.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -397,7 +401,7 @@ struct TableMakerMC {
       // store the selection decisions
       uint64_t tag = collision.selection_raw();
       if (collision.sel7()) {
-        tag |= (uint64_t(1) << evsel::kNsel); //! SEL7 stored at position kNsel in the tag bit map
+        tag |= (static_cast<uint64_t>(1) << evsel::kNsel); //! SEL7 stored at position kNsel in the tag bit map
       }
 
       auto mcCollision = collision.mcCollision();
@@ -413,7 +417,7 @@ struct TableMakerMC {
       }
       // fill stats information, before selections
       for (int i = 0; i < kNaliases; i++) {
-        if (triggerAliases & (uint32_t(1) << i)) {
+        if (triggerAliases & (static_cast<uint32_t>(1) << i)) {
           (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(i));
         }
       }
@@ -429,7 +433,7 @@ struct TableMakerMC {
 
       // fill stats information, after selections
       for (int i = 0; i < kNaliases; i++) {
-        if (triggerAliases & (uint32_t(1) << i)) {
+        if (triggerAliases & (static_cast<uint32_t>(1) << i)) {
           (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(i));
         }
       }
@@ -464,9 +468,10 @@ struct TableMakerMC {
       eventMClabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
         multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
-               collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
+               collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(),
+               collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
         multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
-                0, 0, 0.0, 0.0, 0, 0);
+                0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0.0, 0.0);
       }
 
       // loop over the MC truth tracks and find those that need to be written
@@ -484,7 +489,7 @@ struct TableMakerMC {
             checked = sig.CheckSignal(true, mctrack);
           }
           if (checked) {
-            mcflags |= (uint16_t(1) << i);
+            mcflags |= (static_cast<uint16_t>(1) << i);
           }
           i++;
         }
@@ -505,7 +510,7 @@ struct TableMakerMC {
             VarManager::FillTrackMC(mcTracks, mctrack);
             int j = 0;
             for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
-              if (mcflags & (uint16_t(1) << j)) {
+              if (mcflags & (static_cast<uint16_t>(1) << j)) {
                 fHistMan->FillHistClass(Form("MCTruth_%s", (*signal).GetName()), VarManager::fgValues);
               }
             }
@@ -539,8 +544,8 @@ struct TableMakerMC {
               }
             }
           }
-          trackFilteringTag = uint64_t(0);
-          trackTempFilterMap = uint8_t(0);
+          trackFilteringTag = static_cast<uint64_t>(0);
+          trackTempFilterMap = static_cast<uint8_t>(0);
           VarManager::FillTrack<TTrackFillMap>(track);
           // If no MC particle is found, skip the track
           if (!track.has_mcParticle()) {
@@ -576,23 +581,23 @@ struct TableMakerMC {
 
           // store filtering information
           if (track.isGlobalTrack()) {
-            trackFilteringTag |= (uint64_t(1) << 0); // BIT0: global track
+            trackFilteringTag |= (static_cast<uint64_t>(1) << 0); // BIT0: global track
           }
           if (track.isGlobalTrackSDD()) {
-            trackFilteringTag |= (uint64_t(1) << 1); // BIT1: global track SSD
+            trackFilteringTag |= (static_cast<uint64_t>(1) << 1); // BIT1: global track SSD
           }
           if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackV0Bits)) { // BIT2-6: V0Bits
-            trackFilteringTag |= (uint64_t(track.pidbit()) << 2);
+            trackFilteringTag |= (static_cast<uint64_t>(track.pidbit()) << 2);
             for (int iv0 = 0; iv0 < 5; iv0++) {
-              if (track.pidbit() & (uint8_t(1) << iv0)) {
+              if (track.pidbit() & (static_cast<uint8_t>(1) << iv0)) {
                 (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
               }
             }
           }
           if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
-            trackFilteringTag |= (uint64_t(track.dalitzBits()) << 7); // BIT7-14: Dalitz
+            trackFilteringTag |= (static_cast<uint64_t>(track.dalitzBits()) << 7); // BIT7-14: Dalitz
           }
-          trackFilteringTag |= (uint64_t(trackTempFilterMap) << 15); // BIT15-...:  user track filters
+          trackFilteringTag |= (static_cast<uint64_t>(trackTempFilterMap) << 15); // BIT15-...:  user track filters
 
           mcflags = 0;
           i = 0;     // runs over the MC signals
@@ -600,7 +605,7 @@ struct TableMakerMC {
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
             if (sig.CheckSignal(true, mctrack)) {
-              mcflags |= (uint16_t(1) << i);
+              mcflags |= (static_cast<uint16_t>(1) << i);
               if (fDoDetailedQA) {
                 j = 0;
                 for (auto& cut : fTrackCuts) {
@@ -678,7 +683,7 @@ struct TableMakerMC {
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
             if (sig.CheckSignal(true, mctrack)) {
-              mcflags |= (uint16_t(1) << i);
+              mcflags |= (static_cast<uint16_t>(1) << i);
             }
             i++;
           }
@@ -735,8 +740,8 @@ struct TableMakerMC {
         std::map<int, int> newMFTMatchIndex;
 
         for (auto& muon : groupedMuons) {
-          trackFilteringTag = uint64_t(0);
-          trackTempFilterMap = uint8_t(0);
+          trackFilteringTag = static_cast<uint64_t>(0);
+          trackTempFilterMap = static_cast<uint8_t>(0);
 
           if (!muon.has_mcParticle()) {
             continue;
@@ -785,8 +790,8 @@ struct TableMakerMC {
             }
           }
 
-          trackFilteringTag = uint64_t(0);
-          trackTempFilterMap = uint8_t(0);
+          trackFilteringTag = static_cast<uint64_t>(0);
+          trackTempFilterMap = static_cast<uint8_t>(0);
 
           if (!muon.has_mcParticle()) {
             continue;
@@ -821,7 +826,7 @@ struct TableMakerMC {
             continue;
           }
           // store the cut decisions
-          trackFilteringTag |= uint64_t(trackTempFilterMap); // BIT0-7:  user selection cuts
+          trackFilteringTag |= static_cast<uint64_t>(trackTempFilterMap); // BIT0-7:  user selection cuts
 
           mcflags = 0;
           i = 0;     // runs over the MC signals
@@ -829,7 +834,7 @@ struct TableMakerMC {
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
             if (sig.CheckSignal(true, mctrack)) {
-              mcflags |= (uint16_t(1) << i);
+              mcflags |= (static_cast<uint16_t>(1) << i);
               if (fDoDetailedQA) {
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
@@ -962,7 +967,7 @@ struct TableMakerMC {
               mctrack.weight(), mctrack.pt(), mctrack.eta(), mctrack.phi(), mctrack.e(),
               mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt(), mcflags);
       for (unsigned int isig = 0; isig < fMCSignals.size(); isig++) {
-        if (mcflags & (uint16_t(1) << isig)) {
+        if (mcflags & (static_cast<uint16_t>(1) << isig)) {
           (reinterpret_cast<TH1I*>(fStatsList->At(3)))->Fill(static_cast<float>(isig));
         }
       }
@@ -1035,7 +1040,7 @@ struct TableMakerMC {
       // store the selection decisions
       uint64_t tag = collision.selection_raw();
       if (collision.sel7()) {
-        tag |= (uint64_t(1) << evsel::kNsel); //! SEL7 stored at position kNsel in the tag bit map
+        tag |= (static_cast<uint64_t>(1) << evsel::kNsel); //! SEL7 stored at position kNsel in the tag bit map
       }
 
       auto mcCollision = collision.mcCollision();
@@ -1051,7 +1056,7 @@ struct TableMakerMC {
       }
       // fill stats information, before selections
       for (int i = 0; i < kNaliases; i++) {
-        if (triggerAliases & (uint32_t(1) << i)) {
+        if (triggerAliases & (static_cast<uint32_t>(1) << i)) {
           (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(i));
         }
       }
@@ -1067,7 +1072,7 @@ struct TableMakerMC {
 
       // fill stats information, after selections
       for (int i = 0; i < kNaliases; i++) {
-        if (triggerAliases & (uint32_t(1) << i)) {
+        if (triggerAliases & (static_cast<uint32_t>(1) << i)) {
           (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(i));
         }
       }
@@ -1116,7 +1121,7 @@ struct TableMakerMC {
             checked = sig.CheckSignal(true, mctrack);
           }
           if (checked) {
-            mcflags |= (uint16_t(1) << i);
+            mcflags |= (static_cast<uint16_t>(1) << i);
           }
           i++;
         }
@@ -1137,7 +1142,7 @@ struct TableMakerMC {
             VarManager::FillTrackMC(mcTracks, mctrack);
             int j = 0;
             for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
-              if (mcflags & (uint16_t(1) << j)) {
+              if (mcflags & (static_cast<uint16_t>(1) << j)) {
                 fHistMan->FillHistClass(Form("MCTruth_%s", (*signal).GetName()), VarManager::fgValues);
               }
             }
@@ -1166,8 +1171,8 @@ struct TableMakerMC {
               isAmbiguous = (track.compatibleCollIds().size() != 1);
             }
           }
-          trackFilteringTag = uint64_t(0);
-          trackTempFilterMap = uint8_t(0);
+          trackFilteringTag = static_cast<uint64_t>(0);
+          trackTempFilterMap = static_cast<uint8_t>(0);
           VarManager::FillTrack<TTrackFillMap>(track);
           // If no MC particle is found, skip the track
           if (!track.has_mcParticle()) {
@@ -1203,23 +1208,23 @@ struct TableMakerMC {
 
           // store filtering information
           if (track.isGlobalTrack()) {
-            trackFilteringTag |= (uint64_t(1) << 0); // BIT0: global track
+            trackFilteringTag |= (static_cast<uint64_t>(1) << 0); // BIT0: global track
           }
           if (track.isGlobalTrackSDD()) {
-            trackFilteringTag |= (uint64_t(1) << 1); // BIT1: global track SSD
+            trackFilteringTag |= (static_cast<uint64_t>(1) << 1); // BIT1: global track SSD
           }
           if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackV0Bits)) { // BIT2-6: V0Bits
-            trackFilteringTag |= (uint64_t(track.pidbit()) << 2);
+            trackFilteringTag |= (static_cast<uint64_t>(track.pidbit()) << 2);
             for (int iv0 = 0; iv0 < 5; iv0++) {
-              if (track.pidbit() & (uint8_t(1) << iv0)) {
+              if (track.pidbit() & (static_cast<uint8_t>(1) << iv0)) {
                 (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
               }
             }
           }
           if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
-            trackFilteringTag |= (uint64_t(track.dalitzBits()) << 7); // BIT7-14: Dalitz
+            trackFilteringTag |= (static_cast<uint64_t>(track.dalitzBits()) << 7); // BIT7-14: Dalitz
           }
-          trackFilteringTag |= (uint64_t(trackTempFilterMap) << 15); // BIT15-...:  user track filters
+          trackFilteringTag |= (static_cast<uint64_t>(trackTempFilterMap) << 15); // BIT15-...:  user track filters
 
           mcflags = 0;
           i = 0;     // runs over the MC signals
@@ -1227,7 +1232,7 @@ struct TableMakerMC {
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
             if (sig.CheckSignal(true, mctrack)) {
-              mcflags |= (uint16_t(1) << i);
+              mcflags |= (static_cast<uint16_t>(1) << i);
               if (fDoDetailedQA) {
                 j = 0;
                 for (auto& cut : fTrackCuts) {
@@ -1298,8 +1303,8 @@ struct TableMakerMC {
 
         for (auto& muonId : fwdtrackIdsThisCollision) {
           auto muon = muonId.template fwdtrack_as<TMuons>();
-          trackFilteringTag = uint64_t(0);
-          trackTempFilterMap = uint8_t(0);
+          trackFilteringTag = static_cast<uint64_t>(0);
+          trackTempFilterMap = static_cast<uint8_t>(0);
 
           if (!muon.has_mcParticle()) {
             continue;
@@ -1343,8 +1348,8 @@ struct TableMakerMC {
             }
           }
 
-          trackFilteringTag = uint64_t(0);
-          trackTempFilterMap = uint8_t(0);
+          trackFilteringTag = static_cast<uint64_t>(0);
+          trackTempFilterMap = static_cast<uint8_t>(0);
 
           if (!muon.has_mcParticle()) {
             continue;
@@ -1381,7 +1386,7 @@ struct TableMakerMC {
             continue;
           }
           // store the cut decisions
-          trackFilteringTag |= uint64_t(trackTempFilterMap); // BIT0-7:  user selection cuts
+          trackFilteringTag |= static_cast<uint64_t>(trackTempFilterMap); // BIT0-7:  user selection cuts
 
           mcflags = 0;
           i = 0;     // runs over the MC signals
@@ -1389,7 +1394,7 @@ struct TableMakerMC {
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
             if (sig.CheckSignal(true, mctrack)) {
-              mcflags |= (uint16_t(1) << i);
+              mcflags |= (static_cast<uint16_t>(1) << i);
               if (fDoDetailedQA) {
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
@@ -1504,7 +1509,7 @@ struct TableMakerMC {
               mctrack.weight(), mctrack.pt(), mctrack.eta(), mctrack.phi(), mctrack.e(),
               mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt(), mcflags);
       for (unsigned int isig = 0; isig < fMCSignals.size(); isig++) {
-        if (mcflags & (uint16_t(1) << isig)) {
+        if (mcflags & (static_cast<uint16_t>(1) << isig)) {
           (reinterpret_cast<TH1I*>(fStatsList->At(3)))->Fill(static_cast<float>(isig));
         }
       }

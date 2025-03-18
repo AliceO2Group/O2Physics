@@ -15,6 +15,7 @@
 
 #include <TLorentzVector.h>
 #include <TRandom.h>
+#include <vector>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -342,7 +343,7 @@ struct cascadeXiAnalysis {
     for (auto const& casc : cascTracks) {
       histos.fill(HIST("QA_Casc_Xi/h1d_mass_Xi"), casc.mXi());
       histos.fill(HIST("QA_Casc_Xi/h1d_v0_radius"), casc.transRadius());
-      histos.fill(HIST("QA_Casc_Xi/h1d_casc_radius"), casc.casctransRadius());
+      histos.fill(HIST("QA_Casc_Xi/h1d_casc_radius"), casc.cascTransRadius());
       histos.fill(HIST("QA_Casc_Xi/h1d_v0_cosPA"), casc.v0CosPA());
       histos.fill(HIST("QA_Casc_Xi/h1d_casc_cosPA"), casc.cascCosPA());
       histos.fill(HIST("QA_Casc_Xi/h1d_dca_postoPV"), casc.dcapostopv());
@@ -350,7 +351,7 @@ struct cascadeXiAnalysis {
       histos.fill(HIST("QA_Casc_Xi/h1d_dca_bachtoPV"), casc.dcabachtopv());
       histos.fill(HIST("QA_Casc_Xi/h1d_dca_v0toPV"), casc.dcav0topv());
       histos.fill(HIST("QA_Casc_Xi/h1d_dca_v0_dau"), casc.daughDCA());
-      histos.fill(HIST("QA_Casc_Xi/h1d_dca_casc_dau"), casc.cascdaughDCA());
+      histos.fill(HIST("QA_Casc_Xi/h1d_dca_casc_dau"), casc.cascDaughDCA());
     }
 
     fillDataHisto<false, false>(cascTracks, resoTracks, resoCollision.cent());

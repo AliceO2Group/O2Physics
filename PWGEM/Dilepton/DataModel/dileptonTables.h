@@ -212,11 +212,12 @@ DECLARE_SOA_TABLE(EMEoIs, "AOD", "EMEOI", //! joinable to aod::Collisions in cre
 using EMEoI = EMEoIs::iterator;
 
 DECLARE_SOA_TABLE(EMEventNormInfos, "AOD", "EMEVENTNORMINFO", //! event information for normalization
-                  o2::soa::Index<>, evsel::Alias, evsel::Selection, emevent::PosZint16, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>);
+                  o2::soa::Index<>, evsel::Alias, evsel::Selection, emevent::PosZint16, cent::CentFT0C, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>);
 using EMEventNormInfo = EMEventNormInfos::iterator;
 
 namespace emmcevent
 {
+DECLARE_SOA_INDEX_COLUMN(EMEvent, mpemevent); //! most propable emeventId
 DECLARE_SOA_COLUMN(McCollisionId, mcCollisionId, int);
 } // namespace emmcevent
 
@@ -229,8 +230,10 @@ DECLARE_SOA_TABLE(EMMCEvents, "AOD", "EMMCEVENT", //!   MC event information tab
                   mccollision::GetGeneratorId<mccollision::GeneratorsID>,
                   mccollision::GetSubGeneratorId<mccollision::GeneratorsID>,
                   mccollision::GetSourceId<mccollision::GeneratorsID>);
-
 using EMMCEvent = EMMCEvents::iterator;
+
+DECLARE_SOA_TABLE(MostProbableEMEventIdsInMC, "AOD", "MPEMEVENTIDINMC", emmcevent::EMEventId); // To be joined with EMMCEvents table at analysis level.
+using MostProbableEMEventIdInMC = MostProbableEMEventIdsInMC::iterator;
 
 namespace emmceventlabel
 {
@@ -367,7 +370,12 @@ DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousElectrons, ambiguousElectrons);
 DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool); //! is associated to most probable collision
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                         //!
 DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);                 //!
-DECLARE_SOA_COLUMN(PrefilterBitPi0, pfbpi0, uint16_t);          //!
+DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);  //!
+DECLARE_SOA_COLUMN(ITSNSigmaEl, itsNSigmaEl, float);            //!
+DECLARE_SOA_COLUMN(ITSNSigmaMu, itsNSigmaMu, float);            //!
+DECLARE_SOA_COLUMN(ITSNSigmaPi, itsNSigmaPi, float);            //!
+DECLARE_SOA_COLUMN(ITSNSigmaKa, itsNSigmaKa, float);            //!
+DECLARE_SOA_COLUMN(ITSNSigmaPr, itsNSigmaPr, float);            //!
 DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -420,34 +428,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32
   }
 });
 } // namespace emprimaryelectron
-DECLARE_SOA_TABLE(EMPrimaryElectrons_000, "AOD", "EMPRIMARYEL", //!
-                  o2::soa::Index<>, emprimaryelectron::CollisionId,
-                  emprimaryelectron::TrackId, emprimaryelectron::Sign,
-                  track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ,
-                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
-                  track::TPCChi2NCl, track::TPCInnerParam,
-                  track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
-                  pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
-                  track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
-                  track::X, track::Alpha, track::Y, track::Z, track::Snp, track::Tgl, emprimaryelectron::IsAssociatedToMPC,
-
-                  // dynamic column
-                  track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                  track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
-                  track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
-                  track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                  track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                  track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
-                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
-                  emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
-                  emprimaryelectron::P<track::Pt, track::Eta>,
-                  emprimaryelectron::Px<track::Pt, track::Phi>,
-                  emprimaryelectron::Py<track::Pt, track::Phi>,
-                  emprimaryelectron::Pz<track::Pt, track::Eta>,
-                  emprimaryelectron::Theta<track::Tgl>,
-                  emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
-                  emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
-                  emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_001, "AOD", "EMPRIMARYEL", 1, //!
                             o2::soa::Index<>, emprimaryelectron::CollisionId,
@@ -478,7 +458,37 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_001, "AOD", "EMPRIMARYEL", 1, //!
                             emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                             emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
-using EMPrimaryElectrons = EMPrimaryElectrons_001;
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_002, "AOD", "EMPRIMARYEL", 2, //!
+                            o2::soa::Index<>, emprimaryelectron::CollisionId,
+                            emprimaryelectron::TrackId, emprimaryelectron::Sign,
+                            track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ,
+                            track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
+                            track::TPCChi2NCl, track::TPCInnerParam,
+                            track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                            pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
+                            track::ITSClusterSizes, emprimaryelectron::ITSNSigmaEl, emprimaryelectron::ITSNSigmaMu, emprimaryelectron::ITSNSigmaPi, emprimaryelectron::ITSNSigmaKa, emprimaryelectron::ITSNSigmaPr,
+                            track::ITSChi2NCl, track::TOFChi2, track::DetectorMap,
+                            track::X, track::Alpha, track::Y, track::Z, track::Snp, track::Tgl, emprimaryelectron::IsAssociatedToMPC,
+
+                            // dynamic column
+                            track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                            track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                            emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
+                            emprimaryelectron::P<track::Pt, track::Eta>,
+                            emprimaryelectron::Px<track::Pt, track::Phi>,
+                            emprimaryelectron::Py<track::Pt, track::Phi>,
+                            emprimaryelectron::Pz<track::Pt, track::Eta>,
+                            emprimaryelectron::Theta<track::Tgl>,
+                            emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
+                            emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
+                            emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
+
+using EMPrimaryElectrons = EMPrimaryElectrons_002;
 // iterators
 using EMPrimaryElectron = EMPrimaryElectrons::iterator;
 
@@ -513,9 +523,9 @@ DECLARE_SOA_TABLE(EMAmbiguousElectronSelfIds, "AOD", "EMAMBELSELFID", emprimarye
 // iterators
 using EMAmbiguousElectronSelfId = EMAmbiguousElectronSelfIds::iterator;
 
-DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBitPi0, "AOD", "PRMELPFBPI0", emprimaryelectron::PrefilterBitPi0); // To be joined with EMPrimaryElectrons table at analysis level.
+DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBitDerived, "AOD", "PRMELPFBPI0", emprimaryelectron::PrefilterBitDerived); // To be joined with EMPrimaryElectrons table at analysis level.
 // iterators
-using EMPrimaryElectronPrefilterBitPi0 = EMPrimaryElectronsPrefilterBitPi0::iterator;
+using EMPrimaryElectronPrefilterBitDerived = EMPrimaryElectronsPrefilterBitDerived::iterator;
 
 namespace emprimarymuon
 {

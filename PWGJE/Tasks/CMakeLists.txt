@@ -26,6 +26,10 @@ o2physics_add_dpl_workflow(emc-vertexselection-qa
                     SOURCES emcVertexSelectionQA.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(emcal-gamma-gamma-bc-wise
+                    SOURCES emcalGammaGammaBcWise.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(emc-pi0-energyscale-calib
                     SOURCES emcalPi0EnergyScaleCalib.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
@@ -33,6 +37,10 @@ o2physics_add_dpl_workflow(emc-pi0-energyscale-calib
 o2physics_add_dpl_workflow(emc-tmmonitor
                     SOURCES emcTmMonitor.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(hadron-photon-correlation
+                    SOURCES hadronPhotonCorrelation.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(mc-generator-studies
                     SOURCES mcGeneratorStudies.cxx
@@ -44,6 +52,10 @@ o2physics_add_dpl_workflow(photon-isolation-qa
                     COMPONENT_NAME Analysis)
 
 if(FastJet_FOUND)
+    o2physics_add_dpl_workflow(jet-background-analysis
+                        SOURCES jetBackgroundAnalysis.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure
                         SOURCES jetSubstructure.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
@@ -56,8 +68,16 @@ if(FastJet_FOUND)
                         SOURCES jetSubstructureD0.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-substructure-dplus
+                        SOURCES jetSubstructureDplus.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-lc
                         SOURCES jetSubstructureLc.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-substructure-bplus
+                        SOURCES jetSubstructureBplus.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-dielectron
@@ -68,8 +88,16 @@ if(FastJet_FOUND)
                         SOURCES jetSubstructureD0Output.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-substructure-dplus-output
+                        SOURCES jetSubstructureDplusOutput.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-lc-output
                         SOURCES jetSubstructureLcOutput.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-substructure-bplus-output
+                        SOURCES jetSubstructureBplusOutput.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-dielectron-output
@@ -100,8 +128,16 @@ if(FastJet_FOUND)
                         SOURCES jetFinderD0QA.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-finder-dplus-qa
+                        SOURCES jetFinderDplusQA.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-finder-lc-qa
                         SOURCES jetFinderLcQA.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-finder-bplus-qa
+                        SOURCES jetFinderBplusQA.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-finder-dielectron-qa
@@ -116,6 +152,10 @@ if(FastJet_FOUND)
                         SOURCES jetFinderV0QA.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-spectra-charged
+                        SOURCES jetSpectraCharged.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(trigger-correlations
                         SOURCES triggerCorrelations.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::PWGJECore O2Physics::AnalysisCore
@@ -124,10 +164,10 @@ if(FastJet_FOUND)
                         SOURCES ChJetTriggerQATask.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-     o2physics_add_dpl_workflow(jet-full-trigger-qa
-                         SOURCES fullJetTriggerQATask.cxx
-                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-full-trigger-qa
+                        SOURCES fullJetTriggerQATask.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-matching-qa
                         SOURCES jetMatchingQA.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
@@ -156,6 +196,10 @@ if(FastJet_FOUND)
                         SOURCES jetHadronRecoil.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(recoil-jets
+                        SOURCES recoilJets.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-nsubjettiness
                         SOURCES nsubjettiness.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
@@ -167,6 +211,7 @@ if(FastJet_FOUND)
     o2physics_add_dpl_workflow(nuclei-in-jets
                         SOURCES nucleiInJets.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-taggerhf-qa
                         SOURCES jetTaggerHFQA.cxx
@@ -176,7 +221,7 @@ if(FastJet_FOUND)
                         SOURCES jetLundReclustering.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
                         COMPONENT_NAME Analysis)
-    o2physics_add_dpl_workflow(jet-hf-fragmentation
+    o2physics_add_dpl_workflow(hf-fragmentation-function
                         SOURCES hfFragmentationFunction.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
@@ -212,5 +257,16 @@ if(FastJet_FOUND)
                         SOURCES gammaJetTreeProducer.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-
+    o2physics_add_dpl_workflow(dijet-finder-charged-qa
+                        SOURCES dijetFinderQA.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(bjet-tagging-gnn
+                        SOURCES bjetTaggingGnn.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-shape
+                        SOURCES jetShape.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
 endif()

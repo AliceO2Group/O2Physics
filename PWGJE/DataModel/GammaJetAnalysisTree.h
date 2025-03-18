@@ -42,6 +42,7 @@ namespace gjgamma
 {
 DECLARE_SOA_INDEX_COLUMN(GjEvent, gjevent);                            //! event index
 DECLARE_SOA_COLUMN(Energy, energy, float);                             //! cluster energy (GeV)
+DECLARE_SOA_COLUMN(Definition, definition, int);                       //! cluster definition, see EMCALClusterDefinition.h
 DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! cluster pseudorapidity (calculated using vertex)
 DECLARE_SOA_COLUMN(Phi, phi, float);                                   //! cluster azimuthal angle (calculated using vertex)
 DECLARE_SOA_COLUMN(M02, m02, float);                                   //! shower shape long axis
@@ -58,7 +59,7 @@ DECLARE_SOA_COLUMN(TMdeltaEta, tmdeltaeta, float);                     //! delta
 DECLARE_SOA_COLUMN(TMtrackP, tmtrackp, float);                         //! track momentum of closest match, -1 if no match found
 } // namespace gjgamma
 DECLARE_SOA_TABLE(GjGammas, "AOD", "GJGAMMA",
-                  gjgamma::GjEventId, gjgamma::Energy, gjgamma::Eta, gjgamma::Phi, gjgamma::M02, gjgamma::M20, gjgamma::NCells, gjgamma::Time, gjgamma::IsExotic, gjgamma::DistanceToBadChannel, gjgamma::NLM, gjgamma::IsoRaw, gjgamma::PerpConeRho, gjgamma::TMdeltaPhi, gjgamma::TMdeltaEta, gjgamma::TMtrackP)
+                  gjgamma::GjEventId, gjgamma::Energy, gjgamma::Definition, gjgamma::Eta, gjgamma::Phi, gjgamma::M02, gjgamma::M20, gjgamma::NCells, gjgamma::Time, gjgamma::IsExotic, gjgamma::DistanceToBadChannel, gjgamma::NLM, gjgamma::IsoRaw, gjgamma::PerpConeRho, gjgamma::TMdeltaPhi, gjgamma::TMdeltaEta, gjgamma::TMtrackP)
 namespace gjchjet
 {
 DECLARE_SOA_INDEX_COLUMN(GjEvent, gjevent);

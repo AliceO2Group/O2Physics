@@ -31,7 +31,7 @@ using namespace o2::framework;
 
 namespace o2::analysis
 {
-namespace femtoUniverse
+namespace femto_universe
 {
 
 /// \class FemtoUniverseObjectSelection
@@ -67,7 +67,7 @@ class FemtoUniverseObjectSelection
   /// \param selVar Variable to be employed for the selection
   /// \param selType Type of the selection to be employed
   template <typename T>
-  void setSelection(T& selVals, selVariable selVar, femtoUniverseSelection::SelectionType selType)
+  void setSelection(T& selVals, selVariable selVar, femto_universe_selection::SelectionType selType)
   {
     std::vector<selValDataType> tmpSelVals = selVals; // necessary due to some features of the Configurable
     std::vector<FemtoUniverseSelection<selValDataType, selVariable>> tempVec;
@@ -83,15 +83,15 @@ class FemtoUniverseObjectSelection
   {
     /// First the selection is sorted so that the most open cuts are conducted first
     switch (sels.at(0).getSelectionType()) {
-      case (femtoUniverseSelection::SelectionType::kUpperLimit):
-      case (femtoUniverseSelection::SelectionType::kAbsUpperLimit):
+      case (femto_universe_selection::SelectionType::kUpperLimit):
+      case (femto_universe_selection::SelectionType::kAbsUpperLimit):
         std::sort(sels.begin(), sels.end(), [](FemtoUniverseSelection<selValDataType, selVariable> a, FemtoUniverseSelection<selValDataType, selVariable> b) {
           return a.getSelectionValue() > b.getSelectionValue();
         });
         break;
-      case (femtoUniverseSelection::SelectionType::kLowerLimit):
-      case (femtoUniverseSelection::SelectionType::kAbsLowerLimit):
-      case (femtoUniverseSelection::SelectionType::kEqual):
+      case (femto_universe_selection::SelectionType::kLowerLimit):
+      case (femto_universe_selection::SelectionType::kAbsLowerLimit):
+      case (femto_universe_selection::SelectionType::kEqual):
         std::sort(sels.begin(), sels.end(), [](FemtoUniverseSelection<selValDataType, selVariable> a, FemtoUniverseSelection<selValDataType, selVariable> b) {
           return a.getSelectionValue() < b.getSelectionValue();
         });
@@ -108,17 +108,17 @@ class FemtoUniverseObjectSelection
   /// \param selVar Selection variable under consideration
   /// \param selType Type of the selection variable
   /// \return The most open selection of the selection variable given to the class
-  selValDataType getMinimalSelection(selVariable selVar, femtoUniverseSelection::SelectionType selType)
+  selValDataType getMinimalSelection(selVariable selVar, femto_universe_selection::SelectionType selType)
   {
     selValDataType minimalSel{};
     switch (selType) {
-      case (femtoUniverseSelection::SelectionType::kUpperLimit):
-      case (femtoUniverseSelection::SelectionType::kAbsUpperLimit):
+      case (femto_universe_selection::SelectionType::kUpperLimit):
+      case (femto_universe_selection::SelectionType::kAbsUpperLimit):
         minimalSel = -999.e9;
         break;
-      case (femtoUniverseSelection::SelectionType::kLowerLimit):
-      case (femtoUniverseSelection::SelectionType::kAbsLowerLimit):
-      case (femtoUniverseSelection::SelectionType::kEqual):
+      case (femto_universe_selection::SelectionType::kLowerLimit):
+      case (femto_universe_selection::SelectionType::kAbsLowerLimit):
+      case (femto_universe_selection::SelectionType::kEqual):
         minimalSel = 999.e9;
         break;
     }
@@ -126,15 +126,15 @@ class FemtoUniverseObjectSelection
     for (auto sel : mSelections) {
       if (sel.getSelectionVariable() == selVar) {
         switch (sel.getSelectionType()) {
-          case (femtoUniverseSelection::SelectionType::kUpperLimit):
-          case (femtoUniverseSelection::SelectionType::kAbsUpperLimit):
+          case (femto_universe_selection::SelectionType::kUpperLimit):
+          case (femto_universe_selection::SelectionType::kAbsUpperLimit):
             if (minimalSel < sel.getSelectionValue()) {
               minimalSel = sel.getSelectionValue();
             }
             break;
-          case (femtoUniverseSelection::SelectionType::kLowerLimit):
-          case (femtoUniverseSelection::SelectionType::kAbsLowerLimit):
-          case (femtoUniverseSelection::SelectionType::kEqual):
+          case (femto_universe_selection::SelectionType::kLowerLimit):
+          case (femto_universe_selection::SelectionType::kAbsLowerLimit):
+          case (femto_universe_selection::SelectionType::kEqual):
             if (minimalSel > sel.getSelectionValue()) {
               minimalSel = sel.getSelectionValue();
             }
@@ -193,7 +193,7 @@ class FemtoUniverseObjectSelection
   std::vector<FemtoUniverseSelection<selValDataType, selVariable>> mSelections; ///< Vector containing all selections
 };
 
-} // namespace femtoUniverse
+} // namespace femto_universe
 } // namespace o2::analysis
 
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEOBJECTSELECTION_H_

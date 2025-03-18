@@ -16,6 +16,10 @@
 
 #include "FFitWeights.h"
 
+#include <string>
+#include <cstdio>
+#include <vector>
+
 #include <TSpline.h>
 
 ClassImp(FFitWeights)
@@ -43,20 +47,20 @@ FFitWeights::~FFitWeights()
     delete qAxis;
 };
 
-void FFitWeights::Init()
+void FFitWeights::init()
 {
   fW_data = new TObjArray();
   fW_data->SetName("FFitWeights_Data");
   fW_data->SetOwner(kTRUE);
 
   if (!qAxis)
-    this->SetBinAxis(500, 0, 25);
+    this->setBinAxis(500, 0, 25);
   for (const auto& qn : qnTYPE) {
-    fW_data->Add(new TH2D(this->GetQName(qn.first, qn.second.c_str()), this->GetAxisName(qn.first, qn.second.c_str()), CentBin, 0, CentBin, qAxis->GetNbins(), qAxis->GetXmin(), qAxis->GetXmax()));
+    fW_data->Add(new TH2D(this->getQName(qn.first, qn.second.c_str()), this->getAxisName(qn.first, qn.second.c_str()), CentBin, 0, CentBin, qAxis->GetNbins(), qAxis->GetXmin(), qAxis->GetXmax()));
   }
 };
 
-void FFitWeights::Fill(float centrality, float qn, int nh, const char* pf)
+void FFitWeights::fillWeights(float centrality, float qn, int nh, const char* pf)
 {
   TObjArray* tar{nullptr};
 
@@ -64,9 +68,9 @@ void FFitWeights::Fill(float centrality, float qn, int nh, const char* pf)
   if (!tar)
     return;
 
-  TH2D* th2 = reinterpret_cast<TH2D*>(tar->FindObject(this->GetQName(nh, pf)));
+  TH2D* th2 = reinterpret_cast<TH2D*>(tar->FindObject(this->getQName(nh, pf)));
   if (!th2) {
-    tar->Add(new TH2D(this->GetQName(nh, pf), this->GetAxisName(nh, pf), CentBin, 0, CentBin, qAxis->GetNbins(), qAxis->GetXmin(), qAxis->GetXmax()));
+    tar->Add(new TH2D(this->getQName(nh, pf), this->getAxisName(nh, pf), CentBin, 0, CentBin, qAxis->GetNbins(), qAxis->GetXmin(), qAxis->GetXmax()));
     th2 = reinterpret_cast<TH2D*>(tar->At(tar->GetEntries() - 1));
   }
   th2->Fill(centrality, qn);
@@ -83,12 +87,12 @@ Long64_t FFitWeights::Merge(TCollection* collist)
   FFitWeights* l_w = 0;
   TIter all_w(collist);
   while ((l_w = (reinterpret_cast<FFitWeights*>(all_w())))) {
-    AddArray(fW_data, l_w->GetDataArray());
+    addArray(fW_data, l_w->getDataArray());
     nmerged++;
   }
   return nmerged;
 };
-void FFitWeights::AddArray(TObjArray* targ, TObjArray* sour)
+void FFitWeights::addArray(TObjArray* targ, TObjArray* sour)
 {
   if (!sour) {
     printf("Source array does not exist!\n");
@@ -107,7 +111,7 @@ void FFitWeights::AddArray(TObjArray* targ, TObjArray* sour)
   }
 };
 
-void FFitWeights::qSelectionSpline(std::vector<int> nhv, std::vector<std::string> stv) /* only execute OFFLINE */
+void FFitWeights::qSelection(std::vector<int> nhv, std::vector<std::string> stv) /* only execute OFFLINE */
 {
   TObjArray* tar{nullptr};
 
@@ -117,15 +121,15 @@ void FFitWeights::qSelectionSpline(std::vector<int> nhv, std::vector<std::string
 
   for (const auto& pf : stv) {
     for (const auto& nh : nhv) {
-      TH2D* th2 = reinterpret_cast<TH2D*>(tar->FindObject(this->GetQName(nh, pf.c_str())));
+      TH2D* th2{reinterpret_cast<TH2D*>(tar->FindObject(this->getQName(nh, pf.c_str())))};
       if (!th2) {
         printf("qh not found!\n");
         return;
       }
 
-      TH1D* tmp = nullptr;
-      TGraph* tmpgr = nullptr;
-      TSpline3* spline = nullptr;
+      TH1D* tmp{nullptr};
+      TGraph* tmpgr{nullptr};
+      // TSpline3* spline = nullptr;
       for (int iSP{0}; iSP < 90; iSP++) {
         tmp = th2->ProjectionY(Form("q%i_%i_%i", nh, iSP, iSP + 1), iSP + 1, iSP + 1);
         std::vector<double> xq(nResolution);
@@ -134,15 +138,16 @@ void FFitWeights::qSelectionSpline(std::vector<int> nhv, std::vector<std::string
           xq[i] = static_cast<double>(i + 1) / static_cast<double>(nResolution);
         tmp->GetQuantiles(nResolution, yq.data(), xq.data());
         tmpgr = new TGraph(nResolution, yq.data(), xq.data());
-        spline = new TSpline3(Form("sp_q%i%s_%i", nh, pf.c_str(), iSP), tmpgr);
-        spline->SetName(Form("sp_q%i%s_%i", nh, pf.c_str(), iSP));
-        fW_data->Add(spline);
+        tmpgr->SetName(Form("sp_q%i%s_%i", nh, pf.c_str(), iSP));
+        // spline = new TSpline3(Form("sp_q%i%s_%i", nh, pf.c_str(), iSP), tmpgr);
+        // spline->SetName(Form("sp_q%i%s_%i", nh, pf.c_str(), iSP));
+        fW_data->Add(tmpgr);
       }
     }
   }
 };
 
-float FFitWeights::EvalSplines(float centr, const float& dqn, const int nh, const char* pf)
+float FFitWeights::eval(float centr, const float& dqn, const int nh, const char* pf)
 {
   TObjArray* tar{nullptr};
 
@@ -150,19 +155,19 @@ float FFitWeights::EvalSplines(float centr, const float& dqn, const int nh, cons
   if (!tar)
     return -1;
 
-  int isp = static_cast<int>(centr);
+  int isp{static_cast<int>(centr)};
   if (isp < 0 || isp > 90) {
     return -1;
   }
 
-  TSpline3* spline = nullptr;
-  spline = reinterpret_cast<TSpline3*>(tar->FindObject(Form("sp_q%i%s_%i", nh, pf, isp)));
+  TGraph* spline{nullptr};
+  spline = reinterpret_cast<TGraph*>(tar->FindObject(Form("sp_q%i%s_%i", nh, pf, isp)));
   if (!spline) {
     return -1;
   }
 
-  float qn_val = 100. * spline->Eval(dqn);
-  if (qn_val < 0) {
+  float qn_val{static_cast<float>(100. * spline->Eval(dqn))};
+  if (qn_val < 0 || qn_val > 100.05) {
     return -1;
   }
 

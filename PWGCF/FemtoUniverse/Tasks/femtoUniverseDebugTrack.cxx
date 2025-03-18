@@ -24,12 +24,12 @@
 
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 
 using namespace o2;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -223,14 +223,14 @@ struct femtoUniverseDebugTrack {
 
   /// Porduce QA plots for sigle track selection in FemtoUniverse framework
   template <bool isMC, typename PartitionType>
-  void FillDebugHistos(o2::aod::FDCollision& col, PartitionType& groupPartsOne)
+  void FillDebugHistos(o2::aod::FdCollision& col, PartitionType& groupPartsOne)
   {
     eventHisto.fillQA(col);
     for (auto& part : groupPartsOne) {
       // if (part.p() > ConfCutTable->get("MaxP") || part.pt() > ConfCutTable->get("MaxPt")) {
       //   continue;
       // }
-      // if (!isFullPIDSelected(part.pidcut(), part.p(), ConfCutTable->get("PIDthr"), vPIDPartOne, ConfNspecies, kNsigma, ConfCutTable->get("nSigmaTPC"), ConfCutTable->get("nSigmaTPCTOF"))) {
+      // if (!isFullPIDSelected(part.pidCut(), part.p(), ConfCutTable->get("PIDthr"), vPIDPartOne, ConfNspecies, kNsigma, ConfCutTable->get("nSigmaTPC"), ConfCutTable->get("nSigmaTPCTOF"))) {
       //   continue;
       // }
       if (trackonefilter.ConfIsTrackIdentified) {
@@ -245,7 +245,7 @@ struct femtoUniverseDebugTrack {
   /// process function when runnning over data/ Monte Carlo reconstructed only
   /// \param col subscribe to FemtoUniverseCollision table
   /// \param parts subscribe to FemtoUniverseParticles table
-  void processData(o2::aod::FDCollision& col, FemtoFullParticles&)
+  void processData(o2::aod::FdCollision& col, FemtoFullParticles&)
   {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     FillDebugHistos<false>(col, groupPartsOne);
@@ -257,7 +257,7 @@ struct femtoUniverseDebugTrack {
   /// \param col subscribe to FemtoUniverseCollision table
   /// \param parts subscribe to the joined table of FemtoUniverseParticles and FemtoUniverseMCLabels table
   /// \param FemtoDramMCParticles subscribe to the table containing the Monte Carlo Truth information
-  void processMC(o2::aod::FDCollision& col, FemtoFullParticlesMC&, o2::aod::FDMCParticles&)
+  void processMC(o2::aod::FdCollision& col, FemtoFullParticlesMC&, o2::aod::FdMCParticles&)
   {
     auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     FillDebugHistos<true>(col, groupPartsOne);

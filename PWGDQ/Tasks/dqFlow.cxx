@@ -189,7 +189,7 @@ struct DQEventQvector {
     fPtAxis = new TAxis(ptbins, &ptbinning[0]);
     if (fConfigFillWeights) {
       // fWeights->SetPtBins(ptbins, &ptbinning[0]); // in the default case, it will accept everything
-      fWeights->Init(true, false); // true for data, false for MC
+      fWeights->init(true, false); // true for data, false for MC
     }
 
     // Reference flow
@@ -383,7 +383,7 @@ struct DQEventQvector {
 
       // Fill weights for Q-vector correction: this should be enabled for a first run to get weights
       if (fConfigFillWeights) {
-        fWeights->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), centrality, 0);
+        fWeights->fill(track.phi(), track.eta(), collision.posZ(), track.pt(), centrality, 0);
       }
 
       if (cfg.mEfficiency) {
@@ -396,7 +396,7 @@ struct DQEventQvector {
       }
       weff = 1. / weff;
       if (cfg.mAcceptance) {
-        wacc = cfg.mAcceptance->GetNUA(track.phi(), track.eta(), collision.posZ());
+        wacc = cfg.mAcceptance->getNUA(track.phi(), track.eta(), collision.posZ());
       } else {
         wacc = 1.0;
       }
@@ -507,7 +507,7 @@ struct DQEventQvector {
     if (fEventCut->IsSelected(VarManager::fgValues)) {
       eventQvector(VarManager::fgValues[VarManager::kQ1X0A], VarManager::fgValues[VarManager::kQ1Y0A], VarManager::fgValues[VarManager::kQ1X0B], VarManager::fgValues[VarManager::kQ1Y0B], VarManager::fgValues[VarManager::kQ1X0C], VarManager::fgValues[VarManager::kQ1Y0C], VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultB], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C], VarManager::fgValues[VarManager::kQ4X0A], VarManager::fgValues[VarManager::kQ4Y0A], VarManager::fgValues[VarManager::kQ4X0B], VarManager::fgValues[VarManager::kQ4Y0B], VarManager::fgValues[VarManager::kQ4X0C], VarManager::fgValues[VarManager::kQ4Y0C]);
       eventQvectorExtra(VarManager::fgValues[VarManager::kQ42XA], VarManager::fgValues[VarManager::kQ42YA], VarManager::fgValues[VarManager::kQ23XA], VarManager::fgValues[VarManager::kQ23YA], VarManager::fgValues[VarManager::kS11A], VarManager::fgValues[VarManager::kS12A], VarManager::fgValues[VarManager::kS13A], VarManager::fgValues[VarManager::kS31A]);
-      eventRefFlow(VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
+      eventRefFlow(VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM11REFetagap], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR2REFetagap], VarManager::fgValues[VarManager::kCORR4REF], centrality);
     }
 
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0) {

@@ -48,6 +48,8 @@ void addNMHistograms(HistogramRegistry* fRegistry, bool isMC, const char* pairna
     fRegistry->add("Pair/Pi0/hs_Primary", "rec. true pi0", kTHnSparseD, {axis_mass, axis_pt}, true);
     fRegistry->add("Pair/Pi0/hs_FromWD", "rec. true pi0 from weak decay", kTHnSparseD, {axis_mass, axis_pt}, true);
     fRegistry->add("Pair/Pi0/hs_FromHS", "rec. true pi0 from hadronic shower in material", kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Pi0/hs_FromSameGamma", "Two clusters from same gamma that is a pi0 daughter (conversion)", kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Eta/hs_FromSameGamma", "Two clusters from same gamma that is a eta daughter (conversion)", kTHnSparseD, {axis_mass, axis_pt}, true);
     fRegistry->add("Pair/Eta/hs_Primary", "rec. true eta", kTHnSparseD, {axis_mass, axis_pt}, true);
 
     const AxisSpec axis_rapidity{{0.0, +0.8, +0.9}, "rapidity |y|"};
@@ -70,7 +72,7 @@ void addNMHistograms(HistogramRegistry* fRegistry, bool isMC, const char* pairna
 template <typename TDiphoton, typename TMCParitlce, typename TMCParticles, typename TMCCollisions>
 void fillTruePairInfo(HistogramRegistry* fRegistry, TDiphoton const& v12, TMCParitlce const& mcparticle, TMCParticles const& mcparticles, TMCCollisions const&, const TF1* f1fd_k0s_to_pi0 = nullptr, float eventWeight = 1.f)
 {
-  int pdg = abs(mcparticle.pdgCode());
+  int pdg = std::abs(mcparticle.pdgCode());
   float weight = eventWeight;
   switch (pdg) {
     case 111: {
@@ -79,7 +81,7 @@ void fillTruePairInfo(HistogramRegistry* fRegistry, TDiphoton const& v12, TMCPar
         fRegistry->fill(HIST("Pair/Pi0/hs_Primary"), v12.M(), v12.Pt(), weight);
       } else if (motherid_strhad > 0) {
         auto str_had = mcparticles.iteratorAt(motherid_strhad);
-        if (abs(str_had.pdgCode()) == 310 && f1fd_k0s_to_pi0 != nullptr) {
+        if (std::abs(str_had.pdgCode()) == 310 && f1fd_k0s_to_pi0 != nullptr) {
           weight *= f1fd_k0s_to_pi0->Eval(str_had.pt());
         }
         fRegistry->fill(HIST("Pair/Pi0/hs_FromWD"), v12.M(), v12.Pt(), weight);

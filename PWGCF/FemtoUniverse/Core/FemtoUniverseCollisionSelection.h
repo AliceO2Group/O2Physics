@@ -19,14 +19,13 @@
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_
 
 #include <string>
-#include <iostream>
 #include "Common/CCDB/TriggerAliases.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 
 using namespace o2::framework;
 
-namespace o2::analysis::femtoUniverse
+namespace o2::analysis::femto_universe
 {
 
 /// \class FemtoUniverseCollisionSelection
@@ -160,33 +159,33 @@ class FemtoUniverseCollisionSelection
   template <typename T1, typename T2>
   float computeSphericity(T1 const& /*col*/, T2 const& tracks)
   {
-    double S00 = 0;
-    double S11 = 0;
-    double S10 = 0;
+    double kS00 = 0;
+    double kS11 = 0;
+    double kS10 = 0;
     double sumPt = 0;
     int partNumber = 0;
     double spher = 0;
 
-    for (auto& p : tracks) {
+    for (const auto& p : tracks) {
       double phi = p.phi();
       double pT = p.pt();
-      double px = pT * TMath::Cos(phi);
-      double py = pT * TMath::Sin(phi);
+      double px = pT * std::cos(phi);
+      double py = pT * std::sin(phi);
 
-      S00 = S00 + px * px / pT;
-      S11 = S11 + py * py / pT;
-      S10 = S10 + px * py / pT;
+      kS00 = kS00 + px * px / pT;
+      kS11 = kS11 + py * py / pT;
+      kS10 = kS10 + px * py / pT;
       sumPt = sumPt + pT;
       partNumber++;
     }
 
     if (sumPt != 0) {
-      S00 = S00 / sumPt;
-      S11 = S11 / sumPt;
-      S10 = S10 / sumPt;
+      kS00 = kS00 / sumPt;
+      kS11 = kS11 / sumPt;
+      kS10 = kS10 / sumPt;
 
-      double lambda1 = (S00 + S11 + TMath::Sqrt((S00 + S11) * (S00 + S11) - 4.0 * (S00 * S11 - S10 * S10))) / 2.0;
-      double lambda2 = (S00 + S11 - TMath::Sqrt((S00 + S11) * (S00 + S11) - 4.0 * (S00 * S11 - S10 * S10))) / 2.0;
+      double lambda1 = (kS00 + kS11 + std::sqrt((kS00 + kS11) * (kS00 + kS11) - 4.0 * (kS00 * kS11 - kS10 * kS10))) / 2.0;
+      double lambda2 = (kS00 + kS11 - std::sqrt((kS00 + kS11) * (kS00 + kS11) - 4.0 * (kS00 * kS11 - kS10 * kS10))) / 2.0;
 
       if ((lambda1 + lambda2) != 0 && partNumber > 2) {
         spher = 2 * lambda2 / (lambda1 + lambda2);
@@ -215,6 +214,6 @@ class FemtoUniverseCollisionSelection
   float mCentMin = 0.0;                            ///< Minimum centrality value
   float mCentMax = 100.0;                          ///< Maximum centrality value
 };
-} // namespace o2::analysis::femtoUniverse
+} // namespace o2::analysis::femto_universe
 
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_

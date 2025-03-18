@@ -124,7 +124,7 @@ struct tofPidBeta {
   }
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
-  o2::pid::tof::Beta<Trks::iterator> responseBeta;
+  o2::pid::tof::Beta responseBeta;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
   void process(Trks const& tracks)
@@ -142,16 +142,13 @@ struct tofPidBeta {
       }
       if (enableTableMass) {
         if (enableTOFParams) {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV2.getShift(trk.eta())), beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV2.getShift(trk.eta())), beta));
         } else {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk, beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk, beta));
         }
       }
     }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<tofPidBeta>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tofPidBeta>(cfgc)}; }

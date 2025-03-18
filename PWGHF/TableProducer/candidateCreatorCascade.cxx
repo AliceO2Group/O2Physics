@@ -15,6 +15,10 @@
 /// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
 ///         Paul Buehler, <paul.buehler@oeaw.ac.at>, Vienna
 
+#include <string>
+#include <memory>
+#include <vector>
+
 #include <TPDGCode.h>
 
 #include "CommonConstants/PhysicsConstants.h"
@@ -79,6 +83,9 @@ struct HfCandidateCreatorCascade {
   double mass2K0sP{0.};
   double bz = 0.;
 
+  using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
+  using V0fCfull = soa::Join<aod::V0fCDatas, aod::V0fCCovs>;
+
   std::shared_ptr<TH1> hCandidates;
   HistogramRegistry registry{"registry"};
 
@@ -137,9 +144,6 @@ struct HfCandidateCreatorCascade {
     setLabelHistoCands(hCandidates);
   }
 
-  using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
-  using V0fCfull = soa::Join<aod::V0fCDatas, aod::V0fCCovs>;
-
   template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
   void runCreatorCascade(Coll const&,
                          aod::HfCascades const& rowsTrackIndexCasc,
@@ -170,7 +174,7 @@ struct HfCandidateCreatorCascade {
       }
 
       int posGlobalIndex = -1, negGlobalIndex = -1;
-      float v0x, v0y, v0z, v0px, v0py, v0pz;
+      float v0X, v0Y, v0Z, v0px, v0py, v0pz;
       float v0PosPx, v0PosPy, v0PosPz, v0NegPx, v0NegPy, v0NegPz;
       float dcaV0dau, dcaPosToPV, dcaNegToPV, v0cosPA;
       std::array<float, 21> covV = {0.};
@@ -183,9 +187,9 @@ struct HfCandidateCreatorCascade {
         const auto& trackV0DaughNeg = v0row.negTrack_as<aod::TracksWCov>();
         posGlobalIndex = trackV0DaughPos.globalIndex();
         negGlobalIndex = trackV0DaughNeg.globalIndex();
-        v0x = v0row.x();
-        v0y = v0row.y();
-        v0z = v0row.z();
+        v0X = v0row.x();
+        v0Y = v0row.y();
+        v0Z = v0row.z();
         v0px = v0row.px();
         v0py = v0row.py();
         v0pz = v0row.pz();
@@ -212,9 +216,9 @@ struct HfCandidateCreatorCascade {
         const auto& trackV0DaughNeg = v0row.negTrack_as<aod::TracksWCov>();
         posGlobalIndex = trackV0DaughPos.globalIndex();
         negGlobalIndex = trackV0DaughNeg.globalIndex();
-        v0x = v0row.x();
-        v0y = v0row.y();
-        v0z = v0row.z();
+        v0X = v0row.x();
+        v0Y = v0row.y();
+        v0Z = v0row.z();
         v0px = v0row.px();
         v0py = v0row.py();
         v0pz = v0row.pz();
@@ -251,7 +255,7 @@ struct HfCandidateCreatorCascade {
       df.setBz(bz);
 
       auto trackBach = getTrackParCov(bach);
-      const std::array<float, 3> vertexV0 = {v0x, v0y, v0z};
+      const std::array<float, 3> vertexV0 = {v0X, v0Y, v0Z};
       const std::array<float, 3> momentumV0 = {v0px, v0py, v0pz};
       // we build the neutral track to then build the cascade
       auto trackV0 = o2::track::TrackParCov(vertexV0, momentumV0, covV, 0, true);
@@ -314,7 +318,7 @@ struct HfCandidateCreatorCascade {
                        impactParameterBach.getY(), impactParameterV0.getY(),
                        std::sqrt(impactParameterBach.getSigmaY2()), std::sqrt(impactParameterV0.getSigmaY2()),
                        casc.prong0Id(), casc.v0Id(),
-                       v0x, v0y, v0z,
+                       v0X, v0Y, v0Z,
                        posGlobalIndex, negGlobalIndex,
                        v0PosPx, v0PosPy, v0PosPz,
                        v0NegPx, v0NegPy, v0NegPz,
@@ -437,21 +441,24 @@ struct HfCandidateCreatorCascadeMc {
   Produces<aod::HfCandCascadeMcRec> rowMcMatchRec;
   Produces<aod::HfCandCascadeMcGen> rowMcMatchGen;
 
+  // Configuration
+  Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
+
   using MyTracksWMc = soa::Join<aod::TracksWCov, aod::McTrackLabels>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
-  HistogramRegistry registry{"registry"};
-
-  // Configuration
-  o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
-
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
-  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
+
+  HistogramRegistry registry{"registry"};
 
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
@@ -471,11 +478,11 @@ struct HfCandidateCreatorCascadeMc {
     hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
-  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs>
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename McCollisions>
   void runCreatorCascMc(MyTracksWMc const& tracks,
                         aod::McParticles const& mcParticles,
                         CCs const& collInfos,
-                        aod::McCollisions const& mcCollisions,
+                        McCollisions const& mcCollisions,
                         BCsInfo const&)
   {
     // Match reconstructed candidates.
@@ -538,17 +545,19 @@ struct HfCandidateCreatorCascadeMc {
       // Slice the collisions table to get the collision info for the current MC collision
       float centrality{-1.f};
       uint16_t rejectionMask{0};
+      int nSplitColl = 0;
       if constexpr (centEstimator == CentralityEstimator::FT0C) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
+        nSplitColl = collSlice.size();
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       } else if constexpr (centEstimator == CentralityEstimator::None) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       }
-      hfEvSelMc.fillHistograms(rejectionMask);
+      hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask, nSplitColl);
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
@@ -578,11 +587,11 @@ struct HfCandidateCreatorCascadeMc {
         }
         if (sign != 0) {
           // we check the K0S
-          for (const auto& daughterK0 : particle.daughters_as<aod::McParticles>()) {
+          for (const auto& daughterK0 : particle.template daughters_as<aod::McParticles>()) {
             if (std::abs(daughterK0.pdgCode()) != kK0) {
               continue;
             }
-            for (const auto& daughterK0S : daughterK0.daughters_as<aod::McParticles>()) {
+            for (const auto& daughterK0S : daughterK0.template daughters_as<aod::McParticles>()) {
               if (daughterK0S.pdgCode() != kK0Short) {
                 continue;
               }
@@ -628,7 +637,7 @@ struct HfCandidateCreatorCascadeMc {
   void processMcCentFT0M(MyTracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          McCollisionsFT0Ms const& collInfos,
-                         aod::McCollisions const& mcCollisions,
+                         McCollisionsCentFT0Ms const& mcCollisions,
                          BCsInfo const& BCsInfo)
   {
     runCreatorCascMc<CentralityEstimator::FT0M>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);

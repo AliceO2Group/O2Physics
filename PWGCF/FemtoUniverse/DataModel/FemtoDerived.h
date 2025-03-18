@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FemtoDerived.h
+/// \brief Declaration of FemtoUniverse tables
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
+
 #ifndef PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTODERIVED_H_
 #define PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTODERIVED_H_
 
@@ -27,26 +31,26 @@ namespace o2::aod
 /// FemtoUniverseCollision
 namespace femtouniversecollision
 {
-DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
-DECLARE_SOA_COLUMN(MultNtr, multNtr, int);         //! multiplicity of charged tracks as defined in the producer
-DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
-DECLARE_SOA_COLUMN(MagField, magField, float);     //! Magnetic field of the event
-DECLARE_SOA_COLUMN(IRrate, irrate, float);         //! Interaction rate
-DECLARE_SOA_COLUMN(Occupancy, occupancy, int);     //! TPC occupancy
+DECLARE_SOA_COLUMN(MultV0M, multV0M, float);                 //! V0M multiplicity
+DECLARE_SOA_COLUMN(MultNtr, multNtr, int);                   //! multiplicity of charged tracks as defined in the producer
+DECLARE_SOA_COLUMN(Sphericity, sphericity, float);           //! Sphericity of the event
+DECLARE_SOA_COLUMN(MagField, magField, float);               //! Magnetic field of the event
+DECLARE_SOA_COLUMN(InteractionRate, interactionRate, float); //! Interaction rate
+DECLARE_SOA_COLUMN(Occupancy, occupancy, int);               //! TPC occupancy
 
 } // namespace femtouniversecollision
 
-DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
+DECLARE_SOA_TABLE(FdCollisions, "AOD", "FDCOLLISION",
                   o2::soa::Index<>,
                   o2::aod::collision::PosZ,
                   femtouniversecollision::MultV0M,
                   femtouniversecollision::MultNtr,
                   femtouniversecollision::Sphericity,
                   femtouniversecollision::MagField);
-using FDCollision = FDCollisions::iterator;
+using FdCollision = FdCollisions::iterator;
 
 DECLARE_SOA_TABLE(FDExtCollisions, "AOD", "FDEXTCOLLISION",
-                  femtouniversecollision::IRrate,
+                  femtouniversecollision::InteractionRate,
                   femtouniversecollision::Occupancy);
 using FDExtCollision = FDExtCollisions::iterator;
 
@@ -71,7 +75,7 @@ enum ParticleType {
 static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "MCTruthTracks", "V0", "V0Child", "Cascade", "CascadeBachelor", "Phi", "PhiChild", "D0", "D0Child"}; //! Naming of the different particle types
 static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hPDGvspT", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy", "/hInvMass", "/hDCAxy", "/hInvMass", "/hDCAxy"};
 
-using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
+using CutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
 enum TrackType {
   kNoChild,    //! Not a V0 child
@@ -83,13 +87,13 @@ enum TrackType {
 
 static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg", "Bach"}; //! Naming of the different particle types
 
-DECLARE_SOA_INDEX_COLUMN(FDCollision, fdCollision);
+DECLARE_SOA_INDEX_COLUMN(FdCollision, fdCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);                       //! p_T (GeV/c)
 DECLARE_SOA_COLUMN(Eta, eta, float);                     //! Eta
 DECLARE_SOA_COLUMN(Phi, phi, float);                     //! Phi
 DECLARE_SOA_COLUMN(PartType, partType, uint8_t);         //! Type of the particle, according to femtouniverseparticle::ParticleType
-DECLARE_SOA_COLUMN(Cut, cut, cutContainerType);          //! Bit-wise container for the different selection criteria
-DECLARE_SOA_COLUMN(PIDCut, pidcut, cutContainerType);    //! Bit-wise container for the different PID selection criteria \todo since bit-masking cannot be done yet with filters we use a second field for the PID
+DECLARE_SOA_COLUMN(Cut, cut, CutContainerType);          //! Bit-wise container for the different selection criteria
+DECLARE_SOA_COLUMN(PidCut, pidCut, CutContainerType);    //! Bit-wise container for the different PID selection criteria \todo since bit-masking cannot be done yet with filters we use a second field for the PID
 DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);       //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Children, children); //! Field for the track indices to remove auto-correlations
 DECLARE_SOA_COLUMN(MLambda, mLambda, float);             //! The invariant mass of V0 candidate, assuming lambda
@@ -101,11 +105,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! Compute the theta of the track
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! Compute the momentum in x in GeV/c
                            [](float pt, float phi) -> float {
-                             return pt * std::sin(phi);
+                             return pt * std::cos(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! Compute the momentum in y in GeV/c
                            [](float pt, float phi) -> float {
-                             return pt * std::cos(phi);
+                             return pt * std::sin(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! Compute the momentum in z in GeV/c
                            [](float pt, float eta) -> float {
@@ -117,11 +121,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Compute the overall momentum in GeV/c
                            });
 // debug variables
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                                  //! Sign of the track charge
-DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);                                 //! Number of TPC clusters
-DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);                     //! Number of TPC crossed rows
-DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);                                           //! Number of ITS clusters
-DECLARE_SOA_COLUMN(ITSNClsInnerBarrel, itsNClsInnerBarrel, uint8_t);                     //! Number of ITS clusters in the inner barrel                             //! TPC signal
-DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, //! Compute the number of crossed rows over findable TPC clusters
+DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, uint8_t);                                 //! Number of TPC clusters
+DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, uint8_t);                     //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TpcFractionSharedCls, tpcFractionSharedCls, float);                   //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(ItsNCls, itsNCls, uint8_t);                                           //! Number of ITS clusters
+DECLARE_SOA_COLUMN(ItsNClsInnerBarrel, itsNClsInnerBarrel, uint8_t);                     //! Number of ITS clusters in the inner barrel                             //! TPC signal
+DECLARE_SOA_DYNAMIC_COLUMN(TpcCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, //! Compute the number of crossed rows over findable TPC clusters
                            [](uint8_t tpcNClsFindable, uint8_t tpcNClsCrossedRows) -> float {
                              return (float)tpcNClsCrossedRows / (float)tpcNClsFindable;
                            });
@@ -153,13 +158,13 @@ DECLARE_SOA_COLUMN(Dcav0topv, dcav0topv, float);               //! DCA of V0 to 
 
 DECLARE_SOA_TABLE(FDParticles, "AOD", "FDPARTICLE",
                   o2::soa::Index<>,
-                  femtouniverseparticle::FDCollisionId,
+                  femtouniverseparticle::FdCollisionId,
                   femtouniverseparticle::Pt,
                   femtouniverseparticle::Eta,
                   femtouniverseparticle::Phi,
                   femtouniverseparticle::PartType,
                   femtouniverseparticle::Cut,
-                  femtouniverseparticle::PIDCut,
+                  femtouniverseparticle::PidCut,
                   femtouniverseparticle::TempFitVar,
                   femtouniverseparticle::ChildrenIds,
                   femtouniverseparticle::MLambda,
@@ -173,13 +178,14 @@ using FDParticle = FDParticles::iterator;
 
 DECLARE_SOA_TABLE(FDExtParticles, "AOD", "FDEXTPARTICLE",
                   femtouniverseparticle::Sign,
-                  femtouniverseparticle::TPCNClsFound,
+                  femtouniverseparticle::TpcNClsFound,
                   track::TPCNClsFindable,
-                  femtouniverseparticle::TPCNClsCrossedRows,
+                  femtouniverseparticle::TpcNClsCrossedRows,
                   track::TPCNClsShared,
+                  femtouniverseparticle::TpcFractionSharedCls,
                   track::TPCInnerParam,
-                  femtouniverseparticle::ITSNCls,
-                  femtouniverseparticle::ITSNClsInnerBarrel,
+                  femtouniverseparticle::ItsNCls,
+                  femtouniverseparticle::ItsNClsInnerBarrel,
                   track::DcaXY,
                   track::DcaZ,
                   track::TPCSignal,
@@ -199,7 +205,7 @@ DECLARE_SOA_TABLE(FDExtParticles, "AOD", "FDEXTPARTICLE",
                   femtouniverseparticle::DecayVtxY,
                   femtouniverseparticle::DecayVtxZ,
                   femtouniverseparticle::MKaon,
-                  femtouniverseparticle::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, femtouniverseparticle::TPCNClsCrossedRows>,
+                  femtouniverseparticle::TpcCrossedRowsOverFindableCls<track::TPCNClsFindable, femtouniverseparticle::TpcNClsCrossedRows>,
                   pidtpc_tiny::TPCNSigmaEl<pidtpc_tiny::TPCNSigmaStoreEl>,
                   pidtpc_tiny::TPCNSigmaPi<pidtpc_tiny::TPCNSigmaStorePi>,
                   pidtpc_tiny::TPCNSigmaKa<pidtpc_tiny::TPCNSigmaStoreKa>,
@@ -214,13 +220,13 @@ using FDFullParticle = FDExtParticles::iterator;
 
 DECLARE_SOA_TABLE(FDCascParticles, "AOD", "FDCASCPARTICLE",
                   o2::soa::Index<>,
-                  femtouniverseparticle::FDCollisionId,
+                  femtouniverseparticle::FdCollisionId,
                   femtouniverseparticle::Pt,
                   femtouniverseparticle::Eta,
                   femtouniverseparticle::Phi,
                   femtouniverseparticle::PartType,
                   femtouniverseparticle::Cut,
-                  femtouniverseparticle::PIDCut,
+                  femtouniverseparticle::PidCut,
                   femtouniverseparticle::TempFitVar,
                   femtouniverseparticle::ChildrenIds,
                   femtouniverseparticle::MLambda,
@@ -243,7 +249,7 @@ DECLARE_SOA_TABLE(FDCascParticles, "AOD", "FDCASCPARTICLE",
 using FDCascParticle = FDCascParticles::iterator;
 
 /// FemtoUniverseTrackMC
-namespace femtouniverseMCparticle
+namespace femtouniverse_mc_particle
 {
 /// Distinuishes the different particle origins
 enum ParticleOriginMCTruth {
@@ -254,6 +260,8 @@ enum ParticleOriginMCTruth {
   kFake,              //! particle, that has NOT the PDG code of the current analysed particle
   kDaughterLambda,    //! Daughter from a Lambda decay
   kDaughterSigmaplus, //! Daughter from a Sigma^plus decay
+  kPrompt,            //! Orgin for D0/D0bar mesons
+  kNonPrompt,         //! Orgin for D0/D0bar mesons
   kNOriginMCTruthTypes
 };
 
@@ -265,7 +273,9 @@ static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes
   "_NotPrimary",
   "_Fake",
   "_DaughterLambda",
-  "DaughterSigmaPlus"};
+  "DaughterSigmaPlus",
+  "_Prompt",
+  "_NonPrompt"};
 
 /// Distinguished between reconstructed and truth
 enum MCType {
@@ -277,31 +287,31 @@ enum MCType {
 static constexpr std::string_view MCTypeName[kNMCTypes] = {"", "_MC"};
 
 DECLARE_SOA_COLUMN(PartOriginMCTruth, partOriginMCTruth, uint8_t); //! Origin of the particle, according to femtouniverseparticle::ParticleOriginMCTruth
-DECLARE_SOA_COLUMN(PDGMCTruth, pdgMCTruth, int);                   //! Particle PDG
+DECLARE_SOA_COLUMN(PdgMCTruth, pdgMCTruth, int);                   //! Particle PDG
 
 // debug variables
 DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int); //! Checks mother PDG, where mother is the primary particle for that decay chain
-} // namespace femtouniverseMCparticle
+} // namespace femtouniverse_mc_particle
 
-DECLARE_SOA_TABLE(FDMCParticles, "AOD", "FDMCPARTICLE",
+DECLARE_SOA_TABLE(FdMCParticles, "AOD", "FDMCPARTICLE",
                   o2::soa::Index<>,
-                  femtouniverseMCparticle::PartOriginMCTruth,
-                  femtouniverseMCparticle::PDGMCTruth,
+                  femtouniverse_mc_particle::PartOriginMCTruth,
+                  femtouniverse_mc_particle::PdgMCTruth,
                   femtouniverseparticle::Pt,
                   femtouniverseparticle::Eta,
                   femtouniverseparticle::Phi);
-using FDMCParticle = FDMCParticles::iterator;
+using FdMCParticle = FdMCParticles::iterator;
 
 DECLARE_SOA_TABLE(FDExtMCParticles, "AOD", "FDEXTMCPARTICLE",
-                  femtouniverseMCparticle::MotherPDG);
+                  femtouniverse_mc_particle::MotherPDG);
 using FDExtMCParticle = FDExtMCParticles::iterator;
 
 namespace mcfdlabel
 {
-DECLARE_SOA_INDEX_COLUMN(FDMCParticle, fdMCParticle); //! MC particle for femtouniverseparticle
+DECLARE_SOA_INDEX_COLUMN(FdMCParticle, fdMCParticle); //! MC particle for femtouniverseparticle
 } // namespace mcfdlabel
 DECLARE_SOA_TABLE(FDMCLabels, "AOD", "FDMCLabel", //! Table joinable to FemtoUniverseParticle containing the MC labels
-                  mcfdlabel::FDMCParticleId);
+                  mcfdlabel::FdMCParticleId);
 
 /// Hash
 namespace hash

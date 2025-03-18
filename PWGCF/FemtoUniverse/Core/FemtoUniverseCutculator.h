@@ -32,7 +32,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseV0Selection.h"
 
-namespace o2::analysis::femtoUniverse
+namespace o2::analysis::femto_universe
 {
 
 /// \class FemtoUniverseCutculator
@@ -45,23 +45,23 @@ class FemtoUniverseCutculator
   /// femtouniverse-producer task
   void init(const char* configFile)
   {
-    std::cout << "Welcome to the CutCulator!" << std::endl;
+    LOGF(info, "Welcome to the CutCulator!");
+    // std::cout << "Welcome to the CutCulator!" << std::endl;
 
     boost::property_tree::ptree root;
     try {
       boost::property_tree::read_json(configFile, root);
     } catch (const boost::property_tree::ptree_error& e) {
-      std::cout
-        << "Failed to read JSON config file " << configFile << " ("
-        << e.what() << ")" << std::endl;
+      // LOGF(fatal, "Failed to read JSON config file  %s (%s)", configFile, e.what());
+      std::cout << "Failed to read JSON config file " << configFile << " (" << e.what() << ")" << std::endl;
     }
 
     // check the config file for all known producer task
-    std::vector<const char*> ProducerTasks = {
-      "femto-universe-producer-task"};
-    for (auto& Producer : ProducerTasks) {
+    std::vector<const char*> producerTasks = {"femto-universe-producer-task"};
+    for (const auto& Producer : producerTasks) {
       if (root.count(Producer) > 0) {
         mConfigTree = root.get_child(Producer);
+        // LOGF(info, "Found %s in %s", Producer, configFile);
         std::cout << "Found " << Producer << " in " << configFile << std::endl;
         break;
       }
@@ -76,16 +76,15 @@ class FemtoUniverseCutculator
   {
     try {
       boost::property_tree::ptree& selections = mConfigTree.get_child(name);
-      boost::property_tree::ptree& selectionsValues =
-        selections.get_child("values");
+      boost::property_tree::ptree& selectionsValues = selections.get_child("values");
       std::vector<float> tmpVec;
       for (boost::property_tree::ptree::value_type& val : selectionsValues) {
         tmpVec.push_back(std::stof(val.second.data()));
       }
       return tmpVec;
     } catch (const boost::property_tree::ptree_error& e) {
-      std::cout << "Selection " << name << " not available (" << e.what() << ")"
-                << std::endl;
+      // LOGF(fatal, "Selection %s not available (%s)", name, e.what());
+      std::cout << "Selection " << name << " not available (" << e.what() << ")" << std::endl;
       return {};
     }
   }
@@ -96,12 +95,11 @@ class FemtoUniverseCutculator
   /// \param obs Observable of the track selection
   /// \param type Type of the track selection
   /// \param prefix Prefix which is added to the name of the Configurable
-  void setTrackSelection(femtoUniverseTrackSelection::TrackSel obs,
-                         femtoUniverseSelection::SelectionType type,
+  void setTrackSelection(femto_universe_track_selection::TrackSel obs,
+                         femto_universe_selection::SelectionType type,
                          const char* prefix)
   {
-    auto tmpVec =
-      setSelection(FemtoUniverseTrackSelection::getSelectionName(obs, prefix));
+    auto tmpVec = setSelection(FemtoUniverseTrackSelection::getSelectionName(obs, prefix));
     if (tmpVec.size() > 0) {
       mTrackSel.setSelection(tmpVec, obs, type);
     }
@@ -112,17 +110,17 @@ class FemtoUniverseCutculator
   void setTrackSelectionFromFile(const char* prefix)
   {
     for (const auto& sel : mConfigTree) {
-      std::string sel_name = sel.first;
-      femtoUniverseTrackSelection::TrackSel obs;
-      if (sel_name.find(prefix) != std::string::npos) {
+      std::string selName = sel.first;
+      femto_universe_track_selection::TrackSel obs;
+      if (selName.find(prefix) != std::string::npos) {
         int index = FemtoUniverseTrackSelection::findSelectionIndex(
-          std::string_view(sel_name), prefix);
+          std::string_view(selName), prefix);
         if (index >= 0) {
-          obs = femtoUniverseTrackSelection::TrackSel(index);
+          obs = femto_universe_track_selection::TrackSel(index);
         } else {
           continue;
         }
-        if (obs == femtoUniverseTrackSelection::TrackSel::kPIDnSigmaMax)
+        if (obs == femto_universe_track_selection::TrackSel::kPIDnSigmaMax)
           continue; // kPIDnSigmaMax is a special case
         setTrackSelection(obs, FemtoUniverseTrackSelection::getSelectionType(obs),
                           prefix);
@@ -134,23 +132,23 @@ class FemtoUniverseCutculator
   /// \param prefix Prefix which is added to the name of the Configurable
   void setPIDSelectionFromFile(const char* prefix)
   {
-    std::string PIDnodeName = std::string(prefix) + "PIDspecies";
-    std::string PIDNsigmaNodeName = std::string(prefix) + "PIDnSigmaMax";
+    std::string mPIDnodeName = std::string(prefix) + "PIDspecies";
+    std::string mPIDNsigmaNodeName = std::string(prefix) + "PIDnSigmaMax";
     try {
-      boost::property_tree::ptree& pidNode = mConfigTree.get_child(PIDnodeName);
+      boost::property_tree::ptree& pidNode = mConfigTree.get_child(mPIDnodeName);
       boost::property_tree::ptree& pidValues = pidNode.get_child("values");
-      for (auto& val : pidValues) {
+      for (const auto& val : pidValues) {
         mPIDspecies.push_back(
           static_cast<o2::track::PID::ID>(std::stoi(val.second.data())));
       }
-      boost::property_tree::ptree& pidNsigmaNode = mConfigTree.get_child(PIDNsigmaNodeName);
+      boost::property_tree::ptree& pidNsigmaNode = mConfigTree.get_child(mPIDNsigmaNodeName);
       boost::property_tree::ptree& pidNsigmaValues = pidNsigmaNode.get_child("values");
-      for (auto& val : pidNsigmaValues) {
+      for (const auto& val : pidNsigmaValues) {
         mPIDValues.push_back(std::stof(val.second.data()));
       }
     } catch (const boost::property_tree::ptree_error& e) {
-      std::cout << "PID selection not avalible for these skimmed data."
-                << std::endl;
+      // LOGF(fatal, "PID selection not avalible for these skimmed data.");
+      std::cout << "PID selection not avalible for these skimmed data." << std::endl;
     }
   }
 
@@ -160,8 +158,8 @@ class FemtoUniverseCutculator
   /// \param obs Observable of the track selection
   /// \param type Type of the track selection
   /// \param prefix Prefix which is added to the name of the Configurable
-  void setV0Selection(femtoUniverseV0Selection::V0Sel obs,
-                      femtoUniverseSelection::SelectionType type,
+  void setV0Selection(femto_universe_v0_selection::V0Sel obs,
+                      femto_universe_selection::SelectionType type,
                       const char* prefix)
   {
     auto tmpVec =
@@ -176,13 +174,13 @@ class FemtoUniverseCutculator
   void setV0SelectionFromFile(const char* prefix)
   {
     for (const auto& sel : mConfigTree) {
-      std::string sel_name = sel.first;
-      femtoUniverseV0Selection::V0Sel obs;
-      if (sel_name.find(prefix) != std::string::npos) {
+      std::string selName = sel.first;
+      femto_universe_v0_selection::V0Sel obs;
+      if (selName.find(prefix) != std::string::npos) {
         int index = FemtoUniverseV0Selection::findSelectionIndex(
-          std::string_view(sel_name), prefix);
+          std::string_view(selName), prefix);
         if (index >= 0) {
-          obs = femtoUniverseV0Selection::V0Sel(index);
+          obs = femto_universe_v0_selection::V0Sel(index);
         } else {
           continue;
         }
@@ -202,13 +200,12 @@ class FemtoUniverseCutculator
   /// \param selectionType Selection type under investigation, as defined in the
   /// selection class
   template <typename T1, typename T2>
-  void checkForSelection(aod::femtouniverseparticle::cutContainerType& output,
+  void checkForSelection(aod::femtouniverseparticle::CutContainerType& output,
                          size_t& counter, T1 objectSelection, T2 selectionType,
                          bool SysChecks, float sign)
   {
     /// Output of the available selections and user input
-    std::cout << "Selection: "
-              << objectSelection.getSelectionHelper(selectionType) << " - (";
+    std::cout << "Selection: " << objectSelection.getSelectionHelper(selectionType) << " - (";
     auto selVec = objectSelection.getSelections(selectionType);
     for (auto selIt : selVec) {
       std::cout << selIt.getSelectionValue() << " ";
@@ -255,19 +252,19 @@ class FemtoUniverseCutculator
 
     /// If the input is sane, the selection bit is put together
     if (inputSane) {
-      int internal_index = 0;
+      int internalIndex = 0;
       for (auto sel : selVec) {
         double signOffset;
         switch (sel.getSelectionType()) {
-          case femtoUniverseSelection::SelectionType::kEqual:
+          case femto_universe_selection::SelectionType::kEqual:
             signOffset = 0.;
             break;
-          case (femtoUniverseSelection::SelectionType::kLowerLimit):
-          case (femtoUniverseSelection::SelectionType::kAbsLowerLimit):
+          case (femto_universe_selection::SelectionType::kLowerLimit):
+          case (femto_universe_selection::SelectionType::kAbsLowerLimit):
             signOffset = 1.;
             break;
-          case (femtoUniverseSelection::SelectionType::kUpperLimit):
-          case (femtoUniverseSelection::SelectionType::kAbsUpperLimit):
+          case (femto_universe_selection::SelectionType::kUpperLimit):
+          case (femto_universe_selection::SelectionType::kAbsUpperLimit):
             signOffset = -1.;
             break;
         }
@@ -276,16 +273,16 @@ class FemtoUniverseCutculator
         /// the cut is actually fulfilled
         if (sel.isSelected(input + signOffset * 1.e-6 * input)) {
           output |= 1UL << counter;
-          for (int i = internal_index; i > 0; i--) {
+          for (int i = internalIndex; i > 0; i--) {
             output &= ~(1UL << (counter - i));
           }
         }
         ++counter;
-        ++internal_index;
+        ++internalIndex;
       }
     } else {
-      std::cout << "Choice " << in << " not recognized - repeating"
-                << std::endl;
+      // LOGF(info, "Choice %s not recognized - repeating", in);
+      std::cout << "Choice " << in << " not recognized - repeating" << std::endl;
       checkForSelection(output, counter, objectSelection, selectionType, SysChecks, sign);
     }
   }
@@ -297,10 +294,9 @@ class FemtoUniverseCutculator
   /// container that will be put to the user task incorporating the user choice
   /// of selections
   template <typename T>
-  aod::femtouniverseparticle::cutContainerType iterateSelection(T objectSelection,
-                                                                bool SysChecks, float sign)
+  aod::femtouniverseparticle::CutContainerType iterateSelection(T objectSelection, bool SysChecks, float sign)
   {
-    aod::femtouniverseparticle::cutContainerType output = 0;
+    aod::femtouniverseparticle::CutContainerType output = 0;
     size_t counter = 0;
     auto selectionVariables = objectSelection.getSelectionVariables();
     for (auto selVarIt : selectionVariables) {
@@ -313,18 +309,23 @@ class FemtoUniverseCutculator
   /// selection bit-wise container incorporating the user choice of selections
   void analyseCuts(std::string choice, bool SysChecks = false, float sign = 1)
   {
-    aod::femtouniverseparticle::cutContainerType output = -1;
+    aod::femtouniverseparticle::CutContainerType output = -1;
     if (choice == std::string("T")) {
       output = iterateSelection(mTrackSel, SysChecks, sign);
     } else if (choice == std::string("V")) {
       output = iterateSelection(mV0Sel, SysChecks, sign);
     } else {
-      std::cout << "Option " << choice
-                << " not recognized - available options are (T/V)" << std::endl;
+      // LOGF(info, "Option %s not recognized - available options are (T/V)", choice);
+      std::cout << "Option " << choice << " not recognized - available options are (T/V)" << std::endl;
       return;
     }
-    std::bitset<8 * sizeof(aod::femtouniverseparticle::cutContainerType)>
+    std::bitset<8 * sizeof(aod::femtouniverseparticle::CutContainerType)>
       bitOutput = output;
+    // LOGF(info, "+++++++++++++++++++++++++++++++++");
+    // LOGF(info, "CutCulator has spoken - your selection bit is");
+    // LOGF(info, "%s (bitwise)", bitOutput);
+    // LOGF(info, "%s (number representation)", output);
+    // LOGF(info, "PID for these species is stored:");
     std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
     std::cout << "CutCulator has spoken - your selection bit is" << std::endl;
     std::cout << bitOutput << " (bitwise)" << std::endl;
@@ -332,6 +333,7 @@ class FemtoUniverseCutculator
     std::cout << "PID for these species is stored:" << std::endl;
     int index = 0;
     for (auto id : mPIDspecies) {
+      // LOGF(info, "%s : %d", o2::track::PID::getName(id), index++);
       std::cout << o2::track::PID::getName(id) << " : " << index++ << std::endl;
       if (SysChecks) {
         // Seed the random number generator
@@ -357,6 +359,6 @@ class FemtoUniverseCutculator
   std::vector<float>
     mPIDValues; ///< list of nsigma values for which PID is stored
 };
-} // namespace o2::analysis::femtoUniverse
+} // namespace o2::analysis::femto_universe
 
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECUTCULATOR_H_ */

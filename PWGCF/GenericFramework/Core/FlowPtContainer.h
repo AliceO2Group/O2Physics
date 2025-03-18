@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FlowPtContainer.h
+/// \brief Class to handle angular and transverse momentum correlations
+/// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
+
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_
 
@@ -26,9 +30,9 @@
 
 namespace o2::analysis::genericframework::eventweight
 {
-enum kEventWeight {
-  kUnity,
-  kTuples
+enum EventWeight {
+  UnityWeight,
+  TupleWeight
 };
 };
 
@@ -43,83 +47,88 @@ class FlowPtContainer : public TNamed
   explicit FlowPtContainer(const char* name);
   ~FlowPtContainer();
   FlowPtContainer(const char* name, const char* title);
-  void Initialise(const o2::framework::AxisSpec axis, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
-  void Initialise(int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
-  void Initialise(int nbinsx, double xlow, double xhigh, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
-  void Fill(const double& w, const double& pt);
-  void FillArray(FillType a, FillType b, double c, double d);
-  int GetVectorIndex(const int i, const int j) { return j * (mpar + 1) + i; }
-  void CalculateCorrelations();
-  void CalculateCMTerms();
-  void FillPtProfiles(const Double_t& lMult, const Double_t& rn);
-  void FillVnPtCorrProfiles(const double& lMult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
-  void FillVnDeltaPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
-  void FillVnDeltaPtStdProfiles(const double& centmult, const double& rn);
-  void FillVnPtCorrStdProfiles(const double& centmult, const double& rn);
-  void FillVnPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
+  void initialise(const o2::framework::AxisSpec axis, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
+  void initialise(int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
+  void initialise(int nbinsx, double xlow, double xhigh, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
+  void fill(const double& w, const double& pt);
+  void fillArray(FillType a, FillType b, double c, double d);
+  int getVectorIndex(const int i, const int j) { return j * (mpar + 1) + i; }                                              // index for 2d array for storing pt correlations
+  int getVectorIndex(const int i, const int j, const int k, const int l) { return i + j * 3 + k * 3 * 3 + l * 3 * 3 * 3; } // index for 4d array for std vnpt correlation - size 3x3x3x3
+  void calculateCorrelations();
+  void calculateCMTerms();
+  void fillPtProfiles(const double& lMult, const double& rn);
+  void fillVnPtCorrProfiles(const double& lMult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
+  void fillVnDeltaPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
+  void fillVnDeltaPtStdProfiles(const double& centmult, const double& rn);
+  void fillVnPtCorrStdProfiles(const double& centmult, const double& rn);
+  void fillVnPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
   {
     if (fUseCentralMoments)
-      FillVnDeltaPtProfiles(centmult, flowval, flowtuples, rn, mask);
+      fillVnDeltaPtProfiles(centmult, flowval, flowtuples, rn, mask);
     else
-      FillVnPtCorrProfiles(centmult, flowval, flowtuples, rn, mask);
+      fillVnPtCorrProfiles(centmult, flowval, flowtuples, rn, mask);
   }
-  void FillVnPtStdProfiles(const double& centmult, const double& rn)
+  void fillVnPtStdProfiles(const double& centmult, const double& rn)
   {
     if (fUseCentralMoments)
-      FillVnDeltaPtStdProfiles(centmult, rn);
+      fillVnDeltaPtStdProfiles(centmult, rn);
     else
-      FillVnPtCorrStdProfiles(centmult, rn);
+      fillVnPtCorrStdProfiles(centmult, rn);
   }
-  void FillCMProfiles(const double& lMult, const double& rn);
-  TList* GetCorrList() { return fCorrList; }
-  TList* GetCMTermList() { return fCMTermList; }
-  TList* GetCovList() { return fCovList; }
-  void SetEventWeight(const unsigned int& lWeight) { fEventWeight = lWeight; }
-  void SetUseCentralMoments(bool newval) { fUseCentralMoments = newval; }
-  void SetUseGapMethod(bool newval) { fUseGap = newval; }
+  void fillCMProfiles(const double& lMult, const double& rn);
+  TList* getCorrList() { return fCorrList; }
+  TList* getCMTermList() { return fCMTermList; }
+  TList* getCovList() { return fCovList; }
+  void setEventWeight(const unsigned int& lWeight) { fEventWeight = lWeight; }
+  void setUseCentralMoments(bool newval) { fUseCentralMoments = newval; }
+  void setUseGapMethod(bool newval) { fUseGap = newval; }
   bool usesCentralMoments() { return fUseCentralMoments; }
-  void RebinMulti(Int_t nbins);
-  void RebinMulti(Int_t nbins, double* binedges);
+  bool usesGap() { return fUseGap; }
+  void rebinMulti(int nbins);
+  void rebinMulti(int nbins, double* binedges);
   TH1* getCentralMomentHist(int ind, int m);
   TH1* getCumulantHist(int ind, int m);
   TH1* getCorrHist(int ind, int m);
-  Int_t getMpar() { return mpar; }
+  int getMpar() { return mpar; }
   Long64_t Merge(TCollection* collist);
-  Double_t OrderedAddition(std::vector<double> vec);
-  void CreateCentralMomentList();
-  void CalculateCentralMomentHists(std::vector<TH1*> inh, int ind, int m, TH1* hMpt);
-  void CreateCumulantList();
-  void CalculateCumulantHists(std::vector<TH1*> inh, Int_t ind);
-  void ClearArray();
-  void ClearVector()
+  double orderedAddition(std::vector<double> vec);
+  void createCentralMomentList();
+  void calculateCentralMomentHists(std::vector<TH1*> inh, int ind, int m, TH1* hMpt);
+  void createCumulantList();
+  void calculateCumulantHists(std::vector<TH1*> inh, int ind);
+  void clearVector()
   {
     sumP.clear();
     sumP.resize((mpar + 1) * (mpar + 1));
     cmVal.clear();
     cmDen.clear();
     fillCounter = 0;
+    arr.clear();
+    arr.resize(3 * 3 * 3 * 3, {0.0, 0.0});
+    warr.clear();
+    warr.resize(3 * 3 * 3 * 3, 0.0);
   };
 
- private:
   TList* fCMTermList;
   TList* fCorrList;
   TList* fCovList;
   TList* fCumulantList;
   TList* fCentralMomentList;
-  int mpar;
-  int fillCounter;
-  unsigned int fEventWeight;
-  bool fUseCentralMoments;
-  bool fUseGap;
-  void MergeBSLists(TList* source, TList* target);
+
+  int mpar;                  //!
+  int fillCounter;           //!
+  unsigned int fEventWeight; //!
+  bool fUseCentralMoments;   //!
+  bool fUseGap;              //!
+  void mergeBSLists(TList* source, TList* target);
   TH1* raiseHistToPower(TH1* inh, double p);
-  std::vector<double> sumP;             //!
-  std::vector<double> corrNum;          //!
-  std::vector<double> corrDen;          //!
-  std::vector<double> cmVal;            //!
-  std::vector<double> cmDen;            //!
-  std::complex<double> arr[3][3][3][3]; //!
-  double warr[3][3][3][3];              //!
+  std::vector<double> sumP;              //!
+  std::vector<double> corrNum;           //!
+  std::vector<double> corrDen;           //!
+  std::vector<double> cmVal;             //!
+  std::vector<double> cmDen;             //!
+  std::vector<std::complex<double>> arr; //!
+  std::vector<double> warr;              //!
   template <typename T>
   double getStdAABBCC(T& inarr);
   template <typename T>
@@ -140,8 +149,10 @@ class FlowPtContainer : public TNamed
   double getStdABC(T& inarr);
   template <typename T>
   double getStdABD(T& inarr);
-  static constexpr float fFactorial[9] = {1., 1., 2., 6., 24., 120., 720., 5040., 40320.};
-  static constexpr int fSign[9] = {1, -1, 1, -1, 1, -1, 1, -1, 1};
-  ClassDef(FlowPtContainer, 1);
+
+ private:
+  static constexpr float FactorialArray[9] = {1., 1., 2., 6., 24., 120., 720., 5040., 40320.};
+  static constexpr int SignArray[9] = {1, -1, 1, -1, 1, -1, 1, -1, 1};
+  ClassDef(FlowPtContainer, 2);
 };
 #endif // PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_

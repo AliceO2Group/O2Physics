@@ -18,12 +18,17 @@
 #include <TString.h>
 #include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/VarManager.h"
+#include "CommonConstants/MathConstants.h"
+#include "rapidjson/document.h"
 
 namespace o2::aod
 {
 namespace dqhistograms
 {
 void DefineHistograms(HistogramManager* hm, const char* histClass, const char* groupName, const char* subGroupName = "");
+template <typename T>
+bool ValidateJSONHistogram(T hist);
+void AddHistogramsFromJSON(HistogramManager* hm, const char* json);
 }
 } // namespace o2::aod
 

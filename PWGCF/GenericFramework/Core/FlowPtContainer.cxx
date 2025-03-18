@@ -9,28 +9,37 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "FlowPtContainer.h"
+/// \file FlowPtContainer.cxx
+/// \brief Class to handle angular and transverse momentum correlations
+/// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
 
-FlowPtContainer::FlowPtContainer() : TNamed("name", "name"),
-                                     fCMTermList(0),
+#include "FlowPtContainer.h"
+#include <algorithm>
+#include <vector>
+#include <cstdio>
+
+FlowPtContainer::FlowPtContainer() : fCMTermList(0),
                                      fCorrList(0),
                                      fCovList(0),
                                      fCumulantList(0),
                                      fCentralMomentList(0),
                                      mpar(0),
                                      fillCounter(0),
-                                     fEventWeight(kEventWeight::kUnity),
+                                     fEventWeight(EventWeight::UnityWeight),
                                      fUseCentralMoments(true),
                                      fUseGap(false),
                                      sumP(),
                                      corrNum(),
                                      corrDen(),
                                      cmVal(),
-                                     cmDen() {}
+                                     cmDen(),
+                                     arr(),
+                                     warr() {}
 FlowPtContainer::~FlowPtContainer()
 {
   delete fCMTermList;
   delete fCorrList;
+  delete fCovList;
 };
 FlowPtContainer::FlowPtContainer(const char* name) : TNamed(name, name),
                                                      fCMTermList(0),
@@ -40,14 +49,16 @@ FlowPtContainer::FlowPtContainer(const char* name) : TNamed(name, name),
                                                      fCentralMomentList(0),
                                                      mpar(0),
                                                      fillCounter(0),
-                                                     fEventWeight(kEventWeight::kUnity),
+                                                     fEventWeight(EventWeight::UnityWeight),
                                                      fUseCentralMoments(true),
                                                      fUseGap(false),
                                                      sumP(),
                                                      corrNum(),
                                                      corrDen(),
                                                      cmVal(),
-                                                     cmDen() {}
+                                                     cmDen(),
+                                                     arr(),
+                                                     warr() {}
 FlowPtContainer::FlowPtContainer(const char* name, const char* title) : TNamed(name, title),
                                                                         fCMTermList(0),
                                                                         fCorrList(0),
@@ -56,16 +67,20 @@ FlowPtContainer::FlowPtContainer(const char* name, const char* title) : TNamed(n
                                                                         fCentralMomentList(0),
                                                                         mpar(0),
                                                                         fillCounter(0),
-                                                                        fEventWeight(kEventWeight::kUnity),
+                                                                        fEventWeight(EventWeight::UnityWeight),
                                                                         fUseCentralMoments(true),
                                                                         fUseGap(false),
                                                                         sumP(),
                                                                         corrNum(),
                                                                         corrDen(),
                                                                         cmVal(),
-                                                                        cmDen() {}
-void FlowPtContainer::Initialise(const o2::framework::AxisSpec axis, const int& m, const GFWCorrConfigs& configs, const int& nsub)
+                                                                        cmDen(),
+                                                                        arr(),
+                                                                        warr() {}
+void FlowPtContainer::initialise(const o2::framework::AxisSpec axis, const int& m, const GFWCorrConfigs& configs, const int& nsub)
 {
+  arr.resize(3 * 3 * 3 * 3);
+  warr.resize(3 * 3 * 3 * 3);
   if (!mpar)
     mpar = m;
   std::vector<double> multiBins = axis.binEdges;
@@ -73,7 +88,7 @@ void FlowPtContainer::Initialise(const o2::framework::AxisSpec axis, const int& 
   if (nMultiBins <= 0)
     nMultiBins = multiBins.size() - 1;
   if (nMultiBins <= 0) {
-    printf("Multiplicity axis does not exist");
+    LOGF(warning, "Multiplicity axis does not exist");
     return;
   }
   if (fCMTermList)
@@ -141,11 +156,13 @@ void FlowPtContainer::Initialise(const o2::framework::AxisSpec axis, const int& 
     for (int i = 0; i < fCovList->GetEntries(); ++i)
       dynamic_cast<BootstrapProfile*>(fCovList->At(i))->InitializeSubsamples(nsub);
   }
-  printf("Container %s initialized with m = %i\n and %i subsamples", this->GetName(), mpar, nsub);
+  LOGF(info, "Container %s initialized with m = %i\n and %i subsamples", this->GetName(), mpar, nsub);
   return;
 };
-void FlowPtContainer::Initialise(int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs, const int& nsub)
+void FlowPtContainer::initialise(int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs, const int& nsub)
 {
+  arr.resize(3 * 3 * 3 * 3);
+  warr.resize(3 * 3 * 3 * 3);
   if (!mpar)
     mpar = m;
   if (fCMTermList)
@@ -156,6 +173,10 @@ void FlowPtContainer::Initialise(int nbinsx, double* xbins, const int& m, const 
     delete fCorrList;
   fCorrList = new TList();
   fCorrList->SetOwner(kTRUE);
+  if (fCovList)
+    delete fCovList;
+  fCovList = new TList();
+  fCovList->SetOwner(kTRUE);
   for (int m = 0; m < mpar; ++m) {
     fCorrList->Add(new BootstrapProfile(Form("mpt%i", m + 1), Form("mpt%i", m + 1), nbinsx, xbins));
   }
@@ -208,10 +229,12 @@ void FlowPtContainer::Initialise(int nbinsx, double* xbins, const int& m, const 
     for (int i = 0; i < fCovList->GetEntries(); ++i)
       dynamic_cast<BootstrapProfile*>(fCovList->At(i))->InitializeSubsamples(nsub);
   }
-  printf("Container %s initialized with m = %i\n", this->GetName(), mpar);
+  LOGF(info, "Container %s initialized with m = %i\n", this->GetName(), mpar);
 };
-void FlowPtContainer::Initialise(int nbinsx, double xlow, double xhigh, const int& m, const GFWCorrConfigs& configs, const int& nsub)
+void FlowPtContainer::initialise(int nbinsx, double xlow, double xhigh, const int& m, const GFWCorrConfigs& configs, const int& nsub)
 {
+  arr.resize(3 * 3 * 3 * 3);
+  warr.resize(3 * 3 * 3 * 3);
   if (!mpar)
     mpar = m;
   if (fCMTermList)
@@ -222,6 +245,10 @@ void FlowPtContainer::Initialise(int nbinsx, double xlow, double xhigh, const in
     delete fCorrList;
   fCorrList = new TList();
   fCorrList->SetOwner(kTRUE);
+  if (fCovList)
+    delete fCovList;
+  fCovList = new TList();
+  fCovList->SetOwner(kTRUE);
   for (int m = 0; m < mpar; ++m) {
     fCorrList->Add(new BootstrapProfile(Form("mpt%i", m + 1), Form("mpt%i", m + 1), nbinsx, xlow, xhigh));
   }
@@ -274,16 +301,16 @@ void FlowPtContainer::Initialise(int nbinsx, double xlow, double xhigh, const in
     for (int i = 0; i < fCovList->GetEntries(); ++i)
       dynamic_cast<BootstrapProfile*>(fCovList->At(i))->InitializeSubsamples(nsub);
   }
-  printf("Container %s initialized with m = %i\n", this->GetName(), mpar);
+  LOGF(info, "Container %s initialized with m = %i\n", this->GetName(), mpar);
 };
-void FlowPtContainer::Fill(const double& w, const double& pt)
+void FlowPtContainer::fill(const double& w, const double& pt)
 {
   for (size_t i = 0; i < sumP.size(); ++i) {
-    sumP[i] += pow(w, i % (mpar + 1)) * pow(pt, i / (mpar + 1));
+    sumP[i] += std::pow(w, i % (mpar + 1)) * std::pow(pt, i / (mpar + 1));
   }
   return;
 }
-void FlowPtContainer::CalculateCorrelations()
+void FlowPtContainer::calculateCorrelations()
 {
   corrNum.clear();
   corrNum.resize(mpar + 1, 0);
@@ -297,11 +324,11 @@ void FlowPtContainer::CalculateCorrelations()
   std::vector<double> valDenum;
   for (int m(1); m <= mpar; ++m) {
     for (int k(1); k <= m; ++k) {
-      valNum.push_back(fSign[k - 1] * corrNum[m - k] * (fFactorial[m - 1] / fFactorial[m - k]) * sumP[GetVectorIndex(k, k)]);
-      valDenum.push_back(fSign[k - 1] * corrDen[m - k] * (fFactorial[m - 1] / fFactorial[m - k]) * sumP[GetVectorIndex(k, 0)]);
+      valNum.push_back(SignArray[k - 1] * corrNum[m - k] * (FactorialArray[m - 1] / FactorialArray[m - k]) * sumP[getVectorIndex(k, k)]);
+      valDenum.push_back(SignArray[k - 1] * corrDen[m - k] * (FactorialArray[m - 1] / FactorialArray[m - k]) * sumP[getVectorIndex(k, 0)]);
     }
-    sumNum = OrderedAddition(valNum);
-    sumDenum = OrderedAddition(valDenum);
+    sumNum = orderedAddition(valNum);
+    sumDenum = orderedAddition(valDenum);
     valNum.clear();
     valDenum.clear();
 
@@ -310,16 +337,16 @@ void FlowPtContainer::CalculateCorrelations()
   }
   return;
 }
-void FlowPtContainer::FillPtProfiles(const double& centmult, const double& rn)
+void FlowPtContainer::fillPtProfiles(const double& centmult, const double& rn)
 {
   for (int m = 1; m <= mpar; ++m) {
     if (corrDen[m] != 0) {
-      dynamic_cast<BootstrapProfile*>(fCorrList->At(m - 1))->FillProfile(centmult, corrNum[m] / corrDen[m], (fEventWeight == kEventWeight::kUnity) ? 1.0 : corrDen[m], rn);
+      dynamic_cast<BootstrapProfile*>(fCorrList->At(m - 1))->FillProfile(centmult, corrNum[m] / corrDen[m], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : corrDen[m], rn);
     }
   }
   return;
 }
-void FlowPtContainer::FillVnPtCorrProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
+void FlowPtContainer::fillVnPtCorrProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
 {
   if (!mask) {
     return;
@@ -329,13 +356,13 @@ void FlowPtContainer::FillVnPtCorrProfiles(const double& centmult, const double&
       continue;
     }
     if (corrDen[m] != 0) {
-      dynamic_cast<BootstrapProfile*>(fCovList->At(fillCounter))->FillProfile(centmult, flowval * corrNum[m] / corrDen[m], (fEventWeight == kUnity) ? 1.0 : flowtuples * corrDen[m], rn);
+      dynamic_cast<BootstrapProfile*>(fCovList->At(fillCounter))->FillProfile(centmult, flowval * corrNum[m] / corrDen[m], (fEventWeight == UnityWeight) ? 1.0 : flowtuples * corrDen[m], rn);
     }
     ++fillCounter;
   }
   return;
 }
-void FlowPtContainer::FillVnDeltaPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
+void FlowPtContainer::fillVnDeltaPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
 {
   if (!mask) {
     return;
@@ -345,171 +372,154 @@ void FlowPtContainer::FillVnDeltaPtProfiles(const double& centmult, const double
       continue;
     for (auto i = 0; i <= m; ++i) {
       if (cmDen[m] != 0) {
-        dynamic_cast<BootstrapProfile*>(fCovList->At(fillCounter))->FillProfile(centmult, flowval * ((i == m) ? cmVal[0] : cmVal[m * (m - 1) / 2 + (m - i)]), (fEventWeight == kUnity) ? 1.0 : flowtuples * cmDen[m], rn);
+        dynamic_cast<BootstrapProfile*>(fCovList->At(fillCounter))->FillProfile(centmult, flowval * ((i == m) ? cmVal[0] : cmVal[m * (m - 1) / 2 + i + 1]), (fEventWeight == UnityWeight) ? 1.0 : flowtuples * cmDen[m], rn);
       }
       ++fillCounter;
     }
   }
   return;
 }
-void FlowPtContainer::FillVnPtCorrStdProfiles(const double& centmult, const double& rn)
+void FlowPtContainer::fillVnPtCorrStdProfiles(const double& centmult, const double& rn)
 {
   double wAABBCC = getStdAABBCC(warr);
   if (wAABBCC != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(0))->FillProfile(centmult, getStdAABBCC(arr) / wAABBCC, (fEventWeight == kUnity) ? 1.0 : wAABBCC, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(0))->FillProfile(centmult, getStdAABBCC(arr) / wAABBCC, (fEventWeight == UnityWeight) ? 1.0 : wAABBCC, rn);
   double wAABBC = getStdAABBC(warr);
   if (wAABBC != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(1))->FillProfile(centmult, getStdAABBCC(arr) / wAABBC, (fEventWeight == kUnity) ? 1.0 : wAABBC, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(1))->FillProfile(centmult, getStdAABBCC(arr) / wAABBC, (fEventWeight == UnityWeight) ? 1.0 : wAABBC, rn);
   double wABCC = getStdAABBC(warr);
   if (wABCC != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(2))->FillProfile(centmult, getStdABCC(arr) / wABCC, (fEventWeight == kUnity) ? 1.0 : wABCC, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(2))->FillProfile(centmult, getStdABCC(arr) / wABCC, (fEventWeight == UnityWeight) ? 1.0 : wABCC, rn);
   double wABC = getStdABC(warr);
   if (wABC != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(3))->FillProfile(centmult, getStdABC(arr) / wABC, (fEventWeight == kUnity) ? 1.0 : wABC, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(3))->FillProfile(centmult, getStdABC(arr) / wABC, (fEventWeight == UnityWeight) ? 1.0 : wABC, rn);
   return;
 }
-void FlowPtContainer::FillVnDeltaPtStdProfiles(const double& centmult, const double& rn)
+void FlowPtContainer::fillVnDeltaPtStdProfiles(const double& centmult, const double& rn)
 {
   double wAABBCC = getStdAABBCC(warr);
   if (wAABBCC != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(0))->FillProfile(centmult, getStdAABBCC(arr) / wAABBCC, (fEventWeight == kUnity) ? 1.0 : wAABBCC, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(0))->FillProfile(centmult, getStdAABBCC(arr) / wAABBCC, (fEventWeight == UnityWeight) ? 1.0 : wAABBCC, rn);
   double wAABBCD = getStdAABBCD(warr);
   if (wAABBCD != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(1))->FillProfile(centmult, getStdAABBCD(arr) / wAABBCD, (fEventWeight == kUnity) ? 1.0 : wAABBCD, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(1))->FillProfile(centmult, getStdAABBCD(arr) / wAABBCD, (fEventWeight == UnityWeight) ? 1.0 : wAABBCD, rn);
   double wAABBDD = getStdAABBDD(warr);
   if (wAABBDD != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(2))->FillProfile(centmult, getStdAABBDD(arr) / wAABBDD, (fEventWeight == kUnity) ? 1.0 : wAABBDD, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(2))->FillProfile(centmult, getStdAABBDD(arr) / wAABBDD, (fEventWeight == UnityWeight) ? 1.0 : wAABBDD, rn);
 
   double wAABBC = getStdAABBC(warr);
   if (wAABBC != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(3))->FillProfile(centmult, getStdAABBC(arr) / wAABBC, (fEventWeight == kUnity) ? 1.0 : wAABBC, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(3))->FillProfile(centmult, getStdAABBC(arr) / wAABBC, (fEventWeight == UnityWeight) ? 1.0 : wAABBC, rn);
   double wAABBD = getStdAABBD(warr);
   if (wAABBD != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(4))->FillProfile(centmult, getStdAABBD(arr) / wAABBD, (fEventWeight == kUnity) ? 1.0 : wAABBD, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(4))->FillProfile(centmult, getStdAABBD(arr) / wAABBD, (fEventWeight == UnityWeight) ? 1.0 : wAABBD, rn);
 
   double wABCC = getStdABCC(warr);
   if (wABCC != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(5))->FillProfile(centmult, getStdABCC(arr) / wABCC, (fEventWeight == kUnity) ? 1.0 : wABCC, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(5))->FillProfile(centmult, getStdABCC(arr) / wABCC, (fEventWeight == UnityWeight) ? 1.0 : wABCC, rn);
   double wABCD = getStdABCD(warr);
   if (wABCD != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(6))->FillProfile(centmult, getStdABCD(arr) / wABCD, (fEventWeight == kUnity) ? 1.0 : wABCD, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(6))->FillProfile(centmult, getStdABCD(arr) / wABCD, (fEventWeight == UnityWeight) ? 1.0 : wABCD, rn);
   double wABDD = getStdABDD(warr);
   if (wABDD != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(7))->FillProfile(centmult, getStdABDD(arr) / wABDD, (fEventWeight == kUnity) ? 1.0 : wABDD, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(7))->FillProfile(centmult, getStdABDD(arr) / wABDD, (fEventWeight == UnityWeight) ? 1.0 : wABDD, rn);
 
   double wABC = getStdABC(warr);
   if (wABC != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(8))->FillProfile(centmult, getStdABC(arr) / wABC, (fEventWeight == kUnity) ? 1.0 : wABC, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(8))->FillProfile(centmult, getStdABC(arr) / wABC, (fEventWeight == UnityWeight) ? 1.0 : wABC, rn);
   double wABD = getStdABD(warr);
   if (wABD != 0)
-    dynamic_cast<BootstrapProfile*>(fCovList->At(9))->FillProfile(centmult, getStdABD(arr) / wABD, (fEventWeight == kUnity) ? 1.0 : wABD, rn);
+    dynamic_cast<BootstrapProfile*>(fCovList->At(9))->FillProfile(centmult, getStdABD(arr) / wABD, (fEventWeight == UnityWeight) ? 1.0 : wABD, rn);
   return;
 }
-void FlowPtContainer::FillCMProfiles(const double& centmult, const double& rn)
+void FlowPtContainer::fillCMProfiles(const double& centmult, const double& rn)
 {
-  if (sumP[GetVectorIndex(0, 0)] == 0)
+  if (sumP[getVectorIndex(0, 0)] == 0)
     return;
   // 0th order correlation
   cmDen.push_back(1.);
   cmVal.push_back(1.);
 
-  cmDen.push_back(sumP[GetVectorIndex(1, 0)]);
-  cmDen.push_back(sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 0)] - sumP[GetVectorIndex(2, 0)]);
-  cmDen.push_back(sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 0)] - 3 * sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 0)] + 2 * sumP[GetVectorIndex(3, 0)]);
-  cmDen.push_back(sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 0)] - 6 * sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 0)] + 8 * sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(3, 0)] + 3 * sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(2, 0)] - 6 * sumP[GetVectorIndex(4, 0)]);
+  cmDen.push_back(sumP[getVectorIndex(1, 0)]);
+  cmDen.push_back(sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - sumP[getVectorIndex(2, 0)]);
+  cmDen.push_back(sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - 3 * sumP[getVectorIndex(2, 0)] * sumP[getVectorIndex(1, 0)] + 2 * sumP[getVectorIndex(3, 0)]);
+  cmDen.push_back(sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - 6 * sumP[getVectorIndex(2, 0)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] + 8 * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(3, 0)] + 3 * sumP[getVectorIndex(2, 0)] * sumP[getVectorIndex(2, 0)] - 6 * sumP[getVectorIndex(4, 0)]);
   if (mpar < 1 || cmDen[1] == 0)
     return;
-  cmVal.push_back(sumP[GetVectorIndex(1, 1)] / cmDen[1]);
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(0))->FillProfile(centmult, cmVal[1], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[0], rn);
-  if (mpar < 2 || sumP[GetVectorIndex(2, 0)] == 0 || cmDen[2] == 0)
+  cmVal.push_back(sumP[getVectorIndex(1, 1)] / cmDen[1]);
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(0))->FillProfile(centmult, cmVal[1], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[1], rn);
+  if (mpar < 2 || sumP[getVectorIndex(2, 0)] == 0 || cmDen[2] == 0)
     return;
-  cmVal.push_back(1 / cmDen[2] * (sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 1)] - sumP[GetVectorIndex(2, 2)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(1))->FillProfile(centmult, cmVal[2], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[1], rn);
-  cmVal.push_back(-2 * 1 / cmDen[2] * (sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 1)] - sumP[GetVectorIndex(2, 1)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(2))->FillProfile(centmult, cmVal[3], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[1], rn);
-  if (mpar < 3 || sumP[GetVectorIndex(3, 0)] == 0 || cmDen[3] == 0)
+  cmVal.push_back(1 / cmDen[2] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] - sumP[getVectorIndex(2, 2)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(1))->FillProfile(centmult, cmVal[2], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[2], rn);
+  cmVal.push_back(-2 * 1 / cmDen[2] * (sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 1)] - sumP[getVectorIndex(2, 1)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(2))->FillProfile(centmult, cmVal[3], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[2], rn);
+  if (mpar < 3 || sumP[getVectorIndex(3, 0)] == 0 || cmDen[3] == 0)
     return;
-  cmVal.push_back(1 / cmDen[3] * (sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 1)] - 3 * sumP[GetVectorIndex(2, 2)] * sumP[GetVectorIndex(1, 1)] + 2 * sumP[GetVectorIndex(3, 3)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(3))->FillProfile(centmult, cmVal[4], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[2], rn);
-  cmVal.push_back(-3 * 1 / cmDen[3] * (sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 0)] - 2 * sumP[GetVectorIndex(2, 1)] * sumP[GetVectorIndex(1, 1)] + 2 * sumP[GetVectorIndex(3, 2)] - sumP[GetVectorIndex(2, 2)] * sumP[GetVectorIndex(1, 0)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(4))->FillProfile(centmult, cmVal[5], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[2], rn);
-  cmVal.push_back(3 * 1 / cmDen[3] * (sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 0)] - 2 * sumP[GetVectorIndex(2, 1)] * sumP[GetVectorIndex(1, 0)] + 2 * sumP[GetVectorIndex(3, 1)] - sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(2, 0)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(5))->FillProfile(centmult, cmVal[6], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[2], rn);
-  if (mpar < 4 || sumP[GetVectorIndex(4, 0)] == 0 || cmDen[4] == 0)
+  cmVal.push_back(1 / cmDen[3] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] - 3 * sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(1, 1)] + 2 * sumP[getVectorIndex(3, 3)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(3))->FillProfile(centmult, cmVal[4], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[3], rn);
+  cmVal.push_back(-3 * 1 / cmDen[3] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] - 2 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(1, 1)] + 2 * sumP[getVectorIndex(3, 2)] - sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(1, 0)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(4))->FillProfile(centmult, cmVal[5], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[3], rn);
+  cmVal.push_back(3 * 1 / cmDen[3] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - 2 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(1, 0)] + 2 * sumP[getVectorIndex(3, 1)] - sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(2, 0)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(5))->FillProfile(centmult, cmVal[6], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[3], rn);
+  if (mpar < 4 || sumP[getVectorIndex(4, 0)] == 0 || cmDen[4] == 0)
     return;
-  cmVal.push_back(1 / cmDen[4] * (sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 1)] - 6 * sumP[GetVectorIndex(2, 2)] * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 1)] + 3 * sumP[GetVectorIndex(2, 2)] * sumP[GetVectorIndex(2, 2)] + 8 * sumP[GetVectorIndex(3, 3)] * sumP[GetVectorIndex(1, 1)] - 6 * sumP[GetVectorIndex(4, 4)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(6))->FillProfile(centmult, cmVal[7], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[3], rn);
-  cmVal.push_back(-4 * 1 / cmDen[4] * (sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 0)] - 3 * sumP[GetVectorIndex(2, 2)] * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 0)] - 3 * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(2, 1)] + 3 * sumP[GetVectorIndex(2, 2)] * sumP[GetVectorIndex(2, 1)] + 6 * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(3, 2)] - 6 * sumP[GetVectorIndex(4, 3)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(7))->FillProfile(centmult, cmVal[8], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[3], rn);
-  cmVal.push_back(6 * 1 / cmDen[4] * (sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 0)] - sumP[GetVectorIndex(2, 2)] * sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 0)] - sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 1)] + sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(2, 2)] - 4 * sumP[GetVectorIndex(2, 1)] * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 0)] + 4 * sumP[GetVectorIndex(3, 2)] * sumP[GetVectorIndex(1, 0)] + 4 * sumP[GetVectorIndex(3, 1)] * sumP[GetVectorIndex(1, 1)] + 2 * sumP[GetVectorIndex(2, 1)] * sumP[GetVectorIndex(2, 1)] - 6 * sumP[GetVectorIndex(4, 2)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(8))->FillProfile(centmult, cmVal[9], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[3], rn);
-  cmVal.push_back(-4 * 1 / cmDen[4] * (sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 0)] - 3 * sumP[GetVectorIndex(2, 1)] * sumP[GetVectorIndex(1, 0)] * sumP[GetVectorIndex(1, 0)] - 3 * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(2, 0)] * sumP[GetVectorIndex(1, 0)] + 3 * sumP[GetVectorIndex(2, 1)] * sumP[GetVectorIndex(2, 0)] + 2 * sumP[GetVectorIndex(1, 1)] * sumP[GetVectorIndex(3, 0)] + 6 * sumP[GetVectorIndex(3, 1)] * sumP[GetVectorIndex(1, 0)] - 6 * sumP[GetVectorIndex(4, 1)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(9))->FillProfile(centmult, cmVal[10], (fEventWeight == kEventWeight::kUnity) ? 1.0 : cmDen[3], rn);
+  cmVal.push_back(1 / cmDen[4] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] - 6 * sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] + 3 * sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(2, 2)] + 8 * sumP[getVectorIndex(3, 3)] * sumP[getVectorIndex(1, 1)] - 6 * sumP[getVectorIndex(4, 4)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(6))->FillProfile(centmult, cmVal[7], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[4], rn);
+  cmVal.push_back(-4 * 1 / cmDen[4] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] - 3 * sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] - 3 * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(2, 1)] + 3 * sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(2, 1)] + 6 * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(3, 2)] - 6 * sumP[getVectorIndex(4, 3)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(7))->FillProfile(centmult, cmVal[8], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[4], rn);
+  cmVal.push_back(6 * 1 / cmDen[4] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - sumP[getVectorIndex(2, 0)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] + sumP[getVectorIndex(2, 0)] * sumP[getVectorIndex(2, 2)] - 4 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] + 4 * sumP[getVectorIndex(3, 2)] * sumP[getVectorIndex(1, 0)] + 4 * sumP[getVectorIndex(3, 1)] * sumP[getVectorIndex(1, 1)] + 2 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(2, 1)] - 6 * sumP[getVectorIndex(4, 2)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(8))->FillProfile(centmult, cmVal[9], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[4], rn);
+  cmVal.push_back(-4 * 1 / cmDen[4] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - 3 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - 3 * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(2, 0)] * sumP[getVectorIndex(1, 0)] + 3 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(2, 0)] + 2 * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(3, 0)] + 6 * sumP[getVectorIndex(3, 1)] * sumP[getVectorIndex(1, 0)] - 6 * sumP[getVectorIndex(4, 1)]));
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(9))->FillProfile(centmult, cmVal[10], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[4], rn);
   return;
 }
-void FlowPtContainer::FillArray(FillType a, FillType b, double c, double d)
+void FlowPtContainer::fillArray(FillType a, FillType b, double c, double d)
 {
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      for (int k = 0; k < 3; ++k) {
-        for (int l = 0; l < 3; ++l) {
-          if (std::holds_alternative<std::complex<double>>(a) && std::holds_alternative<std::complex<double>>(b)) {
-            arr[i][j][k][l] += pow(std::get<0>(a), i) * pow(std::get<0>(b), j) * pow(c, k) * pow(d, l);
-          } else if (std::holds_alternative<double>(a) && std::holds_alternative<double>(b)) {
-            warr[i][j][k][l] += pow(std::get<1>(a), i) * pow(std::get<1>(b), j) * pow(c, k) * pow(d, l);
-          } else {
-            LOGF(error, "FillType variant should hold same type for a and b during single function c");
-          }
-        }
-      }
+  for (int idx = 0; idx < 81; ++idx) {
+    int i = idx % 3;
+    int j = ((idx - i) / 3) % 3;
+    int k = ((idx - j * 3 - i) / 9) % 3;
+    int l = ((idx - k * 9 - j * 3 - i) / 27) % 3;
+    if (std::holds_alternative<std::complex<double>>(a) && std::holds_alternative<std::complex<double>>(b)) {
+      arr[idx] += std::pow(std::get<0>(a), i) * std::pow(std::get<0>(b), j) * std::pow(c, k) * std::pow(d, l);
+    } else if (std::holds_alternative<double>(a) && std::holds_alternative<double>(b)) {
+      warr[idx] += std::pow(std::get<1>(a), i) * std::pow(std::get<1>(b), j) * std::pow(c, k) * std::pow(d, l);
+    } else {
+      LOGF(error, "FillType variant should hold same type for a and b during single function c");
     }
   }
-  return;
-}
-void FlowPtContainer::ClearArray()
-{
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      for (int k = 0; k < 3; ++k) {
-        for (int l = 0; l < 3; ++l) {
-          arr[i][j][k][l] = {0.0, 0.0};
-          warr[i][j][k][l] = 0.0;
-        }
-      }
-    }
-  }
-
   return;
 }
 template <typename T>
 double FlowPtContainer::getStdAABBCC(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> c = inarr[0][0][1][0];
-  std::complex<double> aa = inarr[2][0][0][0];
-  std::complex<double> bb = inarr[0][2][0][0];
-  std::complex<double> cc = inarr[0][0][2][0];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ac = inarr[1][0][1][0];
-  std::complex<double> bc = inarr[0][1][1][0];
-  std::complex<double> aab = inarr[2][1][0][0];
-  std::complex<double> aac = inarr[2][0][1][0];
-  std::complex<double> abb = inarr[1][2][0][0];
-  std::complex<double> acc = inarr[1][0][2][0];
-  std::complex<double> abc = inarr[1][1][1][0];
-  std::complex<double> bbc = inarr[0][2][1][0];
-  std::complex<double> bcc = inarr[0][1][2][0];
-  std::complex<double> aabb = inarr[2][2][0][0];
-  std::complex<double> aacc = inarr[2][0][2][0];
-  std::complex<double> aabc = inarr[2][1][1][0];
-  std::complex<double> abbc = inarr[1][2][1][0];
-  std::complex<double> abcc = inarr[1][1][2][0];
-  std::complex<double> bbcc = inarr[0][2][2][0];
-  std::complex<double> aabbc = inarr[2][2][1][0];
-  std::complex<double> aabcc = inarr[2][1][2][0];
-  std::complex<double> abbcc = inarr[0][0][0][0];
-  std::complex<double> aabbcc = inarr[2][2][2][0];
+  std::complex<double> a = inarr[getVectorIndex(1, 0, 0, 0)];
+  std::complex<double> b = inarr[getVectorIndex(0, 1, 0, 0)];
+  std::complex<double> c = inarr[getVectorIndex(0, 0, 1, 0)];
+  std::complex<double> aa = inarr[getVectorIndex(2, 0, 0, 0)];
+  std::complex<double> bb = inarr[getVectorIndex(0, 2, 0, 0)];
+  std::complex<double> cc = inarr[getVectorIndex(0, 0, 2, 0)];
+  std::complex<double> ab = inarr[getVectorIndex(1, 1, 0, 0)];
+  std::complex<double> ac = inarr[getVectorIndex(1, 0, 1, 0)];
+  std::complex<double> bc = inarr[getVectorIndex(0, 1, 1, 0)];
+  std::complex<double> aab = inarr[getVectorIndex(2, 1, 0, 0)];
+  std::complex<double> aac = inarr[getVectorIndex(2, 0, 1, 0)];
+  std::complex<double> abb = inarr[getVectorIndex(1, 2, 0, 0)];
+  std::complex<double> acc = inarr[getVectorIndex(1, 0, 2, 0)];
+  std::complex<double> abc = inarr[getVectorIndex(1, 1, 1, 0)];
+  std::complex<double> bbc = inarr[getVectorIndex(0, 2, 1, 0)];
+  std::complex<double> bcc = inarr[getVectorIndex(0, 1, 2, 0)];
+  std::complex<double> aabb = inarr[getVectorIndex(2, 2, 0, 0)];
+  std::complex<double> aacc = inarr[getVectorIndex(2, 0, 2, 0)];
+  std::complex<double> aabc = inarr[getVectorIndex(2, 1, 1, 0)];
+  std::complex<double> abbc = inarr[getVectorIndex(1, 2, 1, 0)];
+  std::complex<double> abcc = inarr[getVectorIndex(1, 1, 2, 0)];
+  std::complex<double> bbcc = inarr[getVectorIndex(0, 2, 2, 0)];
+  std::complex<double> aabbc = inarr[getVectorIndex(2, 2, 1, 0)];
+  std::complex<double> aabcc = inarr[getVectorIndex(2, 1, 2, 0)];
+  std::complex<double> abbcc = inarr[getVectorIndex(1, 2, 2, 0)];
+  std::complex<double> aabbcc = inarr[getVectorIndex(2, 2, 2, 0)];
   return (a * a * b * b * c * c - aa * b * b * c * c - a * a * bb * c * c - a * a * b * b * cc - 4. * a * ab * b * c * c -
           4. * a * ac * b * b * c - 4. * a * a * b * bc * c + 4. * aab * b * c * c + 4. * aac * b * b * c +
           4. * a * abb * c * c + 4. * a * acc * b * b + 4. * a * a * bbc * c + 4. * a * a * b * bcc +
@@ -529,41 +539,41 @@ double FlowPtContainer::getStdAABBCC(T& inarr)
 template <typename T>
 double FlowPtContainer::getStdAABBCD(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> c = inarr[0][0][1][0];
-  std::complex<double> d = inarr[0][0][0][1];
-  std::complex<double> aa = inarr[2][0][0][0];
-  std::complex<double> bb = inarr[0][2][0][0];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ac = inarr[1][0][1][0];
-  std::complex<double> ad = inarr[1][0][0][1];
-  std::complex<double> bc = inarr[0][1][1][0];
-  std::complex<double> bd = inarr[0][1][0][1];
-  std::complex<double> cd = inarr[0][0][1][1];
-  std::complex<double> aab = inarr[2][1][0][0];
-  std::complex<double> aac = inarr[2][0][1][0];
-  std::complex<double> aad = inarr[2][0][0][1];
-  std::complex<double> abb = inarr[1][2][0][0];
-  std::complex<double> abc = inarr[1][1][1][0];
-  std::complex<double> abd = inarr[1][1][0][1];
-  std::complex<double> acd = inarr[1][0][1][1];
-  std::complex<double> bbc = inarr[0][2][1][0];
-  std::complex<double> bbd = inarr[0][2][0][1];
-  std::complex<double> bcd = inarr[0][1][1][1];
-  std::complex<double> aabb = inarr[2][2][0][0];
-  std::complex<double> aabc = inarr[2][1][1][0];
-  std::complex<double> aabd = inarr[2][1][0][1];
-  std::complex<double> aacd = inarr[2][0][1][1];
-  std::complex<double> abbc = inarr[1][2][1][0];
-  std::complex<double> abbd = inarr[1][2][0][1];
-  std::complex<double> abcd = inarr[0][1][1][1];
-  std::complex<double> bbcd = inarr[0][2][1][1];
-  std::complex<double> aabbc = inarr[2][2][1][0];
-  std::complex<double> aabbd = inarr[2][2][0][1];
-  std::complex<double> aabcd = inarr[2][1][1][1];
-  std::complex<double> abbcd = inarr[1][2][1][1];
-  std::complex<double> aabbcd = inarr[2][2][1][1];
+  std::complex<double> a = inarr[getVectorIndex(1, 0, 0, 0)];
+  std::complex<double> b = inarr[getVectorIndex(0, 1, 0, 0)];
+  std::complex<double> c = inarr[getVectorIndex(0, 0, 1, 0)];
+  std::complex<double> d = inarr[getVectorIndex(0, 0, 0, 1)];
+  std::complex<double> aa = inarr[getVectorIndex(2, 0, 0, 0)];
+  std::complex<double> bb = inarr[getVectorIndex(0, 2, 0, 0)];
+  std::complex<double> ab = inarr[getVectorIndex(1, 1, 0, 0)];
+  std::complex<double> ac = inarr[getVectorIndex(1, 0, 1, 0)];
+  std::complex<double> ad = inarr[getVectorIndex(1, 0, 0, 1)];
+  std::complex<double> bc = inarr[getVectorIndex(0, 1, 1, 0)];
+  std::complex<double> bd = inarr[getVectorIndex(0, 1, 0, 1)];
+  std::complex<double> cd = inarr[getVectorIndex(0, 0, 1, 1)];
+  std::complex<double> aab = inarr[getVectorIndex(2, 1, 0, 0)];
+  std::complex<double> aac = inarr[getVectorIndex(2, 0, 1, 0)];
+  std::complex<double> aad = inarr[getVectorIndex(2, 0, 0, 1)];
+  std::complex<double> abb = inarr[getVectorIndex(1, 2, 0, 0)];
+  std::complex<double> abc = inarr[getVectorIndex(1, 1, 1, 0)];
+  std::complex<double> abd = inarr[getVectorIndex(1, 1, 0, 1)];
+  std::complex<double> acd = inarr[getVectorIndex(1, 0, 1, 1)];
+  std::complex<double> bbc = inarr[getVectorIndex(0, 2, 1, 0)];
+  std::complex<double> bbd = inarr[getVectorIndex(0, 2, 0, 1)];
+  std::complex<double> bcd = inarr[getVectorIndex(0, 1, 1, 1)];
+  std::complex<double> aabb = inarr[getVectorIndex(2, 2, 0, 0)];
+  std::complex<double> aabc = inarr[getVectorIndex(2, 1, 1, 0)];
+  std::complex<double> aabd = inarr[getVectorIndex(2, 1, 0, 1)];
+  std::complex<double> aacd = inarr[getVectorIndex(2, 0, 1, 1)];
+  std::complex<double> abbc = inarr[getVectorIndex(1, 2, 1, 0)];
+  std::complex<double> abbd = inarr[getVectorIndex(1, 2, 0, 1)];
+  std::complex<double> abcd = inarr[getVectorIndex(1, 1, 1, 1)];
+  std::complex<double> bbcd = inarr[getVectorIndex(0, 2, 1, 1)];
+  std::complex<double> aabbc = inarr[getVectorIndex(2, 2, 1, 0)];
+  std::complex<double> aabbd = inarr[getVectorIndex(2, 2, 0, 1)];
+  std::complex<double> aabcd = inarr[getVectorIndex(2, 1, 1, 1)];
+  std::complex<double> abbcd = inarr[getVectorIndex(1, 2, 1, 1)];
+  std::complex<double> aabbcd = inarr[getVectorIndex(2, 2, 1, 1)];
   return (-120. * aabbcd + 48. * a * abbcd + 24. * ab * abcd + 16. * abc * abd + 12. * abbd * ac +
           8. * abb * acd + 12. * abbc * ad + 48. * aabcd * b - 24. * a * abcd * b - 8. * abd * ac * b -
           8. * ab * acd * b - 8. * abc * ad * b - 6. * aacd * b * b + 4. * a * acd * b * b + 2. * ac * ad * b * b +
@@ -588,32 +598,32 @@ double FlowPtContainer::getStdAABBCD(T& inarr)
 template <typename T>
 double FlowPtContainer::getStdAABBDD(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> d = inarr[0][0][1][1];
-  std::complex<double> aa = inarr[2][0][0][0];
-  std::complex<double> bb = inarr[0][2][0][0];
-  std::complex<double> dd = inarr[0][0][0][2];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ad = inarr[1][0][0][1];
-  std::complex<double> bd = inarr[0][1][0][1];
-  std::complex<double> aab = inarr[2][1][0][0];
-  std::complex<double> aad = inarr[2][0][0][1];
-  std::complex<double> abb = inarr[1][2][0][0];
-  std::complex<double> add = inarr[1][0][0][2];
-  std::complex<double> abd = inarr[1][1][0][1];
-  std::complex<double> bbd = inarr[0][2][0][1];
-  std::complex<double> bdd = inarr[0][1][0][2];
-  std::complex<double> aabb = inarr[2][2][0][0];
-  std::complex<double> aadd = inarr[2][0][0][2];
-  std::complex<double> aabd = inarr[2][1][0][1];
-  std::complex<double> abbd = inarr[1][2][0][1];
-  std::complex<double> abdd = inarr[1][1][0][2];
-  std::complex<double> bbdd = inarr[0][2][0][2];
-  std::complex<double> aabbd = inarr[2][2][0][1];
-  std::complex<double> aabdd = inarr[2][1][0][2];
-  std::complex<double> abbdd = inarr[0][0][0][2];
-  std::complex<double> aabbdd = inarr[2][2][0][2];
+  std::complex<double> a = inarr[getVectorIndex(1, 0, 0, 0)];
+  std::complex<double> b = inarr[getVectorIndex(0, 1, 0, 0)];
+  std::complex<double> d = inarr[getVectorIndex(0, 0, 0, 1)];
+  std::complex<double> aa = inarr[getVectorIndex(2, 0, 0, 0)];
+  std::complex<double> bb = inarr[getVectorIndex(0, 2, 0, 0)];
+  std::complex<double> dd = inarr[getVectorIndex(0, 0, 0, 2)];
+  std::complex<double> ab = inarr[getVectorIndex(1, 1, 0, 0)];
+  std::complex<double> ad = inarr[getVectorIndex(1, 0, 0, 1)];
+  std::complex<double> bd = inarr[getVectorIndex(0, 1, 0, 1)];
+  std::complex<double> aab = inarr[getVectorIndex(2, 1, 0, 0)];
+  std::complex<double> aad = inarr[getVectorIndex(2, 0, 0, 1)];
+  std::complex<double> abb = inarr[getVectorIndex(1, 2, 0, 0)];
+  std::complex<double> add = inarr[getVectorIndex(1, 0, 0, 2)];
+  std::complex<double> abd = inarr[getVectorIndex(1, 1, 0, 1)];
+  std::complex<double> bbd = inarr[getVectorIndex(0, 2, 0, 1)];
+  std::complex<double> bdd = inarr[getVectorIndex(0, 1, 0, 2)];
+  std::complex<double> aabb = inarr[getVectorIndex(2, 2, 0, 0)];
+  std::complex<double> aadd = inarr[getVectorIndex(2, 0, 0, 2)];
+  std::complex<double> aabd = inarr[getVectorIndex(2, 1, 0, 1)];
+  std::complex<double> abbd = inarr[getVectorIndex(1, 2, 0, 1)];
+  std::complex<double> abdd = inarr[getVectorIndex(1, 1, 0, 2)];
+  std::complex<double> bbdd = inarr[getVectorIndex(0, 2, 0, 2)];
+  std::complex<double> aabbd = inarr[getVectorIndex(2, 2, 0, 1)];
+  std::complex<double> aabdd = inarr[getVectorIndex(2, 1, 0, 2)];
+  std::complex<double> abbdd = inarr[getVectorIndex(1, 2, 0, 2)];
+  std::complex<double> aabbdd = inarr[getVectorIndex(2, 2, 0, 2)];
   return (-120. * aabbdd + 48. * a * abbdd + 16. * abd * abd + 24. * ab * abdd + 24. * abbd * ad +
           8. * abb * add + 48. * aabdd * b - 24. * a * abdd * b - 16. * abd * ad * b - 8. * ab * add * b -
           6. * aadd * b * b + 2. * ad * ad * b * b + 4. * a * add * b * b + 6. * aadd * bb - 2. * ad * ad * bb -
@@ -633,81 +643,81 @@ double FlowPtContainer::getStdAABBDD(T& inarr)
 template <typename T>
 double FlowPtContainer::getStdAABBC(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> c = inarr[0][0][1][0];
-  std::complex<double> aa = inarr[2][0][0][0];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ac = inarr[1][0][1][0];
-  std::complex<double> bb = inarr[0][2][0][0];
-  std::complex<double> bc = inarr[0][1][1][0];
-  std::complex<double> aab = inarr[2][1][0][0];
-  std::complex<double> aac = arr[2][0][1][0];
-  std::complex<double> abb = inarr[1][2][0][0];
-  std::complex<double> abc = inarr[1][1][1][0];
-  std::complex<double> bbc = inarr[0][2][1][0];
-  std::complex<double> aabb = inarr[2][2][0][0];
-  std::complex<double> aabc = inarr[2][1][1][0];
-  std::complex<double> abbc = inarr[1][2][1][0];
-  std::complex<double> aabbc = inarr[2][2][1][0];
+  std::complex<double> a = inarr[getVectorIndex(1, 0, 0, 0)];
+  std::complex<double> b = inarr[getVectorIndex(0, 1, 0, 0)];
+  std::complex<double> c = inarr[getVectorIndex(0, 0, 1, 0)];
+  std::complex<double> aa = inarr[getVectorIndex(2, 0, 0, 0)];
+  std::complex<double> ab = inarr[getVectorIndex(1, 1, 0, 0)];
+  std::complex<double> ac = inarr[getVectorIndex(1, 0, 1, 0)];
+  std::complex<double> bb = inarr[getVectorIndex(0, 2, 0, 0)];
+  std::complex<double> bc = inarr[getVectorIndex(0, 1, 1, 0)];
+  std::complex<double> aab = inarr[getVectorIndex(2, 1, 0, 0)];
+  std::complex<double> aac = inarr[getVectorIndex(2, 0, 1, 0)];
+  std::complex<double> abb = inarr[getVectorIndex(1, 2, 0, 0)];
+  std::complex<double> abc = inarr[getVectorIndex(1, 1, 1, 0)];
+  std::complex<double> bbc = inarr[getVectorIndex(0, 2, 1, 0)];
+  std::complex<double> aabb = inarr[getVectorIndex(2, 2, 0, 0)];
+  std::complex<double> aabc = inarr[getVectorIndex(2, 1, 1, 0)];
+  std::complex<double> abbc = inarr[getVectorIndex(1, 2, 1, 0)];
+  std::complex<double> aabbc = inarr[getVectorIndex(2, 2, 1, 0)];
   return (a * a * b * b * c - aa * b * b * c - a * a * bb * c - 4. * ab * a * b * c - 2. * a * ac * b * b - 2. * a * a * bc * b + 2. * ab * ab * c + 4. * ab * ac * b + 4. * ab * bc * a + 8. * abc * a * b + 4. * aab * b * c + 2. * aac * b * b + 4. * abb * a * c + 2. * bbc * a * a + aa * bb * c + 2. * aa * b * bc + 2. * bb * a * ac - 12. * aabc * b - 12. * abbc * a - 6. * aabb * c - 8. * abc * ab - 2. * bbc * aa - 2. * aac * bb - 4. * aab * bc - 4. * abb * ac + 24. * aabbc).real();
 }
 template <typename T>
 double FlowPtContainer::getStdAABBD(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> d = inarr[0][0][1][0];
-  std::complex<double> aa = inarr[2][0][0][0];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ad = inarr[1][0][1][0];
-  std::complex<double> bb = inarr[0][2][0][0];
-  std::complex<double> bd = inarr[0][1][1][0];
-  std::complex<double> aab = inarr[2][1][0][0];
-  std::complex<double> aad = arr[2][0][1][0];
-  std::complex<double> abb = inarr[1][2][0][0];
-  std::complex<double> abd = inarr[1][1][1][0];
-  std::complex<double> bbd = inarr[0][2][1][0];
-  std::complex<double> aabb = inarr[2][2][0][0];
-  std::complex<double> aabd = inarr[2][1][1][0];
-  std::complex<double> abbd = inarr[1][2][1][0];
-  std::complex<double> aabbd = inarr[2][2][1][0];
+  std::complex<double> a = inarr[getVectorIndex(1, 0, 0, 0)];
+  std::complex<double> b = inarr[getVectorIndex(0, 1, 0, 0)];
+  std::complex<double> d = inarr[getVectorIndex(0, 0, 1, 0)];
+  std::complex<double> aa = inarr[getVectorIndex(2, 0, 0, 0)];
+  std::complex<double> ab = inarr[getVectorIndex(1, 1, 0, 0)];
+  std::complex<double> ad = inarr[getVectorIndex(1, 0, 1, 0)];
+  std::complex<double> bb = inarr[getVectorIndex(0, 2, 0, 0)];
+  std::complex<double> bd = inarr[getVectorIndex(0, 1, 1, 0)];
+  std::complex<double> aab = inarr[getVectorIndex(2, 1, 0, 0)];
+  std::complex<double> aad = inarr[getVectorIndex(2, 0, 1, 0)];
+  std::complex<double> abb = inarr[getVectorIndex(1, 2, 0, 0)];
+  std::complex<double> abd = inarr[getVectorIndex(1, 1, 1, 0)];
+  std::complex<double> bbd = inarr[getVectorIndex(0, 2, 1, 0)];
+  std::complex<double> aabb = inarr[getVectorIndex(2, 2, 0, 0)];
+  std::complex<double> aabd = inarr[getVectorIndex(2, 1, 1, 0)];
+  std::complex<double> abbd = inarr[getVectorIndex(1, 2, 1, 0)];
+  std::complex<double> aabbd = inarr[getVectorIndex(2, 2, 1, 0)];
   return (a * a * b * b * d - aa * b * b * d - a * a * bb * d - 4. * ab * a * b * d - 2. * a * ad * b * b - 2. * a * a * bd * b + 2. * ab * ab * d + 4. * ab * ad * b + 4. * ab * bd * a + 8. * abd * a * b + 4. * aab * b * d + 2. * aad * b * b + 4. * abb * a * d + 2. * bbd * a * a + aa * bb * d + 2. * aa * b * bd + 2. * bb * a * ad - 12. * aabd * b - 12. * abbd * a - 6. * aabb * d - 8. * abd * ab - 2. * bbd * aa - 2. * aad * bb - 4. * aab * bd - 4. * abb * ad + 24. * aabbd).real();
 }
 template <typename T>
 double FlowPtContainer::getStdABCC(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> c = inarr[0][0][1][0];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ac = inarr[1][0][1][0];
-  std::complex<double> bc = inarr[0][1][1][0];
-  std::complex<double> cc = inarr[0][0][2][0];
-  std::complex<double> abc = inarr[1][1][1][0];
-  std::complex<double> acc = inarr[1][0][2][0];
-  std::complex<double> bcc = inarr[0][1][2][0];
-  std::complex<double> abcc = inarr[1][1][2][0];
+  std::complex<double> a = inarr[getVectorIndex(1, 0, 0, 0)];
+  std::complex<double> b = inarr[getVectorIndex(0, 1, 0, 0)];
+  std::complex<double> c = inarr[getVectorIndex(0, 0, 1, 0)];
+  std::complex<double> ab = inarr[getVectorIndex(1, 1, 0, 0)];
+  std::complex<double> ac = inarr[getVectorIndex(1, 0, 1, 0)];
+  std::complex<double> bc = inarr[getVectorIndex(0, 1, 1, 0)];
+  std::complex<double> cc = inarr[getVectorIndex(0, 0, 2, 0)];
+  std::complex<double> abc = inarr[getVectorIndex(1, 1, 1, 0)];
+  std::complex<double> acc = inarr[getVectorIndex(1, 0, 2, 0)];
+  std::complex<double> bcc = inarr[getVectorIndex(0, 1, 2, 0)];
+  std::complex<double> abcc = inarr[getVectorIndex(1, 1, 2, 0)];
   return (a * b * c * c - a * b * cc - 2. * a * bc * c - 2. * ac * b * c - ab * c * c + 2. * acc * b + 2. * a * bcc + 4. * abc * c + ab * cc + 2. * ac * bc - 6. * abcc).real();
 }
 template <typename T>
 double FlowPtContainer::getStdABCD(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> c = inarr[0][0][1][0];
-  std::complex<double> d = inarr[0][0][0][1];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ac = inarr[1][0][1][0];
-  std::complex<double> ad = inarr[1][0][0][1];
-  std::complex<double> bc = inarr[0][1][1][0];
-  std::complex<double> bd = inarr[0][1][0][1];
-  std::complex<double> cd = inarr[0][0][1][1];
-  std::complex<double> abc = inarr[1][1][1][0];
-  std::complex<double> abd = inarr[1][1][0][1];
-  std::complex<double> acd = inarr[1][0][1][1];
-  std::complex<double> bcd = inarr[0][1][1][1];
-  std::complex<double> abcd = inarr[1][1][0][1];
+  std::complex<double> a = inarr[getVectorIndex(1, 0, 0, 0)];
+  std::complex<double> b = inarr[getVectorIndex(0, 1, 0, 0)];
+  std::complex<double> c = inarr[getVectorIndex(0, 0, 1, 0)];
+  std::complex<double> d = inarr[getVectorIndex(0, 0, 0, 1)];
+  std::complex<double> ab = inarr[getVectorIndex(1, 1, 0, 0)];
+  std::complex<double> ac = inarr[getVectorIndex(1, 0, 1, 0)];
+  std::complex<double> ad = inarr[getVectorIndex(1, 0, 0, 1)];
+  std::complex<double> bc = inarr[getVectorIndex(0, 1, 1, 0)];
+  std::complex<double> bd = inarr[getVectorIndex(0, 1, 0, 1)];
+  std::complex<double> cd = inarr[getVectorIndex(0, 0, 1, 1)];
+  std::complex<double> abc = inarr[getVectorIndex(1, 1, 1, 0)];
+  std::complex<double> abd = inarr[getVectorIndex(1, 1, 0, 1)];
+  std::complex<double> acd = inarr[getVectorIndex(1, 0, 1, 1)];
+  std::complex<double> bcd = inarr[getVectorIndex(0, 1, 1, 1)];
+  std::complex<double> abcd = inarr[getVectorIndex(1, 1, 0, 1)];
   return (-6. * abcd + 2. * acd * b + ad * bc + 2. * a * bcd + ac * bd + 2. * abd * c - ad * b * c -
           a * bd * c + ab * cd - a * b * cd + 2. * abc * d - ac * b * d - a * bc * d - ab * c * d +
           a * b * c * d)
@@ -716,44 +726,44 @@ double FlowPtContainer::getStdABCD(T& inarr)
 template <typename T>
 double FlowPtContainer::getStdABDD(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> d = inarr[0][0][0][1];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ad = inarr[1][0][0][1];
-  std::complex<double> bd = inarr[0][1][0][1];
-  std::complex<double> dd = inarr[0][0][0][2];
-  std::complex<double> abd = inarr[1][1][0][1];
-  std::complex<double> add = inarr[1][0][0][2];
-  std::complex<double> bdd = inarr[0][1][0][2];
-  std::complex<double> abdd = inarr[1][1][0][2];
+  std::complex<double> a = inarr[getVectorIndex(1, 0, 0, 0)];
+  std::complex<double> b = inarr[getVectorIndex(0, 1, 0, 0)];
+  std::complex<double> d = inarr[getVectorIndex(0, 0, 0, 1)];
+  std::complex<double> ab = inarr[getVectorIndex(1, 1, 0, 0)];
+  std::complex<double> ad = inarr[getVectorIndex(1, 0, 0, 1)];
+  std::complex<double> bd = inarr[getVectorIndex(0, 1, 0, 1)];
+  std::complex<double> dd = inarr[getVectorIndex(0, 0, 0, 2)];
+  std::complex<double> abd = inarr[getVectorIndex(1, 1, 0, 1)];
+  std::complex<double> add = inarr[getVectorIndex(1, 0, 0, 2)];
+  std::complex<double> bdd = inarr[getVectorIndex(0, 1, 0, 2)];
+  std::complex<double> abdd = inarr[getVectorIndex(1, 1, 0, 2)];
   return (a * b * d * d - a * b * dd - 2. * a * bd * d - 2. * ad * b * d - ab * d * d + 2. * add * b + 2. * a * bdd + 4. * abd * d + ab * dd + 2. * ad * bd - 6. * abdd).real();
 }
 template <typename T>
 double FlowPtContainer::getStdABC(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> c = inarr[0][0][1][0];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ac = inarr[1][0][1][0];
-  std::complex<double> bc = inarr[0][1][1][0];
-  std::complex<double> abc = inarr[1][1][1][0];
+  std::complex<double> a = inarr[getVectorIndex(1, 0, 0, 0)];
+  std::complex<double> b = inarr[getVectorIndex(0, 1, 0, 0)];
+  std::complex<double> c = inarr[getVectorIndex(0, 0, 1, 0)];
+  std::complex<double> ab = inarr[getVectorIndex(1, 1, 0, 0)];
+  std::complex<double> ac = inarr[getVectorIndex(1, 0, 1, 0)];
+  std::complex<double> bc = inarr[getVectorIndex(0, 1, 1, 0)];
+  std::complex<double> abc = inarr[getVectorIndex(1, 1, 1, 0)];
   return (a * b * c - ab * c - ac * b - a * bc + 2. * abc).real();
 }
 template <typename T>
 double FlowPtContainer::getStdABD(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> d = inarr[0][0][0][1];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ad = inarr[1][0][0][1];
-  std::complex<double> bd = inarr[0][1][0][1];
-  std::complex<double> abd = inarr[1][1][0][1];
+  std::complex<double> a = inarr[getVectorIndex(1, 0, 0, 0)];
+  std::complex<double> b = inarr[getVectorIndex(0, 1, 0, 0)];
+  std::complex<double> d = inarr[getVectorIndex(0, 0, 0, 1)];
+  std::complex<double> ab = inarr[getVectorIndex(1, 1, 0, 0)];
+  std::complex<double> ad = inarr[getVectorIndex(1, 0, 0, 1)];
+  std::complex<double> bd = inarr[getVectorIndex(0, 1, 0, 1)];
+  std::complex<double> abd = inarr[getVectorIndex(1, 1, 0, 1)];
   return (a * b * d - ab * d - ad * b - a * bd + 2. * abd).real();
 }
-double FlowPtContainer::OrderedAddition(std::vector<double> vec)
+double FlowPtContainer::orderedAddition(std::vector<double> vec)
 {
   double sum = 0;
   std::sort(vec.begin(), vec.end());
@@ -762,53 +772,53 @@ double FlowPtContainer::OrderedAddition(std::vector<double> vec)
   }
   return sum;
 }
-void FlowPtContainer::RebinMulti(Int_t nbins)
+void FlowPtContainer::rebinMulti(int nbins)
 {
   if (fCMTermList) {
-    for (Int_t i = 0; i < fCMTermList->GetEntries(); i++)
+    for (int i = 0; i < fCMTermList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCMTermList->At(i))->RebinMulti(nbins);
   }
   if (fCorrList) {
-    for (Int_t i = 0; i < fCorrList->GetEntries(); i++)
+    for (int i = 0; i < fCorrList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCorrList->At(i))->RebinMulti(nbins);
   }
   if (fCovList) {
-    for (Int_t i = 0; i < fCovList->GetEntries(); i++)
+    for (int i = 0; i < fCovList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCovList->At(i))->RebinMulti(nbins);
   }
   return;
 }
-void FlowPtContainer::RebinMulti(Int_t nbins, Double_t* binedges)
+void FlowPtContainer::rebinMulti(int nbins, double* binedges)
 {
   if (fCMTermList) {
-    for (Int_t i = 0; i < fCMTermList->GetEntries(); i++)
+    for (int i = 0; i < fCMTermList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCMTermList->At(i))->RebinMulti(nbins, binedges);
   }
   if (fCorrList) {
-    for (Int_t i = 0; i < fCorrList->GetEntries(); i++)
+    for (int i = 0; i < fCorrList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCorrList->At(i))->RebinMulti(nbins, binedges);
   }
   if (fCovList) {
-    for (Int_t i = 0; i < fCovList->GetEntries(); i++)
+    for (int i = 0; i < fCovList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCovList->At(i))->RebinMulti(nbins, binedges);
   }
   return;
 }
 TH1* FlowPtContainer::getCorrHist(int ind, int m)
 {
-  return dynamic_cast<BootstrapProfile*>(fCorrList->FindObject(Form("mpt%i", m + 1)))->getHist(ind);
+  return dynamic_cast<BootstrapProfile*>(fCorrList->FindObject(Form("mpt%i", m)))->getHist(ind);
 }
 TH1* FlowPtContainer::getCentralMomentHist(int ind, int m)
 {
   if (!fCentralMomentList)
-    CreateCentralMomentList();
+    createCentralMomentList();
   if (!fCentralMomentList)
     return 0;
   if (ind + 1 < fCentralMomentList->GetEntries())
     return dynamic_cast<TH1*>(fCentralMomentList->FindObject(Form("cm%i_%i", m, ind)));
   return 0;
 }
-void FlowPtContainer::CreateCentralMomentList()
+void FlowPtContainer::createCentralMomentList()
 {
   if (fCentralMomentList)
     delete fCentralMomentList;
@@ -822,12 +832,12 @@ void FlowPtContainer::CreateCentralMomentList()
         dynamic_cast<BootstrapProfile*>(fCMTermList->FindObject(Form("cm%i_Mpt%i", m, j)))->SetErrorOption("g");
         hTs.push_back(reinterpret_cast<BootstrapProfile*>(fCMTermList->FindObject(Form("cm%i_Mpt%i", m, j)))->getHist(i));
       }
-      CalculateCentralMomentHists(hTs, i, m, hMpt);
+      calculateCentralMomentHists(hTs, i, m, hMpt);
     }
   }
   return;
 }
-void FlowPtContainer::CalculateCentralMomentHists(std::vector<TH1*> inh, int ind, int m, TH1* hMpt)
+void FlowPtContainer::calculateCentralMomentHists(std::vector<TH1*> inh, int ind, int m, TH1* hMpt)
 {
   TH1* reth = reinterpret_cast<TH1*>(inh[0]->Clone(Form("cm%i_%i", m, ind)));
   for (auto i(1); i < m; ++i) {
@@ -843,14 +853,14 @@ void FlowPtContainer::CalculateCentralMomentHists(std::vector<TH1*> inh, int ind
 TH1* FlowPtContainer::getCumulantHist(int ind, int m)
 {
   if (!fCumulantList)
-    CreateCumulantList();
+    createCumulantList();
   if (!fCumulantList)
     return 0;
   if (ind + 1 < fCumulantList->GetEntries())
     return reinterpret_cast<TH1*>(fCumulantList->At((ind + 1) * mpar + m - 1));
   return 0;
 }
-void FlowPtContainer::CreateCumulantList()
+void FlowPtContainer::createCumulantList()
 {
   if (fCumulantList)
     delete fCumulantList;
@@ -863,14 +873,14 @@ void FlowPtContainer::CreateCumulantList()
       dynamic_cast<BootstrapProfile*>(fCorrList->FindObject(Form("mpt%i", j + 1)))->SetErrorOption("g");
       hTs.push_back(reinterpret_cast<BootstrapProfile*>(fCorrList->FindObject(Form("mpt%i", j + 1)))->getHist(i));
     }
-    CalculateCumulantHists(hTs, i);
+    calculateCumulantHists(hTs, i);
   }
   //((BootstrapProfile*)fCorrList->At(0))->PresetWeights(0);
   return;
 }
-void FlowPtContainer::CalculateCumulantHists(std::vector<TH1*> inh, int ind)
+void FlowPtContainer::calculateCumulantHists(std::vector<TH1*> inh, int ind)
 {
-  auto binomial = [&](const int n, const int m) { assert(n >= m); return fFactorial[n]/(fFactorial[m]*fFactorial[n-m]); };
+  auto binomial = [&](const int n, const int m) { assert(n >= m); return FactorialArray[n]/(FactorialArray[m]*FactorialArray[n-m]); };
   for (int m = 1; m <= mpar; ++m) {
     TH1* reth = dynamic_cast<TH1*>(inh[m - 1]->Clone(Form("reth%i_%i", m, ind)));
     // TH1* hWeights = (TH1*)inh[m-1]->Clone(Form("hWeights%i_%i",m,ind));
@@ -892,51 +902,58 @@ Long64_t FlowPtContainer::Merge(TCollection* collist)
   if (!fCorrList || !fCMTermList)
     return 0;
   Long64_t nmerged = 0;
-  TIter all_PTC(collist);
-  FlowPtContainer* l_PTC = 0;
-  while ((l_PTC = dynamic_cast<FlowPtContainer*>(all_PTC()))) {
-    TList* t_CMTerm = l_PTC->fCMTermList;
-    TList* t_Corr = l_PTC->fCorrList;
-    TList* t_Cum = l_PTC->fCumulantList;
-    TList* t_CM = l_PTC->fCentralMomentList;
-    if (t_CMTerm) {
+  TIter allPTC(collist);
+  FlowPtContainer* lPTC = 0;
+  while ((lPTC = dynamic_cast<FlowPtContainer*>(allPTC()))) {
+    TList* tCMTerm = lPTC->fCMTermList;
+    TList* tCorr = lPTC->fCorrList;
+    TList* tCov = lPTC->fCovList;
+    TList* tCum = lPTC->fCumulantList;
+    TList* tCM = lPTC->fCentralMomentList;
+    if (tCMTerm) {
       if (!fCMTermList)
-        fCMTermList = dynamic_cast<TList*>(t_CMTerm->Clone());
+        fCMTermList = dynamic_cast<TList*>(tCMTerm->Clone());
       else
-        MergeBSLists(fCMTermList, t_CMTerm);
+        mergeBSLists(fCMTermList, tCMTerm);
       nmerged++;
     }
-    if (t_Corr) {
+    if (tCorr) {
       if (!fCorrList)
-        fCorrList = dynamic_cast<TList*>(t_Corr->Clone());
+        fCorrList = dynamic_cast<TList*>(tCorr->Clone());
       else
-        MergeBSLists(fCorrList, t_Corr);
+        mergeBSLists(fCorrList, tCorr);
     }
-    if (t_Cum) {
+    if (tCov) {
+      if (!fCovList)
+        fCovList = dynamic_cast<TList*>(tCov->Clone());
+      else
+        mergeBSLists(fCovList, tCov);
+    }
+    if (tCum) {
       if (!fCumulantList)
-        fCumulantList = dynamic_cast<TList*>(t_Cum->Clone());
+        fCumulantList = dynamic_cast<TList*>(tCum->Clone());
       else
-        MergeBSLists(fCumulantList, t_Cum);
+        mergeBSLists(fCumulantList, tCum);
     }
-    if (t_CM) {
+    if (tCM) {
       if (!fCentralMomentList)
-        fCentralMomentList = dynamic_cast<TList*>(t_CM->Clone());
+        fCentralMomentList = dynamic_cast<TList*>(tCM->Clone());
       else
-        MergeBSLists(fCentralMomentList, t_CM);
+        mergeBSLists(fCentralMomentList, tCM);
     }
   }
   return nmerged;
 }
-void FlowPtContainer::MergeBSLists(TList* source, TList* target)
+void FlowPtContainer::mergeBSLists(TList* source, TList* target)
 {
   if (source->GetEntries() != target->GetEntries()) {
-    printf("Number in lists to be merged are not the same, skipping...\n");
+    LOGF(warning, "Number in lists to be merged are not the same, skipping...\n");
     return;
   }
-  for (Int_t i = 0; i < source->GetEntries(); i++) {
-    BootstrapProfile* l_obj = dynamic_cast<BootstrapProfile*>(source->At(i));
-    BootstrapProfile* t_obj = dynamic_cast<BootstrapProfile*>(target->At(i));
-    l_obj->MergeBS(t_obj);
+  for (int i = 0; i < source->GetEntries(); i++) {
+    BootstrapProfile* lObj = dynamic_cast<BootstrapProfile*>(source->At(i));
+    BootstrapProfile* tObj = dynamic_cast<BootstrapProfile*>(target->At(i));
+    lObj->MergeBS(tObj);
   }
 }
 TH1* FlowPtContainer::raiseHistToPower(TH1* inh, double p)
@@ -945,8 +962,8 @@ TH1* FlowPtContainer::raiseHistToPower(TH1* inh, double p)
   reth->SetName(Form("power%.2f_%s", p, inh->GetName()));
   for (int i = 1; i <= inh->GetNbinsX(); i++) {
     if (inh->GetBinContent(i) >= 0 || std::floor(p) == p) {
-      reth->SetBinContent(i, pow(inh->GetBinContent(i), p));
-      reth->SetBinError(i, p * pow(reth->GetBinContent(i), p - 1) * inh->GetBinError(i));
+      reth->SetBinContent(i, std::pow(inh->GetBinContent(i), p));
+      reth->SetBinError(i, p * std::pow(reth->GetBinContent(i), p - 1) * inh->GetBinError(i));
     } else {
       reth->SetBinContent(i, -999);
       reth->SetBinError(i, 0.000000001);

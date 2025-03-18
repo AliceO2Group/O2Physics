@@ -8,12 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
 ///
-/// \file   tofPidMerge.cxx
-/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
+/// \file   pidTOFMerge.cxx
 /// \brief  Task to produce PID tables for TOF split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
+/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 ///
 
 #include <utility>
@@ -70,11 +69,12 @@ struct TOFCalibConfig {
     mTimestamp = opt.cfgTimestamp.value;
     mTimeShiftCCDBPathPos = opt.cfgTimeShiftCCDBPathPos.value;
     mTimeShiftCCDBPathNeg = opt.cfgTimeShiftCCDBPathNeg.value;
+    mTimeShiftCCDBPathPosMC = opt.cfgTimeShiftCCDBPathPosMC.value;
+    mTimeShiftCCDBPathNegMC = opt.cfgTimeShiftCCDBPathNegMC.value;
     mParamFileName = opt.cfgParamFileName.value;
     mParametrizationPath = opt.cfgParametrizationPath.value;
     mReconstructionPass = opt.cfgReconstructionPass.value;
     mReconstructionPassDefault = opt.cfgReconstructionPassDefault.value;
-    mLoadResponseFromCCDB = opt.cfgLoadResponseFromCCDB.value;
     mFatalOnPassNotAvailable = opt.cfgFatalOnPassNotAvailable.value;
     mEnableTimeDependentResponse = opt.cfgEnableTimeDependentResponse.value;
     mCollisionSystem = opt.cfgCollisionSystem.value;
@@ -97,11 +97,12 @@ struct TOFCalibConfig {
     getCfg(initContext, "ccdb-timestamp", mTimestamp, task);
     getCfg(initContext, "timeShiftCCDBPathPos", mTimeShiftCCDBPathPos, task);
     getCfg(initContext, "timeShiftCCDBPathNeg", mTimeShiftCCDBPathNeg, task);
+    getCfg(initContext, "timeShiftCCDBPathPosMC", mTimeShiftCCDBPathPosMC, task);
+    getCfg(initContext, "timeShiftCCDBPathNegMC", mTimeShiftCCDBPathNegMC, task);
     getCfg(initContext, "paramFileName", mParamFileName, task);
     getCfg(initContext, "parametrizationPath", mParametrizationPath, task);
     getCfg(initContext, "reconstructionPass", mReconstructionPass, task);
     getCfg(initContext, "reconstructionPassDefault", mReconstructionPassDefault, task);
-    getCfg(initContext, "loadResponseFromCCDB", mLoadResponseFromCCDB, task);
     getCfg(initContext, "fatalOnPassNotAvailable", mFatalOnPassNotAvailable, task);
     getCfg(initContext, "enableTimeDependentResponse", mEnableTimeDependentResponse, task);
     getCfg(initContext, "collisionSystem", mCollisionSystem, task);
@@ -147,20 +148,25 @@ struct TOFCalibConfig {
             paramCollection.print();
             LOG(fatal) << "Cannot get default pass for calibration " << mReconstructionPassDefault;
           } else {
-            mRespParamsV3.setResolutionParametrization(paramCollection.getPars(mReconstructionPassDefault));
+            if (metadataInfo.isRun3()) {
+              mRespParamsV3.setResolutionParametrization(paramCollection.getPars(mReconstructionPassDefault));
+            } else {
+              mRespParamsV3.setResolutionParametrizationRun2(paramCollection.getPars(mReconstructionPassDefault));
+            }
             mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(mReconstructionPassDefault));
-            mRespParamsV3.printMomentumChargeShiftParameters();
           }
         }
       } else { // Pass is available, load non standard parameters
-        mRespParamsV3.setResolutionParametrization(paramCollection.getPars(mReconstructionPass));
+        if (metadataInfo.isRun3()) {
+          mRespParamsV3.setResolutionParametrization(paramCollection.getPars(mReconstructionPass));
+        } else {
+          mRespParamsV3.setResolutionParametrizationRun2(paramCollection.getPars(mReconstructionPass));
+        }
         mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(mReconstructionPass));
-        mRespParamsV3.printMomentumChargeShiftParameters();
       }
-    } else if (mLoadResponseFromCCDB && !mEnableTimeDependentResponse) { // Loading it from CCDB
+    } else if (!mEnableTimeDependentResponse) { // Loading it from CCDB
       LOG(info) << "Loading initial exp. sigma parametrization from CCDB, using path: " << mParametrizationPath << " for timestamp " << mTimestamp;
-      o2::tof::ParameterCollection* paramCollection = ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp);
-      paramCollection->print();
+      o2::tof::ParameterCollection* paramCollection = ccdb->template getSpecific<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp);
       if (!paramCollection->retrieveParameters(mRespParamsV3, mReconstructionPass)) { // Attempt at loading the parameters with the pass defined
         if (mFatalOnPassNotAvailable) {
           LOG(fatal) << "Pass '" << mReconstructionPass << "' not available in the retrieved CCDB object";
@@ -170,52 +176,58 @@ struct TOFCalibConfig {
             paramCollection->print();
             LOG(fatal) << "Cannot get default pass for calibration " << mReconstructionPassDefault;
           } else {
-            mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPassDefault));
+            if (metadataInfo.isRun3()) {
+              mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPassDefault));
+            } else {
+              mRespParamsV3.setResolutionParametrizationRun2(paramCollection->getPars(mReconstructionPassDefault));
+            }
             mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPassDefault));
-            mRespParamsV3.printMomentumChargeShiftParameters();
           }
         }
       } else { // Pass is available, load non standard parameters
-        mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPass));
+        if (metadataInfo.isRun3()) {
+          mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPass));
+        } else {
+          mRespParamsV3.setResolutionParametrizationRun2(paramCollection->getPars(mReconstructionPass));
+        }
         mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPass));
-        mRespParamsV3.printMomentumChargeShiftParameters();
       }
-    } else {
-      std::unordered_map<std::string, float> m;
-      mRespParamsV3.setResolutionParametrization(m);
     }
 
     // Loading additional calibration objects
-    if (mTimeShiftCCDBPathPos != "") {
-      if (mTimeShiftCCDBPathPos.find(".root") != std::string::npos) {
-        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPathPos, "ccdb_object", true);
-      } else if (!mEnableTimeDependentResponse) {
-        if (mReconstructionPass == "") {
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(mTimeShiftCCDBPathPos, mTimestamp), true);
-        } else {
-          std::map<std::string, std::string> metadata;
-          metadata["RecoPassName"] = mReconstructionPass;
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(mTimeShiftCCDBPathPos, mTimestamp, metadata), true);
-        }
-      }
+    std::map<std::string, std::string> metadata;
+    if (!mReconstructionPass.empty()) {
+      metadata["RecoPassName"] = mReconstructionPass;
     }
-    if (mTimeShiftCCDBPathNeg != "") {
-      if (mTimeShiftCCDBPathNeg.find(".root") != std::string::npos) {
-        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPathNeg, "ccdb_object", false);
-      } else if (!mEnableTimeDependentResponse) {
-        if (mReconstructionPass == "") {
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(mTimeShiftCCDBPathNeg, mTimestamp), false);
-        } else {
-          std::map<std::string, std::string> metadata;
-          metadata["RecoPassName"] = mReconstructionPass;
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(mTimeShiftCCDBPathNeg, mTimestamp, metadata), false);
-        }
+
+    auto updateTimeShift = [&](const std::string& nameShift, bool isPositive) {
+      if (nameShift.empty()) {
+        return;
       }
-    }
+      const bool isFromFile = nameShift.find(".root") != std::string::npos;
+      if (isFromFile) {
+        LOG(info) << "Initializing the time shift for " << (isPositive ? "positive" : "negative") << " from file '" << nameShift << "'";
+        mRespParamsV3.setTimeShiftParameters(nameShift, "ccdb_object", isPositive);
+      } else if (!mEnableTimeDependentResponse) { // If the response is fixed fetch it at the init time
+        LOG(info) << "Initializing the time shift for " << (isPositive ? "positive" : "negative")
+                  << " from ccdb '" << nameShift << "' and timestamp " << mTimestamp
+                  << " and pass '" << mReconstructionPass << "'";
+        ccdb->setFatalWhenNull(false);
+        mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(nameShift, mTimestamp, metadata), isPositive);
+        ccdb->setFatalWhenNull(true);
+      }
+      LOG(info) << " test getTimeShift at 0 " << (isPositive ? "pos" : "neg") << ": "
+                << mRespParamsV3.getTimeShift(0, isPositive);
+    };
+
+    const std::string nameShiftPos = metadataInfo.isMC() ? mTimeShiftCCDBPathPosMC : mTimeShiftCCDBPathPos;
+    updateTimeShift(nameShiftPos, true);
+    const std::string nameShiftNeg = metadataInfo.isMC() ? mTimeShiftCCDBPathNegMC : mTimeShiftCCDBPathNeg;
+    updateTimeShift(nameShiftNeg, false);
 
     // Calibration object is defined
     LOG(info) << "Parametrization at init time:";
-    mRespParamsV3.print();
+    mRespParamsV3.printFullConfig();
   }
 
   template <typename CCDBObject, typename BcType>
@@ -228,13 +240,14 @@ struct TOFCalibConfig {
     if (mLastRunNumber == bc.runNumber()) {
       return;
     }
+    LOG(info) << "Updating the parametrization from last run " << mLastRunNumber << " to " << bc.runNumber() << " and timestamp from " << mTimestamp << " " << bc.timestamp();
     mLastRunNumber = bc.runNumber();
     mTimestamp = bc.timestamp();
 
     // Check the beam type
     if (mCollisionSystem == -1) {
-      o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(mPathGrpLhcIf,
-                                                                                                        mTimestamp);
+      o2::parameters::GRPLHCIFData* grpo = ccdb->template getSpecific<o2::parameters::GRPLHCIFData>(mPathGrpLhcIf,
+                                                                                                    mTimestamp);
       mCollisionSystem = CollisionSystemType::getCollisionTypeFromGrp(grpo);
     } else {
       LOG(debug) << "Not setting collisions system as already set to " << mCollisionSystem << " " << CollisionSystemType::getCollisionSystemName(mCollisionSystem);
@@ -243,51 +256,66 @@ struct TOFCalibConfig {
     if (!mEnableTimeDependentResponse) {
       return;
     }
-    LOG(info) << "Updating parametrization from path '" << mParametrizationPath << "' and timestamp " << mTimestamp << " and reconstruction pass '" << mReconstructionPass << "'";
-    if (mParamFileName.empty()) { // Not loading if parametrization from file
-      if (!ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp)->retrieveParameters(mRespParamsV3, mReconstructionPass)) {
+    LOG(info) << "Updating parametrization from path '" << mParametrizationPath << "' and timestamp " << mTimestamp << " and reconstruction pass '" << mReconstructionPass << "' for run number " << bc.runNumber();
+    if (mParamFileName.empty()) { // Not loading if parametrization was taken from file
+      LOG(info) << "Updating parametrization from ccdb";
+      const o2::tof::ParameterCollection* paramCollection = ccdb->template getSpecific<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp);
+      if (!paramCollection->retrieveParameters(mRespParamsV3, mReconstructionPass)) {
         if (mFatalOnPassNotAvailable) {
           LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", mReconstructionPass.data());
         } else {
           LOGF(warning, "Pass '%s' not available in the retrieved CCDB object, fetching '%s'", mReconstructionPass.data(), mReconstructionPassDefault.data());
-          if (!ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp)->retrieveParameters(mRespParamsV3, mReconstructionPassDefault)) {
-            ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp)->print();
+          if (!paramCollection->retrieveParameters(mRespParamsV3, mReconstructionPassDefault)) {
+            paramCollection->print();
             LOG(fatal) << "Cannot get default pass for calibration " << mReconstructionPassDefault;
+          } else { // Found the default case
+            if (metadataInfo.isRun3()) {
+              mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPassDefault));
+            } else {
+              mRespParamsV3.setResolutionParametrizationRun2(paramCollection->getPars(mReconstructionPassDefault));
+            }
+            mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPassDefault));
           }
         }
+      } else { // Found the non default case
+        if (metadataInfo.isRun3()) {
+          mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPass));
+        } else {
+          mRespParamsV3.setResolutionParametrizationRun2(paramCollection->getPars(mReconstructionPass));
+        }
+        mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPass));
       }
     }
 
     // Loading additional calibration objects
-    if (mTimeShiftCCDBPathPos != "") {
-      if (mTimeShiftCCDBPathPos.find(".root") != std::string::npos) {
-        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPathPos, "ccdb_object", true);
-      } else {
-        if (mReconstructionPass == "") {
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(mTimeShiftCCDBPathPos, mTimestamp), true);
-        } else {
-          std::map<std::string, std::string> metadata;
-          metadata["RecoPassName"] = mReconstructionPass;
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(mTimeShiftCCDBPathPos, mTimestamp, metadata), true);
-        }
-      }
-    }
-    if (mTimeShiftCCDBPathNeg != "") {
-      if (mTimeShiftCCDBPathNeg.find(".root") != std::string::npos) {
-        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPathNeg, "ccdb_object", false);
-      } else {
-        if (mReconstructionPass == "") {
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(mTimeShiftCCDBPathNeg, mTimestamp), false);
-        } else {
-          std::map<std::string, std::string> metadata;
-          metadata["RecoPassName"] = mReconstructionPass;
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(mTimeShiftCCDBPathNeg, mTimestamp, metadata), false);
-        }
-      }
-      LOG(info) << " test getTimeShift neg: " << mRespParamsV3.getTimeShift(0, false);
+    std::map<std::string, std::string> metadata;
+    if (!mReconstructionPass.empty()) {
+      metadata["RecoPassName"] = mReconstructionPass;
     }
 
-    return;
+    auto updateTimeShift = [&](const std::string& nameShift, bool isPositive) {
+      if (nameShift.empty()) {
+        return;
+      }
+      const bool isFromFile = nameShift.find(".root") != std::string::npos;
+      if (isFromFile) {
+        return;
+      }
+      LOG(info) << "Updating the time shift for " << (isPositive ? "positive" : "negative")
+                << " from ccdb '" << nameShift << "' and timestamp " << mTimestamp
+                << " and pass '" << mReconstructionPass << "'";
+      ccdb->setFatalWhenNull(false);
+      mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(nameShift, mTimestamp, metadata), isPositive);
+      ccdb->setFatalWhenNull(true);
+      LOG(info) << " test getTimeShift at 0 " << (isPositive ? "pos" : "neg") << ": "
+                << mRespParamsV3.getTimeShift(0, isPositive);
+    };
+
+    updateTimeShift(metadataInfo.isMC() ? mTimeShiftCCDBPathPosMC : mTimeShiftCCDBPathPos, true);
+    updateTimeShift(metadataInfo.isMC() ? mTimeShiftCCDBPathNegMC : mTimeShiftCCDBPathNeg, false);
+
+    LOG(info) << "Parametrization at setup time:";
+    mRespParamsV3.printFullConfig();
   }
 
   bool autoSetProcessFunctions() const { return mAutoSetProcessFunctions; }
@@ -303,11 +331,12 @@ struct TOFCalibConfig {
   int64_t mTimestamp;
   std::string mTimeShiftCCDBPathPos;
   std::string mTimeShiftCCDBPathNeg;
+  std::string mTimeShiftCCDBPathPosMC;
+  std::string mTimeShiftCCDBPathNegMC;
   std::string mParamFileName;
   std::string mParametrizationPath;
   std::string mReconstructionPass;
   std::string mReconstructionPassDefault;
-  bool mLoadResponseFromCCDB;
   bool mFatalOnPassNotAvailable;
   bool mEnableTimeDependentResponse;
   int mCollisionSystem;
@@ -345,11 +374,12 @@ struct tofSignal {
     Configurable<int64_t> cfgTimestamp{"ccdb-timestamp", -1, "timestamp of the object"};
     Configurable<std::string> cfgTimeShiftCCDBPathPos{"timeShiftCCDBPathPos", "", "Path of the TOF time shift vs eta for pos. tracks. If empty none is taken"};
     Configurable<std::string> cfgTimeShiftCCDBPathNeg{"timeShiftCCDBPathNeg", "", "Path of the TOF time shift vs eta for neg. tracks. If empty none is taken"};
+    Configurable<std::string> cfgTimeShiftCCDBPathPosMC{"timeShiftCCDBPathPosMC", "", "Path of the TOF time shift for MC vs eta for pos. tracks. If empty none is taken"};
+    Configurable<std::string> cfgTimeShiftCCDBPathNegMC{"timeShiftCCDBPathNegMC", "", "Path of the TOF time shift for MC vs eta for neg. tracks. If empty none is taken"};
     Configurable<std::string> cfgParamFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
     Configurable<std::string> cfgParametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
     Configurable<std::string> cfgReconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
     Configurable<std::string> cfgReconstructionPassDefault{"reconstructionPassDefault", "unanchored", {"Default pass to get if the standard one is not found"}};
-    Configurable<bool> cfgLoadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
     Configurable<bool> cfgFatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
     Configurable<bool> cfgEnableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
     Configurable<int> cfgCollisionSystem{"collisionSystem", -1, "Collision system: -1 (autoset), 0 (pp), 1 (PbPb), 2 (XeXe), 3 (pPb)"};
@@ -416,7 +446,7 @@ struct tofSignal {
     if (enableTablepidTOFFlags) {
       tableFlags.reserve(tracks.size());
     }
-    for (auto& trk : tracks) {
+    for (const auto& trk : tracks) {
       const float& sig = o2::pid::tof::TOFSignal<Run3Trks::iterator>::GetTOFSignal(trk);
       if (enableQaHistograms) {
         histos.fill(HIST("tofSignal"), sig);
@@ -443,7 +473,7 @@ struct tofSignal {
     if (enableTablepidTOFFlags) {
       tableFlags.reserve(tracks.size());
     }
-    for (auto& trk : tracks) {
+    for (const auto& trk : tracks) {
       table(o2::pid::tof::TOFSignal<Run2Trks::iterator>::GetTOFSignal(trk));
       if (!enableTablepidTOFFlags) {
         continue;
@@ -488,10 +518,10 @@ struct tofEventTime {
   Produces<o2::aod::TOFEvTime> tableEvTime;
   Produces<o2::aod::EvTimeTOFOnly> tableEvTimeTOFOnly;
   Produces<o2::aod::pidEvTimeFlags> tableFlags;
-  static constexpr bool removeTOFEvTimeBias = true; // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
-  static constexpr float diamond = 6.0;             // Collision diamond used in the estimation of the TOF event time
-  static constexpr float errDiamond = diamond * 33.356409f;
-  static constexpr float weightDiamond = 1.f / (errDiamond * errDiamond);
+  static constexpr bool kRemoveTOFEvTimeBias = true; // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
+  static constexpr float kDiamond = 6.0;             // Collision diamond used in the estimation of the TOF event time
+  static constexpr float kErrDiamond = kDiamond * 33.356409f;
+  static constexpr float kWeightDiamond = 1.f / (kErrDiamond * kErrDiamond);
 
   bool enableTableTOFEvTime = false;
   bool enableTableEvTimeTOFOnly = false;
@@ -608,10 +638,10 @@ struct tofEventTime {
   Preslice<Run3TrksWtof> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
   using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<Run3TrksWtof::iterator, pid>;
-  void processRun3(Run3TrksWtof& tracks,
+  void processRun3(Run3TrksWtof const& tracks,
                    aod::FT0s const&,
                    EvTimeCollisionsFT0 const&,
-                   aod::BCsWithTimestamps const&)
+                   aod::BCsWithTimestamps const& bcs)
   {
     if (!enableTableTOFEvTime) {
       return;
@@ -623,39 +653,24 @@ struct tofEventTime {
     if (enableTableEvTimeTOFOnly) {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
-    bool calibUpdated = false;
-    for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Skipping tracks without collisions
-        continue;
-      }
-      const auto& coll = track.collision_as<EvTimeCollisionsFT0>();
-      if (!coll.has_bc()) {
-        continue;
-      }
-      mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
-      calibUpdated = true;
-      break;
-    }
+
+    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
 
     // Autoset the processing mode for the event time computation
-    if (calibUpdated) {
-      if (mComputeEvTimeWithTOF == -1 || mComputeEvTimeWithFT0 == -1) {
-        switch (mTOFCalibConfig.collisionSystem()) {
-          case CollisionSystemType::kCollSyspp: // pp
-            mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 0 : mComputeEvTimeWithTOF.value);
-            mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 1 : mComputeEvTimeWithFT0.value);
-            break;
-          case CollisionSystemType::kCollSysPbPb: // PbPb
-            mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 1 : mComputeEvTimeWithTOF.value);
-            mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 0 : mComputeEvTimeWithFT0.value);
-            break;
-          default:
-            LOG(fatal) << "Collision system " << mTOFCalibConfig.collisionSystem() << " " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.collisionSystem()) << " not supported for TOF event time computation";
-            break;
-        }
+    if (mComputeEvTimeWithTOF == -1 || mComputeEvTimeWithFT0 == -1) {
+      switch (mTOFCalibConfig.collisionSystem()) {
+        case CollisionSystemType::kCollSyspp: // pp
+          mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 0 : mComputeEvTimeWithTOF.value);
+          mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 1 : mComputeEvTimeWithFT0.value);
+          break;
+        case CollisionSystemType::kCollSysPbPb: // PbPb
+          mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 1 : mComputeEvTimeWithTOF.value);
+          mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 0 : mComputeEvTimeWithFT0.value);
+          break;
+        default:
+          LOG(fatal) << "Collision system " << mTOFCalibConfig.collisionSystem() << " " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.collisionSystem()) << " not supported for TOF event time computation";
+          break;
       }
-    } else {
-      LOG(warning) << "Calibration not updated on " << tracks.size() << " tracks !!";
     }
     LOG(debug) << "Running on " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.collisionSystem()) << " mComputeEvTimeWithTOF " << mComputeEvTimeWithTOF.value << " mComputeEvTimeWithFT0 " << mComputeEvTimeWithFT0.value;
 
@@ -680,7 +695,7 @@ struct tofEventTime {
         const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
 
         // Compute the TOF event time
-        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
+        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, kDiamond);
 
         float t0AC[2] = {.0f, 999.f};                                                                                             // Value and error of T0A or T0C or T0AC
         float t0TOF[2] = {static_cast<float_t>(evTimeMakerTOF.mEventTime), static_cast<float_t>(evTimeMakerTOF.mEventTimeError)}; // Value and error of TOF
@@ -699,10 +714,10 @@ struct tofEventTime {
           sumOfWeights = 0.f;
           weight = 0.f;
           // Remove the bias on TOF ev. time
-          if constexpr (removeTOFEvTimeBias) {
+          if constexpr (kRemoveTOFEvTimeBias) {
             evTimeMakerTOF.removeBias<Run3TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
           }
-          if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || abs(t0TOF[0]) < maxEvTimeTOF)) {
+          if (t0TOF[1] < kErrDiamond && (maxEvTimeTOF <= 0 || std::abs(t0TOF[0]) < maxEvTimeTOF)) {
             flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
 
             weight = 1.f / (t0TOF[1] * t0TOF[1]);
@@ -723,14 +738,14 @@ struct tofEventTime {
             sumOfWeights += weight;
           }
 
-          if (sumOfWeights < weightDiamond) { // avoiding sumOfWeights = 0 or worse that diamond
+          if (sumOfWeights < kWeightDiamond) { // avoiding sumOfWeights = 0 or worse that kDiamond
             eventTime = 0;
-            sumOfWeights = weightDiamond;
+            sumOfWeights = kWeightDiamond;
             tableFlags(0);
           } else {
             tableFlags(flags);
           }
-          tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights));
+          tableEvTime(eventTime / sumOfWeights, std::sqrt(1. / sumOfWeights));
           if (enableTableEvTimeTOFOnly) {
             tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), t0TOF[0], t0TOF[1], evTimeMakerTOF.mEventTimeMultiplicity);
           }
@@ -756,21 +771,21 @@ struct tofEventTime {
         const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
 
         // First make table for event time
-        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
+        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, kDiamond);
         int nGoodTracksForTOF = 0;
         float et = evTimeMakerTOF.mEventTime;
         float erret = evTimeMakerTOF.mEventTimeError;
 
         for (auto const& trk : tracksInCollision) { // Loop on Tracks
-          if constexpr (removeTOFEvTimeBias) {
+          if constexpr (kRemoveTOFEvTimeBias) {
             evTimeMakerTOF.removeBias<Run3TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
           }
           uint8_t flags = 0;
-          if (erret < errDiamond && (maxEvTimeTOF <= 0.f || abs(et) < maxEvTimeTOF)) {
+          if (erret < kErrDiamond && (maxEvTimeTOF <= 0.f || std::abs(et) < maxEvTimeTOF)) {
             flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
           } else {
             et = 0.f;
-            erret = errDiamond;
+            erret = kErrDiamond;
           }
           tableFlags(flags);
           tableEvTime(et, erret);
@@ -811,19 +826,19 @@ struct tofEventTime {
 
 // Part 3 Nsigma computation
 
-static constexpr int nParameters2 = 2;
-static const std::vector<std::string> parameterNames2{"Enable", "EnableFull"};
-static constexpr int idxEl = 0;
-static constexpr int idxMu = 1;
-static constexpr int idxPi = 2;
-static constexpr int idxKa = 3;
-static constexpr int idxPr = 4;
-static constexpr int idxDe = 5;
-static constexpr int idxTr = 6;
-static constexpr int idxHe = 7;
-static constexpr int idxAl = 8;
+static constexpr int kParEnabledN = 2;
+static constexpr int kIdxEl = 0;
+static constexpr int kIdxMu = 1;
+static constexpr int kIdxPi = 2;
+static constexpr int kIdxKa = 3;
+static constexpr int kIdxPr = 4;
+static constexpr int kIdxDe = 5;
+static constexpr int kIdxTr = 6;
+static constexpr int kIdxHe = 7;
+static constexpr int kIdxAl = 8;
 
-static constexpr int defaultParameters2[nSpecies][nParameters2]{{-1, -1},
+static const std::vector<std::string> kParEnabledNames{"Enable", "EnableFull"};
+static constexpr int kDefaultParEnabled[nSpecies][kParEnabledN]{{-1, -1},
                                                                 {-1, -1},
                                                                 {-1, -1},
                                                                 {-1, -1},
@@ -857,15 +872,22 @@ struct tofPidMerge {
   Produces<o2::aod::pidTOFFullHe> tablePIDFullHe;
   Produces<o2::aod::pidTOFFullAl> tablePIDFullAl;
 
+  // Beta tables
+  Produces<aod::pidTOFbeta> tablePIDBeta;
+  Produces<aod::pidTOFmass> tablePIDTOFMass;
+  bool enableTableBeta = false;
+  bool enableTableMass = false;
+
   // Detector response parameters
   o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   TOFCalibConfig mTOFCalibConfig; // TOF Calib configuration
   Configurable<bool> enableQaHistograms{"enableQaHistograms", false, "Flag to enable the QA histograms"};
+  Configurable<bool> enableTOFParamsForBetaMass{"enableTOFParamsForBetaMass", false, "Flag to use TOF parameters for TOF Beta and Mass"};
 
   // Configuration flags to include and exclude particle hypotheses
   Configurable<LabeledArray<int>> enableParticle{"enableParticle",
-                                                 {defaultParameters2[0], nSpecies, nParameters2, particleNames, parameterNames2},
+                                                 {kDefaultParEnabled[0], nSpecies, kParEnabledN, particleNames, kParEnabledNames},
                                                  "Produce PID information for the various mass hypotheses. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
 
   // Histograms for QA
@@ -900,19 +922,24 @@ struct tofPidMerge {
       LOG(info) << "No PID tables are required, disabling the task";
       doprocessRun3.value = false;
       doprocessRun2.value = false;
-      return;
-    } else if (doprocessRun3.value == false && doprocessRun2.value == false) {
-      LOG(fatal) << "PID tables are required but process data is disabled. Please enable it";
-    }
-    if (doprocessRun3.value == true && doprocessRun2.value == true) {
-      LOG(fatal) << "Both processRun2 and processRun3 are enabled. Pick one of the two";
-    }
-    if (metadataInfo.isFullyDefined()) {
-      if (metadataInfo.isRun3() && doprocessRun2) {
-        LOG(fatal) << "Run2 process function is enabled but the metadata says it is Run3";
+    } else {
+      if (mTOFCalibConfig.autoSetProcessFunctions()) {
+        LOG(info) << "Autodetecting process functions for mass and beta";
+        if (metadataInfo.isFullyDefined()) {
+          if (metadataInfo.isRun3()) {
+            doprocessRun3.value = true;
+            doprocessRun2.value = false;
+          } else {
+            doprocessRun2.value = true;
+            doprocessRun3.value = false;
+          }
+        }
       }
-      if (!metadataInfo.isRun3() && doprocessRun3) {
-        LOG(fatal) << "Run3 process function is enabled but the metadata says it is Run2";
+      if (doprocessRun2 && doprocessRun3) {
+        LOG(fatal) << "Both processRun2 and processRun3 are enabled. Pick one of the two";
+      }
+      if (!doprocessRun2 && !doprocessRun3) {
+        LOG(fatal) << "Neither processRun2 nor processRun3 are enabled. Pick one of the two";
       }
     }
     mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
@@ -935,13 +962,42 @@ struct tofPidMerge {
       }
       hnsigmaFull[i] = histos.add<TH2>(Form("nsigmaFull/%s", particleNames[i].c_str()), Form("N_{#sigma}^{TOF}(%s)", particleNames[i].c_str()), kTH2F, {pAxis, nSigmaAxis});
     }
+
+    // Checking the TOF mass and TOF beta tables
+    enableTableBeta = isTableRequiredInWorkflow(initContext, "pidTOFbeta");
+    enableTableMass = isTableRequiredInWorkflow(initContext, "pidTOFmass");
+
+    if (!enableTableBeta && !enableTableMass) {
+      LOG(info) << "No table for TOF mass and beta is required. Disabling beta and mass tables";
+      doprocessRun2BetaM.value = false;
+      doprocessRun3BetaM.value = false;
+    } else {
+      if (mTOFCalibConfig.autoSetProcessFunctions()) {
+        LOG(info) << "Autodetecting process functions for mass and beta";
+        if (metadataInfo.isFullyDefined()) {
+          if (metadataInfo.isRun3()) {
+            doprocessRun3BetaM.value = true;
+            doprocessRun2BetaM.value = false;
+          } else {
+            doprocessRun2BetaM.value = true;
+            doprocessRun3BetaM.value = false;
+          }
+        }
+      }
+      if (doprocessRun2BetaM && doprocessRun3BetaM) {
+        LOG(fatal) << "Both processRun2BetaM and processRun3BetaM are enabled. Pick one of the two";
+      }
+      if (!doprocessRun2BetaM && !doprocessRun3BetaM) {
+        LOG(fatal) << "Neither processRun2BetaM nor processRun3BetaM are enabled. Pick one of the two";
+      }
+    }
   }
 
   // Reserves an empty table for the given particle ID with size of the given track table
   void reserveTable(const int id, const int64_t& size, const bool fullTable = false)
   {
     switch (id) {
-      case idxEl: {
+      case kIdxEl: {
         if (fullTable) {
           tablePIDFullEl.reserve(size);
         } else {
@@ -949,7 +1005,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxMu: {
+      case kIdxMu: {
         if (fullTable) {
           tablePIDFullMu.reserve(size);
         } else {
@@ -957,7 +1013,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxPi: {
+      case kIdxPi: {
         if (fullTable) {
           tablePIDFullPi.reserve(size);
         } else {
@@ -965,7 +1021,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxKa: {
+      case kIdxKa: {
         if (fullTable) {
           tablePIDFullKa.reserve(size);
         } else {
@@ -973,7 +1029,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxPr: {
+      case kIdxPr: {
         if (fullTable) {
           tablePIDFullPr.reserve(size);
         } else {
@@ -981,7 +1037,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxDe: {
+      case kIdxDe: {
         if (fullTable) {
           tablePIDFullDe.reserve(size);
         } else {
@@ -989,7 +1045,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxTr: {
+      case kIdxTr: {
         if (fullTable) {
           tablePIDFullTr.reserve(size);
         } else {
@@ -997,7 +1053,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxHe: {
+      case kIdxHe: {
         if (fullTable) {
           tablePIDFullHe.reserve(size);
         } else {
@@ -1005,7 +1061,7 @@ struct tofPidMerge {
         }
         break;
       }
-      case idxAl: {
+      case kIdxAl: {
         if (fullTable) {
           tablePIDFullAl.reserve(size);
         } else {
@@ -1023,7 +1079,7 @@ struct tofPidMerge {
   void makeTableEmpty(const int id, bool fullTable = false)
   {
     switch (id) {
-      case idxEl:
+      case kIdxEl:
         if (fullTable) {
           tablePIDFullEl(-999.f, -999.f);
         } else {
@@ -1031,7 +1087,7 @@ struct tofPidMerge {
                                                                 tablePIDEl);
         }
         break;
-      case idxMu:
+      case kIdxMu:
         if (fullTable) {
           tablePIDFullMu(-999.f, -999.f);
         } else {
@@ -1039,7 +1095,7 @@ struct tofPidMerge {
                                                                 tablePIDMu);
         }
         break;
-      case idxPi:
+      case kIdxPi:
         if (fullTable) {
           tablePIDFullPi(-999.f, -999.f);
         } else {
@@ -1047,7 +1103,7 @@ struct tofPidMerge {
                                                                 tablePIDPi);
         }
         break;
-      case idxKa:
+      case kIdxKa:
         if (fullTable) {
           tablePIDFullKa(-999.f, -999.f);
         } else {
@@ -1055,7 +1111,7 @@ struct tofPidMerge {
                                                                 tablePIDKa);
         }
         break;
-      case idxPr:
+      case kIdxPr:
         if (fullTable) {
           tablePIDFullPr(-999.f, -999.f);
         } else {
@@ -1063,7 +1119,7 @@ struct tofPidMerge {
                                                                 tablePIDPr);
         }
         break;
-      case idxDe:
+      case kIdxDe:
         if (fullTable) {
           tablePIDFullDe(-999.f, -999.f);
         } else {
@@ -1071,7 +1127,7 @@ struct tofPidMerge {
                                                                 tablePIDDe);
         }
         break;
-      case idxTr:
+      case kIdxTr:
         if (fullTable) {
           tablePIDFullTr(-999.f, -999.f);
         } else {
@@ -1079,7 +1135,7 @@ struct tofPidMerge {
                                                                 tablePIDTr);
         }
         break;
-      case idxHe:
+      case kIdxHe:
         if (fullTable) {
           tablePIDFullHe(-999.f, -999.f);
         } else {
@@ -1087,7 +1143,7 @@ struct tofPidMerge {
                                                                 tablePIDHe);
         }
         break;
-      case idxAl:
+      case kIdxAl:
         if (fullTable) {
           tablePIDFullAl(-999.f, -999.f);
         } else {
@@ -1107,7 +1163,7 @@ struct tofPidMerge {
   using ResponseImplementation = o2::pid::tof::ExpTimes<Run3TrksWtofWevTime::iterator, pid>;
   void processRun3(Run3TrksWtofWevTime const& tracks,
                    Run3Cols const&,
-                   aod::BCsWithTimestamps const&)
+                   aod::BCsWithTimestamps const& bcs)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
@@ -1119,17 +1175,7 @@ struct tofPidMerge {
     constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
     constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
 
-    for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Skipping tracks without collisions
-        continue;
-      }
-      const auto& coll = track.collision();
-      if (!coll.has_bc()) {
-        continue;
-      }
-      mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
-      break;
-    }
+    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
 
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size(), false);
@@ -1154,47 +1200,47 @@ struct tofPidMerge {
 
       for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
         switch (pidId) {
-          case idxEl: {
+          case kIdxEl: {
             nsigma = responseEl.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDEl);
             break;
           }
-          case idxMu: {
+          case kIdxMu: {
             nsigma = responseMu.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDMu);
             break;
           }
-          case idxPi: {
+          case kIdxPi: {
             nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPi);
             break;
           }
-          case idxKa: {
+          case kIdxKa: {
             nsigma = responseKa.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDKa);
             break;
           }
-          case idxPr: {
+          case kIdxPr: {
             nsigma = responsePr.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPr);
             break;
           }
-          case idxDe: {
+          case kIdxDe: {
             nsigma = responseDe.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDDe);
             break;
           }
-          case idxTr: {
+          case kIdxTr: {
             nsigma = responseTr.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDTr);
             break;
           }
-          case idxHe: {
+          case kIdxHe: {
             nsigma = responseHe.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDHe);
             break;
           }
-          case idxAl: {
+          case kIdxAl: {
             nsigma = responseAl.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDAl);
             break;
@@ -1209,55 +1255,55 @@ struct tofPidMerge {
       }
       for (auto const& pidId : mEnabledParticlesFull) { // Loop on enabled particle hypotheses with full tables
         switch (pidId) {
-          case idxEl: {
+          case kIdxEl: {
             resolution = responseEl.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseEl.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullEl(resolution, nsigma);
             break;
           }
-          case idxMu: {
+          case kIdxMu: {
             resolution = responseMu.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseMu.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullMu(resolution, nsigma);
             break;
           }
-          case idxPi: {
+          case kIdxPi: {
             resolution = responsePi.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
             tablePIDFullPi(resolution, nsigma);
             break;
           }
-          case idxKa: {
+          case kIdxKa: {
             resolution = responseKa.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseKa.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullKa(resolution, nsigma);
             break;
           }
-          case idxPr: {
+          case kIdxPr: {
             resolution = responsePr.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responsePr.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullPr(resolution, nsigma);
             break;
           }
-          case idxDe: {
+          case kIdxDe: {
             resolution = responseDe.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseDe.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullDe(resolution, nsigma);
             break;
           }
-          case idxTr: {
+          case kIdxTr: {
             resolution = responseTr.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseTr.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullTr(resolution, nsigma);
             break;
           }
-          case idxHe: {
+          case kIdxHe: {
             resolution = responseHe.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseHe.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullHe(resolution, nsigma);
             break;
           }
-          case idxAl: {
+          case kIdxAl: {
             resolution = responseAl.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseAl.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullAl(resolution, nsigma);
@@ -1273,13 +1319,13 @@ struct tofPidMerge {
       }
     }
   }
-  PROCESS_SWITCH(tofPidMerge, processRun3, "Produce tables. Set to off if the tables are not required", true);
+  PROCESS_SWITCH(tofPidMerge, processRun3, "Produce Run 3 Nsigma table. Set to off if the tables are not required, or autoset is on", false);
 
   template <o2::track::PID::ID pid>
   using ResponseImplementationRun2 = o2::pid::tof::ExpTimes<Run2TrksWtofWevTime::iterator, pid>;
   void processRun2(Run2TrksWtofWevTime const& tracks,
                    Run3Cols const&,
-                   aod::BCsWithTimestamps const&)
+                   aod::BCsWithTimestamps const& bcs)
   {
     constexpr auto responseEl = ResponseImplementationRun2<PID::Electron>();
     constexpr auto responseMu = ResponseImplementationRun2<PID::Muon>();
@@ -1291,17 +1337,7 @@ struct tofPidMerge {
     constexpr auto responseHe = ResponseImplementationRun2<PID::Helium3>();
     constexpr auto responseAl = ResponseImplementationRun2<PID::Alpha>();
 
-    for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Skipping tracks without collisions
-        continue;
-      }
-      const auto& coll = track.collision();
-      if (!coll.has_bc()) {
-        continue;
-      }
-      mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
-      break;
-    }
+    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
 
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size(), false);
@@ -1326,47 +1362,47 @@ struct tofPidMerge {
 
       for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
         switch (pidId) {
-          case idxEl: {
+          case kIdxEl: {
             nsigma = responseEl.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDEl);
             break;
           }
-          case idxMu: {
+          case kIdxMu: {
             nsigma = responseMu.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDMu);
             break;
           }
-          case idxPi: {
+          case kIdxPi: {
             nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPi);
             break;
           }
-          case idxKa: {
+          case kIdxKa: {
             nsigma = responseKa.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDKa);
             break;
           }
-          case idxPr: {
+          case kIdxPr: {
             nsigma = responsePr.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPr);
             break;
           }
-          case idxDe: {
+          case kIdxDe: {
             nsigma = responseDe.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDDe);
             break;
           }
-          case idxTr: {
+          case kIdxTr: {
             nsigma = responseTr.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDTr);
             break;
           }
-          case idxHe: {
+          case kIdxHe: {
             nsigma = responseHe.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDHe);
             break;
           }
-          case idxAl: {
+          case kIdxAl: {
             nsigma = responseAl.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDAl);
             break;
@@ -1381,55 +1417,55 @@ struct tofPidMerge {
       }
       for (auto const& pidId : mEnabledParticlesFull) { // Loop on enabled particle hypotheses with full tables
         switch (pidId) {
-          case idxEl: {
+          case kIdxEl: {
             resolution = responseEl.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseEl.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullEl(resolution, nsigma);
             break;
           }
-          case idxMu: {
+          case kIdxMu: {
             resolution = responseMu.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseMu.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullMu(resolution, nsigma);
             break;
           }
-          case idxPi: {
+          case kIdxPi: {
             resolution = responsePi.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
             tablePIDFullPi(resolution, nsigma);
             break;
           }
-          case idxKa: {
+          case kIdxKa: {
             resolution = responseKa.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseKa.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullKa(resolution, nsigma);
             break;
           }
-          case idxPr: {
+          case kIdxPr: {
             resolution = responsePr.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responsePr.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullPr(resolution, nsigma);
             break;
           }
-          case idxDe: {
+          case kIdxDe: {
             resolution = responseDe.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseDe.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullDe(resolution, nsigma);
             break;
           }
-          case idxTr: {
+          case kIdxTr: {
             resolution = responseTr.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseTr.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullTr(resolution, nsigma);
             break;
           }
-          case idxHe: {
+          case kIdxHe: {
             resolution = responseHe.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseHe.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullHe(resolution, nsigma);
             break;
           }
-          case idxAl: {
+          case kIdxAl: {
             resolution = responseAl.GetExpectedSigma(mRespParamsV3, trk);
             nsigma = responseAl.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullAl(resolution, nsigma);
@@ -1445,55 +1481,10 @@ struct tofPidMerge {
       }
     }
   }
-  PROCESS_SWITCH(tofPidMerge, processRun2, "Produce tables. Set to off if the tables are not required", false);
-};
+  PROCESS_SWITCH(tofPidMerge, processRun2, "Produce Run 2 Nsigma table. Set to off if the tables are not required, or autoset is on", false);
 
-// Part 4 Beta and TOF mass computation
-
-struct tofPidBeta {
-  Produces<aod::pidTOFbeta> tablePIDBeta;
-  Produces<aod::pidTOFmass> tablePIDTOFMass;
-  Configurable<float> expreso{"tof-expreso", 80, "Expected resolution for the computation of the expected beta"};
-  // Detector response and input parameters
-  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
-  TOFCalibConfig mTOFCalibConfig; // TOF Calib configuration
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<bool> enableTOFParams{"enableTOFParams", false, "Flag to use TOF parameters"};
-
-  bool enableTableBeta = false;
-  bool enableTableMass = false;
-  void init(o2::framework::InitContext& initContext)
-  {
-    mTOFCalibConfig.inheritFromBaseTask(initContext);
-    enableTableBeta = isTableRequiredInWorkflow(initContext, "pidTOFbeta");
-    enableTableMass = isTableRequiredInWorkflow(initContext, "pidTOFmass");
-    if (!enableTableBeta && !enableTableMass && !doprocessRun2 && !doprocessRun3) {
-      LOG(info) << "No table or process is enabled. Disabling task";
-      return;
-    }
-
-    if (mTOFCalibConfig.autoSetProcessFunctions()) {
-      LOG(info) << "Autodetecting process functions";
-      if (metadataInfo.isFullyDefined()) {
-        if (metadataInfo.isRun3()) {
-          doprocessRun3.value = true;
-        } else {
-          doprocessRun2.value = true;
-        }
-      }
-    }
-
-    responseBeta.mExpectedResolution = expreso.value;
-    if (!enableTOFParams) {
-      return;
-    }
-    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
-  }
-
-  void process(aod::BCs const&) {}
-
-  o2::pid::tof::Beta<Run2TrksWtofWevTime::iterator> responseBetaRun2;
-  void processRun2(Run2TrksWtofWevTime const& tracks)
+  o2::pid::tof::Beta responseBetaRun2;
+  void processRun2BetaM(Run2TrksWtofWevTime const& tracks)
   {
     if (!enableTableBeta && !enableTableMass) {
       return;
@@ -1506,18 +1497,18 @@ struct tofPidBeta {
         tablePIDBeta(beta, responseBetaRun2.GetExpectedSigma(trk));
       }
       if (enableTableMass) {
-        if (enableTOFParams) {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<Run2TrksWtofWevTime::iterator>::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
+        if (enableTOFParamsForBetaMass) {
+          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
         } else {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<Run2TrksWtofWevTime::iterator>::GetTOFMass(trk, beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk, beta));
         }
       }
     }
   }
-  PROCESS_SWITCH(tofPidBeta, processRun2, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", true);
+  PROCESS_SWITCH(tofPidMerge, processRun2BetaM, "Produce Run 2 Beta and Mass table. Set to off if the tables are not required, or autoset is on", false);
 
-  o2::pid::tof::Beta<Run3TrksWtofWevTime::iterator> responseBeta;
-  void processRun3(Run3TrksWtofWevTime const& tracks)
+  o2::pid::tof::Beta responseBeta;
+  void processRun3BetaM(Run3TrksWtofWevTime const& tracks)
   {
     if (!enableTableBeta && !enableTableMass) {
       return;
@@ -1531,15 +1522,15 @@ struct tofPidBeta {
                      responseBeta.GetExpectedSigma(trk));
       }
       if (enableTableMass) {
-        if (enableTOFParams) {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<Run3TrksWtofWevTime::iterator>::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
+        if (enableTOFParamsForBetaMass) {
+          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
         } else {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<Run3TrksWtofWevTime::iterator>::GetTOFMass(trk, beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk, beta));
         }
       }
     }
   }
-  PROCESS_SWITCH(tofPidBeta, processRun3, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", true);
+  PROCESS_SWITCH(tofPidMerge, processRun3BetaM, "Produce Run 3 Beta and Mass table. Set to off if the tables are not required, or autoset is on", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -1549,6 +1540,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   auto workflow = WorkflowSpec{adaptAnalysisTask<tofSignal>(cfgc)};
   workflow.push_back(adaptAnalysisTask<tofEventTime>(cfgc));
   workflow.push_back(adaptAnalysisTask<tofPidMerge>(cfgc));
-  workflow.push_back(adaptAnalysisTask<tofPidBeta>(cfgc));
   return workflow;
 }

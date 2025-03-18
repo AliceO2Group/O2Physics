@@ -23,6 +23,11 @@
 
 // runme like: o2-analysis-trackselection -b --aod-file ${sourceFile} --aod-writer-json ${writerFile} | o2-analysis-timestamp -b | o2-analysis-trackextension -b | o2-analysis-lf-lambdakzerobuilder -b | o2-analysis-pid-tpc -b | o2-analysis-em-skimmermc -b
 
+#include <memory>
+#include <map>
+#include <string>
+#include <vector>
+
 // todo: remove reduantant information in GammaConversionsInfoTrue
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
@@ -308,7 +313,7 @@ struct skimmerGammaConversion {
                 gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                 gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz(),
                 v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
-                cospa_kf, pca_kf, alpha, qt, chi2kf);
+                cospa_kf, 1.f, 1.f, pca_kf, alpha, qt, chi2kf);
 
     fillTrackTable(pos, kfp_pos_DecayVtx);
     fillTrackTable(ele, kfp_ele_DecayVtx);

@@ -55,11 +55,6 @@ struct JetMatchingSub {
   {
   }
 
-  void processDummy(aod::JetCollisions const&)
-  {
-  }
-  PROCESS_SWITCH(JetMatchingSub, processDummy, "Dummy process", true);
-
   void processJets(aod::JetCollisions const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
                    aod::JetTracks const& tracks, TracksTag const& tracksSub, Candidates const& candidates)
@@ -81,7 +76,7 @@ struct JetMatchingSub {
       const auto jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, collision.globalIndex());
       const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, collision.globalIndex());
 
-      jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidates, candidates, tracks, tracks, tracksSub, tracksSub, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
+      jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidates, tracks, tracks, candidates, tracksSub, tracksSub, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
     }
 
     for (auto i = 0; i < jetsBase.size(); ++i) {
@@ -91,12 +86,5 @@ struct JetMatchingSub {
       jetsTagtoBaseMatchingTable(jetsTagtoBaseMatchingGeo[i], jetsTagtoBaseMatchingPt[i], jetsTagtoBaseMatchingHF[i]); // is (and needs to) be filled in order
     }
   }
-  PROCESS_SWITCH(JetMatchingSub, processJets, "Perform jet matching", false);
+  PROCESS_SWITCH(JetMatchingSub, processJets, "Perform jet matching", true);
 };
-
-/*using BplusChargedJetMatching = JetMatchingSub<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>,
-                                               soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>,
-                                               aod::BplusChargedJetsMatchedToBplusChargedEventWiseSubtractedJets,
-                                               aod::BplusChargedEventWiseSubtractedJetsMatchedToBplusChargedJets,
-                                               aod::JTrackBplusSubs,
-                                               aod::CandidatesBplusData>;*/

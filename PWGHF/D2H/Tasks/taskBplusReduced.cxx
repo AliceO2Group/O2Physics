@@ -43,8 +43,8 @@ DECLARE_SOA_COLUMN(AbsEtaBach, absEtaBach, float);                              
 DECLARE_SOA_COLUMN(ItsNClsBach, itsNClsBach, int);                                       //! Number of ITS clusters of bachelor pion
 DECLARE_SOA_COLUMN(TpcNClsCrossedRowsBach, tpcNClsCrossedRowsBach, int);                 //! Number of TPC crossed rows of prongs of bachelor pion
 DECLARE_SOA_COLUMN(TpcChi2NClBach, tpcChi2NClBach, float);                               //! Maximum TPC chi2 of prongs of D0-meson daughter candidate
-DECLARE_SOA_COLUMN(PtDmesProngMin, ptProngDmesMin, float);                               //! Minimum pT of prongs of D-meson daughter candidate (GeV/c)
-DECLARE_SOA_COLUMN(AbsEtaDmesProngMin, absEtaProngDmesMin, float);                       //! Minimum absolute pseudorapidity of prongs of D-meson daughter candidate
+DECLARE_SOA_COLUMN(PtDmesProngMin, ptDmesProngMin, float);                               //! Minimum pT of prongs of D-meson daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(AbsEtaDmesProngMin, absEtaDmesProngMin, float);                       //! Minimum absolute pseudorapidity of prongs of D-meson daughter candidate
 DECLARE_SOA_COLUMN(ItsNClsDmesProngMin, itsNClsDmesProngMin, int);                       //! Minimum number of ITS clusters of prongs of D-meson daughter candidate
 DECLARE_SOA_COLUMN(TpcNClsCrossedRowsDmesProngMin, tpcNClsCrossedRowsDmesProngMin, int); //! Minimum number of TPC crossed rows of prongs of D-meson daughter candidate
 DECLARE_SOA_COLUMN(TpcChi2NClDmesProngMax, tpcChi2NClDmesProngMax, float);               //! Maximum TPC chi2 of prongs of D-meson daughter candidate
@@ -77,6 +77,8 @@ DECLARE_SOA_COLUMN(ImpactParameterBach, impactParameterBach, float);            
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);               //! Impact parameter product of daughters
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                                     //! Cosine pointing angle of candidate
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                                 //! Cosine pointing angle of candidate in transverse plane
+DECLARE_SOA_COLUMN(CpaD, cpaD, float);                                                   //! Cosine pointing angle of D-meson daughter candidate
+DECLARE_SOA_COLUMN(CpaXYD, cpaXYD, float);                                               //! Cosine pointing angle in transverse plane of D-meson daughter candidate
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);                   //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
 DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                                       //! ML score for signal class
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);                      //! Flag for association with wrong collision
@@ -105,6 +107,8 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplus_lite::DecayLengthD,
                   hf_cand_bplus_lite::DecayLengthXYD,
                   hf_cand_bplus_lite::ImpactParameterD,
+                  hf_cand_bplus_lite::CpaD,
+                  hf_cand_bplus_lite::CpaXYD,
                   hf_cand_bplus_lite::PtDmesProngMin,
                   hf_cand_bplus_lite::AbsEtaDmesProngMin,
                   hf_cand_bplus_lite::ItsNClsDmesProngMin,
@@ -144,6 +148,7 @@ DECLARE_SOA_TABLE(HfRedBpMcCheck, "AOD", "HFREDBPMCCHECK", //! Table with MC dec
                   hf_cand_bplus_lite::Pt,
                   hf_cand_bplus_lite::MlScoreSig,
                   hf_bplus_mc::PdgCodeBeautyMother,
+                  hf_bplus_mc::PdgCodeCharmMother,
                   hf_bplus_mc::PdgCodeProng0,
                   hf_bplus_mc::PdgCodeProng1,
                   hf_bplus_mc::PdgCodeProng2);
@@ -178,12 +183,12 @@ struct HfTaskBplusReduced {
 
   HfHelper hfHelper;
 
+  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
+  using CandsD0 = soa::Join<HfRed2Prongs, HfRedPidDau0s, HfRedPidDau1s>;
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus);
 
   HistogramRegistry registry{"registry"};
-
-  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
-  using CandsD0 = soa::Join<HfRed2Prongs, HfRedPidDau0s, HfRedPidDau1s>;
 
   void init(InitContext&)
   {
@@ -594,6 +599,8 @@ struct HfTaskBplusReduced {
           decLenD0,
           decLenXyD0,
           candidate.impactParameter0(),
+          cpaD0,
+          cpaXyD0,
           candD0.ptProngMin(),
           candD0.absEtaProngMin(),
           candD0.itsNClsProngMin(),
@@ -634,6 +641,7 @@ struct HfTaskBplusReduced {
             ptCandBplus,
             candidateMlScoreSig,
             candidate.pdgCodeBeautyMother(),
+            candidate.pdgCodeCharmMother(),
             candidate.pdgCodeProng0(),
             candidate.pdgCodeProng1(),
             candidate.pdgCodeProng2());

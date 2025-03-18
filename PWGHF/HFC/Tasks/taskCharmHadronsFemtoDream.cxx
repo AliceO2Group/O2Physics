@@ -204,8 +204,8 @@ struct HfTaskCharmHadronsFemtoDream {
     colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}, true};
     colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}, true};
     eventHisto.init(&registry);
-    allTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, isMc, pdgCodeTrack1, true);
-    selectedTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, isMc, pdgCodeTrack1, true);
+    allTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, dummy, isMc, pdgCodeTrack1, true);
+    selectedTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, dummy, isMc, pdgCodeTrack1, true);
 
     sameEventCont.init<true>(&registry,
                              binkstar, binpTTrack, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
@@ -394,6 +394,14 @@ struct HfTaskCharmHadronsFemtoDream {
           invMass = p2.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
         } else {
           invMass = p2.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
+        }
+
+        if (invMass < charmHadMinInvMass || invMass > charmHadMaxInvMass) {
+          continue;
+        }
+
+        if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
+          continue;
         }
 
         int charmHadMc = 0;

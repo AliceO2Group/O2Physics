@@ -335,15 +335,15 @@ struct tofPidCollisionTimeQa {
         histos.fill(HIST("trackSelection"), 4.5f);
 
         // Recompute quantities with event times
-        const float& betaTOF = trk.evTimeTOFMult() > 1 ? o2::pid::tof::Beta<TrksData::iterator>::GetBeta(trk, trk.evTimeTOF()) : 999.f;
-        const float& betaT0A = collision.t0ACorrectedValid() ? o2::pid::tof::Beta<TrksData::iterator>::GetBeta(trk, collision.t0ACorrected() * 1000.f) : 999.f;
-        const float& betaT0C = collision.t0CCorrectedValid() ? o2::pid::tof::Beta<TrksData::iterator>::GetBeta(trk, collision.t0CCorrected() * 1000.f) : 999.f;
-        const float& betaT0AC = collision.t0ACValid() ? o2::pid::tof::Beta<TrksData::iterator>::GetBeta(trk, collision.t0AC() * 1000.f) : 999.f;
+        const float& betaTOF = trk.evTimeTOFMult() > 1 ? o2::pid::tof::Beta::GetBeta(trk, trk.evTimeTOF()) : 999.f;
+        const float& betaT0A = collision.t0ACorrectedValid() ? o2::pid::tof::Beta::GetBeta(trk, collision.t0ACorrected() * 1000.f) : 999.f;
+        const float& betaT0C = collision.t0CCorrectedValid() ? o2::pid::tof::Beta::GetBeta(trk, collision.t0CCorrected() * 1000.f) : 999.f;
+        const float& betaT0AC = collision.t0ACValid() ? o2::pid::tof::Beta::GetBeta(trk, collision.t0AC() * 1000.f) : 999.f;
 
-        const float& massTOF = trk.evTimeTOFMult() > 1 ? o2::pid::tof::TOFMass<TrksData::iterator>::GetTOFMass(trk, betaTOF) : 999.f;
-        const float& massT0A = collision.t0ACorrectedValid() ? o2::pid::tof::TOFMass<TrksData::iterator>::GetTOFMass(trk, betaT0A) : 999.f;
-        const float& massT0C = collision.t0CCorrectedValid() ? o2::pid::tof::TOFMass<TrksData::iterator>::GetTOFMass(trk, betaT0C) : 999.f;
-        const float& massT0AC = collision.t0ACValid() ? o2::pid::tof::TOFMass<TrksData::iterator>::GetTOFMass(trk, betaT0AC) : 999.f;
+        const float& massTOF = trk.evTimeTOFMult() > 1 ? o2::pid::tof::TOFMass::GetTOFMass(trk, betaTOF) : 999.f;
+        const float& massT0A = collision.t0ACorrectedValid() ? o2::pid::tof::TOFMass::GetTOFMass(trk, betaT0A) : 999.f;
+        const float& massT0C = collision.t0CCorrectedValid() ? o2::pid::tof::TOFMass::GetTOFMass(trk, betaT0C) : 999.f;
+        const float& massT0AC = collision.t0ACValid() ? o2::pid::tof::TOFMass::GetTOFMass(trk, betaT0AC) : 999.f;
 
         const float& deltaPi = trk.tofSignal() - trk.tofEvTime() - trk.tofExpTimePi();
 

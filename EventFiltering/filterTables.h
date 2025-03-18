@@ -46,9 +46,9 @@ namespace o2::aod
 {
 namespace filtering
 {
-DECLARE_SOA_COLUMN(H2, hasH2, bool);             //! deuteron trigger for the helium normalisation (to be downscaled)
-DECLARE_SOA_COLUMN(He, hasHe, bool);             //! helium
-DECLARE_SOA_COLUMN(H3L3Body, hasH3L3Body, bool); //! hypertriton 3body
+DECLARE_SOA_COLUMN(H2, hasH2, bool);                                     //! deuteron trigger for the helium normalisation (to be downscaled)
+DECLARE_SOA_COLUMN(He, hasHe, bool);                                     //! helium
+DECLARE_SOA_COLUMN(H3L3Body, hasH3L3Body, bool);                         //! hypertriton 3body
 DECLARE_SOA_COLUMN(ITSextremeIonisation, hasITSextremeIonisation, bool); //! ITS extreme ionisation
 DECLARE_SOA_COLUMN(ITSmildIonisation, hasITSmildIonisation, bool);       //! ITS mild ionisation (normalisation of the extreme ionisation), to be downscaled
 
@@ -67,28 +67,37 @@ DECLARE_SOA_COLUMN(DiMuon, hasDiMuon, bool);             //! dimuon trigger with
 // EM dielectrons
 DECLARE_SOA_COLUMN(LMeeIMR, hasLMeeIMR, bool); //! dielectron trigger for intermediate mass region
 DECLARE_SOA_COLUMN(LMeeHMR, hasLMeeHMR, bool); //! dielectron trigger for high mass region
+// Electron-muon pair
+DECLARE_SOA_COLUMN(ElectronMuon, hasElectronMuon, bool); //! dimuon trigger with low pT on muons
 
 // heavy flavours
-DECLARE_SOA_COLUMN(HfHighPt2P, hasHfHighPt2P, bool);                 //! high-pT 2-prong charm hadron
-DECLARE_SOA_COLUMN(HfHighPt3P, hasHfHighPt3P, bool);                 //! high-pT 3-prong charm hadron
-DECLARE_SOA_COLUMN(HfBeauty3P, hasHfBeauty3P, bool);                 //! 3-prong beauty hadron
-DECLARE_SOA_COLUMN(HfBeauty4P, hasHfBeauty4P, bool);                 //! 4-prong beauty hadron
-DECLARE_SOA_COLUMN(HfFemto2P, hasHfFemto2P, bool);                   //! 2-prong charm-hadron - N pair
-DECLARE_SOA_COLUMN(HfFemto3P, hasHfFemto3P, bool);                   //! 3-prong charm-hadron - N pair
-DECLARE_SOA_COLUMN(HfDoubleCharm2P, hasHfDoubleCharm2P, bool);       //! at least two 2-prong charm-hadron candidates
-DECLARE_SOA_COLUMN(HfDoubleCharm3P, hasHfDoubleCharm3P, bool);       //! at least two 3-prong charm-hadron candidates
-DECLARE_SOA_COLUMN(HfDoubleCharmMix, hasHfDoubleCharmMix, bool);     //! at least one 2-prong and one 3-prong charm-hadron candidates
-DECLARE_SOA_COLUMN(HfV0Charm2P, hasHfV0Charm2P, bool);               //! V0 with 2-prong charm hadron
-DECLARE_SOA_COLUMN(HfV0Charm3P, hasHfV0Charm3P, bool);               //! V0 with 3-prong charm hadron
-DECLARE_SOA_COLUMN(HfCharmBarToXiBach, hasHfCharmBarToXiBach, bool); //! Charm baryon to Xi + bachelor
-DECLARE_SOA_COLUMN(HfSigmaCPPK, hasHfSigmaCPPK, bool);               //! SigmaC(2455)++K- and SigmaC(2520)++K- + c.c.
-DECLARE_SOA_COLUMN(HfSigmaC0K0, hasHfSigmaC0K0, bool);               //! SigmaC(2455)0KS0 and SigmaC(2520)0KS0
-DECLARE_SOA_COLUMN(HfPhotonCharm2P, hasHfPhotonCharm2P, bool);       //! photon with 2-prong charm hadron
-DECLARE_SOA_COLUMN(HfPhotonCharm3P, hasHfPhotonCharm3P, bool);       //! photon with 3-prong charm hadron
-DECLARE_SOA_COLUMN(HfSingleCharm2P, hasHfSingleCharm2P, bool);       //! 2-prong charm hadron (for efficiency studies)
-DECLARE_SOA_COLUMN(HfSingleCharm3P, hasHfSingleCharm3P, bool);       //! 3-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfHighPt2P, hasHfHighPt2P, bool);                             //! high-pT 2-prong charm hadron
+DECLARE_SOA_COLUMN(HfHighPt3P, hasHfHighPt3P, bool);                             //! high-pT 3-prong charm hadron
+DECLARE_SOA_COLUMN(HfBeauty3P, hasHfBeauty3P, bool);                             //! 3-prong beauty hadron
+DECLARE_SOA_COLUMN(HfBeauty4P, hasHfBeauty4P, bool);                             //! 4-prong beauty hadron
+DECLARE_SOA_COLUMN(HfFemto2P, hasHfFemto2P, bool);                               //! 2-prong charm-hadron - N pair
+DECLARE_SOA_COLUMN(HfFemto3P, hasHfFemto3P, bool);                               //! 3-prong charm-hadron - N pair
+DECLARE_SOA_COLUMN(HfDoubleCharm2P, hasHfDoubleCharm2P, bool);                   //! at least two 2-prong charm-hadron candidates
+DECLARE_SOA_COLUMN(HfDoubleCharm3P, hasHfDoubleCharm3P, bool);                   //! at least two 3-prong charm-hadron candidates
+DECLARE_SOA_COLUMN(HfDoubleCharmMix, hasHfDoubleCharmMix, bool);                 //! at least one 2-prong and one 3-prong charm-hadron candidates
+DECLARE_SOA_COLUMN(HfV0Charm2P, hasHfV0Charm2P, bool);                           //! V0 with 2-prong charm hadron
+DECLARE_SOA_COLUMN(HfV0Charm3P, hasHfV0Charm3P, bool);                           //! V0 with 3-prong charm hadron
+DECLARE_SOA_COLUMN(HfCharmBarToXiBach, hasHfCharmBarToXiBach, bool);             //! Charm baryon to Xi + bachelor
+DECLARE_SOA_COLUMN(HfCharmBarToXi2Bach, hasHfCharmBarToXi2Bach, bool);           //! Charm baryon to Xi + 2 bachelors
+DECLARE_SOA_COLUMN(HfPrCharm2P, hasHfPrCharm2P, bool);                           //! Charm baryon to 2-prong + bachelors
+DECLARE_SOA_COLUMN(HfSigmaCPPK, hasHfSigmaCPPK, bool);                           //! SigmaC(2455)++K- and SigmaC(2520)++K- + c.c.
+DECLARE_SOA_COLUMN(HfSigmaC0K0, hasHfSigmaC0K0, bool);                           //! SigmaC(2455)0KS0 and SigmaC(2520)0KS0
+DECLARE_SOA_COLUMN(HfPhotonCharm2P, hasHfPhotonCharm2P, bool);                   //! photon with 2-prong charm hadron
+DECLARE_SOA_COLUMN(HfPhotonCharm3P, hasHfPhotonCharm3P, bool);                   //! photon with 3-prong charm hadron
+DECLARE_SOA_COLUMN(HfSingleCharm2P, hasHfSingleCharm2P, bool);                   //! 2-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfSingleCharm3P, hasHfSingleCharm3P, bool);                   //! 3-prong charm hadron (for efficiency studies)
 DECLARE_SOA_COLUMN(HfSingleNonPromptCharm2P, hasHfSingleNonPromptCharm2P, bool); //! 2-prong charm hadron (for efficiency studies)
 DECLARE_SOA_COLUMN(HfSingleNonPromptCharm3P, hasHfSingleNonPromptCharm3P, bool); //! 3-prong charm hadron (for efficiency studies)
+DECLARE_SOA_COLUMN(HfBtoJPsiKa, hasHfBtoJPsiKa, bool);                           //! B+ -> JPsi(->mumu)K+
+DECLARE_SOA_COLUMN(HfBtoJPsiKstar, hasHfBtoJPsiKstar, bool);                     //! B0 -> JPsi(->mumu)K*+(->Kpi)
+DECLARE_SOA_COLUMN(HfBtoJPsiPhi, hasHfBtoJPsiPhi, bool);                         //! B0s -> JPsi(->mumu)phi(->KK)
+DECLARE_SOA_COLUMN(HfBtoJPsiPrKa, hasHfBtoJPsiPrKa, bool);                       //! Lb -> JPsi(->mumu)pK+
+DECLARE_SOA_COLUMN(HfBtoJPsiPi, hasHfBtoJPsiPi, bool);                           //! Bc -> JPsi(->mumu)pi+
 
 // CF two body triggers
 DECLARE_SOA_COLUMN(PD, hasPD, bool); //! has d-p pair
@@ -166,6 +175,12 @@ DECLARE_SOA_COLUMN(PCMHighPtPhoton, hasPCMHighPtPhoton, bool); //! PCM high pT p
 // DECLARE_SOA_COLUMN(PCMEtaDalitz, hasPCMEtaDalitz, bool);       //! PCM eta -> ee gamma
 // DECLARE_SOA_COLUMN(PCMEtaGG, hasPCMEtaGG, bool);               //! PCM eta -> ee gamma
 DECLARE_SOA_COLUMN(PCMandEE, hasPCMandEE, bool); //! PCM and ee
+
+// heavy meson filters
+DECLARE_SOA_COLUMN(PCMOmegaMeson, hasPCMOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(EMCOmegaMeson, hasEMCOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(PCMEtaPrimeMeson, hasPCMEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(EMCEtaPrimeMeson, hasEMCEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
 } // namespace filtering
 
 namespace decision
@@ -207,7 +222,7 @@ using DiffractionBCFilter = DiffractionBCFilters::iterator;
 
 // Dileptons & Quarkonia
 DECLARE_SOA_TABLE(DqFilters, "AOD", "DqFilters", //!
-                  filtering::SingleE, filtering::LMeeIMR, filtering::LMeeHMR, filtering::DiElectron, filtering::SingleMuLow, filtering::SingleMuHigh, filtering::DiMuon);
+                  filtering::SingleE, filtering::LMeeIMR, filtering::LMeeHMR, filtering::DiElectron, filtering::SingleMuLow, filtering::SingleMuHigh, filtering::DiMuon, filtering::ElectronMuon);
 using DqFilter = DqFilters::iterator;
 
 // heavy flavours
@@ -231,7 +246,14 @@ DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
                   filtering::HfSingleCharm2P,
                   filtering::HfSingleCharm3P,
                   filtering::HfSingleNonPromptCharm2P,
-                  filtering::HfSingleNonPromptCharm3P);
+                  filtering::HfSingleNonPromptCharm3P,
+                  filtering::HfCharmBarToXi2Bach,
+                  filtering::HfPrCharm2P,
+                  filtering::HfBtoJPsiKa,
+                  filtering::HfBtoJPsiKstar,
+                  filtering::HfBtoJPsiPhi,
+                  filtering::HfBtoJPsiPrKa,
+                  filtering::HfBtoJPsiPi);
 
 using HfFilter = HfFilters::iterator;
 
@@ -284,6 +306,13 @@ DECLARE_SOA_TABLE(PhotonFilters, "AOD", "PhotonFilters", //!
 
 using PhotonFilter = PhotonFilters::iterator;
 
+// heavy mesons
+DECLARE_SOA_TABLE(HeavyNeutralMesonFilters, "AOD", "HeavyNeutralMesonFilters", //!
+                  filtering::PCMOmegaMeson, filtering::EMCOmegaMeson,
+                  filtering::PCMEtaPrimeMeson, filtering::EMCEtaPrimeMeson);
+
+using HeavyNeutralMesonFilter = HeavyNeutralMesonFilters::iterator;
+
 // cefp decision
 DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
                   decision::BCId, decision::GlobalBCId, decision::EvSelBC, decision::CollisionTime, decision::CollisionTimeRes, decision::CefpTriggered0, decision::CefpTriggered1, decision::CefpSelected0, decision::CefpSelected1);
@@ -295,11 +324,11 @@ DECLARE_SOA_TABLE(BCRanges, "AOD", "BCRanges", //!
 using BCRange = BCRanges::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks
-constexpr int NumberOfFilters{12};
-constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters"};
-constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters"};
-constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp-with-association", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-je-hf-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-em-photon-filter", "o2-analysis-lf-f1proton-filter"};
-constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, JetHFFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotonFilters, F1ProtonFilters> FiltersPack;
+constexpr int NumberOfFilters{13};
+constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters", "HeavyNeutralMesonFilters"};
+constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters", "HNMesonFilters"};
+constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp-with-association", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-je-hf-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-em-photon-filter", "o2-analysis-lf-f1proton-filter", "o2-analysis-heavy-meson-filter"};
+constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, JetHFFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotonFilters, F1ProtonFilters, HeavyNeutralMesonFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
 
 template <typename T, typename C>

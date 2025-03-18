@@ -185,7 +185,7 @@ struct TreeCreatorElectronML {
   // collision
   Configurable<float> maxVtxZ{"maxVtxZ", 10.0, "max VtxZ [cm]"};
   Configurable<int> maxTrackOccupancy{"maxTrackOccupancy", 999999, "max. track occupancy"};
-  Configurable<int> maxFT0Occupancy{"maxFT0Occupancy", 999999, "max. FT0 occupancy"};
+  Configurable<float> maxFT0Occupancy{"maxFT0Occupancy", 999999., "max. FT0 occupancy"};
 
   // track
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};

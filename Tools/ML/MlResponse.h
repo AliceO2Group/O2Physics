@@ -158,7 +158,7 @@ class MlResponse
       LOG(fatal) << "Model index " << nModel << " is out of range! The number of initialised models is " << mModels.size() << ". Please check your configurables.";
     }
 
-    TypeOutputScore* outputPtr = mModels[nModel].evalModel(input);
+    TypeOutputScore* outputPtr = mModels[nModel].template evalModel<TypeOutputScore>(input);
     return std::vector<TypeOutputScore>{outputPtr, outputPtr + mNClasses};
   }
 

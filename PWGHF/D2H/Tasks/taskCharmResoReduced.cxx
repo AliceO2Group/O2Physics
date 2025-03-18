@@ -132,14 +132,16 @@ struct HfTaskCharmResoReduced {
   Produces<aod::HfCandResoLites> hfCandResoLite;
   Produces<aod::HfGenResoLites> hfGenResoLite;
   Configurable<float> ptMinReso{"ptMinReso", -1, "Discard events with smaller pT"};
-  Configurable<bool> fillTrees{"fillTrees", false, "Fill output Trees"};
+  Configurable<bool> fillTrees{"fillTrees", true, "Fill output Trees"};
   Configurable<bool> fillSparses{"fillSparses", false, "Fill output Sparses"};
-  Configurable<bool> useDeltaMass{"useDeltaMass", false, "Use Delta Mass for resonance invariant Mass calculation"};
+  Configurable<bool> useDeltaMass{"useDeltaMass", true, "Use Delta Mass for resonance invariant Mass calculation"};
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to Fill only signal candidates (MC only)"};
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<float> yCandRecoMax{"yCandRecoMax", -1, "max. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. track pseudo-rapidity for acceptance calculation"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum for acceptance calculation"};
+  Configurable<float> massResoMin{"massResoMin", 0.49, "min. mass of resonance"};
+  Configurable<float> massResoMax{"massResoMax", 1.29, "max. mass of resonance"};
   // Configurables axis for histos
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis axisPtProng0{"axisPtProng0", {VARIABLE_WIDTH, 0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "prong0 bach. #it{p}_{T} (GeV/#it{c})"};
@@ -249,6 +251,9 @@ struct HfTaskCharmResoReduced {
       invMassReso = invMassReso - invMassBach0;
     } else {
       invMassReso = RecoDecay::m(std::array{bach0.pVector(), bach1.pVector()}, std::array{pdgMassBach0, pdgMassBach1});
+    }
+    if (invMassReso < massResoMin || invMassReso > massResoMax) {
+      return;
     }
     invMassBach0 = invMassBach0 - invMassD0;
     float ptGen{-1.};

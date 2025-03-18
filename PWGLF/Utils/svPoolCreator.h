@@ -45,9 +45,16 @@ struct SVCand {
 class svPoolCreator
 {
  public:
+  svPoolCreator() = default;
   svPoolCreator(int track0Pdg, int track1Pdg)
     : track0Pdg(track0Pdg), track1Pdg(track1Pdg)
   {
+  }
+
+  void setPDGs(int track0Pdg, int track1Pdg)
+  {
+    this->track0Pdg = track0Pdg;
+    this->track1Pdg = track1Pdg;
   }
 
   void clearPools()
