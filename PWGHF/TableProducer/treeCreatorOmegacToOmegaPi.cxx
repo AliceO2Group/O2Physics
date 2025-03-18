@@ -215,7 +215,7 @@ DECLARE_SOA_TABLE(HfKfOmegacLites, "AOD", "HFKFOMEGACLITE",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct HfTreeCreatorOmegac0ToOmegaPi {
+struct HfTreeCreatorOmegacToOmegaPi {
 
   Produces<o2::aod::HfOmegac0ToOmegaPiLites> rowCandidateLite;
   Produces<o2::aod::HfKfOmegacFulls> rowKfCandidateFull;
@@ -437,7 +437,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
       fillCandidateLite(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processDataLite, "Process data", true);
+  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processDataLite, "Process data", true);
 
   void processKfDataFull(MyEventTable const& collisions, MyTrackTable const&,
                          soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi> const& candidates)
@@ -454,7 +454,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
       fillKfCandidate(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataFull, "Process KF data", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processKfDataFull, "Process KF data", false);
 
   void processKfDataLite(MyEventTable const& collisions, MyTrackTable const&,
                          soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi> const& candidates)
@@ -471,7 +471,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
       fillKfCandidateLite(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataLite, "Process KF data Lite", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processKfDataLite, "Process KF data Lite", false);
 
   void processMcLite(MyEventTable const& collisions, MyTrackTable const&,
                      soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec> const& candidates)
@@ -488,7 +488,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
       fillCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMcLite, "Process MC", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processMcLite, "Process MC", false);
 
   void processKFMcFull(MyEventTable const& collisions, MyTrackTable const&,
                        soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec> const& candidates)
@@ -511,7 +511,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
       }
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMcFull, "Process KF MC", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processKFMcFull, "Process KF MC", false);
 
   void processKFMcLite(MyEventTable const& collisions, MyTrackTable const&,
                        soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec> const& candidates)
@@ -534,12 +534,12 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
       }
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMcLite, "Process KF MC Lite", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processKFMcLite, "Process KF MC Lite", false);
 
 }; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTreeCreatorOmegac0ToOmegaPi>(cfgc)};
+    adaptAnalysisTask<HfTreeCreatorOmegacToOmegaPi>(cfgc)};
 }
