@@ -1125,7 +1125,7 @@ struct IdentifiedbfTask {
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
-  PROCESS_SWITCH(IdentifiedBfTask, processRecLevel, "Process reco level correlations", false);
+  PROCESS_SWITCH(IdentifiedbfTask, processRecLevel, "Process reco level correlations", false);
 
   void processRecLevelCheck(aod::Collisions const& collisions, aod::Tracks const& tracks, aod::McParticles const&)
   {
@@ -1152,7 +1152,7 @@ struct IdentifiedbfTask {
     LOGF(info, "  First not assigned track index %d", firstNotAssignedIndex);
     LOGF(info, "  Last not assigned track index %d", lastNotAssignedIndex);
   }
-  PROCESS_SWITCH(IdentifiedBfTask, processRecLevelCheck, "Process reco level checks", true);
+  PROCESS_SWITCH(IdentifiedbfTask, processRecLevelCheck, "Process reco level checks", true);
 
   void processGenLevelCheck(aod::McCollisions const& mccollisions, aod::McParticles const& particles)
   {
@@ -1179,7 +1179,7 @@ struct IdentifiedbfTask {
     LOGF(info, "  First not assigned track index %d", firstNotAssignedIndex);
     LOGF(info, "  Last not assigned track index %d", lastNotAssignedIndex);
   }
-  PROCESS_SWITCH(IdentifiedBfTask, processGenLevelCheck, "Process generator level checks", true);
+  PROCESS_SWITCH(IdentifiedbfTask, processGenLevelCheck, "Process generator level checks", true);
 
   void processRecLevelNotStored(
     soa::Filtered<soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo>>::iterator const& collision,
@@ -1189,7 +1189,7 @@ struct IdentifiedbfTask {
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
-  PROCESS_SWITCH(IdentifiedBfTask, processRecLevelNotStored,
+  PROCESS_SWITCH(IdentifiedbfTask, processRecLevelNotStored,
                  "Process reco level correlations for not stored derived data",
                  true);
 
@@ -1201,7 +1201,7 @@ struct IdentifiedbfTask {
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
-  PROCESS_SWITCH(IdentifiedBfTask, processDetLevelNotStored,
+  PROCESS_SWITCH(IdentifiedbfTask, processDetLevelNotStored,
                  "Process detecotr level correlations for not stored derived data",
                  true);
 
@@ -1211,7 +1211,7 @@ struct IdentifiedbfTask {
   {
     processSame<true>(collision, tracks);
   }
-  PROCESS_SWITCH(IdentifiedBfTask, processGenLevel, "Process generator level correlations", false);
+  PROCESS_SWITCH(IdentifiedbfTask, processGenLevel, "Process generator level correlations", false);
 
   void processGenLevelNotStored(
     soa::Filtered<soa::Join<aod::McCollisions, aod::IdentifiedBfCFGenCollisionsInfo>>::iterator const& collision,
@@ -1219,7 +1219,7 @@ struct IdentifiedbfTask {
   {
     processSame<true>(collision, particles);
   }
-  PROCESS_SWITCH(IdentifiedBfTask, processGenLevelNotStored,
+  PROCESS_SWITCH(IdentifiedbfTask, processGenLevelNotStored,
                  "Process generator level correlations for not stored derived data",
                  false);
 
@@ -1252,7 +1252,7 @@ struct IdentifiedbfTask {
       processMixed<false>(collision1, tracks1, tracks2, collision1.bc_as<aod::BCsWithTimestamps>().timestamp());
     }
   }
-  PROCESS_SWITCH(IdentifiedBfTask, processRecLevelMixed, "Process reco level mixed events correlations", false);
+  PROCESS_SWITCH(IdentifiedbfTask, processRecLevelMixed, "Process reco level mixed events correlations", false);
 
   void processRecLevelMixedNotStored(
     soa::Filtered<soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo>> const& collisions,
@@ -1304,7 +1304,7 @@ struct IdentifiedbfTask {
                           collision1.bc_as<aod::BCsWithTimestamps>().timestamp());
     }
   }
-  PROCESS_SWITCH(IdentifiedBfTask, processRecLevelMixedNotStored,
+  PROCESS_SWITCH(IdentifiedbfTask, processRecLevelMixedNotStored,
                  "Process reco level mixed events correlations for not stored derived data",
                  false);
 
@@ -1332,7 +1332,7 @@ struct IdentifiedbfTask {
       processMixed<true>(collision1, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(IdentifiedBfTask, processGenLevelMixed, "Process generator level mixed events correlations", false);
+  PROCESS_SWITCH(IdentifiedbfTask, processGenLevelMixed, "Process generator level mixed events correlations", false);
 
   void processGenLevelMixedNotStored(
     soa::Filtered<soa::Join<aod::McCollisions, aod::IdentifiedBfCFGenCollisionsInfo>> const& collisions,
@@ -1379,7 +1379,7 @@ struct IdentifiedbfTask {
       processMixed<true>(collision1, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(IdentifiedBfTask, processGenLevelMixedNotStored,
+  PROCESS_SWITCH(IdentifiedbfTask, processGenLevelMixedNotStored,
                  "Process generator level mixed events correlations for not stored derived data",
                  false);
 
@@ -1389,13 +1389,13 @@ struct IdentifiedbfTask {
     LOGF(IDENTIFIEDBFLOGCOLLISIONS, "Got %d new collisions", colls.size());
     fOutput->Clear();
   }
-  PROCESS_SWITCH(IdentifiedBfTask, processCleaner, "Cleaner process for not used output", false);
+  PROCESS_SWITCH(IdentifiedbfTask, processCleaner, "Cleaner process for not used output", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<IdentifiedBfTask>(cfgc, TaskName{"IdentifiedBfTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processRecLevelMixed", false}, {"processCleaner", false}}}),  // o2-linter: disable=name/o2-task (Task is adapted multiple times)
-    adaptAnalysisTask<IdentifiedBfTask>(cfgc, TaskName{"IdentifiedBfTaskGen"}, SetDefaultProcesses{{{"processGenLevel", false}, {"processGenLevelMixed", false}, {"processCleaner", true}}})}; // o2-linter: disable=name/o2-task (Task is adapted multiple times)
+    adaptAnalysisTask<IdentifiedbfTask>(cfgc, TaskName{"IdentifiedbfTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processRecLevelMixed", false}, {"processCleaner", false}}}),  // o2-linter: disable=name/o2-task (Task is adapted multiple times)
+    adaptAnalysisTask<IdentifiedbfTask>(cfgc, TaskName{"IdentifiedbfTaskGen"}, SetDefaultProcesses{{{"processGenLevel", false}, {"processGenLevelMixed", false}, {"processCleaner", true}}})}; // o2-linter: disable=name/o2-task (Task is adapted multiple times)
   return workflow;
 }
