@@ -975,7 +975,7 @@ struct EventSelectionQaTask {
     // collision-based event selection qa
     std::vector<int64_t> vFoundGlobalBC(cols.size(), 0);   // global BCs for collisions
     std::vector<float> vCollVz(cols.size(), 0);            // vector with vZ positions for each collision
-    std::vector<bool> vIsSel8(cols.size(), 0);             // vector with vZ positions for each collision
+    std::vector<bool> vIsSel8(cols.size(), 0);             // vector with sel8 decisions
     std::vector<int> vTracksITS567perColl(cols.size(), 0); // counter of tracks per collision for occupancy studies
     for (const auto& col : cols) {
       for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
