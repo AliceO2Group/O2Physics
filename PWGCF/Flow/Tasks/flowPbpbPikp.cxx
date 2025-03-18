@@ -85,6 +85,10 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 2.0f, "DCAxy range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "DCAz range for tracks")
 
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancy, int, 3000, "Occupancy cut")
+  O2_DEFINE_CONFIGURABLE(cfgUseGlobalTrack, bool, true, "use Global track")
+  O2_DEFINE_CONFIGURABLE(cfgITScluster, int, 0, "Number of ITS cluster")
+
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -255,6 +259,18 @@ struct FlowPbpbPikp {
     KAONS,
     PROTONS
   };
+
+  template <typename TTrack>
+  bool selectionTrack(const TTrack& track)
+  {
+    if (cfgUseGlobalTrack && !(track.isGlobalTrack() && track.isPVContributor() && track.itsNCls() > cfgITScluster && track.tpcNClsFound() > cfgTpcCluster && track.hasTPC())) {
+      return false;
+    }
+    if (!cfgUseGlobalTrack && !(track.isPVContributor() && track.itsNCls() > cfgITScluster && track.hasTPC())) {
+      return false;
+    }
+    return true;
+  }
 
   template <typename TTrack>
   int getNsigmaPID(TTrack track)
@@ -476,7 +492,12 @@ struct FlowPbpbPikp {
     int nTot = tracks.size();
     if (nTot < 1)
       return;
-    if (!collision.sel8())
+
+    if (!collision.sel8() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
+      return;
+
+    int occupancy = collision.trackOccupancyInTimeRange();
+    if (occupancy > cfgCutOccupancy)
       return;
 
     float lRandom = fRndm->Rndm();
@@ -495,14 +516,16 @@ struct FlowPbpbPikp {
 
     histos.fill(HIST("hVtxZ"), vtxz);
     histos.fill(HIST("hMult"), nTot);
-    histos.fill(HIST("hCent"), collision.centFT0C());
+    histos.fill(HIST("hCent"), cent);
     fGFW->Clear();
 
     float weff = 1;
     int pidIndex;
-    loadCorrections(bc);
+    loadCorrections(bc); // load corrections for the each event
 
     for (auto const& track : tracks) {
+      if (!selectionTrack(track))
+        continue;
       double pt = track.pt();
       histos.fill(HIST("hPhi"), track.phi());
       histos.fill(HIST("hEta"), track.eta());
