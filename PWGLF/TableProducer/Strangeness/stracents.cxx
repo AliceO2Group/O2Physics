@@ -50,7 +50,8 @@ struct straCents {
   Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
   struct : ConfigurableGroup {
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
-    Configurable<std::string> ccdbPath{"ccdbPath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
+    Configurable<std::string> ccdbPath_Centrality{"ccdbPath_Centrality", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
+    Configurable<std::string> ccdbPath_Multiplicity{"ccdbPath_Multiplicity", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
     Configurable<std::string> genName{"genName", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
     Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, {"Option to not crash on null and instead fill required tables with dummy info"}};
     Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
@@ -218,19 +219,23 @@ struct straCents {
     mRunNumber = collision.runNumber();
     LOGF(info, "timestamp=%llu, run number=%d", collision.timestamp(), collision.runNumber());
 
-    TList* lCalibObjects = nullptr;
+    TList* lCalibObjects_Centrality = nullptr;
+    TList* lCalibObjects_Multiplicity= nullptr;
     if (ccdbConfig.reconstructionPass.value == "") {
-      lCalibObjects = ccdb->getForRun<TList>(ccdbConfig.ccdbPath, mRunNumber);
+      lCalibObjects_Centrality = ccdb->getForRun<TList>(ccdbConfig.ccdbPath_Centrality, mRunNumber);
+      lCalibObjects_Multiplicity = ccdb->getForRun<TList>(ccdbConfig.ccdbPath_Multiplicity, mRunNumber);
     } else if (ccdbConfig.reconstructionPass.value == "metadata") {
       std::map<std::string, std::string> metadata;
       metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
       LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
-      lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
+      lCalibObjects_Centrality = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath_Centrality, mRunNumber, metadata);
+      lCalibObjects_Multiplicity = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath_Multiplicity, mRunNumber, metadata);
     } else {
       std::map<std::string, std::string> metadata;
       metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
       LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", ccdbConfig.reconstructionPass.value);
-      lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
+      lCalibObjects_Centrality = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath_Centrality, mRunNumber, metadata);
+      lCalibObjects_Multiplicity = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath_Multiplicity, mRunNumber, metadata);
     }
 
     fv0aInfo.mCalibrationStored = false;
@@ -250,20 +255,21 @@ struct straCents {
     Run2CL0Info.mCalibrationStored = false;
     Run2CL1Info.mCalibrationStored = false;
 
-    if (lCalibObjects) {
+    if (lCalibObjects_Multiplicity && lCalibObjects_Centrality) {
       if (produceHistograms) {
-        listCalib->Add(lCalibObjects->Clone(Form("%i", collision.runNumber())));
+        listCalib->Add(lCalibObjects_Centrality->Clone(Form("%i", collision.runNumber())));
+        listCalib->Add(lCalibObjects_Multiplicity->Clone(Form("%i", collision.runNumber())));
       }
 
       LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, collision.runNumber());
 
       if constexpr (requires { collision.sel7(); }) { // check if we are in Run 2
-        auto getccdb = [lCalibObjects](const char* ccdbhname) {
-          TH1* h = reinterpret_cast<TH1*>(lCalibObjects->FindObject(ccdbhname));
+        auto getccdb = [lCalibObjects_Centrality](const char* ccdbhname) {
+          TH1* h = reinterpret_cast<TH1*>(lCalibObjects_Centrality->FindObject(ccdbhname));
           return h;
         };
-        auto getformulaccdb = [lCalibObjects](const char* ccdbhname) {
-          TFormula* f = reinterpret_cast<TFormula*>(lCalibObjects->FindObject(ccdbhname));
+        auto getformulaccdb = [lCalibObjects_Centrality](const char* ccdbhname) {
+          TFormula* f = reinterpret_cast<TFormula*>(lCalibObjects_Centrality->FindObject(ccdbhname));
           return f;
         };
         
@@ -335,9 +341,9 @@ struct straCents {
           }
         }
       } else { // we are in Run 3
-        auto getccdb = [lCalibObjects, collision](struct CalibrationInfo& estimator, const Configurable<std::string> generatorName, const Configurable<bool> notCrashOnNull) { // TODO: to consider the name inside the estimator structure
-          estimator.mhMultSelCalib = reinterpret_cast<TH1*>(lCalibObjects->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
-          estimator.mMCScale = reinterpret_cast<TFormula*>(lCalibObjects->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
+        auto getccdb = [lCalibObjects_Centrality, collision](struct CalibrationInfo& estimator, const Configurable<std::string> generatorName, const Configurable<bool> notCrashOnNull) { // TODO: to consider the name inside the estimator structure
+          estimator.mhMultSelCalib = reinterpret_cast<TH1*>(lCalibObjects_Centrality->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
+          estimator.mMCScale = reinterpret_cast<TFormula*>(lCalibObjects_Centrality->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
           if (estimator.mhMultSelCalib != nullptr) {
             if (generatorName->length() != 0) {
               LOGF(info, "Retrieving MC calibration for %d, generator name: %s", collision.runNumber(), generatorName->c_str());
@@ -370,12 +376,12 @@ struct straCents {
         getccdb(nGlobalInfo, ccdbConfig.genName, ccdbConfig.doNotCrashOnNull);
         getccdb(mftInfo, ccdbConfig.genName, ccdbConfig.doNotCrashOnNull);
 
-        hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
-        hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
-        hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
-        hVtxZFDDA = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
-        hVtxZFDDC = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
-        hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
+        hVtxZFV0A = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFV0A"));
+        hVtxZFT0A = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFT0A"));
+        hVtxZFT0C = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFT0C"));
+        hVtxZFDDA = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFDDA"));
+        hVtxZFDDC = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFDDC"));
+        hVtxZNTracks = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZNTracksPV"));
         lCalibLoaded = true;
         // Capture error
         if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {  
