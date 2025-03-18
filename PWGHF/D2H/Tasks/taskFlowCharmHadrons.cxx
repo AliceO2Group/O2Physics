@@ -49,7 +49,7 @@ enum DecayChannel { DplusToPiKPi = 0,
                     LcToPiKP,
                     XicToPKPi,
                     XicToPiKP
-                  };
+};
 
 enum QvecEstimator { FV0A = 0,
                      FT0M,
@@ -79,7 +79,7 @@ struct HfTaskFlowCharmHadrons {
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {10, 0., 10.}, ""};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {10000, 0., 100.}, ""};
   ConfigurableAxis thnConfigAxisCosNPhi{"thnConfigAxisCosNPhi", {100, -1., 1.}, ""};
-  ConfigurableAxis thnConfigAxisPsi{"thnConfigAxisPsi", {6000, 2.*TMath::Pi(), 2.*TMath::Pi()}, ""};
+  ConfigurableAxis thnConfigAxisPsi{"thnConfigAxisPsi", {6000, 2. * TMath::Pi(), 2. * TMath::Pi()}, ""};
   ConfigurableAxis thnConfigAxisCosDeltaPhi{"thnConfigAxisCosDeltaPhi", {100, -1., 1.}, ""};
   ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
@@ -186,7 +186,7 @@ struct HfTaskFlowCharmHadrons {
     if (occEstimator != 0) {
       registry.add("trackOccVsFT0COcc", "trackOccVsFT0COcc; trackOcc; FT0COcc", {HistType::kTH2F, {thnAxisOccupancyITS, thnAxisOccupancyFT0C}});
     }
-  
+
     if (storeEpCosSin) {
       registry.add("ep/hSparseEp", "THn for Event Plane distirbution", {HistType::kTHnSparseF, {thnAxisCent, thnAxisPsi, thnAxisCosNPhi, thnAxisSinNPhi}});
     }
@@ -663,23 +663,23 @@ struct HfTaskFlowCharmHadrons {
 
   // Xic with ML
   void processXicMl(CollsWithQvecs::iterator const& collision,
-    CandXicDataWMl const&)
+                    CandXicDataWMl const&)
   {
-  auto candsXicToPKPiWMl = selectedXicToPKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-  auto candsXicToPiKPWMl = selectedXicToPiKPWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-  runFlowAnalysis<DecayChannel::XicToPKPi>(collision, candsXicToPKPiWMl);
-  runFlowAnalysis<DecayChannel::XicToPiKP>(collision, candsXicToPiKPWMl);
+    auto candsXicToPKPiWMl = selectedXicToPKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    auto candsXicToPiKPWMl = selectedXicToPiKPWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    runFlowAnalysis<DecayChannel::XicToPKPi>(collision, candsXicToPKPiWMl);
+    runFlowAnalysis<DecayChannel::XicToPiKP>(collision, candsXicToPiKPWMl);
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processXicMl, "Process Xic candidates with ML", false);
 
   // Xic with rectangular cuts
   void processXic(CollsWithQvecs::iterator const& collision,
-    CandXicData const&)
+                  CandXicData const&)
   {
-  auto candsXicToPKPi = selectedXicToPKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-  auto candsXicToPiKP = selectedXicToPiKP->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-  runFlowAnalysis<DecayChannel::XicToPKPi>(collision, candsXicToPKPi);
-  runFlowAnalysis<DecayChannel::XicToPiKP>(collision, candsXicToPiKP);
+    auto candsXicToPKPi = selectedXicToPKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    auto candsXicToPiKP = selectedXicToPiKP->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    runFlowAnalysis<DecayChannel::XicToPKPi>(collision, candsXicToPKPi);
+    runFlowAnalysis<DecayChannel::XicToPiKP>(collision, candsXicToPiKP);
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processXic, "Process Xic candidates", false);
 
@@ -769,9 +769,9 @@ struct HfTaskFlowCharmHadrons {
 
     if (storeEpCosSin) {
       registry.fill(HIST("ep/hSparseEp"), centrality,
-      epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, harmonic),
-      std::cos(harmonic * epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, harmonic)),
-      std::sin(harmonic * epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, harmonic)));
+                    epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, harmonic),
+                    std::cos(harmonic * epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, harmonic)),
+                    std::sin(harmonic * epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, harmonic)));
     }
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processResolution, "Process resolution", false);
