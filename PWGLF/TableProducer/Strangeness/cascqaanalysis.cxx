@@ -100,10 +100,10 @@ struct Cascqaanalysis {
   {
     AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
-    ConfigurableAxis centFT0MAxis{"FT0M",
+    ConfigurableAxis centFT0MAxis{"centFT0MAxis",
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
                                   "FT0M (%)"};
-    ConfigurableAxis centFV0AAxis{"FV0A",
+    ConfigurableAxis centFV0AAxis{"centFV0AAxis",
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
                                   "FV0A (%)"};
     AxisSpec eventTypeAxis = {3, -0.5f, 2.5f, "Event Type"};
@@ -828,6 +828,6 @@ struct MyCascades {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Cascqaanalysis>(cfgc, TaskName{"lf-cascqaanalysis"}),
-    adaptAnalysisTask<MyCascades>(cfgc, TaskName{"lf-mycascades"})};
+    adaptAnalysisTask<Cascqaanalysis>(cfgc),
+    adaptAnalysisTask<MyCascades>(cfgc)};
 }
