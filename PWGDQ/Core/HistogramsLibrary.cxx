@@ -861,18 +861,18 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     if (subGroupStr.Contains("singlemucumulant2")) {
       double PtBinEdges[68]; // 0-1000
       for (int i = 0; i < 68; i++) {
-          if (i <= 39) {
-              PtBinEdges[i] = i / 10.;
-          } else if (i <= 66) {
-              PtBinEdges[i] = (i - 40) * 1. + 4.;
-          } else {
-              PtBinEdges[i] = 1000;
-          }
+        if (i <= 39) {
+          PtBinEdges[i] = i / 10.;
+        } else if (i <= 66) {
+          PtBinEdges[i] = (i - 40) * 1. + 4.;
+        } else {
+          PtBinEdges[i] = 1000;
+        }
       }
 
       double CentBinEdges[19]; // 0-90%
       for (int i = 0; i < 19; i++) {
-          CentBinEdges[i] = i * 5;
+        CentBinEdges[i] = i * 5;
       }
 
       hm->AddHistogram(histClass, "Pt_centrFT0C_Corr2REFsingle2", "", true, 67, PtBinEdges, VarManager::kPt, 18, CentBinEdges, VarManager::kCentFT0C, 0, nullptr, VarManager::kCORR2REFbysinglemu, "", "", "", VarManager::kNothing, VarManager::kM11REFoverMpsingle);
