@@ -736,13 +736,13 @@ struct MeanPtFlucId {
 
     if (cfgWeightPt) {
       float weightPt = hWeightPt->GetBinContent(hWeightPt->FindBin(pt));
-      weight = purity / weightPt;
+      weight = purity * weightPt;
     } else if (cfgWeightPtY) {
       float weightPtY = hWeightPtY->GetBinContent(hWeightPtY->FindBin(rap, pt));
-      weight = purity / weightPtY;
+      weight = purity * weightPtY;
     } else if (cfgWeightPtEta) {
       float weightPtEta = hWeightPtEta->GetBinContent(hWeightPtEta->FindBin(eta, pt));
-      weight = purity / weightPtEta;
+      weight = purity * weightPtEta;
     } else {
       weight = 1.0;
     }
