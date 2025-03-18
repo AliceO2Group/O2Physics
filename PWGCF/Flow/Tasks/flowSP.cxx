@@ -657,7 +657,7 @@ struct FlowSP {
   template <typename TrackObject>
   bool trackSelected(TrackObject track, const int& field)
   {
-    if (std::fabs(track.eta()) < cfgEta)
+    if (std::fabs(track.eta()) > cfgEta)
       return false;
     registry.fill(HIST("hTrackCount"), trackSel_Eta);
 
