@@ -1395,7 +1395,7 @@ struct IdentifiedBfCorrelationsTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<IdentifiedBfCorrelationsTask>(cfgc, TaskName{"IdentifiedBfCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processRecLevelMixed", false}, {"processCleaner", false}}}),
+    adaptAnalysisTask<IdentifiedBfCorrelationsTask>(cfgc, SetDefaultProcesses{{{"processRecLevel", true}, {"processRecLevelMixed", false}, {"processCleaner", false}}}),
     adaptAnalysisTask<IdentifiedBfCorrelationsTask>(cfgc, TaskName{"IdentifiedBfCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", false}, {"processGenLevelMixed", false}, {"processCleaner", true}}})};
   return workflow;
 }
