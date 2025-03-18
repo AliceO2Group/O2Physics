@@ -33,6 +33,7 @@
 #include "Math/Vector3D.h"
 #include "Math/GenVector/Boost.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "TPDGCode.h"
 
 using namespace std;
 using namespace o2;
@@ -250,9 +251,7 @@ DECLARE_SOA_TABLE(SignalMCreco, "AOD", "SignalMCreco",
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct ExclusiveRhoTo4Pi {
   SGSelector sgSelector;
-  int kPiPlus = 211;
-  int kPiMinus = -211;
-  int kRhoPrime1700 = 30113;
+  int rhoPrime = 30113;
   uint16_t numPVContrib = 4;
   Produces<aod::SignalData> sigFromData;
   Produces<aod::BkgroundData> bkgFromData;
@@ -402,30 +401,34 @@ struct ExclusiveRhoTo4Pi {
     histosMCgen.add("rhoPrimeCounts", "Total Rho prime Events; Events", kTH1F, {{10, 0, 10}});
 
     // Track Stuff
-    histosMCgen.add("MCgen_particle_pT", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 10}});
-    histosMCgen.add("MCgen_particle_pT_contributed", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 10}});
-    histosMCgen.add("MCgen_particle_rapidity", "Generated Rapidity; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
-    histosMCgen.add("MCgen_particle_rapidity_contributed", "Generated Rapidity; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
+    histosMCgen.add("pion_pT", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 10}});
+    histosMCgen.add("pion_eta", "Generated Pseudorapidity; #eta; Events", kTH1F, {{1000, -2.5, 2.5}});
+    histosMCgen.add("pion_rapidity", "Generated Rapidity; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
 
     // Pair Invariant Mass
-    histosMCgen.add("MCgen_invMass_pair_1", "Invariant Mass Distribution of 2 pions 1 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
-    histosMCgen.add("MCgen_invMass_pair_2", "Invariant Mass Distribution of 2 pions 2 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
-    histosMCgen.add("MCgen_invMass_pair_3", "Invariant Mass Distribution of 2 pions 3 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
-    histosMCgen.add("MCgen_invMass_pair_4", "Invariant Mass Distribution of 2 pions 4 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+    histosMCgen.add("twoPion_invMass_pair_1", "Invariant Mass Distribution of 2 pions 1 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+    histosMCgen.add("twoPion_invMass_pair_2", "Invariant Mass Distribution of 2 pions 2 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+    histosMCgen.add("twoPion_invMass_pair_3", "Invariant Mass Distribution of 2 pions 3 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
+    histosMCgen.add("twoPion_invMass_pair_4", "Invariant Mass Distribution of 2 pions 4 ; m(#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{5000, 0, 5}});
 
     // Generated Transverse Momentum, Rapidty and Invariant Mass
-    histosMCgen.add("MCgen_rhoPrime_pT", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
-    histosMCgen.add("MCgen_4pion_pT", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
-    histosMCgen.add("MCgen_4pion_rapidity", "Generated Rapidity; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
-    histosMCgen.add("MCgen_4pion_invmass", "Invariant Mass of 4-Pions; m(4-pion); Events", kTH1F, {{nBinsInvariantMass, invariantMassMin, invariantMassMax}});
+    histosMCgen.add("rhoPrime_pT", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
+    histosMCgen.add("rhoPrime_eta", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
+    histosMCgen.add("rhoPrime_rapidity", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
+    histosMCgen.add("rhoPrime_invmass", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
+
+    histosMCgen.add("fourPion_pT", "Generated pT; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
+    histosMCgen.add("fourPion_eta", "Generated Pseudorapidity; #eta; Events", kTH1F, {{1000, -2.5, 2.5}});
+    histosMCgen.add("fourPion_rapidity", "Generated Rapidity; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
+    histosMCgen.add("fourPion_invmass", "Invariant Mass of 4-Pions; m(4-pion); Events", kTH1F, {{nBinsInvariantMass, invariantMassMin, invariantMassMax}});
 
     // Collin Soper Theta and Phi
-    histosMCgen.add("MCgen_CS_phi_pair_1", "#phi Distribution; #phi; Events", kTH1F, {{nBinsPhi, -3.2, 3.2}});
-    histosMCgen.add("MCgen_CS_phi_pair_2", "#phi Distribution; #phi; Events", kTH1F, {{nBinsPhi, -3.2, 3.2}});
-    histosMCgen.add("MCgen_CS_costheta_pair_1", "#theta Distribution;cos(#theta); Events", kTH1F, {{nBinsCosTheta, -1, 1}});
-    histosMCgen.add("MCgen_CS_costheta_pair_2", "#theta Distribution;cos(#theta); Events", kTH1F, {{nBinsCosTheta, -1, 1}});
-    histosMCgen.add("MCgen_phi_cosTheta_pair_1", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {{nBinsPhi, -3.2, 3.2}, {nBinsCosTheta, -1, 1}});
-    histosMCgen.add("MCgen_phi_cosTheta_pair_2", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {{nBinsPhi, -3.2, 3.2}, {nBinsCosTheta, -1, 1}});
+    histosMCgen.add("fourPion_phi_pair_1", "#phi Distribution; #phi; Events", kTH1F, {{nBinsPhi, -3.2, 3.2}});
+    histosMCgen.add("fourPion_phi_pair_2", "#phi Distribution; #phi; Events", kTH1F, {{nBinsPhi, -3.2, 3.2}});
+    histosMCgen.add("fourPion_costheta_pair_1", "#theta Distribution;cos(#theta); Events", kTH1F, {{nBinsCosTheta, -1, 1}});
+    histosMCgen.add("fourPion_costheta_pair_2", "#theta Distribution;cos(#theta); Events", kTH1F, {{nBinsCosTheta, -1, 1}});
+    histosMCgen.add("phi_cosTheta_pair_1", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {{nBinsPhi, -3.2, 3.2}, {nBinsCosTheta, -1, 1}});
+    histosMCgen.add("phi_cosTheta_pair_2", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {{nBinsPhi, -3.2, 3.2}, {nBinsCosTheta, -1, 1}});
 
     // MC Reco Stuff
 
@@ -619,6 +622,7 @@ struct ExclusiveRhoTo4Pi {
     if ((gapSide != 2)) {
       return;
     }
+
     histosData.fill(HIST("vertexZ"), collision.posZ());
     histosData.fill(HIST("V0A"), collision.totalFV0AmplitudeA());
     histosData.fill(HIST("FT0A"), collision.totalFT0AmplitudeA());
@@ -1386,39 +1390,30 @@ struct ExclusiveRhoTo4Pi {
   {
     std::vector<TLorentzVector> piPlusvectors;
     std::vector<TLorentzVector> piMinusvectors;
-    TLorentzVector motherVector, tempVector, p1, p2, p3, p4;
-    TLorentzVector p1234;
-
-    bool flag = false;
+    TLorentzVector daughterVector;
+    TVector3 particleVector;
 
     for (const auto& particle : mcParts) {
-      tempVector.SetXYZM(particle.px(), particle.py(), particle.pz(), o2::constants::physics::MassPionCharged);
 
-      if (!particle.has_mothers()) {
+      if ((particle.pdgCode() != rhoPrime) || (particle.daughters_as<aod::UDMcParticles>().size() != 4)) {
         continue;
       }
 
-      for (const auto& mother : particle.mothers_as<aod::UDMcParticles>()) {
-        if (mother.pdgCode() == kRhoPrime1700) {
-          motherVector.SetXYZM(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassPionCharged);
-          histosMCgen.fill(HIST("MCgen_rhoPrime_pT"), motherVector.Pt());
+      particleVector.SetXYZ(particle.px(), particle.py(), particle.pz());
+      histosMCgen.fill(HIST("rhoPrimeCounts"), 1);
+      histosMCgen.fill(HIST("rhoPrime_pT"), particleVector.Pt());
+      histosMCgen.fill(HIST("rhoPrime_eta"), particleVector.Eta());
 
-          if (flag == false) {
-            histosMCgen.fill(HIST("rhoPrimeCounts"), 5);
-          }
-          flag = true;
-          if (particle.pdgCode() == kPiPlus) {
-            histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
-            histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
-            piPlusvectors.push_back(tempVector);
-          }
-          if (particle.pdgCode() == kPiMinus) {
-            histosMCgen.fill(HIST("MCgen_particle_pT"), tempVector.Pt());
-            histosMCgen.fill(HIST("MCgen_particle_rapidity"), tempVector.Rapidity());
-            piMinusvectors.push_back(tempVector);
-          }
-        } // End of Mother ID 30113 rho prime
-      } // End of loop over mothers
+      for (const auto& daughter : particle.daughters_as<aod::UDMcParticles>()) {
+        daughterVector.SetXYZM(daughter.px(), daughter.py(), daughter.pz(), o2::constants::physics::MassPionCharged);
+        if (daughter.pdgCode() == PDG_t::kPiPlus) {
+          piPlusvectors.push_back(daughterVector);
+        }
+        if (daughter.pdgCode() == PDG_t::kPiMinus) {
+          piMinusvectors.push_back(daughterVector);
+        }
+      } // End of loop over daughters
+
     } // End of loop over MC particles
 
     if (piPlusvectors.size() != 2 || piMinusvectors.size() != 2) {
@@ -1450,26 +1445,32 @@ struct ExclusiveRhoTo4Pi {
     pirapidity.push_back(piMinusvectors[0].Rapidity());
     pirapidity.push_back(piMinusvectors[1].Rapidity());
 
-    p1234 = piPlusvectors[0] + piPlusvectors[1] + piMinusvectors[0] + piMinusvectors[1];
+    TLorentzVector p1234 = piPlusvectors[0] + piPlusvectors[1] + piMinusvectors[0] + piMinusvectors[1];
 
-    histosMCgen.fill(HIST("MCgen_particle_pT_contributed"), piPlusvectors[0].Pt());
-    histosMCgen.fill(HIST("MCgen_particle_pT_contributed"), piPlusvectors[1].Pt());
-    histosMCgen.fill(HIST("MCgen_particle_pT_contributed"), piMinusvectors[0].Pt());
-    histosMCgen.fill(HIST("MCgen_particle_pT_contributed"), piMinusvectors[1].Pt());
+    histosMCgen.fill(HIST("pion_pT"), piPlusvectors[0].Pt());
+    histosMCgen.fill(HIST("pion_pT"), piPlusvectors[1].Pt());
+    histosMCgen.fill(HIST("pion_pT"), piMinusvectors[0].Pt());
+    histosMCgen.fill(HIST("pion_pT"), piMinusvectors[1].Pt());
 
-    histosMCgen.fill(HIST("MCgen_particle_rapidity_contributed"), piPlusvectors[0].Rapidity());
-    histosMCgen.fill(HIST("MCgen_particle_rapidity_contributed"), piPlusvectors[1].Rapidity());
-    histosMCgen.fill(HIST("MCgen_particle_rapidity_contributed"), piMinusvectors[0].Rapidity());
-    histosMCgen.fill(HIST("MCgen_particle_rapidity_contributed"), piMinusvectors[1].Rapidity());
+    histosMCgen.fill(HIST("pion_eta"), piPlusvectors[0].Eta());
+    histosMCgen.fill(HIST("pion_eta"), piPlusvectors[1].Eta());
+    histosMCgen.fill(HIST("pion_eta"), piMinusvectors[0].Eta());
+    histosMCgen.fill(HIST("pion_eta"), piMinusvectors[1].Eta());
 
-    histosMCgen.fill(HIST("MCgen_4pion_pT"), p1234.Pt());
-    histosMCgen.fill(HIST("MCgen_4pion_rapidity"), p1234.Rapidity());
-    histosMCgen.fill(HIST("MCgen_4pion_invmass"), p1234.M());
+    histosMCgen.fill(HIST("pion_rapidity"), piPlusvectors[0].Rapidity());
+    histosMCgen.fill(HIST("pion_rapidity"), piPlusvectors[1].Rapidity());
+    histosMCgen.fill(HIST("pion_rapidity"), piMinusvectors[0].Rapidity());
+    histosMCgen.fill(HIST("pion_rapidity"), piMinusvectors[1].Rapidity());
 
-    histosMCgen.fill(HIST("MCgen_invMass_pair_1"), (piPlusvectors[0] + piMinusvectors[0]).M());
-    histosMCgen.fill(HIST("MCgen_invMass_pair_2"), (piPlusvectors[0] + piMinusvectors[1]).M());
-    histosMCgen.fill(HIST("MCgen_invMass_pair_3"), (piPlusvectors[1] + piMinusvectors[0]).M());
-    histosMCgen.fill(HIST("MCgen_invMass_pair_4"), (piPlusvectors[1] + piMinusvectors[1]).M());
+    histosMCgen.fill(HIST("fourPion_pT"), p1234.Pt());
+    histosMCgen.fill(HIST("fourPion_eta"), p1234.Eta());
+    histosMCgen.fill(HIST("fourPion_rapidity"), p1234.Rapidity());
+    histosMCgen.fill(HIST("fourPion_invmass"), p1234.M());
+
+    histosMCgen.fill(HIST("twoPion_invMass_pair_1"), (piPlusvectors[0] + piMinusvectors[0]).M());
+    histosMCgen.fill(HIST("twoPion_invMass_pair_2"), (piPlusvectors[0] + piMinusvectors[1]).M());
+    histosMCgen.fill(HIST("twoPion_invMass_pair_3"), (piPlusvectors[1] + piMinusvectors[0]).M());
+    histosMCgen.fill(HIST("twoPion_invMass_pair_4"), (piPlusvectors[1] + piMinusvectors[1]).M());
 
     ROOT::Math::PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
 
@@ -1490,16 +1491,17 @@ struct ExclusiveRhoTo4Pi {
     auto cosThetaPair1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
     auto cosThetaPair2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
 
-    generatedMC(pipt, pieta, piphi, pirapidity,
-                p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(),
-                phiPair1, phiPair2, cosThetaPair1, cosThetaPair2);
+    generatedMC(
+      pipt, pieta, piphi, pirapidity,
+      p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(),
+      phiPair1, phiPair2, cosThetaPair1, cosThetaPair2);
 
-    histosMCgen.fill(HIST("MCgen_CS_phi_pair_1"), phiPair1);
-    histosMCgen.fill(HIST("MCgen_CS_phi_pair_2"), phiPair2);
-    histosMCgen.fill(HIST("MCgen_CS_costheta_pair_1"), cosThetaPair1);
-    histosMCgen.fill(HIST("MCgen_CS_costheta_pair_2"), cosThetaPair2);
-    histosMCgen.fill(HIST("MCgen_phi_cosTheta_pair_1"), phiPair1, cosThetaPair1);
-    histosMCgen.fill(HIST("MCgen_phi_cosTheta_pair_2"), phiPair2, cosThetaPair2);
+    histosMCgen.fill(HIST("fourPion_phi_pair_1"), phiPair1);
+    histosMCgen.fill(HIST("fourPion_phi_pair_2"), phiPair2);
+    histosMCgen.fill(HIST("fourPion_costheta_pair_1"), cosThetaPair1);
+    histosMCgen.fill(HIST("fourPion_costheta_pair_2"), cosThetaPair2);
+    histosMCgen.fill(HIST("phi_cosTheta_pair_1"), phiPair1, cosThetaPair1);
+    histosMCgen.fill(HIST("phi_cosTheta_pair_2"), phiPair2, cosThetaPair2);
 
   } // End of 4 Pion MC Generation Process function
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCgen, "The Process for 4 Pion Analysis from MC Generation", false);
@@ -1863,6 +1865,208 @@ struct ExclusiveRhoTo4Pi {
 
   } // End of 4 Pion Analysis Process function for MC Reconstruction
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCrec, "The Process for 4 Pion Analysis from MC Reconstruction", false);
+
+  using FilteredTrackStuff = soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>>;
+  using FilteredCollisionStuff = soa::Filtered<soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>>;
+  using FilteredCollisionTotal = FilteredCollisionStuff::iterator;
+
+  void processMCrecFast(FilteredCollisionTotal const& collision, FilteredTrackStuff const& tracks)
+  {
+
+    if ((tracks.size() != 4) || (!collision.has_udMcCollision())) {
+      return;
+    }
+
+    std::vector<decltype(tracks.begin())> pionPlusTracks;
+    std::vector<decltype(tracks.begin())> pionMinusTracks;
+
+    for (const auto& track : tracks) {
+      if ((!selectionPIDPion(track, true, nSigmaTPCcut, nSigmaTOFcut)) || (!track.has_udMcParticle())) {
+        continue;
+      }
+      if (track.sign() == 1) {
+        pionPlusTracks.push_back(track);
+      }
+      if (track.sign() == -1) {
+        pionMinusTracks.push_back(track);
+      }
+    } // end of loop over tracks
+
+    if ((pionPlusTracks.size() + pionMinusTracks.size()) != 4) {
+      return;
+    }
+
+    if (pionPlusTracks.size() == 2 || pionMinusTracks.size() == 2) {
+
+      std::vector<double> dcaxy;
+      std::vector<double> dcaz;
+
+      std::vector<double> tpcnsigPi;
+      std::vector<double> tpcnsigKa;
+      std::vector<double> tpcnsigPr;
+      std::vector<double> tpcnsigEl;
+      std::vector<double> tpcnsigMu;
+
+      std::vector<double> tofnsigPi;
+      std::vector<double> tofnsigKa;
+      std::vector<double> tofnsigPr;
+      std::vector<double> tofnsigEl;
+      std::vector<double> tofnsigMu;
+
+      std::vector<double> tpcchi2;
+      std::vector<double> tpcnclsfindable;
+      std::vector<double> itschi2;
+
+      std::vector<double> pipt;
+      std::vector<double> pieta;
+      std::vector<double> piphi;
+      std::vector<double> pirapidity;
+
+      TLorentzVector p1, p2, p3, p4, p1234;
+      ROOT::Math::PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
+
+      p1.SetXYZM(pionPlusTracks[0].px(), pionPlusTracks[0].py(), pionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      p2.SetXYZM(pionPlusTracks[1].px(), pionPlusTracks[1].py(), pionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      p3.SetXYZM(pionMinusTracks[0].px(), pionMinusTracks[0].py(), pionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      p4.SetXYZM(pionMinusTracks[1].px(), pionMinusTracks[1].py(), pionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+
+      k1.SetCoordinates(p1.Pt(), p1.Eta(), p1.Phi(), o2::constants::physics::MassPionCharged);
+      k2.SetCoordinates(p2.Pt(), p2.Eta(), p2.Phi(), o2::constants::physics::MassPionCharged);
+      k3.SetCoordinates(p3.Pt(), p3.Eta(), p3.Phi(), o2::constants::physics::MassPionCharged);
+      k4.SetCoordinates(p4.Pt(), p4.Eta(), p4.Phi(), o2::constants::physics::MassPionCharged);
+
+      dcaxy.push_back(pionPlusTracks[0].dcaXY());
+      dcaxy.push_back(pionPlusTracks[1].dcaXY());
+      dcaxy.push_back(pionMinusTracks[0].dcaXY());
+      dcaxy.push_back(pionMinusTracks[1].dcaXY());
+
+      dcaz.push_back(pionPlusTracks[0].dcaZ());
+      dcaz.push_back(pionPlusTracks[1].dcaZ());
+      dcaz.push_back(pionMinusTracks[0].dcaZ());
+      dcaz.push_back(pionMinusTracks[1].dcaZ());
+
+      tpcnsigPi.push_back(pionPlusTracks[0].tpcNSigmaPi());
+      tpcnsigPi.push_back(pionPlusTracks[1].tpcNSigmaPi());
+      tpcnsigPi.push_back(pionMinusTracks[0].tpcNSigmaPi());
+      tpcnsigPi.push_back(pionMinusTracks[1].tpcNSigmaPi());
+
+      tpcnsigKa.push_back(pionPlusTracks[0].tpcNSigmaKa());
+      tpcnsigKa.push_back(pionPlusTracks[1].tpcNSigmaKa());
+      tpcnsigKa.push_back(pionMinusTracks[0].tpcNSigmaKa());
+      tpcnsigKa.push_back(pionMinusTracks[1].tpcNSigmaKa());
+
+      tpcnsigPr.push_back(pionPlusTracks[0].tpcNSigmaPr());
+      tpcnsigPr.push_back(pionPlusTracks[1].tpcNSigmaPr());
+      tpcnsigPr.push_back(pionMinusTracks[0].tpcNSigmaPr());
+      tpcnsigPr.push_back(pionMinusTracks[1].tpcNSigmaPr());
+
+      tpcnsigEl.push_back(pionPlusTracks[0].tpcNSigmaEl());
+      tpcnsigEl.push_back(pionPlusTracks[1].tpcNSigmaEl());
+      tpcnsigEl.push_back(pionMinusTracks[0].tpcNSigmaEl());
+      tpcnsigEl.push_back(pionMinusTracks[1].tpcNSigmaEl());
+
+      tpcnsigMu.push_back(pionPlusTracks[0].tpcNSigmaMu());
+      tpcnsigMu.push_back(pionPlusTracks[1].tpcNSigmaMu());
+      tpcnsigMu.push_back(pionMinusTracks[0].tpcNSigmaMu());
+      tpcnsigMu.push_back(pionMinusTracks[1].tpcNSigmaMu());
+
+      tofnsigPi.push_back(pionPlusTracks[0].tofNSigmaPi());
+      tofnsigPi.push_back(pionPlusTracks[1].tofNSigmaPi());
+      tofnsigPi.push_back(pionMinusTracks[0].tofNSigmaPi());
+      tofnsigPi.push_back(pionMinusTracks[1].tofNSigmaPi());
+
+      tofnsigKa.push_back(pionPlusTracks[0].tofNSigmaKa());
+      tofnsigKa.push_back(pionPlusTracks[1].tofNSigmaKa());
+      tofnsigKa.push_back(pionMinusTracks[0].tofNSigmaKa());
+      tofnsigKa.push_back(pionMinusTracks[1].tofNSigmaKa());
+
+      tofnsigPr.push_back(pionPlusTracks[0].tofNSigmaPr());
+      tofnsigPr.push_back(pionPlusTracks[1].tofNSigmaPr());
+      tofnsigPr.push_back(pionMinusTracks[0].tofNSigmaPr());
+      tofnsigPr.push_back(pionMinusTracks[1].tofNSigmaPr());
+
+      tofnsigEl.push_back(pionPlusTracks[0].tofNSigmaEl());
+      tofnsigEl.push_back(pionPlusTracks[1].tofNSigmaEl());
+      tofnsigEl.push_back(pionMinusTracks[0].tofNSigmaEl());
+      tofnsigEl.push_back(pionMinusTracks[1].tofNSigmaEl());
+
+      tofnsigMu.push_back(pionPlusTracks[0].tofNSigmaMu());
+      tofnsigMu.push_back(pionPlusTracks[1].tofNSigmaMu());
+      tofnsigMu.push_back(pionMinusTracks[0].tofNSigmaMu());
+      tofnsigMu.push_back(pionMinusTracks[1].tofNSigmaMu());
+
+      tpcchi2.push_back(pionPlusTracks[0].tpcChi2NCl());
+      tpcchi2.push_back(pionPlusTracks[1].tpcChi2NCl());
+      tpcchi2.push_back(pionMinusTracks[0].tpcChi2NCl());
+      tpcchi2.push_back(pionMinusTracks[1].tpcChi2NCl());
+
+      tpcnclsfindable.push_back(pionPlusTracks[0].tpcNClsFindable());
+      tpcnclsfindable.push_back(pionPlusTracks[1].tpcNClsFindable());
+      tpcnclsfindable.push_back(pionMinusTracks[0].tpcNClsFindable());
+      tpcnclsfindable.push_back(pionMinusTracks[1].tpcNClsFindable());
+
+      itschi2.push_back(pionPlusTracks[0].itsChi2NCl());
+      itschi2.push_back(pionPlusTracks[1].itsChi2NCl());
+      itschi2.push_back(pionMinusTracks[0].itsChi2NCl());
+      itschi2.push_back(pionMinusTracks[1].itsChi2NCl());
+
+      pipt.push_back(p1.Pt());
+      pipt.push_back(p2.Pt());
+      pipt.push_back(p3.Pt());
+      pipt.push_back(p4.Pt());
+
+      pieta.push_back(p1.Eta());
+      pieta.push_back(p2.Eta());
+      pieta.push_back(p3.Eta());
+      pieta.push_back(p4.Eta());
+
+      piphi.push_back(p1.Phi());
+      piphi.push_back(p2.Phi());
+      piphi.push_back(p3.Phi());
+      piphi.push_back(p4.Phi());
+
+      pirapidity.push_back(p1.Rapidity());
+      pirapidity.push_back(p2.Rapidity());
+      pirapidity.push_back(p3.Rapidity());
+      pirapidity.push_back(p4.Rapidity());
+
+      p1234 = p1 + p2 + p3 + p4;
+      k1234 = k1 + k2 + k3 + k4;
+
+      k13 = k1 + k3;
+      k14 = k1 + k4;
+      k23 = k2 + k3;
+      k24 = k2 + k4;
+
+      double fourPiPhiPair1 = phiCollinsSoperFrame(k13, k24, k1234);
+      double fourPiPhiPair2 = phiCollinsSoperFrame(k14, k23, k1234);
+      double fourPiCosThetaPair1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
+      double fourPiCosThetaPair2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
+
+      sigFromMC(
+        collision.posX(), collision.posY(), collision.posZ(),
+        collision.totalFV0AmplitudeA(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
+        collision.timeFV0A(), collision.timeFT0A(), collision.timeFT0C(), collision.timeFDDA(), collision.timeFDDC(),
+        collision.timeZNA(), collision.timeZNC(),
+        dcaxy, dcaz,
+        tpcnsigPi, tpcnsigKa, tpcnsigPr, tpcnsigEl, tpcnsigMu,
+        tofnsigPi, tofnsigKa, tofnsigPr, tofnsigEl, tofnsigMu,
+        tpcchi2, tpcnclsfindable, itschi2,
+        pipt, pieta, piphi, pirapidity,
+        p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(),
+        fourPiPhiPair1, fourPiPhiPair2, fourPiCosThetaPair1, fourPiCosThetaPair2);
+
+      histosFast.fill(HIST("4PionPt"), p1234.Pt());
+      histosFast.fill(HIST("4PionRapidity"), p1234.Rapidity());
+      histosFast.fill(HIST("4PionMassFull"), p1234.M());
+
+      if ((p1234.Pt() < 0.15) && (std::abs(p1234.Rapidity()) < 0.5)) {
+        histosFast.fill(HIST("4PionMassWithCut"), p1234.M());
+      }
+    } // End 0 charge event
+  } // End of 4 Pion Analysis Process function for Fast MC Reconstruction
+
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCrecFast, "The Process for 4 Pion Analysis from Fast MC Reconstruction", false);
 
 }; // End of Struct exclusiveRhoTo4Pi
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
