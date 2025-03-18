@@ -25,6 +25,9 @@
 #include <TVector2.h>
 #include <cmath>
 #include <ctime>
+#include <vector>
+#include <string>
+#include <cstdio>
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
