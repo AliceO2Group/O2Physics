@@ -212,7 +212,7 @@ struct Lambdak0sflattenicity {
   Configurable<float> cascsettingRapidity{"cascsettingRapidity", 0.5, "Cascade rapidity cut"};
   Configurable<float> cascsettingMassRejectionLambdaXi{"cascsettingMassRejectionLambdaXi", 0.0116, "Casc Mass Rejection cut of Lambda for Xi"};
   Configurable<float> cascsettingMassRejectioOmegaXi{"cascsettingMassRejectioOmegaXi", -1, "Casc Mass Rejection cut of Omega for Xi"};
-  Configurable<float> cascsettingproplifetime{"cascsettingproplifetime", 4.6, "Scale for lifetime cut on  Xi"};
+  Configurable<float> cascsettingproplifetime{"cascsettingproplifetime", 4.6, "Scale for lifetime cut on ctau Xi"};
 
   int nbin = 1;
 
@@ -290,7 +290,7 @@ struct Lambdak0sflattenicity {
       // K0s topological/PID cuts
       rKzeroShort.add("hrapidityK0s", "hrapidityK0s",
                       {HistType::kTH1D, {{40, -2.0f, 2.0f, "y"}}});
-      rKzeroShort.add("hK0s", "hK0s",
+      rKzeroShort.add("hctauK0s", "hctauK0s",
                       {HistType::kTH1D, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
       rKzeroShort.add(
         "h2DdecayRadiusK0s", "h2DdecayRadiusK0s",
@@ -332,7 +332,7 @@ struct Lambdak0sflattenicity {
                   {HistType::kTH2D, {{100, -5.f, 5.f}, {ptAxis}}});
       rLambda.add("hrapidityLambda", "hrapidityLambda",
                   {HistType::kTH1D, {{40, -2.0f, 2.0f, "y"}}});
-      rLambda.add("hLambda", "hLambda",
+      rLambda.add("hctauLambda", "hctauLambda",
                   {HistType::kTH1D, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
       rLambda.add("h2DdecayRadiusLambda", "h2DdecayRadiusLambda",
                   {HistType::kTH1D, {{100, 0.0f, 1.0f, "c#tau (cm)"}}});
@@ -365,7 +365,7 @@ struct Lambdak0sflattenicity {
                       {HistType::kTH2D, {{100, -5.f, 5.f}, {ptAxis}}});
       rAntiLambda.add("hrapidityAntiLambda", "hrapidityAntiLambda",
                       {HistType::kTH1D, {{40, -2.0f, 2.0f, "y"}}});
-      rAntiLambda.add("hAntiLambda", "hAntiLambda",
+      rAntiLambda.add("hctauAntiLambda", "hctauAntiLambda",
                       {HistType::kTH1D, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
       rAntiLambda.add("h2DdecayRadiusAntiLambda", "h2DdecayRadiusAntiLambda",
                       {HistType::kTH1D, {{100, 0.0f, 1.0f, "c#tau (cm)"}}});
@@ -390,7 +390,7 @@ struct Lambdak0sflattenicity {
       // Xi topological/PID cuts
       rXi.add("hrapidityXi", "hrapidityXi",
               {HistType::kTH1D, {{40, -2.0f, 2.0f, "y"}}});
-      rXi.add("hXi", "hXi",
+      rXi.add("hctauXi", "hctauXi",
               {HistType::kTH1D, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
       rXi.add(
         "h2DdecayRadiusXi", "h2DdecayRadiusXi",
@@ -1345,9 +1345,9 @@ struct Lambdak0sflattenicity {
                                     std::pow(decayvtxZ - vtxZ, 2));
       float v0p = std::sqrt(v0.pt() * v0.pt() + v0.pz() * v0.pz());
 
-      float K0s = decaylength * massK0s / v0p;
-      float Lambda = decaylength * massLambda / v0p;
-      float AntiLambda = decaylength * massAntiLambda / v0p;
+      float ctauK0s = decaylength * massK0s / v0p;
+      float ctauLambda = decaylength * massLambda / v0p;
+      float ctauAntiLambda = decaylength * massAntiLambda / v0p;
 
       float alpha = v0.alpha();
       float qtarm = v0.qtarm();
@@ -1359,7 +1359,7 @@ struct Lambdak0sflattenicity {
           v0.v0radius() >= v0settingRadiusK0s &&
           std::abs(posDaughterTrack.tpcNSigmaPi()) <= nSigmaTPCPion &&
           std::abs(negDaughterTrack.tpcNSigmaPi()) <= nSigmaTPCPion &&
-          K0s < v0settingK0s &&
+          ctauK0s < v0settingcTauK0s &&
           std::abs(v0.rapidity(0)) <= v0settingRapidity &&
           std::abs(massLambda - pdgmassLambda) > v0settingMassRejectionK0s &&
           std::abs(massAntiLambda - pdgmassLambda) >
@@ -1370,7 +1370,7 @@ struct Lambdak0sflattenicity {
         rKzeroShort.fill(HIST("hDCAV0DaughtersK0s"), v0.dcaV0daughters());
         rKzeroShort.fill(HIST("hV0CosPAK0s"), v0.v0cosPA());
         rKzeroShort.fill(HIST("hrapidityK0s"), v0.rapidity(0));
-        rKzeroShort.fill(HIST("hK0s"), K0s);
+        rKzeroShort.fill(HIST("hctauK0s"), ctauK0s);
         rKzeroShort.fill(HIST("h2DdecayRadiusK0s"), v0.v0radius());
         rKzeroShort.fill(HIST("hMassK0spT"), massK0s, v0.pt());
         rKzeroShort.fill(HIST("hMassK0spTFlat"), massK0s, v0.pt(), flattenicity);
@@ -1392,7 +1392,7 @@ struct Lambdak0sflattenicity {
           v0.v0radius() >= v0settingRadiusLambda &&
           std::abs(posDaughterTrack.tpcNSigmaPr()) <= nSigmaTPCProton &&
           std::abs(negDaughterTrack.tpcNSigmaPi()) <= nSigmaTPCPion &&
-          Lambda < v0settingLambda &&
+          ctauLambda < v0settingcTauLambda &&
           std::abs(v0.rapidity(1)) <= v0settingRapidity &&
           std::abs(massK0s - pdgmassK0s) > v0settingMassRejectionLambda) {
 
@@ -1400,7 +1400,7 @@ struct Lambdak0sflattenicity {
         rLambda.fill(HIST("hDCAV0DaughtersLambda"), v0.dcaV0daughters());
         rLambda.fill(HIST("hV0CosPALambda"), v0.v0cosPA());
         rLambda.fill(HIST("hrapidityLambda"), v0.rapidity(1));
-        rLambda.fill(HIST("hLambda"), Lambda);
+        rLambda.fill(HIST("hctauLambda"), ctauLambda);
         rLambda.fill(HIST("h2DdecayRadiusLambda"), v0.v0radius());
         rLambda.fill(HIST("hMassLambdapT"), massLambda, v0.pt());
         rLambda.fill(HIST("hMassLambdapTFlat"), massLambda, v0.pt(), flattenicity);
@@ -1421,7 +1421,7 @@ struct Lambdak0sflattenicity {
           v0.v0radius() >= v0settingRadiusLambda &&
           std::abs(posDaughterTrack.tpcNSigmaPi()) <= nSigmaTPCPion &&
           std::abs(negDaughterTrack.tpcNSigmaPr()) <= nSigmaTPCProton &&
-          AntiLambda < v0settingLambda &&
+          ctauAntiLambda < v0settingcTauLambda &&
           std::abs(v0.rapidity(2)) <= v0settingRapidity &&
           std::abs(massK0s - pdgmassK0s) > v0settingMassRejectionLambda) {
 
@@ -1430,7 +1430,7 @@ struct Lambdak0sflattenicity {
                          v0.dcaV0daughters());
         rAntiLambda.fill(HIST("hV0CosPAAntiLambda"), v0.v0cosPA());
         rAntiLambda.fill(HIST("hrapidityAntiLambda"), v0.rapidity(2));
-        rAntiLambda.fill(HIST("hAntiLambda"), AntiLambda);
+        rAntiLambda.fill(HIST("hctauAntiLambda"), ctauAntiLambda);
         rAntiLambda.fill(HIST("h2DdecayRadiusAntiLambda"), v0.v0radius());
         rAntiLambda.fill(HIST("hMassAntiLambdapT"), massAntiLambda, v0.pt());
 
