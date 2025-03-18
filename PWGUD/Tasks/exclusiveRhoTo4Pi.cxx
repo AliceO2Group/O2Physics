@@ -1294,12 +1294,17 @@ struct ExclusiveRhoTo4Pi {
 
     if (pionPlusTracks.size() != 2 && pionMinusTracks.size() != 2) {
       std::vector<decltype(tracks.begin())> allTracks;
-      for (int i = 0; i < pionPlusTracks.size(); i++) {
+      int piPlussize = static_cast<int>(pionPlusTracks.size());
+      int piMinussize = static_cast<int>(pionMinusTracks.size());
+
+      for (int i = 0; i < piPlussize; i++) {
         allTracks.push_back(pionPlusTracks[i]);
       }
-      for (int i = 0; i < pionMinusTracks.size(); i++) {
+      for (int i = 0; i < piMinussize; i++) {
         allTracks.push_back(pionMinusTracks[i]);
       }
+
+      int allTRackSize = static_cast<int>(allTracks.size());
 
       TLorentzVector p1, p2, p3, p4, p1234;
 
@@ -1333,7 +1338,7 @@ struct ExclusiveRhoTo4Pi {
       std::vector<double> pirapidity;
 
       TLorentzVector tempPionVect;
-      for (int i = 0; i < allTracks.size(); i++) {
+      for (int i = 0; i < allTRackSize; i++) {
         tempPionVect.SetXYZM(allTracks[i].px(), allTracks[i].py(), allTracks[i].pz(), o2::constants::physics::MassPionCharged);
         dcaxy.push_back(allTracks[i].dcaXY());
         dcaz.push_back(allTracks[i].dcaZ());
