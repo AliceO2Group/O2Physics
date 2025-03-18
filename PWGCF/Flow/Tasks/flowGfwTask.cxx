@@ -104,7 +104,7 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgOccupancy, bool, false, "Bool for event selection on detector occupancy");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, false, "Use additional event cut on mult correlations");
   O2_DEFINE_CONFIGURABLE(cfgV0AT0A5Sigma, bool, false, "V0A T0A 5 sigma cut")
-  O2_DEFINE_CONFIGURABLE(cfgGlobalplusITS, bool, false, "Global and ITS tracks")
+  O2_DEFINE_CONFIGURABLE(cfgGlobalplusITS, bool, true, "Global and ITS tracks")
   O2_DEFINE_CONFIGURABLE(cfgGlobalonly, bool, false, "Global only tracks")
   O2_DEFINE_CONFIGURABLE(cfgITSonly, bool, false, "ITS only tracks")
   O2_DEFINE_CONFIGURABLE(cfgFineBinning, bool, false, "Manually change to fine binning")
@@ -242,15 +242,15 @@ struct FlowGfwTask {
 
   bool isStable(int pdg)
   {
-    if (std::abs(pdg) == PDG_t::kPiPlus)
+    if (std::abs(pdg) == kPiPlus)
       return true;
-    if (std::abs(pdg) == PDG_t::kKPlus)
+    if (std::abs(pdg) == kKPlus)
       return true;
-    if (std::abs(pdg) == PDG_t::kProton)
+    if (std::abs(pdg) == kProton)
       return true;
-    if (std::abs(pdg) == PDG_t::kElectron)
+    if (std::abs(pdg) == kElectron)
       return true;
-    if (std::abs(pdg) == PDG_t::kMuonMinus)
+    if (std::abs(pdg) == kMuonMinus)
       return true;
     return false;
   }
@@ -410,6 +410,9 @@ struct FlowGfwTask {
       registry.add("hPtMCRec", "Monte Carlo Reco; pT (GeV/c)", {HistType::kTH1D, {axisPt}});
       registry.add("hCenMCRec", "Monte Carlo Reco; Centrality (%)", {HistType::kTH1D, {axisCentrality}});
       registry.add("hPtNchMCRec", "Reco production; pT (GeV/c); Multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
+      registry.add("hPtMCRec05", "Monte Carlo Reco 0-5%; pT (GeV/c)", {HistType::kTH1D, {axisPt}});
+      registry.add("hCenMCRec05", "Monte Carlo Reco 0-5%; Centrality (%)", {HistType::kTH1D, {axisCentrality}});
+      registry.add("hPtNchMCRec05", "Reco production 0-5%; pT (GeV/c); Multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
       registry.add("Pt_pi", "", kTH2F, {{axisCentrality}, {axisPt}});
       registry.add("Pt_ka", "", kTH2F, {{axisCentrality}, {axisPt}});
       registry.add("Pt_pr", "", kTH2F, {{axisCentrality}, {axisPt}});
@@ -424,6 +427,9 @@ struct FlowGfwTask {
       registry.add("hPtMCGen", "Monte Carlo Truth; pT (GeV/c)", {HistType::kTH1D, {axisPt}});
       registry.add("hCenMCGen", "Monte Carlo Truth; Centrality (%)", {HistType::kTH1D, {axisCentrality}});
       registry.add("hPtNchMCGen", "Truth production; pT (GeV/c); multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
+      registry.add("hPtMCGen05", "Monte Carlo Truth 0-5%; pT (GeV/c)", {HistType::kTH1D, {axisPt}});
+      registry.add("hCenMCGen05", "Monte Carlo Truth 0-5%; Centrality (%)", {HistType::kTH1D, {axisCentrality}});
+      registry.add("hPtNchMCGen05", "Truth production 0-5%; pT (GeV/c); multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
       registry.add("PtMC_pi", "", kTH2F, {{axisCentrality}, {axisPt}});
       registry.add("PtMC_ka", "", kTH2F, {{axisCentrality}, {axisPt}});
       registry.add("PtMC_pr", "", kTH2F, {{axisCentrality}, {axisPt}});
@@ -1087,13 +1093,13 @@ struct FlowGfwTask {
   {
     // MC reconstructed
     for (const auto& collision : collisions) {
-      const auto& centrality = collision.centFT0C();
-
       if (!collision.sel8())
         return;
 
       if (tracks.size() < 1)
         return;
+
+      const auto& centrality = collision.centFT0C();
 
       if (cfgUseAdditionalEventCut && !eventSelected(o2::aod::mult::MultNTracksPV(), collision, tracks.size(), centrality)) {
         return;
@@ -1118,10 +1124,17 @@ struct FlowGfwTask {
         const auto& particle = track.mcParticle();
 
         if (isStable(particle.pdgCode())) {
+
           registry.fill(HIST("hEventCounterMCRec"), 0.5);
           registry.fill(HIST("hPtMCRec"), track.pt());
           registry.fill(HIST("hCenMCRec"), centrality);
           registry.fill(HIST("hPtNchMCRec"), track.pt(), track.size());
+
+          if (centrality >= 0 && centrality <= 5) {
+            registry.fill(HIST("hPtMCRec05"), track.pt());
+            registry.fill(HIST("hCenMCRec05"), centrality);
+            registry.fill(HIST("hPtNchMCRec05"), track.pt(), track.size());
+          }
         }
 
         registry.fill(HIST("Pt_all_ch"), centrality, track.pt());
@@ -1181,6 +1194,12 @@ struct FlowGfwTask {
           registry.fill(HIST("hPtMCGen"), particle.pt());
           registry.fill(HIST("hCenMCGen"), centrality);
 
+          if (centrality >= 0 && centrality <= 5) {
+            registry.fill(HIST("hPtMCGen05"), particle.pt());
+            registry.fill(HIST("hCenMCGen05"), centrality);
+            registry.fill(HIST("hPtNchMCGen05"), particle.pt(), numberOfTracks[0]);
+          }
+
           if (collisions.size() > 0) {
             registry.fill(HIST("hPtNchMCGen"), particle.pt(), numberOfTracks[0]);
           }
@@ -1210,7 +1229,7 @@ struct FlowGfwTask {
       }
     }
   }
-  PROCESS_SWITCH(FlowGfwTask, processpTEff, "Process pT Eff", false);
+  PROCESS_SWITCH(FlowGfwTask, processpTEff, "Process pT Eff", true);
 
 }; // End of struct
 
