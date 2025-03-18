@@ -8,9 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///\file identifiedbf.cxx
-///\brief Fills histograms with particles and tracks to calculate the Balance Function
-///\author bghanley1995@gmail.com
+
+/// \file identifiedbf.cxx
+/// \brief Fills histograms with particles and tracks to calculate the Balance Function
+/// \author bghanley1995@gmail.com
 #include <CCDB/BasicCCDBManager.h>
 #include <TDirectory.h>
 #include <TFolder.h>
@@ -29,6 +30,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/RecoDecay.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -138,11 +140,8 @@ struct IdentifiedBfCorrelationsTask {
     {
       using namespace correlationstask;
       using namespace o2::analysis::identifiedbffilter;
-      if (!(phi < phiup)) {
-        return phi - constants::math::TwoPI;
-      } else {
-        return phi;
-      }
+      phi = RecoDecay::constrainAngle(phi,philow, phiup);
+      return phi;
     }
 
     /// \brief Returns the zero based bin index of the eta phi passed track
@@ -393,12 +392,7 @@ struct IdentifiedBfCorrelationsTask {
           int globalbin = getDEtaDPhiGlobalIndex(track1, track2);
           float deltaeta = track1.eta() - track2.eta();
           float deltaphi = track1.phi() - track2.phi();
-          while (deltaphi >= deltaphiup) {
-            deltaphi -= constants::math::TwoPI;
-          }
-          while (deltaphi < deltaphilow) {
-            deltaphi += constants::math::TwoPI;
-          }
+          deltaphi = RecoDecay::constrainAngle(deltaphi,deltaphilow,deltaphiup);
           if ((fUseConversionCuts && fPairCuts.conversionCuts(track1, track2)) || (fUseTwoTrackCut && fPairCuts.twoTrackCut(track1, track2, bfield))) {
             /* suppress the pair */
             fhSupN1N1VsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, corr);
@@ -1143,7 +1137,7 @@ struct IdentifiedBfCorrelationsTask {
     int64_t firstNotAssignedIndex = -1;
     int64_t lastNotAssignedIndex = -1;
 
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       if (track.has_collision()) {
         nAssignedTracks++;
       } else {
@@ -1170,7 +1164,7 @@ struct IdentifiedBfCorrelationsTask {
     int64_t firstNotAssignedIndex = -1;
     int64_t lastNotAssignedIndex = -1;
 
-    for (auto particle : particles) {
+    for (const auto& particle : particles) {
       if (particle.has_mcCollision()) {
         nAssignedParticles++;
       } else {
