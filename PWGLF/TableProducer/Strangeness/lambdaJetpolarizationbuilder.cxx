@@ -40,6 +40,7 @@ using namespace o2::framework::expressions;
 
 struct myAnalysis {
   Produces<o2::aod::MyTable> myTable;
+  Produces<o2::aod::MyTableAnti> myTableanti;
   Produces<o2::aod::MyTableJet> myTableJet;
   Produces<o2::aod::MyCollision> outputCollisions;
   Produces<o2::aod::MyCollisionV0s> outputCollisionsV0;
@@ -95,7 +96,8 @@ struct myAnalysis {
   Configurable<float> v0rejLambda{"v0rejLambda", 0.01, "V0 rej K0s"};
   Configurable<float> CtauLambda{"ctauLambda", 30, "C tau Lambda (cm)"};
   Configurable<bool> ifpasslambda{"passedLambdaSelection", 1, "passedLambdaSelection"};
-  Configurable<bool> ifpassantilambda{"passedANtiLambdaSelection", 1, "passedAntiLambdaSelection"};
+  Configurable<bool> ifpassantilambda{"passedAntiLambdaSelection", 1, "passedAntiLambdaSelection"};
+  Configurable<bool> ifinitpasslambda{"ifinitpasslambda", 0, "ifinitpasslambda"};
   // Event Selection/////////////////////////////////
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
@@ -600,7 +602,7 @@ struct myAnalysis {
         JEhistos.fill(HIST("V0DCANegToPV"), v0.dcanegtopv());
         JEhistos.fill(HIST("V0DCAPosToPV"), v0.dcapostopv());
         JEhistos.fill(HIST("V0DCAV0Daughters"), v0.dcaV0daughters());
-      } else if (passedInitLambdaSelection(v0, pos, neg)) {
+      } else if (passedInitLambdaSelection(v0, pos, neg) && ifinitpasslambda) {
         JEhistos.fill(HIST("hPt"), v0.pt());
         JEhistos.fill(HIST("V0Radius"), v0.v0radius());
         JEhistos.fill(HIST("CosPA"), v0.v0cosPA());
@@ -621,7 +623,7 @@ struct myAnalysis {
         JEhistos.fill(HIST("v0Lambdapz"), v0.pz());
         myTable(outputCollisionsV0.lastIndex(), v0.collisionId(), v0.px(), v0.py(), v0.pz(), v0.pt(), v0.mLambda(), pos.px(), pos.py(), pos.pz());
         JEhistos.fill(HIST("hV0Lambda"), nEventsV0, v0.px(), v0.py(), v0.pz(), v0.mLambda(), pos.px(), pos.py(), pos.pz());
-      } else if (passedInitLambdaSelection(v0, pos, neg)) {
+      } else if (passedInitLambdaSelection(v0, pos, neg) && ifinitpasslambda) {
         V0LambdaNumbers = V0LambdaNumbers + 1;
         JEhistos.fill(HIST("hMassVsPtLambda"), v0.pt(), v0.mLambda());
         JEhistos.fill(HIST("hMassLambda"), v0.mLambda());
@@ -635,7 +637,6 @@ struct myAnalysis {
         JEhistos.fill(HIST("hV0Lambda"), nEventsV0, v0.px(), v0.py(), v0.pz(), v0.mLambda(), pos.px(), pos.py(), pos.pz());
       }
       if (passedAntiLambdaSelection(v0, pos, neg) && ifpassantilambda) {
-
         JEhistos.fill(HIST("hMassVsPtAntiLambda"), v0.pt(), v0.mAntiLambda());
         JEhistos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
         JEhistos.fill(HIST("TPCNSigmaPosPi"), pos.tpcNSigmaPi());
@@ -644,7 +645,8 @@ struct myAnalysis {
         JEhistos.fill(HIST("v0AntiLambdapx"), v0.px());
         JEhistos.fill(HIST("v0AntiLambdapy"), v0.py());
         JEhistos.fill(HIST("v0AntiLambdapz"), v0.pz());
-      } else if (passedInitLambdaSelection(v0, pos, neg)) {
+        myTableanti(outputCollisionsV0.lastIndex(), v0.collisionId(), v0.px(), v0.py(), v0.pz(), v0.pt(), v0.mAntiLambda(), pos.px(), pos.py(), pos.pz());
+      } else if (passedInitLambdaSelection(v0, pos, neg) && ifinitpasslambda) {
         JEhistos.fill(HIST("hMassVsPtAntiLambda"), v0.pt(), v0.mAntiLambda());
         JEhistos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
         JEhistos.fill(HIST("TPCNSigmaPosPi"), pos.tpcNSigmaPi());
@@ -653,6 +655,7 @@ struct myAnalysis {
         JEhistos.fill(HIST("v0AntiLambdapx"), v0.px());
         JEhistos.fill(HIST("v0AntiLambdapy"), v0.py());
         JEhistos.fill(HIST("v0AntiLambdapz"), v0.pz());
+        myTableanti(outputCollisionsV0.lastIndex(), v0.collisionId(), v0.px(), v0.py(), v0.pz(), v0.pt(), v0.mLambda(), pos.px(), pos.py(), pos.pz());
       }
     }
     JEhistos.fill(HIST("V0Counts"), V0NumbersPerEvent);
