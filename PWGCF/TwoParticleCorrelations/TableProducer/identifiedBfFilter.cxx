@@ -1446,7 +1446,6 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
   float nsigmas[kIdBfNoOfSpecies];
 
   if (loadfromccdb) {
-    LOGF(info, "Do center Correction");
     for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
       actualTPCNSigma[iSp] = actualTPCNSigma[iSp] - fhNSigmaCorrection[iSp]->GetBinContent(fhNSigmaCorrection[iSp]->FindBin(track.tpcInnerParam()));
     }

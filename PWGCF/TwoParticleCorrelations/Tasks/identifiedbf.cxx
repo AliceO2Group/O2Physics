@@ -76,7 +76,7 @@ std::vector<std::string> tname = {"e+", "e-", "pi+", "pi-", "K+", "K-", "p+", "p
 } // namespace correlationstask
 
 // Task for building <dpt,dpt> correlations
-struct IdentifiedBfTask {
+struct IdentifiedbfTask {
 
   /* the data collecting engine */
   template <bool smallsingles>
