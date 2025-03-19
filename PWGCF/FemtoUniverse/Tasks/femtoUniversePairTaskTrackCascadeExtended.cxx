@@ -237,6 +237,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
     rXiQA.add("hDcaNegtoPV", "hDcaNegtoPV", {HistType::kTH1F, {aDCAToPVAxis}});
     rXiQA.add("hDcaBachtoPV", "hDcaBachtoPV", {HistType::kTH1F, {aDCAToPVAxis}});
     rXiQA.add("hDcaV0toPV", "hDcaV0toPV", {HistType::kTH1F, {aDCAToPVAxis}});
+    rXiQA.add("hInvMpT", "hInvMpT", kTH2F, {{ptAxis}, {aXiMassAxis}});
 
     eventHisto.init(&qaRegistry);
     qaRegistry.add("Tracks_pos/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
@@ -339,6 +340,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
       rXiQA.fill(HIST("hDcaNegtoPV"), casc.dcanegtopv());
       rXiQA.fill(HIST("hDcaBachtoPV"), casc.dcabachtopv());
       rXiQA.fill(HIST("hDcaV0toPV"), casc.dcav0topv());
+      rXiQA.fill(HIST("hInvMpT"), casc.pt(), casc.mLambda());
 
       posChildHistos.fillQA<false, true>(posChild);
       negChildHistos.fillQA<false, true>(negChild);
