@@ -255,10 +255,9 @@ struct straCents {
     Run2CL0Info.mCalibrationStored = false;
     Run2CL1Info.mCalibrationStored = false;
 
-    if (lCalibObjects_Multiplicity && lCalibObjects_Centrality) {
+    if (lCalibObjects_Centrality) {
       if (produceHistograms) {
-        listCalib->Add(lCalibObjects_Centrality->Clone(Form("%i", collision.runNumber())));
-        listCalib->Add(lCalibObjects_Multiplicity->Clone(Form("%i", collision.runNumber())));
+        listCalib->Add(lCalibObjects_Centrality->Clone(Form("Centrality_%i", collision.runNumber())));
       }
 
       LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, collision.runNumber());
@@ -340,7 +339,7 @@ struct straCents {
             LOGF(warning, "Calibration information from SPD clusters for run %d corrupted, will fill SPD clusters tables with dummy values", collision.runNumber());
           }
         }
-      } else { 
+      } else {
         // we are in Run 3
         auto getccdb = [lCalibObjects_Centrality, collision](struct CalibrationInfo& estimator, const Configurable<std::string> generatorName, const Configurable<bool> notCrashOnNull) { // TODO: to consider the name inside the estimator structure
           estimator.mhMultSelCalib = reinterpret_cast<TH1*>(lCalibObjects_Centrality->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
@@ -377,16 +376,29 @@ struct straCents {
         getccdb(nGlobalInfo, ccdbConfig.genName, ccdbConfig.doNotCrashOnNull);
         getccdb(mftInfo, ccdbConfig.genName, ccdbConfig.doNotCrashOnNull);
 
-        hVtxZFV0A = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFV0A"));
-        hVtxZFT0A = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFT0A"));
-        hVtxZFT0C = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFT0C"));
-        hVtxZFDDA = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFDDA"));
-        hVtxZFDDC = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFDDC"));
-        hVtxZNTracks = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZNTracksPV"));
-        lCalibLoaded = true;
-        // Capture error
-        if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
-          LOGF(error, "Problem loading CCDB objects! Please check");
+        if (lCalibObjects_Multiplicity) {
+          if (produceHistograms) {
+            listCalib->Add(lCalibObjects_Multiplicity->Clone(Form("Multiplicity_%i", collision.runNumber())));
+          }
+  
+          hVtxZFV0A = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFV0A"));
+          hVtxZFT0A = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFT0A"));
+          hVtxZFT0C = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFT0C"));
+          hVtxZFDDA = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFDDA"));
+          hVtxZFDDC = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZFDDC"));
+          hVtxZNTracks = static_cast<TProfile*>(lCalibObjects_Multiplicity->FindObject("hVtxZNTracksPV"));
+          lCalibLoaded = true;
+          // Capture error
+          if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
+            LOGF(error, "Problem loading CCDB objects! Please check");
+            lCalibLoaded = false;
+          }
+        } else {
+          if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
+            LOGF(fatal, "Multiplicity calibration is not available in CCDB for run=%d at timestamp=%llu", collision.runNumber(), collision.timestamp());
+          } else { // only if asked: continue filling with non-valid values (105)
+            LOGF(warning, "Multiplicity calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", collision.runNumber(), collision.timestamp());
+          }
           lCalibLoaded = false;
         }
       } // end we are in Run 3
