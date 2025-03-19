@@ -41,6 +41,7 @@
 #include <TProfile.h>
 #include <TRandom3.h>
 #include <TPDGCode.h>
+#include <TF1.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -66,6 +67,10 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgIsGlobalTrack, bool, false, "Use global tracks instead of hasTPC&&hasITS")
   O2_DEFINE_CONFIGURABLE(cfgFlowCumulantEnabled, bool, false, "switch of calculating flow")
   O2_DEFINE_CONFIGURABLE(cfgFlowCumulantNbootstrap, int, 30, "Number of subsamples")
+  O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrUse, bool, false, "Use track density efficiency correction")
+  O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrSlopeFactor, float, 1.0f, "A factor to scale the track density efficiency slope")
+  Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.6003720411, 0.6152630970, 0.6288860646, 0.6360694031, 0.6409494798, 0.6450540203, 0.6482117301, 0.6512592056, 0.6640008690, 0.6862631416, 0.7005738691, 0.7106567432, 0.7170728333}, "parameter 0 for track density efficiency correction"};
+  Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-1.007592e-05, -8.932635e-06, -9.114538e-06, -1.054818e-05, -1.220212e-05, -1.312304e-05, -1.376433e-05, -1.412813e-05, -1.289562e-05, -1.050065e-05, -8.635725e-06, -7.380821e-06, -6.201250e-06}, "parameter 1 for track density efficiency correction"};
 
   ConfigurableAxis axisB{"axisB", {100, 0.0f, 20.0f}, ""};
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "X axis for histograms"};
@@ -82,6 +87,12 @@ struct FlowMc {
   TH1D* mEfficiency = nullptr;
   GFWWeights* mAcceptance = nullptr;
   bool correctionsLoaded = false;
+
+  std::vector<TF1*> funcEff;
+  TH1D* hFindPtBin;
+  TF1* funcV2;
+  TF1* funcV3;
+  TF1* funcV4;
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -134,6 +145,7 @@ struct FlowMc {
     histos.add<TH2>("hPtNchGlobal", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
     histos.add<TH1>("hPtMCGen", "Monte Carlo Truth; pT (GeV/c);", {HistType::kTH1D, {axisPt}});
     histos.add<TH1>("hPtMCGlobal", "Monte Carlo Global; pT (GeV/c);", {HistType::kTH1D, {axisPt}});
+    histos.add<TH1>("hPhiWeightedTrDen", "corrected #phi distribution, considering track density", {HistType::kTH1D, {axisPhi}});
 
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
@@ -186,6 +198,25 @@ struct FlowMc {
       corrconfigsReco.push_back(fGFWReco->GetCorrelatorConfig("refN10 {2} refP10 {-2}", "Ch10Gap22", kFALSE));
       corrconfigsReco.push_back(fGFWReco->GetCorrelatorConfig("poiN10 refN10 | olN10 {2} refP10 {-2}", "Ch10Gap22", kTRUE));
       fGFWReco->CreateRegions();
+    }
+
+    if (cfgTrackDensityCorrUse) {
+      std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
+      hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
+      funcEff.resize(pTEffBins.size() - 1);
+      // LHC24g3 Eff
+      std::vector<double> f1p0 = cfgTrackDensityP0;
+      std::vector<double> f1p1 = cfgTrackDensityP1;
+      for (uint ifunc = 0; ifunc < pTEffBins.size() - 1; ifunc++) {
+        funcEff[ifunc] = new TF1(Form("funcEff%i", ifunc), "[0]+[1]*x", 0, 3000);
+        funcEff[ifunc]->SetParameters(f1p0[ifunc], f1p1[ifunc] * cfgTrackDensityCorrSlopeFactor);
+      }
+      funcV2 = new TF1("funcV2", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV2->SetParameters(0.0186111, 0.00351907, -4.38264e-05, 1.35383e-07, -3.96266e-10);
+      funcV3 = new TF1("funcV3", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV3->SetParameters(0.0174056, 0.000703329, -1.45044e-05, 1.91991e-07, -1.62137e-09);
+      funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
   }
 
@@ -305,6 +336,12 @@ struct FlowMc {
         fGFWReco->Clear();
       }
 
+      double psi2Est = 0, psi3Est = 0, psi4Est = 0;
+      float wEPeff = 1;
+      double v2 = 0, v3 = 0, v4 = 0;
+      double q2x = 0, q2y = 0;
+      double q3x = 0, q3y = 0;
+      double q4x = 0, q4y = 0;
       for (auto const& mcParticle : mcParticles) {
         int pdgCode = std::abs(mcParticle.pdgCode());
         if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
@@ -318,8 +355,27 @@ struct FlowMc {
           for (auto const& track : tracks) {
             if (track.hasTPC() && track.hasITS())
               nChGlobal++;
+            if (cfgTrackDensityCorrUse && cfgFlowCumulantEnabled) {
+              bool withinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT rang
+              if (withinPtRef) {
+                q2x += std::cos(2 * track.phi());
+                q2y += std::sin(2 * track.phi());
+                q3x += std::cos(3 * track.phi());
+                q3y += std::sin(3 * track.phi());
+                q4x += std::cos(4 * track.phi());
+                q4y += std::sin(4 * track.phi());
+              }
+            }
           }
         }
+      }
+      if (cfgTrackDensityCorrUse && cfgFlowCumulantEnabled) {
+        psi2Est = std::atan2(q2y, q2x) / 2.;
+        psi3Est = std::atan2(q3y, q3x) / 3.;
+        psi4Est = std::atan2(q4y, q4x) / 4.;
+        v2 = funcV2->Eval(centrality);
+        v3 = funcV3->Eval(centrality);
+        v4 = funcV4->Eval(centrality);
       }
 
       for (auto const& mcParticle : mcParticles) {
@@ -382,6 +438,19 @@ struct FlowMc {
           fWeights->fill(mcParticle.phi(), mcParticle.eta(), vtxz, mcParticle.pt(), 0, 0);
         if (!setCurrentParticleWeights(weff, wacc, mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), vtxz))
           continue;
+        if (cfgTrackDensityCorrUse && cfgFlowCumulantEnabled && withinPtRef) {
+          double fphi = v2 * std::cos(2 * (mcParticle.phi() - psi2Est)) + v3 * std::cos(3 * (mcParticle.phi() - psi3Est)) + v4 * std::cos(4 * (mcParticle.phi() - psi4Est));
+          fphi = (1 + 2 * fphi);
+          int pTBinForEff = hFindPtBin->FindBin(mcParticle.pt());
+          if (pTBinForEff >= 1 && pTBinForEff <= hFindPtBin->GetNbinsX()) {
+            wEPeff = funcEff[pTBinForEff - 1]->Eval(fphi * nChGlobal);
+            if (wEPeff > 0.) {
+              wEPeff = 1. / wEPeff;
+              weff *= wEPeff;
+              histos.fill(HIST("hPhiWeightedTrDen"), mcParticle.phi(), wacc * wEPeff);
+            }
+          }
+        }
 
         if (cfgFlowCumulantEnabled) {
           if (withinPtRef)
