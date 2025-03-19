@@ -711,7 +711,7 @@ struct FlowCumulantsUpc {
 
     // Runnumber loading test
     // accept only selected run numbers
-    int run = collision.runNumber();
+    // int run = collision.runNumber();
 
     // extract bc pattern from CCDB for data or anchored MC only
     // if (run != lastRun && run >= 500000) {
