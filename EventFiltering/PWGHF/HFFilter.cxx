@@ -1317,7 +1317,8 @@ struct HfFilter { // Main struct for HF triggers
                 }
               }
             }
-          } else if (isDeuteron && track.collisionId() == thisCollId) {
+          }
+          if (isDeuteron && track.collisionId() == thisCollId) {
             for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto3P]; ++iHypo) {
               if (isCharmTagged[iHypo] && enableFemtoChannels->get(1u, iHypo + 1)) {
                 float relativeMomentum = helper.computeRelativeMomentum(pVecFourth, pVec3Prong, massCharmHypos[iHypo]);
