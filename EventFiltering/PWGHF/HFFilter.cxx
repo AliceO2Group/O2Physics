@@ -946,6 +946,11 @@ struct HfFilter { // Main struct for HF triggers
             if (trackProton.globalIndex() == trackPos.globalIndex() || trackProton.globalIndex() == trackNeg.globalIndex()) {
               continue;
             }
+            // minimal track selections
+            if (!trackProton.isGlobalTrackWoDCA() || std::fabs(trackProton.pt()) < 0.3f) {
+              continue;
+            }
+            // PID selection
             bool isProton = helper.isSelectedProton4CharmOrBeautyBaryons(trackProton);
             if (isProton) {
               if (!keepEvent[kPrCharm2P]) {
