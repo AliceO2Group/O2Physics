@@ -1786,7 +1786,7 @@ struct HfTrackIndexSkimCreator {
             hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCand, ptDummy, outputScores[iDecay3P]);
           } else {
             std::vector<float> featuresCandWithPid = featuresCand;
-            featuresCandWithPid.insert(featuresCandWithPid.begin(), featuresCandPid.begin(), featuresCandPid.end());
+            featuresCandWithPid.insert(featuresCandWithPid.end(), featuresCandPid.begin(), featuresCandPid.end());
             hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCandWithPid, ptDummy, outputScores[iDecay3P]);
           }
         } else {

@@ -343,8 +343,9 @@ static const std::vector<std::string> labelsColumnsCutsBeautyToJPsi = {"minPtMuo
 } // namespace hf_trigger_cuts_presel_beauty
 
 // double charm
-constexpr int activeDoubleCharmChannels[1][3] = {{1, 1, 1}}; // kDoubleCharm2P, kDoubleCharm3P, kDoubleCharmMix
+constexpr int activeDoubleCharmChannels[2][3] = {{1, 1, 1}, {1, 1, 0}}; // kDoubleCharm2P, kDoubleCharm3P, kDoubleCharmMix (second column to keep non-prompt)
 static const std::vector<std::string> labelsColumnsDoubleCharmChannels = {"DoubleCharm2Prong", "DoubleCharm3Prong", "DoubleCharmMix"};
+static const std::vector<std::string> labelsRowsDoubleCharmChannels = {"", "KeepNonprompt"};
 
 // charm resonances
 constexpr float cutsCharmReso[3][13] = {{0.0, 0.0, 0.0, 0.0, 0.4, 0., 0.0, 0.00, 0.21, 0.21, 0.0, 0.7, 0.7},
