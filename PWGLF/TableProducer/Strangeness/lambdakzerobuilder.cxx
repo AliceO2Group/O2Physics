@@ -1380,6 +1380,9 @@ struct lambdakzeroPreselector {
   Configurable<bool> forceITSOnlyMesons{"forceITSOnlyMesons", false, "force meson-like daughters to be ITS-only to pass Lambda/AntiLambda selections (yes/no)"};
   Configurable<int> minITSCluITSOnly{"minITSCluITSOnly", 0, "minimum number of ITS clusters to ask for if daughter track does not have TPC"};
 
+  // qa coll assoc directly from AO2D (MC mode exclusive)
+  Configurable<bool> qaCollisionAssociation{"qaCollisionAssociation", false, "QA collision association"};
+
   // for bit-packed maps
   std::vector<uint32_t> selectionMask;
   enum v0bit { bitInteresting = 0,
@@ -1419,6 +1422,16 @@ struct lambdakzeroPreselector {
     h->GetXaxis()->SetBinLabel(4, "dEdx OK");
     h->GetXaxis()->SetBinLabel(5, "Used in Casc");
     h->GetXaxis()->SetBinLabel(6, "Used in Tra-Casc");
+
+    if(qaCollisionAssociation){ 
+      auto hCollAssocQA = histos.add<TH2>("hCollAssocQA", "hCollAssocQA", kTH2D, {{6, -0.5f, 5.5f}, {2, -0.5f, 1.5f}});
+      hCollAssocQA->GetXaxis()->SetBinLabel(1, "K0");
+      hCollAssocQA->GetXaxis()->SetBinLabel(2, "Lambda");
+      hCollAssocQA->GetXaxis()->SetBinLabel(3, "AntiLambda");
+      hCollAssocQA->GetXaxis()->SetBinLabel(4, "Gamma");
+      hCollAssocQA->GetYaxis()->SetBinLabel(1, "Correct collision");
+      hCollAssocQA->GetYaxis()->SetBinLabel(2, "Wrong collision");
+    }
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -1467,9 +1480,10 @@ struct lambdakzeroPreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
   template <class TTrackTo, typename TV0Object>
-  void checkPDG(TV0Object const& lV0Candidate, uint32_t& maskElement)
+  void checkPDG(TV0Object const& lV0Candidate, uint32_t& maskElement, int mcCollisionId)
   {
     int lPDG = -1;
+    int correctMcCollisionIndex = -1;
     bool physicalPrimary = false;
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
@@ -1493,6 +1507,7 @@ struct lambdakzeroPreselector {
                   for (auto& lNegGrandMother : lNegMother.template mothers_as<aod::McParticles>()) {
                     if (lNegGrandMother.pdgCode() == dIfMCselectV0MotherPDG)
                       lPDG = lNegMother.pdgCode();
+                      correctMcCollisionIndex = lNegMother.mcCollisionId();
                   }
                 }
               }
@@ -1502,14 +1517,36 @@ struct lambdakzeroPreselector {
         }
       }
     } // end association check
-    if (lPDG == 310)
+
+    bool collisionAssociationOK = false; 
+    if(correctMcCollisionIndex>-1 && correctMcCollisionIndex == mcCollisionId){
+      collisionAssociationOK = true;
+    }
+
+    if (lPDG == 310){
       bitset(maskElement, bitTrueK0Short);
-    if (lPDG == 3122)
+      if(qaCollisionAssociation){
+        histos.fill(HIST("hCollAssocQA"), 0.0f, collisionAssociationOK);
+      }
+    }
+    if (lPDG == 3122){
       bitset(maskElement, bitTrueLambda);
-    if (lPDG == -3122)
+      if(qaCollisionAssociation){
+        histos.fill(HIST("hCollAssocQA"), 1.0f, collisionAssociationOK);
+      }
+    }
+    if (lPDG == -3122){
       bitset(maskElement, bitTrueAntiLambda);
-    if (lPDG == 22)
+      if(qaCollisionAssociation){
+        histos.fill(HIST("hCollAssocQA"), 2.0f, collisionAssociationOK);
+      }
+    }
+    if (lPDG == 22){
       bitset(maskElement, bitTrueGamma);
+      if(qaCollisionAssociation){
+        histos.fill(HIST("hCollAssocQA"), 3.0f, collisionAssociationOK);
+      }
+    }
     if (lPDG == 1010010030)
       bitset(maskElement, bitTrueHypertriton);
     if (lPDG == -1010010030)
@@ -1622,11 +1659,12 @@ struct lambdakzeroPreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildMCAssociated(aod::Collisions const& /*collisions*/, aod::V0s const& v0table, LabeledTracksExtra const&, aod::McParticles const& /*particlesMC*/)
+  void processBuildMCAssociated(soa::Join<aod::Collisions, aod::McCollisionLabels> const& /*collisions*/, aod::V0s const& v0table, LabeledTracksExtra const&, aod::McParticles const& /*particlesMC*/)
   {
     initializeMasks(v0table.size());
     for (auto const& v0 : v0table) {
-      checkPDG<LabeledTracksExtra>(v0, selectionMask[v0.globalIndex()]);
+      auto collision = v0.collision_as<soa::Join<aod::Collisions, aod::McCollisionLabels>>();
+      checkPDG<LabeledTracksExtra>(v0, selectionMask[v0.globalIndex()], collision.mcCollisionId());
       checkTrackQuality<LabeledTracksExtra>(v0, selectionMask[v0.globalIndex()], true);
     }
     if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInTrackedCascades)
@@ -1644,11 +1682,12 @@ struct lambdakzeroPreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collisions const& /*collisions*/, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
+  void processBuildValiddEdxMCAssociated(soa::Join<aod::Collisions, aod::McCollisionLabels> const& /*collisions*/, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
   {
     initializeMasks(v0table.size());
     for (auto const& v0 : v0table) {
-      checkPDG<TracksExtraWithPIDandLabels>(v0, selectionMask[v0.globalIndex()]);
+      auto collision = v0.collision_as<soa::Join<aod::Collisions, aod::McCollisionLabels>>();
+      checkPDG<TracksExtraWithPIDandLabels>(v0, selectionMask[v0.globalIndex()], collision.mcCollisionId());
       checkdEdx<TracksExtraWithPIDandLabels>(v0, selectionMask[v0.globalIndex()]);
       checkTrackQuality<TracksExtraWithPIDandLabels>(v0, selectionMask[v0.globalIndex()]);
     }
