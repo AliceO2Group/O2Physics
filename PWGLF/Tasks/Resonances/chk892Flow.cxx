@@ -146,6 +146,8 @@ struct Chk892Flow {
     Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", true, "Evt sel: apply pileup rejection"};
     Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
     Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", true, "Evt sel: apply NoCollInTimeRangeStandard"};
+    Configurable<float> cfgEventCentralityMin{"cfgEventCentralityMin", 0.0f, "Event sel: minimum centrality"};
+    Configurable<float> cfgEventCentralityMax{"cfgEventCentralityMax", 80.0f, "Event sel: maximum centrality"};
   } EventCuts;
 
   /// PID Selections, pion
@@ -159,7 +161,7 @@ struct Chk892Flow {
 
   // Track selections
   struct : ConfigurableGroup {
-    Configurable<float> cfgMinPtcut{"cfgMinPtcut", 0.15, "Track minium pt cut"};
+    Configurable<float> cfgMinPtcut{"cfgMinPtcut", 0.6, "Track minium pt cut"};
     Configurable<float> cfgMaxEtacut{"cfgMaxEtacut", 0.8, "Track maximum eta cut"};
     Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
     Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
@@ -190,14 +192,14 @@ struct Chk892Flow {
 
     Configurable<bool> cfgByPassDauPIDSelection{"cfgByPassDauPIDSelection", true, "Bypass Daughters PID selection"};
     Configurable<float> cfgSecondaryDauDCAMax{"cfgSecondaryDauDCAMax", 0.2, "Maximum DCA Secondary daughters to PV"};
-    Configurable<float> cfgSecondaryDauPosDCAtoPVMin{"cfgSecondaryDauPosDCAtoPVMin", 0.0, "Minimum DCA Secondary positive daughters to PV"};
-    Configurable<float> cfgSecondaryDauNegDCAtoPVMin{"cfgSecondaryDauNegDCAtoPVMin", 0.0, "Minimum DCA Secondary negative daughters to PV"};
+    Configurable<float> cfgSecondaryDauPosDCAtoPVMin{"cfgSecondaryDauPosDCAtoPVMin", 0.1, "Minimum DCA Secondary positive daughters to PV"};
+    Configurable<float> cfgSecondaryDauNegDCAtoPVMin{"cfgSecondaryDauNegDCAtoPVMin", 0.1, "Minimum DCA Secondary negative daughters to PV"};
 
     Configurable<float> cfgSecondaryPtMin{"cfgSecondaryPtMin", 0.f, "Minimum transverse momentum of Secondary"};
-    Configurable<float> cfgSecondaryRapidityMax{"cfgSecondaryRapidityMax", 0.5, "Maximum rapidity of Secondary"};
+    Configurable<float> cfgSecondaryRapidityMax{"cfgSecondaryRapidityMax", 0.8, "Maximum rapidity of Secondary"};
     Configurable<float> cfgSecondaryRadiusMin{"cfgSecondaryRadiusMin", 0.0, "Minimum transverse radius of Secondary"};
     Configurable<float> cfgSecondaryRadiusMax{"cfgSecondaryRadiusMax", 999.9, "Maximum transverse radius of Secondary"};
-    Configurable<float> cfgSecondaryCosPAMin{"cfgSecondaryCosPAMin", 0.998, "Mininum cosine pointing angle of Secondary"};
+    Configurable<float> cfgSecondaryCosPAMin{"cfgSecondaryCosPAMin", 0.995, "Mininum cosine pointing angle of Secondary"};
     Configurable<float> cfgSecondaryDCAtoPVMax{"cfgSecondaryDCAtoPVMax", 0.4, "Maximum DCA Secondary to PV"};
     Configurable<float> cfgSecondaryProperLifetimeMax{"cfgSecondaryProperLifetimeMax", 20., "Maximum Secondary Lifetime"};
     Configurable<float> cfgSecondaryparamArmenterosCut{"cfgSecondaryparamArmenterosCut", 0.2, "parameter for Armenteros Cut"};
@@ -1068,6 +1070,8 @@ struct Chk892Flow {
       return; // If we don't have a Q-vector
     colCuts.fillQA(collision);
     lCentrality = getCentrality(collision);
+    if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
+      return;
 
     fillHistograms<false, false>(collision, tracks, v0s, EventPlaneConfig.cfgnMods); // second order
   }
