@@ -187,7 +187,7 @@ struct StrangenessBuilder {
                     kCascFoundTags,
                     nTables };
 
-  struct : ProducesGroup{
+  struct : ProducesGroup {
     //__________________________________________________
     // V0 tables
     Produces<aod::V0Indices> v0indices; // standard part of V0Datas
@@ -1148,7 +1148,7 @@ struct StrangenessBuilder {
         if (mEnabledTables[kV0Indices]) {
           // for referencing (especially - but not only - when using derived data)
           products.v0indices(v0.posTrackId, v0.negTrackId,
-                    v0.collisionId, iv0);
+                             v0.collisionId, iv0);
           histos.fill(HIST("hTableBuildingStatistics"), kV0Indices);
         }
         if (mEnabledTables[kV0TrackXs]) {
@@ -1159,21 +1159,21 @@ struct StrangenessBuilder {
         if (mEnabledTables[kV0CoresBase]) {
           // standard analysis
           products.v0cores(straHelper.v0.position[0], straHelper.v0.position[1], straHelper.v0.position[2],
-                  straHelper.v0.positiveMomentum[0], straHelper.v0.positiveMomentum[1], straHelper.v0.positiveMomentum[2],
-                  straHelper.v0.negativeMomentum[0], straHelper.v0.negativeMomentum[1], straHelper.v0.negativeMomentum[2],
-                  straHelper.v0.daughterDCA,
-                  straHelper.v0.positiveDCAxy,
-                  straHelper.v0.negativeDCAxy,
-                  TMath::Cos(straHelper.v0.pointingAngle),
-                  straHelper.v0.dcaXY,
-                  v0.v0Type);
+                           straHelper.v0.positiveMomentum[0], straHelper.v0.positiveMomentum[1], straHelper.v0.positiveMomentum[2],
+                           straHelper.v0.negativeMomentum[0], straHelper.v0.negativeMomentum[1], straHelper.v0.negativeMomentum[2],
+                           straHelper.v0.daughterDCA,
+                           straHelper.v0.positiveDCAxy,
+                           straHelper.v0.negativeDCAxy,
+                           TMath::Cos(straHelper.v0.pointingAngle),
+                           straHelper.v0.dcaXY,
+                           v0.v0Type);
           products.v0dataLink(products.v0cores.lastIndex(), -1);
           histos.fill(HIST("hTableBuildingStatistics"), kV0CoresBase);
         }
         if (mEnabledTables[kV0TraPosAtDCAs]) {
           // for tracking studies
           products.v0dauPositions(straHelper.v0.positivePosition[0], straHelper.v0.positivePosition[1], straHelper.v0.positivePosition[2],
-                         straHelper.v0.negativePosition[0], straHelper.v0.negativePosition[1], straHelper.v0.negativePosition[2]);
+                                  straHelper.v0.negativePosition[0], straHelper.v0.negativePosition[1], straHelper.v0.negativePosition[2]);
           histos.fill(HIST("hTableBuildingStatistics"), kV0TraPosAtDCAs);
         }
         if (mEnabledTables[kV0TraPosAtIUs]) {
@@ -1185,7 +1185,7 @@ struct StrangenessBuilder {
           positiveTrackParam.getXYZGlo(positivePositionIU);
           negativeTrackParam.getXYZGlo(negativePositionIU);
           products.v0dauPositionsIU(positivePositionIU[0], positivePositionIU[1], positivePositionIU[2],
-                           negativePositionIU[0], negativePositionIU[1], negativePositionIU[2]);
+                                    negativePositionIU[0], negativePositionIU[1], negativePositionIU[2]);
           histos.fill(HIST("hTableBuildingStatistics"), kV0TraPosAtIUs);
         }
         if (mEnabledTables[kV0Covs]) {
@@ -1589,21 +1589,21 @@ struct StrangenessBuilder {
       // generate analysis tables as required
       if (mEnabledTables[kCascIndices]) {
         products.cascidx(cascade.globalId,
-                straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
-                straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
+                         straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
+                         straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
         histos.fill(HIST("hTableBuildingStatistics"), kCascIndices);
       }
       if (mEnabledTables[kStoredCascCores]) {
         products.cascdata(straHelper.cascade.charge, straHelper.cascade.massXi, straHelper.cascade.massOmega,
-                 straHelper.cascade.cascadePosition[0], straHelper.cascade.cascadePosition[1], straHelper.cascade.cascadePosition[2],
-                 straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
-                 straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2],
-                 straHelper.cascade.negativeMomentum[0], straHelper.cascade.negativeMomentum[1], straHelper.cascade.negativeMomentum[2],
-                 straHelper.cascade.bachelorMomentum[0], straHelper.cascade.bachelorMomentum[1], straHelper.cascade.bachelorMomentum[2],
-                 straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2],
-                 straHelper.cascade.v0DaughterDCA, straHelper.cascade.cascadeDaughterDCA,
-                 straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
-                 straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz);
+                          straHelper.cascade.cascadePosition[0], straHelper.cascade.cascadePosition[1], straHelper.cascade.cascadePosition[2],
+                          straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
+                          straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2],
+                          straHelper.cascade.negativeMomentum[0], straHelper.cascade.negativeMomentum[1], straHelper.cascade.negativeMomentum[2],
+                          straHelper.cascade.bachelorMomentum[0], straHelper.cascade.bachelorMomentum[1], straHelper.cascade.bachelorMomentum[2],
+                          straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2],
+                          straHelper.cascade.v0DaughterDCA, straHelper.cascade.cascadeDaughterDCA,
+                          straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
+                          straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz);
         histos.fill(HIST("hTableBuildingStatistics"), kStoredCascCores);
 
         // interlink always produced if cascades generated
@@ -1901,25 +1901,25 @@ struct StrangenessBuilder {
       // generate analysis tables as required
       if (mEnabledTables[kKFCascIndices]) {
         products.kfcascidx(cascade.globalId,
-                  straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
-                  straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
+                           straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
+                           straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
         histos.fill(HIST("hTableBuildingStatistics"), kKFCascIndices);
       }
       if (mEnabledTables[kStoredKFCascCores]) {
         products.kfcascdata(straHelper.cascade.charge, straHelper.cascade.massXi, straHelper.cascade.massOmega,
-                   straHelper.cascade.cascadePosition[0], straHelper.cascade.cascadePosition[1], straHelper.cascade.cascadePosition[2],
-                   straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
-                   straHelper.cascade.positivePosition[0], straHelper.cascade.positivePosition[1], straHelper.cascade.positivePosition[2],
-                   straHelper.cascade.negativePosition[0], straHelper.cascade.negativePosition[1], straHelper.cascade.negativePosition[2],
-                   straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2],
-                   straHelper.cascade.negativeMomentum[0], straHelper.cascade.negativeMomentum[1], straHelper.cascade.negativeMomentum[2],
-                   straHelper.cascade.bachelorMomentum[0], straHelper.cascade.bachelorMomentum[1], straHelper.cascade.bachelorMomentum[2],
-                   straHelper.cascade.v0Momentum[0], straHelper.cascade.v0Momentum[1], straHelper.cascade.v0Momentum[2],
-                   straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2],
-                   straHelper.cascade.v0DaughterDCA, straHelper.cascade.cascadeDaughterDCA,
-                   straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
-                   straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz,
-                   straHelper.cascade.kfMLambda, straHelper.cascade.kfV0Chi2, straHelper.cascade.kfCascadeChi2);
+                            straHelper.cascade.cascadePosition[0], straHelper.cascade.cascadePosition[1], straHelper.cascade.cascadePosition[2],
+                            straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
+                            straHelper.cascade.positivePosition[0], straHelper.cascade.positivePosition[1], straHelper.cascade.positivePosition[2],
+                            straHelper.cascade.negativePosition[0], straHelper.cascade.negativePosition[1], straHelper.cascade.negativePosition[2],
+                            straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2],
+                            straHelper.cascade.negativeMomentum[0], straHelper.cascade.negativeMomentum[1], straHelper.cascade.negativeMomentum[2],
+                            straHelper.cascade.bachelorMomentum[0], straHelper.cascade.bachelorMomentum[1], straHelper.cascade.bachelorMomentum[2],
+                            straHelper.cascade.v0Momentum[0], straHelper.cascade.v0Momentum[1], straHelper.cascade.v0Momentum[2],
+                            straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2],
+                            straHelper.cascade.v0DaughterDCA, straHelper.cascade.cascadeDaughterDCA,
+                            straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
+                            straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz,
+                            straHelper.cascade.kfMLambda, straHelper.cascade.kfV0Chi2, straHelper.cascade.kfCascadeChi2);
         histos.fill(HIST("hTableBuildingStatistics"), kStoredKFCascCores);
 
         // interlink always produced if cascades generated
@@ -2009,22 +2009,22 @@ struct StrangenessBuilder {
       // generate analysis tables as required
       if (mEnabledTables[kTraCascIndices]) {
         products.tracascidx(cascade.globalIndex(),
-                   straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
-                   straHelper.cascade.bachelorTrack, cascadeTrack.trackId(), straHelper.cascade.collisionId);
+                            straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
+                            straHelper.cascade.bachelorTrack, cascadeTrack.trackId(), straHelper.cascade.collisionId);
         histos.fill(HIST("hTableBuildingStatistics"), kTraCascIndices);
       }
       if (mEnabledTables[kStoredTraCascCores]) {
         products.tracascdata(straHelper.cascade.charge, cascadeTrack.xiMass(), cascadeTrack.omegaMass(),
-                    cascadeTrack.decayX(), cascadeTrack.decayY(), cascadeTrack.decayZ(),
-                    straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
-                    straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2],
-                    straHelper.cascade.negativeMomentum[0], straHelper.cascade.negativeMomentum[1], straHelper.cascade.negativeMomentum[2],
-                    straHelper.cascade.bachelorMomentum[0], straHelper.cascade.bachelorMomentum[1], straHelper.cascade.bachelorMomentum[2],
-                    straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2],
-                    straHelper.cascade.v0DaughterDCA, straHelper.cascade.cascadeDaughterDCA,
-                    straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
-                    straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz,
-                    cascadeTrack.matchingChi2(), cascadeTrack.topologyChi2(), cascadeTrack.itsClsSize());
+                             cascadeTrack.decayX(), cascadeTrack.decayY(), cascadeTrack.decayZ(),
+                             straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
+                             straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2],
+                             straHelper.cascade.negativeMomentum[0], straHelper.cascade.negativeMomentum[1], straHelper.cascade.negativeMomentum[2],
+                             straHelper.cascade.bachelorMomentum[0], straHelper.cascade.bachelorMomentum[1], straHelper.cascade.bachelorMomentum[2],
+                             straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2],
+                             straHelper.cascade.v0DaughterDCA, straHelper.cascade.cascadeDaughterDCA,
+                             straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
+                             straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz,
+                             cascadeTrack.matchingChi2(), cascadeTrack.topologyChi2(), cascadeTrack.itsClsSize());
         histos.fill(HIST("hTableBuildingStatistics"), kStoredTraCascCores);
 
         // interlink always produced if base core table generated

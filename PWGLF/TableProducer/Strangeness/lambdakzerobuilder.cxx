@@ -1423,7 +1423,7 @@ struct lambdakzeroPreselector {
     h->GetXaxis()->SetBinLabel(5, "Used in Casc");
     h->GetXaxis()->SetBinLabel(6, "Used in Tra-Casc");
 
-    if(qaCollisionAssociation){ 
+    if (qaCollisionAssociation) {
       auto hCollAssocQA = histos.add<TH2>("hCollAssocQA", "hCollAssocQA", kTH2D, {{6, -0.5f, 5.5f}, {2, -0.5f, 1.5f}});
       hCollAssocQA->GetXaxis()->SetBinLabel(1, "K0");
       hCollAssocQA->GetXaxis()->SetBinLabel(2, "Lambda");
@@ -1507,7 +1507,7 @@ struct lambdakzeroPreselector {
                   for (auto& lNegGrandMother : lNegMother.template mothers_as<aod::McParticles>()) {
                     if (lNegGrandMother.pdgCode() == dIfMCselectV0MotherPDG)
                       lPDG = lNegMother.pdgCode();
-                      correctMcCollisionIndex = lNegMother.mcCollisionId();
+                    correctMcCollisionIndex = lNegMother.mcCollisionId();
                   }
                 }
               }
@@ -1518,32 +1518,32 @@ struct lambdakzeroPreselector {
       }
     } // end association check
 
-    bool collisionAssociationOK = false; 
-    if(correctMcCollisionIndex>-1 && correctMcCollisionIndex == mcCollisionId){
+    bool collisionAssociationOK = false;
+    if (correctMcCollisionIndex > -1 && correctMcCollisionIndex == mcCollisionId) {
       collisionAssociationOK = true;
     }
 
-    if (lPDG == 310){
+    if (lPDG == 310) {
       bitset(maskElement, bitTrueK0Short);
-      if(qaCollisionAssociation){
+      if (qaCollisionAssociation) {
         histos.fill(HIST("hCollAssocQA"), 0.0f, collisionAssociationOK);
       }
     }
-    if (lPDG == 3122){
+    if (lPDG == 3122) {
       bitset(maskElement, bitTrueLambda);
-      if(qaCollisionAssociation){
+      if (qaCollisionAssociation) {
         histos.fill(HIST("hCollAssocQA"), 1.0f, collisionAssociationOK);
       }
     }
-    if (lPDG == -3122){
+    if (lPDG == -3122) {
       bitset(maskElement, bitTrueAntiLambda);
-      if(qaCollisionAssociation){
+      if (qaCollisionAssociation) {
         histos.fill(HIST("hCollAssocQA"), 2.0f, collisionAssociationOK);
       }
     }
-    if (lPDG == 22){
+    if (lPDG == 22) {
       bitset(maskElement, bitTrueGamma);
-      if(qaCollisionAssociation){
+      if (qaCollisionAssociation) {
         histos.fill(HIST("hCollAssocQA"), 3.0f, collisionAssociationOK);
       }
     }
