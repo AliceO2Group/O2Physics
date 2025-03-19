@@ -1498,6 +1498,7 @@ struct lambdakzeroPreselector {
           for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
             if (lNegMother.globalIndex() == lPosMother.globalIndex() && (!dIfMCselectPhysicalPrimary || lNegMother.isPhysicalPrimary())) {
               lPDG = lNegMother.pdgCode();
+              correctMcCollisionIndex = lNegMother.mcCollisionId();
               physicalPrimary = lNegMother.isPhysicalPrimary();
 
               // additionally check PDG of the mother particle if requested
@@ -1507,7 +1508,6 @@ struct lambdakzeroPreselector {
                   for (auto& lNegGrandMother : lNegMother.template mothers_as<aod::McParticles>()) {
                     if (lNegGrandMother.pdgCode() == dIfMCselectV0MotherPDG)
                       lPDG = lNegMother.pdgCode();
-                    correctMcCollisionIndex = lNegMother.mcCollisionId();
                   }
                 }
               }
