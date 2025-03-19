@@ -159,7 +159,7 @@ struct FlowEfficiencyCasc {
         continue;
       // Omega and antiOmega
       int pdgCode{cascMC.pdgCode()};
-      if (!cfgcheckMCParticleTrue || (std::abs(pdgCode) == kOmegaMinus && std::abs(cascMC.pdgCodeV0()) == kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == kKPlus)) {
+      if (!cfgcheckMCParticle || (std::abs(pdgCode) == kOmegaMinus && std::abs(cascMC.pdgCodeV0()) == kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == kKPlus)) {
         if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
             (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
           registry.fill(HIST("h2DRecOmega"), casc.pt(), rectracknum, casc.mOmega());
@@ -169,7 +169,7 @@ struct FlowEfficiencyCasc {
         }
       }
       // Xi and antiXi
-      if (!cfgcheckMCParticleTrue || (std::abs(pdgCode) == kXiMinus && std::abs(cascMC.pdgCodeV0()) == kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == kPiPlus)) {
+      if (!cfgcheckMCParticle || (std::abs(pdgCode) == kXiMinus && std::abs(cascMC.pdgCodeV0()) == kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == kPiPlus)) {
         if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
             (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
           registry.fill(HIST("h2DRecXi"), casc.pt(), rectracknum, casc.mXi());
@@ -216,7 +216,7 @@ struct FlowEfficiencyCasc {
 
       int pdgCode{v0MC.pdgCode()};
       // K0short
-      if (!cfgcheckMCParticleTrue || (std::abs(pdgCode) == kK0Short && v0MC.pdgCodePositive() == kPiPlus && v0MC.pdgCodeNegative() == kPiMinus)) {
+      if (!cfgcheckMCParticle || (std::abs(pdgCode) == kK0Short && v0MC.pdgCodePositive() == kPiPlus && v0MC.pdgCodeNegative() == kPiMinus)) {
         if (v0.qtarm() / std::fabs(v0.alpha()) > cfgv0_ArmPodocut && std::fabs(v0.y()) < 0.5 && std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < cfgv0_mk0swindow &&
             (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
           registry.fill(HIST("h2DRecK0s"), v0.pt(), rectracknum, v0.mK0Short());
@@ -225,11 +225,11 @@ struct FlowEfficiencyCasc {
       // Lambda and antiLambda
       if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
           (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-        if (!cfgcheckMCParticleTrue || (std::abs(pdgCode) == kLambda0 && v0MC.pdgCodePositive() == kProton && v0MC.pdgCodeNegative() == kPiMinus))
+        if (!cfgcheckMCParticle || (std::abs(pdgCode) == kLambda0 && v0MC.pdgCodePositive() == kProton && v0MC.pdgCodeNegative() == kPiMinus))
           registry.fill(HIST("h2DRecLambda"), v0.pt(), rectracknum, v0.mLambda());
       } else if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
                  (!cfgcheckDauTPC || (std::fabs(v0negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-        if (!cfgcheckMCParticleTrue || (std::abs(pdgCode) == kLambda0 && v0MC.pdgCodePositive() == kPiPlus && v0MC.pdgCodeNegative() == kProtonBar))
+        if (!cfgcheckMCParticle || (std::abs(pdgCode) == kLambda0 && v0MC.pdgCodePositive() == kPiPlus && v0MC.pdgCodeNegative() == kProtonBar))
           registry.fill(HIST("h2DRecLambda"), v0.pt(), rectracknum, v0.mLambda());
       }
     }
