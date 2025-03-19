@@ -185,6 +185,8 @@ struct FemtoUniversePairTaskTrackPhi {
   HistogramRegistry registryDCA{"registryDCA", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryMCpT{"registryMCpT", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfBinsVtx, ConfBinsMult}, true};
+
   EfficiencyConfigurableGroup effConfGroup;
   EfficiencyCalculator<TH1> efficiencyCalculator{&effConfGroup};
 
@@ -466,14 +468,9 @@ struct FemtoUniversePairTaskTrackPhi {
   }
 
   template <typename PartitionType, typename PartType, typename MCParticles = std::nullptr_t>
-  void doSameEvent(FilteredFDCollision const& col, PartType const& parts, PartitionType& groupPartsOne, PartitionType& groupPartsTwo, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doSameEvent(PartitionType groupPartsTrack, PartitionType groupPartsPhi, PartType parts, float magFieldTesla, int multCol, [[maybe_unused]] MCParticles mcParts = nullptr)
   {
-    const auto& magFieldTesla = col.magField();
-    const int multCol = col.multNtr();
-
-    eventHisto.fillQA(col);
-
-    for (auto const& phicandidate : groupPartsTwo) {
+    for (auto const& phicandidate : groupPartsPhi) {
       // TODO: add phi meson minv cut here
       const auto& posChild = parts.iteratorAt(phicandidate.index() - 2);
       float tpcNSigmaKp = trackCuts.getNsigmaTPC(posChild, o2::track::PID::Kaon);
@@ -498,7 +495,7 @@ struct FemtoUniversePairTaskTrackPhi {
       trackHistoPartPhi.fillQA<false, false>(phicandidate);
     }
 
-    for (auto const& track : groupPartsOne) {
+    for (auto const& track : groupPartsTrack) {
       float tpcNSigmaPi = trackCuts.getNsigmaTPC(track, o2::track::PID::Pion);
       float tofNSigmaPi = trackCuts.getNsigmaTOF(track, o2::track::PID::Pion);
       float tpcNSigmaKa = trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon);
@@ -535,9 +532,7 @@ struct FemtoUniversePairTaskTrackPhi {
     }
 
     /// Now build the combinations
-    for (auto const& [track, phicandidate] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-      // TODO: add phi inv mass cut here
-
+    for (auto const& [track, phicandidate] : combinations(CombinationsFullIndexPolicy(groupPartsTrack, groupPartsPhi))) {
       if (ConfTrackIsIdentified) {
         if (!isParticleNSigmaAccepted(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
           continue;
@@ -597,6 +592,36 @@ struct FemtoUniversePairTaskTrackPhi {
     // }
   }
 
+  template <typename PartitionType, typename PartType, typename MCParticles = std::nullptr_t>
+  void doMixedEvent(PartitionType groupPartsTrack, PartitionType groupPartsPhi, PartType parts, float magFieldTesla, int multCol, [[maybe_unused]] MCParticles mcParts = nullptr)
+  {
+    for (auto const& [track, phicandidate] : combinations(CombinationsFullIndexPolicy(groupPartsTrack, groupPartsPhi))) {
+      if (ConfTrackIsIdentified) {
+        if (!isParticleNSigmaAccepted(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
+          continue;
+        }
+        if (ConfTrackIsRejected) {
+          if (isParticleNSigmaRejected(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
+            continue;
+          }
+        }
+      }
+
+      if (ConfCPRIsEnabled) {
+        if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla, femto_universe_container::EventType::mixed)) {
+          continue;
+        }
+      }
+
+      weight = efficiencyCalculator.getWeight(ParticleNo::ONE, phicandidate.pt()) * efficiencyCalculator.getWeight(ParticleNo::TWO, track.pt());
+
+      if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
+        mixedEventCont.setPair<true>(track, phicandidate, multCol, ConfUse3D, weight);
+      else
+        mixedEventCont.setPair<false>(track, phicandidate, multCol, ConfUse3D, weight);
+    }
+  }
+
   void processSameEvent(FilteredFDCollision const& col, FilteredFemtoFullParticles const& parts)
   {
     auto thegroupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -604,66 +629,29 @@ struct FemtoUniversePairTaskTrackPhi {
     // auto thegroupPartsPhiDaugh = partsPhiDaugh->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     // auto thegroupPartsKaons = partsKaons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    doSameEvent(col, parts, thegroupPartsTrack, thegroupPartsPhi);
+    doSameEvent(thegroupPartsTrack, thegroupPartsPhi, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processSameEvent, "Enable processing same event", true);
 
-  template <typename PartitionType, typename PartType, typename MCParticles = std::nullptr_t>
-  void doMixedEvent(FilteredFDCollisions const& cols, PartType const& parts, PartitionType& partitionPhi, PartitionType& partitionTrack, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void processMixedEvent(FilteredFDCollisions const& cols, FilteredFemtoFullParticles const& parts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfBinsVtx, ConfBinsMult}, true};
+    for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
-    auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
-      const int multCol = collision1.multNtr();
+      const int multiplicityCol = collision1.multNtr();
+      mixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
 
-      auto groupPartsPhi = partitionPhi->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
-      auto groupPartsTrack = partitionTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+      auto groupPartsPhi = partsPhi->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
 
       if (magFieldTesla1 != magFieldTesla2) {
-        return;
+        continue;
       }
 
-      for (const auto& [phicandidate, track] : combinations(CombinationsFullIndexPolicy(groupPartsPhi, groupPartsTrack))) {
-        // TODO: move here phi meson mass cut
-
-        if (ConfTrackIsIdentified) {
-          if (!isParticleNSigmaAccepted(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
-            continue;
-          }
-          if (ConfTrackIsRejected) {
-            if (isParticleNSigmaRejected(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
-              continue;
-            }
-          }
-        }
-
-        if (ConfCPRIsEnabled) {
-          if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
-            continue;
-          }
-        }
-
-        weight = efficiencyCalculator.getWeight(ParticleNo::ONE, phicandidate.pt()) * efficiencyCalculator.getWeight(ParticleNo::TWO, track.pt());
-
-        if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
-          mixedEventCont.setPair<true>(track, phicandidate, multCol, ConfUse3D, weight);
-        else
-          mixedEventCont.setPair<false>(track, phicandidate, multCol, ConfUse3D, weight);
-      }
-    };
-
-    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
-      mixedCollProcessFunc(collision1, collision2);
-      mixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.multNtr()}));
+      doMixedEvent(groupPartsTrack, groupPartsPhi, parts, magFieldTesla1, multiplicityCol);
     }
-  }
-
-  void processMixedEvent(FilteredFDCollisions const& cols, FilteredFemtoFullParticles const& parts)
-  {
-    doMixedEvent(cols, parts, partsPhi, partsTrack);
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processMixedEvent, "Enable processing mixed events", true);
 
@@ -674,14 +662,29 @@ struct FemtoUniversePairTaskTrackPhi {
     auto thegroupPartsPhi = partsPhiMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     // auto thegroupPartsPhiDaugh = partsPhiDaugh->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     // auto thegroupPartsKaons = partsKaons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-
-    doSameEvent(col, parts, thegroupPartsTrack, thegroupPartsPhi, mcparts);
+    doSameEvent(thegroupPartsTrack, thegroupPartsPhi, parts, col.magField(), col.multNtr(), mcparts);
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processSameEventMCReco, "Enable processing same event for MC Reco", true);
 
   void processMixedEventMCReco(FilteredFDCollisions const& cols, FemtoRecoParticles const& parts, aod::FdMCParticles const& mcparts)
   {
-    doMixedEvent(cols, parts, partsPhiMCReco, partsTrackMCReco, mcparts);
+    for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+
+      const int multiplicityCol = collision1.multNtr();
+      mixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
+
+      const auto& magFieldTesla1 = collision1.magField();
+      const auto& magFieldTesla2 = collision2.magField();
+
+      if (magFieldTesla1 != magFieldTesla2) {
+        continue;
+      }
+
+      auto groupPartsTrack = partsTrackMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+      auto groupPartsPhi = partsPhiMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+
+      doMixedEvent(groupPartsTrack, groupPartsPhi, parts, magFieldTesla1, multiplicityCol, mcparts);
+    }
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processMixedEventMCReco, "Enable processing mixed events for MC Reco", false);
 
