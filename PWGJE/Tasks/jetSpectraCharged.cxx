@@ -271,7 +271,7 @@ struct JetSpectraCharged {
       for (const auto& constituent : jet.template tracks_as<TTracks>()) {
         double pt = constituent.pt();
 
-        if (checkConstituentMinPt && pt >= leadingConstituentPtMin) { 
+        if (checkConstituentMinPt && pt >= leadingConstituentPtMin) {
           isMinLeadingConstituent = true;
         }
         if (checkConstituentMaxPt && pt > leadingConstituentPtMax) {
@@ -488,15 +488,15 @@ struct JetSpectraCharged {
           double corrTagjetpt = jetMCP.pt() - (mcrho * jetMCP.area());
           double corrBasejetpt = jetMCD.pt() - (rho * jetMCD.area());
           double dcorrpt = corrTagjetpt - corrBasejetpt;
-            if (jetfindingutilities::isInEtaAcceptance(jetMCD, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
-              registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_rhoareasubtracted_mcdetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
-              registry.fill(HIST("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_rhoareasubtracted"), corrBasejetpt, dcorrpt / corrBasejetpt, weight);
-            }
-            if (jetfindingutilities::isInEtaAcceptance(jetMCP, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
-              registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_rhoareasubtracted_mcpetaconstraint"),  corrBasejetpt, corrTagjetpt, weight);
-              registry.fill(HIST("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_rhoareasubtracted"), corrTagjetpt, dcorrpt / corrTagjetpt, weight);
-              registry.fill(HIST("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_rhoareasubtracted"), corrTagjetpt, corrBasejetpt / corrTagjetpt, weight);
-            }
+          if (jetfindingutilities::isInEtaAcceptance(jetMCD, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+            registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_rhoareasubtracted_mcdetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
+            registry.fill(HIST("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_rhoareasubtracted"), corrBasejetpt, dcorrpt / corrBasejetpt, weight);
+          }
+          if (jetfindingutilities::isInEtaAcceptance(jetMCP, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+            registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_rhoareasubtracted_mcpetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
+            registry.fill(HIST("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_rhoareasubtracted"), corrTagjetpt, dcorrpt / corrTagjetpt, weight);
+            registry.fill(HIST("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_rhoareasubtracted"), corrTagjetpt, corrBasejetpt / corrTagjetpt, weight);
+          }
         }
       }
     }
