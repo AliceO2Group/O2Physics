@@ -480,8 +480,8 @@ struct straCents {
       float multZeqFV0A = 0.f;
       float multZeqFT0A = 0.f;
       float multZeqFT0C = 0.f;
-      float multZeqFDDA = 0.f;
-      float multZeqFDDC = 0.f;
+      // float multZeqFDDA = 0.f;
+      // float multZeqFDDC = 0.f;
 
       if (std::fabs(collision.posZ()) < 15.0f && hVtxZFV0A) {
         multZeqFV0A = hVtxZFV0A->Interpolate(0.0) * collision.multFV0A() / hVtxZFV0A->Interpolate(collision.posZ());
@@ -492,12 +492,12 @@ struct straCents {
       if (std::fabs(collision.posZ()) < 15.0f && hVtxZFT0C) {
         multZeqFT0C = hVtxZFT0C->Interpolate(0.0) * collision.multFT0C() / hVtxZFT0C->Interpolate(collision.posZ());
       }
-      if (std::fabs(collision.posZ()) < 15.0f && hVtxZFDDA) {
-        multZeqFDDA = hVtxZFDDA->Interpolate(0.0) * collision.multFDDA() / hVtxZFDDA->Interpolate(collision.posZ());
-      }
-      if (std::fabs(collision.posZ()) < 15.0f && hVtxZFDDC) {
-        multZeqFDDC = hVtxZFDDC->Interpolate(0.0) * collision.multFDDC() / hVtxZFDDC->Interpolate(collision.posZ());
-      }
+      // if (std::fabs(collision.posZ()) < 15.0f && hVtxZFDDA) {
+      //   multZeqFDDA = hVtxZFDDA->Interpolate(0.0) * collision.multFDDA() / hVtxZFDDA->Interpolate(collision.posZ());
+      // }
+      // if (std::fabs(collision.posZ()) < 15.0f && hVtxZFDDC) {
+      //   multZeqFDDC = hVtxZFDDC->Interpolate(0.0) * collision.multFDDC() / hVtxZFDDC->Interpolate(collision.posZ());
+      // }
 
       /**
        * @brief Get centrality value based on the given calibration information and multiplicity.
