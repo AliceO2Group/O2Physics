@@ -144,6 +144,10 @@ std::bitset<kSelNum> maskAntiOmegaSpecific;
 std::bitset<kSelNum> maskSelectionK0Short;
 std::bitset<kSelNum> maskSelectionLambda;
 std::bitset<kSelNum> maskSelectionAntiLambda;
+
+std::bitset<kSelNum> secondaryMaskSelectionLambda;
+std::bitset<kSelNum> secondaryMaskSelectionAntiLambda;
+
 std::bitset<kSelNum> maskSelectionXi;
 std::bitset<kSelNum> maskSelectionAntiXi;
 std::bitset<kSelNum> maskSelectionOmega;
