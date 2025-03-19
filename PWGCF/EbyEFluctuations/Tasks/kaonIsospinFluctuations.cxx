@@ -69,7 +69,7 @@ struct KaonIsospinFluctuations {
 
   // Configurables
   // Event Selection
-  Configurable<float> cutZvertex{"cutZvertex", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<float> cutZvertex{"cutZvertex", 8.0f, "Accepted z-vertex range (cm)"};
 
   // Configurable parameters for V0 selection
   Configurable<float> v0settingDcaPosToPV{"v0settingDcaPosToPV", 0.06, "DCA Pos to PV"};
@@ -88,6 +88,42 @@ struct KaonIsospinFluctuations {
   Configurable<double> centBinsxUp{"centBinsxUp", 101.0, "centBinsxUp"};
 
   Configurable<int> centAxisType{"centAxisType", 0, "centAxisType"};
+
+  // Configurables for particle Identification
+  Configurable<bool> cfgCheckVetoCut{"cfgCheckVetoCut", false, "cfgCheckVetoCut"};
+  Configurable<bool> cfgDoElAndDeRejection{"cfgDoElAndDeRejection", false, "cfgDoElAndDeRejection"};
+  Configurable<bool> cfgDoPdependentId{"cfgDoPdependentId", true, "cfgDoPdependentId"};
+  Configurable<bool> cfgDoTpcInnerParamId{"cfgDoTpcInnerParamId", false, "cfgDoTpcInnerParamId"};
+
+  Configurable<float> cfgPiThrPforTOF{"cfgPiThrPforTOF", 0.7, "cfgPiThrPforTOF"};
+  Configurable<int> cfgPiIdCutTypeLowP{"cfgPiIdCutTypeLowP", 0, "cfgPiIdCutTypeLowP"};
+  Configurable<float> cfgPiNSigmaTPCLowP{"cfgPiNSigmaTPCLowP", 3.0, "cfgPiNSigmaTPCLowP"};
+  Configurable<float> cfgPiNSigmaTOFLowP{"cfgPiNSigmaTOFLowP", 3.0, "cfgPiNSigmaTOFLowP"};
+  Configurable<float> cfgPiNSigmaRadLowP{"cfgPiNSigmaRadLowP", 9.0, "cfgPiNSigmaRadLowP"};
+  Configurable<int> cfgPiIdCutTypeHighP{"cfgPiIdCutTypeHighP", 0, "cfgPiIdCutTypeHighP"};
+  Configurable<float> cfgPiNSigmaTPCHighP{"cfgPiNSigmaTPCHighP", 3.0, "cfgPiNSigmaTPCHighP"};
+  Configurable<float> cfgPiNSigmaTOFHighP{"cfgPiNSigmaTOFHighP", 3.0, "cfgPiNSigmaTOFHighP"};
+  Configurable<float> cfgPiNSigmaRadHighP{"cfgPiNSigmaRadHighP", 9.0, "cfgPiNSigmaRadHighP"};
+
+  Configurable<float> cfgKaThrPforTOF{"cfgKaThrPforTOF", 0.8, "cfgKaThrPforTOF"};
+  Configurable<int> cfgKaIdCutTypeLowP{"cfgKaIdCutTypeLowP", 0, "cfgKaIdCutTypeLowP"};
+  Configurable<float> cfgKaNSigmaTPCLowP{"cfgKaNSigmaTPCLowP", 3.0, "cfgKaNSigmaTPCLowP"};
+  Configurable<float> cfgKaNSigmaTOFLowP{"cfgKaNSigmaTOFLowP", 3.0, "cfgKaNSigmaTOFLowP"};
+  Configurable<float> cfgKaNSigmaRadLowP{"cfgKaNSigmaRadLowP", 9.0, "cfgKaNSigmaRadLowP"};
+  Configurable<int> cfgKaIdCutTypeHighP{"cfgKaIdCutTypeHighP", 0, "cfgKaIdCutTypeHighP"};
+  Configurable<float> cfgKaNSigmaTPCHighP{"cfgKaNSigmaTPCHighP", 3.0, "cfgKaNSigmaTPCHighP"};
+  Configurable<float> cfgKaNSigmaTOFHighP{"cfgKaNSigmaTOFHighP", 3.0, "cfgKaNSigmaTOFHighP"};
+  Configurable<float> cfgKaNSigmaRadHighP{"cfgKaNSigmaRadHighP", 9.0, "cfgKaNSigmaRadHighP"};
+
+  Configurable<float> cfgPrThrPforTOF{"cfgPrThrPforTOF", 0.8, "cfgPrThrPforTOF"};
+  Configurable<int> cfgPrIdCutTypeLowP{"cfgPrIdCutTypeLowP", 0, "cfgPrIdCutTypeLowP"};
+  Configurable<float> cfgPrNSigmaTPCLowP{"cfgPrNSigmaTPCLowP", 3.0, "cfgPrNSigmaTPCLowP"};
+  Configurable<float> cfgPrNSigmaTOFLowP{"cfgPrNSigmaTOFLowP", 3.0, "cfgPrNSigmaTOFLowP"};
+  Configurable<float> cfgPrNSigmaRadLowP{"cfgPrNSigmaRadLowP", 9.0, "cfgPrNSigmaRadLowP"};
+  Configurable<int> cfgPrIdCutTypeHighP{"cfgPrIdCutTypeHighP", 0, "cfgPrIdCutTypeHighP"};
+  Configurable<float> cfgPrNSigmaTPCHighP{"cfgPrNSigmaTPCHighP", 3.0, "cfgPrNSigmaTPCHighP"};
+  Configurable<float> cfgPrNSigmaTOFHighP{"cfgPrNSigmaTOFHighP", 3.0, "cfgPrNSigmaTOFHighP"};
+  Configurable<float> cfgPrNSigmaRadHighP{"cfgPrNSigmaRadHighP", 9.0, "cfgPrNSigmaRadHighP"};
 
   // configurable for process functions to  reduce memory usage
   Configurable<bool> cfgFillV0TableFull{"cfgFillV0TableFull", true, "cfgFillV0TableFull"};
@@ -284,6 +320,7 @@ struct KaonIsospinFluctuations {
     recoV0s.add("v0Table/postSelectionCut/nCommonPionOfDifferentK0s", "nCommonPionOfDifferentK0s", {HistType::kTH1D, {{44, -2, 20}}});
 
     // Event Selection
+    recoEvent.add("recoEvent/ProcessType", "ProcessType", {HistType::kTH1D, {{20, -1, 9}}});
     recoEvent.add("recoEvent/h01_CollisionCount", "CollisionCount", {HistType::kTH1D, {{1, 0, 1}}});
     recoEvent.add("recoEvent/h02_VertexXRec", "VertexXRec", {HistType::kTH1D, {{1000, -0.2, 0.2}}});
     recoEvent.add("recoEvent/h03_VertexYRec", "VertexYRec", {HistType::kTH1D, {{1000, -0.2, 0.2}}});
@@ -518,15 +555,390 @@ struct KaonIsospinFluctuations {
     kTOFidentified
   };
 
+  enum TpcTofCutType {
+    kRectangularCut = 0,
+    kCircularCut,
+    kEllipsoidalCut
+  };
+
+  enum ProcessTypeEnum {
+    doDataProcessing = 0,
+    doRecoProcessing,
+    doPurityProcessing
+  };
+
+  enum HistRegEnum {
+    v0TableFull = 0,
+    v0TablePostK0sCheck,
+    v0TablePostMassCut,
+    v0TablePostSelectionCut,
+    recoK0sPreSel,
+    recoK0sPostSel,
+    recoTrackPreSel,
+    recoTrackPostSel,
+    recoAnalysisDir,
+    genAnalysisDir
+  };
+
+  static constexpr std::string_view HistRegDire[] = {
+    "v0Table/Full/",
+    "v0Table/postK0sCheck/",
+    "v0Table/postMassCut/",
+    "v0Table/postSelectionCut/",
+    "recoK0s/PreSel/",
+    "recoK0s/PostSel/",
+    "recoTracks/PreSel/",
+    "recoTracks/PostSel/",
+    "recoAnalysis/",
+    "genAnalysis/"};
+
+  enum PidEnum {
+    kPi = 0, // dont use kPion, kKaon, as these enumeration
+    kKa,     // are already defined in $ROOTSYS/root/include/TPDGCode.h
+    kPr,
+    kEl,
+    kDe,
+    kK0s
+  };
+
+  static constexpr std::string_view PidDire[] = {
+    "Pi/",
+    "Ka/",
+    "Pr/",
+    "El/",
+    "De/",
+    "K0s/"};
+
+  enum DetEnum {
+    tpcId = 0,
+    tofId,
+    NoId
+  };
+
+  static constexpr std::string_view DetDire[] = {
+    "tpcId/",
+    "tofId/",
+    "NoId/"};
+
+  // vetoRejection for particles //From Victor Luis Gonzalez Sebastian's analysis note for balance functions
+  template <typename T>
+  bool selTrackForId(const T& track)
+  {
+    if (-3.0 < track.tpcNSigmaEl() && track.tpcNSigmaEl() < 5.0 &&
+        std::fabs(track.tpcNSigmaPi()) > 3.0 &&
+        std::fabs(track.tpcNSigmaKa()) > 3.0 &&
+        std::fabs(track.tpcNSigmaPr()) > 3.0) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  template <int pidMode, typename T>
+  bool vetoIdOthersTPC(const T& track)
+  {
+    if (pidMode != kPi) {
+      if (std::fabs(track.tpcNSigmaPi()) < 3.0)
+        return false;
+    }
+    if (pidMode != kKa) {
+      if (std::fabs(track.tpcNSigmaKa()) < 3.0)
+        return false;
+    }
+    if (pidMode != kPr) {
+      if (std::fabs(track.tpcNSigmaPr()) < 3.0)
+        return false;
+    }
+    if (cfgDoElAndDeRejection) {
+      if (pidMode != kDe) {
+        if (std::fabs(track.tpcNSigmaDe()) < 3.0)
+          return false;
+      }
+      if (pidMode != kEl) {
+        if (std::fabs(track.tpcNSigmaEl()) < 3.0)
+          return false;
+      }
+    }
+    return true;
+  }
+
+  template <int pidMode, typename T>
+  bool vetoIdOthersTOF(const T& track)
+  {
+    if (pidMode != kPi) {
+      if (std::fabs(track.tofNSigmaPi()) < 3.0)
+        return false;
+    }
+    if (pidMode != kKa) {
+      if (std::fabs(track.tofNSigmaKa()) < 3.0)
+        return false;
+    }
+    if (pidMode != kPr) {
+      if (std::fabs(track.tofNSigmaPr()) < 3.0)
+        return false;
+    }
+    if (cfgDoElAndDeRejection) {
+      if (pidMode != kDe) {
+        if (std::fabs(track.tofNSigmaDe()) < 3.0)
+          return false;
+      }
+      if (pidMode != kEl) {
+        if (std::fabs(track.tofNSigmaEl()) < 3.0)
+          return false;
+      }
+    }
+    return true;
+  }
+
+  template <int pidMode, typename T>
+  bool vetoIdOthersTPCTOF(const T& track)
+  {
+    if (pidMode != kPi) {
+      if (std::fabs(track.tpcNSigmaPi()) < 3.0 && std::fabs(track.tofNSigmaPi()) < 3.0)
+        return false;
+    }
+    if (pidMode != kKa) {
+      if (std::fabs(track.tpcNSigmaKa()) < 3.0 && std::fabs(track.tofNSigmaKa()) < 3.0)
+        return false;
+    }
+    if (pidMode != kPr) {
+      if (std::fabs(track.tpcNSigmaPr()) < 3.0 && std::fabs(track.tofNSigmaPr()) < 3.0)
+        return false;
+    }
+    if (cfgDoElAndDeRejection) {
+      if (pidMode != kDe) {
+        if (std::fabs(track.tpcNSigmaDe()) < 3.0 && std::fabs(track.tofNSigmaDe()) < 3.0)
+          return false;
+      }
+      if (pidMode != kEl) {
+        if (std::fabs(track.tpcNSigmaEl()) < 3.0 && std::fabs(track.tofNSigmaEl()) < 3.0)
+          return false;
+      }
+    }
+    return true;
+  }
+
+  template <int pidMode, typename T>
+  bool selIdRectangularCut(const T& track, const float& nSigmaTPC, const float& nSigmaTOF)
+  {
+    switch (pidMode) {
+      case kPi:
+        if (std::fabs(track.tpcNSigmaPi()) < nSigmaTPC &&
+            std::fabs(track.tofNSigmaPi()) < nSigmaTOF) {
+          return true;
+        }
+        break;
+      case kKa:
+        if (std::fabs(track.tpcNSigmaKa()) < nSigmaTPC &&
+            std::fabs(track.tofNSigmaKa()) < nSigmaTOF) {
+          return true;
+        }
+        break;
+      case kPr:
+        if (std::fabs(track.tpcNSigmaPr()) < nSigmaTPC &&
+            std::fabs(track.tofNSigmaPr()) < nSigmaTOF) {
+          return true;
+        }
+        break;
+      default:
+        return false;
+        break;
+    }
+    return false;
+  }
+
+  template <int pidMode, typename T>
+  bool selIdEllipsoidalCut(const T& track, const float& nSigmaTPC, const float& nSigmaTOF)
+  {
+    switch (pidMode) {
+      case kPi:
+        if (std::pow(track.tpcNSigmaPi() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPi() / nSigmaTOF, 2) < 1.0)
+          return true;
+        break;
+      case kKa:
+        if (std::pow(track.tpcNSigmaKa() / nSigmaTPC, 2) + std::pow(track.tofNSigmaKa() / nSigmaTOF, 2) < 1.0)
+          return true;
+        break;
+      case kPr:
+        if (std::pow(track.tpcNSigmaPr() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPr() / nSigmaTOF, 2) < 1.0)
+          return true;
+        break;
+      default:
+        return false;
+        break;
+    }
+    return false;
+  }
+
+  template <int pidMode, typename T>
+  bool selIdCircularCut(const T& track, const float& nSigmaSquaredRad)
+  {
+    switch (pidMode) {
+      case kPi:
+        if (std::pow(track.tpcNSigmaPi(), 2) + std::pow(track.tofNSigmaPi(), 2) < nSigmaSquaredRad)
+          return true;
+        break;
+      case kKa:
+        if (std::pow(track.tpcNSigmaKa(), 2) + std::pow(track.tofNSigmaKa(), 2) < nSigmaSquaredRad)
+          return true;
+        break;
+      case kPr:
+        if (std::pow(track.tpcNSigmaPr(), 2) + std::pow(track.tofNSigmaPr(), 2) < nSigmaSquaredRad)
+          return true;
+        break;
+      default:
+        return false;
+        break;
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool checkReliableTOF(const T& track)
+  {
+    if (track.hasTOF())
+      return true; // which check makes the information of TOF relaiable? should track.beta() be checked?
+    else
+      return false;
+  }
+
+  template <int pidMode, typename T>
+  bool idTPC(const T& track, const float& nSigmaTPC)
+  {
+    if (cfgCheckVetoCut && !vetoIdOthersTPC<pidMode>(track))
+      return false;
+    switch (pidMode) {
+      case kPi:
+        if (std::fabs(track.tpcNSigmaPi()) < nSigmaTPC)
+          return true;
+        break;
+      case kKa:
+        if (std::fabs(track.tpcNSigmaKa()) < nSigmaTPC)
+          return true;
+        break;
+      case kPr:
+        if (std::fabs(track.tpcNSigmaPr()) < nSigmaTPC)
+          return true;
+        break;
+      default:
+        return false;
+        break;
+    }
+    return false;
+  }
+
+  template <int pidMode, typename T>
+  bool idTPCTOF(const T& track, const int& pidCutType, const float& nSigmaTPC, const float& nSigmaTOF, const float& nSigmaSquaredRad)
+  {
+    if (cfgCheckVetoCut && !vetoIdOthersTPCTOF<pidMode>(track))
+      return false;
+    if (pidCutType == kRectangularCut) {
+      return selIdRectangularCut<pidMode>(track, nSigmaTPC, nSigmaTOF);
+    } else if (pidCutType == kCircularCut) {
+      return selIdCircularCut<pidMode>(track, nSigmaSquaredRad);
+    } else if (pidCutType == kEllipsoidalCut) {
+      return selIdEllipsoidalCut<pidMode>(track, nSigmaTPC, nSigmaTOF);
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool selPiPdependent(const T& track, int& IdMethod)
+  {
+    if (track.p() < cfgPiThrPforTOF) {
+      if (checkReliableTOF(track)) {
+        if (idTPCTOF<kPi>(track, cfgPiIdCutTypeLowP, cfgPiNSigmaTPCLowP, cfgPiNSigmaTOFLowP, cfgPiNSigmaRadLowP)) {
+          IdMethod = kTOFidentified;
+          return true;
+        }
+        return false;
+      } else {
+        if (idTPC<kPi>(track, cfgPiNSigmaTPCLowP)) {
+          IdMethod = kTPCidentified;
+          return true;
+        }
+        return false;
+      }
+    } else {
+      if (checkReliableTOF(track)) {
+        if (idTPCTOF<kPi>(track, cfgPiIdCutTypeHighP, cfgPiNSigmaTPCHighP, cfgPiNSigmaTOFHighP, cfgPiNSigmaRadHighP)) {
+          IdMethod = kTOFidentified;
+          return true;
+        }
+        return false;
+      }
+      return false;
+    }
+  }
+
+  template <typename T>
+  bool selKaPdependent(const T& track, int& IdMethod)
+  {
+    if (track.p() < cfgKaThrPforTOF) {
+      if (checkReliableTOF(track)) {
+        if (idTPCTOF<kKa>(track, cfgKaIdCutTypeLowP, cfgKaNSigmaTPCLowP, cfgKaNSigmaTOFLowP, cfgKaNSigmaRadLowP)) {
+          IdMethod = kTOFidentified;
+          return true;
+        }
+        return false;
+      } else {
+        if (idTPC<kKa>(track, cfgKaNSigmaTPCLowP)) {
+          IdMethod = kTPCidentified;
+          return true;
+        }
+        return false;
+      }
+    } else {
+      if (checkReliableTOF(track)) {
+        if (idTPCTOF<kKa>(track, cfgKaIdCutTypeHighP, cfgKaNSigmaTPCHighP, cfgKaNSigmaTOFHighP, cfgKaNSigmaRadHighP)) {
+          IdMethod = kTOFidentified;
+          return true;
+        }
+        return false;
+      }
+      return false;
+    }
+  }
+
+  template <typename T>
+  bool selPrPdependent(const T& track, int& IdMethod)
+  {
+    if (track.p() < cfgPrThrPforTOF) {
+      if (checkReliableTOF(track)) {
+        if (idTPCTOF<kPr>(track, cfgPrIdCutTypeLowP, cfgPrNSigmaTPCLowP, cfgPrNSigmaTOFLowP, cfgPrNSigmaRadLowP)) {
+          IdMethod = kTOFidentified;
+          return true;
+        }
+        return false;
+      } else {
+        if (idTPC<kPr>(track, cfgPrNSigmaTPCLowP)) {
+          IdMethod = kTPCidentified;
+          return true;
+        }
+        return false;
+      }
+    } else {
+      if (checkReliableTOF(track)) {
+        if (idTPCTOF<kPr>(track, cfgPrIdCutTypeHighP, cfgPrNSigmaTPCHighP, cfgPrNSigmaTOFHighP, cfgPrNSigmaRadHighP)) {
+          IdMethod = kTOFidentified;
+          return true;
+        }
+        return false;
+      }
+      return false;
+    }
+  }
+
+  //_______________________________Identification Funtions Depending on the tpcInnerParam _______________________________
   // tpc Selections
   template <typename T>
   bool selPionTPCInnerParam(T track)
   {
-    if (std::abs(track.tpcNSigmaEl()) > 3.0 && std::abs(track.tpcNSigmaKa()) > 3.0 && std::abs(track.tpcNSigmaPr()) > 3.0 && std::abs(track.tpcNSigmaDe()) > 3.0) {
-      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 0.70 && std::abs(track.tpcNSigmaPi()) < 3.0) {
+    if (vetoIdOthersTPC<kPi>(track)) {
+      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 0.70 && std::abs(track.tpcNSigmaPi()) < cfgPiNSigmaTPCLowP) {
         return true;
       }
-      if (0.70 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaPi()) < 2.0) {
+      if (0.70 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaPi()) < cfgPiNSigmaTPCHighP) {
         return true;
       }
     }
@@ -536,12 +948,11 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selKaonTPCInnerParam(T track)
   {
-    // p dependent cuts
-    if (std::abs(track.tpcNSigmaEl()) > 3.0 && std::abs(track.tpcNSigmaPi()) > 3.0 && std::abs(track.tpcNSigmaPr()) > 3.0 && std::abs(track.tpcNSigmaDe()) > 3.0) {
-      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 0.70 && std::abs(track.tpcNSigmaKa()) < 3.0) {
+    if (vetoIdOthersTPC<kKa>(track)) {
+      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 0.70 && std::abs(track.tpcNSigmaKa()) < cfgKaNSigmaTPCLowP) {
         return true;
       }
-      if (0.70 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaKa()) < 2.0) {
+      if (0.70 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaKa()) < cfgKaNSigmaTPCHighP) {
         return true;
       }
     }
@@ -551,11 +962,11 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selProtonTPCInnerParam(T track)
   {
-    if (std::abs(track.tpcNSigmaEl()) > 3.0 && std::abs(track.tpcNSigmaPi()) > 3.0 && std::abs(track.tpcNSigmaKa()) > 3.0 && std::abs(track.tpcNSigmaDe()) > 3.0) {
-      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 1.60 && std::abs(track.tpcNSigmaPr()) < 3.0) {
+    if (vetoIdOthersTPC<kPr>(track)) {
+      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 1.60 && std::abs(track.tpcNSigmaPr()) < cfgPrNSigmaTPCLowP) {
         return true;
       }
-      if (1.60 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaPr()) < 2.0) {
+      if (1.60 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaPr()) < cfgPrNSigmaTPCHighP) {
         return true;
       }
     }
@@ -565,7 +976,7 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selDeuteronTPCInnerParam(T track)
   {
-    if (std::abs(track.tpcNSigmaEl()) > 3.0 && std::abs(track.tpcNSigmaPi()) > 3.0 && std::abs(track.tpcNSigmaKa()) > 3.0 && std::abs(track.tpcNSigmaPr()) > 3.0) {
+    if (vetoIdOthersTPC<kDe>(track)) {
       if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 1.80 && std::abs(track.tpcNSigmaDe()) < 3.0) {
         return true;
       }
@@ -585,17 +996,19 @@ struct KaonIsospinFluctuations {
     return false;
   }
   //
-
+  //_____________________________________________________TOF selection Functions _______________________________________________________________________
   // TOF Selections
   // Pion
   template <typename T>
   bool selPionTOF(T track)
   {
-    if (track.p() <= 0.75 && std::abs(track.tpcNSigmaPi()) < 3.0 && std::abs(track.tofNSigmaPi()) < 3.0 && std::abs(track.tofNSigmaEl()) > 3.0) {
-      return true;
-    } else if (0.75 < track.p() // after p = 0.75, Pi and Ka lines of nSigma 3.0 will start intersecting
-               && std::abs(track.tpcNSigmaPi()) < 2.0 && std::abs(track.tofNSigmaPi()) < 2.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0) {
-      return true;
+    if (vetoIdOthersTOF<kPi>(track)) {
+      if (track.p() <= 0.75 && std::abs(track.tpcNSigmaPi()) < cfgPiNSigmaTPCLowP && std::abs(track.tofNSigmaPi()) < cfgPiNSigmaTOFLowP) {
+        return true;
+      } else if (0.75 < track.p() // after p = 0.75, Pi and Ka lines of nSigma 3.0 will start intersecting
+                 && std::abs(track.tpcNSigmaPi()) < cfgPiNSigmaTPCHighP && std::abs(track.tofNSigmaPi()) < cfgPiNSigmaTOFHighP) {
+        return true;
+      }
     }
     return false;
   }
@@ -604,16 +1017,18 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selKaonTOF(T track)
   {
-    if (track.p() <= 0.75 && std::abs(track.tpcNSigmaKa()) < 3.0 && std::abs(track.tofNSigmaKa()) < 3.0) {
-      return true;
-    }
-    if (0.75 < track.p() && track.p() <= 1.30 // after 0.75 Pi and Ka lines of nSigma 3.0 will start intersecting
-        && std::abs(track.tpcNSigmaKa()) < 3.0 && std::abs(track.tofNSigmaKa()) < 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaEl()) > 3.0) {
-      return true;
-    }
-    if (1.30 < track.p() // after 1.30 Pr and Ka lines of nSigma 3.0 will start intersecting
-        && std::abs(track.tpcNSigmaKa()) < 2.0 && std::abs(track.tofNSigmaKa()) < 2.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0) {
-      return true;
+    if (vetoIdOthersTOF<kKa>(track)) {
+      if (track.p() <= 0.75 && std::abs(track.tpcNSigmaKa()) < cfgKaNSigmaTPCLowP && std::abs(track.tofNSigmaKa()) < cfgKaNSigmaTOFLowP) {
+        return true;
+      }
+      if (0.75 < track.p() && track.p() <= 1.30 // after 0.75 Pi and Ka lines of nSigma 3.0 will start intersecting
+          && std::abs(track.tpcNSigmaKa()) < cfgKaNSigmaTPCLowP && std::abs(track.tofNSigmaKa()) < cfgKaNSigmaTOFLowP) {
+        return true;
+      }
+      if (1.30 < track.p() // after 1.30 Pr and Ka lines of nSigma 3.0 will start intersecting
+          && std::abs(track.tpcNSigmaKa()) < cfgKaNSigmaTPCHighP && std::abs(track.tofNSigmaKa()) < cfgKaNSigmaTOFHighP) {
+        return true;
+      }
     }
     return false;
   }
@@ -622,17 +1037,19 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selProtonTOF(T track)
   {
-    if (track.p() <= 1.30 && std::abs(track.tpcNSigmaPr()) < 3.0 && std::abs(track.tofNSigmaPr()) < 3.0) {
-      return true;
-    }
-    if (1.30 < track.p() && track.p() <= 3.10                                                                                                                                                                                                     // after 1.30 Pr and Ka lines of nSigma 3.0 will start intersecting
-        && std::abs(track.tpcNSigmaPr()) < 3.0 && std::abs(track.tofNSigmaPr()) < 3.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0 // Some Deuteron contamination is still coming in p dependent cuts
-    ) {
-      return true;
-    }
-    if (3.10 < track.p() // after 3.10 Pr and De lines of nSigma 3.0 will start intersecting
-        && std::abs(track.tpcNSigmaPr()) < 2.0 && std::abs(track.tofNSigmaPr()) < 2.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0) {
-      return true;
+    if (vetoIdOthersTOF<kPr>(track)) {
+      if (track.p() <= 1.30 && std::abs(track.tpcNSigmaPr()) < cfgPrNSigmaTPCLowP && std::abs(track.tofNSigmaPr()) < cfgPrNSigmaTOFLowP) {
+        return true;
+      }
+      if (1.30 < track.p() && track.p() <= 3.10                                                                       // after 1.30 Pr and Ka lines of nSigma 3.0 will start intersecting
+          && std::abs(track.tpcNSigmaPr()) < cfgPrNSigmaTPCLowP && std::abs(track.tofNSigmaPr()) < cfgPrNSigmaTOFLowP // Some Deuteron contamination is still coming in p dependent cuts
+      ) {
+        return true;
+      }
+      if (3.10 < track.p() // after 3.10 Pr and De lines of nSigma 3.0 will start intersecting
+          && std::abs(track.tpcNSigmaPr()) < cfgPrNSigmaTPCHighP && std::abs(track.tofNSigmaPr()) < cfgPrNSigmaTOFHighP) {
+        return true;
+      }
     }
     return false;
   }
@@ -641,12 +1058,14 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selDeuteronTOF(T track)
   {
-    if (track.p() <= 3.10 && std::abs(track.tpcNSigmaDe()) < 3.0 && std::abs(track.tofNSigmaDe()) < 3.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0) {
-      return true;
-    }
-    if (3.10 < track.p() // after 3.10 De and Pr lines of nSigma 3.0 will start intersecting
-        && std::abs(track.tpcNSigmaDe()) < 2.0 && std::abs(track.tofNSigmaDe()) < 2.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0) {
-      return true;
+    if (vetoIdOthersTOF<kDe>(track)) {
+      if (track.p() <= 3.10 && std::abs(track.tpcNSigmaDe()) < 3.0 && std::abs(track.tofNSigmaDe()) < 3.0) {
+        return true;
+      }
+      if (3.10 < track.p() // after 3.10 De and Pr lines of nSigma 3.0 will start intersecting
+          && std::abs(track.tpcNSigmaDe()) < 2.0 && std::abs(track.tofNSigmaDe()) < 2.0) {
+        return true;
+      }
     }
     return false;
   }
@@ -655,34 +1074,29 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selElectronTOF(T track)
   {
-    if (
-      (std::pow(track.tpcNSigmaEl(), 2) + std::pow(track.tofNSigmaEl(), 2)) < 9.00 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0) {
+    if ((std::pow(track.tpcNSigmaEl(), 2) + std::pow(track.tofNSigmaEl(), 2)) < 9.00 && vetoIdOthersTOF<kEl>(track)) {
       return true;
     }
     return false;
   }
   //
 
-  // SelectionFunctions
+  //______________________________Identification Functions________________________________________________________________
   // Pion
   template <typename T>
   bool selPion(T track, int& IdMethod)
   {
-    if (!track.hasTOF() && selPionTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() < 0.0 && selPionTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && selPionTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && !selPionTPCInnerParam(track)) {
-      IdMethod = kTOFidentified;
-      return selPionTOF(track);
+    if (cfgDoPdependentId) {
+      return selPiPdependent(track, IdMethod);
+    } else if (cfgDoTpcInnerParamId) {
+      if (selPionTPCInnerParam(track)) {
+        IdMethod = kTPCidentified;
+        return true;
+      } else if (track.hasTOF() && track.beta() > 0.0 && selPionTOF(track)) {
+        IdMethod = kTOFidentified;
+        return true;
+      }
+      return false;
     }
     return false;
   }
@@ -691,21 +1105,17 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selKaon(T track, int& IdMethod)
   {
-    if (!track.hasTOF() && selKaonTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() < 0.0 && selKaonTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && selKaonTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && !selKaonTPCInnerParam(track)) {
-      IdMethod = kTOFidentified;
-      return selKaonTOF(track);
+    if (cfgDoPdependentId) {
+      return selKaPdependent(track, IdMethod);
+    } else if (cfgDoTpcInnerParamId) {
+      if (selKaonTPCInnerParam(track)) {
+        IdMethod = kTPCidentified;
+        return true;
+      } else if (track.hasTOF() && track.beta() > 0.0 && selKaonTOF(track)) {
+        IdMethod = kTOFidentified;
+        return true;
+      }
+      return false;
     }
     return false;
   }
@@ -714,21 +1124,17 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selProton(T track, int& IdMethod)
   {
-    if (!track.hasTOF() && selProtonTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() < 0.0 && selProtonTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && selProtonTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && !selProtonTPCInnerParam(track)) {
-      IdMethod = kTOFidentified;
-      return selProtonTOF(track);
+    if (cfgDoPdependentId) {
+      return selPrPdependent(track, IdMethod);
+    } else if (cfgDoTpcInnerParamId) {
+      if (selProtonTPCInnerParam(track)) {
+        IdMethod = kTPCidentified;
+        return true;
+      } else if (track.hasTOF() && track.beta() > 0.0 && selProtonTOF(track)) {
+        IdMethod = kTOFidentified;
+        return true;
+      }
+      return false;
     }
     return false;
   }
@@ -737,21 +1143,17 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selDeuteron(T track, int& IdMethod)
   {
-    if (!track.hasTOF() && selDeuteronTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() < 0.0 && selDeuteronTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && selDeuteronTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && !selDeuteronTPCInnerParam(track)) {
-      IdMethod = kTOFidentified;
-      return selDeuteronTOF(track);
+    if (cfgDoPdependentId) {
+      return false;
+    } else if (cfgDoTpcInnerParamId) {
+      if (selDeuteronTPCInnerParam(track)) {
+        IdMethod = kTPCidentified;
+        return true;
+      } else if (track.hasTOF() && track.beta() > 0.0 && selDeuteronTOF(track)) {
+        IdMethod = kTOFidentified;
+        return true;
+      }
+      return false;
     }
     return false;
   }
@@ -760,21 +1162,17 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selElectron(T track, int& IdMethod)
   {
-    if (!track.hasTOF() && selElectronTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() < 0.0 && selElectronTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && selElectronTPCInnerParam(track)) {
-      IdMethod = kTPCidentified;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && !selElectronTPCInnerParam(track)) {
-      IdMethod = kTOFidentified;
-      return selElectronTOF(track);
+    if (cfgDoPdependentId) {
+      return false;
+    } else if (cfgDoTpcInnerParamId) {
+      if (selElectronTPCInnerParam(track)) {
+        IdMethod = kTPCidentified;
+        return true;
+      } else if (track.hasTOF() && track.beta() > 0.0 && selElectronTOF(track)) {
+        IdMethod = kTOFidentified;
+        return true;
+      }
+      return false;
     }
     return false;
   }
@@ -885,64 +1283,6 @@ struct KaonIsospinFluctuations {
     }
     return true;
   }
-
-  enum ProcessTypeEnum {
-    doDataProcessing = 0,
-    doRecoProcessing
-  };
-
-  enum HistRegEnum {
-    v0TableFull = 0,
-    v0TablePostK0sCheck,
-    v0TablePostMassCut,
-    v0TablePostSelectionCut,
-    recoK0sPreSel,
-    recoK0sPostSel,
-    recoTrackPreSel,
-    recoTrackPostSel,
-    recoAnalysisDir,
-    genAnalysisDir
-  };
-
-  static constexpr std::string_view HistRegDire[] = {
-    "v0Table/Full/",
-    "v0Table/postK0sCheck/",
-    "v0Table/postMassCut/",
-    "v0Table/postSelectionCut/",
-    "recoK0s/PreSel/",
-    "recoK0s/PostSel/",
-    "recoTracks/PreSel/",
-    "recoTracks/PostSel/",
-    "recoAnalysis/",
-    "genAnalysis/"};
-
-  enum PidEnum {
-    kPi = 0, // dont use kPion, kKaon, as these enumeration
-    kKa,     // are already defined in $ROOTSYS/root/include/TPDGCode.h
-    kPr,
-    kEl,
-    kDe,
-    kK0s
-  };
-
-  static constexpr std::string_view PidDire[] = {
-    "Pi/",
-    "Ka/",
-    "Pr/",
-    "El/",
-    "De/",
-    "K0s/"};
-
-  enum DetEnum {
-    tpcId = 0,
-    tofId,
-    NoId
-  };
-
-  static constexpr std::string_view DetDire[] = {
-    "tpcId/",
-    "tofId/",
-    "NoId/"};
 
   template <int Mode, int pidMode, int detMode, bool fillSignal, typename H, typename T>
   void fillIdentificationQA(H histReg, const T& track)
@@ -1474,7 +1814,6 @@ struct KaonIsospinFluctuations {
   std::vector<int64_t> k0sNegDauList;
   std::vector<int64_t> fullDauList;
 
-  // template<bool doData, bool doMC, typename C, typename V, typename T >
   template <int analysisType, typename C, typename V, typename T>
   void executeAnalysis(const C& collisions, const V& V0s, const T& tracks)
   {
@@ -1528,7 +1867,6 @@ struct KaonIsospinFluctuations {
     int idMethodEl = -1;
     int idMethodDe = -1;
 
-    // if(doData) {}
     if constexpr (analysisType == doDataProcessing) {
       for (const auto& v0 : V0s) {
         const auto& posDaughterTrack = v0.template posTrack_as<MyTracks>();
@@ -1645,7 +1983,7 @@ struct KaonIsospinFluctuations {
                              nPiPlus, nKaPlus, nProton, nElPlus, nDePlus,
                              nPiMinus, nKaMinus, nPBar, nElMinus, nDeMinus);
       } // collision loop ends
-    } else if constexpr (analysisType == doRecoProcessing) {
+    } else if constexpr (analysisType == doRecoProcessing || analysisType == doPurityProcessing) {
       for (const auto& v0 : V0s) {
         const auto& posDaughterTrack = v0.template posTrack_as<MyTracksWithMcLabels>();
         const auto& negDaughterTrack = v0.template negTrack_as<MyTracksWithMcLabels>();
@@ -1659,7 +1997,12 @@ struct KaonIsospinFluctuations {
         if (!v0mcparticle.isPhysicalPrimary())
           continue;
 
-        // should i check daugter tracks as physical primary as well. is it needed? // because my daughter must be seconday particle for it
+        if constexpr (analysisType == doPurityProcessing) {
+          auto posDauMcPart = posDaughterTrack.mcParticle();
+          auto negDauMcPart = negDaughterTrack.mcParticle();
+          if (v0mcparticle.pdgCode() != kK0Short || posDauMcPart.pdgCode() != kPiPlus || negDauMcPart.pdgCode() != kPiMinus)
+            continue;
+        }
 
         executeV0loop(posDaughterTrack, negDaughterTrack, v0, recoV0s,
                       posPiIdMethod, posPrIdMethod, negPiIdMethod, negPrIdMethod,
@@ -1714,6 +2057,13 @@ struct KaonIsospinFluctuations {
           auto v0mcparticle = v0.mcParticle();
           if (!v0mcparticle.isPhysicalPrimary())
             continue;
+
+          if constexpr (analysisType == doPurityProcessing) {
+            auto posDauMcPart = posDaughterTrack.mcParticle();
+            auto negDauMcPart = negDaughterTrack.mcParticle();
+            if (v0mcparticle.pdgCode() != kK0Short || posDauMcPart.pdgCode() != kPiPlus || negDauMcPart.pdgCode() != kPiMinus)
+              continue;
+          }
 
           executeV0InCollisionloop(posDaughterTrack, negDaughterTrack, v0,
                                    posPiIdMethod, posPrIdMethod, negPiIdMethod, negPrIdMethod,
@@ -1775,6 +2125,49 @@ struct KaonIsospinFluctuations {
             BITSET(trackIdTag, ID_BIT_DE);
           }
 
+          if constexpr (analysisType == doPurityProcessing) {
+            if (trackIsPion) {
+              if (track.sign() > 0 && mcPart.pdgCode() != kPiPlus) {
+                trackIsPion = false;
+              }
+              if (track.sign() < 0 && mcPart.pdgCode() != kPiMinus) {
+                trackIsPion = false;
+              }
+            }
+            if (trackIsKaon) {
+              if (track.sign() > 0 && mcPart.pdgCode() != kKPlus) {
+                trackIsKaon = false;
+              }
+              if (track.sign() < 0 && mcPart.pdgCode() != kKMinus) {
+                trackIsKaon = false;
+              }
+            }
+            if (trackIsProton) {
+              if (track.sign() > 0 && mcPart.pdgCode() != kProton) {
+                trackIsProton = false;
+              }
+              if (track.sign() < 0 && mcPart.pdgCode() != kProtonBar) {
+                trackIsProton = false;
+              }
+            }
+            if (trackIsElectron) {
+              if (track.sign() > 0 && mcPart.pdgCode() != kPositron) {
+                trackIsElectron = false;
+              }
+              if (track.sign() < 0 && mcPart.pdgCode() != kElectron) {
+                trackIsElectron = false;
+              }
+            }
+            if (trackIsDeuteron) {
+              if (track.sign() > 0 && mcPart.pdgCode() != kDeuteron) {
+                trackIsDeuteron = false;
+              }
+              if (track.sign() < 0 && mcPart.pdgCode() != -kDeuteron) {
+                trackIsDeuteron = false;
+              }
+            }
+          }
+
           executeTrackAnalysisPart(track, trackIdTag,
                                    idMethodPi, trackIsPion, nPiMinus, nPiPlus,
                                    idMethodKa, trackIsKaon, nKaMinus, nKaPlus,
@@ -1802,6 +2195,7 @@ struct KaonIsospinFluctuations {
                    MyV0s const& V0s,
                    MyTracks const& tracks)
   {
+    recoEvent.fill(HIST("recoEvent/ProcessType"), 1);
     executeAnalysis<doDataProcessing>(collisions, V0s, tracks);
 
   } // Process Function Ends
@@ -1809,17 +2203,26 @@ struct KaonIsospinFluctuations {
 
   void processReco(MyCollisionsWithMcLabels const& collisions, MyV0sWithMcLabels const& V0s, MyTracksWithMcLabels const& tracks, aod::McParticles const&)
   {
-
+    recoEvent.fill(HIST("recoEvent/ProcessType"), 2);
     executeAnalysis<doRecoProcessing>(collisions, V0s, tracks);
 
   } // Process function is over
   PROCESS_SWITCH(KaonIsospinFluctuations, processReco, "Process for Reco", false);
+
+  void processPurity(MyCollisionsWithMcLabels const& collisions, MyV0sWithMcLabels const& V0s, MyTracksWithMcLabels const& tracks, aod::McParticles const&)
+  {
+    recoEvent.fill(HIST("recoEvent/ProcessType"), 4);
+    executeAnalysis<doPurityProcessing>(collisions, V0s, tracks);
+
+  } // Process function is over
+  PROCESS_SWITCH(KaonIsospinFluctuations, processPurity, "Process for Purity", false);
 
   Preslice<aod::McParticles> mcTracksPerMcCollisionPreslice = o2::aod::mcparticle::mcCollisionId;
 
   using MyMcCollisions = aod::McCollisions;
   void processGen(MyMcCollisions const&, MyCollisionsWithMcLabels const& collisions, aod::McParticles const& mcParticles)
   {
+    recoEvent.fill(HIST("recoEvent/ProcessType"), 3);
     float centrality = -1;
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
@@ -1862,7 +2265,7 @@ struct KaonIsospinFluctuations {
           continue;
         }
 
-        if (mcTrack.pdgCode() == 310 &&
+        if (mcTrack.pdgCode() == kK0Short &&
             0.1 < mcTrack.pt() && mcTrack.pt() < 1.5 &&
             std::abs(mcTrack.y()) < 0.5) {
           nK0s++;
@@ -1873,34 +2276,34 @@ struct KaonIsospinFluctuations {
           continue;
         }
 
-        if (mcTrack.pdgCode() == 211) {
+        if (mcTrack.pdgCode() == kPiPlus) {
           fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nPiPlus++;
-        } else if (mcTrack.pdgCode() == -211) {
+        } else if (mcTrack.pdgCode() == kPiMinus) {
           fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nPiMinus++;
-        } else if (mcTrack.pdgCode() == 321) {
+        } else if (mcTrack.pdgCode() == kKPlus) {
           fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nKaPlus++;
-        } else if (mcTrack.pdgCode() == -321) {
+        } else if (mcTrack.pdgCode() == kKMinus) {
           fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nKaMinus++;
-        } else if (mcTrack.pdgCode() == 2212) {
+        } else if (mcTrack.pdgCode() == kProton) {
           fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nProton++;
-        } else if (mcTrack.pdgCode() == -2212) {
+        } else if (mcTrack.pdgCode() == kProtonBar) {
           fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nPBar++;
-        } else if (mcTrack.pdgCode() == 11) {
+        } else if (mcTrack.pdgCode() == kElectron) {
           fillGenTrackQA<genAnalysisDir, kEl>(genAnalysis, mcTrack);
           nElPlus++;
-        } else if (mcTrack.pdgCode() == -11) {
+        } else if (mcTrack.pdgCode() == kPositron) {
           fillGenTrackQA<genAnalysisDir, kEl>(genAnalysis, mcTrack);
           nElMinus++;
-        } else if (mcTrack.pdgCode() == 1000010020) {
+        } else if (mcTrack.pdgCode() == kDeuteron) {
           fillGenTrackQA<genAnalysisDir, kDe>(genAnalysis, mcTrack);
           nDePlus++;
-        } else if (mcTrack.pdgCode() == -1000010020) {
+        } else if (mcTrack.pdgCode() == -kDeuteron) {
           fillGenTrackQA<genAnalysisDir, kDe>(genAnalysis, mcTrack);
           nDeMinus++;
         }

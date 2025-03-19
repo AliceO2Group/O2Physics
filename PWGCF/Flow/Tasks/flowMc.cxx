@@ -58,9 +58,12 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgCutPtRefMax, float, 3.0f, "Maximal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 10.0f, "Maximal pT for poi tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 6.0f, "minimum ITS clusters")
   O2_DEFINE_CONFIGURABLE(cfgFlowAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgFlowEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgCentVsIPTruth, std::string, "", "CCDB path to centrality vs IP truth")
+  O2_DEFINE_CONFIGURABLE(cfgIsGlobalTrack, bool, false, "Use global tracks instead of hasTPC&&hasITS")
   O2_DEFINE_CONFIGURABLE(cfgFlowCumulantEnabled, bool, false, "switch of calculating flow")
   O2_DEFINE_CONFIGURABLE(cfgFlowCumulantNbootstrap, int, 30, "Number of subsamples")
 
@@ -97,6 +100,9 @@ struct FlowMc {
 
   void init(InitContext&)
   {
+    // QA histograms
+    histos.add<TH1>("hnTPCClu", "Number of found TPC clusters", HistType::kTH1D, {{100, 40, 180}});
+    histos.add<TH1>("hnITSClu", "Number of found ITS clusters", HistType::kTH1D, {{100, 0, 20}});
     // pT histograms
     histos.add<TH1>("hImpactParameter", "hImpactParameter", HistType::kTH1D, {axisB});
     histos.add<TH2>("hNchVsImpactParameter", "hNchVsImpactParameter", HistType::kTH2D, {axisB, axisNch});
@@ -269,7 +275,7 @@ struct FlowMc {
     }
   }
 
-  using RecoTracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
+  using RecoTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TrackSelection>;
 
   void process(aod::McCollision const& mcCollision, aod::BCsWithTimestamps const&, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& mcParticles, RecoTracks const&)
   {
@@ -344,7 +350,15 @@ struct FlowMc {
         if (mcParticle.has_tracks()) {
           auto const& tracks = mcParticle.tracks_as<RecoTracks>();
           for (auto const& track : tracks) {
-            if (track.hasTPC() && track.hasITS()) {
+            if (!((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu))) {
+              continue;
+            }
+            histos.fill(HIST("hnTPCClu"), track.tpcNClsFound());
+            histos.fill(HIST("hnITSClu"), track.itsNCls());
+            if (cfgIsGlobalTrack && track.isGlobalTrack()) {
+              validGlobal = true;
+            }
+            if (!cfgIsGlobalTrack && track.hasTPC() && track.hasITS()) {
               validGlobal = true;
             }
             if (track.hasTPC() || track.hasITS()) {

@@ -436,7 +436,7 @@ struct Dilepton {
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
@@ -759,7 +759,7 @@ struct Dilepton {
   {
     bool is_good = true;
     for (auto& qn : qvectors[nmod]) {
-      if (fabs(qn[0]) > 20.f || fabs(qn[1]) > 20.f) {
+      if (std::fabs(qn[0]) > 20.f || std::fabs(qn[1]) > 20.f) {
         is_good = false;
         break;
       }
@@ -922,8 +922,8 @@ struct Dilepton {
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kUPC)) {
       float dphi = v1.Phi() - v2.Phi();
       o2::math_utils::bringToPMPi(dphi);
-      float aco = 1.f - abs(dphi) / M_PI;
-      float asym = abs(v1.Pt() - v2.Pt()) / (v1.Pt() + v2.Pt());
+      float aco = 1.f - std::fabs(dphi) / M_PI;
+      float asym = std::fabs(v1.Pt() - v2.Pt()) / (v1.Pt() + v2.Pt());
       float dphi_e_ee = v1.Phi() - v12.Phi();
       o2::math_utils::bringToPMPi(dphi_e_ee);
 
@@ -931,11 +931,11 @@ struct Dilepton {
       o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS<false>(t1, t2, leptonM1, leptonM2, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
 
       if (t1.sign() * t2.sign() < 0) { // ULS
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, aco, asym, abs(dphi_e_ee), abs(cos_thetaCS), weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, aco, asym, std::fabs(dphi_e_ee), std::fabs(cos_thetaCS), weight);
       } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, aco, asym, abs(dphi_e_ee), abs(cos_thetaCS), weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, aco, asym, std::fabs(dphi_e_ee), std::fabs(cos_thetaCS), weight);
       } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, aco, asym, abs(dphi_e_ee), abs(cos_thetaCS), weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, aco, asym, std::fabs(dphi_e_ee), std::fabs(cos_thetaCS), weight);
       }
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV2) || cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV3)) {
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
@@ -984,11 +984,11 @@ struct Dilepton {
       o2::math_utils::bringToPMPi(phiCS);
 
       if (t1.sign() * t2.sign() < 0) { // ULS
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, abs(cos_thetaCS), abs(phiCS), weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, std::fabs(cos_thetaCS), std::fabs(phiCS), weight);
       } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, abs(cos_thetaCS), abs(phiCS), weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, std::fabs(cos_thetaCS), std::fabs(phiCS), weight);
       } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, abs(cos_thetaCS), abs(phiCS), weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, std::fabs(cos_thetaCS), std::fabs(phiCS), weight);
       }
 
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kVM)) {
@@ -1558,7 +1558,7 @@ struct Dilepton {
       if (collision.sel8()) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 10.0);
       }
-      if (abs(collision.posZ()) < 10.0) {
+      if (std::fabs(collision.posZ()) < 10.0) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 11.0);
       }
       if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {

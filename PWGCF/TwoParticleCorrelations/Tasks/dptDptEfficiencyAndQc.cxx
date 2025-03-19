@@ -15,9 +15,11 @@
 
 #include <TH2F.h>
 #include <TProfile2D.h>
+#include <THnSparse.h>
 #include <TPDGCode.h>
 #include <CCDB/BasicCCDBManager.h>
 #include <vector>
+#include <algorithm>
 #include <cstdio>
 #include <memory>
 #include <string>
@@ -91,6 +93,9 @@ float minNSigma = -4.05f;
 float maxNSigma = 4.05f;
 float widthNSigmaBin = 0.1f;
 int noOfNSigmaBins = static_cast<int>((maxNSigma - minNSigma) / widthNSigmaBin);
+
+/* the pT bins of interest for the relative separation within TPC sectors data collection */
+std::vector<int> ptBinsOfInterest{1, 2, 3};
 
 /* the PID selector object to help with the configuration and the id of the selected particles */
 o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
@@ -581,11 +586,11 @@ struct QAExtraDataCollectingEngine {
   //===================================================
   /* pairs histograms */
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhPhiPhiA{2, {nsp, {nsp, nullptr}}};
-  std::vector<std::vector<std::vector<std::shared_ptr<TH3>>>> fhDeltaPhiVsPhiPhiA{2, {nsp, {nsp, nullptr}}};
-  std::vector<std::vector<std::vector<std::shared_ptr<TH3>>>> fhDeltaPhiVsEtaEtaA{2, {nsp, {nsp, nullptr}}};
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhEtaEtaA{2, {nsp, {nsp, nullptr}}};
-  std::vector<std::vector<std::vector<std::shared_ptr<TH3>>>> fhDeltaEtaVsEtaEtaA{2, {nsp, {nsp, nullptr}}};
-  std::vector<std::vector<std::vector<std::shared_ptr<TH3>>>> fhDeltaEtaVsPhiPhiA{2, {nsp, {nsp, nullptr}}};
+  TAxis ptAxis{analysis::dptdptfilter::ptbins, analysis::dptdptfilter::ptlow, analysis::dptdptfilter::ptup};
+  std::vector<int> ptOfInterestBinMap{analysis::dptdptfilter::ptbins + 1, -1};
+  std::vector<std::vector<std::vector<std::shared_ptr<THnSparse>>>> fhInSectorDeltaPhiVsPhiPhiPerPtBinA{2, {nsp, {nsp, nullptr}}};
+  std::vector<std::vector<std::vector<std::shared_ptr<THnSparse>>>> fhInSectorDeltaPhiVsEtaEtaPerPtBinA{2, {nsp, {nsp, nullptr}}};
 
   template <efficiencyandqatask::KindOfData kindOfData>
   void init(HistogramRegistry& registry, const char* dirname)
@@ -594,9 +599,20 @@ struct QAExtraDataCollectingEngine {
     using namespace analysis::dptdptfilter;
 
     AxisSpec phiAxis = {phibins, 0.0f, constants::math::TwoPI, "#varphi"};
-    AxisSpec deltaPhiAxis = {phibins, 0.0f, constants::math::TwoPI, "#Delta#varphi"};
+    AxisSpec phiSectorAxis = {72, 0.0f, kTpcPhiSectorWidth, "#varphi (mod(2#pi/18)) (rad)"};
+    AxisSpec deltaPhiAxis = {phibins, 0.0f, constants::math::TwoPI, "#Delta#varphi (rad)"};
+    AxisSpec deltaPhiInSectorAxis = {144, -kTpcPhiSectorWidth, kTpcPhiSectorWidth, "#Delta#varphi (rad)"};
     AxisSpec etaAxis = {etabins, etalow, etaup, "#eta"};
-    AxisSpec deltaEtaAxis = {2 * etabins - 1, etalow - etaup, etaup - etalow, "#DeltaEta"};
+    AxisSpec ptOfInterestAxis = {static_cast<int>(ptBinsOfInterest.size()), 0.5f, static_cast<float>(ptBinsOfInterest.size()) + 0.5f, "#it{p}_{T} (GeV/#it{c})"};
+
+    /* the mapping between pT bins of interest and internal representation, and histogram title to keep track of them offline */
+    std::string hPtRangesOfInterestTitle;
+    for (size_t ix = 0; ix < ptBinsOfInterest.size(); ++ix) {
+      TString ptRange = TString::Format("%s%.2f-%.2f", ix == 0 ? "" : ",", ptAxis.GetBinLowEdge(ptBinsOfInterest[ix]), ptAxis.GetBinUpEdge(ptBinsOfInterest[ix]));
+      /* remember our internal axis starts in 0.5 value, i.e. its first central value is 1 */
+      ptOfInterestBinMap[ptBinsOfInterest[ix]] = ix + 1;
+      hPtRangesOfInterestTitle += ptRange.Data();
+    }
 
     /* the reconstructed and generated levels histograms */
     std::string recogen = (kindOfData == kReco) ? "Reco" : "Gen";
@@ -604,16 +620,15 @@ struct QAExtraDataCollectingEngine {
       for (uint jsp = 0; jsp < nsp; ++jsp) {
         fhPhiPhiA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("PhiPhi_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
                                                        HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH2F, {phiAxis, phiAxis});
-        fhDeltaPhiVsPhiPhiA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsPhiPhi_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
-                                                                 HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH3F, {phiAxis, phiAxis, deltaPhiAxis});
-        fhDeltaEtaVsPhiPhiA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaEtaVsPhiPhi_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
-                                                                 HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH3F, {phiAxis, phiAxis, deltaEtaAxis});
         fhEtaEtaA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("EtaEta_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
                                                        HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH2F, {etaAxis, etaAxis});
-        fhDeltaEtaVsEtaEtaA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaEtaVsEtaEta_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
-                                                                 HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH3F, {etaAxis, etaAxis, deltaEtaAxis});
-        fhDeltaPhiVsEtaEtaA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsEtaEta_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
-                                                                 HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH3F, {etaAxis, etaAxis, deltaPhiAxis});
+        /* first resize them to the actual configured size */
+        fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][isp][jsp] = ADDHISTOGRAM(THnSparse, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsPhiPhiPt_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+                                                                                 HTITLESTRING("%s%s pairs, #it{p}_{T}: %s", tnames[isp].c_str(), tnames[jsp].c_str(), hPtRangesOfInterestTitle.c_str()),
+                                                                                 kTHnSparseF, {phiSectorAxis, phiSectorAxis, deltaPhiInSectorAxis, ptOfInterestAxis, ptOfInterestAxis});
+        fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][isp][jsp] = ADDHISTOGRAM(THnSparse, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsEtaEtaPt_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+                                                                                 HTITLESTRING("%s%s pairs, #it{p}_{T}: %s", tnames[isp].c_str(), tnames[jsp].c_str(), hPtRangesOfInterestTitle.c_str()),
+                                                                                 kTHnSparseF, {etaAxis, etaAxis, deltaPhiInSectorAxis, ptOfInterestAxis, ptOfInterestAxis});
       }
     }
   }
@@ -626,20 +641,33 @@ struct QAExtraDataCollectingEngine {
 
     /* we should only receive accepted tracks */
     for (auto const& track1 : tracks1) {
-      for (auto const& track2 : tracks2) {
-        /* checking the same track id condition */
-        if (track1 == track2) {
-          /* exclude autocorrelations */
-          continue;
+      auto binForPt = [&](auto const& track) {
+        return ptOfInterestBinMap[ptAxis.FindFixBin(track.pt())];
+      };
+      int ptBin1 = binForPt(track1);
+      if (ptBin1 > 0) {
+        float inTpcSectorPhi1 = std::fmod(track1.phi(), kTpcPhiSectorWidth);
+        for (auto const& track2 : tracks2) {
+          /* checking the same track id condition */
+          if (track1 == track2) {
+            /* exclude autocorrelations */
+            continue;
+          }
+          int ptBin2 = binForPt(track2);
+          if (ptBin2 > 0) {
+            fhPhiPhiA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.phi(), track2.phi());
+            fhEtaEtaA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta());
+            if (static_cast<int>(track1.phi() / kTpcPhiSectorWidth) == static_cast<int>(track2.phi() / kTpcPhiSectorWidth)) {
+              /* only if, for sure, both tracks are within the same sector */
+              float inTpcSectorPhi2 = std::fmod(track2.phi(), kTpcPhiSectorWidth);
+              float deltaPhi = inTpcSectorPhi1 - inTpcSectorPhi2;
+              double values[] = {inTpcSectorPhi1, inTpcSectorPhi2, deltaPhi, static_cast<float>(ptBin1), static_cast<float>(ptBin2)};
+              fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(values);
+              values[0] = track1.eta(), values[1] = track2.eta();
+              fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(values);
+            }
+          }
         }
-        float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi());
-        float deltaEta = track1.eta() - track2.eta();
-        fhPhiPhiA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.phi(), track2.phi());
-        fhDeltaPhiVsPhiPhiA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.phi(), track2.phi(), deltaPhi);
-        fhDeltaEtaVsPhiPhiA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.phi(), track2.phi(), deltaEta);
-        fhEtaEtaA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta());
-        fhDeltaEtaVsEtaEtaA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta(), deltaEta);
-        fhDeltaPhiVsEtaEtaA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta(), deltaPhi);
       }
     }
   }
@@ -973,6 +1001,7 @@ struct DptDptEfficiencyAndQc {
   Configurable<float> cfgMinNSigma{"cfgMinNSigma", -4.05f, "nsigma axes lowest value. Default: -4.05"};
   Configurable<float> cfgMaxNSigma{"cfgMaxNSigma", 4.05f, "nsigma axes highest value. Default: 4.05"};
   Configurable<float> cfgWidthNSigmaBin{"cfgWidthNSigmaBin", 0.1, "nsigma axes bin width. Deafault: 0.1"};
+  Configurable<std::vector<int>> cfgPtBinsOfInterest{"cfgPtBinsOfInterest", {1, 2, 3}, "The pt bins of interest"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -989,6 +1018,7 @@ struct DptDptEfficiencyAndQc {
         !doprocessGeneratorLevelNotStored &&
         !doprocessExtraGeneratorLevelNotStored &&
         !doprocessReconstructedNotStored &&
+        !doprocessExtraReconstructedNotStored &&
         !doprocessReconstructedNotStoredPID &&
         !doprocessReconstructedNotStoredPIDExtra) {
       return;
@@ -1073,6 +1103,9 @@ struct DptDptEfficiencyAndQc {
       maxNSigma = cfgMaxNSigma.value;
       widthNSigmaBin = cfgWidthNSigmaBin.value;
       noOfNSigmaBins = static_cast<int>((maxNSigma - minNSigma) / widthNSigmaBin);
+
+      /* configure the pT bins of interest */
+      ptBinsOfInterest = cfgPtBinsOfInterest.value;
 
       bool doBasicAnalysis = doprocessDetectorLevelNotStored || doprocessReconstructedNotStored || doprocessGeneratorLevelNotStored;
       bool doExtraAnalysis = doprocessExtraDetectorLevelNotStored || doprocessExtraReconstructedNotStored || doprocessExtraGeneratorLevelNotStored;
