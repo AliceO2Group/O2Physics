@@ -118,7 +118,7 @@ struct FlowEfficiencyCasc {
     registry.fill(HIST("eventCounter"), 0.5);
     if (!collision.sel8())
       return;
-    int rectracknum = collision.multNTracksITSTPC();
+    int rectracknum = collision.multNTracksGlobal();
     registry.fill(HIST("h2DCentvsNch"), collision.centFT0C(), rectracknum);
     for (const auto& casc : Cascades) {
       if (!casc.has_cascMCCore())
