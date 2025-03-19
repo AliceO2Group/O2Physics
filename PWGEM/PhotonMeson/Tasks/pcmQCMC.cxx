@@ -376,7 +376,7 @@ struct PCMQCMC {
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hXY_MC"), mcleg.vx(), mcleg.vy());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRZ_MC"), mcleg.vz(), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)));
 
-    float phi_cp = atan2(v0.vy(), v0.vx());
+    float phi_cp = std::atan2(v0.vy(), v0.vx());
     o2::math_utils::bringTo02Pi(phi_cp);
     float eta_cp = std::atanh(v0.vz() / std::sqrt(std::pow(v0.vx(), 2) + std::pow(v0.vy(), 2) + std::pow(v0.vz(), 2)));
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hsConvPoint"), v0.v0radius(), phi_cp, eta_cp);
@@ -490,25 +490,29 @@ struct PCMQCMC {
             // LOGF(info, "mcphoton.vx() = %f, mcphoton.vy() = %f, mcphoton.vz() = %f, mother_pdg = %d", mcphoton.vx(), mcphoton.vy(), mcphoton.vz(), mother_pdg);
           }
         } else if (pi0id > 0) {
-          auto mcpi0 = mcparticles.iteratorAt(photonid);
+          auto mcpi0 = mcparticles.iteratorAt(pi0id);
           if (cfgRequireTrueAssociation && (mcpi0.emmceventId() != collision.emmceventId())) {
             continue;
           }
-          fillV0Info<3>(v0, mcpi0, elemc);
-          for (auto& leg : {pos, ele}) {
-            fillV0LegInfo<3>(leg);
+          if (mcpi0.isPhysicalPrimary() || mcpi0.producedByGenerator()) {
+            fillV0Info<3>(v0, mcpi0, elemc);
+            for (auto& leg : {pos, ele}) {
+              fillV0LegInfo<3>(leg);
+            }
+            nee_pi0++;
           }
-          nee_pi0++;
         } else if (etaid > 0) {
-          auto mceta = mcparticles.iteratorAt(photonid);
+          auto mceta = mcparticles.iteratorAt(etaid);
           if (cfgRequireTrueAssociation && (mceta.emmceventId() != collision.emmceventId())) {
             continue;
           }
-          fillV0Info<4>(v0, mceta, elemc);
-          for (auto& leg : {pos, ele}) {
-            fillV0LegInfo<4>(leg);
+          if (mceta.isPhysicalPrimary() || mceta.producedByGenerator()) {
+            fillV0Info<4>(v0, mceta, elemc);
+            for (auto& leg : {pos, ele}) {
+              fillV0LegInfo<4>(leg);
+            }
+            nee_eta++;
           }
-          nee_eta++;
         }
       } // end of v0 loop
       fRegistry.fill(HIST("V0/primary/hNgamma"), ng_primary);
@@ -573,7 +577,7 @@ struct PCMQCMC {
         if (std::abs(mctrack.pdgCode()) == 22 && (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           auto daughter = mcparticles.iteratorAt(mctrack.daughtersIds()[0]); // choose ele or pos.
           float rxy_gen_e = std::sqrt(std::pow(daughter.vx(), 2) + std::pow(daughter.vy(), 2));
-          float phi_cp = atan2(daughter.vy(), daughter.vx());
+          float phi_cp = std::atan2(daughter.vy(), daughter.vx());
           o2::math_utils::bringTo02Pi(phi_cp);
           float eta_cp = std::atanh(daughter.vz() / std::sqrt(std::pow(daughter.vx(), 2) + std::pow(daughter.vy(), 2) + std::pow(daughter.vz(), 2)));
 
