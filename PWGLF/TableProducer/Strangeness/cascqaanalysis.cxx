@@ -525,7 +525,7 @@ struct Cascqaanalysis {
         if (casc.has_mcParticle()) {
           registry.fill(HIST("hCandidateCounter"), 2.5); // has associated MC particle
           auto cascmc = casc.mcParticle();
-          if (std::fabs(cascmc.pdgCode()) == PDG_t::kXiMinus || std::fabs(cascmc.pdgCode()) == PDG_t::kOmegaMinus) {
+          if (std::abs(cascmc.pdgCode()) == PDG_t::kXiMinus || std::abs(cascmc.pdgCode()) == PDG_t::kOmegaMinus) {
             registry.fill(HIST("hCandidateCounter"), 3.5); // associated with Xi or Omega
             lPDG = cascmc.pdgCode();
             isPrimary = cascmc.isPhysicalPrimary() ? 1 : 0;
@@ -815,8 +815,8 @@ struct MyCascades {
         registry.fill(HIST("hBachBaryonCosPA"), candidate.bachBaryonCosPA());
         registry.fill(HIST("hBachBaryonDCAxyToPV"), candidate.bachBaryonDCAxyToPV());
 
-        if (std::fabs(candidate.mcPdgCode()) == PDG_t::kXiMinus || std::fabs(candidate.mcPdgCode()) == PDG_t::kOmegaMinus) {
-          registry.fill(HIST("hPDGcode"), std::fabs(candidate.mcPdgCode()) == PDG_t::kXiMinus ? 0 : 1); // 0 if Xi, 1 if Omega
+        if (std::abs(candidate.mcPdgCode()) == PDG_t::kXiMinus || std::abs(candidate.mcPdgCode()) == PDG_t::kOmegaMinus) {
+          registry.fill(HIST("hPDGcode"), std::abs(candidate.mcPdgCode()) == PDG_t::kXiMinus ? 0 : 1); // 0 if Xi, 1 if Omega
         } else {
           registry.fill(HIST("hPDGcode"), -1); // -1 if unknown
         }
