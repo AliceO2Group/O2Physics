@@ -254,6 +254,10 @@ struct DptDptTrackSelection {
   {
     maxDcazPtDep = ptDepCut;
   }
+  void setRequirePvContributor(bool pvc = true)
+  {
+    requirePvContributor = pvc;
+  }
 
   template <typename TrackObject>
   bool isSelected(TrackObject const& track) const
@@ -366,11 +370,13 @@ struct DptDptTrackSelection {
         globalRun3->stdTrackSelection->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
         globalRun3->stdTrackSelection->ResetITSRequirements();
         globalRun3->stdTrackSelection->SetRequireHitsInITSLayers(1, {0, 1, 2});
+        globalRun3->setRequirePvContributor(true);
         DptDptTrackSelection* globalSDDRun3 = new DptDptTrackSelection(new TrackSelection(getGlobalTrackSelection()), outputList, "TType10Sdd");
         globalSDDRun3->stdTrackSelection->SetTrackType(o2::aod::track::TrackTypeEnum::Track);
         globalSDDRun3->stdTrackSelection->ResetITSRequirements();
         globalSDDRun3->stdTrackSelection->SetRequireNoHitsInITSLayers({0, 1, 2});
         globalSDDRun3->stdTrackSelection->SetRequireHitsInITSLayers(1, {3});
+        globalSDDRun3->setRequirePvContributor(true);
         addTrackFilter(globalRun3);
         addTrackFilter(globalSDDRun3);
       } break;
