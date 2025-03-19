@@ -238,18 +238,18 @@ auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candid
 }
 
 /**
- * returns a slice of the table depending on the type of the candidate and index of the collision
- *
- * @param candidate candidate that is being checked
+ * returns a slice of the table depending on the index of the candidate
+ * @param CandidateTable candidtae table type
+ * @param jet jet that the slice is based on
  * @param table the table to be sliced
  */
-template <typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q>
-auto slicedPerCandidateCollision(T const& table, U const& candidates, V const& collision, M const& D0CollisionPerCollision, N const& DplusCollisionPerCollision, O const& LcCollisionPerCollision, P const& BplusCollisionPerCollision, Q const& DielectronCollisionPerCollision)
+template <typename CandidateTable, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
+auto slicedPerJet(T const& table, U const& jet, V const& perD0Jet, M const& perDplusJet, N const& perLcJet, O const& perBplusJet, P const& perDielectronJet)
 {
-  if constexpr (jethfutilities::isHFTable<U>() || jethfutilities::isHFMcTable<U>()) {
-    return jethfutilities::slicedPerHFCollision(table, candidates, collision, D0CollisionPerCollision, DplusCollisionPerCollision, LcCollisionPerCollision, BplusCollisionPerCollision);
-  } else if constexpr (jetdqutilities::isDielectronTable<U>() || jetdqutilities::isDielectronMcTable<U>()) {
-    return jetdqutilities::slicedPerDielectronCollision(table, candidates, collision, DielectronCollisionPerCollision);
+  if constexpr (jethfutilities::isHFTable<CandidateTable>() || jethfutilities::isHFMcTable<CandidateTable>()) {
+    return jethfutilities::slicedPerHFJet<CandidateTable>(table, jet, perD0Jet, perDplusJet, perLcJet, perBplusJet);
+  } else if constexpr (jetdqutilities::isDielectronTable<CandidateTable>() || jetdqutilities::isDielectronMcTable<CandidateTable>()) {
+    return jetdqutilities::slicedPerDielectronJet<CandidateTable>(table, jet, perDielectronJet);
   } else {
     return table;
   }

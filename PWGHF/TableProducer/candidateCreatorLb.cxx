@@ -68,6 +68,9 @@ struct HfCandidateCreatorLb {
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
+  std::shared_ptr<TH1> hCandidatesLc, hCandidatesLb;
+  HistogramRegistry registry{"registry"};
+
   OutputObj<TH1F> hMassLcToPKPi{TH1F("hMassLcToPKPi", "#Lambda_{c}^{#plus} candidates;inv. mass (pK^{#minus} #pi^{#plus}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hPtLc{TH1F("hPtLc", "#Lambda_{c}^{#plus} candidates;#Lambda_{c}^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
   OutputObj<TH1F> hPtPion{TH1F("hPtPion", "#pi^{#minus} candidates;#pi^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", 100, 0., 10.)};
@@ -75,9 +78,6 @@ struct HfCandidateCreatorLb {
   OutputObj<TH1F> hMassLbToLcPi{TH1F("hMassLbToLcPi", "2-prong candidates;inv. mass (#Lambda_{b}^{0} #rightarrow #Lambda_{c}^{#plus}#pi^{#minus} #rightarrow pK^{#minus}#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
-
-  std::shared_ptr<TH1> hCandidatesLc, hCandidatesLb;
-  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
@@ -242,18 +242,17 @@ struct HfCandidateCreatorLb {
           hMassLbToLcPi->Fill(massLcPi);
         }
       } // pi- loop
-    }   // Lc loop
-  }     // process
-};      // struct
+    } // Lc loop
+  } // process
+}; // struct
 
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorLbExpressions {
   Spawns<aod::HfCandLbExt> rowCandidateLb;
-
-  void init(InitContext const&) {}
-
   Produces<aod::HfCandLbMcRec> rowMcMatchRec;
   Produces<aod::HfCandLbMcGen> rowMcMatchGen;
+
+  void init(InitContext const&) {}
 
   /// @brief dummy process function, to be run on data
   void process(aod::Tracks const&) {}
@@ -306,8 +305,8 @@ struct HfCandidateCreatorLbExpressions {
       // Λb → Λc+ π-
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaB0, std::array{static_cast<int>(Pdg::kLambdaCPlus), -kPiPlus}, true)) {
         // Λc+ → p K- π+
-        auto LcCandMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(mcParticles, LcCandMC, static_cast<int>(Pdg::kLambdaCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
+        auto candLcMc = mcParticles.rawIteratorAt(particle.daughtersIds().front());
+        if (RecoDecay::isMatchedMCGen(mcParticles, candLcMc, static_cast<int>(Pdg::kLambdaCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
           flag = sign * (1 << hf_cand_lb::DecayType::LbToLcPi);
         }
       }
