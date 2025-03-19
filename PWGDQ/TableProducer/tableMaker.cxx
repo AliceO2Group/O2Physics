@@ -1123,7 +1123,24 @@ struct TableMaker {
       for (const auto& muonId : fwdtrackIndices) { // start loop over tracks
         auto muon = muonId.template fwdtrack_as<TMuons>();
         trackFilteringTag = static_cast<uint64_t>(0);
-        VarManager::FillTrack<TMuonFillMap>(muon);
+        if constexpr (static_cast<bool>(TMuonRealignFillMap)) {
+          // Update muon information using realigned tracks
+          if (static_cast<int>(muon.trackType()) > 2) {
+            // Update only MCH or MCH-MID tracks with realigned information
+            auto muonRealignSelected = tracksMuonRealign.select(aod::fwdtrackrealign::fwdtrackId == muonId.fwdtrackId() && aod::fwdtrackrealign::collisionId == collision.globalIndex());
+            if (muonRealignSelected.size() == 1) {
+              for (const auto& muonRealign : muonRealignSelected) {
+                VarManager::FillTrack<TMuonRealignFillMap>(muonRealign);
+              }
+            } else {
+              LOGF(fatal, "Inconsistent size of realigned muon track candidates.");
+            }
+          } else {
+            VarManager::FillTrack<TMuonFillMap>(muon);
+          }
+        } else {
+          VarManager::FillTrack<TMuonFillMap>(muon);
+        }
 
         if (muon.index() > idxPrev + 1) { // checks if some muons are filtered even before the skimming function
           nDel += muon.index() - (idxPrev + 1);
