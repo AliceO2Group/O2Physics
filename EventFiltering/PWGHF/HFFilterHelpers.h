@@ -343,8 +343,9 @@ static const std::vector<std::string> labelsColumnsCutsBeautyToJPsi = {"minPtMuo
 } // namespace hf_trigger_cuts_presel_beauty
 
 // double charm
-constexpr int activeDoubleCharmChannels[1][3] = {{1, 1, 1}}; // kDoubleCharm2P, kDoubleCharm3P, kDoubleCharmMix
+constexpr int activeDoubleCharmChannels[2][3] = {{1, 1, 1}, {1, 1, 0}}; // kDoubleCharm2P, kDoubleCharm3P, kDoubleCharmMix (second column to keep non-prompt)
 static const std::vector<std::string> labelsColumnsDoubleCharmChannels = {"DoubleCharm2Prong", "DoubleCharm3Prong", "DoubleCharmMix"};
+static const std::vector<std::string> labelsRowsDoubleCharmChannels = {"", "KeepNonprompt"};
 
 // charm resonances
 constexpr float cutsCharmReso[3][13] = {{0.0, 0.0, 0.0, 0.0, 0.4, 0., 0.0, 0.00, 0.21, 0.21, 0.0, 0.7, 0.7},
@@ -932,12 +933,13 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
   // For deuterons: Determine whether to apply TOF based on pt threshold
   if (trackSpecies == kDeuteronForFemto) {
     // Apply different PID strategy in different pt range
+    // one side selection only
     if (pt <= ptThresholdPidStrategy) {
-      if (std::fabs(NSigmaTPC) > nSigmaCuts[0] || NSigmaITS < nSigmaCuts[3]) { // Use TPC and ITS below the threshold, NSigmaITS for deuteron with a lower limit
+      if (NSigmaTPC < -nSigmaCuts[0] || NSigmaITS < -nSigmaCuts[3]) { // Use TPC and ITS below the threshold, NSigmaITS for deuteron with a lower limit
         return false;
       }
     } else {
-      if (NSigma > nSigmaCuts[2]) { // Use combined TPC and TOF above the threshold
+      if (NSigmaTOF > nSigmaCuts[2] || NSigmaTPC < -nSigmaCuts[0]) { // Use combined TPC and TOF above the threshold
         return false;
       }
     }
