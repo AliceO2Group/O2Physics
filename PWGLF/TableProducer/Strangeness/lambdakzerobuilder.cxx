@@ -1429,8 +1429,8 @@ struct lambdakzeroPreselector {
       hCollAssocQA->GetXaxis()->SetBinLabel(2, "Lambda");
       hCollAssocQA->GetXaxis()->SetBinLabel(3, "AntiLambda");
       hCollAssocQA->GetXaxis()->SetBinLabel(4, "Gamma");
-      hCollAssocQA->GetYaxis()->SetBinLabel(1, "Correct collision");
-      hCollAssocQA->GetYaxis()->SetBinLabel(2, "Wrong collision");
+      hCollAssocQA->GetYaxis()->SetBinLabel(1, "Wrong collision");
+      hCollAssocQA->GetYaxis()->SetBinLabel(2, "Correct collision");
     }
   }
 
