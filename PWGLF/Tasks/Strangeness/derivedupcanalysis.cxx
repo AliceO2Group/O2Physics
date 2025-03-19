@@ -195,6 +195,8 @@ struct Derivedupcanalysis {
   // for MC
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
   Configurable<bool> doTreatPiToMuon{"doTreatPiToMuon", false, "Take pi decay into muon into account in MC"};
+  Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "fill feeddown matrix if MC"};
+  ConfigurableAxis axisGeneratorIds{"axisGeneratorIds", {256, -0.5f, 255.5f}, "axis for generatorIds"};
 
   // fast check on occupancy
   Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
@@ -700,7 +702,7 @@ struct Derivedupcanalysis {
       LOG(fatal) << "Unable to analyze both v0s and cascades simultaneously. Please enable only one process at a time";
     }
 
-    if ((doprocessV0sMC || doprocessGenerated) && (doprocessV0s || doprocessCascades)) {
+    if ((doprocessV0sMC || doprocessCascadesMC || doprocessGenerated) && (doprocessV0s || doprocessCascades)) {
       LOG(fatal) << "Cannot analyze both data and MC simultaneously. Please select one of them.";
     }
 
@@ -835,6 +837,10 @@ struct Derivedupcanalysis {
     maskSelectionOmega = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskOmegaSpecific | (std::bitset<kSelNum>(1) << selPhysPrimOmega);
     maskSelectionAntiOmega = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskAntiOmegaSpecific | (std::bitset<kSelNum>(1) << selPhysPrimAntiOmega);
 
+    // No primary requirement for feeddown matrix
+    secondaryMaskSelectionLambda = maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskLambdaSpecific;
+    secondaryMaskSelectionAntiLambda = maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskAntiLambdaSpecific;
+
     // Event Counter
     histos.add("eventQA/hEventSelection", "hEventSelection", kTH1F, {{16, -0.5f, +15.5f}});
     histos.get<TH1>(HIST("eventQA/hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
@@ -873,12 +879,11 @@ struct Derivedupcanalysis {
     histos.add("eventQA/hZN", "hZN", kTH3F, {axisDetectors.axisZNAampl, axisDetectors.axisZNCampl, axisSelGap});
 
     if (doprocessGenerated) {
-      // Event Counter
-      histos.add("eventQA/mc/hEventSelectionMC", "hEventSelectionMC", kTH1F, {{2, -0.5f, +1.5f}});
-      histos.get<TH1>(HIST("eventQA/mc/hEventSelectionMC"))->GetXaxis()->SetBinLabel(1, "All collisions");
-      histos.get<TH1>(HIST("eventQA/mc/hEventSelectionMC"))->GetXaxis()->SetBinLabel(2, "posZ cut");
+      histos.add("eventQA/mc/hEventSelectionMC", "hEventSelectionMC", kTH3F, {{3, -0.5, 2.5}, axisNTracksPVeta1, axisGeneratorIds});
+      histos.get<TH3>(HIST("eventQA/mc/hEventSelectionMC"))->GetXaxis()->SetBinLabel(1, "All collisions");
+      histos.get<TH3>(HIST("eventQA/mc/hEventSelectionMC"))->GetXaxis()->SetBinLabel(2, "posZ cut");
+      histos.get<TH3>(HIST("eventQA/mc/hEventSelectionMC"))->GetXaxis()->SetBinLabel(3, "rec. at least once");
 
-      histos.add("eventQA/mc/hMCNParticlesEta10", "hMCNParticlesEta10", kTH2F, {axisNTracksPVeta1, {2, -0.5, 1.5}});
       histos.add("eventQA/mc/hTracksGlobalvsMCNParticlesEta10gen", "hTracksGlobalvsMCNParticlesEta10gen", kTH2F, {axisNTracksGlobal, axisNTracksPVeta1});
       histos.add("eventQA/mc/hTracksGlobalVsNcoll_beforeEvSel", "hTracksGlobalVsNcoll_beforeEvSel", kTH2F, {axisNTracksGlobal, axisNAssocColl});
       histos.add("eventQA/mc/hTracksGlobalVsNcoll_afterEvSel", "hTracksGlobalVsNcoll_afterEvSel", kTH2F, {axisNTracksGlobal, axisNAssocColl});
@@ -887,7 +892,7 @@ struct Derivedupcanalysis {
       histos.add("eventQA/mc/hGenEventCentrality", "hGenEventCentrality", kTH1F, {axisFT0Cqa});
     }
 
-    if (doprocessV0sMC) {
+    if (doprocessV0sMC || doprocessCascadesMC) {
       // Event QA
       histos.add("eventQA/mc/hFakeEvents", "hFakeEvents", {kTH1F, {{1, -0.5f, 0.5f}}});
       histos.add("eventQA/mc/hNTracksGlobalvsMCNParticlesEta10rec", "hNTracksGlobalvsMCNParticlesEta10rec", kTH2F, {axisNTracksGlobal, axisNTracksPVeta1});
@@ -896,9 +901,16 @@ struct Derivedupcanalysis {
       histos.add("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles", "hNTracksPVeta1vstotalMultMCParticles", kTH2F, {axisNTracksPVeta1, axisNchInvMass});
     }
 
+    if (doprocessV0sMC) {
+      if (analyseLambda && calculateFeeddownMatrix)
+        histos.add(Form("%s/h3dLambdaFeeddown", kParticlenames[1].data()), "h3dLambdaFeeddown", kTH3F, {axisNTracksGlobal, axisPt, axisPtXi});
+      if (analyseAntiLambda && calculateFeeddownMatrix)
+        histos.add(Form("%s/h3dAntiLambdaFeeddown", kParticlenames[2].data()), "h3dAntiLambdaFeeddown", kTH3F, {axisNTracksGlobal, axisPt, axisPtXi});
+    }
+
     if (doprocessGenerated) {
       for (int partID = 0; partID <= 6; partID++) {
-        histos.add(Form("%s/mc/h6dGen", kParticlenames[partID].data()), "h6dGen", kTHnSparseF, {axisFT0Cqa, axisNchInvMass, axisNchInvMass, axisPt, axisSelGap, axisRap});
+        histos.add(Form("%s/mc/h7dGen", kParticlenames[partID].data()), "h7dGen", kTHnSparseF, {axisFT0Cqa, axisNchInvMass, axisNchInvMass, axisPt, axisSelGap, axisRap, axisGeneratorIds});
       }
     }
 
@@ -933,7 +945,7 @@ struct Derivedupcanalysis {
       }
     }
 
-    if (doprocessCascades) {
+    if (doprocessCascades || doprocessCascadesMC) {
       // For all candidates
       if (doPlainTopoQA) {
         histos.add("generalQA/hPt", "hPt", kTH1F, {axisPtCoarse});
@@ -1047,7 +1059,7 @@ struct Derivedupcanalysis {
 
     if (studyUPConly && !collision.isUPC()) {
       return false;
-    } else if (collision.isUPC()) {
+    } else if (collision.isUPC() && fillQA) {
       histos.fill(HIST("eventQA/hEventSelection"), 14.0); // is UPC compatible
     }
 
@@ -1685,13 +1697,12 @@ struct Derivedupcanalysis {
         continue;
       }
 
-      histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 0.0);
-      histos.fill(HIST("eventQA/mc/hMCNParticlesEta10"), mcCollision.multMCNParticlesEta10(), 0 /* all gen. events*/);
+      histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 0.0, mcCollision.multMCNParticlesEta10(), mcCollision.generatorsID());
 
       if (std::abs(mcCollision.posZ()) > maxZVtxPosition)
         continue;
 
-      histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 1.0);
+      histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 1.0, mcCollision.multMCNParticlesEta10(), mcCollision.generatorsID());
 
       // Group collisions by MC collision index
       auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
@@ -1730,9 +1741,37 @@ struct Derivedupcanalysis {
       histos.fill(HIST("eventQA/mc/hEventPVzMC"), mcCollision.posZ());
 
       if (atLeastOne) {
-        histos.fill(HIST("eventQA/mc/hMCNParticlesEta10"), mcCollision.multMCNParticlesEta10(), 1 /* at least 1 rec. event*/);
+        histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 2.0, mcCollision.multMCNParticlesEta10(), mcCollision.generatorsID());
         histos.fill(HIST("eventQA/mc/hGenEventCentrality"), centrality);
       }
+    }
+  }
+
+  template <typename TCollision, typename TV0>
+  void fillFeeddownMatrix(TCollision const& collision, TV0 const& v0, std::bitset<kSelNum> const& selMap)
+  {
+    if (!v0.has_motherMCPart()) {
+      return;
+    }
+
+    auto v0mother = v0.motherMCPart();
+    const float rapidityXi = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXiMinus);
+    if (std::fabs(rapidityXi) > 0.5f) {
+      return;
+    }
+
+    const float mult = collision.multNTracksGlobal();
+    const float v0pt = v0.pt();
+    const float motherPt = std::hypot(v0mother.px(), v0mother.py());
+
+    if (analyseLambda && verifyMask(selMap, secondaryMaskSelectionLambda) &&
+        v0mother.pdgCode() == PDG_t::kXiMinus && v0mother.isPhysicalPrimary()) {
+      histos.fill(HIST("h3dLambdaFeeddown"), mult, v0pt, motherPt);
+    }
+
+    if (analyseAntiLambda && verifyMask(selMap, secondaryMaskSelectionAntiLambda) &&
+        v0mother.pdgCode() == PDG_t::kXiPlusBar && v0mother.isPhysicalPrimary()) {
+      histos.fill(HIST("h3dAntiLambdaFeeddown"), mult, v0pt, motherPt);
     }
   }
 
@@ -1810,6 +1849,9 @@ struct Derivedupcanalysis {
         if (v0.has_v0MCCore()) {
           const auto& v0MC = v0.v0MCCore_as<V0MCCoresFull>();
           computeV0MCAssociation(v0MC, selMap);
+          if (calculateFeeddownMatrix) {
+            fillFeeddownMatrix(collision, v0, selMap);
+          }
         }
       } else {
         // consider all species for the candidate
@@ -1945,13 +1987,13 @@ struct Derivedupcanalysis {
 
       // Fill histograms
       if (v0MC.pdgCode() == PDG_t::kK0Short) {
-        histos.fill(HIST(kParticlenames[0]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+        histos.fill(HIST(kParticlenames[0]) + HIST("/mc/h7dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
       if (v0MC.pdgCode() == PDG_t::kLambda0) {
-        histos.fill(HIST(kParticlenames[1]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+        histos.fill(HIST(kParticlenames[1]) + HIST("/mc/h7dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
       if (v0MC.pdgCode() == PDG_t::kLambda0Bar) {
-        histos.fill(HIST(kParticlenames[2]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+        histos.fill(HIST(kParticlenames[2]) + HIST("/mc/h7dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
     } // V0 end
 
@@ -1985,16 +2027,16 @@ struct Derivedupcanalysis {
 
       // Fill histograms
       if (cascMC.pdgCode() == PDG_t::kXiMinus) {
-        histos.fill(HIST(kParticlenames[3]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+        histos.fill(HIST(kParticlenames[3]) + HIST("/mc/h7dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
       if (cascMC.pdgCode() == PDG_t::kXiPlusBar) {
-        histos.fill(HIST(kParticlenames[4]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+        histos.fill(HIST(kParticlenames[4]) + HIST("/mc/h7dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
       if (cascMC.pdgCode() == PDG_t::kOmegaMinus) {
-        histos.fill(HIST(kParticlenames[5]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+        histos.fill(HIST(kParticlenames[5]) + HIST("/mc/h7dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
       if (cascMC.pdgCode() == PDG_t::kOmegaPlusBar) {
-        histos.fill(HIST(kParticlenames[6]) + HIST("/mc/h6dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc);
+        histos.fill(HIST(kParticlenames[6]) + HIST("/mc/h7dGen"), centrality, nTracksGlobal, mcCollision.multMCNParticlesEta10(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
     } // Cascade end
   }
@@ -2002,6 +2044,7 @@ struct Derivedupcanalysis {
   PROCESS_SWITCH(Derivedupcanalysis, processV0s, "Process V0s", true);
   PROCESS_SWITCH(Derivedupcanalysis, processV0sMC, "Process V0s MC", false);
   PROCESS_SWITCH(Derivedupcanalysis, processCascades, "Process Cascades", false);
+  PROCESS_SWITCH(Derivedupcanalysis, processCascadesMC, "Process Cascades MC", false);
   PROCESS_SWITCH(Derivedupcanalysis, processGenerated, "Process Generated Level", false);
 };
 
