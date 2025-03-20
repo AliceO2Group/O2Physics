@@ -1643,11 +1643,11 @@ inline int16_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, 
   }
 
   float pt = track.pt();
-  if constexpr (whichTrigger == kCharmBarToXiBach){
+  if constexpr (whichTrigger == kCharmBarToXiBach) {
     if (pt < mPtMinCharmBaryonBachelor || pt > mPtMaxCharmBaryonBachelor) {
       return kRejected;
     }
-  } else  if constexpr (whichTrigger == kPrCharm2P){
+  } else if constexpr (whichTrigger == kPrCharm2P) {
     if (pt < mPtMinLcResonanceBachelor || pt > mPtMaxLcResonanceBachelor) {
       return kRejected;
     }
