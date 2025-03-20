@@ -1431,6 +1431,20 @@ struct lambdakzeroPreselector {
       hCollAssocQA->GetXaxis()->SetBinLabel(4, "Gamma");
       hCollAssocQA->GetYaxis()->SetBinLabel(1, "Wrong collision");
       hCollAssocQA->GetYaxis()->SetBinLabel(2, "Correct collision");
+
+      auto h2dPtVsCollAssocK0Short = histos.add<TH2>("h2dPtVsCollAssocK0Short", "h2dPtVsCollAssocK0Short", kTH2D, {{100, 0.0f, 10.0f}, {2, -0.5f, 1.5f}});
+      auto h2dPtVsCollAssocLambda = histos.add<TH2>("h2dPtVsCollAssocLambda", "h2dPtVsCollAssocLambda", kTH2D, {{100, 0.0f, 10.0f}, {2, -0.5f, 1.5f}});
+      auto h2dPtVsCollAssocAntiLambda = histos.add<TH2>("h2dPtVsCollAssocAntiLambda", "h2dPtVsCollAssocAntiLambda", kTH2D, {{100, 0.0f, 10.0f}, {2, -0.5f, 1.5f}});
+      auto h2dPtVsCollAssocGamma = histos.add<TH2>("h2dPtVsCollAssocGamma", "h2dPtVsCollAssocGamma", kTH2D, {{100, 0.0f, 10.0f}, {2, -0.5f, 1.5f}});
+
+      h2dPtVsCollAssocK0Short->GetYaxis()->SetBinLabel(1, "Wrong collision");
+      h2dPtVsCollAssocK0Short->GetYaxis()->SetBinLabel(2, "Correct collision");
+      h2dPtVsCollAssocLambda->GetYaxis()->SetBinLabel(1, "Wrong collision");
+      h2dPtVsCollAssocLambda->GetYaxis()->SetBinLabel(2, "Correct collision");
+      h2dPtVsCollAssocAntiLambda->GetYaxis()->SetBinLabel(1, "Wrong collision");
+      h2dPtVsCollAssocAntiLambda->GetYaxis()->SetBinLabel(2, "Correct collision");
+      h2dPtVsCollAssocGamma->GetYaxis()->SetBinLabel(1, "Wrong collision");
+      h2dPtVsCollAssocGamma->GetYaxis()->SetBinLabel(2, "Correct collision");
     }
   }
 
@@ -1484,6 +1498,7 @@ struct lambdakzeroPreselector {
   {
     int lPDG = -1;
     int correctMcCollisionIndex = -1;
+    float mcpt = -1.0;
     bool physicalPrimary = false;
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
@@ -1500,6 +1515,7 @@ struct lambdakzeroPreselector {
               lPDG = lNegMother.pdgCode();
               correctMcCollisionIndex = lNegMother.mcCollisionId();
               physicalPrimary = lNegMother.isPhysicalPrimary();
+              mcpt = lNegMother.pt();
 
               // additionally check PDG of the mother particle if requested
               if (dIfMCselectV0MotherPDG != 0) {
@@ -1527,24 +1543,28 @@ struct lambdakzeroPreselector {
       bitset(maskElement, bitTrueK0Short);
       if (qaCollisionAssociation) {
         histos.fill(HIST("hCollAssocQA"), 0.0f, collisionAssociationOK);
+        histos.fill(HIST("h2dPtVsCollAssocK0Short"), collisionAssociationOK, mcpt);
       }
     }
     if (lPDG == 3122) {
       bitset(maskElement, bitTrueLambda);
       if (qaCollisionAssociation) {
         histos.fill(HIST("hCollAssocQA"), 1.0f, collisionAssociationOK);
+        histos.fill(HIST("h2dPtVsCollAssocLambda"), collisionAssociationOK, mcpt);
       }
     }
     if (lPDG == -3122) {
       bitset(maskElement, bitTrueAntiLambda);
       if (qaCollisionAssociation) {
         histos.fill(HIST("hCollAssocQA"), 2.0f, collisionAssociationOK);
+        histos.fill(HIST("h2dPtVsCollAssocAntiLambda"), collisionAssociationOK, mcpt);
       }
     }
     if (lPDG == 22) {
       bitset(maskElement, bitTrueGamma);
       if (qaCollisionAssociation) {
         histos.fill(HIST("hCollAssocQA"), 3.0f, collisionAssociationOK);
+        histos.fill(HIST("h2dPtVsCollAssocGamma"), collisionAssociationOK, mcpt);
       }
     }
     if (lPDG == 1010010030)
