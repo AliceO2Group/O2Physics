@@ -1543,28 +1543,28 @@ struct lambdakzeroPreselector {
       bitset(maskElement, bitTrueK0Short);
       if (qaCollisionAssociation) {
         histos.fill(HIST("hCollAssocQA"), 0.0f, collisionAssociationOK);
-        histos.fill(HIST("h2dPtVsCollAssocK0Short"), collisionAssociationOK, mcpt);
+        histos.fill(HIST("h2dPtVsCollAssocK0Short"), mcpt, collisionAssociationOK);
       }
     }
     if (lPDG == 3122) {
       bitset(maskElement, bitTrueLambda);
       if (qaCollisionAssociation) {
         histos.fill(HIST("hCollAssocQA"), 1.0f, collisionAssociationOK);
-        histos.fill(HIST("h2dPtVsCollAssocLambda"), collisionAssociationOK, mcpt);
+        histos.fill(HIST("h2dPtVsCollAssocLambda"), mcpt, collisionAssociationOK);
       }
     }
     if (lPDG == -3122) {
       bitset(maskElement, bitTrueAntiLambda);
       if (qaCollisionAssociation) {
         histos.fill(HIST("hCollAssocQA"), 2.0f, collisionAssociationOK);
-        histos.fill(HIST("h2dPtVsCollAssocAntiLambda"), collisionAssociationOK, mcpt);
+        histos.fill(HIST("h2dPtVsCollAssocAntiLambda"), mcpt, collisionAssociationOK);
       }
     }
     if (lPDG == 22) {
       bitset(maskElement, bitTrueGamma);
       if (qaCollisionAssociation) {
         histos.fill(HIST("hCollAssocQA"), 3.0f, collisionAssociationOK);
-        histos.fill(HIST("h2dPtVsCollAssocGamma"), collisionAssociationOK, mcpt);
+        histos.fill(HIST("h2dPtVsCollAssocGamma"), mcpt, collisionAssociationOK);
       }
     }
     if (lPDG == 1010010030)
