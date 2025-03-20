@@ -353,8 +353,15 @@ struct FlowMc {
         if (mcParticle.has_tracks()) {
           auto const& tracks = mcParticle.tracks_as<RecoTracks>();
           for (auto const& track : tracks) {
-            if (track.hasTPC() && track.hasITS())
+            if (!((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu))) {
+              continue;
+            }
+            if (cfgIsGlobalTrack && track.isGlobalTrack()) {
               nChGlobal++;
+            }
+            if (!cfgIsGlobalTrack && track.hasTPC() && track.hasITS()) {
+              nChGlobal++;
+            }
             if (cfgTrackDensityCorrUse && cfgFlowCumulantEnabled) {
               bool withinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT rang
               if (withinPtRef) {
