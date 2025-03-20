@@ -1783,11 +1783,11 @@ struct HfTrackIndexSkimCreator {
         bool isMlSel = false;
         if constexpr (usePidForHfFiltersBdt) {
           if (iDecay3P != hf_cand_3prong::DecayType::LcToPKPi && iDecay3P != hf_cand_3prong::DecayType::XicToPKPi) {
-            hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCand, ptDummy, outputScores[iDecay3P]);
+            isMlSel = hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCand, ptDummy, outputScores[iDecay3P]);
           } else {
             std::vector<float> featuresCandWithPid = featuresCand;
             featuresCandWithPid.insert(featuresCandWithPid.end(), featuresCandPid.begin(), featuresCandPid.end());
-            hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCandWithPid, ptDummy, outputScores[iDecay3P]);
+            isMlSel = hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCandWithPid, ptDummy, outputScores[iDecay3P]);
           }
         } else {
           isMlSel = hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCand, ptDummy, outputScores[iDecay3P]);
