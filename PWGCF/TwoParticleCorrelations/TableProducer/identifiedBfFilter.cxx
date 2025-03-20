@@ -1090,7 +1090,9 @@ struct IdentifiedBfFilterTracks {
   template <typename CollisionObjects, typename TrackObject>
   int8_t selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track);
   template <typename ParticleObject>
-  inline void identifyPIDMismatch(ParticleObject const& particle, MatchRecoGenSpecies const& trkId, float tpcNSigma[kIdBfNoOfSpecies], float tofNSigma[kIdBfNoOfSpecies], float tpcInnerParam);
+  inline void identifyPIDMismatch(ParticleObject const& particle, MatchRecoGenSpecies const& trkId);
+  template <typename ParticleObject>
+  inline void identifyRealNSigma(ParticleObject const& particle, std::vector<float> tpcNSigma, std::vector<float> tofNSigma, float tpcInnerParam);
   template <typename ParticleObject>
   inline MatchRecoGenSpecies identifyParticle(ParticleObject const& particle);
   template <typename TrackObject>
@@ -1338,7 +1340,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyParticle(ParticleOb
 }
 
 template <typename ParticleObject>
-inline void IdentifiedBfFilterTracks::identifyPIDMismatch(ParticleObject const& particle, MatchRecoGenSpecies const& trkId, float tpcNSigma[kIdBfNoOfSpecies], float tofNSigma[kIdBfNoOfSpecies], float tpcInnerParam)
+inline void IdentifiedBfFilterTracks::identifyPIDMismatch(ParticleObject const& particle, MatchRecoGenSpecies const& trkId)
 {
   MatchRecoGenSpecies realPID = kWrongSpecies;
   int pdgcode = std::fabs(particle.pdgCode());
@@ -1369,11 +1371,39 @@ inline void IdentifiedBfFilterTracks::identifyPIDMismatch(ParticleObject const& 
     } else {
       fhTruePIDMismatch->Fill(realPID, trkId);
     }
+  }
+}
 
+template <typename ParticleObject>
+inline void IdentifiedBfFilterTracks::identifyRealNSigma(ParticleObject const& particle, std::vector<float> tpcNSigma, std::vector<float> tofNSigma, float tpcInnerParam)
+{
+
+  MatchRecoGenSpecies realPID = kWrongSpecies;
+  int pdgcode = std::fabs(particle.pdgCode());
+
+  switch (pdgcode) {
+    case pdgcodeEl:
+      realPID = kIdBfElectron;
+      break;
+    case pdgcodePi:
+      realPID = kIdBfPion;
+      break;
+    case pdgcodeKa:
+      realPID = kIdBfKaon;
+      break;
+    case pdgcodePr:
+      realPID = kIdBfProton;
+      break;
+    default:
+      if (traceOutOfSpeciesParticles) {
+        LOGF(info, "Wrong particle passed selection cuts. PDG code: %d", pdgcode);
+      }
+      realPID = kWrongSpecies;
+      break;
+  }
+  if (!(realPID < 0)) {
     fhTrueNSigmaTPC[realPID]->Fill(tpcNSigma[realPID], tpcInnerParam);
     fhTrueNSigmaTOF[realPID]->Fill(tofNSigma[realPID], tpcInnerParam);
-
-    // fill histo based on realTPC and tpcNSigma value for center align
   }
 }
 
@@ -1429,14 +1459,14 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
 
   fillNSigmaHistos(track);
 
-  float actualTPCNSigma[kIdBfNoOfSpecies];
+  std::vector<float> actualTPCNSigma;
 
   actualTPCNSigma[kIdBfElectron] = track.tpcNSigmaEl();
   actualTPCNSigma[kIdBfPion] = track.tpcNSigmaPi();
   actualTPCNSigma[kIdBfKaon] = track.tpcNSigmaKa();
   actualTPCNSigma[kIdBfProton] = track.tpcNSigmaPr();
 
-  float actualTOFNSigma[kIdBfNoOfSpecies];
+  std::vector<float> actualTOFNSigma;
 
   actualTOFNSigma[kIdBfElectron] = track.tofNSigmaEl();
   actualTOFNSigma[kIdBfPion] = track.tofNSigmaPi();
@@ -1444,6 +1474,10 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
   actualTOFNSigma[kIdBfProton] = track.tofNSigmaPr();
 
   float nsigmas[kIdBfNoOfSpecies];
+
+  if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
+    identifyRealNSigma(track.template mcParticle_as<aod::McParticles>(),actualTPCNSigma, actualTOFNSigma, track.tpcInnerParam());
+  }
 
   if (loadfromccdb) {
     for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
@@ -1519,7 +1553,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
       fhNSigmaTPCIdTrks[spMinNSigma]->Fill(actualTPCNSigma[spMinNSigma], track.tpcInnerParam());
 
       if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
-        identifyPIDMismatch(track.template mcParticle_as<aod::McParticles>(), spMinNSigma, actualTPCNSigma, actualTOFNSigma, track.tpcInnerParam());
+        identifyPIDMismatch(track.template mcParticle_as<aod::McParticles>(), spMinNSigma);
       }
       return spMinNSigma;
     }
