@@ -779,7 +779,7 @@ struct NucleiHistTask {
 
       histTrackcuts_data_particle->AddBinContent(12);
 
-      if (TPCnSigma_particle > nsigmacutLow && TPCnSigma_particle < nsigmacutHigh && TMath::Abs(track.dcaZ()) < 2.0 && TMath::Abs(track.dcaXY()) < 0.5) {
+      if (TPCnSigma_particle > nsigmacutLow && TPCnSigma_particle < nsigmacutHigh) {
         if (track.sign() > 0) {
           particle_reg.fill(HIST("histDcaVsPtData"), momentum, track.dcaXY());
           particle_reg.fill(HIST("histDcaZVsPtData"), momentum, track.dcaZ());
