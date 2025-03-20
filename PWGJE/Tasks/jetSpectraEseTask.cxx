@@ -68,17 +68,23 @@ struct JetSpectraEseTask {
   Configurable<float> vertexZCut{"vertexZCut", 10.0, "vertex z cut"};
   Configurable<std::vector<float>> centRange{"centRange", {0, 90}, "centrality region of interest"};
   Configurable<bool> cfgSelCentrality{"cfgSelCentrality", true, "Flag for centrality selection"};
-  Configurable<double> leadingTrackPtCut{"leadingTrackPtCut", 5.0, "leading jet pT cut"};
-  Configurable<double> jetAreaFractionMin{"jetAreaFractionMin", 0.56, "used to make a cut on the jet areas"};
-  Configurable<bool> fjetAreaCut{"fjetAreaCut", true, "Flag for jet area cut"};
+  // Configurable<double> leadingTrackPtCut{"leadingTrackPtCut", 5.0, "leading jet pT cut"};
+  Configurable<double> jetAreaFractionMin{"jetAreaFractionMin", -99, "used to make a cut on the jet areas"};
   Configurable<bool> cfgCentVariant{"cfgCentVariant", false, "Flag for centrality variant 1"};
   Configurable<bool> cfgisPbPb{"cfgisPbPb", false, "Flag for using MC centrality in PbPb"};
   Configurable<bool> cfgbkgSubMC{"cfgbkgSubMC", true, "Flag for MC background subtraction"};
+  Configurable<bool> cfgUseMCEventWeights{"cfgUseMCEventWeights", false, "Flag for using MC event weights"};
+  Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
+  Configurable<float> leadingConstituentPtMax{"leadingConstituentPtMax", 9999.0, "maximum pT selection on jet constituent"};
+  Configurable<bool> checkLeadConstituentMinPtForMcpJets{"checkLeadConstituentMinPtForMcpJets", false, "flag to choose whether particle level jets should have their lead track pt above leadingConstituentPtMin to be accepted; off by default, as leadingConstituentPtMin cut is only applied on MCD jets for the Pb-Pb analysis using pp MC anchored to Pb-Pb for the response matrix"};
+  Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
+  Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
+  Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
 
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum pT acceptance for tracks"};
-  Configurable<float> trackPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks"};
+  Configurable<float> trackPtMax{"trackPtMax", 200.0, "maximum pT acceptance for tracks"};
 
   Configurable<float> jetEtaMin{"jetEtaMin", -0.7, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 0.7, "maximum jet pseudorapidity"};
@@ -118,10 +124,11 @@ struct JetSpectraEseTask {
   std::vector<int> eventSelectionBits;
   int trackSelection{-1};
 
+  Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f) && nabs(aod::jet::eta) < 0.9f - jetR;
   Filter colFilter = nabs(aod::jcollision::posZ) < vertexZCut;
   Filter mcCollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
-  using ChargedMCDJets = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
+  using ChargedMCDJets = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights>>;
   Preslice<ChargedMCDJets> mcdjetsPerJCollision = o2::aod::jet::collisionId;
 
   enum class DetID { FT0C,
@@ -247,7 +254,9 @@ struct JetSpectraEseTask {
       LOGF(info, "JetSpectraEseTask::init() - MC Charged Matched");
 
       registry.add("mcm/hJetSparse", ";Centrality;#it{p}_{T,jet det}; #eta; #phi", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {etaAxis}, {phiAxis}}}); /* detector level */
-      registry.add("mcm/hPartSparseMatch", ";Centrality;#it{p}_{T,jet part}; #eta; #phi", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {etaAxis}, {phiAxis}}});
+      // registry.add("mcm/hPartSparseMatch", ";Centrality;#it{p}_{T,jet part}; #eta; #phi", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {etaAxis}, {phiAxis}}});
+      registry.addClone("mcm/hJetSparse", "mcm/hDetSparseMatch");
+      registry.addClone("mcm/hJetSparse", "mcm/hPartSparseMatch");
 
       registry.add("mcm/hMCEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
       registry.add("mcm/hMCDMatchedEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
@@ -284,7 +293,7 @@ struct JetSpectraEseTask {
   }
 
   void processESEDataCharged(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors, aod::QPercentileFT0Cs>::iterator const& collision,
-                             soa::Filtered<aod::ChargedJets> const& jets,
+                             soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets,
                              aod::JetTracks const& tracks)
   {
     float counter{0.5f};
@@ -307,10 +316,6 @@ struct JetSpectraEseTask {
     if (qPerc[0] < 0)
       return;
     registry.fill(HIST("hEventCounter"), counter++);
-
-    if (!isAcceptedLeadTrack(tracks))
-      return;
-
     std::unique_ptr<TF1> rhoFit{nullptr};
     if (cfgrhoPhi) {
       rhoFit = fitRho<true>(collision, psi, tracks, jets);
@@ -322,10 +327,11 @@ struct JetSpectraEseTask {
     registry.fill(HIST("hRho"), centrality, collision.rho());
     registry.fill(HIST("hCentralityAnalyzed"), centrality);
     for (auto const& jet : jets) {
-      if (fjetAreaCut && !isJetAreaAccepted(jet))
-        continue;
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax))
         continue;
+      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+        continue;
+      }
       registry.fill(HIST("hJetPt"), jet.pt());
       registry.fill(HIST("hJetPt_bkgsub"), jet.pt() - collision.rho() * jet.area());
       registry.fill(HIST("hJetEta"), jet.eta());
@@ -405,7 +411,8 @@ struct JetSpectraEseTask {
 
   void processMCParticleLevel(soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>>::iterator const& mcCollision,
                               soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
-                              soa::Filtered<aod::ChargedMCParticleLevelJets> const& jets)
+                              soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetEventWeights, aod::ChargedMCParticleLevelJetConstituents>> const& jets,
+                              aod::JetParticles const&)
   {
     float counter{0.5f};
     registry.fill(HIST("mcp/hEventCounter"), counter++);
@@ -420,24 +427,31 @@ struct JetSpectraEseTask {
     registry.fill(HIST("mcp/hEventCounter"), counter++);
     auto centrality{-1};
     bool fOccupancy = true;
+    bool eventSel = true;
     for (const auto& col : collisions) {
       if (cfgisPbPb)
         centrality = col.centrality();
       if (cfgEvSelOccupancy && !isOccupancyAccepted(col))
         fOccupancy = false;
+      if (!jetderiveddatautilities::selectCollision(col, eventSelectionBits))
+        eventSel = false;
     }
     if (cfgEvSelOccupancy && !fOccupancy)
+      return;
+    if (!(std::abs(mcCollision.posZ()) < vertexZCut)) {
+      return;
+    }
+    if (!eventSel)
       return;
 
     registry.fill(HIST("mcp/hEventCounter"), counter++);
 
     registry.fill(HIST("mcp/hCentralitySel"), centrality);
-
-    jetLoop<JetType::MCP>(jets, centrality, mcCollision.rho());
+    jetLoopMCP<aod::JetParticles>(jets, centrality, mcCollision.rho());
   }
   PROCESS_SWITCH(JetSpectraEseTask, processMCParticleLevel, "jets on particle level MC", false);
 
-  void processMCDetectorLevel(soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>::iterator const& collision,
+  void processMCDetectorLevel(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision,
                               ChargedMCDJets const& mcdjets,
                               aod::JetTracks const&,
                               aod::JetParticles const&)
@@ -451,11 +465,14 @@ struct JetSpectraEseTask {
       return;
     registry.fill(HIST("mcd/hEventCounter"), counter++);
 
+    if (!(std::abs(collision.posZ()) < vertexZCut)) {
+      return;
+    }
+
     auto centrality = cfgisPbPb ? collision.centrality() : -1;
 
     registry.fill(HIST("mcd/hCentralitySel"), centrality);
-
-    jetLoop<JetType::MCD>(mcdjets, centrality, collision.rho());
+    jetLoopMCD<aod::JetTracks>(mcdjets, centrality, collision.rho());
   }
   PROCESS_SWITCH(JetSpectraEseTask, processMCDetectorLevel, "jets on detector level", false);
 
@@ -470,6 +487,9 @@ struct JetSpectraEseTask {
     float counter{0.5f};
     registry.fill(HIST("mcm/hMCEventCounter"), counter++);
     if (mcCol.size() < 1) {
+      return;
+    }
+    if (collisions.size() != 1) {
       return;
     }
     registry.fill(HIST("mcm/hMCEventCounter"), counter++);
@@ -500,13 +520,7 @@ struct JetSpectraEseTask {
           registry.fill(HIST("mcm/hMCDMatchedEventCounter"), secCount++);
 
       registry.fill(HIST("mcm/hCentralityAnalyzed"), centrality);
-
-      jetLoop<JetType::MCM>(
-        mcdjets.sliceBy(mcdjetsPerJCollision, collision.globalIndex()),
-        centrality,
-        collision.rho(),
-        [](const auto& jet) { return jet.template matchedJetGeo_as<JetMCPTable>(); },
-        mcCol.rho());
+      matchedJetLoop<JetMCPTable, aod::JetTracks>(mcdjets.sliceBy(mcdjetsPerJCollision, collision.globalIndex()), centrality, collision.rho(), mcCol.rho());
 
       registry.fill(HIST("mcm/hMCDMatchedEventCounter"), secCount++);
     }
@@ -514,30 +528,6 @@ struct JetSpectraEseTask {
   }
   PROCESS_SWITCH(JetSpectraEseTask, processMCChargedMatched, "jet MC process: geometrically matched MCP and MCD for response matrix and efficiency", false);
 
-  template <typename T>
-  bool isAcceptedLeadTrack(T const& tracks)
-  {
-    double leadingTrackPt = 0.0;
-    for (const auto& track : tracks) {
-      if (track.pt() > leadingTrackPtCut) {
-        if (track.pt() > leadingTrackPt) {
-          leadingTrackPt = track.pt();
-        }
-      }
-    }
-    if (leadingTrackPt == 0.0)
-      return false;
-    else
-      return true;
-  }
-  template <typename Jet>
-  bool isJetAreaAccepted(const Jet& jet)
-  {
-    if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0))
-      return false;
-    else
-      return true;
-  }
   // template <bool FillAllPsi, bool FillHist, typename EPCol>
   template <EventPlaneFiller P, typename EPCol>
   EventPlane procEP(EPCol const& vec)
@@ -663,8 +653,8 @@ struct JetSpectraEseTask {
       return true;
   }
 
-  template <bool fillHist, typename C, typename T, typename J>
-  std::unique_ptr<TF1> fitRho(const C& col, const EventPlane& ep, T const& tracks, J const& jets)
+  template <bool fillHist, typename Col, typename TTracks, typename Jets>
+  std::unique_ptr<TF1> fitRho(const Col& col, const EventPlane& ep, TTracks const& tracks, Jets const& jets)
   {
     float leadingJetPt = 0.0;
     float leadingJetEta = 0.0;
@@ -864,40 +854,134 @@ struct JetSpectraEseTask {
     return false;
   }
 
-  static constexpr std::string_view LevelJets[] = {"mcd/", "mcp/", "mcm/"};
-  enum JetType { MCP = 0,
-                 MCD = 1,
-                 MCM = 2 };
-  template <JetType jetLvl, typename Jets, typename matchJet = std::nullptr_t>
-  void jetLoop(const Jets& jets, const float& centrality, const float& rho, matchJet matchjet = nullptr, const float& rho2 = 0)
+  // static constexpr std::string_view LevelJets[] = {"mcd/", "mcp/"};
+  // enum JetType { MCP = 0,
+  //                MCD = 1
+  //               };
+  // template <JetType jetLvl, typename Jets>
+  template <typename JTracks, typename Jets>
+  void jetLoopMCD(const Jets& jets, const float& centrality, const float& rho)
   {
-
+    float weight = 1.0;
     for (const auto& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<JTracks>(jet)) {
+        continue;
+      }
       auto pt = jet.pt();
       if (cfgbkgSubMC) {
         pt = jet.pt() - (rho * jet.area());
       }
-      // registry.fill(HIST(levelJets[jetLvl]) + HIST("hJetSparse"), centrality, jet.pt(), jet.eta(), jet.phi());
-      registry.fill(HIST(LevelJets[jetLvl]) + HIST("hJetSparse"), centrality, pt, jet.eta(), jet.phi()); /* detector level mcm*/
+      if (cfgUseMCEventWeights) {
+        weight = jet.eventWeight();
+      }
+      registry.fill(/*HIST(LevelJets[jetLvl]) +*/ HIST("mcd/hJetSparse"), centrality, pt, jet.eta(), jet.phi(), weight); /* detector level mcm*/
+    }
+  }
 
-      if constexpr (jetLvl == MCM && !std::is_same_v<matchJet, std::nullptr_t>) {
-        for (const auto& matchedJet : matchjet(jet)) {
+  template <typename JTracks, typename Jets>
+  void jetLoopMCP(const Jets& jets, const float& centrality, const float& rho)
+  {
+    bool mcLevelIsParticleLevel = true;
+    float weight = 1.0;
+    for (const auto& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<JTracks>(jet, mcLevelIsParticleLevel)) {
+        continue;
+      }
+      auto pt = jet.pt();
+      if (cfgbkgSubMC) {
+        pt = jet.pt() - (rho * jet.area());
+      }
+      if (cfgUseMCEventWeights) {
+        weight = jet.eventWeight();
+      }
+      registry.fill(/*HIST(LevelJets[jetLvl]) +*/ HIST("mcp/hJetSparse"), centrality, pt, jet.eta(), jet.phi(), weight); /* detector level mcm*/
+    }
+  }
+
+  template <typename MCPTab, typename JTracks, typename Jets>
+  void matchedJetLoop(const Jets& jets, const float& centrality, const float& rho, const float& rho2)
+  {
+    float weight = 1.0;
+    for (const auto& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<JTracks>(jet)) {
+        continue;
+      }
+      float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+      if (jet.pt() > pTHatMaxMCD * pTHat) {
+        return;
+      }
+
+      auto pt = jet.pt();
+      if (cfgbkgSubMC) {
+        pt = jet.pt() - (rho * jet.area());
+      }
+      if (cfgUseMCEventWeights) {
+        weight = jet.eventWeight();
+      }
+      registry.fill(HIST("mcm/hJetSparse"), centrality, pt, jet.eta(), jet.phi(), weight); /* detector level mcm*/
+
+      if (jet.has_matchedJetGeo()) {
+        registry.fill(HIST("mcm/hDetSparseMatch"), centrality, pt, jet.eta(), jet.phi(), weight);
+        for (const auto& matchedJet : jet.template matchedJetGeo_as<MCPTab>()) {
+          if (matchedJet.pt() > pTHatMaxMCD * pTHat)
+            continue;
           auto matchedpt = matchedJet.pt();
           if (cfgbkgSubMC) {
             matchedpt = matchedJet.pt() - (rho2 * matchedJet.area());
           }
-          registry.fill(HIST("mcm/hPartSparseMatch"), centrality, matchedpt, matchedJet.eta(), matchedJet.phi());
-
-          registry.fill(HIST("mcm/hMatchedJetsPtDelta"), matchedJet.pt(), jet.pt() - matchedJet.pt());
-          registry.fill(HIST("mcm/hMatchedJetsPhiDelta"), matchedJet.phi(), jet.phi() - matchedJet.phi());
-          registry.fill(HIST("mcm/hMatchedJetsEtaDelta"), matchedJet.eta(), jet.eta() - matchedJet.eta());
-          registry.fill(HIST("mcm/hGenMatchedJetsPtDeltadPt"), centrality, matchedpt, (pt - matchedpt) / matchedpt);
-          registry.fill(HIST("mcm/hRecoMatchedJetsPtDeltadPt"), centrality, pt, (pt - matchedpt) / pt);
-
-          registry.fill(HIST("mcm/hRespMcDMcPMatch"), centrality, pt, matchedpt);
+          registry.fill(HIST("mcm/hPartSparseMatch"), centrality, matchedpt, matchedJet.eta(), matchedJet.phi(), weight);
+          registry.fill(HIST("mcm/hMatchedJetsPtDelta"), matchedJet.pt(), jet.pt() - matchedJet.pt(), weight);
+          registry.fill(HIST("mcm/hMatchedJetsPhiDelta"), matchedJet.phi(), jet.phi() - matchedJet.phi(), weight);
+          registry.fill(HIST("mcm/hMatchedJetsEtaDelta"), matchedJet.eta(), jet.eta() - matchedJet.eta(), weight);
+          registry.fill(HIST("mcm/hGenMatchedJetsPtDeltadPt"), centrality, matchedpt, (pt - matchedpt) / matchedpt, weight);
+          registry.fill(HIST("mcm/hRecoMatchedJetsPtDeltadPt"), centrality, pt, (pt - matchedpt) / pt, weight);
+          registry.fill(HIST("mcm/hRespMcDMcPMatch"), centrality, pt, matchedpt, weight);
         }
       }
     }
+  }
+
+  template <typename TTracks, typename TJets>
+  bool isAcceptedJet(TJets const& jet, bool mcLevelIsParticleLevel = false)
+  {
+    if (jetAreaFractionMin > -98.0) {
+      if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
+        return false;
+      }
+    }
+    bool checkConstituentPt = true;
+    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0);
+    if (!checkConstituentMinPt && !checkConstituentMaxPt) {
+      checkConstituentPt = false;
+    }
+
+    if (checkConstituentPt) {
+      bool isMinLeadingConstituent = !checkConstituentMinPt;
+      bool isMaxLeadingConstituent = true;
+
+      for (const auto& constituent : jet.template tracks_as<TTracks>()) {
+        double pt = constituent.pt();
+
+        if ((!checkLeadConstituentMinPtForMcpJets && mcLevelIsParticleLevel) || (checkConstituentMinPt && pt >= leadingConstituentPtMin)) { // if the jet is mcp level and checkLeadConstituentMinPtForMcpJets is true, then the pt of the leading track of that jet does not need to be below the defined leadingConstituentPtMin cut
+          isMinLeadingConstituent = true;
+        }
+        if (checkConstituentMaxPt && pt > leadingConstituentPtMax) {
+          isMaxLeadingConstituent = false;
+        }
+      }
+      return isMinLeadingConstituent && isMaxLeadingConstituent;
+    }
+    return true;
   }
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetSpectraEseTask>(cfgc)}; }
