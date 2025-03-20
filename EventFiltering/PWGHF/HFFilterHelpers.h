@@ -127,6 +127,7 @@ enum bachelorTrackSelection {
   kSoftPionForBeauty,
   kPionForCharmBaryon,
   kKaonForCharmBaryon,
+  kProtonForCharmBaryon,
   kSoftPionForSigmaC
 };
 
@@ -296,9 +297,9 @@ constexpr float cutsPtThresholdsForFemto[1][2] = {{8., 1.4}}; // proton, deutero
 static const std::vector<std::string> labelsColumnsPtThresholdsForFemto = {"Proton", "Deuteron"};
 
 // min and max pT for all tracks combined  (except for V0 and cascades)
-constexpr float cutsPt[2][8] = {{1., 0.1, 0.8, 0.5, 0.1, 0.2, 0.4, 0.5},
-                                {100000., 100000., 5., 100000., 100000., 100000., 100000., 100000.}}; // beauty, D*, femto, SigmaC, Xic*+ -> SigmaC++K-, beauty to JPsi
-static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "PrForFemto", "CharmBaryon", "SoftPiSigmaC", "SoftKaonXicResoToSigmaC", "DeForFemto", "BeautyToJPsi"};
+constexpr float cutsPt[2][9] = {{1., 0.1, 0.8, 0.5, 0.1, 0.2, 0.4, 0.5, 0.3},
+                                {100000., 100000., 5., 100000., 100000., 100000., 100000., 100000., 100000.}}; // beauty, D*, femto, SigmaC, Xic*+ -> SigmaC++K-, beauty to JPsi, Lc*->D0p
+static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "PrForFemto", "CharmBaryon", "SoftPiSigmaC", "SoftKaonXicResoToSigmaC", "DeForFemto", "BeautyToJPsi", "PrForLcReso"};
 static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
 
 // PID cuts
@@ -472,6 +473,11 @@ class HfFilterHelper
     mPtMinCharmBaryonBachelor = minPt;
     mPtMaxCharmBaryonBachelor = maxPt;
   }
+  void setPtLimitsLcResonanceBachelor(float minPt, float maxPt)
+  {
+    mPtMinLcResonanceBachelor = minPt;
+    mPtMaxLcResonanceBachelor = maxPt;
+  }
 
   void setNsigmaProtonCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaPrCutsForFemto = nSigmaCuts; }
   void setNsigmaDeuteronCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaDeCutsForFemto = nSigmaCuts; }
@@ -565,7 +571,7 @@ class HfFilterHelper
   template <typename T>
   bool isSelectedHighPt3Prong(const T& pt);
   template <o2::aod::hffilters::HfTriggers whichTrigger, typename T, typename T1, typename T2>
-  int8_t isSelectedTrackForSoftPionOrBeauty(const T& track, const T1& trackPar, const T2& dca);
+  int16_t isSelectedTrackForSoftPionOrBeauty(const T& track, const T1& trackPar, const T2& dca);
   template <typename T1, typename T2, typename H2>
   bool isSelectedTrack4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hTPCPID, H2 hTOFPID, const int& trackSpecies);
   template <typename T>
@@ -594,8 +600,8 @@ class HfFilterHelper
   bool isSelectedPhoton(const Photon& photon, const std::array<T, 2>& dauTracks, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
   template <typename Casc>
   bool isSelectedCascade(const Casc& casc);
-  template <typename T, typename T2>
-  int8_t isSelectedBachelorForCharmBaryon(const T& track, const T2& dca);
+  template <o2::aod::hffilters::HfTriggers whichTrigger, typename T, typename T2>
+  int16_t isSelectedBachelorForCharmBaryon(const T& track, const T2& dca);
   template <bool is4beauty = false, typename T>
   bool isSelectedProton4CharmOrBeautyBaryons(const T& track);
   template <typename T, typename U>
@@ -668,12 +674,14 @@ class HfFilterHelper
   float mPtMinProtonForFemto{0.8};                                                // minimum pt for the proton for femto
   float mPtMinDeuteronForFemto{0.8};                                              // minimum pt for the deuteron for femto
   float mPtMinCharmBaryonBachelor{0.5};                                           // minimum pt for the bachelor pion from Xic/Omegac decays
+  float mPtMinLcResonanceBachelor{0.3};                                           // minimum pt for the bachelor proton from Lc resonance decays
   float mPtMaxSoftPionForDstar{2.};                                               // maximum pt for the D*+ soft pion
   float mPtMaxBeautyBachelor{100000.};                                            // maximum pt for the b-hadron pion daughter
   float mPtMaxBeautyToJPsiBachelor{100000.};                                      // maximum pt for the b-hadron -> JPsi X daughters (not the muons)
   float mPtMaxProtonForFemto{5.0};                                                // maximum pt for the proton for femto
   float mPtMaxDeuteronForFemto{5.0};                                              // maximum pt for the deuteron for femto
   float mPtMaxCharmBaryonBachelor{100000.};                                       // maximum pt for the bachelor pion from Xic/Omegac decays
+  float mPtMaxLcResonanceBachelor{100000.};                                       // maximum pt for the bachelor proton from Lc resonance decays
   float mPtThresholdProtonForFemto{8.};                                           // pt threshold to change strategy for proton PID for femto
   float mPtThresholdDeuteronForFemto{1.4};                                        // pt threshold to change strategy for deuteron PID for femto
   float mPtMinSigmaCZero{0.f};                                                    // pt min SigmaC0 candidate
@@ -766,10 +774,10 @@ inline bool HfFilterHelper::isSelectedHighPt3Prong(const T& pt)
 /// \param dca is the 2d array with dcaXY and dcaZ of the track
 /// \return a flag that encodes the selection for soft pions BIT(kSoftPion), tracks for beauty BIT(kForBeauty), or soft pions for beauty BIT(kSoftPionForBeauty)
 template <o2::aod::hffilters::HfTriggers whichTrigger, typename T, typename T1, typename T2>
-inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track, const T1& trackPar, const T2& dca)
+inline int16_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track, const T1& trackPar, const T2& dca)
 {
 
-  int8_t retValue{BIT(kSoftPion) | BIT(kForBeauty) | BIT(kSoftPionForBeauty) | BIT(kSoftPionForSigmaC)};
+  int16_t retValue{BIT(kSoftPion) | BIT(kForBeauty) | BIT(kSoftPionForBeauty) | BIT(kSoftPionForSigmaC)};
 
   if (!track.isGlobalTrackWoDCA()) {
     return kRejected;
@@ -939,7 +947,7 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
         return false;
       }
     } else {
-      if (NSigmaTOF > nSigmaCuts[2] || NSigmaTPC < -nSigmaCuts[0]) { // Use combined TPC and TOF above the threshold
+      if (NSigmaTOF < -nSigmaCuts[1] || NSigmaTPC < -nSigmaCuts[0]) { // Use combined TPC and TOF above the threshold
         return false;
       }
     }
@@ -1625,18 +1633,24 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc)
 /// \param track is a track
 /// \param dca is the 2d array with dcaXY and dcaZ of the track
 /// \return 0 if rejected, or a bitmap that contains the information whether it is selected as pion and/or kaon
-template <typename T, typename T2>
-inline int8_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, const T2& dca)
+template <o2::aod::hffilters::HfTriggers whichTrigger, typename T, typename T2>
+inline int16_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, const T2& dca)
 {
-  int8_t retValue{BIT(kPionForCharmBaryon) | BIT(kKaonForCharmBaryon)};
+  int16_t retValue{BIT(kPionForCharmBaryon) | BIT(kKaonForCharmBaryon) | BIT(kProtonForCharmBaryon)};
 
   if (!track.isGlobalTrackWoDCA()) {
     return kRejected;
   }
 
   float pt = track.pt();
-  if (pt < mPtMinCharmBaryonBachelor || pt > mPtMaxCharmBaryonBachelor) {
-    return kRejected;
+  if constexpr (whichTrigger == kCharmBarToXiBach) {
+    if (pt < mPtMinCharmBaryonBachelor || pt > mPtMaxCharmBaryonBachelor) {
+      return kRejected;
+    }
+  } else if constexpr (whichTrigger == kPrCharm2P) {
+    if (pt < mPtMinLcResonanceBachelor || pt > mPtMaxLcResonanceBachelor) {
+      return kRejected;
+    }
   }
 
   auto pTBinTrack = findBin(mPtBinsTracks, pt);
@@ -1665,14 +1679,18 @@ inline int8_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, c
 
   float nSigmaPiTpc = track.tpcNSigmaPi();
   float nSigmaKaTpc = track.tpcNSigmaKa();
+  float nSigmaPrTpc = track.tpcNSigmaPr();
   float nSigmaPiTof = track.tofNSigmaPi();
   float nSigmaKaTof = track.tofNSigmaKa();
+  float nSigmaPrTof = track.tofNSigmaPr();
   if (mTpcPidCalibrationOption == 1) {
     nSigmaPiTpc = getTPCPostCalib(track, kPi);
     nSigmaKaTpc = getTPCPostCalib(track, kKa);
+    nSigmaPrTpc = getTPCPostCalib(track, kPr);
   } else if (mTpcPidCalibrationOption == 2) {
     nSigmaPiTpc = getTPCSplineCalib(track, (track.sign() > 0) ? kPi : kAntiPi);
     nSigmaKaTpc = getTPCSplineCalib(track, (track.sign() > 0) ? kKa : kAntiKa);
+    nSigmaPrTpc = getTPCSplineCalib(track, (track.sign() > 0) ? kPr : kAntiPr);
   }
 
   if ((track.hasTPC() && std::fabs(nSigmaPiTpc) > mNSigmaTpcPiCharmBaryonBachelor) && (track.hasTOF() && std::fabs(nSigmaPiTof) > mNSigmaTofPiCharmBaryonBachelor)) {
@@ -1680,6 +1698,9 @@ inline int8_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, c
   }
   if ((track.hasTPC() && std::fabs(nSigmaKaTpc) > mNSigmaTpcPiCharmBaryonBachelor) && (track.hasTOF() && std::fabs(nSigmaKaTof) > mNSigmaTofPiCharmBaryonBachelor)) {
     CLRBIT(retValue, kKaonForCharmBaryon);
+  }
+  if ((track.hasTPC() && std::fabs(nSigmaPrTpc) > mNSigmaTpcPiCharmBaryonBachelor) && (track.hasTOF() && std::fabs(nSigmaPrTof) > mNSigmaTpcPiCharmBaryonBachelor)) {
+    CLRBIT(retValue, kProtonForCharmBaryon);
   }
 
   return retValue;
