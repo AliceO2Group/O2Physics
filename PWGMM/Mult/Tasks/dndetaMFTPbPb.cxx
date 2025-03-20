@@ -1724,13 +1724,13 @@ struct DndetaMFTPbPb {
         // MC gen
         if constexpr (has_reco_cent<C>) {
           if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-            if( std::abs(mcCollision.posZ()) < eventCuts.maxZvtx ) {
+            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
               qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffGen"), particle.pt(), particle.eta(), crec, occrec);
             }
           }
         } else {
           if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
-            if( std::abs(mcCollision.posZ()) < eventCuts.maxZvtx ) {
+            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
               qaregistry.fill(HIST("Tracks/hPtEtaEffGen"), particle.pt(), particle.eta(), occrec);
             }
           }
@@ -1745,7 +1745,7 @@ struct DndetaMFTPbPb {
             if constexpr (has_reco_cent<C>) {
               if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
                 if (!iscounted) { // primaries
-                  if( std::abs(mcCollision.posZ()) < eventCuts.maxZvtx ) {
+                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                     qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffPrim"), particle.pt(), particle.eta(), crec, occrec);
                   }
                   iscounted = true;
@@ -1759,7 +1759,7 @@ struct DndetaMFTPbPb {
             } else {
               if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
                 if (!iscounted) { // primaries
-                  if( std::abs(mcCollision.posZ()) < eventCuts.maxZvtx ) {
+                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
                     qaregistry.fill(HIST("Tracks/hPtEtaEffPrim"), particle.pt(), particle.eta(), occrec);
                   }
                   iscounted = true;
