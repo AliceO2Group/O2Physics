@@ -75,7 +75,7 @@ struct HfFilter { // Main struct for HF triggers
   // nsigma PID (except for V0 and cascades)
   Configurable<LabeledArray<float>> nSigmaPidCuts{"nSigmaPidCuts", {cutsNsigma[0], 4, 8, labelsRowsNsigma, labelsColumnsNsigma}, "Nsigma cuts for ITS/TPC/TOF PID (except for V0 and cascades)"};
   // min and max pts for tracks and bachelors (except for V0 and cascades)
-  Configurable<LabeledArray<float>> ptCuts{"ptCuts", {cutsPt[0], 2, 8, labelsRowsCutsPt, labelsColumnsCutsPt}, "minimum and maximum pT for bachelor tracks (except for V0 and cascades)"};
+  Configurable<LabeledArray<float>> ptCuts{"ptCuts", {cutsPt[0], 2, 9, labelsRowsCutsPt, labelsColumnsCutsPt}, "minimum and maximum pT for bachelor tracks (except for V0 and cascades)"};
 
   // parameters for high-pT triggers
   Configurable<LabeledArray<float>> ptThresholds{"ptThresholds", {cutsHighPtThresholds[0], 1, 2, labelsEmpty, labelsColumnsHighPtThresholds}, "pT treshold for high pT charm hadron candidates for kHighPt triggers in GeV/c"};
@@ -204,6 +204,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtLimitsProtonForFemto(ptCuts->get(0u, 2u), ptCuts->get(1u, 2u));
     helper.setPtLimitsDeuteronForFemto(ptCuts->get(0u, 6u), ptCuts->get(1u, 6u));
     helper.setPtLimitsCharmBaryonBachelor(ptCuts->get(0u, 3u), ptCuts->get(1u, 3u));
+    helper.setPtLimitsLcResonanceBachelor(ptCuts->get(0u, 8u), ptCuts->get(1u, 8u));
     helper.setCutsSingleTrackBeauty(cutsTrackBeauty3Prong, cutsTrackBeauty4Prong, cutsTrackBeauty4Prong);
     helper.setCutsSingleTrackCharmBaryonBachelor(cutsTrackCharmBaryonBachelor);
     helper.setCutsBhadrons(cutsBplus, cutsBzeroToDstar, cutsBzero, cutsBs, cutsLb, cutsXib);
@@ -549,7 +550,7 @@ struct HfFilter { // Main struct for HF triggers
 
           // Beauty with D0
           if (!keepEvent[kBeauty3P] && isD0BeautyTagged) {
-            auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty<kBeauty3P>(track, trackParThird, dcaThird);
+            int16_t isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty<kBeauty3P>(track, trackParThird, dcaThird);
             if (TESTBIT(isTrackSelected, kForBeauty) && ((TESTBIT(selD0InMass, 0) && track.sign() < 0) || (TESTBIT(selD0InMass, 1) && track.sign() > 0))) { // D0 pi- and D0bar pi+
               auto massCand = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
               auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
@@ -857,7 +858,7 @@ struct HfFilter { // Main struct for HF triggers
                   getPxPyPz(trackParBachelor, pVecBachelor);
                 }
 
-                int isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty<kV0Charm2P>(trackBachelor, trackParBachelor, dcaBachelor);
+                auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty<kV0Charm2P>(trackBachelor, trackParBachelor, dcaBachelor);
                 if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0InMass, 0) && trackBachelor.sign() > 0) || (TESTBIT(selD0InMass, 1) && trackBachelor.sign() < 0))) {
                   std::array<float, 2> massDausD0{massPi, massKa};
                   auto massD0dau = massD0Cand;
@@ -943,17 +944,17 @@ struct HfFilter { // Main struct for HF triggers
         if (!keepEvent[kPrCharm2P] && isD0SignalTagged && (TESTBIT(selD0InMass, 0) || TESTBIT(selD0InMass, 1))) {
           for (const auto& trackProtonId : trackIdsThisCollision) { // start loop over tracks selecting only protons
             auto trackProton = tracks.rawIteratorAt(trackProtonId.trackId());
-            std::array<float, 3> pVecProton = trackProton.pVector();
+            auto trackParBachelorProton = getTrackPar(trackProton);
             if (trackProton.globalIndex() == trackPos.globalIndex() || trackProton.globalIndex() == trackNeg.globalIndex()) {
               continue;
             }
-            // minimal track selections
-            if (!trackProton.isGlobalTrackWoDCA() || std::fabs(trackProton.pt()) < 0.3f) {
-              continue;
+            gpu::gpustd::array<float, 2> dcaInfoBachProton;
+            if (trackProton.collisionId() != thisCollId) {
+              o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParBachelorProton, 2.f, noMatCorr, &dcaInfoBachProton);
             }
-            // PID selection
-            bool isProton = helper.isSelectedProton4CharmOrBeautyBaryons(trackProton);
-            if (isProton) {
+            std::array<float, 3> pVecProton = trackProton.pVector();
+            auto isSelProton = helper.isSelectedBachelorForCharmBaryon<kPrCharm2P>(trackProton, dcaInfoBachProton);
+            if (isSelProton == kProtonForCharmBaryon) {
               if (!keepEvent[kPrCharm2P]) {
                 // we first look for a D*+
                 for (const auto& trackBachelorId : trackIdsThisCollision) { // start loop over tracks to find bachelor pion
@@ -968,7 +969,7 @@ struct HfFilter { // Main struct for HF triggers
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParBachelor, 2.f, noMatCorr, &dcaBachelor);
                     getPxPyPz(trackParBachelor, pVecBachelor);
                   }
-                  int isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty<kPrCharm2P>(trackBachelor, trackParBachelor, dcaBachelor);
+                  auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty<kPrCharm2P>(trackBachelor, trackParBachelor, dcaBachelor);
                   if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0InMass, 0) && trackBachelor.sign() > 0) || (TESTBIT(selD0InMass, 1) && trackBachelor.sign() < 0))) {
                     std::array<float, 2> massDausD0{massPi, massKa};
                     auto massD0dau = massD0Cand;
@@ -1390,7 +1391,7 @@ struct HfFilter { // Main struct for HF triggers
                 o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaSoftPi);
                 getPxPyPz(trackParSoftPi, pVecSoftPi);
               }
-              int8_t isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty<kSigmaCPPK>(trackSoftPi, trackParSoftPi, dcaSoftPi);
+              int16_t isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty<kSigmaCPPK>(trackSoftPi, trackParSoftPi, dcaSoftPi);
               if (TESTBIT(isSoftPionSelected, kSoftPionForSigmaC) /*&& (TESTBIT(is3Prong[2], 0) || TESTBIT(is3Prong[2], 1))*/) {
 
                 // check the mass of the SigmaC++ candidate
@@ -1596,7 +1597,7 @@ struct HfFilter { // Main struct for HF triggers
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaSoftPi);
                   getPxPyPz(trackParSoftPi, pVecSoftPi);
                 }
-                int8_t isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty<kSigmaC0K0>(trackSoftPi, trackParSoftPi, dcaSoftPi);
+                int16_t isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty<kSigmaC0K0>(trackSoftPi, trackParSoftPi, dcaSoftPi);
                 if (TESTBIT(isSoftPionSelected, kSoftPionForSigmaC) /*&& (TESTBIT(is3Prong[2], 0) || TESTBIT(is3Prong[2], 1))*/) {
 
                   // check the mass of the SigmaC0 candidate
@@ -1725,7 +1726,7 @@ struct HfFilter { // Main struct for HF triggers
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParBachelor, 2.f, noMatCorr, &dcaInfoBach);
             }
 
-            auto isSelBachelor = helper.isSelectedBachelorForCharmBaryon(track, dcaInfoBach);
+            auto isSelBachelor = helper.isSelectedBachelorForCharmBaryon<kCharmBarToXiBach>(track, dcaInfoBach);
             if (isSelBachelor == kRejected) {
               continue;
             }
@@ -1769,7 +1770,7 @@ struct HfFilter { // Main struct for HF triggers
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParBachelorSecond, 2.f, noMatCorr, &dcaInfoBachSecond);
                 }
 
-                auto isSelBachelorSecond = helper.isSelectedBachelorForCharmBaryon(trackSecond, dcaInfoBachSecond);
+                auto isSelBachelorSecond = helper.isSelectedBachelorForCharmBaryon<kCharmBarToXiBach>(trackSecond, dcaInfoBachSecond);
                 if (!TESTBIT(isSelBachelorSecond, kPionForCharmBaryon)) {
                   continue;
                 }
