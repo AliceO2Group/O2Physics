@@ -628,7 +628,7 @@ struct FemtoUniversePairTaskTrackPhi {
     auto thegroupPartsPhi = partsPhi->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     // auto thegroupPartsPhiDaugh = partsPhiDaugh->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     // auto thegroupPartsKaons = partsKaons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-
+    eventHisto.fillQA(col);
     doSameEvent(thegroupPartsTrack, thegroupPartsPhi, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processSameEvent, "Enable processing same event", true);
@@ -662,6 +662,7 @@ struct FemtoUniversePairTaskTrackPhi {
     auto thegroupPartsPhi = partsPhiMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     // auto thegroupPartsPhiDaugh = partsPhiDaugh->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     // auto thegroupPartsKaons = partsKaons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    eventHisto.fillQA(col);
     doSameEvent(thegroupPartsTrack, thegroupPartsPhi, parts, col.magField(), col.multNtr(), mcparts);
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processSameEventMCReco, "Enable processing same event for MC Reco", true);
