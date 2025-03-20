@@ -370,7 +370,7 @@ struct AntinucleiInJets {
       return false;
     if (std::fabs(track.dcaZ()) > 2.0)
       return false;
-    return false;
+    return true;
   }
 
   // single-track selection
