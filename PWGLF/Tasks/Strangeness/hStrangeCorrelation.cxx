@@ -1378,7 +1378,7 @@ struct HStrangeCorrelation {
       }
 
       if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
-        if (std::abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+        if (mcParticle.pdgCode() == 310 && doCorrelationK0Short) {
           histos.fill(HIST("hGeneratedQAPtAssociatedK0"), gpt, 0.0f); // step 1: before all selections
         }
       }
@@ -1471,7 +1471,7 @@ struct HStrangeCorrelation {
       }
 
       if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
-        if (std::abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+        if (mcParticle.pdgCode() == 310 && doCorrelationK0Short) {
           histos.fill(HIST("hGeneratedQAPtAssociatedK0"), gpt, 1.0f); // step 2: before all selections
         }
       }
@@ -1531,7 +1531,7 @@ struct HStrangeCorrelation {
       }
 
       if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
-        if (std::abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+        if (mcParticle.pdgCode() == 310 && doCorrelationK0Short) {
           histos.fill(HIST("hClosureQAPtAssociatedK0"), gpt, 0.0f); // step 1: no event selection whatsoever
         }
       }
@@ -1590,7 +1590,7 @@ struct HStrangeCorrelation {
       }
 
       if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
-        if (std::abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+        if (mcParticle.pdgCode() == 310 && doCorrelationK0Short) {
           histos.fill(HIST("hClosureQAPtAssociatedK0"), gpt, 1.0f); // step 2: after event selection
         }
       }
@@ -1616,7 +1616,7 @@ struct HStrangeCorrelation {
           piIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hPion"), gpt, geta, gphi);
         }
-        if (std::abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+        if (mcParticle.pdgCode() == 310 && doCorrelationK0Short) {
           k0ShortIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hK0Short"), gpt, geta, gphi);
         }
