@@ -947,7 +947,7 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
         return false;
       }
     } else {
-      if (NSigmaTOF > nSigmaCuts[2] || NSigmaTPC < -nSigmaCuts[0]) { // Use combined TPC and TOF above the threshold
+      if (NSigmaTOF < -nSigmaCuts[1] || NSigmaTPC < -nSigmaCuts[0]) { // Use combined TPC and TOF above the threshold
         return false;
       }
     }
