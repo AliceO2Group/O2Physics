@@ -645,7 +645,7 @@ struct myAnalysis {
         JEhistos.fill(HIST("v0AntiLambdapx"), v0.px());
         JEhistos.fill(HIST("v0AntiLambdapy"), v0.py());
         JEhistos.fill(HIST("v0AntiLambdapz"), v0.pz());
-        myTableanti(outputCollisionsV0.lastIndex(), v0.collisionId(), v0.px(), v0.py(), v0.pz(), v0.pt(), v0.mAntiLambda(), pos.px(), pos.py(), pos.pz());
+        myTableanti(outputCollisionsV0.lastIndex(), v0.collisionId(), v0.px(), v0.py(), v0.pz(), v0.pt(), v0.mAntiLambda(), neg.px(), neg.py(), neg.pz());
       } else if (passedInitLambdaSelection(v0, pos, neg) && ifinitpasslambda) {
         JEhistos.fill(HIST("hMassVsPtAntiLambda"), v0.pt(), v0.mAntiLambda());
         JEhistos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
@@ -655,7 +655,7 @@ struct myAnalysis {
         JEhistos.fill(HIST("v0AntiLambdapx"), v0.px());
         JEhistos.fill(HIST("v0AntiLambdapy"), v0.py());
         JEhistos.fill(HIST("v0AntiLambdapz"), v0.pz());
-        myTableanti(outputCollisionsV0.lastIndex(), v0.collisionId(), v0.px(), v0.py(), v0.pz(), v0.pt(), v0.mLambda(), pos.px(), pos.py(), pos.pz());
+        myTableanti(outputCollisionsV0.lastIndex(), v0.collisionId(), v0.px(), v0.py(), v0.pz(), v0.pt(), v0.mAntiLambda(), neg.px(), neg.py(), neg.pz());
       }
     }
     JEhistos.fill(HIST("V0Counts"), V0NumbersPerEvent);
