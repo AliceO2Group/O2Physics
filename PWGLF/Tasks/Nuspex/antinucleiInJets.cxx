@@ -449,7 +449,7 @@ struct AntinucleiInJets {
     static std::mt19937 gen(rd());
     static std::uniform_int_distribution<> dis(0, 99);
     int randomNumber = dis(gen);
-    if(randomNumber <= rejectionPercentage) {
+    if (randomNumber <= rejectionPercentage) {
       return false;
     }
     return true;
@@ -458,7 +458,8 @@ struct AntinucleiInJets {
   // Process Data
   void processData(SelectedCollisions::iterator const& collision, FullNucleiTracks const& tracks)
   {
-    if(rejectEvents && shouldRejectEvent()) return;
+    if (rejectEvents && shouldRejectEvent())
+      return;
 
     // event counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
@@ -1215,7 +1216,8 @@ struct AntinucleiInJets {
   // Process Systematics
   void processSystematicsData(SelectedCollisions::iterator const& collision, FullNucleiTracks const& tracks)
   {
-    if(rejectEvents && shouldRejectEvent()) return;
+    if (rejectEvents && shouldRejectEvent())
+      return;
 
     const int nSystematics = 10;
     int itsNclustersSyst[nSystematics] = {5, 6, 5, 4, 5, 3, 5, 6, 3, 4};
