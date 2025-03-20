@@ -42,7 +42,7 @@ namespace fourpi
 // for event
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
 
-// for Rhos
+// for rho prime
 DECLARE_SOA_COLUMN(M, m, double);
 DECLARE_SOA_COLUMN(Pt, pt, double);
 DECLARE_SOA_COLUMN(Eta, eta, double);
@@ -56,7 +56,7 @@ DECLARE_SOA_COLUMN(PosZ, posZ, double);
 // for other
 DECLARE_SOA_COLUMN(TotalCharge, totalCharge, int);
 
-// info Detec
+// info detec
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
 DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float);
@@ -69,16 +69,32 @@ DECLARE_SOA_COLUMN(TimeFDDA, timeFDDA, float);
 DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float);
 
 // for pion tracks
-// DECLARE_SOA_COLUMN(TrackSign, trackSign, std::vector<int>);
-// DECLARE_SOA_COLUMN(TrackM, trackM, std::vector<double>);
-// DECLARE_SOA_COLUMN(TrackPt, trackPt, std::vector<double>);
-// DECLARE_SOA_COLUMN(TrackEta, trackEta, std::vector<double>);
-// DECLARE_SOA_COLUMN(TrackPhi, trackPhi, std::vector<double>);
+DECLARE_SOA_COLUMN(NumContrib, numContrib, int32_t);
+DECLARE_SOA_COLUMN(Sign, sign, std::vector<int>);
+DECLARE_SOA_COLUMN(TrackPt, trackPt, std::vector<float>);
+DECLARE_SOA_COLUMN(TrackEta, trackEta, std::vector<float>);
+DECLARE_SOA_COLUMN(TrackPhi, trackPhi, std::vector<float>);
+DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, std::vector<float>);
+DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, std::vector<float>);
+DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, std::vector<float>);
+DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, std::vector<float>);
+DECLARE_SOA_COLUMN(TrackID, trackID, std::vector<int>);
+
+// for others
+DECLARE_SOA_COLUMN(IsReconstructedWithUPC, isReconstructedWithUPC, bool);
+DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
+DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
+DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
+DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
 
 } // namespace fourpi
+
 DECLARE_SOA_TABLE(SYSTEMTREE, "AOD", "SystemTree", fourpi::RunNumber, fourpi::M, fourpi::Pt, fourpi::Eta, fourpi::Phi,
                   fourpi::PosX, fourpi::PosY, fourpi::PosZ, fourpi::TotalCharge, fourpi::TotalFT0AmplitudeA, fourpi::TotalFT0AmplitudeC, fourpi::TotalFV0AmplitudeA,
-                  fourpi::TotalFDDAmplitudeA, fourpi::TotalFDDAmplitudeC, fourpi::TimeFT0A, fourpi::TimeFT0C, fourpi::TimeFV0A, fourpi::TimeFDDA, fourpi::TimeFDDC);
+                  fourpi::TotalFDDAmplitudeA, fourpi::TotalFDDAmplitudeC, fourpi::TimeFT0A, fourpi::TimeFT0C, fourpi::TimeFV0A, fourpi::TimeFDDA, fourpi::TimeFDDC,
+                  fourpi::NumContrib, fourpi::Sign, fourpi::TrackPt, fourpi::TrackEta, fourpi::TrackPhi,
+                  fourpi::TPCNSigmaEl, fourpi::TPCNSigmaPi, fourpi::TPCNSigmaKa, fourpi::TPCNSigmaPr, fourpi::TrackID, fourpi::IsReconstructedWithUPC,
+                  fourpi::TimeZNA, fourpi::TimeZNC, fourpi::EnergyCommonZNA, fourpi::EnergyCommonZNC);
 } // namespace o2::aod
 
 struct upcRhoPrimeAnalysis {
@@ -264,9 +280,41 @@ struct upcRhoPrimeAnalysis {
 
     if (nTracks == 4 && tracksTotalCharge(cutTracks) == 0) { // 4pi system
 
+      std::vector<float> vTrackPt, vTrackEta, vTrackPhi;
+      std::vector<int> vSign, vTrackID;
+      std::vector<float> vTpcNSigmaEl, vTpcNSigmaPi, vTpcNSigmaKa, vTpcNSigmaPr;
+
+      for (size_t i = 0; i < cutTracks.size(); i++) {
+
+        double tPt = cutTracks[i].pt();
+        double tEta = eta(cutTracks[i].px(), cutTracks[i].py(), cutTracks[i].pz());
+        double tPhi = phi(cutTracks[i].px(), cutTracks[i].py());
+
+        vTrackPt.push_back(tPt);
+        vTrackEta.push_back(tEta);
+        vTrackPhi.push_back(tPhi);
+        vSign.push_back(cutTracks[i].sign());
+        vTpcNSigmaEl.push_back(cutTracks[i].tpcNSigmaEl());
+        vTpcNSigmaPi.push_back(cutTracks[i].tpcNSigmaPi());
+        vTpcNSigmaKa.push_back(cutTracks[i].tpcNSigmaKa());
+        vTpcNSigmaPr.push_back(cutTracks[i].tpcNSigmaPr());
+
+        vTrackID.push_back(i);
+      }
+
+      bool isReconstructedWithUPC = false;
+
+      if (collision.flags() == 1) {
+        isReconstructedWithUPC = true;
+      } else {
+        isReconstructedWithUPC = false;
+      }
+
       systemTree(collision.runNumber(), mass, pT, rapidity, systemPhi, collision.posX(), collision.posY(), collision.posZ(), totalCharge,
                  collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.timeFV0A(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
-                 collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC());
+                 collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
+                 collision.numContrib(), vSign, vTrackPt, vTrackEta, vTrackPhi, vTpcNSigmaEl, vTpcNSigmaPi, vTpcNSigmaKa, vTpcNSigmaPr, vTrackID, isReconstructedWithUPC,
+                 collision.timeZNA(), collision.timeZNC(), collision.energyCommonZNA(), collision.energyCommonZNC());
 
       // registry.fill(HIST("4pi/hM"), mass);
       // registry.fill(HIST("4pi/hPt"), pT);
