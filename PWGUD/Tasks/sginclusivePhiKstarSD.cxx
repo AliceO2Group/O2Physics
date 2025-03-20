@@ -48,7 +48,6 @@ using namespace o2::constants::physics;
 struct SginclusivePhiKstarSD {
   SGSelector sgSelector;
   Service<o2::framework::O2DatabasePDG> pdg;
-  Configurable<int> verbosity{"verbosity", 0, "Determines level of verbosity"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -287,6 +286,8 @@ struct SginclusivePhiKstarSD {
         registry.add("MC/genM_1", "Generated events; Mass (GeV/c^2)", {HistType::kTH1F, {{220, 0.98, 1.2}}});
 
         registry.add("MC/accMPtRap_phi_G", "Generated Phi; Mass (GeV/c^2); Pt (GeV/c)", {HistType::kTH3F, {{220, 0.98, 1.20}, {200, 0.0, 10.0}, {60, -1.5, 1.5}}});
+        registry.add("MC/accMPtRap_phi_T", "Reconstrcted Phi; Mass (GeV/c^2); Pt (GeV/c)", {HistType::kTH3F, {{220, 0.98, 1.20}, {200, 0.0, 10.0}, {60, -1.5, 1.5}}});
+
         registry.add("MC/accEtaPt", "Generated events in acceptance; eta (1); Pt (GeV/c)", {HistType::kTH2F, {{60, -1.5, 1.5}, {250, 0.0, 5.0}}});
         registry.add("MC/accRap", "Generated events in acceptance; Rapidity (1)", {HistType::kTH1F, {{60, -1.5, 1.5}}});
         registry.add("MC/accMPt", "Generated events in acceptance; Mass (GeV/c^2); Pt (GeV/c)", {HistType::kTH2F, {{220, 0.98, 1.20}, {200, 0.0, 10.0}}});
@@ -298,6 +299,7 @@ struct SginclusivePhiKstarSD {
         registry.add("MC/pDiff", "McTruth - reconstructed track momentum; McTruth - reconstructed track momentum; Entries", {HistType::kTH2F, {{240, -6., 6.}, {3, -1.5, 1.5}}});
         // K*0
         registry.add("MC/accMPtRap_kstar_G", "Generated K*0; Mass (GeV/c^2); Pt (GeV/c)", {HistType::kTH3F, {{400, 0., 2.0}, {200, 0.0, 10.0}, {60, -1.5, 1.5}}});
+        registry.add("MC/accMPtRap_kstar_T", "Reconstructed K*0; Mass (GeV/c^2); Pt (GeV/c)", {HistType::kTH3F, {{400, 0., 2.0}, {200, 0.0, 10.0}, {60, -1.5, 1.5}}});
         registry.add("MC/genEtaPt_k", "Generated events; eta (1); Pt (GeV/c)", {HistType::kTH2F, {{60, -1.5, 1.5}, {250, 0.0, 5.0}}});
         registry.add("MC/genRap_k", "Generated events; Rapidity (1)", {HistType::kTH1F, {{60, -1.5, 1.5}}});
         registry.add("MC/genMPt_k", "Generated events; Mass (GeV/c^2); Pt (GeV/c)", {HistType::kTH2F, {{400, 0., 2.0}, {200, 0.0, 10.0}}});
@@ -1165,9 +1167,6 @@ struct SginclusivePhiKstarSD {
   void processMCTruth(aod::UDMcCollisions const& mccollisions, CCs const& collisions, aod::UDMcParticles const& McParts, TCs const& tracks)
   {
     // number of McCollisions in DF
-    if (verbosity > 0) {
-      LOGF(info, "Number of MC collisions %d", mccollisions.size());
-    }
     TLorentzVector v0;
     TLorentzVector v1;
     TLorentzVector v01;
@@ -1184,9 +1183,6 @@ struct SginclusivePhiKstarSD {
       // get McParticles which belong to mccollision
       auto partSlice = McParts.sliceBy(partPerMcCollision, mccollision.globalIndex());
       registry.get<TH1>(HIST("MC/nParts"))->Fill(partSlice.size(), 1.);
-      if (verbosity > 0) {
-        LOGF(info, "Number of McParts %d", partSlice.size());
-      }
       for (const auto& [tr1, tr2] : combinations(partSlice, partSlice)) {
         if ((tr1.pdgCode() == kKPlus && tr2.pdgCode() == kPiMinus) || (tr1.pdgCode() == kKMinus && tr2.pdgCode() == kPiPlus) || (tr1.pdgCode() == kPiPlus && tr2.pdgCode() == kKMinus) || (tr1.pdgCode() == kPiMinus && tr2.pdgCode() == kKPlus)) {
           if (std::abs(tr1.pdgCode()) == kKPlus) {
@@ -1287,19 +1283,10 @@ struct SginclusivePhiKstarSD {
             auto pPart = std::sqrt(McPart.px() * McPart.px() + McPart.py() * McPart.py() + McPart.pz() * McPart.pz());
             auto pDiff = pTrack - pPart;
             registry.get<TH2>(HIST("MC/pDiff"))->Fill(pDiff, track.isPVContributor(), 1.);
-            if (verbosity > 0) {
-              LOGF(info, "  PID: %d Generated: %d Process: %d PV contributor: %d dP: %f", McPart.pdgCode(), McPart.producedByGenerator(), McPart.getProcess(), track.isPVContributor(), pDiff);
-            }
           }
         } else {
           registry.get<TH2>(HIST("MC/pDiff"))->Fill(-5.9, -1, 1.);
-          if (verbosity > 0) {
-            LOGF(info, "  PID: %d Generated: %d Process: %d PV contributor: No dP: nan", McPart.pdgCode(), McPart.producedByGenerator(), McPart.getProcess());
-          }
         }
-      }
-      if (verbosity > 0) {
-        LOGF(info, "");
       }
     }
   }
@@ -1308,9 +1295,6 @@ struct SginclusivePhiKstarSD {
   void processReco(CC const& collision, TCs const& tracks, aod::UDMcCollisions const& /*mccollisions*/, aod::UDMcParticles const& /*McParts*/)
   {
     // number of McCollisions in DF
-    if (verbosity > 0) {
-      LOGF(info, "Number of MC collisions %d", collision.size());
-    }
     float fitCut[5] = {fv0Cut, ft0aCut, ft0cCut, fddaCut, fddcCut};
     std::vector<float> parameters = {pvCut, dcazCut, dcaxyCut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, ptCut};
     int truegapSide = sgSelector.trueGap(collision, fitCut[0], fitCut[1], fitCut[2], zdcCut);
@@ -1511,10 +1495,6 @@ struct SginclusivePhiKstarSD {
     if (collision.has_udMcCollision()) {
       // auto mccollision = collision.udMcCollision();
       registry.get<TH1>(HIST("Reco/Stat"))->Fill(3., 1.);
-    } else {
-      if (verbosity > 0) {
-        LOGF(info, "This collision has no associated McCollision");
-      }
     }
     // compute the difference between generated and reconstructed momentum
     for (const auto& track : tracks) {
@@ -1525,18 +1505,9 @@ struct SginclusivePhiKstarSD {
         auto pPart = std::sqrt(mcPart.px() * mcPart.px() + mcPart.py() * mcPart.py() + mcPart.pz() * mcPart.pz());
         auto pDiff = pTrack - pPart;
         registry.get<TH2>(HIST("Reco/pDiff"))->Fill(pDiff, track.isPVContributor(), 1.);
-        if (verbosity > 0) {
-          LOGF(info, "  PID: %d Generated: %d Process: %d PV contributor: %d dP: %f", mcPart.pdgCode(), mcPart.producedByGenerator(), mcPart.getProcess(), track.isPVContributor(), pDiff);
-        }
       } else {
         registry.get<TH2>(HIST("Reco/pDiff"))->Fill(-5.9, -1, 1.);
-        if (verbosity > 0) {
-          LOGF(info, "  This track has no associated McParticle");
-        }
       }
-    }
-    if (verbosity > 0) {
-      LOGF(info, "");
     }
   }
   PROCESS_SWITCH(SginclusivePhiKstarSD, processReco, "Process reconstructed data", true);
