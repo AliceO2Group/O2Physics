@@ -24,6 +24,7 @@
 #include <TVector2.h>
 #include <TVector3.h>
 #include "TGrid.h"
+#include <random>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -93,6 +94,8 @@ struct AntinucleiInJets {
   // track parameters
   Configurable<bool> requirePvContributor{"requirePvContributor", false, "require that the track is a PV contributor"};
   Configurable<bool> applyItsPid{"applyItsPid", true, "apply ITS PID"};
+  Configurable<bool> rejectEvents{"rejectEvents", false, "reject some events"};
+  Configurable<int> rejectionPercentage{"rejectionPercentage", 3, "percentage of events to reject"};
   Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum number of ITS clusters"};
   Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 80, "minimum number of TPC crossed pad rows"};
   Configurable<double> minTpcNcrossedRowsOverFindable{"minTpcNcrossedRowsOverFindable", 0.8, "crossed rows/findable"};
@@ -170,6 +173,7 @@ struct AntinucleiInJets {
 
       // event counter data
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
+      registryData.add("number_of_rejected_events", "check on number of events rejected", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
       // antiprotons
       registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
@@ -254,6 +258,7 @@ struct AntinucleiInJets {
 
     // systematic uncertainties
     if (doprocessSystematicsData) {
+      registryData.add("number_of_rejected_events_syst", "check on number of events rejected", HistType::kTH1F, {{10, 0, 10, "counter"}});
       registryData.add("antiproton_tpc_syst", "antiproton_tpc_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {10, 0, 10, "systematic uncertainty"}});
       registryData.add("antiproton_tof_syst", "antiproton_tof_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {10, 0, 10, "systematic uncertainty"}});
       registryData.add("antideuteron_tpc_syst", "antideuteron_tpc_syst", HistType::kTHnSparseF, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {10, 0, 10, "systematic uncertainty"}});
@@ -440,9 +445,32 @@ struct AntinucleiInJets {
     LOGP(info, "Opened histogram {}", Form("%s_antiproton", histname_antip_ue.Data()));
   }
 
+  bool shouldRejectEvent()
+  {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<> dis(0, 99);
+    int randomNumber = dis(gen);
+    if (randomNumber <= rejectionPercentage) {
+      return false;
+    }
+    return true;
+  }
+
   // Process Data
   void processData(SelectedCollisions::iterator const& collision, FullNucleiTracks const& tracks)
   {
+    if (rejectEvents) {
+      // event counter: before event rejection
+      registryData.fill(HIST("number_of_rejected_events"), 0.5);
+
+      if (shouldRejectEvent())
+        return;
+
+      // event counter: after event rejection
+      registryData.fill(HIST("number_of_rejected_events"), 1.5);
+    }
+
     // event counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
 
@@ -1198,6 +1226,17 @@ struct AntinucleiInJets {
   // Process Systematics
   void processSystematicsData(SelectedCollisions::iterator const& collision, FullNucleiTracks const& tracks)
   {
+    if (rejectEvents) {
+      // event counter: before event rejection
+      registryData.fill(HIST("number_of_rejected_events_syst"), 0.5);
+
+      if (shouldRejectEvent())
+        return;
+
+      // event counter: after event rejection
+      registryData.fill(HIST("number_of_rejected_events_syst"), 1.5);
+    }
+
     const int nSystematics = 10;
     int itsNclustersSyst[nSystematics] = {5, 6, 5, 4, 5, 3, 5, 6, 3, 4};
     float tpcNcrossedRowsSyst[nSystematics] = {100, 85, 80, 110, 95, 90, 105, 95, 100, 105};
