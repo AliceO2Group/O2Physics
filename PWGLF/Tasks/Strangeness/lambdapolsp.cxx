@@ -481,11 +481,11 @@ struct lambdapolsp {
     double result = phi;
     while (result < 0) {
       // result = result + 2. * TMath::Pi();
-      result = result + 2. * o2::constants::math::pi;
+      result = result + 2. * o2::constants::math::PI;
     }
     while (result > 2. * TMath::Pi()) {
       // result = result - 2. * TMath::Pi();
-      result = result - 2. * o2::constants::math::pi;
+      result = result - 2. * o2::constants::math::PI;
     }
     return result;
   }
@@ -521,8 +521,8 @@ struct lambdapolsp {
 
     auto sinPhiStar = TMath::Sin(GetPhiInRange(phiangle));
     auto cosPhiStar = TMath::Cos(GetPhiInRange(phiangle));
-    auto sinThetaStarcosphiphiStar = sinThetaStar * TMath::Cos(2 * GetPhiInRange(particle.Phi() - phiangle));
-    auto phiphiStar = GetPhiInRange(particle.Phi() - phiangle);
+    // auto sinThetaStarcosphiphiStar = sinThetaStar * TMath::Cos(2 * GetPhiInRange(particle.Phi() - phiangle));
+    // auto phiphiStar = GetPhiInRange(particle.Phi() - phiangle);
 
     // Fill histograms using constructed names
     if (tag2) {
