@@ -295,7 +295,7 @@ struct lambdalambda {
       return false;
     if (getCPA(v01, v02) < cfgV0V0CPA)
       return false;
-    if (getDistance(v01, v02) < cfgV0V0Distance)
+    if (getDistance(v01, v02) > cfgV0V0Distance)
       return false;
     if (getRadius(v01, v02) > cfgV0V0Radius)
       return false;
