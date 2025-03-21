@@ -84,7 +84,7 @@ std::vector<double> pyZDC = {-1.75, -1.75, 1.75, 1.75};
 double alphaZDC = 0.395;
 
 // q-vectors before (q) and after (qRec) recentering.
-std::vector<double> q(4);    // start values of [QxA, QyA, QxC, QyC]
+std::vector<double> q(4); // start values of [QxA, QyA, QxC, QyC]
 
 // for energy calibration
 std::vector<double> eZN(8);      // uncalibrated energy for the 2x4 towers (a1, a2, a3, a4, c1, c2, c3, c4)
@@ -391,7 +391,6 @@ struct ZdcQVectors {
       }
 
       delete tempProj;
-
     }
 
     return calibConstant;
@@ -434,7 +433,7 @@ struct ZdcQVectors {
     if (!foundBC.has_zdc()) {
       isSelected = false;
       spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
-      counter++; 
+      counter++;
       return;
     }
 
@@ -446,7 +445,7 @@ struct ZdcQVectors {
 
     // load new calibrations for new runs only
     if (runnumber != lastRunNumber) {
-      cal.calibfilesLoaded.clear(); 
+      cal.calibfilesLoaded.clear();
       cal.calibfilesLoaded.resize(7, std::vector<bool>(8, false));
 
       cal.calibList.clear();
@@ -496,14 +495,14 @@ struct ZdcQVectors {
       isZNChit = false;
 
     // Fill to get mean energy per tower in 1% centrality bins
-    if (isZNAhit){
+    if (isZNAhit) {
       registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t0_cent"))->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNA(), 1);
       registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t1_cent"))->Fill(Form("%d", runnumber), cent, eZN[0], 1);
       registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t2_cent"))->Fill(Form("%d", runnumber), cent, eZN[1], 1);
       registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t3_cent"))->Fill(Form("%d", runnumber), cent, eZN[2], 1);
       registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t4_cent"))->Fill(Form("%d", runnumber), cent, eZN[3], 1);
     }
-    if (isZNChit){
+    if (isZNChit) {
       registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t0_cent"))->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNC(), 1);
       registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t1_cent"))->Fill(Form("%d", runnumber), cent, eZN[4], 1);
       registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t2_cent"))->Fill(Form("%d", runnumber), cent, eZN[5], 1);
@@ -543,7 +542,6 @@ struct ZdcQVectors {
       }
       calibtower++;
     }
-
 
     for (int i = 0; i < 4; i++) {
       float bincenter = i + .5;
@@ -644,9 +642,9 @@ struct ZdcQVectors {
 
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], qRec[0], qRec[1], qRec[2], qRec[3], isSelected, cal.atIteration, cal.atStep);
 
-      qRec.clear(); 
+      qRec.clear();
 
-      counter++; 
+      counter++;
       return;
     } else {
       if (counter < 1)
