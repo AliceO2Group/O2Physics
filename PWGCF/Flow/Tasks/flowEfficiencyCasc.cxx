@@ -162,20 +162,20 @@ struct FlowEfficiencyCasc {
       if (!cfgcheckMCParticle || (std::abs(pdgCode) == kOmegaMinus && std::abs(cascMC.pdgCodeV0()) == kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == kKPlus)) {
         if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
             (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-          registry.fill(HIST("h2DRecOmega"), casc.pt(), rectracknum, casc.mOmega());
+          registry.fill(HIST("h3DRecOmega"), casc.pt(), rectracknum, casc.mOmega());
         } else if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
                    (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-          registry.fill(HIST("h2DRecOmega"), casc.pt(), rectracknum, casc.mOmega());
+          registry.fill(HIST("h3DRecOmega"), casc.pt(), rectracknum, casc.mOmega());
         }
       }
       // Xi and antiXi
       if (!cfgcheckMCParticle || (std::abs(pdgCode) == kXiMinus && std::abs(cascMC.pdgCodeV0()) == kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == kPiPlus)) {
         if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
             (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-          registry.fill(HIST("h2DRecXi"), casc.pt(), rectracknum, casc.mXi());
+          registry.fill(HIST("h3DRecXi"), casc.pt(), rectracknum, casc.mXi());
         } else if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
                    (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-          registry.fill(HIST("h2DRecXi"), casc.pt(), rectracknum, casc.mXi());
+          registry.fill(HIST("h3DRecXi"), casc.pt(), rectracknum, casc.mXi());
         }
       }
     }
@@ -219,18 +219,18 @@ struct FlowEfficiencyCasc {
       if (!cfgcheckMCParticle || (std::abs(pdgCode) == kK0Short && v0MC.pdgCodePositive() == kPiPlus && v0MC.pdgCodeNegative() == kPiMinus)) {
         if (v0.qtarm() / std::fabs(v0.alpha()) > cfgv0_ArmPodocut && std::fabs(v0.y()) < 0.5 && std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < cfgv0_mk0swindow &&
             (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
-          registry.fill(HIST("h2DRecK0s"), v0.pt(), rectracknum, v0.mK0Short());
+          registry.fill(HIST("h3DRecK0s"), v0.pt(), rectracknum, v0.mK0Short());
         }
       }
       // Lambda and antiLambda
       if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
           (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
         if (!cfgcheckMCParticle || (std::abs(pdgCode) == kLambda0 && v0MC.pdgCodePositive() == kProton && v0MC.pdgCodeNegative() == kPiMinus))
-          registry.fill(HIST("h2DRecLambda"), v0.pt(), rectracknum, v0.mLambda());
+          registry.fill(HIST("h3DRecLambda"), v0.pt(), rectracknum, v0.mLambda());
       } else if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
                  (!cfgcheckDauTPC || (std::fabs(v0negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
         if (!cfgcheckMCParticle || (std::abs(pdgCode) == kLambda0 && v0MC.pdgCodePositive() == kPiPlus && v0MC.pdgCodeNegative() == kProtonBar))
-          registry.fill(HIST("h2DRecLambda"), v0.pt(), rectracknum, v0.mLambda());
+          registry.fill(HIST("h3DRecLambda"), v0.pt(), rectracknum, v0.mLambda());
       }
     }
   }

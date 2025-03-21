@@ -24,6 +24,7 @@
 #include <TVector2.h>
 #include <TVector3.h>
 #include "TGrid.h"
+#include <random>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -93,6 +94,8 @@ struct AntinucleiInJets {
   // track parameters
   Configurable<bool> requirePvContributor{"requirePvContributor", false, "require that the track is a PV contributor"};
   Configurable<bool> applyItsPid{"applyItsPid", true, "apply ITS PID"};
+  Configurable<bool> rejectEvents{"rejectEvents", false, "reject some events"};
+  Configurable<int> rejectionPercentage{"rejectionPercentage", 3, "percentage of events to reject"};
   Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum number of ITS clusters"};
   Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 80, "minimum number of TPC crossed pad rows"};
   Configurable<double> minTpcNcrossedRowsOverFindable{"minTpcNcrossedRowsOverFindable", 0.8, "crossed rows/findable"};
@@ -440,9 +443,24 @@ struct AntinucleiInJets {
     LOGP(info, "Opened histogram {}", Form("%s_antiproton", histname_antip_ue.Data()));
   }
 
+  bool shouldRejectEvent()
+  {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<> dis(0, 99);
+    int randomNumber = dis(gen);
+    if (randomNumber <= rejectionPercentage) {
+      return false;
+    }
+    return true;
+  }
+
   // Process Data
   void processData(SelectedCollisions::iterator const& collision, FullNucleiTracks const& tracks)
   {
+    if (rejectEvents && shouldRejectEvent())
+      return;
+
     // event counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
 
@@ -1198,6 +1216,9 @@ struct AntinucleiInJets {
   // Process Systematics
   void processSystematicsData(SelectedCollisions::iterator const& collision, FullNucleiTracks const& tracks)
   {
+    if (rejectEvents && shouldRejectEvent())
+      return;
+
     const int nSystematics = 10;
     int itsNclustersSyst[nSystematics] = {5, 6, 5, 4, 5, 3, 5, 6, 3, 4};
     float tpcNcrossedRowsSyst[nSystematics] = {100, 85, 80, 110, 95, 90, 105, 95, 100, 105};

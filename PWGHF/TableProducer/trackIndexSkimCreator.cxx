@@ -1268,7 +1268,7 @@ struct HfTrackIndexSkimCreator {
 
   void init(InitContext const&)
   {
-    if (!doprocess2And3ProngsWithPvRefit && !doprocess2And3ProngsNoPvRefit) {
+    if (!doprocess2And3ProngsWithPvRefit && !doprocess2And3ProngsNoPvRefit && !doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt && !doprocess2And3ProngsNoPvRefitWithPidForHfFiltersBdt) {
       return;
     }
 
@@ -1356,7 +1356,7 @@ struct HfTrackIndexSkimCreator {
       registry.add("hMassDstarToD0Pi", "D^{*#plus} candidates;inv. mass (K #pi #pi) - mass (K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0.135, 0.185}}});
 
       // needed for PV refitting
-      if (doprocess2And3ProngsWithPvRefit) {
+      if (doprocess2And3ProngsWithPvRefit || doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt) {
         AxisSpec axisCollisionX{100, -20.f, 20.f, "X (cm)"};
         AxisSpec axisCollisionY{100, -20.f, 20.f, "Y (cm)"};
         AxisSpec axisCollisionZ{100, -20.f, 20.f, "Z (cm)"};
@@ -1783,11 +1783,11 @@ struct HfTrackIndexSkimCreator {
         bool isMlSel = false;
         if constexpr (usePidForHfFiltersBdt) {
           if (iDecay3P != hf_cand_3prong::DecayType::LcToPKPi && iDecay3P != hf_cand_3prong::DecayType::XicToPKPi) {
-            hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCand, ptDummy, outputScores[iDecay3P]);
+            isMlSel = hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCand, ptDummy, outputScores[iDecay3P]);
           } else {
             std::vector<float> featuresCandWithPid = featuresCand;
             featuresCandWithPid.insert(featuresCandWithPid.end(), featuresCandPid.begin(), featuresCandPid.end());
-            hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCandWithPid, ptDummy, outputScores[iDecay3P]);
+            isMlSel = hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCandWithPid, ptDummy, outputScores[iDecay3P]);
           }
         } else {
           isMlSel = hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCand, ptDummy, outputScores[iDecay3P]);
@@ -1916,7 +1916,7 @@ struct HfTrackIndexSkimCreator {
     bool pvRefitDoable = vertexer.prepareVertexRefit(vecPvContributorTrackParCov, primVtx);
     if (!pvRefitDoable) {
       LOG(info) << "Not enough tracks accepted for the refit";
-      if (doprocess2And3ProngsWithPvRefit && config.fillHistograms) {
+      if ((doprocess2And3ProngsWithPvRefit || doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt) && config.fillHistograms) {
         registry.fill(HIST("PvRefit/hNContribPvRefitNotDoable"), collision.numContrib());
       }
     }
@@ -1927,7 +1927,7 @@ struct HfTrackIndexSkimCreator {
     /// PV refitting, if the tracks contributed to this at the beginning
     o2::dataformats::VertexBase primVtxBaseRecalc;
     bool recalcPvRefit = false;
-    if (doprocess2And3ProngsWithPvRefit && pvRefitDoable) {
+    if ((doprocess2And3ProngsWithPvRefit || doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt) && pvRefitDoable) {
       if (config.fillHistograms) {
         registry.fill(HIST("PvRefit/verticesPerCandidate"), 2);
       }
