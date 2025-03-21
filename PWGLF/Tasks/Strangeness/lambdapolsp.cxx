@@ -21,10 +21,11 @@
 #include <TH2F.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
+// #include <TDatabasePDG.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <algorithm>
 
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
@@ -68,8 +69,6 @@ using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
 struct lambdapolsp {
 
   int mRunNumber;
-  int multEstimator;
-  float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdg;
 
@@ -481,10 +480,12 @@ struct lambdapolsp {
   {
     double result = phi;
     while (result < 0) {
-      result = result + 2. * TMath::Pi();
+      // result = result + 2. * TMath::Pi();
+      result = result + 2. * o2::constants::math::pi;
     }
     while (result > 2. * TMath::Pi()) {
-      result = result - 2. * TMath::Pi();
+      // result = result - 2. * TMath::Pi();
+      result = result - 2. * o2::constants::math::pi;
     }
     return result;
   }
@@ -704,7 +705,7 @@ struct lambdapolsp {
       histos.fill(HIST("hpQypvscent"), centrality, modqyZDCA);
       histos.fill(HIST("hpQytvscent"), centrality, modqyZDCC);
 
-      for (auto track : tracks) {
+      for (const auto& track : tracks) {
         if (!selectionTrack(track)) {
           continue;
         }
@@ -826,7 +827,7 @@ struct lambdapolsp {
         }
       }
     } else {
-      for (auto v0 : V0s) {
+      for (const auto& v0 : V0s) {
 
         auto postrack = v0.template posTrack_as<AllTrackCandidates>();
         auto negtrack = v0.template negTrack_as<AllTrackCandidates>();
@@ -942,9 +943,7 @@ struct lambdapolsp {
               fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), desbinvalue);
             }
           }
-        }
-
-        else {
+        } else {
           if (LambdaTag) {
             Lambda = Proton + AntiPion;
             tagb = 0;
@@ -1034,7 +1033,7 @@ struct lambdapolsp {
 
     //___________________________________________________________________________________________________
     // loop over V0s as necessary
-    for (auto v0 : V0s) {
+    for (const auto& v0 : V0s) {
       bool LambdaTag = isCompatible(v0, 0);
       bool aLambdaTag = isCompatible(v0, 1);
 
