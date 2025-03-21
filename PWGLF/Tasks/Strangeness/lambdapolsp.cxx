@@ -21,11 +21,11 @@
 #include <TH2F.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
-// #include <TDatabasePDG.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
 #include <algorithm>
+#include "Common/Core/RecoDecay.h"
 
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
@@ -478,15 +478,18 @@ struct lambdapolsp {
 
   double GetPhiInRange(double phi)
   {
-    double result = phi;
-    while (result < 0) {
+    double result = RecoDecay::constrainAngle(phi);
+
+    /*
+      double result = phi;
+      while (result < 0) {
       // result = result + 2. * TMath::Pi();
       result = result + 2. * o2::constants::math::PI;
-    }
-    while (result > 2. * TMath::Pi()) {
+      }
+      while (result > 2. * TMath::Pi()) {
       // result = result - 2. * TMath::Pi();
       result = result - 2. * o2::constants::math::PI;
-    }
+      }*/
     return result;
   }
 
