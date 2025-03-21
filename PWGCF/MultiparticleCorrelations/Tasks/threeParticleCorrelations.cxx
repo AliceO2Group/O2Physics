@@ -122,71 +122,71 @@ struct ThreeParticleCorrelations {
     const AxisSpec lambdaInvMassAxis{100, 1.08, 1.16};
 
     // QA & PID
-    rQARegistry.add("hTrackPt", "hTrackPt", {HistType::kTH1F, {{100, 0, 4}}});
-    rQARegistry.add("hTrackEta", "hTrackEta", {HistType::kTH1F, {{100, -1, 1}}});
-    rQARegistry.add("hTrackPhi", "hTrackPhi", {HistType::kTH1F, {{100, (-1. / 2) * constants::math::PI, (5. / 2) * constants::math::PI}}});
-    rQARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1F, {{centralityAxis}}});
-    rQARegistry.add("hEventCentrality_MC", "hEventCentrality_MC", {HistType::kTH1F, {{centralityAxis}}});
-    rQARegistry.add("hEventZvtx", "hEventZvtx", {HistType::kTH1F, {{zvtxAxis}}});
+    rQARegistry.add("hTrackPt", "hTrackPt", {HistType::kTH1D, {{100, 0, 4}}});
+    rQARegistry.add("hTrackEta", "hTrackEta", {HistType::kTH1D, {{100, -1, 1}}});
+    rQARegistry.add("hTrackPhi", "hTrackPhi", {HistType::kTH1D, {{100, (-1. / 2) * constants::math::PI, (5. / 2) * constants::math::PI}}});
+    rQARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1D, {{centralityAxis}}});
+    rQARegistry.add("hEventCentrality_MC", "hEventCentrality_MC", {HistType::kTH1D, {{centralityAxis}}});
+    rQARegistry.add("hEventZvtx", "hEventZvtx", {HistType::kTH1D, {{zvtxAxis}}});
 
-    rQARegistry.add("hdEdx", "hdEdx", {HistType::kTH2F, {{56, 0.2, 3.0}, {180, 20, 200}}});
-    rQARegistry.add("hdEdxPion", "hdEdxPion", {HistType::kTH2F, {{56, 0.2, 3.0}, {180, 20, 200}}});
-    rQARegistry.add("hdEdxKaon", "hdEdxKaon", {HistType::kTH2F, {{56, 0.2, 3.0}, {180, 20, 200}}});
-    rQARegistry.add("hdEdxProton", "hdEdxProton", {HistType::kTH2F, {{56, 0.2, 3.0}, {180, 20, 200}}});
-    rQARegistry.add("hBeta", "hBeta", {HistType::kTH2F, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
-    rQARegistry.add("hBetaPion", "hBetaPion", {HistType::kTH2F, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
-    rQARegistry.add("hBetaKaon", "hBetaKaon", {HistType::kTH2F, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
-    rQARegistry.add("hBetaProton", "hBetaProton", {HistType::kTH2F, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
-    rQARegistry.add("hNSigmaPion", "hNSigmaPion", {HistType::kTH2F, {{201, -5.025, 5.025}, {201, -5.025, 5.025}}});
-    rQARegistry.add("hNSigmaKaon", "hNSigmaKaon", {HistType::kTH2F, {{201, -5.025, 5.025}, {201, -5.025, 5.025}}});
-    rQARegistry.add("hNSigmaProton", "hNSigmaProton", {HistType::kTH2F, {{201, -5.025, 5.025}, {201, -5.025, 5.025}}});
+    rQARegistry.add("hdEdx", "hdEdx", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
+    rQARegistry.add("hdEdxPion", "hdEdxPion", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
+    rQARegistry.add("hdEdxKaon", "hdEdxKaon", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
+    rQARegistry.add("hdEdxProton", "hdEdxProton", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
+    rQARegistry.add("hBeta", "hBeta", {HistType::kTH2D, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
+    rQARegistry.add("hBetaPion", "hBetaPion", {HistType::kTH2D, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
+    rQARegistry.add("hBetaKaon", "hBetaKaon", {HistType::kTH2D, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
+    rQARegistry.add("hBetaProton", "hBetaProton", {HistType::kTH2D, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
+    rQARegistry.add("hNSigmaPion", "hNSigmaPion", {HistType::kTH2D, {{201, -5.025, 5.025}, {201, -5.025, 5.025}}});
+    rQARegistry.add("hNSigmaKaon", "hNSigmaKaon", {HistType::kTH2D, {{201, -5.025, 5.025}, {201, -5.025, 5.025}}});
+    rQARegistry.add("hNSigmaProton", "hNSigmaProton", {HistType::kTH2D, {{201, -5.025, 5.025}, {201, -5.025, 5.025}}});
 
-    rQARegistry.add("hTPCPion", "hTPCPion", {HistType::kTH2F, {{trackPtAxis}, {241, -6, 6}}});
-    rQARegistry.add("hTPCKaon", "hTPCKaon", {HistType::kTH2F, {{trackPtAxis}, {241, -6, 6}}});
-    rQARegistry.add("hTPCProton", "hTPCProton", {HistType::kTH2F, {{trackPtAxis}, {241, -6, 6}}});
-    rQARegistry.add("hTOFPion", "hTOFPion", {HistType::kTH2F, {{trackPtAxis}, {1000, -50, 50}}});
-    rQARegistry.add("hTOFKaon", "hTOFKaon", {HistType::kTH2F, {{trackPtAxis}, {1000, -50, 50}}});
-    rQARegistry.add("hTOFProton", "hTOFProton", {HistType::kTH2F, {{trackPtAxis}, {1000, -50, 50}}});
+    rQARegistry.add("hTPCPion", "hTPCPion", {HistType::kTH2D, {{trackPtAxis}, {241, -6, 6}}});
+    rQARegistry.add("hTPCKaon", "hTPCKaon", {HistType::kTH2D, {{trackPtAxis}, {241, -6, 6}}});
+    rQARegistry.add("hTPCProton", "hTPCProton", {HistType::kTH2D, {{trackPtAxis}, {241, -6, 6}}});
+    rQARegistry.add("hTOFPion", "hTOFPion", {HistType::kTH2D, {{trackPtAxis}, {1000, -50, 50}}});
+    rQARegistry.add("hTOFKaon", "hTOFKaon", {HistType::kTH2D, {{trackPtAxis}, {1000, -50, 50}}});
+    rQARegistry.add("hTOFProton", "hTOFProton", {HistType::kTH2D, {{trackPtAxis}, {1000, -50, 50}}});
 
-    rQARegistry.add("hInvMassLambda", "hInvMassLambda", {HistType::kTH3F, {{lambdaInvMassAxis}, {v0PtAxis}, {centralityAxis}}});
-    rQARegistry.add("hInvMassAntiLambda", "hInvMassAntiLambda", {HistType::kTH3F, {{lambdaInvMassAxis}, {v0PtAxis}, {centralityAxis}}});
-    rQARegistry.add("hNLambdas", "hNLambdas", {HistType::kTH3F, {{2, -2, 2}, {v0PtAxis}, {centralityAxis}}});
+    rQARegistry.add("hInvMassLambda", "hInvMassLambda", {HistType::kTH3D, {{lambdaInvMassAxis}, {v0PtAxis}, {centralityAxis}}});
+    rQARegistry.add("hInvMassAntiLambda", "hInvMassAntiLambda", {HistType::kTH3D, {{lambdaInvMassAxis}, {v0PtAxis}, {centralityAxis}}});
+    rQARegistry.add("hNLambdas", "hNLambdas", {HistType::kTH3D, {{2, -2, 2}, {v0PtAxis}, {centralityAxis}}});
 
     // PhiStar
-    rPhiStarRegistry.add("hSEProtonPreCut", "hSEProtonPreCut", {HistType::kTH2F, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
-    rPhiStarRegistry.add("hSEProtonPostCut", "hSEProtonPostCut", {HistType::kTH2F, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
-    rPhiStarRegistry.add("hMEProtonPreCut", "hMEProtonPreCut", {HistType::kTH2F, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
-    rPhiStarRegistry.add("hMEProtonPostCut", "hMEProtonPostCut", {HistType::kTH2F, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
+    rPhiStarRegistry.add("hSEProtonPreCut", "hSEProtonPreCut", {HistType::kTH2D, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
+    rPhiStarRegistry.add("hSEProtonPostCut", "hSEProtonPostCut", {HistType::kTH2D, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
+    rPhiStarRegistry.add("hMEProtonPreCut", "hMEProtonPreCut", {HistType::kTH2D, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
+    rPhiStarRegistry.add("hMEProtonPostCut", "hMEProtonPostCut", {HistType::kTH2D, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
 
     // Efficiency
-    rMCRegistry.add("hGenerated", "hGenerated", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
-    rMCRegistry.add("hGenPionP", "hGenPionP", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
-    rMCRegistry.add("hGenPionN", "hGenPionN", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
-    rMCRegistry.add("hGenKaonP", "hGenKaonP", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
-    rMCRegistry.add("hGenKaonN", "hGenKaonN", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
-    rMCRegistry.add("hGenProtonP", "hGenProtonP", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
-    rMCRegistry.add("hGenProtonN", "hGenProtonN", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
-    rMCRegistry.add("hReconstructed", "hReconstructed", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
-    rMCRegistry.add("hRecPionP", "hRecPionP", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
-    rMCRegistry.add("hRecPionN", "hRecPionN", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
-    rMCRegistry.add("hRecKaonP", "hRecKaonP", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
-    rMCRegistry.add("hRecKaonN", "hRecKaonN", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
-    rMCRegistry.add("hRecProtonP", "hRecProtonP", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
-    rMCRegistry.add("hRecProtonN", "hRecProtonN", {HistType::kTH2F, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hGenerated", "hGenerated", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hGenPionP", "hGenPionP", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hGenPionN", "hGenPionN", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hGenKaonP", "hGenKaonP", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hGenKaonN", "hGenKaonN", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hGenProtonP", "hGenProtonP", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hGenProtonN", "hGenProtonN", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hReconstructed", "hReconstructed", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hRecPionP", "hRecPionP", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hRecPionN", "hRecPionN", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hRecKaonP", "hRecKaonP", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hRecKaonN", "hRecKaonN", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hRecProtonP", "hRecProtonP", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
+    rMCRegistry.add("hRecProtonN", "hRecProtonN", {HistType::kTH2D, {{trackPtAxis}, {trackEtaAxis}}});
 
     // Purity
-    rMCRegistry.add("hSelectPionP", "hSelectPionP", {HistType::kTH1F, {trackPtAxis}});
-    rMCRegistry.add("hSelectPionN", "hSelectPionN", {HistType::kTH1F, {trackPtAxis}});
-    rMCRegistry.add("hSelectKaonP", "hSelectKaonP", {HistType::kTH1F, {trackPtAxis}});
-    rMCRegistry.add("hSelectKaonN", "hSelectKaonN", {HistType::kTH1F, {trackPtAxis}});
-    rMCRegistry.add("hSelectProtonP", "hSelectProtonP", {HistType::kTH1F, {trackPtAxis}});
-    rMCRegistry.add("hSelectProtonN", "hSelectProtonN", {HistType::kTH1F, {trackPtAxis}});
-    rMCRegistry.add("hTrueSelectPionP", "hTrueSelectPionP", {HistType::kTH1F, {trackPtAxis}});
-    rMCRegistry.add("hTrueSelectPionN", "hTrueSelectPionN", {HistType::kTH1F, {trackPtAxis}});
-    rMCRegistry.add("hTrueSelectKaonP", "hTrueSelectKaonP", {HistType::kTH1F, {trackPtAxis}});
-    rMCRegistry.add("hTrueSelectKaonN", "hTrueSelectKaonN", {HistType::kTH1F, {trackPtAxis}});
-    rMCRegistry.add("hTrueSelectProtonP", "hTrueSelectProtonP", {HistType::kTH1F, {trackPtAxis}});
-    rMCRegistry.add("hTrueSelectProtonN", "hTrueSelectProtonN", {HistType::kTH1F, {trackPtAxis}});
+    rMCRegistry.add("hSelectPionP", "hSelectPionP", {HistType::kTH1D, {trackPtAxis}});
+    rMCRegistry.add("hSelectPionN", "hSelectPionN", {HistType::kTH1D, {trackPtAxis}});
+    rMCRegistry.add("hSelectKaonP", "hSelectKaonP", {HistType::kTH1D, {trackPtAxis}});
+    rMCRegistry.add("hSelectKaonN", "hSelectKaonN", {HistType::kTH1D, {trackPtAxis}});
+    rMCRegistry.add("hSelectProtonP", "hSelectProtonP", {HistType::kTH1D, {trackPtAxis}});
+    rMCRegistry.add("hSelectProtonN", "hSelectProtonN", {HistType::kTH1D, {trackPtAxis}});
+    rMCRegistry.add("hTrueSelectPionP", "hTrueSelectPionP", {HistType::kTH1D, {trackPtAxis}});
+    rMCRegistry.add("hTrueSelectPionN", "hTrueSelectPionN", {HistType::kTH1D, {trackPtAxis}});
+    rMCRegistry.add("hTrueSelectKaonP", "hTrueSelectKaonP", {HistType::kTH1D, {trackPtAxis}});
+    rMCRegistry.add("hTrueSelectKaonN", "hTrueSelectKaonN", {HistType::kTH1D, {trackPtAxis}});
+    rMCRegistry.add("hTrueSelectProtonP", "hTrueSelectProtonP", {HistType::kTH1D, {trackPtAxis}});
+    rMCRegistry.add("hTrueSelectProtonN", "hTrueSelectProtonN", {HistType::kTH1D, {trackPtAxis}});
 
     // Correlations
     rSECorrRegistry.add("hSameLambdaPion_SGNL", "Same-event #Lambda - #pi correlator (SGNL region)", {HistType::kTHnSparseF, {{phiAxis}, {etaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
