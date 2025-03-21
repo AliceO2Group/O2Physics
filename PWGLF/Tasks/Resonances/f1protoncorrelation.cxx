@@ -77,6 +77,13 @@ struct f1protoncorrelation {
   void init(o2::framework::InitContext&)
   {
     colBinningFemto = {{CfgVtxBins, CfgMultBins}, true};
+
+    const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisPtProton{configThnAxisPtProton, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisKstar{configThnAxisKstar, "#it{k}^{*} (GeV/#it{c})"};
+    const AxisSpec thnAxisNsigma{configThnAxisNsigma, "NsigmaCombined"};
+
     // register histograms
     histos.add("hNsigmaProtonTPC", "Nsigma Proton TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 10.0f}});
     histos.add("hNsigmaKaonTPC", "Nsigma Kaon TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 10.0f}});
@@ -84,19 +91,14 @@ struct f1protoncorrelation {
     histos.add("hNsigmaPionKaonTPC", "Nsigma Pion Kaon TPC correlation", kTH2F, {{100, -5.0f, 5.0f}, {100, -5.0f, 5.0f}});
     histos.add("h2SameEventPtCorrelation", "Pt correlation of F1 and proton", kTH3F, {{100, 0.0f, 1.0f}, {100, 0.0, 10.0}, {100, 0.0, 10.0}});
 
-    histos.add("h2SameEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 same event", kTH3F, {{300, 0.0f, 3.0f}, {500, 0.0, 100.0}, {800, 1.0, 1.8}});
-    histos.add("h2SameEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 same event", kTH3F, {{300, 0.0f, 3.0f}, {500, 0.0, 100.0}, {800, 1.0, 1.8}});
-    histos.add("h2SameEventInvariantMassRot_mass", "Rotational Invariant mass of f1 same event", kTH3F, {{300, 0.0f, 3.0f}, {500, 0.0, 100.0}, {800, 1.0, 1.8}});
+    histos.add("h2SameEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 same event", kTH3F, {thnAxisKstar, thnAxisPt, thnAxisInvMass});
+    histos.add("h2SameEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 same event", kTH3F, {thnAxisKstar, thnAxisPt, thnAxisInvMass});
+    histos.add("h2SameEventInvariantMassRot_mass", "Rotational Invariant mass of f1 same event", kTH3F, {thnAxisKstar, thnAxisPt, thnAxisInvMass});
 
-    histos.add("h2MixEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 mix event", kTH3F, {{300, 0.0f, 3.0f}, {500, 0.0, 100.0}, {800, 1.0, 1.8}});
-    histos.add("h2MixEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 mix event", kTH3F, {{300, 0.0f, 3.0f}, {500, 0.0, 100.0}, {800, 1.0, 1.8}});
-    histos.add("h2MixEventInvariantMassRot_mass", "Rotational Sign Invariant mass of f1 mix event", kTH3F, {{300, 0.0f, 3.0f}, {500, 0.0, 100.0}, {800, 1.0, 1.8}});
+    histos.add("h2MixEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 mix event", kTH3F, {thnAxisKstar, thnAxisPt, thnAxisInvMass});
+    histos.add("h2MixEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 mix event", kTH3F, {thnAxisKstar, thnAxisPt, thnAxisInvMass});
+    histos.add("h2MixEventInvariantMassRot_mass", "Rotational Sign Invariant mass of f1 mix event", kTH3F, {thnAxisKstar, thnAxisPt, thnAxisInvMass});
 
-    const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
-    const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec thnAxisPtProton{configThnAxisPtProton, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec thnAxisKstar{configThnAxisKstar, "#it{k}^{*} (GeV/#it{c})"};
-    const AxisSpec thnAxisNsigma{configThnAxisNsigma, "NsigmaCombined"};
     if (fillSparse) {
       histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
       histos.add("SEMassLike", "SEMassLike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
