@@ -173,6 +173,7 @@ struct AntinucleiInJets {
 
       // event counter data
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
+      registryData.add("number_of_rejected_events", "check on number of events rejected", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
       // antiprotons
       registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
@@ -257,6 +258,7 @@ struct AntinucleiInJets {
 
     // systematic uncertainties
     if (doprocessSystematicsData) {
+      registryData.add("number_of_rejected_events_syst", "check on number of events rejected", HistType::kTH1F, {{10, 0, 10, "counter"}});
       registryData.add("antiproton_tpc_syst", "antiproton_tpc_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {10, 0, 10, "systematic uncertainty"}});
       registryData.add("antiproton_tof_syst", "antiproton_tof_syst", HistType::kTHnSparseF, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {10, 0, 10, "systematic uncertainty"}});
       registryData.add("antideuteron_tpc_syst", "antideuteron_tpc_syst", HistType::kTHnSparseF, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {10, 0, 10, "systematic uncertainty"}});
@@ -458,8 +460,16 @@ struct AntinucleiInJets {
   // Process Data
   void processData(SelectedCollisions::iterator const& collision, FullNucleiTracks const& tracks)
   {
-    if (rejectEvents && shouldRejectEvent())
-      return;
+    if (rejectEvents) {
+      // event counter: before event rejection
+      registryData.fill(HIST("number_of_rejected_events"), 0.5);
+
+      if (shouldRejectEvent())
+        return;
+
+      // event counter: after event rejection
+      registryData.fill(HIST("number_of_rejected_events"), 1.5);
+    }
 
     // event counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
@@ -1216,8 +1226,16 @@ struct AntinucleiInJets {
   // Process Systematics
   void processSystematicsData(SelectedCollisions::iterator const& collision, FullNucleiTracks const& tracks)
   {
-    if (rejectEvents && shouldRejectEvent())
-      return;
+    if (rejectEvents) {
+      // event counter: before event rejection
+      registryData.fill(HIST("number_of_rejected_events_syst"), 0.5);
+
+      if (shouldRejectEvent())
+        return;
+
+      // event counter: after event rejection
+      registryData.fill(HIST("number_of_rejected_events_syst"), 1.5);
+    }
 
     const int nSystematics = 10;
     int itsNclustersSyst[nSystematics] = {5, 6, 5, 4, 5, 3, 5, 6, 3, 4};
