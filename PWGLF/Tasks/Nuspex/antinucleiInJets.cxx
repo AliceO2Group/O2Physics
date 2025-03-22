@@ -451,10 +451,10 @@ struct AntinucleiInJets {
     static std::mt19937 gen(rd());
     static std::uniform_int_distribution<> dis(0, 99);
     int randomNumber = dis(gen);
-    if (randomNumber <= rejectionPercentage) {
-      return false;
+    if (randomNumber > rejectionPercentage) {
+      return false; // accept event
     }
-    return true;
+    return true; // reject event
   }
 
   // Process Data
