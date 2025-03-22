@@ -699,7 +699,7 @@ struct HfTreeCreatorLcToPKPi {
               svX = mcParticleProng0.vx();
               svY = mcParticleProng0.vy();
               svZ = mcParticleProng0.vz();
-              l = std::sqrt((svX - pvX) * (svX - pvX) + (svY - pvY) * (svY - pvY) + (svZ - pvZ) * (svZ - pvZ));
+              l = RecoDecay::distance(std::vector<float>{svX, svY, svZ}, std::vector<float>{pvX, pvY, pvZ});
               t = mcParticleProng0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
             }
             rowCandidateMC(
@@ -729,7 +729,7 @@ struct HfTreeCreatorLcToPKPi {
         const float svX = mcDaughter0.vx();
         const float svY = mcDaughter0.vy();
         const float svZ = mcDaughter0.vz();
-        const float l = std::sqrt((svX - pvX) * (svX - pvX) + (svY - pvY) * (svY - pvY) + (svZ - pvZ) * (svZ - pvZ));
+        const float l = RecoDecay::distance(std::vector<float>{svX, svY, svZ}, std::vector<float>{pvX, pvY, pvZ});
         const float t = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
         rowCandidateFullParticles(
           particle.pt(),
