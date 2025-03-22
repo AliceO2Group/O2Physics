@@ -114,7 +114,7 @@ struct PCMQCMC {
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_types[2] = {"before/", "after/"};
-  static constexpr std::string_view mcphoton_types[5] = {"primary/", "fromWD/", "fromHS/", "fromPi0Dalitz/", "fromEtaDalitz"};
+  static constexpr std::string_view mcphoton_types[5] = {"primary/", "fromWD/", "fromHS/", "fromPi0Dalitz/", "fromEtaDalitz/"};
 
   void init(InitContext&)
   {
