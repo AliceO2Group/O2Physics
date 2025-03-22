@@ -112,6 +112,11 @@ o2physics_add_dpl_workflow(lf-f1proton-filter
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
+ o2physics_add_dpl_workflow(lf-doublephi-filter
+    SOURCES PWGLF/filterdoublephi.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+    COMPONENT_NAME Analysis)
+
 o2physics_add_library(EventFilteringUtils
     SOURCES Zorro.cxx ZorroSummary.cxx
     INSTALL_HEADERS ZorroHelper.h ZorroSummary.h
