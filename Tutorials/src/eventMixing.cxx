@@ -501,18 +501,18 @@ struct MixedEventsCounters {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    /*adaptAnalysisTask<MixedEvents>(cfgc),
+    adaptAnalysisTask<MixedEvents>(cfgc),
     adaptAnalysisTask<MixedEventsInsideProcess>(cfgc),
     adaptAnalysisTask<MixedEventsFilteredTracks>(cfgc),
-    adaptAnalysisTask<MixedEventsJoinedCollisions>(cfgc),*/
+    adaptAnalysisTask<MixedEventsJoinedCollisions>(cfgc),
     adaptAnalysisTask<MixedEventsDynamicColumns>(cfgc),
-    /*adaptAnalysisTask<MixedEventsVariousKinds>(cfgc),
+    adaptAnalysisTask<MixedEventsVariousKinds>(cfgc),
     adaptAnalysisTask<MixedEventsTriple>(cfgc),
     adaptAnalysisTask<MixedEventsTripleVariousKinds>(cfgc),
     adaptAnalysisTask<HashTask>(cfgc),
     adaptAnalysisTask<MixedEventsWithHashTask>(cfgc),
     adaptAnalysisTask<MixedEventsPartitionedTracks>(cfgc),
     adaptAnalysisTask<MixedEventsLambdaBinning>(cfgc),
-    adaptAnalysisTask<MixedEventsCounters>(cfgc),*/
+    adaptAnalysisTask<MixedEventsCounters>(cfgc),
   };
 }
