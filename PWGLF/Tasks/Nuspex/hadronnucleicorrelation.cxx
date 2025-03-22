@@ -193,12 +193,12 @@ struct hadronnucleicorrelation {
 
     AxisSpec ptBinnedAxis = {pTBins, "#it{p}_{T} of #bar{p} (GeV/c)"};
     AxisSpec etaAxis = {100, -1., 1., "#eta"};
-    AxisSpec phiAxis = {157, 0., 2 * TMath::Pi(), "#phi (rad)"};
+    AxisSpec phiAxis = {157, 0., 2 * o2::constants::math::PI, "#phi (rad)"};
     AxisSpec pTAxis = {200, -10.f, 10.f, "p_{T} GeV/c"};
     AxisSpec pTAxis_small = {100, -5.f, 5.f, "p_{T} GeV/c"};
 
     AxisSpec DeltaEtaAxis = {100, -1.5, 1.5, "#Delta#eta"};
-    AxisSpec DeltaPhiAxis = {60, -TMath::Pi() / 2, 1.5 * TMath::Pi(), "#Delta#phi (rad)"};
+    AxisSpec DeltaPhiAxis = {60, -o2::constants::math::PI / 2, 1.5 * o2::constants::math::PI, "#Delta#phi (rad)"};
 
     registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{5, 0.f, 5.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "Selected");
@@ -329,12 +329,12 @@ struct hadronnucleicorrelation {
       if (doMCQA) {
         registry.add("hResEta_Proton", "; #eta(gen); #eta(reco) - #eta(gen)  ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
         registry.add("hResEta_Deuteron", "; #eta(gen); #eta(reco) - #eta(gen) ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
-        registry.add("hResPhi_Proton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi(), "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
-        registry.add("hResPhi_Deuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi(), "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
+        registry.add("hResPhi_Proton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * o2::constants::math::PI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
+        registry.add("hResPhi_Deuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * o2::constants::math::PI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
         registry.add("hResEta_AntiProton", "; #eta(gen); #eta(reco) - #eta(gen)  ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
         registry.add("hResEta_AntiDeuteron", "; #eta(gen); #eta(reco) - #eta(gen) ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
-        registry.add("hResPhi_AntiProton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi(), "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
-        registry.add("hResPhi_AntiDeuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi(), "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
+        registry.add("hResPhi_AntiProton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * o2::constants::math::PI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
+        registry.add("hResPhi_AntiDeuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * o2::constants::math::PI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
 
         registry.add("hNumeratorPurity_Proton_TPC", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
         registry.add("hNumeratorPurity_Deuteron_TPC", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
@@ -385,6 +385,9 @@ struct hadronnucleicorrelation {
       registry.get<TH1>(HIST("Generated/hQADeuterons"))->GetXaxis()->SetBinLabel(1, "All");
       registry.get<TH1>(HIST("Generated/hQADeuterons"))->GetXaxis()->SetBinLabel(2, "PhysicalPrimary");
       registry.get<TH1>(HIST("Generated/hQADeuterons"))->GetXaxis()->SetBinLabel(3, "|#eta|<0.8");
+
+      registry.add("Generated/hDeuteronsVsPt", "hDeuteronsVsPt;  p_{T} (GeV/c);", {HistType::kTH1D, {{100, 0.f, 10.f}}});
+      registry.add("Generated/hAntiDeuteronsVsPt", "hAntiDeuteronsVsPt;  p_{T} (GeV/c);", {HistType::kTH1D, {{100, 0.f, 10.f}}});
     }
   }
 
@@ -509,9 +512,9 @@ struct hadronnucleicorrelation {
   {
     bool passcut = true;
     // pt-dependent selection
-    if (TMath::Abs(track.dcaXY()) > (par0 + par1 / track.pt()))
+    if (std::abs(track.dcaXY()) > (par0 + par1 / track.pt()))
       passcut = false;
-    if (TMath::Abs(track.dcaZ()) > (par0 + par1 / track.pt()))
+    if (std::abs(track.dcaZ()) > (par0 + par1 / track.pt()))
       passcut = false;
 
     return passcut;
@@ -635,10 +638,10 @@ struct hadronnucleicorrelation {
 
   float getDeltaPhi(float deltaPhi)
   {
-    if (deltaPhi < -TMath::Pi() / 2) {
-      return deltaPhi += 2 * TMath::Pi();
-    } else if (deltaPhi >= 3 * TMath::Pi() / 2) {
-      return deltaPhi -= 2 * TMath::Pi();
+    if (deltaPhi < -o2::constants::math::PI / 2) {
+      return deltaPhi += 2 * o2::constants::math::PI;
+    } else if (deltaPhi >= 3 * o2::constants::math::PI / 2) {
+      return deltaPhi -= 2 * o2::constants::math::PI;
     }
     return deltaPhi;
   }
@@ -1354,6 +1357,13 @@ struct hadronnucleicorrelation {
       }
       if (particle.pdgCode() == pdgDeuteron) {
         registry.fill(HIST("Generated/hQADeuterons"), 1.5);
+      }
+
+      if (particle.pdgCode() == pdgDeuteron && std::abs(particle.y()) < 0.5) {
+        registry.fill(HIST("Generated/hDeuteronsVsPt"), particle.pt());
+      }
+      if (particle.pdgCode() == -pdgDeuteron && std::abs(particle.y()) < 0.5) {
+        registry.fill(HIST("Generated/hAntiDeuteronsVsPt"), particle.pt());
       }
 
       if (std::abs(particle.eta()) > etacut) {
