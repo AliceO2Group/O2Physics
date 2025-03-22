@@ -73,7 +73,7 @@ struct HfCandidateSelectorLc {
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::Cuts[0], hf_cuts_lc_to_p_k_pi::NBinsPt, hf_cuts_lc_to_p_k_pi::NCutVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
-  Configurable<LabeledArray<double>> kfCuts{"kfCuts", {hf_cuts_lc_to_p_k_pi::kfCuts[0], hf_cuts_lc_to_p_k_pi::NBinsPt, hf_cuts_lc_to_p_k_pi::NKfCutVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsKfCutVar}, "Lc candidate selection per pT bin with KF-associated variables"};
+  Configurable<LabeledArray<double>> kfCuts{"kfCuts", {hf_cuts_lc_to_p_k_pi::CutsKf[0], hf_cuts_lc_to_p_k_pi::NBinsPt, hf_cuts_lc_to_p_k_pi::NCutKfVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsCutKfVar}, "Lc candidate selection per pT bin with KF-associated variables"};
   Configurable<bool> applyNonKfCuts{"applyNonKfCuts", true, "Whether to apply non-KF cuts when running in KF mode. In DCAFitter mode this field is not effective"};
   Configurable<bool> applyKfCuts{"applyKfCuts", true, "Whether to apply KF cuts when running in KF mode. In DCAFitter mode this field is not effective"};
   // QA switch
