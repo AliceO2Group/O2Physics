@@ -56,21 +56,15 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(E, e, float);
-DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);
-DECLARE_SOA_COLUMN(NSigTpcPr0, nSigTpcPr0, float);
-DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);
-DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float);
-DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);
-DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);
-DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);
-DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float);
-DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);
-DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);
-DECLARE_SOA_COLUMN(NSigTpcTofPr0, nSigTpcTofPr0, float);
-DECLARE_SOA_COLUMN(NSigTpcTofPi0, nSigTpcTofPi0, float);
-DECLARE_SOA_COLUMN(NSigTpcTofKa1, nSigTpcTofKa1, float);
-DECLARE_SOA_COLUMN(NSigTpcTofPr2, nSigTpcTofPr2, float);
-DECLARE_SOA_COLUMN(NSigTpcTofPi2, nSigTpcTofPi2, float);
+DECLARE_SOA_COLUMN(NSigTpcPi, nSigTpcPi, float);
+DECLARE_SOA_COLUMN(NSigTpcKa, nSigTpcKa, float);
+DECLARE_SOA_COLUMN(NSigTpcPr, nSigTpcPr, float);
+DECLARE_SOA_COLUMN(NSigTofPi, nSigTofPi, float);
+DECLARE_SOA_COLUMN(NSigTofKa, nSigTofKa, float);
+DECLARE_SOA_COLUMN(NSigTofPr, nSigTofPr, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPi, nSigTpcTofPi, float);
+DECLARE_SOA_COLUMN(NSigTpcTofKa, nSigTpcTofKa, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPr, nSigTpcTofPr, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
@@ -131,7 +125,18 @@ DECLARE_SOA_COLUMN(ErrP, errP, float);                                   //! mom
 DECLARE_SOA_COLUMN(ErrPt, errPt, float);                                 //! transverse momentum error
 DECLARE_SOA_COLUMN(IsSelected, isSelected, int);                         //! flag whether candidate was selected in candidateSelectorLc task
 DECLARE_SOA_COLUMN(SigBgStatus, sigBgStatus, int);                       //! 0 bg, 1 prompt, 2 non-prompt, 3 wrong order of prongs, -1 default value (impossible, should not be the case), -999 for data
+DECLARE_SOA_COLUMN(MultNTracksPV, multNTracksPV, int);
 } // namespace kf
+
+namespace kf_collision
+{
+DECLARE_SOA_COLUMN(PosXErr, posXErr, float); //! PV X coordinate uncertainty
+DECLARE_SOA_COLUMN(PosYErr, posYErr, float); //! PV Y coordinate uncertainty
+DECLARE_SOA_COLUMN(PosZErr, posZErr, float); //! PV Z coordinate uncertainty
+DECLARE_SOA_COLUMN(McPosX, mcPosX, float);   //! PV X coordinate uncertainty
+DECLARE_SOA_COLUMN(McPosY, mcPosY, float);   //! PV Y coordinate uncertainty
+DECLARE_SOA_COLUMN(McPosZ, mcPosZ, float);   //! PV Z coordinate uncertainty
+} // namespace kf_collision
 
 namespace mc_match
 {
@@ -154,6 +159,7 @@ DECLARE_SOA_TABLE(HfCandLcMCs, "AOD", "HFCANDLCMC",
                   mc_match::XEvent, mc_match::YEvent, mc_match::ZEvent)
 
 DECLARE_SOA_TABLE(HfCandLcKFs, "AOD", "HFCANDLCKF",
+                  full::CollisionId,
                   kf::X, kf::Y, kf::Z, kf::ErrX, kf::ErrY, kf::ErrZ,
                   kf::ErrPVX, kf::ErrPVY, kf::ErrPVZ,
                   kf::Chi2PrimProton, kf::Chi2PrimKaon, kf::Chi2PrimPion,
@@ -161,7 +167,8 @@ DECLARE_SOA_TABLE(HfCandLcKFs, "AOD", "HFCANDLCKF",
                   kf::Chi2GeoProtonKaon, kf::Chi2GeoProtonPion, kf::Chi2GeoPionKaon,
                   kf::Chi2Geo, kf::Chi2Topo, kf::DecayLength, kf::DecayLengthError, kf::DecayLengthNormalised, kf::T, kf::ErrT,
                   kf::MassInv, kf::P, kf::Pt, kf::ErrP, kf::ErrPt,
-                  kf::IsSelected, kf::SigBgStatus);
+                  kf::IsSelected, kf::SigBgStatus,
+                  kf::MultNTracksPV);
 
 DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   collision::PosX,
@@ -178,21 +185,15 @@ DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
                   hf_cand::ImpactParameter2,
-                  full::NSigTpcPi0,
-                  full::NSigTpcPr0,
-                  full::NSigTofPi0,
-                  full::NSigTofPr0,
-                  full::NSigTpcKa1,
-                  full::NSigTofKa1,
-                  full::NSigTpcPi2,
-                  full::NSigTpcPr2,
-                  full::NSigTofPi2,
-                  full::NSigTofPr2,
-                  full::NSigTpcTofPi0,
-                  full::NSigTpcTofPr0,
-                  full::NSigTpcTofKa1,
-                  full::NSigTpcTofPi2,
-                  full::NSigTpcTofPr2,
+                  full::NSigTpcPi,
+                  full::NSigTpcKa,
+                  full::NSigTpcPr,
+                  full::NSigTofPi,
+                  full::NSigTofKa,
+                  full::NSigTofPr,
+                  full::NSigTpcTofPi,
+                  full::NSigTpcTofKa,
+                  full::NSigTpcTofPr,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -253,21 +254,15 @@ DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
                   hf_cand::ErrorImpactParameter2,
-                  full::NSigTpcPi0,
-                  full::NSigTpcPr0,
-                  full::NSigTofPi0,
-                  full::NSigTofPr0,
-                  full::NSigTpcKa1,
-                  full::NSigTofKa1,
-                  full::NSigTpcPi2,
-                  full::NSigTpcPr2,
-                  full::NSigTofPi2,
-                  full::NSigTofPr2,
-                  full::NSigTpcTofPi0,
-                  full::NSigTpcTofPr0,
-                  full::NSigTpcTofKa1,
-                  full::NSigTpcTofPi2,
-                  full::NSigTpcTofPr2,
+                  full::NSigTpcPi,
+                  full::NSigTpcKa,
+                  full::NSigTpcPr,
+                  full::NSigTofPi,
+                  full::NSigTofKa,
+                  full::NSigTofPr,
+                  full::NSigTpcTofPi,
+                  full::NSigTpcTofKa,
+                  full::NSigTpcTofPr,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -293,6 +288,12 @@ DECLARE_SOA_TABLE(HfCandLcFullEvs, "AOD", "HFCANDLCFULLEV",
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
+                  kf_collision::PosXErr,
+                  kf_collision::PosYErr,
+                  kf_collision::PosZErr,
+                  kf_collision::McPosX,
+                  kf_collision::McPosY,
+                  kf_collision::McPosZ,
                   full::IsEventReject,
                   full::RunNumber,
                   full::CentFT0A,
@@ -300,7 +301,8 @@ DECLARE_SOA_TABLE(HfCandLcFullEvs, "AOD", "HFCANDLCFULLEV",
                   full::CentFT0M,
                   full::CentFV0A,
                   full::CentFDDM,
-                  full::MultZeqNTracksPV);
+                  full::MultZeqNTracksPV,
+                  kf::MultNTracksPV);
 
 DECLARE_SOA_TABLE(HfCandLcFullPs, "AOD", "HFCANDLCFULLP",
                   full::Pt,
@@ -308,7 +310,16 @@ DECLARE_SOA_TABLE(HfCandLcFullPs, "AOD", "HFCANDLCFULLP",
                   full::Phi,
                   full::Y,
                   full::FlagMc,
-                  full::OriginMcGen);
+                  full::OriginMcGen,
+                  mc_match::P,
+                  mc_match::XDecay,
+                  mc_match::YDecay,
+                  mc_match::ZDecay,
+                  mc_match::LDecay,
+                  mc_match::TDecay,
+                  mc_match::XEvent,
+                  mc_match::YEvent,
+                  mc_match::ZEvent);
 
 } // namespace o2::aod
 
@@ -431,6 +442,8 @@ struct HfTreeCreatorLcToPKPi {
         centFDDM = collision.centFDDM();
       }
 
+      auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
+
       rowCandidateFullEvents(
         collision.globalIndex(),
         collision.mcCollisionId(),
@@ -438,6 +451,12 @@ struct HfTreeCreatorLcToPKPi {
         collision.posX(),
         collision.posY(),
         collision.posZ(),
+        std::sqrt(collision.covXX()),
+        std::sqrt(collision.covYY()),
+        std::sqrt(collision.covZZ()),
+        mcCollision.posX(),
+        mcCollision.posY(),
+        mcCollision.posZ(),
         0,
         collision.bc().runNumber(),
         centFT0A,
@@ -445,7 +464,8 @@ struct HfTreeCreatorLcToPKPi {
         centFT0M,
         centFV0A,
         centFDDM,
-        collision.multZeqNTracksPV());
+        collision.multZeqNTracksPV(),
+        collision.multNTracksPV());
     }
 
     // Filling candidate properties
@@ -469,12 +489,16 @@ struct HfTreeCreatorLcToPKPi {
       auto trackPos1 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
+      auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int CandFlag) {
         double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
         const int FunctionSelection = CandFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         const int sigbgstatus = determineSignalBgStatus(candidate, CandFlag);
-        bool isMcCandidateSignal = (sigbgstatus == Prompt) || (sigbgstatus == NonPrompt);
-        if (FunctionSelection >= selectionFlagLc && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))))) {
+        const bool isMcCandidateSignal = (sigbgstatus == Prompt) || (sigbgstatus == NonPrompt);
+        const bool passSelection = FunctionSelection >= selectionFlagLc;
+        const bool keepAll = !keepOnlySignalMc && !keepOnlyBkg;
+        const bool notSkippedBkg = isMcCandidateSignal || candidate.pt() > downSampleBkgPtMax || pseudoRndm < downSampleBkgFactor;
+        if (passSelection && notSkippedBkg && (keepAll || (keepOnlySignalMc && isMcCandidateSignal) || (keepOnlyBkg && !isMcCandidateSignal))) {
           float FunctionInvMass, FunctionInvMassKPi;
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
             FunctionInvMass = CandFlag == 0 ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
@@ -502,21 +526,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.impactParameter0(),
               candidate.impactParameter1(),
               candidate.impactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaPr(),
+              CandFlag == 0 ? trackPos1.tpcNSigmaPi() : trackPos2.tpcNSigmaPi(),
               trackNeg.tpcNSigmaKa(),
+              CandFlag == 0 ? trackPos2.tpcNSigmaPr() : trackPos1.tpcNSigmaPr(),
+              CandFlag == 0 ? trackPos1.tofNSigmaPi() : trackPos2.tofNSigmaPi(),
               trackNeg.tofNSigmaKa(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaPr(),
-              trackPos1.tpcTofNSigmaPi(),
-              trackPos1.tpcTofNSigmaPr(),
+              CandFlag == 0 ? trackPos2.tofNSigmaPr() : trackPos1.tofNSigmaPr(),
+              CandFlag == 0 ? trackPos1.tpcTofNSigmaPi() : trackPos2.tpcTofNSigmaPi(),
               trackNeg.tpcTofNSigmaKa(),
-              trackPos2.tpcTofNSigmaPi(),
-              trackPos2.tpcTofNSigmaPr(),
+              CandFlag == 0 ? trackPos2.tpcTofNSigmaPr() : trackPos1.tpcTofNSigmaPr(),
               1 << CandFlag,
               FunctionInvMass,
               candidate.pt(),
@@ -579,21 +597,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.errorImpactParameter0(),
               candidate.errorImpactParameter1(),
               candidate.errorImpactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaPr(),
+              CandFlag == 0 ? trackPos1.tpcNSigmaPi() : trackPos2.tpcNSigmaPi(),
               trackNeg.tpcNSigmaKa(),
+              CandFlag == 0 ? trackPos2.tpcNSigmaPr() : trackPos1.tpcNSigmaPr(),
+              CandFlag == 0 ? trackPos1.tofNSigmaPi() : trackPos2.tofNSigmaPi(),
               trackNeg.tofNSigmaKa(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaPr(),
-              trackPos1.tpcTofNSigmaPi(),
-              trackPos1.tpcTofNSigmaPr(),
+              CandFlag == 0 ? trackPos2.tofNSigmaPr() : trackPos1.tofNSigmaPr(),
+              CandFlag == 0 ? trackPos1.tpcTofNSigmaPi() : trackPos2.tpcTofNSigmaPi(),
               trackNeg.tpcTofNSigmaKa(),
-              trackPos2.tpcTofNSigmaPi(),
-              trackPos2.tpcTofNSigmaPr(),
+              CandFlag == 0 ? trackPos2.tpcTofNSigmaPr() : trackPos1.tpcTofNSigmaPr(),
               1 << CandFlag,
               FunctionInvMass,
               candidate.pt(),
@@ -648,6 +660,7 @@ struct HfTreeCreatorLcToPKPi {
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float mass = CandFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
             rowCandidateKF(
+              candidate.collisionId(),
               svX, svY, svZ, svErrX, svErrY, svErrZ,
               pvErrX, pvErrY, pvErrZ,
               chi2primProton, chi2primKaon, chi2primPion,
@@ -655,7 +668,8 @@ struct HfTreeCreatorLcToPKPi {
               chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
               chi2Geo, chi2Topo, l, dl, l / dl, t, deltaT,
               mass, p, pt, deltaP, deltaPt,
-              FunctionSelection, sigbgstatus);
+              FunctionSelection, sigbgstatus,
+              collision.multNTracksPV());
           }
           if (fillCandidateMcTable) {
             float p, pt, svX, svY, svZ, pvX, pvY, pvZ, l, t;
@@ -704,13 +718,29 @@ struct HfTreeCreatorLcToPKPi {
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
+        auto mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
+        auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
+        auto p = particle.p();
+        const float p2m = p / MassLambdaCPlus;
+        const float gamma = std::sqrt(1 + p2m * p2m); // mother's particle Lorentz factor
+        const float pvX = mcCollision.posX();
+        const float pvY = mcCollision.posY();
+        const float pvZ = mcCollision.posZ();
+        const float svX = mcDaughter0.vx();
+        const float svY = mcDaughter0.vy();
+        const float svZ = mcDaughter0.vz();
+        const float l = std::sqrt((svX - pvX) * (svX - pvX) + (svY - pvY) * (svY - pvY) + (svZ - pvZ) * (svZ - pvZ));
+        const float t = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
         rowCandidateFullParticles(
           particle.pt(),
           particle.eta(),
           particle.phi(),
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus),
           particle.flagMcMatchGen(),
-          particle.originMcGen());
+          particle.originMcGen(),
+          p,
+          svX, svY, svZ, l, t,
+          pvX, pvY, pvZ);
       }
     }
   }
@@ -722,7 +752,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param particles Generated particle table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processMcNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs> const& collisions,
+  void processMcNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                            aod::McCollisions const& mcCollisions,
                                            soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
@@ -738,7 +768,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidates Lc->pKpi candidate table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processMcWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents> const& collisions,
+  void processMcWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                              aod::McCollisions const& mcCollisions,
                                              soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
@@ -755,7 +785,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param particles Generated particle table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processMcNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs> const& collisions,
+  void processMcNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                            aod::McCollisions const& mcCollisions,
                                            soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
@@ -771,7 +801,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidates Lc->pKpi candidate table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processMcWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents> const& collisions,
+  void processMcWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                              aod::McCollisions const& mcCollisions,
                                              soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
@@ -814,6 +844,12 @@ struct HfTreeCreatorLcToPKPi {
         collision.posX(),
         collision.posY(),
         collision.posZ(),
+        std::sqrt(collision.covXX()),
+        std::sqrt(collision.covYY()),
+        std::sqrt(collision.covZZ()),
+        UndefValueFloat,
+        UndefValueFloat,
+        UndefValueFloat,
         0,
         collision.bc().runNumber(),
         centFT0A,
@@ -821,7 +857,8 @@ struct HfTreeCreatorLcToPKPi {
         centFT0M,
         centFV0A,
         centFDDM,
-        collision.multZeqNTracksPV());
+        collision.multZeqNTracksPV(),
+        collision.multNTracksPV());
     }
 
     // Filling candidate properties
@@ -842,6 +879,7 @@ struct HfTreeCreatorLcToPKPi {
       auto trackPos1 = candidate.template prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
+      auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int CandFlag) {
         double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
         const int FunctionSelection = CandFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
@@ -873,21 +911,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.impactParameter0(),
               candidate.impactParameter1(),
               candidate.impactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaPr(),
+              CandFlag == 0 ? trackPos1.tpcNSigmaPi() : trackPos2.tpcNSigmaPi(),
               trackNeg.tpcNSigmaKa(),
+              CandFlag == 0 ? trackPos2.tpcNSigmaPr() : trackPos1.tpcNSigmaPr(),
+              CandFlag == 0 ? trackPos1.tofNSigmaPi() : trackPos2.tofNSigmaPi(),
               trackNeg.tofNSigmaKa(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaPr(),
-              trackPos1.tpcTofNSigmaPi(),
-              trackPos1.tpcTofNSigmaPr(),
+              CandFlag == 0 ? trackPos2.tofNSigmaPr() : trackPos1.tofNSigmaPr(),
+              CandFlag == 0 ? trackPos1.tpcTofNSigmaPi() : trackPos2.tpcTofNSigmaPi(),
               trackNeg.tpcTofNSigmaKa(),
-              trackPos2.tpcTofNSigmaPi(),
-              trackPos2.tpcTofNSigmaPr(),
+              CandFlag == 0 ? trackPos2.tpcTofNSigmaPr() : trackPos1.tpcTofNSigmaPr(),
               1 << CandFlag,
               FunctionInvMass,
               candidate.pt(),
@@ -951,21 +983,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.errorImpactParameter0(),
               candidate.errorImpactParameter1(),
               candidate.errorImpactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaPr(),
+              CandFlag == 0 ? trackPos1.tpcNSigmaPi() : trackPos2.tpcNSigmaPi(),
               trackNeg.tpcNSigmaKa(),
+              CandFlag == 0 ? trackPos2.tpcNSigmaPr() : trackPos1.tpcNSigmaPr(),
+              CandFlag == 0 ? trackPos1.tofNSigmaPi() : trackPos2.tofNSigmaPi(),
               trackNeg.tofNSigmaKa(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaPr(),
-              trackPos1.tpcTofNSigmaPi(),
-              trackPos1.tpcTofNSigmaPr(),
+              CandFlag == 0 ? trackPos2.tofNSigmaPr() : trackPos1.tofNSigmaPr(),
+              CandFlag == 0 ? trackPos1.tpcTofNSigmaPi() : trackPos2.tpcTofNSigmaPi(),
               trackNeg.tpcTofNSigmaKa(),
-              trackPos2.tpcTofNSigmaPi(),
-              trackPos2.tpcTofNSigmaPr(),
+              CandFlag == 0 ? trackPos2.tpcTofNSigmaPr() : trackPos1.tpcTofNSigmaPr(),
               1 << CandFlag,
               FunctionInvMass,
               candidate.pt(),
@@ -1020,6 +1046,7 @@ struct HfTreeCreatorLcToPKPi {
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float mass = CandFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
             rowCandidateKF(
+              candidate.collisionId(),
               X, Y, Z, ErrX, ErrY, ErrZ,
               ErrPVX, ErrPVY, ErrPVZ,
               chi2prim_proton, chi2prim_kaon, chi2prim_pion,
@@ -1027,7 +1054,8 @@ struct HfTreeCreatorLcToPKPi {
               chi2Geo_proton_kaon, chi2Geo_proton_pion, chi2Geo_pion_kaon,
               chi2Geo, chi2Topo, l, dl, l / dl, T, deltaT,
               mass, p, pt, deltaP, deltaPt,
-              FunctionSelection, UndefValueInt);
+              FunctionSelection, UndefValueInt,
+              collision.multNTracksPV());
           }
         }
       };
@@ -1042,7 +1070,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidates Lc->pKpi candidate table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processDataNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs> const& collisions,
+  void processDataNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                              soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
                                              TracksWPid const& tracks, aod::BCs const& bcs)
   {
@@ -1055,7 +1083,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidates Lc->pKpi candidate table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processDataWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents> const& collisions,
+  void processDataWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                                soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
                                                TracksWPid const& tracks, aod::BCs const& bcs)
   {
@@ -1068,7 +1096,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidates Lc->pKpi candidate table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processDataNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs> const& collisions,
+  void processDataNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                              soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                              TracksWPid const& tracks, aod::BCs const& bcs)
   {
@@ -1081,7 +1109,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidates Lc->pKpi candidate table
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
-  void processDataWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents> const& collisions,
+  void processDataWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                                soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                                TracksWPid const& tracks, aod::BCs const& bcs)
   {
