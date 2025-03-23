@@ -655,7 +655,7 @@ struct FlowGfwTask {
       effNch = mEfficiencyNch->GetBinContent(mEfficiencyNch->FindBin(nch));
     else
       effNch = 1.0;
-    if (effNch == 0)
+    if (effNch == 0.0)
       return false;
     weight_nueNch = 1. / effNch;
     return true;
@@ -1012,7 +1012,6 @@ struct FlowGfwTask {
 
       if (cfgGlobalplusITS) {
         if (withinPtRef) {
-          nch++;
           registry.fill(HIST("GlobalplusITS"), centrality, nch);
           fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
         }
@@ -1021,7 +1020,6 @@ struct FlowGfwTask {
       if (track.hasTPC()) {
         if (cfgGlobalonly) {
           if (withinPtRef) {
-            nch++;
             registry.fill(HIST("Globalonly"), centrality, nch);
             registry.fill(HIST("pt_Cen_GlobalOnly"), centrality, track.pt());
             registry.fill(HIST("phi_Cen_GlobalOnly"), centrality, track.phi());
@@ -1031,7 +1029,6 @@ struct FlowGfwTask {
       } else {
         if (cfgITSonly) {
           if (withinPtRef) {
-            nch++;
             registry.fill(HIST("ITSonly"), centrality, nch);
             registry.fill(HIST("pt_Cen_ITSOnly"), centrality, track.pt());
             registry.fill(HIST("phi_Cen_ITSOnly"), centrality, track.phi());
