@@ -415,6 +415,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
       /// Child particles must pass this condition to be selected
       if (!isParticleTPC(posChild, CascChildTable[confCascType1][0]) || !isParticleTPC(negChild, CascChildTable[confCascType1][1]) || !isParticleTPC(bachelor, CascChildTable[confCascType1][2]))
         continue;
+      if (!isParticleTOF(posChild, CascChildTable[confCascType1][0]) || !isParticleTOF(negChild, CascChildTable[confCascType1][1]) || !isParticleTOF(bachelor, CascChildTable[confCascType1][2]))
+        continue;
 
       sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
     }
@@ -527,6 +529,9 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
         /// Child particles must pass this condition to be selected
         if (!isParticleTPC(posChild, CascChildTable[confCascType1][0]) || !isParticleTPC(negChild, CascChildTable[confCascType1][1]) || !isParticleTPC(bachelor, CascChildTable[confCascType1][2]))
           continue;
+        if (!isParticleTOF(posChild, CascChildTable[confCascType1][0]) || !isParticleTOF(negChild, CascChildTable[confCascType1][1]) || !isParticleTOF(bachelor, CascChildTable[confCascType1][2]))
+          continue;
+
         // track cleaning
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
