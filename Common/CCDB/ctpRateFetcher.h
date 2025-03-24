@@ -34,7 +34,7 @@ class ctpRateFetcher
 {
  public:
   ctpRateFetcher() = default;
-  double fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName);
+  double fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName, bool fCrashOnNull = true);
 
   void setManualCleanup(bool manualCleanup = true) { mManualCleanup = manualCleanup; }
 

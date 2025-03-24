@@ -23,6 +23,7 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/HistogramRegistry.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -149,16 +150,19 @@ struct FlowPtEfficiency {
     registry.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
     registry.add("hPtMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
     registry.add("hPtNchMCRec", "Reco production; pT (GeV/c); multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
+    registry.add("hBVsPtVsPhiRec", "hBVsPtVsPhiRec", HistType::kTH3D, {axisB, axisPhi, axisPt});
 
     registry.add("mcEventCounter", "Monte Carlo Truth EventCounter", kTH1F, {axisCounter});
     registry.add("hPtMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
     registry.add("hPtNchMCGen", "Truth production; pT (GeV/c); multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
     registry.add("numberOfRecoCollisions", "numberOfRecoCollisions", kTH1F, {{10, -0.5f, 9.5f}});
+    registry.add("hBVsPtVsPhiTrue", "hBVsPtVsPhiTrue", HistType::kTH3D, {axisB, axisPhi, axisPt});
 
     if (cfgFlowEnabled) {
       registry.add("hImpactParameterReco", "hImpactParameterReco", {HistType::kTH1D, {axisB}});
       registry.add("hImpactParameterTruth", "hImpactParameterTruth", {HistType::kTH1D, {axisB}});
       registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
+      registry.add("hPhiMCTruth", "#phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
 
       o2::framework::AxisSpec axis = axisPt;
@@ -189,7 +193,7 @@ struct FlowPtEfficiency {
       fGFWTrue->AddRegion("refP10", 0.5, 0.8, 1, 1);
       fGFWTrue->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
       fGFWTrue->AddRegion("poifull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2);
-      fGFWTrue->AddRegion("olN10", -0.8, -0.5, 1, 4);
+      fGFWTrue->AddRegion("olN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 4);
       fGFWTrue->AddRegion("olfull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 4);
       corrconfigsTruth.push_back(fGFWTrue->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
       corrconfigsTruth.push_back(fGFWTrue->GetCorrelatorConfig("poifull full | olfull {2 -2}", "ChFull22", kTRUE));
@@ -202,7 +206,7 @@ struct FlowPtEfficiency {
       fGFWReco->AddRegion("refP10", 0.5, 0.8, 1, 1);
       fGFWReco->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
       fGFWReco->AddRegion("poifull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2);
-      fGFWReco->AddRegion("olN10", -0.8, -0.5, 1, 4);
+      fGFWReco->AddRegion("olN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 4);
       fGFWReco->AddRegion("olfull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 4);
       corrconfigsReco.push_back(fGFWReco->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
       corrconfigsReco.push_back(fGFWReco->GetCorrelatorConfig("poifull full | olfull {2 -2}", "ChFull22", kTRUE));
@@ -371,8 +375,9 @@ struct FlowPtEfficiency {
         return;
     }
 
-    float imp;
+    float imp = 0;
     bool impFetched = false;
+    float evPhi = 0;
     float centrality = 0.;
     float lRandom = fRndm->Rndm();
     float vtxz = collision.posZ();
@@ -381,6 +386,8 @@ struct FlowPtEfficiency {
     if (cfgFlowEnabled) {
       loadCentVsIPReco(bc.timestamp());
       loadCorrections(bc.timestamp());
+
+      fGFWReco->Clear();
     }
 
     for (const auto& track : tracks) {
@@ -393,6 +400,7 @@ struct FlowPtEfficiency {
           imp = mcCollision.impactParameter();
           registry.fill(HIST("hImpactParameterReco"), imp);
           centrality = mCentVsIPReco->GetBinContent(mCentVsIPReco->GetXaxis()->FindBin(imp));
+          evPhi = RecoDecay::constrainAngle(mcCollision.eventPlaneAngle());
           impFetched = true;
         }
         if (isStable(mcParticle.pdgCode())) {
@@ -400,6 +408,8 @@ struct FlowPtEfficiency {
           registry.fill(HIST("hPtNchMCRec"), track.pt(), tracks.size());
 
           if (cfgFlowEnabled) {
+            float deltaPhi = RecoDecay::constrainAngle(track.phi() - evPhi);
+            registry.fill(HIST("hBVsPtVsPhiRec"), imp, deltaPhi, track.pt());
             bool withinPtPOI = (cfgFlowCutPtPOIMin < track.pt()) && (track.pt() < cfgFlowCutPtPOIMax); // within POI pT range
             bool withinPtRef = (cfgFlowCutPtRefMin < track.pt()) && (track.pt() < cfgFlowCutPtRefMax); // within RF pT range
             if (withinPtRef)
@@ -439,12 +449,15 @@ struct FlowPtEfficiency {
     }
 
     float imp = mcCollision.impactParameter();
+    float evPhi = RecoDecay::constrainAngle(mcCollision.eventPlaneAngle());
     float centrality = 0.;
     if (cfgFlowEnabled) {
       registry.fill(HIST("hImpactParameterTruth"), imp);
       auto bc = mcCollision.bc_as<aod::BCsWithTimestamps>();
       loadCentVsIPTruth(bc.timestamp());
       centrality = mCentVsIPTruth->GetBinContent(mCentVsIPTruth->GetXaxis()->FindBin(imp));
+
+      fGFWTrue->Clear();
     }
     float lRandom = fRndm->Rndm();
     float wacc = 1.0f;
@@ -468,8 +481,13 @@ struct FlowPtEfficiency {
             registry.fill(HIST("hPtNchMCGen"), mcParticle.pt(), numberOfTracks[0]);
 
           if (cfgFlowEnabled) {
+            float deltaPhi = RecoDecay::constrainAngle(mcParticle.phi() - evPhi);
+            registry.fill(HIST("hBVsPtVsPhiTrue"), imp, deltaPhi, mcParticle.pt());
             bool withinPtPOI = (cfgFlowCutPtPOIMin < mcParticle.pt()) && (mcParticle.pt() < cfgFlowCutPtPOIMax); // within POI pT range
             bool withinPtRef = (cfgFlowCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgFlowCutPtRefMax); // within RF pT range
+            if (withinPtRef) {
+              registry.fill(HIST("hPhiMCTruth"), mcParticle.phi());
+            }
             if (withinPtRef)
               fGFWTrue->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 1);
             if (withinPtPOI)

@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 //
 ///
+/// \file dndetaMFTPbPb.cxx
 /// \brief  Task for calculating dNdeta in Pb-Pb collisions using MFT detector
 /// \author Gyula Bencedi, gyula.bencedi@cern.ch
 /// \since  Nov 2024
@@ -39,11 +40,12 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "CommonConstants/MathConstants.h"
 
-#include "Functions.h"
-#include "Index.h"
 #include "MathUtils/Utils.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "TPDGCode.h"
+
+#include "Functions.h"
+#include "Index.h"
 #include "bestCollisionTable.h"
 
 using namespace o2;
@@ -133,7 +135,7 @@ struct DndetaMFTPbPb {
     "centralityBins",
     {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
     "Centrality"};
-  ConfigurableAxis IrBins{"IrBins", {500, 0, 50}, "Interaction rate (kHz)"};
+  ConfigurableAxis irBins{"irBins", {500, 0, 50}, "Interaction rate (kHz)"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
@@ -246,7 +248,7 @@ struct DndetaMFTPbPb {
       x->SetBinLabel(2, "Selected");
 
       qaregistry.add("hOccIRate", "hOccIRate", HistType::kTH2F,
-                     {occupancyAxis, IrBins});
+                     {occupancyAxis, irBins});
 
       registry.add({"Events/NtrkZvtx",
                     "; N_{trk}; Z_{vtx} (cm); occupancy",
@@ -332,7 +334,7 @@ struct DndetaMFTPbPb {
       hstat->GetAxis(0)->SetBinLabel(2, "Selected");
 
       qaregistry.add("hCentOccIRate", "hCentOccIRate", HistType::kTHnSparseF,
-                     {centralityAxis, occupancyAxis, IrBins});
+                     {centralityAxis, occupancyAxis, irBins});
 
       qaregistry.add({"Events/Centrality/hCent",
                       "; centrality; occupancy",
@@ -516,26 +518,26 @@ struct DndetaMFTPbPb {
     }
 
     if (doprocessTrkEffIdxInlusive) {
-      qaregistry.add({"Tracks/hPtPhiEtaZvtxEffGen",
-                      "; p_{T} (GeV/c); #varphi; #eta; Z_{vtx} (cm); occupancy",
+      qaregistry.add({"Tracks/hPtEtaEffGen",
+                      "; p_{T} (GeV/c); #eta; occupancy",
                       {HistType::kTHnSparseF,
-                       {ptAxis, phiAxis, etaAxis, zAxis, occupancyAxis}}});
-      qaregistry.add({"Tracks/hPtPhiEtaZvtxEffRec",
-                      "; p_{T} (GeV/c); #varphi; #eta; Z_{vtx} (cm); occupancy",
+                       {ptAxis, etaAxis, occupancyAxis}}});
+      qaregistry.add({"Tracks/hPtEtaEffPrim",
+                      "; p_{T} (GeV/c); #eta; occupancy",
                       {HistType::kTHnSparseF,
-                       {ptAxis, phiAxis, etaAxis, zAxis, occupancyAxis}}});
-      qaregistry.add(
-        {"Tracks/hPhiEtaDuplicates",
-         "; #varphi; #eta; occupancy",
-         {HistType::kTHnSparseF, {phiAxis, etaAxis, occupancyAxis}}});
-      qaregistry.add({"Tracks/hPtPhiEtaZvtxEffDuplicates",
-                      "; p_{T} (GeV/c); #varphi; #eta; Z_{vtx} (cm); occupancy",
+                       {ptAxis, etaAxis, occupancyAxis}}});
+      qaregistry.add({"Tracks/hPtEtaEffSec",
+                      "; p_{T} (GeV/c); #eta; occupancy",
                       {HistType::kTHnSparseF,
-                       {ptAxis, phiAxis, etaAxis, zAxis, occupancyAxis}}});
-      qaregistry.add({"Tracks/hPtPhiEtaZvtxEffGenDuplicates",
-                      "; p_{T} (GeV/c); #varphi; #eta; Z_{vtx} (cm); occupancy",
+                       {ptAxis, etaAxis, occupancyAxis}}});
+      qaregistry.add({"Tracks/hPtEtaEffGenDupl",
+                      "; p_{T} (GeV/c); #eta; occupancy",
                       {HistType::kTHnSparseF,
-                       {ptAxis, phiAxis, etaAxis, zAxis, occupancyAxis}}});
+                       {ptAxis, etaAxis, occupancyAxis}}});
+      qaregistry.add({"Tracks/hPtEtaEffDupl",
+                      "; p_{T} (GeV/c); #eta; occupancy",
+                      {HistType::kTHnSparseF,
+                       {ptAxis, etaAxis, occupancyAxis}}});
       qaregistry.add({"Tracks/NmftTrkPerPart",
                       "; #it{N}_{mft tracks per particle}; occupancy",
                       {HistType::kTH2F, {multAxis, occupancyAxis}}});
@@ -543,33 +545,35 @@ struct DndetaMFTPbPb {
 
     if (doprocessTrkEffIdxCentFT0C) {
       qaregistry.add(
-        {"Tracks/Centrality/hPtPhiEtaZvtxEffGen",
-         "; p_{T} (GeV/c); #varphi; #eta; Z_{vtx} (cm); centrality; "
+        {"Tracks/Centrality/hPtEtaEffGen",
+         "; p_{T} (GeV/c); #eta; centrality; "
          "occupancy",
          {HistType::kTHnSparseF,
-          {ptAxis, phiAxis, etaAxis, zAxis, centralityAxis, occupancyAxis}}});
+          {ptAxis, etaAxis, centralityAxis, occupancyAxis}}});
       qaregistry.add(
-        {"Tracks/Centrality/hPtPhiEtaZvtxEffRec",
-         "; p_{T} (GeV/c); #varphi; #eta; Z_{vtx} (cm); centrality; "
+        {"Tracks/Centrality/hPtEtaEffPrim",
+         "; p_{T} (GeV/c); #eta; centrality; "
          "occupancy",
          {HistType::kTHnSparseF,
-          {ptAxis, phiAxis, etaAxis, zAxis, centralityAxis, occupancyAxis}}});
-      qaregistry.add({"Tracks/Centrality/hPhiEtaDuplicates",
-                      "; #varphi; #eta; centrality; occupancy",
-                      {HistType::kTHnSparseF,
-                       {phiAxis, etaAxis, centralityAxis, occupancyAxis}}});
+          {ptAxis, etaAxis, centralityAxis, occupancyAxis}}});
       qaregistry.add(
-        {"Tracks/Centrality/hPtPhiEtaZvtxEffDuplicates",
-         "; p_{T} (GeV/c); #varphi; #eta; Z_{vtx} (cm); centrality; "
+        {"Tracks/Centrality/hPtEtaEffSec",
+         "; p_{T} (GeV/c); #eta; Z_{vtx} (cm); centrality; "
          "occupancy",
          {HistType::kTHnSparseF,
-          {ptAxis, phiAxis, etaAxis, zAxis, centralityAxis, occupancyAxis}}});
+          {ptAxis, etaAxis, centralityAxis, occupancyAxis}}});
       qaregistry.add(
-        {"Tracks/Centrality/hPtPhiEtaZvtxEffGenDuplicates",
-         "; p_{T} (GeV/c); #varphi; #eta; Z_{vtx} (cm); centrality; "
+        {"Tracks/Centrality/hPtEtaEffGenDupl",
+         "; p_{T} (GeV/c); #eta; centrality; "
          "occupancy",
          {HistType::kTHnSparseF,
-          {ptAxis, phiAxis, etaAxis, zAxis, centralityAxis, occupancyAxis}}});
+          {ptAxis, etaAxis, centralityAxis, occupancyAxis}}});
+      qaregistry.add(
+        {"Tracks/Centrality/hPtEtaEffDupl",
+         "; p_{T} (GeV/c); #eta; centrality; "
+         "occupancy",
+         {HistType::kTHnSparseF,
+          {ptAxis, etaAxis, centralityAxis, occupancyAxis}}});
       qaregistry.add(
         {"Tracks/Centrality/NmftTrkPerPart",
          "; #it{N}_{mft tracks per particle}; centrality; occupancy",
@@ -675,13 +679,13 @@ struct DndetaMFTPbPb {
 
     if (doprocessEfficiencyCentFT0C) {
       qaregistry.add({"Tracks/Centrality/hEffRec",
-                      "; p_{T} (GeV/c); #varphi; #eta; Z_{vtx} (cm); occupancy",
+                      "; p_{T} (GeV/c); #varphi; #eta; Z_{vtx} (cm); centrality; occupancy",
                       {HistType::kTHnSparseF,
-                       {ptAxis, phiAxis, etaAxis, zAxis, occupancyAxis}}});
+                       {ptAxis, phiAxis, etaAxis, zAxis, centralityAxis, occupancyAxis}}});
       qaregistry.add({"Tracks/Centrality/hEffFake",
-                      "; p_{T} (GeV/c); #varphi; #eta; Z_{vtx} (cm); occupancy",
+                      "; p_{T} (GeV/c); #varphi; #eta; Z_{vtx} (cm); centrality; occupancy",
                       {HistType::kTHnSparseF,
-                       {ptAxis, phiAxis, etaAxis, zAxis, occupancyAxis}}});
+                       {ptAxis, phiAxis, etaAxis, zAxis, centralityAxis, occupancyAxis}}});
     }
   }
 
@@ -1230,10 +1234,9 @@ struct DndetaMFTPbPb {
     processDatawBestTracks<CollsCentFT0C>(collision, tracks, besttracks, bcs);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processDatawBestTracksCentFT0C,
-    "Count tracks in FT0C centrality bins based on BestCollisionsFwd table",
-    false);
+  PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentFT0C,
+                 "Count tracks in FT0C centrality bins based on BestCollisionsFwd table",
+                 false);
 
   void processDatawBestTracksCentFT0CVariant1(
     CollsCentFT0CVariant1::iterator const& collision,
@@ -1258,10 +1261,9 @@ struct DndetaMFTPbPb {
     processDatawBestTracks<CollsCentFT0M>(collision, tracks, besttracks, bcs);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processDatawBestTracksCentFT0M,
-    "Count tracks in FT0M centrality bins based on BestCollisionsFwd table",
-    false);
+  PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentFT0M,
+                 "Count tracks in FT0M centrality bins based on BestCollisionsFwd table",
+                 false);
 
   void processDatawBestTracksCentNGlobal(
     CollsCentNGlobal::iterator const& collision, FiltMftTracks const& tracks,
@@ -1285,10 +1287,9 @@ struct DndetaMFTPbPb {
     processDatawBestTracks<CollsCentMFT>(collision, tracks, besttracks, bcs);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processDatawBestTracksCentMFT,
-    "Count tracks in MFT centrality bins based on BestCollisionsFwd table",
-    false);
+  PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentMFT,
+                 "Count tracks in MFT centrality bins based on BestCollisionsFwd table",
+                 false);
 
   Preslice<FiltMcMftTracks> perCol = o2::aod::fwdtrack::collisionId;
   PresliceUnsorted<CollsGenCentFT0C> recColPerMcCol =
@@ -1391,15 +1392,16 @@ struct DndetaMFTPbPb {
     auto perCollMCsample = mcSample->sliceByCached(
       aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto nchrg = countPart(perCollMCsample);
+    auto zvtxMC = mcCollision.posZ();
+
     if (gtOneColl > 1) {
       if constexpr (has_reco_cent<C>) {
-        qaregistry.fill(HIST("Events/Centrality/SplitMult"), nchrg, cgen);
+        qaregistry.fill(HIST("Events/Centrality/SplitMult"), nchrg, zvtxMC, cgen);
       } else {
-        qaregistry.fill(HIST("Events/SplitMult"), nchrg);
+        qaregistry.fill(HIST("Events/SplitMult"), nchrg, zvtxMC);
       }
     }
 
-    auto zvtxMC = mcCollision.posZ();
     auto nCharged = countPart(particles);
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged, zvtxMC,
@@ -1562,9 +1564,9 @@ struct DndetaMFTPbPb {
 
         if constexpr (has_reco_cent<C>) {
           registry.fill(HIST("Events/Centrality/NtrkZvtxGen"), nTrkRec, z,
-                        crec);
+                        crec, occrec);
         } else {
-          registry.fill(HIST("Events/NtrkZvtxGen"), nTrkRec, z);
+          registry.fill(HIST("Events/NtrkZvtxGen"), nTrkRec, z, occrec);
         }
       }
     }
@@ -1620,10 +1622,9 @@ struct DndetaMFTPbPb {
       mccollision, collisions, particles, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processMCwBestTracksCentFT0C,
-    "Count MC particles in FT0C centrality bins using aod::BestCollisionsFwd",
-    false);
+  PROCESS_SWITCH(DndetaMFTPbPb, processMCwBestTracksCentFT0C,
+                 "Count MC particles in FT0C centrality bins using aod::BestCollisionsFwd",
+                 false);
 
   void processMCwBestTracksCentFT0CVariant1(
     aod::McCollisions::iterator const& mccollision,
@@ -1651,10 +1652,9 @@ struct DndetaMFTPbPb {
       mccollision, collisions, particles, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processMCwBestTracksCentFT0M,
-    "Count MC particles in FT0M centrality bins using aod::BestCollisionsFwd",
-    false);
+  PROCESS_SWITCH(DndetaMFTPbPb, processMCwBestTracksCentFT0M,
+                 "Count MC particles in FT0M centrality bins using aod::BestCollisionsFwd",
+                 false);
 
   void processMCwBestTracksCentNGlobal(
     aod::McCollisions::iterator const& mccollision,
@@ -1682,10 +1682,9 @@ struct DndetaMFTPbPb {
       mccollision, collisions, particles, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processMCwBestTracksCentMFT,
-    "Count MC particles in MFT centrality bins using aod::BestCollisionsFwd",
-    false);
+  PROCESS_SWITCH(DndetaMFTPbPb, processMCwBestTracksCentMFT,
+                 "Count MC particles in MFT centrality bins using aod::BestCollisionsFwd",
+                 false);
 
   using ParticlesI = soa::Join<aod::McParticles, aod::ParticlesToMftTracks>;
   Partition<ParticlesI> primariesI =
@@ -1713,31 +1712,6 @@ struct DndetaMFTPbPb {
       auto occrec = getOccupancy(collision, eventCuts.occupancyEstimator);
       auto mcCollision = collision.mcCollision();
 
-      float cgen = -1;
-      if constexpr (has_reco_cent<C>) {
-        float crec_min = 105.f;
-        for (const auto& collision : collisions) {
-          if (isGoodEvent<false>(collision)) {
-            float c = getRecoCent(collision);
-            if (c < crec_min) {
-              crec_min = c;
-            }
-          }
-        }
-        if (cgen < 0)
-          cgen = crec_min;
-      }
-
-      float occgen = -1.;
-      for (const auto& collision : collisions) {
-        if (isGoodEvent<false>(collision)) {
-          float o = getOccupancy(collision, eventCuts.occupancyEstimator);
-          if (o > occgen) {
-            occgen = o;
-          }
-        }
-      }
-
       auto partsPerCol = primariesI->sliceByCached(
         aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
       partsPerCol.bindExternalIndices(&tracks);
@@ -1749,72 +1723,73 @@ struct DndetaMFTPbPb {
 
         // MC gen
         if constexpr (has_reco_cent<C>) {
-          qaregistry.fill(HIST("Tracks/Centrality/hPtPhiEtaZvtxEffGen"),
-                          particle.pt(), particle.phi(), particle.eta(),
-                          mcCollision.posZ(), cgen, occgen);
+          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
+            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffGen"), particle.pt(), particle.eta(), crec, occrec);
+            }
+          }
         } else {
-          qaregistry.fill(HIST("Tracks/hPtPhiEtaZvtxEffGen"), particle.pt(),
-                          particle.phi(), particle.eta(), mcCollision.posZ(),
-                          occgen);
+          if (particle.eta() > trackCuts.minEta && particle.eta() < trackCuts.maxEta) {
+            if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+              qaregistry.fill(HIST("Tracks/hPtEtaEffGen"), particle.pt(), particle.eta(), occrec);
+            }
+          }
         }
         // MC rec
         if (particle.has_mfttracks()) {
           auto iscounted = false;
           auto ncnt = 0;
-          auto relatedTracks =
-            particle.template mfttracks_as<MFTTracksLabeled>();
+          auto relatedTracks = particle.template mfttracks_as<MFTTracksLabeled>();
           for (auto const& track : relatedTracks) {
-            if (!isTrackSelected(track)) {
-              continue;
-            }
             ++ncnt;
             if constexpr (has_reco_cent<C>) {
-              if (!iscounted) { // primaries
-                qaregistry.fill(HIST("Tracks/Centrality/hPtPhiEtaZvtxEffRec"),
-                                particle.pt(), particle.phi(), particle.eta(),
-                                mcCollision.posZ(), crec, occrec);
-                iscounted = true;
+              if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
+                if (!iscounted) { // primaries
+                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                    qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffPrim"), particle.pt(), particle.eta(), crec, occrec);
+                  }
+                  iscounted = true;
+                }
               }
-              if (ncnt > 1) { // duplicates
-                qaregistry.fill(HIST("Tracks/Centrality/hPhiEtaDuplicates"),
-                                track.phi(), track.eta(), crec, occrec);
-                qaregistry.fill(
-                  HIST("Tracks/Centrality/hPtPhiEtaZvtxEffDuplicates"),
-                  particle.pt(), particle.phi(), particle.eta(),
-                  mcCollision.posZ(), crec, occrec);
+              if (ncnt > 1) { // secondaries
+                if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
+                  qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffSec"), particle.pt(), particle.eta(), crec, occrec);
+                }
               }
             } else {
-              if (!iscounted) { // primaries
-                qaregistry.fill(HIST("Tracks/hPtPhiEtaZvtxEffRec"),
-                                particle.pt(), particle.phi(), particle.eta(),
-                                mcCollision.posZ(), occrec);
-                iscounted = true;
+              if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
+                if (!iscounted) { // primaries
+                  if (std::abs(mcCollision.posZ()) < eventCuts.maxZvtx) {
+                    qaregistry.fill(HIST("Tracks/hPtEtaEffPrim"), particle.pt(), particle.eta(), occrec);
+                  }
+                  iscounted = true;
+                }
               }
-              if (ncnt > 1) { // duplicates
-                qaregistry.fill(HIST("Tracks/hPhiEtaDuplicates"), track.phi(),
-                                track.eta(), occrec);
-                qaregistry.fill(HIST("Tracks/hPtPhiEtaZvtxEffDuplicates"),
-                                particle.pt(), particle.phi(), particle.eta(),
-                                mcCollision.posZ(), occrec);
+              if (ncnt > 1) { // secondaries
+                if (track.eta() > trackCuts.minEta && track.eta() < trackCuts.maxEta) {
+                  qaregistry.fill(HIST("Tracks/hPtEtaEffSec"), particle.pt(), particle.eta(), occrec);
+                }
               }
             }
           }
+
           if constexpr (has_reco_cent<C>) {
-            qaregistry.fill(HIST("Tracks/Centrality/NmftTrkPerPart"), ncnt,
-                            crec, occrec);
+            qaregistry.fill(HIST("Tracks/Centrality/NmftTrkPerPart"), ncnt, crec, occrec);
           } else {
             qaregistry.fill(HIST("Tracks/NmftTrkPerPart"), ncnt, occrec);
           }
-          if (relatedTracks.size() > 1) {
+
+          if (relatedTracks.size() > 1) { // duplicates
             if constexpr (has_reco_cent<C>) {
-              qaregistry.fill(
-                HIST("Tracks/Centrality/hPtPhiEtaZvtxEffGenDuplicates"),
-                particle.pt(), particle.phi(), particle.eta(),
-                mcCollision.posZ(), crec, occrec);
+              qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffGenDupl"), particle.pt(), particle.eta(), crec, occrec);
+              for (auto const& track : relatedTracks) {
+                qaregistry.fill(HIST("Tracks/Centrality/hPtEtaEffDupl"), track.pt(), track.eta(), crec, occrec);
+              }
             } else {
-              qaregistry.fill(HIST("Tracks/hPtPhiEtaZvtxEffGenDuplicates"),
-                              particle.pt(), particle.phi(), particle.eta(),
-                              mcCollision.posZ(), occrec);
+              qaregistry.fill(HIST("Tracks/hPtEtaEffGenDupl"), particle.pt(), particle.eta(), occrec);
+              for (auto const& track : relatedTracks) {
+                qaregistry.fill(HIST("Tracks/hPtEtaEffDupl"), track.pt(), track.eta(), occrec);
+              }
             }
           }
         }
@@ -1843,9 +1818,8 @@ struct DndetaMFTPbPb {
                                                        particles, tracks);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processTrkEffIdxCentFT0C,
-    "Process tracking efficiency (in FT0C centrality bins, indexed)", false);
+  PROCESS_SWITCH(DndetaMFTPbPb, processTrkEffIdxCentFT0C,
+                 "Process tracking efficiency (in FT0C centrality bins, indexed)", false);
 
   /// @brief process function to calculate tracking efficiency (indexed) based
   /// on BestCollisionsFwd in FT0C bins
@@ -1922,10 +1896,9 @@ struct DndetaMFTPbPb {
                                                 particles, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processTrkEffBestInclusive,
-    "Process tracking efficiency (inclusive, based on BestCollisionsFwd)",
-    false);
+  PROCESS_SWITCH(DndetaMFTPbPb, processTrkEffBestInclusive,
+                 "Process tracking efficiency (inclusive, based on BestCollisionsFwd)",
+                 false);
 
   void processTrkEffBestCentFT0C(
     soa::Join<CollsCentFT0C, aod::McCollisionLabels>::iterator const& collision,
@@ -2091,10 +2064,9 @@ struct DndetaMFTPbPb {
       collision, allcollisions, track);
   }
 
-  PROCESS_SWITCH(
-    DndetaMFTPbPb, processCheckAmbiguousMftTracksCentFT0C,
-    "Process checks for Ambiguous MFT tracks (in FT0C centrality bins)",
-    false);
+  PROCESS_SWITCH(DndetaMFTPbPb, processCheckAmbiguousMftTracksCentFT0C,
+                 "Process checks for Ambiguous MFT tracks (in FT0C centrality bins)",
+                 false);
 
   Preslice<FiltMftTracks> filtTrkperCol = o2::aod::fwdtrack::collisionId;
 

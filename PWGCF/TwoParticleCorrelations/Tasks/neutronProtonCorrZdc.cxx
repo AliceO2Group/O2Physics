@@ -112,6 +112,8 @@ struct NeutronProtonCorrZdc {
     histos.add("CentvsZPSignalSum", "CentvsZPSignalSum", kTH2F, {cfgAxisCent, axisZPSignal});
     histos.add("CentvsAlphaZN", "CentvsAlphaZN", kTH2F, {cfgAxisCent, axisAlphaZ});
     histos.add("CentvsAlphaZP", "CentvsAlphaZP", kTH2F, {cfgAxisCent, axisAlphaZ});
+    histos.add("CentvsAlphaZNcommon", "CentvsAlphaZNcommon", kTH2F, {cfgAxisCent, axisAlphaZ});
+    histos.add("CentvsAlphaZPcommon", "CentvsAlphaZPcommon", kTH2F, {cfgAxisCent, axisAlphaZ});
     histos.add("CentvsDiffZNSignal", "CentvsDiffZNSignal", defaultZDCDiffHist);
     histos.add("CentvsDiffZPSignal", "CentvsDiffZPSignal", defaultZDCDiffHist);
     histos.add("CentvsZNAvsZNC", "CentvsZNAvsZNC", kTH3F, {cfgAxisCent, axisZNASignal, axisZNCSignal});
@@ -242,6 +244,8 @@ struct NeutronProtonCorrZdc {
       histos.fill(HIST("CentvsZPSignalCommon"), cent, (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
       histos.fill(HIST("CentvsAlphaZN"), cent, alphaZN);
       histos.fill(HIST("CentvsAlphaZP"), cent, alphaZP);
+      histos.fill(HIST("CentvsAlphaZNcommon"), cent, (zdcread.energyCommonZNA() - zdcread.energyCommonZNC()) / (zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
+      histos.fill(HIST("CentvsAlphaZPcommon"), cent, (zdcread.energyCommonZPA() - zdcread.energyCommonZPC()) / (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
 
       histos.fill(HIST("CentvsZNAvsZNC"), cent, sumZNA, sumZNC);
       histos.fill(HIST("CentvsZNAvsZPA"), cent, sumZNA, sumZPA);
@@ -296,6 +300,8 @@ struct NeutronProtonCorrZdc {
       histos.fill(HIST("CentvsZPSignalCommon"), cent, (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
       histos.fill(HIST("CentvsAlphaZN"), cent, alphaZN);
       histos.fill(HIST("CentvsAlphaZP"), cent, alphaZP);
+      histos.fill(HIST("CentvsAlphaZNcommon"), cent, (zdcread.energyCommonZNA() - zdcread.energyCommonZNC()) / (zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
+      histos.fill(HIST("CentvsAlphaZPcommon"), cent, (zdcread.energyCommonZPA() - zdcread.energyCommonZPC()) / (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
 
       histos.fill(HIST("CentvsZNAvsZNC"), cent, sumZNA, sumZNC);
       histos.fill(HIST("CentvsZNAvsZPA"), cent, sumZNA, sumZPA);

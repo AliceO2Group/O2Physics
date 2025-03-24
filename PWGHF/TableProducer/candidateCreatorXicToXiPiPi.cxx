@@ -14,10 +14,11 @@
 ///
 /// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
 /// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
+/// \author Jaeyoon Cho <jaeyoon.cho@cern.ch>, Inha University
 /// \author Jinjoo Seo <jseo@cern.ch>, Heidelberg University
 
 #ifndef HomogeneousField
-#define HomogeneousField // o2-linter: disable=name/macro
+#define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
 #include <string>
@@ -178,7 +179,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovDcaPidPrPi>();
       auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovDcaPidPrPi>();
       auto collision = rowTrackIndexXicPlus.collision();
-      registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
+      }
 
       // preselect cascade candidates
       if (doCascadePreselection) {
@@ -189,7 +192,9 @@ struct HfCandidateCreatorXicToXiPiPi {
           continue;
         }
       }
-      registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
+      }
 
       //----------------------Set the magnetic field from ccdb---------------------------------------
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -241,7 +246,9 @@ struct HfCandidateCreatorXicToXiPiPi {
         LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
         continue;
       }
-      registry.fill(HIST("hCandCounter"), 1 + VertexFit);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + VertexFit);
+      }
 
       //----------------------------calculate physical properties-----------------------
       // Charge of charm baryon
@@ -399,7 +406,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovExtraPidPrPi>();
       auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovExtraPidPrPi>();
       auto collision = rowTrackIndexXicPlus.collision();
-      registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
+      }
 
       //-------------------preselect cascade candidates--------------------------------------
       if (doCascadePreselection) {
@@ -410,7 +419,9 @@ struct HfCandidateCreatorXicToXiPiPi {
           continue;
         }
       }
-      registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
+      }
 
       //----------------------Set the magnetic field from ccdb-----------------------------
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -464,7 +475,9 @@ struct HfCandidateCreatorXicToXiPiPi {
         LOG(debug) << "Failed to construct XicPlus : " << e.what();
         continue;
       }
-      registry.fill(HIST("hCandCounter"), 1 + VertexFit);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + VertexFit);
+      }
 
       // get geometrical chi2 of XicPlus
       float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
@@ -645,8 +658,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       rowCandidateKF(casc.kfCascadeChi2(), casc.kfV0Chi2(),
                      chi2topoXicPlusToPVBeforeConstraint, chi2topoXicPlusToPV, chi2topoXiToXicPlusBeforeConstraint, chi2topoXiToXicPlus,
                      dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi,
-                     dcaPi0Pi1, dcaPi0Xi, dcaPi1Xi,
-                     casc.dcacascdaughters());
+                     dcaPi0Pi1, dcaPi0Xi, dcaPi1Xi);
     } // loop over track triplets
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processXicplusWithKFParticle, "Run candidate creator with KFParticle using derived data from HfTrackIndexSkimCreatorLfCascades.", false);

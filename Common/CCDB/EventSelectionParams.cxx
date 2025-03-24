@@ -65,7 +65,6 @@ const char* selectionLabels[kNsel] = {
   "kNoCollInTimeRangeNarrow",
   "kNoCollInTimeRangeStrict",
   "kNoCollInTimeRangeStandard",
-  "kNoCollInTimeRangeVzDependent",
   "kNoCollInRofStrict",
   "kNoCollInRofStandard",
   "kNoHighMultCollInPrevRof",

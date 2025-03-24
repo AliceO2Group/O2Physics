@@ -201,11 +201,6 @@ class reconstructedParticle
 
  private:
   std::string fName;
-
-  // status
-  //  0: not defined
-  //  1: ULS
-  //  2: LS
   TLorentzVector fIVM;
   std::vector<int> fComb;
 };
@@ -896,11 +891,11 @@ class decayTree
             // M vs dcaXYZ
             hname = base;
             hname.append("MvsdcaXY_").append(res->name()).append(d1->name());
-            annot = "M versus dcaXY; M (" + res->name() + ") GeV/c^{2}; dca_{XY} (" + d1->name() + ") {mu}m";
+            annot = "M versus dcaXY; M (" + res->name() + ") GeV/c^{2}; dca_{XY} (" + d1->name() + ") #mu m";
             fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {HistType::kTH2F, {max, dcaxyax}})});
             hname = base;
             hname.append("MvsdcaZ_").append(res->name()).append(d1->name());
-            annot = "M versus dcaZ; M (" + res->name() + ") GeV/c^{2}; dca_{Z} (" + d1->name() + ") {mu}m";
+            annot = "M versus dcaZ; M (" + res->name() + ") GeV/c^{2}; dca_{Z} (" + d1->name() + ") #mu m";
             fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {HistType::kTH2F, {max, dcazax}})});
 
             // M vs chi2 track

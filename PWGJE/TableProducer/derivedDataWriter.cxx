@@ -145,7 +145,7 @@ struct JetDerivedDataWriter {
     Produces<aod::StoredJDielectronIds> storedDielectronIdsTable;
     Produces<aod::StoredJDielectronMcCollisions> storedDielectronMcCollisionsTable;
     Produces<aod::StoredJDielectronMcCollisionIds> storedDielectronMcCollisionIdsTable;
-    // Produces<aod::StoredHfD0McRCollIds> storedD0McCollisionsMatchingTable; //this doesnt exist for Dileptons yet
+    Produces<aod::StoredJDielectronMcRCollDummys> storedDielectronMcRCollDummysTable;
     Produces<aod::StoredJDielectronMcs> storedDielectronParticlesTable;
     Produces<aod::StoredJDielectronMcIds> storedDielectronParticleIdsTable;
   } products;
@@ -154,15 +154,15 @@ struct JetDerivedDataWriter {
 
   Preslice<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>> ParticlesPerMcCollision = aod::jmcparticle::mcCollisionId;
   Preslice<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs, aod::JMcTrackLbs>> TracksPerCollision = aod::jtrack::collisionId;
-  Preslice<aod::McCollisionsD0> D0McCollisionsPerMcCollision = aod::jd0indices::mcCollisionId;
-  Preslice<aod::McCollisionsDplus> DplusMcCollisionsPerMcCollision = aod::jdplusindices::mcCollisionId;
-  Preslice<aod::McCollisionsLc> LcMcCollisionsPerMcCollision = aod::jlcindices::mcCollisionId;
-  Preslice<aod::McCollisionsBplus> BplusMcCollisionsPerMcCollision = aod::jbplusindices::mcCollisionId;
-  Preslice<aod::McCollisionsDielectron> DielectronMcCollisionsPerMcCollision = aod::jdielectronindices::mcCollisionId;
-  Preslice<aod::CandidatesD0MCP> D0ParticlesPerMcCollision = aod::jd0indices::mcCollisionId;
-  Preslice<aod::CandidatesDplusMCP> DplusParticlesPerMcCollision = aod::jdplusindices::mcCollisionId;
-  Preslice<aod::CandidatesLcMCP> LcParticlesPerMcCollision = aod::jlcindices::mcCollisionId;
-  Preslice<aod::CandidatesBplusMCP> BplusParticlesPerMcCollision = aod::jbplusindices::mcCollisionId;
+  Preslice<aod::McCollisionsD0> D0McCollisionsPerMcCollision = aod::jcandidateindices::mcCollisionId;
+  Preslice<aod::McCollisionsDplus> DplusMcCollisionsPerMcCollision = aod::jcandidateindices::mcCollisionId;
+  Preslice<aod::McCollisionsLc> LcMcCollisionsPerMcCollision = aod::jcandidateindices::mcCollisionId;
+  Preslice<aod::McCollisionsBplus> BplusMcCollisionsPerMcCollision = aod::jcandidateindices::mcCollisionId;
+  Preslice<aod::McCollisionsDielectron> DielectronMcCollisionsPerMcCollision = aod::jcandidateindices::mcCollisionId;
+  Preslice<aod::CandidatesD0MCP> D0ParticlesPerMcCollision = aod::jcandidateindices::mcCollisionId;
+  Preslice<aod::CandidatesDplusMCP> DplusParticlesPerMcCollision = aod::jcandidateindices::mcCollisionId;
+  Preslice<aod::CandidatesLcMCP> LcParticlesPerMcCollision = aod::jcandidateindices::mcCollisionId;
+  Preslice<aod::CandidatesBplusMCP> BplusParticlesPerMcCollision = aod::jcandidateindices::mcCollisionId;
   PresliceUnsorted<aod::JEMCTracks> EMCTrackPerTrack = aod::jemctrack::trackId;
 
   uint32_t precisionPositionMask;
@@ -292,7 +292,7 @@ struct JetDerivedDataWriter {
     for (auto const& collision : collisions) {
       if (collision.isCollisionSelected()) {
 
-        products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.trackOccupancyInTimeRange(), collision.eventSel(), collision.alias_raw(), collision.triggerSel());
+        products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.centralityVariant1(), collision.hadronicRate(), collision.trackOccupancyInTimeRange(), collision.eventSel(), collision.alias_raw(), collision.triggerSel());
         collisionMapping[collision.globalIndex()] = products.storedJCollisionsTable.lastIndex();
         products.storedJCollisionMcInfosTable(collision.weight(), collision.subGeneratorId());
         products.storedJCollisionsParentIndexTable(collision.collisionId());
@@ -421,8 +421,7 @@ struct JetDerivedDataWriter {
     mcCollisionMapping.resize(mcCollisions.size(), -1);
     for (auto const& mcCollision : mcCollisions) {
       if (mcCollision.isMcCollisionSelected()) {
-
-        products.storedJMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.weight(), mcCollision.subGeneratorId());
+        products.storedJMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.weight(), mcCollision.subGeneratorId(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr());
         products.storedJMcCollisionsParentIndexTable(mcCollision.mcCollisionId());
         mcCollisionMapping[mcCollision.globalIndex()] = products.storedJMcCollisionsTable.lastIndex();
       }
@@ -562,7 +561,7 @@ struct JetDerivedDataWriter {
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processBplusMCP, "write out Bplus mcp output tables", false);
 
-  void processDielectronMCP(soa::Join<aod::JMcCollisions, aod::JMcCollisionSelections>::iterator const& mcCollision, aod::JMcParticles const&, aod::McCollisionsDielectron const& DielectronMcCollisions, aod::CandidatesDielectronMCP const& DielectronParticles)
+  void processDielectronMCP(soa::Join<aod::JMcCollisions, aod::JMcCollisionSelections>::iterator const& mcCollision, aod::JMcParticles const&, soa::Join<aod::McCollisionsDielectron, aod::JDielectronMcRCollDummys> const& DielectronMcCollisions, aod::CandidatesDielectronMCP const& DielectronParticles)
   {
     if (mcCollision.isMcCollisionSelected()) {
 
@@ -570,6 +569,7 @@ struct JetDerivedDataWriter {
       for (const auto& dielectronMcCollisionPerMcCollision : dielectronMcCollisionsPerMcCollision) { // should only ever be one
         jetdqutilities::fillDielectronMcCollisionTable(dielectronMcCollisionPerMcCollision, products.storedDielectronMcCollisionsTable);
         products.storedDielectronMcCollisionIdsTable(mcCollisionMapping[mcCollision.globalIndex()]);
+        products.storedDielectronMcRCollDummysTable(dielectronMcCollisionPerMcCollision.dummyDQ());
       }
       for (const auto& DielectronParticle : DielectronParticles) {
         jetdqutilities::fillDielectronCandidateMcTable(DielectronParticle, products.storedDielectronMcCollisionsTable.lastIndex(), products.storedDielectronParticlesTable);
