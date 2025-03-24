@@ -74,6 +74,7 @@ struct HStrangeCorrelation {
   Configurable<bool> doGenEventSelection{"doGenEventSelection", true, "use event selections when performing closure test for the gen events"};
   Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
   Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
+  Configurable<bool> requireAllGoodITSLayers{"requireAllGoodITSLayers", false, " require that in the event all ITS are good"};
   Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", false, "skip under/overflow in THns"};
   Configurable<int> mixingParameter{"mixingParameter", 10, "how many events are mixed"};
   Configurable<bool> doMCassociation{"doMCassociation", false, "fill everything only for MC associated"};
@@ -119,12 +120,18 @@ struct HStrangeCorrelation {
     Configurable<int> minTPCNCrossedRowsTrigger{"minTPCNCrossedRowsTrigger", 70, "Minimum TPC crossed rows (trigger)"};
     Configurable<int> minTPCNCrossedRowsAssociated{"minTPCNCrossedRowsAssociated", 70, "Minimum TPC crossed rows (associated)"};
     Configurable<bool> triggerRequireITS{"triggerRequireITS", true, "require ITS signal in trigger tracks"};
+    Configurable<bool> assocRequireITS{"assocRequireITS", true, "require ITS signal in associated primary tracks"};
     Configurable<int> triggerMaxTPCSharedClusters{"triggerMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive)"};
+    Configurable<int> assocMaxTPCSharedClusters{"assocMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive) for assoc primary tracks"};
     Configurable<bool> triggerRequireL0{"triggerRequireL0", false, "require ITS L0 cluster for trigger"};
+    Configurable<bool> assocRequireL0{"assocRequireL0", true, "require ITS L0 cluster for assoc primary track"};
 
     // --- Trigger: DCA variation from basic formula: |DCAxy| <  0.004f + (0.013f / pt)
     Configurable<float> dcaXYconstant{"dcaXYconstant", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
     Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
+
+    Configurable<float> dcaXYconstantAssoc{"dcaXYconstantAssoc", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
+    Configurable<float> dcaXYpTdepAssoc{"dcaXYpTdepAssoc", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
 
     // --- Associated: topological variable variation (OK to vary all-at-once, at least for first study)
     Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -265,6 +272,30 @@ struct HStrangeCorrelation {
     }
     return true;
   }
+  template <class TTrack>
+  bool isValidAssocHadron(TTrack track)
+  {
+    if (track.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRowsAssociated) {
+      return false; // crossed rows
+    }
+    if (!track.hasITS() && systCuts.assocRequireITS) {
+      return false; // skip, doesn't have ITS signal (skips lots of TPC-only!)
+    }
+    if (track.tpcNClsShared() > systCuts.assocMaxTPCSharedClusters) {
+      return false; // skip, has shared clusters
+    }
+    if (!(TESTBIT(track.itsClusterMap(), 0)) && systCuts.assocRequireL0) {
+      return false; // skip, doesn't have cluster in ITS L0
+    }
+    // systematic variations: trigger DCAxy
+    if (std::abs(track.dcaXY()) > systCuts.dcaXYconstantAssoc + systCuts.dcaXYpTdepAssoc * std::abs(track.signed1Pt())) {
+      return false;
+    }
+    if (track.pt() > axisRanges[2][1] || track.pt() < axisRanges[2][0]) {
+      return false;
+    }
+    return true;
+  }
   void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing, float pvz, float mult)
   {
     for (auto const& triggerTrack : triggers) {
@@ -278,6 +309,9 @@ struct HStrangeCorrelation {
         float efficiency = 1.0f;
         if (applyEfficiencyForTrigger) {
           efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+          if (efficiency == 0) { // check for zero efficiency, do not apply if the case
+            efficiency = 1;
+          }
         }
         float weight = (applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
         histos.fill(HIST("sameEvent/TriggerParticlesV0"), trigg.pt(), mult, weight);
@@ -336,6 +370,9 @@ struct HStrangeCorrelation {
           if (applyEfficiencyForTrigger) {
             efficiency = efficiency * hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
           }
+          if (efficiency == 0) { // check for zero efficiency, do not apply if the case
+            efficiency = 1;
+          }
 
           float weight = (applyEfficiencyCorrection || applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
           if (TESTBIT(doCorrelation, Index) && (!applyEfficiencyCorrection || efficiency != 0)) {
@@ -379,6 +416,9 @@ struct HStrangeCorrelation {
         float efficiency = 1.0f;
         if (applyEfficiencyForTrigger) {
           efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+          if (efficiency == 0) { // check for zero efficiency, do not apply if the case
+            efficiency = 1;
+          }
         }
         float weight = (applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
         histos.fill(HIST("sameEvent/TriggerParticlesCascade"), trigg.pt(), mult, weight);
@@ -450,6 +490,9 @@ struct HStrangeCorrelation {
           if (applyEfficiencyForTrigger) {
             efficiency = efficiency * hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
           }
+          if (efficiency == 0) { // check for zero efficiency, do not apply if the case
+            efficiency = 1;
+          }
           float weight = (applyEfficiencyCorrection || applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
           if (TESTBIT(doCorrelation, Index + 3) && (!applyEfficiencyCorrection || efficiency != 0)) {
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma)
@@ -484,6 +527,9 @@ struct HStrangeCorrelation {
         float efficiency = 1.0f;
         if (applyEfficiencyForTrigger) {
           efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+          if (efficiency == 0) { // check for zero efficiency, do not apply if the case
+            efficiency = 1;
+          }
         }
         float weight = (applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
         if constexpr (requires { triggerTrack.extra(); })
@@ -504,11 +550,12 @@ struct HStrangeCorrelation {
             continue;
           }
         }
-
         //---] track quality check [---
-        if (assoc.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRowsAssociated)
+        if (!isValidAssocHadron(assoc))
           continue;
-
+        if (doAssocPhysicalPrimary && !assocTrack.mcPhysicalPrimary()) {
+          continue;
+        }
         float deltaphi = computeDeltaPhi(trigg.phi(), assoc.phi());
         float deltaeta = trigg.eta() - assoc.eta();
         float ptassoc = assoc.pt();
@@ -532,6 +579,9 @@ struct HStrangeCorrelation {
         }
         if (applyEfficiencyForTrigger) {
           efficiency = efficiency * hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
+        }
+        if (efficiency == 0) { // check for zero efficiency, do not apply if the case
+          efficiency = 1;
         }
         float weight = (applyEfficiencyCorrection || applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
 
@@ -770,6 +820,7 @@ struct HStrangeCorrelation {
     histos.add("hTriggerPtResolution", ";p_{T}^{reconstructed} (GeV/c); p_{T}^{generated} (GeV/c)", kTH2F, {axisPtQA, axisPtQA});
     histos.add("hTriggerPrimaryEtaVsPt", "hTriggerPrimaryEtaVsPt", kTH3F, {axisPtQA, axisEta, axisMult});
     histos.add("hTrackEtaVsPtVsPhi", "hTrackEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
+    histos.add("hAssocTrackEtaVsPtVsPhi", "hAssocTrackEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
     histos.add("hTrackAttempt", "Attempt", kTH3F, {axisPtQA, axisEta, axisPhi});
 
     bool hStrange = false;
@@ -863,6 +914,9 @@ struct HStrangeCorrelation {
     if (!collision.isInelGt0() && selectINELgtZERO) {
       return false;
     }
+    if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && requireAllGoodITSLayers) {
+      return false;
+    }
     if (zorroMask.value != "") {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initZorro(bc);
@@ -946,12 +1000,39 @@ struct HStrangeCorrelation {
         auto track = triggerTrack.track_as<TracksComplete>();
         if (!isValidTrigger(track))
           continue;
+        float efficiency = 1.0f;
+        if (applyEfficiencyCorrection) {
+          efficiency = hEfficiencyTrigger->Interpolate(track.pt(), track.eta());
+        }
+        if (efficiency == 0) { // check for zero efficiency, do not apply if the case
+          efficiency = 1;
+        }
+        float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
         histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
         histos.fill(HIST("hTriggerPtResolution"), track.pt(), triggerTrack.mcOriginalPt());
         if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
           continue;
         histos.fill(HIST("hTriggerPrimaryEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
-        histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi());
+        histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi(), weight);
+      }
+      for (auto const& assocTrack : assocHadrons) {
+        auto assoc = assocTrack.track_as<TracksComplete>();
+        if (!isValidAssocHadron(assoc))
+          continue;
+        float efficiency = 1.0f;
+        if (applyEfficiencyCorrection) {
+          efficiency = hEfficiencyHadron->Interpolate(assoc.pt(), assoc.eta());
+        }
+        if (efficiency == 0) { // check for zero efficiency, do not apply if the case
+          efficiency = 1;
+        }
+        float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
+        histos.fill(HIST("hAssocHadronsAllSelectedEtaVsPt"), assoc.pt(), assoc.eta(), collision.centFT0M());
+        histos.fill(HIST("hAssocPtResolution"), assoc.pt(), assocTrack.mcOriginalPt());
+        if (doAssocPhysicalPrimary && !assocTrack.mcPhysicalPrimary())
+          continue;
+        histos.fill(HIST("hAssocPrimaryEtaVsPt"), assoc.pt(), assoc.eta(), collision.centFT0M());
+        histos.fill(HIST("hAsssocTrackEtaVsPtVsPhi"), assoc.pt(), assoc.eta(), assoc.phi(), weight);
       }
     }
 
@@ -1013,6 +1094,9 @@ struct HStrangeCorrelation {
         float efficiency = 1.0f;
         if (applyEfficiencyCorrection) {
           efficiency = hEfficiencyV0[Index]->Interpolate(v0Data.pt(), v0Data.eta());
+        }
+        if (efficiency == 0) { // check for zero efficiency, do not apply if the case
+          efficiency = 1;
         }
         float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
         if (v0.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || v0.mcTrue(Index)) && (!doAssocPhysicalPrimary || v0.mcPhysicalPrimary()) && (!applyEfficiencyCorrection || efficiency != 0)) {
@@ -1108,6 +1192,9 @@ struct HStrangeCorrelation {
         float efficiency = 1.0f;
         if (applyEfficiencyCorrection) {
           efficiency = hEfficiencyCascade[Index]->Interpolate(cascData.pt(), cascData.eta());
+        }
+        if (efficiency == 0) { // check for zero efficiency, do not apply if the case
+          efficiency = 1;
         }
         float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
         if (casc.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || casc.mcTrue(Index)) && (!doAssocPhysicalPrimary || casc.mcPhysicalPrimary()) && (!applyEfficiencyCorrection || efficiency != 0)) {
