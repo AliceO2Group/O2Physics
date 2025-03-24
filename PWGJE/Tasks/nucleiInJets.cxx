@@ -12,7 +12,7 @@
 // author: Arvind Khuntia (arvind.khuntia@cern.ch) INFN Bologna, Italy
 
 #include <algorithm>
-#include <iostream> 
+#include <iostream>
 #include <iterator>
 #include <string>
 #include <vector>
