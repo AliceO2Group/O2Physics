@@ -1700,7 +1700,7 @@ inline int16_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, 
     if ((std::fabs(nSigmaKaTpc) > mNSigmaTpcPiCharmBaryonBachelor) || (std::fabs(nSigmaKaTof) > mNSigmaTofPiCharmBaryonBachelor)) {
       CLRBIT(retValue, kKaonForCharmBaryon);
     }
-    if ((std::fabs(nSigmaPrTpc) > mNSigmaTpcPiCharmBaryonBachelor) || (std::fabs(nSigmaPrTof) > mNSigmaTpcPiCharmBaryonBachelor)) {
+    if ((std::fabs(nSigmaPrTpc) > mNSigmaTpcPiCharmBaryonBachelor) || (std::fabs(nSigmaPrTof) > mNSigmaTofPiCharmBaryonBachelor)) {
       CLRBIT(retValue, kProtonForCharmBaryon);
     }
   } else {
