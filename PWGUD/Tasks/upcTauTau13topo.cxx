@@ -43,7 +43,88 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
+// derived tables for tautau->4 (=1+3) tracks
+namespace o2::aod
+{
+namespace tau_tree
+{
+// event info
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
+DECLARE_SOA_COLUMN(Bc, bc, int);
+DECLARE_SOA_COLUMN(TotalTracks, totalTracks, int);
+DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
+// DECLARE_SOA_COLUMN(GlobalNonPVtracks, globalNonPVtracks, int);
+// DECLARE_SOA_COLUMN(PosX, posX, float);
+// DECLARE_SOA_COLUMN(PosY, posY, float);
+DECLARE_SOA_COLUMN(PosZ, posZ, float);
+DECLARE_SOA_COLUMN(FlagUPC, flagUPC, bool);
+DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, int);
+DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
+DECLARE_SOA_COLUMN(Trs, trs, bool);
+DECLARE_SOA_COLUMN(Trofs, trofs, bool);
+DECLARE_SOA_COLUMN(Hmpr, hmpr, bool);
+// DECLARE_SOA_COLUMN(Tfb, tfb, int);
+// DECLARE_SOA_COLUMN(ItsRofb, itsRofb, int);
+// DECLARE_SOA_COLUMN(Sbp, sbp, int);
+// DECLARE_SOA_COLUMN(ZvtxFT0vsPv, zvtxFT0vsPv, int);
+// DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int);
+DECLARE_SOA_COLUMN(ZdcAenergy, zdcAenergy, float);
+DECLARE_SOA_COLUMN(ZdcCenergy, zdcCenergy, float);
+DECLARE_SOA_COLUMN(Qtot, qtot, short);
+// FIT info
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
+DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float);
+// DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float);
+// DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float);
+// DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);
+// tracks
+DECLARE_SOA_COLUMN(TrkPx, trkPx, float[4]);
+DECLARE_SOA_COLUMN(TrkPy, trkPy, float[4]);
+DECLARE_SOA_COLUMN(TrkPz, trkPz, float[4]);
+// DECLARE_SOA_COLUMN(TrkSign, trkSign, int[4]);
+// DECLARE_SOA_COLUMN(TrkDCAxy, trkDCAxy, float[4]);
+// DECLARE_SOA_COLUMN(TrkDCAz, trkDCAz, float[4]);
+DECLARE_SOA_COLUMN(TrkTPCcr, trkTPCcr, int[4]);
+DECLARE_SOA_COLUMN(TrkTPCsignal, trkTPCsignal, float[4]);
+DECLARE_SOA_COLUMN(TrkTPCnSigmaEl, trkTPCnSigmaEl, float[4]);
+// DECLARE_SOA_COLUMN(TrkTPCnSigmaMu, trkTPCnSigmaMu, float[4]);
+DECLARE_SOA_COLUMN(TrkTPCnSigmaPi, trkTPCnSigmaPi, float[4]);
+DECLARE_SOA_COLUMN(TrkTPCnSigmaKa, trkTPCnSigmaKa, float[4]);
+DECLARE_SOA_COLUMN(TrkTPCnSigmaPr, trkTPCnSigmaPr, float[4]);
+DECLARE_SOA_COLUMN(TrkTOFbeta, trkTOFbeta, float[4]);
+DECLARE_SOA_COLUMN(TrkTOFnSigmaEl, trkTOFnSigmaEl, float[4]);
+// DECLARE_SOA_COLUMN(TrkTOFnSigmaMu, trkTOFnSigmaMu, float[4]);
+DECLARE_SOA_COLUMN(TrkTOFnSigmaPi, trkTOFnSigmaPi, float[4]);
+DECLARE_SOA_COLUMN(TrkTOFnSigmaKa, trkTOFnSigmaKa, float[4]);
+DECLARE_SOA_COLUMN(TrkTOFnSigmaPr, trkTOFnSigmaPr, float[4]);
+DECLARE_SOA_COLUMN(TrkTOFchi2, trkTOFchi2, float[4]);
+
+} // end of namespace tau_tree
+DECLARE_SOA_TABLE(TauFourTracks, "AOD", "TAUFOURTRACK",
+                  tau_tree::RunNumber, tau_tree::Bc, tau_tree::TotalTracks, tau_tree::NumContrib,
+                  // tau_tree::GlobalNonPVtracks,
+                  // tau_tree::PosX, tau_tree::PosY,
+                  tau_tree::PosZ,
+                  tau_tree::FlagUPC, tau_tree::OccupancyInTime, tau_tree::HadronicRate, tau_tree::ZdcAenergy, tau_tree::ZdcCenergy,
+                  tau_tree::Qtot,
+                  tau_tree::Trs, tau_tree::Trofs, tau_tree::Hmpr,
+                  // tau_tree::Tfb, tau_tree::ItsRofb, tau_tree::Sbp, tau_tree::ZvtxFT0vsPv, tau_tree::VtxITSTPC,
+                  tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA,
+                  // tau_tree::TimeFT0A, tau_tree::TimeFT0C, tau_tree::TimeFV0A,
+                  tau_tree::TrkPx, tau_tree::TrkPy, tau_tree::TrkPz,
+                  // tau_tree::TrkSign,
+                  // tau_tree::TrkDCAxy, tau_tree::TrkDCAz,
+                  tau_tree::TrkTPCcr,
+                  tau_tree::TrkTPCsignal, tau_tree::TrkTPCnSigmaEl, tau_tree::TrkTPCnSigmaPi, tau_tree::TrkTPCnSigmaKa, tau_tree::TrkTPCnSigmaPr,
+                  tau_tree::TrkTOFbeta, tau_tree::TrkTOFnSigmaEl, tau_tree::TrkTOFnSigmaPi, tau_tree::TrkTOFnSigmaKa, tau_tree::TrkTOFnSigmaPr,
+                  tau_tree::TrkTOFchi2);
+
+} // end of namespace o2::aod
+
 struct TauTau13topo {
+  Produces<o2::aod::TauFourTracks> tauFourTracks;
+
   SGSelector sgSelector;
   // configurables
   Configurable<float> cutFV0{"cutFV0", 10000., "FV0A threshold"};
@@ -652,7 +733,7 @@ struct TauTau13topo {
     registry.add("pidTPC/hpvsdedxElHipCut33", "eTOF+1 hip;#it{p}_{trk} (GeV/#it{c});d#it{E}/d#it{x}_{trk}", {HistType::kTH2F, {axisp, dedxAxis}});
     registry.add("pidTPC/hpvsdedxElHipCut34", "piTOF+33 hip;#it{p}_{trk} (GeV/#it{c});d#it{E}/d#it{x}_{trk}", {HistType::kTH2F, {axisp, dedxAxis}});
     registry.add("pidTPC/hpvsdedxElHipCut35", "ZDC+27 hip;#it{p}_{trk} (GeV/#it{c});d#it{E}/d#it{x}_{trk}", {HistType::kTH2F, {axisp, dedxAxis}});
-    registry.add("pidTPC/hpvsdedxElHipCut36", "Good+35 hip;#it{p}_{trk} (GeV/#it{c});d#it{E}/d#it{x}_{trk}", {HistType::kTH2F, {axisp, dedxAxis}});
+    // registry.add("pidTPC/hpvsdedxElHipCut36", "Good+35 hip;#it{p}_{trk} (GeV/#it{c});d#it{E}/d#it{x}_{trk}", {HistType::kTH2F, {axisp, dedxAxis}});
     // registry.add("pidTPC/hpvsdedxElHipCut37", "TOFgood+36 hip;#it{p}_{trk} (GeV/#it{c});d#it{E}/d#it{x}_{trk}", {HistType::kTH2F, {axisp, dedxAxis}});
 
     registry.add("pidTPC/hpvsdedxElHipCut40", "All from gamma hip;#it{p}_{trk} (GeV/#it{c});d#it{E}/d#it{x}_{trk}", {HistType::kTH2F, {axisp, dedxAxis}});
@@ -706,7 +787,7 @@ struct TauTau13topo {
     registry.add("pidTOF/hpvsNsigmaElHipCut27", "DP+30 hip;#it{p}_{trk} (GeV/#it{c});N#sigma El^{TOF}_{trk}", {HistType::kTH2F, {axisp, {100, -5., 5.}}});
     registry.add("pidTOF/hpvsNsigmaElHipCut35", "ZDC+27 hip;#it{p}_{trk} (GeV/#it{c});N#sigma El^{TOF}_{trk}", {HistType::kTH2F, {axisp, {100, -5., 5.}}});
     registry.add("pidTOF/hpvsNsigmaElHipCut23", "Occ+35 hip;#it{p}_{trk} (GeV/#it{c});N#sigma El^{TOF}_{trk}", {HistType::kTH2F, {axisp, {100, -5., 5.}}});
-    registry.add("pidTOF/hpvsNsigmaElHipCut36", "Good+23 hip;#it{p}_{trk} (GeV/#it{c});N#sigma El^{TOF}_{trk}", {HistType::kTH2F, {axisp, {100, -5., 5.}}});
+    // registry.add("pidTOF/hpvsNsigmaElHipCut36", "Good+23 hip;#it{p}_{trk} (GeV/#it{c});N#sigma El^{TOF}_{trk}", {HistType::kTH2F, {axisp, {100, -5., 5.}}});
     // registry.add("pidTOF/hpvsNsigmaElHipCut37", "GoodTof+36 hip;#it{p}_{trk} (GeV/#it{c});N#sigma El^{TOF}_{trk}", {HistType::kTH2F, {axisp, {100, -5., 5.}}});
 
     registry.add("pidTOF/h3piTOFchi2", "tof chi2;chi2 TOF;events", {HistType::kTH1F, {{100, 0., 10.}}});
@@ -715,7 +796,7 @@ struct TauTau13topo {
     registry.add("pidTOF/h3piTOFchi2Cut27", "tof chi2;chi2 TOF;events", {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add("pidTOF/h3piTOFchi2Cut35", "tof chi2;chi2 TOF;events", {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add("pidTOF/h3piTOFchi2Cut23", "tof chi2;chi2 TOF;events", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add("pidTOF/h3piTOFchi2Cut36", "tof chi2;chi2 TOF;events", {HistType::kTH1F, {{100, 0., 10.}}});
+    // registry.add("pidTOF/h3piTOFchi2Cut36", "tof chi2;chi2 TOF;events", {HistType::kTH1F, {{100, 0., 10.}}});
     // registry.add("pidTOF/h3piTOFchi2Cut37", "tof chi2;chi2 TOF;events", {HistType::kTH1F, {{100, 0., 10.}}});
 
     // MC part
@@ -2889,6 +2970,7 @@ struct TauTau13topo {
       registry.get<TH2>(HIST("control/cut30/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut30/hNtofTrk"))->Fill(nTofTrk);
       registry.get<TH2>(HIST("control/cut30/hZNACenergy"))->Fill(energyZNA, energyZNC);
+      registry.get<TH1>(HIST("global/hRecFlag"))->Fill(5 + 2 + dgcand.flags()); // reconstruction with upc settings flag
       for (int i = 0; i < 4; i++) {
         if (flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagS3pi[i] && flagIM[i] && (otherTOFtracks[i] >= 1)) {
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut30"))->Fill(tmpMomentum[i], tmpDedx[i]);
@@ -2917,6 +2999,7 @@ struct TauTau13topo {
       registry.get<TH2>(HIST("control/cut27/h4trkMassVsPt"))->Fill(mass4pi, pttot);
       registry.get<TH1>(HIST("control/cut27/hNtofTrk"))->Fill(nTofTrk);
       registry.get<TH2>(HIST("control/cut27/hZNACenergy"))->Fill(energyZNA, energyZNC);
+      registry.get<TH1>(HIST("global/hRecFlag"))->Fill(5 + 2 + 2 + dgcand.flags()); // reconstruction with upc settings flag
       for (int i = 0; i < 4; i++) {
         if (flagEl[i] && trkHasTof[i] && flagPi[i] && flagPr[i] && flagKa[i] && flagCR[i] && !flagVcalPV[i] && flagS3pi[i] && flagIM[i] && (otherTOFtracks[i] >= 1) && flagDP[i]) {
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut27"))->Fill(tmpMomentum[i], tmpDedx[i]);
@@ -2944,7 +3027,7 @@ struct TauTau13topo {
     //
     // skip events with znac energy cut 35
     //
-    if (energyZNA >= 1. && energyZNC >= 1.) {
+    if (energyZNA >= 1. || energyZNC >= 1.) {
       if (verbose) {
         LOGF(info, "<tautau13topo> Candidate rejected: ZNA, ZNC are %f, %f", energyZNA, energyZNC);
       }
@@ -4719,9 +4802,162 @@ struct TauTau13topo {
 
   } // end of processEfficiencyMCSG
 
+  // skimming: only 4 tracks selection
+  void processDoSkim(UDCollisionFull2 const& dgcand, UDTracksFull const& dgtracks, PVTracks const& PVContributors)
+  {
+    int gapSide = dgcand.gapSide();
+    int truegapSide = sgSelector.trueGap(dgcand, cutFV0, cutFT0A, cutFT0C, cutZDC);
+    if (gapSide < 0 || gapSide > 2)
+      return;
+    gapSide = truegapSide;
+    if (gapSide != mGapSide)
+      return;
+
+    // zdc information
+    float energyZNA = dgcand.energyCommonZNA();
+    float energyZNC = dgcand.energyCommonZNC();
+    if (energyZNA < 0)
+      energyZNA = -1.;
+    if (energyZNC < 0)
+      energyZNC = -1.;
+
+    int nTofTrk = 0;
+    int nEtaIn15 = 0;
+    int npT100 = 0;
+    //    int qtot = 0;
+    short qtot = 0;
+    TLorentzVector p;
+    for (const auto& trk : PVContributors) {
+      qtot += trk.sign();
+      p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
+      if (std::abs(p.Eta()) < trkEtacut)
+        nEtaIn15++; // 0.9 is a default
+      if (trk.pt() > 0.1)
+        npT100++;
+      if (trk.hasTOF())
+        nTofTrk++;
+    } // end of loop over PV tracks
+
+    if (PVContributors.size() != 4)
+      return;
+    if (nEtaIn15 != 4)
+      return;
+    if (npT100 != 4)
+      return;
+    if (nTofTrk < nTofTrkMinCut)
+      return;
+
+    //
+    // FIT informaton
+    //
+    auto bitMin = 16 - mFITvetoWindow; // default is +- 1 bc (1 bit)
+    auto bitMax = 16 + mFITvetoWindow;
+    bool flagFITveto = false;
+    // check FIT information
+    for (auto bit = bitMin; bit <= bitMax; bit++) {
+      if (TESTBIT(dgcand.bbFT0Apf(), bit))
+        flagFITveto = true;
+      if (TESTBIT(dgcand.bbFT0Cpf(), bit))
+        flagFITveto = true;
+      if (useFV0ForVeto && TESTBIT(dgcand.bbFV0Apf(), bit))
+        flagFITveto = true;
+      if (useFDDAForVeto && TESTBIT(dgcand.bbFDDApf(), bit))
+        flagFITveto = true;
+      if (useFDDCForVeto && TESTBIT(dgcand.bbFDDCpf(), bit))
+        flagFITveto = true;
+    } // end of loop over FIT bits
+
+    if (mFITvetoFlag && flagFITveto)
+      return;
+
+    //
+    // variables per track
+    //
+    int counterTmp = 0;
+    float px[4], py[4], pz[4];
+    // int sign[4];
+    // float dcaZ[4];
+    // float dcaXY[4];
+
+    float tmpDedx[4];
+    float tmpTofNsigmaEl[4];
+    float tmpTofNsigmaPi[4];
+    float tmpTofNsigmaKa[4];
+    float tmpTofNsigmaPr[4];
+
+    float nSigmaEl[4];
+    float nSigmaPi[4];
+    float nSigmaPr[4];
+    float nSigmaKa[4];
+    // float chi2TPC[4];
+    // float chi2ITS[4];
+    float chi2TOF[4] = {-1., -1., -1., -1.};
+    // float nclTPCfind[4];
+    int nclTPCcrossedRows[4];
+    // double trkTime[4];
+    // float trkTimeRes[4];
+    float trkTofSignal[4];
+
+    for (const auto& trk : PVContributors) {
+
+      px[counterTmp] = trk.px();
+      py[counterTmp] = trk.py();
+      pz[counterTmp] = trk.pz();
+      // sign[counterTmp] = trk.sign();
+      // dcaZ[counterTmp] = trk.dcaZ();
+      // dcaXY[counterTmp] = trk.dcaXY();
+
+      tmpDedx[counterTmp] = trk.tpcSignal();
+      nSigmaEl[counterTmp] = trk.tpcNSigmaEl();
+      nSigmaPi[counterTmp] = trk.tpcNSigmaPi();
+      nSigmaPr[counterTmp] = trk.tpcNSigmaPr();
+      nSigmaKa[counterTmp] = trk.tpcNSigmaKa();
+
+      trkTofSignal[counterTmp] = trk.beta();
+      tmpTofNsigmaEl[counterTmp] = trk.tofNSigmaEl();
+      tmpTofNsigmaPi[counterTmp] = trk.tofNSigmaPi();
+      tmpTofNsigmaKa[counterTmp] = trk.tofNSigmaKa();
+      tmpTofNsigmaPr[counterTmp] = trk.tofNSigmaPr();
+
+      // chi2TPC[counterTmp] = trk.tpcChi2NCl();
+      // chi2ITS[counterTmp] = trk.itsChi2NCl();
+      if (trk.hasTOF())
+        chi2TOF[counterTmp] = trk.tofChi2();
+      // nclTPCfind[counterTmp] = trk.tpcNClsFindable();
+      nclTPCcrossedRows[counterTmp] = trk.tpcNClsCrossedRows();
+
+      // trkTime[counterTmp] = trk.trackTime();
+      // trkTimeRes[counterTmp] = trk.trackTimeRes();
+      counterTmp++;
+    }
+
+    tauFourTracks(dgcand.runNumber(),
+                  dgcand.globalBC(), // is it necessary
+                  dgtracks.size(),
+                  dgcand.numContrib(),
+                  // dgcand.posX(), dgcand.posY(),
+                  dgcand.posZ(),
+                  dgcand.flags(),
+                  dgcand.occupancyInTime(),
+                  dgcand.hadronicRate(), // is it necessary
+                  energyZNA, energyZNC,
+                  qtot,
+                  dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
+                  // dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
+                  dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC(), dgcand.totalFV0AmplitudeA(),
+                  // dgcand.timeFT0A(), dgcand.timeFT0C(), dgcand.timeFV0A(),
+                  px, py, pz, // sign,
+                  // dcaXY, dcaZ,
+                  nclTPCcrossedRows,
+                  tmpDedx, nSigmaEl, nSigmaPi, nSigmaKa, nSigmaPr,
+                  trkTofSignal, tmpTofNsigmaEl, tmpTofNsigmaPi, tmpTofNsigmaKa, tmpTofNsigmaPr,
+                  chi2TOF);
+  } // end of skim process
+
   PROCESS_SWITCH(TauTau13topo, processDataSG, "Run over SG Producer tables in reco level (reconstructed data or MC)", true);
   PROCESS_SWITCH(TauTau13topo, processSimpleMCSG, "Run over SG Producer tables in true level (MC true only)", false);
   PROCESS_SWITCH(TauTau13topo, processEfficiencyMCSG, "Run over SG Producer tables in true and reco level (MC true and reconstructed)", false);
+  PROCESS_SWITCH(TauTau13topo, processDoSkim, "Run over SG Producer tables to produce skimmed data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
