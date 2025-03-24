@@ -283,8 +283,8 @@ struct FlowGfwTask {
       registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
       registry.add("hVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
-      registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
-      registry.add("hMultCorr", "Corrected Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
+      registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {axisNch}});
+      registry.add("hMultCorr", "Corrected Multiplicity distribution", {HistType::kTH1D, {axisNch}});
       registry.add("hCent", "Centrality distribution", {HistType::kTH1D, {{90, 0, 90}}});
       registry.add("cent_vs_Nch", ";Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
       registry.add("cent_vs_NchCorr", ";Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
@@ -820,9 +820,7 @@ struct FlowGfwTask {
     if (!collision.sel8())
       return;
 
-    int nch = tracks.size();
-
-    if (nch < 1)
+    if (tracks.size() < 1)
       return;
 
     registry.fill(HIST("hEventCount"), kSEL8);
@@ -942,19 +940,20 @@ struct FlowGfwTask {
     float vtxz = collision.posZ();
     float lRandom = fRndm->Rndm();
     registry.fill(HIST("hVtxZ"), vtxz);
-    registry.fill(HIST("hMult"), nch);
+    registry.fill(HIST("hMult"), tracks.size());
     registry.fill(HIST("hCent"), centrality);
-    registry.fill(HIST("cent_vs_Nch"), centrality, nch);
-
-    fGFW->Clear();
+    registry.fill(HIST("cent_vs_Nch"), centrality, tracks.size());
 
     float weffNch = 1;
-    if (!setNch(weffNch, nch))
+    if (!setNch(weffNch, tracks.size()))
       return;
 
-    nch = nch * weffNch;
+    // Corrected nch
+    float nch = tracks.size() * weffNch;
     registry.fill(HIST("hMultCorr"), nch);
     registry.fill(HIST("cent_vs_NchCorr"), centrality, nch);
+
+    fGFW->Clear();
 
     auto bc = collision.bc_as<BCsRun3>();
     loadCorrections(bc.timestamp());
