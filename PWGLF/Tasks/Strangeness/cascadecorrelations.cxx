@@ -26,6 +26,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -38,6 +39,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "EventFiltering/Zorro.h"
+#include "PWGLF/Utils/inelGt.h"
 
 #include <TFile.h>
 #include <TList.h>
@@ -78,6 +80,7 @@ using CascDataExtSelected = soa::Join<CascDataExt, CascadeFlags>;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>;
 using MyCollisionsMult = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults>;
 using MyCascades = soa::Filtered<aod::CascDataExtSelected>;
+using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
 
 struct CascadeSelector {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -399,6 +402,10 @@ struct CascadeCorrelations {
   TH1D* hEffOmegaMin;
   TH1D* hEffOmegaPlus;
 
+  // used in MC closure test
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+  o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> mCounter;
+
   void init(InitContext const&)
   {
     ccdb->setURL(ccdbUrl);
@@ -415,6 +422,9 @@ struct CascadeCorrelations {
     }
 
     zorroSummary.setObject(zorro.getZorroSummary());
+
+    mCounter.mPdgDatabase = pdgDB.service;
+    mCounter.mSelectPrimaries = true;
   }
 
   double getEfficiency(TH1D* h, double pT)
@@ -489,6 +499,16 @@ struct CascadeCorrelations {
       {"MixedEvents/hMEOmXiSS", "hMEOmXiSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
       {"MixedEvents/hMEOmOmOS", "hMEOmOmOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
       {"MixedEvents/hMEOmOmSS", "hMEOmOmSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
+
+      // MC closure
+      {"MC/hMCPlusMinus", "hMCPlusMinus", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, vertexAxis, multiplicityAxis}}, true},
+      {"MC/hMCPlusPlus", "hMCPlusPlus", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, vertexAxis, multiplicityAxis}}, true},
+      {"MC/hMCMinusPlus", "hMCMinusPlus", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, vertexAxis, multiplicityAxis}}, true},
+      {"MC/hMCMinusMinus", "hMCMinusMinus", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, vertexAxis, multiplicityAxis}}, true},
+
+      {"MC/hGenMultNoReco", "hGenMultNoReco", {HistType::kTH1I, {{100, 0, 100, "Number of generated charged primaries"}}}},
+      {"MC/hGenMultOneReco", "hGenMultOneReco", {HistType::kTH1I, {{100, 0, 100, "Number of generated charged primaries"}}}},
+      {"MC/hSplitEvents", "hSplitEvents", {HistType::kTH1I, {{10, 0, 10, "Number of rec. events per gen event"}}}},
     },
   };
 
@@ -503,9 +523,8 @@ struct CascadeCorrelations {
   // BinningType colBinning{{axisVtxZ, axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
   BinningType colBinning{{axisVtxZ}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
-  SameKindPair<MyCollisionsMult, MyCascades, BinningType> pair{colBinning, nMixedEvents, -1, &cache};
 
-  void processSameEvent(MyCollisionsMult::iterator const& collision, MyCascades const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  void processSameEvent(MyCollisionsMult::iterator const& collision, MyCascades const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
     if (useTrigger) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -713,11 +732,13 @@ struct CascadeCorrelations {
         }
       }
     } // correlations
-  }   // process same event
+  } // process same event
 
-  void processMixedEvent(MyCollisionsMult const& /*collisions*/, MyCascades const& /*Cascades*/,
-                         aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
+  void processMixedEvent(MyCollisionsMult const& collisions, MyCascades const& Cascades, FullTracksExtIU const&)
   {
+    auto cascadesTuple = std::make_tuple(Cascades);
+    SameKindPair<MyCollisionsMult, MyCascades, BinningType> pair{colBinning, nMixedEvents, -1, collisions, cascadesTuple, &cache};
+
     for (auto const& [col1, cascades1, col2, cascades2] : pair) {
       if (!col1.sel8() || !col2.sel8())
         continue;
@@ -891,8 +912,60 @@ struct CascadeCorrelations {
     } // collisions
   } // process mixed events
 
+  Filter genCascadesFilter = nabs(aod::mcparticle::pdgCode) == 3312;
+
+  void processMC(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisionsMult>> const& collisions, soa::Filtered<aod::McParticles> const& genCascades, aod::McParticles const& mcParticles)
+  {
+    // Let's do some logic on matched reconstructed collisions - if there less or more than one, fill some QA and skip the rest
+    double FT0mult = -1; // non-sensible default value just in case
+    double vtxz = -999.; // non-sensible default value just in case
+    if (collisions.size() < 1) {
+      registry.fill(HIST("MC/hSplitEvents"), 0);
+      registry.fill(HIST("MC/hGenMultNoReco"), mCounter.countFT0A(mcParticles) + mCounter.countFT0C(mcParticles));
+      return;
+    } else if (collisions.size() == 1) {
+      registry.fill(HIST("MC/hSplitEvents"), 1);
+      registry.fill(HIST("MC/hGenMultOneReco"), mCounter.countFT0A(mcParticles) + mCounter.countFT0C(mcParticles));
+      for (auto const& collision : collisions) { // not really a loop, as there is only one collision
+        FT0mult = collision.multFT0M();
+        vtxz = collision.posZ();
+      }
+    } else if (collisions.size() > 1) {
+      registry.fill(HIST("MC/hSplitEvents"), collisions.size());
+      return;
+    }
+
+    for (auto& [c0, c1] : combinations(genCascades, genCascades)) { // combinations automatically applies strictly upper in case of 2 identical tables
+      // Define the trigger as the particle with the highest pT. As we can't swap the cascade tables themselves, we swap the addresses and later dereference them
+      auto* triggerAddress = &c0;
+      auto* assocAddress = &c1;
+      if (assocAddress->pt() > triggerAddress->pt()) {
+        std::swap(triggerAddress, assocAddress);
+      }
+      auto trigger = *triggerAddress;
+      auto assoc = *assocAddress;
+
+      double dphi = RecoDecay::constrainAngle(trigger.phi() - assoc.phi(), -PIHalf);
+
+      if (trigger.pdgCode() < 0) { // anti-trigg --> Plus
+        if (assoc.pdgCode() < 0) { // anti-assoc --> Plus
+          registry.fill(HIST("MC/hMCPlusPlus"), dphi, trigger.y() - assoc.y(), trigger.pt(), assoc.pt(), vtxz, FT0mult);
+        } else { // assoc --> Minus
+          registry.fill(HIST("MC/hMCPlusMinus"), dphi, trigger.y() - assoc.y(), trigger.pt(), assoc.pt(), vtxz, FT0mult);
+        }
+      } else {                     // trig --> Minus
+        if (assoc.pdgCode() < 0) { // anti-assoc --> Plus
+          registry.fill(HIST("MC/hMCMinusPlus"), dphi, trigger.y() - assoc.y(), trigger.pt(), assoc.pt(), vtxz, FT0mult);
+        } else {
+          registry.fill(HIST("MC/hMCMinusMinus"), dphi, trigger.y() - assoc.y(), trigger.pt(), assoc.pt(), vtxz, FT0mult);
+        }
+      }
+    }
+  }
+
   PROCESS_SWITCH(CascadeCorrelations, processSameEvent, "Process same events", true);
   PROCESS_SWITCH(CascadeCorrelations, processMixedEvent, "Process mixed events", true);
+  PROCESS_SWITCH(CascadeCorrelations, processMC, "Process MC", false);
 
 }; // struct
 

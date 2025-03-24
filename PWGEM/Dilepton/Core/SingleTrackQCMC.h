@@ -715,7 +715,7 @@ struct SingleTrackQCMC {
 
       for (auto& track : tracks_per_coll) {
         auto mctrack = track.template emmcparticle_as<TMCParticles>();
-        if (abs(mctrack.pdgCode()) != pdg_lepton) {
+        if (std::abs(mctrack.pdgCode()) != pdg_lepton) {
           continue;
         }
 
@@ -752,7 +752,7 @@ struct SingleTrackQCMC {
           continue;
         }
         auto mcmother = mcparticles.iteratorAt(mctrack.mothersIds()[0]);
-        int pdg_mother = abs(mcmother.pdgCode());
+        int pdg_mother = std::abs(mcmother.pdgCode());
 
         if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
           if (pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333) {
@@ -826,7 +826,7 @@ struct SingleTrackQCMC {
           continue;
         }
         auto mcmother = mcparticles.iteratorAt(lepton.mothersIds()[0]);
-        int pdg_mother = abs(mcmother.pdgCode());
+        int pdg_mother = std::abs(mcmother.pdgCode());
 
         float pt = 0.f, eta = 0.f, phi = 0.f;
         if constexpr (isSmeared) {
@@ -1068,7 +1068,7 @@ struct SingleTrackQCMC {
       if (collision.sel8()) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 10.0);
       }
-      if (abs(collision.posZ()) < 10.0) {
+      if (std::fabs(collision.posZ()) < 10.0) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 11.0);
       }
       if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {

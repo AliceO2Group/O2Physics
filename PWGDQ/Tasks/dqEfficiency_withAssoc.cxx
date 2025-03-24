@@ -3118,6 +3118,13 @@ struct AnalysisDileptonTrack {
   Configurable<std::string> fConfigMCGenSignals{"cfgMCGenSignals", "", "Comma separated list of MC signals (generated)"};
   Configurable<std::string> fConfigMCRecSignalsJSON{"cfgMCRecSignalsJSON", "", "Additional list of MC signals (reconstructed) via JSON"};
   Configurable<std::string> fConfigMCGenSignalsJSON{"cfgMCGenSignalsJSON", "", "Comma separated list of MC signals (generated) via JSON"};
+  Configurable<int> fConfigMCGenSignalDileptonLegPos{"cfgMCGenSignalDileptonLegPos", 0, "generator level positive dilepton leg signal (bit number according to table-maker)"};
+  Configurable<int> fConfigMCGenSignalDileptonLegNeg{"cfgMCGenSignalDileptonLegNeg", 0, "generator level negative dilepton leg signal (bit number according to table-maker)"};
+  Configurable<int> fConfigMCGenSignalHadron{"cfgMCGenSignalHadron", 0, "generator level associated hadron signal (bit number according to table-maker)"};
+  Configurable<float> fConfigMCGenDileptonLegPtMin{"cfgMCGenDileptonLegPtMin", 1.0f, "minimum pt for the dilepton leg"};
+  Configurable<float> fConfigMCGenHadronPtMin{"cfgMCGenHadronPtMin", 1.0f, "minimum pt for the hadron"};
+  Configurable<float> fConfigMCGenDileptonLegEtaAbs{"cfgMCGenDileptonLegEtaAbs", 0.9f, "eta abs range for the dilepton leg"};
+  Configurable<float> fConfigMCGenHadronEtaAbs{"cfgMCGenHadronEtaAbs", 0.9f, "eta abs range for the hadron"};
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
   int fNCuts;
@@ -3154,7 +3161,7 @@ struct AnalysisDileptonTrack {
     bool isBarrel = context.mOptions.get<bool>("processBarrelSkimmed");
     bool isBarrelAsymmetric = context.mOptions.get<bool>("processDstarToD0Pi");
     bool isMuon = context.mOptions.get<bool>("processMuonSkimmed");
-    bool isMCGen = context.mOptions.get<bool>("processMCGen");
+    bool isMCGen = context.mOptions.get<bool>("processMCGen") || context.mOptions.get<bool>("processMCGenWithEventSelection");
     bool isDummy = context.mOptions.get<bool>("processDummy");
 
     if (isDummy) {
@@ -3399,7 +3406,9 @@ struct AnalysisDileptonTrack {
     if (isMCGen) {
       for (auto& sig : fGenMCSignals) {
         DefineHistograms(fHistMan, Form("MCTruthGen_%s", sig->GetName()), "");
+        DefineHistograms(fHistMan, Form("MCTruthGenSel_%s", sig->GetName()), "");
       }
+      DefineHistograms(fHistMan, "MCTruthGenAccepted", "");
     }
 
     TString addHistsStr = fConfigAddJSONHistograms.value;
@@ -3591,7 +3600,7 @@ struct AnalysisDileptonTrack {
             fHistMan->FillHistClass(Form("DileptonTrack_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
             for (uint32_t isig = 0; isig < fRecMCSignals.size(); isig++) {
               if (mcDecision & (uint32_t(1) << isig)) {
-                fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data(), fRecMCSignals[isig]->GetName()), fValuesHadron);
+                fHistMan->FillHistClass(Form("DileptonTrackMCMatched_%s_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data(), fRecMCSignals[isig]->GetName()), fValuesHadron);
               }
             }
 
@@ -3601,7 +3610,7 @@ struct AnalysisDileptonTrack {
                   fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
                   for (uint32_t isig = 0; isig < fRecMCSignals.size(); isig++) {
                     if (mcDecision & (uint32_t(1) << isig)) {
-                      fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fTrackCutNames[iTrackCut].Data(), fRecMCSignals[isig]->GetName()), fValuesHadron);
+                      fHistMan->FillHistClass(Form("DileptonTrackMCMatched_%s_%s_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fTrackCutNames[iTrackCut].Data(), fRecMCSignals[isig]->GetName()), fValuesHadron);
                     }
                   }
                 }
@@ -3611,7 +3620,7 @@ struct AnalysisDileptonTrack {
                   fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s", fTrackCutNames[icut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
                   for (uint32_t isig = 0; isig < fRecMCSignals.size(); isig++) {
                     if (mcDecision & (uint32_t(1) << isig)) {
-                      fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s_%s", fTrackCutNames[icut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data(), fRecMCSignals[isig]->GetName()), fValuesHadron);
+                      fHistMan->FillHistClass(Form("DileptonTrackMCMatched_%s_%s_%s_%s", fTrackCutNames[icut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data(), fRecMCSignals[isig]->GetName()), fValuesHadron);
                     }
                   }
                   for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
@@ -3619,7 +3628,7 @@ struct AnalysisDileptonTrack {
                       fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
                       for (uint32_t isig = 0; isig < fRecMCSignals.size(); isig++) {
                         if (mcDecision & (uint32_t(1) << isig)) {
-                          fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data(), fRecMCSignals[isig]->GetName()), fValuesHadron);
+                          fHistMan->FillHistClass(Form("DileptonTrackMCMatched_%s_%s_%s_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data(), fRecMCSignals[isig]->GetName()), fValuesHadron);
                         }
                       }
                     }
@@ -3716,17 +3725,107 @@ struct AnalysisDileptonTrack {
     // loop over mc stack and fill histograms for pure MC truth signals
     // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
     // auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
-    for (auto& track : mcTracks) {
-      VarManager::FillTrackMC(mcTracks, track);
+    for (auto& mctrack : mcTracks) {
+
+      if ((std::abs(mctrack.pdgCode()) > 400 && std::abs(mctrack.pdgCode()) < 599) ||
+          (std::abs(mctrack.pdgCode()) > 4000 && std::abs(mctrack.pdgCode()) < 5999) ||
+          mctrack.mcReducedFlags() > 0) {
+        /*cout << ">>>>>>>>>>>>>>>>>>>>>>> track idx / pdg / selections: " << mctrack.globalIndex() << " / " << mctrack.pdgCode() << " / ";
+        PrintBitMap(mctrack.mcReducedFlags(), 16);
+        cout << endl;
+        if (mctrack.has_mothers()) {
+          for (auto& m : mctrack.mothersIds()) {
+            if (m < mcTracks.size()) { // protect against bad mother indices
+              auto aMother = mcTracks.rawIteratorAt(m);
+              cout << "<<<<<< mother idx / pdg: " << m << " / " << aMother.pdgCode() << endl;
+            }
+          }
+        }
+
+        if (mctrack.has_daughters()) {
+          for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
+            if (d < mcTracks.size()) { // protect against bad daughter indices
+              auto aDaughter = mcTracks.rawIteratorAt(d);
+              cout << "<<<<<< daughter idx / pdg: " << d << " / " << aDaughter.pdgCode() << endl;
+            }
+          }
+        }*/
+      }
+
+      VarManager::FillTrackMC(mcTracks, mctrack);
       // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
       // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
       // TODO:  Use the mcReducedFlags to select signals
       for (auto& sig : fGenMCSignals) {
-        if (sig->CheckSignal(true, track)) {
+        if (sig->CheckSignal(true, mctrack)) {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
         }
       }
     }
+  }
+
+  PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+
+  void processMCGenWithEventSelection(soa::Filtered<MyEventsVtxCovSelected> const& events,
+                                      ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
+  {
+    for (auto& event : events) {
+      if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (!event.has_reducedMCevent()) {
+        continue;
+      }
+
+      auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedMCeventId());
+      groupedMCTracks.bindInternalIndicesTo(&mcTracks);
+      for (auto& track : groupedMCTracks) {
+
+        VarManager::FillTrackMC(mcTracks, track);
+
+        auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
+        for (auto& sig : fGenMCSignals) {
+          if (sig->CheckSignal(true, track_raw)) {
+            fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
+          }
+        }
+      }
+
+      /*for (auto& [t1, t2, t3] : combinations(groupedMCTracks, groupedMCTracks, groupedMCTracks)) {
+
+        if (! (t1.mcReducedFlags() & (uint16_t(1) << fConfigMCGenSignalDileptonLegPos.value))) {
+          continue;
+        }
+        if (t1.pt() < fConfigMCGenDileptonLegPtMin.value) {
+          continue;
+        }
+        if (std::abs(t1.eta()) > fConfigMCGenDileptonLegEtaAbs.value) {
+          continue;
+        }
+
+        if (! (t2.mcReducedFlags() & (uint16_t(1) << fConfigMCGenSignalDileptonLegNeg.value))) {
+          continue;
+        }
+        if (t2.pt() < fConfigMCGenDileptonLegPtMin.value) {
+          continue;
+        }
+        if (std::abs(t2.eta()) > fConfigMCGenDileptonLegEtaAbs.value) {
+          continue;
+        }
+
+        if (! (t3.mcReducedFlags() & (uint16_t(1) << fConfigMCGenSignalHadron.value))) {
+          continue;
+        }
+        if (t3.pt() < fConfigMCGenHadronPtMin.value) {
+          continue;
+        }
+        if (std::abs(t3.eta()) > fConfigMCGenHadronEtaAbs.value) {
+          continue;
+        }
+
+        fHistMan->FillHistClass("MCTruthGenSelAccepted", VarManager::fgValues);
+      }*/
+    } // end loop over reconstructed events
   }
 
   void processDummy(MyEvents&)
@@ -3738,6 +3837,7 @@ struct AnalysisDileptonTrack {
   PROCESS_SWITCH(AnalysisDileptonTrack, processDstarToD0Pi, "Run barrel pairing of D0 daughters with pion candidate, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMuonSkimmed, "Run muon dilepton-track pairing, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMCGen, "Loop over MC particle stack and fill generator level histograms", false);
+  PROCESS_SWITCH(AnalysisDileptonTrack, processMCGenWithEventSelection, "Loop over MC particle stack and fill generator level histograms", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processDummy, "Dummy function", false);
 };
 
