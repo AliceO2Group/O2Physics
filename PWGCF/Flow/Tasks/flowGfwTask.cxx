@@ -949,7 +949,7 @@ struct FlowGfwTask {
     if (!setNch(weffNch, tracks.size())) return;
 
     // Corrected nch
-    float nch = tracks.size()/weffNch;
+    float nch = tracks.size()*weffNch;
     registry.fill(HIST("hMultCorr"), nch);
     registry.fill(HIST("cent_vs_NchCorr"), centrality, nch);
 
