@@ -1268,7 +1268,7 @@ struct HfTrackIndexSkimCreator {
 
   void init(InitContext const&)
   {
-    if (!doprocess2And3ProngsWithPvRefit && !doprocess2And3ProngsNoPvRefit) {
+    if (!doprocess2And3ProngsWithPvRefit && !doprocess2And3ProngsNoPvRefit && !doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt && !doprocess2And3ProngsNoPvRefitWithPidForHfFiltersBdt) {
       return;
     }
 
@@ -1356,7 +1356,7 @@ struct HfTrackIndexSkimCreator {
       registry.add("hMassDstarToD0Pi", "D^{*#plus} candidates;inv. mass (K #pi #pi) - mass (K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0.135, 0.185}}});
 
       // needed for PV refitting
-      if (doprocess2And3ProngsWithPvRefit) {
+      if (doprocess2And3ProngsWithPvRefit || doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt) {
         AxisSpec axisCollisionX{100, -20.f, 20.f, "X (cm)"};
         AxisSpec axisCollisionY{100, -20.f, 20.f, "Y (cm)"};
         AxisSpec axisCollisionZ{100, -20.f, 20.f, "Z (cm)"};
@@ -1766,9 +1766,12 @@ struct HfTrackIndexSkimCreator {
 
   /// Method to perform ML selections for 2-prong candidates after the rectangular selections
   /// \param featuresCand is the vector with the candidate features
+  /// \param featuresCandPid is the vector with the candidate PID features
   /// \param outputScores is the array of vectors with the output scores to be filled
   /// \param isSelected ia s bitmap with selection outcome
-  void applyMlSelectionForHfFilters3Prong(std::vector<float> featuresCand, std::array<std::vector<float>, kN3ProngDecays>& outputScores, int& isSelected)
+  /// \param usePidForHfFiltersBdt is the flag to determine whether to use also the PID features for the Lc BDT
+  template <bool usePidForHfFiltersBdt = false>
+  void applyMlSelectionForHfFilters3Prong(std::vector<float> featuresCand, std::vector<float> featuresCandPid, std::array<std::vector<float>, kN3ProngDecays>& outputScores, int& isSelected)
   {
     if (isSelected == 0) {
       return;
@@ -1777,7 +1780,18 @@ struct HfTrackIndexSkimCreator {
     const float ptDummy = 1.; // dummy pT value (only one pT bin)
     for (int iDecay3P{0}; iDecay3P < kN3ProngDecays; ++iDecay3P) {
       if (TESTBIT(isSelected, iDecay3P) && hasMlModel3Prong[iDecay3P]) {
-        bool isMlSel = hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCand, ptDummy, outputScores[iDecay3P]);
+        bool isMlSel = false;
+        if constexpr (usePidForHfFiltersBdt) {
+          if (iDecay3P != hf_cand_3prong::DecayType::LcToPKPi && iDecay3P != hf_cand_3prong::DecayType::XicToPKPi) {
+            isMlSel = hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCand, ptDummy, outputScores[iDecay3P]);
+          } else {
+            std::vector<float> featuresCandWithPid = featuresCand;
+            featuresCandWithPid.insert(featuresCandWithPid.end(), featuresCandPid.begin(), featuresCandPid.end());
+            isMlSel = hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCandWithPid, ptDummy, outputScores[iDecay3P]);
+          }
+        } else {
+          isMlSel = hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCand, ptDummy, outputScores[iDecay3P]);
+        }
         if (config.fillHistograms) {
           switch (iDecay3P) {
             case hf_cand_3prong::DecayType::DplusToPiKPi: {
@@ -1902,7 +1916,7 @@ struct HfTrackIndexSkimCreator {
     bool pvRefitDoable = vertexer.prepareVertexRefit(vecPvContributorTrackParCov, primVtx);
     if (!pvRefitDoable) {
       LOG(info) << "Not enough tracks accepted for the refit";
-      if (doprocess2And3ProngsWithPvRefit && config.fillHistograms) {
+      if ((doprocess2And3ProngsWithPvRefit || doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt) && config.fillHistograms) {
         registry.fill(HIST("PvRefit/hNContribPvRefitNotDoable"), collision.numContrib());
       }
     }
@@ -1913,7 +1927,7 @@ struct HfTrackIndexSkimCreator {
     /// PV refitting, if the tracks contributed to this at the beginning
     o2::dataformats::VertexBase primVtxBaseRecalc;
     bool recalcPvRefit = false;
-    if (doprocess2And3ProngsWithPvRefit && pvRefitDoable) {
+    if ((doprocess2And3ProngsWithPvRefit || doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt) && pvRefitDoable) {
       if (config.fillHistograms) {
         registry.fill(HIST("PvRefit/verticesPerCandidate"), 2);
       }
@@ -2002,7 +2016,7 @@ struct HfTrackIndexSkimCreator {
     return;
   } /// end of performPvRefitCandProngs function
 
-  template <bool doPvRefit = false, typename TTracks>
+  template <bool doPvRefit = false, bool usePidForHfFiltersBdt = false, typename TTracks>
   void run2And3Prongs(SelectedCollisions const& collisions,
                       aod::BCsWithTimestamps const& bcWithTimeStamps,
                       FilteredTrackAssocSel const&,
@@ -2506,7 +2520,15 @@ struct HfTrackIndexSkimCreator {
               std::array<std::vector<float>, kN3ProngDecays> mlScores3Prongs;
               if (config.applyMlForHfFilters) {
                 std::vector<float> inputFeatures{trackParVarPcaPos1.getPt(), dcaInfoPos1[0], dcaInfoPos1[1], trackParVarPcaNeg1.getPt(), dcaInfoNeg1[0], dcaInfoNeg1[1], trackParVarPcaPos2.getPt(), dcaInfoPos2[0], dcaInfoPos2[1]};
-                applyMlSelectionForHfFilters3Prong(inputFeatures, mlScores3Prongs, isSelected3ProngCand);
+                std::vector<float> inputFeaturesLcPid{};
+                if constexpr (usePidForHfFiltersBdt) {
+                  inputFeaturesLcPid.push_back(trackPos1.tpcNSigmaPr());
+                  inputFeaturesLcPid.push_back(trackPos2.tpcNSigmaPr());
+                  inputFeaturesLcPid.push_back(trackPos1.tpcNSigmaPi());
+                  inputFeaturesLcPid.push_back(trackPos2.tpcNSigmaPi());
+                  inputFeaturesLcPid.push_back(trackNeg1.tpcNSigmaKa());
+                }
+                applyMlSelectionForHfFilters3Prong<usePidForHfFiltersBdt>(inputFeatures, inputFeaturesLcPid, mlScores3Prongs, isSelected3ProngCand);
               }
 
               if (!config.debug && isSelected3ProngCand == 0) {
@@ -2751,7 +2773,15 @@ struct HfTrackIndexSkimCreator {
               std::array<std::vector<float>, kN3ProngDecays> mlScores3Prongs;
               if (config.applyMlForHfFilters) {
                 std::vector<float> inputFeatures{trackParVarPcaNeg1.getPt(), dcaInfoNeg1[0], dcaInfoNeg1[1], trackParVarPcaPos1.getPt(), dcaInfoPos1[0], dcaInfoPos1[1], trackParVarPcaNeg2.getPt(), dcaInfoNeg2[0], dcaInfoNeg2[1]};
-                applyMlSelectionForHfFilters3Prong(inputFeatures, mlScores3Prongs, isSelected3ProngCand);
+                std::vector<float> inputFeaturesLcPid{};
+                if constexpr (usePidForHfFiltersBdt) {
+                  inputFeaturesLcPid.push_back(trackNeg1.tpcNSigmaPr());
+                  inputFeaturesLcPid.push_back(trackNeg2.tpcNSigmaPr());
+                  inputFeaturesLcPid.push_back(trackNeg1.tpcNSigmaPi());
+                  inputFeaturesLcPid.push_back(trackNeg2.tpcNSigmaPi());
+                  inputFeaturesLcPid.push_back(trackPos1.tpcNSigmaKa());
+                }
+                applyMlSelectionForHfFilters3Prong<usePidForHfFiltersBdt>(inputFeatures, inputFeaturesLcPid, mlScores3Prongs, isSelected3ProngCand);
               }
 
               if (!config.debug && isSelected3ProngCand == 0) {
@@ -2945,6 +2975,26 @@ struct HfTrackIndexSkimCreator {
     run2And3Prongs(collisions, bcWithTimeStamps, trackIndices, tracks);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreator, process2And3ProngsNoPvRefit, "Process 2-prong and 3-prong skim without PV refit", true);
+
+  void process2And3ProngsWithPvRefitWithPidForHfFiltersBdt( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
+    SelectedCollisions const& collisions,
+    aod::BCsWithTimestamps const& bcWithTimeStamps,
+    FilteredTrackAssocSel const& trackIndices,
+    soa::Join<TracksWithPVRefitAndDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr> const& tracks)
+  {
+    run2And3Prongs<true, true>(collisions, bcWithTimeStamps, trackIndices, tracks);
+  }
+  PROCESS_SWITCH(HfTrackIndexSkimCreator, process2And3ProngsWithPvRefitWithPidForHfFiltersBdt, "Process 2-prong and 3-prong skim with PV refit and PID for software trigger BDTs (Lc and Xic only)", false);
+
+  void process2And3ProngsNoPvRefitWithPidForHfFiltersBdt( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
+    SelectedCollisions const& collisions,
+    aod::BCsWithTimestamps const& bcWithTimeStamps,
+    FilteredTrackAssocSel const& trackIndices,
+    soa::Join<aod::TracksWCovDcaExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr> const& tracks)
+  {
+    run2And3Prongs<false, true>(collisions, bcWithTimeStamps, trackIndices, tracks);
+  }
+  PROCESS_SWITCH(HfTrackIndexSkimCreator, process2And3ProngsNoPvRefitWithPidForHfFiltersBdt, "Process 2-prong and 3-prong skim without PV refit and PID for software trigger BDTs (Lc and Xic only)", false);
 };
 
 //________________________________________________________________________________________________________________________

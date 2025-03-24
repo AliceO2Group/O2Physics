@@ -162,7 +162,6 @@ struct PCMQC {
     // v0leg info
     fRegistry.add("V0Leg/hPt", "pT;p_{T,e} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
     fRegistry.add("V0Leg/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{1000, -50, 50}}, false);
-    fRegistry.add("V0Leg/hRelDeltaPt", "pT resolution;p_{T} (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0, 10}, {200, 0, 0.2}}, false);
     fRegistry.add("V0Leg/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("V0Leg/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -50.0f, 50.0f}, {200, -50.0f, 50.0f}}, false);
     fRegistry.add("V0Leg/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
@@ -216,8 +215,6 @@ struct PCMQC {
     fV0PhotonCut.RejectITSib(pcmcuts.cfg_reject_v0_on_itsib);
 
     // for track
-    fV0PhotonCut.SetTrackPtRange(pcmcuts.cfg_min_pt_v0 * 0.4, 1e+10f);
-    fV0PhotonCut.SetTrackEtaRange(pcmcuts.cfg_min_eta_v0, pcmcuts.cfg_max_eta_v0);
     fV0PhotonCut.SetMinNClustersTPC(pcmcuts.cfg_min_ncluster_tpc);
     fV0PhotonCut.SetMinNCrossedRowsTPC(pcmcuts.cfg_min_ncrossedrows);
     fV0PhotonCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
@@ -301,7 +298,7 @@ struct PCMQC {
     fRegistry.fill(HIST("V0/hThetaResolution"), v0.p(), getThetaResolution(v0));
     fRegistry.fill(HIST("V0/hPhiResolution"), v0.p(), getPhiResolution(v0));
 
-    float phi_cp = atan2(v0.vy(), v0.vx());
+    float phi_cp = std::atan2(v0.vy(), v0.vx());
     o2::math_utils::bringTo02Pi(phi_cp);
     float eta_cp = std::atanh(v0.vz() / std::sqrt(std::pow(v0.vx(), 2) + std::pow(v0.vy(), 2) + std::pow(v0.vz(), 2)));
     fRegistry.fill(HIST("V0/hsConvPoint"), v0.v0radius(), phi_cp, eta_cp);
@@ -312,7 +309,6 @@ struct PCMQC {
   {
     fRegistry.fill(HIST("V0Leg/hPt"), leg.pt());
     fRegistry.fill(HIST("V0Leg/hQoverPt"), leg.sign() / leg.pt());
-    fRegistry.fill(HIST("V0Leg/hRelDeltaPt"), leg.pt(), std::sqrt(leg.c1Pt21Pt2()) * leg.pt());
     fRegistry.fill(HIST("V0Leg/hEtaPhi"), leg.phi(), leg.eta());
     fRegistry.fill(HIST("V0Leg/hDCAxyz"), leg.dcaXY(), leg.dcaZ());
     fRegistry.fill(HIST("V0Leg/hNclsITS"), leg.itsNCls());

@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file netprotonCumulantsMc.cxx
+/// \file antiprotonCumulantsMc.cxx
 /// \brief Task for analyzing efficiency of proton, and net-proton distributions in MC reconstructed and generated, and calculating net-proton cumulants
 /// \author Swati Saha
 
@@ -60,7 +60,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct NetprotonCumulantsMc {
+struct AntiprotonCumulantsMc {
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   // MC
@@ -192,7 +192,7 @@ struct NetprotonCumulantsMc {
     histos.add("hrecDcaZAntiproton", "Reconstructed Antiprotons;DCA_{z} (in cm)", kTH1F, {{400, -2.0, 2.0}});
     histos.add("hrecPtDistProtonVsCentrality", "Reconstructed proton number vs centrality in 2D", kTH2F, {ptAxis, centAxis});
     histos.add("hrecPtDistAntiprotonVsCentrality", "Reconstructed antiproton number vs centrality in 2D", kTH2F, {ptAxis, centAxis});
-    histos.add("hrecNetProtonVsCentrality", "Reconstructed net-proton number vs centrality in 2D", kTH2F, {netprotonAxis, centAxis});
+
     histos.add("hrecProtonVsCentrality", "Reconstructed proton number vs centrality in 2D", kTH2F, {protonAxis, centAxis});
     histos.add("hrecAntiprotonVsCentrality", "Reconstructed antiproton number vs centrality in 2D", kTH2F, {antiprotonAxis, centAxis});
     histos.add("hrecProfileTotalProton", "Reconstructed total proton number vs. centrality", kTProfile, {centAxis});
@@ -213,14 +213,14 @@ struct NetprotonCumulantsMc {
 
     if (cfgIsCalculateCentral) {
       // uncorrected
-      histos.add("Prof_mu1_netproton", "", {HistType::kTProfile, {centAxis}});
-      histos.add("Prof_mu2_netproton", "", {HistType::kTProfile, {centAxis}});
-      histos.add("Prof_mu3_netproton", "", {HistType::kTProfile, {centAxis}});
-      histos.add("Prof_mu4_netproton", "", {HistType::kTProfile, {centAxis}});
-      histos.add("Prof_mu5_netproton", "", {HistType::kTProfile, {centAxis}});
-      histos.add("Prof_mu6_netproton", "", {HistType::kTProfile, {centAxis}});
-      histos.add("Prof_mu7_netproton", "", {HistType::kTProfile, {centAxis}});
-      histos.add("Prof_mu8_netproton", "", {HistType::kTProfile, {centAxis}});
+      histos.add("Prof_mu1_antiproton", "", {HistType::kTProfile, {centAxis}});
+      histos.add("Prof_mu2_antiproton", "", {HistType::kTProfile, {centAxis}});
+      histos.add("Prof_mu3_antiproton", "", {HistType::kTProfile, {centAxis}});
+      histos.add("Prof_mu4_antiproton", "", {HistType::kTProfile, {centAxis}});
+      histos.add("Prof_mu5_antiproton", "", {HistType::kTProfile, {centAxis}});
+      histos.add("Prof_mu6_antiproton", "", {HistType::kTProfile, {centAxis}});
+      histos.add("Prof_mu7_antiproton", "", {HistType::kTProfile, {centAxis}});
+      histos.add("Prof_mu8_antiproton", "", {HistType::kTProfile, {centAxis}});
 
       // eff. corrected
       histos.add("Prof_Q11_1", "", {HistType::kTProfile, {centAxis}});
@@ -471,14 +471,14 @@ struct NetprotonCumulantsMc {
 
     if (cfgIsCalculateError) {
       // uncorrected
-      histos.add("Prof2D_mu1_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-      histos.add("Prof2D_mu2_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-      histos.add("Prof2D_mu3_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-      histos.add("Prof2D_mu4_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-      histos.add("Prof2D_mu5_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-      histos.add("Prof2D_mu6_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-      histos.add("Prof2D_mu7_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-      histos.add("Prof2D_mu8_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu1_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu2_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu3_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu4_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu5_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu6_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu7_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+      histos.add("Prof2D_mu8_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
 
       // eff. corrected
       histos.add("Prof2D_Q11_1", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
@@ -748,7 +748,7 @@ struct NetprotonCumulantsMc {
       histos.add("hgenPtDistAntiprotonVsCentrality", "Generated antiproton number vs centrality in 2D", kTH2F, {ptAxis, centAxis});
       histos.add("hrecTruePtProton", "Reconstructed pdgcode verified protons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
       histos.add("hrecTruePtAntiproton", "Reconstructed pdgcode verified Antiprotons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
-      histos.add("hgenNetProtonVsCentrality", "Generated net-proton number vs centrality in 2D", kTH2F, {netprotonAxis, centAxis});
+
       histos.add("hgenProtonVsCentrality", "Generated proton number vs centrality in 2D", kTH2F, {protonAxis, centAxis});
       histos.add("hgenAntiprotonVsCentrality", "Generated antiproton number vs centrality in 2D", kTH2F, {antiprotonAxis, centAxis});
       histos.add("hgenProfileTotalProton", "Generated total proton number vs. centrality", kTProfile, {centAxis});
@@ -756,25 +756,25 @@ struct NetprotonCumulantsMc {
       histos.add("hgenProfileAntiproton", "Generated antiproton number vs. centrality", kTProfile, {centAxis});
 
       if (cfgIsCalculateCentral) {
-        histos.add("GenProf_mu1_netproton", "", {HistType::kTProfile, {centAxis}});
-        histos.add("GenProf_mu2_netproton", "", {HistType::kTProfile, {centAxis}});
-        histos.add("GenProf_mu3_netproton", "", {HistType::kTProfile, {centAxis}});
-        histos.add("GenProf_mu4_netproton", "", {HistType::kTProfile, {centAxis}});
-        histos.add("GenProf_mu5_netproton", "", {HistType::kTProfile, {centAxis}});
-        histos.add("GenProf_mu6_netproton", "", {HistType::kTProfile, {centAxis}});
-        histos.add("GenProf_mu7_netproton", "", {HistType::kTProfile, {centAxis}});
-        histos.add("GenProf_mu8_netproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu1_antiproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu2_antiproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu3_antiproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu4_antiproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu5_antiproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu6_antiproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu7_antiproton", "", {HistType::kTProfile, {centAxis}});
+        histos.add("GenProf_mu8_antiproton", "", {HistType::kTProfile, {centAxis}});
       }
 
       if (cfgIsCalculateError) {
-        histos.add("GenProf2D_mu1_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-        histos.add("GenProf2D_mu2_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-        histos.add("GenProf2D_mu3_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-        histos.add("GenProf2D_mu4_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-        histos.add("GenProf2D_mu5_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-        histos.add("GenProf2D_mu6_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-        histos.add("GenProf2D_mu7_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
-        histos.add("GenProf2D_mu8_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu1_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu2_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu3_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu4_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu5_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu6_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu7_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
+        histos.add("GenProf2D_mu8_antiproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
       }
     }
   } // end init()
@@ -1023,8 +1023,8 @@ struct NetprotonCumulantsMc {
       }
     } //! end particle loop
 
-    float netProt = nProt - nAntiprot;
-    histos.fill(HIST("hgenNetProtonVsCentrality"), netProt, cent);
+    float netProt = nAntiprot; // here we are interested in antiproton cumulants
+
     histos.fill(HIST("hgenProtonVsCentrality"), nProt, cent);
     histos.fill(HIST("hgenAntiprotonVsCentrality"), nAntiprot, cent);
     histos.fill(HIST("hgenProfileTotalProton"), cent, (nProt + nAntiprot));
@@ -1035,14 +1035,14 @@ struct NetprotonCumulantsMc {
     //-------------------------------------------------------------------------------------------
 
     if (cfgIsCalculateCentral) {
-      histos.get<TProfile>(HIST("GenProf_mu1_netproton"))->Fill(cent, std::pow(netProt, 1.0));
-      histos.get<TProfile>(HIST("GenProf_mu2_netproton"))->Fill(cent, std::pow(netProt, 2.0));
-      histos.get<TProfile>(HIST("GenProf_mu3_netproton"))->Fill(cent, std::pow(netProt, 3.0));
-      histos.get<TProfile>(HIST("GenProf_mu4_netproton"))->Fill(cent, std::pow(netProt, 4.0));
-      histos.get<TProfile>(HIST("GenProf_mu5_netproton"))->Fill(cent, std::pow(netProt, 5.0));
-      histos.get<TProfile>(HIST("GenProf_mu6_netproton"))->Fill(cent, std::pow(netProt, 6.0));
-      histos.get<TProfile>(HIST("GenProf_mu7_netproton"))->Fill(cent, std::pow(netProt, 7.0));
-      histos.get<TProfile>(HIST("GenProf_mu8_netproton"))->Fill(cent, std::pow(netProt, 8.0));
+      histos.get<TProfile>(HIST("GenProf_mu1_antiproton"))->Fill(cent, std::pow(netProt, 1.0));
+      histos.get<TProfile>(HIST("GenProf_mu2_antiproton"))->Fill(cent, std::pow(netProt, 2.0));
+      histos.get<TProfile>(HIST("GenProf_mu3_antiproton"))->Fill(cent, std::pow(netProt, 3.0));
+      histos.get<TProfile>(HIST("GenProf_mu4_antiproton"))->Fill(cent, std::pow(netProt, 4.0));
+      histos.get<TProfile>(HIST("GenProf_mu5_antiproton"))->Fill(cent, std::pow(netProt, 5.0));
+      histos.get<TProfile>(HIST("GenProf_mu6_antiproton"))->Fill(cent, std::pow(netProt, 6.0));
+      histos.get<TProfile>(HIST("GenProf_mu7_antiproton"))->Fill(cent, std::pow(netProt, 7.0));
+      histos.get<TProfile>(HIST("GenProf_mu8_antiproton"))->Fill(cent, std::pow(netProt, 8.0));
     }
 
     if (cfgIsCalculateError) {
@@ -1050,18 +1050,18 @@ struct NetprotonCumulantsMc {
       float lRandom = fRndm->Rndm();
       int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
 
-      histos.get<TProfile2D>(HIST("GenProf2D_mu1_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 1.0));
-      histos.get<TProfile2D>(HIST("GenProf2D_mu2_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 2.0));
-      histos.get<TProfile2D>(HIST("GenProf2D_mu3_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 3.0));
-      histos.get<TProfile2D>(HIST("GenProf2D_mu4_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 4.0));
-      histos.get<TProfile2D>(HIST("GenProf2D_mu5_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 5.0));
-      histos.get<TProfile2D>(HIST("GenProf2D_mu6_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 6.0));
-      histos.get<TProfile2D>(HIST("GenProf2D_mu7_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 7.0));
-      histos.get<TProfile2D>(HIST("GenProf2D_mu8_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 8.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu1_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 1.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu2_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 2.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu3_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 3.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu4_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 4.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu5_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 5.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu6_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 6.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu7_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 7.0));
+      histos.get<TProfile2D>(HIST("GenProf2D_mu8_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 8.0));
     }
     //-------------------------------------------------------------------------------------------
   }
-  PROCESS_SWITCH(NetprotonCumulantsMc, processMCGen, "Process Generated", true);
+  PROCESS_SWITCH(AntiprotonCumulantsMc, processMCGen, "Process Generated", true);
 
   void processMCRec(MyMCRecCollision const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
@@ -1115,6 +1115,7 @@ struct NetprotonCumulantsMc {
       auto particle = track.mcParticle();
       if (!particle.has_mcCollision())
         continue;
+
       if ((particle.pt() < cfgCutPtLower) || (particle.pt() > 5.0f) || (std::abs(particle.eta()) > cfgCutEta)) {
         continue;
       }
@@ -1205,8 +1206,8 @@ struct NetprotonCumulantsMc {
       } //! checking if primary
     } //! end track loop
 
-    float netProt = nProt - nAntiprot;
-    histos.fill(HIST("hrecNetProtonVsCentrality"), netProt, cent);
+    float netProt = nAntiprot;
+
     histos.fill(HIST("hrecProtonVsCentrality"), nProt, cent);
     histos.fill(HIST("hrecAntiprotonVsCentrality"), nAntiprot, cent);
     histos.fill(HIST("hrecProfileTotalProton"), cent, (nProt + nAntiprot));
@@ -1218,8 +1219,8 @@ struct NetprotonCumulantsMc {
 
     // Calculating q_{r,s} as required
     for (int i = 1; i < 7; i++) {
-      fTCP0[i] = powerEffProt[i] + powerEffAntiprot[i];
-      fTCP1[i] = powerEffProt[i] - powerEffAntiprot[i];
+      fTCP0[i] = 0.0 + powerEffAntiprot[i];
+      fTCP1[i] = 0.0 - powerEffAntiprot[i];
     }
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1493,14 +1494,14 @@ struct NetprotonCumulantsMc {
     if (cfgIsCalculateCentral) {
 
       // uncorrected
-      histos.get<TProfile>(HIST("Prof_mu1_netproton"))->Fill(cent, std::pow(netProt, 1.0));
-      histos.get<TProfile>(HIST("Prof_mu2_netproton"))->Fill(cent, std::pow(netProt, 2.0));
-      histos.get<TProfile>(HIST("Prof_mu3_netproton"))->Fill(cent, std::pow(netProt, 3.0));
-      histos.get<TProfile>(HIST("Prof_mu4_netproton"))->Fill(cent, std::pow(netProt, 4.0));
-      histos.get<TProfile>(HIST("Prof_mu5_netproton"))->Fill(cent, std::pow(netProt, 5.0));
-      histos.get<TProfile>(HIST("Prof_mu6_netproton"))->Fill(cent, std::pow(netProt, 6.0));
-      histos.get<TProfile>(HIST("Prof_mu7_netproton"))->Fill(cent, std::pow(netProt, 7.0));
-      histos.get<TProfile>(HIST("Prof_mu8_netproton"))->Fill(cent, std::pow(netProt, 8.0));
+      histos.get<TProfile>(HIST("Prof_mu1_antiproton"))->Fill(cent, std::pow(netProt, 1.0));
+      histos.get<TProfile>(HIST("Prof_mu2_antiproton"))->Fill(cent, std::pow(netProt, 2.0));
+      histos.get<TProfile>(HIST("Prof_mu3_antiproton"))->Fill(cent, std::pow(netProt, 3.0));
+      histos.get<TProfile>(HIST("Prof_mu4_antiproton"))->Fill(cent, std::pow(netProt, 4.0));
+      histos.get<TProfile>(HIST("Prof_mu5_antiproton"))->Fill(cent, std::pow(netProt, 5.0));
+      histos.get<TProfile>(HIST("Prof_mu6_antiproton"))->Fill(cent, std::pow(netProt, 6.0));
+      histos.get<TProfile>(HIST("Prof_mu7_antiproton"))->Fill(cent, std::pow(netProt, 7.0));
+      histos.get<TProfile>(HIST("Prof_mu8_antiproton"))->Fill(cent, std::pow(netProt, 8.0));
 
       // eff. corrected
       histos.get<TProfile>(HIST("Prof_Q11_1"))->Fill(cent, fQ11_1);
@@ -1754,14 +1755,14 @@ struct NetprotonCumulantsMc {
       float lRandom = fRndm->Rndm();
       int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
 
-      histos.get<TProfile2D>(HIST("Prof2D_mu1_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 1.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu2_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 2.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu3_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 3.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu4_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 4.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu5_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 5.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu6_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 6.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu7_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 7.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu8_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 8.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu1_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 1.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu2_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 2.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu3_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 3.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu4_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 4.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu5_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 5.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu6_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 6.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu7_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 7.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu8_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 8.0));
 
       histos.get<TProfile2D>(HIST("Prof2D_Q11_1"))->Fill(cent, sampleIndex, fQ11_1);
       histos.get<TProfile2D>(HIST("Prof2D_Q11_2"))->Fill(cent, sampleIndex, fQ11_2);
@@ -2009,7 +2010,7 @@ struct NetprotonCumulantsMc {
       histos.get<TProfile2D>(HIST("Prof2D_Q112221_111"))->Fill(cent, sampleIndex, fQ112221_111);
     }
   }
-  PROCESS_SWITCH(NetprotonCumulantsMc, processMCRec, "Process Generated", true);
+  PROCESS_SWITCH(AntiprotonCumulantsMc, processMCRec, "Process Generated", true);
 
   void processDataRec(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
   {
@@ -2135,8 +2136,8 @@ struct NetprotonCumulantsMc {
       } //! checking PID
     } //! end track loop
 
-    float netProt = nProt - nAntiprot;
-    histos.fill(HIST("hrecNetProtonVsCentrality"), netProt, cent);
+    float netProt = nAntiprot;
+
     histos.fill(HIST("hrecProtonVsCentrality"), nProt, cent);
     histos.fill(HIST("hrecAntiprotonVsCentrality"), nAntiprot, cent);
     histos.fill(HIST("hrecProfileTotalProton"), cent, (nProt + nAntiprot));
@@ -2148,8 +2149,8 @@ struct NetprotonCumulantsMc {
 
     // Calculating q_{r,s} as required
     for (int i = 1; i < 7; i++) {
-      fTCP0[i] = powerEffProt[i] + powerEffAntiprot[i];
-      fTCP1[i] = powerEffProt[i] - powerEffAntiprot[i];
+      fTCP0[i] = 0.0 + powerEffAntiprot[i];
+      fTCP1[i] = 0.0 - powerEffAntiprot[i];
     }
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -2423,14 +2424,14 @@ struct NetprotonCumulantsMc {
     if (cfgIsCalculateCentral) {
 
       // uncorrected
-      histos.get<TProfile>(HIST("Prof_mu1_netproton"))->Fill(cent, std::pow(netProt, 1.0));
-      histos.get<TProfile>(HIST("Prof_mu2_netproton"))->Fill(cent, std::pow(netProt, 2.0));
-      histos.get<TProfile>(HIST("Prof_mu3_netproton"))->Fill(cent, std::pow(netProt, 3.0));
-      histos.get<TProfile>(HIST("Prof_mu4_netproton"))->Fill(cent, std::pow(netProt, 4.0));
-      histos.get<TProfile>(HIST("Prof_mu5_netproton"))->Fill(cent, std::pow(netProt, 5.0));
-      histos.get<TProfile>(HIST("Prof_mu6_netproton"))->Fill(cent, std::pow(netProt, 6.0));
-      histos.get<TProfile>(HIST("Prof_mu7_netproton"))->Fill(cent, std::pow(netProt, 7.0));
-      histos.get<TProfile>(HIST("Prof_mu8_netproton"))->Fill(cent, std::pow(netProt, 8.0));
+      histos.get<TProfile>(HIST("Prof_mu1_antiproton"))->Fill(cent, std::pow(netProt, 1.0));
+      histos.get<TProfile>(HIST("Prof_mu2_antiproton"))->Fill(cent, std::pow(netProt, 2.0));
+      histos.get<TProfile>(HIST("Prof_mu3_antiproton"))->Fill(cent, std::pow(netProt, 3.0));
+      histos.get<TProfile>(HIST("Prof_mu4_antiproton"))->Fill(cent, std::pow(netProt, 4.0));
+      histos.get<TProfile>(HIST("Prof_mu5_antiproton"))->Fill(cent, std::pow(netProt, 5.0));
+      histos.get<TProfile>(HIST("Prof_mu6_antiproton"))->Fill(cent, std::pow(netProt, 6.0));
+      histos.get<TProfile>(HIST("Prof_mu7_antiproton"))->Fill(cent, std::pow(netProt, 7.0));
+      histos.get<TProfile>(HIST("Prof_mu8_antiproton"))->Fill(cent, std::pow(netProt, 8.0));
 
       // eff. corrected
       histos.get<TProfile>(HIST("Prof_Q11_1"))->Fill(cent, fQ11_1);
@@ -2684,14 +2685,14 @@ struct NetprotonCumulantsMc {
       float lRandom = fRndm->Rndm();
       int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
 
-      histos.get<TProfile2D>(HIST("Prof2D_mu1_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 1.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu2_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 2.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu3_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 3.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu4_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 4.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu5_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 5.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu6_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 6.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu7_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 7.0));
-      histos.get<TProfile2D>(HIST("Prof2D_mu8_netproton"))->Fill(cent, sampleIndex, std::pow(netProt, 8.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu1_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 1.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu2_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 2.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu3_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 3.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu4_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 4.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu5_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 5.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu6_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 6.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu7_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 7.0));
+      histos.get<TProfile2D>(HIST("Prof2D_mu8_antiproton"))->Fill(cent, sampleIndex, std::pow(netProt, 8.0));
 
       histos.get<TProfile2D>(HIST("Prof2D_Q11_1"))->Fill(cent, sampleIndex, fQ11_1);
       histos.get<TProfile2D>(HIST("Prof2D_Q11_2"))->Fill(cent, sampleIndex, fQ11_2);
@@ -2939,11 +2940,11 @@ struct NetprotonCumulantsMc {
       histos.get<TProfile2D>(HIST("Prof2D_Q112221_111"))->Fill(cent, sampleIndex, fQ112221_111);
     }
   }
-  PROCESS_SWITCH(NetprotonCumulantsMc, processDataRec, "Process real data", false);
+  PROCESS_SWITCH(AntiprotonCumulantsMc, processDataRec, "Process real data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<NetprotonCumulantsMc>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<AntiprotonCumulantsMc>(cfgc)};
   return workflow;
 }
