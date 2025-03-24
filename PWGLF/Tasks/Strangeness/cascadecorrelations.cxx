@@ -917,8 +917,8 @@ struct CascadeCorrelations {
   void processMC(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisionsMult>> const& collisions, soa::Filtered<aod::McParticles> const& genCascades, aod::McParticles const& mcParticles)
   {
     // Let's do some logic on matched reconstructed collisions - if there less or more than one, fill some QA and skip the rest
-    double FT0mult;
-    double vtxz;
+    double FT0mult = -1; // non-sensible default value just in case
+    double vtxz = -999.; // non-sensible default value just in case
     if (collisions.size() < 1) {
       registry.fill(HIST("MC/hSplitEvents"), 0);
       registry.fill(HIST("MC/hGenMultNoReco"), mCounter.countFT0A(mcParticles) + mCounter.countFT0C(mcParticles));
