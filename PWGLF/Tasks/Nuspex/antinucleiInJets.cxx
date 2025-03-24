@@ -155,6 +155,8 @@ struct AntinucleiInJets {
     if (doprocessQC) {
       registryQC.add("deltaEta_deltaPhi_jet", "deltaEta_deltaPhi_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, PIHalf, "#Delta#phi"}});
       registryQC.add("deltaEta_deltaPhi_ue", "deltaEta_deltaPhi_ue", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, PIHalf, "#Delta#phi"}});
+      registryQC.add("eta_phi_jet", "eta_phi_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#eta_{jet}"}, {200, 0, TwoPI, "#phi_{jet}"}});
+      registryQC.add("eta_phi_ue", "eta_phi_ue", HistType::kTH2F, {{200, -0.5, 0.5, "#eta_{UE}"}, {200, 0, TwoPI, "#phi_{UE}"}});
       registryQC.add("NchJetCone", "NchJetCone", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
       registryQC.add("NchJet", "NchJet", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
       registryQC.add("NchUE", "NchUE", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
@@ -747,7 +749,7 @@ struct AntinucleiInJets {
       // jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      double ptJetAfterSub = jet.pt();
+      double ptJetAfterSub = jetForSub.pt();
       registryQC.fill(HIST("jetPtDifference"), ptJetAfterSub - ptJetBeforeSub);
 
       if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
@@ -773,6 +775,7 @@ struct AntinucleiInJets {
         double deltaEta = particle.eta() - jetAxis.Eta();
         double deltaPhi = getDeltaPhi(particle.phi(), jetAxis.Phi());
         registryQC.fill(HIST("deltaEta_deltaPhi_jet"), deltaEta, deltaPhi);
+        registryQC.fill(HIST("eta_phi_jet"), particle.eta(), particle.phi());
       }
 
       // loop over particles in perpendicular cones
@@ -796,6 +799,7 @@ struct AntinucleiInJets {
         nParticlesPerp++;
         registryQC.fill(HIST("deltaEta_deltaPhi_ue"), deltaEtaUe1, deltaPhiUe1);
         registryQC.fill(HIST("deltaEta_deltaPhi_ue"), deltaEtaUe2, deltaPhiUe2);
+        registryQC.fill(HIST("eta_phi_ue"), track.eta(), track.phi());
       }
       registryQC.fill(HIST("NchUE"), 0.5 * nParticlesPerp);
       registryQC.fill(HIST("NchJet"), static_cast<double>(jetConstituents.size()) - 0.5 * nParticlesPerp);
