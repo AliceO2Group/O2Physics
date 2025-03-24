@@ -173,7 +173,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmProtonKstarDistr{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmDeuteronKstarDistr{};
   std::array<std::shared_ptr<TH2>, nTotBeautyParts> hMassVsPtB{};
-  std::array<std::shared_ptr<TH2>, kNCharmParticles + 22> hMassVsPtC{}; // +9 for resonances (D*+, D*0, Ds*+, Ds1+, Ds2*+, Xic+* right sign, Xic+* wrong sign, Xic0* right sign, Xic0* wrong sign) +2 for SigmaC (SigmaC++, SigmaC0) +2 for SigmaCK pairs (SigmaC++K-, SigmaC0K0s) +3 for charm baryons (Xi+Pi, Xi+Ka, Xi+Pi+Pi) + JPsi + 4 for charm baryons (D0+p, D0+pWrongSign, D*0p, D*0+pWrongSign)
+  std::array<std::shared_ptr<TH2>, kNCharmParticles + 23> hMassVsPtC{}; // +9 for resonances (D*+, D*0, Ds*+, Ds1+, Ds2*+, Xic+* right sign, Xic+* wrong sign, Xic0* right sign, Xic0* wrong sign) +2 for SigmaC (SigmaC++, SigmaC0) +2 for SigmaCK pairs (SigmaC++K-, SigmaC0K0s) +3 for charm baryons (Xi+Pi, Xi+Ka, Xi+Pi+Pi) + JPsi + 4 for charm baryons (D0+p, D0+pWrongSign, D*0p, D*0+pWrongSign)
   std::array<std::shared_ptr<TH2>, 4> hPrDePID;                         // proton TPC, proton TOF, deuteron TPC, deuteron TOF
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreBkg{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
@@ -954,7 +954,7 @@ struct HfFilter { // Main struct for HF triggers
             }
             std::array<float, 3> pVecProton = trackProton.pVector();
             auto isSelProton = helper.isSelectedBachelorForCharmBaryon<kPrCharm2P>(trackProton, dcaInfoBachProton);
-            if (isSelProton == kProtonForCharmBaryon) {
+            if (TESTBIT(isSelProton, kProtonForCharmBaryon)) {
               if (!keepEvent[kPrCharm2P]) {
                 // we first look for a D*+
                 for (const auto& trackBachelorId : trackIdsThisCollision) { // start loop over tracks to find bachelor pion
