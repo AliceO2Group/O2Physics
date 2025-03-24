@@ -2475,7 +2475,7 @@ struct KaonIsospinFluctuations {
 
         if (cfgCountPhysicalPrimAndFinalParticles) {
           if (!mcTrack.has_daughters() && mcTrack.isPhysicalPrimary()) {
-            if (!(std::abs(mcTrack.pdgCode()) == 12 || std::abs(mcTrack.pdgCode()) == 14 || std::abs(mcTrack.pdgCode()) == 16)) {
+            if (!(std::abs(mcTrack.pdgCode()) == kNuE || std::abs(mcTrack.pdgCode()) == kNuMu || std::abs(mcTrack.pdgCode()) == kNuTau)) {
               // Removed invisible neutrinos;
               getV0MCount(mcTrack, multV0M);
             }
