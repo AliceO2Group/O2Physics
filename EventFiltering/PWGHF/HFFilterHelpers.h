@@ -1693,26 +1693,14 @@ inline int16_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, 
     nSigmaPrTpc = getTPCSplineCalib(track, (track.sign() > 0) ? kPr : kAntiPr);
   }
 
-  if (track.hasTOF()) {
-    if ((std::fabs(nSigmaPiTpc) > mNSigmaTpcPiCharmBaryonBachelor) || (std::fabs(nSigmaPiTof) > mNSigmaTofPiCharmBaryonBachelor)) {
-      CLRBIT(retValue, kPionForCharmBaryon);
-    }
-    if ((std::fabs(nSigmaKaTpc) > mNSigmaTpcPiCharmBaryonBachelor) || (std::fabs(nSigmaKaTof) > mNSigmaTofPiCharmBaryonBachelor)) {
-      CLRBIT(retValue, kKaonForCharmBaryon);
-    }
-    if ((std::fabs(nSigmaPrTpc) > mNSigmaTpcPiCharmBaryonBachelor) || (std::fabs(nSigmaPrTof) > mNSigmaTofPiCharmBaryonBachelor)) {
-      CLRBIT(retValue, kProtonForCharmBaryon);
-    }
-  } else {
-    if (std::fabs(nSigmaPiTpc) > mNSigmaTpcPiCharmBaryonBachelor) {
-      CLRBIT(retValue, kPionForCharmBaryon);
-    }
-    if (std::fabs(nSigmaPiTpc) > mNSigmaTpcPiCharmBaryonBachelor) {
-      CLRBIT(retValue, kKaonForCharmBaryon);
-    }
-    if (std::fabs(nSigmaPiTpc) > mNSigmaTpcPiCharmBaryonBachelor) {
-      CLRBIT(retValue, kProtonForCharmBaryon);
-    }
+  if ((track.hasTPC() && std::fabs(nSigmaPiTpc) > mNSigmaTpcPiCharmBaryonBachelor) && (track.hasTOF() && std::fabs(nSigmaPiTof) > mNSigmaTofPiCharmBaryonBachelor)) {
+    CLRBIT(retValue, kPionForCharmBaryon);
+  }
+  if ((track.hasTPC() && std::fabs(nSigmaKaTpc) > mNSigmaTpcPiCharmBaryonBachelor) && (track.hasTOF() && std::fabs(nSigmaKaTof) > mNSigmaTofPiCharmBaryonBachelor)) {
+    CLRBIT(retValue, kKaonForCharmBaryon);
+  }
+  if ((track.hasTPC() && std::fabs(nSigmaPrTpc) > mNSigmaTpcPiCharmBaryonBachelor) && (track.hasTOF() && std::fabs(nSigmaPrTof) > mNSigmaTpcPiCharmBaryonBachelor)) {
+    CLRBIT(retValue, kProtonForCharmBaryon);
   }
 
   return retValue;
