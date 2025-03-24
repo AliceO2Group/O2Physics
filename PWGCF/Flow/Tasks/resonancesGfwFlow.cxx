@@ -107,8 +107,8 @@ struct ResonancesGfwFlow {
   O2_DEFINE_CONFIGURABLE(cfgDCAK0PosToPVMin, float, 0.06f, "minimum DCA to PV for K0 positive track")
   O2_DEFINE_CONFIGURABLE(cfgDCAK0NegToPVMin, float, 0.06f, "minimum DCA to PV for K0 negative track")
   O2_DEFINE_CONFIGURABLE(cfgDCAK0BetDaug, int, 1, "Maximum DCA between K0 daughter tracks")
-  O2_DEFINE_CONFIGURABLE(cfgMassLambdaMin, float, 1.08f, "minimum lambda mass")
-  O2_DEFINE_CONFIGURABLE(cfgMassLambdaMax, float, 1.15f, "maximum lambda mass")
+  O2_DEFINE_CONFIGURABLE(cfgMassLambdaMin, float, 1.1f, "minimum lambda mass")
+  O2_DEFINE_CONFIGURABLE(cfgMassLambdaMax, float, 1.16f, "maximum lambda mass")
   O2_DEFINE_CONFIGURABLE(cfgMassK0Min, float, 0.44f, "minimum K0short mass")
   O2_DEFINE_CONFIGURABLE(cfgMassK0Max, float, 0.56f, "maximum K0short mass")
   O2_DEFINE_CONFIGURABLE(cfgUseMCCLambda, bool, false, "Use mass cross check for lambda")
@@ -188,7 +188,7 @@ struct ResonancesGfwFlow {
     histos.add("hAntiLambdaPhi", "", {HistType::kTH1D, {axisPhi}});
     histos.add("hAntiLambdaEta", "", {HistType::kTH1D, {axisEta}});
     histos.add("hAntiLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, axisPt, axisMultiplicity}}});
-    histos.add("hLambdaCount", "", {HistType::kTH1D, {singleCount}});
+    histos.add("hLambdas", "", {HistType::kTH1D, {singleCount}});
 
     histos.add("PlusTPC_K0", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
     histos.add("MinusTPC_K0", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
@@ -197,27 +197,63 @@ struct ResonancesGfwFlow {
     histos.add("hK0Phi", "", {HistType::kTH1D, {axisPhi}});
     histos.add("hK0Eta", "", {HistType::kTH1D, {axisEta}});
     histos.add("hK0Mass_sparse", "", {HistType::kTHnSparseF, {{axisK0Mass, axisPt, axisMultiplicity}}});
-    histos.add("hK0Count", "", {HistType::kTH1D, {singleCount}});
+    histos.add("hK0s", "", {HistType::kTH1D, {singleCount}});
 
     histos.add("Phic22", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("Phic24", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("Phiv22pt", "", {HistType::kTProfile3D, {{axisPt, axisPhiMass, axisMultiplicity}}});
-    histos.add("Phiv24pt", "", {HistType::kTProfile3D, {{axisPt, axisPhiMass, axisMultiplicity}}});
+    histos.add("Phiv22pt", "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}});
+    histos.add("Phiv24pt", "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}});
 
     histos.add("K0c22", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("K0c24", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("K0v22pt", "", {HistType::kTProfile3D, {{axisPt, axisK0Mass, axisMultiplicity}}});
-    histos.add("K0v24pt", "", {HistType::kTProfile3D, {{axisPt, axisK0Mass, axisMultiplicity}}});
+    histos.add("K0v22pt", "", {HistType::kTProfile3D, {axisPt, axisK0Mass, axisMultiplicity}});
+    histos.add("K0v24pt", "", {HistType::kTProfile3D, {axisPt, axisK0Mass, axisMultiplicity}});
 
     histos.add("Lambdac22", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("Lambdac24", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("Lambdav22pt", "", {HistType::kTProfile3D, {{axisPt, axisLambdaMass, axisMultiplicity}}});
-    histos.add("Lambdav24pt", "", {HistType::kTProfile3D, {{axisPt, axisLambdaMass, axisMultiplicity}}});
+    histos.add("Lambdav22pt", "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
+    histos.add("Lambdav24pt", "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
 
     histos.add("AnLambdac22", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("AnLambdac24", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("AnLambdav22pt", "", {HistType::kTProfile3D, {{axisPt, axisLambdaMass, axisMultiplicity}}});
-    histos.add("AnLambdav24pt", "", {HistType::kTProfile3D, {{axisPt, axisLambdaMass, axisMultiplicity}}});
+    histos.add("AnLambdav22pt", "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
+    histos.add("AnLambdav24pt", "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
+
+    histos.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{8, 0, 8}}});
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "After sel8");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "kNoTimeFrameBorder");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "kNoSameBunchPileup");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(6, "kIsGoodZvtxFT0vsPV");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(7, "kNoCollInTimeRangeStandard");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(8, "After Occupancy");
+
+    histos.add("hLambdaCount", "Number of Lambda;; Count", {HistType::kTH1D, {{11, 0, 11}}});
+    histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(1, "Lambda candidates");
+    histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(2, "Daughter pt");
+    histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(3, "Mass cut");
+    histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(4, "Rapidity cut");
+    histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(5, "DCA to PV");
+    histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(6, "DCA between daughters");
+    histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(7, "V0radius");
+    histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(8, "CosPA");
+    histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(9, "Proper lifetime");
+    histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(10, "Daughter track selection");
+    histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(11, "Mass cross check");
+
+    histos.add("hK0Count", "Number of K0;; Count", {HistType::kTH1D, {{11, 0, 11}}});
+    histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(1, "K0 candidates");
+    histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(2, "Daughter pt");
+    histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(3, "Mass cut");
+    histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(4, "Rapidity cut");
+    histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(5, "DCA to PV");
+    histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(6, "DCA between daughters");
+    histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(7, "V0radius");
+    histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(8, "CosPA");
+    histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(9, "Proper lifetime");
+    histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(10, "Daughter track selection");
+    histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(11, "Mass cross check");
 
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
@@ -239,40 +275,66 @@ struct ResonancesGfwFlow {
 
     // phi
     fGFW->AddRegion("poiNphi", -0.8, -0.4, 1 + nPhisPtMassBins, 2);
+    fGFW->AddRegion("poiPphi", -0.8, -0.4, 1 + nPhisPtMassBins, 2);
     fGFW->AddRegion("olNphi", -0.8, -0.4, 1 + nPhisPtMassBins, 32);
+    fGFW->AddRegion("olPphi", -0.8, -0.4, 1 + nPhisPtMassBins, 32);
 
     // kshort
     fGFW->AddRegion("poiNk0", -0.8, -0.4, 1 + nK0sPtMassBins, 4);
+    fGFW->AddRegion("poiPk0", -0.8, -0.4, 1 + nK0sPtMassBins, 4);
     fGFW->AddRegion("olNk0", -0.8, -0.4, 1 + nK0sPtMassBins, 64);
+    fGFW->AddRegion("olPk0", -0.8, -0.4, 1 + nK0sPtMassBins, 64);
 
     // lambda
     fGFW->AddRegion("poiNlam", -0.8, -0.4, 1 + nLambdasPtMassBins, 8);
+    fGFW->AddRegion("poiPlam", -0.8, -0.4, 1 + nLambdasPtMassBins, 8);
     fGFW->AddRegion("olNlam", -0.8, -0.4, 1 + nLambdasPtMassBins, 128);
+    fGFW->AddRegion("olPlam", -0.8, -0.4, 1 + nLambdasPtMassBins, 128);
 
     // antilambda
     fGFW->AddRegion("poiNantilam", -0.8, -0.4, 1 + nLambdasPtMassBins, 16);
+    fGFW->AddRegion("poiPantilam", -0.8, -0.4, 1 + nLambdasPtMassBins, 16);
     fGFW->AddRegion("olNantilam", -0.8, -0.4, 1 + nLambdasPtMassBins, 256);
+    fGFW->AddRegion("olPantilam", -0.8, -0.4, 1 + nLambdasPtMassBins, 256);
 
     //********** Defining the correlations  ************
-    // reference particles
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Phi08Gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ks08Gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Lam08Gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "AnLam08Gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "Phi08Gap24", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "Ks08Gap24", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "Lam08Gap24", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "AnLam08Gap24", kFALSE));
+    // NAMING CONVENTION:
+    //    F: Forward --> REF from negative eta + POI from negative eta correlated to REF from positive eta
+    //    B: Backward --> REF from negative eta correlated to REF from positive eta + POI from positive eta
 
-    // pt differential pois
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2} refP08 {-2}", "Phi08Gap22", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2} refP08 {-2}", "Ks08Gap22", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2} refP08 {-2}", "Lam08Gap22", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2} refP08 {-2}", "AnLam08Gap22", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2 2} refP08 {-2 -2}", "Phi08Gap24", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2 2} refP08 {-2 -2}", "Ks08Gap24", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2 2} refP08 {-2 -2}", "Lam08Gap24", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2 2} refP08 {-2 -2}", "AnLam08Gap24", kTRUE));
+    //--------- reference particles
+    // Forward and Backward correlations are the same for reference particles
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "PhiF08Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "KsF08Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "LamF08Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "AnLamF08Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "PhiF08Gap24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "KsF08Gap24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "LamF08Gap24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "AnLamF08Gap24", kFALSE));
+
+    //--------- pt differential pois
+    // Forward
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2} refP08 {-2}", "PhiF08Gap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNk0 refN08 | olNk0 {2} refP08 {-2}", "KsF08Gap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNlam refN08 | olNlam {2} refP08 {-2}", "LamF08Gap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNantilam refN08 | olNantilam {2} refP08 {-2}", "AnLamF08Gap22", kTRUE));
+
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNphi refN08 | olNphi {2 2} refP08 {-2 -2}", "PhiF08Gap24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNk0 refN08 | olNk0 {2 2} refP08 {-2 -2}", "KsF08Gap24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNlam refN08 | olNlam {2 2} refP08 {-2 -2}", "LamF08Gap24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNantilam refN08 | olNantilam {2 2} refP08 {-2 -2}", "AnLamF08Gap24", kTRUE));
+
+    // Backward
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPphi refP08 | olPphi {2} refN08 {-2}", "PhiB08Gap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPk0 refP08 | olPk0 {2} refN08 {-2}", "KsB08Gap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPlam refP08 | olPlam {2} refN08 {-2}", "LamB08Gap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPantilam refP08 | olPantilam {2} refN08 {-2}", "AnLamB08Gap22", kTRUE));
+
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPphi refP08 | olPphi {2 2} refN08 {-2 -2}", "PhiB08Gap24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPk0 refP08 | olPk0 {2 2} refN08 {-2 -2}", "KsB08Gap24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPlam refP08 | olPlam {2 2} refN08 {-2 -2}", "LamB08Gap24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPantilam refP08 | olPantilam {2 2} refN08 {-2 -2}", "AnLamB08Gap24", kTRUE));
 
     fGFW->CreateRegions();
   }
@@ -440,9 +502,11 @@ struct ResonancesGfwFlow {
     auto postrack = candidate.template posTrack_as<AodTracksWithoutBayes>();
     auto negtrack = candidate.template negTrack_as<AodTracksWithoutBayes>();
 
+    histos.fill(HIST("hLambdaCount"), 0.5);
     if (postrack.pt() < 0.15 || negtrack.pt() < 0.15)
       return false;
 
+    histos.fill(HIST("hLambdaCount"), 1.5);
     if (mlambda > cfgMassLambdaMin && mlambda < cfgMassLambdaMax)
       isL = true;
     if (mantilambda > cfgMassLambdaMin && mantilambda < cfgMassLambdaMax)
@@ -451,11 +515,12 @@ struct ResonancesGfwFlow {
     if (!isL && !isAL) {
       return false;
     }
+    histos.fill(HIST("hLambdaCount"), 2.5);
 
     // Rapidity correction
     if (candidate.yLambda() > 0.5)
       return false;
-
+    histos.fill(HIST("hLambdaCount"), 3.5);
     // DCA cuts for lambda and antilambda
     if (isL) {
       if (std::abs(candidate.dcapostopv()) < cfgDCALambdaPosToPVMin || std::abs(candidate.dcanegtopv()) < cfgDCALambdaNegToPVMin)
@@ -465,21 +530,22 @@ struct ResonancesGfwFlow {
       if (std::abs(candidate.dcapostopv()) < cfgDCALambdaNegToPVMin || std::abs(candidate.dcanegtopv()) < cfgDCALambdaPosToPVMin)
         return false;
     }
+    histos.fill(HIST("hLambdaCount"), 4.5);
     if (std::abs(candidate.dcaV0daughters()) > cfgDCALambdaBetDaug)
       return false;
-
+    histos.fill(HIST("hLambdaCount"), 5.5);
     // v0 radius cuts
     if (cfgUseV0Radius && (candidate.v0radius() < cfgLambdaRadiusMin || candidate.v0radius() > cfgLambdaRadiusMax))
       return false;
-
+    histos.fill(HIST("hLambdaCount"), 6.5);
     // cosine pointing angle cuts
     if (candidate.v0cosPA() < cfgLambdaCosPA)
       return false;
-
+    histos.fill(HIST("hLambdaCount"), 7.5);
     // Proper lifetime
     if (cfgUseProperLifetime && candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > cfgLambdaLifeTime)
       return false;
-
+    histos.fill(HIST("hLambdaCount"), 8.5);
     if (isL) {
       if (!selectionV0Daughter(postrack, 1) || !selectionV0Daughter(negtrack, 0))
         return false;
@@ -488,11 +554,11 @@ struct ResonancesGfwFlow {
       if (!selectionV0Daughter(postrack, 0) || !selectionV0Daughter(negtrack, 1))
         return false;
     }
-
+    histos.fill(HIST("hLambdaCount"), 9.5);
     // Mass cross check
     if (cfgUseMCCLambda && std::abs(massK0Short - 0.497614) < 0.01)
       return false;
-
+    histos.fill(HIST("hLambdaCount"), 10.5);
     bool withinPtPOI = (cfgCutPtPOIMin < candidate.pt()) && (candidate.pt() < cfgCutPtPOIMax); // within POI pT range
     bool withinPtRef = (cfgCutPtMin < candidate.pt()) && (candidate.pt() < cfgCutPtMax);
 
@@ -536,44 +602,45 @@ struct ResonancesGfwFlow {
     auto postrack = candidate.template posTrack_as<AodTracksWithoutBayes>();
     auto negtrack = candidate.template negTrack_as<AodTracksWithoutBayes>();
 
+    histos.fill(HIST("hK0Count"), 0.5);
     if (postrack.pt() < 0.15 || negtrack.pt() < 0.15)
       return false;
-
+    histos.fill(HIST("hK0Count"), 1.5);
     if (mk0 < cfgMassK0Min && mk0 > cfgMassK0Max)
       return false;
-
+    histos.fill(HIST("hK0Count"), 2.5);
     // Rapidity correction
     if (candidate.yK0Short() > 0.5)
       return false;
-
+    histos.fill(HIST("hK0Count"), 3.5);
     // DCA cuts for K0short
     if (std::abs(candidate.dcapostopv()) < cfgDCAK0PosToPVMin || std::abs(candidate.dcanegtopv()) < cfgDCAK0NegToPVMin)
       return false;
-
+    histos.fill(HIST("hK0Count"), 4.5);
     if (std::abs(candidate.dcaV0daughters()) > cfgDCAK0BetDaug)
       return false;
-
+    histos.fill(HIST("hK0Count"), 5.5);
     // v0 radius cuts
     if (cfgUseV0Radius && (candidate.v0radius() < cfgK0RadiusMin || candidate.v0radius() > cfgK0RadiusMax))
       return false;
-
+    histos.fill(HIST("hK0Count"), 6.5);
     // cosine pointing angle cuts
     if (candidate.v0cosPA() < cfgK0CosPA)
       return false;
-
+    histos.fill(HIST("hK0Count"), 7.5);
     // Proper lifetime
     if (cfgUseProperLifetime && candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massK0Short > cfgK0LifeTime)
       return false;
-
+    histos.fill(HIST("hK0Count"), 8.5);
     if (!selectionV0Daughter(postrack, 0) || !selectionV0Daughter(negtrack, 0))
       return false;
-
+    histos.fill(HIST("hK0Count"), 9.5);
     // Mass cross check
     if (cfgUseMCCK0 && std::abs(massLambda - 1.11568) < 0.005)
       return false;
     if (cfgUseMCCK0 && std::abs(massLambda - 1.11568) < 0.005)
       return false;
-
+    histos.fill(HIST("hK0Count"), 10.5);
     bool withinPtPOI = (cfgCutPtPOIMin < candidate.pt()) && (candidate.pt() < cfgCutPtPOIMax); // within POI pT range
     bool withinPtRef = (cfgCutPtMin < candidate.pt()) && (candidate.pt() < cfgCutPtMax);
 
@@ -601,16 +668,39 @@ struct ResonancesGfwFlow {
 
   void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracksWithoutBayes const& tracks, aod::V0Datas const& V0s)
   {
+    histos.fill(HIST("hEventCount"), 0.5);
     int nTot = tracks.size();
     if (nTot < 1)
       return;
 
-    if (!collision.sel8() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
+    if (!collision.sel8())
       return;
+    histos.fill(HIST("hEventCount"), 1.5);
+
+    if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      return;
+    histos.fill(HIST("hEventCount"), 2.5);
+
+    if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+      return;
+    histos.fill(HIST("hEventCount"), 3.5);
+
+    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+      return;
+    histos.fill(HIST("hEventCount"), 4.5);
+
+    if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      return;
+    histos.fill(HIST("hEventCount"), 5.5);
+
+    if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
+      return;
+    histos.fill(HIST("hEventCount"), 6.5);
 
     int occupancy = collision.trackOccupancyInTimeRange();
     if (occupancy > cfgCutOccupancy)
       return;
+    histos.fill(HIST("hEventCount"), 7.5);
 
     const auto cent = collision.centFT0C();
     float vtxz = collision.posZ();
@@ -639,17 +729,15 @@ struct ResonancesGfwFlow {
 
     for (auto const& v0s : V0s) {
       if (selectionLambda(collision, v0s) == true)
-        histos.fill(HIST("hLambdaCount"), 1);
+        histos.fill(HIST("hLambdas"), 1);
       if (selectionK0(collision, v0s) == true)
-        histos.fill(HIST("hK0Count"), 1);
-
+        histos.fill(HIST("hK0s"), 1);
     } // End of v0 loop
 
     fillResoProfile(corrconfigs.at(0), HIST("Phic22"), cent, fPhiMassAxis);
     fillResoProfile(corrconfigs.at(1), HIST("K0c22"), cent, fK0MassAxis);
     fillResoProfile(corrconfigs.at(2), HIST("Lambdac22"), cent, fLambdaMassAxis);
     fillResoProfile(corrconfigs.at(3), HIST("AnLambdac22"), cent, fLambdaMassAxis);
-
     fillResoProfile(corrconfigs.at(4), HIST("Phic24"), cent, fPhiMassAxis);
     fillResoProfile(corrconfigs.at(5), HIST("K0c24"), cent, fK0MassAxis);
     fillResoProfile(corrconfigs.at(6), HIST("Lambdac24"), cent, fLambdaMassAxis);
@@ -664,6 +752,17 @@ struct ResonancesGfwFlow {
     fillResoProfile(corrconfigs.at(13), HIST("K0v24pt"), cent, fK0MassAxis);
     fillResoProfile(corrconfigs.at(14), HIST("Lambdav24pt"), cent, fLambdaMassAxis);
     fillResoProfile(corrconfigs.at(15), HIST("AnLambdav24pt"), cent, fLambdaMassAxis);
+
+    fillResoProfile(corrconfigs.at(16), HIST("Phiv22pt"), cent, fPhiMassAxis);
+    fillResoProfile(corrconfigs.at(17), HIST("K0v22pt"), cent, fK0MassAxis);
+    fillResoProfile(corrconfigs.at(18), HIST("Lambdav22pt"), cent, fLambdaMassAxis);
+    fillResoProfile(corrconfigs.at(19), HIST("AnLambdav22pt"), cent, fLambdaMassAxis);
+
+    fillResoProfile(corrconfigs.at(20), HIST("Phiv24pt"), cent, fPhiMassAxis);
+    fillResoProfile(corrconfigs.at(21), HIST("K0v24pt"), cent, fK0MassAxis);
+    fillResoProfile(corrconfigs.at(22), HIST("Lambdav24pt"), cent, fLambdaMassAxis);
+    fillResoProfile(corrconfigs.at(23), HIST("AnLambdav24pt"), cent, fLambdaMassAxis);
+
   } // end of process
 };
 
