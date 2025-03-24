@@ -85,17 +85,17 @@ struct KaonIsospinFluctuations {
     Configurable<float> cfgK0sLowPt{"cfgK0sLowPt", 0.1, "cfgK0sLowPt"};
     Configurable<double> cfgK0sHighPt{"cfgK0sHighPt", 1.5, "cfgK0sHighPt"};
     Configurable<double> cfgK0sRapitidy{"cfgK0sRapitidy", 0.5, "cfgK0sRapitidy"};
-    Configurable<double> cfgK0sARMcut{"cfgK0sARMcut", 0.2, "cfgK0sARMcut"};      
+    Configurable<double> cfgK0sARMcut{"cfgK0sARMcut", 0.2, "cfgK0sARMcut"};
   } k0sSelCut;
 
-   // Histogram Configurables
+  // Histogram Configurables
   struct : ConfigurableGroup {
     Configurable<int> centBins{"centBins", 1020, "No of bins in centrality axis"};
     Configurable<double> centBinsxLow{"centBinsxLow", -1.0, "centBinsxLow"};
     Configurable<double> centBinsxUp{"centBinsxUp", 101.0, "centBinsxUp"};
     Configurable<int> centAxisType{"centAxisType", 0, "centAxisType"};
   } cfgCentAxis;
-  //Track Configurables
+  // Track Configurables
   struct : ConfigurableGroup {
     Configurable<int> cfgTrkTpcNClsCrossedRows{"cfgTrkTpcNClsCrossedRows", 70, "cfgTrkTpcNClsCrossedRows"};
     Configurable<float> cfgTrkdcaXY{"cfgTrkdcaXY", 0.2, "cfgTrkdcaXY"};
@@ -177,7 +177,7 @@ struct KaonIsospinFluctuations {
   Configurable<bool> doFWDPtDependentCheck{"doFWDPtDependentCheck", 1, "doFWDPtDependentCheck"};
   Configurable<float> cfgFWDPtCut{"cfgFWDPtCut", 0.2, "cfgFWDPtCut"};
   Configurable<std::vector<int>> cfgFinalParticleIdList{"cfgFinalParticleIdList", {11, -11, 13, -13, 15, -15, 211, -211, 321, -321, 2212, -2212}, "cfgFinalParticleIdList"};
-  Configurable<std::vector<int>> cfgNonFinalParticleIdList{"cfgNonFinalParticleIdList",  {11, -11, 13, -13, 15, -15, 211, -211, 321, -321, 2212, -2212}, "cfgNonFinalParticleIdList"};
+  Configurable<std::vector<int>> cfgNonFinalParticleIdList{"cfgNonFinalParticleIdList", {11, -11, 13, -13, 15, -15, 211, -211, 321, -321, 2212, -2212}, "cfgNonFinalParticleIdList"};
 
   void init(InitContext const&)
   {
@@ -239,7 +239,7 @@ struct KaonIsospinFluctuations {
     const AxisSpec axisParticleCount3 = {1060, -10, 1050, "particleCount"};
 
     const AxisSpec axisArmenterosAlpha = {100, -1.0, 1.0, "ArmenterosAlpha"};
-    const AxisSpec axisArmenterosQt    = {150,    0, 0.3, "ArmenterosQt"};
+    const AxisSpec axisArmenterosQt = {150, 0, 0.3, "ArmenterosQt"};
 
     HistogramConfigSpec histPDcaXY({HistType::kTH2F, {axisP, axisDcaXY}});
     HistogramConfigSpec histPtDcaXY({HistType::kTH2F, {axisPt, axisDcaXY}});
@@ -295,7 +295,7 @@ struct KaonIsospinFluctuations {
     recoV0s.add("v0Table/Full/h16_rapidity", "rapidity", kTH1F, {axisRapidity});
     recoV0s.add("v0Table/Full/h17_alpha", "alpha", kTH1F, {axisArmenterosAlpha});
     recoV0s.add("v0Table/Full/h18_qtarm", "qtarm", kTH1F, {axisArmenterosQt});
-    recoV0s.add("v0Table/Full/h19_alpha_qtarm","alpha_qtarm",kTH2F, {axisArmenterosAlpha, axisArmenterosQt});
+    recoV0s.add("v0Table/Full/h19_alpha_qtarm", "alpha_qtarm", kTH2F, {axisArmenterosAlpha, axisArmenterosQt});
     recoV0s.add("v0Table/Full/h20_pt_eta", "pt_eta", kTH2F, {axisPt, axisEta});
 
     // K0s-Daughter Info
@@ -343,11 +343,17 @@ struct KaonIsospinFluctuations {
     recoV0s.add("v0Table/Full/Pi/tpcId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", histTpcNSigmaTofNSigma);
 
     recoV0s.addClone("v0Table/Full/Pi/tpcId/", "v0Table/Full/Pi/tpctofId/"); // for identification using tof+tpc
-    recoV0s.addClone("v0Table/Full/Pi/tpcId/", "v0Table/Full/Pi/NoId/");  // for unidentified case // to observe and debug
+    recoV0s.addClone("v0Table/Full/Pi/tpcId/", "v0Table/Full/Pi/NoId/");     // for unidentified case // to observe and debug
 
-    if (cfgFillV0TablePostK0sCheck    ){recoV0s.addClone("v0Table/Full/", "v0Table/postK0sCheck/");    }
-    if (cfgFillV0TablePostMassCut     ){recoV0s.addClone("v0Table/Full/", "v0Table/postMassCut/");     }
-    if (cfgFillV0TablePostSelectionCut){recoV0s.addClone("v0Table/Full/", "v0Table/postSelectionCut/");}
+    if (cfgFillV0TablePostK0sCheck) {
+      recoV0s.addClone("v0Table/Full/", "v0Table/postK0sCheck/");
+    }
+    if (cfgFillV0TablePostMassCut) {
+      recoV0s.addClone("v0Table/Full/", "v0Table/postMassCut/");
+    }
+    if (cfgFillV0TablePostSelectionCut) {
+      recoV0s.addClone("v0Table/Full/", "v0Table/postSelectionCut/");
+    }
 
     recoV0s.add("v0Table/postSelectionCut/hTrueV0TagCount", "hTrueV0TagCount", {HistType::kTH1F, {{12, -2, 10}}}); // 001 = Kaon, 010 = Lambda, 100 = AnitLambda
     recoV0s.add("v0Table/postSelectionCut/nCommonPionOfDifferentK0s", "nCommonPionOfDifferentK0s", {HistType::kTH1D, {{44, -2, 20}}});
@@ -398,7 +404,7 @@ struct KaonIsospinFluctuations {
     recoK0s.add("recoK0s/PreSel/h16_rapidity", "rapidity", kTH1F, {axisRapidity});
     recoK0s.add("recoK0s/PreSel/h17_alpha", "alpha", kTH1F, {axisArmenterosAlpha});
     recoK0s.add("recoK0s/PreSel/h18_qtarm", "qtarm", kTH1F, {axisArmenterosQt});
-    recoK0s.add("recoK0s/PreSel/h19_alpha_qtarm","alpha_qtarm",kTH2F, {axisArmenterosAlpha, axisArmenterosQt});
+    recoK0s.add("recoK0s/PreSel/h19_alpha_qtarm", "alpha_qtarm", kTH2F, {axisArmenterosAlpha, axisArmenterosQt});
     recoK0s.add("recoK0s/PreSel/h20_pt_eta", "pt_eta", kTH2F, {axisPt, axisEta});
 
     // K0s-Daughter Info
@@ -446,7 +452,7 @@ struct KaonIsospinFluctuations {
     recoK0s.add("recoK0s/PreSel/Pi/tpcId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", histTpcNSigmaTofNSigma);
 
     recoK0s.addClone("recoK0s/PreSel/Pi/tpcId/", "recoK0s/PreSel/Pi/tpctofId/"); // for identification using tof+tpc
-    recoK0s.addClone("recoK0s/PreSel/Pi/tpcId/", "recoK0s/PreSel/Pi/NoId/");  // for unidentified case // to observe and debug
+    recoK0s.addClone("recoK0s/PreSel/Pi/tpcId/", "recoK0s/PreSel/Pi/NoId/");     // for unidentified case // to observe and debug
 
     recoK0s.addClone("recoK0s/PreSel/", "recoK0s/PostSel/"); // for unidentified case // to observe and debug
 
@@ -590,7 +596,7 @@ struct KaonIsospinFluctuations {
     genAnalysis.print();
   }
 
-  enum RejectionTagEnum{
+  enum RejectionTagEnum {
     kPassed = 0,
     kFailTpcNClsCrossedRows,
     kFailTrkdcaXY,
@@ -1291,10 +1297,9 @@ struct KaonIsospinFluctuations {
   bool selK0s(T v0)
   {
     if (k0sSelCut.cfgK0sMLow < v0.mK0Short() && v0.mK0Short() < k0sSelCut.cfgK0sMHigh &&
-    k0sSelCut.cfgK0sLowPt < v0.pt() && v0.pt() < k0sSelCut.cfgK0sHighPt &&
-    std::abs(v0.rapidity(MassK0Short)) < k0sSelCut.cfgK0sRapitidy &&
-    v0.qtarm() > (k0sSelCut.cfgK0sARMcut * std::abs(v0.alpha()))
-   ) {
+        k0sSelCut.cfgK0sLowPt < v0.pt() && v0.pt() < k0sSelCut.cfgK0sHighPt &&
+        std::abs(v0.rapidity(MassK0Short)) < k0sSelCut.cfgK0sRapitidy &&
+        v0.qtarm() > (k0sSelCut.cfgK0sARMcut * std::abs(v0.alpha()))) {
       return true;
     } else {
       return false;
@@ -1322,17 +1327,21 @@ struct KaonIsospinFluctuations {
   bool checkTrackSelection(const T& track, int& rejectionTag)
   {
     if (track.tpcNClsCrossedRows() < cfgTrackCuts.cfgTrkTpcNClsCrossedRows) {
-      rejectionTag = kFailTpcNClsCrossedRows; return false;
+      rejectionTag = kFailTpcNClsCrossedRows;
+      return false;
     }
     if (std::fabs(track.dcaXY()) > cfgTrackCuts.cfgTrkdcaXY) {
-      rejectionTag = kFailTrkdcaXY; return false;
+      rejectionTag = kFailTrkdcaXY;
+      return false;
     }
     if (!track.isGlobalTrack()) {
-      rejectionTag = kFailGlobalTrack; return false;
+      rejectionTag = kFailGlobalTrack;
+      return false;
     }
-    if (cfgTrackCuts.cfgDoVGselTrackCheck){
-      if(!selTrackForId(track)) {
-        rejectionTag = kFailVGSelCheck; return false;
+    if (cfgTrackCuts.cfgDoVGselTrackCheck) {
+      if (!selTrackForId(track)) {
+        rejectionTag = kFailVGSelCheck;
+        return false;
       }
     }
     return true;
@@ -1340,9 +1349,10 @@ struct KaonIsospinFluctuations {
 
   template <typename T>
   bool checkTrackInList(const T& track, const std::vector<int64_t>& vecList, int& rejectionTag, const int& listTagValue)
-  { 
-    if(std::binary_search(vecList.begin(), vecList.end(), track.globalIndex())){
-      rejectionTag = listTagValue; return true; //Binary Search is fastest search in a sorted array.
+  {
+    if (std::binary_search(vecList.begin(), vecList.end(), track.globalIndex())) {
+      rejectionTag = listTagValue;
+      return true; // Binary Search is fastest search in a sorted array.
     }
     return false;
   }
@@ -1439,7 +1449,7 @@ struct KaonIsospinFluctuations {
     recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h16_tpcInnerParam_dcaZ"), track.tpcInnerParam(), track.dcaZ());
     recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h17_tofExpMom_dcaZ"), track.tofExpMom(), track.dcaZ());
 
-    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h20_pt_eta"), track.pt(), track.eta());    
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h20_pt_eta"), track.pt(), track.eta());
     // momemtum
     recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h20_p_pt"), track.p(), track.pt());
     recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h21_p_tpcInnerParam"), track.p(), track.tpcInnerParam());
@@ -1514,8 +1524,8 @@ struct KaonIsospinFluctuations {
     histReg.fill(HIST(HistRegDire[Mode]) + HIST("h16_rapidity"), v0.rapidity(MassK0Short));
     histReg.fill(HIST(HistRegDire[Mode]) + HIST("h17_alpha"), v0.alpha());
     histReg.fill(HIST(HistRegDire[Mode]) + HIST("h18_qtarm"), v0.qtarm());
-    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h19_alpha_qtarm"),v0.alpha(),v0.qtarm());
-    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h20_pt_eta"),v0.pt(), v0.eta());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h19_alpha_qtarm"), v0.alpha(), v0.qtarm());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h20_pt_eta"), v0.pt(), v0.eta());
 
     if (posPiIdMethod == kTPCidentified) {
       fillV0DaughterQA<Mode, kPi, tpcId>(histReg, posDaughterTrack, MassProton);
@@ -1542,7 +1552,7 @@ struct KaonIsospinFluctuations {
     histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST("h14_eta"), mcTrack.eta());
     histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST("h15_phi"), mcTrack.phi());
     histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST("h16_rapidity"), mcTrack.y());
-    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST("h20_pt_eta"),  mcTrack.pt(), mcTrack.eta());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST("h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
   }
 
   template <typename T, typename U, typename H>
@@ -1595,7 +1605,7 @@ struct KaonIsospinFluctuations {
     } // End of K0s block
   }
 
-  template<typename T> 
+  template <typename T>
   void executeSortPairDaughters(const auto& posDauList, const auto& negDauList, auto& fullDauList, const T& hist)
   {
     findRepeatedEntries(posDauList, hist);
@@ -1660,12 +1670,12 @@ struct KaonIsospinFluctuations {
       recoAnalysis.fill(HIST("recoAnalysis/RejectedTrack_RejectionTag"), rejectionTag);
       isAcceptedTrack = false;
       return; // for continue;
-    } else if(checkTrackInList(track, fullDauList, rejectionTag, kFailK0ShortDaughter)){
+    } else if (checkTrackInList(track, fullDauList, rejectionTag, kFailK0ShortDaughter)) {
       recoAnalysis.fill(HIST("recoAnalysis/RejectedTrack_RejectionTag"), rejectionTag);
       if (track.signed1Pt() > 0) {
-        nRejectedPiPlus++; //DOEFFCORR
+        nRejectedPiPlus++; // DOEFFCORR
       } else if (track.signed1Pt() < 0) {
-        nRejectedPiMinus++; //DOEFFCORR
+        nRejectedPiMinus++; // DOEFFCORR
       }
       isAcceptedTrack = false;
       return; // for continue;
@@ -1677,7 +1687,6 @@ struct KaonIsospinFluctuations {
     nTrack++;
   }
 
-
   template <typename T>
   void executeTrackAnalysisPart(const T& track, const int& trackIdTag,
                                 const int& idMethodPi, const bool& trackIsPion, float& nPiMinus, float& nPiPlus,
@@ -1687,11 +1696,11 @@ struct KaonIsospinFluctuations {
                                 const int& idMethodDe, const bool& trackIsDeuteron, float& nDePlus, float& nDeMinus)
   {
     if (trackIsPion) {
-      if (idMethodPi == kTPCidentified){
+      if (idMethodPi == kTPCidentified) {
         fillIdentificationQA<recoAnalysisDir, kPi, tpcId, true>(recoAnalysis, track);
-      } else if (idMethodPi == kTPCTOFidentified){
+      } else if (idMethodPi == kTPCTOFidentified) {
         fillIdentificationQA<recoAnalysisDir, kPi, tpctofId, true>(recoAnalysis, track);
-      } else if (idMethodPi == kUnidentified){
+      } else if (idMethodPi == kUnidentified) {
         fillIdentificationQA<recoAnalysisDir, kPi, NoId, true>(recoAnalysis, track);
       }
       if (track.sign() > 0) {
@@ -1701,7 +1710,7 @@ struct KaonIsospinFluctuations {
       }
     }
     if (trackIsKaon) {
-      if (idMethodKa == kTPCidentified){
+      if (idMethodKa == kTPCidentified) {
         fillIdentificationQA<recoAnalysisDir, kKa, tpcId, true>(recoAnalysis, track);
       } else if (idMethodKa == kTPCTOFidentified) {
         fillIdentificationQA<recoAnalysisDir, kKa, tpctofId, true>(recoAnalysis, track);
@@ -1710,16 +1719,16 @@ struct KaonIsospinFluctuations {
       }
       if (track.sign() > 0) {
         nKaPlus++;
-      } else  if (track.sign() < 0) {
+      } else if (track.sign() < 0) {
         nKaMinus++;
       }
     }
     if (trackIsProton) {
-      if (idMethodPr == kTPCidentified){
+      if (idMethodPr == kTPCidentified) {
         fillIdentificationQA<recoAnalysisDir, kPr, tpcId, true>(recoAnalysis, track);
       } else if (idMethodPr == kTPCTOFidentified) {
         fillIdentificationQA<recoAnalysisDir, kPr, tpctofId, true>(recoAnalysis, track);
-      } else if (idMethodPr == kUnidentified){
+      } else if (idMethodPr == kUnidentified) {
         fillIdentificationQA<recoAnalysisDir, kPr, NoId, true>(recoAnalysis, track);
       }
       if (track.sign() > 0) {
@@ -1729,11 +1738,11 @@ struct KaonIsospinFluctuations {
       }
     }
     if (trackIsElectron) {
-      if (idMethodEl == kTPCidentified){
+      if (idMethodEl == kTPCidentified) {
         fillIdentificationQA<recoAnalysisDir, kEl, tpcId, true>(recoAnalysis, track);
       } else if (idMethodEl == kTPCTOFidentified) {
         fillIdentificationQA<recoAnalysisDir, kEl, tpctofId, true>(recoAnalysis, track);
-      } else if (idMethodEl == kUnidentified){
+      } else if (idMethodEl == kUnidentified) {
         fillIdentificationQA<recoAnalysisDir, kEl, NoId, true>(recoAnalysis, track);
       }
       if (track.sign() > 0) {
@@ -1743,9 +1752,9 @@ struct KaonIsospinFluctuations {
       }
     }
     if (trackIsDeuteron) {
-      if (idMethodDe == kTPCidentified){
+      if (idMethodDe == kTPCidentified) {
         fillIdentificationQA<recoAnalysisDir, kDe, tpcId, true>(recoAnalysis, track);
-      } else if (idMethodDe == kTPCTOFidentified){  
+      } else if (idMethodDe == kTPCTOFidentified) {
         fillIdentificationQA<recoAnalysisDir, kDe, tpctofId, true>(recoAnalysis, track);
       } else if (idMethodDe == kUnidentified) {
         fillIdentificationQA<recoAnalysisDir, kDe, NoId, true>(recoAnalysis, track);
@@ -2398,13 +2407,14 @@ struct KaonIsospinFluctuations {
   }
   PROCESS_SWITCH(KaonIsospinFluctuations, processGen, "Process for Gen", false);
 
-  template<typename T>
-  void getV0MCount(const T& mcTrack, float& multV0M){
-    if((-3.7 < mcTrack.eta() && mcTrack.eta() < -1.7 ) || (2.8 < mcTrack.eta() && mcTrack.eta() < 5.1)){
-      if(doFWDPtDependentCheck){
-        if(mcTrack.pt() > cfgFWDPtCut){
+  template <typename T>
+  void getV0MCount(const T& mcTrack, float& multV0M)
+  {
+    if ((-3.7 < mcTrack.eta() && mcTrack.eta() < -1.7) || (2.8 < mcTrack.eta() && mcTrack.eta() < 5.1)) {
+      if (doFWDPtDependentCheck) {
+        if (mcTrack.pt() > cfgFWDPtCut) {
           multV0M++; // V0C: at -3.7 < η < -1.7 (backward direction).
-                      // V0A: at 2.8 < η < 5.1 (forward direction).
+                     // V0A: at 2.8 < η < 5.1 (forward direction).
         }
       } else {
         multV0M++;
@@ -2424,8 +2434,8 @@ struct KaonIsospinFluctuations {
     for (const auto& mcColl : mcCollisions) {
       centrality = -1;
 
-      if(cfgVtxZCheck){
-        if(std::abs(mcColl.posZ()) >= cutZvertex){
+      if (cfgVtxZCheck) {
+        if (std::abs(mcColl.posZ()) >= cutZvertex) {
           continue;
         }
       }
@@ -2452,32 +2462,33 @@ struct KaonIsospinFluctuations {
 
       for (const auto& mcTrack : mcTracksTablePerMcColl) {
 
-        if(cfgCountFinalParticles){
-          if(!mcTrack.has_daughters() && std::binary_search(finalParticleIdList.begin(), finalParticleIdList.end(), mcTrack.pdgCode())){
+        if (cfgCountFinalParticles) {
+          if (!mcTrack.has_daughters() && std::binary_search(finalParticleIdList.begin(), finalParticleIdList.end(), mcTrack.pdgCode())) {
             getV0MCount(mcTrack, multV0M);
           }
-        }      
-        if(cfgCountNonFinalParticles){
-          if(mcTrack.has_daughters() && std::binary_search(nonFinalParticleIdList.begin(), nonFinalParticleIdList.end(), mcTrack.pdgCode())){
+        }
+        if (cfgCountNonFinalParticles) {
+          if (mcTrack.has_daughters() && std::binary_search(nonFinalParticleIdList.begin(), nonFinalParticleIdList.end(), mcTrack.pdgCode())) {
             getV0MCount(mcTrack, multV0M);
           }
         }
 
-        if(cfgCountPhysicalPrimAndFinalParticles){
-          if(!mcTrack.has_daughters() && mcTrack.isPhysicalPrimary()){
-            if(!(std::abs(mcTrack.pdgCode()) == 12 || std::abs(mcTrack.pdgCode()) == 14 ||std::abs(mcTrack.pdgCode()) == 16)){
-              //Removed invisible neutrinos;
+        if (cfgCountPhysicalPrimAndFinalParticles) {
+          if (!mcTrack.has_daughters() && mcTrack.isPhysicalPrimary()) {
+            if (!(std::abs(mcTrack.pdgCode()) == 12 || std::abs(mcTrack.pdgCode()) == 14 || std::abs(mcTrack.pdgCode()) == 16)) {
+              // Removed invisible neutrinos;
               getV0MCount(mcTrack, multV0M);
             }
-        }}
+          }
+        }
 
         if (!mcTrack.isPhysicalPrimary()) {
           continue;
         }
 
         if (mcTrack.pdgCode() == kK0Short &&
-          k0sSelCut.cfgK0sLowPt < mcTrack.pt() && mcTrack.pt() < k0sSelCut.cfgK0sHighPt &&
-          std::abs(mcTrack.y()) < k0sSelCut.cfgK0sRapitidy) {
+            k0sSelCut.cfgK0sLowPt < mcTrack.pt() && mcTrack.pt() < k0sSelCut.cfgK0sHighPt &&
+            std::abs(mcTrack.y()) < k0sSelCut.cfgK0sRapitidy) {
           nK0s++;
           fillGenTrackQA<genAnalysisDir, kK0s>(genAnalysis, mcTrack);
         }
@@ -2534,7 +2545,6 @@ struct KaonIsospinFluctuations {
     } // collision loop is over
   }
   PROCESS_SWITCH(KaonIsospinFluctuations, processSim, "Process for Sim", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
