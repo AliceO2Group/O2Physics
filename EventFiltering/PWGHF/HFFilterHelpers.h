@@ -285,7 +285,7 @@ static const o2::framework::AxisSpec qtAxis{100, 0.f, 0.25f};
 static const o2::framework::AxisSpec bdtAxis{100, 0.f, 1.f};
 static const o2::framework::AxisSpec phiAxis{36, 0., o2::constants::math::TwoPI};
 static const std::array<o2::framework::AxisSpec, kNCharmParticles + 23> massAxisC = {o2::framework::AxisSpec{250, 1.65f, 2.15f}, o2::framework::AxisSpec{250, 1.65f, 2.15f}, o2::framework::AxisSpec{250, 1.75f, 2.25f}, o2::framework::AxisSpec{250, 2.05f, 2.55f}, o2::framework::AxisSpec{250, 2.25f, 2.75f}, o2::framework::AxisSpec{200, 0.139f, 0.159f}, o2::framework::AxisSpec{250, 0.f, 0.25f}, o2::framework::AxisSpec{250, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{170, 0.13f, 0.3f}, o2::framework::AxisSpec{170, 0.13f, 0.3f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{350, 2.3f, 3.0f}, o2::framework::AxisSpec{350, 2.3f, 3.0f}, o2::framework::AxisSpec{350, 2.3f, 3.0f}, o2::framework::AxisSpec{240, 2.4f, 3.6f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}};
-static const std::array<o2::framework::AxisSpec, nTotBeautyParts> massAxisB = {o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}, o2::framework::AxisSpec{240, 5.8f, 7.0f}};
+static const std::array<o2::framework::AxisSpec, nTotBeautyParts> massAxisB = {o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.4f, 6.4f}, o2::framework::AxisSpec{400, 5.0f, 6.6f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{400, 5.0f, 6.6f}, o2::framework::AxisSpec{240, 5.8f, 7.0f}};
 
 // default values for configurables
 // channels to trigger on for femto
@@ -361,8 +361,8 @@ static const std::vector<std::string> labelsColumnsV0s = {"CosPaGamma", "CosPaK0
 // cascades for Xi + bachelor triggers
 constexpr float cutsCascades[1][8] = {{0.2, 1., 0.01, 0.01, 0.99, 0.99, 0.3, 3.}}; // ptXiBachelor, deltaMassXi, deltaMassLambda, cosPaXi, cosPaLambda, DCAxyXi, nSigmaPid
 static const std::vector<std::string> labelsColumnsCascades = {"PtBachelor", "PtXi", "DeltaMassXi", "DeltaMassLambda", "CosPAXi", "CosPaLambda", "DCAxyXi", "NsigmaPid"};
-constexpr float cutsCharmBaryons[1][8] = {{5., 5., 1000., 2.35, 2.60, 2.35, -2., -2.}}; // MinPtXiPi, MinPtXiKa, MinPtXiPiPi, MinMassXiPi, MinMassXiKa, MinMassXiPiPi, CosPaXiBach, CosPaXiBachBach
-static const std::vector<std::string> labelsColumnsCharmBarCuts = {"MinPtXiPi", "MinPtXiKa", "MinPtXiPiPi", "MinMassXiPi", "MinMassXiKa", "MinMassXiPiPi", "CosPaXiBach", "CosPaXiBachBach"};
+constexpr float cutsCharmBaryons[1][11] = {{5., 5., 1000., 2.35, 2.60, 2.35, 3., 3., 2.7, -2., -2.}}; // MinPtXiPi, MinPtXiKa, MinPtXiPiPi, MinMassXiPi, MinMassXiKa, MinMassXiPiPi, MaxMassXiPi, MaxMassXiKa, MaxMassXiPiPi, CosPaXiBach, CosPaXiBachBach
+static const std::vector<std::string> labelsColumnsCharmBarCuts = {"MinPtXiPi", "MinPtXiKa", "MinPtXiPiPi", "MinMassXiPi", "MinMassXiKa", "MinMassXiPiPi", "MaxMassXiPi", "MaxMassXiKa", "MaxMassXiPiPi", "CosPaXiBach", "CosPaXiBachBach"};
 
 constexpr int requireStrangenessTrackedXi[1][2] = {{1, 0}};
 static const std::vector<std::string> labelsColumnsCharmBaryons = {"CharmBarToXiBach", "CharmBarToXiBachBach"};
@@ -533,7 +533,7 @@ class HfFilterHelper
     mNSigmaTofKaonFromXicResoToSigmaC = nSigmaTof;
   }
 
-  void setXiBachelorSelections(float ptMinXiPi, float ptMinXiKa, float ptMinXiPiPi, float massMinXiPi, float massMinXiKa, float massMinXiPiPi, float cosPaMinXiBach, float cosPaMinXiBachBach)
+  void setXiBachelorSelections(float ptMinXiPi, float ptMinXiKa, float ptMinXiPiPi, float massMinXiPi, float massMinXiKa, float massMinXiPiPi, float massMaxXiPi, float massMaxXiKa, float massMaxXiPiPi, float cosPaMinXiBach, float cosPaMinXiBachBach)
   {
     mPtMinXiBach[0] = ptMinXiPi;
     mPtMinXiBach[1] = ptMinXiKa;
@@ -541,6 +541,9 @@ class HfFilterHelper
     mMassMinXiBach[0] = massMinXiPi;
     mMassMinXiBach[1] = massMinXiKa;
     mMassMinXiBach[2] = massMinXiPiPi;
+    mMassMaxXiBach[0] = massMaxXiPi;
+    mMassMaxXiBach[1] = massMaxXiKa;
+    mMassMaxXiBach[2] = massMaxXiPiPi;
     mCosPaMinXiBach[0] = cosPaMinXiBach;
     mCosPaMinXiBach[1] = cosPaMinXiBachBach;
   }
@@ -600,7 +603,7 @@ class HfFilterHelper
   bool isSelectedPhoton(const Photon& photon, const std::array<T, 2>& dauTracks, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
   template <typename Casc>
   bool isSelectedCascade(const Casc& casc);
-  template <o2::aod::hffilters::HfTriggers whichTrigger, typename T, typename T2>
+  template <typename T, typename T2>
   int16_t isSelectedBachelorForCharmBaryon(const T& track, const T2& dca);
   template <bool is4beauty = false, typename T>
   bool isSelectedProton4CharmOrBeautyBaryons(const T& track);
@@ -622,7 +625,8 @@ class HfFilterHelper
   bool isSelectedXiBach(T const& trackParCasc, T const& trackParBachelor, int8_t isSelBachelor, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPi, H2 hMassVsPtXiKa);
   template <int Nprongs, typename T, typename C, typename H2>
   bool isSelectedXiBachBach(T const& trackParCasc, std::array<T, 2> const& trackParBachelor, C const& collision, o2::vertexing::DCAFitterN<Nprongs>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPiPi);
-
+  template <typename T>
+  bool isSelectedProtonFromLcReso(const T& track);
   // helpers
   template <typename T>
   T computeRelativeMomentum(const std::array<T, 3>& pTrack, const std::array<T, 3>& CharmCandMomentum, const T& CharmMass);
@@ -736,6 +740,7 @@ class HfFilterHelper
   bool mForceTofDeuteronForFemto = false;                                         // flag to force TOF PID for deuterons
   std::array<float, 3> mPtMinXiBach{5., 5., 5.};                                  // minimum pT for XiBachelor candidates
   std::array<float, 3> mMassMinXiBach{2.35, 2.6, 2.35};                           // minimum invariant-mass for XiBachelor candidates
+  std::array<float, 3> mMassMaxXiBach{3.0, 3.0, 2.7};                             // maximum invariant-mass for XiBachelor candidates
   std::array<float, 2> mCosPaMinXiBach{-2.f, -2.f};                               // minimum cosine of pointing angle for XiBachelor candidates
   std::array<o2::framework::LabeledArray<double>, kNBeautyParticles> mCutsBhad{}; // selections for B-hadron candidates (DeltaMass, CPA, DecayLength, ImpactParameterProduct)
   o2::framework::LabeledArray<double> mCutsBhadToJPsi{};                          // selections for B->JPsi candidates (PtMinMu, DeltaMass, CPA, DecayLength)
@@ -1633,24 +1638,18 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc)
 /// \param track is a track
 /// \param dca is the 2d array with dcaXY and dcaZ of the track
 /// \return 0 if rejected, or a bitmap that contains the information whether it is selected as pion and/or kaon
-template <o2::aod::hffilters::HfTriggers whichTrigger, typename T, typename T2>
+template <typename T, typename T2>
 inline int16_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, const T2& dca)
 {
-  int16_t retValue{BIT(kPionForCharmBaryon) | BIT(kKaonForCharmBaryon) | BIT(kProtonForCharmBaryon)};
+  int16_t retValue{BIT(kPionForCharmBaryon) | BIT(kKaonForCharmBaryon)};
 
   if (!track.isGlobalTrackWoDCA()) {
     return kRejected;
   }
 
   float pt = track.pt();
-  if constexpr (whichTrigger == kCharmBarToXiBach) {
-    if (pt < mPtMinCharmBaryonBachelor || pt > mPtMaxCharmBaryonBachelor) {
-      return kRejected;
-    }
-  } else if constexpr (whichTrigger == kPrCharm2P) {
-    if (pt < mPtMinLcResonanceBachelor || pt > mPtMaxLcResonanceBachelor) {
-      return kRejected;
-    }
+  if (pt < mPtMinCharmBaryonBachelor || pt > mPtMaxCharmBaryonBachelor) {
+    return kRejected;
   }
 
   auto pTBinTrack = findBin(mPtBinsTracks, pt);
@@ -1679,18 +1678,14 @@ inline int16_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, 
 
   float nSigmaPiTpc = track.tpcNSigmaPi();
   float nSigmaKaTpc = track.tpcNSigmaKa();
-  float nSigmaPrTpc = track.tpcNSigmaPr();
   float nSigmaPiTof = track.tofNSigmaPi();
   float nSigmaKaTof = track.tofNSigmaKa();
-  float nSigmaPrTof = track.tofNSigmaPr();
   if (mTpcPidCalibrationOption == 1) {
     nSigmaPiTpc = getTPCPostCalib(track, kPi);
     nSigmaKaTpc = getTPCPostCalib(track, kKa);
-    nSigmaPrTpc = getTPCPostCalib(track, kPr);
   } else if (mTpcPidCalibrationOption == 2) {
     nSigmaPiTpc = getTPCSplineCalib(track, (track.sign() > 0) ? kPi : kAntiPi);
     nSigmaKaTpc = getTPCSplineCalib(track, (track.sign() > 0) ? kKa : kAntiKa);
-    nSigmaPrTpc = getTPCSplineCalib(track, (track.sign() > 0) ? kPr : kAntiPr);
   }
 
   if ((track.hasTPC() && std::fabs(nSigmaPiTpc) > mNSigmaTpcPiCharmBaryonBachelor) && (track.hasTOF() && std::fabs(nSigmaPiTof) > mNSigmaTofPiCharmBaryonBachelor)) {
@@ -1698,9 +1693,6 @@ inline int16_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, 
   }
   if ((track.hasTPC() && std::fabs(nSigmaKaTpc) > mNSigmaTpcPiCharmBaryonBachelor) && (track.hasTOF() && std::fabs(nSigmaKaTof) > mNSigmaTofPiCharmBaryonBachelor)) {
     CLRBIT(retValue, kKaonForCharmBaryon);
-  }
-  if ((track.hasTPC() && std::fabs(nSigmaPrTpc) > mNSigmaTpcPiCharmBaryonBachelor) && (track.hasTOF() && std::fabs(nSigmaPrTof) > mNSigmaTpcPiCharmBaryonBachelor)) {
-    CLRBIT(retValue, kProtonForCharmBaryon);
   }
 
   return retValue;
@@ -1943,6 +1935,25 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3ProngOrBeautyToJPsi(const T& tr
       return false;
     }
   }
+
+  return true;
+}
+
+/// Basic selection of proton candidates forLc and ThetaC decays
+/// \param track is a track
+/// \return true if track passes all cuts
+template <typename T>
+inline bool HfFilterHelper::isSelectedProtonFromLcReso(const T& track)
+{
+
+  // pt selections
+  float pt = track.pt();
+  if (pt < mPtMinLcResonanceBachelor || pt > mPtMaxLcResonanceBachelor) {
+    return false;
+  }
+
+  /// PID selection
+  return isSelectedProton4CharmOrBeautyBaryons<false>(track);
 
   return true;
 }
@@ -2241,7 +2252,7 @@ inline bool HfFilterHelper::isSelectedXiBach(T const& trackParCasc, T const& tra
   float massXiPi{0.f};
   if (TESTBIT(isSelBachelor, kPionForCharmBaryon)) {
     massXiPi = RecoDecay::m(std::array{pVecCascade, pVecBachelor}, std::array{massXi, massPi});
-    if (ptXiBach >= mPtMinXiBach[0] && massXiPi >= mMassMinXiBach[0] && massXiPi <= 3.f) {
+    if (ptXiBach >= mPtMinXiBach[0] && massXiPi >= mMassMinXiBach[0] && massXiPi <= mMassMaxXiBach[0]) {
       isSelectedXiPi = true;
     }
   }
@@ -2250,7 +2261,7 @@ inline bool HfFilterHelper::isSelectedXiBach(T const& trackParCasc, T const& tra
   float massXiKa{0.f};
   if (TESTBIT(isSelBachelor, kKaonForCharmBaryon)) {
     massXiKa = RecoDecay::m(std::array{pVecCascade, pVecBachelor}, std::array{massXi, massKa});
-    if (ptXiBach >= mPtMinXiBach[1] && massXiKa >= mMassMinXiBach[1] && massXiKa <= 3.f) {
+    if (ptXiBach >= mPtMinXiBach[1] && massXiKa >= mMassMinXiBach[1] && massXiKa <= mMassMaxXiBach[1]) {
       isSelectedXiKa = true;
     }
   }
@@ -2318,7 +2329,7 @@ inline bool HfFilterHelper::isSelectedXiBachBach(T const& trackParCasc, std::arr
 
   // compute mass
   float massXiPiPi = RecoDecay::m(std::array{pVecCascade, pVecBachelorFirst, pVecBachelorSecond}, std::array{massXi, massPi, massPi});
-  if (massXiPiPi < mMassMinXiBach[2] || massXiPiPi > 3.f) {
+  if (massXiPiPi < mMassMinXiBach[2] || massXiPiPi > mMassMaxXiBach[2]) {
     return false;
   }
 
