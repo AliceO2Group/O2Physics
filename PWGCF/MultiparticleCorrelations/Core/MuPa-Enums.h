@@ -33,6 +33,7 @@ enum eConfiguration {
   eSequentialBailout,
   eUseSpecificCuts,
   eWhichSpecificCuts,
+  eSkipTheseRuns,
   eConfiguration_N
 };
 
@@ -63,7 +64,7 @@ enum eRecSim { eRec = 0,
                eRec_Run1, // converted Run 1 data
                eSim_Run1,
                eRecAndSim_Run1,
-               eTest };
+               eTest }; // remember that as of 20250315 I can use "cfWhichSpecificCuts": "Test" in JSON, to configure quickly all cuts for this case
 
 enum eBeforeAfter { eBefore = 0, // use this one for cuts
                     eAfter = 1 };
@@ -142,11 +143,11 @@ enum eEventHistograms {
 };
 
 enum eEventCuts {
-  // a) For available event selection bits, check https://github.com/AliceO2Group/O2Physics/blob/master/Common/CCDB/EventSelectionParams.cxx
+  // a) For available event selection bits, check https://github.com/AliceO2Group/O2Physics/blob/master/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
   // b) Some settings are configurable, check: https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/eventSelection.cxx
   eTrigger = eEventHistograms_N,   // Implemented and validated so far:
                                    // a) Run 3: "kTVXinTRD" (use optionally for systematics, and only in real data)
-                                   // b) Run 2: "kINT7" (at the moment the usage of this one is enfored in fact)
+                                   // b) Run 2: "kINT7" (at the moment there is a warning if not used in real data.). Not validated in Monte Carlo.
                                    // c) Run 1: TBI 20241209 check if I can use kINT7 also for Run 1
   eSel7,                           // See def. of sel7 in Ref. b) above. Event selection decision based on V0A & V0C => use only in Run 2 and Run 1.
                                    // TBI 20250115 it removes 99% of events in MC LHC21i6a, check this further
@@ -178,6 +179,9 @@ enum eEventCuts {
   eIsGoodITSLayersAll,             // numbers of inactive chips on all ITS layers are below maximum allowed values
   eOccupancyEstimator,             // the default Occupancy estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eOccupancyEstimators
   eMinVertexDistanceFromIP,        // if sqrt(vx^2+vy^2+vz^2) < MinVertexDistanceFromIP, the event is rejected. This way, I remove suspicious events with |vertex| = 0.
+  eNoPileupTPC,                    // no pileup in TPC
+  eNoPileupFromSPD,                // no pileup according to SPD vertexer
+  eNoSPDOnVsOfPileup,              // no out-of-bunch pileup according to online-vs-offline SPD correlation
   // ...
   eCentralityWeights, // used for centrality flattening. Remember that this event cut must be implemented very last,
                       // therefore I have it separately implemented for Run 3,2,1 in EventCuts() at the very end in each case.
@@ -240,7 +244,7 @@ enum eParticleCuts {
   etrackCutFlagFb2,                      // Global tracks in Run 3, similar as etrackCutFlagFb1, but more stringent (since 2 points in ITS are required in inner barrel (IB)).
                                          // Unlike etrackCutFlagFb1 (1 ITS point is required), it produces a 20% dip in azimuthal acceptance for 1.2 < phi < 1.6, in LHC24ar/559545
                                          // DCAxy and z are significantly further depleted, when compared to etrackCutFlagFb1
-  eisQualityTrack,                       // Do not use in Run 3, but it can be used in Run 2 and Run 1 (for the latter, it yields to large NUA - TBI 20250114 check this again)
+  eisQualityTrack,                       // Do not use in Run 3, but it can be used in Run 2 and Run 1
   eisPrimaryTrack,                       // Validated in Run 3. See also isPVContributor
   eisInAcceptanceTrack,                  // kInAcceptanceTracks = kPtRange | kEtaRange . Pt is open, and |eta| < 0.8.
                                          // But after I already cut directly on 0.2 < pt < 5.0 and |eta| < 0.8, it has no effect.
@@ -258,6 +262,7 @@ enum eParticleCuts {
                                          // This cut affects significantly distributions of other tracking parameters. Most notably, after using this cut, DCAz distribution is reduced to ~ 1mm range.
                                          // But for global tracks in any case we request very stringent DCA cut.
                                          // pt and eta distributions are only mildly affected.
+                                         // Do not use in Run 2 and Run 1.
                                          // It's not the same as isPrimaryTrack cut, albeit there is an overlap.
   // special treatment:
   ePtDependentDCAxyParameterization,
@@ -322,17 +327,22 @@ enum eQAEventHistograms2D {
   eMultiplicity_vs_Centrality,
   eMultiplicity_vs_Vertex_z,
   eMultiplicity_vs_Occupancy,
+  eMultiplicity_vs_InteractionRate,
   eReferenceMultiplicity_vs_NContributors,
   eReferenceMultiplicity_vs_Centrality,
   eReferenceMultiplicity_vs_Vertex_z,
   eReferenceMultiplicity_vs_Occupancy,
+  eReferenceMultiplicity_vs_InteractionRate,
   eNContributors_vs_Centrality,
   eNContributors_vs_Vertex_z,
   eNContributors_vs_Occupancy,
+  eNContributors_vs_InteractionRate,
   eCentrality_vs_Vertex_z,
   eCentrality_vs_Occupancy,
   eCentrality_vs_ImpactParameter, // [sim] = reconstructed centrality vs. simulated impact parameter. [rec] = ... TBI 20241210
+  eCentrality_vs_InteractionRate,
   eVertex_z_vs_Occupancy,
+  eVertex_z_vs_InteractionRate,
   // ...
   // Specific (everything is hardwired):
   eMultNTracksPV_vs_MultNTracksGlobal,  // Run 3 multiplicity
@@ -405,6 +415,27 @@ enum eQACorrelationsVsHistograms2D {
   eQACorrelationsVsHistograms2D_N
 };
 
+enum eQACorrelationsVsInteractionRateVsProfiles2D_N {
+  // In this category I fill <2> in 2D profile spanned by IR vs. some-other-observable (IR is always x axis)
+  // For instance: <2> is filled in TProfile2D spanned by IR vs. CurrentRunDuration (crd)
+  //               <2> is filled in TProfile2D spanned by IR vs. <pT>, where <pT> is calculated from all particles in that event
+  // Remark 1: If I would ever need the same thingie for <4>, <6>, etc., just introduce new dimension in 2D profile
+  // Remark 2: All < ... > over particles are calculated with helper TProfile fQAParticleEventProEbyE
+  eCorrelationsVsInteractionRate_vs_CurrentRunDuration = 0,
+  eCorrelationsVsInteractionRate_vs_Multiplicity,
+  eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity,
+  eCorrelationsVsInteractionRate_vs_Centrality,
+  // ...
+  eCorrelationsVsInteractionRate_vs_MeanPhi,
+  eCorrelationsVsInteractionRate_vs_SigmaMeanPhi,
+  eCorrelationsVsInteractionRate_vs_MeanPt,
+  eCorrelationsVsInteractionRate_vs_SigmaMeanPt,
+  eCorrelationsVsInteractionRate_vs_MeanEta,
+  eCorrelationsVsInteractionRate_vs_SigmaMeanEta,
+  // ...
+  eQACorrelationsVsInteractionRateVsProfiles2D_N
+};
+
 enum eReferenceMultiplicityEstimators {
   // Run 3:
   eMultTPC = 0,
@@ -453,6 +484,8 @@ enum eSpecificCuts {
   eLHC15o,
   // Run 1:
   // ...
+  // Cuts for minimal subscription, "processTest": "true in JSON
+  eTestCuts,
   eSpecificCuts_N
 };
 
