@@ -953,8 +953,8 @@ struct HfFilter { // Main struct for HF triggers
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParBachelorProton, 2.f, noMatCorr, &dcaInfoBachProton);
             }
             std::array<float, 3> pVecProton = trackProton.pVector();
-            auto isSelProton = helper.isSelectedBachelorForCharmBaryon<kPrCharm2P>(trackProton, dcaInfoBachProton);
-            if (TESTBIT(isSelProton, kProtonForCharmBaryon)) {
+            bool isSelProton = helper.isSelectedProtonFromLcReso(trackProton);
+            if (isSelProton) {
               if (!keepEvent[kPrCharm2P]) {
                 // we first look for a D*+
                 for (const auto& trackBachelorId : trackIdsThisCollision) { // start loop over tracks to find bachelor pion
@@ -1726,7 +1726,7 @@ struct HfFilter { // Main struct for HF triggers
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParBachelor, 2.f, noMatCorr, &dcaInfoBach);
             }
 
-            auto isSelBachelor = helper.isSelectedBachelorForCharmBaryon<kCharmBarToXiBach>(track, dcaInfoBach);
+            auto isSelBachelor = helper.isSelectedBachelorForCharmBaryon(track, dcaInfoBach);
             if (isSelBachelor == kRejected) {
               continue;
             }
@@ -1770,7 +1770,7 @@ struct HfFilter { // Main struct for HF triggers
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParBachelorSecond, 2.f, noMatCorr, &dcaInfoBachSecond);
                 }
 
-                auto isSelBachelorSecond = helper.isSelectedBachelorForCharmBaryon<kCharmBarToXiBach>(trackSecond, dcaInfoBachSecond);
+                auto isSelBachelorSecond = helper.isSelectedBachelorForCharmBaryon(trackSecond, dcaInfoBachSecond);
                 if (!TESTBIT(isSelBachelorSecond, kPionForCharmBaryon)) {
                   continue;
                 }

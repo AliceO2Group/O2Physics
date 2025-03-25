@@ -600,7 +600,7 @@ class HfFilterHelper
   bool isSelectedPhoton(const Photon& photon, const std::array<T, 2>& dauTracks, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
   template <typename Casc>
   bool isSelectedCascade(const Casc& casc);
-  template <o2::aod::hffilters::HfTriggers whichTrigger, typename T, typename T2>
+  template <typename T, typename T2>
   int16_t isSelectedBachelorForCharmBaryon(const T& track, const T2& dca);
   template <bool is4beauty = false, typename T>
   bool isSelectedProton4CharmOrBeautyBaryons(const T& track);
@@ -622,7 +622,8 @@ class HfFilterHelper
   bool isSelectedXiBach(T const& trackParCasc, T const& trackParBachelor, int8_t isSelBachelor, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPi, H2 hMassVsPtXiKa);
   template <int Nprongs, typename T, typename C, typename H2>
   bool isSelectedXiBachBach(T const& trackParCasc, std::array<T, 2> const& trackParBachelor, C const& collision, o2::vertexing::DCAFitterN<Nprongs>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPiPi);
-
+  template <typename T>
+  bool isSelectedProtonFromLcReso(const T& track);
   // helpers
   template <typename T>
   T computeRelativeMomentum(const std::array<T, 3>& pTrack, const std::array<T, 3>& CharmCandMomentum, const T& CharmMass);
@@ -1633,24 +1634,18 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc)
 /// \param track is a track
 /// \param dca is the 2d array with dcaXY and dcaZ of the track
 /// \return 0 if rejected, or a bitmap that contains the information whether it is selected as pion and/or kaon
-template <o2::aod::hffilters::HfTriggers whichTrigger, typename T, typename T2>
+template <typename T, typename T2>
 inline int16_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, const T2& dca)
 {
-  int16_t retValue{BIT(kPionForCharmBaryon) | BIT(kKaonForCharmBaryon) | BIT(kProtonForCharmBaryon)};
+  int16_t retValue{BIT(kPionForCharmBaryon) | BIT(kKaonForCharmBaryon)};
 
   if (!track.isGlobalTrackWoDCA()) {
     return kRejected;
   }
 
   float pt = track.pt();
-  if constexpr (whichTrigger == kCharmBarToXiBach) {
-    if (pt < mPtMinCharmBaryonBachelor || pt > mPtMaxCharmBaryonBachelor) {
-      return kRejected;
-    }
-  } else if constexpr (whichTrigger == kPrCharm2P) {
-    if (pt < mPtMinLcResonanceBachelor || pt > mPtMaxLcResonanceBachelor) {
-      return kRejected;
-    }
+  if (pt < mPtMinCharmBaryonBachelor || pt > mPtMaxCharmBaryonBachelor) {
+    return kRejected;
   }
 
   auto pTBinTrack = findBin(mPtBinsTracks, pt);
@@ -1679,18 +1674,14 @@ inline int16_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, 
 
   float nSigmaPiTpc = track.tpcNSigmaPi();
   float nSigmaKaTpc = track.tpcNSigmaKa();
-  float nSigmaPrTpc = track.tpcNSigmaPr();
   float nSigmaPiTof = track.tofNSigmaPi();
   float nSigmaKaTof = track.tofNSigmaKa();
-  float nSigmaPrTof = track.tofNSigmaPr();
   if (mTpcPidCalibrationOption == 1) {
     nSigmaPiTpc = getTPCPostCalib(track, kPi);
     nSigmaKaTpc = getTPCPostCalib(track, kKa);
-    nSigmaPrTpc = getTPCPostCalib(track, kPr);
   } else if (mTpcPidCalibrationOption == 2) {
     nSigmaPiTpc = getTPCSplineCalib(track, (track.sign() > 0) ? kPi : kAntiPi);
     nSigmaKaTpc = getTPCSplineCalib(track, (track.sign() > 0) ? kKa : kAntiKa);
-    nSigmaPrTpc = getTPCSplineCalib(track, (track.sign() > 0) ? kPr : kAntiPr);
   }
 
   if ((track.hasTPC() && std::fabs(nSigmaPiTpc) > mNSigmaTpcPiCharmBaryonBachelor) && (track.hasTOF() && std::fabs(nSigmaPiTof) > mNSigmaTofPiCharmBaryonBachelor)) {
@@ -1698,9 +1689,6 @@ inline int16_t HfFilterHelper::isSelectedBachelorForCharmBaryon(const T& track, 
   }
   if ((track.hasTPC() && std::fabs(nSigmaKaTpc) > mNSigmaTpcPiCharmBaryonBachelor) && (track.hasTOF() && std::fabs(nSigmaKaTof) > mNSigmaTofPiCharmBaryonBachelor)) {
     CLRBIT(retValue, kKaonForCharmBaryon);
-  }
-  if ((track.hasTPC() && std::fabs(nSigmaPrTpc) > mNSigmaTpcPiCharmBaryonBachelor) && (track.hasTOF() && std::fabs(nSigmaPrTof) > mNSigmaTpcPiCharmBaryonBachelor)) {
-    CLRBIT(retValue, kProtonForCharmBaryon);
   }
 
   return retValue;
@@ -1943,6 +1931,25 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3ProngOrBeautyToJPsi(const T& tr
       return false;
     }
   }
+
+  return true;
+}
+
+/// Basic selection of proton candidates forLc and ThetaC decays
+/// \param track is a track
+/// \return true if track passes all cuts
+template <typename T>
+inline bool HfFilterHelper::isSelectedProtonFromLcReso(const T& track)
+{
+
+  // pt selections
+  float pt = track.pt();
+  if (pt < mPtMinLcResonanceBachelor || pt > mPtMaxLcResonanceBachelor) {
+    return false;
+  }
+
+  /// PID selection
+  return isSelectedProton4CharmOrBeautyBaryons<false>(track);
 
   return true;
 }
