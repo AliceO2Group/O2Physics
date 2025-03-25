@@ -68,7 +68,7 @@ struct FlowEfficiencyCasc {
   O2_DEFINE_CONFIGURABLE(cfgtpccrossoverfindable, int, 0, "minimum number of Ratio crossed rows over findable clusters")
   O2_DEFINE_CONFIGURABLE(cfgcheckDauTPC, bool, true, "check daughter tracks TPC or not")
   O2_DEFINE_CONFIGURABLE(cfgcheckDauTOF, bool, false, "check daughter tracks TOF or not")
-  O2_DEFINE_CONFIGURABLE(cfgcheckMCParticle, bool, false, "check the particle and deacy channel is match or not")
+  O2_DEFINE_CONFIGURABLE(cfgcheckMCParticle, bool, false, "check the particle and deacy channel match or not")
   O2_DEFINE_CONFIGURABLE(cfgCasc_rapidity, float, 0.5, "rapidity")
 
   O2_DEFINE_CONFIGURABLE(cfgNSigmatpctof, std::vector<float>, (std::vector<float>{3, 3, 3}), "tpc and tof NSigma for Pion Kaon Proton")
