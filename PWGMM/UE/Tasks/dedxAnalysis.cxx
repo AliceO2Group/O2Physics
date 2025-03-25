@@ -131,6 +131,7 @@ struct DedxAnalysis {
       registryDeDx.add(
         "hdEdx_vs_eta_vs_p_Pos_El", "dE/dx", HistType::kTH3F,
         {{etaAxis}, {dedxAxis}, {pAxis}});
+<<<<<<< HEAD
         //Pions from TOF
         registryDeDx.add(
           "hdEdx_vs_eta_vs_p_Neg_TOF", "dE/dx", HistType::kTH3F,
@@ -138,6 +139,15 @@ struct DedxAnalysis {
         registryDeDx.add(
           "hdEdx_vs_eta_vs_p_Pos_TOF", "dE/dx", HistType::kTH3F,
           {{etaAxis}, {dedxAxis}, {pAxis}});
+=======
+      // Pions from TOF
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Neg_TOF", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Pos_TOF", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+>>>>>>> 1bf4e11ce (Standard track selection was included to improve PID)
 
     } else {
       // MIP for pions
@@ -157,6 +167,7 @@ struct DedxAnalysis {
       registryDeDx.add(
         "hdEdx_vs_eta_vs_p_Pos_calibrated_El", "dE/dx", HistType::kTH3F,
         {{etaAxis}, {dedxAxis}, {pAxis}});
+<<<<<<< HEAD
         
         // Pions from TOF
         registryDeDx.add(
@@ -166,6 +177,17 @@ struct DedxAnalysis {
         registryDeDx.add(
           "hdEdx_vs_eta_vs_p_Pos_calibrated_TOF", "dE/dx", HistType::kTH3F,
           {{etaAxis}, {dedxAxis}, {pAxis}});
+=======
+
+      // Pions from TOF
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Neg_calibrated_TOF", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Pos_calibrated_TOF", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+>>>>>>> 1bf4e11ce (Standard track selection was included to improve PID)
 
       // De/Dx for ch and v0 particles
       for (int i = 0; i < 4; ++i) {
@@ -399,6 +421,55 @@ struct DedxAnalysis {
               } else {
                 registryDeDx.fill(HIST("hdEdx_vs_eta_Pos_calibrated_Pi"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorPos->at(i));
               }
+<<<<<<< HEAD
+=======
+            }
+          }
+        }
+      }
+      // Beta from TOF
+      if (signedP < 0) {
+        registryDeDx.fill(HIST("hbeta_vs_p_Neg"), std::abs(signedP), trk.beta());
+      } else {
+        registryDeDx.fill(HIST("hbeta_vs_p_Pos"), signedP, trk.beta());
+      }
+      // Electrons from TOF
+      if (std::abs(trk.beta() - 1) < 0.1) { // beta cut
+        if (calibrationMode) {
+          if (signedP < 0) {
+            registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_El"), trk.eta(), trk.tpcSignal(), std::abs(signedP));
+          } else {
+            registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_El"), trk.eta(), trk.tpcSignal(), signedP);
+          }
+        } else {
+          for (int i = 0; i < 8; ++i) {
+            if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
+              if (signedP < 0) {
+                registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_calibrated_El"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), std::abs(signedP));
+              } else {
+                registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_calibrated_El"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorPos->at(i), signedP);
+              }
+            }
+          }
+        }
+      }
+      // pions from TOF
+      if (trk.beta() > 1. && trk.beta() < 1.05) { // beta cut
+        if (calibrationMode) {
+          if (signedP < 0) {
+            registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_TOF"), trk.eta(), trk.tpcSignal(), std::abs(signedP));
+          } else {
+            registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_TOF"), trk.eta(), trk.tpcSignal(), signedP);
+          }
+        } else {
+          for (int i = 0; i < 8; ++i) {
+            if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
+              if (signedP < 0) {
+                registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_calibrated_TOF"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), std::abs(signedP));
+              } else {
+                registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_calibrated_TOF"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorPos->at(i), signedP);
+              }
+>>>>>>> 1bf4e11ce (Standard track selection was included to improve PID)
             }
           }
         }
@@ -449,6 +520,8 @@ struct DedxAnalysis {
             }
           }
         }
+
+      registryDeDx.fill(HIST("hdEdx_vs_phi"), trk.phi(), trk.tpcSignal());
 
       registryDeDx.fill(HIST("hdEdx_vs_phi"), trk.phi(), trk.tpcSignal());
 
