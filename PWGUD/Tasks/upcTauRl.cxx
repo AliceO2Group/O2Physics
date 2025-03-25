@@ -214,6 +214,17 @@ struct UpcTauRl {
   } cutTauEvent;
 
   struct : ConfigurableGroup {
+    Configurable<float> cutCanMinElectronNsigmaEl{"cutCanMinElectronNsigmaEl", 4.0, {"Good el candidate hypo in. Upper n sigma cut on el hypo of selected electron. What is more goes away."}};
+    Configurable<float> cutCanMaxElectronNsigmaEl{"cutCanMaxElectronNsigmaEl", -2.0, {"Good el candidate hypo in. Lower n sigma cut on el hypo of selected electron. What is less goes away."}};
+    Configurable<bool> cutCanElectronHasTOF{"cutCanElectronHasTOF", true, {"Electron candidated is required to hit TOF."}};
+    Configurable<float> cutCanMinPionNsigmaEl{"cutCanMinPionNsigmaEl", 5.0, {"Good pi candidate hypo in. Upper n sigma cut on pi hypo of selected electron. What is more goes away."}};
+    Configurable<float> cutCanMaxPionNsigmaEl{"cutCanMaxPionNsigmaEl", -5.0, {"Good pi candidate hypo in. Lower n sigma cut on pi hypo of selected electron. What is less goes away."}};
+    Configurable<float> cutCanMinMuonNsigmaEl{"cutCanMinMuonNsigmaEl", 5.0, {"Good pi candidate hypo in. Upper n sigma cut on pi hypo of selected electron. What is more goes away."}};
+    Configurable<float> cutCanMaxMuonNsigmaEl{"cutCanMaxMuonNsigmaEl", -5.0, {"Good pi candidate hypo in. Lower n sigma cut on pi hypo of selected electron. What is less goes away."}};
+    Configurable<bool> cutCanMupionHasTOF{"cutCanMupionHasTOF", true, {"Mupion candidate is required to hit TOF."}};
+  } cutPreselect;
+
+  struct : ConfigurableGroup {
     Configurable<bool> usePIDwTOF{"usePIDwTOF", false, {"Determine whether also TOF should be used in testPIDhypothesis"}};
     Configurable<bool> useScutTOFinTPC{"useScutTOFinTPC", true, {"Determine whether cut on TOF n sigma should be used after TPC-based decision in testPIDhypothesis"}};
     Configurable<float> cutSiTPC{"cutSiTPC", 35.f, {"n sigma TPC cut on all particles in absolut values for testPIDhypothesis"}};
@@ -252,6 +263,8 @@ struct UpcTauRl {
     ConfigurableAxis zzAxisFITamplitude{"zzAxisFITamplitude", {1000, 0., 1000.}, "FIT amplitude"};
 
     AxisSpec zzAxisChannels{CH_ENUM_COUNTER, -0.5, +CH_ENUM_COUNTER - 0.5, "Channels (-)"};
+    AxisSpec zzAxisSelections{10, -0.5, 9.5, "Selections (-)"};
+
   } confAxis;
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
@@ -632,6 +645,14 @@ struct UpcTauRl {
       histos.add("Tracks/Truth/hPionEta", ";Pion #eta (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisEta});
     }
 
+    histos.add("ProcessDataDG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    histos.add("ProcessDataSG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    histos.add("ProcessMCrecDG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    histos.add("ProcessMCrecSG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    histos.add("ProcessMCgen/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    histos.add("OutputTable/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    histos.add("OutputTable/hRejections", ";Rejections (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+
   } // end init
 
   // run (always called before process :( )
@@ -849,15 +870,43 @@ struct UpcTauRl {
     return true;
   }
 
+  unsigned int bitsRejection = 0;
+  unsigned int bitsRejectElCan = 0;
+  unsigned int bitsRejectMuPiCan = 0;
+
+  template <typename T>
+  void fillRejectElectronCandidate(T const& electronCandidate)
+  // Fill reasons of rejecting electron candidate
+  {
+    if (electronCandidate.tpcNSigmaEl() < cutPreselect.cutCanMaxElectronNsigmaEl || electronCandidate.tpcNSigmaEl() > cutPreselect.cutCanMinElectronNsigmaEl)
+      bitsRejectElCan |= (1 << 0);
+    if (cutPreselect.cutCanElectronHasTOF && !electronCandidate.hasTOF())
+      bitsRejectElCan |= (1 << 1);
+  }
+
   template <typename T>
   bool isElectronCandidate(T const& electronCandidate)
   // Loose criterium to find electron-like particle
   // Requiring TOF to avoid double-counting pions/electrons and for better timing
   {
-    if (electronCandidate.tpcNSigmaEl() < -2.0 || electronCandidate.tpcNSigmaEl() > 4.0)
+    fillRejectElectronCandidate(electronCandidate);
+    if (electronCandidate.tpcNSigmaEl() < cutPreselect.cutCanMaxElectronNsigmaEl || electronCandidate.tpcNSigmaEl() > cutPreselect.cutCanMinElectronNsigmaEl)
       return false;
-    if (!electronCandidate.hasTOF())
+    if (cutPreselect.cutCanElectronHasTOF && !electronCandidate.hasTOF())
       return false;
+    return true;
+  }
+
+  template <typename T>
+  bool fillRejectMuPionCandidate(T const& muPionCandidate)
+  // Fill reasons of rejecting mupion candidate
+  {
+    if (muPionCandidate.tpcNSigmaMu() < cutPreselect.cutCanMaxMuonNsigmaEl || muPionCandidate.tpcNSigmaMu() > cutPreselect.cutCanMinMuonNsigmaEl)
+      bitsRejectMuPiCan |= (1 << 0);
+    if (muPionCandidate.tpcNSigmaPi() < cutPreselect.cutCanMaxPionNsigmaEl || muPionCandidate.tpcNSigmaPi() > cutPreselect.cutCanMinPionNsigmaEl)
+      bitsRejectMuPiCan |= (1 << 1);
+    if (cutPreselect.cutCanMupionHasTOF && !muPionCandidate.hasTOF())
+      bitsRejectMuPiCan |= (1 << 2);
     return true;
   }
 
@@ -866,11 +915,11 @@ struct UpcTauRl {
   // Loose criterium to find muon/pion-like particle
   // Requiring TOF for better timing
   {
-    if (muPionCandidate.tpcNSigmaMu() < -5.0 || muPionCandidate.tpcNSigmaMu() > 5.0)
+    if (muPionCandidate.tpcNSigmaMu() < cutPreselect.cutCanMaxMuonNsigmaEl || muPionCandidate.tpcNSigmaMu() > cutPreselect.cutCanMinMuonNsigmaEl)
       return false;
-    if (muPionCandidate.tpcNSigmaPi() < -5.0 || muPionCandidate.tpcNSigmaPi() > 5.0)
+    if (muPionCandidate.tpcNSigmaPi() < cutPreselect.cutCanMaxPionNsigmaEl || muPionCandidate.tpcNSigmaPi() > cutPreselect.cutCanMinPionNsigmaEl)
       return false;
-    if (!muPionCandidate.hasTOF())
+    if (cutPreselect.cutCanMupionHasTOF && !muPionCandidate.hasTOF())
       return false;
     return true;
   }
@@ -2060,9 +2109,70 @@ struct UpcTauRl {
     }
   }
 
+  template <typename C>
+  void fillRejectionReasonDG(C const& collision)
+  {
+    if (!isGoodROFtime(collision))
+      bitsRejection |= (1 << 1);
+
+    if (!isGoodFITtime(collision, cutSample.cutFITtime))
+      bitsRejection |= (1 << 2);
+
+    if (cutSample.useNumContribs && (collision.numContrib() != cutSample.cutNumContribs))
+      bitsRejection |= (1 << 3);
+
+    if (cutSample.useRecoFlag && (collision.flags() != cutSample.cutRecoFlag))
+      bitsRejection |= (1 << 4);
+  }
+
+  template <typename C>
+  void fillRejectionReasonSG(C const& collision)
+  {
+    int gapSide = collision.gapSide();
+
+    if (cutSample.useTrueGap)
+      gapSide = sgSelector.trueGap(collision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
+
+    if (gapSide != cutSample.whichGapSide)
+      bitsRejection |= (1 << 0);
+
+    if (!isGoodROFtime(collision))
+      bitsRejection |= (1 << 1);
+
+    if (!isGoodFITtime(collision, cutSample.cutFITtime))
+      bitsRejection |= (1 << 2);
+
+    if (cutSample.useNumContribs && (collision.numContrib() != cutSample.cutNumContribs))
+      bitsRejection |= (1 << 3);
+
+    if (cutSample.useRecoFlag && (collision.flags() != cutSample.cutRecoFlag))
+      bitsRejection |= (1 << 4);
+  }
+
+  template <typename C>
+  void fillRejectionReasonMCSG(C const& collision)
+  {
+    if (collision.gapSide() != cutSample.whichGapSide)
+      bitsRejection |= (1 << 0);
+
+    if (!isGoodROFtime(collision))
+      bitsRejection |= (1 << 1);
+
+    if (!isGoodFITtime(collision, cutSample.cutFITtime))
+      bitsRejection |= (1 << 2);
+
+    if (cutSample.useNumContribs && (collision.numContrib() != cutSample.cutNumContribs))
+      bitsRejection |= (1 << 3);
+
+    if (cutSample.useRecoFlag && (collision.flags() != cutSample.cutRecoFlag))
+      bitsRejection |= (1 << 4);
+  }
+
+
   void processDataDG(FullUDCollision const& reconstructedCollision,
                      FullUDTracks const& reconstructedBarrelTracks)
   {
+    fillRejectionReasonDG(reconstructedCollision);
 
     if (!isGoodROFtime(reconstructedCollision))
       return;
@@ -2092,6 +2202,7 @@ struct UpcTauRl {
   void processDataSG(FullSGUDCollision const& reconstructedCollision,
                      FullUDTracks const& reconstructedBarrelTracks)
   {
+    fillRejectionReasonSG(reconstructedCollision);
 
     int gapSide = reconstructedCollision.gapSide();
     int trueGapSide = sgSelector.trueGap(reconstructedCollision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
@@ -2134,6 +2245,7 @@ struct UpcTauRl {
                       aod::UDMcParticles const&)
   {
     isMC = true;
+    fillRejectionReasonDG(reconstructedCollision);
 
     if (!isGoodROFtime(reconstructedCollision))
       return;
@@ -2176,6 +2288,7 @@ struct UpcTauRl {
                       aod::UDMcParticles const&)
   {
     isMC = true;
+    fillRejectionReasonMCSG(reconstructedCollision);
 
     int gapSide = reconstructedCollision.gapSide();
 
