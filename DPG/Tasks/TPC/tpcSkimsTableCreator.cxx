@@ -405,7 +405,7 @@ struct TreeWriterTpcV0 {
     }
   } /// process with TrackQA
   PROCESS_SWITCH(TreeWriterTpcV0, processWithTrQA, "Standard V0 Samples with Track QA for PID", false);
-  void processDummy(Colls const&){}
+  void processDummy(Colls const&) {}
   PROCESS_SWITCH(TreeWriterTpcV0, processDummy, "Dummy function", false);
 
 };  /// struct TreeWriterTpcV0
@@ -746,7 +746,7 @@ struct TreeWriterTPCTOF {
     }
   } /// process
   PROCESS_SWITCH(TreeWriterTPCTOF, processWithTrQA, "Samples for PID with TrackQA info", false);
-  void processDummy(Colls const&){}
+  void processDummy(Colls const&) {}
   PROCESS_SWITCH(TreeWriterTPCTOF, processDummy, "Dummy function", false);
 
 }; /// struct TreeWriterTPCTOF
