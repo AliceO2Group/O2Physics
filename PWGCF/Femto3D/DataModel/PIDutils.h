@@ -16,7 +16,12 @@
 /// \since  24/03/2025
 ///
 
+#ifndef PWGCF_FEMTO3D_DATAMODEL_PIDUTILS_H_
+#define PWGCF_FEMTO3D_DATAMODEL_PIDUTILS_H_
+
 #include <type_traits>
+#include <utility>
+#include <vector>
 #include "Common/DataModel/PIDResponse.h"
 
 namespace o2::aod::singletrackselector
@@ -246,3 +251,5 @@ inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<floa
   return false;
 }
 } // namespace o2::aod::singletrackselector
+
+#endif // PWGCF_FEMTO3D_DATAMODEL_PIDUTILS_H_
