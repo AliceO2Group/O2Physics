@@ -718,8 +718,8 @@ struct FlowGfwOmegaXi {
       if (cfgOutputNUAWeights)
         fWeightsREF->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
     }
-    double Nch = hLocalDensity->Integral() / 2;
-    registry.fill(HIST("hCentvsNch"), cent, Nch);
+    double nch = hLocalDensity->Integral() / 2;
+    registry.fill(HIST("hCentvsNch"), cent, nch);
     // fill GFW of V0 flow
     for (const auto& v0 : V0s) {
       auto v0posdau = v0.posTrack_as<DaughterTracks>();
