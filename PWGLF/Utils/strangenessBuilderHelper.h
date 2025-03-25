@@ -161,11 +161,13 @@ class strangenessBuilderHelper
     fitter.setBz(-999.9f); // will NOT make sense if not changed
   };
 
-  template <typename TTrack>
+  template <typename TTrack, typename TTrackParametrization>
   bool buildV0Candidate(int collisionIndex,
                         float pvX, float pvY, float pvZ,
                         TTrack const& positiveTrack,
                         TTrack const& negativeTrack,
+                        TTrackParametrization& positiveTrackParam, 
+                        TTrackParametrization& negativeTrackParam, 
                         bool useCollinearFit = false,
                         bool calculateCovariance = false)
   {
@@ -185,27 +187,26 @@ class strangenessBuilderHelper
       return false;
     }
 
-    // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+    // Calculate DCA with respect to the collision associated to the V0
     gpu::gpustd::array<float, 2> dcaInfo;
 
-    auto posTrackPar = getTrackPar(positiveTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    // do DCA to PV on copies instead of originals
+    auto positiveTrackParamCopy = positiveTrackParam;
+    auto negativeTrackParamCopy = negativeTrackParam;
+    
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, positiveTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.positiveDCAxy = dcaInfo[0];
 
     if (std::fabs(v0.positiveDCAxy) < v0selections.dcanegtopv) {
       return false;
     }
 
-    auto negTrackPar = getTrackPar(negativeTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, negTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, negativeTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.negativeDCAxy = dcaInfo[0];
 
     if (std::fabs(v0.negativeDCAxy) < v0selections.dcanegtopv) {
       return false;
     }
-
-    o2::track::TrackParCov positiveTrackParam = getTrackParCov(positiveTrack);
-    o2::track::TrackParCov negativeTrackParam = getTrackParCov(negativeTrack);
 
     // Perform DCA fit
     int nCand = 0;
@@ -318,7 +319,11 @@ class strangenessBuilderHelper
                              bool useCascadeMomentumAtPV = false,
                              bool processCovariances = false)
   {
-    if (!buildV0Candidate(collisionIndex, pvX, pvY, pvZ, positiveTrack, negativeTrack, false, processCovariances)) {
+    // no special treatment of positive and negative tracks when building V0s for cascades
+    auto posTrackPar = getTrackParCov(positiveTrack);
+    auto negTrackPar = getTrackParCov(negativeTrack);
+
+    if (!buildV0Candidate(collisionIndex, pvX, pvY, pvZ, positiveTrack, negativeTrack, posTrackPar, negTrackPar, false, processCovariances)) {
       return false;
     }
     if (!buildCascadeCandidate(collisionIndex, pvX, pvY, pvZ, v0, positiveTrack, negativeTrack, bachelorTrack, calculateBachelorBaryonVariables, useCascadeMomentumAtPV, processCovariances)) {
