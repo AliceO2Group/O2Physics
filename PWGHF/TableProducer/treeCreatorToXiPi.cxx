@@ -177,8 +177,10 @@ DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
                   full::CentFDDM,
                   full::MultZeqNTracksPV);
 
+DECLARE_SOA_TABLE(HfToXiPiCollId, "AOD", "HFTOXIPICOLLID",
+                  full::CollisionId);
+
 DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
-                  full::CollisionId,
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
                   full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
@@ -245,8 +247,10 @@ struct HfTreeCreatorToXiPi {
   Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
   Produces<o2::aod::HfToXiPiLites> rowCandidateLite;
   Produces<o2::aod::HfToXiPiEvs> rowEv;
+  Produces<o2::aod::HfToXiPiCollId> rowCollisionId;
 
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
+  Configurable<bool> fillCollIdTable{"fillCollIdTable", false, "Fill a single-column table with collision index"};
 
   SliceCache cache;
 
@@ -413,6 +417,12 @@ struct HfTreeCreatorToXiPi {
       debugMc,
       originMc,
       collisionMatched);
+      
+    if (fillCollIdTable) {
+      /// save also candidate collision indices
+      rowCollisionId(
+        rowEv.lastIndex());
+    }
   }
 
   template <typename T>
@@ -517,12 +527,14 @@ struct HfTreeCreatorToXiPi {
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto groupedXicCandidates = candidates.sliceBy(candXicPerCollision, thisCollId);
+      auto groupedXicCandidates = candidates.sliceByCached(aod::hf_cand_xic0_omegac0::collisionId, thisCollId, cache); // FIXME
       auto sizeTableCand = groupedXicCandidates.size();
       fillEvent<true>(collision, zPvCut);
 
       // Filling candidate properties
       rowCandidateFull.reserve(sizeTableCand);
+      rowCollisionId.reserve(sizeTableCand);
+      LOGF(debug, "Filling rec. collision %d at derived index %d", thisCollId, rowEv.lastIndex() + 1);
       for (const auto& candidate : groupedXicCandidates) {
         fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None, false);
       }
@@ -554,12 +566,13 @@ struct HfTreeCreatorToXiPi {
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto groupedXicCandidates = candidates.sliceBy(candXicPerCollision, thisCollId);
+      auto groupedXicCandidates = candidates.sliceByCached(aod::hf_cand_xic0_omegac0::collisionId, thisCollId, cache); // FIXME
       auto sizeTableCand = groupedXicCandidates.size();
       fillEvent<true>(collision, zPvCut);
 
       // Filling candidate properties
       rowCandidateFull.reserve(sizeTableCand);
+      rowCollisionId.reserve(sizeTableCand);
       for (const auto& candidate : groupedXicCandidates) {
         fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
       }
