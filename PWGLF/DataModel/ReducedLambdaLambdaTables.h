@@ -29,7 +29,7 @@ namespace o2::aod
 {
 namespace redllevent
 {
-DECLARE_SOA_COLUMN(NumLambda, numLambda, int); //! Number of lambda
+DECLARE_SOA_COLUMN(NumLambda, numLambda, int);     //! Number of lambda
 DECLARE_SOA_COLUMN(Centrality, centrality, float); //!
 } // namespace redllevent
 DECLARE_SOA_TABLE(RedLLEvents, "AOD", "REDLLEVENT",
@@ -46,18 +46,18 @@ using RedLLEvent = RedLLEvents::iterator;
 namespace lltrack
 {
 DECLARE_SOA_INDEX_COLUMN(RedLLEvent, redLLEvent);
-DECLARE_SOA_COLUMN(LLdId, lldId, int);                 //! LL PID
-DECLARE_SOA_COLUMN(LLdPx, lldPx, float);               //! LL d Px
-DECLARE_SOA_COLUMN(LLdPy, lldPy, float);               //! LL d Py
-DECLARE_SOA_COLUMN(LLdPz, lldPz, float);               //! LL d Pz
+DECLARE_SOA_COLUMN(LLdId, lldId, int);               //! LL PID
+DECLARE_SOA_COLUMN(LLdPx, lldPx, float);             //! LL d Px
+DECLARE_SOA_COLUMN(LLdPy, lldPy, float);             //! LL d Py
+DECLARE_SOA_COLUMN(LLdPz, lldPz, float);             //! LL d Pz
 DECLARE_SOA_COLUMN(LLdx, lldx, float);               //! LL d x
 DECLARE_SOA_COLUMN(LLdy, lldy, float);               //! LL d y
 DECLARE_SOA_COLUMN(LLdz, lldz, float);               //! LL d z
-DECLARE_SOA_COLUMN(LLdMass, lldMass, float);           //! LL d Mass
-DECLARE_SOA_COLUMN(LLdd1TPC, lldd1TPC, float);         //! LL dd1 TPC nsigma
-DECLARE_SOA_COLUMN(LLdd2TPC, lldd2TPC, float);         //! LL dd2 TPC nsigma
-DECLARE_SOA_COLUMN(LLdd1Index, lldd1Index, int64_t);   //! LL dd1 global index
-DECLARE_SOA_COLUMN(LLdd2Index, lldd2Index, int64_t);   //! LL dd2 global index
+DECLARE_SOA_COLUMN(LLdMass, lldMass, float);         //! LL d Mass
+DECLARE_SOA_COLUMN(LLdd1TPC, lldd1TPC, float);       //! LL dd1 TPC nsigma
+DECLARE_SOA_COLUMN(LLdd2TPC, lldd2TPC, float);       //! LL dd2 TPC nsigma
+DECLARE_SOA_COLUMN(LLdd1Index, lldd1Index, int64_t); //! LL dd1 global index
+DECLARE_SOA_COLUMN(LLdd2Index, lldd2Index, int64_t); //! LL dd2 global index
 
 } // namespace lltrack
 DECLARE_SOA_TABLE(LLTracks, "AOD", "LLTRACK",
