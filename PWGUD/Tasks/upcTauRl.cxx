@@ -119,7 +119,6 @@ struct UpcTauRl {
   Produces<o2::aod::TauTwoTracks> tauTwoTracks;
 
   // Global varialbes
-  bool isMC = false;
   Service<o2::framework::O2DatabasePDG> pdg;
   SGSelector sgSelector;
 
@@ -263,7 +262,7 @@ struct UpcTauRl {
     ConfigurableAxis zzAxisFITamplitude{"zzAxisFITamplitude", {1000, 0., 1000.}, "FIT amplitude"};
 
     AxisSpec zzAxisChannels{CH_ENUM_COUNTER, -0.5, +CH_ENUM_COUNTER - 0.5, "Channels (-)"};
-    AxisSpec zzAxisSelections{10, -0.5, 9.5, "Selections (-)"};
+    AxisSpec zzAxisSelections{40, -0.5, 39.5, "Selections (-)"};
 
   } confAxis;
 
@@ -645,12 +644,12 @@ struct UpcTauRl {
       histos.add("Tracks/Truth/hPionEta", ";Pion #eta (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisEta});
     }
 
-    histos.add("ProcessDataDG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
-    histos.add("ProcessDataSG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
-    histos.add("ProcessMCrecDG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
-    histos.add("ProcessMCrecSG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
-    histos.add("ProcessMCgen/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
-    histos.add("OutputTable/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+//    histos.add("ProcessDataDG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+//    histos.add("ProcessDataSG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+//    histos.add("ProcessMCrecDG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+//    histos.add("ProcessMCrecSG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+//    histos.add("ProcessMCgen/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+//    histos.add("OutputTable/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
     histos.add("OutputTable/hRejections", ";Rejections (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
 
   } // end init
@@ -873,6 +872,33 @@ struct UpcTauRl {
   unsigned int bitsRejection = 0;
   unsigned int bitsRejectElCan = 0;
   unsigned int bitsRejectMuPiCan = 0;
+  unsigned int bitsRejectTauEvent = 0;
+
+  void outputGlobalRejectionHistogram(){
+
+    for (int i{0}; i < 10; i++) {
+      if (bitsRejection & (1 << i))
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(i);
+    }
+  }
+
+  void outputDetailedRejectionHistogram(){
+
+    for (int i{0}; i < 10; i++) {
+      if (bitsRejectTauEvent & (1 << i))
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(i+10);
+    }
+
+    for (int i{0}; i < 10; i++) {
+      if (bitsRejectElCan & (1 << i))
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(i+20);
+    }
+
+    for (int i{0}; i < 10; i++) {
+      if (bitsRejectMuPiCan & (1 << i))
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(i+30);
+    }
+  }
 
   template <typename T>
   void fillRejectElectronCandidate(T const& electronCandidate)
@@ -1682,7 +1708,7 @@ struct UpcTauRl {
         }
       }
       if (trkDaug1.hasTPC() && trkDaug2.hasTPC()) {
-        if (!isMC && isElEl) {
+        if ((doprocessDataDG || doprocessDataSG) && isElEl) {
           if (daug[0].P() > daug[1].P()) {
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsLP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsOP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
@@ -1711,7 +1737,7 @@ struct UpcTauRl {
             }
           }
         }
-        if (!isMC && isElMuPion) {
+        if ((doprocessDataSG || doprocessDataDG) && isElMuPion) {
           double electronPt = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
           double electronPID = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcSignal() : trkDaug2.tpcSignal();
           double electronNsigmaEl = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcNSigmaEl() : trkDaug2.tpcNSigmaEl();
@@ -1823,7 +1849,7 @@ struct UpcTauRl {
           daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       }
       if (trkDaug1.hasTPC() && trkDaug2.hasTPC()) {
-        if (isMC && isElEl) {
+        if ((doprocessMCgen || doprocessMCrecSG || doprocessMCrecDG) && isElEl) {
           if (daug[0].P() > daug[1].P()) {
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsLP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
             histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsOP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
@@ -1852,7 +1878,7 @@ struct UpcTauRl {
             }
           }
         }
-        if (isMC && isElMuPion) {
+        if ((doprocessMCgen || doprocessMCrecSG || doprocessMCrecDG) && isElMuPion) {
           int pid = 0;
           if (trkDaug1.has_udMcParticle()) {
             const auto& part = trkDaug1.udMcParticle();
@@ -2051,6 +2077,7 @@ struct UpcTauRl {
 
     int countTracksPerCollision = 0;
     int countGoodNonPVtracks = 0;
+    int countBadTracks = 0;
     int countPVGTel = 0;
     int countPVGTmupi = 0;
     std::vector<int> vecTrkIdx;
@@ -2106,6 +2133,27 @@ struct UpcTauRl {
                    px, py, pz, sign, dcaxy, dcaz,
                    tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr,
                    tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr);
+    } else {
+      // Store info on what would rejected events
+      bitsRejectTauEvent |= (1 << 0);
+
+      int countTrksPerCol = 0;
+      int countNonPVtracks = 0;
+      int countBadTracks = 0;
+      // Loop over tracks with selections
+      for (const auto& track : tracks) {
+        countTrksPerCol++;
+        if (!isGlobalTrackReinstatement(track)){
+          countBadTracks++;
+        }
+        if (!track.isPVContributor()) {
+          countNonPVtracks++;
+        }
+      } // Loop over tracks with selections
+      if (countTrksPerCol - countBadTracks != 2)
+      bitsRejectTauEvent |= (1 << 1);
+      if (countTrksPerCol - countNonPVtracks != 2)
+      bitsRejectTauEvent |= (1 << 2);
     }
   }
 
@@ -2168,11 +2216,11 @@ struct UpcTauRl {
       bitsRejection |= (1 << 4);
   }
 
-
   void processDataDG(FullUDCollision const& reconstructedCollision,
                      FullUDTracks const& reconstructedBarrelTracks)
   {
     fillRejectionReasonDG(reconstructedCollision);
+    outputGlobalRejectionHistogram();
 
     if (!isGoodROFtime(reconstructedCollision))
       return;
@@ -2197,12 +2245,15 @@ struct UpcTauRl {
     if (doOutputTauEvents)
       outputTauEventCandidates(reconstructedCollision, reconstructedBarrelTracks);
 
+    outputDetailedRejectionHistogram();
+
   } // end processDataDG
 
   void processDataSG(FullSGUDCollision const& reconstructedCollision,
                      FullUDTracks const& reconstructedBarrelTracks)
   {
     fillRejectionReasonSG(reconstructedCollision);
+    outputGlobalRejectionHistogram();
 
     int gapSide = reconstructedCollision.gapSide();
     int trueGapSide = sgSelector.trueGap(reconstructedCollision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
@@ -2238,14 +2289,16 @@ struct UpcTauRl {
     if (doOutputTauEvents)
       outputTauEventCandidates(reconstructedCollision, reconstructedBarrelTracks);
 
+    outputDetailedRejectionHistogram();
+
   } // end processDataSG
 
   void processMCrecDG(FullMCUDCollision const& reconstructedCollision,
                       FullMCUDTracks const& reconstructedBarrelTracks,
                       aod::UDMcParticles const&)
   {
-    isMC = true;
     fillRejectionReasonDG(reconstructedCollision);
+    outputGlobalRejectionHistogram();
 
     if (!isGoodROFtime(reconstructedCollision))
       return;
@@ -2281,14 +2334,16 @@ struct UpcTauRl {
     if (doOutputTauEvents)
       outputTauEventCandidates(reconstructedCollision, reconstructedBarrelTracks);
 
+    outputDetailedRejectionHistogram();
+
   } // end processMCrecDG
 
   void processMCrecSG(FullMCSGUDCollision const& reconstructedCollision,
                       FullMCUDTracks const& reconstructedBarrelTracks,
                       aod::UDMcParticles const&)
   {
-    isMC = true;
     fillRejectionReasonMCSG(reconstructedCollision);
+    outputGlobalRejectionHistogram();
 
     int gapSide = reconstructedCollision.gapSide();
 
@@ -2330,12 +2385,13 @@ struct UpcTauRl {
     if (doOutputTauEvents)
       outputTauEventCandidates(reconstructedCollision, reconstructedBarrelTracks);
 
+    outputDetailedRejectionHistogram();
+
   } // end processMCrecDG
 
   void processMCgen(aod::UDMcCollision const& /*generatedCollision*/,
                     aod::UDMcParticles const& particles)
   {
-    isMC = true;
 
     if (cutSample.applyAcceptanceSelection) {
       for (const auto& particle : particles) {
