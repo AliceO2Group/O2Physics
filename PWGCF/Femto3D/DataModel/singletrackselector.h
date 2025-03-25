@@ -16,7 +16,7 @@
 #ifndef PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
 #define PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
 
-#include <experimental/type_traits>
+// #include <experimental/type_traits>
 #include <utility>
 #include <vector>
 
@@ -26,6 +26,7 @@
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Framework/Logger.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "PWGCF/Femto3D/DataModel/PIDutils.h"
 
 namespace o2::aod
 {
@@ -514,125 +515,3 @@ DECLARE_SOA_TABLE(SingleTrkMCs, "AOD", "SINGLETRKMC", // Table with generatad in
 } // namespace o2::aod
 
 #endif // PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
-
-namespace o2::aod::singletrackselector
-{
-template <typename TrackType>
-inline bool ITSselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts)
-{
-  int PDG = PIDcuts.first;
-
-  float Nsigma = -1000;
-  switch (PDG) {
-    case 2212:
-      Nsigma = track.itsNSigmaPr();
-      break;
-    case 1000010020:
-      Nsigma = track.itsNSigmaDe();
-      break;
-    case 1000020030:
-      Nsigma = track.itsNSigmaHe();
-      break;
-    case 1000010030:
-      Nsigma = track.itsNSigmaTr();
-      break;
-    case 211:
-      Nsigma = track.itsNSigmaPi();
-      break;
-    case 321:
-      Nsigma = track.itsNSigmaKa();
-      break;
-    case 0:
-      return false;
-    default:
-      LOG(fatal) << "Cannot interpret PDG for ITS selection: " << PIDcuts.first;
-  }
-
-  if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1]) {
-    return true;
-  }
-  return false;
-}
-
-template <bool useITS, typename TrackType>
-inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts, std::vector<float> const& ITSCut = std::vector<float>{})
-{
-  int PDG = PIDcuts.first;
-
-  if constexpr (useITS) {
-    if (ITSCut.size() != 0 && !ITSselection(track, std::make_pair(PDG, ITSCut)))
-      return false;
-  }
-
-  float Nsigma = -1000;
-  switch (PDG) {
-    case 2212:
-      Nsigma = track.tpcNSigmaPr();
-      break;
-    case 1000010020:
-      Nsigma = track.tpcNSigmaDe();
-      break;
-    case 1000020030:
-      Nsigma = track.tpcNSigmaHe();
-      break;
-    case 1000010030:
-      Nsigma = track.tpcNSigmaTr();
-      break;
-    case 211:
-      Nsigma = track.tpcNSigmaPi();
-      break;
-    case 321:
-      Nsigma = track.tpcNSigmaKa();
-      break;
-    case 0:
-      return false;
-    default:
-      LOG(fatal) << "Cannot interpret PDG for TPC selection: " << PIDcuts.first;
-  }
-
-  if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1]) {
-    return true;
-  }
-  return false;
-}
-
-template <typename TrackType>
-inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts, std::vector<float> const& TPCresidualCut = std::vector<float>{-5.0f, 5.0f})
-{
-  int PDG = PIDcuts.first;
-  if (!TPCselection<false>(track, std::make_pair(PDG, TPCresidualCut)))
-    return false;
-
-  float Nsigma = -1000;
-  switch (PDG) {
-    case 2212:
-      Nsigma = track.tofNSigmaPr();
-      break;
-    case 1000010020:
-      Nsigma = track.tofNSigmaDe();
-      break;
-    case 1000020030:
-      Nsigma = track.tofNSigmaHe();
-      break;
-    case 1000010030:
-      Nsigma = track.tofNSigmaTr();
-      break;
-    case 211:
-      Nsigma = track.tofNSigmaPi();
-      break;
-    case 321:
-      Nsigma = track.tofNSigmaKa();
-      break;
-    case 0:
-      return false;
-    default:
-      LOG(fatal) << "Cannot interpret PDG for TOF selection: " << PIDcuts.first;
-  }
-
-  if (Nsigma > PIDcuts.second[0] && Nsigma < PIDcuts.second[1]) {
-    return true;
-  }
-  return false;
-}
-
-} // namespace o2::aod::singletrackselector
