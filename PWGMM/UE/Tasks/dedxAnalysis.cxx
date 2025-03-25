@@ -86,8 +86,6 @@ struct DedxAnalysis {
   // Histograms names
   static constexpr std::string_view kDedxvsMomentumPos[4] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
   static constexpr std::string_view kDedxvsMomentumNeg[4] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
-  static constexpr std::string_view kDedxvsMomentumPosWoCal[4] = {"dEdx_vs_Momentum_all_Pos_WoCal", "dEdx_vs_Momentum_Pi_v0_Pos_WoCal", "dEdx_vs_Momentum_Pr_v0_Pos_WoCal", "dEdx_vs_Momentum_El_v0_Pos_WoCal"};
-  static constexpr std::string_view kDedxvsMomentumNegWoCal[4] = {"dEdx_vs_Momentum_all_Neg_WoCal", "dEdx_vs_Momentum_Pi_v0_Neg_WoCal", "dEdx_vs_Momentum_Pr_v0_Neg_WoCal", "dEdx_vs_Momentum_El_v0_Neg_WoCal"};
   static constexpr double EtaCut[9] = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
   Configurable<std::vector<float>> calibrationFactorNeg{"calibrationFactorNeg", {50.4011, 50.4764, 50.186, 49.2955, 48.8222, 49.4273, 49.9292, 50.0556}, "negative calibration factors"};
   Configurable<std::vector<float>> calibrationFactorPos{"calibrationFactorPos", {50.5157, 50.6359, 50.3198, 49.3345, 48.9197, 49.4931, 50.0188, 50.1406}, "positive calibration factors"};
@@ -133,6 +131,13 @@ struct DedxAnalysis {
       registryDeDx.add(
         "hdEdx_vs_eta_vs_p_Pos_El", "dE/dx", HistType::kTH3F,
         {{etaAxis}, {dedxAxis}, {pAxis}});
+        //Pions from TOF
+        registryDeDx.add(
+          "hdEdx_vs_eta_vs_p_Neg_TOF", "dE/dx", HistType::kTH3F,
+          {{etaAxis}, {dedxAxis}, {pAxis}});
+        registryDeDx.add(
+          "hdEdx_vs_eta_vs_p_Pos_TOF", "dE/dx", HistType::kTH3F,
+          {{etaAxis}, {dedxAxis}, {pAxis}});
 
     } else {
       // MIP for pions
@@ -152,6 +157,15 @@ struct DedxAnalysis {
       registryDeDx.add(
         "hdEdx_vs_eta_vs_p_Pos_calibrated_El", "dE/dx", HistType::kTH3F,
         {{etaAxis}, {dedxAxis}, {pAxis}});
+        
+        // Pions from TOF
+        registryDeDx.add(
+          "hdEdx_vs_eta_vs_p_Neg_calibrated_TOF", "dE/dx", HistType::kTH3F,
+          {{etaAxis}, {dedxAxis}, {pAxis}});
+
+        registryDeDx.add(
+          "hdEdx_vs_eta_vs_p_Pos_calibrated_TOF", "dE/dx", HistType::kTH3F,
+          {{etaAxis}, {dedxAxis}, {pAxis}});
 
       // De/Dx for ch and v0 particles
       for (int i = 0; i < 4; ++i) {
@@ -159,12 +173,8 @@ struct DedxAnalysis {
                          {{pAxis}, {dedxAxis}, {etaAxis}});
         registryDeDx.add(kDedxvsMomentumNeg[i].data(), "dE/dx", HistType::kTH3F,
                          {{pAxis}, {dedxAxis}, {etaAxis}});
-
-        registryDeDx.add(kDedxvsMomentumPosWoCal[i].data(), "dE/dx", HistType::kTH3F,
-                         {{pAxis}, {dedxAxis}, {etaAxis}});
-        registryDeDx.add(kDedxvsMomentumNegWoCal[i].data(), "dE/dx", HistType::kTH3F,
-                         {{pAxis}, {dedxAxis}, {etaAxis}});
       }
+
     }
 
     registryDeDx.add(
@@ -393,13 +403,13 @@ struct DedxAnalysis {
           }
         }
       }
-      // MIP calibration for electrons
+      // Beta from TOF
       if (signedP < 0) {
         registryDeDx.fill(HIST("hbeta_vs_p_Neg"), std::abs(signedP), trk.beta());
       } else {
         registryDeDx.fill(HIST("hbeta_vs_p_Pos"), signedP, trk.beta());
       }
-
+        // Electrons from TOF
       if (std::abs(trk.beta() - 1) < 0.1) { // beta cut
         if (calibrationMode) {
           if (signedP < 0) {
@@ -419,6 +429,26 @@ struct DedxAnalysis {
           }
         }
       }
+        //pions from TOF
+        if (trk.beta() > 1. && trk.beta() < 1.05) { // beta cut
+          if (calibrationMode) {
+            if (signedP < 0) {
+              registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_TOF"), trk.eta(), trk.tpcSignal(), std::abs(signedP));
+            } else {
+              registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_TOF"), trk.eta(), trk.tpcSignal(), signedP);
+            }
+          } else {
+            for (int i = 0; i < 8; ++i) {
+              if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
+                if (signedP < 0) {
+                  registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_calibrated_TOF"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), std::abs(signedP));
+                } else {
+                  registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_calibrated_TOF"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorPos->at(i), signedP);
+                }
+              }
+            }
+          }
+        }
 
       registryDeDx.fill(HIST("hdEdx_vs_phi"), trk.phi(), trk.tpcSignal());
 
