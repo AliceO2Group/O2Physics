@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   checkPacking.cxx
+/// \file   PIDutils.h
 /// \author Gleb Romanenko gleb.romanenko@cern.ch
 /// \brief  SFINAE checks for existance of PID info
 /// \since  24/03/2025
