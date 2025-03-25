@@ -405,7 +405,7 @@ struct TreeWriterTpcV0 {
     }
   } /// process with TrackQA
   PROCESS_SWITCH(TreeWriterTpcV0, processWithTrQA, "Standard V0 Samples with Track QA for PID", false);
-  void processDummy(Colls const& ){}
+  void processDummy(Colls const&){}
   PROCESS_SWITCH(TreeWriterTpcV0, processDummy, "Dummy function", false);
 
 };  /// struct TreeWriterTpcV0
@@ -679,9 +679,9 @@ struct TreeWriterTPCTOF {
     for (const auto& collision : collisions) {
       auto tracks = myTracks.sliceBy(perCollisionTracks, collision.globalIndex());
       auto tracksWithITSPid = soa::Attach<Trks,
-                              aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi,
-                              aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe,
-                              aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe, aod::pidits::ITSNSigmaAl>(tracks);
+                                          aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi,
+                                          aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe,
+                                          aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe, aod::pidits::ITSNSigmaAl>(tracks);
       /// Check event selection
       if (!isEventSelected(collision, tracks)) {
         continue;
@@ -693,7 +693,6 @@ struct TreeWriterTPCTOF {
       const int bcTimeFrameId = bc.tfId();
       const int bcBcInTimeFrame = bc.bcInTF();
       rowTPCTOFTreeWithTrkQA.reserve(tracks.size());
-      //for (auto const& trk : tracks) {
       for (auto const& trk : tracksWithITSPid) {
         if (!((trackSelection == 0) ||
               ((trackSelection == 1) && trk.isGlobalTrack()) ||
@@ -703,7 +702,6 @@ struct TreeWriterTPCTOF {
               ((trackSelection == 5) && trk.isInAcceptanceTrack()))) {
           continue;
         }
-        
         // get the corresponding trackQA using labelTracks2TracKQA and get variables of interest
         aod::TracksQA_002::iterator trackQA;
         bool existTrkQA;
@@ -748,9 +746,9 @@ struct TreeWriterTPCTOF {
     }
   } /// process
   PROCESS_SWITCH(TreeWriterTPCTOF, processWithTrQA, "Samples for PID with TrackQA info", false);
-  void processDummy(Colls const& ){}
+  void processDummy(Colls const&){}
   PROCESS_SWITCH(TreeWriterTPCTOF, processDummy, "Dummy function", false);
-  
+
 }; /// struct TreeWriterTPCTOF
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
