@@ -40,7 +40,7 @@ using namespace rapidjson;
 int runMassFitter(TString configFileName = "config_massfitter.json");
 
 template <typename ValueType>
-void readArray(const Value& jsonArray, vector<ValueType>& output)
+void readArray(const Value& jsonArray, std::vector<ValueType>& output)
 {
   for (auto it = jsonArray.Begin(); it != jsonArray.End(); it++) {
     auto value = it->template Get<ValueType>();
@@ -48,7 +48,7 @@ void readArray(const Value& jsonArray, vector<ValueType>& output)
   }
 }
 
-void parseStringArray(const Value& jsonArray, vector<string>& output)
+void parseStringArray(const Value& jsonArray, std::vector<string>& output)
 {
   size_t arrayLength = jsonArray.Size();
   for (size_t i = 0; i < arrayLength; i++) {

@@ -30,8 +30,10 @@ using BCs_Run3 = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse
 // Remark 2: For consistency with notation below, drop _Run3 and instead use _Run2 and _Run1
 
 // using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::MultsGlobal, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>; // TBI 20241209 validating "MultsGlobal"
-//  for using collision.multNTracksGlobal()
-using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
+//  for using collision.multNTracksGlobal() TBI 20250128 do i still need this?
+using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
+// TBI 20250128 I can't join here directly aod::CentNGlobals, see email from DDC from 20250127 if this one requires a special treatment
+//              See in https://github.com/AliceO2Group/O2Physics/blob/master/Common/DataModel/Centrality.h how centrality tables are named exactly
 using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator; // use in json "isMC": "true" for "event-selection-task"
 using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
 // using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::MultsExtraMC, EventSelection>::iterator; // TBI 20241210 validating "MultsExtraMC" for multMCNParticlesEta08
@@ -62,6 +64,7 @@ using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, 
 #include <TSystem.h>
 #include <TFile.h>
 #include <TH1D.h>
+#include <TProfile2D.h>
 #include <TGrid.h>
 #include <Riostream.h>
 #include <TRandom3.h>
@@ -71,6 +74,7 @@ using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, 
 #include <TF1.h>
 #include <TF3.h>
 #include <TObjString.h>
+#include <THnSparse.h>
 using namespace std;
 
 // *) Enums:
@@ -111,7 +115,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     // *) Trick to avoid name clashes, part 2;
 
     // *) Trick to avoid name clashes, part 1:
-    Bool_t oldHistAddStatus = TH1::AddDirectoryStatus();
+    bool oldHistAddStatus = TH1::AddDirectoryStatus();
     TH1::AddDirectory(kFALSE);
 
     // *) Default configuration, booking, binning and cuts:
@@ -271,6 +275,8 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // J) Process data with minimum subscription to the tables, for testing purposes:
+  //    Remark: To keep this branch as simple as possible, I do not subscribe to centrality table. Therefore, when running with "processTest": "true" in JSON,
+  //            I have to remove "| o2-analysis-centrality-table $JsonFile \" from workflow (yes, remove, not comment out!)
   void processTest(aod::Collision const& collision, aod::BCs const& bcs, aod::Tracks const& tracks)
   {
     Steer<eTest>(collision, bcs, tracks);

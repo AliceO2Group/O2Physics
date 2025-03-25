@@ -87,6 +87,7 @@ struct SingleTrackQCMC {
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "flag to fill QA histograms"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
+  Configurable<bool> cfgRequireTrueAssociation{"cfgRequireTrueAssociation", false, "flag to require true mc collision association"};
 
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
   ConfigurableAxis ConfDCABins{"ConfDCABins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCA bins for output histograms"};
@@ -221,7 +222,8 @@ struct SingleTrackQCMC {
   {
     // event info
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
-    fRegistry.add("MCEvent/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
+    fRegistry.add("MCEvent/before/hZvtx", "mc vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
+    fRegistry.add("MCEvent/before/hZvtx_rec", "rec. mc vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
     fRegistry.addClone("MCEvent/before/", "MCEvent/after/");
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
@@ -701,11 +703,6 @@ struct SingleTrackQCMC {
         continue;
       }
 
-      // auto mccollision = collision.template emmcevent_as<TMCCollisions>();
-      // if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
-      //   continue;
-      // }
-
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
@@ -718,7 +715,7 @@ struct SingleTrackQCMC {
 
       for (auto& track : tracks_per_coll) {
         auto mctrack = track.template emmcparticle_as<TMCParticles>();
-        if (abs(mctrack.pdgCode()) != pdg_lepton) {
+        if (std::abs(mctrack.pdgCode()) != pdg_lepton) {
           continue;
         }
 
@@ -731,9 +728,9 @@ struct SingleTrackQCMC {
           continue;
         }
 
-        // if (mctrack.emmceventId() != collision.emmceventId()) {
-        //   continue;
-        // }
+        if (cfgRequireTrueAssociation && (mctrack.emmceventId() != collision.emmceventId())) {
+          continue;
+        }
 
         if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
           if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
@@ -755,7 +752,7 @@ struct SingleTrackQCMC {
           continue;
         }
         auto mcmother = mcparticles.iteratorAt(mctrack.mothersIds()[0]);
-        int pdg_mother = abs(mcmother.pdgCode());
+        int pdg_mother = std::abs(mcmother.pdgCode());
 
         if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
           if (pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333) {
@@ -811,6 +808,7 @@ struct SingleTrackQCMC {
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
+      fRegistry.fill(HIST("MCEvent/before/hZvtx_rec"), mccollision.posZ());
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
@@ -828,7 +826,7 @@ struct SingleTrackQCMC {
           continue;
         }
         auto mcmother = mcparticles.iteratorAt(lepton.mothersIds()[0]);
-        int pdg_mother = abs(mcmother.pdgCode());
+        int pdg_mother = std::abs(mcmother.pdgCode());
 
         float pt = 0.f, eta = 0.f, phi = 0.f;
         if constexpr (isSmeared) {
@@ -1070,7 +1068,7 @@ struct SingleTrackQCMC {
       if (collision.sel8()) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 10.0);
       }
-      if (abs(collision.posZ()) < 10.0) {
+      if (std::fabs(collision.posZ()) < 10.0) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 11.0);
       }
       if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {

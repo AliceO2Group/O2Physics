@@ -85,7 +85,7 @@ struct GammaJetTreeProducer {
   Configurable<float> minClusterETrigger{"minClusterETrigger", 0.0, "minimum cluster energy to trigger"};
 
   int mRunNumber = 0;
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
   std::unordered_map<int32_t, int32_t> collisionMapping;
@@ -96,7 +96,7 @@ struct GammaJetTreeProducer {
     using o2HistType = HistType;
     using o2Axis = AxisSpec;
 
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
@@ -150,7 +150,7 @@ struct GammaJetTreeProducer {
     if (collision.posZ() > mVertexCut) {
       return false;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return false;
     }
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {

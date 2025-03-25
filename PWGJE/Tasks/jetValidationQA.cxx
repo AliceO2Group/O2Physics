@@ -175,7 +175,7 @@ struct jetTrackCollisionQa {
   {
     mHistManager.fill(HIST("controlCollisionVtxZ"), collision.posZ());
     if (evSel == true) {
-      if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel7) || fabs(collision.posZ()) > 10) {
+      if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel7")) || fabs(collision.posZ()) > 10) {
         return;
       }
     } else {
@@ -242,7 +242,7 @@ struct jetTrackCollisionQa {
   void processRun3AOD(aod::JetCollision const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, TracksJE const& tracks, Tracks const&)
   {
     if (evSel == true) {
-      if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8) || fabs(collision.posZ()) > 10) {
+      if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel8")) || fabs(collision.posZ()) > 10) {
         return;
       }
     } else {

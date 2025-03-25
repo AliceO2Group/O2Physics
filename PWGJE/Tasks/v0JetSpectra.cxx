@@ -14,6 +14,9 @@
 /// \author Gijs van Weelden <g.van.weelden@cern.ch>
 //
 
+#include <string>
+#include <vector>
+
 #include "TH1F.h"
 #include "TTree.h"
 
@@ -63,13 +66,13 @@ struct V0JetSpectra {
 
   Configurable<std::string> evSel{"evSel", "sel8WithoutTimeFrameBorderCut", "choose event selection"};
   Configurable<float> vertexZCut{"vertexZCut", 10.f, "vertex z cut"};
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   Filter jetCollisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
 
   void init(InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(evSel));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(evSel));
     registry.add("jetPtEtaPhi", "Jets; #it{p}_{T}; #eta; #phi", HistType::kTH3D, {{200, 0., 200.}, {20, -1.f, 1.f}, {18 * 8, 0.f, 2. * TMath::Pi()}});
     registry.add("mcpJetPtEtaPhi", "Jets; #it{p}_{T}; #eta; #phi", HistType::kTH3D, {{200, 0., 200.}, {20, -1.f, 1.f}, {18 * 8, 0.f, 2. * TMath::Pi()}});
   }
@@ -91,7 +94,7 @@ struct V0JetSpectra {
 
   void processData(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, aod::ChargedJets const& chjets, aod::V0ChargedJets const& v0jets)
   {
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
     }
     if (v0jets.size() == 0) {
@@ -105,7 +108,7 @@ struct V0JetSpectra {
     if (!jcoll.has_mcCollision()) {
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
     }
     double weight = jcoll.mcCollision().weight();
@@ -126,7 +129,7 @@ struct V0JetSpectra {
 
   void processMcMatched(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDJets const& chjetsMCD, MatchedMCPJets const& chjetsMCP, MatchedMCDV0Jets const& v0jetsMCD, MatchedMCPV0Jets const& v0jetsMCP)
   {
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
     }
     // TODO: Need to add checker to only count matched jets (?)

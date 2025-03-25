@@ -102,9 +102,9 @@ struct HfDataCreatorCharmResoReduced {
   Produces<aod::HfRedCollisions> hfReducedCollision; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfOrigColCounts> hfCollisionCounter; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   // tracks, V0 and D candidates reduced tables
-  Produces<aod::HfRedVzeros> hfCandV0;   // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
+  Produces<aod::HfRedVzeros> hfCandV0;            // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfRedTrkNoParams> hfTrackNoParam; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
-  Produces<aod::HfRed3PrNoTrks> hfCandD; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
+  Produces<aod::HfRed3PrNoTrks> hfCandD;          // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   // ML optional Tables
   Produces<aod::HfRed3ProngsMl> hfCandDMl; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   // MC Tables
@@ -368,7 +368,7 @@ struct HfDataCreatorCharmResoReduced {
     auto trackNegPar = getTrackPar(trackNeg);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackNegPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     auto trackNegDcaXY = dcaInfo[0];
-    if (fabs(trackPosDcaXY) < cfgV0Cuts.dcaMaxDauToPv || fabs(trackNegDcaXY) < cfgV0Cuts.dcaMaxDauToPv) {
+    if (std::fabs(trackPosDcaXY) < cfgV0Cuts.dcaMaxDauToPv || std::fabs(trackNegDcaXY) < cfgV0Cuts.dcaMaxDauToPv) {
       return false;
     }
     // vertex reconstruction
@@ -810,8 +810,9 @@ struct HfDataCreatorCharmResoReduced {
         charmHadDauTracks.push_back(candD.template prong1_as<Tr>());
         charmHadDauTracks.push_back(candD.template prong2_as<Tr>());
         if constexpr (withMl) {
-          registry.fill(HIST("hMassVsPtDplusAll"), candD.pt(), varUtils.invMassD);
+          std::copy(candD.mlProbDplusToPiKPi().begin(), candD.mlProbDplusToPiKPi().end(), bdtScores.begin());
         }
+        registry.fill(HIST("hMassVsPtDplusAll"), candD.pt(), varUtils.invMassD);
       } // else if
 
       // Get single track variables

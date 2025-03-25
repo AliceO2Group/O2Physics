@@ -56,6 +56,7 @@ using ChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::ChargedMCDetectorLev
 using NeutralMCJetsEventWeight = JetEventWeightMCDTask<aod::NeutralMCDetectorLevelJet, aod::NeutralMCDetectorLevelJetEventWeights, aod::NeutralMCDetectorLevelEventWiseSubtractedJet, aod::NeutralMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 using FullMCJetsEventWeight = JetEventWeightMCDTask<aod::FullMCDetectorLevelJet, aod::FullMCDetectorLevelJetEventWeights, aod::FullMCDetectorLevelEventWiseSubtractedJet, aod::FullMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 using D0ChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::D0ChargedMCDetectorLevelJet, aod::D0ChargedMCDetectorLevelJetEventWeights, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJet, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
+using DplusChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::DplusChargedMCDetectorLevelJet, aod::DplusChargedMCDetectorLevelJetEventWeights, aod::DplusChargedMCDetectorLevelEventWiseSubtractedJet, aod::DplusChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 using LcChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::LcChargedMCDetectorLevelJet, aod::LcChargedMCDetectorLevelJetEventWeights, aod::LcChargedMCDetectorLevelEventWiseSubtractedJet, aod::LcChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 using BplusChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::BplusChargedMCDetectorLevelJet, aod::BplusChargedMCDetectorLevelJetEventWeights, aod::BplusChargedMCDetectorLevelEventWiseSubtractedJet, aod::BplusChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 using V0ChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::V0ChargedMCDetectorLevelJet, aod::V0ChargedMCDetectorLevelJetEventWeights, aod::V0ChargedMCDetectorLevelEventWiseSubtractedJet, aod::V0ChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
@@ -80,6 +81,10 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   tasks.emplace_back(
     adaptAnalysisTask<D0ChargedMCJetsEventWeight>(cfgc,
                                                   SetDefaultProcesses{}, TaskName{"jet-d0-eventweight-mcd-charged"}));
+
+  tasks.emplace_back(
+    adaptAnalysisTask<DplusChargedMCJetsEventWeight>(cfgc,
+                                                     SetDefaultProcesses{}, TaskName{"jet-dplus-eventweight-mcd-charged"}));
 
   tasks.emplace_back(
     adaptAnalysisTask<LcChargedMCJetsEventWeight>(cfgc,

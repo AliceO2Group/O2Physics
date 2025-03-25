@@ -70,7 +70,7 @@ enum DQTriggers {
   kSingleMuLow,
   kSingleMuHigh,
   kDiMuon,
-  // kElectronMuon, // the ElectronMuon trigger is not available now
+  kElectronMuon,
   kNTriggersDQ
 };
 } // namespace
@@ -1042,8 +1042,6 @@ struct DQFilterPPTask {
           }
         }
       }
-      // the ElectronMuon trigger is not available now
-      /*
       for (int i = fNBarrelCuts + fNMuonCuts; i < fNBarrelCuts + fNMuonCuts + fNElectronMuonCuts; i++) {
         if (filter & (static_cast<uint64_t>(1) << i)) {
           if (i < kNTriggersDQ) {
@@ -1051,7 +1049,6 @@ struct DQFilterPPTask {
           }
         }
       }
-      */
       // if this collision fired at least one input, add it to the map, or if it is there already, update the decisions with a logical OR
       // This may happen in the case when some collisions beyond the iterator are added because they contain ambiguous tracks fired on by another collision
       if (fFiltersMap.find(collision.globalIndex()) == fFiltersMap.end()) {
@@ -1132,16 +1129,14 @@ struct DQFilterPPTask {
       fStats->Fill(-2.0);
       if (!collision.isDQEventSelected()) {
         eventFilter(0);
-        dqtable(false, false, false, false, false, false, false);
-        // dqtable(false, false, false, false, false, false, false, false); // the ElectronMuon trigger is not available now
+        dqtable(false, false, false, false, false, false, false, false);
         continue;
       }
       fStats->Fill(-1.0);
 
       if (fFiltersMap.find(collision.globalIndex()) == fFiltersMap.end()) {
         eventFilter(0);
-        dqtable(false, false, false, false, false, false, false);
-        // dqtable(false, false, false, false, false, false, false, false); // the ElectronMuon trigger is not available now
+        dqtable(false, false, false, false, false, false, false, false);
       } else {
         totalEventsTriggered++;
         for (int i = 0; i < fNBarrelCuts + fNMuonCuts + fNElectronMuonCuts; i++) {
@@ -1150,8 +1145,7 @@ struct DQFilterPPTask {
         }
         eventFilter(fFiltersMap[collision.globalIndex()]);
         auto dqDecisions = fCEFPfilters[collision.globalIndex()];
-        dqtable(dqDecisions[0], dqDecisions[1], dqDecisions[2], dqDecisions[3], dqDecisions[4], dqDecisions[5], dqDecisions[6]);
-        // dqtable(dqDecisions[0], dqDecisions[1], dqDecisions[2], dqDecisions[3], dqDecisions[4], dqDecisions[5], dqDecisions[6], dqDecisions[7]); // the ElectronMuon trigger is not available now
+        dqtable(dqDecisions[0], dqDecisions[1], dqDecisions[2], dqDecisions[3], dqDecisions[4], dqDecisions[5], dqDecisions[6], dqDecisions[7]);
       }
     }
 
@@ -1256,16 +1250,14 @@ struct DQFilterPPTask {
       fStats->Fill(-2.0);
       if (!collision.isDQEventSelected()) {
         eventFilter(0);
-        dqtable(false, false, false, false, false, false, false);
-        // dqtable(false, false, false, false, false, false, false, false); // the ElectronMuon trigger is not available now
+        dqtable(false, false, false, false, false, false, false, false);
         continue;
       }
       fStats->Fill(-1.0);
 
       if (fFiltersMap.find(collision.globalIndex()) == fFiltersMap.end()) {
         eventFilter(0);
-        dqtable(false, false, false, false, false, false, false);
-        // dqtable(false, false, false, false, false, false, false, false); // the ElectronMuon trigger is not available now
+        dqtable(false, false, false, false, false, false, false, false);
       } else {
         totalEventsTriggered++;
         for (int i = 0; i < fNMuonCuts; i++) {
@@ -1274,8 +1266,7 @@ struct DQFilterPPTask {
         }
         eventFilter(fFiltersMap[collision.globalIndex()]);
         auto dqDecisions = fCEFPfilters[collision.globalIndex()];
-        dqtable(dqDecisions[0], dqDecisions[1], dqDecisions[2], dqDecisions[3], dqDecisions[4], dqDecisions[5], dqDecisions[6]);
-        // dqtable(dqDecisions[0], dqDecisions[1], dqDecisions[2], dqDecisions[3], dqDecisions[4], dqDecisions[5], dqDecisions[6], dqDecisions[7]); // the ElectronMuon trigger is not available now
+        dqtable(dqDecisions[0], dqDecisions[1], dqDecisions[2], dqDecisions[3], dqDecisions[4], dqDecisions[5], dqDecisions[6], dqDecisions[7]);
       }
     }
 
