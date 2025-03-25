@@ -647,12 +647,12 @@ struct UpcTauRl {
       histos.add("Tracks/Truth/hPionEta", ";Pion #eta (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisEta});
     }
 
-//    histos.add("ProcessDataDG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
-//    histos.add("ProcessDataSG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
-//    histos.add("ProcessMCrecDG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
-//    histos.add("ProcessMCrecSG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
-//    histos.add("ProcessMCgen/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
-//    histos.add("OutputTable/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    //    histos.add("ProcessDataDG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    //    histos.add("ProcessDataSG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    //    histos.add("ProcessMCrecDG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    //    histos.add("ProcessMCrecSG/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    //    histos.add("ProcessMCgen/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
+    //    histos.add("OutputTable/hSelections", ";Selection (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
     histos.add("OutputTable/hRejections", ";Rejections (-);Number of passed collision (-)", HistType::kTH1D, {confAxis.zzAxisSelections});
 
   } // end init
@@ -877,7 +877,8 @@ struct UpcTauRl {
   unsigned int bitsRejectMuPiCan = 0;
   unsigned int bitsRejectTauEvent = 0;
 
-  void outputGlobalRejectionHistogram(){
+  void outputGlobalRejectionHistogram()
+  {
 
     for (int i{0}; i < 10; i++) {
       if (bitsRejection & (1 << i))
@@ -885,21 +886,22 @@ struct UpcTauRl {
     }
   }
 
-  void outputDetailedRejectionHistogram(){
+  void outputDetailedRejectionHistogram()
+  {
 
     for (int i{0}; i < 10; i++) {
       if (bitsRejectTauEvent & (1 << i))
-        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(i+10);
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(i + 10);
     }
 
     for (int i{0}; i < 10; i++) {
       if (bitsRejectElCan & (1 << i))
-        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(i+20);
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(i + 20);
     }
 
     for (int i{0}; i < 10; i++) {
       if (bitsRejectMuPiCan & (1 << i))
-        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(i+30);
+        histos.get<TH1>(HIST("OutputTable/hRejections"))->Fill(i + 30);
     }
   }
 
@@ -2115,7 +2117,7 @@ struct UpcTauRl {
       int sign[2] = {trk1.sign(), trk2.sign()};
       float dcaxy[2] = {trk1.dcaXY(), trk2.dcaXY()};
       float dcaz[2] = {trk1.dcaZ(), trk2.dcaZ()};
-      float trkTimeRes[2] = {trk1.trackTimeRes(),trk2.trackTimeRes()};
+      float trkTimeRes[2] = {trk1.trackTimeRes(), trk2.trackTimeRes()};
       float tpcSignal[2] = {trk1.tpcSignal(), trk2.tpcSignal()};
       float tpcEl[2] = {trk1.tpcNSigmaEl(), trk2.tpcNSigmaEl()};
       float tpcMu[2] = {trk1.tpcNSigmaMu(), trk2.tpcNSigmaMu()};
@@ -2149,7 +2151,7 @@ struct UpcTauRl {
       // Loop over tracks with selections
       for (const auto& track : tracks) {
         countTrksPerCol++;
-        if (!isGlobalTrackReinstatement(track)){
+        if (!isGlobalTrackReinstatement(track)) {
           countBadTracks++;
         }
         if (!track.isPVContributor()) {
@@ -2157,9 +2159,9 @@ struct UpcTauRl {
         }
       } // Loop over tracks with selections
       if (countTrksPerCol - countBadTracks != 2)
-      bitsRejectTauEvent |= (1 << 1);
+        bitsRejectTauEvent |= (1 << 1);
       if (countTrksPerCol - countNonPVtracks != 2)
-      bitsRejectTauEvent |= (1 << 2);
+        bitsRejectTauEvent |= (1 << 2);
     }
   }
 
