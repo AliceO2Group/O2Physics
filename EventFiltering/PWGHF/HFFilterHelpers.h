@@ -1936,7 +1936,6 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3ProngOrBeautyToJPsi(const T& tr
 }
 
 /// Basic selection of proton candidates forLc and ThetaC decays
-/// \param isProtonTrack true if we are using a p track, false otherwise
 /// \param track is a track
 /// \return true if track passes all cuts
 template <typename T>
@@ -1949,10 +1948,8 @@ inline bool HfFilterHelper::isSelectedProtonFromLcReso(const T& track)
     return false;
   }
 
-  if constexpr (isProtonTrack) {
-    /// if it is a proton, check the PID as well
-    return isSelectedProton4CharmOrBeautyBaryons<false>(track);
-  }
+  /// PID selection
+  return isSelectedProton4CharmOrBeautyBaryons<false>(track);
 
   return true;
 }
