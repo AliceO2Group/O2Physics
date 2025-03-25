@@ -89,18 +89,21 @@ DECLARE_SOA_COLUMN(TrkPz, trkPz, float[2]);
 DECLARE_SOA_COLUMN(TrkSign, trkSign, int[2]);
 DECLARE_SOA_COLUMN(TrkDCAxy, trkDCAxy, float[2]);
 DECLARE_SOA_COLUMN(TrkDCAz, trkDCAz, float[2]);
+DECLARE_SOA_COLUMN(TrkTimeRes, trkTimeRes, float[2]);
 DECLARE_SOA_COLUMN(TrkTPCsignal, trkTPCsignal, float[2]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaEl, trkTPCnSigmaEl, float[2]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaMu, trkTPCnSigmaMu, float[2]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaPi, trkTPCnSigmaPi, float[2]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaKa, trkTPCnSigmaKa, float[2]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaPr, trkTPCnSigmaPr, float[2]);
+DECLARE_SOA_COLUMN(TrkTPCinnerParam, trkTPCinnerParam, float[2]);
 DECLARE_SOA_COLUMN(TrkTOFsignal, trkTOFsignal, float[2]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaEl, trkTOFnSigmaEl, float[2]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaMu, trkTOFnSigmaMu, float[2]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaPi, trkTOFnSigmaPi, float[2]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaKa, trkTOFnSigmaKa, float[2]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaPr, trkTOFnSigmaPr, float[2]);
+DECLARE_SOA_COLUMN(TrkTPCexpMom, trkTPCexpMom, float[2]);
 
 } // namespace tau_tree
 DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
@@ -109,9 +112,9 @@ DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
                   tau_tree::Trs, tau_tree::Trofs, tau_tree::Hmpr, tau_tree::Tfb, tau_tree::ItsRofb, tau_tree::Sbp, tau_tree::ZvtxFT0vsPv, tau_tree::VtxITSTPC,
                   tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA,
                   tau_tree::TimeFT0A, tau_tree::TimeFT0C, tau_tree::TimeFV0A,
-                  tau_tree::TrkPx, tau_tree::TrkPy, tau_tree::TrkPz, tau_tree::TrkSign, tau_tree::TrkDCAxy, tau_tree::TrkDCAz,
-                  tau_tree::TrkTPCsignal, tau_tree::TrkTPCnSigmaEl, tau_tree::TrkTPCnSigmaMu, tau_tree::TrkTPCnSigmaPi, tau_tree::TrkTPCnSigmaKa, tau_tree::TrkTPCnSigmaPr,
-                  tau_tree::TrkTOFsignal, tau_tree::TrkTOFnSigmaEl, tau_tree::TrkTOFnSigmaMu, tau_tree::TrkTOFnSigmaPi, tau_tree::TrkTOFnSigmaKa, tau_tree::TrkTOFnSigmaPr);
+                  tau_tree::TrkPx, tau_tree::TrkPy, tau_tree::TrkPz, tau_tree::TrkSign, tau_tree::TrkDCAxy, tau_tree::TrkDCAz, tau_tree::TrkTimeRes,
+                  tau_tree::TrkTPCsignal, tau_tree::TrkTPCnSigmaEl, tau_tree::TrkTPCnSigmaMu, tau_tree::TrkTPCnSigmaPi, tau_tree::TrkTPCnSigmaKa, tau_tree::TrkTPCnSigmaPr, tau_tree::TrkTPCinnerParam,
+                  tau_tree::TrkTOFsignal, tau_tree::TrkTOFnSigmaEl, tau_tree::TrkTOFnSigmaMu, tau_tree::TrkTOFnSigmaPi, tau_tree::TrkTOFnSigmaKa, tau_tree::TrkTOFnSigmaPr, tau_tree::TrkTPCexpMom);
 
 } // namespace o2::aod
 
@@ -2112,27 +2115,30 @@ struct UpcTauRl {
       int sign[2] = {trk1.sign(), trk2.sign()};
       float dcaxy[2] = {trk1.dcaXY(), trk2.dcaXY()};
       float dcaz[2] = {trk1.dcaZ(), trk2.dcaZ()};
+      float trkTimeRes[2] = {trk1.trackTimeRes(),trk2.trackTimeRes()};
       float tpcSignal[2] = {trk1.tpcSignal(), trk2.tpcSignal()};
       float tpcEl[2] = {trk1.tpcNSigmaEl(), trk2.tpcNSigmaEl()};
       float tpcMu[2] = {trk1.tpcNSigmaMu(), trk2.tpcNSigmaMu()};
       float tpcPi[2] = {trk1.tpcNSigmaPi(), trk2.tpcNSigmaPi()};
       float tpcKa[2] = {trk1.tpcNSigmaKa(), trk2.tpcNSigmaKa()};
       float tpcPr[2] = {trk1.tpcNSigmaPr(), trk2.tpcNSigmaPr()};
+      float tpcIP[2] = {trk1.tpcInnerParam(), trk2.tpcInnerParam()};
       float tofSignal[2] = {trk1.tofSignal(), trk2.tofSignal()};
       float tofEl[2] = {trk1.tofNSigmaEl(), trk2.tofNSigmaEl()};
       float tofMu[2] = {trk1.tofNSigmaMu(), trk2.tofNSigmaMu()};
       float tofPi[2] = {trk1.tofNSigmaPi(), trk2.tofNSigmaPi()};
       float tofKa[2] = {trk1.tofNSigmaKa(), trk2.tofNSigmaKa()};
       float tofPr[2] = {trk1.tofNSigmaPr(), trk2.tofNSigmaPr()};
+      float tofEP[2] = {trk1.tofExpMom(), trk2.tofExpMom()};
 
       tauTwoTracks(collision.runNumber(), collision.globalBC(), countTracksPerCollision, collision.numContrib(), countGoodNonPVtracks, collision.posX(), collision.posY(), collision.posZ(),
                    collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.trofs(), collision.hmpr(),
                    collision.tfb(), collision.itsROFb(), collision.sbp(), collision.zVtxFT0vPV(), collision.vtxITSTPC(),
                    collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(),
                    collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(),
-                   px, py, pz, sign, dcaxy, dcaz,
-                   tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr,
-                   tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr);
+                   px, py, pz, sign, dcaxy, dcaz, trkTimeRes,
+                   tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
+                   tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP);
     } else {
       // Store info on what would rejected events
       bitsRejectTauEvent |= (1 << 0);
