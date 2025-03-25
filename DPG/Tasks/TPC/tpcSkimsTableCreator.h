@@ -34,6 +34,7 @@ DECLARE_SOA_COLUMN(NormNClustersTPC, normNClustersTPC, float);
 DECLARE_SOA_COLUMN(PidIndex, pidIndexTPC, uint8_t);
 DECLARE_SOA_COLUMN(NSigTPC, nsigTPC, float);
 DECLARE_SOA_COLUMN(NSigTOF, nsigTOF, float);
+DECLARE_SOA_COLUMN(NSigITS, nsigITS, float);
 DECLARE_SOA_COLUMN(AlphaV0, alphaV0, float);
 DECLARE_SOA_COLUMN(QtV0, qtV0, float);
 DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, float);
@@ -150,6 +151,7 @@ DECLARE_SOA_TABLE(SkimmedTPCTOFTreeWithTrkQA, "AOD", "TPCTOFSKIMWQA",
                   tpcskims::PidIndex,
                   tpcskims::NSigTPC,
                   tpcskims::NSigTOF,
+                  tpcskims::NSigITS,
                   tpcskims::RunNumber,
                   tpcskims::TrackOcc,
                   tpcskims::Ft0Occ,
