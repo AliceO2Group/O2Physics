@@ -1882,7 +1882,7 @@ struct StrangenessInJets {
   PROCESS_SWITCH(StrangenessInJets, processMCefficiency, "Process MC Efficiency", false);
 
   void processGen(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
-  {      
+  {
     for (const auto& mccollision : mcCollisions) {
 
       // Selection on z_{vertex}
@@ -2035,7 +2035,7 @@ struct StrangenessInJets {
                 break;
               case -3334:
                 registryMC.fill(HIST("AntiOmega_eta_pt_ue"), particle.pt(), particle.eta());
-                break;         
+                break;
               default:
                 continue;
             }
