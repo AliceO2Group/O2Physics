@@ -438,8 +438,8 @@ struct FemtoCorrelations {
 
         pHisto_first->Fill(track.p());
         ITShisto_first->Fill(track.p(), o2::aod::singletrackselector::getITSNsigma(track, _particlePDG_1));
-        ITShisto_first->Fill(track.p(), o2::aod::singletrackselector::getTPCNsigma(track, _particlePDG_1));
-        ITShisto_first->Fill(track.p(), o2::aod::singletrackselector::getTOFNsigma(track, _particlePDG_1));
+        TPChisto_first->Fill(track.p(), o2::aod::singletrackselector::getTPCNsigma(track, _particlePDG_1));
+        TOFhisto_first->Fill(track.p(), o2::aod::singletrackselector::getTOFNsigma(track, _particlePDG_1));
       }
 
       if (IsIdentical) {
@@ -449,8 +449,8 @@ struct FemtoCorrelations {
 
         pHisto_second->Fill(track.p());
         ITShisto_second->Fill(track.p(), o2::aod::singletrackselector::getITSNsigma(track, _particlePDG_2));
-        ITShisto_second->Fill(track.p(), o2::aod::singletrackselector::getTPCNsigma(track, _particlePDG_2));
-        ITShisto_second->Fill(track.p(), o2::aod::singletrackselector::getTOFNsigma(track, _particlePDG_2));
+        TPChisto_second->Fill(track.p(), o2::aod::singletrackselector::getTPCNsigma(track, _particlePDG_2));
+        TOFhisto_second->Fill(track.p(), o2::aod::singletrackselector::getTOFNsigma(track, _particlePDG_2));
       }
     }
 
