@@ -17,7 +17,7 @@
 #include "Framework/runDataProcessing.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/StepTHn.h"
-#include <TTree.h>
+//#include <TTree.h>
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
@@ -35,7 +35,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-namespace o2::aod{
+/*namespace o2::aod{
   namespace tree{
     DECLARE_SOA_COLUMN(PT, Pt, float);
     DECLARE_SOA_COLUMN(RAP, rap, float);
@@ -45,13 +45,15 @@ namespace o2::aod{
                     tree::PT,
                     tree::RAP,
                     tree::PHI);
-} // namespace o2:aod
+}*/ // namespace o2:aod
+
+DECLARE_SOA_COLUMN(FakeMult, fakeMult, float);
 
 static constexpr float cfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
 
 struct upcPhotonuclearAnalysisJMG {
 
-  Produces<aod::TREE> tree;
+  //Produces<aod::TREE> tree;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Declare configurables on events/collisions
@@ -174,7 +176,7 @@ struct upcPhotonuclearAnalysisJMG {
     histos.add("Tracks/SGsideA/hTrackTPCChi2NCls", "#it{N Clusters Chi2 TPC} distribution; #it{N Clusters Chi2 TPC}; counts", kTH1F, {axisChi2NCls});
     histos.add("Tracks/SGsideA/hTrackITSNClsTPCCls", "#it{ITS Clusters vs TPC Clusters}; #it{TPC Clusters}; #it{ITS Clusters}", kTH2F, {axisNCls, axisNCls});
 
-    histos.add("Events/SGsideA/hTrackZVtx", "vertex in z; z (cm); counts", kTH1F, {axisZvtx});
+    histos.add("Events/SGsideA/hZVtx", "vertex in z; z (cm); counts", kTH1F, {axisZvtx});
     histos.add("Events/SGsideA/hNch", "#it{Charged Tracks Multiplicity} distribution; #it{Charged Tracks Multiplicity}; counts", kTH1F, {axisNch});
     histos.add("Events/SGsideA/hPtVSNch", "#it{ #LT p_{T} #GT } vs #it{Charged Tracks Multiplicity}; #it{Charged Tracks Multiplicity}; #it{ #LT p_{T} #GT }", kTH2F, {axisNch, axisPt});
     histos.add("Events/SGsideA/hEnergyZNA", "Energy in side A distribution; Energy in side A; counts", kTH1F, {axisZNEnergy});
@@ -203,7 +205,7 @@ struct upcPhotonuclearAnalysisJMG {
     histos.add("Tracks/SGsideC/hTrackTPCChi2NCls", "#it{N Clusters Chi2 TPC} distribution; #it{N Clusters Chi2 TPC}; counts", kTH1F, {axisChi2NCls});
     histos.add("Tracks/SGsideC/hTrackITSNClsTPCCls", "#it{ITS Clusters vs TPC Clusters}; #it{TPC Clusters}; #it{ITS Clusters}", kTH2F, {axisNCls, axisNCls});
 
-    histos.add("Events/SGsideC/hTrackZVtx", "vertex in z; z (cm); counts", kTH1F, {axisZvtx});
+    histos.add("Events/SGsideC/hZVtx", "vertex in z; z (cm); counts", kTH1F, {axisZvtx});
     histos.add("Events/SGsideC/hNch", "#it{Charged Tracks Multiplicity} distribution; #it{Charged Tracks Multiplicity}; counts", kTH1F, {axisNch});
     histos.add("Events/SGsideC/hPtVSNch", "#it{ #LT p_{T} #GT } vs #it{Charged Tracks Multiplicity}; #it{Charged Tracks Multiplicity}; #it{ #LT p_{T} #GT }", kTH2F, {axisNch, axisPt});
     histos.add("Events/SGsideC/hEnergyZNA", "Energy in side A distribution; Energy in side A; counts", kTH1F, {axisZNEnergy});
@@ -228,7 +230,7 @@ struct upcPhotonuclearAnalysisJMG {
     histos.add("Tracks/SGsideBoth/hTrackTPCChi2NCls", "#it{N Clusters Chi2 TPC} distribution; #it{N Clusters Chi2 TPC}; counts", kTH1F, {axisChi2NCls});
     histos.add("Tracks/SGsideBoth/hTrackITSNClsTPCCls", "#it{ITS Clusters vs TPC Clusters}; #it{TPC Clusters}; #it{ITS Clusters}", kTH2F, {axisNCls, axisNCls});
 
-    histos.add("Events/SGsideBoth/hTrackZVtx", "vertex in z; z (cm); counts", kTH1F, {axisZvtx});
+    histos.add("Events/SGsideBoth/hZVtx", "vertex in z; z (cm); counts", kTH1F, {axisZvtx});
     histos.add("Events/SGsideBoth/hNch", "#it{Charged Tracks Multiplicity} distribution; #it{Charged Tracks Multiplicity}; counts", kTH1F, {axisNch});
     histos.add("Events/SGsideBoth/hPtVSNch", "#it{ #LT p_{T} #GT } vs #it{Charged Tracks Multiplicity}; #it{Charged Tracks Multiplicity}; #it{ #LT p_{T} #GT }", kTH2F, {axisNch, axisPt});
     histos.add("Events/SGsideBoth/hEnergyZNA", "Energy in side A distribution; Energy in side A; counts", kTH1F, {axisZNEnergy});
@@ -254,15 +256,23 @@ struct upcPhotonuclearAnalysisJMG {
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
   }
 
-  std::vector<double> vtxBinsEdges{VARIABLE_WIDTH, -7.0f, -5.0f, -3.0f, -1.0f, 1.0f, 3.0f, 5.0f, 7.0f};
+  std::vector<double> vtxBinsEdges{VARIABLE_WIDTH, -10.0f, 0.0f, 10.0f};
+  std::vector<double> multBinsEdges{VARIABLE_WIDTH, 0.0f, 50.0f, 400.0f};
   SliceCache cache;
 
-  // Binning only on PosZ without centrality
-  ColumnBinningPolicy<aod::collision::PosZ> bindingOnVtx{{vtxBinsEdges}, true};
 
-  SameKindPair<soa::Filtered<soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>>,
-               soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksFlags>>,
-               ColumnBinningPolicy<aod::collision::PosZ>> pair{bindingOnVtx, 5, -1, &cache};
+  // Binning only on PosZ without centrality
+  ColumnBinningPolicy<aod::UDCollision::PosZ, o2::aod::udcollision::TotalFT0AmplitudeC> bindingOnVtx{{vtxBinsEdges, multBinsEdges}, true};
+  //ColumnBinningPolicy<aod::UDCollision::PosZ> bindingOnVtx{{vtxBinsEdges}, true};
+
+  SameKindPair<soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>,
+               FullUDTracks,
+               ColumnBinningPolicy<aod::UDCollision::PosZ, o2::aod::udcollision::TotalFT0AmplitudeC>>
+               pair{bindingOnVtx, 3, -1, &cache};
+
+  /*SameKindPair<soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>,
+               FullUDTracks,
+               ColumnBinningPolicy<aod::UDCollision::PosZ>> pair{bindingOnVtx, 5, -1, &cache};*/
 
   template <typename C>
   bool isGlobalCollisionCut(C const& collision)
@@ -422,9 +432,9 @@ struct upcPhotonuclearAnalysisJMG {
       return;
     }
 
-    float centrality = 50.0;
+    //float centrality = 50.0;
     switch (SGside) {
-      case 0: // for side A
+      case 0: // gap for side A
         if (isCollisionCutSG(reconstructedCollision, 0) == false) {
           return;
         }
@@ -435,7 +445,7 @@ struct upcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideA/hTimeZNA"), reconstructedCollision.timeZNA());
         histos.fill(HIST("Events/SGsideA/hTimeZNC"), reconstructedCollision.timeZNC());
         histos.fill(HIST("Events/SGsideA/hTimeRelationSides"), reconstructedCollision.timeZNA(), reconstructedCollision.timeZNC());
-        histos.fill(HIST("Events/SGsideA/hTrackZVtx"), reconstructedCollision.posZ());
+        histos.fill(HIST("Events/SGsideA/hZVtx"), reconstructedCollision.posZ());
         histos.fill(HIST("Events/SGsideA/hAmplitudFT0A"), reconstructedCollision.totalFT0AmplitudeA());
         histos.fill(HIST("Events/SGsideA/hAmplitudFT0C"), reconstructedCollision.totalFT0AmplitudeC());
         for (auto& track : reconstructedTracks) {
@@ -446,7 +456,7 @@ struct upcPhotonuclearAnalysisJMG {
             nTracksCharged++;
             sumPt += track.pt();
             // filling tree
-            tree(track.pt(), eta(track.px(), track.py(), track.pz()), phi(track.px(), track.py()));
+            //tree(track.pt(), eta(track.px(), track.py(), track.pz()), phi(track.px(), track.py()));
             histos.fill(HIST("Tracks/SGsideA/hTrackPt"), track.pt());
             histos.fill(HIST("Tracks/SGsideA/hTrackPhi"), phi(track.px(), track.py()));
             histos.fill(HIST("Tracks/SGsideA/hTrackEta"), eta(track.px(), track.py(), track.pz()));
@@ -473,7 +483,7 @@ struct upcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideA/hPtVSNch"), nTracksCharged, (sumPt / nTracksCharged));
         nTracksCharged = sumPt = 0;
         break;
-      case 1: // for side C
+      case 1: // gap for side C
         if (isCollisionCutSG(reconstructedCollision, 1) == false) {
           return;
         }
@@ -484,7 +494,7 @@ struct upcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideC/hTimeZNA"), reconstructedCollision.timeZNA());
         histos.fill(HIST("Events/SGsideC/hTimeZNC"), reconstructedCollision.timeZNC());
         histos.fill(HIST("Events/SGsideC/hTimeRelationSides"), reconstructedCollision.timeZNA(), reconstructedCollision.timeZNC());
-        histos.fill(HIST("Events/SGsideC/hTrackZVtx"), reconstructedCollision.posZ());
+        histos.fill(HIST("Events/SGsideC/hZVtx"), reconstructedCollision.posZ());
         histos.fill(HIST("Events/SGsideC/hAmplitudFT0A"), reconstructedCollision.totalFT0AmplitudeA());
         histos.fill(HIST("Events/SGsideC/hAmplitudFT0C"), reconstructedCollision.totalFT0AmplitudeC());
         for (auto& track : reconstructedTracks) {
@@ -527,7 +537,7 @@ struct upcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideBoth/hTimeZNA"), reconstructedCollision.timeZNA());
         histos.fill(HIST("Events/SGsideBoth/hTimeZNC"), reconstructedCollision.timeZNC());
         histos.fill(HIST("Events/SGsideBoth/hTimeRelationSides"), reconstructedCollision.timeZNA(), reconstructedCollision.timeZNC());
-        histos.fill(HIST("Events/SGsideBoth/hTrackZVtx"), reconstructedCollision.posZ());
+        histos.fill(HIST("Events/SGsideBoth/hZVtx"), reconstructedCollision.posZ());
         histos.fill(HIST("Events/SGsideBoth/hAmplitudFT0A"), reconstructedCollision.totalFT0AmplitudeA());
         histos.fill(HIST("Events/SGsideBoth/hAmplitudFT0C"), reconstructedCollision.totalFT0AmplitudeC());
         for (auto& track : reconstructedTracks) {
@@ -575,18 +585,19 @@ struct upcPhotonuclearAnalysisJMG {
 
     float centrality = 100.0;
     switch (SGside) {
-      case 0: // for side A
+      case 0: // gap for side A
         if (isCollisionCutSG(reconstructedCollision, 0) == false) {
           return;
         }
         if (fillCollisionUD(same, reconstructedCollision, centrality) == false) {
           return;
         }
+        LOGF(info, "Filling same events");
         histos.fill(HIST("eventcount"), -2);
         fillQAUD(reconstructedCollision, centrality, reconstructedTracks);
         fillCorrelationsUD(same, reconstructedTracks, reconstructedTracks, centrality, reconstructedCollision.posZ());
         break;
-      case 1: // for side C
+      case 1: // gap for side C
         if (isCollisionCutSG(reconstructedCollision, 1) == false) {
           return;
         }
@@ -596,6 +607,7 @@ struct upcPhotonuclearAnalysisJMG {
         break;
     }
   }
+
   PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSame, "Process same event", true);
 
   void processMixed(FullSGUDCollision const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
@@ -605,21 +617,30 @@ struct upcPhotonuclearAnalysisJMG {
     if (isGlobalCollisionCut(reconstructedCollision) == false) {
       return;
     }
-
+    //LOGF(info, "Process mixed events");
+    //LOGF(info, ">>> Collision posZ: %f", reconstructedCollision.posZ());
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+      if (collision1.size() == 0 || collision2.size() == 0) {
+        LOGF(info, "One or both collisions are empty.");
+        continue;
+      }
+      //LOGF(info, "Mixed event collisions: (%d, %d)", collision1.globalIndex(), collision2.globalIndex());
       float centrality = 100.0;
+      LOGF(info, "Filling mixed events");
       switch (SGside) {
-        case 0: // for side A
+        case 0: // gap for side A
           if (isCollisionCutSG(reconstructedCollision, 0) == false) {
             return;
           }
           if (fillCollisionUD(mixed, collision1, centrality) == false) {
             return;
           }
-          histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
+          //LOGF(info, ">>> Bin of collision: ", bindingOnVtx.getBin({collision1.posZ()}));
+          histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ(), collision1.totalFT0AmplitudeC()}));
+          //histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
           fillCorrelationsUD(mixed, tracks1, tracks2, centrality, collision1.posZ());
           break;
-        case 1: // for side C
+        case 1: // gap for side C
           if (isCollisionCutSG(reconstructedCollision, 1) == false) {
             return;
           }
@@ -631,6 +652,7 @@ struct upcPhotonuclearAnalysisJMG {
     }
 
   }
+
   PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processMixed, "Process mixed events", true);
 };
 
