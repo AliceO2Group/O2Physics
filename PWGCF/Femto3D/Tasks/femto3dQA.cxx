@@ -83,6 +83,10 @@ struct QAHistograms {
   std::pair<int, std::vector<float>> TPCcuts;
   std::pair<int, std::vector<float>> TOFcuts;
 
+  std::shared_ptr<TH2> ITShisto;
+  std::shared_ptr<TH2> TPChisto;
+  std::shared_ptr<TH2> TOFhisto;
+
   Filter signFilter = o2::aod::singletrackselector::sign == _sign;
   Filter pFilter = o2::aod::singletrackselector::p > _min_P&& o2::aod::singletrackselector::p < _max_P;
   Filter etaFilter = nabs(o2::aod::singletrackselector::eta) < _eta;
@@ -145,40 +149,9 @@ struct QAHistograms {
     registry.add("TPCSignal", "TPC Signal", kTH2F, {{{200, 0., 5.0, "#it{p}_{inner} (GeV/#it{c})"}, {1000, 0., 1000.0, "dE/dx in TPC (arbitrary units)"}}});
     registry.add("TOFSignal", "TOF Signal", kTH2F, {{200, 0., 5.0, "#it{p} (GeV/#it{c})"}, {100, 0., 1.5, "#beta"}});
 
-    switch (_particlePDG) {
-      case 211:
-        registry.add("nsigmaTOFPi", "nsigmaTOFPi", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaTPCPi", "nsigmaTPCPi", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaITSPi", "nsigmaITSPi", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        break;
-      case 321:
-        registry.add("nsigmaTOFKa", "nsigmaTOFKa", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaTPCKa", "nsigmaTPCKa", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaITSKa", "nsigmaITSKa", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        break;
-      case 2212:
-        registry.add("nsigmaTOFPr", "nsigmaTOFPr", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaTPCPr", "nsigmaTPCPr", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaITSPr", "nsigmaITSPr", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        break;
-      case 1000010020:
-        registry.add("nsigmaTOFDe", "nsigmaTOFDe", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaTPCDe", "nsigmaTPCDe", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaITSDe", "nsigmaITSDe", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        break;
-      case 1000010030:
-        registry.add("nsigmaTOFTr", "nsigmaTOFTr", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaTPCTr", "nsigmaTPCTr", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaITSTr", "nsigmaITSTr", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        break;
-      case 1000020030:
-        registry.add("nsigmaTOFHe", "nsigmaTOFHe", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaTPCHe", "nsigmaTPCHe", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        registry.add("nsigmaITSHe", "nsigmaITSHe", kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-        break;
-      default:
-        break;
-    }
+    ITShisto = registry.add<TH2>(Form("nsigmaITS_PDG%i", _particlePDG.value), Form("nsigmaITS_PDG%i", _particlePDG.value), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
+    TPChisto = registry.add<TH2>(Form("nsigmaTPC_PDG%i", _particlePDG.value), Form("nsigmaTPC_PDG%i", _particlePDG.value), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
+    TOFhisto = registry.add<TH2>(Form("nsigmaTOF_PDG%i", _particlePDG.value), Form("nsigmaTOF_PDG%i", _particlePDG.value), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
 
     const AxisSpec axisMult{5001, -0.5, 5000.5, "mult."};
     const AxisSpec axisPerc{101, -0.5, 100.5, "percentile"};
@@ -215,7 +188,7 @@ struct QAHistograms {
       registry.fill(HIST("IRvsOccupancy"), collision.occupancy(), collision.hadronicRate());
     }
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
 
       if (_removeSameBunchPileup && !track.template singleCollSel_as<ColsType>().isNoSameBunchPileup())
         continue;
@@ -266,40 +239,9 @@ struct QAHistograms {
         registry.fill(HIST("ITSchi2"), track.itsChi2NCl());
         registry.fill(HIST("TPCchi2"), track.tpcChi2NCl());
 
-        switch (_particlePDG) {
-          case 211:
-            registry.fill(HIST("nsigmaTOFPi"), track.p(), track.tofNSigmaPi());
-            registry.fill(HIST("nsigmaTPCPi"), track.p(), track.tpcNSigmaPi());
-            registry.fill(HIST("nsigmaITSPi"), track.p(), track.itsNSigmaPi());
-            break;
-          case 321:
-            registry.fill(HIST("nsigmaTOFKa"), track.p(), track.tofNSigmaKa());
-            registry.fill(HIST("nsigmaTPCKa"), track.p(), track.tpcNSigmaKa());
-            registry.fill(HIST("nsigmaITSKa"), track.p(), track.itsNSigmaKa());
-            break;
-          case 2212:
-            registry.fill(HIST("nsigmaTOFPr"), track.p(), track.tofNSigmaPr());
-            registry.fill(HIST("nsigmaTPCPr"), track.p(), track.tpcNSigmaPr());
-            registry.fill(HIST("nsigmaITSPr"), track.p(), track.itsNSigmaPr());
-            break;
-          case 1000010020:
-            registry.fill(HIST("nsigmaTOFDe"), track.p(), track.tofNSigmaDe());
-            registry.fill(HIST("nsigmaTPCDe"), track.p(), track.tpcNSigmaDe());
-            registry.fill(HIST("nsigmaITSDe"), track.p(), track.itsNSigmaDe());
-            break;
-          case 1000010030:
-            registry.fill(HIST("nsigmaTOFTr"), track.p(), track.tofNSigmaTr());
-            registry.fill(HIST("nsigmaTPCTr"), track.p(), track.tpcNSigmaTr());
-            registry.fill(HIST("nsigmaITSTr"), track.p(), track.itsNSigmaTr());
-            break;
-          case 1000020030:
-            registry.fill(HIST("nsigmaTOFHe"), track.p(), track.tofNSigmaHe());
-            registry.fill(HIST("nsigmaTPCHe"), track.p(), track.tpcNSigmaHe());
-            registry.fill(HIST("nsigmaITSHe"), track.p(), track.itsNSigmaHe());
-            break;
-          default:
-            break;
-        }
+        ITShisto->Fill(track.p(), o2::aod::singletrackselector::getITSNsigma(track, _particlePDG));
+        TPChisto->Fill(track.p(), o2::aod::singletrackselector::getTPCNsigma(track, _particlePDG));
+        TOFhisto->Fill(track.p(), o2::aod::singletrackselector::getTOFNsigma(track, _particlePDG));
 
         if constexpr (FillExtra) {
           registry.fill(HIST("TPCSignal"), track.tpcInnerParam(), track.tpcSignal());
@@ -309,13 +251,15 @@ struct QAHistograms {
     }
   }
 
-  void processDefault(soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>> const& collisions, soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>> const& tracks)
+  // void processDefault(soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>> const& collisions, soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>> const& tracks) // main
+  void processDefault(soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>> const& collisions, soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SinglePIDPrs, aod::SinglePIDDes>> const& tracks) // tmp solution till the HL is fixed
   {
     fillHistograms<false>(collisions, tracks);
   }
   PROCESS_SWITCH(QAHistograms, processDefault, "process default", true);
 
-  void processExtra(soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>> const& collisions, soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkExtras, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>> const& tracks)
+  // void processExtra(soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>> const& collisions, soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkExtras, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>> const& tracks) // main
+  void processExtra(soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>> const& collisions, soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkExtras, aod::SinglePIDPrs, aod::SinglePIDDes>> const& tracks) // tmp solution till the HL is fixed
   {
     fillHistograms<true>(collisions, tracks);
   }

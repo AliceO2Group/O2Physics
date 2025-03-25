@@ -123,7 +123,8 @@ struct FemtoCorrelations {
   std::pair<int, std::vector<float>> TOFcuts_2;
 
   using FilteredCollisions = soa::Join<aod::SingleCollSels, aod::SingleCollExtras>;
-  using FilteredTracks = soa::Join<aod::SingleTrackSels, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>;
+  // using FilteredTracks = soa::Join<aod::SingleTrackSels, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>; // main
+  using FilteredTracks = soa::Join<aod::SingleTrackSels, aod::SinglePIDPrs, aod::SinglePIDDes>; // tmp solution till the HL is fixed
 
   typedef std::shared_ptr<soa::Filtered<FilteredTracks>::iterator> trkType;
   typedef std::shared_ptr<soa::Filtered<FilteredCollisions>::iterator> colType;
@@ -144,6 +145,16 @@ struct FemtoCorrelations {
   Filter itsTrkFilter = o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedItsChi2NCl) < _itsChi2NCl;
 
   Filter vertexFilter = nabs(o2::aod::singletrackselector::posZ) < _vertexZ;
+
+  std::shared_ptr<TH1> pHisto_first; // momentum histogram for the first particle
+  std::shared_ptr<TH2> ITShisto_first;
+  std::shared_ptr<TH2> TPChisto_first;
+  std::shared_ptr<TH2> TOFhisto_first;
+
+  std::shared_ptr<TH1> pHisto_second; // momentum histogram for the second particle
+  std::shared_ptr<TH2> ITShisto_second;
+  std::shared_ptr<TH2> TPChisto_second;
+  std::shared_ptr<TH2> TOFhisto_second;
 
   std::vector<std::shared_ptr<TH1>> MultHistos;
   std::vector<std::vector<std::shared_ptr<TH1>>> kThistos;
@@ -262,13 +273,16 @@ struct FemtoCorrelations {
       }
     }
 
-    registry.add("p_first", Form("p_%i", static_cast<int>(_particlePDG_1)), kTH1F, {{100, 0., 5., "p"}});
-    registry.add("nsigmaTOF_first", Form("nsigmaTOF_%i", static_cast<int>(_particlePDG_1)), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-    registry.add("nsigmaTPC_first", Form("nsigmaTPC_%i", static_cast<int>(_particlePDG_1)), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
+    pHisto_first = registry.add<TH1>(Form("p_%i", _particlePDG_1.value), Form("p_%i", _particlePDG_1.value), kTH1F, {{100, 0., 5., "p"}});
+    ITShisto_first = registry.add<TH2>(Form("nsigmaITS_PDG%i", _particlePDG_1.value), Form("nsigmaITS_PDG%i", _particlePDG_1.value), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
+    TPChisto_first = registry.add<TH2>(Form("nsigmaTPC_PDG%i", _particlePDG_1.value), Form("nsigmaTPC_PDG%i", _particlePDG_1.value), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
+    TOFhisto_first = registry.add<TH2>(Form("nsigmaTOF_PDG%i", _particlePDG_1.value), Form("nsigmaTOF_PDG%i", _particlePDG_1.value), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
+
     if (!IsIdentical) {
-      registry.add("p_second", Form("p_%i", static_cast<int>(_particlePDG_2)), kTH1F, {{100, 0., 5., "p"}});
-      registry.add("nsigmaTOF_second", Form("nsigmaTOF_%i", static_cast<int>(_particlePDG_2)), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
-      registry.add("nsigmaTPC_second", Form("nsigmaTPC_%i", static_cast<int>(_particlePDG_2)), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
+      pHisto_second = registry.add<TH1>(Form("p_%i", _particlePDG_2.value), Form("p_%i", _particlePDG_2.value), kTH1F, {{100, 0., 5., "p"}});
+      ITShisto_second = registry.add<TH2>(Form("nsigmaITS_PDG%i", _particlePDG_2.value), Form("nsigmaITS_PDG%i", _particlePDG_2.value), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
+      TPChisto_second = registry.add<TH2>(Form("nsigmaTPC_PDG%i", _particlePDG_2.value), Form("nsigmaTPC_PDG%i", _particlePDG_2.value), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
+      TOFhisto_second = registry.add<TH2>(Form("nsigmaTOF_PDG%i", _particlePDG_2.value), Form("nsigmaTOF_PDG%i", _particlePDG_2.value), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
     }
   }
 
@@ -395,7 +409,7 @@ struct FemtoCorrelations {
     if (_particlePDG_1 == 0 || _particlePDG_2 == 0)
       LOGF(fatal, "One of passed PDG is 0!!!");
 
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       if (std::fabs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > _vertexZ)
         continue;
       if (_removeSameBunchPileup && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
@@ -420,53 +434,27 @@ struct FemtoCorrelations {
         continue;
 
       if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection<true>(track, TPCcuts_1, _itsNSigma_1.value) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1.value))) { // filling the map: eventID <-> selected particles1
-        selectedtracks_1[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
+        selectedtracks_1[track.singleCollSelId()].push_back(std::make_shared<soa::Filtered<FilteredTracks>::iterator>(track));
 
-        registry.fill(HIST("p_first"), track.p());
-        if (_particlePDG_1 == 211) {
-          registry.fill(HIST("nsigmaTOF_first"), track.p(), track.tofNSigmaPi());
-          registry.fill(HIST("nsigmaTPC_first"), track.p(), track.tpcNSigmaPi());
-        }
-        if (_particlePDG_1 == 321) {
-          registry.fill(HIST("nsigmaTOF_first"), track.p(), track.tofNSigmaKa());
-          registry.fill(HIST("nsigmaTPC_first"), track.p(), track.tpcNSigmaKa());
-        }
-        if (_particlePDG_1 == 2212) {
-          registry.fill(HIST("nsigmaTOF_first"), track.p(), track.tofNSigmaPr());
-          registry.fill(HIST("nsigmaTPC_first"), track.p(), track.tpcNSigmaPr());
-        }
-        if (_particlePDG_1 == 1000010020) {
-          registry.fill(HIST("nsigmaTOF_first"), track.p(), track.tofNSigmaDe());
-          registry.fill(HIST("nsigmaTPC_first"), track.p(), track.tpcNSigmaDe());
-        }
+        pHisto_first->Fill(track.p());
+        ITShisto_first->Fill(track.p(), o2::aod::singletrackselector::getITSNsigma(track, _particlePDG_1));
+        TPChisto_first->Fill(track.p(), o2::aod::singletrackselector::getTPCNsigma(track, _particlePDG_1));
+        TOFhisto_first->Fill(track.p(), o2::aod::singletrackselector::getTOFNsigma(track, _particlePDG_1));
       }
 
       if (IsIdentical) {
         continue;
       } else if (track.sign() != _sign_2 && !TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection<true>(track, TPCcuts_2, _itsNSigma_2.value) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2, _tpcNSigmaResidual_2.value))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
-        selectedtracks_2[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
+        selectedtracks_2[track.singleCollSelId()].push_back(std::make_shared<soa::Filtered<FilteredTracks>::iterator>(track));
 
-        registry.fill(HIST("p_second"), track.p());
-        if (_particlePDG_2 == 211) {
-          registry.fill(HIST("nsigmaTOF_second"), track.p(), track.tofNSigmaPi());
-          registry.fill(HIST("nsigmaTPC_second"), track.p(), track.tpcNSigmaPi());
-        }
-        if (_particlePDG_2 == 321) {
-          registry.fill(HIST("nsigmaTOF_second"), track.p(), track.tofNSigmaKa());
-          registry.fill(HIST("nsigmaTPC_second"), track.p(), track.tpcNSigmaKa());
-        }
-        if (_particlePDG_2 == 2212) {
-          registry.fill(HIST("nsigmaTOF_second"), track.p(), track.tofNSigmaPr());
-          registry.fill(HIST("nsigmaTPC_second"), track.p(), track.tpcNSigmaPr());
-        }
-        if (_particlePDG_2 == 1000010020) {
-          registry.fill(HIST("nsigmaTOF_second"), track.p(), track.tofNSigmaDe());
-          registry.fill(HIST("nsigmaTPC_second"), track.p(), track.tpcNSigmaDe());
-        }
+        pHisto_second->Fill(track.p());
+        ITShisto_second->Fill(track.p(), o2::aod::singletrackselector::getITSNsigma(track, _particlePDG_2));
+        TPChisto_second->Fill(track.p(), o2::aod::singletrackselector::getTPCNsigma(track, _particlePDG_2));
+        TOFhisto_second->Fill(track.p(), o2::aod::singletrackselector::getTOFNsigma(track, _particlePDG_2));
       }
     }
 
-    for (auto collision : collisions) {
+    for (const auto& collision : collisions) {
       if (collision.multPerc() < *_centBins.value.begin() || collision.multPerc() >= *(_centBins.value.end() - 1))
         continue;
       if (collision.hadronicRate() < _IRcut.value.first || collision.hadronicRate() >= _IRcut.value.second)
@@ -494,7 +482,7 @@ struct FemtoCorrelations {
       int vertexBinToMix = std::floor((collision.posZ() + _vertexZ) / (2 * _vertexZ / _vertexNbinsToMix));
       float centBinToMix = o2::aod::singletrackselector::getBinIndex<float>(collision.multPerc(), _centBins, _multNsubBins);
 
-      mixbins[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision)>(collision));
+      mixbins[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<soa::Filtered<FilteredCollisions>::iterator>(collision));
     }
 
     //====================================== mixing starts here ======================================
