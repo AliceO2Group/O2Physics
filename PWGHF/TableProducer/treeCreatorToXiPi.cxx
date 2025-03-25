@@ -417,7 +417,6 @@ struct HfTreeCreatorToXiPi {
       debugMc,
       originMc,
       collisionMatched);
-    
     if (fillCollIdTable) {
       /// save also candidate collision indices
       rowCollisionId(
