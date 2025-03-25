@@ -2082,7 +2082,6 @@ struct UpcTauRl {
 
     int countTracksPerCollision = 0;
     int countGoodNonPVtracks = 0;
-    int countBadTracks = 0;
     int countPVGTel = 0;
     int countPVGTmupi = 0;
     std::vector<int> vecTrkIdx;
