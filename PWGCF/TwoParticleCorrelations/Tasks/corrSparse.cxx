@@ -81,7 +81,6 @@ struct CalcNch {
 
   void process(AodCollisions::iterator const& collision, AodTracks const& tracks)
   {
-    // LOGF(info, "multiplicity from tracks %d, multiplicity from collision %d", tracks.size(), collision.numContrib());
     multiplicityNch(tracks.size());
     registry.fill(HIST("Ncharge"), tracks.size());
     registry.fill(HIST("zVtx_all"), collision.posZ());
@@ -183,6 +182,8 @@ struct CorrSparse {
     MixedEvent = 3
   };
 
+  TRandom3* gRandom = new TRandom3();
+
   template <typename TTrackAssoc>
   bool isAcceptedMftTrack(TTrackAssoc const& mftTrack)
   {
@@ -256,7 +257,6 @@ struct CorrSparse {
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
   void fillCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float Nch, int magneticField) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
-    TRandom3* gRandom = new TRandom3();
 
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
