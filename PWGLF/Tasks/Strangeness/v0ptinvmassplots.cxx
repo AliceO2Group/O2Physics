@@ -369,16 +369,16 @@ struct V0PtInvMassPlots {
               if (!v0mcParticle.isPhysicalPrimary()) {
                 auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>(); // Get mothers
                 if (!v0mothers.empty()) {
-                  auto& v0mcParticleMother = v0mothers.front(); // First mother
-                  if (v0mcParticleMother.pdgCode() == 3312)     // Xi Minus Mother Matched
+                  auto& v0mcParticleMother = v0mothers.front();     // First mother
+                  if (v0mcParticleMother.pdgCode() == Pdg::XiMinus) // Xi Minus Mother Matched
                   {
                     rFeeddownMatrices.fill(HIST("hLambdaXiMinusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
                   }
-                  if (v0mcParticleMother.pdgCode() == 3322) // Xi Zero Mother Matched
+                  if (v0mcParticleMother.pdgCode() == Pdg::Xi0) // Xi Zero Mother Matched
                   {
                     rFeeddownMatrices.fill(HIST("hLambdaXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
                   }
-                  if (v0mcParticleMother.pdgCode() == 3334) // Omega Mother Matched
+                  if (v0mcParticleMother.pdgCode() == Pdg::OmegaMinus) // Omega Mother Matched
                   {
                     rFeeddownMatrices.fill(HIST("hLambdaOmegaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
                   }
@@ -413,15 +413,15 @@ struct V0PtInvMassPlots {
               auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>(); // Get mothers
               if (!v0mothers.empty()) {
                 auto& v0mcParticleMother = v0mothers.front(); // First mother
-                if (v0mcParticleMother.pdgCode() == -3312)    // Xi Plus Mother Matched
+                if (v0mcParticleMother.pdgCode() == XiPlus)   // Xi Plus Mother Matched
                 {
                   rFeeddownMatrices.fill(HIST("hAntiLambdaXiPlusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
                 }
-                if (v0mcParticleMother.pdgCode() == -3322) // Anti-Xi Zero Mother Matched
+                if (v0mcParticleMother.pdgCode() == AntiXi0) // Anti-Xi Zero Mother Matched
                 {
                   rFeeddownMatrices.fill(HIST("hAntiLambdaAntiXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
                 }
-                if (v0mcParticleMother.pdgCode() == -3334) // Anti-Omega (minus) Mother Matched
+                if (v0mcParticleMother.pdgCode() == AntiOmegaPlus) // Anti-Omega (minus) Mother Matched
                 {
                   rFeeddownMatrices.fill(HIST("hAntiLambdaAntiOmegaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
                 }
