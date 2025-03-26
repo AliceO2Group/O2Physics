@@ -630,7 +630,7 @@ struct StrangenessBuilder {
     // mmark this run as configured
     mRunNumber = bc.runNumber();
 
-    if(v0BuilderOpts.generatePhotonCandidates.value && v0BuilderOpts.moveTPCOnlyTracks.value){
+    if (v0BuilderOpts.generatePhotonCandidates.value && v0BuilderOpts.moveTPCOnlyTracks.value) {
       // initialize only if needed, avoid unnecessary CCDB calls
       mVDriftMgr.init(&ccdb->instance());
       mVDriftMgr.update(timestamp);
@@ -1150,27 +1150,27 @@ struct StrangenessBuilder {
       auto negTrackPar = getTrackParCov(negTrack);
 
       // handle TPC-only tracks properly (photon conversions)
-      if(v0BuilderOpts.moveTPCOnlyTracks){ 
+      if (v0BuilderOpts.moveTPCOnlyTracks) {
         bool isPosTPCOnly = (posTrack.hasTPC() && !posTrack.hasITS() && !posTrack.hasTRD() && !posTrack.hasTOF());
-        if(isPosTPCOnly){ 
-          // Nota bene: positive is TPC-only -> this entire V0 merits treatment as photon candidate 
+        if (isPosTPCOnly) {
+          // Nota bene: positive is TPC-only -> this entire V0 merits treatment as photon candidate
           posTrackPar.setPID(o2::track::PID::Electron);
           negTrackPar.setPID(o2::track::PID::Electron);
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
-          if(!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, posTrack, posTrackPar)){
+          if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, posTrack, posTrackPar)) {
             return;
           }
         }
 
         bool isNegTPCOnly = (negTrack.hasTPC() && !negTrack.hasITS() && !negTrack.hasTRD() && !negTrack.hasTOF());
-        if(isNegTPCOnly){ 
-          // Nota bene: negative is TPC-only -> this entire V0 merits treatment as photon candidate 
+        if (isNegTPCOnly) {
+          // Nota bene: negative is TPC-only -> this entire V0 merits treatment as photon candidate
           posTrackPar.setPID(o2::track::PID::Electron);
           negTrackPar.setPID(o2::track::PID::Electron);
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
-          if(!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, negTrack, negTrackPar)){
+          if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, negTrack, negTrackPar)) {
             return;
           }
         }

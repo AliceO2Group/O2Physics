@@ -168,8 +168,8 @@ class strangenessBuilderHelper
                         float pvX, float pvY, float pvZ,
                         TTrack const& positiveTrack,
                         TTrack const& negativeTrack,
-                        TTrackParametrization& positiveTrackParam, 
-                        TTrackParametrization& negativeTrackParam, 
+                        TTrackParametrization& positiveTrackParam,
+                        TTrackParametrization& negativeTrackParam,
                         bool useCollinearFit = false,
                         bool calculateCovariance = false)
   {
@@ -195,7 +195,7 @@ class strangenessBuilderHelper
     // do DCA to PV on copies instead of originals
     auto positiveTrackParamCopy = positiveTrackParam;
     auto negativeTrackParamCopy = negativeTrackParam;
-    
+
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, positiveTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.positiveDCAxy = dcaInfo[0];
 
@@ -235,7 +235,7 @@ class strangenessBuilderHelper
       // avoids misuse if mixed with KF particle use
       v0.momentum[i] = v0.positiveMomentum[i] + v0.negativeMomentum[i];
     }
-    
+
     // get decay vertex coordinates
     const auto& vtx = fitter.getPCACandidate();
     for (int i = 0; i < 3; i++) {
@@ -315,17 +315,16 @@ class strangenessBuilderHelper
   }
 
   template <typename TCollision, typename TTrack, typename TTrackParametrization>
-  bool buildV0CandidateWithKF(TCollision const& collision, 
+  bool buildV0CandidateWithKF(TCollision const& collision,
                               TTrack const& positiveTrack,
                               TTrack const& negativeTrack,
-                              TTrackParametrization& positiveTrackParam, 
-                              TTrackParametrization& negativeTrackParam, 
-                              int kfConstructMethod = 2, // the typical used
+                              TTrackParametrization& positiveTrackParam,
+                              TTrackParametrization& negativeTrackParam,
+                              int kfConstructMethod = 2,           // the typical used
                               float kfConstrainedMassValue = 0.0f, // negative: no constraint
-                              bool kfConstrainToPrimaryVertex = true
-                              )
+                              bool kfConstrainToPrimaryVertex = true)
   {
-    int collisionIndex = collision.globalIndex(); 
+    int collisionIndex = collision.globalIndex();
     float pvX = collision.posX();
     float pvY = collision.posY();
     float pvZ = collision.posZ();
@@ -352,7 +351,7 @@ class strangenessBuilderHelper
     // do DCA to PV on copies instead of originals
     auto positiveTrackParamCopy = positiveTrackParam;
     auto negativeTrackParamCopy = negativeTrackParam;
-    
+
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, positiveTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.positiveDCAxy = dcaInfo[0];
 
@@ -387,7 +386,7 @@ class strangenessBuilderHelper
       return false;
     }
 
-    if (kfConstrainedMassValue>-1e-4) { 
+    if (kfConstrainedMassValue > -1e-4) {
       // photon constraint: this one's got no mass
       KFV0.SetNonlinearMassConstraint(kfConstrainedMassValue);
     }
@@ -406,10 +405,9 @@ class strangenessBuilderHelper
     v0.negativeMomentum = {kfpNeg_DecayVtx.GetPx(), kfpNeg_DecayVtx.GetPy(), kfpNeg_DecayVtx.GetPz()};
 
     v0.daughterDCA = std::hypot(
-      kfpPos_DecayVtx.GetX()-kfpNeg_DecayVtx.GetX(),
-      kfpPos_DecayVtx.GetY()-kfpNeg_DecayVtx.GetY(),
-      kfpPos_DecayVtx.GetZ()-kfpNeg_DecayVtx.GetZ()
-      );
+      kfpPos_DecayVtx.GetX() - kfpNeg_DecayVtx.GetX(),
+      kfpPos_DecayVtx.GetY() - kfpNeg_DecayVtx.GetY(),
+      kfpPos_DecayVtx.GetZ() - kfpNeg_DecayVtx.GetZ());
 
     if (v0.daughterDCA > v0selections.dcav0dau) {
       return false;
@@ -434,14 +432,14 @@ class strangenessBuilderHelper
     v0.pointingAngle = TMath::ACos(cosPA);
 
     v0.dcaXY = CalculateDCAStraightToPV(
-    v0.position[0], v0.position[1], v0.position[2],
-    v0.momentum[0], v0.momentum[1], v0.momentum[2],
-    pvX, pvY, pvZ);
+      v0.position[0], v0.position[1], v0.position[2],
+      v0.momentum[0], v0.momentum[1], v0.momentum[2],
+      pvX, pvY, pvZ);
 
-    // apply topological constraint to PV if requested 
-    // might adjust px py pz 
+    // apply topological constraint to PV if requested
+    // might adjust px py pz
     KFParticle KFV0_PV = KFV0;
-    if(kfConstrainToPrimaryVertex){
+    if (kfConstrainToPrimaryVertex) {
       KFV0_PV.SetProductionVertex(KFPV);
     }
     v0.momentum = {KFV0_PV.GetPx(), KFV0_PV.GetPy(), KFV0_PV.GetPz()};
