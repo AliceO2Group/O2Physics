@@ -157,8 +157,8 @@ TH2F* fhCompatibleCollisionsZVtxRms = nullptr;
 TH2S* fhTruePIDMismatch = nullptr;
 TH1S* fhTruePIDCorrect = nullptr;
 
-std::vector<std::vector<TH2F*>> fhTrueNSigmaTPC = {o2::analysis::identifiedbffilter::kIdBfNoOfSpecies,{o2::analysis::identifiedbffilter::kIdBfNoOfSpecies,nullptr}};
-std::vector<std::vector<TH2F*>> fhTrueNSigmaTOF = {o2::analysis::identifiedbffilter::kIdBfNoOfSpecies,{o2::analysis::identifiedbffilter::kIdBfNoOfSpecies,nullptr}};
+std::vector<std::vector<TH2F*>> fhTrueNSigmaTPC = {o2::analysis::identifiedbffilter::kIdBfNoOfSpecies, {o2::analysis::identifiedbffilter::kIdBfNoOfSpecies, nullptr}};
+std::vector<std::vector<TH2F*>> fhTrueNSigmaTOF = {o2::analysis::identifiedbffilter::kIdBfNoOfSpecies, {o2::analysis::identifiedbffilter::kIdBfNoOfSpecies, nullptr}};
 
 TH1F* fhTrueCentMultB = nullptr;
 TH1F* fhTrueCentMultA = nullptr;
@@ -1029,14 +1029,14 @@ struct IdentifiedBfFilterTracks {
       for (int sp1 = 0; sp1 < kIdBfNoOfSpecies; ++sp1) {
         for (int sp2 = 0; sp2 < kIdBfNoOfSpecies; ++sp2) {
           fhTrueNSigmaTPC[sp1][sp2] = new TH2F(TString::Format("fhTrueNSigmaTPC%s_%s", speciesName[sp1], speciesName[sp2]).Data(),
-                                        TString::Format("N #sigma %s from TPC vs P for generated %s;N #sigma;p (GeV/c)", speciesTitle[sp1], speciesTitle[sp2]).Data(),
-                                        48, -6, 6,
-                                        ptbins, ptlow, ptup);
+                                               TString::Format("N #sigma %s from TPC vs P for generated %s;N #sigma;p (GeV/c)", speciesTitle[sp1], speciesTitle[sp2]).Data(),
+                                               48, -6, 6,
+                                               ptbins, ptlow, ptup);
 
           fhTrueNSigmaTOF[sp1][sp2] = new TH2F(TString::Format("fhTrueNSigmaTOF%s_%s", speciesName[sp1], speciesName[sp2]).Data(),
-                                        TString::Format("N #sigma %s from TOF vs P for generated %s;N #sigma;p (GeV/c)", speciesTitle[sp1], speciesTitle[sp2]).Data(),
-                                        48, -6, 6,
-                                        ptbins, ptlow, ptup);
+                                               TString::Format("N #sigma %s from TOF vs P for generated %s;N #sigma;p (GeV/c)", speciesTitle[sp1], speciesTitle[sp2]).Data(),
+                                               48, -6, 6,
+                                               ptbins, ptlow, ptup);
         }
       }
 
@@ -1469,14 +1469,14 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
 
   fillNSigmaHistos(track);
 
-  std::vector<float> actualTPCNSigma(kIdBfNoOfSpecies,0.);
+  std::vector<float> actualTPCNSigma(kIdBfNoOfSpecies, 0.);
 
   actualTPCNSigma[kIdBfElectron] = track.tpcNSigmaEl();
   actualTPCNSigma[kIdBfPion] = track.tpcNSigmaPi();
   actualTPCNSigma[kIdBfKaon] = track.tpcNSigmaKa();
   actualTPCNSigma[kIdBfProton] = track.tpcNSigmaPr();
 
-  std::vector<float> actualTOFNSigma(kIdBfNoOfSpecies,0.);
+  std::vector<float> actualTOFNSigma(kIdBfNoOfSpecies, 0.);
 
   actualTOFNSigma[kIdBfElectron] = track.tofNSigmaEl();
   actualTOFNSigma[kIdBfPion] = track.tofNSigmaPi();
@@ -1486,7 +1486,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
   float nsigmas[kIdBfNoOfSpecies];
 
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
-    identifyRealNSigma(track.template mcParticle_as<aod::McParticles>(),actualTPCNSigma, actualTOFNSigma, track.tpcInnerParam());
+    identifyRealNSigma(track.template mcParticle_as<aod::McParticles>(), actualTPCNSigma, actualTOFNSigma, track.tpcInnerParam());
   }
 
   if (loadfromccdb) {
@@ -1881,3 +1881,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
                         adaptAnalysisTask<IdentifiedBfFilterTracks>(cfgc)};
   return workflow;
 }
+ 
