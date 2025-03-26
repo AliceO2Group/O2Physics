@@ -66,6 +66,8 @@ struct JFlucEfficiencyTask {
     Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", true, "Evt sel: apply pileup rejection"};
     Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
     Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", true, "Evt sel: apply NoCollInTimeRangeStandard"};
+    Configurable<bool> cfgEvtRun2AliEventCuts{"cfgEvtRun2AliEventCuts", true, "Evt sel: apply Run2 Ali event cuts"};
+    Configurable<bool> cfgEvtRun2INELgtZERO{"cfgEvtRun2INELgtZERO", false, "Evt sel: apply Run2 INEL>0 event cuts"};
   } EventCuts;
 
   // Configurable for track selection
@@ -125,8 +127,11 @@ struct JFlucEfficiencyTask {
     if (debugMode) {
       LOGF(info, "Initializing JFlucEfficiencyTask");
     }
-
-    colCuts.setCuts(EventCuts.cfgEvtZvtx, EventCuts.cfgEvtTriggerCheck, EventCuts.cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, EventCuts.cfgEvtOccupancyInTimeRangeMax, EventCuts.cfgEvtOccupancyInTimeRangeMin);
+    if (!doprocessMCRun2 && !doprocessDataRun2) {
+      colCuts.setCuts(EventCuts.cfgEvtZvtx, EventCuts.cfgEvtTriggerCheck, EventCuts.cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, EventCuts.cfgEvtOccupancyInTimeRangeMax, EventCuts.cfgEvtOccupancyInTimeRangeMin);
+    } else {
+      colCuts.setCuts(EventCuts.cfgEvtZvtx, EventCuts.cfgEvtTriggerCheck, EventCuts.cfgEvtOfflineCheck, false);
+    }
     colCuts.init(&registry);
     colCuts.setTriggerTVX(EventCuts.cfgEvtTriggerTVXSel);
     colCuts.setApplyTFBorderCut(EventCuts.cfgEvtTFBorderCut);
@@ -135,6 +140,8 @@ struct JFlucEfficiencyTask {
     colCuts.setApplyPileupRejection(EventCuts.cfgEvtPileupRejection);
     colCuts.setApplyNoITSROBorderCut(EventCuts.cfgEvtNoITSROBorderCut);
     colCuts.setApplyCollInTimeRangeStandard(EventCuts.cfgEvtCollInTimeRangeStandard);
+    colCuts.setApplyRun2AliEventCuts(EventCuts.cfgEvtRun2AliEventCuts);
+    colCuts.setApplyRun2INELgtZERO(EventCuts.cfgEvtRun2INELgtZERO);
     colCuts.printCuts();
 
     if (doprocessDerivedMC || doprocessMC) {
