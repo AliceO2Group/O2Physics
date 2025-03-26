@@ -105,7 +105,7 @@ struct HfTaskOmegac0ToOmegapi {
     if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl) {
       axes.push_back(thnAxisPtB);
       axes.push_back(thnAxisOrigin);
-      axes.push_back(thnAxisMatchFlag);  
+      axes.push_back(thnAxisMatchFlag);
       axes.push_back(thnAxisNumPvContr);
     }
     if (applyMl) {
