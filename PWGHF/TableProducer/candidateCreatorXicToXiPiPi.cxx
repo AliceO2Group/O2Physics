@@ -580,6 +580,14 @@ struct HfCandidateCreatorXicToXiPiPi {
       float errMassXiPiPi;
       kfXicPlus.GetMass(massXiPiPi, errMassXiPiPi);
 
+      // decay length of XicPlus
+      // use XicPlus constrained to PV (kfXicPlusToPV), since production point must be set before calling GetDecayLength(XY) on KFParticle
+      float kfDecayLength = 0., errorKfDecayLength = 0., kfDecayLengthXY = 0., errorKfDecayLengthXY = 0.;
+      kfXicPlusToPV.GetDecayLength(kfDecayLength, errorKfDecayLength);
+      kfXicPlusToPV.GetDecayLengthXY(kfDecayLengthXY, errorKfDecayLengthXY);
+      float kfDecayLengthNormalised = ldlFromKF(kfXicPlus, kfPv);
+      float kfDecayLengthXYNormalised = ldlXYFromKF(kfXicPlus, kfPv);
+
       //--------------------- get PID information-----------------------
       float nSigTpcPiFromXicPlus0 = trackCharmBachelor0.tpcNSigmaPi();
       float nSigTofPiFromXicPlus0 = trackCharmBachelor0.tofNSigmaPi();
@@ -638,7 +646,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                        casc.bachelorId(), casc.posTrackId(), casc.negTrackId(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                        kfXicPlus.GetErrX(), kfXicPlus.GetErrY(), kfXicPlus.GetErrZ(),
-                       kfXicPlus.GetErrDecayLength(), kfXicPlus.GetErrDecayLengthXY(),
+                       errorKfDecayLength, errorKfDecayLengthXY,
                        chi2GeoXicPlus, massXiPiPi, signXic,
                        kfXi.GetPx(), kfXi.GetPy(), kfXi.GetPz(),
                        kfCharmBachelor0.GetPx(), kfCharmBachelor0.GetPy(), kfCharmBachelor0.GetPz(),
@@ -656,6 +664,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                        nSigTpcPiFromXicPlus0, nSigTpcPiFromXicPlus1, nSigTpcBachelorPi, nSigTpcPiFromLambda, nSigTpcPrFromLambda,
                        nSigTofPiFromXicPlus0, nSigTofPiFromXicPlus1, nSigTofBachelorPi, nSigTofPiFromLambda, nSigTofPrFromLambda);
       rowCandidateKF(casc.kfCascadeChi2(), casc.kfV0Chi2(),
+                     kfDecayLength, kfDecayLengthNormalised, kfDecayLengthXY, kfDecayLengthXYNormalised,
                      chi2topoXicPlusToPVBeforeConstraint, chi2topoXicPlusToPV, chi2topoXiToXicPlusBeforeConstraint, chi2topoXiToXicPlus,
                      dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi,
                      dcaPi0Pi1, dcaPi0Xi, dcaPi1Xi);
