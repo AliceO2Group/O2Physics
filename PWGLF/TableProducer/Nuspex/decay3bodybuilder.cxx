@@ -308,7 +308,7 @@ struct decay3bodyBuilder {
     Configurable<bool> applySVertexerV0Cuts{"kfparticleConfigurations.applySVertexerV0Cuts", false, "Apply virtual V0 cuts applied in SVertexer in case of proton mixing"};
     ConfigurableAxis bins3BodyRadius{"kfparticleConfigurations.bins3BodyRadius", {VARIABLE_WIDTH, 0.0f, 0.5f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f, 6.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f, 30.0f, 1000.0}, "Mixing bins - 3body radius"};
     // ConfigurableAxis bins3BodyPhi{"kfparticleConfigurations.bins3BodyPhi", {VARIABLE_WIDTH, -180.0f*TMath::Pi()/180, -170.0f*TMath::Pi()/180, -160.0f*TMath::Pi()/180, -150.0f*TMath::Pi()/180, -140.0f*TMath::Pi()/180, -130.0f*TMath::Pi()/180, -120.0f*TMath::Pi()/180, -110.0f*TMath::Pi()/180, -100.0f*TMath::Pi()/180, -90.0f*TMath::Pi()/180, -80.0f*TMath::Pi()/180, -70.0f*TMath::Pi()/180, -60.0f*TMath::Pi()/180, -50.0f*TMath::Pi()/180, -40.0f*TMath::Pi()/180, -30.0f*TMath::Pi()/180, -20.0f*TMath::Pi()/180, -10.0f*TMath::Pi()/180, 0.0f, 10.0f*TMath::Pi()/180, 20.0f*TMath::Pi()/180, 30.0f*TMath::Pi()/180, 40.0f*TMath::Pi()/180, 50.0f*TMath::Pi()/180, 60.0f*TMath::Pi()/180, 70.0f*TMath::Pi()/180, 80.0f*TMath::Pi()/180, 90.0f*TMath::Pi()/180, 100.0f*TMath::Pi()/180, 110.0f*TMath::Pi()/180, 120.0f*TMath::Pi()/180, 130.0f*TMath::Pi()/180, 140.0f*TMath::Pi()/180, 150.0f*TMath::Pi()/180, 160.0f*TMath::Pi()/180, 170.0f*TMath::Pi()/180, 180.0f*TMath::Pi()/180}, "Mixing bins - 3body phi"};
-    ConfigurableAxis bins3BodyPhi{"kfparticleConfigurations.bins3BodyPhi", {VARIABLE_WIDTH, -180.0f*TMath::Pi()/180, -160.0f*TMath::Pi()/180, -140.0f*TMath::Pi()/180, -120.0f*TMath::Pi()/180, -100.0f*TMath::Pi()/180, -80.0f*TMath::Pi()/180, -60.0f*TMath::Pi()/180, -40.0f*TMath::Pi()/180, -20.0f*TMath::Pi()/180, 0.0f, 20.0f*TMath::Pi()/180, 40.0f*TMath::Pi()/180, 60.0f*TMath::Pi()/180, 80.0f*TMath::Pi()/180, 100.0f*TMath::Pi()/180, 120.0f*TMath::Pi()/180, 140.0f*TMath::Pi()/180, 160.0f*TMath::Pi()/180, 180.0f*TMath::Pi()/180}, "Mixing bins - 3body phi"};
+    ConfigurableAxis bins3BodyPhi{"kfparticleConfigurations.bins3BodyPhi", {VARIABLE_WIDTH, -180.0f * TMath::Pi() / 180, -160.0f * TMath::Pi() / 180, -140.0f * TMath::Pi() / 180, -120.0f * TMath::Pi() / 180, -100.0f * TMath::Pi() / 180, -80.0f * TMath::Pi() / 180, -60.0f * TMath::Pi() / 180, -40.0f * TMath::Pi() / 180, -20.0f * TMath::Pi() / 180, 0.0f, 20.0f * TMath::Pi() / 180, 40.0f * TMath::Pi() / 180, 60.0f * TMath::Pi() / 180, 80.0f * TMath::Pi() / 180, 100.0f * TMath::Pi() / 180, 120.0f * TMath::Pi() / 180, 140.0f * TMath::Pi() / 180, 160.0f * TMath::Pi() / 180, 180.0f * TMath::Pi() / 180}, "Mixing bins - 3body phi"};
     ConfigurableAxis bins3BodyPosZ{"kfparticleConfigurations.bins3BodyPosZ", {VARIABLE_WIDTH, -300.0f, -42.0f, -13.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 13.0f, 42.0f, 300.0f}, "Mixing bins - 3body z position"};
     Configurable<bool> selectVtxZ3bodyMixing{"kfparticleConfigurations.selectVtxZ3bodyMixing", true, "Select same VtxZ events in case of 3body mixing"};
     Configurable<float> VtxZBin3bodyMixing{"kfparticleConfigurations.VtxZBin3bodyMixing", 1., "Bin width for event vtx z position in case of 3body mixing"};
@@ -1497,7 +1497,7 @@ struct decay3bodyBuilder {
     // apply virtual V0 cuts used in SVertexer in case of 3body mixing with proton track
     if (kfparticleConfigurations.mixingType == 1 && kfparticleConfigurations.applySVertexerV0Cuts) {
       // V0 radius
-      if (std::sqrt(KFV0.GetX()*KFV0.GetX() + KFV0.GetY()*KFV0.GetY()) <= 0.5) {
+      if (std::sqrt(KFV0.GetX() * KFV0.GetX() + KFV0.GetY() * KFV0.GetY()) <= 0.5) {
         return;
       }
       // pT
@@ -1505,7 +1505,7 @@ struct decay3bodyBuilder {
         return;
       }
       // pz/pT
-      if (KFV0.GetPz()/KFV0.GetPt() >= 2) {
+      if (KFV0.GetPz() / KFV0.GetPt() >= 2) {
         return;
       }
       // cos(PA)
@@ -2205,9 +2205,9 @@ struct decay3bodyBuilder {
     // Function to find bin index (returns -1 if out of range)
     auto findBin = [](float value, const std::vector<float>& binEdges) -> int {
       for (size_t i = 0; i < binEdges.size() - 1; ++i) {
-          if (value > binEdges[i] && value <= binEdges[i + 1]) {
-              return i;
-          }
+        if (value > binEdges[i] && value <= binEdges[i + 1]) {
+          return i;
+        }
       }
       return -1; // Out of range
     };
@@ -2228,8 +2228,8 @@ struct decay3bodyBuilder {
 
       // Determine bin indices
       int radiusBin = findBin(radius, {0.0f, 0.5f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f, 6.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f, 30.0f, 1000.0});
-      int phiBin = findBin(phi, {-180.0f*TMath::Pi()/180, -160.0f*TMath::Pi()/180, -140.0f*TMath::Pi()/180, -120.0f*TMath::Pi()/180, -100.0f*TMath::Pi()/180, -80.0f*TMath::Pi()/180, -60.0f*TMath::Pi()/180, -40.0f*TMath::Pi()/180, -20.0f*TMath::Pi()/180, 0.0f, 20.0f*TMath::Pi()/180, 40.0f*TMath::Pi()/180, 60.0f*TMath::Pi()/180, 80.0f*TMath::Pi()/180, 100.0f*TMath::Pi()/180, 120.0f*TMath::Pi()/180, 140.0f*TMath::Pi()/180, 160.0f*TMath::Pi()/180, 180.0f*TMath::Pi()/180});
-      if (radiusBin >= 0 && phiBin >= 0) { // && posZBin >= 0) {
+      int phiBin = findBin(phi, {-180.0f * TMath::Pi() / 180, -160.0f * TMath::Pi() / 180, -140.0f * TMath::Pi() / 180, -120.0f * TMath::Pi() / 180, -100.0f * TMath::Pi() / 180, -80.0f * TMath::Pi() / 180, -60.0f * TMath::Pi() / 180, -40.0f * TMath::Pi() / 180, -20.0f * TMath::Pi() / 180, 0.0f, 20.0f * TMath::Pi() / 180, 40.0f * TMath::Pi() / 180, 60.0f * TMath::Pi() / 180, 80.0f * TMath::Pi() / 180, 100.0f * TMath::Pi() / 180, 120.0f * TMath::Pi() / 180, 140.0f * TMath::Pi() / 180, 160.0f * TMath::Pi() / 180, 180.0f * TMath::Pi() / 180});
+      if (radiusBin >= 0 && phiBin >= 0) {   // && posZBin >= 0) {
         bin3bodyCounts[radiusBin][phiBin]++; //[posZBin]++;
       }
     }
@@ -2285,7 +2285,7 @@ struct decay3bodyBuilder {
         continue;
       }
       registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 3.5);
- 
+
       // ---------- do candidate analysis ----------
       bool isMatter1 = false;
       if (trackBach1.sign() > 0) {
@@ -2365,7 +2365,7 @@ struct kfdecay3bodyDataLinkBuilder {
       kfvtxdataLink(lIndices[ii]);
     }
   }
-  
+
   void processStandard(aod::Decay3Bodys const& decay3bodytable, aod::KFVtx3BodyDatas const& vtxdatatable)
   {
     buildDataLink(decay3bodytable, vtxdatatable); // build Decay3Body -> KFDecay3BodyData link table
