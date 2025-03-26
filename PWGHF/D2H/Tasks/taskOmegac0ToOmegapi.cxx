@@ -86,7 +86,7 @@ struct HfTaskOmegac0ToOmegapi {
     const AxisSpec thnAxisPtB{thnConfigAxisPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
     const AxisSpec thnAxisY{thnConfigAxisY, "y"};
     const AxisSpec thnAxisOrigin{thnConfigAxisOrigin, "Origin"};
-	const AxisSpec thnAxisMatchFlag{thnConfigAxisMatchFlag, "MatchFlag"};
+    const AxisSpec thnAxisMatchFlag{thnConfigAxisMatchFlag, "MatchFlag"};
     const AxisSpec thnAxisGenPtD{thnConfigAxisGenPtD, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisGenPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
     const AxisSpec thnAxisNumPvContr{thnConfigAxisNumPvContr, "Number of PV contributors"};
@@ -105,7 +105,7 @@ struct HfTaskOmegac0ToOmegapi {
     if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl) {
       axes.push_back(thnAxisPtB);
       axes.push_back(thnAxisOrigin);
-	  axes.push_back(thnAxisMatchFlag);  
+      axes.push_back(thnAxisMatchFlag);  
       axes.push_back(thnAxisNumPvContr);
     }
     if (applyMl) {
@@ -181,7 +181,7 @@ struct HfTaskOmegac0ToOmegapi {
       if (candidate.resultSelections() && !selectionFlagOmegac0)
         if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi)) {
           if constexpr (applyMl) {
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.mlProbOmegac()[0], massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.flagMcMatchRec(), candidate.originRec(), numPvContributors);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.mlProbOmegac()[0], massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), candidate.flagMcMatchRec(), numPvContributors);
 
           } else {
             registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), candidate.flagMcMatchRec(), numPvContributors);
