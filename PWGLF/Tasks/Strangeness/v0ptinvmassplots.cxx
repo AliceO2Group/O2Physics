@@ -126,7 +126,7 @@ struct V0PtInvMassPlots {
     AxisSpec antilambdaPtAxis = {antilambdaPtedgevalues, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec armenterosQtAxis = {nBinsArmenteros, 0.0f, 0.3f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec armenterosasymAxis = {nBinsArmenteros, -1.f, 1.f, "#ait{p}^{+}_{||}-it{p}^{-}_{||}/it{p}^{+}_{||}+it{p}^{-}_{||}"};
-    AxisSpec vertexZAxis = {nBins, -10.0f, 10.0f, "vrtx_{Z} [cm]"};
+    AxisSpec vertexZAxis = {nBins, -11.0f, 11.0f, "vrtx_{Z} [cm]"};
 
     std::vector<std::string> kaonhistvalue(nmaxHistograms + 1);
     std::vector<std::string> lambdahistvalue(nmaxHistograms + 1);
