@@ -2198,10 +2198,6 @@ struct decay3bodyBuilder {
     // Define a 2D array to count 3bodies per bin (radius, phi, posZ)
     std::vector<std::vector<int>> bin3bodyCounts(16, std::vector<int>(36, 0));
 
-    // initialise magnetic field values
-    float bz_c1 = 0.;
-    float bz_c2 = 0.;
-
     // Function to find bin index (returns -1 if out of range)
     auto findBin = [](float value, const std::vector<float>& binEdges) -> int {
       for (size_t i = 0; i < binEdges.size() - 1; ++i) {
@@ -2267,9 +2263,7 @@ struct decay3bodyBuilder {
       auto collision1 = decay3body1.template collision_as<ReducedCollisionsMults>();
       auto collision2 = decay3body2.template collision_as<ReducedCollisionsMults>();
       initCCDBfromRunNumber(collision2.runNumber());
-      bz_c2 = d_bz;
       initCCDBfromRunNumber(collision1.runNumber());
-      bz_c1 = d_bz;
 
       if (decay3body1.collisionId() == decay3body2.collisionId()) { // only combine if from different event
         continue;
