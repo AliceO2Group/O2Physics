@@ -13,6 +13,8 @@
 /// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>
 /// \author Christian Sonnabend <christian.sonnabend@cern.ch>
 /// \author Jeremy Wilkinson <jeremy.wilkinson@cern.ch>
+/// \author Ana Marin <ana.marin@cern.ch>
+/// \brief  Creates clean samples of particles for PID fits
 
 #ifndef DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
 #define DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
@@ -34,6 +36,7 @@ DECLARE_SOA_COLUMN(NormNClustersTPC, normNClustersTPC, float);
 DECLARE_SOA_COLUMN(PidIndex, pidIndexTPC, uint8_t);
 DECLARE_SOA_COLUMN(NSigTPC, nsigTPC, float);
 DECLARE_SOA_COLUMN(NSigTOF, nsigTOF, float);
+DECLARE_SOA_COLUMN(NSigITS, nsigITS, float);
 DECLARE_SOA_COLUMN(AlphaV0, alphaV0, float);
 DECLARE_SOA_COLUMN(QtV0, qtV0, float);
 DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, float);
@@ -150,6 +153,7 @@ DECLARE_SOA_TABLE(SkimmedTPCTOFTreeWithTrkQA, "AOD", "TPCTOFSKIMWQA",
                   tpcskims::PidIndex,
                   tpcskims::NSigTPC,
                   tpcskims::NSigTOF,
+                  tpcskims::NSigITS,
                   tpcskims::RunNumber,
                   tpcskims::TrackOcc,
                   tpcskims::Ft0Occ,
