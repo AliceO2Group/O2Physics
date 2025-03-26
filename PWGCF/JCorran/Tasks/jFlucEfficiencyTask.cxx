@@ -109,6 +109,7 @@ struct JFlucEfficiencyTask {
   using MCCollisionCandidates = soa::Join<CollisionCandidates, aod::McCollisionLabel>;
   using MCRun2CollisionCandidates = soa::Join<CollisionRun2Candidates, aod::McCollisionLabel>;
   using MCTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabel>;
+  using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 
   // Histogram Registry
   HistogramRegistry registry{
@@ -337,7 +338,8 @@ struct JFlucEfficiencyTask {
   void processMCRun2(aod::McCollisions::iterator const& mcCollision,
                      soa::SmallGroups<MCRun2CollisionCandidates> const& collisions,
                      soa::Filtered<MCTrackCandidates> const& mcTracks,
-                     aod::McParticles const& mcParticles)
+                     aod::McParticles const& mcParticles,
+                     BCsWithRun2Info const&)
   {
     registry.fill(HIST("hEventCounterMC"), 0);
     if (!(std::abs(mcCollision.posZ()) < cfgCutVertex)) {
@@ -431,7 +433,7 @@ struct JFlucEfficiencyTask {
     }
   }
 
-  void processDataRun2(CollisionRun2Candidates::iterator const& collision, soa::Filtered<TrackCandidates> const& tracks)
+  void processDataRun2(CollisionRun2Candidates::iterator const& collision, soa::Filtered<TrackCandidates> const& tracks, BCsWithRun2Info const&)
   {
     if (!colCuts.isSelected(collision)) // Default event selection
       return;
