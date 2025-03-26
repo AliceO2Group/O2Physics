@@ -153,6 +153,7 @@ struct V0PtInvMassPlots {
       antilambdahistvalue[i] = antilambdaPtbin;
     }
 
+    rPtAnalysis.add("hVertexZ", "hVertexZ", {HistType::kTH1F, {vertexZAxis}});
     rPtAnalysis.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
     rPtAnalysis.add("hArmenterosPodolanskiPlot", "hArmenterosPodolanskiPlot", {HistType::kTH2F, {{armenterosasymAxis}, {armenterosQtAxis}}});
     rPtAnalysis.add("hV0EtaDaughters", "hV0EtaDaughters", {HistType::kTH1F, {{nBins, -1.2f, 1.2f}}});
@@ -176,6 +177,9 @@ struct V0PtInvMassPlots {
       rPtAnalysis.add("hNSigmaNegPiFromK0s", "hNSigmaNegPiFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {k0ShortPtAxis}}});
       rPtAnalysis.add("hK0shEtaDaughters", "hK0shEtaDaughters", {HistType::kTH1F, {{nBins, -1.2f, 1.2f}}});
       rPtAnalysis.add("hArmenterosPodolanskiPlotK0Short", "hArmenterosPodolanskiPlotK0Short", {HistType::kTH2F, {{armenterosasymAxis}, {armenterosQtAxis}}});
+      rPtAnalysis.add("hK0shNegDaughterPt", "hK0shNegDaughterPt", {HistType::kTH1F, {k0ShortPtAxis}});
+      rPtAnalysis.add("hK0shPosDaughterPt", "hK0shPosDaughterPt", {HistType::kTH1F, {k0ShortPtAxis}});
+
       for (int i = 0; i < nmaxHistograms; i++) {
         pthistos::kaonPt[i] = rKaonshMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), fmt::format("hPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), {HistType::kTH1D, {{k0ShortMassAxis}}});
       }
@@ -192,6 +196,8 @@ struct V0PtInvMassPlots {
       rPtAnalysis.add("hNSigmaNegPionFromLambda", "hNSigmaNegPionFromLambda", {HistType::kTH2F, {{100, -5.f, 5.f}, {lambdaPtAxis}}});
       rPtAnalysis.add("hLambdaEtaDaughters", "hLambdaEtaDaughters", {HistType::kTH1F, {{nBins, -1.2f, 1.2f}}});
       rPtAnalysis.add("hArmenterosPodolanskiPlotLambda", "hArmenterosPodolanskiPlotLambda", {HistType::kTH2F, {{armenterosasymAxis}, {armenterosQtAxis}}});
+      rPtAnalysis.add("hLambdaNegDaughterPt", "hLambdaNegDaughterPt", {HistType::kTH1F, {lambdaPtAxis}});
+      rPtAnalysis.add("hLambdaPosDaughterPt", "hLambdaPosDaughterPt", {HistType::kTH1F, {lambdaPtAxis}});
       for (int i = 0; i < nmaxHistograms; i++) {
         pthistos::lambdaPt[i] = rLambdaMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), fmt::format("hPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{lambdaMassAxis}}});
       }
@@ -212,6 +218,8 @@ struct V0PtInvMassPlots {
       rPtAnalysis.add("hNSigmaPosPionFromAntilambda", "hNSigmaPosPionFromAntilambda", {HistType::kTH2F, {{100, -5.f, 5.f}, {antilambdaPtAxis}}});
       rPtAnalysis.add("hAntiLambdaEtaDaughters", "hAntiLambdaEtaDaughters", {HistType::kTH1F, {{nBins, -1.2f, 1.2f}}});
       rPtAnalysis.add("hArmenterosPodolanskiPlotAntiLambda", "hArmenterosPodolanskiPlotAntiLambda", {HistType::kTH2F, {{armenterosasymAxis}, {armenterosQtAxis}}});
+      rPtAnalysis.add("hAntiLambdaNegDaughterPt", "hAntiLambdaNegDaughterPt", {HistType::kTH1F, {antilambdaPtAxis}});
+      rPtAnalysis.add("hAntiLambdaPosDaughterPt", "hAntiLambdaPosDaughterPt", {HistType::kTH1F, {antilambdaPtAxis}});
       for (int i = 0; i < nmaxHistograms; i++) {
         pthistos::antilambdaPt[i] = rAntilambdaMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), fmt::format("hPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{antiLambdaMassAxis}}});
       }
@@ -324,6 +332,8 @@ struct V0PtInvMassPlots {
                   rPtAnalysis.fill(HIST("hK0ShortReconstructedPtSpectrum"), v0.pt());
                   rPtAnalysis.fill(HIST("hK0shEtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
                   rPtAnalysis.fill(HIST("hK0shEtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
+                  rPtAnalysis.fill(HIST("hK0shNegDaughterPt"), v0.negTrack_as<DaughterTracks>().pt()); // Neg Daughter Pt
+                  rPtAnalysis.fill(HIST("hK0shPosDaughterPt"), v0.posTrack_as<DaughterTracks>().pt()); // Pos Daughter Pt
                   if (v0mcParticle.isPhysicalPrimary()) {
                     for (int i = 0; i < nmaxHistograms; i++) {
                       if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
@@ -347,6 +357,8 @@ struct V0PtInvMassPlots {
                   rPtAnalysis.fill(HIST("hLambdaReconstructedPtSpectrum"), v0.pt());
                   rPtAnalysis.fill(HIST("hLambdaEtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
                   rPtAnalysis.fill(HIST("hLambdaEtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
+                  rPtAnalysis.fill(HIST("hLambdaNegDaughterPt"), v0.negTrack_as<DaughterTracks>().pt()); // Neg Daughter Pt
+                  rPtAnalysis.fill(HIST("hLambdaPosDaughterPt"), v0.posTrack_as<DaughterTracks>().pt()); // Pos Daughter Pt
                   if (v0mcParticle.isPhysicalPrimary()) {
                     for (int i = 0; i < nmaxHistograms; i++) {
                       if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
@@ -388,6 +400,8 @@ struct V0PtInvMassPlots {
                   rPtAnalysis.fill(HIST("hAntilambdaReconstructedPtSpectrum"), v0.pt());
                   rPtAnalysis.fill(HIST("hAntiLambdaEtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
                   rPtAnalysis.fill(HIST("hAntiLambdaEtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
+                  rPtAnalysis.fill(HIST("hAntiLambdaNegDaughterPt"), v0.negTrack_as<DaughterTracks>().pt()); // Neg Daughter Pt
+                  rPtAnalysis.fill(HIST("hAntiLambdaPosDaughterPt"), v0.posTrack_as<DaughterTracks>().pt()); // Pos Daughter Pt
                   if (v0mcParticle.isPhysicalPrimary()) {
                     for (int i = 0; i < nmaxHistograms; i++) {
                       if (antilambdaPtedgevalues[i] <= v0.pt() && v0.pt() < antilambdaPtedgevalues[i + 1]) {
@@ -443,7 +457,7 @@ struct V0PtInvMassPlots {
       lambdaptedgevalues[i] = std::stod(pthistos::lambdaPtBins[i]);
       antilambdaPtedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
     }
-
+    rPtAnalysis.fill(HIST("hVertexZ"), collision.posZ());
     for (const auto& v0 : V0s) {
       const auto& posDaughterTrack = v0.posTrack_as<DaughterTracks>();
       const auto& negDaughterTrack = v0.negTrack_as<DaughterTracks>();
@@ -473,6 +487,8 @@ struct V0PtInvMassPlots {
                 rPtAnalysis.fill(HIST("hK0shEtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
                 rPtAnalysis.fill(HIST("hK0shEtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
                 rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotK0Short"), aValue, qValue);
+                rPtAnalysis.fill(HIST("hK0shNegDaughterPt"), v0.negTrack_as<DaughterTracks>().pt()); // Neg Daughter Pt
+                rPtAnalysis.fill(HIST("hK0shPosDaughterPt"), v0.posTrack_as<DaughterTracks>().pt()); // Pos Daughter Pt
                 for (int i = 0; i < nmaxHistograms; i++) {
                   if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) {
                     pthistos::kaonPt[i]->Fill(v0.mK0Short());
@@ -496,6 +512,8 @@ struct V0PtInvMassPlots {
                 rPtAnalysis.fill(HIST("hLambdaEtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
                 rPtAnalysis.fill(HIST("hLambdaEtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
                 rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotLambda"), aValue, qValue);
+                rPtAnalysis.fill(HIST("hLambdaNegDaughterPt"), v0.negTrack_as<DaughterTracks>().pt()); // Neg Daughter Pt
+                rPtAnalysis.fill(HIST("hLambdaPosDaughterPt"), v0.posTrack_as<DaughterTracks>().pt()); // Pos Daughter Pt
                 for (int i = 0; i < nmaxHistograms; i++) {
                   if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
                     pthistos::lambdaPt[i]->Fill(v0.mLambda());
@@ -519,6 +537,8 @@ struct V0PtInvMassPlots {
                 rPtAnalysis.fill(HIST("hAntiLambdaEtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
                 rPtAnalysis.fill(HIST("hAntiLambdaEtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
                 rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotAntiLambda"), aValue, qValue);
+                rPtAnalysis.fill(HIST("hAntiLambdaNegDaughterPt"), v0.negTrack_as<DaughterTracks>().pt()); // Neg Daughter Pt
+                rPtAnalysis.fill(HIST("hAntiLambdaPosDaughterPt"), v0.posTrack_as<DaughterTracks>().pt()); // Pos Daughter Pt
                 for (int i = 0; i < nmaxHistograms; i++) {
                   if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
                     pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda());
