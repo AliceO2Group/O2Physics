@@ -46,6 +46,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "Common/Core/TPCVDriftManager.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -278,6 +279,7 @@ struct StrangenessBuilder {
   struct : ConfigurableGroup {
     std::string prefix = "v0BuilderOpts";
     Configurable<bool> generatePhotonCandidates{"generatePhotonCandidates", false, "generate gamma conversion candidates (V0s using TPC-only tracks)"};
+    Configurable<bool> moveTPCOnlyTracks{"moveTPCOnlyTracks", true, "if dealing with TPC-only tracks, move them according to TPC drift / time info"};
 
     // baseline conditionals of V0 building
     Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimum TPC crossed rows for daughter tracks"};
@@ -340,6 +342,9 @@ struct StrangenessBuilder {
 
   int mRunNumber;
   o2::base::MatLayerCylSet* lut = nullptr;
+
+  // for handling TPC-only tracks (photons)
+  o2::aod::common::TPCVDriftManager mVDriftMgr;
 
   // for tagging V0s used in cascades
   std::vector<o2::pwglf::v0candidate> v0sFromCascades; // Vector of v0 candidates used in cascades
@@ -624,6 +629,12 @@ struct StrangenessBuilder {
     LOG(info) << "Fully configured for run: " << bc.runNumber();
     // mmark this run as configured
     mRunNumber = bc.runNumber();
+
+    if (v0BuilderOpts.generatePhotonCandidates.value && v0BuilderOpts.moveTPCOnlyTracks.value) {
+      // initialize only if needed, avoid unnecessary CCDB calls
+      mVDriftMgr.init(&ccdb->instance());
+      mVDriftMgr.update(timestamp);
+    }
 
     return true;
   }
@@ -1098,7 +1109,7 @@ struct StrangenessBuilder {
   }
 
   //__________________________________________________
-  template <typename TCollisions, typename TTracks, typename TV0s, typename TMCParticles>
+  template <class TBCs, typename TCollisions, typename TTracks, typename TV0s, typename TMCParticles>
   void buildV0s(TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, TMCParticles const& mcParticles)
   {
     // prepare MC containers (not necessarily used)
@@ -1134,7 +1145,38 @@ struct StrangenessBuilder {
       }
       auto const& posTrack = tracks.rawIteratorAt(v0.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(v0.negTrackId);
-      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, v0.isCollinearV0, mEnabledTables[kV0Covs])) {
+
+      auto posTrackPar = getTrackParCov(posTrack);
+      auto negTrackPar = getTrackParCov(negTrack);
+
+      // handle TPC-only tracks properly (photon conversions)
+      if (v0BuilderOpts.moveTPCOnlyTracks) {
+        bool isPosTPCOnly = (posTrack.hasTPC() && !posTrack.hasITS() && !posTrack.hasTRD() && !posTrack.hasTOF());
+        if (isPosTPCOnly) {
+          // Nota bene: positive is TPC-only -> this entire V0 merits treatment as photon candidate
+          posTrackPar.setPID(o2::track::PID::Electron);
+          negTrackPar.setPID(o2::track::PID::Electron);
+
+          auto const& collision = collisions.rawIteratorAt(v0.collisionId);
+          if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, posTrack, posTrackPar)) {
+            return;
+          }
+        }
+
+        bool isNegTPCOnly = (negTrack.hasTPC() && !negTrack.hasITS() && !negTrack.hasTRD() && !negTrack.hasTOF());
+        if (isNegTPCOnly) {
+          // Nota bene: negative is TPC-only -> this entire V0 merits treatment as photon candidate
+          posTrackPar.setPID(o2::track::PID::Electron);
+          negTrackPar.setPID(o2::track::PID::Electron);
+
+          auto const& collision = collisions.rawIteratorAt(v0.collisionId);
+          if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, negTrack, negTrackPar)) {
+            return;
+          }
+        }
+      }
+
+      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, mEnabledTables[kV0Covs])) {
         products.v0dataLink(-1, -1);
         continue;
       }
@@ -2107,7 +2149,7 @@ struct StrangenessBuilder {
     markV0sUsedInCascades(v0List, cascadeList, trackedCascades);
 
     // build V0s
-    buildV0s(collisions, v0List, tracks, mcParticles);
+    buildV0s<TBCs>(collisions, v0List, tracks, mcParticles);
 
     // build cascades
     buildCascades(collisions, cascadeList, tracks, mcParticles);
@@ -2121,22 +2163,22 @@ struct StrangenessBuilder {
     populateCascadeInterlinks();
   }
 
-  void processRealData(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRealData(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     dataProcess(collisions, static_cast<TObject*>(nullptr), v0s, cascades, trackedCascades, tracks, bcs, static_cast<TObject*>(nullptr));
   }
 
-  void processRealDataRun2(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRealDataRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     dataProcess(collisions, static_cast<TObject*>(nullptr), v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, static_cast<TObject*>(nullptr));
   }
 
-  void processMonteCarlo(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIU const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
+  void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIU const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
   {
     dataProcess(collisions, mccollisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles);
   }
 
-  void processMonteCarloRun2(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExtLabeled const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
+  void processMonteCarloRun2(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExtLabeled const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
   {
     dataProcess(collisions, mccollisions, v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, mcParticles);
   }

@@ -21,6 +21,7 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/trackUtilities.h"
+#include "Tools/KFparticle/KFUtilities.h"
 
 #ifndef HomogeneousField
 #define HomogeneousField
@@ -56,6 +57,7 @@ struct v0candidate {
   float negativeDCAxy = 0.0f;
 
   // V0 properties
+  std::array<float, 3> momentum = {0.0f, 0.0f, 0.0f}; // necessary for KF
   std::array<float, 3> position = {0.0f, 0.0f, 0.0f};
   float daughterDCA = 1000.0f;
   float pointingAngle = 0.0f;
@@ -161,11 +163,13 @@ class strangenessBuilderHelper
     fitter.setBz(-999.9f); // will NOT make sense if not changed
   };
 
-  template <typename TTrack>
+  template <typename TTrack, typename TTrackParametrization>
   bool buildV0Candidate(int collisionIndex,
                         float pvX, float pvY, float pvZ,
                         TTrack const& positiveTrack,
                         TTrack const& negativeTrack,
+                        TTrackParametrization& positiveTrackParam,
+                        TTrackParametrization& negativeTrackParam,
                         bool useCollinearFit = false,
                         bool calculateCovariance = false)
   {
@@ -185,27 +189,26 @@ class strangenessBuilderHelper
       return false;
     }
 
-    // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+    // Calculate DCA with respect to the collision associated to the V0
     gpu::gpustd::array<float, 2> dcaInfo;
 
-    auto posTrackPar = getTrackPar(positiveTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    // do DCA to PV on copies instead of originals
+    auto positiveTrackParamCopy = positiveTrackParam;
+    auto negativeTrackParamCopy = negativeTrackParam;
+
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, positiveTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.positiveDCAxy = dcaInfo[0];
 
     if (std::fabs(v0.positiveDCAxy) < v0selections.dcanegtopv) {
       return false;
     }
 
-    auto negTrackPar = getTrackPar(negativeTrack);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, negTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, negativeTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.negativeDCAxy = dcaInfo[0];
 
     if (std::fabs(v0.negativeDCAxy) < v0selections.dcanegtopv) {
       return false;
     }
-
-    o2::track::TrackParCov positiveTrackParam = getTrackParCov(positiveTrack);
-    o2::track::TrackParCov negativeTrackParam = getTrackParCov(negativeTrack);
 
     // Perform DCA fit
     int nCand = 0;
@@ -228,6 +231,10 @@ class strangenessBuilderHelper
     negativeTrackParam.getPxPyPzGlo(v0.negativeMomentum);
     positiveTrackParam.getXYZGlo(v0.positivePosition);
     negativeTrackParam.getXYZGlo(v0.negativePosition);
+    for (int i = 0; i < 3; i++) {
+      // avoids misuse if mixed with KF particle use
+      v0.momentum[i] = v0.positiveMomentum[i] + v0.negativeMomentum[i];
+    }
 
     // get decay vertex coordinates
     const auto& vtx = fitter.getPCACandidate();
@@ -307,6 +314,161 @@ class strangenessBuilderHelper
     return true;
   }
 
+  template <typename TCollision, typename TTrack, typename TTrackParametrization>
+  bool buildV0CandidateWithKF(TCollision const& collision,
+                              TTrack const& positiveTrack,
+                              TTrack const& negativeTrack,
+                              TTrackParametrization& positiveTrackParam,
+                              TTrackParametrization& negativeTrackParam,
+                              int kfConstructMethod = 2,           // the typical used
+                              float kfConstrainedMassValue = 0.0f, // negative: no constraint
+                              bool kfConstrainToPrimaryVertex = true)
+  {
+    int collisionIndex = collision.globalIndex();
+    float pvX = collision.posX();
+    float pvY = collision.posY();
+    float pvZ = collision.posZ();
+
+    // verify track quality
+    if (positiveTrack.tpcNClsCrossedRows() < v0selections.minCrossedRows) {
+      return false;
+    }
+    if (negativeTrack.tpcNClsCrossedRows() < v0selections.minCrossedRows) {
+      return false;
+    }
+
+    // verify eta
+    if (std::fabs(positiveTrack.eta()) > v0selections.maxDaughterEta) {
+      return false;
+    }
+    if (std::fabs(negativeTrack.eta()) > v0selections.maxDaughterEta) {
+      return false;
+    }
+
+    // Calculate DCA with respect to the collision associated to the V0
+    gpu::gpustd::array<float, 2> dcaInfo;
+
+    // do DCA to PV on copies instead of originals
+    auto positiveTrackParamCopy = positiveTrackParam;
+    auto negativeTrackParamCopy = negativeTrackParam;
+
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, positiveTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    v0.positiveDCAxy = dcaInfo[0];
+
+    if (std::fabs(v0.positiveDCAxy) < v0selections.dcanegtopv) {
+      return false;
+    }
+
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, negativeTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    v0.negativeDCAxy = dcaInfo[0];
+
+    if (std::fabs(v0.negativeDCAxy) < v0selections.dcanegtopv) {
+      return false;
+    }
+
+    //__________________________________________
+    //*>~<* do V0 with KF
+    // create KFParticle objects from trackParCovs
+    KFParticle kfpPos = createKFParticleFromTrackParCov(positiveTrackParam, positiveTrackParam.getCharge(), o2::constants::physics::MassElectron);
+    KFParticle kfpNeg = createKFParticleFromTrackParCov(negativeTrackParam, negativeTrackParam.getCharge(), o2::constants::physics::MassElectron);
+
+    KFParticle kfpPos_DecayVtx = kfpPos;
+    KFParticle kfpNeg_DecayVtx = kfpNeg;
+    const KFParticle* V0Daughters[2] = {&kfpPos, &kfpNeg};
+
+    // construct V0
+    KFParticle KFV0;
+    KFV0.SetConstructMethod(kfConstructMethod);
+    try {
+      KFV0.Construct(V0Daughters, 2);
+    } catch (std::runtime_error& e) {
+      LOG(debug) << "Failed to construct cascade V0 from daughter tracks: " << e.what();
+      return false;
+    }
+
+    if (kfConstrainedMassValue > -1e-4) {
+      // photon constraint: this one's got no mass
+      KFV0.SetNonlinearMassConstraint(kfConstrainedMassValue);
+    }
+
+    // V0 constructed, now recovering TrackParCov for dca fitter minimization (with material correction)
+    KFV0.TransportToDecayVertex();
+    o2::track::TrackParCov v0TrackParCov = getTrackParCovFromKFP(KFV0, o2::track::PID::Lambda, 0);
+    v0TrackParCov.setAbsCharge(0); // to be sure
+
+    // estimate momentum of daughters (since KFParticle does not allow us to retrieve it directly...)
+    float xyz_decay[3] = {KFV0.GetX(), KFV0.GetY(), KFV0.GetZ()};
+    kfpPos_DecayVtx.TransportToPoint(xyz_decay);
+    kfpNeg_DecayVtx.TransportToPoint(xyz_decay);
+
+    v0.positiveMomentum = {kfpPos_DecayVtx.GetPx(), kfpPos_DecayVtx.GetPy(), kfpPos_DecayVtx.GetPz()};
+    v0.negativeMomentum = {kfpNeg_DecayVtx.GetPx(), kfpNeg_DecayVtx.GetPy(), kfpNeg_DecayVtx.GetPz()};
+
+    v0.daughterDCA = std::hypot(
+      kfpPos_DecayVtx.GetX() - kfpNeg_DecayVtx.GetX(),
+      kfpPos_DecayVtx.GetY() - kfpNeg_DecayVtx.GetY(),
+      kfpPos_DecayVtx.GetZ() - kfpNeg_DecayVtx.GetZ());
+
+    if (v0.daughterDCA > v0selections.dcav0dau) {
+      return false;
+    }
+
+    // check radius
+    for (int i = 0; i < 3; i++) {
+      v0.position[i] = xyz_decay[i];
+    }
+    if (std::hypot(v0.position[0], v0.position[1]) < v0selections.v0radius) {
+      return false;
+    }
+
+    KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
+    KFParticle KFPV(kfpVertex);
+
+    // deal with pointing angle
+    float cosPA = cpaFromKF(KFV0, KFPV);
+    if (cosPA < v0selections.v0cospa) {
+      return false;
+    }
+    v0.pointingAngle = TMath::ACos(cosPA);
+
+    v0.dcaXY = CalculateDCAStraightToPV(
+      v0.position[0], v0.position[1], v0.position[2],
+      v0.momentum[0], v0.momentum[1], v0.momentum[2],
+      pvX, pvY, pvZ);
+
+    // apply topological constraint to PV if requested
+    // might adjust px py pz
+    KFParticle KFV0_PV = KFV0;
+    if (kfConstrainToPrimaryVertex) {
+      KFV0_PV.SetProductionVertex(KFPV);
+    }
+    v0.momentum = {KFV0_PV.GetPx(), KFV0_PV.GetPy(), KFV0_PV.GetPz()};
+
+    // set collision Id correctly
+    v0.collisionId = collisionIndex;
+
+    // Calculate masses
+    v0.massGamma = RecoDecay::m(std::array{
+                                  std::array{v0.positiveMomentum[0], v0.positiveMomentum[1], v0.positiveMomentum[2]},
+                                  std::array{v0.negativeMomentum[0], v0.negativeMomentum[1], v0.negativeMomentum[2]}},
+                                std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
+    v0.massK0Short = RecoDecay::m(std::array{
+                                    std::array{v0.positiveMomentum[0], v0.positiveMomentum[1], v0.positiveMomentum[2]},
+                                    std::array{v0.negativeMomentum[0], v0.negativeMomentum[1], v0.negativeMomentum[2]}},
+                                  std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
+    v0.massLambda = RecoDecay::m(std::array{
+                                   std::array{v0.positiveMomentum[0], v0.positiveMomentum[1], v0.positiveMomentum[2]},
+                                   std::array{v0.negativeMomentum[0], v0.negativeMomentum[1], v0.negativeMomentum[2]}},
+                                 std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+    v0.massAntiLambda = RecoDecay::m(std::array{
+                                       std::array{v0.positiveMomentum[0], v0.positiveMomentum[1], v0.positiveMomentum[2]},
+                                       std::array{v0.negativeMomentum[0], v0.negativeMomentum[1], v0.negativeMomentum[2]}},
+                                     std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
+
+    // information validated, V0 built successfully. Signal OK
+    return true;
+  }
+
   // cascade builder creating a cascade from plain tracks
   template <typename TTrack>
   bool buildCascadeCandidate(int collisionIndex,
@@ -318,7 +480,11 @@ class strangenessBuilderHelper
                              bool useCascadeMomentumAtPV = false,
                              bool processCovariances = false)
   {
-    if (!buildV0Candidate(collisionIndex, pvX, pvY, pvZ, positiveTrack, negativeTrack, false, processCovariances)) {
+    // no special treatment of positive and negative tracks when building V0s for cascades
+    auto posTrackPar = getTrackParCov(positiveTrack);
+    auto negTrackPar = getTrackParCov(negativeTrack);
+
+    if (!buildV0Candidate(collisionIndex, pvX, pvY, pvZ, positiveTrack, negativeTrack, posTrackPar, negTrackPar, false, processCovariances)) {
       return false;
     }
     if (!buildCascadeCandidate(collisionIndex, pvX, pvY, pvZ, v0, positiveTrack, negativeTrack, bachelorTrack, calculateBachelorBaryonVariables, useCascadeMomentumAtPV, processCovariances)) {
@@ -928,70 +1094,6 @@ class strangenessBuilderHelper
 
     // Potentially also to be considered: bachelor-baryon DCA (between the two tracks)
     // to be added here as complementary information in the future
-  }
-
-  // TrackParCov to KF converter
-  // FIXME: could be an utility somewhere else
-  // from Carolina Reetz (thank you!)
-  template <typename T>
-  KFParticle createKFParticleFromTrackParCov(const o2::track::TrackParametrizationWithError<T>& trackparCov, int charge, float mass)
-  {
-    std::array<T, 3> xyz, pxpypz;
-    float xyzpxpypz[6];
-    trackparCov.getPxPyPzGlo(pxpypz);
-    trackparCov.getXYZGlo(xyz);
-    for (int i{0}; i < 3; ++i) {
-      xyzpxpypz[i] = xyz[i];
-      xyzpxpypz[i + 3] = pxpypz[i];
-    }
-
-    std::array<float, 21> cv;
-    try {
-      trackparCov.getCovXYZPxPyPzGlo(cv);
-    } catch (std::runtime_error& e) {
-      LOG(debug) << "Failed to get cov matrix from TrackParCov" << e.what();
-    }
-
-    KFParticle kfPart;
-    float Mini, SigmaMini, M, SigmaM;
-    kfPart.GetMass(Mini, SigmaMini);
-    LOG(debug) << "Daughter KFParticle mass before creation: " << Mini << " +- " << SigmaMini;
-
-    try {
-      kfPart.Create(xyzpxpypz, cv.data(), charge, mass);
-    } catch (std::runtime_error& e) {
-      LOG(debug) << "Failed to create KFParticle from daughter TrackParCov" << e.what();
-    }
-
-    kfPart.GetMass(M, SigmaM);
-    LOG(debug) << "Daughter KFParticle mass after creation: " << M << " +- " << SigmaM;
-    return kfPart;
-  }
-
-  // KF to TrackParCov converter
-  // FIXME: could be an utility somewhere else
-  // from Carolina Reetz (thank you!)
-  o2::track::TrackParCov getTrackParCovFromKFP(const KFParticle& kfParticle, const o2::track::PID pid, const int sign)
-  {
-    o2::gpu::gpustd::array<float, 3> xyz, pxpypz;
-    o2::gpu::gpustd::array<float, 21> cv;
-
-    // get parameters from kfParticle
-    xyz[0] = kfParticle.GetX();
-    xyz[1] = kfParticle.GetY();
-    xyz[2] = kfParticle.GetZ();
-    pxpypz[0] = kfParticle.GetPx();
-    pxpypz[1] = kfParticle.GetPy();
-    pxpypz[2] = kfParticle.GetPz();
-
-    // set covariance matrix elements (lower triangle)
-    for (int i = 0; i < 21; i++) {
-      cv[i] = kfParticle.GetCovariance(i);
-    }
-
-    // create TrackParCov track
-    o2::track::TrackParCov track = o2::track::TrackParCov(xyz, pxpypz, cv, sign, true, pid);
-    return track;
   }
 };
 
