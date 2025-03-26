@@ -160,9 +160,9 @@ struct HfTaskCharmHadImpactPar {
     float invMass{-1.f};
     float yCand{-999.f};
     if constexpr (channel == Channel::DplusToKPiPi) { // D+ -> Kpipi
-      if constexpr (doMc){
-        if (fillOnlySignal){
-          if (std::abs(candidate.flagMcMatchRec()) != 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi){
+      if constexpr (doMc) {
+        if (fillOnlySignal) {
+          if (std::abs(candidate.flagMcMatchRec()) != 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
             return;
           }
         }
@@ -179,9 +179,9 @@ struct HfTaskCharmHadImpactPar {
       }
     } else if constexpr (channel == Channel::DzeroToKPi) {
       if (candidate.isSelD0()) { // D0 -> Kpi
-        if constexpr (doMc){
-          if (fillOnlySignal){
-            if (std::abs(candidate.flagMcMatchRec()) != 1 << aod::hf_cand_2prong::DecayType::D0ToPiK){
+        if constexpr (doMc) {
+          if (fillOnlySignal) {
+            if (std::abs(candidate.flagMcMatchRec()) != 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
               return;
             }
           }
@@ -268,7 +268,7 @@ struct HfTaskCharmHadImpactPar {
     if constexpr (doMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
     }
-    double impParZ = candidate.impactParameterXY()*(-1)*candidate.pz()/candidate.pt();
+    double impParZ = candidate.impactParameterXY() * (-1) * candidate.pz() / candidate.pt();
 
     hfCharmCandLite(
       // Event features
