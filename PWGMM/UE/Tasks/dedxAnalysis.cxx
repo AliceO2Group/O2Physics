@@ -28,14 +28,15 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace constants::physics;
 
 using PIDTracks = soa::Join<
-  aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension,
-  aod::pidTOFFullPi, aod::pidTOFFullPr, aod::pidTOFFullEl>;
+  aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension, aod::TracksDCA, aod::TrackSelection,
+  aod::pidTOFFullPi, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFbeta>;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 
@@ -50,16 +51,19 @@ struct DedxAnalysis {
     true};
 
   // Configurable Parameters
+  // Tracks cuts
   Configurable<float> minTPCnClsFound{"minTPCnClsFound", 70.0f,
                                       "min number of found TPC clusters"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f, "min number of found TPC crossed rows"};
-  Configurable<float> minNClsTPCdEdx{"minNClsTPCdEdx", 50.0f, "min number of TPC clusters for PID"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f,
                                  "max chi2 per cluster TPC"};
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f,
                                  "max chi2 per cluster ITS"};
   Configurable<float> etaMin{"etaMin", -0.8f, "etaMin"};
   Configurable<float> etaMax{"etaMax", +0.8f, "etaMax"};
+  Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
+  Configurable<float> maxDCAz{"maxDCAz", 2.f, "maxDCAz"};
+  // v0 cuts
   Configurable<float> v0cospaMin{"v0cospaMin", 0.998f, "Minimum V0 CosPA"};
   Configurable<float> minimumV0Radius{"minimumV0Radius", 0.5f,
                                       "Minimum V0 Radius"};
@@ -78,49 +82,115 @@ struct DedxAnalysis {
                                    "Minimum Mass Gamma"};
   Configurable<float> maxMassGamma{"maxMassGamma", 0.002022f,
                                    "Maximum Mass Gamma"};
-  Configurable<float> minReqClusterITS{"minReqClusterITS", 4.0f, "min number of clusters required in ITS"};
-  Configurable<float> maxDCAxy{"maxDCAxy", 0.1f, "maxDCAxy"};
-  Configurable<float> maxDCAz{"maxDCAz", 0.1f, "maxDCAz"};
-  Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
   Configurable<bool> calibrationMode{"calibrationMode", false, "calibration mode"};
   // Histograms names
   static constexpr std::string_view kDedxvsMomentumPos[4] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
   static constexpr std::string_view kDedxvsMomentumNeg[4] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
   static constexpr double EtaCut[9] = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
-  Configurable<std::vector<float>> calibrationFactor{"calibrationFactor", {50.8263, 51.0122, 50.7456, 50.0372, 49.699, 50.2222, 50.7263, 50.8073}, "calibration factors"};
+  Configurable<std::vector<float>> calibrationFactorNeg{"calibrationFactorNeg", {50.4011, 50.4764, 50.186, 49.2955, 48.8222, 49.4273, 49.9292, 50.0556}, "negative calibration factors"};
+  Configurable<std::vector<float>> calibrationFactorPos{"calibrationFactorPos", {50.5157, 50.6359, 50.3198, 49.3345, 48.9197, 49.4931, 50.0188, 50.1406}, "positive calibration factors"};
   ConfigurableAxis binP{"binP", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, ""};
+
+  TrackSelection myTrackSelection()
+  {
+    TrackSelection selectedTracks;
+    selectedTracks.SetPtRange(0.1f, 1e10f);
+    selectedTracks.SetEtaRange(etaMin, etaMax);
+    selectedTracks.SetRequireITSRefit(true);
+    selectedTracks.SetRequireTPCRefit(true);
+    selectedTracks.SetMinNCrossedRowsTPC(minNCrossedRowsTPC);
+    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC);
+    selectedTracks.SetMaxChi2PerClusterTPC(maxChi2TPC);
+    selectedTracks.SetRequireHitsInITSLayers(1, {0, 1});
+    selectedTracks.SetMaxChi2PerClusterITS(maxChi2ITS);
+    selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / std::pow(pt, 1.1f); });
+    selectedTracks.SetMaxDcaZ(maxDCAz);
+
+    return selectedTracks;
+  }
+
+  TrackSelection mySelectionPrim;
 
   void init(InitContext const&)
   {
+    AxisSpec dedxAxis{100, 0.0, 100.0, "dE/dx MIP (a. u.)"};
+    AxisSpec etaAxis{8, -0.8, 0.8, "#eta"};
+    AxisSpec pAxis = {binP, "#it{p}/Z (GeV/c)"};
     if (calibrationMode) {
       // MIP for pions
       registryDeDx.add(
-        "hdEdxMIP_vs_eta", "dE/dx", HistType::kTH2F,
-        {{8, -0.8, 0.8, "#eta"}, {100, 0.0, 100.0, "dE/dx MIP (a. u.)"}});
+        "hdEdx_vs_eta_Neg_Pi", "dE/dx", HistType::kTH2F,
+        {{etaAxis}, {dedxAxis}});
       registryDeDx.add(
-        "hdEdxMIP_vs_phi", "dE/dx", HistType::kTH2F,
-        {{100, 0.0, 6.4, "#phi"}, {100, 0.0, 100.0, "dE/dx MIP (a. u.)"}});
+        "hdEdx_vs_eta_Pos_Pi", "dE/dx", HistType::kTH2F,
+        {{etaAxis}, {dedxAxis}});
+      // MIP for electrons
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Neg_El", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Pos_El", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+      // Pions from TOF
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Neg_TOF", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Pos_TOF", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
 
     } else {
-      AxisSpec pAxis = {binP, "#it{p}/Z (GeV/c)"};
+      // MIP for pions
+      registryDeDx.add(
+        "hdEdx_vs_eta_Neg_calibrated_Pi", "dE/dx", HistType::kTH2F,
+        {{etaAxis}, {dedxAxis}});
 
       registryDeDx.add(
-        "hdEdxMIP_vs_eta_calibrated", "dE/dx", HistType::kTH2F,
-        {{8, -0.8, 0.8, "#eta"}, {100, 0.0, 100.0, "dE/dx MIP (a. u.)"}});
+        "hdEdx_vs_eta_Pos_calibrated_Pi", "dE/dx", HistType::kTH2F,
+        {{etaAxis}, {dedxAxis}});
+
+      // MIP for electrons
       registryDeDx.add(
-        "hdEdxMIP_vs_phi", "dE/dx", HistType::kTH2F,
-        {{100, 0.0, 6.4, "#phi"}, {100, 0.0, 100.0, "dE/dx MIP (a. u.)"}});
+        "hdEdx_vs_eta_vs_p_Neg_calibrated_El", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Pos_calibrated_El", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+
+      // Pions from TOF
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Neg_calibrated_TOF", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
+
+      registryDeDx.add(
+        "hdEdx_vs_eta_vs_p_Pos_calibrated_TOF", "dE/dx", HistType::kTH3F,
+        {{etaAxis}, {dedxAxis}, {pAxis}});
 
       // De/Dx for ch and v0 particles
       for (int i = 0; i < 4; ++i) {
         registryDeDx.add(kDedxvsMomentumPos[i].data(), "dE/dx", HistType::kTH3F,
-                         {{pAxis}, {100, 0.0, 100.0, "dE/dx (a. u.)"}, {8, -0.8, 0.8, "#eta"}});
+                         {{pAxis}, {dedxAxis}, {etaAxis}});
         registryDeDx.add(kDedxvsMomentumNeg[i].data(), "dE/dx", HistType::kTH3F,
-                         {{pAxis}, {100, 0.0, 100.0, "dE/dx (a. u.)"}, {8, -0.8, 0.8, "#eta"}});
+                         {{pAxis}, {dedxAxis}, {etaAxis}});
       }
     }
+
+    registryDeDx.add(
+      "hdEdx_vs_phi", "dE/dx", HistType::kTH2F,
+      {{100, 0.0, 6.4, "#phi"}, {dedxAxis}});
+
+    registryDeDx.add(
+      "hbeta_vs_p_Neg", "beta", HistType::kTH2F,
+      {{pAxis}, {100, 0.0, 1.1, "#beta"}});
+
+    registryDeDx.add(
+      "hbeta_vs_p_Pos", "beta", HistType::kTH2F,
+      {{pAxis}, {100, 0.0, 1.1, "#beta"}});
     // Event Counter
     registryDeDx.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{100, -20.0, +20.0, "z_{vtx} (cm)"}});
+
+    mySelectionPrim = myTrackSelection();
   }
 
   // Single-Track Selection
@@ -302,34 +372,92 @@ struct DedxAnalysis {
     // Kaons
     for (const auto& trk : tracks) {
 
+      // track Selection
       if (!passedSingleTrackSelection(trk, collision))
         continue;
-      if (!trk.passedTPCRefit())
+
+      if (!mySelectionPrim.IsSelected(trk))
         continue;
+
       float signedP = trk.sign() * trk.tpcInnerParam();
 
-      // MIP for pions
+      // MIP calibration for pions
       if (trk.tpcInnerParam() >= 0.35 && trk.tpcInnerParam() <= 0.45) {
         if (calibrationMode) {
-          registryDeDx.fill(HIST("hdEdxMIP_vs_eta"), trk.eta(), trk.tpcSignal());
-          registryDeDx.fill(HIST("hdEdxMIP_vs_phi"), trk.phi(), trk.tpcSignal());
+          if (signedP < 0) {
+            registryDeDx.fill(HIST("hdEdx_vs_eta_Neg_Pi"), trk.eta(), trk.tpcSignal());
+          } else {
+            registryDeDx.fill(HIST("hdEdx_vs_eta_Pos_Pi"), trk.eta(), trk.tpcSignal());
+          }
+
         } else {
-          registryDeDx.fill(HIST("hdEdxMIP_vs_phi"), trk.phi(), trk.tpcSignal());
           for (int i = 0; i < 8; ++i) {
             if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
-              registryDeDx.fill(HIST("hdEdxMIP_vs_eta_calibrated"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactor->at(i));
+              if (signedP < 0) {
+                registryDeDx.fill(HIST("hdEdx_vs_eta_Neg_calibrated_Pi"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i));
+              } else {
+                registryDeDx.fill(HIST("hdEdx_vs_eta_Pos_calibrated_Pi"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorPos->at(i));
+              }
+            }
+          }
+        }
+      }
+      // Beta from TOF
+      if (signedP < 0) {
+        registryDeDx.fill(HIST("hbeta_vs_p_Neg"), std::abs(signedP), trk.beta());
+      } else {
+        registryDeDx.fill(HIST("hbeta_vs_p_Pos"), signedP, trk.beta());
+      }
+      // Electrons from TOF
+      if (std::abs(trk.beta() - 1) < 0.1) { // beta cut
+        if (calibrationMode) {
+          if (signedP < 0) {
+            registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_El"), trk.eta(), trk.tpcSignal(), std::abs(signedP));
+          } else {
+            registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_El"), trk.eta(), trk.tpcSignal(), signedP);
+          }
+        } else {
+          for (int i = 0; i < 8; ++i) {
+            if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
+              if (signedP < 0) {
+                registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_calibrated_El"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), std::abs(signedP));
+              } else {
+                registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_calibrated_El"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorPos->at(i), signedP);
+              }
+            }
+          }
+        }
+      }
+      // pions from TOF
+      if (trk.beta() > 1. && trk.beta() < 1.05) { // beta cut
+        if (calibrationMode) {
+          if (signedP < 0) {
+            registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_TOF"), trk.eta(), trk.tpcSignal(), std::abs(signedP));
+          } else {
+            registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_TOF"), trk.eta(), trk.tpcSignal(), signedP);
+          }
+        } else {
+          for (int i = 0; i < 8; ++i) {
+            if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
+              if (signedP < 0) {
+                registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_calibrated_TOF"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), std::abs(signedP));
+              } else {
+                registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_calibrated_TOF"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorPos->at(i), signedP);
+              }
             }
           }
         }
       }
 
+      registryDeDx.fill(HIST("hdEdx_vs_phi"), trk.phi(), trk.tpcSignal());
+
       if (!calibrationMode) {
         for (int i = 0; i < 8; ++i) {
           if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
             if (signedP > 0) {
-              registryDeDx.fill(HIST(kDedxvsMomentumPos[0]), signedP, trk.tpcSignal() * 50 / calibrationFactor->at(i), trk.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumPos[0]), signedP, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
             } else {
-              registryDeDx.fill(HIST(kDedxvsMomentumNeg[0]), std::abs(signedP), trk.tpcSignal() * 50 / calibrationFactor->at(i), trk.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumNeg[0]), std::abs(signedP), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
             }
           }
         }
@@ -384,12 +512,10 @@ struct DedxAnalysis {
 
           for (int i = 0; i < 8; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
-
-              registryDeDx.fill(HIST(kDedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactor->at(i), negTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
             }
             if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
-
-              registryDeDx.fill(HIST(kDedxvsMomentumPos[1]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactor->at(i), posTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumPos[1]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactorPos->at(i), posTrack.eta());
             }
           }
         }
@@ -408,12 +534,10 @@ struct DedxAnalysis {
 
           for (int i = 0; i < 8; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
-
-              registryDeDx.fill(HIST(kDedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactor->at(i), negTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
             }
             if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
-
-              registryDeDx.fill(HIST(kDedxvsMomentumPos[2]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactor->at(i), posTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumPos[2]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactorPos->at(i), posTrack.eta());
             }
           }
         }
@@ -432,12 +556,10 @@ struct DedxAnalysis {
 
           for (int i = 0; i < 8; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
-
-              registryDeDx.fill(HIST(kDedxvsMomentumNeg[2]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactor->at(i), negTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumNeg[2]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
             }
             if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
-
-              registryDeDx.fill(HIST(kDedxvsMomentumPos[1]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactor->at(i), posTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumPos[1]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactorPos->at(i), posTrack.eta());
             }
           }
         }
@@ -456,12 +578,10 @@ struct DedxAnalysis {
 
           for (int i = 0; i < 8; ++i) {
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
-
-              registryDeDx.fill(HIST(kDedxvsMomentumNeg[3]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactor->at(i), negTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumNeg[3]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
             }
             if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
-
-              registryDeDx.fill(HIST(kDedxvsMomentumPos[3]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactor->at(i), posTrack.eta());
+              registryDeDx.fill(HIST(kDedxvsMomentumPos[3]), signedPpos, posTrack.tpcSignal() * 50 / calibrationFactorPos->at(i), posTrack.eta());
             }
           }
         }
