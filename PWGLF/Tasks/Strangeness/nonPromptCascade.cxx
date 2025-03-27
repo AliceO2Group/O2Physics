@@ -459,7 +459,7 @@ struct NonPromptCascadeTask {
   void fillDataTable(auto const& candidates)
   {
     for (const auto& c : candidates) {
-      getDataTable<CascadeType>()(c.matchingChi2, c.deltaPtITS, c.deltaPt,c.itsClusSize, c.hasReassociatedCluster,
+      getDataTable<CascadeType>()(c.matchingChi2, c.deltaPtITS, c.deltaPt, c.itsClusSize, c.hasReassociatedCluster,
                                   c.pvContributors, c.pvTimeResolution, c.pvX, c.pvY, c.pvZ,
                                   c.cascPt, c.cascEta, c.cascPhi,
                                   c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
