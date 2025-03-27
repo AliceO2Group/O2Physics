@@ -105,7 +105,9 @@ struct reduced3bodyCreator {
   // Zorro counting
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
   // Flag for trigger
-  Configurable<bool> cfgOnlyKeepH3L3Body{"cfgOnlyKeepH3L3Body", false, "Flag to keep only H3L3Body trigger"};
+  Configurable<bool> cfgOnlyKeepInterestedTrigger{"cfgOnlyKeepInterestedTrigger", false, "Flag to keep only interested trigger"};
+  Configurable<std::string> triggerList{"triggerList", "fH3L3Body", "List of triggers used to select events"};
+
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction for DCAFitter"};
 
   int mRunNumber;
@@ -152,7 +154,7 @@ struct reduced3bodyCreator {
   void initZorroBC(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (cfgSkimmedProcessing) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fH3L3Body");
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerList);
       zorro.populateHistRegistry(registry, bc.runNumber());
     }
   }
@@ -352,7 +354,7 @@ struct reduced3bodyCreator {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      if (cfgSkimmedProcessing && cfgOnlyKeepH3L3Body) {
+      if (cfgSkimmedProcessing && cfgOnlyKeepInterestedTrigger) {
         if (triggeredCollisions[collision.globalIndex()] == false) {
           continue;
         }
