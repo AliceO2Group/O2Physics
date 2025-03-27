@@ -11,7 +11,7 @@
 ///
 /// \file eventMixingValidation.cxx
 /// \brief Validation tasks for event mixing.
-/// \author
+/// \author Karwowska Maja
 /// \since
 
 #include <vector>

@@ -11,7 +11,7 @@
 ///
 /// \file eventMixing.cxx
 /// \brief Example tasks for event mixing.
-/// \author
+/// \author Karwowska Maja
 /// \since
 
 #include <vector>
