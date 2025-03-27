@@ -54,6 +54,7 @@ struct NPCascCandidate {
   int64_t trackITSID;
   int64_t collisionID;
   float matchingChi2;
+  float deltaPtITS;
   float deltaPt;
   float itsClusSize;
   bool hasReassociatedCluster;
@@ -413,7 +414,7 @@ struct NonPromptCascadeTask {
       o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, pionTrkParCov, mBz, 2.f, matCorr, &pionDCA);
       o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, bachTrkParCov, mBz, 2.f, matCorr, &bachDCA);
 
-      float deltaPtITSCascade{-1.e10f}, cascITSclsSize{-1.e10f}, matchingChi2{-1.e10f};
+      float deltaPtITSCascade{-1.e10f}, deltaPtCascade{-1.e10f}, cascITSclsSize{-1.e10f}, matchingChi2{-1.e10f};
       bool hasReassociatedClusters{false};
       int trackedCascGlobalIndex{-1}, itsTrackGlobalIndex{-1}, cascITSclusters{-1};
       if constexpr (requires { candidate.track(); }) {
@@ -424,6 +425,7 @@ struct NonPromptCascadeTask {
         hasReassociatedClusters = (track.itsNCls() != ITStrack.itsNCls());
         cascadeLvector.SetCoordinates(track.pt(), track.eta(), track.phi(), 0);
         deltaPtITSCascade = std::hypot(cascadeMomentum[0], cascadeMomentum[1]) - ITStrack.pt();
+        deltaPtCascade = std::hypot(cascadeMomentum[0], cascadeMomentum[1]) - track.pt();
         trackedCascGlobalIndex = track.globalIndex();
         itsTrackGlobalIndex = ITStrack.globalIndex();
         cascITSclusters = track.itsNCls();
@@ -439,7 +441,7 @@ struct NonPromptCascadeTask {
           itsTrackPDG = ITStrack.has_mcParticle() ? ITStrack.mcParticle().pdgCode() : 0;
         }
       }
-      candidates.emplace_back(NPCascCandidate{mcParticleID, trackedCascGlobalIndex, itsTrackGlobalIndex, candidate.collisionId(), matchingChi2, deltaPtITSCascade, cascITSclsSize, hasReassociatedClusters, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, fromHF[0], fromHF[1],
+      candidates.emplace_back(NPCascCandidate{mcParticleID, trackedCascGlobalIndex, itsTrackGlobalIndex, candidate.collisionId(), matchingChi2, deltaPtITSCascade, deltaPtCascade, cascITSclsSize, hasReassociatedClusters, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, fromHF[0], fromHF[1],
                                               collision.numContrib(), collision.collisionTimeRes(), primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               cascadeLvector.pt(), cascadeLvector.eta(), cascadeLvector.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
@@ -457,7 +459,7 @@ struct NonPromptCascadeTask {
   void fillDataTable(auto const& candidates)
   {
     for (const auto& c : candidates) {
-      getDataTable<CascadeType>()(c.matchingChi2, c.deltaPt, c.itsClusSize, c.hasReassociatedCluster,
+      getDataTable<CascadeType>()(c.matchingChi2, c.deltaPtITS, c.deltaPt,c.itsClusSize, c.hasReassociatedCluster,
                                   c.pvContributors, c.pvTimeResolution, c.pvX, c.pvY, c.pvZ,
                                   c.cascPt, c.cascEta, c.cascPhi,
                                   c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
@@ -496,7 +498,7 @@ struct NonPromptCascadeTask {
       auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
       auto recCollision = collisions.iteratorAt(c.collisionID);
 
-      getMCtable<CascadeType>()(c.matchingChi2, c.deltaPt, c.itsClusSize, c.hasReassociatedCluster, c.isGoodMatch, c.isGoodCascade, c.pdgCodeMom, c.pdgCodeITStrack, c.isFromBeauty, c.isFromCharm,
+      getMCtable<CascadeType>()(c.matchingChi2, c.deltaPtITS, c.deltaPt, c.itsClusSize, c.hasReassociatedCluster, c.isGoodMatch, c.isGoodCascade, c.pdgCodeMom, c.pdgCodeITStrack, c.isFromBeauty, c.isFromCharm,
                                 c.pvContributors, c.pvTimeResolution, c.pvX, c.pvY, c.pvZ, c.cascPt, c.cascEta, c.cascPhi,
                                 c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                                 c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,

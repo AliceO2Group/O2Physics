@@ -26,6 +26,7 @@ namespace NPCascadeTable
 {
 DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float);
 DECLARE_SOA_COLUMN(DeltaPtITSCascade, deltaPtITSCascade, float);
+DECLARE_SOA_COLUMN(DeltaPtCascade, deltaPtCascade, float);
 DECLARE_SOA_COLUMN(ITSClusSize, itsClusSize, float);
 DECLARE_SOA_COLUMN(HasReassociatedCluster, hasReassociatedCluster, bool);
 DECLARE_SOA_COLUMN(IsGoodMatch, isGoodMatch, bool);
@@ -109,6 +110,7 @@ DECLARE_SOA_COLUMN(MotherDecayDaughters, motherDecayDaughters, int8_t);
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::MatchingChi2,
                   NPCascadeTable::DeltaPtITSCascade,
+                  NPCascadeTable::DeltaPtCascade,
                   NPCascadeTable::ITSClusSize,
                   NPCascadeTable::HasReassociatedCluster,
                   aod::collision::NumContrib,
@@ -164,6 +166,7 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
 DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::MatchingChi2,
                   NPCascadeTable::DeltaPtITSCascade,
+                  NPCascadeTable::DeltaPtCascade,
                   NPCascadeTable::ITSClusSize,
                   NPCascadeTable::HasReassociatedCluster,
                   aod::collision::NumContrib,
@@ -219,6 +222,7 @@ DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
 DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::MatchingChi2,
                   NPCascadeTable::DeltaPtITSCascade,
+                  NPCascadeTable::DeltaPtCascade,
                   NPCascadeTable::ITSClusSize,
                   NPCascadeTable::HasReassociatedCluster,
                   NPCascadeTable::IsGoodMatch,
@@ -289,6 +293,7 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
 DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::MatchingChi2,
                   NPCascadeTable::DeltaPtITSCascade,
+                  NPCascadeTable::DeltaPtCascade,
                   NPCascadeTable::ITSClusSize,
                   NPCascadeTable::HasReassociatedCluster,
                   NPCascadeTable::IsGoodMatch,
