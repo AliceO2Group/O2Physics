@@ -118,9 +118,6 @@ int findLeadingParticle(TTracks const& tracks, T1 const dcaXYTrackMax, T2 const 
 {
   auto leadingParticle = tracks.begin();
   for (auto const& track : tracks) {
-    if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
-      continue;
-    }
     if (std::abs(track.eta()) > etaTrackMax) {
       continue;
     }
