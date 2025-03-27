@@ -64,6 +64,7 @@ struct DalitzEEQCMC {
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
+  Configurable<bool> cfgRequireTrueAssociation{"cfgRequireTrueAssociation", false, "flag to require true mc collision association"};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -84,7 +85,7 @@ struct DalitzEEQCMC {
   struct : ConfigurableGroup {
     std::string prefix = "dileptoncut_group";
     Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
-    Configurable<float> cfg_max_mass{"cfg_max_mass", 1e+10, "max mass"};
+    Configurable<float> cfg_max_mass{"cfg_max_mass", 0.02, "max mass"};
     Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", true, "flag to apply phiv cut"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", true, "flag to require ITS ib any hits"};
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", false, "flag to require ITS ib 1st hit"};
@@ -96,16 +97,20 @@ struct DalitzEEQCMC {
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 5, "min ncluster its"};
     Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 70, "min ncrossed rows"};
+    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
+    Configurable<float> cfg_max_dca3dsigma_track{"cfg_max_dca3dsigma_track", 1.5, "max DCA 3D in sigma"};
 
-    Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DalitzEECut::PIDSchemes::kTPConly), "pid scheme [kTPConly : 0]"};
+    Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DalitzEECut::PIDSchemes::kTOFif), "pid scheme [kTOFif : 0, kTPConly : 1]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron inclusion"};
-    Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -1e+10, "min. TPC n sigma for pion exclusion"};
-    Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +3.0, "max. TPC n sigma for pion exclusion"};
+    Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -0.0, "min. TPC n sigma for pion exclusion"};
+    Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +0.0, "max. TPC n sigma for pion exclusion"};
+    Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -3.0, "min. TOF n sigma for electron inclusion"};
+    Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +3.0, "max. TOF n sigma for electron inclusion"};
   } dileptoncuts;
 
   o2::ccdb::CcdbApi ccdbApi;
@@ -122,6 +127,7 @@ struct DalitzEEQCMC {
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
+  static constexpr std::string_view track_types[2] = {"primary/", "secondary/"};
 
   ~DalitzEEQCMC() {}
 
@@ -152,22 +158,37 @@ struct DalitzEEQCMC {
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Phi/");
 
     // track info
-    fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
-    fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
-    fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -2.0f, 2.0f}}, false);
-    fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
-    fRegistry.add("Track/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
-    fRegistry.add("Track/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
-    fRegistry.add("Track/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
-    fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
-    fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("Track/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
-    fRegistry.add("Track/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
-    fRegistry.add("Track/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
-    fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
-    fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
-    fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH1F, {{32, 0, 16}}, false);
+    fRegistry.add("Track/primary/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
+    fRegistry.add("Track/primary/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
+    fRegistry.add("Track/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -2.0f, 2.0f}}, false);
+    fRegistry.add("Track/primary/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -0.1f, 0.1f}, {200, -0.1f, 0.1f}}, false);
+    fRegistry.add("Track/primary/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
+    fRegistry.add("Track/primary/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
+    fRegistry.add("Track/primary/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
+    fRegistry.add("Track/primary/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
+    fRegistry.add("Track/primary/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
+    fRegistry.add("Track/primary/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/primary/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
+    fRegistry.add("Track/primary/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
+    fRegistry.add("Track/primary/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
+
+    fRegistry.add("Track/primary/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
+    fRegistry.add("Track/primary/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/primary/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+
+    fRegistry.add("Track/primary/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
+    fRegistry.add("Track/primary/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/primary/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
+    fRegistry.add("Track/primary/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH1F, {{32, 0, 16}}, false);
+
+    fRegistry.add("Track/primary/hChi2TOF", "chi2 of TOF", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/primary/hTOFbeta", "TOF beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
+    fRegistry.add("Track/primary/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/primary/hTOFNsigmaPi", "TOF n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/primary/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {200, -1.0f, 1.0f}}, true);
+    fRegistry.add("Track/primary/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
+    fRegistry.add("Track/primary/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
+    fRegistry.addClone("Track/primary/", "Track/secondary/");
   }
 
   void init(InitContext&)
@@ -196,7 +217,7 @@ struct DalitzEEQCMC {
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       mRunNumber = collision.runNumber();
@@ -254,16 +275,19 @@ struct DalitzEEQCMC {
     fDileptonCut.SetMinNClustersTPC(dileptoncuts.cfg_min_ncluster_tpc);
     fDileptonCut.SetMinNCrossedRowsTPC(dileptoncuts.cfg_min_ncrossedrows);
     fDileptonCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    fDileptonCut.SetMaxFracSharedClustersTPC(dileptoncuts.cfg_max_frac_shared_clusters_tpc);
     fDileptonCut.SetChi2PerClusterTPC(0.0, dileptoncuts.cfg_max_chi2tpc);
     fDileptonCut.SetChi2PerClusterITS(0.0, dileptoncuts.cfg_max_chi2its);
     fDileptonCut.SetNClustersITS(dileptoncuts.cfg_min_ncluster_its, 7);
     fDileptonCut.SetMaxDcaXY(dileptoncuts.cfg_max_dcaxy);
     fDileptonCut.SetMaxDcaZ(dileptoncuts.cfg_max_dcaz);
+    fDileptonCut.SetTrackDca3DRange(0.f, dileptoncuts.cfg_max_dca3dsigma_track); // in sigma
 
     // for eID
     fDileptonCut.SetPIDScheme(dileptoncuts.cfg_pid_scheme);
     fDileptonCut.SetTPCNsigmaElRange(dileptoncuts.cfg_min_TPCNsigmaEl, dileptoncuts.cfg_max_TPCNsigmaEl);
     fDileptonCut.SetTPCNsigmaPiRange(dileptoncuts.cfg_min_TPCNsigmaPi, dileptoncuts.cfg_max_TPCNsigmaPi);
+    fDileptonCut.SetTOFNsigmaElRange(dileptoncuts.cfg_min_TOFNsigmaEl, dileptoncuts.cfg_max_TOFNsigmaEl);
   }
 
   template <typename TTrack, typename TMCParticles>
@@ -287,7 +311,7 @@ struct DalitzEEQCMC {
   template <typename T>
   bool isInAcceptance(T const& t1)
   {
-    if ((mctrackcuts.min_mcPt < t1.pt() && t1.pt() < mctrackcuts.max_mcPt) && abs(t1.eta()) < mctrackcuts.max_mcEta) {
+    if ((mctrackcuts.min_mcPt < t1.pt() && t1.pt() < mctrackcuts.max_mcPt) && std::fabs(t1.eta()) < mctrackcuts.max_mcEta) {
       return true;
     } else {
       return false;
@@ -295,7 +319,7 @@ struct DalitzEEQCMC {
   }
 
   template <typename TCollision, typename TTrack1, typename TTrack2, typename TMCParticles>
-  bool fillTruePairInfo(TCollision const&, TTrack1 const& t1, TTrack2 const& t2, TMCParticles const& mcparticles)
+  bool fillTruePairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TMCParticles const& mcparticles)
   {
     if (!fDileptonCut.IsSelectedTrack(t1) || !fDileptonCut.IsSelectedTrack(t2)) {
       return false;
@@ -309,55 +333,114 @@ struct DalitzEEQCMC {
     auto t2mc = t2.template emmcparticle_as<TMCParticles>();
 
     int mother_id = FindLF(t1mc, t2mc, mcparticles);
-    int hfee_type = IsHF(t1mc, t2mc, mcparticles);
-    if (mother_id < 0 && hfee_type < 0) {
+    if (mother_id < 0) {
       return false;
     }
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-    if (abs(v12.Rapidity()) > maxY) {
+    if (std::fabs(v12.Rapidity()) > maxY) {
       return false;
     }
     float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
 
     if (mother_id > -1 && t1mc.pdgCode() * t2mc.pdgCode() < 0) {
       auto mcmother = mcparticles.iteratorAt(mother_id);
+      if (cfgRequireTrueAssociation && (mcmother.emmceventId() != collision.emmceventId())) {
+        return false;
+      }
+
       if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
         if ((t1mc.isPhysicalPrimary() || t1mc.producedByGenerator()) && (t2mc.isPhysicalPrimary() || t2mc.producedByGenerator())) {
-          switch (abs(mcmother.pdgCode())) {
+          switch (std::abs(mcmother.pdgCode())) {
             case 111:
               fRegistry.fill(HIST("Pair/sm/Pi0/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Pi0/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<0>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<0>(t2);
+              }
               break;
             case 221:
               fRegistry.fill(HIST("Pair/sm/Eta/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Eta/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<0>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<0>(t2);
+              }
               break;
             case 331:
               fRegistry.fill(HIST("Pair/sm/EtaPrime/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/EtaPrime/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<0>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<0>(t2);
+              }
               break;
             case 113:
               fRegistry.fill(HIST("Pair/sm/Rho/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Rho/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<0>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<0>(t2);
+              }
               break;
             case 223:
               fRegistry.fill(HIST("Pair/sm/Omega/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Omega/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<0>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<0>(t2);
+              }
               break;
             case 333:
               fRegistry.fill(HIST("Pair/sm/Phi/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Phi/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<0>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<0>(t2);
+              }
               break;
             default:
               break;
           }
         } else if (!(t1mc.isPhysicalPrimary() || t1mc.producedByGenerator()) && !(t2mc.isPhysicalPrimary() || t2mc.producedByGenerator())) {
-          switch (abs(mcmother.pdgCode())) {
+          switch (std::abs(mcmother.pdgCode())) {
             case 22:
               fRegistry.fill(HIST("Pair/sm/Photon/hMvsPt"), v12.M(), v12.Pt());
               fRegistry.fill(HIST("Pair/sm/Photon/hMvsPhiV"), phiv, v12.M());
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t1.globalIndex());
+                fillTrackInfo<1>(t1);
+              }
+              if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+                used_trackIds.emplace_back(t2.globalIndex());
+                fillTrackInfo<1>(t2);
+              }
               break;
             default:
               break;
@@ -365,53 +448,39 @@ struct DalitzEEQCMC {
         } // end of primary/secondary selection
       } // end of primary selection for same mother
     }
-
-    // fill track info that belong to true pairs.
-    if (t1.sign() > 0) {
-      if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
-        used_trackIds.emplace_back(t1.globalIndex());
-        fillTrackInfo(t1);
-      }
-    } else {
-      if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
-        used_trackIds.emplace_back(t1.globalIndex());
-        fillTrackInfo(t1);
-      }
-    }
-    if (t2.sign() > 0) {
-      if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
-        used_trackIds.emplace_back(t1.globalIndex());
-        fillTrackInfo(t2);
-      }
-    } else {
-      if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
-        used_trackIds.emplace_back(t2.globalIndex());
-        fillTrackInfo(t2);
-      }
-    }
-
     return true;
   }
 
-  template <typename TTrack>
+  template <int tracktype, typename TTrack>
   void fillTrackInfo(TTrack const& track)
   {
-    fRegistry.fill(HIST("Track/hPt"), track.pt());
-    fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / track.pt());
-    fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
-    fRegistry.fill(HIST("Track/hDCAxyz"), track.dcaXY(), track.dcaZ());
-    fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
-    fRegistry.fill(HIST("Track/hNclsTPC"), track.tpcNClsFound());
-    fRegistry.fill(HIST("Track/hNcrTPC"), track.tpcNClsCrossedRows());
-    fRegistry.fill(HIST("Track/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
-    fRegistry.fill(HIST("Track/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
-    fRegistry.fill(HIST("Track/hChi2TPC"), track.tpcChi2NCl());
-    fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
-    fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
-    fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
-    fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
-    fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-    fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
+    auto mctrack = track.template emmcparticle_as<aod::EMMCParticles>();
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hPt"), track.pt());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hQoverPt"), track.sign() / track.pt());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hEtaPhi"), track.phi(), track.eta());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hDCAxyz"), track.dcaXY(), track.dcaZ());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hDCAxyzSigma"), track.dcaXY() / std::sqrt(track.cYY()), track.dcaZ() / std::sqrt(track.cZZ()));
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4); // convert cm to um
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);  // convert cm to um
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hNclsITS"), track.itsNCls());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hNclsTPC"), track.tpcNClsFound());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hNcrTPC"), track.tpcNClsCrossedRows());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hChi2TPC"), track.tpcChi2NCl());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hChi2ITS"), track.itsChi2NCl());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hITSClusterMap"), track.itsClusterMap());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hTOFbeta"), track.p(), track.beta());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
+    fRegistry.fill(HIST("Track/") + HIST(track_types[tracktype]) + HIST("hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
   }
 
   std::vector<int> used_trackIds;
@@ -504,15 +573,14 @@ struct DalitzEEQCMC {
         }
 
         int mother_id = FindLF(t1, t2, mcparticles);
-        int hfee_type = IsHF(t1, t2, mcparticles);
-        if (mother_id < 0 && hfee_type < 0) {
+        if (mother_id < 0) {
           continue;
         }
         ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-        if (abs(v12.Rapidity()) > maxY) {
+        if (std::fabs(v12.Rapidity()) > maxY) {
           continue;
         }
 
@@ -520,7 +588,7 @@ struct DalitzEEQCMC {
           auto mcmother = mcparticles.iteratorAt(mother_id);
           if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
 
-            switch (abs(mcmother.pdgCode())) {
+            switch (std::abs(mcmother.pdgCode())) {
               case 111:
                 fRegistry.fill(HIST("Generated/sm/Pi0/hMvsPt"), v12.M(), v12.Pt());
                 break;

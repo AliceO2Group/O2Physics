@@ -123,7 +123,7 @@ struct PseudorapidityDensityMFT {
        {HistType::kTH2F, {PtAxis, EtaAxis}}}, //
       {"EventSelection",
        ";status;events",
-       {HistType::kTH1F, {{10, 0.5, 10.5}}}},
+       {HistType::kTH1F, {{15, 0.5, 15.5}}}},
       {"EventCounts",
        ";status;events",
        {HistType::kTH1F, {{2, 0.5, 2.5}}}},
@@ -146,13 +146,16 @@ struct PseudorapidityDensityMFT {
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
     x->SetBinLabel(2, "Selected");
-    x->SetBinLabel(3, "Selected INEL>0");
-    x->SetBinLabel(4, "Vz cut Sel INEL>0");
+    x->SetBinLabel(3, "Selected Vz Cut");
+    x->SetBinLabel(4, "Sel8+Vz+INEL>0");
     x->SetBinLabel(5, "Sel INEL,INEL_fwd>0");
     x->SetBinLabel(6, "Rejected");
     x->SetBinLabel(7, "Good BCs");
     x->SetBinLabel(8, "BCs with collisions");
     x->SetBinLabel(9, "BCs with pile-up/splitting");
+    x->SetBinLabel(10, "midtracks>0");
+    x->SetBinLabel(11, "percollisionSample>0");
+    x->SetBinLabel(12, "midtracks+percollisionSample>0");
     registry.add({"EventsNtrkZvtx",
                   "; N_{trk}; #it{z}_{vtx} (cm); events",
                   {HistType::kTH2F, {MultAxis, ZAxis}}});
@@ -452,7 +455,7 @@ struct PseudorapidityDensityMFT {
   Partition<aod::MFTTracks> sample =
     (aod::fwdtrack::eta < -2.8f) && (aod::fwdtrack::eta > -3.2f);
 
-  Partition<aod::Tracks> sampleCentral = (nabs(aod::track::eta) < 1.1f);
+  Partition<aod::Tracks> sampleCentral = (nabs(aod::track::eta) < 1.f);
 
   expressions::Filter atrackFilter =
     (aod::fwdtrack::bestCollisionId >= 0) && (aod::fwdtrack::eta < -2.0f) &&
@@ -553,8 +556,15 @@ struct PseudorapidityDensityMFT {
         registry.fill(HIST("EventsNtrkZvtx"), Ntrk, z);
         if (midtracks.size() > 0) {
           registry.fill(HIST("EventSelection"), 4.);
+          registry.fill(HIST("EventSelection"), 10.);
           registry.fill(HIST("EventsNtrkZvtx_gt0"), Ntrk, z);
           eventsInel.insert(collision.globalIndex());
+        }
+        if (perCollisionSample.size() > 0) {
+          registry.fill(HIST("EventSelection"), 11.);
+        }
+        if (midtracks.size() > 0 && perCollisionSample.size() > 0) {
+          registry.fill(HIST("EventSelection"), 12.);
         }
         int64_t i = 0.0, j = 0.0, k = 0.0;
         if (retracks.size() > 0) {

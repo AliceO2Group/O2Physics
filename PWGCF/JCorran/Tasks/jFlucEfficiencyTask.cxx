@@ -66,6 +66,8 @@ struct JFlucEfficiencyTask {
     Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", true, "Evt sel: apply pileup rejection"};
     Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
     Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", true, "Evt sel: apply NoCollInTimeRangeStandard"};
+    Configurable<bool> cfgEvtRun2AliEventCuts{"cfgEvtRun2AliEventCuts", true, "Evt sel: apply Run2 Ali event cuts"};
+    Configurable<bool> cfgEvtRun2INELgtZERO{"cfgEvtRun2INELgtZERO", false, "Evt sel: apply Run2 INEL>0 event cuts"};
   } EventCuts;
 
   // Configurable for track selection
@@ -102,9 +104,12 @@ struct JFlucEfficiencyTask {
 
   Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 1, "Centrality bins for MC, 0: off, 1: on"};
   using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
+  using CollisionRun2Candidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TrackSelection>;
   using MCCollisionCandidates = soa::Join<CollisionCandidates, aod::McCollisionLabel>;
+  using MCRun2CollisionCandidates = soa::Join<CollisionRun2Candidates, aod::McCollisionLabel>;
   using MCTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabel>;
+  using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 
   // Histogram Registry
   HistogramRegistry registry{
@@ -123,8 +128,11 @@ struct JFlucEfficiencyTask {
     if (debugMode) {
       LOGF(info, "Initializing JFlucEfficiencyTask");
     }
-
-    colCuts.setCuts(EventCuts.cfgEvtZvtx, EventCuts.cfgEvtTriggerCheck, EventCuts.cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, EventCuts.cfgEvtOccupancyInTimeRangeMax, EventCuts.cfgEvtOccupancyInTimeRangeMin);
+    if (!doprocessMCRun2 && !doprocessDataRun2) {
+      colCuts.setCuts(EventCuts.cfgEvtZvtx, EventCuts.cfgEvtTriggerCheck, EventCuts.cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, EventCuts.cfgEvtOccupancyInTimeRangeMax, EventCuts.cfgEvtOccupancyInTimeRangeMin);
+    } else {
+      colCuts.setCuts(EventCuts.cfgEvtZvtx, EventCuts.cfgEvtTriggerCheck, EventCuts.cfgEvtOfflineCheck, false);
+    }
     colCuts.init(&registry);
     colCuts.setTriggerTVX(EventCuts.cfgEvtTriggerTVXSel);
     colCuts.setApplyTFBorderCut(EventCuts.cfgEvtTFBorderCut);
@@ -133,6 +141,8 @@ struct JFlucEfficiencyTask {
     colCuts.setApplyPileupRejection(EventCuts.cfgEvtPileupRejection);
     colCuts.setApplyNoITSROBorderCut(EventCuts.cfgEvtNoITSROBorderCut);
     colCuts.setApplyCollInTimeRangeStandard(EventCuts.cfgEvtCollInTimeRangeStandard);
+    colCuts.setApplyRun2AliEventCuts(EventCuts.cfgEvtRun2AliEventCuts);
+    colCuts.setApplyRun2INELgtZERO(EventCuts.cfgEvtRun2INELgtZERO);
     colCuts.printCuts();
 
     if (doprocessDerivedMC || doprocessMC) {
@@ -325,12 +335,110 @@ struct JFlucEfficiencyTask {
     }
   }
 
+  void processMCRun2(aod::McCollisions::iterator const& mcCollision,
+                     soa::SmallGroups<MCRun2CollisionCandidates> const& collisions,
+                     soa::Filtered<MCTrackCandidates> const& mcTracks,
+                     aod::McParticles const& mcParticles,
+                     BCsWithRun2Info const&)
+  {
+    registry.fill(HIST("hEventCounterMC"), 0);
+    if (!(std::abs(mcCollision.posZ()) < cfgCutVertex)) {
+      return;
+    }
+    if (collisions.size() < 1) {
+      return;
+    }
+    if (cfgAcceptSplitCollisions == 0 && collisions.size() > 1) {
+      return;
+    }
+    float centrality = -999;
+    for (const auto& collision : collisions) { // Anayway only 1 collision per mcCollision will be selected
+      if (!colCuts.isSelected(collision))      // Default event selection
+        return;
+      colCuts.fillQARun2(collision);
+      centrality = collision.centRun2V0M();
+    }
+    registry.fill(HIST("hEventCounterMC"), 1);
+    registry.fill(HIST("hZVertexMC"), mcCollision.posZ(), centrality);
+    if (centrality < cfgCentMin || centrality > cfgCentMax) {
+      return;
+    }
+    for (const auto& particle : mcParticles) {
+      auto charge = getCharge(particle);
+      if ((!particle.isPhysicalPrimary()) || !isChargedParticle(particle.pdgCode())) {
+        continue;
+      }
+      // pT and eta selections
+      if (particle.pt() < cfgPtMin || particle.pt() > cfgPtMax || particle.eta() < cfgEtaMin || particle.eta() > cfgEtaMax) {
+        continue;
+      }
+      registry.fill(HIST("hPtGen"), particle.pt(), centrality);
+      registry.fill(HIST("hEtaGen"), particle.eta(), centrality);
+      if (charge > 0) { // Positive particles
+        registry.fill(HIST("hPtGenPos"), particle.pt(), centrality);
+      } else if (charge < 0) { // Negative particles
+        registry.fill(HIST("hPtGenNeg"), particle.pt(), centrality);
+      }
+    }
+    // Reconstruct tracks from MC particles
+    for (const auto& collision : collisions) {
+      registry.fill(HIST("hZVertexReco"), collision.posZ(), centrality);
+      registry.fill(HIST("hZVertexCorrelation"), mcCollision.posZ(), collision.posZ());
+      auto tracks = mcTracks.sliceBy(perCollision, collision.globalIndex());
+      for (const auto& track : tracks) {
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        auto mcPart = track.mcParticle();
+        if (!mcPart.isPhysicalPrimary() || !isChargedParticle(mcPart.pdgCode())) {
+          continue;
+        }
+        // pT and eta selections
+        if (track.pt() < cfgPtMin || track.pt() > cfgPtMax || track.eta() < cfgEtaMin || track.eta() > cfgEtaMax) {
+          continue;
+        }
+        registry.fill(HIST("hPtRec"), track.pt(), centrality);
+        registry.fill(HIST("hEtaRec"), track.eta(), centrality);
+        if (track.sign() > 0) { // Positive tracks
+          registry.fill(HIST("hPtRecPos"), track.pt(), centrality);
+        } else if (track.sign() < 0) { // Negative tracks
+          registry.fill(HIST("hPtRecNeg"), track.pt(), centrality);
+        }
+      }
+    }
+  }
+
   void processData(CollisionCandidates::iterator const& collision, soa::Filtered<TrackCandidates> const& tracks)
   {
     if (!colCuts.isSelected(collision)) // Default event selection
       return;
     colCuts.fillQA(collision);
     auto centrality = collision.centFT0C();
+    if (centrality < cfgCentMin || centrality > cfgCentMax) {
+      return;
+    }
+    registry.fill(HIST("hZVertexReco"), collision.posZ(), centrality);
+    for (const auto& track : tracks) {
+      // pT and eta selections
+      if (track.pt() < cfgPtMin || track.pt() > cfgPtMax || track.eta() < cfgEtaMin || track.eta() > cfgEtaMax) {
+        continue;
+      }
+      registry.fill(HIST("hPtRec"), track.pt(), centrality);
+      registry.fill(HIST("hEtaRec"), track.eta(), centrality);
+      if (track.sign() > 0) { // Positive tracks
+        registry.fill(HIST("hPtRecPos"), track.pt(), centrality);
+      } else if (track.sign() < 0) { // Negative tracks
+        registry.fill(HIST("hPtRecNeg"), track.pt(), centrality);
+      }
+    }
+  }
+
+  void processDataRun2(CollisionRun2Candidates::iterator const& collision, soa::Filtered<TrackCandidates> const& tracks, BCsWithRun2Info const&)
+  {
+    if (!colCuts.isSelected(collision)) // Default event selection
+      return;
+    colCuts.fillQARun2(collision);
+    auto centrality = collision.centRun2V0M();
     if (centrality < cfgCentMin || centrality > cfgCentMax) {
       return;
     }
@@ -455,7 +563,9 @@ struct JFlucEfficiencyTask {
   }
 
   PROCESS_SWITCH(JFlucEfficiencyTask, processMC, "Process MC only", false);
+  PROCESS_SWITCH(JFlucEfficiencyTask, processMCRun2, "Process Run2 MC only", false);
   PROCESS_SWITCH(JFlucEfficiencyTask, processData, "Process data only", false);
+  PROCESS_SWITCH(JFlucEfficiencyTask, processDataRun2, "Process Run2 data only", false);
   PROCESS_SWITCH(JFlucEfficiencyTask, processDerivedMC, "Process derived MC only", false);
   PROCESS_SWITCH(JFlucEfficiencyTask, processDerivedData, "Process derived data only", false);
   PROCESS_SWITCH(JFlucEfficiencyTask, processEfficiency, "Process efficiency task", true);

@@ -226,11 +226,14 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_004, "AOD", "STRAEVSELS", 4,         //! 
                             // stracollision::EnergyCommonZNC<mult::MultZNC>,
                             stracollision::IsUPC<udcollision::GapSide>);
 
-DECLARE_SOA_TABLE(StraEvSelsRun2, "AOD", "STRAEVSELSRUN2",        //! debug information
-                  evsel::Sel8, evsel::Sel7, evsel::Selection,     //! event selection: sel8
-                  mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+DECLARE_SOA_TABLE(StraEvSelsRun2, "AOD", "STRAEVSELSRUN2",    //! debug information
+                  evsel::Sel8, evsel::Sel7, evsel::Selection, //! event selection: sel8
+                  mult::MultFT0A, mult::MultFT0C,             // FIT detectors
+                  mult::MultFV0A, mult::MultFV0C,
                   mult::MultFDDA, mult::MultFDDC,
+                  run2::SPDClustersL0, run2::SPDClustersL1,     // SPD detectors
                   mult::MultNTracksPVeta1,                      // track multiplicities with eta cut for INEL>0
+                  mult::MultTracklets,                          // multiplicity with tracklets (only Run2)
                   mult::MultPVTotalContributors,                // number of PV contribs total
                   mult::MultNTracksGlobal,                      // global track multiplicities
                   mult::MultNTracksITSTPC,                      // track multiplicities, PV contribs, no eta cut
@@ -282,7 +285,10 @@ DECLARE_SOA_TABLE(StraMCCollisions_000, "AOD", "STRAMCCOLLISION", //! MC collisi
 DECLARE_SOA_TABLE_VERSIONED(StraMCCollisions_001, "AOD", "STRAMCCOLLISION", 1, //! debug information
                             o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
                             mccollision::ImpactParameter, mccollision::EventPlaneAngle);
-using StraMCCollisions = StraMCCollisions_001;
+DECLARE_SOA_TABLE_VERSIONED(StraMCCollisions_002, "AOD", "STRAMCCOLLISION", 2, //! debug information
+                            o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
+                            mccollision::ImpactParameter, mccollision::EventPlaneAngle, mccollision::GeneratorsID);
+using StraMCCollisions = StraMCCollisions_002;
 using StraMCCollision = StraMCCollisions::iterator;
 
 DECLARE_SOA_TABLE(StraMCCollMults_000, "AOD", "STRAMCCOLLMULTS", //! MC collision multiplicities

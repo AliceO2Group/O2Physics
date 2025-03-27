@@ -154,7 +154,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
   o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "Users/m/mpuccio/EventFiltering/OTS/Chunked/", "ccdb path for ZORRO objects"};
   o2::framework::ConfigurableAxis th2ConfigAxisCent{"th2ConfigAxisCent", {100, 0., 100.}, ""};
-  o2::framework::ConfigurableAxis th2ConfigAxisOccupancy{"th2ConfigAxisOccupancy", {14, 0, 140000}, ""};
+  o2::framework::ConfigurableAxis th2ConfigAxisOccupancy{"th2ConfigAxisOccupancy", {14, 0, 14000}, ""};
 
   // histogram names
   static constexpr char NameHistCollisions[] = "hCollisions";

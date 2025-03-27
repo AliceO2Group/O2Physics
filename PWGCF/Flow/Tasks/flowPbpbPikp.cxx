@@ -85,6 +85,10 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 2.0f, "DCAxy range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "DCAz range for tracks")
 
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancy, int, 3000, "Occupancy cut")
+  O2_DEFINE_CONFIGURABLE(cfgUseGlobalTrack, bool, true, "use Global track")
+  O2_DEFINE_CONFIGURABLE(cfgITScluster, int, 0, "Number of ITS cluster")
+
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -133,6 +137,7 @@ struct FlowPbpbPikp {
     histos.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     histos.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
     histos.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
+    histos.add("hPhiWeighted", "", {HistType::kTH1D, {axisPhi}});
     histos.add("hEta", "", {HistType::kTH1D, {axisEta}});
     histos.add("hPt", "", {HistType::kTH1D, {axisPt}});
     histos.add("c22_gap08", "", {HistType::kTProfile, {axisMultiplicity}});
@@ -254,6 +259,18 @@ struct FlowPbpbPikp {
     KAONS,
     PROTONS
   };
+
+  template <typename TTrack>
+  bool selectionTrack(const TTrack& track)
+  {
+    if (cfgUseGlobalTrack && !(track.isGlobalTrack() && track.isPVContributor() && track.itsNCls() > cfgITScluster && track.tpcNClsFound() > cfgTpcCluster && track.hasTPC())) {
+      return false;
+    }
+    if (!cfgUseGlobalTrack && !(track.isPVContributor() && track.itsNCls() > cfgITScluster && track.hasTPC())) {
+      return false;
+    }
+    return true;
+  }
 
   template <typename TTrack>
   int getNsigmaPID(TTrack track)
@@ -385,11 +402,35 @@ struct FlowPbpbPikp {
       uint64_t timestamp = bc.timestamp();
       mAcceptance.clear();
       mAcceptance.resize(kCount_OutputSpecies);
-      mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_ref", timestamp));
-      mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_ch", timestamp));
-      mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_pi", timestamp));
-      mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_ka", timestamp));
-      mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_pr", timestamp));
+      mAcceptance[hRef] = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_ref", timestamp);
+      if (mAcceptance[hRef])
+        LOGF(info, "Loaded acceptance weights from %s_ref (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance[hRef]);
+      else
+        LOGF(fatal, "Could not load acceptance weights from %s_ref (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance[hRef]);
+
+      mAcceptance[hCharge] = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_ch", timestamp);
+      if (mAcceptance[hCharge])
+        LOGF(info, "Loaded acceptance weights from %s_ch (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance[hCharge]);
+      else
+        LOGF(fatal, "Could not load acceptance weights from %s_ch (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance[hCharge]);
+
+      mAcceptance[hPion] = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_pi", timestamp);
+      if (mAcceptance[hPion])
+        LOGF(info, "Loaded acceptance weights from %s_pi (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance[hPion]);
+      else
+        LOGF(fatal, "Could not load acceptance weights from %s_pi (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance[hPion]);
+
+      mAcceptance[hKaon] = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_ka", timestamp);
+      if (mAcceptance[hKaon])
+        LOGF(info, "Loaded acceptance weights from %s_ka (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance[hKaon]);
+      else
+        LOGF(fatal, "Could not load acceptance weights from %s_ka (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance[hKaon]);
+
+      mAcceptance[hProton] = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + "_pr", timestamp);
+      if (mAcceptance[hProton])
+        LOGF(info, "Loaded acceptance weights from %s_pr (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance[hProton]);
+      else
+        LOGF(fatal, "Could not load acceptance weights from %s_pr (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance[hProton]);
     }
 
     correctionsLoaded = true;
@@ -398,9 +439,17 @@ struct FlowPbpbPikp {
   template <typename TTrack>
   double getAcceptance(TTrack track, const double& vtxz, int index)
   { // 0 ref, 1 ch, 2 pi, 3 ka, 4 pr
+    if (index < 0 || index >= kCount_OutputSpecies) {
+      return 1;
+    }
     double wacc = 1;
-    if (!mAcceptance.empty())
+    if (!mAcceptance.empty() && correctionsLoaded) {
+      if (!mAcceptance[index]) {
+        LOGF(fatal, "Acceptance weights not loaded for index %d", index);
+        return 1;
+      }
       wacc = mAcceptance[index]->getNUA(track.phi(), track.eta(), vtxz);
+    }
     return wacc;
   }
 
@@ -443,7 +492,12 @@ struct FlowPbpbPikp {
     int nTot = tracks.size();
     if (nTot < 1)
       return;
-    if (!collision.sel8())
+
+    if (!collision.sel8() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
+      return;
+
+    int occupancy = collision.trackOccupancyInTimeRange();
+    if (occupancy > cfgCutOccupancy)
       return;
 
     float lRandom = fRndm->Rndm();
@@ -462,13 +516,16 @@ struct FlowPbpbPikp {
 
     histos.fill(HIST("hVtxZ"), vtxz);
     histos.fill(HIST("hMult"), nTot);
-    histos.fill(HIST("hCent"), collision.centFT0C());
+    histos.fill(HIST("hCent"), cent);
     fGFW->Clear();
 
     float weff = 1;
     int pidIndex;
+    loadCorrections(bc); // load corrections for the each event
 
     for (auto const& track : tracks) {
+      if (!selectionTrack(track))
+        continue;
       double pt = track.pt();
       histos.fill(HIST("hPhi"), track.phi());
       histos.fill(HIST("hEta"), track.eta());
@@ -494,6 +551,7 @@ struct FlowPbpbPikp {
         waccRef = waccPOI; // if particle is both (then it's overlap), override ref with POI
 
       if (withinPtRef) {
+        histos.fill(HIST("hPhiWeighted"), track.phi(), waccRef);
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccRef * weff, 1);
         fGFW->Fill(track.eta(), 1, track.phi(), waccRef * weff, 512);
       }
