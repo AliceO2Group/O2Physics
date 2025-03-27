@@ -318,7 +318,7 @@ struct V0PtInvMassPlots {
       lambdaptedgevalues[i] = std::stod(pthistos::lambdaPtBins[i]);
       antilambdaPtedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
     }
-
+    rPtAnalysis.fill(HIST("hVertexZ"), collision.posZ());
     for (const auto& v0 : V0s) {
       rPtAnalysis.fill(HIST("hVertexZRec"), collision.posZ());
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
