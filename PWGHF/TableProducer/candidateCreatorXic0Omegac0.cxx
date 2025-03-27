@@ -74,6 +74,13 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_evsel;
 
+enum McMatchFlag : uint8_t { 
+  None = 0,                                  
+  CharmbaryonUnmatched,
+  CascUnmatched,
+  V0Unmatched
+};
+
 // Reconstruction of omegac0 and xic0 candidates
 struct HfCandidateCreatorXic0Omegac0 {
   Produces<aod::HfCandToXiPi> rowCandToXiPi;
@@ -1916,22 +1923,11 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     int8_t nKaToPiCasc{0}, nKaToPiOmegac0{0};
     bool collisionMatched = false;
 
-    int pdgCodeOmegac0 = Pdg::kOmegaC0;  // 4332
-    int pdgCodeXic0 = Pdg::kXiC0;        // 4132
-    int pdgCodeXiMinus = kXiMinus;       // 3312
-    int pdgCodeOmegaMinus = kOmegaMinus; // 3334
-    int pdgCodeLambda = kLambda0;        // 3122
-    int pdgCodePiPlus = kPiPlus;         // 211
-    int pdgCodePiMinus = kPiMinus;       // -211
-    int pdgCodeProton = kProton;         // 2212
-    int pdgCodeKaonPlus = kKPlus;        // 321
-    int pdgCodeKaonMinus = kKMinus;      // -321
-
     // Match reconstructed candidates.
     for (const auto& candidate : candidates) {
       flag = 0;
       origin = RecoDecay::OriginType::None;
-      debug = 0;
+      debug = McMatchFlag::None;
       collisionMatched = false;
       std::vector<int> idxBhadMothers{};
 
@@ -1968,22 +1964,22 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       // Xic0 -> xi pi matching
       if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
         // Xic → pi pi pi p
-        indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgCodeXic0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, +kXiC0, std::array{+kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
         if (indexRec == -1) {
-          debug = 1;
+          debug = McMatchFlag::CharmbaryonUnmatched;
         }
         if (indexRec > -1) {
           // Xi- → pi pi p
-          indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &signCasc, 2);
+          indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &signCasc, 2);
           if (indexRec == -1) {
-            debug = 2;
+            debug = McMatchFlag::CascUnmatched;
           }
           if (indexRec > -1) {
             // Lambda → p pi
-            indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &signV0, 1);
+            indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
             if (indexRec == -1) {
-              debug = 3;
+              debug = McMatchFlag::V0Unmatched;
             }
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi);
@@ -2002,27 +1998,27 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         } else {
           rowMCMatchRecXicToXiPi(flag, debug, origin, collisionMatched, -1.f, 0);
         }
-        if (debug == 2 || debug == 3) {
+        if (debug == McMatchFlag::CascUnmatched || debug == McMatchFlag::V0Unmatched) {
           LOGF(info, "WARNING: Xic0ToXiPi decays in the expected final state but the condition on the intermediate states are not fulfilled");
         }
       } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) { // Omegac -> xi pi matching
         // Omegac → pi pi pi p
-        indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, +kOmegaC0, std::array{+kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
         if (indexRec == -1) {
-          debug = 1;
+          debug = McMatchFlag::CharmbaryonUnmatched;
         }
         if (indexRec > -1) {
           // Xi- → pi pi p
-          indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &signCasc, 2);
+          indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &signCasc, 2);
           if (indexRec == -1) {
-            debug = 2;
+            debug = McMatchFlag::CascUnmatched;
           }
           if (indexRec > -1) {
             // Lambda → p pi
-            indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &signV0, 1);
+            indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
             if (indexRec == -1) {
-              debug = 3;
+              debug = McMatchFlag::V0Unmatched;
             }
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi);
@@ -2041,28 +2037,28 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         } else {
           rowMCMatchRecOmegacToXiPi(flag, debug, origin, collisionMatched, -1.f, 0);
         }
-        if (debug == 2 || debug == 3) {
+        if (debug == McMatchFlag::CascUnmatched || debug == McMatchFlag::V0Unmatched) {
           LOGF(info, "WARNING: Omegac0ToXiPi decays in the expected final state but the condition on the intermediate states are not fulfilled");
         }
       } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) { // Omegac0 -> omega pi matching
         if (acceptTrackIntWithMaterial) {
           // Omegac → pi K pi p
-          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodeKaonMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3, &nPiToMuOmegac0, &nKaToPiOmegac0);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, arrayDaughters, +kOmegaC0, std::array{+kPiPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3, &nPiToMuOmegac0, &nKaToPiOmegac0);
           indexRecCharmBaryon = indexRec;
           if (indexRec == -1) {
-            debug = 1;
+            debug = McMatchFlag::CharmbaryonUnmatched;
           }
           if (indexRec > -1) {
             // Omega- → K pi p
-            indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, arrayDaughtersCasc, pdgCodeOmegaMinus, std::array{pdgCodeKaonMinus, pdgCodeProton, pdgCodePiMinus}, true, &signCasc, 2, &nPiToMuCasc, &nKaToPiCasc);
+            indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, arrayDaughtersCasc, +kOmegaMinus, std::array{+kKMinus, +kProton, +kPiMinus}, true, &signCasc, 2, &nPiToMuCasc, &nKaToPiCasc);
             if (indexRec == -1) {
-              debug = 2;
+              debug = McMatchFlag::CascUnmatched;
             }
             if (indexRec > -1) {
               // Lambda → p pi
-              indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &signV0, 1, &nPiToMuV0);
+              indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1, &nPiToMuV0);
               if (indexRec == -1) {
-                debug = 3;
+                debug = McMatchFlag::V0Unmatched;
               }
               if (indexRec > -1 && nPiToMuOmegac0 >= 1 && nKaToPiOmegac0 == 0) {
                 flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPiOneMu);
@@ -2075,22 +2071,22 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           }
         } else {
           // Omegac → pi K pi p
-          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodeKaonMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3, &nPiToMuOmegac0, &nKaToPiOmegac0);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughters, +kOmegaC0, std::array{+kPiPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3, &nPiToMuOmegac0, &nKaToPiOmegac0);
           indexRecCharmBaryon = indexRec;
           if (indexRec == -1) {
-            debug = 1;
+            debug = McMatchFlag::CharmbaryonUnmatched;
           }
           if (indexRec > -1) {
             // Omega- → K pi p
-            indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughtersCasc, pdgCodeOmegaMinus, std::array{pdgCodeKaonMinus, pdgCodeProton, pdgCodePiMinus}, true, &signCasc, 2, &nPiToMuCasc, &nKaToPiCasc);
+            indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughtersCasc, +kOmegaMinus, std::array{+kKMinus, +kProton, +kPiMinus}, true, &signCasc, 2, &nPiToMuCasc, &nKaToPiCasc);
             if (indexRec == -1) {
-              debug = 2;
+              debug = McMatchFlag::CascUnmatched;
             }
             if (indexRec > -1) {
               // Lambda → p pi
-              indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &signV0, 1, &nPiToMuV0);
+              indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1, &nPiToMuV0);
               if (indexRec == -1) {
-                debug = 3;
+                debug = McMatchFlag::V0Unmatched;
               }
               if (indexRec > -1 && nPiToMuOmegac0 >= 1 && nKaToPiOmegac0 == 0) {
                 flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPiOneMu);
@@ -2113,27 +2109,27 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         } else {
           rowMCMatchRecToOmegaPi(flag, debug, origin, collisionMatched, -1.f, 0);
         }
-        if (debug == 2 || debug == 3) {
+        if (debug == McMatchFlag::CascUnmatched || debug == McMatchFlag::V0Unmatched) {
           LOGF(info, "WARNING: Omegac0ToOmegaPi decays in the expected final state but the condition on the intermediate states are not fulfilled");
         }
       } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) { // Omegac0 -> omega K matching
         // Omegac → K K pi p
-        indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodeKaonPlus, pdgCodeKaonMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, +kOmegaC0, std::array{ +kKPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
         if (indexRec == -1) {
-          debug = 1;
+          debug = McMatchFlag::CharmbaryonUnmatched;
         }
         if (indexRec > -1) {
           // Omega- → K pi p
-          indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, pdgCodeOmegaMinus, std::array{pdgCodeKaonMinus, pdgCodeProton, pdgCodePiMinus}, true, &signCasc, 2);
+          indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, +kOmegaMinus, std::array{+kKMinus, +kProton, +kPiMinus}, true, &signCasc, 2);
           if (indexRec == -1) {
-            debug = 2;
+            debug = McMatchFlag::CascUnmatched;
           }
           if (indexRec > -1) {
             // Lambda → p pi
-            indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &signV0, 1);
+            indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
             if (indexRec == -1) {
-              debug = 3;
+              debug = McMatchFlag::V0Unmatched;
             }
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK);
@@ -2152,7 +2148,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         } else {
           rowMCMatchRecToOmegaK(flag, debug, origin, collisionMatched, -1.f, 0);
         }
-        if (debug == 2 || debug == 3) {
+        if (debug == McMatchFlag::CascUnmatched || debug == McMatchFlag::V0Unmatched) {
           LOGF(info, "WARNING: Omegac0ToOmegaK decays in the expected final state but the condition on the intermediate states are not fulfilled");
         }
       }
@@ -2220,23 +2216,23 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
         if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
           //  Xic → Xi pi
-          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, +kXiC0, std::array{+kXiMinus, +kPiPlus}, true, &sign)) {
             debugGenCharmBar = 1;
             ptCharmBaryonGen = particle.pt();
             rapidityCharmBaryonGen = particle.y();
             for (const auto& daughterCharm : particle.template daughters_as<aod::McParticles>()) {
-              if (std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus) {
+              if (std::abs(daughterCharm.pdgCode()) != +kXiMinus) {
                 continue;
               }
               // Xi -> Lambda pi
-              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
                 debugGenCasc = 1;
                 for (const auto& daughterCascade : daughterCharm.template daughters_as<aod::McParticles>()) {
-                  if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
+                  if (std::abs(daughterCascade.pdgCode()) != +kLambda0) {
                     continue;
                   }
                   // Lambda -> p pi
-                  if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+                  if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
                     debugGenLambda = 1;
                     flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi);
                   }
@@ -2262,23 +2258,23 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
         } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
           //  Omegac → Xi pi
-          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, +kOmegaC0, std::array{+kXiMinus, +kPiPlus}, true, &sign)) {
             debugGenCharmBar = 1;
             ptCharmBaryonGen = particle.pt();
             rapidityCharmBaryonGen = particle.y();
             for (const auto& daughterCharm : particle.template daughters_as<aod::McParticles>()) {
-              if (std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus) {
+              if (std::abs(daughterCharm.pdgCode()) != +kXiMinus) {
                 continue;
               }
               // Xi -> Lambda pi
-              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
                 debugGenCasc = 1;
                 for (const auto& daughterCascade : daughterCharm.template daughters_as<aod::McParticles>()) {
-                  if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
+                  if (std::abs(daughterCascade.pdgCode()) != +kLambda0) {
                     continue;
                   }
                   // Lambda -> p pi
-                  if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+                  if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
                     debugGenLambda = 1;
                     flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi);
                   }
@@ -2304,23 +2300,23 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
         } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
           //  Omegac → Omega pi
-          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeOmegaMinus, pdgCodePiPlus}, true, &sign)) {
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, +kOmegaC0, std::array{+kOmegaMinus, +kPiPlus}, true, &sign)) {
             debugGenCharmBar = 1;
             ptCharmBaryonGen = particle.pt();
             rapidityCharmBaryonGen = particle.y();
             for (const auto& daughterCharm : particle.template daughters_as<aod::McParticles>()) {
-              if (std::abs(daughterCharm.pdgCode()) != pdgCodeOmegaMinus) {
+              if (std::abs(daughterCharm.pdgCode()) != +kOmegaMinus) {
                 continue;
               }
               // Omega -> Lambda K
-              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeOmegaMinus, std::array{pdgCodeLambda, pdgCodeKaonMinus}, true)) {
+              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, +kOmegaMinus, std::array{+kLambda0, +kKMinus}, true)) {
                 debugGenCasc = 1;
                 for (const auto& daughterCascade : daughterCharm.template daughters_as<aod::McParticles>()) {
-                  if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
+                  if (std::abs(daughterCascade.pdgCode()) != +kLambda0) {
                     continue;
                   }
                   // Lambda -> p pi
-                  if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+                  if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
                     debugGenLambda = 1;
                     flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi);
                   }
@@ -2346,23 +2342,23 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
         } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
           //  Omegac → Omega K
-          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeOmegaMinus, pdgCodeKaonPlus}, true, &sign)) {
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, +kOmegaC0, std::array{+kOmegaMinus,  +kKPlus}, true, &sign)) {
             debugGenCharmBar = 1;
             ptCharmBaryonGen = particle.pt();
             rapidityCharmBaryonGen = particle.y();
             for (const auto& daughterCharm : particle.template daughters_as<aod::McParticles>()) {
-              if (std::abs(daughterCharm.pdgCode()) != pdgCodeOmegaMinus) {
+              if (std::abs(daughterCharm.pdgCode()) != +kOmegaMinus) {
                 continue;
               }
               // Omega -> Lambda K
-              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeOmegaMinus, std::array{pdgCodeLambda, pdgCodeKaonMinus}, true)) {
+              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, +kOmegaMinus, std::array{+kLambda0, +kKMinus}, true)) {
                 debugGenCasc = 1;
                 for (const auto& daughterCascade : daughterCharm.template daughters_as<aod::McParticles>()) {
-                  if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
+                  if (std::abs(daughterCascade.pdgCode()) != +kLambda0) {
                     continue;
                   }
                   // Lambda -> p pi
-                  if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+                  if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
                     debugGenLambda = 1;
                     flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK);
                   }
