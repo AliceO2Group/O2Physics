@@ -74,8 +74,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_evsel;
 
-enum McMatchFlag : uint8_t { 
-  None = 0,                                  
+enum McMatchFlag : uint8_t {
+  None = 0,
   CharmbaryonUnmatched,
   CascUnmatched,
   V0Unmatched
@@ -2114,7 +2114,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         }
       } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) { // Omegac0 -> omega K matching
         // Omegac → K K pi p
-        indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, +kOmegaC0, std::array{ +kKPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, +kOmegaC0, std::array{+kKPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
         if (indexRec == -1) {
           debug = McMatchFlag::CharmbaryonUnmatched;
@@ -2342,7 +2342,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
         } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
           //  Omegac → Omega K
-          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, +kOmegaC0, std::array{+kOmegaMinus,  +kKPlus}, true, &sign)) {
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, +kOmegaC0, std::array{+kOmegaMinus, +kKPlus}, true, &sign)) {
             debugGenCharmBar = 1;
             ptCharmBaryonGen = particle.pt();
             rapidityCharmBaryonGen = particle.y();
