@@ -110,11 +110,11 @@ struct statPromptPhoton {
     std::vector<double> ptBinning = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 12.0, 16.0, 20.0, 25.0, 30.0, 40.0, 50.0, 75.0, 100.0, 150.0, 200.0, 300.0, 500.0};
     AxisSpec pthadAxis = {ptBinning, "#it{p}_{T}^{had sum} [GeV/c]"};
 
-    if(cfgJETracks){
+    if (cfgJETracks) {
       trackFilter = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(cfgTrackFilter));
     }
 
-    if(cfgRecHistograms){
+    if (cfgRecHistograms) {
       histos.add("REC_nEvents", "REC_nEvents", kTH1F, {{4, 0.0, 4.0}});
       histos.add("REC_Cluster_QA", "REC_Cluster_QA", kTH1F, {{10, -0.5, 9.5}});
       histos.add("REC_PtHadSum_Photon", "REC_PtHadSum_Photon", kTH1F, {pthadAxis});
@@ -191,7 +191,7 @@ struct statPromptPhoton {
       histos.add("REC_dR_Photon", "REC_dR_Photon", kTH1F, {{628, 0.0, 2 * TMath::Pi()}});
       histos.add("REC_dR_Stern", "REC_dR_Stern", kTH1F, {{628, 0.0, 2 * TMath::Pi()}});
     }
-    if(cfgGenHistograms){
+    if (cfgGenHistograms) {
       histos.add("GEN_nEvents", "GEN_nEvents", kTH1F, {{4, 0.0, 4.0}});
       histos.add("GEN_True_Trigger_Energy", "GEN_True_Trigger_Energy", kTH1F, {{82, -1.0, 40.0}});
       histos.add("GEN_Particle_Pt", "GEN_Particle_Pt", kTH1F, {{82, -1.0, 40.0}});
@@ -203,7 +203,7 @@ struct statPromptPhoton {
       histos.add("GEN_dR_Photon", "GEN_dR_Photon", kTH1F, {{628, 0.0, 2 * TMath::Pi()}});
       histos.add("GEN_dR_Stern", "GEN_dR_Stern", kTH1F, {{628, 0.0, 2 * TMath::Pi()}});
     }
-    if(cfgDataHistograms){
+    if (cfgDataHistograms) {
       histos.add("DATA_nEvents", "DATA_nEvents", kTH1F, {{4, 0.0, 4.0}});
       histos.add("DATA_M02_BC", "DATA_M02_BC", kTH1F, {{628, -2 * TMath::Pi(), 2 * TMath::Pi()}});
       histos.add("DATA_M02_AC", "DATA_M02_AC", kTH1F, {{628, -2 * TMath::Pi(), 2 * TMath::Pi()}});
@@ -255,7 +255,7 @@ struct statPromptPhoton {
   using jfilteredCollisions = soa::Filtered<jselectedCollisions>;
   using jfilteredMCClusters = soa::Filtered<jMCClusters>;
   using jfilteredClusters = soa::Filtered<jClusters>;
-  
+
   Preslice<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalclustercell::emcalclusterId;
 
   // Helper functions
@@ -286,26 +286,26 @@ struct statPromptPhoton {
 
       if (!IsParticle) {
         if constexpr (requires { track.trackId(); }) {
-	  if(cfgJETracks) {
-	    if(!jetderiveddatautilities::selectTrack(track, trackFilter)) {
-	      continue;
-	    }
-	  } else {
-	    auto originaltrack = track.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>();
-	    if (!trackSelection(originaltrack)) {
-	      continue;
-	    }
+          if (cfgJETracks) {
+            if (!jetderiveddatautilities::selectTrack(track, trackFilter)) {
+              continue;
+            }
+          } else {
+            auto originaltrack = track.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>();
+            if (!trackSelection(originaltrack)) {
+              continue;
+            }
           } // reject track
         } else if constexpr (requires { track.sign(); }) { // checking for JTrack
-	   if(cfgJETracks) {
-	    if(!jetderiveddatautilities::selectTrack(track, trackFilter)) {
-	      continue;
-	    }
-	   } else {
-	     if (!trackSelection(track)) {
-	       continue;
-	     }
-	   } // reject track
+          if (cfgJETracks) {
+            if (!jetderiveddatautilities::selectTrack(track, trackFilter)) {
+              continue;
+            }
+          } else {
+            if (!trackSelection(track)) {
+              continue;
+            }
+          } // reject track
         } // done checking for JTrack
       } else {
         if constexpr (requires { track.isPhysicalPrimary(); }) {
@@ -340,21 +340,21 @@ struct statPromptPhoton {
       if (DodR) {
         if (dR > MinR && dR < MaxR) {
           if (!IsParticle) {
-	    if(cfgRecHistograms) {
-	      if (IsStern) {
-		histos.fill(HIST("REC_dR_Stern"), dR);
-	      }
-	      if (!IsStern) {
-		histos.fill(HIST("REC_dR_Photon"), dR);
-	      }
-	    } else if(cfgDataHistograms) {
-	      if (IsStern) {
-		histos.fill(HIST("DATA_dR_Stern"), dR);
-	      }
-	      if (!IsStern) {
-		histos.fill(HIST("DATA_dR_Photon"), dR);
-	      } 
-	    }
+            if (cfgRecHistograms) {
+              if (IsStern) {
+                histos.fill(HIST("REC_dR_Stern"), dR);
+              }
+              if (!IsStern) {
+                histos.fill(HIST("REC_dR_Photon"), dR);
+              }
+            } else if (cfgDataHistograms) {
+              if (IsStern) {
+                histos.fill(HIST("DATA_dR_Stern"), dR);
+              }
+              if (!IsStern) {
+                histos.fill(HIST("DATA_dR_Photon"), dR);
+              }
+            }
           } else {
             if (IsStern) {
               histos.fill(HIST("GEN_dR_Stern"), dR);
@@ -602,7 +602,6 @@ struct statPromptPhoton {
 
   PROCESS_SWITCH(statPromptPhoton, processMCGen, "process MC Gen", true);
 
-
   PresliceUnsorted<jEMCtracks> EMCTrackPerTrack = aod::jemctrack::trackId;
   int nEventsRecMC_JE = 0;
   void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const& tracks, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const&, TrackCandidates const&, aod::JMcParticles const&, BcCandidates const&, jEMCtracks const& emctracks)
@@ -632,18 +631,18 @@ struct statPromptPhoton {
 
     bool noTrk = true;
     for (auto& track : tracks) {
-      if(cfgJETracks) {
-	if(!jetderiveddatautilities::selectTrack(track, trackFilter)) {
-	  continue;
-	}
+      if (cfgJETracks) {
+        if (!jetderiveddatautilities::selectTrack(track, trackFilter)) {
+          continue;
+        }
       } else {
-	auto ogtrack = track.track_as<TrackCandidates>();
-	if (!trackSelection(ogtrack)) {
-	  continue;
-	}
-	if (!ogtrack.isGlobalTrack()) {
-	  continue;
-	}
+        auto ogtrack = track.track_as<TrackCandidates>();
+        if (!trackSelection(ogtrack)) {
+          continue;
+        }
+        if (!ogtrack.isGlobalTrack()) {
+          continue;
+        }
       }
       noTrk = false;
       break;
@@ -708,28 +707,28 @@ struct statPromptPhoton {
       double sumptT = 0;
       bool clusterqa = false;
       for (auto& ctrack : tracksofcluster) {
-	double etaT, phiT;
+        double etaT, phiT;
 
-	if(cfgJETracks) {
-	  if(!jetderiveddatautilities::selectTrack(ctrack, trackFilter)) {
-	    continue;
-	  }
-	  auto emctracksPerTrack = emctracks.sliceBy(EMCTrackPerTrack, ctrack.globalIndex());
-	  auto emctrack = emctracksPerTrack.iteratorAt(0);
-	  etaT = emctrack.etaEmcal();
-	  phiT = emctrack.phiEmcal();
-	} else {
-	  auto ogtrack = ctrack.track_as<TrackCandidates>();
-	  if (!trackSelection(ogtrack)) {
-	    continue;
-	  }
-	  if (!ogtrack.isGlobalTrack()) {
-	    continue;
-	  }
-	  etaT = ogtrack.trackEtaEmcal();
-	  phiT = ogtrack.trackPhiEmcal();
-	}
-	
+        if (cfgJETracks) {
+          if (!jetderiveddatautilities::selectTrack(ctrack, trackFilter)) {
+            continue;
+          }
+          auto emctracksPerTrack = emctracks.sliceBy(EMCTrackPerTrack, ctrack.globalIndex());
+          auto emctrack = emctracksPerTrack.iteratorAt(0);
+          etaT = emctrack.etaEmcal();
+          phiT = emctrack.phiEmcal();
+        } else {
+          auto ogtrack = ctrack.track_as<TrackCandidates>();
+          if (!trackSelection(ogtrack)) {
+            continue;
+          }
+          if (!ogtrack.isGlobalTrack()) {
+            continue;
+          }
+          etaT = ogtrack.trackEtaEmcal();
+          phiT = ogtrack.trackPhiEmcal();
+        }
+
         double etaC = mccluster.eta();
         double phiC = mccluster.phi();
         double ptT = ctrack.pt();
@@ -795,20 +794,20 @@ struct statPromptPhoton {
 
       // check if cluster is good
       for (auto& ctrack : tracksofcluster) {
-	if(cfgJETracks) {
-	  if(!jetderiveddatautilities::selectTrack(ctrack, trackFilter)) {
-	    continue;
-	  }
-	} else {
-	  auto ogtrack = ctrack.track_as<TrackCandidates>();
-	  if (!trackSelection(ogtrack)) {
-	    continue;
-	  }
-	  if (!ogtrack.isGlobalTrack()) {
-	    continue;
-	  }
-	}
-	bool etatrigger = false;
+        if (cfgJETracks) {
+          if (!jetderiveddatautilities::selectTrack(ctrack, trackFilter)) {
+            continue;
+          }
+        } else {
+          auto ogtrack = ctrack.track_as<TrackCandidates>();
+          if (!trackSelection(ogtrack)) {
+            continue;
+          }
+          if (!ogtrack.isGlobalTrack()) {
+            continue;
+          }
+        }
+        bool etatrigger = false;
         bool phitrigger = false;
         // double ptT = ctrack.pt();
         double phidiff = TVector2::Phi_mpi_pi(mccluster.phi() - ctrack.phi());
@@ -880,20 +879,20 @@ struct statPromptPhoton {
           for (auto& track : tracks) {
             if (!track.has_mcParticle())
               continue;
-	    
-	    if(cfgJETracks) {
-	      if(!jetderiveddatautilities::selectTrack(track, trackFilter)) {
-		continue;
-	      }
-	    } else {
-	      auto ogtrack = track.track_as<TrackCandidates>();
-	      if (!trackSelection(ogtrack)) {
-		continue;
-	      }
-	      if (!ogtrack.isGlobalTrack()) {
-		continue;
-	      }
-	    }
+
+            if (cfgJETracks) {
+              if (!jetderiveddatautilities::selectTrack(track, trackFilter)) {
+                continue;
+              }
+            } else {
+              auto ogtrack = track.track_as<TrackCandidates>();
+              if (!trackSelection(ogtrack)) {
+                continue;
+              }
+              if (!ogtrack.isGlobalTrack()) {
+                continue;
+              }
+            }
 
             int tindex = track.mcParticleId();
             if (tindex == cindex) {
@@ -1054,20 +1053,20 @@ struct statPromptPhoton {
     for (auto& track : tracks) {
       bool sterntrigger = false;
       double sternPt = 0.0;
-      if(cfgJETracks) {
-	if(!jetderiveddatautilities::selectTrack(track, trackFilter)) {
-	  continue;
-	}
+      if (cfgJETracks) {
+        if (!jetderiveddatautilities::selectTrack(track, trackFilter)) {
+          continue;
+        }
       } else {
-	auto ogtrack = track.track_as<TrackCandidates>();
-	if (!trackSelection(ogtrack)) {
-	  continue;
-	}
-	if (!ogtrack.isGlobalTrack()) {
-	  continue;
-	}
+        auto ogtrack = track.track_as<TrackCandidates>();
+        if (!trackSelection(ogtrack)) {
+          continue;
+        }
+        if (!ogtrack.isGlobalTrack()) {
+          continue;
+        }
       }
-      
+
       // Do stuff with geometric cuts
       double phiPrime = track.phi();
       if (track.sign() < 0) {
@@ -1151,18 +1150,18 @@ struct statPromptPhoton {
     bool noTrk = true;
     for (auto& track : tracks) {
 
-      if(cfgJETracks) {
-	if(!jetderiveddatautilities::selectTrack(track, trackFilter)) {
-	  continue;
-	}
+      if (cfgJETracks) {
+        if (!jetderiveddatautilities::selectTrack(track, trackFilter)) {
+          continue;
+        }
       } else {
-	auto ogtrack = track.track_as<TrackCandidates>();
-	if (!trackSelection(ogtrack)) {
-	  continue;
-	}
-	if (!ogtrack.isGlobalTrack()) {
-	  continue;
-	}
+        auto ogtrack = track.track_as<TrackCandidates>();
+        if (!trackSelection(ogtrack)) {
+          continue;
+        }
+        if (!ogtrack.isGlobalTrack()) {
+          continue;
+        }
       }
       noTrk = false;
       break;
@@ -1227,27 +1226,27 @@ struct statPromptPhoton {
       double sumptT = 0;
       bool clusterqa = false;
       for (auto& ctrack : tracksofcluster) {
-	double etaT, phiT;
-	if(cfgJETracks) {
-	  if(!jetderiveddatautilities::selectTrack(ctrack, trackFilter)) {
-	    continue;
-	  }
-	  auto emctracksPerTrack = emctracks.sliceBy(EMCTrackPerTrack, ctrack.globalIndex());
-	  auto emctrack = emctracksPerTrack.iteratorAt(0);
-	  etaT = emctrack.etaEmcal();
-	  phiT = emctrack.phiEmcal();
-	} else {
-	  auto ogtrack = ctrack.track_as<TrackCandidates>();
-	  if (!trackSelection(ogtrack)) {
-	    continue;
-	  }
-	  if (!ogtrack.isGlobalTrack()) {
-	    continue;
-	  }
-	  etaT = ogtrack.trackEtaEmcal();
-	  phiT = ogtrack.trackPhiEmcal();
-	}
-	
+        double etaT, phiT;
+        if (cfgJETracks) {
+          if (!jetderiveddatautilities::selectTrack(ctrack, trackFilter)) {
+            continue;
+          }
+          auto emctracksPerTrack = emctracks.sliceBy(EMCTrackPerTrack, ctrack.globalIndex());
+          auto emctrack = emctracksPerTrack.iteratorAt(0);
+          etaT = emctrack.etaEmcal();
+          phiT = emctrack.phiEmcal();
+        } else {
+          auto ogtrack = ctrack.track_as<TrackCandidates>();
+          if (!trackSelection(ogtrack)) {
+            continue;
+          }
+          if (!ogtrack.isGlobalTrack()) {
+            continue;
+          }
+          etaT = ogtrack.trackEtaEmcal();
+          phiT = ogtrack.trackPhiEmcal();
+        }
+
         double etaC = cluster.eta();
         double phiC = cluster.phi();
         double ptT = ctrack.pt();
@@ -1255,7 +1254,7 @@ struct statPromptPhoton {
         bool phitrigger = false;
         double phidiff = TVector2::Phi_mpi_pi(cluster.phi() - ctrack.phi());
         double etadiff = cluster.eta() - ctrack.eta();
-	
+
         if (cfgPtClusterCut) {
           if (fabs(etaT - etaC) < (0.010 + pow(ptT + 4.07, -2.5))) {
             etatrigger = true;
@@ -1328,18 +1327,18 @@ struct statPromptPhoton {
     for (auto& track : tracks) {
       bool sterntrigger = false;
       double sternPt = 0.0;
-      if(cfgJETracks) {
-	if(!jetderiveddatautilities::selectTrack(track, trackFilter)) {
-	  continue;
-	}
+      if (cfgJETracks) {
+        if (!jetderiveddatautilities::selectTrack(track, trackFilter)) {
+          continue;
+        }
       } else {
-	auto ogtrack = track.track_as<TrackCandidates>();
-	if (!trackSelection(ogtrack)) {
-	  continue;
-	}
-	if (!ogtrack.isGlobalTrack()) {
-	  continue;
-	}
+        auto ogtrack = track.track_as<TrackCandidates>();
+        if (!trackSelection(ogtrack)) {
+          continue;
+        }
+        if (!ogtrack.isGlobalTrack()) {
+          continue;
+        }
       }
 
       // Do stuff with geometric cuts
@@ -1377,8 +1376,8 @@ struct statPromptPhoton {
       if (sterntrigger) {
         bool doStern = true;
         double sterncount = 1.0;
-	double pthadsum = GetPtHadSum(tracks, track, cfgMinR, cfgMaxR, true, false, true);
-	histos.fill(HIST("DATA_Trigger_V_PtHadSum_Nch"), sternPt, pthadsum);
+        double pthadsum = GetPtHadSum(tracks, track, cfgMinR, cfgMaxR, true, false, true);
+        histos.fill(HIST("DATA_Trigger_V_PtHadSum_Nch"), sternPt, pthadsum);
         while (doStern) {
           double pthadsum = GetPtHadSum(tracks, track, cfgMinR, cfgMaxR, true, false, true);
           histos.fill(HIST("DATA_Trigger_V_PtHadSum_Stern"), sterncount, pthadsum, 2.0 / sternPt);
