@@ -226,11 +226,14 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_004, "AOD", "STRAEVSELS", 4,         //! 
                             // stracollision::EnergyCommonZNC<mult::MultZNC>,
                             stracollision::IsUPC<udcollision::GapSide>);
 
-DECLARE_SOA_TABLE(StraEvSelsRun2, "AOD", "STRAEVSELSRUN2",        //! debug information
-                  evsel::Sel8, evsel::Sel7, evsel::Selection,     //! event selection: sel8
-                  mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+DECLARE_SOA_TABLE(StraEvSelsRun2, "AOD", "STRAEVSELSRUN2",    //! debug information
+                  evsel::Sel8, evsel::Sel7, evsel::Selection, //! event selection: sel8
+                  mult::MultFT0A, mult::MultFT0C,             // FIT detectors
+                  mult::MultFV0A, mult::MultFV0C,
                   mult::MultFDDA, mult::MultFDDC,
+                  run2::SPDClustersL0, run2::SPDClustersL1,     // SPD detectors
                   mult::MultNTracksPVeta1,                      // track multiplicities with eta cut for INEL>0
+                  mult::MultTracklets,                          // multiplicity with tracklets (only Run2)
                   mult::MultPVTotalContributors,                // number of PV contribs total
                   mult::MultNTracksGlobal,                      // global track multiplicities
                   mult::MultNTracksITSTPC,                      // track multiplicities, PV contribs, no eta cut
