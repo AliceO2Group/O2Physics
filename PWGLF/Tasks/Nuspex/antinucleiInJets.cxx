@@ -255,7 +255,7 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_ue_rec_tof", "antiproton_ue_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // detector response matrix
-      registryMC.add("detectorResponseMatrix", "detectorResponseMatrix", HistType::kTH2F, {{1000, 0.0, 100.0, "#it{p}_{T}^{gen} (GeV/#it{c})"}, {2000, -20.0, 20.0, "#it{p}_{T}^{gen} - #it{p}_{T}^{rec} (GeV/#it{c})"}});
+      registryMC.add("detectorResponseMatrix", "detectorResponseMatrix", HistType::kTH2F, {{1000, 0.0, 100.0, "#it{p}_{T}^{rec} (GeV/#it{c})"}, {2000, -20.0, 20.0, "#it{p}_{T}^{gen} - #it{p}_{T}^{rec} (GeV/#it{c})"}});
     }
 
     // systematic uncertainties
@@ -1106,7 +1106,7 @@ struct AntinucleiInJets {
           continue;
 
         // fill detector response matrix
-        registryMC.fill(HIST("detectorResponseMatrix"), jetPtGen, jetPtGen - jet.pt()); // maybe it should be filled after bkg sub
+        registryMC.fill(HIST("detectorResponseMatrix"), jet.pt(), jetPtGen - jet.pt()); // maybe it should be filled after bkg sub
 
         // jet pt must be larger than threshold
         auto jetForSub = jet;
