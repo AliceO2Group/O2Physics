@@ -286,7 +286,7 @@ struct V0PtInvMassPlots {
         {
           rPtAnalysis.fill(HIST("hAntiOmegaGeneratedPtSpectrum"), mcParticle.pt());
         }
-        if (mcParticle.pdgCode() == kPhi) // Anti-Omega matched
+        if (mcParticle.pdgCode() == kPhi) // Phi matched
         {
           rPtAnalysis.fill(HIST("hPhiGeneratedPtSpectrum"), mcParticle.pt());
         }
