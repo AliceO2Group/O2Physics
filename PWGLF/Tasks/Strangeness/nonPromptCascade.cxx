@@ -58,6 +58,7 @@ struct NPCascCandidate {
   float deltaPt;
   float itsClusSize;
   bool hasReassociatedCluster;
+  bool hasFakeReassociation;
   bool isGoodMatch;
   bool isGoodCascade;
   int pdgCodeMom;
@@ -390,6 +391,7 @@ struct NonPromptCascadeTask {
               if (v0part.mothersIds()[0] == bachelor.mcParticle().mothersIds()[0]) {
                 if (std::abs(motherV0.pdgCode()) == 3312 || std::abs(motherV0.pdgCode()) == 3334) {
                   isGoodCascade = true;
+
                   isOmega = (std::abs(motherV0.pdgCode()) == 3334);
                   fromHF = isFromHF(motherV0);
                   mcParticleID = v0part.mothersIds()[0];
@@ -415,7 +417,7 @@ struct NonPromptCascadeTask {
       o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, bachTrkParCov, mBz, 2.f, matCorr, &bachDCA);
 
       float deltaPtITSCascade{-1.e10f}, deltaPtCascade{-1.e10f}, cascITSclsSize{-1.e10f}, matchingChi2{-1.e10f};
-      bool hasReassociatedClusters{false};
+      bool hasReassociatedClusters{false}, hasFakeReassociation{false};
       int trackedCascGlobalIndex{-1}, itsTrackGlobalIndex{-1}, cascITSclusters{-1};
       if constexpr (requires { candidate.track(); }) {
         const auto& track = candidate.template track_as<TrackType>();
@@ -437,11 +439,12 @@ struct NonPromptCascadeTask {
 
           if (isGoodMatch) {
             pdgCodeMom = track.mcParticle().has_mothers() ? track.mcParticle().template mothers_as<aod::McParticles>()[0].pdgCode() : 0;
+            hasFakeReassociation = track.mcMask() & (1 << 15);
           }
           itsTrackPDG = ITStrack.has_mcParticle() ? ITStrack.mcParticle().pdgCode() : 0;
         }
       }
-      candidates.emplace_back(NPCascCandidate{mcParticleID, trackedCascGlobalIndex, itsTrackGlobalIndex, candidate.collisionId(), matchingChi2, deltaPtITSCascade, deltaPtCascade, cascITSclsSize, hasReassociatedClusters, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, fromHF[0], fromHF[1],
+      candidates.emplace_back(NPCascCandidate{mcParticleID, trackedCascGlobalIndex, itsTrackGlobalIndex, candidate.collisionId(), matchingChi2, deltaPtITSCascade, deltaPtCascade, cascITSclsSize, hasReassociatedClusters, hasFakeReassociation, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, fromHF[0], fromHF[1],
                                               collision.numContrib(), collision.collisionTimeRes(), primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               cascadeLvector.pt(), cascadeLvector.eta(), cascadeLvector.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
@@ -507,7 +510,7 @@ struct NonPromptCascadeTask {
                                 c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma, c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                 c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
                                 particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(),
-                                mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == recCollision.mcCollisionId(), motherDecayDaughters);
+                                mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == recCollision.mcCollisionId(), c.hasFakeReassociation, motherDecayDaughters);
     }
   }
 
