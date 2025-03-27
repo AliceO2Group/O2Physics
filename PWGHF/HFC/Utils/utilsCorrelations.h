@@ -113,7 +113,7 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
 }
 
 // ========= Find Leading Particle ==============
-template <typename TTracks, typename T1> //// FIXME: 14 days 
+template <typename TTracks, typename T1> //// FIXME: 14 days
 int findLeadingParticle(TTracks const& tracks, T1 const etaTrackMax)
 {
   auto leadingParticle = tracks.begin();
