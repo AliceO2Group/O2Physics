@@ -1915,7 +1915,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     int8_t signV0 = -9;
     int8_t flag = 0;
     int8_t origin = 0; // to be used for prompt/non prompt
-    int8_t debug = 0;
+    McMatchFlag debug{McMatchFlag::None};
     int8_t debugGenCharmBar = 0;
     int8_t debugGenCasc = 0;
     int8_t debugGenLambda = 0;
