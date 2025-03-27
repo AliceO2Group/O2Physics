@@ -142,9 +142,10 @@ struct ResonancesGfwFlow {
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, true, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
 
-  O2_DEFINE_CONFIGURABLE(cfgUseWeightPhiEtaVtxz, bool, false, "Use Phi, Eta, VertexZ dependent NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgUseWeightPhiEtaVtxz, bool, true, "Use Phi, Eta, VertexZ dependent NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgUseWeightPhiPtCent, bool, false, "Use Phi, Pt, Centrality dependent NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgUseWeightPhiEtaPt, bool, false, "Use Phi, Eta, Pt dependent NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgUseBootStrap, bool, true, "Use bootstrap for error estimation")
 
   // Defining configurable axis
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
@@ -315,24 +316,26 @@ struct ResonancesGfwFlow {
       histos.add<TH3>("NUA/hPhiEtaPt_phi", ";#varphi;#eta;p_{T}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {100, 0, 10}}});
     }
 
-    for (int i = 0; i < 10; i++) {
-      phic22_boot[i] = histos.add<TProfile>(Form("BootStrap/Phic22_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
-      phic24_boot[i] = histos.add<TProfile>(Form("BootStrap/Phic24_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
-      k0c22_boot[i] = histos.add<TProfile>(Form("BootStrap/k0c22_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
-      k0c24_boot[i] = histos.add<TProfile>(Form("BootStrap/k0c24_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
-      lambdac22_boot[i] = histos.add<TProfile>(Form("BootStrap/lambdac22_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
-      lambdac24_boot[i] = histos.add<TProfile>(Form("BootStrap/lambdac24_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
-      anlambdac22_boot[i] = histos.add<TProfile>(Form("BootStrap/anlambdac22_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
-      anlambdac24_boot[i] = histos.add<TProfile>(Form("BootStrap/anlambdac24_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
+    if (cfgUseBootStrap) {
+      for (int i = 0; i < 10; i++) {
+        phic22_boot[i] = histos.add<TProfile>(Form("BootStrap/Phic22_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
+        phic24_boot[i] = histos.add<TProfile>(Form("BootStrap/Phic24_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
+        k0c22_boot[i] = histos.add<TProfile>(Form("BootStrap/k0c22_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
+        k0c24_boot[i] = histos.add<TProfile>(Form("BootStrap/k0c24_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
+        lambdac22_boot[i] = histos.add<TProfile>(Form("BootStrap/lambdac22_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
+        lambdac24_boot[i] = histos.add<TProfile>(Form("BootStrap/lambdac24_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
+        anlambdac22_boot[i] = histos.add<TProfile>(Form("BootStrap/anlambdac22_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
+        anlambdac24_boot[i] = histos.add<TProfile>(Form("BootStrap/anlambdac24_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
 
-      phid22pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/Phid22pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}});
-      phid24pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/Phid24pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}});
-      k0d22pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/k0d22pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisK0Mass, axisMultiplicity}});
-      k0d24pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/k0d24pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisK0Mass, axisMultiplicity}});
-      lambdad22pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/lambdad22pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
-      lambdad24pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/lambdad24pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
-      anlambdad22pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/anlambdad22pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
-      anlambdad24pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/anlambdad24pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
+        phid22pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/Phid22pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}});
+        phid24pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/Phid24pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}});
+        k0d22pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/k0d22pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisK0Mass, axisMultiplicity}});
+        k0d24pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/k0d24pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisK0Mass, axisMultiplicity}});
+        lambdad22pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/lambdad22pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
+        lambdad24pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/lambdad24pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
+        anlambdad22pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/anlambdad22pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
+        anlambdad24pt_boot[i] = histos.add<TProfile3D>(Form("BootStrap/anlambdad24pt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
+      }
     }
 
     o2::framework::AxisSpec axis = axisPt;
@@ -1009,38 +1012,40 @@ struct ResonancesGfwFlow {
     fillResoProfile(corrconfigs.at(23), HIST("AnLambdav24pt"), cent, fLambdaMassAxis);
 
     // bootstraping
-    TRandom3* rand = new TRandom3(0);
-    double r = rand->Rndm();
-    int boot_id = (int)(r * 10);
+    if (cfgUseBootStrap) {
+      TRandom3* rand = new TRandom3(0);
+      double r = rand->Rndm();
+      int boot_id = (int)(r * 10);
 
-    fillProfileBoot(corrconfigs.at(0), phic22_boot[boot_id], cent);
-    fillProfileBoot(corrconfigs.at(1), k0c22_boot[boot_id], cent);
-    fillProfileBoot(corrconfigs.at(2), lambdac22_boot[boot_id], cent);
-    fillProfileBoot(corrconfigs.at(3), anlambdac22_boot[boot_id], cent);
-    fillProfileBoot(corrconfigs.at(4), phic24_boot[boot_id], cent);
-    fillProfileBoot(corrconfigs.at(5), k0c24_boot[boot_id], cent);
-    fillProfileBoot(corrconfigs.at(6), lambdac24_boot[boot_id], cent);
-    fillProfileBoot(corrconfigs.at(7), anlambdac24_boot[boot_id], cent);
+      fillProfileBoot(corrconfigs.at(0), phic22_boot[boot_id], cent);
+      fillProfileBoot(corrconfigs.at(1), k0c22_boot[boot_id], cent);
+      fillProfileBoot(corrconfigs.at(2), lambdac22_boot[boot_id], cent);
+      fillProfileBoot(corrconfigs.at(3), anlambdac22_boot[boot_id], cent);
+      fillProfileBoot(corrconfigs.at(4), phic24_boot[boot_id], cent);
+      fillProfileBoot(corrconfigs.at(5), k0c24_boot[boot_id], cent);
+      fillProfileBoot(corrconfigs.at(6), lambdac24_boot[boot_id], cent);
+      fillProfileBoot(corrconfigs.at(7), anlambdac24_boot[boot_id], cent);
 
-    fillProfileBoot3D(corrconfigs.at(8), phid22pt_boot[boot_id], cent, fPhiMassAxis);
-    fillProfileBoot3D(corrconfigs.at(9), k0d22pt_boot[boot_id], cent, fK0MassAxis);
-    fillProfileBoot3D(corrconfigs.at(10), lambdad22pt_boot[boot_id], cent, fLambdaMassAxis);
-    fillProfileBoot3D(corrconfigs.at(11), anlambdad22pt_boot[boot_id], cent, fLambdaMassAxis);
+      fillProfileBoot3D(corrconfigs.at(8), phid22pt_boot[boot_id], cent, fPhiMassAxis);
+      fillProfileBoot3D(corrconfigs.at(9), k0d22pt_boot[boot_id], cent, fK0MassAxis);
+      fillProfileBoot3D(corrconfigs.at(10), lambdad22pt_boot[boot_id], cent, fLambdaMassAxis);
+      fillProfileBoot3D(corrconfigs.at(11), anlambdad22pt_boot[boot_id], cent, fLambdaMassAxis);
 
-    fillProfileBoot3D(corrconfigs.at(12), phid24pt_boot[boot_id], cent, fPhiMassAxis);
-    fillProfileBoot3D(corrconfigs.at(13), k0d24pt_boot[boot_id], cent, fK0MassAxis);
-    fillProfileBoot3D(corrconfigs.at(14), lambdad24pt_boot[boot_id], cent, fLambdaMassAxis);
-    fillProfileBoot3D(corrconfigs.at(15), anlambdad24pt_boot[boot_id], cent, fLambdaMassAxis);
+      fillProfileBoot3D(corrconfigs.at(12), phid24pt_boot[boot_id], cent, fPhiMassAxis);
+      fillProfileBoot3D(corrconfigs.at(13), k0d24pt_boot[boot_id], cent, fK0MassAxis);
+      fillProfileBoot3D(corrconfigs.at(14), lambdad24pt_boot[boot_id], cent, fLambdaMassAxis);
+      fillProfileBoot3D(corrconfigs.at(15), anlambdad24pt_boot[boot_id], cent, fLambdaMassAxis);
 
-    fillProfileBoot3D(corrconfigs.at(16), phid22pt_boot[boot_id], cent, fPhiMassAxis);
-    fillProfileBoot3D(corrconfigs.at(17), k0d22pt_boot[boot_id], cent, fK0MassAxis);
-    fillProfileBoot3D(corrconfigs.at(18), lambdad22pt_boot[boot_id], cent, fLambdaMassAxis);
-    fillProfileBoot3D(corrconfigs.at(19), anlambdad22pt_boot[boot_id], cent, fLambdaMassAxis);
+      fillProfileBoot3D(corrconfigs.at(16), phid22pt_boot[boot_id], cent, fPhiMassAxis);
+      fillProfileBoot3D(corrconfigs.at(17), k0d22pt_boot[boot_id], cent, fK0MassAxis);
+      fillProfileBoot3D(corrconfigs.at(18), lambdad22pt_boot[boot_id], cent, fLambdaMassAxis);
+      fillProfileBoot3D(corrconfigs.at(19), anlambdad22pt_boot[boot_id], cent, fLambdaMassAxis);
 
-    fillProfileBoot3D(corrconfigs.at(20), phid24pt_boot[boot_id], cent, fPhiMassAxis);
-    fillProfileBoot3D(corrconfigs.at(21), k0d24pt_boot[boot_id], cent, fK0MassAxis);
-    fillProfileBoot3D(corrconfigs.at(22), lambdad24pt_boot[boot_id], cent, fLambdaMassAxis);
-    fillProfileBoot3D(corrconfigs.at(23), anlambdad24pt_boot[boot_id], cent, fLambdaMassAxis);
+      fillProfileBoot3D(corrconfigs.at(20), phid24pt_boot[boot_id], cent, fPhiMassAxis);
+      fillProfileBoot3D(corrconfigs.at(21), k0d24pt_boot[boot_id], cent, fK0MassAxis);
+      fillProfileBoot3D(corrconfigs.at(22), lambdad24pt_boot[boot_id], cent, fLambdaMassAxis);
+      fillProfileBoot3D(corrconfigs.at(23), anlambdad24pt_boot[boot_id], cent, fLambdaMassAxis);
+    }
   } // end of process
 };
 
