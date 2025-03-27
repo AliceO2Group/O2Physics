@@ -144,19 +144,52 @@ struct DetectorOccupancyQaTask {
 
       histos.add("hNumUniqueBCInTimeWindow", ";n collisions;n events", kTH1D, {{201, -0.5, 200.5}});
 
+      // track QA counters
+      histos.add("nTrackCounter_after_cuts_QA", "", kTH1D, {{12, -0.5, 11.5, "track QA"}});
+      TAxis* axTrackCounters = reinterpret_cast<TAxis*>(histos.get<TH1>(HIST("nTrackCounter_after_cuts_QA"))->GetXaxis());
+      axTrackCounters->SetBinLabel(1, "all");
+      axTrackCounters->SetBinLabel(2, "PVcontrib");
+      axTrackCounters->SetBinLabel(3, "ptCut");
+      axTrackCounters->SetBinLabel(4, "etaCut");
+      axTrackCounters->SetBinLabel(5, "itsNCls>=5");
+      axTrackCounters->SetBinLabel(6, "isGlobal,nTPCcls>=70");
+      axTrackCounters->SetBinLabel(7, "passedTPCRefit");
+      axTrackCounters->SetBinLabel(8, "occupancy>=0");
+      axTrackCounters->SetBinLabel(9, "fracton nClsNoPID (0,0.8)");
+      axTrackCounters->SetBinLabel(10, "pos");
+      axTrackCounters->SetBinLabel(11, "neg");
+
       // dE/dx
-      histos.add("dEdx_vs_Momentum", "dE/dx", kTH2F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}});
-      histos.add("dEdx_vs_Momentum_occupBelow200", "dE/dx", kTH2F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}});
-      histos.add("dEdx_vs_Momentum_occupBelow200_kNoCollStd", "dE/dx", kTH2F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}});
-      histos.add("dEdx_vs_Momentum_occupAbove4000", "dE/dx", kTH2F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}});
+      AxisSpec axisDeDx{800, 0.0, 800.0, "dE/dx (a. u.)"};
+      histos.add("dEdx_vs_Momentum", "dE/dx", kTH2F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, axisDeDx});
+      histos.add("dEdx_vs_Momentum_occupBelow200", "dE/dx", kTH2F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, axisDeDx});
+      histos.add("dEdx_vs_Momentum_occupBelow200_kNoCollStd", "dE/dx", kTH2F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, axisDeDx});
+      histos.add("dEdx_vs_Momentum_occupAbove4000", "dE/dx", kTH2F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, axisDeDx});
+      histos.add("dEdx_vs_Momentum_NegativeFractionNclsPID", "dE/dx", kTH2F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, axisDeDx});
+      histos.add("dEdx_vs_Momentum_HighFractionNclsNonPID", "dE/dx", kTH2F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, axisDeDx});
       AxisSpec axisBinsOccupStudydEdx{{0., 500, 1000, 2000, 4000, 6000, 8000, 15000}, "p_{T}"};
-      histos.add("dEdx_vs_Momentum_vs_occup", "dE/dx", kTH3F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}, axisBinsOccupStudydEdx});
+      histos.add("dEdx_vs_Momentum_vs_occup", "dE/dx", kTH3F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, axisDeDx, axisBinsOccupStudydEdx});
       if (confFlagManyHeavyHistos) {
-        histos.add("dEdx_vs_Momentum_vs_occup_eta_02_04", "dE/dx", kTH3F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}, axisBinsOccupStudydEdx});
-        histos.add("dEdx_vs_Momentum_vs_occup_eta_04_02", "dE/dx", kTH3F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}, axisBinsOccupStudydEdx});
+        histos.add("dEdx_vs_Momentum_vs_occup_eta_02_04", "dE/dx", kTH3F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, axisDeDx, axisBinsOccupStudydEdx});
+        histos.add("dEdx_vs_Momentum_vs_occup_eta_04_02", "dE/dx", kTH3F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, axisDeDx, axisBinsOccupStudydEdx});
       }
 
-      histos.add("dEdx_vs_centr_vs_occup_narrow_p_win", "dE/dx", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, {60, 0, 15000, "occupancy"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}});
+      AxisSpec axisOccupancyForDeDxStudies{60, 0, 15000, "occupancy"};
+      histos.add("dEdx_vs_centr_vs_occup_narrow_p_win", "dE/dx", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisDeDx});
+      histos.add("dEdx_vs_centr_vs_occup_narrow_p_win_pos", "dE/dx", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisDeDx});
+      histos.add("dEdx_vs_centr_vs_occup_narrow_p_win_neg", "dE/dx", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisDeDx});
+      histos.add("dEdx_vs_centr_vs_occup_narrow_p_win_pos_FractionPIDclsInRange", "dE/dx", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisDeDx});
+      histos.add("dEdx_vs_centr_vs_occup_narrow_p_win_neg_FractionPIDclsInRange", "dE/dx", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisDeDx});
+
+      AxisSpec axisFractionNclsFindableMinusPID{110, -1.1, 1.1, "TPC nClsFindableMinusPID / nClsFindable"};
+      histos.add("fraction_tpcNClsFindableMinusPID_vs_occup", "", kTH2D, {axisOccupancyForDeDxStudies, axisFractionNclsFindableMinusPID});
+      histos.add("fraction_tpcNClsFindableMinusPID_vs_occup_peripheralByV0A", "", kTH2D, {axisOccupancyForDeDxStudies, axisFractionNclsFindableMinusPID});
+      histos.add("fraction_tpcNClsFindableMinusPID_vs_occup_centralByV0A", "", kTH2D, {axisOccupancyForDeDxStudies, axisFractionNclsFindableMinusPID});
+      histos.add("fraction_tpcNClsFindableMinusPID_vs_occup_eta02", "", kTH2D, {axisOccupancyForDeDxStudies, axisFractionNclsFindableMinusPID});
+      histos.add("fraction_tpcNClsFindableMinusPID_vs_occup_pos", "", kTH2D, {axisOccupancyForDeDxStudies, axisFractionNclsFindableMinusPID});
+      histos.add("fraction_tpcNClsFindableMinusPID_vs_occup_neg", "", kTH2D, {axisOccupancyForDeDxStudies, axisFractionNclsFindableMinusPID});
+      histos.add("fraction_tpcNClsFindableMinusPID_vs_occup_lowPt", "", kTH2D, {axisOccupancyForDeDxStudies, axisFractionNclsFindableMinusPID});
+      histos.add("fraction_tpcNClsFindableMinusPID_vs_occup_highPt", "", kTH2D, {axisOccupancyForDeDxStudies, axisFractionNclsFindableMinusPID});
 
       // ### kinematic distributions for events with high occupancy at specified dt ranges
       histos.add("track_distr_nITStrThisEv_10_200/hEventCount", ";delta-time bin id;n events", kTH1D, {{5, -0.5, 4.5}});
@@ -206,10 +239,10 @@ struct DetectorOccupancyQaTask {
 
       // 3D: pt vs centr vs occup
       if (confFlagManyHeavyHistos) {
-        histos.add("ptGlobal_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, {60, 0, 15000, "occupancy"}, axisLogPt});
-        histos.add("ptPV_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, {60, 0, 15000, "occupancy"}, axisLogPt});
-        histos.add("ptGlobal_vs_centr_vs_occup_NoCollStd", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, {60, 0, 15000, "occupancy"}, axisLogPt});
-        histos.add("ptPV_vs_centr_vs_occup_NoCollStd", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, {60, 0, 15000, "occupancy"}, axisLogPt});
+        histos.add("ptGlobal_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisLogPt});
+        histos.add("ptPV_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisLogPt});
+        histos.add("ptGlobal_vs_centr_vs_occup_NoCollStd", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisLogPt});
+        histos.add("ptPV_vs_centr_vs_occup_NoCollStd", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisLogPt});
       }
     }
     // 2D
@@ -819,20 +852,28 @@ struct DetectorOccupancyQaTask {
 
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       for (const auto& track : tracksGrouped) {
+        histos.fill(HIST("nTrackCounter_after_cuts_QA"), 0);
         if (!track.isPVContributor())
           continue;
+        histos.fill(HIST("nTrackCounter_after_cuts_QA"), 1);
         if (track.pt() < confCutPtMinThisEvent || track.pt() > confCutPtMaxThisEvent)
           continue;
+        histos.fill(HIST("nTrackCounter_after_cuts_QA"), 2);
         if (track.eta() < confCutEtaMinTracksThisEvent || track.eta() > confCutEtaMaxTracksThisEvent)
           continue;
+        histos.fill(HIST("nTrackCounter_after_cuts_QA"), 3);
         if (track.itsNCls() < 5)
           continue;
+        histos.fill(HIST("nTrackCounter_after_cuts_QA"), 4);
         nPV++;
 
         if (track.isGlobalTrack() && track.tpcNClsFound() >= confCutMinTPCcls) {
           nGlobalTracks++;
+          histos.fill(HIST("nTrackCounter_after_cuts_QA"), 5);
 
           if (track.passedTPCRefit()) {
+            histos.fill(HIST("nTrackCounter_after_cuts_QA"), 6);
+
             float signedP = track.sign() * track.tpcInnerParam();
             histos.fill(HIST("dEdx_vs_Momentum"), signedP, track.tpcSignal());
             if (occupancy >= 0 && occupancy < 200) {
@@ -844,6 +885,8 @@ struct DetectorOccupancyQaTask {
               histos.fill(HIST("dEdx_vs_Momentum_occupAbove4000"), signedP, track.tpcSignal());
 
             if (occupancy >= 0) {
+              histos.fill(HIST("nTrackCounter_after_cuts_QA"), 7);
+
               histos.fill(HIST("dEdx_vs_Momentum_vs_occup"), signedP, track.tpcSignal(), occupancy);
 
               if (confFlagManyHeavyHistos) {
@@ -852,9 +895,52 @@ struct DetectorOccupancyQaTask {
                 if (track.eta() > -0.4 && track.eta() < -0.2)
                   histos.fill(HIST("dEdx_vs_Momentum_vs_occup_eta_04_02"), signedP, track.tpcSignal(), occupancy);
               }
+
+              // check ratio tpcNClsFindableMinusPID / tpcNClsFindable (https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L242)
+              float fractionTPCcls = (1.0 * track.tpcNClsFindableMinusPID()) / track.tpcNClsFindable();
+              histos.fill(HIST("fraction_tpcNClsFindableMinusPID_vs_occup"), occupancy, fractionTPCcls);
+              if (fractionTPCcls >= 0 && fractionTPCcls < 0.8)
+                histos.fill(HIST("nTrackCounter_after_cuts_QA"), 8);
+              if (fractionTPCcls < 0)
+                histos.fill(HIST("dEdx_vs_Momentum_HighFractionNclsNonPID"), signedP, track.tpcSignal());
+              if (fractionTPCcls > 0.8)
+                histos.fill(HIST("dEdx_vs_Momentum_NegativeFractionNclsPID"), signedP, track.tpcSignal());
+
+              if (multV0A < 6800)
+                histos.fill(HIST("fraction_tpcNClsFindableMinusPID_vs_occup_peripheralByV0A"), occupancy, fractionTPCcls);
+              else if (multV0A > 82850)
+                histos.fill(HIST("fraction_tpcNClsFindableMinusPID_vs_occup_centralByV0A"), occupancy, fractionTPCcls);
+
+              if (std::fabs(track.eta()) < 0.2)
+                histos.fill(HIST("fraction_tpcNClsFindableMinusPID_vs_occup_eta02"), occupancy, fractionTPCcls);
+
+              // vs charge
+              if (signedP > 0) {
+                histos.fill(HIST("nTrackCounter_after_cuts_QA"), 9);
+                histos.fill(HIST("fraction_tpcNClsFindableMinusPID_vs_occup_pos"), occupancy, fractionTPCcls);
+              } else {
+                histos.fill(HIST("nTrackCounter_after_cuts_QA"), 10);
+                histos.fill(HIST("fraction_tpcNClsFindableMinusPID_vs_occup_neg"), occupancy, fractionTPCcls);
+              }
+              // vs pt
+              if (track.pt() > 0.2 && track.pt() < 0.8)
+                histos.fill(HIST("fraction_tpcNClsFindableMinusPID_vs_occup_lowPt"), occupancy, fractionTPCcls);
+              if (track.pt() > 0.8 && track.pt() < 10)
+                histos.fill(HIST("fraction_tpcNClsFindableMinusPID_vs_occup_highPt"), occupancy, fractionTPCcls);
+
               // dE/dx in narrow mom bin vs centrality and occupancy
-              if (signedP > 0.38 && signedP < 0.4)
+              if (std::fabs(signedP) > 0.38 && std::fabs(signedP) < 0.4)
                 histos.fill(HIST("dEdx_vs_centr_vs_occup_narrow_p_win"), nPV, occupancy, track.tpcSignal());
+              // vs charge
+              if (signedP > 0.38 && signedP < 0.4) {
+                histos.fill(HIST("dEdx_vs_centr_vs_occup_narrow_p_win_pos"), nPV, occupancy, track.tpcSignal());
+                if (fractionTPCcls >= 0 && fractionTPCcls < 0.8)
+                  histos.fill(HIST("dEdx_vs_centr_vs_occup_narrow_p_win_pos_FractionPIDclsInRange"), nPV, occupancy, track.tpcSignal());
+              } else if (signedP > -0.4 && signedP < -0.38) {
+                histos.fill(HIST("dEdx_vs_centr_vs_occup_narrow_p_win_neg"), nPV, occupancy, track.tpcSignal());
+                if (fractionTPCcls >= 0 && fractionTPCcls < 0.8)
+                  histos.fill(HIST("dEdx_vs_centr_vs_occup_narrow_p_win_neg_FractionPIDclsInRange"), nPV, occupancy, track.tpcSignal());
+              }
             }
           }
         }
