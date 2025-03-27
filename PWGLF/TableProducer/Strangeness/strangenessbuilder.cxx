@@ -1992,7 +1992,7 @@ struct StrangenessBuilder {
   }
 
   //__________________________________________________
-  template <class TTracks, typename TStrangeTracks, typename TMCParticles>
+  template <class TCollisions, class TTracks, typename TStrangeTracks, typename TMCParticles>
   void buildTrackedCascades(TStrangeTracks const& cascadeTracks, TMCParticles const& mcParticles)
   {
     if (!mEnabledTables[kStoredTraCascCores] || mc_findableMode.value != 0) {
@@ -2007,12 +2007,12 @@ struct StrangenessBuilder {
         continue; // safety (should be fine but depends on future stratrack dev)
 
       auto const& strangeTrack = cascadeTrack.template track_as<TTracks>();
-      auto const& collision = strangeTrack.collision();
+      auto const& collision = strangeTrack.template collision_as<TCollisions>();
       // if collisionId positive: get vertex, negative: origin
       // could be replaced by mean vertex (but without much benefit...)
       float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
       if (strangeTrack.has_collision()) {
-        auto const& collision = strangeTrack.collision();
+        auto const& collision = strangeTrack.template collision_as<TCollisions>();
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
@@ -2157,7 +2157,7 @@ struct StrangenessBuilder {
 
     // build tracked cascades only if subscription is Run 3 like (doesn't exist in Run 2)
     if constexpr (soa::is_table<TTrackedCascades>) {
-      buildTrackedCascades<TTracks>(trackedCascades, mcParticles);
+      buildTrackedCascades<TCollisions, TTracks>(trackedCascades, mcParticles);
     }
 
     populateCascadeInterlinks();
