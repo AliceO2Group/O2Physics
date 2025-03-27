@@ -110,7 +110,7 @@ struct strangenessFilter {
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
   Configurable<int> LowLimitFT0MMult{"LowLimitFT0MMult", 3100, "FT0M selection for omega + high multiplicity trigger"};
   Configurable<int> LowLimitFT0MMultNorm{"LowLimitFT0MMultNorm", 70, "FT0M selection for omega + high multiplicity trigger with Normalised FT0M"};
-  Configurable<bool> useAverageMult{"useAverageMult",1,"Use avarage multiplicity for HM omega like in multFilter.cxx"};
+  Configurable<bool> useAverageMult{"useAverageMult", 1, "Use avarage multiplicity for HM omega like in multFilter.cxx"};
   Configurable<float> avPyT0C{"avPyT0C", 8.83, "nch from pythia T0C"};
   Configurable<float> avPyT0A{"avPyT0A", 8.16, "nch from pythia T0A"};
   Configurable<bool> isTimeFrameBorderCut{"isTimeFrameBorderCut", 1, "Apply timeframe border cut"};
@@ -287,7 +287,7 @@ struct strangenessFilter {
 
     EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0M", "T0M distribution of all events", HistType::kTH1F, {multAxisT0M});
     EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MwOmega", "T0M distribution of events w/ Omega candidate", HistType::kTH1F, {multAxisT0M});
-    EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MNorm","T0M Normalised of all events", HistType::kTH1F, {multAxisT0MNorm});
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MNorm", "T0M Normalised of all events", HistType::kTH1F, {multAxisT0MNorm});
     EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MwOmegaNorm", "T0M distribution of events w/ Omega candidate - Normalised FT0M", HistType::kTH1F, {multAxisT0MNorm});
     if (doextraQA) {
       EventsvsMultiplicity.add("AllEventsvsMultiplicityZeqV0A", "ZeqV0A distribution of all events", HistType::kTH1F, {multAxisV0A});
@@ -451,7 +451,7 @@ struct strangenessFilter {
     Bool_t isHighMultEvent = 0;
     float multFT0MNorm = 0.f;
     EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0M"), collision.multFT0M());
-    if(!useAverageMult) {
+    if (!useAverageMult) {
       if (collision.multFT0M() > LowLimitFT0MMult) {
         isHighMultEvent = 1;
       }
@@ -468,8 +468,8 @@ struct strangenessFilter {
       auto vMeanMultT0A = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanT0A", bc.timestamp());
       meanMultT0A = (*vMeanMultT0A)[0];
       float fac_FT0A_ebe = 1.;
-      if(meanMultT0A > 0){
-        fac_FT0A_ebe = avPyT0A/meanMultT0A;
+      if (meanMultT0A > 0) {
+        fac_FT0A_ebe = avPyT0A / meanMultT0A;
       }
       LOG(debug) << "Mean mults t0:" << fac_FT0A_ebe << " " << fac_FT0C_ebe;
       if (collision.has_foundFT0()) {
@@ -495,8 +495,8 @@ struct strangenessFilter {
           LOG(info) << "meanMult:" << multFT0MNorm << " multFT0M:" << collision.multFT0M();
           EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), multFT0MNorm);
           if (multFT0MNorm > LowLimitFT0MMultNorm) {
-              isHighMultEvent = 1;
-              LOG(info) << "Found FT0 using aver mult";
+            isHighMultEvent = 1;
+            LOG(info) << "Found FT0 using aver mult";
           }
         } else {
           LOG(warn) << "Found FT0 but, amplitudes are 0 ?";
