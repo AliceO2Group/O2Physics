@@ -1961,4 +1961,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
                         adaptAnalysisTask<IdentifiedBfFilterTracks>(cfgc)};
   return workflow;
 }
- 
