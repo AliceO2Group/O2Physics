@@ -949,7 +949,7 @@ struct TaskPi0FlowEMC {
 
         ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-        if (cfgDoReverseScaling) {
+        if (cfgDoReverseScaling.value) {
           // Convert to PxPyPzEVector to modify energy
           ROOT::Math::PxPyPzEVector v1Mod(v1);
           v1Mod.SetE(v1Mod.E() * 1.0505);
@@ -1057,7 +1057,7 @@ struct TaskPi0FlowEMC {
         ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
 
-        if (cfgDoReverseScaling) {
+        if (cfgDoReverseScaling.value) {
           // Convert to PxPyPzEVector to modify energy
           ROOT::Math::PxPyPzEVector v1Mod(v1);
           v1Mod.SetE(v1Mod.E() * 1.0505);
@@ -1283,7 +1283,7 @@ struct TaskPi0FlowEMC {
 
         ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-        if (cfgDoReverseScaling) {
+        if (cfgDoReverseScaling.value) {
           // Convert to PxPyPzEVector to modify energy
           ROOT::Math::PxPyPzEVector v1Mod(v1);
           v1Mod.SetE(v1Mod.E() * 1.0505);
