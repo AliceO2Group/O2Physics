@@ -79,9 +79,10 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   Configurable<float> confHPtPart2{"ConfHPtPart2", 4.0f, "higher limit for pt of particle 2"};
   Configurable<float> confLPtPart2{"ConfLPtPart2", 0.3f, "lower limit for pt of particle 2"};
   Configurable<float> confmom{"Confmom", 0.75, "momentum threshold for particle identification using TOF"};
-  Configurable<float> confNsigmaTPCParticle{"ConfNsigmaTPCParticle", 3.0, "TPC Sigma for particle momentum < Confmom"};
-  Configurable<float> confNsigmaTOFParticle{"ConfNsigmaTOFParticle", 3.0, "TOF Sigma for particle momentum > Confmom"};
-  Configurable<float> confNsigmaCombinedParticle{"ConfNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > Confmom"};
+  Configurable<float> confNsigmaTPCParticle{"ConfNsigmaTPCParticle", 3.0, "TPC Sigma for particle (track) momentum < Confmom"};
+  Configurable<float> confNsigmaCombinedParticle{"ConfNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle (track) momentum > Confmom"};
+  Configurable<float> confNsigmaTPCParticleChild{"ConfNsigmaTPCParticleChild", 3.0, "TPC Sigma for particle (daugh & bach) momentum < Confmom"};
+  Configurable<float> confNsigmaTOFParticleChild{"ConfNsigmaTOFParticleChild", 3.0, "TOF Sigma for particle (daugh & bach) momentum > Confmom"};
 
   ConfigurableAxis confkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis confMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
@@ -154,7 +155,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
 
   bool isNSigmaTPC(float nsigmaTPCParticle)
   {
-    if (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle) {
+    if (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticleChild) {
       return true;
     } else {
       return false;
@@ -163,9 +164,9 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
 
   bool isNSigmaTOF(float mom, float nsigmaTOFParticle, float hasTOF)
   {
-    // Cut only on tracks, that have TOF signal
+    // Cut only on daughter and bachelor tracks, that have TOF signal
     if (mom > confmom && hasTOF == 1) {
-      if (std::abs(nsigmaTOFParticle) < confNsigmaTOFParticle) {
+      if (std::abs(nsigmaTOFParticle) < confNsigmaTOFParticleChild) {
         return true;
       } else {
         return false;
