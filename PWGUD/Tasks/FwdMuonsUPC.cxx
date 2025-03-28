@@ -86,17 +86,17 @@ DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
 namespace gendimu
 {
 // dimuon
-DECLARE_SOA_COLUMN(GenM,     genM, float);
-DECLARE_SOA_COLUMN(GenPt,    genPt, float);
-DECLARE_SOA_COLUMN(GenRap,   genRap, float);
-DECLARE_SOA_COLUMN(GenPhi,   genPhi, float);
+DECLARE_SOA_COLUMN(GenM, genM, float);
+DECLARE_SOA_COLUMN(GenPt, genPt, float);
+DECLARE_SOA_COLUMN(GenRap, genRap, float);
+DECLARE_SOA_COLUMN(GenPhi, genPhi, float);
 DECLARE_SOA_COLUMN(GenPhiAv, genPhiAv, float);
 DECLARE_SOA_COLUMN(GenPhiCh, genPhiCh, float);
 // tracks positive (p) and negative (n)
-DECLARE_SOA_COLUMN(GenPtp,  genPtp, float);
+DECLARE_SOA_COLUMN(GenPtp, genPtp, float);
 DECLARE_SOA_COLUMN(GenEtap, genEtap, float);
 DECLARE_SOA_COLUMN(GenPhip, genPhip, float);
-DECLARE_SOA_COLUMN(GenPtn,  genPtn, float);
+DECLARE_SOA_COLUMN(GenPtn, genPtn, float);
 DECLARE_SOA_COLUMN(GenEtan, genEtan, float);
 DECLARE_SOA_COLUMN(GenPhin, genPhin, float);
 } // namespace gendimu
@@ -104,10 +104,10 @@ DECLARE_SOA_COLUMN(GenPhin, genPhin, float);
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(GenDimu, "AOD", "GENDIMU",
-                  gendimu::GenM,     gendimu::GenPt,   gendimu::GenRap, gendimu::GenPhi,
+                  gendimu::GenM, gendimu::GenPt, gendimu::GenRap, gendimu::GenPhi,
                   gendimu::GenPhiAv, gendimu::GenPhiCh,
-                  gendimu::GenPtp,   gendimu::GenEtap, gendimu::GenPhip,
-                  gendimu::GenPtn,   gendimu::GenEtan, gendimu::GenPhin);
+                  gendimu::GenPtp, gendimu::GenEtap, gendimu::GenPhip,
+                  gendimu::GenPtn, gendimu::GenEtan, gendimu::GenPhin);
 } // namespace o2::aod
 
 // for saving tree with info on reco MC
@@ -244,8 +244,7 @@ struct FwdMuonsUPC {
       0.1625, 0.175, 0.1875, 0.20, 0.225, 0.25, 0.275, 0.30, 0.35, 0.40,
       0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00,
       1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.25,
-      2.50, 2.75, 3.00, 3.25, 3.50
-    };
+      2.50, 2.75, 3.00, 3.25, 3.50};
 
     // axis
     const AxisSpec axisPt{nBinsPt, lowPt, highPt, "#it{p}_{T} GeV/#it{c}"};
