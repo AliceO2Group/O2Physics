@@ -75,8 +75,8 @@ struct FwdTrackPropagation {
 
   void init(o2::framework::InitContext&)
   {
-    if (doprocessWithoutTTCA && doprocessWithTTCA) {
-      LOGF(fatal, "Cannot enable doprocessWithoutTTCA and doprocessWithTTCA at the same time. Please choose one.");
+    if (doprocessWithoutFTTCA && doprocessWithFTTCA) {
+      LOGF(fatal, "Cannot enable doprocessWithoutFTTCA and doprocessWithFTTCA at the same time. Please choose one.");
     }
 
     ccdb->setURL(ccdburl);
@@ -302,7 +302,7 @@ struct FwdTrackPropagation {
       fwdtrack.sign() / pt, fwdtrack.nClusters(), pDCA, rAtAbsorberEnd,
       fwdtrack.chi2(), fwdtrack.chi2MatchMCHMID(), fwdtrack.chi2MatchMCHMFT(),
       fwdtrack.matchScoreMCHMFT(), fwdtrack.globalIndex(), fwdtrack.matchMFTTrackId(), fwdtrack.matchMCHTrackId(),
-      fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(), fwdtrack.trackTime(), fwdtrack.trackTimeRes(),
+      fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(), fwdtrack.trackTime(), fwdtrack.trackTimeRes(), dcaX, dcaY,
       cXXatDCA, cYYatDCA, cXYatDCA, etaMatchedMCHMID, phiMatchedMCHMID, isAssociatedToMPC, isAmbiguous);
 
     propfwdtrackscov(
@@ -367,7 +367,7 @@ struct FwdTrackPropagation {
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
   PresliceUnsorted<aod::FwdTrackAssoc> fwdtrackIndicesPerFwdTrack = aod::track_association::fwdtrackId;
 
-  void processWithoutTTCA(aod::Collisions const& collisions, MyFwdTracks const& fwdtracks, aod::MFTTracks const& mfttracks, aod::BCsWithTimestamps const&)
+  void processWithoutFTTCA(aod::Collisions const& collisions, MyFwdTracks const& fwdtracks, aod::MFTTracks const& mfttracks, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -382,9 +382,9 @@ struct FwdTrackPropagation {
       } // end of fwdtrack loop
     } // end of collision loop
   }
-  PROCESS_SWITCH(FwdTrackPropagation, processWithoutTTCA, "process without TTCA", true);
+  PROCESS_SWITCH(FwdTrackPropagation, processWithoutFTTCA, "process without FTTCA", true);
 
-  void processWithTTCA(aod::Collisions const& collisions, MyFwdTracks const& fwdtracks, aod::MFTTracks const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices)
+  void processWithFTTCA(aod::Collisions const& collisions, MyFwdTracks const& fwdtracks, aod::MFTTracks const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     std::unordered_map<int64_t, bool> mapAmb; // fwdtrack.globalIndex() -> bool isAmb;
     for (const auto& fwdtrack : fwdtracks) {
@@ -408,7 +408,7 @@ struct FwdTrackPropagation {
     } // end of collision loop
     mapAmb.clear();
   }
-  PROCESS_SWITCH(FwdTrackPropagation, processWithTTCA, "process with TTCA", false);
+  PROCESS_SWITCH(FwdTrackPropagation, processWithFTTCA, "process with FTTCA", false);
 };
 
 // Extends the PropagatedFwdTracks table for expression columns
