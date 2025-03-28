@@ -509,7 +509,6 @@ struct strangenessFilter {
         LOG(warn) << "FT0 not Found, using FT0M";
         EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), 149);
         EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNoFT0"), collision.multFT0M());
-
       }
     }
 
