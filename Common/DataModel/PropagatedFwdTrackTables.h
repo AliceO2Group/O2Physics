@@ -19,19 +19,21 @@
 #define COMMON_DATAMODEL_PROPAGATEDFWDTRACKTABLES_H_
 
 #include "Framework/AnalysisDataModel.h"
+#include "TrackSelectionTables.h"
 
 namespace o2::aod
 {
 namespace propfwdtrack
 {
-DECLARE_SOA_INDEX_COLUMN(FwdTrack, fwdtrack);                   //! FwdTrack index
-DECLARE_SOA_COLUMN(CXXatDCA, cXXatDCA, float);                  //! DCAx resolution squared at DCA
-DECLARE_SOA_COLUMN(CYYatDCA, cYYatDCA, float);                  //! DCAy resolution squared at DCA
-DECLARE_SOA_COLUMN(CXYatDCA, cXYatDCA, float);                  //! correlation term of DCAx,y resolution at DCA
-DECLARE_SOA_COLUMN(EtaMatchedMCHMID, etaMatchedMCHMID, float);  //! eta of MCH-MID track in MFT-MCH-MID track at PV
-DECLARE_SOA_COLUMN(PhiMatchedMCHMID, phiMatchedMCHMID, float);  //! phi of MCH-MID track in MFT-MCH-MID track at PV
-DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool); //! is assigned to the most probable collision (relevant to TTCA)
-DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);             //! is ambiguous (relevant to TTCA)
+DECLARE_SOA_INDEX_COLUMN(FwdTrack, fwdtrack);                                             //! FwdTrack index
+DECLARE_SOA_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, FwdTracks, "_MatchMCHTrack"); //! Index of matched MCH track for GlobalMuonTracks and GlobalForwardTracks
+DECLARE_SOA_COLUMN(CXXatDCA, cXXatDCA, float);                                            //! DCAx resolution squared at DCA
+DECLARE_SOA_COLUMN(CYYatDCA, cYYatDCA, float);                                            //! DCAy resolution squared at DCA
+DECLARE_SOA_COLUMN(CXYatDCA, cXYatDCA, float);                                            //! correlation term of DCAx,y resolution at DCA
+DECLARE_SOA_COLUMN(EtaMatchedMCHMID, etaMatchedMCHMID, float);                            //! eta of MCH-MID track in MFT-MCH-MID track at PV
+DECLARE_SOA_COLUMN(PhiMatchedMCHMID, phiMatchedMCHMID, float);                            //! phi of MCH-MID track in MFT-MCH-MID track at PV
+DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool);                           //! is assigned to the most probable collision (relevant to TTCA)
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);                                       //! is ambiguous (relevant to TTCA)
 } // namespace propfwdtrack
 
 DECLARE_SOA_TABLE_FULL(StoredPropagatedFwdTracks, "PropagatedFwdTracks", "AOD", "PROPFWDTRACK",
@@ -43,9 +45,9 @@ DECLARE_SOA_TABLE_FULL(StoredPropagatedFwdTracks, "PropagatedFwdTracks", "AOD", 
                        fwdtrack::Pz<fwdtrack::Pt, fwdtrack::Tgl>,
                        fwdtrack::Sign<fwdtrack::Signed1Pt>,
                        fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
-                       fwdtrack::MatchScoreMCHMFT, propfwdtrack::FwdTrackId, fwdtrack::MFTTrackId, fwdtrack::MCHTrackId,
+                       fwdtrack::MatchScoreMCHMFT, propfwdtrack::FwdTrackId, fwdtrack::MFTTrackId, propfwdtrack::MCHTrackId,
                        fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards,
-                       fwdtrack::TrackTime, fwdtrack::TrackTimeRes,
+                       fwdtrack::TrackTime, fwdtrack::TrackTimeRes, fwdtrack::FwdDcaX, fwdtrack::FwdDcaY,
                        propfwdtrack::CXXatDCA, propfwdtrack::CYYatDCA, propfwdtrack::CXYatDCA,
                        propfwdtrack::EtaMatchedMCHMID, propfwdtrack::PhiMatchedMCHMID,
                        propfwdtrack::IsAssociatedToMPC, propfwdtrack::IsAmbiguous, o2::soa::Marker<1>);
