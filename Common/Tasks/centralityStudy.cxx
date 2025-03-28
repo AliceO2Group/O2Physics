@@ -203,7 +203,7 @@ struct centralityStudy {
     }
 
     if (doprocessCollisionsWithCentrality) {
-      // in case requested: do vs centrality debugging
+      // in case requested: do vs centrality debugging of key quantities
       histos.add("hCentrality", "hCentrality", kTH1F, {axisCentrality});
       histos.add("hNContribsVsCentrality", "hNContribsVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
       histos.add("hNITSTPCTracksVsCentrality", "hNITSTPCTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
