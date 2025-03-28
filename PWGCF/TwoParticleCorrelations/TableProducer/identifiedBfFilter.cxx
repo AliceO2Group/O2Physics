@@ -36,6 +36,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include <TROOT.h>
 #include <TParameter.h>
+#include <TPDGCode.h>
 #include <TList.h>
 #include <TDirectory.h>
 #include <TFolder.h>
@@ -1321,17 +1322,17 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyParticle(ParticleOb
   int pdgcode = std::fabs(particle.pdgCode());
 
   switch (pdgcode) {
-    case pdgcodeEl:
+    case kPositron:
       return kIdBfElectron;
       break;
 
-    case pdgcodePi:
+    case kPiPlus:
       return kIdBfPion;
       break;
-    case pdgcodeKa:
+    case kKPlus:
       return kIdBfKaon;
       break;
-    case pdgcodePr:
+    case kProton:
       return kIdBfProton;
       break;
 
@@ -1351,16 +1352,16 @@ inline void IdentifiedBfFilterTracks::identifyPIDMismatch(ParticleObject const& 
   int pdgcode = std::fabs(particle.pdgCode());
 
   switch (pdgcode) {
-    case pdgcodeEl:
+    case kPositron:
       realPID = kIdBfElectron;
       break;
-    case pdgcodePi:
+    case kPiPlus:
       realPID = kIdBfPion;
       break;
-    case pdgcodeKa:
+    case kKPlus:
       realPID = kIdBfKaon;
       break;
-    case pdgcodePr:
+    case kProton:
       realPID = kIdBfProton;
       break;
     default:
@@ -1386,16 +1387,16 @@ inline void IdentifiedBfFilterTracks::identifyRealNSigma(ParticleObject const& p
   MatchRecoGenSpecies realPID = kWrongSpecies;
   int pdgcode = std::fabs(particle.pdgCode());
   switch (pdgcode) {
-    case pdgcodeEl:
+    case kPositron:
       realPID = kIdBfElectron;
       break;
-    case pdgcodePi:
+    case kPiPlus:
       realPID = kIdBfPion;
       break;
-    case pdgcodeKa:
+    case kKPlus:
       realPID = kIdBfKaon;
       break;
-    case pdgcodePr:
+    case kProton:
       realPID = kIdBfProton;
       break;
     default:

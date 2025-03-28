@@ -60,10 +60,7 @@ enum MatchRecoGenSpecies {
   kWrongSpecies = -1
 };
 
-constexpr int pdgcodeEl = 11;
-constexpr int pdgcodePi = 211;
-constexpr int pdgcodeKa = 321;
-constexpr int pdgcodePr = 2212;
+
 
 /// \enum SpeciesPairMatch
 /// \brief The species pair considered by the matching test
