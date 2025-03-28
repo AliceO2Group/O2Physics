@@ -923,7 +923,7 @@ struct DetectorOccupancyQaTask {
 
               int tpcNClsCorrectedFindableMinusPID = track.tpcNClsFindableMinusPID();
               // correct for a buggy behaviour due to int8 and uint8 difference:
-              if (tpcNClsCorrectedFindableMinusPID < -80)
+              if (tpcNClsCorrectedFindableMinusPID < -70)
                 tpcNClsCorrectedFindableMinusPID += 256;
               histos.fill(HIST("tpcNClsFindableMinusPID_CORRECTED"), tpcNClsCorrectedFindableMinusPID);
 
