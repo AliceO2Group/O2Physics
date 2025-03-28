@@ -17,8 +17,6 @@
 
 #include <TLorentzVector.h>
 
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
