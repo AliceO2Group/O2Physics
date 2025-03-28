@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file pidMLBatchEffAndPurProducer
+/// \file pidMlBatchEffAndPurProducer.cxx
 /// \brief Batch PID execution task. It produces derived data needed for ROOT script, which
-/// generates efficiency (recall) and purity (precision) analysis of ML Model PID
+/// generate PIDML neural network performance benchmark plots.
 ///
 /// \author Michał Olędzki <m.oledzki@cern.ch>
 /// \author Marek Mytkowski <marek.mytkowski@cern.ch>
@@ -19,6 +19,9 @@
 #include <cstddef>
 #include <string_view>
 #include <algorithm>
+#include <string>
+#include <vector>
+#include <limits>
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/runDataProcessing.h"
@@ -44,9 +47,9 @@ DECLARE_SOA_COLUMN(Pid, pid, int32_t);               //! PDG particle ID to be t
 DECLARE_SOA_COLUMN(Pt, pt, float);                   //! particle's pt
 DECLARE_SOA_COLUMN(MlCertainty, mlCertainty, float); //! Machine learning model certainty value for track and pid
 DECLARE_SOA_COLUMN(NSigma, nSigma, float);           //! nSigma value for track and pid
-DECLARE_SOA_COLUMN(IsPidMC, isPidMc, bool);          //! Is track's mcParticle recognized as "Pid"
-DECLARE_SOA_COLUMN(HasTOF, hasTof, bool);            //! Does track have TOF detector signal
-DECLARE_SOA_COLUMN(HasTRD, hasTrd, bool);            //! Does track have TRD detector signal
+DECLARE_SOA_COLUMN(IsPidMC, isPidMC, bool);          //! Is track's mcParticle recognized as "Pid"
+DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);            //! Does track have TOF detector signal
+DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);            //! Does track have TRD detector signal
 } // namespace effandpurpidresult
 
 DECLARE_SOA_TABLE(EffAndPurPidResult, "AOD", "PIDEFFANDPURRES", o2::soa::Index<>,
@@ -58,49 +61,49 @@ struct PidMlBatchEffAndPurProducer {
   Produces<o2::aod::EffAndPurPidResult> effAndPurPIDResult;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  static constexpr int32_t currentRunNumber = -1;
-  static constexpr uint32_t kNPids = 6;
-  static constexpr int32_t kPids[kNPids] = {2212, 321, 211, -211, -321, -2212};
-  static constexpr std::string_view kParticleLabels[kNPids] = {"2212", "321", "211", "0211", "0321", "02212"};
-  static constexpr std::string_view kParticleNames[kNPids] = {"proton", "kaon", "pion", "antipion", "antikaon", "antiproton"};
+  static constexpr int32_t CurrentRunNumber = -1;
+  static constexpr uint32_t KNPids = 6;
+  static constexpr int32_t KPids[KNPids] = {2212, 321, 211, -211, -321, -2212};
+  static constexpr std::string_view KParticleLabels[KNPids] = {"2212", "321", "211", "0211", "0321", "02212"};
+  static constexpr std::string_view KPatricleNames[KNPids] = {"proton", "kaon", "pion", "antipion", "antikaon", "antiproton"};
 
-  std::array<std::shared_ptr<TH1>, kNPids> hTracked;
-  std::array<std::shared_ptr<TH1>, kNPids> hMCPositive;
+  std::array<std::shared_ptr<TH1>, KNPids> hTracked;
+  std::array<std::shared_ptr<TH1>, KNPids> hMCPositive;
 
   o2::ccdb::CcdbApi ccdbApi;
-  std::vector<PidONNXModel> models;
 
-  Configurable<std::vector<int32_t>> cfgPids{"pids", std::vector<int32_t>(kPids, kPids + kNPids), "PIDs to predict"};
-  Configurable<std::array<double, kNDetectors>> cfgDetectorsPLimits{"detectors-p-limits", std::array<double, kNDetectors>(pidml_pt_cuts::defaultModelPLimits), "\"use {detector} when p >= y_{detector}\": array of 3 doubles [y_TPC, y_TOF, y_TRD]"};
-  Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
-  Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
-  Configurable<bool> cfgUseCCDB{"use-ccdb", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
-  Configurable<std::string> cfgPathLocal{"local-path", "/home/mkabus/PIDML/", "base path to the local directory with ONNX models"};
-  Configurable<bool> cfgUseFixedTimestamp{"use-fixed-timestamp", false, "Whether to use fixed timestamp from configurable instead of timestamp calculated from the data"};
-  Configurable<uint64_t> cfgTimestamp{"timestamp", 1524176895000, "Hardcoded timestamp for tests"};
+  Configurable<std::vector<int32_t>> pdgPids{"pdgPids", std::vector<int32_t>(KPids, KPids + KNPids), "list of PDG ids of particles to predict. Every subset of {2212, 321, 211, -211, -321, -2212} is correct value."};
+  Configurable<MomentumLimitsMatrix> detectorMomentumLimits{"detectorMomentumLimits", MomentumLimitsMatrix(pidml_pt_cuts::defaultModelPLimits), "\"use {detector} when p >= y_{detector}\": array of 3 doubles [y_TPC, y_TOF, y_TRD]"};
+  Configurable<std::string> ccdbPath{"ccdbPath", "Users/m/mkabus/PIDML", "Base path to the CCDB directory with ONNX models"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
+  Configurable<bool> useCcdb{"useCcdb", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
+  Configurable<std::string> localPath{"localPath", "/home/mkabus/PIDML/", "Base path to the local directory with ONNX models"};
+  Configurable<bool> useFixedTimestamp{"useFixedTimestamp", false, "Whether to use fixed timestamp from configurable instead of timestamp calculated from the data"};
+  Configurable<uint64_t> fixedTimestamp{"fixedTimestamp", 1524176895000, "Hardcoded timestamp for tests"};
 
   Filter trackFilter = requireGlobalTrackInFilter();
 
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels,
                                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu,
                                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu>>;
+  std::vector<PidONNXModel<BigTracks>> models;
 
   void initHistos()
   {
     static const AxisSpec axisPt{50, 0, 3.1, "pt"};
 
-    static_for<0, kNPids - 1>([&](auto i) {
-      if (std::find(cfgPids.value.begin(), cfgPids.value.end(), kPids[i]) != cfgPids.value.end()) {
-        hTracked[i] = histos.add<TH1>(Form("%s/hPtMCTracked", kParticleLabels[i].data()), Form("Tracked %ss vs pT", kParticleNames[i].data()), kTH1F, {axisPt});
-        hMCPositive[i] = histos.add<TH1>(Form("%s/hPtMCPositive", kParticleLabels[i].data()), Form("MC Positive %ss vs pT", kParticleNames[i].data()), kTH1F, {axisPt});
+    static_for<0, KNPids - 1>([&](auto i) {
+      if (std::find(pdgPids.value.begin(), pdgPids.value.end(), KPids[i]) != pdgPids.value.end()) {
+        hTracked[i] = histos.add<TH1>(Form("%s/hPtMCTracked", KParticleLabels[i].data()), Form("Tracked %ss vs pT", KPatricleNames[i].data()), kTH1F, {axisPt});
+        hMCPositive[i] = histos.add<TH1>(Form("%s/hPtMCPositive", KParticleLabels[i].data()), Form("MC Positive %ss vs pT", KPatricleNames[i].data()), kTH1F, {axisPt});
       }
     });
   }
 
   void init(InitContext const&)
   {
-    if (cfgUseCCDB) {
-      ccdbApi.init(cfgCCDBURL);
+    if (useCcdb) {
+      ccdbApi.init(ccdbUrl);
     }
 
     initHistos();
@@ -110,7 +113,7 @@ struct PidMlBatchEffAndPurProducer {
   {
     std::optional<size_t> index;
 
-    if (std::find(cfgPids.value.begin(), cfgPids.value.end(), pdgCode) != cfgPids.value.end()) {
+    if (std::find(pdgPids.value.begin(), pdgPids.value.end(), pdgCode) != pdgPids.value.end()) {
       switch (pdgCode) {
         case 2212:
           index = 0;
@@ -160,7 +163,7 @@ struct PidMlBatchEffAndPurProducer {
   {
     nSigma_t nSigma;
 
-    switch (TMath::Abs(cfgPid)) {
+    switch (std::abs(cfgPid)) {
       case 11: // electron
         nSigma.tof = track.tofNSigmaEl();
         nSigma.tpc = track.tpcNSigmaEl();
@@ -183,10 +186,10 @@ struct PidMlBatchEffAndPurProducer {
         break;
     }
 
-    if (!inPLimit(track, cfgDetectorsPLimits.value[kTPCTOF]) || tofMissing(track)) {
-      nSigma.composed = TMath::Abs(nSigma.tpc);
+    if (!inPLimit(track, detectorMomentumLimits.value[kTPCTOF]) || tofMissing(track)) {
+      nSigma.composed = std::abs(nSigma.tpc);
     } else {
-      nSigma.composed = TMath::Hypot(nSigma.tof, nSigma.tpc);
+      nSigma.composed = std::hypot(nSigma.tof, nSigma.tpc);
     }
 
     int32_t sign = cfgPid > 0 ? 1 : -1;
@@ -202,36 +205,36 @@ struct PidMlBatchEffAndPurProducer {
     effAndPurPIDResult.reserve(mcParticles.size());
 
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
-    if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
-      uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
-      for (const int32_t& pid : cfgPids.value)
-        models.emplace_back(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-                                         ccdbApi, timestamp, pid, 1.1, &cfgDetectorsPLimits.value[0]));
+    if (useCcdb && bc.runNumber() != CurrentRunNumber) {
+      uint64_t timestamp = useFixedTimestamp ? fixedTimestamp.value : bc.timestamp();
+      for (const int32_t& pid : pdgPids.value)
+        models.emplace_back(PidONNXModel<BigTracks>(localPath.value, ccdbPath.value, useCcdb.value,
+                                                    ccdbApi, timestamp, pid, 1.1, &detectorMomentumLimits.value[0]));
     } else {
-      for (int32_t& pid : cfgPids.value)
-        models.emplace_back(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-                                         ccdbApi, -1, pid, 1.1, &cfgDetectorsPLimits.value[0]));
+      for (const int32_t& pid : pdgPids.value)
+        models.emplace_back(PidONNXModel<BigTracks>(localPath.value, ccdbPath.value, useCcdb.value,
+                                                    ccdbApi, -1, pid, 1.1, &detectorMomentumLimits.value[0]));
     }
 
-    for (auto& mcPart : mcParticles) {
+    for (const auto& mcPart : mcParticles) {
       // eta cut is done in requireGlobalTrackInFilter() so we cut it only here
-      if (mcPart.isPhysicalPrimary() && TMath::Abs(mcPart.eta()) < kGlobalEtaCut) {
+      if (mcPart.isPhysicalPrimary() && std::abs(mcPart.eta()) < kGlobalEtaCut) {
         fillMCPositiveHist(mcPart.pdgCode(), mcPart.pt());
       }
     }
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (track.has_mcParticle()) {
         auto mcPart = track.mcParticle();
         if (mcPart.isPhysicalPrimary()) {
           fillTrackedHist(mcPart.pdgCode(), track.pt());
 
-          for (size_t i = 0; i < cfgPids.value.size(); ++i) {
+          for (size_t i = 0; i < pdgPids.value.size(); ++i) {
             float mlCertainty = models[i].applyModel(track);
-            nSigma_t nSigma = getNSigma(track, cfgPids.value[i]);
-            bool isMCPid = mcPart.pdgCode() == cfgPids.value[i];
+            nSigma_t nSigma = getNSigma(track, pdgPids.value[i]);
+            bool isMCPid = mcPart.pdgCode() == pdgPids.value[i];
 
-            effAndPurPIDResult(track.index(), cfgPids.value[i], track.pt(), mlCertainty, nSigma.composed, isMCPid, track.hasTOF(), track.hasTRD());
+            effAndPurPIDResult(track.index(), pdgPids.value[i], track.pt(), mlCertainty, nSigma.composed, isMCPid, track.hasTOF(), track.hasTRD());
           }
         }
       }

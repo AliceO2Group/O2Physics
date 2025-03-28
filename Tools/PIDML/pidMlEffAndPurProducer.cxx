@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file pidMLEffAndPurProducer.cxx
+/// \file pidMlEffAndPurProducer.cxx
 /// \brief Produce pt histograms for tracks accepted by ML network and for MC mcParticles.
 ///
 /// \author Michał Olędzki <m.oledzki@cern.ch>
@@ -24,7 +24,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Tools/PIDML/pidOnnxModel.h"
-#include "pidOnnxModel.h"
 #include "Tools/PIDML/pidUtils.h"
 
 using namespace o2;
@@ -35,19 +34,18 @@ using namespace pidml::pidutils;
 struct PidMlEffAndPurProducer {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  PidONNXModel pidModel;
-  Configurable<int> cfgPid{"pid", 211, "PID to predict"};
-  Configurable<double> cfgNSigmaCut{"n-sigma-cut", 3.0f, "TPC and TOF PID nSigma cut"};
-  Configurable<std::array<double, kNDetectors>> cfgDetectorsPLimits{"detectors-p-limits", std::array<double, kNDetectors>(pidml_pt_cuts::defaultModelPLimits), "\"use {detector} when p >= y_{detector}\": array of 3 doubles [y_TPC, y_TOF, y_TRD]"};
-  Configurable<double> cfgCertainty{"certainty", 0.5, "Min certainty of the model to accept given mcPart to be of given kind"};
+  Configurable<int> pdgPid{"pdgPid", 211, "PID to predict"};
+  Configurable<double> nSigmaCut{"nSigmaCut", 3.0f, "TPC and TOF PID nSigma cut"};
+  Configurable<MomentumLimitsMatrix> detectorMomentumLimits{"detectorMomentumLimits", MomentumLimitsMatrix(pidml_pt_cuts::defaultModelPLimits), "use {detector} when p >= y_{detector}: array of 3 doubles [y_TPC, y_TOF, y_TRD]"};
+  Configurable<double> mlIdentCertaintyThreshold{"mlIdentCertaintyThreshold", 0.5, "Min certainty of the model to accept given mcPart to be of given kind"};
 
-  Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
-  Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
-  Configurable<bool> cfgUseCCDB{"use-ccdb", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
-  Configurable<std::string> cfgPathLocal{"local-path", "/home/mkabus/PIDML", "base path to the local directory with ONNX models"};
+  Configurable<std::string> ccdbPath{"ccdbPath", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
+  Configurable<bool> useCcdb{"useCcdb", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
+  Configurable<std::string> localPath{"localPath", "/home/mkabus/PIDML", "base path to the local directory with ONNX models"};
 
-  Configurable<bool> cfgUseFixedTimestamp{"use-fixed-timestamp", false, "Whether to use fixed timestamp from configurable instead of timestamp calculated from the data"};
-  Configurable<uint64_t> cfgTimestamp{"timestamp", 1524176895000, "Hardcoded timestamp for tests"};
+  Configurable<bool> useFixedTimestamp{"useFixedTimestamp", false, "Whether to use fixed timestamp from configurable instead of timestamp calculated from the data"};
+  Configurable<uint64_t> fixedTimestamp{"fixedTimestamp", 1524176895000, "Hardcoded timestamp for tests"};
 
   o2::ccdb::CcdbApi ccdbApi;
   int currentRunNumber = -1;
@@ -57,16 +55,17 @@ struct PidMlEffAndPurProducer {
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels,
                                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu,
                                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu>>;
+  PidONNXModel<BigTracks> pidModel;
 
   typedef struct nSigma_t {
     double tpc, tof;
   } nSigma_t;
 
-  nSigma_t GetNSigma(const BigTracks::iterator& track)
+  nSigma_t getNSigma(const BigTracks::iterator& track)
   {
     nSigma_t nSigma;
 
-    switch (TMath::Abs(cfgPid)) {
+    switch (std::abs(pdgPid)) {
       case 11: // electron
         nSigma.tof = track.tofNSigmaEl();
         nSigma.tpc = track.tpcNSigmaEl();
@@ -92,19 +91,19 @@ struct PidMlEffAndPurProducer {
     return nSigma;
   }
 
-  bool IsNSigmaAccept(const BigTracks::iterator& track, nSigma_t& nSigma)
+  bool isNSigmaAccept(const BigTracks::iterator& track, nSigma_t& nSigma)
   {
     // FIXME: for current particles it works, but there are some particles,
     //  which can have different sign and pdgSign
-    int sign = cfgPid > 0 ? 1 : -1;
+    int sign = pdgPid > 0 ? 1 : -1;
     if (track.sign() != sign)
       return false;
 
-    if (!inPLimit(track, cfgDetectorsPLimits.value[kTPCTOF]) || tofMissing(track)) {
-      if (TMath::Abs(nSigma.tpc) >= cfgNSigmaCut)
+    if (!inPLimit(track, detectorMomentumLimits.value[kTPCTOF]) || tofMissing(track)) {
+      if (std::abs(nSigma.tpc) >= nSigmaCut)
         return false;
     } else {
-      if (TMath::Hypot(nSigma.tof, nSigma.tpc) >= cfgNSigmaCut)
+      if (std::hypot(nSigma.tof, nSigma.tpc) >= nSigmaCut)
         return false;
     }
 
@@ -113,11 +112,11 @@ struct PidMlEffAndPurProducer {
 
   void init(InitContext const&)
   {
-    if (cfgUseCCDB) {
-      ccdbApi.init(cfgCCDBURL);
+    if (useCcdb) {
+      ccdbApi.init(ccdbUrl);
     } else {
-      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1,
-                              cfgPid.value, cfgCertainty.value, &cfgDetectorsPLimits.value[0]);
+      pidModel = PidONNXModel<BigTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1,
+                                         pdgPid.value, mlIdentCertaintyThreshold.value, &detectorMomentumLimits.value[0]);
     }
 
     const AxisSpec axisPt{100, 0, 5.0, "pt"};
@@ -151,26 +150,26 @@ struct PidMlEffAndPurProducer {
   void process(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
   {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
-    if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
-      uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
-      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, timestamp,
-                              cfgPid.value, cfgCertainty.value, &cfgDetectorsPLimits.value[0]);
+    if (useCcdb && bc.runNumber() != currentRunNumber) {
+      uint64_t timestamp = useFixedTimestamp ? fixedTimestamp.value : bc.timestamp();
+      pidModel = PidONNXModel<BigTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, timestamp,
+                                         pdgPid.value, mlIdentCertaintyThreshold.value, &detectorMomentumLimits.value[0]);
     }
 
-    for (auto& mcPart : mcParticles) {
+    for (const auto& mcPart : mcParticles) {
       // eta cut is included in requireGlobalTrackInFilter() so we cut it only here
-      if (mcPart.isPhysicalPrimary() && TMath::Abs(mcPart.eta()) < kGlobalEtaCut && mcPart.pdgCode() == pidModel.mPid) {
+      if (mcPart.isPhysicalPrimary() && std::abs(mcPart.eta()) < kGlobalEtaCut && mcPart.pdgCode() == pidModel.mPid) {
         histos.fill(HIST("hPtMCPositive"), mcPart.pt());
       }
     }
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (track.has_mcParticle()) {
         auto mcPart = track.mcParticle();
         if (mcPart.isPhysicalPrimary()) {
           bool mlAccepted = pidModel.applyModelBoolean(track);
-          nSigma_t nSigma = GetNSigma(track);
-          bool nSigmaAccepted = IsNSigmaAccept(track, nSigma);
+          nSigma_t nSigma = getNSigma(track);
+          bool nSigmaAccepted = isNSigmaAccept(track, nSigma);
 
           LOGF(debug, "collision id: %d track id: %d mlAccepted: %d nSigmaAccepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
                track.collisionId(), track.index(), mlAccepted, nSigmaAccepted, track.p(), track.x(), track.y(), track.z());
