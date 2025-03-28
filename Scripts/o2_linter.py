@@ -592,6 +592,24 @@ class TestWorkflowOptions(TestSpec):
         return True
 
 
+class TestMagicNumber(TestSpec):
+    """Detect magic numbers."""
+
+    name = "magic-number"
+    message = "Avoid magic numbers in expressions. Assign the value to a clearly named variable or constant."
+    suffixes = [".h", ".cxx", ".C"]
+
+    def test_line(self, line: str) -> bool:
+        if is_comment_cpp(line):
+            return True
+        line = remove_comment_cpp(line)
+        if not (match := re.search(r" ([<>]=?|[!=]=) [\+-]?([\d\.]+)", line)):
+            return True
+        number = match.group(2)
+        # Accept only 0 or 1 (int or float).
+        return re.match(r"[01](\.0?)?$", number) is not None
+
+
 # Documentation
 # Reference: https://rawgit.com/AliceO2Group/CodingGuidelines/master/comments_guidelines.html
 
@@ -1435,6 +1453,7 @@ def main():
         tests.append(TestConstRefInForLoop())
         tests.append(TestConstRefInSubscription())
         tests.append(TestWorkflowOptions())
+        tests.append(TestMagicNumber())
 
     # Documentation
     enable_documentation = True
