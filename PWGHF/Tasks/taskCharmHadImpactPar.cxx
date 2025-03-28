@@ -55,6 +55,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                               //! Transverse 
 DECLARE_SOA_COLUMN(Y, y, float);                                 //! Rapidity of candidate
 DECLARE_SOA_COLUMN(Phi, phi, float);                             //! Azimuth angle of candidate
 DECLARE_SOA_COLUMN(ImpactParameterXY, impactParameterXY, float); //! Dca XY of candidate
+DECLARE_SOA_COLUMN(ImpactParameterZ, impactParameterZ, float);   //! Dca Z of candidate
 DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);               //! ML score for background class
 DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);         //! ML Prompt score for prompt class
 DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float);   //! ML Non Prompt score for non prompt class
@@ -67,6 +68,7 @@ DECLARE_SOA_COLUMN(PhiProng2, phiProng2, float);                 //! Phi of the 
 DECLARE_SOA_COLUMN(EtaProng0, etaProng0, float);                 //! Eta of the 1st daughter
 DECLARE_SOA_COLUMN(EtaProng1, etaProng1, float);                 //! Eta of the 2nd daughter
 DECLARE_SOA_COLUMN(EtaProng2, etaProng2, float);                 //! Eta of the 3rd daughter (if present)
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);      //! Flag for reconstruction level matching
 } // namespace hf_charm_cand_lite
 
 DECLARE_SOA_TABLE(HfCharmCandLites, "AOD", "HFCHARMCANDLITE", //! Table with some charm hadron properties
@@ -84,6 +86,7 @@ DECLARE_SOA_TABLE(HfCharmCandLites, "AOD", "HFCHARMCANDLITE", //! Table with som
                   hf_charm_cand_lite::Y,
                   hf_charm_cand_lite::Phi,
                   hf_charm_cand_lite::ImpactParameterXY,
+                  hf_charm_cand_lite::ImpactParameterZ,
                   hf_charm_cand_lite::MlScoreBkg,
                   hf_charm_cand_lite::MlScorePrompt,
                   hf_charm_cand_lite::MlScoreNonPrompt,
@@ -95,7 +98,8 @@ DECLARE_SOA_TABLE(HfCharmCandLites, "AOD", "HFCHARMCANDLITE", //! Table with som
                   hf_charm_cand_lite::PhiProng2,
                   hf_charm_cand_lite::EtaProng0,
                   hf_charm_cand_lite::EtaProng1,
-                  hf_charm_cand_lite::EtaProng2);
+                  hf_charm_cand_lite::EtaProng2,
+                  hf_charm_cand_lite::FlagMcMatchRec);
 } // namespace o2::aod
 
 struct HfTaskCharmHadImpactPar {
@@ -105,6 +109,7 @@ struct HfTaskCharmHadImpactPar {
   Configurable<int> fillLightTreeCandidate{"fillLightTreeCandidate", 0, "Flag to store charm hadron features"};
   Configurable<int> centEstimator{"centEstimator", 0, "Centrality estimation (None: 0, FT0C: 2, FT0M: 3)"};
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
+  Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to store only matched candidates"};
 
   HfHelper hfHelper;
 
@@ -112,8 +117,12 @@ struct HfTaskCharmHadImpactPar {
   using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   using CandDplusDataWithMl = soa::Filtered<soa::Join<CandDplusData, aod::HfMlDplusToPiKPi>>;
+  using CandDplusMC = soa::Filtered<soa::Join<CandDplusData, aod::HfCand3ProngMcRec>>;
+  using CandDplusMCWithMl = soa::Filtered<soa::Join<CandDplusMC, aod::HfMlDplusToPiKPi>>;
   using CandDzeroData = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
   using CandDzeroDataWithMl = soa::Filtered<soa::Join<CandDzeroData, aod::HfMlD0>>;
+  using CandDzeroMc = soa::Filtered<soa::Join<CandDzeroData, aod::HfCand2ProngMcRec>>;
+  using CandDzeroMcWithMl = soa::Filtered<soa::Join<CandDzeroMc, aod::HfMlD0>>;
 
   Filter filterDplusFlag = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
   Filter filterDzeroFlag = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
@@ -131,26 +140,33 @@ struct HfTaskCharmHadImpactPar {
 
   void init(InitContext&)
   {
-    std::array<bool, 4> doprocess{doprocessDplus, doprocessDplusWithMl, doprocessDzero, doprocessDzeroWithMl};
+    std::array<bool, 8> doprocess{doprocessDataDplus, doprocessDataDplusWithMl, doprocessMCDplus, doprocessMCDplusWithMl, doprocessDataDzero, doprocessDataDzeroWithMl, doprocessMCDzero, doprocessMCDzeroWithMl};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function should be enabled! Please check your configuration!");
     }
-    if (doprocessDplus || doprocessDzero) {
+    if (doprocessDataDplus || doprocessDataDzero || doprocessMCDplus || doprocessMCDzero) {
       registry.add("hMassPtImpParPhiY", ";#it{M} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});dca XY (#mum); phi; y;", HistType::kTHnSparseF, {axisMass, axisPt, axisImpPar, axisPhi, axisY});
-    } else if (doprocessDplusWithMl || doprocessDzeroWithMl) {
+    } else if (doprocessDataDplusWithMl || doprocessDataDzeroWithMl || doprocessMCDplusWithMl || doprocessMCDzeroWithMl) {
       registry.add("hMassPtImpParPhiY", ";#it{M} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});dca XY (#mum); phi; y; ML score 0;ML score 1; ML score 2;", HistType::kTHnSparseF, {axisMass, axisPt, axisImpPar, axisPhi, axisY, axisMlScore0, axisMlScore1, axisMlScore2});
     }
   }
 
   // Fill THnSparses for the ML analysis
   /// \param candidate is a particle candidate
-  template <Channel channel, bool withMl, typename CCands>
+  template <Channel channel, bool doMc, bool withMl, typename CCands>
   void fillSparse(const CCands& candidate)
   {
     std::vector<float> outputMl = {-999., -999., -999.};
     float invMass{-1.f};
     float yCand{-999.f};
     if constexpr (channel == Channel::DplusToKPiPi) { // D+ -> Kpipi
+      if constexpr (doMc) {
+        if (fillOnlySignal) {
+          if (std::abs(candidate.flagMcMatchRec()) != 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
+            return;
+          }
+        }
+      }
       invMass = hfHelper.invMassDplusToPiKPi(candidate);
       yCand = hfHelper.yDplus(candidate);
       if constexpr (withMl) {
@@ -163,6 +179,13 @@ struct HfTaskCharmHadImpactPar {
       }
     } else if constexpr (channel == Channel::DzeroToKPi) {
       if (candidate.isSelD0()) { // D0 -> Kpi
+        if constexpr (doMc) {
+          if (fillOnlySignal) {
+            if (std::abs(candidate.flagMcMatchRec()) != 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+              return;
+            }
+          }
+        }
         invMass = hfHelper.invMassD0ToPiK(candidate);
         yCand = hfHelper.yD0(candidate);
         if constexpr (withMl) {
@@ -192,7 +215,7 @@ struct HfTaskCharmHadImpactPar {
   // Fill the TTree with both event and candidate properties
   /// \param candidate is a particle candidate
   /// \param collision is the respective collision
-  template <Channel channel, bool withMl, typename CCands, typename CollType>
+  template <Channel channel, bool doMc, bool withMl, typename CCands, typename CollType>
   void fillTree(const CCands& candidate, const CollType& collision)
   {
     std::vector<float> outputMl = {-999., -999., -999.};
@@ -241,6 +264,12 @@ struct HfTaskCharmHadImpactPar {
       occupancy = getOccupancyColl(collision, occEstimator);
     }
 
+    int8_t flagMcMatchRec = 0;
+    if constexpr (doMc) {
+      flagMcMatchRec = candidate.flagMcMatchRec();
+    }
+    double impParZ = candidate.impactParameterXY() * (-1) * candidate.pz() / candidate.pt();
+
     hfCharmCandLite(
       // Event features
       collision.numContrib(),
@@ -258,6 +287,7 @@ struct HfTaskCharmHadImpactPar {
       yCand,
       candidate.phi(),
       candidate.impactParameterXY(),
+      impParZ,
       outputMl[0],
       outputMl[1],
       outputMl[2],
@@ -270,46 +300,71 @@ struct HfTaskCharmHadImpactPar {
       phiProngs[2],
       etaProngs[0],
       etaProngs[1],
-      etaProngs[2]);
+      etaProngs[2],
+      flagMcMatchRec);
   }
 
   /// \param candidates are reconstructed candidates
-  template <Channel channel, bool withMl, typename CCands>
+  template <Channel channel, bool doMc, bool withMl, typename CCands>
   void runAnalysis(const CCands& candidates, CollisionsCent const&)
   {
     for (auto const& candidate : candidates) {
       auto collision = candidate.template collision_as<CollisionsCent>();
-      fillSparse<channel, withMl>(candidate);
+      fillSparse<channel, doMc, withMl>(candidate);
       if (fillLightTreeCandidate) {
-        fillTree<channel, withMl>(candidate, collision);
+        fillTree<channel, doMc, withMl>(candidate, collision);
       }
     }
   }
 
   // process functions
-  void processDplus(CandDplusData const& candidates, CollisionsCent const& collisions)
+  void processDataDplus(CandDplusData const& candidates, CollisionsCent const& collisions)
   {
-    runAnalysis<Channel::DplusToKPiPi, false>(candidates, collisions);
+    runAnalysis<Channel::DplusToKPiPi, false, false>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDplus, "Process D+ w/o ML", false);
+  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDataDplus, "Process Data D+ w/o ML", false);
 
-  void processDplusWithMl(CandDplusDataWithMl const& candidates, CollisionsCent const& collisions)
+  void processDataDplusWithMl(CandDplusDataWithMl const& candidates, CollisionsCent const& collisions)
   {
-    runAnalysis<Channel::DplusToKPiPi, true>(candidates, collisions);
+    runAnalysis<Channel::DplusToKPiPi, false, true>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDplusWithMl, "Process D+ with ML", true);
+  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDataDplusWithMl, "Process Data D+ with ML", true);
 
-  void processDzero(CandDzeroData const& candidates, CollisionsCent const& collisions)
+  void processMCDplus(CandDplusMC const& candidates, CollisionsCent const& collisions)
   {
-    runAnalysis<Channel::DzeroToKPi, false>(candidates, collisions);
+    runAnalysis<Channel::DplusToKPiPi, true, false>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDzero, "Process D0 w/o ML", false);
+  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processMCDplus, "Process MC D+ w/o ML", false);
 
-  void processDzeroWithMl(CandDzeroDataWithMl const& candidates, CollisionsCent const& collisions)
+  void processMCDplusWithMl(CandDplusMCWithMl const& candidates, CollisionsCent const& collisions)
   {
-    runAnalysis<Channel::DzeroToKPi, true>(candidates, collisions);
+    runAnalysis<Channel::DplusToKPiPi, true, true>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDzeroWithMl, "Process D0 with ML", false);
+  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processMCDplusWithMl, "Process MC D+ with ML", false);
+
+  void processDataDzero(CandDzeroData const& candidates, CollisionsCent const& collisions)
+  {
+    runAnalysis<Channel::DzeroToKPi, false, false>(candidates, collisions);
+  }
+  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDataDzero, "Process Data D0 w/o ML", false);
+
+  void processDataDzeroWithMl(CandDzeroDataWithMl const& candidates, CollisionsCent const& collisions)
+  {
+    runAnalysis<Channel::DzeroToKPi, false, true>(candidates, collisions);
+  }
+  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDataDzeroWithMl, "Process Data D0 with ML", false);
+
+  void processMCDzero(CandDzeroMc const& candidates, CollisionsCent const& collisions)
+  {
+    runAnalysis<Channel::DzeroToKPi, true, false>(candidates, collisions);
+  }
+  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processMCDzero, "Process MC D0 w/o ML", false);
+
+  void processMCDzeroWithMl(CandDzeroMcWithMl const& candidates, CollisionsCent const& collisions)
+  {
+    runAnalysis<Channel::DzeroToKPi, true, true>(candidates, collisions);
+  }
+  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processMCDzeroWithMl, "Process MC D0 with ML", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
