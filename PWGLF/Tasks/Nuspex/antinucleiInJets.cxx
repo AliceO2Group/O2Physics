@@ -155,6 +155,8 @@ struct AntinucleiInJets {
     if (doprocessQC) {
       registryQC.add("deltaEta_deltaPhi_jet", "deltaEta_deltaPhi_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, PIHalf, "#Delta#phi"}});
       registryQC.add("deltaEta_deltaPhi_ue", "deltaEta_deltaPhi_ue", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, PIHalf, "#Delta#phi"}});
+      registryQC.add("eta_phi_jet", "eta_phi_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#eta_{jet}"}, {200, 0, TwoPI, "#phi_{jet}"}});
+      registryQC.add("eta_phi_ue", "eta_phi_ue", HistType::kTH2F, {{200, -0.5, 0.5, "#eta_{UE}"}, {200, 0, TwoPI, "#phi_{UE}"}});
       registryQC.add("NchJetCone", "NchJetCone", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
       registryQC.add("NchJet", "NchJet", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
       registryQC.add("NchUE", "NchUE", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
@@ -253,7 +255,7 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_ue_rec_tof", "antiproton_ue_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // detector response matrix
-      registryMC.add("detectorResponseMatrix", "detectorResponseMatrix", HistType::kTH2F, {{1000, 0.0, 100.0, "#it{p}_{T}^{gen} (GeV/#it{c})"}, {2000, -20.0, 20.0, "#it{p}_{T}^{gen} - #it{p}_{T}^{rec} (GeV/#it{c})"}});
+      registryMC.add("detectorResponseMatrix", "detectorResponseMatrix", HistType::kTH2F, {{1000, 0.0, 100.0, "#it{p}_{T}^{rec} (GeV/#it{c})"}, {2000, -20.0, 20.0, "#it{p}_{T}^{gen} - #it{p}_{T}^{rec} (GeV/#it{c})"}});
     }
 
     // systematic uncertainties
@@ -418,10 +420,23 @@ struct AntinucleiInJets {
     return false;
   }
 
-  double getCorrectedPt(double ptRec)
+  double getCorrectedPt(double ptRec, TH2* responseMatrix)
   {
-    // to be developed
-    return ptRec;
+
+    int binX = responseMatrix->GetXaxis()->FindBin(ptRec);
+    TH1D* proj = responseMatrix->ProjectionY("proj", binX, binX);
+
+    // add a protection in case the projection is empty
+    if (proj->GetEntries() == 0) {
+      delete proj;
+      return ptRec;
+    }
+
+    double deltaPt = proj->GetRandom();
+    double ptGen = ptRec + deltaPt;
+    delete proj;
+
+    return ptGen;
   }
 
   void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_antip_jet, TString histname_antip_ue)
@@ -451,10 +466,10 @@ struct AntinucleiInJets {
     static std::mt19937 gen(rd());
     static std::uniform_int_distribution<> dis(0, 99);
     int randomNumber = dis(gen);
-    if (randomNumber <= rejectionPercentage) {
-      return false;
+    if (randomNumber > rejectionPercentage) {
+      return false; // accept event
     }
-    return true;
+    return true; // reject event
   }
 
   // Process Data
@@ -518,7 +533,8 @@ struct AntinucleiInJets {
       // jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
+      // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
+      if (jetMinusBkg.pt() < minJetPt)
         continue;
       isAtLeastOneJetSelected = true;
 
@@ -747,10 +763,11 @@ struct AntinucleiInJets {
       // jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      double ptJetAfterSub = jet.pt();
+      double ptJetAfterSub = jetForSub.pt();
       registryQC.fill(HIST("jetPtDifference"), ptJetAfterSub - ptJetBeforeSub);
 
-      if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
+      // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
+      if (jetMinusBkg.pt() < minJetPt)
         continue;
       njetsHighPt++;
       registryQC.fill(HIST("sumPtJet"), jet.pt());
@@ -773,6 +790,7 @@ struct AntinucleiInJets {
         double deltaEta = particle.eta() - jetAxis.Eta();
         double deltaPhi = getDeltaPhi(particle.phi(), jetAxis.Phi());
         registryQC.fill(HIST("deltaEta_deltaPhi_jet"), deltaEta, deltaPhi);
+        registryQC.fill(HIST("eta_phi_jet"), particle.eta(), particle.phi());
       }
 
       // loop over particles in perpendicular cones
@@ -796,6 +814,7 @@ struct AntinucleiInJets {
         nParticlesPerp++;
         registryQC.fill(HIST("deltaEta_deltaPhi_ue"), deltaEtaUe1, deltaPhiUe1);
         registryQC.fill(HIST("deltaEta_deltaPhi_ue"), deltaEtaUe2, deltaPhiUe2);
+        registryQC.fill(HIST("eta_phi_ue"), track.eta(), track.phi());
       }
       registryQC.fill(HIST("NchUE"), 0.5 * nParticlesPerp);
       registryQC.fill(HIST("NchJet"), static_cast<double>(jetConstituents.size()) - 0.5 * nParticlesPerp);
@@ -1102,12 +1121,13 @@ struct AntinucleiInJets {
           continue;
 
         // fill detector response matrix
-        registryMC.fill(HIST("detectorResponseMatrix"), jetPtGen, jetPtGen - jet.pt()); // maybe it should be filled after bkg sub
+        registryMC.fill(HIST("detectorResponseMatrix"), jet.pt(), jetPtGen - jet.pt()); // maybe it should be filled after bkg sub
 
         // jet pt must be larger than threshold
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-        if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
+        // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
+        if (jetMinusBkg.pt() < minJetPt)
           continue;
 
         // perpendicular cone
@@ -1282,7 +1302,8 @@ struct AntinucleiInJets {
       // jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
+      // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
+      if (jetMinusBkg.pt() < minJetPt)
         continue;
 
       // get jet constituents

@@ -283,8 +283,8 @@ struct FlowGfwTask {
       registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
       registry.add("hVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
-      registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
-      registry.add("hMultCorr", "Corrected Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
+      registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {axisNch}});
+      registry.add("hMultCorr", "Corrected Multiplicity distribution", {HistType::kTH1D, {axisNch}});
       registry.add("hCent", "Centrality distribution", {HistType::kTH1D, {{90, 0, 90}}});
       registry.add("cent_vs_Nch", ";Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
       registry.add("cent_vs_NchCorr", ";Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
@@ -655,7 +655,7 @@ struct FlowGfwTask {
       effNch = mEfficiencyNch->GetBinContent(mEfficiencyNch->FindBin(nch));
     else
       effNch = 1.0;
-    if (effNch == 0)
+    if (effNch == 0.0)
       return false;
     weight_nueNch = 1. / effNch;
     return true;
@@ -702,50 +702,51 @@ struct FlowGfwTask {
         return false;
       }
       registry.fill(HIST("hEventCount"), kISVERTEXITSTPC);
-      if (cfgNoCollInTimeRangeStandard) {
-        if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-          // no collisions in specified time range
-          return false;
-        }
-        registry.fill(HIST("hEventCount"), kNOCOLLINTIMERANGESTANDART);
-      }
-      if (cfgEvSelkIsGoodITSLayersAll) {
-        if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
-          // removes dead staves of ITS
-          return false;
-        }
-        registry.fill(HIST("hEventCount"), kISGOODITSLAYERSALL);
-      }
-
-      float vtxz = -999;
-      if (collision.numContrib() > 1) {
-        vtxz = collision.posZ();
-        float zRes = std::sqrt(collision.covZZ());
-        if (zRes > 0.25 && collision.numContrib() < 20)
-          vtxz = -999;
-      }
-
-      auto multNTracksPV = collision.multNTracksPV();
-
-      if (std::abs(vtxz) > cfgCutVertex)
+    }
+    if (cfgNoCollInTimeRangeStandard) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        // no collisions in specified time range
         return false;
-
-      if (cfgMultCut) {
-        if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-          return false;
-        if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-          return false;
-        if (multTrk < fMultCutLow->Eval(centrality))
-          return false;
-        if (multTrk > fMultCutHigh->Eval(centrality))
-          return false;
-        registry.fill(HIST("hEventCount"), kAFTERMULTCUTS);
       }
+      registry.fill(HIST("hEventCount"), kNOCOLLINTIMERANGESTANDART);
+    }
+    if (cfgEvSelkIsGoodITSLayersAll) {
+      if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        // removes dead staves of ITS
+        return false;
+      }
+      registry.fill(HIST("hEventCount"), kISGOODITSLAYERSALL);
+    }
 
-      // V0A T0A 5 sigma cut
-      if (cfgV0AT0A5Sigma)
-        if (std::abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
-          return false;
+    float vtxz = -999;
+    if (collision.numContrib() > 1) {
+      vtxz = collision.posZ();
+      float zRes = std::sqrt(collision.covZZ());
+      if (zRes > 0.25 && collision.numContrib() < 20)
+        vtxz = -999;
+    }
+
+    auto multNTracksPV = collision.multNTracksPV();
+
+    if (std::abs(vtxz) > cfgCutVertex)
+      return false;
+
+    if (cfgMultCut) {
+      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+        return false;
+      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+        return false;
+      if (multTrk < fMultCutLow->Eval(centrality))
+        return false;
+      if (multTrk > fMultCutHigh->Eval(centrality))
+        return false;
+      registry.fill(HIST("hEventCount"), kAFTERMULTCUTS);
+    }
+
+    // V0A T0A 5 sigma cut
+    if (cfgV0AT0A5Sigma) {
+      if (std::abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
+        return false;
     }
 
     return true;
@@ -820,9 +821,7 @@ struct FlowGfwTask {
     if (!collision.sel8())
       return;
 
-    int nch = tracks.size();
-
-    if (nch < 1)
+    if (tracks.size() < 1)
       return;
 
     registry.fill(HIST("hEventCount"), kSEL8);
@@ -942,19 +941,20 @@ struct FlowGfwTask {
     float vtxz = collision.posZ();
     float lRandom = fRndm->Rndm();
     registry.fill(HIST("hVtxZ"), vtxz);
-    registry.fill(HIST("hMult"), nch);
+    registry.fill(HIST("hMult"), tracks.size());
     registry.fill(HIST("hCent"), centrality);
-    registry.fill(HIST("cent_vs_Nch"), centrality, nch);
-
-    fGFW->Clear();
+    registry.fill(HIST("cent_vs_Nch"), centrality, tracks.size());
 
     float weffNch = 1;
-    if (!setNch(weffNch, nch))
+    if (!setNch(weffNch, tracks.size()))
       return;
 
-    nch = nch * weffNch;
+    // Corrected nch
+    float nch = tracks.size() * weffNch;
     registry.fill(HIST("hMultCorr"), nch);
     registry.fill(HIST("cent_vs_NchCorr"), centrality, nch);
+
+    fGFW->Clear();
 
     auto bc = collision.bc_as<BCsRun3>();
     loadCorrections(bc.timestamp());
@@ -1012,7 +1012,6 @@ struct FlowGfwTask {
 
       if (cfgGlobalplusITS) {
         if (withinPtRef) {
-          nch++;
           registry.fill(HIST("GlobalplusITS"), centrality, nch);
           fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
         }
@@ -1021,7 +1020,6 @@ struct FlowGfwTask {
       if (track.hasTPC()) {
         if (cfgGlobalonly) {
           if (withinPtRef) {
-            nch++;
             registry.fill(HIST("Globalonly"), centrality, nch);
             registry.fill(HIST("pt_Cen_GlobalOnly"), centrality, track.pt());
             registry.fill(HIST("phi_Cen_GlobalOnly"), centrality, track.phi());
@@ -1031,7 +1029,6 @@ struct FlowGfwTask {
       } else {
         if (cfgITSonly) {
           if (withinPtRef) {
-            nch++;
             registry.fill(HIST("ITSonly"), centrality, nch);
             registry.fill(HIST("pt_Cen_ITSOnly"), centrality, track.pt());
             registry.fill(HIST("phi_Cen_ITSOnly"), centrality, track.phi());
