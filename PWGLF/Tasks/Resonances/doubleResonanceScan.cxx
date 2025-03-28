@@ -15,6 +15,7 @@
 /// \since 27/03/2025
 ///
 
+#include <vector>
 #include <TLorentzVector.h>
 
 #include "Framework/AnalysisTask.h"
