@@ -81,13 +81,14 @@ struct AngularCorrelationsInJets {
   Configurable<float> maxDCAxy{"maxDCAxy", 0.05, "max DCA to vertex xy"};
   Configurable<float> maxDCAz{"maxDCAz", 0.05, "max DCA to vertex z"};
   Configurable<float> maxEta{"maxEta", 0.8, "max pseudorapidity"}; // consider jet cone
+  Configurable<float> deltaEtaEdge{"deltaEtaEdge", 0.05, "min eta distance of jet from acceptance edge"}; // consider jet cone
   Configurable<float> minTrackPt{"minTrackPt", 0.3, "minimum track pT"};
   Configurable<float> requirePVContributor{"requirePVContributor", false, "require track to be PV contributor"};
 
   // Jet Cuts
   Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
   Configurable<float> minJetPt{"minJetPt", 10.0, "minimum total pT to accept jet"};
-  Configurable<float> minJetParticlePt{"minJetParticlePt", 0.0, "minimum pT to accept jet particle"};
+  // Configurable<float> minJetParticlePt{"minJetParticlePt", 0.0, "minimum pT to accept jet particle"};
 
   // Proton Cuts
   Configurable<float> protonDCAxyYield{"protonDCAxyYield", 0.05, "[proton] DCAxy cut for yield"};
@@ -172,14 +173,11 @@ struct AngularCorrelationsInJets {
   Filter prelimTrackCuts = (aod::track::itsChi2NCl < maxChi2ITS &&
                             aod::track::tpcChi2NCl < maxChi2TPC &&
                             nabs(aod::track::dcaXY) < maxDCAxy &&
-                            nabs(aod::track::dcaZ) < 2.0 &&
-                            nabs(aod::track::eta) < 0.8 &&
-                            aod::track::tpcNClsCrossedRows > 70 &&
-                            aod::track::hasITS &&
-                            aod::track::hasTPC &&
-                            aod::track::pt > 0.1); // add more preliminary cuts to filter if possible
+                            nabs(aod::track::dcaZ) < 2.0f &&
+                            nabs(aod::track::eta) < 0.8f &&
+                            aod::track::pt > 0.1f); // add more preliminary cuts to filter if possible
   Filter collisionFilter = (nabs(aod::jcollision::posZ) < zVtx);
-  Filter jetTrackCuts = (nabs(aod::jtrack::eta) > maxEta && aod::jtrack::pt > minJetParticlePt);
+  Filter jetTrackCuts = (nabs(aod::jtrack::eta) > maxEta/*  && aod::jtrack::pt > minJetParticlePt */);
   Filter jetFilter = (aod::jet::pt >= minJetPt && nabs(aod::jet::eta) < nabs(maxEta - aod::jet::r / 100.f));
 
   Preslice<FullTracksRun2> perCollisionFullTracksRun2 = o2::aod::track::collisionId;
@@ -380,6 +378,12 @@ struct AngularCorrelationsInJets {
   template <typename T>
   bool selectTrackForJetReco(const T& track)
   {
+    if (!track.hasITS())
+      return false;
+    if (!track.hasTPC())
+      return false;
+    if (track.tpcNClsCrossedRows() < 70)
+      return false;
     if ((!hasITSHit(track, 1)) && (!hasITSHit(track, 2)) && (!hasITSHit(track, 3)))
       return false;
     if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < 0.8)
@@ -910,6 +914,8 @@ struct AngularCorrelationsInJets {
 
     if (subtractedJetPerp.pt() < minJetPt) // cut on jet w/o bkg
       return jetCounter;
+    if ((fabs(jet.eta()) + jetR) > (maxEta - deltaEtaEdge))
+      return jetCounter;
     jetCounter++;
     registryData.fill(HIST("ptTotalSubJetPerp"), subtractedJetPerp.pt());
     registryData.fill(HIST("ptTotalSubJetArea"), subtractedJetArea.pt());
@@ -927,6 +933,9 @@ struct AngularCorrelationsInJets {
     registryData.fill(HIST("ptTotalJet"), jet.pt());
     registryData.fill(HIST("jetRapidity"), jet.rap());
     registryData.fill(HIST("numPartInJet"), jet.constituents().size());
+
+    TVector3 pJet(0., 0., 0.);
+    pJet.SetXYZ(jet.px(), jet.py(), jet.pz());
 
     if (outputQC) {
       registryQC.fill(HIST("jetBkgDeltaPt"), jetBkgDeltaPt);
@@ -952,8 +961,6 @@ struct AngularCorrelationsInJets {
       registryQC.fill(HIST("maxRadiusVsPt"), jet.pt(), maxRadius);
 
       // QA for comparison with nuclei_in_jets
-      TVector3 pJet(0., 0., 0.);
-      pJet.SetXYZ(jet.px(), jet.py(), jet.pz());
       TVector3 UEAxis1(0.0, 0.0, 0.0);
       TVector3 UEAxis2(0.0, 0.0, 0.0);
       getPerpendicularAxis(pJet, UEAxis1, +1.0);
@@ -1052,8 +1059,8 @@ struct AngularCorrelationsInJets {
         registryQC.fill(HIST("ptDiff"), ptDiff);
       }
 
-      if (jetParticle.pt() < minJetParticlePt)
-        continue;
+      // if (jetParticle.pt() < minJetParticlePt)
+      //   continue;
       if (measureYields) {
         if (isProton(jetParticle, false)) { // collect protons in jet
           registryData.fill(HIST("ptJetProton"), jetParticle.pt());
@@ -1430,8 +1437,8 @@ struct AngularCorrelationsInJets {
           registryQC.fill(HIST("ptDiff"), ptDiff);
         }
   
-        if (jetParticle.pt() < minJetParticlePt)
-          continue;
+        // if (jetParticle.pt() < minJetParticlePt)
+        //   continue;
         if (!jetParticle.has_mcParticle())
           continue;
         switch (jetParticle.mcParticle().pdgCode()) {
