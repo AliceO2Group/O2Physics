@@ -1397,7 +1397,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtKaFromCasc, ptKaFromCasc,
 enum DecayType { XiczeroToXiPi = 0,
                  OmegaczeroToXiPi,
                  OmegaczeroToOmegaPi,
-                 OmegaczeroToOmegaK };
+                 OmegaczeroToOmegaK,
+                 OmegaczeroToOmegaPiOneMu };
 
 } // end of namespace hf_cand_xic0_omegac0
 
