@@ -227,6 +227,7 @@ struct MultiplicityTable {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false); // don't fatal, please - exception is caught explicitly (as it should)
 
+    listCalib.setObject(new TList);
     if (!produceHistograms.value) {
       return;
     }
@@ -234,8 +235,6 @@ struct MultiplicityTable {
     histos.add("FT0C", "FT0C vs FT0C eq.", HistType::kTH2D, {{1000, 0, 1000, "FT0C multiplicity"}, {1000, 0, 1000, "FT0C multiplicity eq."}});
     histos.add("FT0CMultvsPV", "FT0C vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0C mult."}, {100, 0, 100, "PV mult."}});
     histos.add("FT0AMultvsPV", "FT0A vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0A mult."}, {100, 0, 100, "PV mult."}});
-
-    listCalib.setObject(new TList);
   }
 
   /// Dummy process function for BCs, needed in case both Run2 and Run3 process functions are disabled
