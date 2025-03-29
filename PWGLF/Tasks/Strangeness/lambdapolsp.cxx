@@ -11,6 +11,7 @@
 // Lambda polarisation task
 // prottay.das@cern.ch
 
+#include <string>
 #include <TH1F.h>
 #include <TDirectory.h>
 #include <THn.h>
@@ -26,7 +27,6 @@
 #include <cstdlib>
 #include <algorithm>
 #include "Common/Core/RecoDecay.h"
-#include <string>
 
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
