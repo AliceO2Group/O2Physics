@@ -109,6 +109,10 @@ struct strangenessFilter {
   Configurable<bool> sel7{"sel7", 0, "Apply sel7 event selection"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
   Configurable<int> LowLimitFT0MMult{"LowLimitFT0MMult", 3100, "FT0M selection for omega + high multiplicity trigger"};
+  Configurable<int> LowLimitFT0MMultNorm{"LowLimitFT0MMultNorm", 70, "FT0M selection for omega + high multiplicity trigger with Normalised FT0M"};
+  Configurable<bool> useNormalisedMult{"useNormalisedMult", 1, "Use avarage multiplicity for HM omega like in multFilter.cxx"};
+  Configurable<float> avPyT0C{"avPyT0C", 8.83, "nch from pythia T0C"};
+  Configurable<float> avPyT0A{"avPyT0A", 8.16, "nch from pythia T0A"};
   Configurable<bool> isTimeFrameBorderCut{"isTimeFrameBorderCut", 1, "Apply timeframe border cut"};
   Configurable<bool> useSigmaBasedMassCutXi{"useSigmaBasedMassCutXi", true, "Mass window based on n*sigma instead of fixed"};
   Configurable<bool> useSigmaBasedMassCutOmega{"useSigmaBasedMassCutOmega", true, "Mass window based on n*sigma instead of fixed"};
@@ -221,6 +225,7 @@ struct strangenessFilter {
     std::vector<double> centBinning = {0., 1., 5., 10., 20., 30., 40., 50., 70., 100.};
     AxisSpec multAxisNTPV = {100, 0.0f, 100.0f, "N. tracks PV estimator"};
     AxisSpec multAxisT0M = {600, 0.0f, 6000.0f, "T0M multiplicity estimator"};
+    AxisSpec multAxisT0MNorm = {150, 0.0f, 150.0f, "Normalised T0M multiplicity estimator"};
     AxisSpec multAxisV0A = {500, 0.0f, 25000.0f, "V0A multiplicity estimator"};
     AxisSpec ximassAxis = {200, 1.28f, 1.36f};
     AxisSpec omegamassAxis = {200, 1.59f, 1.75f};
@@ -282,6 +287,10 @@ struct strangenessFilter {
 
     EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0M", "T0M distribution of all events", HistType::kTH1F, {multAxisT0M});
     EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MwOmega", "T0M distribution of events w/ Omega candidate", HistType::kTH1F, {multAxisT0M});
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MNorm", "T0M Normalised of all events", HistType::kTH1F, {multAxisT0MNorm});
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MwOmegaNorm", "T0M distribution of events w/ Omega candidate - Normalised FT0M", HistType::kTH1F, {multAxisT0MNorm});
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MNoFT0", "T0M distribution of events without FT0", HistType::kTH1F, {multAxisT0M});
+
     if (doextraQA) {
       EventsvsMultiplicity.add("AllEventsvsMultiplicityZeqV0A", "ZeqV0A distribution of all events", HistType::kTH1F, {multAxisV0A});
       EventsvsMultiplicity.add("hadEventsvsMultiplicityZeqV0A", "ZeqV0A distribution of events with hight pT hadron", HistType::kTH1F, {multAxisV0A});
@@ -409,7 +418,7 @@ struct strangenessFilter {
   }
 
   void process(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& /*dtracks*/,
-               aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const&, aod::BCsWithTimestamps const&)
+               aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const&, aod::BCsWithTimestamps const&, aod::FT0s const& /*ft0s*/)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Omega, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] Omega + high mult event
@@ -442,9 +451,66 @@ struct strangenessFilter {
     }
 
     Bool_t isHighMultEvent = 0;
+    float multFT0MNorm = 0.f;
     EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0M"), collision.multFT0M());
-    if (collision.multFT0M() > LowLimitFT0MMult)
-      isHighMultEvent = 1;
+    if (!useNormalisedMult) {
+      if (collision.multFT0M() > LowLimitFT0MMult) {
+        isHighMultEvent = 1;
+      }
+    } else {
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      float meanMultT0C = 0.f;
+      float fac_FT0C_ebe = 1.;
+      auto vMeanMultT0C = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanT0C", bc.timestamp());
+      meanMultT0C = (*vMeanMultT0C)[0];
+      if (meanMultT0C > 0) {
+        fac_FT0C_ebe = avPyT0C / meanMultT0C;
+      }
+      float meanMultT0A = 0.f;
+      auto vMeanMultT0A = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanT0A", bc.timestamp());
+      meanMultT0A = (*vMeanMultT0A)[0];
+      float fac_FT0A_ebe = 1.;
+      if (meanMultT0A > 0) {
+        fac_FT0A_ebe = avPyT0A / meanMultT0A;
+      }
+      LOG(debug) << "Mean mults t0:" << fac_FT0A_ebe << " " << fac_FT0C_ebe;
+      if (collision.has_foundFT0()) {
+        auto ft0 = collision.foundFT0();
+        float sumAmpFT0C = 0.f;
+        for (std::size_t i_c = 0; i_c < ft0.amplitudeC().size(); i_c++) {
+          float amplitude = ft0.amplitudeC()[i_c];
+          sumAmpFT0C += amplitude;
+        }
+        float sumAmpFT0A = 0.f;
+        for (std::size_t i_a = 0; i_a < ft0.amplitudeA().size(); i_a++) {
+          float amplitude = ft0.amplitudeA()[i_a];
+          sumAmpFT0A += amplitude;
+        }
+        const int nEta5 = 2; // FT0C + FT0A
+        float weigthsEta5[nEta5] = {0.0490638, 0.010958415};
+        if (sumAmpFT0C >= 0 || sumAmpFT0A >= 0) {
+          if (meanMultT0A > 0 && meanMultT0C > 0) {
+            multFT0MNorm = sumAmpFT0C * fac_FT0C_ebe + sumAmpFT0A * fac_FT0A_ebe;
+          } else {
+            multFT0MNorm = sumAmpFT0C * weigthsEta5[0] + sumAmpFT0A * weigthsEta5[1];
+          }
+          LOG(info) << "meanMult:" << multFT0MNorm << " multFT0M:" << collision.multFT0M();
+          EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), multFT0MNorm);
+          if (multFT0MNorm > LowLimitFT0MMultNorm) {
+            isHighMultEvent = 1;
+            LOG(info) << "Found FT0 using aver mult";
+          }
+        } else {
+          LOG(warn) << "Found FT0 but, amplitudes are 0 ?";
+          EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), 148);
+          EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNoFT0"), collision.multFT0M());
+        }
+      } else {
+        LOG(warn) << "FT0 not Found, using FT0M";
+        EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), 149);
+        EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNoFT0"), collision.multFT0M());
+      }
+    }
 
     // constants
     const float ctauxi = 4.91;     // from PDG
@@ -845,8 +911,10 @@ struct strangenessFilter {
     }
 
     // Omega in high multiplicity events
-    if (omegacounter > 0)
+    if (omegacounter > 0) {
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MwOmega"), collision.multFT0M());
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MwOmegaNorm"), multFT0MNorm);
+    }
     if (omegacounter > 0 && isHighMultEvent) {
       keepEvent[9] = true;
     }
