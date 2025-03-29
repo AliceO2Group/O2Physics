@@ -40,8 +40,6 @@
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DCAFitter/FwdDCAFitterN.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
@@ -272,8 +270,6 @@ struct DileptonMC {
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  // o2::vertexing::DCAFitterN<2> fitter;
-  // o2::vertexing::FwdDCAFitterN<2> fwdfitter;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int mRunNumber;
   float d_bz;
@@ -506,27 +502,11 @@ struct DileptonMC {
       leptonM1 = o2::constants::physics::MassElectron;
       leptonM2 = o2::constants::physics::MassElectron;
       pdg_lepton = 11;
-      // fitter.setPropagateToPCA(true);
-      // fitter.setMaxR(5.f);
-      // fitter.setMinParamChange(1e-3);
-      // fitter.setMinRelChi2Change(0.9);
-      // fitter.setMaxDZIni(1e9);
-      // fitter.setMaxChi2(1e9);
-      // fitter.setUseAbsDCA(true);
-      // fitter.setWeightedFinalPCA(false);
-      // fitter.setMatCorrType(matCorr);
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       DefineDimuonCut();
       leptonM1 = o2::constants::physics::MassMuon;
       leptonM2 = o2::constants::physics::MassMuon;
       pdg_lepton = 13;
-      // fwdfitter.setPropagateToPCA(true);
-      // fwdfitter.setMaxR(90.f);
-      // fwdfitter.setMinParamChange(1e-3);
-      // fwdfitter.setMinRelChi2Change(0.9);
-      // fwdfitter.setMaxChi2(1e9);
-      // fwdfitter.setUseAbsDCA(true);
-      // fwdfitter.setTGeoMat(false);
     }
     if (doprocessNorm) {
       fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
@@ -549,8 +529,6 @@ struct DileptonMC {
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = collision.runNumber();
-      // fitter.setBz(d_bz);
-      // fwdfitter.setBz(d_bz);
       return;
     }
 
@@ -575,8 +553,6 @@ struct DileptonMC {
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
     mRunNumber = collision.runNumber();
-    // fitter.setBz(d_bz);
-    // fwdfitter.setBz(d_bz);
 
     //// for muon
     // o2::base::Propagator::initFieldFromGRP(grpmag);
@@ -818,8 +794,6 @@ struct DileptonMC {
       }
     }
 
-    // float pca = 999.f, lxy = 999.f; // in unit of cm
-    // o2::aod::pwgem::dilepton::utils::pairutil::isSVFound(fitter, collision, t1, t2, pca, lxy);
     float pt1 = 0.f, eta1 = 0.f, phi1 = 0.f, pt2 = 0.f, eta2 = 0.f, phi2 = 0.f;
     if constexpr (isSmeared) {
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
