@@ -34,8 +34,6 @@
 #include "Framework/ASoAHelpers.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DCAFitter/FwdDCAFitterN.h"
 #include "CommonConstants/LHCConstants.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DataFormatsParameters/GRPECSObject.h"
@@ -282,8 +280,6 @@ struct Dilepton {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber;
   float d_bz;
-  // o2::vertexing::DCAFitterN<2> fitter;
-  // o2::vertexing::FwdDCAFitterN<2> fwdfitter;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
@@ -396,26 +392,10 @@ struct Dilepton {
       DefineDielectronCut();
       leptonM1 = o2::constants::physics::MassElectron;
       leptonM2 = o2::constants::physics::MassElectron;
-      // fitter.setPropagateToPCA(true);
-      // fitter.setMaxR(5.f);
-      // fitter.setMinParamChange(1e-3);
-      // fitter.setMinRelChi2Change(0.9);
-      // fitter.setMaxDZIni(1e9);
-      // fitter.setMaxChi2(1e9);
-      // fitter.setUseAbsDCA(true);
-      // fitter.setWeightedFinalPCA(false);
-      // fitter.setMatCorrType(matCorr);
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       DefineDimuonCut();
       leptonM1 = o2::constants::physics::MassMuon;
       leptonM2 = o2::constants::physics::MassMuon;
-      // fwdfitter.setPropagateToPCA(true);
-      // fwdfitter.setMaxR(90.f);
-      // fwdfitter.setMinParamChange(1e-3);
-      // fwdfitter.setMinRelChi2Change(0.9);
-      // fwdfitter.setMaxChi2(1e9);
-      // fwdfitter.setUseAbsDCA(true);
-      // fwdfitter.setTGeoMat(false);
     }
 
     fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{10001, -0.5, 10000.5}}, true);
@@ -444,8 +424,6 @@ struct Dilepton {
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = collision.runNumber();
-      // fitter.setBz(d_bz);
-      // fwdfitter.setBz(d_bz);
       return;
     }
 
@@ -470,8 +448,6 @@ struct Dilepton {
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
     mRunNumber = collision.runNumber();
-    // fitter.setBz(d_bz);
-    // fwdfitter.setBz(d_bz);
 
     auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", collision.timestamp());
     int beamZ1 = grplhcif->getBeamZ(o2::constants::lhc::BeamC);
@@ -746,7 +722,7 @@ struct Dilepton {
     fDimuonCut.SetTrackType(dimuoncuts.cfg_track_type);
     fDimuonCut.SetTrackPtRange(dimuoncuts.cfg_min_pt_track, dimuoncuts.cfg_max_pt_track);
     fDimuonCut.SetTrackEtaRange(dimuoncuts.cfg_min_eta_track, dimuoncuts.cfg_max_eta_track);
-    fDimuonCut.SetTrackEtaRange(dimuoncuts.cfg_min_phi_track, dimuoncuts.cfg_max_phi_track);
+    fDimuonCut.SetTrackPhiRange(dimuoncuts.cfg_min_phi_track, dimuoncuts.cfg_max_phi_track);
     fDimuonCut.SetNClustersMFT(dimuoncuts.cfg_min_ncluster_mft, 10);
     fDimuonCut.SetNClustersMCHMID(dimuoncuts.cfg_min_ncluster_mch, 16);
     fDimuonCut.SetChi2(0.f, dimuoncuts.cfg_max_chi2);
@@ -834,7 +810,7 @@ struct Dilepton {
           }
         }
       } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-        if (!cut.template IsSelectedTrack(t1) || !cut.template IsSelectedTrack(t2)) {
+        if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
           return false;
         }
       }
@@ -849,10 +825,6 @@ struct Dilepton {
         return false;
       }
     }
-
-    // float pca = 999.f, lxy = 999.f; // in unit of cm
-    // o2::aod::pwgem::dilepton::utils::pairutil::isSVFound(fitter, collision, t1, t2, pca, lxy);
-    // o2::aod::pwgem::dilepton::utils::pairutil::isSVFoundFwd(fwdfitter, collision, t1, t2, pca, lxy);
 
     float weight = 1.f;
     if (cfgApplyWeightTTCA) {
