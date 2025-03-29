@@ -136,6 +136,7 @@ class FemtoUniverseParticleHisto
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kTruth]).c_str();
 
     mHistogramRegistry->add((folderName + folderSuffix + "/hPt_ReconNoFake").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {tempFitVarpTAxis});
+    mHistogramRegistry->add((folderName + folderSuffix + "/hPt_ReconPrimary").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {tempFitVarpTAxis});
 
     if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
       /// Track histograms
@@ -320,10 +321,14 @@ class FemtoUniverseParticleHisto
       if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
         /// Track histograms
         switch (mctruthorigin) {
-          case (o2::aod::femtouniverse_mc_particle::kPrimary):
+          case (o2::aod::femtouniverse_mc_particle::kPrimary): {
+            if (pdgcode == mPDG) {
+              mHistogramRegistry->fill(histFolder + HIST("_MC/hPt_Primary"), part.pt());
+            }
             mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_Primary"),
                                      part.pt(), part.tempFitVar());
             break;
+          }
           case (o2::aod::femtouniverse_mc_particle::kDaughter):
             mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_Daughter"),
                                      part.pt(), part.tempFitVar());
