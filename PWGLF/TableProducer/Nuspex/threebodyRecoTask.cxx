@@ -265,7 +265,7 @@ struct ThreebodyRecoTask {
     registry.add("hDiffDaughterR", "hDiffDaughterR", HistType::kTH1F, {{10000, -100, 100}});   // difference between minR of pion&proton and R of deuteron(bachelor)
 
     // Check triggers
-    auto hEventTriggerCount = registry.add<TH1>("hEventTriggerCount", "hEventTriggerCount", HistType::kTH1F, {{triggerLabels.size() + 1, 0, triggerLabels.size() + 1}});
+    auto hEventTriggerCount = registry.add<TH1>("hEventTriggerCount", "hEventTriggerCount", HistType::kTH1F, {{static_cast<int>(triggerLabels.size() + 1), 0, static_cast<double>(triggerLabels.size() + 1)}});
     for (size_t i = 0; i < triggerLabels.size(); i++) {
       hEventTriggerCount->GetXaxis()->SetBinLabel(i + 1, triggerLabels[i].c_str());
     }
@@ -728,7 +728,7 @@ struct ThreebodyRecoTask {
       if (ifHasCandidate) {
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
         auto triggerSelection = zorro.getTriggerOfInterestResults(bc.globalBC(), bcTolerance);
-        for (int i = 0; i < triggerSelection.size(); i++) {
+        for (size_t i = 0; i < triggerSelection.size(); i++) {
           if (triggerSelection[i]) {
             registry.fill(HIST("hEventTriggerCount"), i + 0.5);
           }
