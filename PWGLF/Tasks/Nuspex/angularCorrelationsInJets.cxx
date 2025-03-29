@@ -1246,8 +1246,8 @@ struct AngularCorrelationsInJets {
   template <typename U>
   void fillHistogramsMC(U const& tracks)
   {
-    std::vector<fastjet::PseudoJet> jetInput;         // input for jet finder
-    std::map<int, typename U::iterator> particles;    // all selected particles in event
+    std::vector<fastjet::PseudoJet> jetInput;      // input for jet finder
+    std::map<int, typename U::iterator> particles; // all selected particles in event
     jetInput.clear();
     particles.clear();
     int index = 0;
