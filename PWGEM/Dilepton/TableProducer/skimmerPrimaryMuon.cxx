@@ -73,10 +73,10 @@ struct skimmerPrimaryMuon {
 
   // Configurables
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  // Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  // Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  // Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<float> minpt{"minpt", 0.2, "min pt for muon"};
   Configurable<float> mineta{"mineta", -4.0, "eta acceptance"};
   Configurable<float> maxeta{"maxeta", -2.5, "eta acceptance"};
@@ -85,24 +85,25 @@ struct skimmerPrimaryMuon {
   Configurable<float> minRabs{"minRabs", 17.6, "min. R at absorber end"};
   Configurable<float> maxRabs{"maxRabs", 89.5, "max. R at absorber end"};
 
-  o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  // o2::ccdb::CcdbApi ccdbApi;
+  // Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber;
 
-  o2::globaltracking::MatchGlobalFwd mMatching;
+  // o2::globaltracking::MatchGlobalFwd mMatching;
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view muon_types[5] = {"MFTMCHMID/", "MFTMCHMIDOtherMatch/", "MFTMCH/", "MCHMID/", "MCH/"};
 
   void init(InitContext&)
   {
-    ccdb->setURL(ccdburl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
-    ccdbApi.init(ccdburl);
+    // ccdb->setURL(ccdburl);
+    // ccdb->setCaching(true);
+    // ccdb->setLocalObjectValidityChecking();
+    // ccdb->setFatalWhenNull(false);
+    // ccdbApi.init(ccdburl);
 
-    addHistograms();
-
+    if (fillQAHistogram) {
+      addHistograms();
+    }
     mRunNumber = 0;
   }
 
@@ -111,47 +112,43 @@ struct skimmerPrimaryMuon {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-
     mRunNumber = bc.runNumber();
-    std::map<string, string> metadata;
-    auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, mRunNumber);
-    auto ts = soreor.first;
-    auto grpmag = ccdbApi.retrieveFromTFileAny<o2::parameters::GRPMagField>(grpmagPath, metadata, ts);
-    o2::base::Propagator::initFieldFromGRP(grpmag);
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(geoPath);
-    }
-    o2::mch::TrackExtrap::setField();
+
+    // std::map<string, string> metadata;
+    // auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, mRunNumber);
+    // auto ts = soreor.first;
+    // auto grpmag = ccdbApi.retrieveFromTFileAny<o2::parameters::GRPMagField>(grpmagPath, metadata, ts);
+    // o2::base::Propagator::initFieldFromGRP(grpmag);
+    // if (!o2::base::GeometryManager::isGeometryLoaded()) {
+    //   ccdb->get<TGeoManager>(geoPath);
+    // }
+    // o2::mch::TrackExtrap::setField();
   }
 
   void addHistograms()
   {
-    fRegistry.add("Event/hCollisionCounter", "collision counter", kTH1F, {{2, -0.5f, 1.5}}, false);
-
     // for track
-    if (fillQAHistogram) {
-      auto hMuonType = fRegistry.add<TH1>("Track/hMuonType", "muon type", kTH1F, {{5, -0.5f, 4.5f}});
-      hMuonType->GetXaxis()->SetBinLabel(1, "MFT-MCH-MID (global muon)");
-      hMuonType->GetXaxis()->SetBinLabel(2, "MFT-MCH-MID (global muon other match)");
-      hMuonType->GetXaxis()->SetBinLabel(3, "MFT-MCH");
-      hMuonType->GetXaxis()->SetBinLabel(4, "MCH-MID");
-      hMuonType->GetXaxis()->SetBinLabel(5, "MCH standalone");
+    auto hMuonType = fRegistry.add<TH1>("Track/hMuonType", "muon type", kTH1F, {{5, -0.5f, 4.5f}});
+    hMuonType->GetXaxis()->SetBinLabel(1, "MFT-MCH-MID (global muon)");
+    hMuonType->GetXaxis()->SetBinLabel(2, "MFT-MCH-MID (global muon other match)");
+    hMuonType->GetXaxis()->SetBinLabel(3, "MFT-MCH");
+    hMuonType->GetXaxis()->SetBinLabel(4, "MCH-MID");
+    hMuonType->GetXaxis()->SetBinLabel(5, "MCH standalone");
 
-      fRegistry.add("Track/MFTMCHMID/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
-      fRegistry.add("Track/MFTMCHMID/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{360, 0, 2 * M_PI}, {30, -5.0f, -2.0f}}, false);
-      fRegistry.add("Track/MFTMCHMID/hNclusters", "Nclusters;Nclusters", kTH1F, {{21, -0.5f, 20.5}}, false);
-      fRegistry.add("Track/MFTMCHMID/hNclustersMFT", "NclustersMFT;Nclusters MFT", kTH1F, {{11, -0.5f, 10.5}}, false);
-      fRegistry.add("Track/MFTMCHMID/hRatAbsorberEnd", "R at absorber end;R at absorber end (cm)", kTH1F, {{100, 0.0f, 100}}, false);
-      fRegistry.add("Track/MFTMCHMID/hPDCA", "pDCA;r at absorber end (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
-      fRegistry.add("Track/MFTMCHMID/hChi2", "chi2;chi2", kTH1F, {{100, 0.0f, 100}}, false);
-      fRegistry.add("Track/MFTMCHMID/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 100}}, false);
-      fRegistry.add("Track/MFTMCHMID/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{100, 0.0f, 100}}, false);
-      fRegistry.add("Track/MFTMCHMID/hDCAxy2D", "DCA xy;DCA_{x} (cm);DCA_{y} (cm)", kTH2F, {{200, -10, 10}, {200, -10, +10}}, false);
-      fRegistry.add("Track/MFTMCHMID/hDCAxy2DinSigma", "DCA xy;DCA_{x} (#sigma);DCA_{y} (#sigma)", kTH2F, {{200, -10, 10}, {200, -10, +10}}, false);
-      fRegistry.add("Track/MFTMCHMID/hDCAxResolutionvsPt", "DCA_{x} vs. p_{T,#mu};p_{T,#mu} (GeV/c);DCA_{x} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {100, 0, 100}}, false);
-      fRegistry.add("Track/MFTMCHMID/hDCAyResolutionvsPt", "DCA_{y} vs. p_{T,#mu};p_{T,#mu} (GeV/c);DCA_{y} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {100, 0, 100}}, false);
-      fRegistry.addClone("Track/MFTMCHMID/", "Track/MCHMID/");
-    }
+    fRegistry.add("Track/MFTMCHMID/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
+    fRegistry.add("Track/MFTMCHMID/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{360, 0, 2 * M_PI}, {30, -5.0f, -2.0f}}, false);
+    fRegistry.add("Track/MFTMCHMID/hNclusters", "Nclusters;Nclusters", kTH1F, {{21, -0.5f, 20.5}}, false);
+    fRegistry.add("Track/MFTMCHMID/hNclustersMFT", "NclustersMFT;Nclusters MFT", kTH1F, {{11, -0.5f, 10.5}}, false);
+    fRegistry.add("Track/MFTMCHMID/hRatAbsorberEnd", "R at absorber end;R at absorber end (cm)", kTH1F, {{100, 0.0f, 100}}, false);
+    fRegistry.add("Track/MFTMCHMID/hPDCA", "pDCA;r at absorber end (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
+    fRegistry.add("Track/MFTMCHMID/hChi2", "chi2;chi2", kTH1F, {{100, 0.0f, 100}}, false);
+    fRegistry.add("Track/MFTMCHMID/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 100}}, false);
+    fRegistry.add("Track/MFTMCHMID/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{100, 0.0f, 100}}, false);
+    fRegistry.add("Track/MFTMCHMID/hDCAxy2D", "DCA xy;DCA_{x} (cm);DCA_{y} (cm)", kTH2F, {{200, -10, 10}, {200, -10, +10}}, false);
+    fRegistry.add("Track/MFTMCHMID/hDCAxy2DinSigma", "DCA xy;DCA_{x} (#sigma);DCA_{y} (#sigma)", kTH2F, {{200, -10, 10}, {200, -10, +10}}, false);
+    fRegistry.add("Track/MFTMCHMID/hDCAxResolutionvsPt", "DCA_{x} vs. p_{T,#mu};p_{T,#mu} (GeV/c);DCA_{x} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {100, 0, 100}}, false);
+    fRegistry.add("Track/MFTMCHMID/hDCAyResolutionvsPt", "DCA_{y} vs. p_{T,#mu};p_{T,#mu} (GeV/c);DCA_{y} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {100, 0, 100}}, false);
+    fRegistry.addClone("Track/MFTMCHMID/", "Track/MCHMID/");
   }
 
   template <int mu_id, typename TTrack>
@@ -178,7 +175,6 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      fRegistry.fill(HIST("Event/hCollisionCounter"), 0.f);
       if (!collision.isSelected()) {
         continue;
       }
