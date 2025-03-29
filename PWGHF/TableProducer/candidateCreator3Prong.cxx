@@ -85,6 +85,9 @@ struct HfCandidateCreator3Prong {
   Configurable<bool> createDs{"createDs", false, "enable Ds+/- candidate creation"};
   Configurable<bool> createLc{"createLc", false, "enable Lc+/- candidate creation"};
   Configurable<bool> createXic{"createXic", false, "enable Xic+/- candidate creation"};
+  // KF
+  Configurable<bool> applyTopoConstraint{"applyTopoConstraint", false, "apply origin from PV hypothesis for created candidate, works only in KF mode"};
+  Configurable<bool> applyInvMassConstraint{"applyInvMassConstraint", false, "apply particle type hypothesis to recalculate created candidate's momentum, works only in KF mode"};
 
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<3> df; // 3-prong vertex fitter
@@ -147,6 +150,10 @@ struct HfCandidateCreator3Prong {
     std::array<bool, 4> creationFlags = {createDplus, createDs, createLc, createXic};
     if (std::accumulate(creationFlags.begin(), creationFlags.end(), 0) == 0) {
       LOGP(fatal, "At least one particle specie should be enabled for the creation.");
+    }
+
+    if (createLc && createXic && applyInvMassConstraint) {
+      LOGP(fatal, "Unable to apply invariant mass constraint due to ambiguity of mass hypothesis: only one of Lc and Xic can be reconstructed.");
     }
 
     // histograms
@@ -487,6 +494,15 @@ struct HfCandidateCreator3Prong {
       kfCandPiKK.SetConstructMethod(2);
       kfCandPiKK.Construct(kfDaughtersPiKK, 3);
 
+      const float chi2topo = kfCalculateChi2ToPrimaryVertex(kfCandPKPi, kfpV);
+
+      if (applyTopoConstraint) { // constraints applied after chi2topo getter - to preserve unbiased value of chi2topo
+        for (auto& kfCand : std::array<KFParticle*, 5>{&kfCandPKPi, &kfCandPiKP, &kfCandPiKPi, &kfCandKKPi, &kfCandPiKK}) {
+          kfCand->SetProductionVertex(kfpV);
+          kfCand->TransportToDecayVertex();
+        }
+      }
+
       KFParticle kfPairKPi;
       const KFParticle* kfDaughtersKPi[3] = {&kfSecondKaon, &kfThirdPion};
       kfPairKPi.SetConstructMethod(2);
@@ -505,8 +521,15 @@ struct HfCandidateCreator3Prong {
       const float massKPi = kfPairKPi.GetMass();
       const float massPiK = kfPairPiK.GetMass();
 
+      if (applyInvMassConstraint) { // constraints applied after minv getters - to preserve unbiased values of minv
+        kfCandPKPi.SetNonlinearMassConstraint(createLc ? MassLambdaCPlus : MassXiCPlus);
+        kfCandPiKP.SetNonlinearMassConstraint(createLc ? MassLambdaCPlus : MassXiCPlus);
+        kfCandPiKPi.SetNonlinearMassConstraint(MassDPlus);
+        kfCandKKPi.SetNonlinearMassConstraint(MassDS);
+        kfCandPiKK.SetNonlinearMassConstraint(MassDS);
+      }
+
       const float chi2geo = kfCandPKPi.Chi2() / kfCandPKPi.NDF();
-      const float chi2topo = kfCalculateChi2ToPrimaryVertex(kfCandPKPi, kfpV);
       const std::pair<float, float> ldl = kfCalculateLdL(kfCandPKPi, kfpV);
 
       std::array<float, 3> pProng0 = kfCalculateProngMomentumInSecondaryVertex(kfFirstProton, kfCandPiKP);
