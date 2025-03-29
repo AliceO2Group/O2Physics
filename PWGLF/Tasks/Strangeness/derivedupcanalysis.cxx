@@ -1766,12 +1766,12 @@ struct Derivedupcanalysis {
 
     if (analyseLambda && verifyMask(selMap, secondaryMaskSelectionLambda) &&
         v0mother.pdgCode() == PDG_t::kXiMinus && v0mother.isPhysicalPrimary()) {
-      histos.fill(HIST("h3dLambdaFeeddown"), mult, v0pt, motherPt);
+      histos.fill(HIST(kParticlenames[1]) + HIST("/h3dLambdaFeeddown"), mult, v0pt, motherPt);
     }
 
     if (analyseAntiLambda && verifyMask(selMap, secondaryMaskSelectionAntiLambda) &&
         v0mother.pdgCode() == PDG_t::kXiPlusBar && v0mother.isPhysicalPrimary()) {
-      histos.fill(HIST("h3dAntiLambdaFeeddown"), mult, v0pt, motherPt);
+      histos.fill(HIST(kParticlenames[2]) + HIST("/h3dAntiLambdaFeeddown"), mult, v0pt, motherPt);
     }
   }
 
