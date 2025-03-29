@@ -26,6 +26,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include "Common/Core/RecoDecay.h"
+#include <string>
 
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
