@@ -60,7 +60,7 @@ struct AxisSpecs {
   AxisSpec angDistEtaAxis = {1000, -2, 2, "#Delta#eta"};
 };
 
-struct angularCorrelationsInJets {
+struct AngularCorrelationsInJets {
   // Switches
   Configurable<bool> useRejectionCut{"useRejectionCut", true, "use nsigmaRejection for correlations"};
   Configurable<bool> deuteronAnalysis{"deuteronAnalysis", true, "true [false]: analyse (anti)deuterons [(anti)helium-3]"};
@@ -1304,7 +1304,7 @@ struct angularCorrelationsInJets {
     auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(jetInput, doSparse);
     auto [rhoPerp, rhoMPerp] = bkgSub.estimateRhoPerpCone(jetInput, jets);
 
-    for (auto& jet : jets) { // o2-linter: disable=[const-ref-in-for-loop]
+    for (auto& jet : jets) { // o2-linter: disable=const-ref-in-for-loop (jets are modified)
       if (!jet.has_constituents())
         continue;
       fastjet::PseudoJet subtractedJetPerp(0., 0., 0., 0.);
@@ -1315,7 +1315,6 @@ struct angularCorrelationsInJets {
       if (subtractedJetPerp.pt() < minJetPt) // cut on jet w/o bkg
         continue;
       registryData.fill(HIST("ptTotalSubJetPerp"), subtractedJetPerp.pt());
-      registryData.fill(HIST("ptTotalSubJetArea"), subtractedJetArea.pt());
       registryQC.fill(HIST("rhoEstimateArea"), jet.pt(), rho); // switch to subtracted jet pt
       registryQC.fill(HIST("rhoMEstimateArea"), jet.pt(), rhoM);
       registryQC.fill(HIST("rhoEstimatePerp"), jet.pt(), rhoPerp);
@@ -1540,7 +1539,7 @@ struct angularCorrelationsInJets {
       fillHistograms(slicedTracks);
     }
   }
-  PROCESS_SWITCH(angularCorrelationsInJets, processRun2old, "process Run 2 data w/o jet tables", false);
+  PROCESS_SWITCH(AngularCorrelationsInJets, processRun2old, "process Run 2 data w/o jet tables", false);
 
   void processRun3old(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       soa::Filtered<FullTracksRun3old> const& tracks)
@@ -1559,7 +1558,7 @@ struct angularCorrelationsInJets {
       fillHistograms(slicedTracks);
     }
   }
-  PROCESS_SWITCH(angularCorrelationsInJets, processRun3old, "process Run 3 data w/o jet tables", false);
+  PROCESS_SWITCH(AngularCorrelationsInJets, processRun3old, "process Run 3 data w/o jet tables", false);
 
   void processRun3(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::BkgChargedRhos>>::iterator const& collision,
                    soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& allJets,
@@ -1735,7 +1734,7 @@ struct angularCorrelationsInJets {
 
     registryData.fill(HIST("numJetsInEvent"), jetCounter);
   }
-  PROCESS_SWITCH(angularCorrelationsInJets, processRun3, "process Run 3 data", true);
+  PROCESS_SWITCH(AngularCorrelationsInJets, processRun3, "process Run 3 data", true);
 
   // mcd jets seems to be the issue, also mc coll labels ig
   /// TODO: check if jets already have bkg subtracted
@@ -1839,7 +1838,7 @@ struct angularCorrelationsInJets {
 
     registryData.fill(HIST("numJetsInEvent"), jetCounter);
   }
-  PROCESS_SWITCH(angularCorrelationsInJets, processRun3MCReco, "process Run 3 MC, not currently usable", false);
+  PROCESS_SWITCH(AngularCorrelationsInJets, processRun3MCReco, "process Run 3 MC, not currently usable", false);
 
   void processMCRun2old(McCollisions const& collisions, soa::Filtered<McTracksRun2> const& tracks, BCsWithRun2Info const&, aod::McParticles const&, aod::McCollisions const&)
   {
@@ -1858,7 +1857,7 @@ struct angularCorrelationsInJets {
       fillHistogramsMC(slicedTracks);
     }
   }
-  PROCESS_SWITCH(angularCorrelationsInJets, processMCRun2old, "process Run 2 MC w/o jet tables, not currently usable", false);
+  PROCESS_SWITCH(AngularCorrelationsInJets, processMCRun2old, "process Run 2 MC w/o jet tables, not currently usable", false);
 
   void processMCRun3old(McCollisions const& collisions, soa::Filtered<McTracksRun3old> const& tracks, aod::McParticles const&, aod::McCollisions const&)
   {
@@ -1876,11 +1875,11 @@ struct angularCorrelationsInJets {
       fillHistogramsMC(slicedTracks);
     }
   }
-  PROCESS_SWITCH(angularCorrelationsInJets, processMCRun3old, "process Run 3 MC w/o jet tables, not currently usable", false);
+  PROCESS_SWITCH(AngularCorrelationsInJets, processMCRun3old, "process Run 3 MC w/o jet tables, not currently usable", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<angularCorrelationsInJets>(cfgc)};
+    adaptAnalysisTask<AngularCorrelationsInJets>(cfgc)};
 }
