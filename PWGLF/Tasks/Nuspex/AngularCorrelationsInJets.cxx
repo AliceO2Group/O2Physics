@@ -1442,27 +1442,27 @@ struct AngularCorrelationsInJets {
         if (!jetParticle.has_mcParticle())
           continue;
         switch (jetParticle.mcParticle().pdgCode()) {
-          case 2212:
+          case kProton:
             registryMC.fill(HIST("numberOfTruthParticles"), 0);
             registryMC.fill(HIST("ptJetProtonMC"), jetParticle.pt());
             break;
-          case -2212:
+          case kProtonBar:
             registryMC.fill(HIST("numberOfTruthParticles"), 1);
             registryMC.fill(HIST("ptJetAntiprotonMC"), jetParticle.pt());
             break;
-          case 1000010020:
+          case o2::constants::physics::Pdg::kDeuteron:
             registryMC.fill(HIST("numberOfTruthParticles"), 2);
             registryMC.fill(HIST("ptJetNucleiMC"), jetParticle.pt());
             break;
-          case -1000010020:
+          case -o2::constants::physics::Pdg::kDeuteron:
             registryMC.fill(HIST("numberOfTruthParticles"), 3);
             registryMC.fill(HIST("ptJetAntinucleiMC"), jetParticle.pt());
             break;
-          case 1000020030:
+          case o2::constants::physics::Pdg::kHelium3:
             registryMC.fill(HIST("numberOfTruthParticles"), 4);
             registryMC.fill(HIST("ptJetNucleiMC"), jetParticle.pt());
             break;
-          case -1000020030:
+          case -o2::constants::physics::Pdg::kHelium3:
             registryMC.fill(HIST("numberOfTruthParticles"), 5);
             registryMC.fill(HIST("ptJetAntinucleiMC"), jetParticle.pt());
             break;
@@ -1473,38 +1473,38 @@ struct AngularCorrelationsInJets {
         if (!selectTrackForJetReco(jetParticle))
           continue;
         switch (jetParticle.mcParticle().pdgCode()) {
-          case 2212:
+          case kProton:
             registryData.fill(HIST("ptJetProton"), jetParticle.pt());
             registryQC.fill(HIST("ptJetProtonVsTotalJet"), jetParticle.pt(), subtractedJetPerp.pt());
             registryData.fill(HIST("trackProtocol"), 4); // # protons
             break;
-          case -2212:
+          case kProtonBar:
             registryData.fill(HIST("ptJetAntiproton"), jetParticle.pt());
             registryQC.fill(HIST("ptJetAntiprotonVsTotalJet"), jetParticle.pt(), subtractedJetPerp.pt());
             registryData.fill(HIST("trackProtocol"), 6); // # antiprotons
             break;
-          case 1000010020:
+          case o2::constants::physics::Pdg::kDeuteron:
             if (deuteronAnalysis) {
               registryData.fill(HIST("ptJetNuclei"), jetParticle.pt());
               registryQC.fill(HIST("ptJetNucleiVsTotalJet"), jetParticle.pt(), subtractedJetPerp.pt());
               registryData.fill(HIST("trackProtocol"), 8); // # nuclei
             }
             break;
-          case -1000010020:
+          case -o2::constants::physics::Pdg::kDeuteron:
             if (deuteronAnalysis) {
               registryData.fill(HIST("ptJetAntinuclei"), jetParticle.pt());
               registryQC.fill(HIST("ptJetAntinucleiVsTotalJet"), jetParticle.pt(), subtractedJetPerp.pt());
               registryData.fill(HIST("trackProtocol"), 10); // # antinuclei
             }
             break;
-          case 1000020030:
+          case o2::constants::physics::Pdg::kHelium3:
             if (!deuteronAnalysis) {
               registryData.fill(HIST("ptJetNuclei"), jetParticle.pt());
               registryQC.fill(HIST("ptJetNucleiVsTotalJet"), jetParticle.pt(), subtractedJetPerp.pt());
               registryData.fill(HIST("trackProtocol"), 8); // # nuclei
             }
             break;
-          case -1000020030:
+          case -o2::constants::physics::Pdg::kHelium3:
             if (!deuteronAnalysis) {
               registryData.fill(HIST("ptJetAntinuclei"), jetParticle.pt());
               registryQC.fill(HIST("ptJetAntinucleiVsTotalJet"), jetParticle.pt(), subtractedJetPerp.pt());
@@ -1800,30 +1800,30 @@ struct AngularCorrelationsInJets {
         if (!track.has_mcParticle())
           continue;
         switch (track.mcParticle().pdgCode()) {
-          case 2212:
+          case kProton:
             registryMC.fill(HIST("numberOfTruthParticles"), 0);
             registryMC.fill(HIST("ptJetProtonMC"), track.pt());
             break;
-          case -2212:
+          case kProtonBar:
             registryMC.fill(HIST("numberOfTruthParticles"), 1);
             registryMC.fill(HIST("ptJetAntiprotonMC"), track.pt());
             break;
-          case 1000010020:
+          case o2::constants::physics::Pdg::kDeuteron:
             registryMC.fill(HIST("numberOfTruthParticles"), 2);
             if (deuteronAnalysis)
               registryMC.fill(HIST("ptJetNucleiMC"), track.pt());
             break;
-          case -1000010020:
+          case -o2::constants::physics::Pdg::kDeuteron:
             registryMC.fill(HIST("numberOfTruthParticles"), 3);
             if (deuteronAnalysis)
               registryMC.fill(HIST("ptJetAntinucleiMC"), track.pt());
             break;
-          case 1000020030:
+          case o2::constants::physics::Pdg::kHelium3:
             registryMC.fill(HIST("numberOfTruthParticles"), 4);
             if (!deuteronAnalysis)
               registryMC.fill(HIST("ptJetNucleiMC"), track.pt());
             break;
-          case -1000020030:
+          case -o2::constants::physics::Pdg::kHelium3:
             registryMC.fill(HIST("numberOfTruthParticles"), 5);
             if (!deuteronAnalysis)
               registryMC.fill(HIST("ptJetAntinucleiMC"), track.pt());
