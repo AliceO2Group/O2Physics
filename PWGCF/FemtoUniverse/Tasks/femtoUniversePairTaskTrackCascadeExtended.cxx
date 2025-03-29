@@ -13,7 +13,6 @@
 /// \brief Task for cascade correlations and QA
 /// \author Barbara Chytla, WUT Warsaw, barbara.chytla@cern.ch
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira@cern.ch
-// o2-linter: disable=name/workflow-file
 
 #include <vector>
 #include "Framework/AnalysisTask.h"
@@ -38,7 +37,7 @@ using namespace o2::framework::expressions;
 using namespace o2::analysis::femto_universe;
 using namespace o2::aod::pidutils;
 
-struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/struct
+struct femtoUniversePairTaskTrackCascadeExtended {
 
   Service<o2::framework::O2DatabasePDG> pdgMC;
   SliceCache cache;
@@ -181,7 +180,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
     if (mom <= confmom) {
       return (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle);
     } else {
-      return (TMath::Hypot(nsigmaTOFParticle, nsigmaTPCParticle) < confNsigmaCombinedParticle); // o2-linter: disable=root-entity
+      return (TMath::Hypot(nsigmaTOFParticle, nsigmaTPCParticle) < confNsigmaCombinedParticle);
     }
   }
 
