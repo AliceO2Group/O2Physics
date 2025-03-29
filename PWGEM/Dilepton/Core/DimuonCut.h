@@ -158,42 +158,42 @@ class DimuonCut : public TNamed
     return true;
   }
 
-  template <typename TTrack>
-  bool IsSelectedTrackWoPtEta(TTrack const& track) const
-  {
-    if (!IsSelectedTrack(track, DimuonCuts::kTrackType)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DimuonCuts::kTrackPhiRange)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DimuonCuts::kDCAxy)) {
-      return false;
-    }
-    if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kMFTNCls)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DimuonCuts::kMCHMIDNCls)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DimuonCuts::kChi2)) {
-      return false;
-    }
-    if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kMatchingChi2MCHMFT)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DimuonCuts::kMatchingChi2MCHMID)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DimuonCuts::kPDCA)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DimuonCuts::kRabs)) {
-      return false;
-    }
-
-    return true;
-  }
+  //  template <typename TTrack>
+  //  bool IsSelectedTrackWoPtEta(TTrack const& track) const
+  //  {
+  //    if (!IsSelectedTrack(track, DimuonCuts::kTrackType)) {
+  //      return false;
+  //    }
+  //    if (!IsSelectedTrack(track, DimuonCuts::kTrackPhiRange)) {
+  //      return false;
+  //    }
+  //    if (!IsSelectedTrack(track, DimuonCuts::kDCAxy)) {
+  //      return false;
+  //    }
+  //    if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kMFTNCls)) {
+  //      return false;
+  //    }
+  //    if (!IsSelectedTrack(track, DimuonCuts::kMCHMIDNCls)) {
+  //      return false;
+  //    }
+  //    if (!IsSelectedTrack(track, DimuonCuts::kChi2)) {
+  //      return false;
+  //    }
+  //    if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kMatchingChi2MCHMFT)) {
+  //      return false;
+  //    }
+  //    if (!IsSelectedTrack(track, DimuonCuts::kMatchingChi2MCHMID)) {
+  //      return false;
+  //    }
+  //    if (!IsSelectedTrack(track, DimuonCuts::kPDCA)) {
+  //      return false;
+  //    }
+  //    if (!IsSelectedTrack(track, DimuonCuts::kRabs)) {
+  //      return false;
+  //    }
+  //
+  //    return true;
+  //  }
 
   template <typename T>
   bool IsSelectedTrack(T const& track, const DimuonCuts& cut) const

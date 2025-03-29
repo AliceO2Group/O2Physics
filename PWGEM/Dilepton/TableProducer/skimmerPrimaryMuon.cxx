@@ -142,7 +142,7 @@ struct skimmerPrimaryMuon {
       fRegistry.add("Track/MFTMCHMID/hNclusters", "Nclusters;Nclusters", kTH1F, {{21, -0.5f, 20.5}}, false);
       fRegistry.add("Track/MFTMCHMID/hNclustersMFT", "NclustersMFT;Nclusters MFT", kTH1F, {{11, -0.5f, 10.5}}, false);
       fRegistry.add("Track/MFTMCHMID/hRatAbsorberEnd", "R at absorber end;R at absorber end (cm)", kTH1F, {{100, 0.0f, 100}}, false);
-      fRegistry.add("Track/MFTMCHMID/hPDCA", "pDCA;r at absorber (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
+      fRegistry.add("Track/MFTMCHMID/hPDCA", "pDCA;r at absorber end (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
       fRegistry.add("Track/MFTMCHMID/hChi2", "chi2;chi2", kTH1F, {{100, 0.0f, 100}}, false);
       fRegistry.add("Track/MFTMCHMID/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 100}}, false);
       fRegistry.add("Track/MFTMCHMID/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{100, 0.0f, 100}}, false);
@@ -212,7 +212,7 @@ struct skimmerPrimaryMuon {
         }
         emprimarymuons(collision.globalIndex(), fwdtrack.globalIndex(), -1, -1, muon.trackType(),
                        muon.pt(), muon.eta(), muon.phi(), muon.sign(), muon.fwdDcaX(), muon.fwdDcaY(), muon.cXXatDCA(), muon.cYYatDCA(), muon.cXYatDCA(), muon.etaMatchedMCHMID(), muon.phiMatchedMCHMID(),
-                       muon.x(), muon.y(), muon.z(), muon.tgl(),
+                       // muon.x(), muon.y(), muon.z(), muon.tgl(),
                        muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(), muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
                        muon.mchBitMap(), muon.midBitMap(), muon.midBoards(), 0, 999999.f, muon.isAssociatedToMPC(), muon.isAmbiguous());
 
@@ -245,7 +245,7 @@ struct skimmerPrimaryMuon {
 
         emprimarymuons(collision.globalIndex(), fwdtrack.globalIndex(), mfttrack.globalIndex(), mchtrack.globalIndex(), muon.trackType(),
                        muon.pt(), muon.eta(), muon.phi(), muon.sign(), muon.fwdDcaX(), muon.fwdDcaY(), muon.cXXatDCA(), muon.cYYatDCA(), muon.cXYatDCA(), muon.etaMatchedMCHMID(), muon.phiMatchedMCHMID(),
-                       muon.x(), muon.y(), muon.z(), muon.tgl(),
+                       // muon.x(), muon.y(), muon.z(), muon.tgl(),
                        muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(), muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
                        muon.mchBitMap(), muon.midBitMap(), muon.midBoards(), mfttrack.mftClusterSizesAndTrackFlags(), mfttrack.chi2(), muon.isAssociatedToMPC(), muon.isAmbiguous());
 

@@ -54,9 +54,9 @@ float dcaZinSigma(T const& track)
 template <typename T>
 float fwdDcaXYinSigma(T const& track)
 {
-  float cXX = track.cXX();
-  float cYY = track.cYY();
-  float cXY = track.cXY();
+  float cXX = track.cXXatDCA();
+  float cYY = track.cYYatDCA();
+  float cXY = track.cXYatDCA();
   float dcaX = track.fwdDcaX(); // in cm
   float dcaY = track.fwdDcaY(); // in cm
 

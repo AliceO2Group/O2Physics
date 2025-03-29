@@ -549,8 +549,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * 
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
-DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, [](float tgl) -> float { return M_PI_2 - std::atan(tgl); });
-DECLARE_SOA_DYNAMIC_COLUMN(DcaXY, dcaXY, [](float dcaX, float dcaY) -> float { return std::sqrt(dcaX * dcaX + dcaY * dcaY); });
 DECLARE_SOA_DYNAMIC_COLUMN(NClustersMFT, nClustersMFT, //! Number of MFT clusters
                            [](uint64_t mftClusterSizesAndTrackFlags) -> uint8_t {
                              uint8_t nClusters = 0;
@@ -578,7 +576,7 @@ DECLARE_SOA_TABLE(EMPrimaryMuons, "AOD", "EMPRIMARYMU", //!
                   fwdtrack::Pt, fwdtrack::Eta, fwdtrack::Phi, emprimarymuon::Sign,
                   fwdtrack::FwdDcaX, fwdtrack::FwdDcaY, emprimarymuon::CXXatDCA, emprimarymuon::CYYatDCA, emprimarymuon::CXYatDCA,
                   emprimarymuon::EtaMatchedMCHMID, emprimarymuon::PhiMatchedMCHMID,
-                  fwdtrack::X, fwdtrack::Y, fwdtrack::Z, fwdtrack::Tgl,
+                  // fwdtrack::X, fwdtrack::Y, fwdtrack::Z, fwdtrack::Tgl,
 
                   fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
                   fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
@@ -592,9 +590,7 @@ DECLARE_SOA_TABLE(EMPrimaryMuons, "AOD", "EMPRIMARYMU", //!
                   emprimarymuon::P<fwdtrack::Pt, fwdtrack::Eta>,
                   emprimarymuon::Px<fwdtrack::Pt, fwdtrack::Phi>,
                   emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
-                  emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>,
-                  emprimarymuon::Theta<fwdtrack::Tgl>,
-                  emprimarymuon::DcaXY<fwdtrack::FwdDcaX, fwdtrack::FwdDcaY>);
+                  emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
 // iterators
 using EMPrimaryMuon = EMPrimaryMuons::iterator;
 
