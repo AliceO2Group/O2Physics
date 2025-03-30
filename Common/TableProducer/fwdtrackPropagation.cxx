@@ -69,6 +69,7 @@ struct FwdTrackPropagation {
   Configurable<float> maxMatchingChi2MCHMFT{"maxMatchingChi2MCHMFT", 50.f, "max. chi2 for MCH-MFT matching"};
   Configurable<float> maxChi2{"maxChi2", 1e+6, "max. chi2 for muon tracking"};
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", false, "flag to refit global muon"};
+  Configurable<bool> applyEtaCutToSAinGL{"applyEtaCutToSAinGL", false, "flag to apply eta cut to samuon in global muon"};
 
   HistogramRegistry fRegistry{"fRegistry"};
   static constexpr std::string_view muon_types[5] = {"MFTMCHMID/", "MFTMCHMIDOtherMatch/", "MFTMCH/", "MCHMID/", "MCH/"};
@@ -148,7 +149,7 @@ struct FwdTrackPropagation {
     fRegistry.add("MCHMID/hDCAyResolutionvsPt", "DCA_{y} vs. p_{T};p_{T} (GeV/c);DCA_{y} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {500, 0, 5e+5}}, false);
   }
 
-  bool isSelected(const float pt, const float eta, const float rAtAbsorberEnd, const float pDCA, const float chi2, const uint8_t trackType)
+  bool isSelected(const float pt, const float eta, const float rAtAbsorberEnd, const float pDCA, const float chi2, const uint8_t trackType, const float etaMatchedMCHMID)
   {
     if (pt < minPt || maxPt < pt) {
       return false;
@@ -164,6 +165,9 @@ struct FwdTrackPropagation {
 
     if (trackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
       if (eta < minEtaGL || maxEtaGL < eta) {
+        return false;
+      }
+      if (applyEtaCutToSAinGL && (etaMatchedMCHMID < minEtaSA || maxEtaSA < etaMatchedMCHMID)) {
         return false;
       }
     } else if (trackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
@@ -251,18 +255,18 @@ struct FwdTrackPropagation {
 
       const auto& mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>();
       nClustersMFT = mfttrack.nClusters();
+      chi2mft = mfttrack.chi2();
       if (refitGlobalMuon) {
         eta = mfttrack.eta();
         phi = mfttrack.phi();
         o2::math_utils::bringTo02Pi(phi);
-        pt = propmuonAtPV.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
+        pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
 
         x = mfttrack.x();
         y = mfttrack.y();
         z = mfttrack.z();
         tgl = mfttrack.tgl();
       }
-      chi2mft = mfttrack.chi2();
     } else if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
       o2::dataformats::GlobalFwdTrack propmuonAtRabs = propagateMuon(fwdtrack, collision, propagationPoint::kToRabs); // this is necessary only for MuonStandaloneTrack
       float xAbs = propmuonAtRabs.getX();
@@ -272,7 +276,7 @@ struct FwdTrackPropagation {
       return;
     }
 
-    if (!isSelected(pt, eta, rAtAbsorberEnd, pDCA, fwdtrack.chi2(), fwdtrack.trackType())) {
+    if (!isSelected(pt, eta, rAtAbsorberEnd, pDCA, fwdtrack.chi2(), fwdtrack.trackType(), etaMatchedMCHMID)) {
       return;
     }
 
