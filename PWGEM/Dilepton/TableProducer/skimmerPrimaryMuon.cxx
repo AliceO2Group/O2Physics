@@ -239,6 +239,12 @@ struct skimmerPrimaryMuon {
         const auto& mfttrack = muon.template matchMFTTrack_as<TMFTTracks>();
         const auto& mchtrack = muon.template matchMCHTrack_as<TFwdTracks>();
 
+        if constexpr (isMC) {
+          if (!fwdtrack.has_mcParticle()) {
+            continue;
+          }
+        }
+
         emprimarymuons(collision.globalIndex(), fwdtrack.globalIndex(), mfttrack.globalIndex(), mchtrack.globalIndex(), muon.trackType(),
                        muon.pt(), muon.eta(), muon.phi(), muon.sign(), muon.fwdDcaX(), muon.fwdDcaY(), muon.cXXatDCA(), muon.cYYatDCA(), muon.cXYatDCA(), muon.etaMatchedMCHMID(), muon.phiMatchedMCHMID(),
                        // muon.x(), muon.y(), muon.z(), muon.tgl(),
@@ -283,7 +289,7 @@ struct skimmerPrimaryMuon {
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processRec_SWT, "process reconstructed info only with standalone", false);
 
-  void processMC(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::BCsWithTimestamps const& bcs, MyFwdTracksMC const& fwdtracks, MFTTracksMC const& mfttracks)
+  void processMC(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::BCsWithTimestamps const& bcs, MyPropagatedFwdTracks const&, MyFwdTracksMC const& fwdtracks, MFTTracksMC const& mfttracks)
   {
     run<true, false>(collisions, bcs, sa_muons, global_muons, fwdtracks, mfttracks);
   }
