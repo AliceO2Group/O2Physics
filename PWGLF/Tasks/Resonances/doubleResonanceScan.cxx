@@ -16,6 +16,7 @@
 ///
 
 #include <vector>
+#include <TLorentzVector.h>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -387,9 +388,9 @@ struct DoubleResonanceScan {
     return selectedIndices;
   }
 
-  bool isPairSelected(const ROOT::Math::LorentzVector& lv1, const ROOT::Math::LorentzVector& lv2, int pairType = 0)
+  bool isPairSelected(const TLorentzVector & lv1, const TLorentzVector & lv2, int pairType = 0)
   {
-    ROOT::Math::LorentzVector lvSum = lv1 + lv2;
+    TLorentzVector  lvSum = lv1 + lv2;
     // Mass window cut
     auto pairMass = lvSum.M();
     auto pairMassesLow = PairCuts.cfgPairMassesLow.value;
@@ -431,7 +432,7 @@ struct DoubleResonanceScan {
                           int pairType)
   {
     std::vector<std::pair<int, int>> selectedPairs;
-    ROOT::Math::LorentzVector lv1, lv2;
+    TLorentzVector  lv1, lv2;
     for (const auto& indexA : indicesA) {
       for (const auto& indexB : indicesB) {
         if (indexA == indexB) {
@@ -453,7 +454,7 @@ struct DoubleResonanceScan {
     return selectedPairs;
   }
 
-  bool isResoSelected(const ROOT::Math::LorentzVector& par1, const ROOT::Math::LorentzVector& pair2)
+  bool isResoSelected(const TLorentzVector & par1, const TLorentzVector & pair2)
   {
     // Opening angle (3D)
     double oa = par1.Vect().Angle(pair2.Vect());
@@ -461,7 +462,7 @@ struct DoubleResonanceScan {
       return false;
     }
     // Rapidity cut
-    ROOT::Math::LorentzVector lvTotal = par1 + pair2;
+    TLorentzVector  lvTotal = par1 + pair2;
     if (lvTotal.Rapidity() < -0.5 || lvTotal.Rapidity() > 0.5) {
       return false;
     }
@@ -501,7 +502,7 @@ struct DoubleResonanceScan {
         auto t3 = dTracks.rawIteratorAt(j1);
         auto t4 = dTracks.rawIteratorAt(j2);
 
-        ROOT::Math::LorentzVector lv1, lv2, lv3, lv4, lvPair1, lvPair2, lvTotal, lResonanceRot;
+        TLorentzVector  lv1, lv2, lv3, lv4, lvPair1, lvPair2, lvTotal, lResonanceRot;
         lv1.SetXYZM(t1.px(), t1.py(), t1.pz(), mass1);
         lv2.SetXYZM(t2.px(), t2.py(), t2.pz(), mass2);
         lv3.SetXYZM(t3.px(), t3.py(), t3.pz(), mass3);
