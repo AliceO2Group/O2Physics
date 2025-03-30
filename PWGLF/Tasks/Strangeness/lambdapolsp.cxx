@@ -12,6 +12,7 @@
 // prottay.das@cern.ch
 
 #include <string>
+#include <vector>
 #include <TH1F.h>
 #include <TDirectory.h>
 #include <THn.h>
