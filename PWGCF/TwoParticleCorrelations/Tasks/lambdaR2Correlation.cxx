@@ -764,11 +764,11 @@ struct LambdaTableProducer {
     // get information about secondary lambdas
     if (cRecSecondaryLambda) {
       auto lambdaMothers = mcpart.template mothers_as<aod::McParticles>();
-      if (std::abs(lambdaMothers[0].pdgCode()) == 3112 || std::abs(lambdaMothers[0].pdgCode()) == 3212 || std::abs(lambdaMothers[0].pdgCode()) == 3222) {
+      if (std::abs(lambdaMothers[0].pdgCode()) == kSigmaMinus || std::abs(lambdaMothers[0].pdgCode()) == kSigma0 || std::abs(lambdaMothers[0].pdgCode()) == kSigmaPlus) {
         histos.fill(HIST("Tracks/h2f_lambda_from_sigma"), mcpart.pdgCode(), mcpart.pt());
-      } else if (std::abs(lambdaMothers[0].pdgCode()) == 3312 || std::abs(lambdaMothers[0].pdgCode()) == 3322) {
+      } else if (std::abs(lambdaMothers[0].pdgCode()) == kXiMinus || std::abs(lambdaMothers[0].pdgCode()) == kXi0) {
         histos.fill(HIST("Tracks/h2f_lambda_from_cascade"), mcpart.pdgCode(), mcpart.pt());
-      } else if (std::abs(lambdaMothers[0].pdgCode()) == 3334) {
+      } else if (std::abs(lambdaMothers[0].pdgCode()) == kOmegaMinus) {
         histos.fill(HIST("Tracks/h2f_lambda_from_omega"), mcpart.pdgCode(), mcpart.pt());
       }
     }
