@@ -115,6 +115,14 @@ struct FlowCorrelationsUpc {
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
 
+  // Added UPC Cuts
+  SGSelector sgSelector;
+  Configurable<float> cfgCutFV0{"cfgCutFV0", 50., "FV0A threshold"};
+  Configurable<float> cfgCutFT0A{"cfgCutFT0A", 150., "FT0A threshold"};
+  Configurable<float> cfgCutFT0C{"cfgCutFT0C", 50., "FT0C threshold"};
+  Configurable<float> cfgCutZDC{"cfgCutZDC", 10., "ZDC threshold"};
+  Configurable<float> cfgGapSideSelection{"cfgGapSideSelection", 2, "gap selection"};
+
   // make the filters and cuts.
   // Filter collisionFilter = (nabs(aod::collision::posZ) < cfgZVtxCut) && (aod::flowcorrupc::multiplicity) > cfgMinMult && (aod::flowcorrupc::multiplicity) < cfgMaxMult && (aod::evsel::sel8) == true;
   // Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
@@ -132,14 +140,6 @@ struct FlowCorrelationsUpc {
   void init(InitContext&)
   {
     LOGF(info, "Starting init");
-    // Added UPC Cuts
-    SGSelector sgSelector;
-    Configurable<float> cfgCutFV0{"cfgCutFV0", 50., "FV0A threshold"};
-    Configurable<float> cfgCutFT0A{"cfgCutFT0A", 150., "FT0A threshold"};
-    Configurable<float> cfgCutFT0C{"cfgCutFT0C", 50., "FT0C threshold"};
-    Configurable<float> cfgCutZDC{"cfgCutZDC", 10., "ZDC threshold"};
-    Configurable<float> cfgGapSideSelection{"cfgGapSideSelection", 2, "gap selection"};
-
     // Make histograms to check the distributions after cuts
     registry.add("deltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
     registry.add("deltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
