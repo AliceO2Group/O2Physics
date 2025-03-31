@@ -67,6 +67,7 @@ struct sigmaanalysis {
   // Event selection
   Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
   Configurable<bool> fGetIR{"fGetIR", false, "Flag to retrieve the IR info."};
+  Configurable<bool> fIRCrashOnNull{"fIRCrashOnNull", false, "Flag to avoid CTP RateFetcher crash."};
   Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   Configurable<float> minIR{"minIR", -1, "Min Interaction Rate (kHz). Leave -1 if no selection desired."};
   Configurable<float> maxIR{"maxIR", -1, "Max Interaction Rate (kHz). Leave -1 if no selection desired."};
@@ -236,6 +237,7 @@ struct sigmaanalysis {
     }
 
     // All candidates received
+    histos.add("GeneralQA/hRunNumberNegativeIR", "", kTH1D, {{1, 0., 1.}});
     histos.add("GeneralQA/hInteractionRate", "hInteractionRate", kTH1F, {axisIRBinning});
     histos.add("GeneralQA/hInteractionRatePerColl", "hInteractionRatePerColl", kTH1F, {axisIRBinning});
     histos.add("GeneralQA/hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2F, {axisCentrality, axisIRBinning});
@@ -930,7 +932,11 @@ struct sigmaanalysis {
         continue;
       }
       if (fGetIR) {
-        double interactionRate = rateFetcher.fetch(ccdb.service, sigma.sigmaTimestamp(), sigma.sigmaRunNumber(), irSource) * 1.e-3;
+        double interactionRate = rateFetcher.fetch(ccdb.service, sigma.sigmaTimestamp(), sigma.sigmaRunNumber(), irSource, fIRCrashOnNull) * 1.e-3;
+
+        if (interactionRate<0)          
+          histos.get<TH1>(HIST("GeneralQA/hRunNumberNegativeIR"))->Fill(Form("%d", sigma.sigmaRunNumber()), 1);
+        
         histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);
         histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), sigma.sigmaCentrality(), interactionRate);
         if ((maxIR != -1) && (minIR != -1) && ((interactionRate <= minIR) || (interactionRate >= maxIR))) {
@@ -1076,7 +1082,10 @@ struct sigmaanalysis {
   {
     for (auto& sigma : sigmas) { // selecting Sigma0-like candidates
       if (fGetIR) {
-        double interactionRate = rateFetcher.fetch(ccdb.service, sigma.sigmaTimestamp(), sigma.sigmaRunNumber(), irSource) * 1.e-3;
+        double interactionRate = rateFetcher.fetch(ccdb.service, sigma.sigmaTimestamp(), sigma.sigmaRunNumber(), irSource, fIRCrashOnNull) * 1.e-3;
+
+        if (interactionRate<0)          
+          histos.get<TH1>(HIST("GeneralQA/hRunNumberNegativeIR"))->Fill(Form("%d", sigma.sigmaRunNumber()), 1);
         histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);
         histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), sigma.sigmaCentrality(), interactionRate);
         if ((maxIR != -1) && (minIR != -1) && ((interactionRate <= minIR) || (interactionRate >= maxIR))) {
