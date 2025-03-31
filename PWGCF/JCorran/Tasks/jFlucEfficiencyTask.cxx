@@ -145,7 +145,7 @@ struct JFlucEfficiencyTask {
     colCuts.setApplyRun2INELgtZERO(EventCuts.cfgEvtRun2INELgtZERO);
     colCuts.printCuts();
 
-    if (doprocessDerivedMC || doprocessMC) {
+    if (doprocessDerivedMC || doprocessMC || doprocessMCRun2) {
       registry.add("hPtGen", "Generated p_{T} (all);p_{T} (GeV/c);Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
       registry.add("hEtaGen", "Generated #eta (all);#eta;Centrality (%);Counts",
