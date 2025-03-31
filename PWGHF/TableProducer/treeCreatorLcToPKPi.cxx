@@ -510,6 +510,27 @@ struct HfTreeCreatorLcToPKPi {
           const float functionCt = hfHelper.ctLc(candidate);
           const float functionY = hfHelper.yLc(candidate);
           const float functionE = hfHelper.eLc(candidate);
+          float valueTpcNSigmaPi;
+          float valueTpcNSigmaPr;
+          float valueTofNSigmaPi;
+          float valueTofNSigmaPr;
+          float valueTpcTofNSigmaPi;
+          float valueTpcTofNSigmaPr;
+          if (candFlag == 0) {
+            valueTpcNSigmaPi = trackPos1.tpcNSigmaPi();
+            valueTpcNSigmaPr = trackPos2.tpcNSigmaPr();
+            valueTofNSigmaPi = trackPos1.tofNSigmaPi();
+            valueTofNSigmaPr = trackPos2.tofNSigmaPr();
+            valueTpcTofNSigmaPi = trackPos1.tpcTofNSigmaPi();
+            valueTpcTofNSigmaPr = trackPos2.tpcTofNSigmaPr();
+          } else {
+            valueTpcNSigmaPi = trackPos2.tpcNSigmaPi();
+            valueTpcNSigmaPr = trackPos1.tpcNSigmaPr();
+            valueTofNSigmaPi = trackPos2.tofNSigmaPi();
+            valueTofNSigmaPr = trackPos1.tofNSigmaPr();
+            valueTpcTofNSigmaPi = trackPos2.tpcTofNSigmaPi();
+            valueTpcTofNSigmaPr = trackPos1.tpcTofNSigmaPr();
+          }
           if (fillCandidateLiteTable) {
             rowCandidateLite(
               candidate.posX(),
@@ -526,15 +547,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.impactParameter0(),
               candidate.impactParameter1(),
               candidate.impactParameter2(),
-              candFlag == 0 ? trackPos1.tpcNSigmaPi() : trackPos2.tpcNSigmaPi(),
+              valueTpcNSigmaPi,
               trackNeg.tpcNSigmaKa(),
-              candFlag == 0 ? trackPos2.tpcNSigmaPr() : trackPos1.tpcNSigmaPr(),
-              candFlag == 0 ? trackPos1.tofNSigmaPi() : trackPos2.tofNSigmaPi(),
+              valueTpcNSigmaPr,
+              valueTofNSigmaPi,
               trackNeg.tofNSigmaKa(),
-              candFlag == 0 ? trackPos2.tofNSigmaPr() : trackPos1.tofNSigmaPr(),
-              candFlag == 0 ? trackPos1.tpcTofNSigmaPi() : trackPos2.tpcTofNSigmaPi(),
+              valueTofNSigmaPr,
+              valueTpcTofNSigmaPi,
               trackNeg.tpcTofNSigmaKa(),
-              candFlag == 0 ? trackPos2.tpcTofNSigmaPr() : trackPos1.tpcTofNSigmaPr(),
+              valueTpcTofNSigmaPr,
               1 << candFlag,
               functionInvMass,
               candidate.pt(),
@@ -597,15 +618,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.errorImpactParameter0(),
               candidate.errorImpactParameter1(),
               candidate.errorImpactParameter2(),
-              candFlag == 0 ? trackPos1.tpcNSigmaPi() : trackPos2.tpcNSigmaPi(),
+              valueTpcNSigmaPi,
               trackNeg.tpcNSigmaKa(),
-              candFlag == 0 ? trackPos2.tpcNSigmaPr() : trackPos1.tpcNSigmaPr(),
-              candFlag == 0 ? trackPos1.tofNSigmaPi() : trackPos2.tofNSigmaPi(),
+              valueTpcNSigmaPr,
+              valueTofNSigmaPi,
               trackNeg.tofNSigmaKa(),
-              candFlag == 0 ? trackPos2.tofNSigmaPr() : trackPos1.tofNSigmaPr(),
-              candFlag == 0 ? trackPos1.tpcTofNSigmaPi() : trackPos2.tpcTofNSigmaPi(),
+              valueTofNSigmaPr,
+              valueTpcTofNSigmaPi,
               trackNeg.tpcTofNSigmaKa(),
-              candFlag == 0 ? trackPos2.tpcTofNSigmaPr() : trackPos1.tpcTofNSigmaPr(),
+              valueTpcTofNSigmaPr,
               1 << candFlag,
               functionInvMass,
               candidate.pt(),
@@ -626,6 +647,30 @@ struct HfTreeCreatorLcToPKPi {
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+            float chi2primProton;
+            float chi2primPion;
+            float dcaProtonKaon;
+            float dcaPionKaon;
+            float chi2GeoProtonKaon;
+            float chi2GeoPionKaon;
+            float mass;
+            if (candFlag == 0) {
+              chi2primProton = candidate.kfChi2PrimProng0();
+              chi2primPion = candidate.kfChi2PrimProng2();
+              dcaProtonKaon = candidate.kfDcaProng0Prong1();
+              dcaPionKaon = candidate.kfDcaProng1Prong2();
+              chi2GeoProtonKaon = candidate.kfChi2GeoProng0Prong1();
+              chi2GeoPionKaon = candidate.kfChi2GeoProng1Prong2();
+              mass = candidate.kfMassPKPi();
+            } else {
+              chi2primProton = candidate.kfChi2PrimProng2();
+              chi2primPion = candidate.kfChi2PrimProng0();
+              dcaProtonKaon = candidate.kfDcaProng1Prong2();
+              dcaPionKaon = candidate.kfDcaProng0Prong1();
+              chi2GeoProtonKaon = candidate.kfChi2GeoProng1Prong2();
+              chi2GeoPionKaon = candidate.kfChi2GeoProng0Prong1();
+              mass = candidate.kfMassPiKP();
+            }
             const float svX = candidate.xSecondaryVertex();
             const float svY = candidate.ySecondaryVertex();
             const float svZ = candidate.zSecondaryVertex();
@@ -635,18 +680,12 @@ struct HfTreeCreatorLcToPKPi {
             const float pvErrX = candidate.kfXPVError();
             const float pvErrY = candidate.kfYPVError();
             const float pvErrZ = candidate.kfZPVError();
-            const float chi2primProton = candFlag == 0 ? candidate.kfChi2PrimProng0() : candidate.kfChi2PrimProng2();
             const float chi2primKaon = candidate.kfChi2PrimProng1();
-            const float chi2primPion = candFlag == 0 ? candidate.kfChi2PrimProng2() : candidate.kfChi2PrimProng0();
-            const float dcaProtonKaon = candFlag == 0 ? candidate.kfDcaProng0Prong1() : candidate.kfDcaProng1Prong2();
             const float dcaProtonPion = candidate.kfDcaProng0Prong2();
-            const float dcaPionKaon = candFlag == 0 ? candidate.kfDcaProng1Prong2() : candidate.kfDcaProng0Prong1();
-            const float chi2GeoProtonKaon = candFlag == 0 ? candidate.kfChi2GeoProng0Prong1() : candidate.kfChi2GeoProng1Prong2();
             const float chi2GeoProtonPion = candidate.kfChi2GeoProng0Prong2();
-            const float chi2GeoPionKaon = candFlag == 0 ? candidate.kfChi2GeoProng1Prong2() : candidate.kfChi2GeoProng0Prong1();
             const float chi2Geo = candidate.kfChi2Geo();
             const float chi2Topo = candidate.kfChi2Topo();
-            const float l = candidate.kfDecayLength();
+            const float decayLength = candidate.kfDecayLength();
             const float dl = candidate.kfDecayLengthError();
             const float pt = std::sqrt(candidate.kfPx() * candidate.kfPx() + candidate.kfPy() * candidate.kfPy());
             const float deltaPt = std::sqrt(candidate.kfPx() * candidate.kfPx() * candidate.kfErrorPx() * candidate.kfErrorPx() +
@@ -656,9 +695,8 @@ struct HfTreeCreatorLcToPKPi {
             const float deltaP = std::sqrt(pt * pt * deltaPt * deltaPt +
                                            candidate.kfPz() * candidate.kfPz() * candidate.kfErrorPz() * candidate.kfErrorPz()) /
                                  p;
-            const float t = l * MassLambdaCPlus / LightSpeedCm2PS / p;
+            const float lifetime = decayLength * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
-            const float mass = candFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
             rowCandidateKF(
               candidate.collisionId(),
               svX, svY, svZ, svErrX, svErrY, svErrZ,
@@ -666,13 +704,13 @@ struct HfTreeCreatorLcToPKPi {
               chi2primProton, chi2primKaon, chi2primPion,
               dcaProtonKaon, dcaProtonPion, dcaPionKaon,
               chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
-              chi2Geo, chi2Topo, l, dl, l / dl, t, deltaT,
+              chi2Geo, chi2Topo, decayLength, dl, decayLength / dl, lifetime, deltaT,
               mass, p, pt, deltaP, deltaPt,
               functionSelection, sigbgstatus,
               collision.multNTracksPV());
           }
           if (fillCandidateMcTable) {
-            float p, pt, svX, svY, svZ, pvX, pvY, pvZ, l, t;
+            float p, pt, svX, svY, svZ, pvX, pvY, pvZ, decayLength, lifetime;
             if (!isMcCandidateSignal) {
               p = UndefValueFloat;
               pt = UndefValueFloat;
@@ -682,8 +720,8 @@ struct HfTreeCreatorLcToPKPi {
               pvX = UndefValueFloat;
               pvY = UndefValueFloat;
               pvZ = UndefValueFloat;
-              l = UndefValueFloat;
-              t = UndefValueFloat;
+              decayLength = UndefValueFloat;
+              lifetime = UndefValueFloat;
             } else {
               auto mcParticleProng0 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
               auto indexMother = RecoDecay::getMother(particles, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
@@ -699,12 +737,12 @@ struct HfTreeCreatorLcToPKPi {
               svX = mcParticleProng0.vx();
               svY = mcParticleProng0.vy();
               svZ = mcParticleProng0.vz();
-              l = RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ});
-              t = mcParticleProng0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
+              decayLength = RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ});
+              lifetime = mcParticleProng0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
             }
             rowCandidateMC(
               p, pt,
-              svX, svY, svZ, l, t,
+              svX, svY, svZ, decayLength, lifetime,
               pvX, pvY, pvZ);
           }
         }
@@ -895,6 +933,27 @@ struct HfTreeCreatorLcToPKPi {
           const float functionCt = hfHelper.ctLc(candidate);
           const float functionY = hfHelper.yLc(candidate);
           const float functionE = hfHelper.eLc(candidate);
+          float valueTpcNSigmaPi;
+          float valueTpcNSigmaPr;
+          float valueTofNSigmaPi;
+          float valueTofNSigmaPr;
+          float valueTpcTofNSigmaPi;
+          float valueTpcTofNSigmaPr;
+          if (candFlag == 0) {
+            valueTpcNSigmaPi = trackPos1.tpcNSigmaPi();
+            valueTpcNSigmaPr = trackPos2.tpcNSigmaPr();
+            valueTofNSigmaPi = trackPos1.tofNSigmaPi();
+            valueTofNSigmaPr = trackPos2.tofNSigmaPr();
+            valueTpcTofNSigmaPi = trackPos1.tpcTofNSigmaPi();
+            valueTpcTofNSigmaPr = trackPos2.tpcTofNSigmaPr();
+          } else {
+            valueTpcNSigmaPi = trackPos2.tpcNSigmaPi();
+            valueTpcNSigmaPr = trackPos1.tpcNSigmaPr();
+            valueTofNSigmaPi = trackPos2.tofNSigmaPi();
+            valueTofNSigmaPr = trackPos1.tofNSigmaPr();
+            valueTpcTofNSigmaPi = trackPos2.tpcTofNSigmaPi();
+            valueTpcTofNSigmaPr = trackPos1.tpcTofNSigmaPr();
+          }
           if (fillCandidateLiteTable) {
             rowCandidateLite(
               candidate.posX(),
@@ -911,15 +970,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.impactParameter0(),
               candidate.impactParameter1(),
               candidate.impactParameter2(),
-              candFlag == 0 ? trackPos1.tpcNSigmaPi() : trackPos2.tpcNSigmaPi(),
+              valueTpcNSigmaPi,
               trackNeg.tpcNSigmaKa(),
-              candFlag == 0 ? trackPos2.tpcNSigmaPr() : trackPos1.tpcNSigmaPr(),
-              candFlag == 0 ? trackPos1.tofNSigmaPi() : trackPos2.tofNSigmaPi(),
+              valueTpcNSigmaPr,
+              valueTofNSigmaPi,
               trackNeg.tofNSigmaKa(),
-              candFlag == 0 ? trackPos2.tofNSigmaPr() : trackPos1.tofNSigmaPr(),
-              candFlag == 0 ? trackPos1.tpcTofNSigmaPi() : trackPos2.tpcTofNSigmaPi(),
+              valueTofNSigmaPr,
+              valueTpcTofNSigmaPi,
               trackNeg.tpcTofNSigmaKa(),
-              candFlag == 0 ? trackPos2.tpcTofNSigmaPr() : trackPos1.tpcTofNSigmaPr(),
+              valueTpcTofNSigmaPr,
               1 << candFlag,
               functionInvMass,
               candidate.pt(),
@@ -983,15 +1042,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.errorImpactParameter0(),
               candidate.errorImpactParameter1(),
               candidate.errorImpactParameter2(),
-              candFlag == 0 ? trackPos1.tpcNSigmaPi() : trackPos2.tpcNSigmaPi(),
+              valueTpcNSigmaPi,
               trackNeg.tpcNSigmaKa(),
-              candFlag == 0 ? trackPos2.tpcNSigmaPr() : trackPos1.tpcNSigmaPr(),
-              candFlag == 0 ? trackPos1.tofNSigmaPi() : trackPos2.tofNSigmaPi(),
+              valueTpcNSigmaPr,
+              valueTofNSigmaPi,
               trackNeg.tofNSigmaKa(),
-              candFlag == 0 ? trackPos2.tofNSigmaPr() : trackPos1.tofNSigmaPr(),
-              candFlag == 0 ? trackPos1.tpcTofNSigmaPi() : trackPos2.tpcTofNSigmaPi(),
+              valueTofNSigmaPr,
+              valueTpcTofNSigmaPi,
               trackNeg.tpcTofNSigmaKa(),
-              candFlag == 0 ? trackPos2.tpcTofNSigmaPr() : trackPos1.tpcTofNSigmaPr(),
+              valueTpcTofNSigmaPr,
               1 << candFlag,
               functionInvMass,
               candidate.pt(),
@@ -1012,6 +1071,30 @@ struct HfTreeCreatorLcToPKPi {
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+            float chi2primProton;
+            float chi2primPion;
+            float dcaProtonKaon;
+            float dcaPionKaon;
+            float chi2GeoProtonKaon;
+            float chi2GeoPionKaon;
+            float mass;
+            if (candFlag == 0) {
+              chi2primProton = candidate.kfChi2PrimProng0();
+              chi2primPion = candidate.kfChi2PrimProng2();
+              dcaProtonKaon = candidate.kfDcaProng0Prong1();
+              dcaPionKaon = candidate.kfDcaProng1Prong2();
+              chi2GeoProtonKaon = candidate.kfChi2GeoProng0Prong1();
+              chi2GeoPionKaon = candidate.kfChi2GeoProng1Prong2();
+              mass = candidate.kfMassPKPi();
+            } else {
+              chi2primProton = candidate.kfChi2PrimProng2();
+              chi2primPion = candidate.kfChi2PrimProng0();
+              dcaProtonKaon = candidate.kfDcaProng1Prong2();
+              dcaPionKaon = candidate.kfDcaProng0Prong1();
+              chi2GeoProtonKaon = candidate.kfChi2GeoProng1Prong2();
+              chi2GeoPionKaon = candidate.kfChi2GeoProng0Prong1();
+              mass = candidate.kfMassPiKP();
+            }
             const float x = candidate.xSecondaryVertex();
             const float y = candidate.ySecondaryVertex();
             const float z = candidate.zSecondaryVertex();
@@ -1021,15 +1104,9 @@ struct HfTreeCreatorLcToPKPi {
             const float errPVX = candidate.kfXPVError();
             const float errPVY = candidate.kfYPVError();
             const float errPVZ = candidate.kfZPVError();
-            const float chi2primProton = candFlag == 0 ? candidate.kfChi2PrimProng0() : candidate.kfChi2PrimProng2();
             const float chi2primKaon = candidate.kfChi2PrimProng1();
-            const float chi2primPion = candFlag == 0 ? candidate.kfChi2PrimProng2() : candidate.kfChi2PrimProng0();
-            const float dcaProtonKaon = candFlag == 0 ? candidate.kfDcaProng0Prong1() : candidate.kfDcaProng1Prong2();
             const float dcaProtonPion = candidate.kfDcaProng0Prong2();
-            const float dcaPionKaon = candFlag == 0 ? candidate.kfDcaProng1Prong2() : candidate.kfDcaProng0Prong1();
-            const float chi2GeoProtonKaon = candFlag == 0 ? candidate.kfChi2GeoProng0Prong1() : candidate.kfChi2GeoProng1Prong2();
             const float chi2GeoProtonPion = candidate.kfChi2GeoProng0Prong2();
-            const float chi2GeoPionKaon = candFlag == 0 ? candidate.kfChi2GeoProng1Prong2() : candidate.kfChi2GeoProng0Prong1();
             const float chi2Geo = candidate.kfChi2Geo();
             const float chi2Topo = candidate.kfChi2Topo();
             const float l = candidate.kfDecayLength();
@@ -1044,7 +1121,6 @@ struct HfTreeCreatorLcToPKPi {
                                  p;
             const float t = l * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
-            const float mass = candFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
             rowCandidateKF(
               candidate.collisionId(),
               x, y, z, errX, errY, errZ,
