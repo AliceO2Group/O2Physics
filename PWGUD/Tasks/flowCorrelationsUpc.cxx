@@ -132,6 +132,14 @@ struct FlowCorrelationsUpc {
   void init(InitContext&)
   {
     LOGF(info, "Starting init");
+    // Added UPC Cuts
+    SGSelector sgSelector;
+    Configurable<float> cfgCutFV0{"cfgCutFV0", 50., "FV0A threshold"};
+    Configurable<float> cfgCutFT0A{"cfgCutFT0A", 150., "FT0A threshold"};
+    Configurable<float> cfgCutFT0C{"cfgCutFT0C", 50., "FT0C threshold"};
+    Configurable<float> cfgCutZDC{"cfgCutZDC", 10., "ZDC threshold"};
+    Configurable<float> cfgGapSideSelection{"cfgGapSideSelection", 2, "gap selection"};
+
     // Make histograms to check the distributions after cuts
     registry.add("deltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
     registry.add("deltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
