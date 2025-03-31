@@ -65,7 +65,6 @@ struct CalcNchUpc {
 
   // Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
-
   using UdTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
   using UdTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
@@ -197,11 +196,11 @@ struct FlowCorrelationsUpc {
         if (track1.pt() <= track2.pt())
           continue; // skip if the trigger pt is less than the associate p
 
-	auto momentum1 = std::array<double, 3>{track1.px(), track1.py(), track1.pz()};
-	auto momentum2 = std::array<double, 3>{track2.px(), track2.py(), track2.pz()};
-        double phi1 = RecoDecay::phi(momentum1); 
-	double phi2 = RecoDecay::phi(momentum2);
-        float deltaPhi = RecoDecay::constrainAngle(phi1-phi2, -PIHalf);
+        auto momentum1 = std::array<double, 3>{track1.px(), track1.py(), track1.pz()};
+        auto momentum2 = std::array<double, 3>{track2.px(), track2.py(), track2.pz()};
+        double phi1 = RecoDecay::phi(momentum1);
+        double phi2 = RecoDecay::phi(momentum2);
+        float deltaPhi = RecoDecay::constrainAngle(phi1 - phi2, -PIHalf);
         float deltaEta = RecoDecay::eta(momentum1) - RecoDecay::eta(momentum2);
 
         // fill the right sparse and histograms
