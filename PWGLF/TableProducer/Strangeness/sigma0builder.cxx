@@ -71,6 +71,14 @@ struct sigma0builder {
   Preslice<V0DerivedMCDatas> perCollisionMCDerived = o2::aod::v0data::straCollisionId;
   Preslice<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;
 
+  // pack track quality but separte also afterburner
+  // dynamic range: 0-31
+  enum selection : int { hasTPC = 0,
+    hasITSTracker,
+    hasITSAfterburner,
+    hasTRD,
+    hasTOF };
+
   // Histogram registry
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -678,6 +686,18 @@ struct sigma0builder {
     float fPhotonNegITSChi2PerNcl = negTrackGamma.itsChi2PerNcl();
     uint8_t fPhotonV0Type = gamma.v0Type();
 
+    uint8_t fPhotonPosTrackCode = ((uint8_t(posTrackGamma.hasTPC()) << hasTPC) |
+                                   (uint8_t(posTrackGamma.hasITSTracker()) << hasITSTracker) |
+                                   (uint8_t(posTrackGamma.hasITSAfterburner()) << hasITSAfterburner) |
+                                   (uint8_t(posTrackGamma.hasTRD()) << hasTRD) |
+                                   (uint8_t(posTrackGamma.hasTOF()) << hasTOF));
+
+    uint8_t fPhotonNegTrackCode = ((uint8_t(negTrackGamma.hasTPC()) << hasTPC) |
+                                  (uint8_t(negTrackGamma.hasITSTracker()) << hasITSTracker) |
+                                  (uint8_t(negTrackGamma.hasITSAfterburner()) << hasITSAfterburner) |
+                                  (uint8_t(negTrackGamma.hasTRD()) << hasTRD) |
+                                  (uint8_t(negTrackGamma.hasTOF()) << hasTOF));
+
     // Lambda
     auto posTrackLambda = lambda.template posTrackExtra_as<dauTracks>();
     auto negTrackLambda = lambda.template negTrackExtra_as<dauTracks>();
@@ -722,6 +742,18 @@ struct sigma0builder {
     float fLambdaNegITSChi2PerNcl = negTrackLambda.itsChi2PerNcl();
     uint8_t fLambdaV0Type = lambda.v0Type();
 
+    uint8_t fLambdaPosTrackCode = ((uint8_t(posTrackLambda.hasTPC()) << hasTPC) |
+                                   (uint8_t(posTrackLambda.hasITSTracker()) << hasITSTracker) |
+                                   (uint8_t(posTrackLambda.hasITSAfterburner()) << hasITSAfterburner) |
+                                   (uint8_t(posTrackLambda.hasTRD()) << hasTRD) |
+                                   (uint8_t(posTrackLambda.hasTOF()) << hasTOF));
+
+    uint8_t fLambdaNegTrackCode = ((uint8_t(negTrackLambda.hasTPC()) << hasTPC) |
+                                  (uint8_t(negTrackLambda.hasITSTracker()) << hasITSTracker) |
+                                  (uint8_t(negTrackLambda.hasITSAfterburner()) << hasITSAfterburner) |
+                                  (uint8_t(negTrackLambda.hasTRD()) << hasTRD) |
+                                  (uint8_t(negTrackLambda.hasTOF()) << hasTOF));
+
     // Sigma0 candidate properties
     std::array<float, 3> pVecPhotons{gamma.px(), gamma.py(), gamma.pz()};
     std::array<float, 3> pVecLambda{lambda.px(), lambda.py(), lambda.pz()};
@@ -746,7 +778,7 @@ struct sigma0builder {
                       fPhotonEta, fPhotonY, fPhotonPhi, fPhotonPosTPCNSigmaEl, fPhotonNegTPCNSigmaEl, fPhotonPosTPCNSigmaPi, fPhotonNegTPCNSigmaPi, fPhotonPosTPCCrossedRows,
                       fPhotonNegTPCCrossedRows, fPhotonPosPt, fPhotonNegPt, fPhotonPosEta,
                       fPhotonNegEta, fPhotonPosY, fPhotonNegY, fPhotonPsiPair,
-                      fPhotonPosITSCls, fPhotonNegITSCls, fPhotonPosITSChi2PerNcl, fPhotonNegITSChi2PerNcl,
+                      fPhotonPosITSCls, fPhotonNegITSCls, fPhotonPosITSChi2PerNcl, fPhotonNegITSChi2PerNcl, fPhotonPosTrackCode, fPhotonNegTrackCode,
                       fPhotonV0Type, GammaBDTScore);
 
     sigmaLambdaExtras(fLambdaPt, fLambdaMass, fAntiLambdaMass, fLambdaQt, fLambdaAlpha, fLambdaLifeTime,
@@ -756,7 +788,7 @@ struct sigma0builder {
                       fLambdaPrTOFNSigma, fLambdaPiTOFNSigma, fALambdaPrTOFNSigma, fALambdaPiTOFNSigma,
                       fLambdaPosTPCCrossedRows, fLambdaNegTPCCrossedRows, fLambdaPosPt, fLambdaNegPt, fLambdaPosEta,
                       fLambdaNegEta, fLambdaPosPrY, fLambdaPosPiY, fLambdaNegPrY, fLambdaNegPiY,
-                      fLambdaPosITSCls, fLambdaNegITSCls, fLambdaPosITSChi2PerNcl, fLambdaNegITSChi2PerNcl,
+                      fLambdaPosITSCls, fLambdaNegITSCls, fLambdaPosITSChi2PerNcl, fLambdaNegITSChi2PerNcl, fLambdaPosTrackCode, fLambdaNegTrackCode,
                       fLambdaV0Type, LambdaBDTScore, AntiLambdaBDTScore);
   }
 

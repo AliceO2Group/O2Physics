@@ -81,6 +81,8 @@ DECLARE_SOA_COLUMN(PhotonPosITSCls, photonPosITSCls, int);
 DECLARE_SOA_COLUMN(PhotonNegITSCls, photonNegITSCls, int);
 DECLARE_SOA_COLUMN(PhotonPosITSChi2PerNcl, photonPosITSChi2PerNcl, float);
 DECLARE_SOA_COLUMN(PhotonNegITSChi2PerNcl, photonNegITSChi2PerNcl, float);
+DECLARE_SOA_COLUMN(PhotonPosTrackCode, photonPosTrackCode, uint8_t);
+DECLARE_SOA_COLUMN(PhotonNegTrackCode, photonNegTrackCode, uint8_t);
 DECLARE_SOA_COLUMN(PhotonV0Type, photonV0Type, uint8_t);
 DECLARE_SOA_COLUMN(GammaBDTScore, gammaBDTScore, float);
 
@@ -117,7 +119,9 @@ DECLARE_SOA_TABLE(SigmaPhotonExtras, "AOD", "SIGMA0PHOTON",
                   sigmaPhotonExtra::PhotonNegITSCls,
                   sigmaPhotonExtra::PhotonPosITSChi2PerNcl,
                   sigmaPhotonExtra::PhotonNegITSChi2PerNcl,
-                  sigmaPhotonExtra::PhotonV0Type,
+                  sigmaPhotonExtra::PhotonPosTrackCode,
+                  sigmaPhotonExtra::PhotonNegTrackCode,
+                  sigmaPhotonExtra::PhotonV0Type,            
                   sigmaPhotonExtra::GammaBDTScore);
 
 // For Lambda extra info
@@ -159,6 +163,8 @@ DECLARE_SOA_COLUMN(LambdaPosITSCls, lambdaPosITSCls, int);
 DECLARE_SOA_COLUMN(LambdaNegITSCls, lambdaNegITSCls, int);
 DECLARE_SOA_COLUMN(LambdaPosITSChi2PerNcl, lambdaPosChi2PerNcl, float);
 DECLARE_SOA_COLUMN(LambdaNegITSChi2PerNcl, lambdaNegChi2PerNcl, float);
+DECLARE_SOA_COLUMN(LambdaPosTrackCode, lambdaPosTrackCode, uint8_t);
+DECLARE_SOA_COLUMN(LambdaNegTrackCode, lambdaNegTrackCode, uint8_t);
 DECLARE_SOA_COLUMN(LambdaV0Type, lambdaV0Type, uint8_t);
 DECLARE_SOA_COLUMN(LambdaBDTScore, lambdaBDTScore, float);
 DECLARE_SOA_COLUMN(AntiLambdaBDTScore, antilambdaBDTScore, float);
@@ -202,6 +208,8 @@ DECLARE_SOA_TABLE(SigmaLambdaExtras, "AOD", "SIGMA0LAMBDA",
                   sigmaLambdaExtra::LambdaNegITSCls,
                   sigmaLambdaExtra::LambdaPosITSChi2PerNcl,
                   sigmaLambdaExtra::LambdaNegITSChi2PerNcl,
+                  sigmaLambdaExtra::LambdaPosTrackCode,
+                  sigmaLambdaExtra::LambdaNegTrackCode,
                   sigmaLambdaExtra::LambdaV0Type,
                   sigmaLambdaExtra::LambdaBDTScore,
                   sigmaLambdaExtra::AntiLambdaBDTScore);
