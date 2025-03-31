@@ -454,6 +454,12 @@ struct StrangenessBuilder {
     auto h2 = histos.add<TH1>("hInputStatistics", "hInputStatistics", kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
     h2->SetTitle("Input table sizes");
 
+    if(v0BuilderOpts.generatePhotonCandidates.value==true){ 
+      auto hDeduplicationStatistics = histos.add<TH1>("hDeduplicationStatistics", "hDeduplicationStatistics", kTH1D, {{2, -0.5f, 1.5f}});
+      hDeduplicationStatistics->GetXaxis()->SetBinLabel(1, "AO2D V0s");
+      hDeduplicationStatistics->GetXaxis()->SetBinLabel(2, "Deduplicated V0s");
+    }
+
     if (mc_findableMode.value > 0) {
       // save statistics of findable candidate processing
       auto hFindable = histos.add<TH1>("hFindableStatistics", "hFindableStatistics", kTH1D, {{6, -0.5f, 5.5f}});
@@ -747,6 +753,8 @@ struct StrangenessBuilder {
         // will provide a list of collisionIds (in V0group), allowing for 
         // easy de-duplication when passing to the v0List
         std::vector<o2::pwglf::V0group> v0tableGrouped = o2::pwglf::groupDuplicates(v0s); 
+        histos.fill(HIST("hDeduplicationStatistics"), 0.0, v0s.size());
+        histos.fill(HIST("hDeduplicationStatistics"), 1.0, v0tableGrouped.size());
 
         // process grouped duplicates, remove 'bad' ones
         for(int iV0 = 0; iV0<v0tableGrouped.size(); iV0++){ 
