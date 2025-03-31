@@ -842,9 +842,9 @@ struct HStrangeCorrelation {
     }
 
     if (TESTBIT(doCorrelation, 8)) {
-      histos.add("hAsssocTrackEtaVsPtVsPhi","", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("hAssocPrimaryEtaVsPt","", kTH3F, {axisPtQA, axisEta, axisMultNDim});
-      histos.add("hAssocHadronsAllSelectedEtaVsPt","", kTH3F, {axisPtQA, axisEta, axisMultNDim});
+      histos.add("hAsssocTrackEtaVsPtVsPhi", "", kTH3F, {axisPtQA, axisEta, axisPhi});
+      histos.add("hAssocPrimaryEtaVsPt", "", kTH3F, {axisPtQA, axisEta, axisMultNDim});
+      histos.add("hAssocHadronsAllSelectedEtaVsPt", "", kTH3F, {axisPtQA, axisEta, axisMultNDim});
       histos.add("hAssocPtResolution", ";p_{T}^{reconstructed} (GeV/c); p_{T}^{generated} (GeV/c)", kTH2F, {axisPtQA, axisPtQA});
     }
 
