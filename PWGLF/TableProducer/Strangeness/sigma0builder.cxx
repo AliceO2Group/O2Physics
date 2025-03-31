@@ -760,12 +760,15 @@ struct sigma0builder {
                       fLambdaV0Type, LambdaBDTScore, AntiLambdaBDTScore);
   }
 
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0DerivedMCDatas const& V0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, V0DerivedMCDatas const& V0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
     for (const auto& coll : collisions) {
       if (!IsEventAccepted(coll, true)) {
         continue;
       }
+      
+      bool fIsPhotonCorrectlyAssign = false;
+
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = coll.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionMCDerived, collIdx);
@@ -779,6 +782,11 @@ struct sigma0builder {
           continue;
 
         auto gammaMC = gamma.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+
+        if (coll.has_straMCCollision()) {
+          auto gammaMCCollision = coll.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+          fIsPhotonCorrectlyAssign = (gammaMC.straMCCollisionId() == gammaMCCollision.globalIndex());
+        }
 
         // Auxiliary histograms:
         if (gammaMC.pdgCode() == 22) {
@@ -828,7 +836,13 @@ struct sigma0builder {
             continue;
           }
 
+          bool fIsLambdaCorrectlyAssign = false;
           auto lambdaMC = lambda.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+
+          if (coll.has_straMCCollision()) {
+            auto lambdaMCCollision = coll.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+            fIsLambdaCorrectlyAssign = (lambdaMC.straMCCollisionId() == lambdaMCCollision.globalIndex());
+          }
 
           if (doPi0QA)                               // Pi0 QA study
             runPi0QA(gamma, lambda);
@@ -859,11 +873,12 @@ struct sigma0builder {
           int PhotonCandPDGCode = gammaMC.pdgCode();
           int PhotonCandPDGCodeMother = gammaMC.pdgCodeMother();
           float PhotonMCpT = RecoDecay::pt(array{gammaMC.pxMC(), gammaMC.pyMC()});
+          
           bool fIsLambdaPrimary = lambdaMC.isPhysicalPrimary();
           int LambdaCandPDGCode = lambdaMC.pdgCode();
           int LambdaCandPDGCodeMother = lambdaMC.pdgCodeMother();
           float LambdaMCpT = RecoDecay::pt(array{lambdaMC.pxMC(), lambdaMC.pyMC()});
-
+          
           if ((gammaMC.pdgCode() == 22) && (gammaMC.pdgCodeMother() == 3212) && (lambdaMC.pdgCode() == 3122) && (lambdaMC.pdgCodeMother() == 3212) && (gamma.motherMCPartId() == lambda.motherMCPartId())) {
             fIsSigma = true;
             histos.fill(HIST("MC/h2dPtVsCentrality_Sigma0AfterSel"), centrality, RecoDecay::pt(array{gamma.px() + lambda.px(), gamma.py() + lambda.py()}));
@@ -874,8 +889,8 @@ struct sigma0builder {
             // TH3D Mass histogram
           }
           sigma0mccores(fIsSigma, fIsAntiSigma, SigmaMCpT,
-                        PhotonCandPDGCode, PhotonCandPDGCodeMother, fIsPhotonPrimary, PhotonMCpT,
-                        LambdaCandPDGCode, LambdaCandPDGCodeMother, fIsLambdaPrimary, LambdaMCpT);
+                        PhotonCandPDGCode, PhotonCandPDGCodeMother, fIsPhotonPrimary, PhotonMCpT, fIsPhotonCorrectlyAssign,
+                        LambdaCandPDGCode, LambdaCandPDGCodeMother, fIsLambdaPrimary, LambdaMCpT, fIsLambdaCorrectlyAssign);
 
           fillTables(lambda, gamma, coll); // filling tables with accepted candidates
 
