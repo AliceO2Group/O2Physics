@@ -273,6 +273,10 @@ struct StrangenessBuilder {
     Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   } ccdbConfigurations;
 
+  // first order deduplication implementation
+  // more algorithms to be added as necessary
+  Configurable<int> deduplicationAlgorithm{"deduplicationAlgorithm", 1, "0: disabled; 1: best pointing angle wins"};
+
   Configurable<int> mc_findableMode{"mc_findableMode", 0, "0: disabled; 1: add findable-but-not-found to existing V0s from AO2D; 2: reset V0s and generate only findable-but-not-found"};
 
   // V0 building options
@@ -735,18 +739,90 @@ struct StrangenessBuilder {
     } // end findable mode check
 
     if (mc_findableMode.value < 2) {
-      // simple passthrough: copy existing v0s to build list
+      // keep all unless de-duplication active
+      std::vector<bool> keepV0(v0s.size(), true);
+
+      if(deduplicationAlgorithm>0){
+        // handle duplicates explicitly: group V0s according to (p,n) indices
+        // will provide a list of collisionIds (in V0group), allowing for 
+        // easy de-duplication when passing to the v0List
+        std::vector<o2::pwglf::V0group> v0tableGrouped = o2::pwglf::groupDuplicates(v0s); 
+
+        // process grouped duplicates, remove 'bad' ones
+        for(int iV0 = 0; iV0<v0tableGrouped.size(); iV0++){ 
+        // skip single copy V0s
+          if(v0tableGrouped[iV0].collisionIds.size() == 1){
+            continue;
+          }
+          auto pTrack = tracks.rawIteratorAt(v0tableGrouped[iV0].posTrackId);
+          auto nTrack = tracks.rawIteratorAt(v0tableGrouped[iV0].negTrackId);
+
+          // fitness criteria defined here
+          float bestPointingAngle = 10; // a nonsense angle, anything's better
+          int bestPointingAngleIndex = -1;
+
+          for(int ic=0; ic<v0tableGrouped[iV0].collisionIds.size(); ic++){
+            // get track parametrizations, collisions
+            auto posTrackPar = getTrackParCov(pTrack);
+            auto negTrackPar = getTrackParCov(nTrack);
+            auto const& collision = collisions.rawIteratorAt(v0tableGrouped[iV0].collisionIds[ic]);
+
+            // handle TPC-only tracks properly (photon conversions)
+            if (v0BuilderOpts.moveTPCOnlyTracks) {
+              bool isPosTPCOnly = (pTrack.hasTPC() && !pTrack.hasITS() && !pTrack.hasTRD() && !pTrack.hasTOF());
+              if (isPosTPCOnly) {
+                // Nota bene: positive is TPC-only -> this entire V0 merits treatment as photon candidate
+                posTrackPar.setPID(o2::track::PID::Electron);
+                negTrackPar.setPID(o2::track::PID::Electron);
+                if (!mVDriftMgr.moveTPCTrack<aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>>(collision, pTrack, posTrackPar)) {
+                  return;
+                }
+              }
+              bool isNegTPCOnly = (nTrack.hasTPC() && !nTrack.hasITS() && !nTrack.hasTRD() && !nTrack.hasTOF());
+              if (isNegTPCOnly) {
+                // Nota bene: negative is TPC-only -> this entire V0 merits treatment as photon candidate
+                posTrackPar.setPID(o2::track::PID::Electron);
+                negTrackPar.setPID(o2::track::PID::Electron);
+                if (!mVDriftMgr.moveTPCTrack<aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>>(collision, nTrack, negTrackPar)) {
+                  return;
+                }
+              }
+            } //end TPC drift treatment 
+
+            // process candidate with helper, generate properties for consulting
+            // do not apply selections: do as much as possible to preserve candidate at this level
+            if(straHelper.buildV0Candidate<false>(v0tableGrouped[iV0].collisionIds[ic], collision.posX(), collision.posY(), collision.posZ(), pTrack, nTrack, posTrackPar, negTrackPar, true, false)){ 
+              // candidate built, check pointing angle
+              if(straHelper.v0.pointingAngle < bestPointingAngle){ 
+                bestPointingAngle = straHelper.v0.pointingAngle;
+                bestPointingAngleIndex = ic;
+              }
+            } // end build V0
+          } // end candidate loop
+
+          // mark de-duplicated candidates
+          for(int ic=0; ic<v0tableGrouped[iV0].collisionIds.size(); ic++){
+            keepV0[v0tableGrouped[iV0].V0Ids[ic]] = false;
+            if(bestPointingAngleIndex == ic){
+              keepV0[v0tableGrouped[iV0].V0Ids[ic]] = true; // keep best only
+            }
+          }
+        } // end V0 loop 
+      } // end de-duplication process
+
       for (const auto& v0 : v0s) {
-        currentV0Entry.globalId = v0.globalIndex();
-        currentV0Entry.collisionId = v0.collisionId();
-        currentV0Entry.posTrackId = v0.posTrackId();
-        currentV0Entry.negTrackId = v0.negTrackId();
-        currentV0Entry.v0Type = v0.v0Type();
-        currentV0Entry.pdgCode = 0;
-        currentV0Entry.particleId = -1;
-        currentV0Entry.isCollinearV0 = v0.isCollinearV0();
-        currentV0Entry.found = true;
-        v0List.push_back(currentV0Entry);
+        if(keepV0[v0.globalIndex()]){ // keep only de-duplicated
+          currentV0Entry.globalId = v0.globalIndex();
+          currentV0Entry.collisionId = v0.collisionId();
+          currentV0Entry.posTrackId = v0.posTrackId();
+          currentV0Entry.negTrackId = v0.negTrackId();
+          currentV0Entry.v0Type = v0.v0Type();
+          currentV0Entry.pdgCode = 0;
+          currentV0Entry.particleId = -1;
+          currentV0Entry.isCollinearV0 = v0.isCollinearV0();
+          currentV0Entry.found = true;
+          v0List.push_back(currentV0Entry);
+        }
       }
     }
     // any mode other than 0 will require mcParticles
@@ -1207,7 +1283,7 @@ struct StrangenessBuilder {
                            straHelper.v0.positiveDCAxy,
                            straHelper.v0.negativeDCAxy,
                            TMath::Cos(straHelper.v0.pointingAngle),
-                           straHelper.v0.dcaXY,
+                           straHelper.v0.dcaToPV,
                            v0.v0Type);
           products.v0dataLink(products.v0cores.lastIndex(), -1);
           histos.fill(HIST("hTableBuildingStatistics"), kV0CoresBase);
