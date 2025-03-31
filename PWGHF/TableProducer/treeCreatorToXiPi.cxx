@@ -158,6 +158,7 @@ DECLARE_SOA_COLUMN(TofNSigmaPiFromCharmBaryon, tofNSigmaPiFromCharmBaryon, float
 DECLARE_SOA_COLUMN(TofNSigmaPiFromCasc, tofNSigmaPiFromCasc, float);
 DECLARE_SOA_COLUMN(TofNSigmaPiFromLambda, tofNSigmaPiFromLambda, float);
 DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
+DECLARE_SOA_COLUMN(CollInf, collInf, int);
 
 } // namespace full
 
@@ -177,8 +178,8 @@ DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
                   full::CentFDDM,
                   full::MultZeqNTracksPV);
 
-DECLARE_SOA_TABLE(HfToXiPiCollId, "AOD", "HFTOXIPICOLLID",
-                  full::CollisionId);
+DECLARE_SOA_TABLE(HfToXiPiBase, "AOD", "HFTOXIPIBASE",
+                  full::CollInf);
 
 DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
@@ -247,19 +248,17 @@ struct HfTreeCreatorToXiPi {
   Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
   Produces<o2::aod::HfToXiPiLites> rowCandidateLite;
   Produces<o2::aod::HfToXiPiEvs> rowEv;
-  Produces<o2::aod::HfToXiPiCollId> rowCollisionId;
+  Produces<o2::aod::HfToXiPiBase> rowCandidateBase;
 
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
-  Configurable<bool> fillCollIdTable{"fillCollIdTable", false, "Fill a single-column table with collision index"};
 
   SliceCache cache;
 
   using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
   using MyEventTable = soa::Join<aod::Collisions, aod::EvSels>;
-  using MyEventTableWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::PVMultZeqs, Cents>;
 
-  Preslice<aod::HfCandToXiPi> candXicPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
+  Preslice<soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi>> candXicPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
 
   void init(InitContext const&)
   {
@@ -303,11 +302,10 @@ struct HfTreeCreatorToXiPi {
       multZeqNTracksPV);
   }
 
-  template <typename T>
+  template <bool useCentrality, typename T>
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
   {
     rowCandidateFull(
-      rowEv.lastIndex(),
       candidate.xPv(),
       candidate.yPv(),
       candidate.zPv(),
@@ -417,24 +415,26 @@ struct HfTreeCreatorToXiPi {
       debugMc,
       originMc,
       collisionMatched);
-    if (fillCollIdTable) {
-      /// save also candidate collision indices
-      rowCollisionId(
-        rowEv.lastIndex());
-    }
   }
 
-  template <typename T>
+  template <bool useCentrality, typename T>
   void fillCandidateLite(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
   {
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
+
+      float numContrib = -999.f;
+      float chi2 = -999.f;
+      if constexpr (!useCentrality) {
+        numContrib = candidate.template collision_as<MyEventTable>().numContrib();
+        chi2 = candidate.template collision_as<MyEventTable>().chi2();
+      }
 
       rowCandidateLite(
         candidate.xPv(),
         candidate.yPv(),
         candidate.zPv(),
-        candidate.template collision_as<MyEventTable>().numContrib(),
-        candidate.template collision_as<MyEventTable>().chi2(),
+        numContrib,
+        chi2,
         candidate.xDecayVtxCharmBaryon(),
         candidate.yDecayVtxCharmBaryon(),
         candidate.zDecayVtxCharmBaryon(),
@@ -499,6 +499,9 @@ struct HfTreeCreatorToXiPi {
         flagMc,
         originMc,
         collisionMatched);
+      if constexpr (useCentrality) {
+        rowCandidateBase(rowEv.lastIndex());
+      }
     }
   }
 
@@ -514,32 +517,10 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillCandidate<false>(candidate, -7, -7, RecoDecay::OriginType::None, false);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataFull, "Process data with full information w/o centrality", true);
-
-  void processDataFullWithCentrality(MyEventTableWithCent const& collisions, MyTrackTable const&,
-                                     soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
-  {
-    // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      auto groupedXicCandidates = candidates.sliceByCached(aod::hf_cand_xic0_omegac0::collisionId, thisCollId, cache); // FIXME
-      auto sizeTableCand = groupedXicCandidates.size();
-      fillEvent<true>(collision, zPvCut);
-
-      // Filling candidate properties
-      rowCandidateFull.reserve(sizeTableCand);
-      rowCollisionId.reserve(sizeTableCand);
-      LOGF(debug, "Filling rec. collision %d at derived index %d", thisCollId, rowEv.lastIndex() + 1);
-      for (const auto& candidate : groupedXicCandidates) {
-        fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None, false);
-      }
-    }
-  }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataFullWithCentrality, "Process data with full information with centrality", false);
 
   void processMcFullXic0(MyEventTable const& collisions, MyTrackTable const&,
                          soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
@@ -553,31 +534,10 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidate<false>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcFullXic0, "Process MC with full information for xic0 w/o centrality", false);
-
-  void processMcFullXic0WithCentrality(MyEventTableWithCent const& collisions, MyTrackTable const&,
-                                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
-  {
-    // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      auto groupedXicCandidates = candidates.sliceByCached(aod::hf_cand_xic0_omegac0::collisionId, thisCollId, cache); // FIXME
-      auto sizeTableCand = groupedXicCandidates.size();
-      fillEvent<true>(collision, zPvCut);
-
-      // Filling candidate properties
-      rowCandidateFull.reserve(sizeTableCand);
-      rowCollisionId.reserve(sizeTableCand);
-      for (const auto& candidate : groupedXicCandidates) {
-        fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
-      }
-    }
-  }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcFullXic0WithCentrality, "Process MC with full information for xic0 with centrality", false);
 
   void processMcFullOmegac0(MyEventTable const& collisions, MyTrackTable const&,
                             soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec> const& candidates)
@@ -591,7 +551,7 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidate<false>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcFullOmegac0, "Process MC with full information for omegac0", false);
@@ -608,10 +568,32 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite(candidate, -7, RecoDecay::OriginType::None, false);
+      fillCandidateLite<false>(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataLite, "Process data and produce lite table version", false);
+
+  void processDataLiteWithCentrality(soa::Join<MyEventTable, aod::PVMultZeqs, Cents> const& collisions, MyTrackTable const&,
+                                     soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto groupedXicCandidates = candidates.sliceBy(candXicPerCollision, thisCollId);
+      auto sizeTableCand = groupedXicCandidates.size();
+      fillEvent<true>(collision, zPvCut);
+
+      // Filling candidate properties
+      rowCandidateLite.reserve(sizeTableCand);
+      rowCandidateBase.reserve(sizeTableCand);
+      LOGF(debug, "Filling rec. collision %d at derived index %d", thisCollId, rowEv.lastIndex() + 1);
+      for (const auto& candidate : groupedXicCandidates) {
+        fillCandidateLite<true>(candidate, -7, RecoDecay::OriginType::None, false);
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataLiteWithCentrality, "Process data with full information with centrality", false);
 
   void processMcLiteXic0(MyEventTable const& collisions, MyTrackTable const&,
                          soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
@@ -625,10 +607,31 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidateLite<false>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcLiteXic0, "Process MC and produce lite table version for xic0", false);
+
+  void processMcLiteXic0WithCentrality(soa::Join<MyEventTable, aod::PVMultZeqs, Cents> const& collisions, MyTrackTable const&,
+                                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto groupedXicCandidates = candidates.sliceBy(candXicPerCollision, thisCollId);
+      auto sizeTableCand = groupedXicCandidates.size();
+      fillEvent<true>(collision, zPvCut);
+
+      // Filling candidate properties
+      rowCandidateFull.reserve(sizeTableCand);
+      rowCandidateBase.reserve(sizeTableCand);
+      for (const auto& candidate : groupedXicCandidates) {
+        fillCandidateLite<true>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcLiteXic0WithCentrality, "Process MC with full information for xic0 with centrality", false);
 
   void processMcLiteOmegac0(MyEventTable const& collisions, MyTrackTable const&,
                             soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec> const& candidates)
@@ -642,7 +645,7 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidateLite<false>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcLiteOmegac0, "Process MC and produce lite table version for omegac0", false);
