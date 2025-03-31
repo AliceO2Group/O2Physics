@@ -742,7 +742,7 @@ struct StrangenessBuilder {
       // keep all unless de-duplication active
       std::vector<bool> keepV0(v0s.size(), true);
 
-      if(deduplicationAlgorithm>0){
+      if(deduplicationAlgorithm>0 && v0BuilderOpts.generatePhotonCandidates){
         // handle duplicates explicitly: group V0s according to (p,n) indices
         // will provide a list of collisionIds (in V0group), allowing for 
         // easy de-duplication when passing to the v0List
