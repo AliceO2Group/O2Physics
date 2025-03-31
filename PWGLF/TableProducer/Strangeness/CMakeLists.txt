@@ -121,6 +121,11 @@ o2physics_add_dpl_workflow(v0qaanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(lambdalambdatable
+    SOURCES LambdaLambdatable.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
+    COMPONENT_NAME Analysis)
+
 # ML selection
 o2physics_add_dpl_workflow(lambdakzeromlselectiontreecreator
     SOURCES lambdakzeroMLSelectionTreeCreator.cxx
@@ -149,5 +154,10 @@ o2physics_add_dpl_workflow(sigma0builder
 
 o2physics_add_dpl_workflow(lambdajetpolarizationbuilder
     SOURCES lambdaJetpolarizationbuilder.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(stracents
+    SOURCES stracents.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
