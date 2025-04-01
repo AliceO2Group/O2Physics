@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 /// \file identifiedBfFilter.h
 /// \brief Filters collisions and tracks according to selection criteria
 /// \author bghanley1995@gmail.com
@@ -22,6 +23,8 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/runDataProcessing.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
@@ -29,8 +32,8 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 #include "MathUtils/Utils.h"
+
 
 namespace o2
 {
@@ -237,7 +240,7 @@ float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
 
-TDatabasePDG* fPDG = nullptr;
+Service<o2::framework::O2DatabasePDG> fPDG;
 
 inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
@@ -710,7 +713,7 @@ inline bool matchTrackType(TrackObject const& track)
   if (useOwnTrackSelection) {
     return ownTrackSelection.IsSelected(track);
   } else {
-    for (const auto filter : trackFilters) {
+    for (const auto& filter : trackFilters) {
       if (filter->IsSelected(track)) {
         if (dca2Dcut) {
           if (track.dcaXY() * track.dcaXY() / maxDCAxy / maxDCAxy + track.dcaZ() * track.dcaZ() / maxDCAz / maxDCAz > 1) {
