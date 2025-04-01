@@ -1152,7 +1152,7 @@ struct AntinucleiInJets {
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
         if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
-        continue;
+          continue;
 
         // perpendicular cone
         double coneRadius = std::sqrt(jet.area() / PI);
