@@ -690,7 +690,7 @@ struct StrangenessBuilder {
   }
 
   //__________________________________________________
-  template <typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTracks, typename TMCParticles>
+  template <class TBCs, typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTracks, typename TMCParticles>
   void prepareBuildingLists(TCollisions const& collisions, TMCCollisions const& mcCollisions, TV0s const& v0s, TCascades const& cascades, TTracks const& tracks, TMCParticles const& mcParticles)
   {
     // this function prepares the v0List and cascadeList depending on
@@ -757,7 +757,7 @@ struct StrangenessBuilder {
         histos.fill(HIST("hDeduplicationStatistics"), 1.0, v0tableGrouped.size());
 
         // process grouped duplicates, remove 'bad' ones
-        for(int iV0 = 0; iV0<v0tableGrouped.size(); iV0++){ 
+        for(size_t iV0 = 0; iV0<v0tableGrouped.size(); iV0++){ 
         // skip single copy V0s
           if(v0tableGrouped[iV0].collisionIds.size() == 1){
             continue;
@@ -767,9 +767,9 @@ struct StrangenessBuilder {
 
           // fitness criteria defined here
           float bestPointingAngle = 10; // a nonsense angle, anything's better
-          int bestPointingAngleIndex = -1;
+          size_t bestPointingAngleIndex = -1;
 
-          for(int ic=0; ic<v0tableGrouped[iV0].collisionIds.size(); ic++){
+          for(size_t ic=0; ic<v0tableGrouped[iV0].collisionIds.size(); ic++){
             // get track parametrizations, collisions
             auto posTrackPar = getTrackParCov(pTrack);
             auto negTrackPar = getTrackParCov(nTrack);
@@ -782,7 +782,7 @@ struct StrangenessBuilder {
                 // Nota bene: positive is TPC-only -> this entire V0 merits treatment as photon candidate
                 posTrackPar.setPID(o2::track::PID::Electron);
                 negTrackPar.setPID(o2::track::PID::Electron);
-                if (!mVDriftMgr.moveTPCTrack<aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>>(collision, pTrack, posTrackPar)) {
+                if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pTrack, posTrackPar)) {
                   return;
                 }
               }
@@ -791,14 +791,15 @@ struct StrangenessBuilder {
                 // Nota bene: negative is TPC-only -> this entire V0 merits treatment as photon candidate
                 posTrackPar.setPID(o2::track::PID::Electron);
                 negTrackPar.setPID(o2::track::PID::Electron);
-                if (!mVDriftMgr.moveTPCTrack<aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>>(collision, nTrack, negTrackPar)) {
+                if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, nTrack, negTrackPar)) {
                   return;
                 }
               }
             } //end TPC drift treatment 
 
             // process candidate with helper, generate properties for consulting
-            // do not apply selections: do as much as possible to preserve candidate at this level
+            // <false>: do not apply selections: do as much as possible to preserve 
+            // candidate at this level and do not select with topo selections
             if(straHelper.buildV0Candidate<false>(v0tableGrouped[iV0].collisionIds[ic], collision.posX(), collision.posY(), collision.posZ(), pTrack, nTrack, posTrackPar, negTrackPar, true, false)){ 
               // candidate built, check pointing angle
               if(straHelper.v0.pointingAngle < bestPointingAngle){ 
@@ -809,7 +810,7 @@ struct StrangenessBuilder {
           } // end candidate loop
 
           // mark de-duplicated candidates
-          for(int ic=0; ic<v0tableGrouped[iV0].collisionIds.size(); ic++){
+          for(size_t ic=0; ic<v0tableGrouped[iV0].collisionIds.size(); ic++){
             keepV0[v0tableGrouped[iV0].V0Ids[ic]] = false;
             if(bestPointingAngleIndex == ic){
               keepV0[v0tableGrouped[iV0].V0Ids[ic]] = true; // keep best only
@@ -2227,7 +2228,7 @@ struct StrangenessBuilder {
     resetInterlinks();
 
     // prepare v0List, cascadeList
-    prepareBuildingLists(collisions, mccollisions, v0s, cascades, tracks, mcParticles);
+    prepareBuildingLists<TBCs>(collisions, mccollisions, v0s, cascades, tracks, mcParticles);
 
     // mark V0s that will be buffered for the cascade building
     markV0sUsedInCascades(v0List, cascadeList, trackedCascades);

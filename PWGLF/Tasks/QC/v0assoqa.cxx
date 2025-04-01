@@ -477,7 +477,7 @@ struct v0assoqa {
         for(int iCollisionId = 0; iCollisionId < v0tableGrouped[iV0].collisionIds.size(); iCollisionId++){ 
           cosPAString.Append(Form("%.5f ", v0duplicates[iCollisionId].pointingAngle));
         }
-        LOGF(info, "#%i (p,n) = (%i,%i), type %i, point. angles: %s", iV0, v0tableGrouped[iV0].posTrackId, v0tableGrouped[iV0].negTrackId, v0tableGrouped[iV0].v0Type, cosPAString.Data());
+        //LOGF(info, "#%i (p,n) = (%i,%i), type %i, point. angles: %s", iV0, v0tableGrouped[iV0].posTrackId, v0tableGrouped[iV0].negTrackId, v0tableGrouped[iV0].v0Type, cosPAString.Data());
       } // end this-is-a-mc-gamma check
     }
   }

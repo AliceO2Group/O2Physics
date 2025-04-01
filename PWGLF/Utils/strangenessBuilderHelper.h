@@ -101,14 +101,14 @@ std::vector<V0group> groupDuplicates(const T& V0s){
   int atPosTrackId = v0table[posTrackSort[0]].posTrackId; 
   std::vector<V0group> v0tableFixedPositive; // small list with fixed positive id
   std::vector<V0group> v0tableGrouped; // final list with proper grouping
-  for(int iV0 = 0; iV0<posTrackSort.size(); iV0++){ 
+  for(size_t iV0 = 0; iV0<posTrackSort.size(); iV0++){ 
     if(atPosTrackId != v0table[posTrackSort[iV0]].posTrackId){ 
       // switched pos track id. Process chunk of V0s
       auto negTrackSort = sort_indices_negTrack(v0tableFixedPositive);
       thisV0.collisionIds.clear();
       thisV0.V0Ids.clear();
       thisV0.negTrackId = v0tableFixedPositive[negTrackSort[0]].negTrackId;
-      for(int iPV0 = 0; iPV0 < v0tableFixedPositive.size(); iPV0++){ 
+      for(size_t iPV0 = 0; iPV0 < v0tableFixedPositive.size(); iPV0++){ 
         if(thisV0.negTrackId != v0tableFixedPositive[negTrackSort[iPV0]].negTrackId){
           v0tableGrouped.push_back(thisV0);
           thisV0.collisionIds.clear(); // clean collision Ids
