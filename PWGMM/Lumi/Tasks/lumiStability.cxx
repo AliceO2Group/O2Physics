@@ -289,7 +289,7 @@ struct LumiStabilityTask {
           }
         }
 
-        EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
+        /*EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
         // access orbit-reset timestamp
         auto ctpx = ccdb->getForTimeStamp<std::vector<int64_t>>("CTP/Calib/OrbitReset", ts);
         int64_t tsOrbitReset = (*ctpx)[0]; // us
