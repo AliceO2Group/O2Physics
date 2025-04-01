@@ -25,9 +25,9 @@ using namespace o2;
 using namespace o2::framework;
 
 // *) Run 3:
-using BCs_Run3 = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>; // TBI 20241126 under testing
-// Remark 1: I have already timestamp in workflow, due to track-propagation. With Run3MatchedToBCSparse, I can use bc.has_zdc() TBI 20250112 is this redundant, I nowhere use bc.has_zdc()
-// Remark 2: For consistency with notation below, drop _Run3 and instead use _Run2 and _Run1
+using BCs_Run3 = soa::Join<aod::BCs, aod::Timestamps>; // TBI 20241126 under testing
+// Remark 1: I have already timestamp in workflow, due to track-propagation.
+// Remark 2: For consistency with notation below, drop _Run3 and instead use _Run2 and _Run1 TBI 20250401 not sure any longer what I wanted to say here...
 
 // using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::MultsGlobal, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>; // TBI 20241209 validating "MultsGlobal"
 //  for using collision.multNTracksGlobal() TBI 20250128 do i still need this?
@@ -58,6 +58,15 @@ using EventSelection_Run1 = soa::Join<aod::EvSels, aod::Mults>; // TBI 20240205 
 using CollisionRec_Run1 = soa::Join<aod::Collisions, EventSelection_Run1>::iterator;
 using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection_Run1>::iterator;
 // Remark: For tracks, I can use everything same as in Run 3
+
+// *) QA:
+//    Remark: This is Run 3 "Rec" + subscription to additional few tables (otherwise unnecessary in my analysis, e.g. some specific detector tables), used only for QA purposes.
+//            Therefore, I start all definitions from what I have defined for Run 3 "Rec", and on top of it join these additional tables for QA.
+using BCs_QA = soa::Join<BCs_Run3, aod::BcSels, aod::Run3MatchedToBCSparse>;
+//             *) BcSels => bc.has_foundFT0(), etc.
+//             *) Run3MatchedToBCSparse => bc.has_zdc(), etc. TBI 20250401 at the moment, I do not use this one
+using Collision_QA = CollisionRec; // if I would need additional tables for QA, just join 'em here with CollisionRec
+using TracksRec_QA = TracksRec;    // if I would need additional tables for QA, just join 'em here with TracksRec
 
 // *) ROOT:
 #include <TList.h>
@@ -191,14 +200,14 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // A) Process only reconstructed data:
-  void processRec(CollisionRec const& collision, BCs_Run3 const& bcs, TracksRec const& tracks)
+  void processRec(CollisionRec const& collision, BCs_Run3 const& bcs, TracksRec const& tracks, aod::FT0s const&)
   {
     // Remark: Do not use here LOGF(fatal, ...) or LOGF(info, ...), because their stdout/stderr is suppressed. Use them in regular member functions instead.
 
     // *) Steer all analysis steps:
     Steer<eRec>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed data", true); // yes, keep always one process switch "true", so that I have default running version
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed data", false); // yes, keep always one process switch "true", so that I have default running version
 
   // -------------------------------------------
 
@@ -282,6 +291,19 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     Steer<eTest>(collision, bcs, tracks);
   }
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processTest, "test processing", false);
+
+  // -------------------------------------------
+
+  // K) Process data with more than necessary subscriptions to the tables, only for QA purposes:
+  //    Remark 1: This is basically the main "processRec" switch, merely enhanced with subscription to few more tables, only for QA purposes.
+  //    Remark 2: Ideally, i use the same workflow for "processRec" and "processQA", but most likely at some point I will have to establish separate workflow for "processQA"
+  void processQA(Collision_QA const& collision, BCs_QA const& bcs, TracksRec_QA const& tracks, aod::FT0s const&)
+  {
+    // Summary for additional tables subscribed to directly here:
+    // *) FT0s => bc.foundFT0().sumAmpC(), etc.
+    Steer<eQA>(collision, bcs, tracks);
+  }
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processQA, "QA processing", true);
 
 }; // struct MultiparticleCorrelationsAB
 

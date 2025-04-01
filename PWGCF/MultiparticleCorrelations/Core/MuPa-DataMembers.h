@@ -75,19 +75,20 @@ struct TaskConfiguration {
 
 // *) Event-by-event quantities:
 struct EventByEventQuantities {
-  int fSelectedTracks = 0;           // integer counter of tracks used to calculate Q-vectors, after all particle cuts have been applied
-  float fMultiplicity = 0.;          // my internal multiplicity, can be set to fSelectedTracks (calculated internally), fReferenceMultiplicity (calculated outside of my code), etc.
-                                     // Results "vs. mult" are plotted against fMultiplicity, whatever it is set to.
-                                     // Use configurable cfMultiplicityEstimator[eMultiplicityEstimator] to define what is this multiplicity, by default it is "SelectedTracks"
-  float fReferenceMultiplicity = 0.; // reference multiplicity, calculated outside of my code. Can be "MultTPC", "MultFV0M", etc.
-                                     // Use configurable cfReferenceMultiplicityEstimator[eReferenceMultiplicityEstimator]" to define what is this multiplicity, by default it is "TBI 20241123 I do not know yet which estimator is best for ref. mult."
-  float fCentrality = 0.;            // event-by-event centrality. Value of the default centrality estimator, set via configurable cfCentralityEstimator
-  float fOccupancy = 0.;             // event-by-event occupancy. Value of the default occupancy estimator, set via configurable cfOccupancyEstimator.
-                                     // Remebmer that collision with occupanct 0. shall NOT be rejected, therefore in configurable I set -0.0001 for low edge by default.
-  float fInteractionRate = 0.;       // event-by-event interaction rate
-  float fCurrentRunDuration = 0.;    // how many seconds after start of run this collision was taken, i.e. seconds after start of run (SOR)
-  float fVz = 0.;                    // vertex z position
-} ebye;                              // "ebye" is a common label for objects in this struct
+  int fSelectedTracks = 0;            // integer counter of tracks used to calculate Q-vectors, after all particle cuts have been applied
+  float fMultiplicity = 0.;           // my internal multiplicity, can be set to fSelectedTracks (calculated internally), fReferenceMultiplicity (calculated outside of my code), etc.
+                                      // Results "vs. mult" are plotted against fMultiplicity, whatever it is set to.
+                                      // Use configurable cfMultiplicityEstimator[eMultiplicityEstimator] to define what is this multiplicity, by default it is "SelectedTracks"
+  float fReferenceMultiplicity = 0.;  // reference multiplicity, calculated outside of my code. Can be "MultTPC", "MultFV0M", etc.
+                                      // Use configurable cfReferenceMultiplicityEstimator[eReferenceMultiplicityEstimator]" to define what is this multiplicity, by default it is "TBI 20241123 I do not know yet which estimator is best for ref. mult."
+  float fCentrality = 0.;             // event-by-event centrality. Value of the default centrality estimator, set via configurable cfCentralityEstimator
+  float fOccupancy = 0.;              // event-by-event occupancy. Value of the default occupancy estimator, set via configurable cfOccupancyEstimator.
+                                      // Remebmer that collision with occupanct 0. shall NOT be rejected, therefore in configurable I set -0.0001 for low edge by default.
+  float fInteractionRate = 0.;        // event-by-event interaction rate
+  float fCurrentRunDuration = 0.;     // how many seconds after start of run this collision was taken, i.e. seconds after start of run (SOR)
+  float fVz = 0.;                     // vertex z position
+  float fFT0CAmplitudeOnFoundBC = 0.; // TBI20250331 finalize the comment here
+} ebye;                               // "ebye" is a common label for objects in this struct
 
 // *) QA:
 //    Remark 1: I keep new histograms in this group, until I need them permanently in the analysis. Then, they are moved to EventHistograms or ParticleHistograms (yes, even if they are 2D).
@@ -165,22 +166,26 @@ struct EventHistograms {
 
 // *) Event cuts:
 struct EventCuts {
-  TList* fEventCutsList = NULL;                            //!<! list to hold all event cuts objects
-  TProfile* fEventCutsPro = NULL;                          //!<! keeps flags relevant for the event cuts
-  bool fUseEventCuts[eEventCuts_N] = {false};              // Use or do not use a cut enumerated in eEventHistograms + eEventCuts
-  bool fUseEventCutCounterAbsolute = false;                // profile and save how many times each event cut counter triggered (absolute). Use with care, as this is computationally heavy
-  bool fUseEventCutCounterSequential = false;              // profile and save how many times each event cut counter triggered (sequential). Use with care, as this is computationally heavy
-  bool fEventCutCounterBinLabelingIsDone = false;          // this flag ensures that ordered labeling of bins, to resemble ordering of cut implementation, is done only once
-  bool fPrintCutCounterContent = false;                    // if true, prints on the screen content of fEventCutCounterHist[][] (all which were booked)
-  TString fEventCutName[eEventCuts_N] = {""};              // event cut name, with default ordering defined by ordering in enum eEventCuts
-  TExMap* fEventCutCounterMap[2] = {NULL};                 // map (key, value) = (enum eEventCuts, ordered bin number)
-  TExMap* fEventCutCounterMapInverse[2] = {NULL};          // inverse of above fEventCutCounterMap, i.e. (ordered bin number, enum eEventCuts)
-  int fEventCutCounterBinNumber[2] = {1, 1};               // bin counter for set bin labels in fEventCutCounterHist
-  float fdEventCuts[eEventCuts_N][2] = {{0.}};             // event cuts defined via [min,max)
-  TString fsEventCuts[eEventCuts_N] = {""};                // event cuts defined via string
-  TH1F* fEventCutCounterHist[2][eCutCounter_N] = {{NULL}}; //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each event cut triggered
-  int fBeforeAfterColor[2] = {kRed, kGreen};               // color code before and after cuts
-} ec;                                                      // "ec" is a common label for objects in this struct
+  TList* fEventCutsList = NULL;                                //!<! list to hold all event cuts objects
+  TProfile* fEventCutsPro = NULL;                              //!<! keeps flags relevant for the event cuts
+  bool fUseEventCuts[eEventCuts_N] = {false};                  // Use or do not use a cut enumerated in eEventHistograms + eEventCuts
+  bool fUseEventCutCounterAbsolute = false;                    // profile and save how many times each event cut counter triggered (absolute). Use with care, as this is computationally heavy
+  bool fUseEventCutCounterSequential = false;                  // profile and save how many times each event cut counter triggered (sequential). Use with care, as this is computationally heavy
+  bool fEventCutCounterBinLabelingIsDone = false;              // this flag ensures that ordered labeling of bins, to resemble ordering of cut implementation, is done only once
+  bool fPrintCutCounterContent = false;                        // if true, prints on the screen content of fEventCutCounterHist[][] (all which were booked)
+  TString fEventCutName[eEventCuts_N] = {""};                  // event cut name, with default ordering defined by ordering in enum eEventCuts
+  TExMap* fEventCutCounterMap[2] = {NULL};                     // map (key, value) = (enum eEventCuts, ordered bin number)
+  TExMap* fEventCutCounterMapInverse[2] = {NULL};              // inverse of above fEventCutCounterMap, i.e. (ordered bin number, enum eEventCuts)
+  int fEventCutCounterBinNumber[2] = {1, 1};                   // bin counter for set bin labels in fEventCutCounterHist
+  float fdEventCuts[eEventCuts_N][2] = {{0.}};                 // event cuts defined via [min,max)
+  TString fsEventCuts[eEventCuts_N] = {""};                    // event cuts defined via string
+  TH1F* fEventCutCounterHist[2][eCutCounter_N] = {{NULL}};     //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each event cut triggered
+  int fBeforeAfterColor[2] = {kRed, kGreen};                   // color code before and after cuts
+  float fCentralityCorrelationsCutTreshold = 5.;               // see bool CentralityCorrelationCut()
+  TString fCentralityCorrelationsCutVersion = "Absolute";      // see bool CentralityCorrelationCut()
+  float fCentralityValues[2] = {0.};                           // [0] value of first cent. estimator, [1] = value of second cent. estimator, when CentralityCorrelationsCut is requested
+  TFormula* fEventCutsFormulas[eEventCutsFormulas_N] = {NULL}; // see enum
+} ec;                                                          // "ec" is a common label for objects in this struct
 
 // *) Particle histograms:
 struct ParticleHistograms {
