@@ -42,7 +42,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::evsel;
 
-using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
+// using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 // using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>;
@@ -197,12 +197,18 @@ struct DetectorOccupancyQaTask {
       histos.add("tpcNClsFindableMinusCrossedRows", "", kTH1D, {{601, -300.5, 300.5}});
       histos.add("tpcNClsShared", "", kTH1D, {{601, -300.5, 300.5}});
       histos.add("tpcNClsFindableMinusPID", "", kTH1D, {{601, -300.5, 300.5}});
-      histos.add("tpcNClsFindableMinusPID_CORRECTED", "", kTH1D, {{601, -300.5, 300.5}});
       histos.add("tpcNClUsedForPID", "", kTH1D, {{601, -300.5, 300.5}});
+      histos.add("tpcNClsFound", "", kTH1D, {{601, -300.5, 300.5}});
+      histos.add("tpcNClsFoundAsDiffByHand", "", kTH1D, {{601, -300.5, 300.5}});
+      histos.add("tpcNClsFindableMinusPID_CORRECTED", "", kTH1D, {{601, -300.5, 300.5}});
+      histos.add("tpcNClsFoundMinusPID_BY_HAND", "", kTH1D, {{601, -300.5, 300.5}});
 
       histos.add("tpcNClsUsedForPID_vs_Findable", ";tpcNClsFindable;tpcNClUsedForPID", kTH2D, {{601, -300.5, 300.5}, {601, -300.5, 300.5}});
+      histos.add("tpcNClsUsedForPID_vs_Findable_CORRECTED", ";tpcNClsFindable;tpcNClUsedForPID", kTH2D, {{601, -300.5, 300.5}, {601, -300.5, 300.5}});
       histos.add("tpcNClsShared_vs_Findable", ";tpcNClsFindable;tpcNClsShared", kTH2D, {{601, -300.5, 300.5}, {601, -300.5, 300.5}});
+      histos.add("tpcNClsFound_vs_Findable", ";tpcNClsFindable;tpcNClsFound", kTH2D, {{601, -300.5, 300.5}, {601, -300.5, 300.5}});
       histos.add("tpcNClsUsedForPID_vs_Shared", ";tpcNClsShared;tpcNClUsedForPID", kTH2D, {{601, -300.5, 300.5}, {601, -300.5, 300.5}});
+      histos.add("tpcNClsUsedForPID_vs_Found", ";tpcNClsFound;tpcNClUsedForPID", kTH2D, {{601, -300.5, 300.5}, {601, -300.5, 300.5}});
 
       // ### kinematic distributions for events with high occupancy at specified dt ranges
       histos.add("track_distr_nITStrThisEv_10_200/hEventCount", ";delta-time bin id;n events", kTH1D, {{5, -0.5, 4.5}});
@@ -864,6 +870,21 @@ struct DetectorOccupancyQaTask {
       int occupancy = col.trackOccupancyInTimeRange();
 
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
+
+      // pre-calc nPV
+      for (const auto& track : tracksGrouped) {
+        if (!track.isPVContributor())
+          continue;
+        if (track.pt() < confCutPtMinThisEvent || track.pt() > confCutPtMaxThisEvent)
+          continue;
+        if (track.eta() < confCutEtaMinTracksThisEvent || track.eta() > confCutEtaMaxTracksThisEvent)
+          continue;
+        if (track.itsNCls() < 5)
+          continue;
+        nPV++;
+      }
+
+      // main loop for dE/dx
       for (const auto& track : tracksGrouped) {
         histos.fill(HIST("nTrackCounter_after_cuts_QA"), 0);
         if (!track.isPVContributor())
@@ -878,7 +899,7 @@ struct DetectorOccupancyQaTask {
         if (track.itsNCls() < 5)
           continue;
         histos.fill(HIST("nTrackCounter_after_cuts_QA"), 4);
-        nPV++;
+        // nPV++;
 
         if (track.isGlobalTrack() && track.tpcNClsFound() >= confCutMinTPCcls) {
           nGlobalTracks++;
@@ -917,18 +938,26 @@ struct DetectorOccupancyQaTask {
               int tpcNClUsedForPID = track.tpcNClsFindable() - track.tpcNClsFindableMinusPID();
               histos.fill(HIST("tpcNClUsedForPID"), tpcNClUsedForPID);
 
+              histos.fill(HIST("tpcNClsFound"), track.tpcNClsFound());
+              histos.fill(HIST("tpcNClsFoundAsDiffByHand"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound());
+
               histos.fill(HIST("tpcNClsUsedForPID_vs_Findable"), track.tpcNClsFindable(), tpcNClUsedForPID);
               histos.fill(HIST("tpcNClsShared_vs_Findable"), track.tpcNClsFindable(), track.tpcNClsShared());
-              histos.fill(HIST("tpcNClsUsedForPID_vs_Shared"), tpcNClUsedForPID, track.tpcNClsShared());
+              histos.fill(HIST("tpcNClsUsedForPID_vs_Shared"), track.tpcNClsShared(), tpcNClUsedForPID);
+              histos.fill(HIST("tpcNClsFound_vs_Findable"), track.tpcNClsFindable(), track.tpcNClsFound());
+              histos.fill(HIST("tpcNClsUsedForPID_vs_Found"), track.tpcNClsFound(), tpcNClUsedForPID);
 
               int tpcNClsCorrectedFindableMinusPID = track.tpcNClsFindableMinusPID();
               // correct for a buggy behaviour due to int8 and uint8 difference:
               if (tpcNClsCorrectedFindableMinusPID < -70)
                 tpcNClsCorrectedFindableMinusPID += 256;
               histos.fill(HIST("tpcNClsFindableMinusPID_CORRECTED"), tpcNClsCorrectedFindableMinusPID);
+              histos.fill(HIST("tpcNClsUsedForPID_vs_Findable_CORRECTED"), track.tpcNClsFindable(), track.tpcNClsFindable() - tpcNClsCorrectedFindableMinusPID);
+
+              histos.fill(HIST("tpcNClsFoundMinusPID_BY_HAND"), (track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()) - (track.tpcNClsFindable() - tpcNClsCorrectedFindableMinusPID));
 
               // check ratio tpcNClsFindableMinusPID / tpcNClsFindable
-              // https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L242)
+              // https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L242
               // https://github.com/AliceO2Group/AliceO2/blob/dev/Detectors/AOD/src/AODProducerWorkflowSpec.cxx#L2553C21-L2553C44
               float fractionTPCcls = (1.0 * tpcNClsCorrectedFindableMinusPID) / track.tpcNClsFindable();
               histos.fill(HIST("fraction_tpcNClsFindableMinusPID_vs_occup"), occupancy, fractionTPCcls);
@@ -977,7 +1006,7 @@ struct DetectorOccupancyQaTask {
             }
           }
         }
-      }
+      } // end of track loop
 
       if (confAddTracksVsFwdHistos)
         histos.fill(HIST("nTracksGlobal_vs_nPV_QA_onlyVzCut_noTFROFborderCuts"), nPV, nGlobalTracks);
