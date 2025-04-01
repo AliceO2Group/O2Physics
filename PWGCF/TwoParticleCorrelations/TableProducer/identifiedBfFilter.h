@@ -34,7 +34,6 @@
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "MathUtils/Utils.h"
 
-
 namespace o2
 
 {
@@ -66,8 +65,6 @@ enum MatchRecoGenSpecies {
   kIdBfCharged = 4,
   kWrongSpecies = -1
 };
-
-
 
 /// \enum SpeciesPairMatch
 /// \brief The species pair considered by the matching test
@@ -240,7 +237,6 @@ bool useOwnParticleSelection = false;
 float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
-
 
 inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
