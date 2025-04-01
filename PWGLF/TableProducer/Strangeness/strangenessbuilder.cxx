@@ -700,7 +700,7 @@ struct StrangenessBuilder {
     // or resets and fills with all findable.
     //
     // Whenever using findable candidates, they will be appropriately
-    // marked for posterior analysis using 'type' variables.
+    // marked for posterior analysis using 'tag' variables.
     //
     // findable mode legend:
     // 0: simple passthrough of V0s, Cascades in AO2Ds
@@ -718,8 +718,9 @@ struct StrangenessBuilder {
     v0Entry currentV0Entry;
     cascadeEntry currentCascadeEntry;
 
-    std::vector<int> bestCollisionArray;          // stores McCollision -> Collision map
-    std::vector<int> bestCollisionNContribsArray; // stores Ncontribs for biggest coll assoc to mccoll
+    std::vector<int> ao2dV0toV0List; // index to relate AO2D V0s -> deduplicated V0s
+    std::vector<int> bestCollisionArray;             // stores McCollision -> Collision map
+    std::vector<int> bestCollisionNContribsArray;   // stores Ncontribs for biggest coll assoc to mccoll
 
     int collisionLessV0s = 0;
     int collisionLessCascades = 0;
@@ -747,6 +748,8 @@ struct StrangenessBuilder {
     if (mc_findableMode.value < 2) {
       // keep all unless de-duplication active
       std::vector<bool> keepV0(v0s.size(), true);
+      ao2dV0toV0List.clear();
+      ao2dV0toV0List.resize(v0s.size(), -1);
 
       if(deduplicationAlgorithm>0 && v0BuilderOpts.generatePhotonCandidates){
         // handle duplicates explicitly: group V0s according to (p,n) indices
@@ -821,6 +824,7 @@ struct StrangenessBuilder {
 
       for (const auto& v0 : v0s) {
         if(keepV0[v0.globalIndex()]){ // keep only de-duplicated
+          ao2dV0toV0List[v0.globalIndex()] = v0List.size(); // maps V0s to the corresponding v0List entry
           currentV0Entry.globalId = v0.globalIndex();
           currentV0Entry.collisionId = v0.collisionId();
           currentV0Entry.posTrackId = v0.posTrackId();
@@ -978,7 +982,7 @@ struct StrangenessBuilder {
           auto const& v0 = cascade.v0();
           currentCascadeEntry.globalId = cascade.globalIndex();
           currentCascadeEntry.collisionId = cascade.collisionId();
-          currentCascadeEntry.v0Id = v0.globalIndex();
+          currentCascadeEntry.v0Id = ao2dV0toV0List[v0.globalIndex()];
           currentCascadeEntry.posTrackId = v0.posTrackId();
           currentCascadeEntry.negTrackId = v0.negTrackId();
           currentCascadeEntry.bachTrackId = cascade.bachelorId();
@@ -2092,7 +2096,7 @@ struct StrangenessBuilder {
         continue; // safety (should be fine but depends on future stratrack dev)
 
       auto const& strangeTrack = cascadeTrack.template track_as<TTracks>();
-      auto const& collision = strangeTrack.collision();
+
       // if collisionId positive: get vertex, negative: origin
       // could be replaced by mean vertex (but without much benefit...)
       float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
@@ -2123,7 +2127,7 @@ struct StrangenessBuilder {
       auto strangeTrackParCov = getTrackParCov(strangeTrack);
       gpu::gpustd::array<float, 2> dcaInfo;
       strangeTrackParCov.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, strangeTrackParCov, 2.f, straHelper.fitter.getMatCorrType(), &dcaInfo);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, strangeTrackParCov, 2.f, straHelper.fitter.getMatCorrType(), &dcaInfo);
       straHelper.cascade.cascadeDCAxy = dcaInfo[0];
       straHelper.cascade.cascadeDCAz = dcaInfo[1];
 
