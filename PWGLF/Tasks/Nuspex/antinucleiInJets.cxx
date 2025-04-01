@@ -122,9 +122,15 @@ struct AntinucleiInJets {
   Configurable<std::string> pathToFile{"pathToFile", "", "path to file with reweighting"};
   Configurable<std::string> histoNameWeightAntipJet{"histoNameWeightAntipJet", "", "reweighting histogram: antip in jet"};
   Configurable<std::string> histoNameWeightAntipUe{"histoNameWeightAntipUe", "", "reweighting histogram: antip in ue"};
-
   TH2F* twoDweightsAntipJet;
   TH2F* twoDweightsAntipUe;
+
+  // jet pt unfolding
+  Configurable<bool> applyPtUnfolding{"applyPtUnfolding", true, "apply jet pt unfolding"};
+  Configurable<std::string> urlToCcdbPtUnfolding{"urlToCcdbPtUnfolding", "http://alice-ccdb.cern.ch", "url of the personal ccdb"};
+  Configurable<std::string> pathToFilePtUnfolding{"pathToFilePtUnfolding", "Users/c/chpinto/My/Object/ResponseMatrix", "path to file with pt unfolding"};
+  Configurable<std::string> histoNamePtUnfolding{"histoNamePtUnfolding", "detectorResponseMatrix", "pt unfolding histogram"};
+  TH2F* responseMatrix;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
@@ -144,6 +150,12 @@ struct AntinucleiInJets {
     } else {
       twoDweightsAntipJet = nullptr;
       twoDweightsAntipUe = nullptr;
+    }
+
+    if (applyPtUnfolding) {
+      getPtUnfoldingHistogram(ccdb, TString(pathToFilePtUnfolding), TString(histoNamePtUnfolding));
+    } else {
+      responseMatrix = nullptr;
     }
 
     // binning
@@ -439,6 +451,21 @@ struct AntinucleiInJets {
     return ptGen;
   }
 
+  void getPtUnfoldingHistogram(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histoNamePtUnfolding)
+  {
+    TList* l = ccdbObj->get<TList>(filepath.Data());
+    if (!l) {
+      LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
+      return;
+    }
+    responseMatrix = static_cast<TH2F*>(l->FindObject(Form("%s", histoNamePtUnfolding.Data())));
+    if (!responseMatrix) {
+      LOGP(error, "Could not open histogram {}", Form("%s", histoNamePtUnfolding.Data()));
+      return;
+    }
+    LOGP(info, "Opened histogram {}", Form("%s", histoNamePtUnfolding.Data()));
+  }
+
   void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_antip_jet, TString histname_antip_ue)
   {
     TList* l = ccdbObj->get<TList>(filepath.Data());
@@ -533,8 +560,7 @@ struct AntinucleiInJets {
       // jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
-      if (jetMinusBkg.pt() < minJetPt)
+      if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
         continue;
       isAtLeastOneJetSelected = true;
 
@@ -766,8 +792,7 @@ struct AntinucleiInJets {
       double ptJetAfterSub = jetForSub.pt();
       registryQC.fill(HIST("jetPtDifference"), ptJetAfterSub - ptJetBeforeSub);
 
-      // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
-      if (jetMinusBkg.pt() < minJetPt)
+      if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
         continue;
       njetsHighPt++;
       registryQC.fill(HIST("sumPtJet"), jet.pt());
@@ -1126,8 +1151,7 @@ struct AntinucleiInJets {
         // jet pt must be larger than threshold
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-        // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
-        if (jetMinusBkg.pt() < minJetPt)
+        if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
           continue;
 
         // perpendicular cone
@@ -1302,8 +1326,7 @@ struct AntinucleiInJets {
       // jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
-      if (jetMinusBkg.pt() < minJetPt)
+      if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
         continue;
 
       // get jet constituents
