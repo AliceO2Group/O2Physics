@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file identifiedBfFilter.h
+/// \brief Filters collisions and tracks according to selection criteria
+/// \author bghanley1995@gmail.com
+
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_IDENTIFIEDBFFILTER_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_IDENTIFIEDBFFILTER_H_
 
@@ -19,6 +23,8 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/runDataProcessing.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
@@ -27,9 +33,9 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "MathUtils/Utils.h"
-#include <TDatabasePDG.h>
 
 namespace o2
+
 {
 namespace aod
 {
@@ -59,11 +65,6 @@ enum MatchRecoGenSpecies {
   kIdBfCharged = 4,
   kWrongSpecies = -1
 };
-
-constexpr int pdgcodeEl = 11;
-constexpr int pdgcodePi = 211;
-constexpr int pdgcodeKa = 321;
-constexpr int pdgcodePr = 2212;
 
 /// \enum SpeciesPairMatch
 /// \brief The species pair considered by the matching test
@@ -236,8 +237,6 @@ bool useOwnParticleSelection = false;
 float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
-
-TDatabasePDG* fPDG = nullptr;
 
 inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
@@ -685,7 +684,7 @@ inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float
 //////////////////////////////////////////////////////////////////////////////////
 
 template <typename CollisionObject>
-inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
+inline bool isEvtSelected(CollisionObject const& collision, float& centormult)
 {
   bool trigsel = triggerSelection(collision);
 
@@ -710,7 +709,7 @@ inline bool matchTrackType(TrackObject const& track)
   if (useOwnTrackSelection) {
     return ownTrackSelection.IsSelected(track);
   } else {
-    for (auto filter : trackFilters) {
+    for (const auto& filter : trackFilters) {
       if (filter->IsSelected(track)) {
         if (dca2Dcut) {
           if (track.dcaXY() * track.dcaXY() / maxDCAxy / maxDCAxy + track.dcaZ() * track.dcaZ() / maxDCAz / maxDCAz > 1) {
@@ -738,7 +737,7 @@ inline bool matchTrackType(TrackObject const& track)
 template <typename ParticleObject, typename MCCollisionObject>
 void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
 {
-  for (auto& m : particle.template mothers_as<aod::McParticles>()) {
+  for (const auto& m : particle.template mothers_as<aod::McParticles>()) {
     LOGF(info, "   mother index: %d", m.globalIndex());
     LOGF(info, "   Tracking back mother");
     LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", m.mcCollisionId(), collision.globalIndex());
