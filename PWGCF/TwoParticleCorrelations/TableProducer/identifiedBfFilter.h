@@ -36,6 +36,7 @@
 
 
 namespace o2
+
 {
 namespace aod
 {
@@ -240,7 +241,6 @@ float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
 
-Service<o2::framework::O2DatabasePDG> fPDG;
 
 inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
