@@ -59,7 +59,7 @@ struct LumiStabilityTask {
   int lastRunNumber = -1;
   int nOrbits = nOrbitsConf;
   double minOrbit = minOrbitConf;
-  int64_t bcSOR = 0;                      // global bc of the start of the first orbit, setting 0 by default for unanchored MC
+  int64_t bcSOR = 0; // global bc of the start of the first orbit, setting 0 by default for unanchored MC
   int64_t tsSOR;
   int64_t tsEOR;
   int64_t nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit; // duration of TF in bcs, should be 128*3564 or 32*3564, setting 128 orbits by default sfor unanchored MC
@@ -104,7 +104,7 @@ struct LumiStabilityTask {
     histos.add("hOrbitFDDVertex", "", kTH1F, {axisOrbits});
     histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
     histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});
-    histos.add("tsValues","", kTH1D, {{2,-0.5,1.5}});
+    histos.add("tsValues", "", kTH1D, {{2, -0.5, 1.5}});
     // time 32.766 is dummy time
     // histo about triggers
     histos.add("FDD/hCounts", "0 FDDCount - 1 FDDVertexCount - 2 FDDPPVertexCount - 3 FDDCoincidencesVertexCount - 4 FDDPPCoincidencesVertexCount - 5 FDDPPBotSidesCount; Number; counts", kTH1F, {axisCounts});
@@ -268,15 +268,17 @@ struct LumiStabilityTask {
           if (bcPatternB[i]) {
             histos.fill(HIST("hBcB"), i);
             bool isLeadBC = true;
-            for(int jbit = i-minEmpty; jbit<i;jbit++) {
+            for (int jbit = i - minEmpty; jbit < i; jbit++) {
               int kbit = jbit;
-              if (kbit<0) kbit+=nbin;
+              if (kbit < 0)
+                kbit += nbin;
               if (bcPatternB[kbit]) {
                 isLeadBC = false;
                 break;
               }
             }
-            if (isLeadBC) histos.fill(HIST("hBcBL"), i);
+            if (isLeadBC)
+              histos.fill(HIST("hBcBL"), i);
           }
           if (bcPatternE[i]) {
             histos.fill(HIST("hBcE"), i);
@@ -312,8 +314,8 @@ struct LumiStabilityTask {
         auto hTsValues = histos.get<TH1>(HIST("tsValues"));
         hTsValues->GetXaxis()->SetBinLabel(1, "tsSOR");
         hTsValues->GetXaxis()->SetBinLabel(2, "tsEOR");
-        hTsValues->SetBinContent(1, tsSOR/1000); // seconds
-        hTsValues->SetBinContent(2, tsEOR/1000); // seconds
+        hTsValues->SetBinContent(1, tsSOR / 1000); // seconds
+        hTsValues->SetBinContent(2, tsEOR / 1000); // seconds
       }
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
@@ -399,15 +401,17 @@ struct LumiStabilityTask {
             histos.fill(HIST("FDD/timeACbcBVertex"), fdd.timeA(), fdd.timeC());
             histos.fill(HIST("FDD/hBcBVertex"), localBC);
             bool isLeadBC = true;
-            for(int jbit = localBC-minEmpty; jbit<localBC;jbit++) {
+            for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
               int kbit = jbit;
-              if (kbit<0) kbit+=nbin;
+              if (kbit < 0)
+                kbit += nbin;
               if (bcPatternB[kbit]) {
                 isLeadBC = false;
                 break;
               }
             }
-            if (isLeadBC) histos.fill(HIST("FDD/hBcBVertexL"), localBC);
+            if (isLeadBC)
+              histos.fill(HIST("FDD/hBcBVertexL"), localBC);
             histos.fill(HIST("FDD/hTimeAVertex"), fdd.timeA());
             histos.fill(HIST("FDD/hTimeCVertex"), fdd.timeC());
             if (is2022Data) {
@@ -460,15 +464,17 @@ struct LumiStabilityTask {
             histos.fill(HIST("FDD/timeACbcB"), fdd.timeA(), fdd.timeC());
             histos.fill(HIST("FDD/hBcB"), localBC);
             bool isLeadBC = true;
-            for(int jbit = localBC-minEmpty; jbit<localBC;jbit++) {
+            for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
               int kbit = jbit;
-              if (kbit<0) kbit+=nbin;
+              if (kbit < 0)
+                kbit += nbin;
               if (bcPatternB[kbit]) {
                 isLeadBC = false;
                 break;
               }
             }
-            if (isLeadBC) histos.fill(HIST("FDD/hBcBL"), localBC);
+            if (isLeadBC)
+              histos.fill(HIST("FDD/hBcBL"), localBC);
             histos.fill(HIST("FDD/hTimeACoinc"), fdd.timeA());
             histos.fill(HIST("FDD/hTimeCCoinc"), fdd.timeC());
             if (!is2022Data) {
@@ -618,15 +624,17 @@ struct LumiStabilityTask {
           histos.fill(HIST("FT0/timeACbcB"), ft0.timeA(), ft0.timeC());
           histos.fill(HIST("FT0/hBcB"), localBC);
           bool isLeadBC = true;
-            for(int jbit = localBC-minEmpty; jbit<localBC;jbit++) {
-              int kbit = jbit;
-              if (kbit<0) kbit+=nbin;
-              if (bcPatternB[kbit]) {
-                isLeadBC = false;
-                break;
-              }
+          for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
+            int kbit = jbit;
+            if (kbit < 0)
+              kbit += nbin;
+            if (bcPatternB[kbit]) {
+              isLeadBC = false;
+              break;
             }
-          if (isLeadBC) histos.fill(HIST("FT0/hBcBL"), localBC);
+          }
+          if (isLeadBC)
+            histos.fill(HIST("FT0/hBcBL"), localBC);
           histos.fill(HIST("FT0/hTimeA"), ft0.timeA());
           histos.fill(HIST("FT0/hTimeC"), ft0.timeC());
 
