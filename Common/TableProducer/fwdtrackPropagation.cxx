@@ -159,7 +159,7 @@ struct FwdTrackPropagation {
       return false;
     }
 
-    if (maxChi2 < chi2) {
+    if (chi2 < 0.f || maxChi2 < chi2) {
       return false;
     }
 
