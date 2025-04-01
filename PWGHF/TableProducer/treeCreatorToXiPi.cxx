@@ -158,7 +158,6 @@ DECLARE_SOA_COLUMN(TofNSigmaPiFromCharmBaryon, tofNSigmaPiFromCharmBaryon, float
 DECLARE_SOA_COLUMN(TofNSigmaPiFromCasc, tofNSigmaPiFromCasc, float);
 DECLARE_SOA_COLUMN(TofNSigmaPiFromLambda, tofNSigmaPiFromLambda, float);
 DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
-DECLARE_SOA_COLUMN(CollInf, collInf, int);
 
 } // namespace full
 
@@ -178,8 +177,18 @@ DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
                   full::CentFDDM,
                   full::MultZeqNTracksPV);
 
-DECLARE_SOA_TABLE(HfToXiPiBase, "AOD", "HFTOXIPIBASE",
-                  full::CollInf);
+using HfToXiPiEv = HfToXiPiEvs::iterator; //通过这个来连接Evs表 
+
+namespace full
+{  
+namespace collInf
+{                                                                            
+DECLARE_SOA_INDEX_COLUMN_CUSTOM(HfToXiPiEv, hfEvBase, "HfXic0CollBase");
+}
+}
+
+DECLARE_SOA_TABLE(HfToXiPiEvBase, "AOD", "HFTOXIPIEVBASE",
+                  full::collInf::HfToXiPiEvId);
 
 DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
@@ -248,7 +257,7 @@ struct HfTreeCreatorToXiPi {
   Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
   Produces<o2::aod::HfToXiPiLites> rowCandidateLite;
   Produces<o2::aod::HfToXiPiEvs> rowEv;
-  Produces<o2::aod::HfToXiPiBase> rowCandidateBase;
+  Produces<o2::aod::HfToXiPiEvBase> rowEvBase;
 
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
 
@@ -500,7 +509,7 @@ struct HfTreeCreatorToXiPi {
         originMc,
         collisionMatched);
       if constexpr (useCentrality) {
-        rowCandidateBase(rowEv.lastIndex());
+        rowEvBase(rowEv.lastIndex());
       }
     }
   }
@@ -586,7 +595,7 @@ struct HfTreeCreatorToXiPi {
 
       // Filling candidate properties
       rowCandidateLite.reserve(sizeTableCand);
-      rowCandidateBase.reserve(sizeTableCand);
+      rowEvBase.reserve(sizeTableCand);
       LOGF(debug, "Filling rec. collision %d at derived index %d", thisCollId, rowEv.lastIndex() + 1);
       for (const auto& candidate : groupedXicCandidates) {
         fillCandidateLite<true>(candidate, -7, RecoDecay::OriginType::None, false);
@@ -625,7 +634,7 @@ struct HfTreeCreatorToXiPi {
 
       // Filling candidate properties
       rowCandidateFull.reserve(sizeTableCand);
-      rowCandidateBase.reserve(sizeTableCand);
+      rowEvBase.reserve(sizeTableCand);
       for (const auto& candidate : groupedXicCandidates) {
         fillCandidateLite<true>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
       }
