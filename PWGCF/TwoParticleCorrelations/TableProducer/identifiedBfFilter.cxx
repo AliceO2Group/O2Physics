@@ -777,7 +777,6 @@ struct IdentifiedBfFilterTracks {
     /* if the system type is not known at this time, we have to put the initialization somewhere else */
     fSystem = getSystemType(cfgSystem);
     fDataType = getDataType(cfgDataType);
-    Service<o2::framework::O2DatabasePDG> fPDG;
 
     /* required ambiguous tracks checks? */
     if (dofilterDetectorLevelWithoutPIDAmbiguous || dofilterDetectorLevelWithPIDAmbiguous || dofilterRecoWithoutPIDAmbiguous || dofilterRecoWithPIDAmbiguous) {
