@@ -177,6 +177,7 @@ struct sigma0builder {
   ConfigurableAxis axisRadius{"axisRadius", {240, 0.0f, 120.0f}, "V0 radius (cm)"};
   ConfigurableAxis axisRapidity{"axisRapidity", {100, -2.0f, 2.0f}, "Rapidity"};
   ConfigurableAxis axisCandSel{"axisCandSel", {13, 0.5f, +13.5f}, "Candidate Selection"};
+  ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
 
   int nSigmaCandidates = 0;
   void init(InitContext const&)
@@ -294,6 +295,8 @@ struct sigma0builder {
 
     histos.add("h3dMassSigmasBeforeSel", "h3dMassSigmasBeforeSel", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
     histos.add("h3dMassSigmasAfterSel", "h3dMassSigmasAfterSel", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
+
+    histos.add("Gen/hNEventsNch", "hNEventsNch", kTH1D, {axisMonteCarloNch});
   }
 
   template <typename TCollision>
@@ -984,6 +987,12 @@ struct sigma0builder {
         }
       }
     }
+  }
+
+  // Simulated processing in Run 3 (subscribes to MC information too)
+  void processGeneratedCollRun3(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>::iterator const& mcCollision)
+  {
+    histos.fill(HIST("Gen/hNEventsNch"), mcCollision.multMCNParticlesEta05());
   }
 
   PROCESS_SWITCH(sigma0builder, processMonteCarlo, "process as if MC data", false);
