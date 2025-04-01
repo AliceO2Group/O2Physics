@@ -177,12 +177,12 @@ DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
                   full::CentFDDM,
                   full::MultZeqNTracksPV);
 
-using HfToXiPiEv = HfToXiPiEvs::iterator; //通过这个来连接Evs表 
+using HfToXiPiEv = HfToXiPiEvs::iterator;
 
 namespace full
-{  
+{
 namespace collInf
-{                                                                            
+{
 DECLARE_SOA_INDEX_COLUMN_CUSTOM(HfToXiPiEv, hfEvBase, "HfXic0CollBase");
 }
 }
