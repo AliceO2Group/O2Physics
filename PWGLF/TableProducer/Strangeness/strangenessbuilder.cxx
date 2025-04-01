@@ -2077,8 +2077,8 @@ struct StrangenessBuilder {
   }
 
   //__________________________________________________
-  template <class TTracks, typename TStrangeTracks, typename TMCParticles>
-  void buildTrackedCascades(TStrangeTracks const& cascadeTracks, TMCParticles const& mcParticles)
+  template <class TTracks, typename TCollisions, typename TStrangeTracks, typename TMCParticles>
+  void buildTrackedCascades(TCollisions const& collisions, TStrangeTracks const& cascadeTracks, TMCParticles const& mcParticles)
   {
     if (!mEnabledTables[kStoredTraCascCores] || mc_findableMode.value != 0) {
       return; // don't do if no request for cascades in place or findable mode used
@@ -2097,7 +2097,7 @@ struct StrangenessBuilder {
       // could be replaced by mean vertex (but without much benefit...)
       float pvX = 0.0f, pvY = 0.0f, pvZ = 0.0f;
       if (strangeTrack.has_collision()) {
-        auto const& collision = strangeTrack.collision();
+        auto const& collision = collisions.rawIteratorAt(strangeTrack.collisionId());
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
@@ -2242,7 +2242,7 @@ struct StrangenessBuilder {
 
     // build tracked cascades only if subscription is Run 3 like (doesn't exist in Run 2)
     if constexpr (soa::is_table<TTrackedCascades>) {
-      buildTrackedCascades<TTracks>(trackedCascades, mcParticles);
+      buildTrackedCascades<TTracks>(collisions, trackedCascades, mcParticles);
     }
 
     populateCascadeInterlinks();
