@@ -270,8 +270,6 @@ struct LumiStabilityTask {
       nOrbitsPerTF = 32; // 128 in 2022, 32 in 2023
     }
     int runNumber = bcs.iteratorAt(0).runNumber();
-    int64_t tsSOR = 0;
-    int64_t tsEOR = 1;
     if (runNumber != lastRunNumber && executionCounter < 1) {
       tsSOR = 0;
       tsEOR = 1;
