@@ -95,7 +95,7 @@ struct IdentifiedbfTask {
     std::vector<TH1F*> fhN1VsPt{nch, nullptr};                                    //!<! weighted single particle distribution vs \f$p_T\f$, for the different species
     std::vector<TH2F*> fhN1VsEtaPhi{nch, nullptr};                                //!<! weighted single particle distribution vs \f$\eta,\;\phi\f$, for the different species
     std::vector<TH2F*> fhSum1PtVsEtaPhi{nch, nullptr};                            //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
-    std::vector<TH3F*> fhN1VsZEtaPhiPt{nch + 1, nullptr};                             //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhN1VsZEtaPhiPt{nch + 1, nullptr};                         //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhN1VsZEtaPhiPtPrimary{nch, nullptr};                      //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhN1VsZEtaPhiPtSecondary{nch, nullptr};                    //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhSum1PtVsZEtaPhiPt{nch, nullptr};                         //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
@@ -627,7 +627,7 @@ struct IdentifiedbfTask {
             fOutputList->Add(fhSum1PtVsZEtaPhiPt[i]);
           }
         }
-        if(!smallsingles){
+        if (!smallsingles) {
           TH1::SetDefaultSumw2(false);
           fhN1VsZEtaPhiPt[nch] = new TH3F(
             TString::Format("n1_%s_vsZ_vsEtaPhi_vsPt", "h"),
