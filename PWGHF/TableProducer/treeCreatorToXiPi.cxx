@@ -179,16 +179,13 @@ DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
 
 using HfToXiPiEv = HfToXiPiEvs::iterator;
 
-namespace full
-{
 namespace collInf
 {
 DECLARE_SOA_INDEX_COLUMN_CUSTOM(HfToXiPiEv, hfEvBase, "HfXic0CollBase");
 }
-}
 
 DECLARE_SOA_TABLE(HfToXiPiEvBase, "AOD", "HFTOXIPIEVBASE",
-                  full::collInf::HfToXiPiEvId);
+                  collInf::HfToXiPiEvId);
 
 DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
