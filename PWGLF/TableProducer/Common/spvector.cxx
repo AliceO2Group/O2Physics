@@ -272,20 +272,28 @@ struct spvector {
   int lastRunNumber = -999;
   TH2D* gainprofile;
   TProfile* gainprofilevxy;
-  THnF* hrecentereSp;
+  /*THnF* hrecentereSp;
   TH2F* hrecenterecentSp;
   TH2F* hrecenterevxSp;
   TH2F* hrecenterevySp;
-  TH2F* hrecenterevzSp;
+  TH2F* hrecenterevzSp;*/
+  std::array<THnF*, 6> hrecentereSpA;     // Array of 6 histograms
+  std::array<TH2F*, 5> hrecenterecentSpA; // Array of 5 histograms
+  std::array<TH2F*, 5> hrecenterevxSpA;   // Array of 5 histograms
+  std::array<TH2F*, 5> hrecenterevySpA;   // Array of 5 histograms
+  std::array<TH2F*, 5> hrecenterevzSpA;   // Array of 5 histograms
   TProfile3D* shiftprofileA;
   TProfile3D* shiftprofileC;
 
-  Bool_t Correctcoarse(int64_t ts, Configurable<std::string>& ConfRecentereSpp, bool useRecentereSp, int currentRunNumber, int lastRunNumber, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
+  // Bool_t Correctcoarse(int64_t ts, Configurable<std::string>& ConfRecentereSpp, bool useRecentereSp, int currentRunNumber, int lastRunNumber, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
+  //{
+  Bool_t Correctcoarse(const THnF* hrecentereSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
   {
 
+    /*
     if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
       hrecentereSp = ccdb->getForTimeStamp<THnF>(ConfRecentereSpp.value, ts);
-    }
+      }*/
 
     int binCoords[5];
 
@@ -328,15 +336,22 @@ struct spvector {
     return kTRUE;
   }
 
-  Bool_t Correctfine(int64_t ts, Configurable<std::string>& ConfRecenterecentSpp, Configurable<std::string>& ConfRecenterevxSpp, Configurable<std::string>& ConfRecenterevySpp, Configurable<std::string>& ConfRecenterevzSpp, bool useRecenterefineSp, int currentRunNumber, int lastRunNumber, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
+  // Bool_t Correctfine(int64_t ts, Configurable<std::string>& ConfRecenterecentSpp, Configurable<std::string>& ConfRecenterevxSpp, Configurable<std::string>& ConfRecenterevySpp, Configurable<std::string>& ConfRecenterevzSpp, bool useRecenterefineSp, int currentRunNumber, int lastRunNumber, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
+  //{
+  Bool_t Correctfine(TH2F* hrecenterecentSp, TH2F* hrecenterevxSp, TH2F* hrecenterevySp, TH2F* hrecenterevzSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
   {
 
+    if (!hrecenterecentSp || !hrecenterevxSp || !hrecenterevySp || !hrecenterevzSp) {
+      std::cerr << "Error: One or more histograms are null." << std::endl;
+      return false;
+    }
+    /*
     if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
       hrecenterecentSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSpp.value, ts);
       hrecenterevxSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSpp.value, ts);
       hrecenterevySp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySpp.value, ts);
       hrecenterevzSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSpp.value, ts);
-    }
+      }*/
 
     double meanxAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 0.5));
     double meanyAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 1.5));
@@ -517,47 +532,96 @@ struct spvector {
       Bool_t resfine = 0;
 
       if (coarse1) {
-        res = Correctcoarse(bc.timestamp(), ConfRecentereSp, useRecentereSp, currentRunNumber, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
+          hrecentereSpA[0] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp.value, bc.timestamp());
+        }
+        res = Correctcoarse(hrecentereSpA[0], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (fine1) {
-        resfine = Correctfine(bc.timestamp(), ConfRecenterecentSp, ConfRecenterevxSp, ConfRecenterevySp, ConfRecenterevzSp, useRecenterefineSp, currentRunNumber, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+
+        if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+          hrecenterecentSpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp.value, bc.timestamp());
+          hrecenterevxSpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp.value, bc.timestamp());
+          hrecenterevySpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp.value, bc.timestamp());
+          hrecenterevzSpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp.value, bc.timestamp());
+        }
+        resfine = Correctfine(hrecenterecentSpA[0], hrecenterevxSpA[0], hrecenterevySpA[0], hrecenterevzSpA[0], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (coarse2) {
-        res = Correctcoarse(bc.timestamp(), ConfRecentereSp2, useRecentereSp, currentRunNumber, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
+          hrecentereSpA[1] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp2.value, bc.timestamp());
+        }
+        res = Correctcoarse(hrecentereSpA[1], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (fine2) {
-        resfine = Correctfine(bc.timestamp(), ConfRecenterecentSp2, ConfRecenterevxSp2, ConfRecenterevySp2, ConfRecenterevzSp2, useRecenterefineSp, currentRunNumber, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+          hrecenterecentSpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp2.value, bc.timestamp());
+          hrecenterevxSpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp2.value, bc.timestamp());
+          hrecenterevySpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp2.value, bc.timestamp());
+          hrecenterevzSpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp2.value, bc.timestamp());
+        }
+        resfine = Correctfine(hrecenterecentSpA[1], hrecenterevxSpA[1], hrecenterevySpA[1], hrecenterevzSpA[1], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (coarse3) {
-        res = Correctcoarse(bc.timestamp(), ConfRecentereSp3, useRecentereSp, currentRunNumber, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
+          hrecentereSpA[2] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp3.value, bc.timestamp());
+        }
+        res = Correctcoarse(hrecentereSpA[2], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (fine3) {
-        resfine = Correctfine(bc.timestamp(), ConfRecenterecentSp3, ConfRecenterevxSp3, ConfRecenterevySp3, ConfRecenterevzSp3, useRecenterefineSp, currentRunNumber, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+          hrecenterecentSpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp3.value, bc.timestamp());
+          hrecenterevxSpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp3.value, bc.timestamp());
+          hrecenterevySpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp3.value, bc.timestamp());
+          hrecenterevzSpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp3.value, bc.timestamp());
+        }
+        resfine = Correctfine(hrecenterecentSpA[2], hrecenterevxSpA[2], hrecenterevySpA[2], hrecenterevzSpA[2], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (coarse4) {
-        res = Correctcoarse(bc.timestamp(), ConfRecentereSp4, useRecentereSp, currentRunNumber, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
+          hrecentereSpA[3] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp4.value, bc.timestamp());
+        }
+        res = Correctcoarse(hrecentereSpA[3], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (fine4) {
-        resfine = Correctfine(bc.timestamp(), ConfRecenterecentSp4, ConfRecenterevxSp4, ConfRecenterevySp4, ConfRecenterevzSp4, useRecenterefineSp, currentRunNumber, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+          hrecenterecentSpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp4.value, bc.timestamp());
+          hrecenterevxSpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp4.value, bc.timestamp());
+          hrecenterevySpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp4.value, bc.timestamp());
+          hrecenterevzSpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp4.value, bc.timestamp());
+        }
+        resfine = Correctfine(hrecenterecentSpA[3], hrecenterevxSpA[3], hrecenterevySpA[3], hrecenterevzSpA[3], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (coarse5) {
-        res = Correctcoarse(bc.timestamp(), ConfRecentereSp5, useRecentereSp, currentRunNumber, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
+          hrecentereSpA[4] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp5.value, bc.timestamp());
+        }
+        res = Correctcoarse(hrecentereSpA[4], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (fine5) {
-        resfine = Correctfine(bc.timestamp(), ConfRecenterecentSp5, ConfRecenterevxSp5, ConfRecenterevySp5, ConfRecenterevzSp5, useRecenterefineSp, currentRunNumber, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+          hrecenterecentSpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp5.value, bc.timestamp());
+          hrecenterevxSpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp5.value, bc.timestamp());
+          hrecenterevySpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp5.value, bc.timestamp());
+          hrecenterevzSpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp5.value, bc.timestamp());
+        }
+        resfine = Correctfine(hrecenterecentSpA[4], hrecenterevxSpA[4], hrecenterevySpA[4], hrecenterevzSpA[4], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (coarse6) {
-        res = Correctcoarse(bc.timestamp(), ConfRecentereSp6, useRecentereSp, currentRunNumber, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
+          hrecentereSpA[5] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp6.value, bc.timestamp());
+        }
+        res = Correctcoarse(hrecentereSpA[5], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (res == 0 || resfine == 0) {

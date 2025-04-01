@@ -9,20 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// StoredVtx3BodyDatas analysis task
-// ========================
-//
-// This code loops over a StoredVtx3BodyDatas table and produces some
-// standard analysis output. It requires either
-// the hypertriton3bodybuilder or hypertriton3bodyfinder (not recommended) tasks
-// to have been executed in the workflow (before).
-//
-// author: yuanzhe.wang@cern.ch
-//
+/// \file hypertriton3bodyanalysis.cxx
+/// \brief Standard analysis workflow for hypertriton 3-body decay
+/// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <algorithm>
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -31,7 +26,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+// #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/Vtx3BodyTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -43,7 +38,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using std::array;
 
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
 // using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe, aod::pidTOFFullDe>; // For TOF PID check
@@ -93,7 +87,7 @@ struct hypertriton3bodyQa {
 
   void process(aod::Collision const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const& /*tracks*/)
   {
-    for (auto& vtx : vtx3bodydatas) {
+    for (const auto& vtx : vtx3bodydatas) {
       auto track0 = vtx.track0_as<FullTracksExtIU>();
       auto track1 = vtx.track1_as<FullTracksExtIU>();
       auto track2 = vtx.track2_as<FullTracksExtIU>();
@@ -154,9 +148,9 @@ struct hypertriton3bodyAnalysis {
   Configurable<float> dcapiontopv{"dcapiontopv", .05, "DCA Pion To PV"};
   Configurable<float> etacut{"etacut", 0.9, "etacut"};
   Configurable<float> rapiditycut{"rapiditycut", 1, "rapiditycut"};
-  Configurable<float> TofPidNsigmaMin{"TofPidNsigmaMin", -5, "TofPidNsigmaMin"};
-  Configurable<float> TofPidNsigmaMax{"TofPidNsigmaMax", 5, "TofPidNsigmaMax"};
-  Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
+  Configurable<float> tofPIDNSigmaMin{"tofPIDNSigmaMin", -5, "tofPIDNSigmaMin"};
+  Configurable<float> tofPIDNSigmaMax{"tofPIDNSigmaMax", 5, "tofPIDNSigmaMax"};
+  Configurable<float> tpcPIDNSigmaCut{"tpcPIDNSigmaCut", 5, "tpcPIDNSigmaCut"};
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
   Configurable<bool> mc_event_selection{"mc_event_selection", true, "mc event selection count post kIsTriggerTVX and kNoTimeFrameBorder"};
   Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
@@ -259,7 +253,7 @@ struct hypertriton3bodyAnalysis {
 
   void resetHistos()
   {
-    for (Int_t ii = 0; ii < kNCandSteps; ii++) {
+    for (int ii = 0; ii < kNCandSteps; ii++) {
       statisticsRegistry.candstats[ii] = 0;
       statisticsRegistry.truecandstats[ii] = 0;
     }
@@ -273,7 +267,7 @@ struct hypertriton3bodyAnalysis {
   }
   void fillHistos()
   {
-    for (Int_t ii = 0; ii < kNCandSteps; ii++) {
+    for (int ii = 0; ii < kNCandSteps; ii++) {
       registry.fill(HIST("hCandidatesCounter"), ii, statisticsRegistry.candstats[ii]);
       if (doprocessMC == true) {
         registry.fill(HIST("hTrueHypertritonCounter"), ii, statisticsRegistry.truecandstats[ii]);
@@ -338,7 +332,7 @@ struct hypertriton3bodyAnalysis {
     }
     FillCandCounter(kCandTPCNcls, isTrueCand);
 
-    if (std::abs(trackProton.tpcNSigmaPr()) > TpcPidNsigmaCut || std::abs(trackPion.tpcNSigmaPi()) > TpcPidNsigmaCut || std::abs(trackDeuteron.tpcNSigmaDe()) > TpcPidNsigmaCut) {
+    if (std::abs(trackProton.tpcNSigmaPr()) > tpcPIDNSigmaCut || std::abs(trackPion.tpcNSigmaPi()) > tpcPIDNSigmaCut || std::abs(trackDeuteron.tpcNSigmaDe()) > tpcPIDNSigmaCut) {
       return false;
     }
     FillCandCounter(kCandTPCPID, isTrueCand);
@@ -349,7 +343,7 @@ struct hypertriton3bodyAnalysis {
       // registry.fill(HIST("hDeuteronDefaultTOFVsPBeforeTOFCutSig"), trackDeuteron.sign() * trackDeuteron.p(), trackDeuteron.tofNSigmaDe());
       registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCutSig"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
     }
-    if ((candData.tofNSigmaBachDe() < TofPidNsigmaMin || candData.tofNSigmaBachDe() > TofPidNsigmaMax) && trackDeuteron.p() > minDeuteronPUseTOF) {
+    if ((candData.tofNSigmaBachDe() < tofPIDNSigmaMin || candData.tofNSigmaBachDe() > tofPIDNSigmaMax) && trackDeuteron.p() > minDeuteronPUseTOF) {
       return false;
     }
     FillCandCounter(kCandTOFPID, isTrueCand);
@@ -404,7 +398,7 @@ struct hypertriton3bodyAnalysis {
       registry.fill(HIST("h3dMassHypertriton"), 0., candData.pt(), candData.mHypertriton()); // collision.centV0M() instead of 0. once available
       registry.fill(HIST("h3dTotalHypertriton"), ct, candData.pt(), candData.mHypertriton());
       if (candData.mHypertriton() > lowersignallimit && candData.mHypertriton() < uppersignallimit) {
-        registry.fill(HIST("hDalitz"), RecoDecay::m2(array{array{candData.pxtrack0(), candData.pytrack0(), candData.pztrack0()}, array{candData.pxtrack2(), candData.pytrack2(), candData.pztrack2()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron}), RecoDecay::m2(array{array{candData.pxtrack0(), candData.pytrack0(), candData.pztrack0()}, array{candData.pxtrack1(), candData.pytrack1(), candData.pztrack1()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged}));
+        registry.fill(HIST("hDalitz"), RecoDecay::m2(std::array{std::array{candData.pxtrack0(), candData.pytrack0(), candData.pztrack0()}, std::array{candData.pxtrack2(), candData.pytrack2(), candData.pztrack2()}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron}), RecoDecay::m2(std::array{std::array{candData.pxtrack0(), candData.pytrack0(), candData.pztrack0()}, std::array{candData.pxtrack1(), candData.pytrack1(), candData.pztrack1()}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged}));
       }
       if (isTrueCand) {
         registry.fill(HIST("h3dTotalTrueHypertriton"), MClifetime, lPt, candData.mHypertriton());
@@ -424,7 +418,7 @@ struct hypertriton3bodyAnalysis {
       registry.fill(HIST("h3dMassAntiHypertriton"), 0., candData.pt(), candData.mAntiHypertriton()); // collision.centV0M() instead of 0. once available
       registry.fill(HIST("h3dTotalHypertriton"), ct, candData.pt(), candData.mAntiHypertriton());
       if (candData.mAntiHypertriton() > lowersignallimit && candData.mAntiHypertriton() < uppersignallimit) {
-        registry.fill(HIST("hDalitz"), RecoDecay::m2(array{array{candData.pxtrack1(), candData.pytrack1(), candData.pztrack1()}, array{candData.pxtrack2(), candData.pytrack2(), candData.pztrack2()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron}), RecoDecay::m2(array{array{candData.pxtrack1(), candData.pytrack1(), candData.pztrack1()}, array{candData.pxtrack0(), candData.pytrack0(), candData.pztrack0()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged}));
+        registry.fill(HIST("hDalitz"), RecoDecay::m2(std::array{std::array{candData.pxtrack1(), candData.pytrack1(), candData.pztrack1()}, std::array{candData.pxtrack2(), candData.pytrack2(), candData.pztrack2()}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron}), RecoDecay::m2(std::array{std::array{candData.pxtrack1(), candData.pytrack1(), candData.pztrack1()}, std::array{candData.pxtrack0(), candData.pytrack0(), candData.pztrack0()}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged}));
       }
       if (isTrueCand) {
         registry.fill(HIST("h3dTotalTrueHypertriton"), MClifetime, lPt, candData.mHypertriton());
@@ -481,7 +475,7 @@ struct hypertriton3bodyAnalysis {
   // collect information for generated hypertriton (should be called after event selection)
   void GetGeneratedH3LInfo(aod::McParticles const& particlesMC)
   {
-    for (auto& mcparticle : particlesMC) {
+    for (const auto& mcparticle : particlesMC) {
       if (std::abs(mcparticle.pdgCode()) != motherPdgCode) {
         continue;
       }
@@ -490,7 +484,7 @@ struct hypertriton3bodyAnalysis {
       bool haveProton = false, havePionPlus = false, haveDeuteron = false;
       bool haveAntiProton = false, havePionMinus = false, haveAntiDeuteron = false;
       double MClifetime = -1;
-      for (auto& mcparticleDaughter : mcparticle.template daughters_as<aod::McParticles>()) {
+      for (const auto& mcparticleDaughter : mcparticle.template daughters_as<aod::McParticles>()) {
         if (mcparticleDaughter.pdgCode() == 2212)
           haveProton = true;
         if (mcparticleDaughter.pdgCode() == -2212)
@@ -533,14 +527,14 @@ struct hypertriton3bodyAnalysis {
       return;
     }
     registry.fill(HIST("hEventCounter"), 1.5);
-    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+    if (event_posZ_selection && std::abs(collision.posZ()) > 10.f) { // 10cm
       return;
     }
     registry.fill(HIST("hEventCounter"), 2.5);
 
     bool if_hasvtx = false;
 
-    for (auto& vtx : vtx3bodydatas) {
+    for (const auto& vtx : vtx3bodydatas) {
       CandidateAnalysis<FullTracksExtIU>(collision, vtx, if_hasvtx);
     }
 
@@ -563,7 +557,7 @@ struct hypertriton3bodyAnalysis {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 1.5);
-      if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+      if (event_posZ_selection && std::abs(collision.posZ()) > 10.f) { // 10cm
         continue;
       }
       registry.fill(HIST("hEventCounter"), 2.5);
@@ -571,7 +565,7 @@ struct hypertriton3bodyAnalysis {
       bool if_hasvtx = false;
       auto vtxsthiscol = vtx3bodydatas.sliceBy(perCollisionVtx3BodyDatas, collision.globalIndex());
 
-      for (auto& vtx : vtxsthiscol) {
+      for (const auto& vtx : vtxsthiscol) {
         // int lLabel = -1;
         int lPDG = -1;
         float lPt = -1;
@@ -585,9 +579,9 @@ struct hypertriton3bodyAnalysis {
           auto lMCTrack1 = track1.mcParticle_as<aod::McParticles>();
           auto lMCTrack2 = track2.mcParticle_as<aod::McParticles>();
           if (lMCTrack0.has_mothers() && lMCTrack1.has_mothers() && lMCTrack2.has_mothers()) {
-            for (auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
-              for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
-                for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
+            for (const auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
+              for (const auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
+                for (const auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
                   if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) {
                     // lLabel = lMother1.globalIndex();
                     lPt = lMother1.pt();
@@ -621,7 +615,7 @@ struct hypertriton3bodyLabelCheck {
 
   Configurable<bool> mc_event_selection{"mc_event_selection", true, "mc event selection count post kIsTriggerTVX and kNoTimeFrameBorder"};
   Configurable<bool> event_posZ_selection{"event_posZ_selection", false, "event selection count post poZ cut"};
-  Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
+  Configurable<float> tpcPIDNSigmaCut{"tpcPIDNSigmaCut", 5, "tpcPIDNSigmaCut"};
   Configurable<int> motherPdgCode{"motherPdgCode", 1010010030, "pdgCode of mother track"};
 
   HistogramRegistry registry{"registry", {}};
@@ -680,7 +674,7 @@ struct hypertriton3bodyLabelCheck {
   {
     // check the decay3body table
     std::vector<Indexdaughters> set_pair;
-    for (auto& d3body : decay3bodys) {
+    for (const auto& d3body : decay3bodys) {
       registry.fill(HIST("hDecay3BodyCounter"), 0.5);
       auto lTrack0 = d3body.track0_as<MCLabeledTracksIU>();
       auto lTrack1 = d3body.track1_as<MCLabeledTracksIU>();
@@ -695,9 +689,9 @@ struct hypertriton3bodyLabelCheck {
         continue;
       }
 
-      for (auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
-        for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
-          for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
+      for (const auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
+        for (const auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
+          for (const auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
             if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) {
               registry.fill(HIST("hDecay3BodyCounter"), 1.5);
               // duplicated daughters check
@@ -723,12 +717,12 @@ struct hypertriton3bodyLabelCheck {
       return;
     }
 
-    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+    if (event_posZ_selection && std::abs(collision.posZ()) > 10.f) { // 10cm
       return;
     }
 
     std::vector<int64_t> set_mothertrack;
-    for (auto& vtx : vtx3bodydatas) {
+    for (const auto& vtx : vtx3bodydatas) {
       registry.fill(HIST("hLabeledVtxCounter"), 0.5);
       if (vtx.mcParticleId() != -1) {
         auto mcparticle = vtx.mcParticle_as<aod::McParticles>();
@@ -751,16 +745,16 @@ struct hypertriton3bodyLabelCheck {
             set_mothertrack.push_back(mcparticle.globalIndex());
             registry.fill(HIST("hLabeledVtxCounter"), 2.5);
           }
-          if (TMath::Abs(lTrack0.tpcNSigmaPr()) > TpcPidNsigmaCut) {
+          if (std::abs(lTrack0.tpcNSigmaPr()) > tpcPIDNSigmaCut) {
             registry.fill(HIST("hPIDCounter"), 0.5);
           }
-          if (TMath::Abs(lTrack1.tpcNSigmaPi()) > TpcPidNsigmaCut) {
+          if (std::abs(lTrack1.tpcNSigmaPi()) > tpcPIDNSigmaCut) {
             registry.fill(HIST("hPIDCounter"), 1.5);
           }
-          if (TMath::Abs(lTrack2.tpcNSigmaDe()) > TpcPidNsigmaCut) {
+          if (std::abs(lTrack2.tpcNSigmaDe()) > tpcPIDNSigmaCut) {
             registry.fill(HIST("hPIDCounter"), 2.5);
           }
-          if (TMath::Abs(lTrack0.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(lTrack1.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(lTrack2.tpcNSigmaDe()) < TpcPidNsigmaCut) {
+          if (std::abs(lTrack0.tpcNSigmaPr()) < tpcPIDNSigmaCut && std::abs(lTrack1.tpcNSigmaPi()) < tpcPIDNSigmaCut && std::abs(lTrack2.tpcNSigmaDe()) < tpcPIDNSigmaCut) {
             registry.fill(HIST("hHypertritonCounter"), 1.5);
           }
         } else {
@@ -774,16 +768,16 @@ struct hypertriton3bodyLabelCheck {
             set_mothertrack.push_back(mcparticle.globalIndex());
             registry.fill(HIST("hLabeledVtxCounter"), 2.5);
           }
-          if (TMath::Abs(lTrack0.tpcNSigmaPi()) > TpcPidNsigmaCut) {
+          if (std::abs(lTrack0.tpcNSigmaPi()) > tpcPIDNSigmaCut) {
             registry.fill(HIST("hPIDCounter"), 4.5);
           }
-          if (TMath::Abs(lTrack1.tpcNSigmaPr()) > TpcPidNsigmaCut) {
+          if (std::abs(lTrack1.tpcNSigmaPr()) > tpcPIDNSigmaCut) {
             registry.fill(HIST("hPIDCounter"), 3.5);
           }
-          if (TMath::Abs(lTrack2.tpcNSigmaDe()) > TpcPidNsigmaCut) {
+          if (std::abs(lTrack2.tpcNSigmaDe()) > tpcPIDNSigmaCut) {
             registry.fill(HIST("hPIDCounter"), 5.5);
           }
-          if (TMath::Abs(lTrack0.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(lTrack1.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(lTrack2.tpcNSigmaDe()) < TpcPidNsigmaCut) {
+          if (std::abs(lTrack0.tpcNSigmaPi()) < tpcPIDNSigmaCut && std::abs(lTrack1.tpcNSigmaPr()) < tpcPIDNSigmaCut && std::abs(lTrack2.tpcNSigmaDe()) < tpcPIDNSigmaCut) {
             registry.fill(HIST("hHypertritonCounter"), 3.5);
           }
         }

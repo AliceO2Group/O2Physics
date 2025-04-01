@@ -22,6 +22,8 @@
 #include <memory>
 #include "Framework/HistogramRegistry.h"
 
+// using namespace o2::constants::physics;
+
 namespace o2::analysis::femto_universe
 {
 
@@ -115,6 +117,7 @@ class PairSHCentMultKt
           } else {
             suffix = "Ylm" + std::to_string(felsi[ihist]) + std::to_string(femsi[ihist]);
           }
+          // std::cout<<"ihist "<<ihist<<" "<<suffix.c_str()<<std::endl;
           if (FolderSuffix[EventType] == FolderSuffix[0]) {
             fnumsreal[i][j][ihist] = pairSHCentMultKtRegistry->add<TH1>(
               (histFolderMult + "/" + histFolderkT + "/" + "NumRe" + suffix).c_str(),
@@ -139,6 +142,7 @@ class PairSHCentMultKt
                                                               {(kMaxJM * 2), -0.5, ((static_cast<float>(kMaxJM) * 2.0 - 0.5))},
                                                               {(kMaxJM * 2), -0.5,
                                                                ((static_cast<float>(kMaxJM) * 2.0 - 0.5))}});
+          fcovnum[i][j]->Sumw2();
         } else if (FolderSuffix[EventType] == FolderSuffix[1]) {
           std::string bufnameDen = "CovDen";
           fcovden[i][j] = pairSHCentMultKtRegistry->add<TH3>((histFolderMult + "/" + histFolderkT + "/" + bufnameDen).c_str(), "; x; y; z", kTH3D,
@@ -165,11 +169,11 @@ class PairSHCentMultKt
 
     if ((absmultval >= centMultBins[0]) && (absmultval < centMultBins[1])) {
       multbinval = 0;
-    } else if (absmultval < centMultBins[2]) {
+    } else if ((absmultval >= centMultBins[1]) && (absmultval < centMultBins[2])) {
       multbinval = 1;
-    } else if (absmultval < centMultBins[3]) {
+    } else if ((absmultval >= centMultBins[2]) && (absmultval < centMultBins[3])) {
       multbinval = 2;
-    } else if (absmultval < centMultBins[4]) {
+    } else if ((absmultval >= centMultBins[3]) && (absmultval < centMultBins[4])) {
       multbinval = 3;
     } else {
       return;
@@ -190,14 +194,20 @@ class PairSHCentMultKt
                     int maxl, int multval, float ktval, bool isiden)
   {
     int ktbinval = -1;
-    if ((ktval >= ktBins[0]) && (ktval < ktBins[1])) {
+    if (ktval >= ktBins[0] && ktval < ktBins[1]) {
       ktbinval = 0;
-    } else if (ktval < ktBins[2]) {
+    } else if (ktval >= ktBins[1] && ktval < ktBins[2]) {
       ktbinval = 1;
-    } else if (ktval < ktBins[3]) {
+    } else if (ktval >= ktBins[2] && ktval < ktBins[3]) {
       ktbinval = 2;
-    } else if (ktval < ktBins[4]) {
+    } else if (ktval >= ktBins[3] && ktval < ktBins[4]) {
       ktbinval = 3;
+    } else if (ktval >= ktBins[4] && ktval < ktBins[5]) {
+      ktbinval = 4;
+    } else if (ktval >= ktBins[5] && ktval < ktBins[6]) {
+      ktbinval = 5;
+    } else if (ktval >= ktBins[6] && ktval < ktBins[7]) {
+      ktbinval = 6;
     } else {
       return;
     }
@@ -207,12 +217,10 @@ class PairSHCentMultKt
   /// Set the PDG codes of the two particles involved
   /// \param pdg1 PDG code of particle one
   /// \param pdg2 PDG code of particle two
-  void setPDGCodes(const int pdg1, const int pdg2)
+  void setPionPairMass()
   {
-    mMassOne = TDatabasePDG::Instance()->GetParticle(pdg1)->Mass();
-    mMassTwo = TDatabasePDG::Instance()->GetParticle(pdg2)->Mass();
-    mPDGOne = pdg1;
-    mPDGTwo = pdg2;
+    mMassOne = o2::constants::physics::MassPiPlus; // FIXME: Get from the PDG service of the common header
+    mMassTwo = o2::constants::physics::MassPiPlus; // FIXME: Get from the PDG service of the common header
   }
 
   /// To compute the bin value for cavariance matrix
@@ -242,6 +250,7 @@ class PairSHCentMultKt
     int fKtBin = ktval;
     std::vector<std::complex<double>> fYlmBuffer(kMaxJM);
     std::vector<double> f3d;
+    setPionPairMass();
     f3d = FemtoUniverseMath::newpairfunc(part1, mMassOne, part2, mMassTwo,
                                          isiden);
 
@@ -250,7 +259,9 @@ class PairSHCentMultKt
     const float qlong = f3d[3];
 
     double kv = std::sqrt(qout * qout + qside * qside + qlong * qlong);
-    int nqbin = fbinctn[0][0]->GetXaxis()->FindFixBin(kv) - 1;
+
+    // int nqbin = fbinctn[0][0]->GetXaxis()->FindFixBin(kv);
+    // int nqbinnotfix = fbinctn[0][0]->GetXaxis()->FindBin(kv);
 
     FemtoUniverseSpherHarMath kYlm;
     kYlm.doYlmUpToL(kMaxL, qout, qside, qlong, fYlmBuffer.data());
@@ -261,17 +272,16 @@ class PairSHCentMultKt
         fnumsimag[fMultBin][fKtBin][ihist]->Fill(kv, -imag(fYlmBuffer[ihist]));
         fbinctn[fMultBin][fKtBin]->Fill(kv, 1.0);
       }
-      if (nqbin < fbinctn[0][0]->GetNbinsX()) {
-        for (int ilmzero = 0; ilmzero < kMaxJM; ilmzero++) {
-          for (int ilmprim = 0; ilmprim < kMaxJM; ilmprim++) {
-            fcovmnum[fMultBin][fKtBin][getBin(nqbin, ilmzero, 0, ilmprim, 0)] +=
-              (real(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
-            fcovmnum[fMultBin][fKtBin][getBin(nqbin, ilmzero, 0, ilmprim, 1)] +=
-              (real(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
-            fcovmnum[fMultBin][fKtBin][getBin(nqbin, ilmzero, 1, ilmprim, 0)] +=
-              (-imag(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
-            fcovmnum[fMultBin][fKtBin][getBin(nqbin, ilmzero, 1, ilmprim, 1)] +=
-              (-imag(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
+      for (int ilmzero = 0; ilmzero < kMaxJM * 2; ilmzero++) {
+        for (int ilmprim = 0; ilmprim < kMaxJM * 2; ilmprim++) {
+          if ((ilmzero % 2) == 0 && (ilmprim % 2) == 0) {
+            fcovnum[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
+          } else if ((ilmzero % 2) == 0 && (ilmprim % 2) == 1) {
+            fcovnum[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
+          } else if ((ilmzero % 2) == 1 && (ilmprim % 2) == 0) {
+            fcovnum[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
+          } else if ((ilmzero % 2) == 1 && (ilmprim % 2) == 1) {
+            fcovnum[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
           }
         }
       }
@@ -281,17 +291,16 @@ class PairSHCentMultKt
         fdensimag[fMultBin][fKtBin][ihist]->Fill(kv, -imag(fYlmBuffer[ihist]));
         fbinctd[fMultBin][fKtBin]->Fill(kv, 1.0);
       }
-      if (nqbin < fbinctd[0][0]->GetNbinsX()) {
-        for (int ilmzero = 0; ilmzero < kMaxJM; ilmzero++) {
-          for (int ilmprim = 0; ilmprim < kMaxJM; ilmprim++) {
-            fcovmden[fMultBin][fKtBin][getBin(nqbin, ilmzero, 0, ilmprim, 0)] +=
-              (real(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
-            fcovmden[fMultBin][fKtBin][getBin(nqbin, ilmzero, 0, ilmprim, 1)] +=
-              (real(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
-            fcovmden[fMultBin][fKtBin][getBin(nqbin, ilmzero, 1, ilmprim, 0)] +=
-              (-imag(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
-            fcovmden[fMultBin][fKtBin][getBin(nqbin, ilmzero, 1, ilmprim, 1)] +=
-              (-imag(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
+      for (int ilmzero = 0; ilmzero < kMaxJM * 2; ilmzero++) {
+        for (int ilmprim = 0; ilmprim < kMaxJM * 2; ilmprim++) {
+          if ((ilmzero % 2) == 0 && (ilmprim % 2) == 0) {
+            fcovden[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
+          } else if ((ilmzero % 2) == 0 && (ilmprim % 2) == 1) {
+            fcovden[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
+          } else if ((ilmzero % 2) == 1 && (ilmprim % 2) == 0) {
+            fcovden[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
+          } else if ((ilmzero % 2) == 1 && (ilmprim % 2) == 1) {
+            fcovden[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
           }
         }
       }
@@ -336,7 +345,7 @@ class PairSHCentMultKt
   void fillMultkTCov(uint8_t ChosenEventType, int MaxJM)
   {
     for (int multbinvalcov = 0;
-         multbinvalcov < static_cast<int>(centMultBins.size() - 2);
+         multbinvalcov < static_cast<int>(centMultBins.size() - 1);
          multbinvalcov++) {
       for (int ktbinvalcov = 0;
            ktbinvalcov < static_cast<int>(ktBins.size() - 1); ktbinvalcov++) {
@@ -346,10 +355,10 @@ class PairSHCentMultKt
   }
 
  private:
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 4>, 4> fnumsreal{};
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 4>, 4> fnumsimag{};
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 4>, 4> fdensreal{};
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 4>, 4> fdensimag{};
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 7>, 4> fnumsreal{};
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 7>, 4> fnumsimag{};
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 7>, 4> fdensreal{};
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 7>, 4> fdensimag{};
 
   TH1D* fbinctn[10][10];
   TH1D* fbinctd[10][10];
@@ -357,11 +366,11 @@ class PairSHCentMultKt
   static constexpr int kMaxL = 2;
   static constexpr int kMaxJM = (kMaxL + 1) * (kMaxL + 1);
 
-  std::array<std::array<std::array<float, (kMaxJM * kMaxJM * 4 * 100)>, 4>, 4> fcovmnum{}; ///< Covariance matrix for the numerator
-  std::array<std::array<std::array<float, (kMaxJM * kMaxJM * 4 * 100)>, 4>, 4> fcovmden{}; ///< Covariance matrix for the numerator
+  std::array<std::array<std::array<float, (kMaxJM * kMaxJM * 4 * 100)>, 7>, 4> fcovmnum{}; ///< Covariance matrix for the numerator
+  std::array<std::array<std::array<float, (kMaxJM * kMaxJM * 4 * 100)>, 7>, 4> fcovmden{}; ///< Covariance matrix for the numerator
 
-  std::array<std::array<std::shared_ptr<TH3>, 4>, 4> fcovnum{};
-  std::array<std::array<std::shared_ptr<TH3>, 4>, 4> fcovden{};
+  std::array<std::array<std::shared_ptr<TH3>, 7>, 4> fcovnum{};
+  std::array<std::array<std::shared_ptr<TH3>, 7>, 4> fcovden{};
 
  protected:
   HistogramRegistry* pairSHCentMultKtRegistry = nullptr;

@@ -611,7 +611,7 @@ struct mcParticlePrediction {
     histos.fill(HIST("particles/FromCollVsFromCollBad"), particlesFromColl, particlesFromCollWrongBC);
     histos.fill(HIST("particles/FromCollBadOverFromCollVsVsFromMCColl"), 1.f * particlesFromCollWrongBC / particlesFromColl, particlesInCollision.size());
 
-    const std::array<float, Estimators::nEstimators>& nMult = genMult(mcParticles);
+    const std::array<float, Estimators::nEstimators>& nMult = genMult(particlesInCollision);
 
     float nMultReco[Estimators::nEstimators];
     nMultReco[Estimators::FT0A] = collision.multFT0A();

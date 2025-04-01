@@ -543,8 +543,7 @@ struct cascadeBuilder {
       }
     }
     if (useMatCorrType == 2) {
-      LOGF(info, "LUT correction requested, loading LUT");
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath));
+      LOGF(info, "LUT correction requested, will load LUT when initializing with timestamp...");
     }
 
     if (doprocessRun2 == false && doprocessRun3 == false && doprocessRun3withStrangenessTracking == false && doprocessRun3withKFParticle == false && doprocessFindableRun3 == false) {
@@ -756,9 +755,11 @@ struct cascadeBuilder {
     /// Set magnetic field for KF vertexing
     KFParticle::SetField(d_bz);
 
-    if (useMatCorrType == 2) {
+    if (useMatCorrType == 2 && !lut) {
       // setMatLUT only after magfield has been initalized
       // (setMatLUT has implicit and problematic init field call if not)
+      LOG(info) << "Loading material look-up table for timestamp: " << timestamp;
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath, timestamp));
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   }
@@ -1978,7 +1979,7 @@ struct cascadeBuilder {
   }
   PROCESS_SWITCH(cascadeBuilder, processFindableRun3, "Produce Run 3 findable cascade tables", false);
 
-  void processRun3withKFParticle(aod::Collisions const& collisions, soa::Filtered<TaggedCascades> const& cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, aod::V0s const&)
+  void processRun3withKFParticle(aod::Collisions const& collisions, soa::Filtered<TaggedCascades> const& cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, aod::V0sLinked const&)
   {
     for (const auto& collision : collisions) {
       // Fire up CCDB

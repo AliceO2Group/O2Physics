@@ -13,9 +13,9 @@
 /// \brief Executable that encodes physical selection criteria in a bit-wise
 /// selection \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#include <filesystem>
 #include <iostream>
 #include <random>
+#include <string>
 #include "PWGCF/FemtoDream/Utils/femtoDreamCutCulator.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
@@ -29,14 +29,14 @@ using namespace o2::analysis::femtoDream;
 int main(int /*argc*/, char* argv[])
 {
   std::string configFileName(argv[1]);
-  std::filesystem::path configFile{configFileName};
+  std::ifstream configFile(configFileName);
 
-  if (std::filesystem::exists(configFile)) {
+  if (configFile.is_open()) {
     FemtoDreamCutculator cut;
     cut.init(argv[1]);
 
     std::cout
-      << "Do you want to work with tracks or V0s (T/V)? >";
+      << "Do you want to work with tracks or V0s or Cascades (T/V/C)? >";
     std::string choice;
     std::cin >> choice;
 
@@ -49,6 +49,24 @@ int main(int /*argc*/, char* argv[])
       cut.setV0SelectionFromFile("ConfV0");
       cut.setTrackSelectionFromFile("ConfChild");
       cut.setPIDSelectionFromFile("ConfChild");
+    } else if (choice == std::string("C")) {
+      std::cout << "Do you want to select cascades, V0-Daughter tracks of the cascades or the Bachelor track (C/V/B)? >";
+      std::cin >> choice;
+      if (choice == std::string("C")) {
+        cut.setCascadeSelectionFromFile("ConfCascade");
+        choice = "C";
+      } else if (choice == std::string("V")) {
+        cut.setTrackSelectionFromFile("ConfCascV0Child");
+        cut.setPIDSelectionFromFile("ConfCascV0Child");
+        choice = "T";
+      } else if (choice == std::string("B")) {
+        cut.setTrackSelectionFromFile("ConfCascBachelor");
+        cut.setPIDSelectionFromFile("ConfCascBachelor");
+        choice = "T";
+      } else {
+        std::cout << "Option not recognized. Break...";
+        return 2;
+      }
     } else {
       std::cout << "Option not recognized. Break...";
       return 2;
@@ -79,7 +97,8 @@ int main(int /*argc*/, char* argv[])
 
   } else {
     std::cout << "The configuration file " << configFileName
-              << " could not be found.";
+              << " could not be found or could not be opened.";
+    return 1;
   }
 
   return 0;

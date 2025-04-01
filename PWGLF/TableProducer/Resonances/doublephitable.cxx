@@ -45,6 +45,7 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
+#include "Common/DataModel/PIDResponseITS.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,6 +59,8 @@ struct doublephitable {
 
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+  // Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 0.0f, "Accepted maximum Centrality"};
+  // Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 100.0f, "Accepted minimum Centrality"};
   // track
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
   Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
@@ -74,8 +77,11 @@ struct doublephitable {
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
   ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {120, 0.98, 1.1}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.0, 10.}, "#it{p}_{T} (GeV/#it{c})"};
+  Configurable<float> minPhiMass{"minPhiMass", 1.01, "Minimum phi mass"};
+  Configurable<float> maxPhiMass{"maxPhiMass", 1.03, "Maximum phi mass"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  // Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < nsigmaCutTPC;
@@ -138,6 +144,7 @@ struct doublephitable {
   ROOT::Math::PxPyPzMVector KaonPlus, KaonMinus, PhiMesonMother, PhiVectorDummy, Phid1dummy, Phid2dummy;
   void processPhiReducedTable(EventCandidates::iterator const& collision, TrackCandidates const&, aod::BCsWithTimestamps const&)
   {
+    o2::aod::ITSResponse itsResponse;
     bool keepEventDoublePhi = false;
     int numberPhi = 0;
     auto currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
@@ -174,6 +181,9 @@ struct doublephitable {
         if (!selectionPID(track1)) {
           continue;
         }
+        if (!(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 3.0)) {
+          continue;
+        }
         Npostrack = Npostrack + 1;
         qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), track1.tpcNSigmaKa(), track1.pt());
         if (track1.hasTOF()) {
@@ -196,13 +206,16 @@ struct doublephitable {
           if (track2ID == track1ID) {
             continue;
           }
+          if (!(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 3.0)) {
+            continue;
+          }
           if (!selectionPair(track1, track2)) {
             continue;
           }
           KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
           KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
           PhiMesonMother = KaonPlus + KaonMinus;
-          if (PhiMesonMother.M() > 1.0 && PhiMesonMother.M() < 1.04) {
+          if (PhiMesonMother.M() > minPhiMass && PhiMesonMother.M() < maxPhiMass) {
             numberPhi = numberPhi + 1;
             ROOT::Math::PtEtaPhiMVector temp1(track1.pt(), track1.eta(), track1.phi(), massKa);
             ROOT::Math::PtEtaPhiMVector temp2(track2.pt(), track2.eta(), track2.phi(), massKa);
@@ -241,11 +254,11 @@ struct doublephitable {
         }
       }
     } // select collision
-    if (numberPhi >= 2) {
+    if (numberPhi > 1 && Npostrack > 1 && Nnegtrack > 1) {
       keepEventDoublePhi = true;
     }
     qaRegistry.fill(HIST("hEventstat"), 0.5);
-    if (keepEventDoublePhi && numberPhi >= 2 && (phiresonance.size() == phiresonanced1.size()) && (phiresonance.size() == phiresonanced2.size())) {
+    if (keepEventDoublePhi && numberPhi > 1 && Npostrack > 1 && Nnegtrack > 1 && (phiresonance.size() == phiresonanced1.size()) && (phiresonance.size() == phiresonanced2.size())) {
       qaRegistry.fill(HIST("hEventstat"), 1.5);
       /////////// Fill collision table///////////////
       redPhiEvents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), Npostrack, Nnegtrack);

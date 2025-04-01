@@ -18,8 +18,10 @@
 ///
 /// \author Zaida Conesa del Valle <zaida.conesa.del.valle@cern.ch>
 ///
-#include <iostream>
+
 #include <vector>
+#include <memory>
+#include <string>
 #include <algorithm>
 #include <TH1F.h>
 #include <TH3F.h>
@@ -128,8 +130,8 @@ struct tableMakerMuonMchTrkEfficiency {
 
   using myMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
   using myMuonsMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
-  using myReducedMuons = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo>;
-  using myReducedMuonsMC = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsLabels, aod::ReducedMuonsInfo>;
+  using myReducedMuons = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
+  using myReducedMuonsMC = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsLabels>;
 
   // bit maps used for the Fill functions of the VarManager
   constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;

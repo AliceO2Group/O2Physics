@@ -15,8 +15,8 @@ o2physics_add_dpl_workflow(event-converter1
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(electron-converter1
-                  SOURCES electronConverter1.cxx
+o2physics_add_dpl_workflow(electron-converter2
+                  SOURCES electronConverter2.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
 

@@ -31,21 +31,21 @@ enum HfProngSpecies : uint8_t { Pion = 0,
 template <bool tiny, typename T1>
 T1 combineNSigma(T1 tpcNSigma, T1 tofNSigma)
 {
-  static constexpr float defaultNSigmaTolerance = .1f;
-  static constexpr float defaultNSigma = -999.f + defaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+  static constexpr float DefaultNSigmaTolerance = .1f;
+  static constexpr float DefaultNSigma = -999.f + DefaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
 
   if constexpr (tiny) {
     tpcNSigma *= aod::pidtpc_tiny::binning::bin_width;
     tofNSigma *= aod::pidtof_tiny::binning::bin_width;
   }
 
-  if ((tpcNSigma > defaultNSigma) && (tofNSigma > defaultNSigma)) { // TPC and TOF
+  if ((tpcNSigma > DefaultNSigma) && (tofNSigma > DefaultNSigma)) { // TPC and TOF
     return std::sqrt(.5f * (tpcNSigma * tpcNSigma + tofNSigma * tofNSigma));
   }
-  if (tpcNSigma > defaultNSigma) { // only TPC
+  if (tpcNSigma > DefaultNSigma) { // only TPC
     return std::abs(tpcNSigma);
   }
-  if (tofNSigma > defaultNSigma) { // only TOF
+  if (tofNSigma > DefaultNSigma) { // only TOF
     return std::abs(tofNSigma);
   }
   return tofNSigma; // no TPC nor TOF

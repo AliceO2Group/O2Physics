@@ -104,3 +104,7 @@ o2physics_add_dpl_workflow(run2-tracks-extra-converter
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(run2-tiny-to-full-pid
+                    SOURCES run2TinyToFullPID.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

@@ -40,108 +40,8 @@
 namespace o2::pid::tof
 {
 
-// Utility values (to remove!)
-static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; /// Speed of light in TOF units (cm/ps)
-static constexpr float kCSPEDDInv = 1.f / kCSPEED;               /// Inverse of the Speed of light in TOF units (ps/cm)
-static constexpr float defaultReturnValue = -999.f;              /// Default return value in case TOF measurement is not available
-
-/// \brief Class to handle the the TOF detector response for the TOF beta measurement
-class Beta
-{
- public:
-  Beta() = default;
-  ~Beta() = default;
-
-  /// Computes the beta of a track given a length, a time measurement and an event time (in ps)
-  /// \param length Length in cm of the track
-  /// \param tofSignal TOF signal in ps for the track
-  /// \param collisionTime collision time in ps for the event of the track
-  static float GetBeta(const float length, const float tofSignal, const float collisionTime) { return length / (tofSignal - collisionTime) * o2::constants::physics::invLightSpeedCm2PS; }
-
-  /// Gets the beta for the track of interest
-  /// \param track Track of interest
-  /// \param collisionTime Collision time
-  template <typename TrackType>
-  static float GetBeta(const TrackType& track, const float collisionTime)
-  {
-    return track.hasTOF() ? GetBeta(track.length(), track.tofSignal(), collisionTime) : defaultReturnValue;
-  }
-
-  /// Gets the beta for the track of interest
-  /// \param track Track of interest
-  template <typename TrackType>
-  static float GetBeta(const TrackType& track)
-  {
-    return GetBeta(track, track.tofEvTime());
-  }
-
-  /// Computes the expected uncertainty on the beta measurement
-  /// \param length Length in cm of the track
-  /// \param tofSignal TOF signal in ps for the track
-  /// \param collisionTime collision time in ps for the event of the track
-  /// \param time_reso expected time resolution
-  static float GetExpectedSigma(const float length, const float tofSignal, const float collisionTime, const float expectedResolution) { return GetBeta(length, tofSignal, collisionTime) / (tofSignal - collisionTime) * expectedResolution; }
-
-  /// Gets the expected uncertainty on the beta measurement of the track of interest
-  /// \param track Track of interest
-  template <typename TrackType>
-  float GetExpectedSigma(const TrackType& track) const
-  {
-    return GetExpectedSigma(track.length(), track.tofSignal(), track.tofEvTime(), mExpectedResolution);
-  }
-
-  /// Gets the expected beta for a given mass hypothesis (no energy loss taken into account)
-  /// \param momentum momentum in GeV/c of the track
-  /// \param mass mass in GeV/c2 of the particle of interest
-  static float GetExpectedBeta(const float momentum, const float mass) { return momentum > 0 ? momentum / std::sqrt(momentum * momentum + mass * mass) : 0.f; }
-
-  /// Gets the expected beta given the particle index (no energy loss taken into account) of the track of interest
-  /// \param track Track of interest
-  template <o2::track::PID::ID id, typename TrackType>
-  float GetExpectedBeta(const TrackType& track) const
-  {
-    return GetExpectedBeta(track.p(), o2::track::PID::getMass2Z(id));
-  }
-
-  /// Gets the number of sigmas with respect the approximate beta (no energy loss taken into account) of the track of interest
-  /// \param track Track of interest
-  template <o2::track::PID::ID id, typename TrackType>
-  float GetSeparation(const TrackType& track) const
-  {
-    return (GetBeta(track) - GetExpectedBeta<id>(track)) / GetExpectedSigma(track);
-  }
-
-  float mExpectedResolution = 80; /// Expected time resolution
-};
-
-/// \brief Class to handle the the TOF detector response for the TOF mass measurement
-class TOFMass
-{
- public:
-  TOFMass() = default;
-  ~TOFMass() = default;
-
-  /// Computes the TOF mass of a track given a momentum, a beta measurement
-  /// \param momentum momentum of the track
-  /// \param beta TOF beta measurement
-  static float GetTOFMass(const float momentum, const float beta) { return (momentum / beta) * std::sqrt(std::abs(1.f - beta * beta)); }
-
-  /// Gets the TOF mass for the track of interest
-  /// \param track Track of interest
-  template <typename TrackType>
-  static float GetTOFMass(const TrackType& track, const float beta)
-  {
-    return track.hasTOF() ? GetTOFMass(track.p(), beta) : defaultReturnValue;
-  }
-
-  /// Gets the TOF mass for the track of interest
-  /// \param track Track of interest
-  template <typename TrackType>
-  static float GetTOFMass(const TrackType& track)
-  {
-    return track.hasTOF() ? GetTOFMass(track.p(), Beta::GetBeta<TrackType>(track)) : defaultReturnValue;
-  }
-};
+// Utility values
+static constexpr float defaultReturnValue = -999.f; /// Default return value in case TOF measurement is not available
 
 /// \brief Next implementation class to store TOF response parameters for exp. times
 class TOFResoParamsV2 : public o2::tof::Parameters<13>
@@ -337,58 +237,10 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
   }
 
   // Time shift for post calibration to realign as a function of eta
-  void setTimeShiftParameters(std::unordered_map<std::string, float> const& pars, bool positive)
-  {
-    std::string baseOpt = positive ? "TimeShift.Pos." : "TimeShift.Neg.";
-
-    if (pars.count(baseOpt + "GetN") == 0) { // If the map does not contain the number of eta bins, we assume that no correction has to be applied
-      return;
-    }
-    const int nPoints = static_cast<int>(pars.at(baseOpt + "GetN"));
-    if (nPoints <= 0) {
-      LOG(fatal) << "TOFResoParamsV3 shift: time must be positive";
-    }
-    TGraph graph;
-    for (int i = 0; i < nPoints; ++i) {
-      graph.AddPoint(pars.at(Form("TimeShift.eta%i", i)), pars.at(Form("TimeShift.cor%i", i)));
-    }
-    setTimeShiftParameters(&graph, positive);
-  }
-  void setTimeShiftParameters(std::string const& filename, std::string const& objname, bool positive)
-  {
-    TFile f(filename.c_str(), "READ");
-    if (f.IsOpen()) {
-      if (positive) {
-        f.GetObject(objname.c_str(), gPosEtaTimeCorr);
-      } else {
-        f.GetObject(objname.c_str(), gNegEtaTimeCorr);
-      }
-      f.Close();
-    }
-    LOG(info) << "Set the Time Shift parameters from file " << filename << " and object " << objname << " for " << (positive ? "positive" : "negative");
-  }
-  void setTimeShiftParameters(TGraph* g, bool positive)
-  {
-    if (positive) {
-      gPosEtaTimeCorr = g;
-    } else {
-      gNegEtaTimeCorr = g;
-    }
-    LOG(info) << "Set the Time Shift parameters from object " << g->GetName() << " " << g->GetTitle() << " for " << (positive ? "positive" : "negative");
-  }
-  float getTimeShift(float eta, int16_t sign) const
-  {
-    if (sign > 0) {
-      if (!gPosEtaTimeCorr) {
-        return 0.f;
-      }
-      return gPosEtaTimeCorr->Eval(eta);
-    }
-    if (!gNegEtaTimeCorr) {
-      return 0.f;
-    }
-    return gNegEtaTimeCorr->Eval(eta);
-  }
+  void setTimeShiftParameters(std::unordered_map<std::string, float> const& pars, const bool positive);
+  void setTimeShiftParameters(std::string const& filename, std::string const& objname, const bool positive);
+  void setTimeShiftParameters(TGraph* g, const bool positive);
+  float getTimeShift(float eta, int16_t sign) const;
 
   void printTimeShiftParameters() const
   {
@@ -406,8 +258,7 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
 
   void setResolutionParametrization(std::unordered_map<std::string, float> const& pars)
   {
-    static constexpr std::array<const char*, 9> particleNames = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < 9; i++) {
       const std::string baseOpt = Form("tofResTrack.%s_", particleNames[i]);
       // Check if a key begins with a string
       for (const auto& [key, value] : pars) {
@@ -424,7 +275,7 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
       }
     }
     // Print a summary
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < 9; i++) {
       if (!mResolution[i]) {
         LOG(info) << "Resolution function for " << particleNames[i] << " not provided, using default " << mDefaultResoParams[i];
         mResolution[i] = new TF2(Form("tofResTrack.%s_Default", particleNames[i]), mDefaultResoParams[i], 0., 20, -1, 1.);
@@ -432,6 +283,8 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
       LOG(info) << "Resolution function for " << particleNames[i] << " is " << mResolution[i]->GetName() << " with formula " << mResolution[i]->GetFormula()->GetExpFormula();
     }
   }
+
+  void setResolutionParametrizationRun2(std::unordered_map<std::string, float> const& pars);
 
   template <o2::track::PID::ID pid>
   float getResolution(const float p, const float eta) const
@@ -441,9 +294,8 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
 
   void printResolution() const
   {
-    static constexpr std::array<const char*, 9> particleNames = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
     // Print a summary
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < 9; i++) {
       if (!mResolution[i]) {
         LOG(info) << "Resolution function for " << particleNames[i] << " is not defined yet";
         continue;
@@ -476,10 +328,109 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
                                                                  "315*TMath::Power((TMath::Max(x-0.811,0.1))*(1-0.4235*y*y),-0.783)",
                                                                  "157*TMath::Power((TMath::Max(x-0.556,0.1))*(1-0.4235*y*y),-0.783)",
                                                                  "216*TMath::Power((TMath::Max(x-0.647,0.1))*(1-0.4235*y*y),-0.76)"};
+  static constexpr std::array<const char*, 9> particleNames = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
 
   // Time shift for post calibration
   TGraph* gPosEtaTimeCorr = nullptr; /// Time shift correction for positive tracks
   TGraph* gNegEtaTimeCorr = nullptr; /// Time shift correction for negative tracks
+};
+
+/// \brief Class to handle the the TOF detector response for the TOF beta measurement
+class Beta
+{
+ public:
+  Beta() = default;
+  ~Beta() = default;
+
+  /// Computes the beta of a track given a length, a time measurement and an event time (in ps)
+  /// \param length Length in cm of the track
+  /// \param tofSignal TOF signal in ps for the track
+  /// \param collisionTime collision time in ps for the event of the track
+  static float GetBeta(const float length, const float tofSignal, const float collisionTime) { return length / (tofSignal - collisionTime) * o2::constants::physics::invLightSpeedCm2PS; }
+
+  /// Gets the beta for the track of interest
+  /// \param track Track of interest
+  /// \param collisionTime Collision time
+  template <typename TrackType>
+  static float GetBeta(const TrackType& track, const float collisionTime)
+  {
+    return track.hasTOF() ? GetBeta(track.length(), track.tofSignal(), collisionTime) : defaultReturnValue;
+  }
+
+  /// Gets the beta for the track of interest
+  /// \param track Track of interest
+  template <typename TrackType>
+  static float GetBeta(const TrackType& track)
+  {
+    return GetBeta(track, track.tofEvTime());
+  }
+
+  /// Computes the expected uncertainty on the beta measurement
+  /// \param length Length in cm of the track
+  /// \param tofSignal TOF signal in ps for the track
+  /// \param collisionTime collision time in ps for the event of the track
+  /// \param time_reso expected time resolution
+  static float GetExpectedSigma(const float length, const float tofSignal, const float collisionTime, const float expectedResolution) { return GetBeta(length, tofSignal, collisionTime) / (tofSignal - collisionTime) * expectedResolution; }
+
+  /// Gets the expected uncertainty on the beta measurement of the track of interest
+  /// \param track Track of interest
+  template <typename TrackType>
+  float GetExpectedSigma(const TrackType& track) const
+  {
+    return GetExpectedSigma(track.length(), track.tofSignal(), track.tofEvTime(), mExpectedResolution);
+  }
+
+  /// Gets the expected beta for a given mass hypothesis (no energy loss taken into account)
+  /// \param momentum momentum in GeV/c of the track
+  /// \param mass mass in GeV/c2 of the particle of interest
+  static float GetExpectedBeta(const float momentum, const float mass) { return momentum > 0 ? momentum / std::sqrt(momentum * momentum + mass * mass) : 0.f; }
+
+  /// Gets the expected beta given the particle index (no energy loss taken into account) of the track of interest
+  /// \param track Track of interest
+  template <o2::track::PID::ID id, typename TrackType>
+  float GetExpectedBeta(const TrackType& track) const
+  {
+    return GetExpectedBeta(track.p(), o2::track::PID::getMass2Z(id));
+  }
+
+  /// Gets the number of sigmas with respect the approximate beta (no energy loss taken into account) of the track of interest
+  /// \param track Track of interest
+  template <o2::track::PID::ID id, typename TrackType>
+  float GetSeparation(const TrackType& track) const
+  {
+    return (GetBeta(track) - GetExpectedBeta<id>(track)) / GetExpectedSigma(track);
+  }
+
+  float mExpectedResolution = 80; /// Expected time resolution
+};
+
+/// \brief Class to handle the the TOF detector response for the TOF mass measurement
+class TOFMass
+{
+ public:
+  TOFMass() = default;
+  ~TOFMass() = default;
+
+  /// Computes the TOF mass of a track given a momentum, a beta measurement
+  /// \param momentum momentum of the track
+  /// \param beta TOF beta measurement
+  static float GetTOFMass(const float momentum, const float beta) { return (momentum / beta) * std::sqrt(std::abs(1.f - beta * beta)); }
+
+  /// Gets the TOF mass for the track of interest
+  /// \param track Track of interest
+  template <typename TrackType>
+  static float GetTOFMass(const TrackType& track, const float beta)
+  {
+    return track.hasTOF() ? GetTOFMass(track.p(), beta) : defaultReturnValue;
+  }
+
+  /// Gets the TOF mass for the track of interest
+  /// \param track Track of interest
+  template <typename TrackType>
+  static float GetTOFMass(const TrackType& track)
+  {
+    return track.hasTOF() ? GetTOFMass(track.p(), Beta::GetBeta<TrackType>(track)) : defaultReturnValue;
+  }
 };
 
 /// \brief Class to handle the the TOF detector response for the expected time

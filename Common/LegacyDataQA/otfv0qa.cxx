@@ -8,19 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// This code calculates output histograms for centrality calibration
-// as well as vertex-Z dependencies of raw variables (either for calibration
-// of vtx-Z dependencies or for the calibration of those).
-//
-// This task is not strictly necessary in a typical analysis workflow,
-// except for centrality calibration! The necessary task is the multiplicity
-// tables.
-//
-// Comments, suggestions, questions? Please write to:
-// - victor.gonzalez@cern.ch
-// - david.dobrigkeit.chinellato@cern.ch
-//
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -39,20 +26,33 @@ struct OTFV0Qa {
   // Raw multiplicities
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  Configurable<float> maxGammaMassForXYplot{"maxGammaMassForXYplot", 0.1f, "Max photon mass for XY plot"};
+
+  ConfigurableAxis axisNCandidates{"axisNCandidates", {500, 0, 500}, "Number of OTF v0s"};
+  ConfigurableAxis axisPosition{"axisPosition", {1000, -100, 100}, "position (cm)"};
+  ConfigurableAxis axisMass{"axisMass", {100, 0.0f, 1.0f}, "Mass (GeV/c2)"};
+
   void init(InitContext&)
   {
-    const AxisSpec axisEvent{10, 0, 10, "Event counter"};
-    const AxisSpec axisNCandidates{500, 0, 500, "Number of OTF v0s"};
+    const AxisSpec axisPVz{30, -15, 15, "Primary vertex Z (cm)"};
 
     // Base histograms
-    histos.add("hEventCounter", "Event counter", kTH1F, {axisEvent});
+    histos.add("hPrimaryVertexZ", "Event counter", kTH1F, {axisPVz});
     histos.add("hCandidates", "Number of OTF V0s", kTH1F, {axisNCandidates});
+    histos.add("hGammaMass", "mass distribution", kTH1F, {axisMass});
+    histos.add("h2dPosition", "xy positions", kTH2F, {axisPosition, axisPosition});
   }
 
-  void process(aod::Collision const&, aod::Run2OTFV0s const& v0s)
+  void process(aod::Collision const& collision, aod::Run2OTFV0s const& v0s)
   {
-    histos.fill(HIST("hEventCounter"), 0.5);
+    histos.fill(HIST("hPrimaryVertexZ"), collision.posZ());
     histos.fill(HIST("hCandidates"), v0s.size());
+    for (auto const& v0 : v0s) {
+      histos.fill(HIST("hGammaMass"), v0.mass());
+      if (v0.mass() < maxGammaMassForXYplot) {
+        histos.fill(HIST("h2dPosition"), v0.x(), v0.y());
+      }
+    }
   }
 };
 

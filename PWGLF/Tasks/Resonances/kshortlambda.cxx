@@ -498,6 +498,11 @@ struct Kshortlambda {
     return true;
   }
 
+  double massK0s = o2::constants::physics::MassK0Short;
+  double massLambda = o2::constants::physics::MassLambda;
+  double massPr = o2::constants::physics::MassProton;
+  double massPi = o2::constants::physics::MassPionCharged;
+
   // Defining filters for events (event selection)
   // Filter eventFilter = (o2::aod::evsel::sel8 == true);
 
@@ -516,14 +521,13 @@ struct Kshortlambda {
 
   ROOT::Math::PxPyPzMVector daughter1, daughter2;
   ROOT::Math::PxPyPzMVector protonVec, pionVec, lambdaVec;
+  ROOT::Math::PxPyPzMVector fourVecDau, fourVecMother, fourVecDauCM;
+  ROOT::Math::XYZVector threeVecDauCM;
+  ROOT::Math::XYZVector helicityVec, normalVec, randomVec, beamVec;
 
   void processSE(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s)
   {
     hvzero.fill(HIST("heventscheck"), 0.5);
-    const double massK0s = o2::constants::physics::MassK0Short;
-    const double massLambda = o2::constants::physics::MassLambda;
-    const double massPr = o2::constants::physics::MassProton;
-    const double massPi = o2::constants::physics::MassPionCharged;
 
     float multiplicity = 0.0f;
     if (cfgMultFOTM) {
@@ -550,7 +554,7 @@ struct Kshortlambda {
     }
 
     std::vector<int> v0indexes;
-
+    TLorentzVector lv1, lv3, lvLambda, lv4, lv5;
     for (const auto& [v1, v2] : combinations(CombinationsStrictlyUpperIndexPolicy(V0s, V0s))) {
       hvzero.fill(HIST("heventscheck"), 2.5);
       if (v1.size() == 0 || v2.size() == 0) {
@@ -610,9 +614,9 @@ struct Kshortlambda {
       }
       lambdaVec = protonVec + pionVec;
 
-      TLorentzVector lv1, lv2, lv3, lvLambda, lv4, lv5;
       lv1.SetPtEtaPhiM(v1.pt(), v1.eta(), v1.phi(), massK0s);
       lvLambda.SetPtEtaPhiM(lambdaVec.pt(), lambdaVec.eta(), lambdaVec.phi(), massLambda);
+
       lv3 = lv1 + lvLambda;
 
       if (qAv0daughters) {
@@ -628,48 +632,47 @@ struct Kshortlambda {
       daughter2 = ROOT::Math::PxPyPzMVector(v2.px(), v2.py(), v2.pz(), massLambda); // V02
 
       // polarization calculations
-      ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
-      ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M());                // mass of KshortKshort pair
-      ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                                        // boost mother to center of mass frame
-      ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);                                                                // boost the frame of daughter same as mother
-      ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                                 // get the 3 vector of daughter in the frame of mother
+      fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
+      fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M());                // mass of KshortKshort pair
+      ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                              // boost mother to center of mass frame
+      fourVecDauCM = boost(fourVecDau);                                                                // boost the frame of daughter same as mother
+      threeVecDauCM = fourVecDauCM.Vect();                                                             // get the 3 vector of daughter in the frame of mother
+
       if (std::abs(lv3.Rapidity()) < 0.5) {
         if (invMass1D) {
           hvzero.fill(HIST("h1vzeropairInvMassRot"), lv3.M());
         }
 
         if (activateTHnSparseCosThStarHelicity) {
-          ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
+          helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
           auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
           hvzero.fill(HIST("h3vzeropairInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity, occupancyno);
 
           for (int i = 0; i < cnofrotations; i++) {
             float theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / rotationalCut, o2::constants::math::PI + o2::constants::math::PI / rotationalCut);
             lv4.SetPtEtaPhiM(lambdaVec.pt(), lambdaVec.eta(), lambdaVec.phi() + theta2, massLambda); // for rotated background
-
             lv5 = lv1 + lv4;
-
             hvzero.fill(HIST("h3vzeropairInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity, occupancyno);
           }
 
         } else if (activateTHnSparseCosThStarProduction) {
-          ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
+          normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
           auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
           hvzero.fill(HIST("h3vzeropairInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction, occupancyno);
           for (int i = 0; i < cnofrotations; i++) {
 
-            float theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / rotationalCut, o2::constants::math::PI + o2::constants::math::PI / rotationalCut);
+            auto theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / rotationalCut, o2::constants::math::PI + o2::constants::math::PI / rotationalCut);
 
             lv4.SetPtEtaPhiM(lambdaVec.pt(), lambdaVec.eta(), lambdaVec.phi() + theta2, massLambda); // for rotated background
             lv5 = lv1 + lv4;
             hvzero.fill(HIST("h3vzeropairInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarProduction, occupancyno);
           }
         } else if (activateTHnSparseCosThStarBeam) {
-          ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
+          beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
           auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
           hvzero.fill(HIST("h3vzeropairInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam, occupancyno);
           for (int i = 0; i < cnofrotations; i++) {
-            float theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / rotationalCut, o2::constants::math::PI + o2::constants::math::PI / rotationalCut);
+            auto theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / rotationalCut, o2::constants::math::PI + o2::constants::math::PI / rotationalCut);
             lv4.SetPtEtaPhiM(lambdaVec.pt(), lambdaVec.eta(), lambdaVec.phi() + theta2, massLambda); // for rotated background
             lv5 = lv1 + lv4;
             hvzero.fill(HIST("h3vzeropairInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarBeam, occupancyno);
@@ -677,12 +680,12 @@ struct Kshortlambda {
         } else if (activateTHnSparseCosThStarRandom) {
           auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
           auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
-          ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
+          randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
           auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
           hvzero.fill(HIST("h3vzeropairInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom, occupancyno);
 
           for (int i = 0; i < cnofrotations; i++) {
-            float theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / rotationalCut, o2::constants::math::PI + o2::constants::math::PI / rotationalCut);
+            auto theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / rotationalCut, o2::constants::math::PI + o2::constants::math::PI / rotationalCut);
             lv4.SetPtEtaPhiM(lambdaVec.pt(), lambdaVec.eta(), lambdaVec.phi() + theta2, massLambda); // for rotated background
             lv5 = lv1 + lv4;
             hvzero.fill(HIST("h3vzeropairInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarRandom, occupancyno);
@@ -707,11 +710,6 @@ struct Kshortlambda {
 
   void processME(EventCandidates const& collisions, TrackCandidates const& /*tracks*/, V0TrackCandidate const& v0s)
   {
-    const double massK0s = o2::constants::physics::MassK0Short;
-    const double massLambda = o2::constants::physics::MassLambda;
-    const double massPr = o2::constants::physics::MassProton;
-    const double massPi = o2::constants::physics::MassPionCharged;
-
     auto tracksTuple = std::make_tuple(v0s);
     BinningTypeVertexContributor binningOnPositions1{{mevz, memult}, true};
     BinningTypeCentralityM binningOnPositions2{{mevz, memult}, true};
@@ -720,6 +718,8 @@ struct Kshortlambda {
     SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeCentralityM> pair2{binningOnPositions2, cfgNmixedEvents, -1, collisions, tracksTuple, &cache};       // for pp
 
     if (cfgMultFOTM) {
+      TLorentzVector lv1, lv3, lvLambda, lv4, lv5;
+
       for (const auto& [c1, tracks1, c2, tracks2] : pair2) // two different centrality c1 and c2 and tracks corresponding to them
       {
 
@@ -733,7 +733,7 @@ struct Kshortlambda {
         auto occupancyno = c1.trackOccupancyInTimeRange();
         auto occupancyno2 = c2.trackOccupancyInTimeRange();
         if (applyOccupancyCut && (occupancyno < occupancyCut || occupancyno2 < occupancyCut)) {
-          return;
+          continue;
         }
 
         for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
@@ -792,33 +792,32 @@ struct Kshortlambda {
             pionVec = ROOT::Math::PxPyPzMVector(postrack2.px(), postrack2.py(), postrack2.pz(), massPi);
           }
           lambdaVec = protonVec + pionVec;
-
-          TLorentzVector lv1, lv2, lv3, lvLambda, lv4, lv5;
           lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massK0s);
           lvLambda.SetPtEtaPhiM(lambdaVec.pt(), lambdaVec.eta(), lambdaVec.phi(), massLambda);
           lv3 = lv1 + lvLambda;
-          ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
-          ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M());                // mass of KshortKshort pair
+          fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s);                           // Kshort
+          fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M());                                          // mass of KshortKshort pair
           ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                                        // boost mother to center of mass frame
-          ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);                                                                // boost the frame of daughter same as mother
-          ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                                 // get the 3 vector of daughter in the frame of mother
+          fourVecDauCM = boost(fourVecDau);                                                                                          // boost the frame of daughter same as mother
+          threeVecDauCM = fourVecDauCM.Vect();                                                                                       // get the 3 vector of daughter in the frame of mother
+
           if (std::abs(lv3.Rapidity()) < 0.5) {
             if (activateTHnSparseCosThStarHelicity) {
-              ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
+              helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
               auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
               hvzero.fill(HIST("h3vzeropairInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity, occupancyno);
             } else if (activateTHnSparseCosThStarProduction) {
-              ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
+              normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
               auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
               hvzero.fill(HIST("h3vzeropairInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction, occupancyno);
             } else if (activateTHnSparseCosThStarBeam) {
-              ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
+              beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
               auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hvzero.fill(HIST("h3vzeropairInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam, occupancyno);
             } else if (activateTHnSparseCosThStarRandom) {
               auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
               auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
-              ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
+              randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
               auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hvzero.fill(HIST("h3vzeropairInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom, occupancyno);
             }
@@ -836,10 +835,11 @@ struct Kshortlambda {
         }
         auto occupancyno = c1.trackOccupancyInTimeRange();
         auto occupancyno2 = c2.trackOccupancyInTimeRange();
-        if (applyOccupancyCut && (occupancyno < occupancyCut || occupancyno2 < occupancyCut)) {
-          return;
-        }
 
+        if (applyOccupancyCut && (occupancyno < occupancyCut || occupancyno2 < occupancyCut)) {
+          continue;
+        }
+        TLorentzVector lv1, lv3, lvLambda, lv4, lv5;
         for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
           if (t1.size() == 0 || t2.size() == 0) {
@@ -897,34 +897,34 @@ struct Kshortlambda {
           }
           lambdaVec = protonVec + pionVec;
 
-          TLorentzVector lv1, lv2, lv3, lvLambda, lv4, lv5;
           lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massK0s);
           lvLambda.SetPtEtaPhiM(lambdaVec.pt(), lambdaVec.eta(), lambdaVec.phi(), massLambda);
           lv3 = lv1 + lvLambda;
-          ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
 
-          ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of KshortKshort pair
+          fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s);            // Kshort
+          fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M());                           // mass of KshortKshort pair
           ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                         // boost mother to center of mass frame
-          ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);                                                 // boost the frame of daughter same as mother
-          ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                  // get the 3 vector of daughter in the frame of mother
+          fourVecDauCM = boost(fourVecDau);                                                                           // boost the frame of daughter same as mother
+          threeVecDauCM = fourVecDauCM.Vect();                                                                        // get the 3 vector of daughter in the frame of mother
+
           if (std::abs(lv3.Rapidity()) < 0.5) {
 
             if (activateTHnSparseCosThStarHelicity) {
-              ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
+              helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
               auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
               hvzero.fill(HIST("h3vzeropairInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity, occupancyno);
             } else if (activateTHnSparseCosThStarProduction) {
-              ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
+              normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
               auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
               hvzero.fill(HIST("h3vzeropairInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction, occupancyno);
             } else if (activateTHnSparseCosThStarBeam) {
-              ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
+              beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
               auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hvzero.fill(HIST("h3vzeropairInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam, occupancyno);
             } else if (activateTHnSparseCosThStarRandom) {
               auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
               auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
-              ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
+              randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
               auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hvzero.fill(HIST("h3vzeropairInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom, occupancyno);
             }

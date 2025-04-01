@@ -29,7 +29,53 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGHF/Core/CentralityEstimation.h"
+
+namespace o2::hf_occupancy
+{
+// centrality selection estimators
+enum OccupancyEstimator { None = 0,
+                          Its,
+                          Ft0c };
+
+/// Get the occupancy
+/// \param collision is the collision with the occupancy information
+/// \return collision occupancy
+template <typename Coll>
+float getOccupancyColl(Coll const& collision, int occEstimator)
+{
+  switch (occEstimator) {
+    case OccupancyEstimator::Its:
+      return collision.trackOccupancyInTimeRange();
+    case OccupancyEstimator::Ft0c:
+      return collision.ft0cOccupancyInTimeRange();
+    default:
+      LOG(fatal) << "Occupancy estimator not valid. Possible values are ITS or FT0C.";
+      break;
+  }
+  return -999.f;
+};
+
+/// \brief Function to get MC collision occupancy
+/// \param collSlice collection of reconstructed collisions associated to a generated one
+/// \return generated MC collision occupancy
+template <typename CCs>
+int getOccupancyGenColl(CCs const& collSlice, int occEstimator)
+{
+  float multiplicity{0.f};
+  int occupancy = 0;
+  for (const auto& collision : collSlice) {
+    float collMult{0.f};
+    collMult = collision.numContrib();
+    if (collMult > multiplicity) {
+      occupancy = getOccupancyColl(collision, occEstimator);
+      multiplicity = collMult;
+    }
+  } // end loop over collisions
+  return occupancy;
+};
+} // namespace o2::hf_occupancy
 
 namespace o2::hf_evsel
 {
@@ -108,17 +154,17 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
   o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "Users/m/mpuccio/EventFiltering/OTS/Chunked/", "ccdb path for ZORRO objects"};
   o2::framework::ConfigurableAxis th2ConfigAxisCent{"th2ConfigAxisCent", {100, 0., 100.}, ""};
-  o2::framework::ConfigurableAxis th2ConfigAxisOccupancy{"th2ConfigAxisOccupancy", {14, 0, 140000}, ""};
+  o2::framework::ConfigurableAxis th2ConfigAxisOccupancy{"th2ConfigAxisOccupancy", {14, 0, 14000}, ""};
 
   // histogram names
-  static constexpr char nameHistCollisions[] = "hCollisions";
-  static constexpr char nameHistSelCollisionsCent[] = "hSelCollisionsCent";
-  static constexpr char nameHistPosZBeforeEvSel[] = "hPosZBeforeEvSel";
-  static constexpr char nameHistPosZAfterEvSel[] = "hPosZAfterEvSel";
-  static constexpr char nameHistPosXAfterEvSel[] = "hPosXAfterEvSel";
-  static constexpr char nameHistPosYAfterEvSel[] = "hPosYAfterEvSel";
-  static constexpr char nameHistNumPvContributorsAfterSel[] = "hNumPvContributorsAfterSel";
-  static constexpr char nameHistCollisionsCentOcc[] = "hCollisionsCentOcc";
+  static constexpr char NameHistCollisions[] = "hCollisions";
+  static constexpr char NameHistSelCollisionsCent[] = "hSelCollisionsCent";
+  static constexpr char NameHistPosZBeforeEvSel[] = "hPosZBeforeEvSel";
+  static constexpr char NameHistPosZAfterEvSel[] = "hPosZAfterEvSel";
+  static constexpr char NameHistPosXAfterEvSel[] = "hPosXAfterEvSel";
+  static constexpr char NameHistPosYAfterEvSel[] = "hPosYAfterEvSel";
+  static constexpr char NameHistNumPvContributorsAfterSel[] = "hNumPvContributorsAfterSel";
+  static constexpr char NameHistCollisionsCentOcc[] = "hCollisionsCentOcc";
 
   std::shared_ptr<TH1> hCollisions, hSelCollisionsCent, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
   std::shared_ptr<TH2> hCollisionsCentOcc;
@@ -132,18 +178,18 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param registry reference to the histogram registry
   void addHistograms(o2::framework::HistogramRegistry& registry)
   {
-    hCollisions = registry.add<TH1>(nameHistCollisions, "HF event counter;;# of accepted collisions", {o2::framework::HistType::kTH1D, {axisEvents}});
-    hSelCollisionsCent = registry.add<TH1>(nameHistSelCollisionsCent, "HF event counter;T0M;# of accepted collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
-    hPosZBeforeEvSel = registry.add<TH1>(nameHistPosZBeforeEvSel, "all events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
-    hPosZAfterEvSel = registry.add<TH1>(nameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
-    hPosXAfterEvSel = registry.add<TH1>(nameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
-    hPosYAfterEvSel = registry.add<TH1>(nameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
-    hNumPvContributorsAfterSel = registry.add<TH1>(nameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
+    hCollisions = registry.add<TH1>(NameHistCollisions, "HF event counter;;# of accepted collisions", {o2::framework::HistType::kTH1D, {axisEvents}});
+    hSelCollisionsCent = registry.add<TH1>(NameHistSelCollisionsCent, "HF event counter;T0M;# of accepted collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
+    hPosZBeforeEvSel = registry.add<TH1>(NameHistPosZBeforeEvSel, "all events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
+    hPosZAfterEvSel = registry.add<TH1>(NameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
+    hPosXAfterEvSel = registry.add<TH1>(NameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hPosYAfterEvSel = registry.add<TH1>(NameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hNumPvContributorsAfterSel = registry.add<TH1>(NameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
     setEventRejectionLabels(hCollisions, softwareTrigger);
 
     const o2::framework::AxisSpec th2AxisCent{th2ConfigAxisCent, "Centrality"};
     const o2::framework::AxisSpec th2AxisOccupancy{th2ConfigAxisOccupancy, "Occupancy"};
-    hCollisionsCentOcc = registry.add<TH2>(nameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
+    hCollisionsCentOcc = registry.add<TH2>(NameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
 
     // we initialise the summary object
     if (softwareTrigger.value != "") {
@@ -165,7 +211,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     uint16_t rejectionMask{0}; // 16 bits, in case new ev. selections will be added
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
-      centrality = getCentrality<centEstimator>(collision);
+      centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
         SETBIT(rejectionMask, EventRejection::Centrality);
       }
@@ -210,7 +256,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
         SETBIT(rejectionMask, EventRejection::NoCollInRofStandard);
       }
       if (useOccupancyCut) {
-        float occupancy = getOccupancy(collision, occEstimator);
+        float occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
         if (occupancy < occupancyMin || occupancy > occupancyMax) {
           SETBIT(rejectionMask, EventRejection::Occupancy);
         }
@@ -259,46 +305,6 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     return rejectionMask;
   }
 
-  /// Get the occupancy
-  /// \param collision is the collision with the occupancy information
-  /// \param occEstimator is the occupancy estimator (1: ITS, 2: FT0C)
-  template <typename Coll>
-  float getOccupancy(Coll const& collision, int occEstimator = 1)
-  {
-    switch (occEstimator) {
-      case 1: // ITS
-        return collision.trackOccupancyInTimeRange();
-        break;
-      case 2: // FT0c
-        return collision.ft0cOccupancyInTimeRange();
-        break;
-      default:
-        LOG(warning) << "Occupancy estimator not valid. Possible values are ITS or FT0C. Fallback to ITS";
-        return collision.trackOccupancyInTimeRange();
-        break;
-    }
-  }
-
-  /// Get the centrality
-  /// \param collision is the collision with the centrality information
-  /// \param centEstimator is the centrality estimator from hf_centrality::CentralityEstimator
-  template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
-  float getCentrality(Coll const& collision)
-  {
-    if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
-      return collision.centFT0A();
-    } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
-      return collision.centFT0C();
-    } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
-      return collision.centFT0M();
-    } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
-      return collision.centFV0A();
-    } else {
-      LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to FT0c";
-      return collision.centFT0C();
-    }
-  }
-
   /// \brief Fills histograms for monitoring event selections satisfied by the collision.
   /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
@@ -337,14 +343,23 @@ struct HfEventSelectionMc {
   float centralityMax{100.f};       // Maximum centrality
 
   // histogram names
-  static constexpr char nameHistParticles[] = "hParticles";
+  static constexpr char NameHistGenCollisionsCent[] = "hGenCollisionsCent";
+  std::shared_ptr<TH1> hGenCollisionsCent;
+  static constexpr char NameHistRecCollisionsCentMc[] = "hRecCollisionsCentMc";
+  std::shared_ptr<TH1> hRecCollisionsCentMc;
+  static constexpr char NameHistNSplitVertices[] = "hNSplitVertices";
+  std::shared_ptr<TH1> hNSplitVertices;
+  static constexpr char NameHistParticles[] = "hParticles";
   std::shared_ptr<TH1> hParticles;
 
   /// \brief Adds collision monitoring histograms in the histogram registry.
   /// \param registry reference to the histogram registry
   void addHistograms(o2::framework::HistogramRegistry& registry)
   {
-    hParticles = registry.add<TH1>(nameHistParticles, "HF particle counter;;# of accepted particles", {o2::framework::HistType::kTH1D, {axisEvents}});
+    hGenCollisionsCent = registry.add<TH1>(NameHistGenCollisionsCent, "HF event counter;T0M;# of generated collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
+    hRecCollisionsCentMc = registry.add<TH1>(NameHistRecCollisionsCentMc, "HF event counter;T0M;# of reconstructed collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
+    hNSplitVertices = registry.add<TH1>(NameHistNSplitVertices, "HF split vertices counter;;# of reconstructed collisions per mc collision", {o2::framework::HistType::kTH1D, {{4, 1., 5.}}});
+    hParticles = registry.add<TH1>(NameHistParticles, "HF particle counter;;# of accepted particles", {o2::framework::HistType::kTH1D, {axisEvents}});
     // Puts labels on the collision monitoring histogram.
     setEventRejectionLabels(hParticles);
   }
@@ -385,27 +400,7 @@ struct HfEventSelectionMc {
     auto bc = mcCollision.template bc_as<TBc>();
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
-      float multiplicity{0.f};
-      for (const auto& collision : collSlice) {
-        float collCent{0.f};
-        float collMult{0.f};
-        if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
-          collCent = collision.centFT0A();
-        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
-          collCent = collision.centFT0C();
-        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
-          collCent = collision.centFT0M();
-        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
-          collCent = collision.centFV0A();
-        } else {
-          LOGP(fatal, "Unsupported centrality estimator!");
-        }
-        collMult = collision.numContrib();
-        if (collMult > multiplicity) {
-          centrality = collCent;
-          multiplicity = collMult;
-        }
-      }
+      centrality = o2::hf_centrality::getCentralityGenColl(collSlice, centEstimator);
       /// centrality selection
       if (centrality < centralityMin || centrality > centralityMax) {
         SETBIT(rejectionMask, EventRejection::Centrality);
@@ -436,16 +431,31 @@ struct HfEventSelectionMc {
   }
 
   /// \brief Fills histogram for monitoring event selections satisfied by the collision.
+  /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
-  void fillHistograms(const uint16_t rejectionMask)
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
+  void fillHistograms(Coll const& mcCollision, const uint16_t rejectionMask, int nSplitColl = 0)
   {
     hParticles->Fill(EventRejection::None);
+
+    if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+      if (!TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut) && !TESTBIT(rejectionMask, EventRejection::ItsRofBorderCut) && !TESTBIT(rejectionMask, EventRejection::PositionZ)) {
+        hGenCollisionsCent->Fill(mcCollision.centFT0M());
+      }
+    }
 
     for (std::size_t reason = 1; reason < EventRejection::NEventRejection; reason++) {
       if (TESTBIT(rejectionMask, reason)) {
         return;
       }
       hParticles->Fill(reason);
+    }
+
+    if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+      hNSplitVertices->Fill(nSplitColl);
+      for (int nColl = 0; nColl < nSplitColl; nColl++) {
+        hRecCollisionsCentMc->Fill(mcCollision.centFT0M());
+      }
     }
   }
 };

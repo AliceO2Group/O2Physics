@@ -68,6 +68,7 @@ struct QaImpactPar {
   ConfigurableAxis binningIuPosX{"binningIuPosX", {100, -10.f, 10.f}, "Track IU x position"};
   ConfigurableAxis binningIuPosY{"binningIuPosY", {100, -10.f, 10.f}, "Track IU y position"};
   ConfigurableAxis binningIuPosZ{"binningIuPosZ", {100, -10.f, 10.f}, "Track IU z position"};
+  ConfigurableAxis binningClusterSize{"binningClusterSize", {16, -0.5, 15.5}, "Cluster size, four bits per a layer"};
   ConfigurableAxis binsNumPvContrib{"binsNumPvContrib", {200, 0, 200}, "Number of original PV contributors"};
   Configurable<bool> keepOnlyPhysPrimary{"keepOnlyPhysPrimary", false, "Consider only phys. primary particles (MC)"};
   Configurable<bool> keepOnlyPvContrib{"keepOnlyPvContrib", false, "Consider only PV contributor tracks"};
@@ -157,7 +158,7 @@ struct QaImpactPar {
   using trackFullTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TracksDCACov,
                                        o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
                                        o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
-  using trackTableIU = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksCovIU>;
+  using trackTableIU = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksCovIU, o2::aod::TracksExtra>;
   void processData(o2::soa::Filtered<collisionRecoTable>::iterator& collision,
                    const trackTable& tracksUnfiltered,
                    const o2::soa::Filtered<trackFullTable>& tracks,
@@ -287,6 +288,7 @@ struct QaImpactPar {
     const AxisSpec trackIUposXaxis{binningIuPosX, "x (cm)"};
     const AxisSpec trackIUposYaxis{binningIuPosY, "y (cm)"};
     const AxisSpec trackIUposZaxis{binningIuPosZ, "z (cm)"};
+    const AxisSpec trackIUclusterSize{binningClusterSize, "cluster size"};
     const AxisSpec trackImpParRPhiAxis{binningImpPar, "#it{d}_{r#it{#varphi}} (#mum)"};
     const AxisSpec trackImpParZAxis{binningImpPar, "#it{d}_{z} (#mum)"};
     const AxisSpec trackImpParRPhiPullsAxis{binningPulls, "#it{d}_{r#it{#varphi}} / #sigma(#it{d}_{r#it{#varphi}})"};
@@ -313,7 +315,8 @@ struct QaImpactPar {
     histograms.add("Reco/h4ImpPar", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     histograms.add("Reco/h4ImpParZ", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     if (addTrackIUinfo) {
-      histograms.add("Reco/h4ImpParIU", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
+      histograms.add("Reco/h4ClusterSizeIU", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
+      // histograms.add("Reco/h4ImpParIU", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
       histograms.add("Reco/h4ImpParZIU", "", kTHnSparseD, {trackPaxis, trackImpParZAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
     }
     // if(fEnablePulls && !doPVrefit) {
@@ -325,16 +328,25 @@ struct QaImpactPar {
     }
     isPIDPionApplied = ((nSigmaTPCPionMin > -10.001 && nSigmaTPCPionMax < 10.001) || (nSigmaTOFPionMin > -10.001 && nSigmaTOFPionMax < 10.001));
     if (isPIDPionApplied) {
+      if (addTrackIUinfo) {
+        histograms.add("Reco/h4ClusterSizeIU_Pion", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
+      }
       histograms.add("Reco/h4ImpPar_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
       histograms.add("Reco/h4ImpParZ_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     }
     isPIDKaonApplied = ((nSigmaTPCKaonMin > -10.001 && nSigmaTPCKaonMax < 10.001) || (nSigmaTOFKaonMin > -10.001 && nSigmaTOFKaonMax < 10.001));
     if (isPIDKaonApplied) {
+      if (addTrackIUinfo) {
+        histograms.add("Reco/h4ClusterSizeIU_Kaon", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
+      }
       histograms.add("Reco/h4ImpPar_Kaon", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
       histograms.add("Reco/h4ImpParZ_Kaon", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     }
     isPIDProtonApplied = ((nSigmaTPCProtonMin > -10.001 && nSigmaTPCProtonMax < 10.001) || (nSigmaTOFProtonMin > -10.001 && nSigmaTOFProtonMax < 10.001));
     if (isPIDProtonApplied) {
+      if (addTrackIUinfo) {
+        histograms.add("Reco/h4ClusterSizeIU_Proton", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
+      }
       histograms.add("Reco/h4ImpPar_Proton", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
       histograms.add("Reco/h4ImpParZ_Proton", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     }
@@ -494,6 +506,7 @@ struct QaImpactPar {
     float trackIuPosY = -999.f;
     float trackIuPosZ = -999.f;
     std::array<float, 3> posXYZ = {-999.f, -999.f, -999.f};
+    int clusterSizeInLayer0 = -1;
     int ntr = tracks.size();
     int cnt = 0;
     for (const auto& track : tracks) {
@@ -691,6 +704,7 @@ struct QaImpactPar {
             trackIuPosX = posXYZ[0];
             trackIuPosY = posXYZ[1];
             trackIuPosZ = posXYZ[2];
+            clusterSizeInLayer0 = trackIU.itsClsSizeInLayer(0);
           }
         }
       }
@@ -699,7 +713,8 @@ struct QaImpactPar {
       histograms.fill(HIST("Reco/h4ImpPar"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
       histograms.fill(HIST("Reco/h4ImpParZ"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
       if (addTrackIUinfo) {
-        histograms.fill(HIST("Reco/h4ImpParIU"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ);
+        histograms.fill(HIST("Reco/h4ClusterSizeIU"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
+        // histograms.fill(HIST("Reco/h4ImpParIU"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ);
         histograms.fill(HIST("Reco/h4ImpParZIU"), p, impParZ, trackIuPosX, trackIuPosY, trackIuPosZ);
       }
       if (fEnablePulls) {
@@ -709,6 +724,9 @@ struct QaImpactPar {
 
       if (isPIDPionApplied && nSigmaTPCPionMin < tpcNSigmaPion && tpcNSigmaPion < nSigmaTPCPionMax && nSigmaTOFPionMin < tofNSigmaPion && tofNSigmaPion < nSigmaTOFPionMax) {
         /// PID selected pions
+        if (addTrackIUinfo) {
+          histograms.fill(HIST("Reco/h4ClusterSizeIU_Pion"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
+        }
         histograms.fill(HIST("Reco/h4ImpPar_Pion"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
         histograms.fill(HIST("Reco/h4ImpParZ_Pion"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
         histograms.fill(HIST("Reco/hNSigmaTPCPion_afterPID"), pt, tpcNSigmaPion);
@@ -716,6 +734,9 @@ struct QaImpactPar {
       }
       if (isPIDKaonApplied && nSigmaTPCKaonMin < tpcNSigmaKaon && tpcNSigmaKaon < nSigmaTPCKaonMax && nSigmaTOFKaonMin < tofNSigmaKaon && tofNSigmaKaon < nSigmaTOFKaonMax) {
         /// PID selected kaons
+        if (addTrackIUinfo) {
+          histograms.fill(HIST("Reco/h4ClusterSizeIU_Kaon"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
+        }
         histograms.fill(HIST("Reco/h4ImpPar_Kaon"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
         histograms.fill(HIST("Reco/h4ImpParZ_Kaon"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
         histograms.fill(HIST("Reco/hNSigmaTPCKaon_afterPID"), pt, tpcNSigmaKaon);
@@ -723,6 +744,9 @@ struct QaImpactPar {
       }
       if (isPIDProtonApplied && nSigmaTPCProtonMin < tpcNSigmaProton && tpcNSigmaProton < nSigmaTPCProtonMax && nSigmaTOFProtonMin < tofNSigmaProton && tofNSigmaProton < nSigmaTOFProtonMax) {
         /// PID selected Protons
+        if (addTrackIUinfo) {
+          histograms.fill(HIST("Reco/h4ClusterSizeIU_Proton"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
+        }
         histograms.fill(HIST("Reco/h4ImpPar_Proton"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
         histograms.fill(HIST("Reco/h4ImpParZ_Proton"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
         histograms.fill(HIST("Reco/hNSigmaTPCProton_afterPID"), pt, tpcNSigmaProton);

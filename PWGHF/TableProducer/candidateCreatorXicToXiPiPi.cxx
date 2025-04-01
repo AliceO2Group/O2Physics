@@ -14,10 +14,11 @@
 ///
 /// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
 /// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
+/// \author Jaeyoon Cho <jaeyoon.cho@cern.ch>, Inha University
 /// \author Jinjoo Seo <jseo@cern.ch>, Heidelberg University
 
 #ifndef HomogeneousField
-#define HomogeneousField
+#define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
 #include <string>
@@ -79,6 +80,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   //  KFParticle
+  Configurable<bool> useXiMassConstraint{"useXiMassConstraint", true, "Use mass constraint for Xi"};
   Configurable<bool> constrainXicPlusToPv{"constrainXicPlusToPv", false, "Constrain XicPlus to PV"};
   Configurable<bool> constrainXiToXicPlus{"constrainXiToXicPlus", false, "Constrain Xi to XicPlus"};
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "Construct method of XicPlus: 0 fast mathematics without constraint of fixed daughter particle masses, 2 daughter particle masses stay fixed in construction process"};
@@ -118,7 +120,7 @@ struct HfCandidateCreatorXicToXiPiPi {
     if (fillHistograms) {
       // counter
       registry.add("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}}); // See o2::aod::hf_cand::VertexerType
-      registry.add("hCandCounter", "hCandCounter", {HistType::kTH1F, {{3, 0.f, 0.3}}});
+      registry.add("hCandCounter", "hCandCounter", {HistType::kTH1F, {{3, 0.5, 3.5}}});
       registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + AllIdTriplets, "total");
       registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + CascPreSel, "Cascade preselection");
       registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + VertexFit, "Successful vertex fit");
@@ -178,7 +180,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovDcaPidPrPi>();
       auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovDcaPidPrPi>();
       auto collision = rowTrackIndexXicPlus.collision();
-      registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
+      }
 
       // preselect cascade candidates
       if (doCascadePreselection) {
@@ -189,7 +193,9 @@ struct HfCandidateCreatorXicToXiPiPi {
           continue;
         }
       }
-      registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
+      }
 
       //----------------------Set the magnetic field from ccdb---------------------------------------
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -241,7 +247,9 @@ struct HfCandidateCreatorXicToXiPiPi {
         LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
         continue;
       }
-      registry.fill(HIST("hCandCounter"), 1 + VertexFit);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + VertexFit);
+      }
 
       //----------------------------calculate physical properties-----------------------
       // Charge of charm baryon
@@ -371,7 +379,10 @@ struct HfCandidateCreatorXicToXiPiPi {
                        /*cascade specific columns*/
                        trackPionFromXi.p(), pPiFromLambda, pPrFromLambda,
                        cpaXi, cpaXYXi, cpaLambda, cpaXYLambda, cpaLambdaToXi, cpaXYLambdaToXi,
-                       casc.mXi(), massXiPi0, massXiPi1,
+                       casc.mXi(), casc.mLambda(), massXiPi0, massXiPi1,
+                       /*DCA information*/
+                       casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(),
+                       casc.dcaXYCascToPV(), casc.dcaZCascToPV(),
                        /*PID information*/
                        nSigTpcPiFromXicPlus0, nSigTpcPiFromXicPlus1, nSigTpcBachelorPi, nSigTpcPiFromLambda, nSigTpcPrFromLambda,
                        nSigTofPiFromXicPlus0, nSigTofPiFromXicPlus1, nSigTofBachelorPi, nSigTofPiFromLambda, nSigTofPrFromLambda);
@@ -396,7 +407,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovExtraPidPrPi>();
       auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovExtraPidPrPi>();
       auto collision = rowTrackIndexXicPlus.collision();
-      registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
+      }
 
       //-------------------preselect cascade candidates--------------------------------------
       if (doCascadePreselection) {
@@ -407,7 +420,9 @@ struct HfCandidateCreatorXicToXiPiPi {
           continue;
         }
       }
-      registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
+      }
 
       //----------------------Set the magnetic field from ccdb-----------------------------
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -432,7 +447,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
       float covMatrixPV[6];
       kfpVertex.GetCovarianceMatrix(covMatrixPV);
-      KFParticle KFPV(kfpVertex); // for calculation of DCAs to PV
+      KFParticle kfPv(kfpVertex); // for calculation of DCAs to PV
 
       // convert pion tracks into KFParticle object
       KFPTrack kfpTrackCharmBachelor0 = createKFPTrackFromTrack(trackCharmBachelor0);
@@ -449,7 +464,11 @@ struct HfCandidateCreatorXicToXiPiPi {
       }
       // create KFParticle
       KFParticle kfXi;
-      kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), casc.mXi());
+      float massXi = casc.mXi();
+      kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), massXi);
+      if (useXiMassConstraint) {
+        kfXi.SetNonlinearMassConstraint(MassXiMinus);
+      }
 
       // create XicPlus as KFParticle object
       KFParticle kfXicPlus;
@@ -461,15 +480,17 @@ struct HfCandidateCreatorXicToXiPiPi {
         LOG(debug) << "Failed to construct XicPlus : " << e.what();
         continue;
       }
-      registry.fill(HIST("hCandCounter"), 1 + VertexFit);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + VertexFit);
+      }
 
       // get geometrical chi2 of XicPlus
       float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
 
       // topological constraint of Xic to PV
-      float chi2topoXicPlusToPVBeforeConstraint = kfXicPlus.GetDeviationFromVertex(KFPV);
+      float chi2topoXicPlusToPVBeforeConstraint = kfXicPlus.GetDeviationFromVertex(kfPv);
       KFParticle kfXicPlusToPV = kfXicPlus;
-      kfXicPlusToPV.SetProductionVertex(KFPV);
+      kfXicPlusToPV.SetProductionVertex(kfPv);
       float chi2topoXicPlusToPV = kfXicPlusToPV.GetChi2() / kfXicPlusToPV.GetNDF();
       if (constrainXicPlusToPv) {
         kfXicPlus = kfXicPlusToPV;
@@ -515,9 +536,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       float impactParameterPi0XY = 0., errImpactParameterPi0XY = 0.;
       float impactParameterPi1XY = 0., errImpactParameterPi1XY = 0.;
       float impactParameterXiXY = 0., errImpactParameterXiXY = 0.;
-      kfCharmBachelor0.GetDistanceFromVertexXY(KFPV, impactParameterPi0XY, errImpactParameterPi0XY);
-      kfCharmBachelor1.GetDistanceFromVertexXY(KFPV, impactParameterPi1XY, errImpactParameterPi1XY);
-      kfXi.GetDistanceFromVertexXY(KFPV, impactParameterXiXY, errImpactParameterXiXY);
+      kfCharmBachelor0.GetDistanceFromVertexXY(kfPv, impactParameterPi0XY, errImpactParameterPi0XY);
+      kfCharmBachelor1.GetDistanceFromVertexXY(kfPv, impactParameterPi1XY, errImpactParameterPi1XY);
+      kfXi.GetDistanceFromVertexXY(kfPv, impactParameterXiXY, errImpactParameterXiXY);
 
       // calculate cosine of pointing angle
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
@@ -563,6 +584,14 @@ struct HfCandidateCreatorXicToXiPiPi {
       // get invariant mass of Xic candidate
       float errMassXiPiPi;
       kfXicPlus.GetMass(massXiPiPi, errMassXiPiPi);
+
+      // decay length of XicPlus
+      // use XicPlus constrained to PV (kfXicPlusToPV), since production point must be set before calling GetDecayLength(XY) on KFParticle
+      float kfDecayLength = 0., errorKfDecayLength = 0., kfDecayLengthXY = 0., errorKfDecayLengthXY = 0.;
+      kfXicPlusToPV.GetDecayLength(kfDecayLength, errorKfDecayLength);
+      kfXicPlusToPV.GetDecayLengthXY(kfDecayLengthXY, errorKfDecayLengthXY);
+      float kfDecayLengthNormalised = ldlFromKF(kfXicPlus, kfPv);
+      float kfDecayLengthXYNormalised = ldlXYFromKF(kfXicPlus, kfPv);
 
       //--------------------- get PID information-----------------------
       float nSigTpcPiFromXicPlus0 = trackCharmBachelor0.tpcNSigmaPi();
@@ -615,14 +644,14 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       //------------------------------fill candidate table rows--------------------------------------
       rowCandidateBase(collision.globalIndex(),
-                       KFPV.GetX(), KFPV.GetY(), KFPV.GetZ(),
+                       kfPv.GetX(), kfPv.GetY(), kfPv.GetZ(),
                        std::sqrt(covMatrixPV[0]), std::sqrt(covMatrixPV[2]), std::sqrt(covMatrixPV[5]),
                        /*3-prong specific columns*/
                        rowTrackIndexXicPlus.cascadeId(), rowTrackIndexXicPlus.prong0Id(), rowTrackIndexXicPlus.prong1Id(),
                        casc.bachelorId(), casc.posTrackId(), casc.negTrackId(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                        kfXicPlus.GetErrX(), kfXicPlus.GetErrY(), kfXicPlus.GetErrZ(),
-                       kfXicPlus.GetErrDecayLength(), kfXicPlus.GetErrDecayLengthXY(),
+                       errorKfDecayLength, errorKfDecayLengthXY,
                        chi2GeoXicPlus, massXiPiPi, signXic,
                        kfXi.GetPx(), kfXi.GetPy(), kfXi.GetPz(),
                        kfCharmBachelor0.GetPx(), kfCharmBachelor0.GetPy(), kfCharmBachelor0.GetPz(),
@@ -632,15 +661,18 @@ struct HfCandidateCreatorXicToXiPiPi {
                        /*cascade specific columns*/
                        trackPionFromXi.p(), pPiFromLambda, pPrFromLambda,
                        cpaXi, cpaXYXi, cpaLambda, cpaXYLambda, cpaLambdaToXi, cpaXYLambdaToXi,
-                       casc.mXi(), massXiPi0, massXiPi1,
+                       massXi, casc.mLambda(), massXiPi0, massXiPi1,
+                       /*DCA information*/
+                       casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(),
+                       casc.dcaXYCascToPV(), casc.dcaZCascToPV(),
                        /*PID information*/
                        nSigTpcPiFromXicPlus0, nSigTpcPiFromXicPlus1, nSigTpcBachelorPi, nSigTpcPiFromLambda, nSigTpcPrFromLambda,
                        nSigTofPiFromXicPlus0, nSigTofPiFromXicPlus1, nSigTofBachelorPi, nSigTofPiFromLambda, nSigTofPrFromLambda);
       rowCandidateKF(casc.kfCascadeChi2(), casc.kfV0Chi2(),
+                     kfDecayLength, kfDecayLengthNormalised, kfDecayLengthXY, kfDecayLengthXYNormalised,
                      chi2topoXicPlusToPVBeforeConstraint, chi2topoXicPlusToPV, chi2topoXiToXicPlusBeforeConstraint, chi2topoXiToXicPlus,
                      dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi,
-                     dcaPi0Pi1, dcaPi0Xi, dcaPi1Xi,
-                     casc.dcacascdaughters());
+                     dcaPi0Pi1, dcaPi0Xi, dcaPi1Xi);
     } // loop over track triplets
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processXicplusWithKFParticle, "Run candidate creator with KFParticle using derived data from HfTrackIndexSkimCreatorLfCascades.", false);
@@ -690,20 +722,20 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
                                          candidate.negTrack_as<aod::TracksWMc>()};
 
       // Xic → pi pi pi pi p
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4);
+      indexRec = RecoDecay::getMatchedMCRec<false, true, false, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4);
       indexRecXicPlus = indexRec;
       if (indexRec == -1) {
         debug = 1;
       }
       if (indexRec > -1) {
         // Xi- → pi pi p
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &sign, 2);
         if (indexRec == -1) {
           debug = 2;
         }
         if (indexRec > -1) {
           // Lambda → p pi
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &sign, 1);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &sign, 1);
           if (indexRec == -1) {
             debug = 3;
           }
@@ -729,7 +761,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       // Check whether the charm baryon is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRecXicPlus);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false);
       }
 
       rowMcMatchRec(flag, debug, origin);
@@ -744,18 +776,24 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       arrDaughIndex.clear();
 
       //  Xic → Xi pi pi
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, &sign, 2)) {
+      if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, Pdg::kXiCPlus, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, &sign, 2)) {
         debug = 1;
         // Xi- -> Lambda pi
         auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
+        // Find Xi- from Xi(1530) -> Xi pi in case of resonant decay
+        RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
+        if (arrDaughIndex.size() == 2) {
+          auto cascStarMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascStarMC, +3324, std::array{+kXiMinus, +kPiPlus}, true)) {
+            cascMC = mcParticles.rawIteratorAt(cascStarMC.daughtersIds().front());
+          }
+        }
+        if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
           debug = 2;
           // Lambda -> p pi
           auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
-          if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
             debug = 3;
-
-            RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
             if (arrDaughIndex.size() == 2) {
               for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
                 auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
@@ -775,7 +813,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
       // Check whether the charm baryon is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false);
       }
 
       rowMcMatchGen(flag, debug, origin);

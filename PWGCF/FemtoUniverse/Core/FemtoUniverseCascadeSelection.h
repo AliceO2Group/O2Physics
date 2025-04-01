@@ -23,18 +23,16 @@
 
 #include <string>
 #include <vector>
-
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseObjectSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
-
 #include "Common/Core/RecoDecay.h"
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/PID.h"
 
-namespace o2::analysis::femto_universe // o2-linter: disable=name/namespace
+namespace o2::analysis::femto_universe
 {
-namespace femto_universe_cascade_selection // o2-linter: disable=name/namespace
+namespace femto_universe_cascade_selection
 {
 /// The different selections this task is capable of doing
 enum CascadeSel {

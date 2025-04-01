@@ -23,4 +23,6 @@ o2physics_add_header_only_library(DataModel
                                           MatchMFTFT0.h
                                           MftmchMatchingML.h
                                           ZDCInterCalib.h
-                                          EseTable.h)
+                                          EseTable.h
+                                          FwdTrackReAlignTables.h
+                                          PropagatedFwdTrackTables.h)

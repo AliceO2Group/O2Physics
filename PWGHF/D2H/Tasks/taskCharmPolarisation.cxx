@@ -79,6 +79,7 @@ DECLARE_SOA_COLUMN(IsRealPKPi, isRealPKPi, int8_t);
 DECLARE_SOA_COLUMN(IsRealLcPKPi, isRealLcPKPi, int8_t);
 DECLARE_SOA_COLUMN(IsReflected, isReflected, int8_t);
 DECLARE_SOA_COLUMN(Charge, charge, int8_t);
+DECLARE_SOA_COLUMN(Origin, origin, int8_t);
 
 } // namespace charm_polarisation
 
@@ -99,7 +100,8 @@ DECLARE_SOA_TABLE(HfLcPolBkg, "AOD", "HFLCPOLBKG",
                   charm_polarisation::IsRealPKPi,
                   charm_polarisation::IsRealLcPKPi,
                   charm_polarisation::IsReflected,
-                  charm_polarisation::Charge);
+                  charm_polarisation::Charge,
+                  charm_polarisation::Origin);
 
 } // namespace o2::aod
 
@@ -1281,23 +1283,32 @@ struct TaskPolarisationCharmHadrons {
           int pdgProng0 = 0;
           int pdgProng1 = 0;
           int pdgProng2 = 0;
+          int8_t originProng0 = -1;
+          int8_t originProng1 = -1;
+          int8_t originProng2 = -1;
+          std::vector<int> idxBhadMothersProng0{};
+          std::vector<int> idxBhadMothersProng1{};
+          std::vector<int> idxBhadMothersProng2{};
           if (trackProng0.has_mcParticle()) {
             /// BEWARE: even when grouping by mcCollision, mcParticle_as<> gets the mcParticle even if it belongs to a different mcCollision
             /// because _as<> works with unbound tables. (*)
             auto particleProng0 = trackProng0.template mcParticle_as<Part>();
             pdgProng0 = particleProng0.pdgCode();
+            originProng0 = RecoDecay::getCharmHadronOrigin(particles, particleProng0, false, &idxBhadMothersProng0);
           }
           if (trackProng1.has_mcParticle()) {
             /// BEWARE: even when grouping by mcCollision, mcParticle_as<> gets the mcParticle even if it belongs to a different mcCollision
             /// because _as<> works with unbound tables. (*)
             auto particleProng1 = trackProng1.template mcParticle_as<Part>();
             pdgProng1 = particleProng1.pdgCode();
+            originProng1 = RecoDecay::getCharmHadronOrigin(particles, particleProng1, false, &idxBhadMothersProng1);
           }
           if (trackProng2.has_mcParticle()) {
             /// BEWARE: even when grouping by mcCollision, mcParticle_as<> gets the mcParticle even if it belongs to a different mcCollision
             /// because _as<> works with unbound tables. (*)
             auto particleProng2 = trackProng2.template mcParticle_as<Part>();
             pdgProng2 = particleProng2.pdgCode();
+            originProng2 = RecoDecay::getCharmHadronOrigin(particles, particleProng2, false, &idxBhadMothersProng2);
           }
           isGenPKPi = std::abs(pdgProng0) == kProton && std::abs(pdgProng1) == kKPlus && std::abs(pdgProng2) == kPiPlus;
           isGenPiKP = std::abs(pdgProng0) == kPiPlus && std::abs(pdgProng1) == kKPlus && std::abs(pdgProng2) == kProton;
@@ -1310,6 +1321,26 @@ struct TaskPolarisationCharmHadrons {
           int8_t isReflected = 0;
           if (isRealPKPi && ((iMass == charm_polarisation::MassHyposLcToPKPi::PKPi && candidate.isSelLcToPKPi() >= selectionFlagLcToPKPi && isGenPiKP) || (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi && isGenPKPi))) {
             isReflected = 1;
+          }
+
+          /// check the origin (prompt, non-prompt of the triplet)
+          /// need to check each prong, since they might come from combinatorial background
+          /// convention:
+          ///  - all 3 prongs from the same B hadron: non-prompt
+          ///  - all 3 prongs claimed to be prompt: prompt  -->  check on same charm mother done offline with prong PDG daughters (more difficult for beauty, due to more intermediate resonances) and checking that the distribution peaks somehow (otherwise: combinatorial background)
+          ///  - otherwise: none
+          int8_t originTriplet = RecoDecay::OriginType::None;
+          if (originProng0 == RecoDecay::OriginType::Prompt && originProng1 == RecoDecay::OriginType::Prompt && originProng2 == RecoDecay::OriginType::Prompt) {
+            /// we claim this triplet as prong w/o checking if all triplets have the same mother
+            originTriplet = RecoDecay::OriginType::Prompt;
+          } else if (originProng0 == RecoDecay::OriginType::NonPrompt && originProng1 == RecoDecay::OriginType::NonPrompt && originProng2 == RecoDecay::OriginType::NonPrompt) {
+            /// check if the three particles share the same B-hadron id. If yes: claim the triplet as "non-prompt"
+            int idBMotherProng0 = idxBhadMothersProng0.at(0);
+            int idBMotherProng1 = idxBhadMothersProng1.at(0);
+            int idBMotherProng2 = idxBhadMothersProng2.at(0);
+            if (idBMotherProng0 == idBMotherProng1 && idBMotherProng1 == idBMotherProng2) {
+              originTriplet = RecoDecay::OriginType::NonPrompt;
+            }
           }
 
           /// check if the pKpi triplet is a Lc->pKpi
@@ -1396,7 +1427,7 @@ struct TaskPolarisationCharmHadrons {
                        massKPi, massKProton, massPiProton,
                        outputMl.at(0), outputMl.at(2),
                        isRealPKPi, isRealLcPKPi, isReflected,
-                       charge);
+                       charge, originTriplet);
         } // end studyLcPKPiBkgMc
       } // end table for Lc->pKpi background studies
 
