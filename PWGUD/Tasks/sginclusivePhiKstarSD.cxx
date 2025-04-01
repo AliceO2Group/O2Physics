@@ -1308,7 +1308,6 @@ struct SginclusivePhiKstarSD {
       }
       // compute the difference between generated and reconstructed particle momentum
       for (const auto& McPart : partSlice) {
-        // get track which corresponds to McPart
         auto trackSlice = tracks.sliceBy(trackPerMcParticle, McPart.globalIndex());
         registry.get<TH1>(HIST("MC/nRecTracks"))->Fill(trackSlice.size(), 1.);
         // compute momentum difference between MCTruth and Reconstruction
@@ -1330,7 +1329,6 @@ struct SginclusivePhiKstarSD {
   // ...............................................................................................................
   void processReco(CC const& collision, TCs const& tracks, aod::UDMcCollisions const& /*mccollisions*/, aod::UDMcParticles const& /*McParts*/)
   {
-
     auto mccoll = collision.udMcCollision();
     if (mccoll.generatorsID() != generatedId)
       return;
