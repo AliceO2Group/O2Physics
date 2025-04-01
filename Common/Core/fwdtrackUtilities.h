@@ -59,11 +59,9 @@ o2::dataformats::GlobalFwdTrack propagateMuon(TFwdTrack const& muon, TCollision 
 
     if (endPoint == propagationPoint::kToVertex) {
       o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
-    }
-    if (endPoint == propagationPoint::kToDCA) {
+    } else if (endPoint == propagationPoint::kToDCA) {
       o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrack, collision.posZ());
-    }
-    if (endPoint == propagationPoint::kToRabs) {
+    } else if (endPoint == propagationPoint::kToRabs) {
       o2::mch::TrackExtrap::extrapToZ(mchTrack, -505.);
     }
 
@@ -77,7 +75,11 @@ o2::dataformats::GlobalFwdTrack propagateMuon(TFwdTrack const& muon, TCollision 
     auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
     auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
     auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-    fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
+    if (endPoint == propagationPoint::kToVertex) {
+      fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
+    } else if (endPoint == propagationPoint::kToDCA) {
+      fwdtrack.propagateToZhelix(collision.posZ(), Bz);
+    }
     propmuon.setParameters(fwdtrack.getParameters());
     propmuon.setZ(fwdtrack.getZ());
     propmuon.setCovariances(fwdtrack.getCovariances());
