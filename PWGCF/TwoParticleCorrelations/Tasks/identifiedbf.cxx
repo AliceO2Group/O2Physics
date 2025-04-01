@@ -95,7 +95,7 @@ struct IdentifiedbfTask {
     std::vector<TH1F*> fhN1VsPt{nch, nullptr};                                    //!<! weighted single particle distribution vs \f$p_T\f$, for the different species
     std::vector<TH2F*> fhN1VsEtaPhi{nch, nullptr};                                //!<! weighted single particle distribution vs \f$\eta,\;\phi\f$, for the different species
     std::vector<TH2F*> fhSum1PtVsEtaPhi{nch, nullptr};                            //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
-    std::vector<TH3F*> fhN1VsZEtaPhiPt{nch, nullptr};                             //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhN1VsZEtaPhiPt{nch + 1, nullptr};                         //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhN1VsZEtaPhiPtPrimary{nch, nullptr};                      //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhN1VsZEtaPhiPtSecondary{nch, nullptr};                    //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhSum1PtVsZEtaPhiPt{nch, nullptr};                         //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
@@ -303,6 +303,7 @@ struct IdentifiedbfTask {
           fhN1VsEtaPhi[track.trackacceptedid()]->Fill(track.eta(), getShiftedPhi(track.phi()), corr);
           fhSum1PtVsEtaPhi[track.trackacceptedid()]->Fill(track.eta(), getShiftedPhi(track.phi()), track.pt() * corr);
         } else {
+          fhN1VsZEtaPhiPt[nch]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
           fhN1VsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
           fhSum1PtVsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), track.pt() * corr);
           trackPrimaryCheck(track, zvtx, corr);
@@ -626,6 +627,27 @@ struct IdentifiedbfTask {
             fOutputList->Add(fhSum1PtVsZEtaPhiPt[i]);
           }
         }
+        if (!smallsingles) {
+          TH1::SetDefaultSumw2(false);
+          fhN1VsZEtaPhiPt[nch] = new TH3F(
+            TString::Format("n1_%s_vsZ_vsEtaPhi_vsPt", "h"),
+            TString::Format("#LT n_{1} #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
+                            "h",
+                            "h",
+                            "h")
+              .Data(),
+            zvtxbins,
+            zvtxlow,
+            zvtxup,
+            etabins * phibins,
+            0.0,
+            static_cast<double>(etabins * phibins),
+            ptbins,
+            ptlow,
+            ptup);
+          fOutputList->Add(fhN1VsZEtaPhiPt[nch]);
+        }
+
       } else {
         for (uint i = 0; i < nch; ++i) {
           /* histograms for each track species */
