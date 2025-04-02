@@ -115,6 +115,9 @@ struct SginclusivePhiKstarSD {
   {
     registry.add("GapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
     registry.add("TrueGapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
+    registry.add("nPVContributors_data", "Multiplicity_dist_before track cut gap A", kTH1F, {{110, 0, 110}});
+    registry.add("nPVContributors_data_1", "Multiplicity_dist_before track cut gap C", kTH1F, {{110, 0, 110}});
+
     if (phi) {
       registry.add("os_KK_pT_0", "pt kaon pair", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
       registry.add("os_KK_pT_1", "pt kaon pair", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
@@ -160,14 +163,14 @@ struct SginclusivePhiKstarSD {
     }
     // qa plots
     if (qa) {
-      registry.add("tpc_dedx", "p vs dE/dx", kTH2F, {{100, 0.0, 10.0}, {500000, 0.0, 5000.0}});
-      registry.add("tof_beta", "p vs beta", kTH2F, {{100, 0.0, 10.0}, {5000, 0.0, 25.0}});
+      registry.add("tpc_dedx", "p vs dE/dx", kTH2F, {{100, 0.0, 10.0}, {10000, 0.0, 2500.0}});
+      registry.add("tof_beta", "p vs beta", kTH2F, {{100, 0.0, 10.0}, {100, 0.0, 5.0}});
 
-      registry.add("tpc_dedx_kaon", "p#k dE/dx", kTH2F, {{100, 0.0, 10.0}, {500000, 0.0, 5000.0}});
-      registry.add("tpc_dedx_pion", "p#pi dE/dx", kTH2F, {{100, 0.0, 10.0}, {500000, 0.0, 5000.0}});
-      registry.add("tpc_dedx_kaon_1", "tpc+tof pid cut p#k dE/dx", kTH2F, {{100, 0.0, 10.0}, {500000, 0.0, 5000.0}});
-      registry.add("tpc_dedx_kaon_2", "tpc+tof pid cut1 p#k dE/dx", kTH2F, {{100, 0.0, 10.0}, {500000, 0.0, 5000.0}});
-      registry.add("tpc_dedx_pion_1", "tpc+tof pid cut p#pi dE/dx", kTH2F, {{100, 0.0, 10.0}, {500000, 0.0, 1000.0}});
+      registry.add("tpc_dedx_kaon", "p#k dE/dx", kTH2F, {{100, 0.0, 10.0}, {10000, 0.0, 2500.0}});
+      registry.add("tpc_dedx_pion", "p#pi dE/dx", kTH2F, {{100, 0.0, 10.0}, {10000, 0.0, 2500.0}});
+      registry.add("tpc_dedx_kaon_1", "tpc+tof pid cut p#k dE/dx", kTH2F, {{100, 0.0, 10.0}, {10000, 0.0, 2500.0}});
+      registry.add("tpc_dedx_kaon_2", "tpc+tof pid cut1 p#k dE/dx", kTH2F, {{100, 0.0, 10.0}, {10000, 0.0, 2500.0}});
+      registry.add("tpc_dedx_pion_1", "tpc+tof pid cut p#pi dE/dx", kTH2F, {{100, 0.0, 10.0}, {10000, 0.0, 25000.0}});
       registry.add("tpc_nsigma_kaon", "p#k n#sigma", kTH2F, {{100, 0.0, 10.0}, {100, -10.0, 10.0}});
       registry.add("tpc_nsigma_pion", "p#pi n#sigma", kTH2F, {{100, 0.0, 10.0}, {100, -10.0, 10.0}});
       registry.add("tpc_tof_nsigma_kaon", "p#k n#sigma TPC vs TOF", kTH2F, {{100, -10.0, 10.0}, {100, -10.0, 10.0}});
@@ -215,7 +218,6 @@ struct SginclusivePhiKstarSD {
     registry.add("gap_mult0", "Mult 0", kTH1F, {{100, 0.0, 100.0}});
     registry.add("gap_mult1", "Mult 1", kTH1F, {{100, 0.0, 100.0}});
     registry.add("gap_mult2", "Mult 2", kTH1F, {{100, 0.0, 100.0}});
-    registry.add("Reco/tr_hist", "hist_stat", {HistType::kTH1F, {{10, -0.5, 9.5}}});
 
     // Multiplicity plot
     if (rapidityGap && phi) {
@@ -566,9 +568,18 @@ struct SginclusivePhiKstarSD {
     int trackDG = 0;
     int trackextra = 0;
     int trackextraDG = 0;
+
+    Partition<UDtracksfull> pvContributors1 = aod::udtrack::isPVContributor == true;
+    pvContributors1.bindTable(tracks);
+    if (gapSide == 0) {
+      registry.get<TH1>(HIST("nPVContributors_data"))->Fill(pvContributors1.size(), 1.);
+    }
+    if (gapSide == 1) {
+      registry.get<TH1>(HIST("nPVContributors_data_1"))->Fill(pvContributors1.size(), 1.);
+    }
     for (const auto& track1 : tracks) {
-      // if (!trackselector(track1, parameters))
-      // continue;
+      if (!trackselector(track1, parameters))
+        continue;
       v0.SetXYZM(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassPionCharged);
       if (selectionPIDPion1(track1)) {
         onlyPionTrackspm.push_back(v0);
@@ -1146,7 +1157,7 @@ struct SginclusivePhiKstarSD {
       for (const auto& [track1, track2] : o2::soa::combinations(posThisColl, negThisColl)) {
         if (!trackselector(track1, parameters) || !trackselector(track2, parameters))
           continue;
-        if (selectionPIDKaon1(track1) && selectionPIDKaon1(track2)) {
+        if (phi && selectionPIDKaon1(track1) && selectionPIDKaon1(track2)) {
           v0.SetXYZM(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetXYZM(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassKaonCharged);
           v01 = v0 + v1;
@@ -1169,7 +1180,7 @@ struct SginclusivePhiKstarSD {
           continue;
         if (track1.globalIndex() == track2.globalIndex())
           continue;
-        if (selectionPIDKaon1(track1) && selectionPIDPion1(track2)) {
+        if (kstar && selectionPIDKaon1(track1) && selectionPIDPion1(track2)) {
           v0.SetXYZM(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetXYZM(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassPionCharged);
           v01 = v0 + v1;
@@ -1299,8 +1310,8 @@ struct SginclusivePhiKstarSD {
         if (flag && flag1) {
           registry.get<TH2>(HIST("MC/genMPt"))->Fill(v01.M(), v01.Pt(), 1.);
         }
-        //  registry.get<TH1>(HIST("MC/genRap"))->Fill(v01.Rapidity(), 1.);
-        //  registry.get<TH1>(HIST("MC/genM"))->Fill(v01.M(), 1.);
+        // registry.get<TH1>(HIST("MC/genRap"))->Fill(v01.Rapidity(), 1.);
+        // registry.get<TH1>(HIST("MC/genM"))->Fill(v01.M(), 1.);
         registry.get<TH1>(HIST("MC/accRap"))->Fill(v01.Rapidity(), 1.);
         registry.get<TH2>(HIST("MC/accMPt"))->Fill(v01.M(), v01.Pt(), 1.);
         registry.get<TH1>(HIST("MC/accM"))->Fill(v01.M(), 1.);
@@ -1329,6 +1340,8 @@ struct SginclusivePhiKstarSD {
   // ...............................................................................................................
   void processReco(CC const& collision, TCs const& tracks, aod::UDMcCollisions const& /*mccollisions*/, aod::UDMcParticles const& /*McParts*/)
   {
+    if (!collision.has_udMcCollision())
+      return;
     auto mccoll = collision.udMcCollision();
     if (mccoll.generatorsID() != generatedId)
       return;
