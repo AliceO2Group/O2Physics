@@ -280,6 +280,19 @@ struct sigmaanalysis {
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(30, "Lambda/ALambda Mass");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(31, "Sigma Y");
 
+    // Builder output QA
+    histos.add("BuilderQA/hPhotonAssociation", "hPhotonAssociation", kTH1F, {{2, 0.0f, 2.0f}});
+    histos.add("BuilderQA/hLambdaAssociation", "hLambdaAssociation", kTH1F, {{2, 0.0f, 2.0f}});
+    histos.add("BuilderQA/hPhotonTrackCode", "hPhotonTrackCode", kTH1F, {{8, 0.5f, 8.5f}});
+    histos.add("BuilderQA/hLambdaTrackCode", "hLambdaTrackCode", kTH1F, {{8, 0.5f, 8.5f}});
+    histos.add("BuilderQA/hPhotonZ", "hPhotonZ", kTH1D, {{240, -120.0f, 120.0f}});
+    histos.add("BuilderQA/hPhotonCosPA", "hPhotonCosPA", kTH1D, {axisCosPA});
+    histos.add("BuilderQA/hPhotonDCADau", "hPhotonDCADau", kTH1D, {axisDCAdau});
+
+    histos.add("BuilderQA/hPhotonZ_BadCollAssig", "hPhotonZ_BadCollAssig", kTH1D, {{240, -120.0f, 120.0f}});
+    histos.add("BuilderQA/hPhotonCosPA_BadCollAssig", "hPhotonCosPA_BadCollAssig", kTH1D, {axisCosPA});
+    histos.add("BuilderQA/hPhotonDCADau_BadCollAssig", "hPhotonDCADau_BadCollAssig", kTH1D, {axisDCAdau});
+
     // Photon Selection QA histos
     histos.add("GeneralQA/hPhotonV0Type", "hPhotonV0Type", kTH1F, {{8, 0.5f, 8.5f}});
     histos.add("GeneralQA/hPhotonNegpT", "hPhotonNegpT", kTH1F, {axisPt});
@@ -944,6 +957,43 @@ struct sigmaanalysis {
         }
       }
 
+      // BuilderQA
+      histos.fill(HIST("BuilderQA/hPhotonAssociation"), sigma.photonIsCorrectlyAssoc());
+      histos.fill(HIST("BuilderQA/hLambdaAssociation"), sigma.lambdaIsCorrectlyAssoc());
+
+      int GammaTrkCode = -10; // 1: TPC-only, 2: TPC+Something, 3: ITS-Only
+      int LambdaTrkCode = -10; // 1: TPC-only, 2: TPC+Something, 3: ITS-Only, 4: ITS+TPC + Something
+      
+      if (sigma.photonPosTrackCode()==1 && sigma.photonNegTrackCode()==1)
+        GammaTrkCode = 1;
+      if ((sigma.photonPosTrackCode()!=1 && sigma.photonNegTrackCode()==1) || (sigma.photonPosTrackCode()==1 && sigma.photonNegTrackCode()!=1))
+        GammaTrkCode = 2;
+      if (sigma.photonPosTrackCode()==3 && sigma.photonNegTrackCode()==3)
+        GammaTrkCode = 3;
+      if (sigma.lambdaPosTrackCode()==1 && sigma.lambdaNegTrackCode()==1)
+        LambdaTrkCode = 1;
+      if ((sigma.lambdaPosTrackCode()!=1 && sigma.lambdaNegTrackCode()==1) || (sigma.lambdaPosTrackCode()==1 && sigma.lambdaNegTrackCode()!=1))
+        LambdaTrkCode = 2;
+      if (sigma.lambdaPosTrackCode()==3 && sigma.lambdaNegTrackCode()==3)
+        LambdaTrkCode = 3;
+      if (sigma.lambdaPosTrackCode()==2 || sigma.lambdaNegTrackCode()==2)
+        LambdaTrkCode = 4;
+
+      histos.fill(HIST("BuilderQA/hPhotonTrackCode"), GammaTrkCode);
+      histos.fill(HIST("BuilderQA/hLambdaTrackCode"), LambdaTrkCode);
+
+      if ((GammaTrkCode==1) && (TMath::Abs(sigma.photonY()) <= 0.5) && (sigma.photonCandPDGCode() == 22)){
+        histos.fill(HIST("BuilderQA/hPhotonZ"), sigma.photonZconv());
+        histos.fill(HIST("BuilderQA/hPhotonCosPA"), sigma.photonCosPA());
+        histos.fill(HIST("BuilderQA/hPhotonDCADau"), sigma.photonDCADau());
+
+        if (!sigma.photonIsCorrectlyAssoc()){
+          histos.fill(HIST("BuilderQA/hPhotonZ_BadCollAssig"), sigma.photonZconv());
+          histos.fill(HIST("BuilderQA/hPhotonCosPA_BadCollAssig"), sigma.photonCosPA());
+          histos.fill(HIST("BuilderQA/hPhotonDCADau_BadCollAssig"), sigma.photonDCADau());
+        }
+      }
+           
       // Filling histos before analysis selection
       histos.fill(HIST("MC/h2dSigmaMCPtVsLambdaMCPt"), sigma.sigmaMCPt(), sigma.lambdaMCPt());
       histos.fill(HIST("MC/h2dSigmaMCPtVsGammaMCPt"), sigma.sigmaMCPt(), sigma.photonMCPt());

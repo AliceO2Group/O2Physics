@@ -997,7 +997,7 @@ struct sigma0builder {
 
   PROCESS_SWITCH(sigma0builder, processMonteCarlo, "process as if MC data", false);
   PROCESS_SWITCH(sigma0builder, processRealData, "process as if real data", true);
-  PROCESS_SWITCH(sigma0builder, processGeneratedCollRun3, "process generated MC collisions", true);
+  PROCESS_SWITCH(sigma0builder, processGeneratedCollRun3, "process generated MC collisions", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
