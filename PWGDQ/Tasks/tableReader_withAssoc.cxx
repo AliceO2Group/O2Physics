@@ -1759,10 +1759,10 @@ struct AnalysisSameEventPairing {
                   if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { // if this pair is already stored with this cut
                     isAmbiExtra = true;
                   } else {
-                    fAmbiguousPairs[iPairs] |= static_cast<uint32_t>(1) << icut;
+                    fAmbiguousPairs[iPair] |= static_cast<uint32_t>(1) << icut;
                   }
                 } else {
-                  fAmbiguousPairs[iPairs] = static_cast<uint32_t>(1) << icut;
+                  fAmbiguousPairs[iPair] = static_cast<uint32_t>(1) << icut;
                 }
               }
             }
@@ -1954,10 +1954,10 @@ struct AnalysisSameEventPairing {
                 if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { // if this pair is already stored with this cut
                   isAmbiExtra = true;
                 } else {
-                  fAmbiguousPairs[iPairs] |= static_cast<uint32_t>(1) << icut;
+                  fAmbiguousPairs[iPair] |= static_cast<uint32_t>(1) << icut;
                 }
               } else {
-                fAmbiguousPairs[iPairs] = static_cast<uint32_t>(1) << icut;
+                fAmbiguousPairs[iPair] = static_cast<uint32_t>(1) << icut;
               }
             }
           }
