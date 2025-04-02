@@ -52,6 +52,75 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug5_noCorr"));
     return cut;
   }
+  if (!nameStr.compare("Electron2025_1")) {
+    AnalysisCut* kineCut = new AnalysisCut("kineCut", "kine cut");
+    kineCut->AddCut(VarManager::kP, 1.0, 1000.0);
+    kineCut->AddCut(VarManager::kEta, -0.9, 0.9);
+
+    AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
+    qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 5.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 60, 161.);
+    qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
+
+    AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -4.0, 4.0, false, VarManager::kPin, 0.0, 5.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -1.5, 4.0, false, VarManager::kPin, 5.0, 10.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -1.0, 4.0, false, VarManager::kPin, 10.0, 1000.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPi, 2.0, 999, false, VarManager::kPin, 0.0, 5.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPr, 2.5, 999, false, VarManager::kPin, 0.0, 5.0);
+
+    cut->AddCut(kineCut);
+    cut->AddCut(qualityCuts);
+    cut->AddCut(pidCuts);
+    return cut;
+  }
+
+  if (!nameStr.compare("Electron2025_2")) {
+    AnalysisCut* kineCut = new AnalysisCut("kineCut", "kine cut");
+    kineCut->AddCut(VarManager::kP, 1.0, 1000.0);
+    kineCut->AddCut(VarManager::kEta, -0.9, 0.9);
+
+    AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
+    qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 5.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 60, 161.);
+    qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
+
+    AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -4.0, 4.0, false, VarManager::kPin, 0.0, 5.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -1.5, 4.0, false, VarManager::kPin, 5.0, 1000.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPi, 2.0, 999, false, VarManager::kPin, 0.0, 5.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPr, 2.5, 999, false, VarManager::kPin, 0.0, 5.0);
+
+    cut->AddCut(kineCut);
+    cut->AddCut(qualityCuts);
+    cut->AddCut(pidCuts);
+    return cut;
+  }
+
+  if (!nameStr.compare("Electron2025_3")) {
+    AnalysisCut* kineCut = new AnalysisCut("kineCut", "kine cut");
+    kineCut->AddCut(VarManager::kP, 1.0, 1000.0);
+    kineCut->AddCut(VarManager::kEta, -0.9, 0.9);
+
+    AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
+    qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 5.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 60, 161.);
+    qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
+
+    AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -4.0, 4.0, false, VarManager::kPin, 0.0, 3.5);
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -2.0, 4.0, false, VarManager::kPin, 3.5, 1000.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPi, 2.0, 999, false, VarManager::kPin, 0.0, 3.5);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPr, 2.5, 999, false, VarManager::kPin, 0.0, 5.0);
+
+    cut->AddCut(kineCut);
+    cut->AddCut(qualityCuts);
+    cut->AddCut(pidCuts);
+    return cut;
+  }
   if (!nameStr.compare("LowMassElectron2023")) {
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
     cut->AddCut(GetAnalysisCut("LooseGlobalTrackRun3"));
