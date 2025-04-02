@@ -74,12 +74,11 @@ using MCTracks = soa::Join<StrHadronDaughterTracks, aod::McTrackLabels>;
 
 struct StrangenessInJets {
 
-  // Zorro initialization
-  Zorro zorro;
-  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
-  zorroSummary.setObject(zorro.getZorroSummary());
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryMC{"registryMC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -187,7 +186,7 @@ struct StrangenessInJets {
 
   // Jet background subtraction
   JetBkgSubUtils backgroundSub;
-
+ 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (cfgSkimmedProcessing) {
@@ -197,6 +196,10 @@ struct StrangenessInJets {
 
   void init(InitContext const&)
   {
+    if (cfgSkimmedProcessing) {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
+
     ccdb->setURL(urlToCcdb.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
