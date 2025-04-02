@@ -2166,7 +2166,7 @@ inline int8_t HfFilterHelper::isSelectedBhadronToJPsi(std::array<T1, Nprongs> pV
     }
     if (isFirstKaon) {
       auto massKaPi = RecoDecay::m(std::array{pVecDauTracks[2], pVecDauTracks[3]}, std::array{massKa, massPi});
-      if (std::fabs(massKaPi - massPhi) < 0.1f) {
+      if (std::fabs(massKaPi - massK0Star892) < 0.1f) {
         auto massJPsiKaPi = RecoDecay::m(std::array{pVecJPsi, pVecDauTracks[2], pVecDauTracks[3]}, std::array{massJPsi, massKa, massPi});
         if (std::fabs(massJPsiKaPi - massB0) < mCutsBhadToJPsi.get(binPtB, 1u)) {
           SETBIT(isSelected, kB0ToJPsi);
@@ -2178,7 +2178,7 @@ inline int8_t HfFilterHelper::isSelectedBhadronToJPsi(std::array<T1, Nprongs> pV
     }
     if (isSeconKaon) {
       auto massPiKa = RecoDecay::m(std::array{pVecDauTracks[2], pVecDauTracks[3]}, std::array{massPi, massKa});
-      if (std::fabs(massPiKa - massPhi) < 0.1f) {
+      if (std::fabs(massPiKa - massK0Star892) < 0.1f) {
         auto massJPsiPiKa = RecoDecay::m(std::array{pVecJPsi, pVecDauTracks[2], pVecDauTracks[3]}, std::array{massJPsi, massPi, massKa});
         if (std::fabs(massJPsiPiKa - massB0) < mCutsBhadToJPsi.get(binPtB, 1u)) {
           SETBIT(isSelected, kB0ToJPsi);
