@@ -232,7 +232,7 @@ struct FlowCorrelationsUpc {
 
     int trueGapSide = sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
     gapSide = trueGapSide;
-    if (gapSide == 2) {
+    if (gapSide == cfgGapSideSelection) {
       return;
     }
 
