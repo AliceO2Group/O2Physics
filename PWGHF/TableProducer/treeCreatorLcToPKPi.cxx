@@ -185,15 +185,15 @@ DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
                   hf_cand::ImpactParameter2,
-                  full::NSigTpcPi,
-                  full::NSigTpcKa,
                   full::NSigTpcPr,
-                  full::NSigTofPi,
-                  full::NSigTofKa,
+                  full::NSigTpcKa,
+                  full::NSigTpcPi,
                   full::NSigTofPr,
-                  full::NSigTpcTofPi,
-                  full::NSigTpcTofKa,
+                  full::NSigTofKa,
+                  full::NSigTofPi,
                   full::NSigTpcTofPr,
+                  full::NSigTpcTofKa,
+                  full::NSigTpcTofPi,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -254,15 +254,15 @@ DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
                   hf_cand::ErrorImpactParameter2,
-                  full::NSigTpcPi,
-                  full::NSigTpcKa,
                   full::NSigTpcPr,
-                  full::NSigTofPi,
-                  full::NSigTofKa,
+                  full::NSigTpcKa,
+                  full::NSigTpcPi,
                   full::NSigTofPr,
-                  full::NSigTpcTofPi,
-                  full::NSigTpcTofKa,
+                  full::NSigTofKa,
+                  full::NSigTofPi,
                   full::NSigTpcTofPr,
+                  full::NSigTpcTofKa,
+                  full::NSigTpcTofPi,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -510,26 +510,29 @@ struct HfTreeCreatorLcToPKPi {
           const float functionCt = hfHelper.ctLc(candidate);
           const float functionY = hfHelper.yLc(candidate);
           const float functionE = hfHelper.eLc(candidate);
-          float valueTpcNSigmaPi;
           float valueTpcNSigmaPr;
-          float valueTofNSigmaPi;
+          const float valueTpcNSigmaKa = trackNeg.tpcNSigmaKa();
+          float valueTpcNSigmaPi;
           float valueTofNSigmaPr;
-          float valueTpcTofNSigmaPi;
+          const float valueTofNSigmaKa = trackNeg.tofNSigmaKa();
+          float valueTofNSigmaPi;
           float valueTpcTofNSigmaPr;
+          const float valueTpcTofNSigmaKa = trackNeg.tpcTofNSigmaKa();
+          float valueTpcTofNSigmaPi;
           if (candFlag == 0) {
-            valueTpcNSigmaPi = trackPos1.tpcNSigmaPi();
-            valueTpcNSigmaPr = trackPos2.tpcNSigmaPr();
-            valueTofNSigmaPi = trackPos1.tofNSigmaPi();
-            valueTofNSigmaPr = trackPos2.tofNSigmaPr();
-            valueTpcTofNSigmaPi = trackPos1.tpcTofNSigmaPi();
-            valueTpcTofNSigmaPr = trackPos2.tpcTofNSigmaPr();
-          } else {
-            valueTpcNSigmaPi = trackPos2.tpcNSigmaPi();
             valueTpcNSigmaPr = trackPos1.tpcNSigmaPr();
-            valueTofNSigmaPi = trackPos2.tofNSigmaPi();
+            valueTpcNSigmaPi = trackPos2.tpcNSigmaPi();
             valueTofNSigmaPr = trackPos1.tofNSigmaPr();
-            valueTpcTofNSigmaPi = trackPos2.tpcTofNSigmaPi();
+            valueTofNSigmaPi = trackPos2.tofNSigmaPi();
             valueTpcTofNSigmaPr = trackPos1.tpcTofNSigmaPr();
+            valueTpcTofNSigmaPi = trackPos2.tpcTofNSigmaPi();
+          } else {
+            valueTpcNSigmaPr = trackPos2.tpcNSigmaPr();
+            valueTpcNSigmaPi = trackPos1.tpcNSigmaPi();
+            valueTofNSigmaPr = trackPos2.tofNSigmaPr();
+            valueTofNSigmaPi = trackPos1.tofNSigmaPi();
+            valueTpcTofNSigmaPr = trackPos2.tpcTofNSigmaPr();
+            valueTpcTofNSigmaPi = trackPos1.tpcTofNSigmaPi();
           }
           if (fillCandidateLiteTable) {
             rowCandidateLite(
@@ -547,15 +550,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.impactParameter0(),
               candidate.impactParameter1(),
               candidate.impactParameter2(),
-              valueTpcNSigmaPi,
-              trackNeg.tpcNSigmaKa(),
               valueTpcNSigmaPr,
-              valueTofNSigmaPi,
-              trackNeg.tofNSigmaKa(),
+              valueTpcNSigmaKa,
+              valueTpcNSigmaPi,
               valueTofNSigmaPr,
-              valueTpcTofNSigmaPi,
-              trackNeg.tpcTofNSigmaKa(),
+              valueTofNSigmaKa,
+              valueTofNSigmaPi,
               valueTpcTofNSigmaPr,
+              valueTpcTofNSigmaKa,
+              valueTpcTofNSigmaPi,
               1 << candFlag,
               functionInvMass,
               candidate.pt(),
@@ -618,15 +621,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.errorImpactParameter0(),
               candidate.errorImpactParameter1(),
               candidate.errorImpactParameter2(),
-              valueTpcNSigmaPi,
-              trackNeg.tpcNSigmaKa(),
               valueTpcNSigmaPr,
-              valueTofNSigmaPi,
-              trackNeg.tofNSigmaKa(),
+              valueTpcNSigmaKa,
+              valueTpcNSigmaPi,
               valueTofNSigmaPr,
-              valueTpcTofNSigmaPi,
-              trackNeg.tpcTofNSigmaKa(),
+              valueTofNSigmaKa,
+              valueTofNSigmaPi,
               valueTpcTofNSigmaPr,
+              valueTpcTofNSigmaKa,
+              valueTpcTofNSigmaPi,
               1 << candFlag,
               functionInvMass,
               candidate.pt(),
@@ -933,26 +936,29 @@ struct HfTreeCreatorLcToPKPi {
           const float functionCt = hfHelper.ctLc(candidate);
           const float functionY = hfHelper.yLc(candidate);
           const float functionE = hfHelper.eLc(candidate);
-          float valueTpcNSigmaPi;
           float valueTpcNSigmaPr;
-          float valueTofNSigmaPi;
+          const float valueTpcNSigmaKa = trackNeg.tpcNSigmaKa();
+          float valueTpcNSigmaPi;
           float valueTofNSigmaPr;
-          float valueTpcTofNSigmaPi;
+          const float valueTofNSigmaKa = trackNeg.tofNSigmaKa();
+          float valueTofNSigmaPi;
           float valueTpcTofNSigmaPr;
+          const float valueTpcTofNSigmaKa = trackNeg.tpcTofNSigmaKa();
+          float valueTpcTofNSigmaPi;
           if (candFlag == 0) {
-            valueTpcNSigmaPi = trackPos1.tpcNSigmaPi();
-            valueTpcNSigmaPr = trackPos2.tpcNSigmaPr();
-            valueTofNSigmaPi = trackPos1.tofNSigmaPi();
-            valueTofNSigmaPr = trackPos2.tofNSigmaPr();
-            valueTpcTofNSigmaPi = trackPos1.tpcTofNSigmaPi();
-            valueTpcTofNSigmaPr = trackPos2.tpcTofNSigmaPr();
-          } else {
-            valueTpcNSigmaPi = trackPos2.tpcNSigmaPi();
             valueTpcNSigmaPr = trackPos1.tpcNSigmaPr();
-            valueTofNSigmaPi = trackPos2.tofNSigmaPi();
+            valueTpcNSigmaPi = trackPos2.tpcNSigmaPi();
             valueTofNSigmaPr = trackPos1.tofNSigmaPr();
-            valueTpcTofNSigmaPi = trackPos2.tpcTofNSigmaPi();
+            valueTofNSigmaPi = trackPos2.tofNSigmaPi();
             valueTpcTofNSigmaPr = trackPos1.tpcTofNSigmaPr();
+            valueTpcTofNSigmaPi = trackPos2.tpcTofNSigmaPi();
+          } else {
+            valueTpcNSigmaPr = trackPos2.tpcNSigmaPr();
+            valueTpcNSigmaPi = trackPos1.tpcNSigmaPi();
+            valueTofNSigmaPr = trackPos2.tofNSigmaPr();
+            valueTofNSigmaPi = trackPos1.tofNSigmaPi();
+            valueTpcTofNSigmaPr = trackPos2.tpcTofNSigmaPr();
+            valueTpcTofNSigmaPi = trackPos1.tpcTofNSigmaPi();
           }
           if (fillCandidateLiteTable) {
             rowCandidateLite(
@@ -970,15 +976,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.impactParameter0(),
               candidate.impactParameter1(),
               candidate.impactParameter2(),
-              valueTpcNSigmaPi,
-              trackNeg.tpcNSigmaKa(),
               valueTpcNSigmaPr,
-              valueTofNSigmaPi,
-              trackNeg.tofNSigmaKa(),
+              valueTpcNSigmaKa,
+              valueTpcNSigmaPi,
               valueTofNSigmaPr,
-              valueTpcTofNSigmaPi,
-              trackNeg.tpcTofNSigmaKa(),
+              valueTofNSigmaKa,
+              valueTofNSigmaPi,
               valueTpcTofNSigmaPr,
+              valueTpcTofNSigmaKa,
+              valueTpcTofNSigmaPi,
               1 << candFlag,
               functionInvMass,
               candidate.pt(),
@@ -1042,15 +1048,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.errorImpactParameter0(),
               candidate.errorImpactParameter1(),
               candidate.errorImpactParameter2(),
-              valueTpcNSigmaPi,
-              trackNeg.tpcNSigmaKa(),
               valueTpcNSigmaPr,
-              valueTofNSigmaPi,
-              trackNeg.tofNSigmaKa(),
+              valueTpcNSigmaKa,
+              valueTpcNSigmaPi,
               valueTofNSigmaPr,
-              valueTpcTofNSigmaPi,
-              trackNeg.tpcTofNSigmaKa(),
+              valueTofNSigmaKa,
+              valueTofNSigmaPi,
               valueTpcTofNSigmaPr,
+              valueTpcTofNSigmaKa,
+              valueTpcTofNSigmaPi,
               1 << candFlag,
               functionInvMass,
               candidate.pt(),
