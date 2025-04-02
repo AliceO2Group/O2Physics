@@ -49,7 +49,6 @@
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
-#include "DetectorsBase/Propagator.h"
 
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
