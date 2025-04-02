@@ -106,7 +106,7 @@ enum eDiffPhiWeights {
   wPhiEtaAxis,
   wPhiChargeAxis,
   wPhiCentralityAxis,
-  wPhiVertex_zAxis,
+  wPhiVertexZAxis,
   eDiffPhiWeights_N
 };
 
@@ -131,9 +131,9 @@ enum eEventHistograms {
   eMultiplicity,          // see documentation for ebye.fMultiplicity
   eReferenceMultiplicity, // see documentation for ebye.fReferenceMultiplicity
   eCentrality,            // default centrality estimator
-  eVertex_x,
-  eVertex_y,
-  eVertex_z,
+  eVertexX,
+  eVertexY,
+  eVertexZ,
   eNContributors, // number of tracks used for the vertex
   eImpactParameter,
   eEventPlaneAngle,
@@ -184,8 +184,8 @@ enum eEventCuts {
   eNoPileupTPC,                    // no pileup in TPC
   eNoPileupFromSPD,                // no pileup according to SPD vertexer
   eNoSPDOnVsOfPileup,              // no out-of-bunch pileup according to online-vs-offline SPD correlation
-  eRefMult_vs_NContr_Up,           // formula for upper boundary cut in eReferenceMultiplicity_vs_NContributors (remember that I use naming convention "x_vs_y")
-  eRefMult_vs_NContr_Low,          // formula for lower boundary cut in eReferenceMultiplicity_vs_NContributors (remember that I use naming convention "x_vs_y")
+  eRefMultVsNContrUp,              // formula for upper boundary cut in eReferenceMultiplicity_vs_NContributors (remember that I use naming convention "x_vs_y")
+  eRefMultVsNContrLow,             // formula for lower boundary cut in eReferenceMultiplicity_vs_NContributors (remember that I use naming convention "x_vs_y")
   eCentralityCorrelationsCut,      // port of void SetCentralityCorrelationsCuts(...) from MuPa class. Example format: "CentFT0C_CentFT0M", so IFS is "_", until proven otherwise
   // ...
   eCentralityWeights, // used for centrality flattening. Remember that this event cut must be implemented very last,
@@ -196,8 +196,8 @@ enum eEventCuts {
 };
 
 enum eEventCutsFormulas { // special treatment for all event cuts defined via mathematical formula, because for them I have to do one additional layer of booking using TFormula
-  eRefMult_vs_NContr_Up_Formula = 0,
-  eRefMult_vs_NContr_Low_Formula,
+  eRefMultVsNContrUp_Formula = 0,
+  eRefMultVsNContrLow_Formula,
   eEventCutsFormulas_N
 };
 
@@ -343,24 +343,24 @@ enum eQAEventHistograms2D {
   eMultiplicity_vs_ReferenceMultiplicity = 0, // multiplicity is x, reference multiplicity is y. I can swap offline if needed: histOriginal->GetBinContent(x,y); histSwapped->Fill(y,x);
   eMultiplicity_vs_NContributors,
   eMultiplicity_vs_Centrality,
-  eMultiplicity_vs_Vertex_z,
+  eMultiplicity_vs_VertexZ,
   eMultiplicity_vs_Occupancy,
   eMultiplicity_vs_InteractionRate, // TBI 20250331 I ctd. below with more histos in category eMultiplicity_vs_... - re-organize at some point bookkeping here
   eReferenceMultiplicity_vs_NContributors,
   eReferenceMultiplicity_vs_Centrality,
-  eReferenceMultiplicity_vs_Vertex_z,
+  eReferenceMultiplicity_vs_VertexZ,
   eReferenceMultiplicity_vs_Occupancy,
   eReferenceMultiplicity_vs_InteractionRate,
   eNContributors_vs_Centrality,
-  eNContributors_vs_Vertex_z,
+  eNContributors_vs_VertexZ,
   eNContributors_vs_Occupancy,
   eNContributors_vs_InteractionRate,
-  eCentrality_vs_Vertex_z,
+  eCentrality_vs_VertexZ,
   eCentrality_vs_Occupancy,
   eCentrality_vs_ImpactParameter, // [sim] = reconstructed centrality vs. simulated impact parameter. [rec] = ... TBI 20241210
   eCentrality_vs_InteractionRate,
-  eVertex_z_vs_Occupancy,
-  eVertex_z_vs_InteractionRate,
+  eVertexZ_vs_Occupancy,
+  eVertexZ_vs_InteractionRate,
   // ...
   // Specific (everything is hardwired):
   eMultNTracksPV_vs_MultNTracksGlobal,  // Run 3 multiplicity
