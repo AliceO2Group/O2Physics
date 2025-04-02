@@ -186,7 +186,7 @@ struct StrangenessInJets {
 
   // Jet background subtraction
   JetBkgSubUtils backgroundSub;
- 
+
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (cfgSkimmedProcessing) {
