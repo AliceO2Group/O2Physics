@@ -1287,10 +1287,10 @@ struct AnalysisSameEventPairing {
             histNames += Form("%s;%s;%s;", names[(fEnableBarrelMixingHistos ? 9 : 6)].Data(), names[(fEnableBarrelMixingHistos ? 10 : 7)].Data(), names[(fEnableBarrelMixingHistos ? 11 : 8)].Data());
             histNames += Form("%s;%s;%s;", names[(fEnableBarrelMixingHistos ? 12 : 9)].Data(), names[(fEnableBarrelMixingHistos ? 13 : 10)].Data(), names[(fEnableBarrelMixingHistos ? 14 : 11)].Data());
             if (fEnableBarrelMixingHistos) {
-	            names.push_back(Form("PairsBarrelMEPM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsBarrelMEPM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEPP_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEMM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-	            names.push_back(Form("PairsBarrelMEPM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsBarrelMEPM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEPP_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEMM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
@@ -1756,7 +1756,7 @@ struct AnalysisSameEventPairing {
               if (isLeg1Ambi && isLeg2Ambi) {
                 std::pair<uint32_t, uint32_t> iPair(a1.reducedtrackId(), a2.reducedtrackId());
                 if (fAmbiguousPairs.find(iPair) != fAmbiguousPairs.end()) {
-                  if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { //if this pair is already stored with this cut
+                  if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { // if this pair is already stored with this cut
                     isAmbiExtra = true;
                   } else {
                     fAmbiguousPairs[iPairs] |= static_cast<uint32_t>(1) << icut;
@@ -1951,7 +1951,7 @@ struct AnalysisSameEventPairing {
             if (isLeg1Ambi && isLeg2Ambi) {
               std::pair<uint32_t, uint32_t> iPair(a1.reducedtrackId(), a2.reducedtrackId());
               if (fAmbiguousPairs.find(iPair) != fAmbiguousPairs.end()) {
-                if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { //if this pair is already stored with this cut
+                if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { // if this pair is already stored with this cut
                   isAmbiExtra = true;
                 } else {
                   fAmbiguousPairs[iPairs] |= static_cast<uint32_t>(1) << icut;
