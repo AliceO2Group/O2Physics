@@ -911,7 +911,7 @@ struct StrangenessBuilder {
                 currentV0Entry.collisionId = bestCollisionArray[positiveTrackIndex.mcCollisionId];
                 currentV0Entry.posTrackId = positiveTrackIndex.globalId;
                 currentV0Entry.negTrackId = negativeTrackIndex.globalId;
-                currentV0Entry.v0Type = 1; // mark with bit 3
+                currentV0Entry.v0Type = 1;
                 currentV0Entry.pdgCode = positiveTrackIndex.pdgCode;
                 currentV0Entry.particleId = positiveTrackIndex.originId;
                 currentV0Entry.isCollinearV0 = false;
@@ -927,8 +927,7 @@ struct StrangenessBuilder {
                 }
               }
             }
-            // findable mode 2: determine type based on V0 table,
-            // with type 8 being reserved to findable-but-not-found
+            // findable mode 2
             if (mc_findableMode.value == 2) {
               currentV0Entry.globalId = -1;
               currentV0Entry.collisionId = bestCollisionArray[positiveTrackIndex.mcCollisionId];
